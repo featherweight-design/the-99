@@ -148,4 +148,7 @@ CSS/markup and should be rebuilt as SVG/components in the target codebase.
   specimens, logomark concepts) for additional context on how decisions were reached.
 
 Both are single self-contained HTML files; open directly in a browser. They are authored as
-Design Components but render standalone.
+Design Components but render standalone. The in-body `<x-dc>`/`<helmet>` wrappers are Design
+Component authoring syntax, kept intentionally so the files round-trip back into the design
+tool; browsers apply the contained `<link>`/`<style>` tags regardless, so the sheets render
+correctly despite not being strictly standards-conformant HTML.
