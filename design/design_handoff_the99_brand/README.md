@@ -147,8 +147,10 @@ CSS/markup and should be rebuilt as SVG/components in the target codebase.
 - `The 99 Brand Discovery.dc.html` — the fuller discovery board (tone, palette options, type
   specimens, logomark concepts) for additional context on how decisions were reached.
 
-Both are single self-contained HTML files; open directly in a browser. They are authored as
-Design Components but render standalone. The in-body `<x-dc>`/`<helmet>` wrappers are Design
-Component authoring syntax, kept intentionally so the files round-trip back into the design
-tool; browsers apply the contained `<link>`/`<style>` tags regardless, so the sheets render
-correctly despite not being strictly standards-conformant HTML.
+Each is a single HTML file with no local dependencies — open directly in a browser. An
+internet connection is required to load the fonts from Google Fonts. They are authored as
+Design Components: the in-body `<x-dc>`/`<helmet>` wrappers are DC authoring syntax, kept
+intentionally so the files round-trip back into the design tool. That placement is not
+standards-conformant HTML; mainstream browsers apply the contained `<link>`/`<style>` tags
+in practice, but other viewers/tools may not — treat the files as browser-viewed references,
+not validated markup.
