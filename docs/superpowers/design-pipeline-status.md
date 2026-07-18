@@ -10,8 +10,8 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 
 | Symbol | Meaning |
 |---|---|
-| 🟢 | Ready for implementation (handoff landed AND readiness verdict Green — plan PR / build not yet started) |
-| 🟡 | Audit complete, verdict Yellow — needs a light Design addendum pass to flip Green |
+| 🟢 | Ready for implementation (handoff landed AND readiness verdict ✅ Green or 🟡 Yellow — Yellow's gaps are closed eng-side in the plan PR; plan PR / build not yet started) |
+| 🟡 | Awaiting Design addendum — audit verdict was 🟠 Orange (small Design round-trip needed before flipping Green) |
 | 📐 | Brief locked, awaiting Claude Design handoff production (mocks, components) |
 | 🎨 | Design in flight (workshop / handoff iteration / audit) |
 | 🚦 | Paused (mid-workshop; awaiting Hugh input or external dependency) |
@@ -21,7 +21,7 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 
 ---
 
-## 🟢 Ready for implementation (design complete, Green)
+## 🟢 Ready for implementation (design complete, verdict Green or Yellow)
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
@@ -30,7 +30,9 @@ _Currently empty._
 
 ---
 
-## 🟡 Awaiting Design addendum (audit Yellow, one light pass to flip Green)
+## 🟡 Awaiting Design addendum (audit Orange, one light Design pass to flip Green)
+
+Holds items whose readiness verdict was 🟠 Orange — per `design-pipeline.md`, Orange means a small Design round-trip; a 🟡 Yellow verdict proceeds straight to plan PR and lands in 🟢 above.
 
 | # / handoff | Verdict PR | Blockers to close | Effort |
 |---|---|---|---|
