@@ -45,7 +45,19 @@ the codebase's spacing scale, but keep the type scale and color tokens verbatim.
 | primary   | `#EDE6D8` | headings, values          |
 | secondary | `#C6B79A` | body copy                 |
 | muted     | `#A89B84` | secondary data            |
-| faint     | `#7C7059` | labels, hints             |
+| faint     | `#8E8269` | labels, hints, hex captions |
+
+**Ramp reconciled with the sheet.** The draft table omitted two colors the sheet actually
+used; both are now resolved into the four-step ramp above:
+- `#B9AB92` (5 uses) consolidated into **secondary `#C6B79A`** — the sheet is updated.
+- `#8E8269` (the sheet's most-used caption/label color, 36 uses) is now the named **faint**
+  token, replacing the draft's `#7C7059`.
+
+**Faint contrast fixed.** The draft faint `#7C7059` measured ~3.8:1 on base `#14110E` — below
+WCAG AA (4.5:1) for small text. The new faint `#8E8269` measures ~4.97:1 on base, passing AA
+for the 11px uppercase Plex Mono labels it's specced for. The sheet is updated; no `#7C7059`
+remains in the locked brand sheet. (The discovery board still shows draft values — it is a
+historical record of the exploration, not a token source.)
 
 ### Accent — brass
 | Token        | Hex       | Usage                        |
@@ -59,8 +71,13 @@ Accent buttons use `#14110E` text on `#C9A24B` fill.
 | Token   | Hex       | Usage                    |
 |---------|-----------|--------------------------|
 | success | `#6FA368` | complete, owned          |
-| warning | `#D2A24A` | missing, attention       |
+| warning | `#E0913C` | missing, attention       |
 | danger  | `#C6533F` | over budget, destructive |
+
+**Warning shifted from the draft `#D2A24A` to `#E0913C` (amber-orange).** The draft value was a
+yellow-gold nearly identical to the brass accent `#C9A24B`, so warning-tinted rows (e.g. missing
+cards) would have read as the brand accent sitting beside brass primary actions. `#E0913C` is a
+distinct hue that separates cleanly from brass. The sheet is updated to match.
 
 ### WUBRG identity tags (small markers only)
 | Color      | Hex       |
