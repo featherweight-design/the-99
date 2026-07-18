@@ -4,16 +4,14 @@ The 99 runs a structured design pipeline: every consumer-facing UI ships from a 
 
 Adopted 2026-07-18 from the Concert Crawl design pipeline (`concert-crawl/docs/superpowers/design-pipeline.md`), adapted for this repo. Even though The 99 is a smaller app, it gets the same design foundation.
 
-> **Note for readers viewing this on GitHub:** This document references Claude memory notes inline (filenames matching `feedback_*.md` / `user_*.md`). These live outside the repo at `~/.claude/projects/.../memory/` and are loaded into Claude Code sessions automatically. They are not browsable here.
-
 ---
 
 ## Hard rules
 
-1. **No UI is built without Design mocks.** API, DB, server actions, and pure-logic work may proceed ahead of design; pages and components may not. (Per `feedback_ui_design_gate.md`.)
-2. **Mobile + desktop parity is non-negotiable.** Every behavior and state ships on both surfaces in the same PR; visual presentation may differ, the capability set may not. (Per `feedback_mobile_desktop_parity.md`.)
-3. **Every designed state must be reachable** before UI work starts — the triggering data exists in the server contract and is actually computed, not stubbed. (Per `feedback_api_contract_before_ui.md`.)
-4. **Design owns design decisions.** Handoff briefs state the problem and technical requirements; they never pre-decide layouts, control shapes, state lists, or mobile patterns. (Per `feedback_design_handoff_style.md`.)
+1. **No UI is built without Design mocks.** API, DB, server actions, and pure-logic work may proceed ahead of design; pages and components may not.
+2. **Mobile + desktop parity is non-negotiable.** Every behavior and state ships on both surfaces in the same PR; visual presentation may differ, the capability set may not.
+3. **Every designed state must be reachable** before UI work starts — the triggering data exists in the server contract and is actually computed, not stubbed.
+4. **Design owns design decisions.** Handoff briefs state the problem and technical requirements; they never pre-decide layouts, control shapes, state lists, or mobile patterns.
 
 ---
 
@@ -33,7 +31,7 @@ Adopted 2026-07-18 from the Concert Crawl design pipeline (`concert-crawl/docs/s
 4. Merged handoff lands in `design/design_handoff_<feature>/`
 5. Design Readiness Review as a parity gate → Track 1
 
-Both tracks converge on the same plan-PR-and-Copilot-review step. The Copilot merge bar and cadence live in the canonical review policy in `~/.claude/CLAUDE.md` (user scope).
+Both tracks converge on the same plan-PR-and-Copilot-review step. The Copilot merge bar and cadence follow the standing review policy applied across all of Hugh's projects (maintained in user-scope agent instructions, outside this repo): request a review after opening and after every push, fix all valid findings, and merge only once a clean or Low/Nit-only round lands on the latest push.
 
 ---
 
@@ -149,7 +147,7 @@ No solution language.>
 | Hugh + agent workshop | Design ticket | GitHub Issues |
 | Design produces | Design handoff folder + README | `design/design_handoff_<feature>/` |
 | Hugh + agent audit | Readiness Review | `design/design_handoff_<feature>/READINESS.md` |
-| Hugh + agent workshop | Implementation plan | `docs/superpowers/plans/` (plan PR) |
+| Hugh + agent workshop | Implementation plan | `docs/superpowers/plans/` (directory is introduced by each plan PR; the v1 plan PR #2 creates it) |
 | Copilot reviews | Review threads on plan PR | GitHub PR |
 | Eng builds | Implementation PR(s) | GitHub PR — references plan + handoff |
 
@@ -160,7 +158,7 @@ Traceability chain: design ticket → handoff folder → plan PR → implementat
 ## Status snapshot (as of 2026-07-18)
 
 - **Landed:** brand system handoff (`design_handoff_the99_brand`) — Palette A "Table Candlelight," type system, logomark, tokens.
-- **v1 UI surfaces needing Track 2 tickets** (from the v1 plan, `docs/superpowers/plans/2026-07-18-the-99-v1.md`; backend for each proceeds ahead of design per the UI gate):
+- **v1 UI surfaces needing Track 2 tickets** (from the v1 plan — `docs/superpowers/plans/2026-07-18-the-99-v1.md`, landing via plan PR #2, in review; backend for each proceeds ahead of design per the UI gate):
   1. Collection — upload flow (CSV preview/confirm) + collection table
   2. Commander recommendations — ranked, explainable list
   3. Decks — list, create-from-commander, deck builder (suggestions panel, search, role counters, gaps/shopping list, export)
