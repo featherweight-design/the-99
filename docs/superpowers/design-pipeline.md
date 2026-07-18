@@ -31,7 +31,7 @@ Adopted 2026-07-18 from the Concert Crawl design pipeline (`concert-crawl/docs/s
 4. Merged handoff lands in `design/design_handoff_<feature>/`
 5. Design Readiness Review as a parity gate → Track 1
 
-Both tracks converge on the same plan-PR-and-Copilot-review step. The Copilot merge bar and cadence follow the standing review policy applied across all of Hugh's projects (maintained in user-scope agent instructions, outside this repo): request a review after opening and after every push, fix all valid findings, and merge only once a clean or Low/Nit-only round lands on the latest push.
+Both tracks converge on the same plan-PR-and-Copilot-review step. The Copilot merge bar and cadence: request a review after opening and after every push, fix all valid findings, and merge only once a clean or Low/Nit-only round lands on the latest push.
 
 ---
 
