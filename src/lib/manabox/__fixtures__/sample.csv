@@ -1,0 +1,5 @@
+Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency
+Sol Ring,C21,Commander 2021,263,normal,uncommon,2,12345,83f43730-1c1f-4150-8771-d901c54bedd4,1.50,false,false,near_mint,en,USD
+"Fell the Mighty",C14,Commander 2014,7,normal,rare,1,23456,0900e494-962d-48c6-8e78-66a489be4bb2,0.25,false,false,good,en,USD
+Lightning Bolt,2XM,Double Masters,97,foil,common,1,34567,,0.99,false,false,near_mint,en,USD
+Mystery Card,ZZZ,Fake Set,1,normal,common,abc,45678,,0.00,false,false,near_mint,en,USD
