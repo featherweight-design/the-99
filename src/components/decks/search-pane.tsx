@@ -106,9 +106,16 @@ export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchP
           className="flex items-center gap-[7px] text-[11.5px] cursor-pointer select-none"
           style={{ color: "#A89B84" }}
         >
+          <input
+            type="checkbox"
+            className="sr-only peer"
+            checked={ownedOnly}
+            onChange={(e) => setOwnedOnly(e.target.checked)}
+            aria-label="Show owned cards only"
+          />
           {/* Custom toggle — §Search meta — toggle track + knob */}
           <span
-            className="relative inline-block"
+            className="relative inline-block rounded-[999px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#C9A24B]"
             style={{ width: 30, height: 17, borderRadius: 999 }}
             aria-hidden
           >
@@ -135,13 +142,6 @@ export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchP
               }}
             />
           </span>
-          <input
-            type="checkbox"
-            className="sr-only"
-            checked={ownedOnly}
-            onChange={(e) => setOwnedOnly(e.target.checked)}
-            aria-label="Show owned cards only"
-          />
           Owned only
         </label>
       </div>

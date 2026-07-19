@@ -111,7 +111,7 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search commanders…"
-              className="flex-1 bg-transparent focus:outline-none text-[14px] md:text-[15px]"
+              className="flex-1 bg-transparent text-[14px] md:text-[15px] rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
               style={{ color: "#EDE6D8" }}
               aria-label="Search commanders"
             />
