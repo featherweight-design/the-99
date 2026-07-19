@@ -83,7 +83,7 @@ export function scoreCommander(args: {
   const overlapOwned: string[] = [];
   const overlapMissing: string[] = [];
 
-  if (args.edhrecTopCards) {
+  if (args.edhrecTopCards && args.edhrecTopCards.length > 0) {
     // Index full name AND front face: EDHREC lists DFCs/MDFCs by front face
     // while Scryfall names them "Front // Back".
     const poolNames = new Set<string>();

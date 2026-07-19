@@ -30,7 +30,7 @@ export function DegradedBanner() {
           <p className="m-0" style={{ fontSize: 12.5, color: "#EDE6D8", fontWeight: 500 }}>
             Synergy data unavailable
           </p>
-          <p
+          <div
             className="m-0"
             style={{ fontSize: 11.5, color: "#A89B84", lineHeight: 1.5, marginTop: 2 }}
           >
@@ -45,7 +45,7 @@ export function DegradedBanner() {
                 Retry
               </button>
             </form>
-          </p>
+          </div>
         </div>
       </div>
 

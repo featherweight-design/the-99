@@ -141,7 +141,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
             }}
           >
             <span style={{ color: "#8E8269", fontSize: 12 }}>⚠</span>
-            <span style={{ fontSize: 12, color: "#A89B84" }}>
+            <div style={{ fontSize: 12, color: "#A89B84" }}>
               Synergy data unavailable.{" "}
               <form action={retryRecs} className="inline relative z-[2]">
                 <button
@@ -153,7 +153,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
                   Retry
                 </button>
               </form>
-            </span>
+            </div>
           </div>
         )}
       </div>
@@ -300,7 +300,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
               }}
             >
               <span style={{ color: "#8E8269", fontSize: 13 }}>⚠</span>
-              <span style={{ fontSize: 12.5, color: "#A89B84", lineHeight: 1.45 }}>
+              <div style={{ fontSize: 12.5, color: "#A89B84", lineHeight: 1.45 }}>
                 <strong style={{ color: "#C6B79A", fontWeight: 600 }}>
                   Synergy data unavailable
                 </strong>{" "}
@@ -315,7 +315,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
                     Retry
                   </button>
                 </form>
-              </span>
+              </div>
             </div>
           )}
         </div>

@@ -22,7 +22,7 @@ export function finalizeRecommendations(
   results: CommanderScore[],
   uniqueCardsRead: number,
   candidateCount: number,
-): Omit<RecommendResult, "degraded"> & { degraded: boolean } {
+): Omit<RecommendResult, "degraded"> {
   const seen = new Map<string, number>();
   const ranked: RankedCommander[] = results.map((r) => {
     const base = commanderSlug(r.name);
@@ -30,7 +30,7 @@ export function finalizeRecommendations(
     seen.set(base, n);
     return { ...r, slug: n === 1 ? base : `${base}-${n}` };
   });
-  return { results: ranked, degraded: false, uniqueCardsRead, candidateCount };
+  return { results: ranked, uniqueCardsRead, candidateCount };
 }
 
 export async function recommendCommanders(

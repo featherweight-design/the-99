@@ -67,6 +67,14 @@ describe("scoreCommander", () => {
     expect(s.score).toBeGreaterThan(0);
   });
 
+  it("treats an empty EDHREC top-cards list as no synergy data", () => {
+    const s = scoreCommander({ commander, collection, edhrecTopCards: [] });
+    expect(s.edhrecTotal).toBeNull();
+    expect(s.edhrecOwnedCount).toBeNull();
+    expect(s.fitSynergy).toBeNull();
+    expect(s.score).toBeGreaterThan(0);
+  });
+
   it("ranks a commander with more EDHREC overlap higher, all else equal", () => {
     const low = scoreCommander({ commander, collection, edhrecTopCards: ["Craterhoof Behemoth"] });
     const high = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"] });
