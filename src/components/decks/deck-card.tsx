@@ -118,11 +118,10 @@ export function DeckCard({ deck }: DeckCardProps) {
 
             {/* §Deck card — status pill: mono 10px, 0.06em, br 999px, p 4px 9px / 5px 10px */}
             <span
-              className="shrink-0 font-mono text-[10px] tracking-[0.06em] rounded-[999px]"
+              className="shrink-0 font-mono text-[10px] tracking-[0.06em] rounded-[999px] px-[9px] py-[4px] md:px-[10px] md:py-[5px]"
               style={{
                 color: pill.color,
                 background: pill.background,
-                padding: "4px 9px",
               }}
             >
               {deck.statusPill}
@@ -135,10 +134,8 @@ export function DeckCard({ deck }: DeckCardProps) {
               // §Deck card — WUBRG pip: 11/12px, br 999px, colour hex
               <span
                 key={color}
-                className="shrink-0 rounded-[999px]"
+                className="shrink-0 rounded-[999px] w-[11px] h-[11px] md:w-[12px] md:h-[12px]"
                 style={{
-                  width: 11,
-                  height: 11,
                   background: WUBRG_HEX[color] ?? "#8E8269",
                 }}
                 aria-label={color}
