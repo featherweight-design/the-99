@@ -41,16 +41,14 @@ export async function listRecentDecks(
       name: decks.name,
       commanderName: cards.name,
       colorIdentity: cards.colorIdentity,
-      cardCount: sql<number>`coalesce((
-        select sum(${deckCards.quantity})::int
-        from ${deckCards}
-        where ${deckCards.deckId} = ${decks.id}
-      ), 0)`,
+      cardCount: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       createdAt: decks.createdAt,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
+    .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))
+    .groupBy(decks.id, decks.name, cards.name, cards.colorIdentity, decks.createdAt)
     .orderBy(desc(decks.createdAt))
     .limit(limit);
   return rows;

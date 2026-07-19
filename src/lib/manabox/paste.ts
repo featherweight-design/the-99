@@ -6,12 +6,17 @@ import type { ManaBoxRow, ParseError } from "./parse";
  *   "3 Sol Ring"
  *   "3x Sol Ring"
  *   "Sol Ring"          → quantity 1
- * A leading integer <= 0 or an empty name after quantity strip → ParseError.
+ * A leading integer <= 0, a quantity above MAX_QUANTITY, or an empty name
+ * after quantity strip → ParseError.
  *
  * Produces ManaBoxRows compatible with matchRows() by name only:
  *   scryfallId is null (NOT "") so matchRows' `row.scryfallId && ...`
  *   short-circuits cleanly to the name-index lookup.
  */
+// Quantities aggregate into Postgres `integer` columns downstream; cap well
+// below overflow (no real collection holds more copies than this).
+const MAX_QUANTITY = 10_000;
+
 export function parsePasteList(text: string): { rows: ManaBoxRow[]; errors: ParseError[] } {
   const lines = text.split(/\r?\n/);
   const rows: ManaBoxRow[] = [];
@@ -29,7 +34,7 @@ export function parsePasteList(text: string): { rows: ManaBoxRow[]; errors: Pars
     if (m) {
       quantity = Number(m[1]);
       name = m[2].trim();
-      if (!Number.isInteger(quantity) || quantity <= 0) {
+      if (!Number.isInteger(quantity) || quantity <= 0 || quantity > MAX_QUANTITY) {
         errors.push({ line: i + 1, raw, reason: `invalid quantity "${m[1]}"` });
         continue;
       }

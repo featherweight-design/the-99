@@ -49,6 +49,12 @@ describe("parsePasteList", () => {
     expect(errors[0].line).toBe(1);
   });
 
+  it("reports an oversized quantity as an error", () => {
+    const { rows, errors } = parsePasteList("9999999999 Sol Ring\n");
+    expect(rows).toHaveLength(0);
+    expect(errors[0].reason).toMatch(/quantity/i);
+  });
+
   it("reports a negative quantity as an error instead of treating it as a name", () => {
     const { rows, errors } = parsePasteList("-1 Sol Ring\n");
     expect(rows).toHaveLength(0);

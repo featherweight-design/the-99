@@ -182,6 +182,9 @@ export function UploadEntry() {
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
+              // Reset so re-selecting the same file after a cancelled preview
+              // still fires change.
+              e.target.value = "";
               if (f) void handleFile(f);
             }}
           />
