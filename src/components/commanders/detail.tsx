@@ -8,6 +8,7 @@ import { WUBRG_HEX } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import type { RankedCommander } from "../../lib/recs/recommend";
+import { FullCardTrigger } from "./full-card-trigger";
 
 // ─── Internal sub-component types ───────────────────────────────────────────
 
@@ -497,31 +498,8 @@ export function CommanderDetail({
           </div>
         )}
 
-        {/* ⛶ Full card affordance — stub (Task 8 builds lightbox) */}
-        <button
-          type="button"
-          className="absolute inline-flex items-center rounded-full"
-          style={{
-            top: 56,
-            right: 16,
-            gap: 6,
-            background: "rgba(10,7,4,0.55)",
-            backdropFilter: "blur(4px)",
-            border: "1px solid rgba(237,230,216,0.18)",
-            padding: "6px 11px",
-            cursor: "pointer",
-          }}
-          aria-label="View full card (coming soon)"
-          disabled
-        >
-          <span style={{ color: "#EDE6D8", fontSize: 12 }}>⛶</span>
-          <span
-            className="font-mono"
-            style={{ fontSize: 10, letterSpacing: "0.08em", color: "#EDE6D8" }}
-          >
-            Full card
-          </span>
-        </button>
+        {/* ⛶ Full card trigger + lightbox (client component) */}
+        <FullCardTrigger commander={c} />
 
         {/* Art header overlay (bottom) */}
         <div
