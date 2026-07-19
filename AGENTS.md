@@ -12,7 +12,7 @@ MTG Commander companion: upload a collection CSV, get commander recommendations,
 
 - `npm run dev` / `npm run build` — build needs `DATABASE_URL` to exist but runs no queries; a stub works: `DATABASE_URL="postgres://stub:stub@localhost/stub" npm run build`
 - `npm run typecheck` · `npm run lint` · `npm test`
-- `npm run db:generate` / `db:migrate` / `db:seed` (Drizzle Kit; seed pulls the Scryfall catalog)
+- `npm run db:generate` / `npm run db:migrate` / `npm run db:seed` (Drizzle Kit; seed pulls the Scryfall catalog)
 
 ## Workflow
 
