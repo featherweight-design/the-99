@@ -2203,17 +2203,18 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 | Search result — "✓ In deck" | `inDeck === true` | In-deck label #6FA368 | `inDeck: true` |
 | Suggestion — "+ Add" | `!inDeck` | Add button #C9A24B | `inDeck: false` |
 | Suggestion — "✓ In deck" | `inDeck === true` | In-deck label #6FA368 | `inDeck: true` |
-| Suggestion — synergy reason | `reasonType === 'synergy'` | Brass chip rgba(201,162,75,0.14) | `reason: "EDHREC · N%"`, `rtype: 'synergy'` |
-| Suggestion — role-fill reason | `reasonType !== 'synergy'` | Neutral chip #2A241D | `reason: "Fills <role>"`, `rtype: role` |
+| Suggestion — synergy reason | `reasonType === 'edhrec'` | Brass chip rgba(201,162,75,0.14) | `reasonLabel: "EDHREC · N% of decks"`, `reasonType: 'edhrec'` |
+| Suggestion — role-fill reason | `reasonType === 'role'` | Neutral chip #2A241D | `reasonLabel: "Fills <role> · rec N"`, `reasonType: 'role'` |
 | Builder · suggestions degraded | EDHREC offline / error | DegradedBanner (amber left-border) + Suggestions ranked by role only | `suggestionsMode: 'degraded'` |
 | Role counter — below rec (neutral) | `have < rec` (non-advisory) | Figure #C6B79A, bar #C9A24B | `have < rec` |
 | Role counter — met rec (green) | `have >= rec` | Figure #6FA368, bar #6FA368 | `have >= rec` |
 | Role counter — Lands advisory | Always (advisory role) | Bar #C9A24B regardless of count; label "rec ~37" | `advisory: true` |
 | Builder · complete | `built >= 99`, all owned | Progress bar #6FA368, status pill "Complete" | `built: 99`, `owned === built` |
 | Builder · playable | `built >= 99`, some unowned | Status pill "Playable" #6FA368 | `built: 99`, `owned < built` |
-| Builder · draft | `built < 55` (proposed) | Status pill "Draft" #A89B84 | `built < threshold` |
+| Builder · building | `built >= 1 && built <= 98` | Status pill "Building" #E0913C | `1 <= built <= 98` |
+| Builder · draft | `built === 0` | Status pill "Draft" #A89B84 | `built: 0` |
 | Export · decklist tab | User opens Export dialog / sheet; Decklist tab active | ExportDialog with text block (commander first, N Card Name lines) + Copy + Download | `deck.cards[]`, `commander` |
-| Export · shopping tab | User taps Shopping tab | Shopping list view: unowned cards with names + de-emphasised price reference | `shoppingItems[]` = `cards.filter(!owned)` |
+| Export · shopping tab | User taps Shopping tab | Shopping list view: unowned card names only (prices omitted — planned feature) + Copy + Download | `shoppingItems[]` = `cards.filter(!owned)` |
 | Export · disabled | `deck.size === 0` | Export button greyed (#8E8269, cursor: not-allowed) | `deck.size === 0` |
 | First-run · step 3 live | User is completing guided setup; arrived from Commanders "Build this deck" | GuidedBanner (brass left-border, 3-diamond crumb) + normal empty builder below | `guidedSetup: true`, `stepsDone: [1,2]` |
 | First-run · setup complete | Deck receives its first card | GuidedBanner dissolves; dashboard checklist dissolves | `deck.size >= 1 && wasFirstDeck` |
