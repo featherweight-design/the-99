@@ -39,13 +39,16 @@ export function useDialogA11y(
   // Escape closes; Tab wraps within the dialog.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // No-op while no dialog is mounted (consumer rendered closed/null).
+      const root = dialogRef.current;
+      if (!root) return;
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
         return;
       }
-      if (e.key !== "Tab" || !dialogRef.current) return;
-      const focusables = visibleFocusables(dialogRef.current);
+      if (e.key !== "Tab") return;
+      const focusables = visibleFocusables(root);
       if (focusables.length === 0) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
