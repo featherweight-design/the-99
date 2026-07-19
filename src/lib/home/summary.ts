@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, decks } from "../../db/schema";
+import { cards, collectionItems, csvUploads, deckCards, decks } from "../../db/schema";
 
 /**
  * Thin, logic-free queries for the home dashboard.
@@ -21,6 +21,15 @@ export const getCollectionStats = cache(async function getCollectionStats(
     .where(eq(collectionItems.userId, userId));
   return { totalCards: row?.totalCards ?? 0, uniqueCards: row?.uniqueCards ?? 0 };
 });
+
+export async function getCollectionLastUpdated(userId: string): Promise<Date | null> {
+  const [row] = await db
+    .select({ lastUpdated: sql<string | Date | null>`max(${csvUploads.confirmedAt})` })
+    .from(csvUploads)
+    .where(eq(csvUploads.userId, userId));
+  // Raw aggregate bypasses drizzle's column mapping — the driver may hand back a string.
+  return row?.lastUpdated ? new Date(row.lastUpdated) : null;
+}
 
 export type RecentDeck = {
   id: string;

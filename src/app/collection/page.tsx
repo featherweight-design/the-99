@@ -6,16 +6,17 @@
 // "no results" case is triggered when filters return zero (Task 5).
 
 import { requireUserId } from "../../lib/auth";
-import { getCollectionStats } from "../../lib/home/summary";
-import { loadBrowseCards } from "../../lib/collection/browse";
+import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
+import { formatLastUpdated, loadBrowseCards } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
 import { CollectionBrowser } from "../../components/collection/browser";
 
 export default async function CollectionPage() {
   const userId = await requireUserId();
-  const [stats, cards] = await Promise.all([
+  const [stats, cards, lastUpdated] = await Promise.all([
     getCollectionStats(userId),
     loadBrowseCards(userId),
+    getCollectionLastUpdated(userId),
   ]);
 
   // Empty collection — shell's state, kept intact.
@@ -71,7 +72,8 @@ export default async function CollectionPage() {
               {stats.totalCards.toLocaleString()} cards · {stats.uniqueCards.toLocaleString()} unique
             </span>
             <span className="hidden md:inline">
-              {stats.totalCards.toLocaleString()} cards · {stats.uniqueCards.toLocaleString()} unique · last updated today
+              {stats.totalCards.toLocaleString()} cards · {stats.uniqueCards.toLocaleString()} unique
+              {lastUpdated ? ` · last updated ${formatLastUpdated(lastUpdated)}` : ""}
             </span>
           </p>
         </div>

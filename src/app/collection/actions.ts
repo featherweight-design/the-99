@@ -68,7 +68,7 @@ async function buildPreview(args: {
   const [upload] = await db.insert(csvUploads).values({
     userId,
     filename,
-    rowCount: rows.length,
+    rowCount: rows.length + errors.length,
     unmatchedCount: unmatched.length,
     previewPayload: {
       unmatched: unmatchedPayload,
@@ -84,7 +84,7 @@ async function buildPreview(args: {
     parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
     currentCollectionCount,
     filename,
-    rowCount: rows.length,
+    rowCount: rows.length + errors.length,
   };
 }
 
@@ -120,6 +120,7 @@ export async function confirmUpload(uploadId: string): Promise<void> {
     for (let i = 0; i < values.length; i += 500) {
       await tx.insert(collectionItems).values(values.slice(i, i + 500));
     }
+    await tx.update(csvUploads).set({ confirmedAt: new Date() }).where(eq(csvUploads.id, uploadId));
   });
   revalidatePath("/collection");
   revalidatePath("/");

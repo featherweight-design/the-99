@@ -33,6 +33,17 @@ export function cssUrl(uri: string): string {
   return `url("${encodeURI(uri).replaceAll('"', "%22")}")`;
 }
 
+/** Subtitle date per design: "today" / "yesterday" / "Jul 12" (year appended when not current). */
+export function formatLastUpdated(date: Date, now: Date = new Date()): string {
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((day(now) - day(date)) / 86_400_000);
+  if (diffDays <= 0) return "today";
+  if (diffDays === 1) return "yesterday";
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  if (date.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+  return date.toLocaleDateString("en-US", opts);
+}
+
 /** Shared WUBRG palette — used by mana-pips, rows-view, chip-row, card-modal. */
 export const WUBRG_HEX: Record<string, string> = {
   W: "#E8E4D6", U: "#4A7FB5", B: "#5B5566", R: "#C05A48", G: "#6B9E63",

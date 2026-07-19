@@ -3,7 +3,7 @@
 // The interim inline preview UI from earlier is gone; the parent ReplaceFlow
 // component now owns steps 2 (review) and 3 (type-to-confirm).
 
-import { useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { previewUpload, previewPaste, type UploadPreview } from "../../app/collection/actions";
 import { parsePasteList } from "../../lib/manabox/paste";
 
@@ -51,9 +51,10 @@ export function UploadEntry({
     });
   }
 
-  const pasteCount = pasteText.trim()
-    ? parsePasteList(pasteText).rows.reduce((n, r) => n + r.quantity, 0)
-    : 0;
+  const pasteCount = useMemo(
+    () => (pasteText.trim() ? parsePasteList(pasteText).rows.reduce((n, r) => n + r.quantity, 0) : 0),
+    [pasteText],
+  );
 
   return (
     // Desktop content area — §Desktop Content Area: padding 44px 48px, max-width 760px

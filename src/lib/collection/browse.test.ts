@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aggregateCollection,
   filterCards,
+  formatLastUpdated,
   sortCards,
   type BrowseCard,
 } from "./browse";
@@ -114,5 +115,21 @@ describe("sortCards", () => {
     const copy = [...list];
     sortCards(list, "name");
     expect(list).toEqual(copy);
+  });
+});
+
+describe("formatLastUpdated", () => {
+  const now = new Date(2026, 6, 19, 12, 0); // Jul 19, 2026
+  it("same day → today", () => {
+    expect(formatLastUpdated(new Date(2026, 6, 19, 3, 30), now)).toBe("today");
+  });
+  it("previous day → yesterday", () => {
+    expect(formatLastUpdated(new Date(2026, 6, 18, 23, 59), now)).toBe("yesterday");
+  });
+  it("same year → short month + day", () => {
+    expect(formatLastUpdated(new Date(2026, 6, 12), now)).toBe("Jul 12");
+  });
+  it("prior year → includes year", () => {
+    expect(formatLastUpdated(new Date(2025, 11, 3), now)).toBe("Dec 3, 2025");
   });
 });
