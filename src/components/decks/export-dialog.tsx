@@ -199,12 +199,12 @@ function DialogContent({
 
   return (
     <>
-      {/* Header */}
+      {/* Header: border-bottom mobile only */}
       <div
         className="flex items-center justify-between"
         style={{
           padding: isMobile ? "8px 18px 14px" : "20px 24px 16px",
-          borderBottom: "1px solid #2A241D",
+          borderBottom: isMobile ? "1px solid #2A241D" : undefined,
         }}
       >
         <div>
@@ -364,8 +364,8 @@ function DialogContent({
         ) : (
           /* Shopping tab body */
           <div>
-            {/* Info callout */}
-            <div
+            {/* Info callout — desktop only */}
+            {!isMobile && <div
               className="flex items-center"
               style={{
                 gap: 9,
@@ -396,7 +396,7 @@ function DialogContent({
               >
                 Names only. Pricing is a planned add — see release notes.
               </span>
-            </div>
+            </div>}
 
             {/* Count meta */}
             <p

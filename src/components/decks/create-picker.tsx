@@ -88,19 +88,17 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
 
         {/* ── Left: search + picker list ── */}
         <div className="flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]">
-          {/* §Search input */}
+          {/* §Search input: mobile border #3A3229 p 9px 12px gap 8; desktop border #C9A24B p 12px 15px gap 10 */}
           <div
-            className="flex items-center rounded-[8px] md:rounded-[9px] mb-[16px] focus-within:ring-2 focus-within:ring-[#C9A24B]"
+            className="flex items-center rounded-[8px] md:rounded-[9px] mb-[16px] focus-within:ring-2 focus-within:ring-[#C9A24B] p-[9px_12px] md:p-[12px_15px] gap-[8px] md:gap-[10px] border border-[#3A3229] md:border-[#C9A24B]"
             style={{
               background: "#181410",
-              border: "1px solid #3A3229",
-              padding: "9px 12px",
-              gap: 8,
             }}
           >
-            {/* §Search input — icon: magnifying glass */}
+            {/* §Search input — icon: mobile fs 14, desktop fs 16 */}
             <span
-              style={{ color: "#8E8269", fontSize: 14, userSelect: "none", flexShrink: 0 }}
+              className="text-[14px] md:text-[16px] shrink-0"
+              style={{ color: "#8E8269", userSelect: "none" }}
               aria-hidden
             >
               ⌕
@@ -149,11 +147,10 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
                     <button
                       type="button"
                       onClick={() => setSelected(isSelected ? null : c)}
-                      className="w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] transition-colors"
+                      className="w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] transition-colors p-[10px_12px] md:p-[12px_15px]"
                       style={{
                         background: isSelected ? "#211C15" : "#1A160F",
                         border: `1px solid ${isSelected ? "#C9A24B" : "#2A241D"}`,
-                        padding: "10px 12px",
                       }}
                       aria-pressed={isSelected}
                     >
@@ -172,9 +169,8 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
                       <div className="flex-1 min-w-0">
                         {/* §Commander picker row — name: Cinzel 600 14/16px #EDE6D8, ellipsis */}
                         <p
-                          className="font-display font-semibold truncate"
+                          className="font-display font-semibold truncate text-[14px] md:text-[16px]"
                           style={{
-                            fontSize: 14,
                             color: "#EDE6D8",
                             lineHeight: 1.3,
                             margin: 0,
@@ -183,18 +179,16 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
                           {c.name}
                         </p>
 
-                        {/* §Commander picker row — pip + pool caption */}
+                        {/* §Commander picker row — pip + pool caption: mobile gap 5 mt 4 fs 10; desktop gap 6 mt 5 fs 11 */}
                         <div
-                          className="flex items-center font-mono"
-                          style={{ gap: 5, marginTop: 4, fontSize: 10, color: "#A89B84" }}
+                          className="flex items-center font-mono gap-[5px] md:gap-[6px] mt-[4px] md:mt-[5px] text-[10px] md:text-[11px]"
+                          style={{ color: "#A89B84" }}
                         >
                           {c.colorIdentity.map((color) => (
                             <span
                               key={color}
-                              className="rounded-full shrink-0"
+                              className="rounded-full shrink-0 w-[9px] h-[9px] md:w-[11px] md:h-[11px]"
                               style={{
-                                width: 9,
-                                height: 9,
                                 background: WUBRG_HEX[color] ?? "#8E8269",
                               }}
                               aria-label={color}
@@ -204,15 +198,12 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
                         </div>
                       </div>
 
-                      {/* §Commander picker row — radio control */}
+                      {/* §Commander picker row — radio control: mobile 20×20, desktop 22×22 */}
                       <div
-                        className="shrink-0 rounded-full"
+                        className="shrink-0 rounded-full w-[20px] h-[20px] md:w-[22px] md:h-[22px]"
                         style={{
-                          width: 20,
-                          height: 20,
                           border: `2px solid ${isSelected ? "#C9A24B" : "#4A4033"}`,
                           background: isSelected ? "#C9A24B" : "transparent",
-                          flexShrink: 0,
                         }}
                         aria-hidden
                       />

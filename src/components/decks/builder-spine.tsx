@@ -169,19 +169,19 @@ export function BuilderSpine({ deck, onExport }: BuilderSpineProps) {
           </span>
         </div>
 
-        {/* §Spine — progress bar track */}
+        {/* §Spine — progress bar track: mobile h 5, desktop h 6 */}
         <div
-          className="w-full md:w-[170px] rounded-full overflow-hidden mt-[4px] md:mt-[6px]"
+          className="w-full md:w-[170px] rounded-full overflow-hidden mt-[4px] md:mt-[6px] h-[5px] md:h-[6px]"
           style={{
-            height: 5,
             background: "#2A241D",
           }}
         >
+          {/* §Spine — progress bar fill: built ≥99 #6FA368 / ≥55 #E0913C / <55 #C6533F */}
           <div
             className="h-full rounded-full"
             style={{
               width: `${pct}%`,
-              background: "#E0913C",
+              background: built >= 99 ? "#6FA368" : built >= 55 ? "#E0913C" : "#C6533F",
             }}
           />
         </div>
@@ -228,8 +228,8 @@ export function BuilderSpine({ deck, onExport }: BuilderSpineProps) {
             >
               {/* §Spine — export link icon (mobile): 16px #8E8269 */}
               <svg
-                width="14"
-                height="14"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="#8E8269"

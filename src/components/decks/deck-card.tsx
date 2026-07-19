@@ -26,12 +26,12 @@ function colorLabel(identity: string[]): string {
   return GUILDS[key] ?? "Multi";
 }
 
-/** Progress bar fill color from progressColor. */
-const FILL_COLOR: Record<string, string> = {
-  success: "#6FA368",
-  warning: "#E0913C",
-  danger: "#C6533F",
-};
+/** Progress bar fill colour by built bucket. §Deck card — progress bar fill */
+function progressFillColor(built: number): string {
+  if (built >= 99) return "#6FA368";
+  if (built >= 55) return "#E0913C";
+  return "#C6533F";
+}
 
 /** Status pill variant styles. */
 function pillStyles(status: DeckListItem["statusPill"]): { color: string; background: string } {
@@ -72,7 +72,7 @@ interface DeckCardProps {
 export function DeckCard({ deck }: DeckCardProps) {
   const nameId = `deck-name-${deck.id}`;
   const pill = pillStyles(deck.statusPill);
-  const fillColor = FILL_COLOR[deck.progressColor] ?? "#C6533F";
+  const fillColor = progressFillColor(deck.built);
   const fillPercent = Math.min(100, Math.round((deck.built / 99) * 100));
   const artGradient = commanderGradient(deck.commanderColorIdentity);
 
@@ -189,7 +189,7 @@ export function DeckCard({ deck }: DeckCardProps) {
           aria-valuemax={99}
           aria-label={`${deck.built} of 99 cards built`}
         >
-          {/* §Deck card — progress bar fill: h 100%, br 999px, colour by progressColor */}
+          {/* §Deck card — progress bar fill: h 100%, br 999px, colour by built bucket */}
           <div
             className="h-full rounded-[999px]"
             style={{

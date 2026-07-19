@@ -219,7 +219,6 @@ export type DeckListItem = {
   ownedCount: number;
   toBuyCount: number;
   statusPill: StatusPill;
-  progressColor: "success" | "warning" | "danger";
 };
 
 export async function listDecksWithStats(userId: string): Promise<DeckListItem[]> {
@@ -253,10 +252,6 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
 
   return rows.map((row) => {
     const pill = statusPill({ built: row.built, ownedCount: row.ownedCount });
-    const progressColor: "success" | "warning" | "danger" =
-      pill === "Complete" ? "success" :
-      pill === "Playable" ? "warning" :
-      "danger";
     return {
       id: row.id,
       name: row.name,
@@ -267,7 +262,6 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
       ownedCount: row.ownedCount,
       toBuyCount: row.built - row.ownedCount,
       statusPill: pill,
-      progressColor,
     };
   });
 }

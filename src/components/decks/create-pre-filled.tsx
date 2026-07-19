@@ -63,8 +63,7 @@ export function CreatePreFilled({
       {/* Mobile: flex center gap-[10px] p-[20px_18px_14px] border-bottom */}
       {/* Desktop: block p-[34px_40px] no border-bottom */}
       <div
-        className="flex items-center gap-[10px] p-[20px_18px_14px] md:block md:p-[34px_40px]"
-        style={{ borderBottom: "1px solid #2A241D" }}
+        className="flex items-center gap-[10px] p-[20px_18px_14px] md:block md:p-[34px_40px] border-b border-[#2A241D] md:border-b-0"
       >
         {/* Mobile back chevron */}
         <Link
@@ -91,26 +90,20 @@ export function CreatePreFilled({
             ‹ Commanders · {name}
           </Link>
 
-          {/* §Page title "New deck": Cinzel 700 20/28px #EDE6D8 */}
+          {/* §Page title "New deck": Cinzel 700 20/28px #EDE6D8; desktop margin 2px 0 4px */}
           <h1
-            className="font-display font-bold text-[20px] md:text-[28px] m-0"
+            className="font-display font-bold text-[20px] md:text-[28px] m-0 md:m-[2px_0_4px]"
             style={{ color: "#EDE6D8" }}
           >
             New deck
           </h1>
 
-          {/* §Subtitle */}
-          <p
-            className="font-mono text-[10px] md:text-[14px] mt-[1px]"
-            style={{ color: "#8E8269", marginBottom: 0 }}
-          >
-            <span className="md:hidden">Commander selected</span>
-            <span
-              className="hidden md:inline"
-              style={{ color: "#A89B84", marginBottom: 26, display: "block" }}
-            >
-              Name your deck to get started.
-            </span>
+          {/* §Subtitle: mobile mono 10px #8E8269 mt 1; desktop IBM Plex Sans 14px #A89B84 mb 26 */}
+          <p className="font-mono text-[10px] mt-[1px] md:hidden" style={{ color: "#8E8269", marginBottom: 0 }}>
+            Commander selected
+          </p>
+          <p className="font-sans hidden md:block text-[14px]" style={{ color: "#A89B84", marginBottom: 26 }}>
+            Name your deck to get started.
           </p>
         </div>
       </div>
@@ -207,11 +200,10 @@ export function CreatePreFilled({
         <div className="flex-1 min-w-0">
           {/* §Legal-validated strip */}
           <div
-            className="flex items-center gap-[9px] md:gap-[11px] rounded-[8px] md:rounded-[10px] mb-[24px] md:mb-[28px]"
+            className="flex items-center gap-[9px] md:gap-[11px] rounded-[8px] md:rounded-[10px] mb-[24px] md:mb-[28px] p-[10px_13px] md:p-[13px_16px]"
             style={{
               background: "rgba(111,163,104,0.1)",
               border: "1px solid #33402F",
-              padding: "10px 13px",
             }}
           >
             {/* Checkmark icon: 20×20px mobile / 24×24px desktop */}
@@ -225,7 +217,8 @@ export function CreatePreFilled({
               ✓
             </div>
             <span
-              style={{ fontSize: 12.5, color: "#C6B79A" }}
+              className="text-[12.5px] md:text-[13.5px]"
+              style={{ color: "#C6B79A" }}
             >
               Legal · validated
             </span>
@@ -266,11 +259,11 @@ export function CreatePreFilled({
 
           {/* Deck name form */}
           <form onSubmit={handleSubmit}>
-            {/* §Deck name field label: IBM Plex Mono 10px 0.14em uppercase #8E8269 */}
+            {/* §Deck name field label: IBM Plex Mono 10px 0.14em uppercase #8E8269 mb 8/9px */}
             <label
               htmlFor="deck-name-input"
-              className="block font-mono uppercase tracking-[0.14em]"
-              style={{ fontSize: 10, color: "#8E8269", marginBottom: 8 }}
+              className="block font-mono uppercase tracking-[0.14em] mb-[8px] md:mb-[9px]"
+              style={{ fontSize: 10, color: "#8E8269" }}
             >
               Deck name
             </label>
@@ -286,11 +279,10 @@ export function CreatePreFilled({
               maxLength={120}
               placeholder="My awesome deck"
               disabled={isPending}
-              className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px]"
+              className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px] text-[15px] md:text-[16px]"
               style={{
                 background: "#181410",
                 border: "1px solid #C9A24B",
-                fontSize: 15,
                 color: "#EDE6D8",
                 display: "block",
                 marginBottom: error ? 8 : 24,
@@ -322,11 +314,11 @@ export function CreatePreFilled({
               {isPending ? "Creating…" : "Create deck →"}
             </button>
 
-            {/* §"Change commander" secondary button */}
+            {/* §"Change commander" secondary button: mobile border #2A241D, desktop border #3A3229 */}
             <Link
               href="/decks/new"
-              className="block md:inline-block text-center rounded-[8px] font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] p-[11px_0] md:p-[13px_20px]"
-              style={{ background: "transparent", border: "1px solid #2A241D" }}
+              className="block md:inline-block text-center rounded-[8px] font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] p-[11px_0] md:p-[13px_20px] border border-[#2A241D] md:border-[#3A3229]"
+              style={{ background: "transparent" }}
             >
               {/* Mobile: 13px #A89B84 weight-500 */}
               <span
@@ -344,16 +336,10 @@ export function CreatePreFilled({
               </span>
             </Link>
 
-            {/* §Helper text (desktop only) */}
+            {/* §Helper text: mobile fs 12.5px lh 1.55; desktop fs 13px lh 1.6 border-top pt 16px */}
             <p
-              className="hidden md:block mt-[20px]"
-              style={{
-                fontSize: 13,
-                color: "#8E8269",
-                lineHeight: 1.6,
-                borderTop: "1px solid #2A241D",
-                paddingTop: 16,
-              }}
+              className="mt-[20px] text-[12.5px] md:text-[13px] leading-[1.55] md:leading-[1.6] md:border-t md:border-[#2A241D] md:pt-[16px]"
+              style={{ color: "#8E8269" }}
             >
               Colour identity is locked to your commander. Cards outside this
               identity won&apos;t be suggested.

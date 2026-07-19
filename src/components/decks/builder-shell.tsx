@@ -120,9 +120,17 @@ export function BuilderShell({
               </div>
             </div>
 
-            {/* Desktop mark (larger) */}
-            <div className="hidden md:block mb-[22px]" aria-hidden>
-              <CardFan variant="decks-desktop" />
+            {/* Desktop mark: §Mark container desktop 100-110 × 110-120; constrain to 104×112 */}
+            <div
+              className="hidden md:block mb-[22px] overflow-hidden"
+              style={{ width: 104, height: 112 }}
+              aria-hidden
+            >
+              {/* scale(104/120 ≈ 0.867) shrinks the 120×130 CardFan into the 104×112 target */}
+              <CardFan
+                variant="decks-desktop"
+                className="origin-top-left scale-[0.867]"
+              />
             </div>
 
             {/* §Empty state heading */}

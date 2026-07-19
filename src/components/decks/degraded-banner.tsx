@@ -27,15 +27,12 @@ export function DegradedBanner({ deckId }: DegradedBannerProps) {
     >
       {/* §Banner — header row */}
       <div className="flex items-center gap-[9px] md:gap-[10px]">
-        {/* §Banner — warning icon */}
+        {/* §Banner — warning icon: mobile 22×22 fs 12; desktop 24×24 fs 13 */}
         <div
-          className="flex-none flex items-center justify-center rounded-full font-bold"
+          className="flex-none flex items-center justify-center rounded-full font-bold w-[22px] h-[22px] md:w-[24px] md:h-[24px] text-[12px] md:text-[13px]"
           style={{
-            width: 22,
-            height: 22,
             border: "1.5px solid #E0913C",
             color: "#E0913C",
-            fontSize: 12,
           }}
           aria-hidden
         >
