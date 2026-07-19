@@ -43,30 +43,38 @@ export function UploadEntry() {
     return { pasteCardCount, pasteLineCount };
   }, [pasteText]);
 
-  async function handleFile(file: File) {
+  // All server calls run through `pending` so double-clicks / repeated drops
+  // can't fire concurrent previews (each preview creates a csv_uploads row).
+  function handleFile(file: File) {
+    if (pending) return;
     setError(null);
     const fd = new FormData();
     fd.set("file", file);
-    try {
-      const p = await previewUpload(fd);
-      setPreview(p);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
-    }
+    startTransition(async () => {
+      try {
+        const p = await previewUpload(fd);
+        setPreview(p);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Upload failed");
+      }
+    });
   }
 
-  async function handlePasteSubmit() {
+  function handlePasteSubmit() {
+    if (pending) return;
     setError(null);
-    try {
-      const p = await previewPaste(pasteText);
-      setPreview(p);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Parse failed");
-    }
+    startTransition(async () => {
+      try {
+        const p = await previewPaste(pasteText);
+        setPreview(p);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Parse failed");
+      }
+    });
   }
 
-  async function handleConfirm() {
-    if (!preview) return;
+  function handleConfirm() {
+    if (!preview || pending) return;
     startTransition(async () => {
       try {
         await confirmUpload(preview.uploadId);
@@ -160,7 +168,7 @@ export function UploadEntry() {
             e.preventDefault();
             setDragOver(false);
             const f = e.dataTransfer.files[0];
-            if (f) void handleFile(f);
+            if (f) handleFile(f);
           }}
           className={[
             "block cursor-pointer text-center",
@@ -185,7 +193,7 @@ export function UploadEntry() {
               // Reset so re-selecting the same file after a cancelled preview
               // still fires change.
               e.target.value = "";
-              if (f) void handleFile(f);
+              if (f) handleFile(f);
             }}
           />
 
@@ -330,8 +338,8 @@ export function UploadEntry() {
             )}
             <button
               type="button"
-              onClick={() => void handlePasteSubmit()}
-              disabled={!pasteText.trim()}
+              onClick={handlePasteSubmit}
+              disabled={!pasteText.trim() || pending}
               className="mt-[16px] w-full rounded-lg py-[13px] font-semibold text-[15px] bg-brass text-bg hover:bg-brass-hover disabled:opacity-50"
             >
               {pasteCardCount > 0 ? `Import ${pasteCardCount} cards` : "Import list"}

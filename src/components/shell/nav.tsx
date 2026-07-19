@@ -138,7 +138,11 @@ export function NavRail({ locked }: { locked: boolean }) {
                 key={href}
                 className="flex items-center gap-[11px] rounded-lg px-3 py-[10px] text-sm cursor-default"
                 style={{ color: "var(--fg-locked)", fontWeight: 500 }}
+                // aria-disabled needs a widget role; announce as a disabled,
+                // unfocusable link so AT users know the destination exists.
+                role="link"
                 aria-disabled="true"
+                tabIndex={-1}
               >
                 <RailDiamond active={false} locked={true} />
                 <span>{label}</span>
@@ -234,7 +238,11 @@ export function TabBar({ locked }: { locked: boolean }) {
             <div
               key={href}
               className="flex flex-1 flex-col items-center gap-[5px] cursor-default"
+              // aria-disabled needs a widget role; announce as a disabled,
+              // unfocusable link so AT users know the destination exists.
+              role="link"
               aria-disabled="true"
+              tabIndex={-1}
             >
               <TabDiamond active={false} />
               <span
