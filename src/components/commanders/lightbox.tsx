@@ -68,7 +68,7 @@ export function CommanderLightbox({
   return (
     // §Lightbox overlay
     <div
-      className="absolute inset-0 flex flex-col items-center justify-center"
+      className="fixed inset-0 flex flex-col items-center justify-center"
       style={{
         background: "rgba(8,6,4,0.86)",
         backdropFilter: "blur(6px)",
@@ -88,6 +88,48 @@ export function CommanderLightbox({
         }}
       />
 
+      {/* §"Full card" label (top center of overlay) */}
+      <p
+        className="absolute font-mono uppercase"
+        style={{
+          top: 24,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontSize: 10,
+          letterSpacing: "0.16em",
+          color: "#8E8269",
+          margin: 0,
+        }}
+      >
+        Full card
+      </p>
+
+      {/* §Close "✕" button (top-right of overlay) */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        aria-label="Close full card view"
+        className="absolute flex items-center justify-center rounded-full"
+        style={{
+          top: 20,
+          right: 18,
+          width: 34,
+          height: 34,
+          background: "rgba(237,230,216,0.1)",
+          border: "1px solid rgba(237,230,216,0.18)",
+          color: "#EDE6D8",
+          fontSize: 16,
+          cursor: "pointer",
+          zIndex: 10,
+        }}
+      >
+        ✕
+      </button>
+
       {/* Dialog — stops propagation so inner clicks don't close */}
       <div
         ref={dialogRef}
@@ -97,41 +139,6 @@ export function CommanderLightbox({
         className="relative flex flex-col items-center"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* §"Full card" label (top center) */}
-        <p
-          className="absolute font-mono uppercase"
-          style={{
-            top: -52,
-            textAlign: "center",
-            fontSize: 10,
-            letterSpacing: "0.16em",
-            color: "#8E8269",
-            margin: 0,
-          }}
-        >
-          Full card
-        </p>
-
-        {/* §Close "✕" button */}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close full card view"
-          className="absolute flex items-center justify-center rounded-full"
-          style={{
-            top: -52,
-            right: -30,
-            width: 34,
-            height: 34,
-            background: "rgba(237,230,216,0.1)",
-            border: "1px solid rgba(237,230,216,0.18)",
-            color: "#EDE6D8",
-            fontSize: 16,
-            cursor: "pointer",
-          }}
-        >
-          ✕
-        </button>
 
         {/* §Card frame (lightbox) — 262px wide, 63/88 aspect */}
         <div
