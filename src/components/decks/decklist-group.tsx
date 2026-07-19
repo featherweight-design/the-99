@@ -2,8 +2,8 @@
 // Server-pure (no "use client" directive).
 // §Decklist Group (design table).
 
-import type { DeckDetailCard } from "../../lib/decks/read";
-import { shouldShowMetaRow } from "../../lib/decks/read";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { shouldShowMetaRow } from "../../lib/decks/grouping";
 import { DecklistRow } from "./decklist-row";
 
 interface DecklistGroupProps {

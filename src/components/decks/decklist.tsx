@@ -4,8 +4,8 @@
 // Owns filter/grouping render; filter and grouping come as props from BuilderShell.
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
-import type { DeckDetailCard } from "../../lib/decks/read";
-import { groupByCardType, groupByRole } from "../../lib/decks/read";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { groupByCardType, groupByRole } from "../../lib/decks/grouping";
 import { GroupToggle } from "./group-toggle";
 import { DecklistGroup } from "./decklist-group";
 

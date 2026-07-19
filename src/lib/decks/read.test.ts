@@ -3,8 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 // Mock db before importing read to avoid DATABASE_URL at module init.
 vi.mock("../../db", () => ({ db: {} }));
 
-import { statusPill, cardTypeGroup, primaryRole, groupByCardType, groupByRole, shouldShowMetaRow, colorIdentityMask, poolCountFromMaskTally } from "./read";
-import type { DeckDetailCard } from "./read";
+import { statusPill, cardTypeGroup, primaryRole, colorIdentityMask, poolCountFromMaskTally } from "./read";
+import { groupByCardType, groupByRole, shouldShowMetaRow } from "./grouping";
+import type { DeckDetailCard } from "./grouping";
 
 // ---------------------------------------------------------------------------
 // colorIdentityMask

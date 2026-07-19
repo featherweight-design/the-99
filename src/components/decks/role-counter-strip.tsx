@@ -1,6 +1,6 @@
 // Role Counter Strip — §Role Counter Strip — 5 cells.
 // Server component — recomputes role counts from detail.cards.
-import type { DeckDetailCard } from "../../lib/decks/read";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
 import {
   computeRoleCounts,
   RECOMMENDED_MIX,

@@ -4,7 +4,7 @@
 // §Decklist Row (design table).
 
 import { removeCardFromDeck } from "../../app/decks/actions";
-import type { DeckDetailCard } from "../../lib/decks/read";
+import type { DeckDetailCard } from "../../lib/decks/grouping";
 
 interface DecklistRowProps {
   deckId: string;
