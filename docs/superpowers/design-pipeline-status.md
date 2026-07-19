@@ -26,6 +26,7 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
 | **#5** Design: App shell — nav, auth chrome, empty/first-run states | `design/design_handoff_the99_appshell/` | 🟡 Yellow (2026-07-18) | Rail + bottom tabs; home = dashboard / first-run checklist. Eng-side in plan PR: commander payload fields, paste-list action, un-gate `/`, focus states. CSV-format copy drift routed to #6; guided-flow steps 2–3 are #7/#8 first-run states. |
+| **#6** Design: Collection — CSV upload flow + collection view | `design/design_handoff_the99_collection/` | 🟡 Yellow (2026-07-18) | Rows⇄grid toggle, sticky filter bar + chips, card-detail modal (`?card=` deep-link), 3-step replace with type-to-confirm. Eng-side: broaden CSV ingest to multi-format + paste (pending Hugh sign-off; ManaBox-only would flip to Orange copy addendum), `line` on unmatched rows, sort options, modal a11y, virtualization. |
 
 ---
 
@@ -53,7 +54,6 @@ _Currently empty._
 
 | Ticket | Stage | Notes |
 |---|---|---|
-| **#6** Design: Collection — CSV upload flow + collection view | Handoff prompt with Design | Workshop 2026-07-18: browse scope is search + color/type/set filters + sorting (collection query API to be built to match); card detail view in scope (image, oracle text — container is Design's call); uploads remain full-replace, no merge in v1. Inherits from #5 audit: resolve dropzone CSV-format copy vs ManaBox-only parser. |
 | **#7** Design: Commander recommendations — ranked, explainable list | Handoff prompt with Design | Workshop 2026-07-18: explanation depth is full breakdown + named cards ("receipts" — payload additions planned); color-identity filter only (ranking stays opinionated); commander detail view in scope; first-run state = shell guided-flow step 2 live; global + per-commander degraded states required. |
 
 ---
