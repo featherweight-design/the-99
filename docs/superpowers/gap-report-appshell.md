@@ -10,7 +10,9 @@ the plan governs scope (what ships in #5 vs #6/#7/#8). Agent 3 confirm pass:
 
 1. **Rail nav "Play" group label** — missing → added (mono 10px, 0.18em tracking,
    uppercase, `--fg-faint`, padding 6px 12px 8px) in `src/components/shell/nav.tsx`.
-2. **Rail account trigger cursor** — missing `cursor-pointer` → added.
+2. **Rail account trigger cursor** — `cursor-pointer` was added here, then
+   removed in Copilot round 10: only the inner `UserButton` is interactive, so
+   a pointer cursor on the wrapper was a misleading affordance.
 3. **Paste textarea caret color** — plan-drift token `--fg-mono-cursor` (#6E6353,
    not in table or globals.css) → table value `var(--fg-locked)` (#6A6152) in
    `src/components/collection/upload-entry.tsx`.
