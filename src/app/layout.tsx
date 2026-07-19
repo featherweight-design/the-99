@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cinzel, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import Shell from "../components/shell/shell";
 import "./globals.css";
 
 const cinzel = Cinzel({
@@ -39,9 +40,8 @@ export default function RootLayout({
         lang="en"
         className={`${cinzel.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col font-sans bg-[color:var(--bg)] text-[color:var(--fg)]">
-          {/* Task 6 wraps children in <Shell>; keep passthrough until then. */}
-          <main className="flex-1">{children}</main>
+        <body className="min-h-full bg-[color:var(--bg)] text-[color:var(--fg)]">
+          <Shell>{children}</Shell>
         </body>
       </html>
     </ClerkProvider>
