@@ -77,8 +77,8 @@ export function UploadEntry({
         </span>
         {/* Body — §Warning Banner Body: 12.5/14px, #C6B79A (--fg-body), line-height 1.55/1.6 */}
         <p
-          className="text-[12.5px] md:text-[14px]"
-          style={{ color: "var(--fg-body)", lineHeight: 1.6 }}
+          className="text-[12.5px] md:text-[14px] leading-[1.55] md:leading-[1.6]"
+          style={{ color: "var(--fg-body)" }}
         >
           <span className="md:hidden">
             Uploading a new file replaces your current {currentCardCount.toLocaleString()} cards. There&apos;s no merge — the new export becomes your whole collection.
