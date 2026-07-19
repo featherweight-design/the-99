@@ -12,8 +12,7 @@ export default async function CollectionPage() {
   if (stats.uniqueCards === 0) {
     return (
       <section
-        className="flex flex-col items-center justify-center text-center"
-        style={{ padding: "32px", paddingTop: "32px" }}
+        className="flex flex-col items-center justify-center text-center p-8 md:p-[48px]"
       >
         {/* Card-fan mark: mobile variant → 100×110, desktop variant → 120×130 */}
         <CardFan variant="mobile" className="mb-[22px] md:hidden" />

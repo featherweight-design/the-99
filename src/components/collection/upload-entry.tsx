@@ -7,6 +7,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { parsePasteList } from "../../lib/manabox/paste";
 import {
   previewUpload,
   previewPaste,
@@ -301,7 +302,12 @@ export function UploadEntry() {
                 className="mt-[10px] font-mono text-[11px]"
                 style={{ color: "var(--fg-faint)" }}
               >
-                {pasteText.trim().split("\n").filter(Boolean).length} lines
+                {pasteText.trim().split("\n").filter(Boolean).length} lines ·{" "}
+                {parsePasteList(pasteText).rows.reduce(
+                  (n, r) => n + r.quantity,
+                  0,
+                )}{" "}
+                cards recognized
               </p>
             )}
             <button
