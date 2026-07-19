@@ -11,7 +11,7 @@ import {
 const card = (over: Partial<PoolCard>): PoolCard => ({
   oracleId: over.oracleId ?? randomUUID(),
   name: "X", typeLine: "Creature", oracleText: "", keywords: [], colorIdentity: [],
-  imageUri: null,
+  imageUri: null, manaCost: null,
   ...over,
 });
 

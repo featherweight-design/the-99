@@ -15,7 +15,7 @@ async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise
     .selectDistinctOn([cards.oracleId], {
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords, colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri,
+      imageUri: cards.imageUri, manaCost: cards.manaCost,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
