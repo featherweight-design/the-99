@@ -1,5 +1,5 @@
 // Builder Spine — §Builder Spine (header, /decks/[id]).
-// Server component. Commander thumb + inline rename + progress + export trigger.
+// Client component. Commander thumb + inline rename + progress + export trigger.
 "use client";
 
 import { useState } from "react";

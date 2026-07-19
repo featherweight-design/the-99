@@ -30,7 +30,6 @@ async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise
 // Deck names feed export headers and download filenames — reject control characters.
 function validateDeckName(name: string): string {
   const trimmed = name.trim();
-   
   if (trimmed.length === 0 || trimmed.length > 120 || /[\u0000-\u001F]/.test(trimmed)) {
     throw new Error("deck name must be 1–120 characters without control characters");
   }

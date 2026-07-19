@@ -25,7 +25,6 @@ export function buildShoppingText(cards: { name: string }[]): string {
 
 /** Deck names are user-controlled — strip path separators, OS-reserved and control characters. */
 function sanitizeFilename(name: string): string {
-   
   const cleaned = name.replace(/[\/\\:*?"<>|\u0000-\u001F]/g, "-").trim();
   return cleaned.length > 0 ? cleaned : "deck";
 }
