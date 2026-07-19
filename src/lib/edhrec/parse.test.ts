@@ -20,14 +20,32 @@ describe("parseEdhrecPayload", () => {
   });
   it("retains inclusion % when the payload carries num_decks/potential_decks", () => {
     const { inclusionByName } = parseEdhrecPayload(fixture);
-    expect(inclusionByName["Rhystic Study"]).toBe(71);
+    expect(inclusionByName["rhystic study"]).toBe(71);
   });
   it("prefers explicit inclusion when present", () => {
     const { inclusionByName } = parseEdhrecPayload(fixture);
-    expect(inclusionByName["Bolas's Citadel"]).toBe(34.5);
+    expect(inclusionByName["bolas's citadel"]).toBe(34.5);
   });
   it("omits cards without inclusion data", () => {
     const { inclusionByName } = parseEdhrecPayload(fixture);
-    expect(inclusionByName["Spore Frog"]).toBeUndefined();
+    expect(inclusionByName["spore frog"]).toBeUndefined();
+  });
+  it("stores inclusionByName keys in lowercase for mixed-case card names", () => {
+    const payload = {
+      container: {
+        json_dict: {
+          cardlists: [
+            {
+              cardviews: [
+                { name: "Sol Ring", num_decks: 500, potential_decks: 1000 },
+              ],
+            },
+          ],
+        },
+      },
+    };
+    const { inclusionByName } = parseEdhrecPayload(payload);
+    expect(inclusionByName["sol ring"]).toBe(50);
+    expect(inclusionByName["Sol Ring"]).toBeUndefined();
   });
 });

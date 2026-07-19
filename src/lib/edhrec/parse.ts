@@ -14,14 +14,15 @@ export function parseEdhrecPayload(payload: unknown): EdhrecData {
       if (typeof card?.name !== "string") continue;
       seen.add(card.name);
       // Prefer explicit inclusion (already a %), else derive from num_decks / potential_decks.
+      const key = card.name.toLowerCase();
       if (typeof card.inclusion === "number") {
-        inclusionByName[card.name] = Math.round(card.inclusion * 10) / 10;
+        inclusionByName[key] = Math.round(card.inclusion * 10) / 10;
       } else if (
         typeof card.num_decks === "number" &&
         typeof card.potential_decks === "number" &&
         card.potential_decks > 0
       ) {
-        inclusionByName[card.name] = Math.round((card.num_decks / card.potential_decks) * 1000) / 10;
+        inclusionByName[key] = Math.round((card.num_decks / card.potential_decks) * 1000) / 10;
       }
     }
   }

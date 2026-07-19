@@ -67,6 +67,17 @@ describe("buildSuggestionPayload", () => {
     expect(result.reasonLabel).toBe("EDHREC staple");
   });
 
+  it("resolves inclusion label for mixed-case card name against lowercase keys", () => {
+    // Simulates the real scenario: parse.ts stores lowercase keys ("sol ring"),
+    // suggest.ts looks up s.name.toLowerCase() — these must match.
+    const mixedCaseSuggestion: Suggestion & { name: string } = {
+      oracleId: "abc", name: "Sol Ring", reason: "edhrec",
+    };
+    const inclusionByName = { "sol ring": 84.2 }; // stored by parse.ts in lowercase
+    const result = buildSuggestionPayload({ ...mixedCaseSuggestion, owned: true }, inclusionByName);
+    expect(result.reasonLabel).toBe("EDHREC · 84.2% of decks");
+  });
+
   it("role-fill suggestion → Fills ramp · rec 10", () => {
     const rampSuggestion: Suggestion & { name: string } = { oracleId: "xyz", name: "Rampant Growth", reason: "ramp" };
     const result = buildSuggestionPayload({ ...rampSuggestion, owned: true }, {});
