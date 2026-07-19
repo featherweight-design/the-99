@@ -30,7 +30,10 @@ export function buildSuggestionPayload(
 
   if (s.reason === "edhrec") {
     reasonType = "edhrec";
-    const inclusion = inclusionByName[s.name.toLowerCase()];
+    // EDHREC keys DFCs/MDFCs by front face while Scryfall names them
+    // "Front // Back" — fall back to the front face on a miss.
+    const lower = s.name.toLowerCase();
+    const inclusion = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
     reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
   } else {
     reasonType = "role";

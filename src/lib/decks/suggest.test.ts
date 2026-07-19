@@ -78,6 +78,15 @@ describe("buildSuggestionPayload", () => {
     expect(result.reasonLabel).toBe("EDHREC · 84.2% of decks");
   });
 
+  it("falls back to front-face name for DFC inclusion lookup", () => {
+    // Scryfall names DFCs "Front // Back"; EDHREC keys inclusion by front face.
+    const dfc: Suggestion & { name: string } = {
+      oracleId: "dfc1", name: "Valki, God of Lies // Tibalt, Cosmic Impostor", reason: "edhrec",
+    };
+    const result = buildSuggestionPayload({ ...dfc, owned: true }, { "valki, god of lies": 12 });
+    expect(result.reasonLabel).toBe("EDHREC · 12% of decks");
+  });
+
   it("role-fill suggestion → Fills ramp · rec 10", () => {
     const rampSuggestion: Suggestion & { name: string } = { oracleId: "xyz", name: "Rampant Growth", reason: "ramp" };
     const result = buildSuggestionPayload({ ...rampSuggestion, owned: true }, {});

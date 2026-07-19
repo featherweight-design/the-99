@@ -86,8 +86,10 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   // Unowned EDHREC staples: up to 5
   let unownedSuggestions: DeckSuggestion[] = [];
   if (topCards && topCards.length > 0) {
-    // Query cards by name (case-insensitive), commander_legal, and color identity
-    const lowerTopCards = topCards.map((n) => n.toLowerCase());
+    // Query cards by name (case-insensitive), commander_legal, and color identity.
+    // Cap the IN list — only 5 unowned staples are surfaced, so the top of
+    // EDHREC's ranking is more than enough candidates.
+    const lowerTopCards = topCards.slice(0, 100).map((n) => n.toLowerCase());
     const candidateCards = await db
       .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity })
       .from(cards)
