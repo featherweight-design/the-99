@@ -13,6 +13,7 @@ import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Decklist } from "./decklist";
 import { AddPanel } from "./add-panel";
+import { ExportDialog } from "./export-dialog";
 
 interface BuilderShellProps {
   deck: DeckDetail;
@@ -230,48 +231,18 @@ export function BuilderShell({
         />
       )}
 
-      {/* Export dialog — Task 10 placeholder */}
+      {/* Export dialog — Task 10 */}
       {exportOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-40"
-            style={{ background: "rgba(8,6,4,0.68)" }}
-            onClick={() => setExportOpen(false)}
-            aria-hidden
-          />
-          <div
-            className="fixed z-50 left-0 right-0 bottom-0 md:left-1/2 md:top-1/2 md:bottom-auto md:right-auto md:-translate-x-1/2 md:-translate-y-1/2"
-            style={{
-              // mobile: bottom sheet shape
-              background: "#1A160F",
-              borderTop: "1px solid #3A3229",
-              borderRadius: "22px 22px 0 0",
-              boxShadow: "0 -20px 50px rgba(0,0,0,0.5)",
-              // desktop overrides via media (can't use Tailwind dynamic md: on inline)
-            }}
-          >
-            <div className="p-[20px]">
-              <p className="font-display font-bold text-[19px] md:text-[22px]" style={{ color: "#EDE6D8" }}>
-                Export deck
-              </p>
-              <p className="font-mono text-[11px] mt-[8px]" style={{ color: "#6E6353" }}>
-                [Export dialog — Task 10]
-              </p>
-              <button
-                type="button"
-                onClick={() => setExportOpen(false)}
-                className="mt-[16px] font-sans text-[13px] rounded-[8px] px-[16px] py-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-                style={{
-                  color: "#EDE6D8",
-                  background: "transparent",
-                  border: "1px solid #3A3229",
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </>
+        <ExportDialog
+          deckName={deck.name}
+          commanderName={deck.commander.name}
+          decklistCards={deck.cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
+          shoppingCards={deck.cards
+            .filter((c) => !c.owned)
+            .map((c) => ({ name: c.name, role: c.role }))}
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+        />
       )}
     </div>
   );
