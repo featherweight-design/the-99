@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRef } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { Crowned99 } from "../marks";
 
@@ -194,23 +195,50 @@ export function NavRail({ locked }: { locked: boolean }) {
       {/* mt-auto; outer padding 14px 12px; inner: br 14px, p 2px 12px 2px 2px */}
       {/* ------------------------------------------------------------------ */}
       <div className="mt-auto py-[14px] px-3">
-        {/* §Rail Account trigger — Hover: border-color accent (#C9A24B).
-            Classes (not inline style) so the hover: variant applies. */}
-        {/* Only the inner UserButton is interactive — no pointer cursor on the
-            wrapper, which would imply the whole row is clickable. */}
-        <div className="flex items-center gap-3 rounded-[14px] py-[2px] pr-3 pl-[2px] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] hover:border-[color:var(--brass)] transition-colors">
-          {/* Clerk UserButton — avatar dimensions per §Rail: Avatar badge */}
-          <UserButton
-            appearance={{
-              elements: {
-                userButtonAvatarBox:
-                  "h-[38px] w-[38px] rounded-[12px] border border-[color:var(--brass)]",
-              },
-            }}
-          />
-        </div>
+        <AccountTrigger />
       </div>
     </aside>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AccountTrigger — pill wrapper around Clerk's UserButton
+// §Rail: Account trigger row + §Rail: Avatar badge.
+//
+// #31 — the pill visually reads as a click target but only the inner Clerk
+// avatar was interactive. Rather than strip the pill (which the §Rail spec
+// intends), forward clicks that land on the wrapper surface to the Clerk
+// button so the whole affordance opens the menu. Only wrapper-surface clicks
+// are forwarded (e.target === e.currentTarget) — clicks that already reach
+// the Clerk button/avatar bubble up unchanged, so we don't double-fire and
+// re-close the menu.
+// ---------------------------------------------------------------------------
+function AccountTrigger() {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  function openMenu() {
+    wrapperRef.current?.querySelector<HTMLButtonElement>("button")?.click();
+  }
+
+  return (
+    <div
+      ref={wrapperRef}
+      // §Rail Account trigger — Hover: border-color accent (#C9A24B).
+      // cursor-pointer signals the widened click area introduced by #31.
+      className="flex items-center gap-3 rounded-[14px] py-[2px] pr-3 pl-[2px] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] hover:border-[color:var(--brass)] transition-colors cursor-pointer"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) openMenu();
+      }}
+    >
+      <UserButton
+        appearance={{
+          elements: {
+            userButtonAvatarBox:
+              "h-[38px] w-[38px] rounded-[12px] border border-[color:var(--brass)]",
+          },
+        }}
+      />
+    </div>
   );
 }
 
