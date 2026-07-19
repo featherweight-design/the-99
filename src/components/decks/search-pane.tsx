@@ -20,8 +20,9 @@ type SearchResult = { oracleId: string; name: string; typeLine: string; owned: b
 export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchPaneProps) {
   const [query, setQuery] = useState("");
   const [ownedOnly, setOwnedOnly] = useState(false);
-  // results keyed by the query string that produced them — null until first search.
-  const [resultState, setResultState] = useState<{ query: string; rows: SearchResult[] } | null>(null);
+  // results keyed by the query + owned filter that produced them — null until
+  // first search, so toggling the filter never shows stale rows.
+  const [resultState, setResultState] = useState<{ query: string; ownedOnly: boolean; rows: SearchResult[] } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced search: kick off after 150ms of inactivity. Out-of-bounds
@@ -41,7 +42,7 @@ export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchP
     timerRef.current = setTimeout(() => {
       searchCards(q, commanderIdentity, ownedOnly)
         .then((rows) => {
-          if (!cancelled) setResultState({ query: q, rows });
+          if (!cancelled) setResultState({ query: q, ownedOnly, rows });
         })
         .catch((err) => {
           console.error(err);
@@ -61,8 +62,13 @@ export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchP
   // Only show results if they match the current (trimmed) query.
   const trimmed = query.trim();
   const isQueryActive = trimmed.length >= 2 && trimmed.length <= 100;
-  const results = isQueryActive && resultState?.query === trimmed ? resultState.rows : [];
-  const searched = isQueryActive && resultState?.query === trimmed;
+  const current =
+    isQueryActive && resultState !== null && resultState.query === trimmed &&
+    resultState.ownedOnly === ownedOnly
+      ? resultState
+      : null;
+  const results = current ? current.rows : [];
+  const searched = current !== null;
 
   return (
     <div className="flex flex-col gap-[0px] flex-1 overflow-hidden">

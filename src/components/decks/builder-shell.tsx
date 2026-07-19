@@ -67,7 +67,7 @@ export function BuilderShell({
           <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px]">
             {/* §Mark container */}
             <div
-              className="relative mb-[20px] md:mb-[22px]"
+              className="relative md:hidden mb-[20px]"
               style={{ width: 96, height: 104 }}
               aria-hidden
             >
