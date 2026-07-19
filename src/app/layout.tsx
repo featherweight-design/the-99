@@ -39,7 +39,7 @@ export default function RootLayout({
         lang="en"
         className={`${cinzel.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col">
+        <body className="min-h-full flex flex-col font-sans bg-[color:var(--bg)] text-[color:var(--fg)]">
           {/* Task 6 wraps children in <Shell>; keep passthrough until then. */}
           <main className="flex-1">{children}</main>
         </body>
