@@ -59,7 +59,6 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
         onClick={handleToggle}
         aria-label="Deck options"
         aria-expanded={open}
-        aria-haspopup="menu"
         className="rounded-[8px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
         style={{
           fontFamily: "var(--font-sans)",
@@ -86,9 +85,8 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
         >
           {mode === "menu" ? (
-            <div role="menu" className="p-[8px] flex flex-col gap-[4px]">
+            <div className="p-[8px] flex flex-col gap-[4px]">
               <button
-                role="menuitem"
                 type="button"
                 onClick={handleRename}
                 className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] hover:bg-[#2A241D]"
@@ -97,7 +95,6 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
                 Rename
               </button>
               <button
-                role="menuitem"
                 type="button"
                 onClick={handleDelete}
                 disabled={isPending}
