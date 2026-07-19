@@ -103,6 +103,12 @@
               "name": "Talisman of Dominance"
             }
           ]
+        },
+        {
+          "cardviews": [
+            { "name": "Rhystic Study", "num_decks": 71000, "potential_decks": 100000 },
+            { "name": "Bolas's Citadel", "inclusion": 34.5 }
+          ]
         }
       ]
     }

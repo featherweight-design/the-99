@@ -5,11 +5,12 @@
 // - Focus trap (READINESS #5): queries focusable children, wraps Tab/Shift+Tab
 // - Escape closes; focus returns to the previously-focused element on close
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { cssUrl, WUBRG_HEX } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { ManaCost } from "./mana-pips";
+import { useDialogA11y } from "../../lib/a11y/dialog";
 
 // Renders oracle text with paragraph breaks, italic reminder text, and bolded keywords.
 function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
@@ -109,51 +110,9 @@ export function CardModal({
   onNext: (() => void) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
 
-  // Remember what had focus before the modal opened so we can return it on close.
-  useEffect(() => {
-    triggerRef.current = document.activeElement as HTMLElement | null;
-    return () => {
-      triggerRef.current?.focus();
-    };
-  }, []);
-
-  // Focus first focusable child on mount.
-  useEffect(() => {
-    const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
-    focusables?.[0]?.focus();
-  }, []);
-
-  // Escape closes; Tab wraps.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab" || !dialogRef.current) return;
-      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // Focus trap + Escape + focus-return — shared hook (3 consumers: CardModal, AddPanel sheet, Export dialog).
+  useDialogA11y(dialogRef, onClose);
 
   const artStyle: React.CSSProperties = card.imageUri
     ? { backgroundImage: cssUrl(card.imageUri), backgroundSize: "cover", backgroundPosition: "center" }

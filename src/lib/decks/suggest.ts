@@ -1,9 +1,56 @@
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
 import type { PoolCard } from "../recs/score";
 
+export type ReasonType = "edhrec" | "role";
+
+export type DeckSuggestion = {
+  oracleId: string;
+  name: string;
+  reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land";
+  reasonType: ReasonType;
+  reasonLabel: string;
+  owned: boolean;
+  inDeck: boolean;
+};
+
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
 const MAX = 99;
-const LAND_TARGET = 36;
+export const LAND_TARGET = 37;
+
+export function humanRole(reason: Suggestion["reason"]): string {
+  return reason === "land" ? "lands" : reason;
+}
+
+export function buildSuggestionPayload(
+  s: Suggestion & { name: string; owned: boolean },
+  inclusionByName: Record<string, number>,
+): DeckSuggestion {
+  let reasonType: ReasonType;
+  let reasonLabel: string;
+
+  if (s.reason === "edhrec") {
+    reasonType = "edhrec";
+    // EDHREC keys DFCs/MDFCs by front face while Scryfall names them
+    // "Front // Back" — fall back to the front face on a miss.
+    const lower = s.name.toLowerCase();
+    const inclusion = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
+    reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
+  } else {
+    reasonType = "role";
+    const target = s.reason === "land" ? LAND_TARGET : (ROLE_TARGETS[s.reason] ?? LAND_TARGET);
+    reasonLabel = `Fills ${humanRole(s.reason)} · rec ${target}`;
+  }
+
+  return {
+    oracleId: s.oracleId,
+    name: s.name,
+    reason: s.reason,
+    reasonType,
+    reasonLabel,
+    owned: s.owned,
+    inDeck: false,
+  };
+}
 
 export function suggestDeck(args: {
   commander: PoolCard;

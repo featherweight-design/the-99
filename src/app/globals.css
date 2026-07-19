@@ -96,6 +96,25 @@
 html, body { background: var(--bg); color: var(--fg); }
 body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 
+/* ------------------------------------------------------------------
+ * Guided Banner — responsive border/background split
+ * mobile:  solid bg #1E1A15, border 1px #2A241D, brass left accent 3px
+ * desktop: gradient bg, border 1px #3A3229, no brass left accent
+ * (design table §Banner container)
+ * ------------------------------------------------------------------ */
+.guided-banner {
+  background: #1E1A15;
+  border: 1px solid #2A241D;
+  border-left: 3px solid #C9A24B;
+}
+@media (min-width: 768px) {
+  .guided-banner {
+    background: linear-gradient(120deg, #221D14, #1A160F 60%);
+    border: 1px solid #3A3229;
+    border-left: 1px solid #3A3229;
+  }
+}
+
 /* Brand focus treatment — READINESS item 5.
  * Applies globally so every focusable control (rail item, tab, chip, button,
  * link, popover trigger, textarea) picks it up unless a component overrides.
