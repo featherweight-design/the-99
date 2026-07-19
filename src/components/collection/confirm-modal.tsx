@@ -157,7 +157,7 @@ export function ConfirmModal({
           <p className="mt-[10px] text-[13px]" style={{ color: "var(--danger)" }}>{error}</p>
         )}
 
-        {/* Button row — §Button Row. Per #34 the primary (destructive) button sits on the right and the secondary on the left on desktop. DOM order matches the desktop visual reading order — [Secondary][Primary] — so keyboard tab flows left→right (Copilot #40 round 1 flagged the earlier md:flex-row-reverse arrangement for tab/visual mismatch). Mobile uses flex-col-reverse so the primary still sits on top of the stack. Initial-import secondary label is "Go back" (nothing to keep yet); replace flow keeps "Keep current". */}
+        {/* Button row — §Button Row. Desktop: primary (destructive) on the right, secondary on the left; DOM order is [Secondary][Primary] so keyboard tab flows left→right in the same direction the eye reads. Mobile: flex-col-reverse keeps the primary visually on top of the stack while the DOM order stays consistent across breakpoints (mobile users are tapping, so DOM/visual divergence on the stacked layout is intentional). Initial-import secondary label is "Go back" (nothing to keep yet); replace flow keeps "Keep current". */}
         <div className="mt-[22px] flex flex-col-reverse md:flex-row gap-[12px]">
           <button
             type="button"
