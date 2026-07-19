@@ -348,11 +348,7 @@ export function CommandersView({
           <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
             {filtered.map((r, i) => (
               <li key={r.slug}>
-                <RecCard
-                  commander={r}
-                  rank={i + 1}
-                  globalDegraded={degraded}
-                />
+                <RecCard commander={r} rank={i + 1} />
               </li>
             ))}
           </ul>

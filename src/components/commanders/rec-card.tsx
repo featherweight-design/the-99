@@ -16,9 +16,6 @@ import type { RankedCommander } from "../../lib/recs/recommend";
 type RecCardProps = {
   commander: RankedCommander;
   rank: number;
-  /** Global degraded flag — retained for API compatibility; the inline note now
-   *  renders for any card where fitSynergy is null, regardless of scope. */
-  globalDegraded: boolean;
 };
 
 export function RecCard({ commander: c, rank }: RecCardProps) {

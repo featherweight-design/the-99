@@ -6,7 +6,7 @@
 
 import { useEffect, useRef } from "react";
 import type { RankedCommander } from "../../lib/recs/recommend";
-import { identityGradient } from "../../lib/collection/gradients";
+import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 
 export function CommanderLightbox({
@@ -17,7 +17,6 @@ export function CommanderLightbox({
   onClose: () => void;
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
   // Remember what had focus before the lightbox opened so we can return it on close.
@@ -64,7 +63,7 @@ export function CommanderLightbox({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const gradient = identityGradient(c.colorIdentity);
+  const gradient = commanderGradient(c.colorIdentity);
 
   return (
     // §Lightbox overlay
@@ -135,7 +134,6 @@ export function CommanderLightbox({
 
       {/* Dialog — stops propagation so inner clicks don't close */}
       <div
-        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={`Full card — ${c.name}`}
