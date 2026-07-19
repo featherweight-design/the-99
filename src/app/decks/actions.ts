@@ -15,7 +15,7 @@ async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise
     .selectDistinctOn([cards.oracleId], {
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords, colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri,
+      imageUri: cards.imageUri, manaCost: cards.manaCost,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
@@ -43,7 +43,7 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
   redirect(`/decks/${deck.id}`);
 }
 
-export type DeckSuggestion = { oracleId: string; name: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "land" };
+export type DeckSuggestion = { oracleId: string; name: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
 
 export async function getDeckSuggestions(deckId: string): Promise<DeckSuggestion[]> {
   const userId = await requireUserId();

@@ -4,17 +4,27 @@ export type PoolCard = {
   oracleId: string; name: string; typeLine: string; oracleText: string | null;
   keywords: string[]; colorIdentity: string[];
   imageUri: string | null;
+  manaCost: string | null;
 };
 
 export type CommanderScore = {
   oracleId: string; name: string;
   colorIdentity: string[];
   imageUri: string | null;
+  typeLine: string;
+  oracleText: string | null;
+  manaCost: string | null;
   colorPoolSize: number;
   edhrecOwnedCount: number | null;
   edhrecTotal: number | null;
-  roleCounts: Record<"ramp" | "draw" | "removal", number>;
-  roleGaps: ("ramp" | "draw" | "removal")[];
+  roleCounts: Record<"ramp" | "draw" | "removal" | "wipes", number>;
+  roleGaps: ("ramp" | "draw" | "removal" | "wipes")[];
+  roleCards: Record<"ramp" | "draw" | "removal" | "wipes", string[]>;
+  overlapOwned: string[];
+  overlapMissing: string[];
+  fitPool: number;
+  fitRoles: number;
+  fitSynergy: number | null;
   score: number;
 };
 
@@ -53,10 +63,16 @@ export function scoreCommander(args: {
     (c) => c.oracleId !== args.commander.oracleId && fitsIdentity(c, identity),
   );
 
-  const roleCounts = { ramp: 0, draw: 0, removal: 0 };
+  const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
+  const roleCards: Record<"ramp" | "draw" | "removal" | "wipes", string[]> = {
+    ramp: [], draw: [], removal: [], wipes: [],
+  };
   for (const c of pool) {
     for (const role of classifyRoles(c)) {
-      if (role !== "land") roleCounts[role]++;
+      if (role !== "land") {
+        roleCounts[role]++;
+        roleCards[role].push(c.name);
+      }
     }
   }
   const roleGaps = (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
@@ -64,7 +80,10 @@ export function scoreCommander(args: {
 
   let edhrecOwnedCount: number | null = null;
   let edhrecTotal: number | null = null;
-  if (args.edhrecTopCards) {
+  const overlapOwned: string[] = [];
+  const overlapMissing: string[] = [];
+
+  if (args.edhrecTopCards && args.edhrecTopCards.length > 0) {
     // Index full name AND front face: EDHREC lists DFCs/MDFCs by front face
     // while Scryfall names them "Front // Back".
     const poolNames = new Set<string>();
@@ -73,27 +92,44 @@ export function scoreCommander(args: {
       poolNames.add(lower);
       poolNames.add(lower.split(" // ")[0]);
     }
+
     edhrecTotal = args.edhrecTopCards.length;
-    edhrecOwnedCount = args.edhrecTopCards
-      .filter((n) => poolNames.has(n.toLowerCase())).length;
+    for (const n of args.edhrecTopCards) {
+      if (poolNames.has(n.toLowerCase())) {
+        overlapOwned.push(n);
+      } else {
+        overlapMissing.push(n);
+      }
+    }
+    edhrecOwnedCount = overlapOwned.length;
   }
 
-  // EDHREC overlap dominates; pool size and role coverage round it out.
   const overlapRatio = edhrecTotal ? (edhrecOwnedCount! / edhrecTotal) : 0;
   const roleCoverage =
     (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
       .reduce((sum, r) => sum + Math.min(roleCounts[r], ROLE_TARGETS[r]) / ROLE_TARGETS[r], 0) /
     Object.keys(ROLE_TARGETS).length;
   const poolFactor = Math.min(args.collection.length ? pool.length / 200 : 0, 1);
-  const score = Math.round((overlapRatio * 60 + roleCoverage * 25 + poolFactor * 15) * 10) / 10;
+
+  const fitPool = Math.round(poolFactor * 15 * 10) / 10;
+  const fitRoles = Math.round(roleCoverage * 25 * 10) / 10;
+  const fitSynergy = edhrecTotal == null ? null : Math.round(overlapRatio * 60 * 10) / 10;
+  const score = fitSynergy == null
+    ? Math.round(((fitPool + fitRoles) / 40) * 100 * 10) / 10
+    : Math.round((fitPool + fitRoles + fitSynergy) * 10) / 10;
 
   return {
     oracleId: args.commander.oracleId,
     name: args.commander.name,
     colorIdentity: args.commander.colorIdentity,
     imageUri: args.commander.imageUri,
+    typeLine: args.commander.typeLine,
+    oracleText: args.commander.oracleText,
+    manaCost: args.commander.manaCost,
     colorPoolSize: pool.length,
     edhrecOwnedCount, edhrecTotal,
-    roleCounts, roleGaps, score,
+    roleCounts, roleGaps, roleCards,
+    overlapOwned, overlapMissing,
+    fitPool, fitRoles, fitSynergy, score,
   };
 }

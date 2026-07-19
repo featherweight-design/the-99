@@ -1,18 +1,89 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems } from "../../db/schema";
+import { commanderSlug } from "../edhrec/slug";
 import { getEdhrecData } from "../edhrec/client";
 import { isCommanderCandidate, scoreCommander, type CommanderScore, type PoolCard } from "./score";
+import { receiptsPreview } from "./format";
+
+export type RankedCommander = CommanderScore & { slug: string };
+
+/**
+ * Slim payload for the client-side list view. The full RankedCommander carries
+ * heavy detail-only fields (oracleText, roleCards, overlapMissing) that the
+ * list never renders — stripping them keeps the serialized RSC payload small.
+ */
+export type CommanderListItem = Pick<
+  RankedCommander,
+  | "slug"
+  | "name"
+  | "colorIdentity"
+  | "colorPoolSize"
+  | "roleCounts"
+  | "edhrecOwnedCount"
+  | "edhrecTotal"
+  | "fitPool"
+  | "fitRoles"
+  | "fitSynergy"
+  | "score"
+> & {
+  /** Preformatted receipts line — overlapOwned can be large, so only the
+      rendered preview string ships to the client. */
+  receipts: string;
+};
+
+export function toListItem(r: RankedCommander): CommanderListItem {
+  return {
+    slug: r.slug,
+    name: r.name,
+    colorIdentity: r.colorIdentity,
+    colorPoolSize: r.colorPoolSize,
+    roleCounts: r.roleCounts,
+    edhrecOwnedCount: r.edhrecOwnedCount,
+    edhrecTotal: r.edhrecTotal,
+    receipts: receiptsPreview(r.overlapOwned),
+    fitPool: r.fitPool,
+    fitRoles: r.fitRoles,
+    fitSynergy: r.fitSynergy,
+    score: r.score,
+  };
+}
+
+export type RecommendResult = {
+  results: RankedCommander[];
+  degraded: boolean;
+  uniqueCardsRead: number;
+  candidateCount: number;
+};
+
+/**
+ * Pure post-processing step: assigns unique slugs in rank order and wraps
+ * counts. Exported for unit testing without a live database.
+ */
+export function finalizeRecommendations(
+  results: CommanderScore[],
+  uniqueCardsRead: number,
+  candidateCount: number,
+): Omit<RecommendResult, "degraded"> {
+  const seen = new Map<string, number>();
+  const ranked: RankedCommander[] = results.map((r) => {
+    const base = commanderSlug(r.name);
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    return { ...r, slug: n === 1 ? base : `${base}-${n}` };
+  });
+  return { results: ranked, uniqueCardsRead, candidateCount };
+}
 
 export async function recommendCommanders(
   userId: string,
-): Promise<{ results: CommanderScore[]; degraded: boolean }> {
+): Promise<RecommendResult> {
   const owned = await db
     .selectDistinctOn([cards.oracleId], {
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords,
       colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal,
-      imageUri: cards.imageUri,
+      imageUri: cards.imageUri, manaCost: cards.manaCost,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
@@ -42,5 +113,7 @@ export async function recommendCommanders(
     results.push(...scored);
   }
   results.sort((a, b) => b.score - a.score);
-  return { results, degraded };
+
+  const finalized = finalizeRecommendations(results, owned.length, candidates.length);
+  return { ...finalized, degraded };
 }

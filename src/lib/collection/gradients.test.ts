@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { identityGradient } from "./gradients";
+import { commanderGradient, identityGradient } from "./gradients";
 
 describe("identityGradient", () => {
   it("returns colorless gradient for empty identity", () => {
@@ -34,5 +34,25 @@ describe("identityGradient", () => {
   it("blend uses 125deg angle", () => {
     const result = identityGradient(["R", "G"]);
     expect(result).toContain("125deg");
+  });
+});
+
+describe("commanderGradient", () => {
+  it("uses the second identity color for the 55% stop on 3-color identities", () => {
+    // §Art gradient formula: id0-mid, id0-light 34%, id1-light 55%, idN-mid 82%, idN-dark
+    expect(commanderGradient(["W", "U", "B"])).toBe(
+      "linear-gradient(130deg, #cbbf9c, #efe9d8 34%, #6a9bcb 55%, #2c2833 82%, #17151d)",
+    );
+  });
+
+  it("uses second == last color for 2-color identities", () => {
+    expect(commanderGradient(["R", "G"])).toBe(
+      "linear-gradient(130deg, #8c3627, #cf7157 34%, #84b277 55%, #406f3b 82%, #264823)",
+    );
+  });
+
+  it("falls back to mono/colorless gradients for 1 and 0 colors", () => {
+    expect(commanderGradient(["G"])).toBe("linear-gradient(150deg, #84b277, #406f3b 58%, #264823)");
+    expect(commanderGradient([])).toBe("linear-gradient(150deg, #b3a488, #726755 58%, #453e31)");
   });
 });

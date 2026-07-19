@@ -1,7 +1,7 @@
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
 import type { PoolCard } from "../recs/score";
 
-export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "land" };
+export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
 const MAX = 99;
 const LAND_TARGET = 36;
 
@@ -34,7 +34,9 @@ export function suggestDeck(args: {
     }
   }
 
-  const counts = { ramp: 0, draw: 0, removal: 0, land: 0 };
+  const counts: Record<"ramp" | "draw" | "removal" | "wipes" | "land", number> = {
+    ramp: 0, draw: 0, removal: 0, wipes: 0, land: 0,
+  };
   for (const c of args.ownedPool) {
     if (used.has(c.oracleId)) {
       for (const r of classifyRoles(c)) counts[r]++;
