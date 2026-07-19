@@ -18,4 +18,16 @@ describe("parseEdhrecPayload", () => {
     expect(parseEdhrecPayload({}).topCards).toEqual([]);
     expect(parseEdhrecPayload({ container: { json_dict: { cardlists: [{ cardviews: {} }] } } }).topCards).toEqual([]);
   });
+  it("retains inclusion % when the payload carries num_decks/potential_decks", () => {
+    const { inclusionByName } = parseEdhrecPayload(fixture);
+    expect(inclusionByName["Rhystic Study"]).toBe(71);
+  });
+  it("prefers explicit inclusion when present", () => {
+    const { inclusionByName } = parseEdhrecPayload(fixture);
+    expect(inclusionByName["Bolas's Citadel"]).toBe(34.5);
+  });
+  it("omits cards without inclusion data", () => {
+    const { inclusionByName } = parseEdhrecPayload(fixture);
+    expect(inclusionByName["Spore Frog"]).toBeUndefined();
+  });
 });

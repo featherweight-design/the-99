@@ -3,7 +3,7 @@ import type { PoolCard } from "../recs/score";
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
 const MAX = 99;
-const LAND_TARGET = 36;
+const LAND_TARGET = 37;
 
 export function suggestDeck(args: {
   commander: PoolCard;
