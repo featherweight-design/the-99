@@ -84,6 +84,20 @@ describe("parseCollectionCsv", () => {
     expect(errors[0].reason).toMatch(/quantity/i);
   });
 
+  it("handles CRLF line endings", () => {
+    const { rows, errors } = parseCollectionCsv("Name,Quantity,Foil\r\nSol Ring,2,foil\r\nArcane Signet,1,\r\n");
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ name: "Sol Ring", quantity: 2, foil: true, line: 2 });
+    expect(rows[1]).toMatchObject({ name: "Arcane Signet", quantity: 1, foil: false, line: 3 });
+  });
+
+  it("uses the first match when a header appears twice", () => {
+    const { rows, errors } = parseCollectionCsv("Name,Name,Quantity\nSol Ring,Wrong,3\n");
+    expect(errors).toHaveLength(0);
+    expect(rows[0]).toMatchObject({ name: "Sol Ring", quantity: 3 });
+  });
+
   it("reports empty file as a parse error on line 1", () => {
     const { rows, errors } = parseCollectionCsv("");
     expect(rows).toHaveLength(0);

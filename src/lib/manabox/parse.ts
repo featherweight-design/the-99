@@ -53,12 +53,6 @@ function findHeaderIndex(header: string[], candidates: string[]): number {
   return -1;
 }
 
-// Temporary re-exports so consumers compile while they are migrated in later tasks.
-/** @deprecated Use CollectionRow */
-export type ManaBoxRow = CollectionRow;
-/** @deprecated Use parseCollectionCsv */
-export const parseManaBoxCsv = parseCollectionCsv;
-
 export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; errors: ParseError[] } {
   const lines = csvText.split(/\r?\n/);
   if (lines.every((l) => l.trim() === "")) {
@@ -113,3 +107,9 @@ export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; er
   }
   return { rows, errors };
 }
+
+// Temporary re-exports so consumers compile while they are migrated in later tasks.
+/** @deprecated Use CollectionRow */
+export type ManaBoxRow = CollectionRow;
+/** @deprecated Use parseCollectionCsv */
+export const parseManaBoxCsv = parseCollectionCsv;
