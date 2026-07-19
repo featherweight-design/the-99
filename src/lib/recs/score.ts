@@ -15,6 +15,12 @@ export type CommanderScore = {
   edhrecTotal: number | null;
   roleCounts: Record<"ramp" | "draw" | "removal" | "wipes", number>;
   roleGaps: ("ramp" | "draw" | "removal" | "wipes")[];
+  roleCards: Record<"ramp" | "draw" | "removal" | "wipes", string[]>;
+  overlapOwned: string[];
+  overlapMissing: string[];
+  fitPool: number;
+  fitRoles: number;
+  fitSynergy: number | null;
   score: number;
 };
 
@@ -54,38 +60,59 @@ export function scoreCommander(args: {
   );
 
   const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
+  const roleCards: Record<"ramp" | "draw" | "removal" | "wipes", string[]> = {
+    ramp: [], draw: [], removal: [], wipes: [],
+  };
   for (const c of pool) {
     for (const role of classifyRoles(c)) {
-      if (role !== "land") roleCounts[role]++;
+      if (role !== "land") {
+        roleCounts[role]++;
+        roleCards[role].push(c.name);
+      }
     }
   }
   const roleGaps = (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
     .filter((r) => roleCounts[r] < ROLE_TARGETS[r]);
 
-  let edhrecOwnedCount: number | null = null;
-  let edhrecTotal: number | null = null;
-  if (args.edhrecTopCards) {
-    // Index full name AND front face: EDHREC lists DFCs/MDFCs by front face
-    // while Scryfall names them "Front // Back".
-    const poolNames = new Set<string>();
-    for (const c of pool) {
-      const lower = c.name.toLowerCase();
-      poolNames.add(lower);
-      poolNames.add(lower.split(" // ")[0]);
-    }
-    edhrecTotal = args.edhrecTopCards.length;
-    edhrecOwnedCount = args.edhrecTopCards
-      .filter((n) => poolNames.has(n.toLowerCase())).length;
+  // Index full name AND front face: EDHREC lists DFCs/MDFCs by front face
+  // while Scryfall names them "Front // Back".
+  const poolNames = new Set<string>();
+  for (const c of pool) {
+    const lower = c.name.toLowerCase();
+    poolNames.add(lower);
+    poolNames.add(lower.split(" // ")[0]);
   }
 
-  // EDHREC overlap dominates; pool size and role coverage round it out.
+  let edhrecOwnedCount: number | null = null;
+  let edhrecTotal: number | null = null;
+  let overlapOwned: string[] = [];
+  let overlapMissing: string[] = [];
+
+  if (args.edhrecTopCards) {
+    edhrecTotal = args.edhrecTopCards.length;
+    for (const n of args.edhrecTopCards) {
+      if (poolNames.has(n.toLowerCase())) {
+        overlapOwned.push(n);
+      } else {
+        overlapMissing.push(n);
+      }
+    }
+    edhrecOwnedCount = overlapOwned.length;
+  }
+
   const overlapRatio = edhrecTotal ? (edhrecOwnedCount! / edhrecTotal) : 0;
   const roleCoverage =
     (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
       .reduce((sum, r) => sum + Math.min(roleCounts[r], ROLE_TARGETS[r]) / ROLE_TARGETS[r], 0) /
     Object.keys(ROLE_TARGETS).length;
   const poolFactor = Math.min(args.collection.length ? pool.length / 200 : 0, 1);
-  const score = Math.round((overlapRatio * 60 + roleCoverage * 25 + poolFactor * 15) * 10) / 10;
+
+  const fitPool = Math.round(poolFactor * 15 * 10) / 10;
+  const fitRoles = Math.round(roleCoverage * 25 * 10) / 10;
+  const fitSynergy = edhrecTotal == null ? null : Math.round(overlapRatio * 60 * 10) / 10;
+  const score = fitSynergy == null
+    ? Math.round(((fitPool + fitRoles) / 40) * 100 * 10) / 10
+    : Math.round((fitPool + fitRoles + fitSynergy) * 10) / 10;
 
   return {
     oracleId: args.commander.oracleId,
@@ -94,6 +121,8 @@ export function scoreCommander(args: {
     imageUri: args.commander.imageUri,
     colorPoolSize: pool.length,
     edhrecOwnedCount, edhrecTotal,
-    roleCounts, roleGaps, score,
+    roleCounts, roleGaps, roleCards,
+    overlapOwned, overlapMissing,
+    fitPool, fitRoles, fitSynergy, score,
   };
 }

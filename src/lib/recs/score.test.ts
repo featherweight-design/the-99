@@ -78,6 +78,75 @@ describe("scoreCommander", () => {
     expect(s.colorIdentity).toEqual(["B", "G"]);
     expect(s.imageUri).toBe("https://cards.example/golgari.jpg");
   });
+
+  // Task 2: roleCards
+  it("roleCards.ramp contains a ramp card name", () => {
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    // Sol Ring and Cultivate are both ramp
+    expect(s.roleCards.ramp).toContain("Sol Ring");
+    expect(s.roleCards.ramp).toContain("Cultivate");
+  });
+
+  it("a wrath lands in roleCards.wipes not roleCards.removal", () => {
+    const wrath = card({
+      name: "Wrath of God",
+      typeLine: "Sorcery",
+      oracleText: "Destroy all creatures.",
+      colorIdentity: ["W"],
+    });
+    const colWithWrath = [...collection, wrath];
+    const commanderW = card({
+      name: "Atraxa",
+      typeLine: "Legendary Creature",
+      colorIdentity: ["W", "U", "B", "G"],
+    });
+    const s = scoreCommander({ commander: commanderW, collection: colWithWrath, edhrecTopCards: null });
+    expect(s.roleCards.wipes).toContain("Wrath of God");
+    expect(s.roleCards.removal).not.toContain("Wrath of God");
+  });
+
+  // Task 2: overlapOwned / overlapMissing
+  it("overlapOwned and overlapMissing preserve EDHREC casing and order", () => {
+    // Sol Ring is in pool (colorIdentity []); Rhystic Study is not in collection
+    const s = scoreCommander({
+      commander,
+      collection,
+      edhrecTopCards: ["Sol Ring", "Rhystic Study"],
+    });
+    expect(s.overlapOwned).toEqual(["Sol Ring"]);
+    expect(s.overlapMissing).toEqual(["Rhystic Study"]);
+  });
+
+  it("overlapOwned and overlapMissing are [] when edhrecTopCards is null", () => {
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    expect(s.overlapOwned).toEqual([]);
+    expect(s.overlapMissing).toEqual([]);
+  });
+
+  // Task 2: fitNS renormalization — no synergy
+  it("fitSynergy is null when edhrecTopCards is null, score is renormalized", () => {
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    expect(s.fitSynergy).toBeNull();
+    expect(s.fitPool).toBeLessThanOrEqual(15);
+    expect(s.fitRoles).toBeLessThanOrEqual(25);
+    const expected = Math.round(((s.fitPool + s.fitRoles) / 40) * 100 * 10) / 10;
+    expect(s.score).toBe(expected);
+  });
+
+  // Task 2: with synergy present
+  it("score is sum of fit components when synergy is present", () => {
+    const s = scoreCommander({
+      commander,
+      collection,
+      edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"],
+    });
+    expect(s.fitSynergy).not.toBeNull();
+    expect(s.fitPool).toBeLessThanOrEqual(15);
+    expect(s.fitRoles).toBeLessThanOrEqual(25);
+    expect(s.fitSynergy!).toBeLessThanOrEqual(60);
+    const expected = Math.round((s.fitPool + s.fitRoles + s.fitSynergy!) * 10) / 10;
+    expect(s.score).toBe(expected);
+  });
 });
 
 describe("completeness", () => {

@@ -43,7 +43,7 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
   redirect(`/decks/${deck.id}`);
 }
 
-export type DeckSuggestion = { oracleId: string; name: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "land" };
+export type DeckSuggestion = { oracleId: string; name: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
 
 export async function getDeckSuggestions(deckId: string): Promise<DeckSuggestion[]> {
   const userId = await requireUserId();
