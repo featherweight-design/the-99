@@ -3,7 +3,7 @@
 // Mobile: art header band (236px, gradient + overlay text) + sticky bottom Build bar + sections.
 
 import Link from "next/link";
-import { identityGradient } from "../../lib/collection/gradients";
+import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
@@ -443,7 +443,7 @@ export function CommanderDetail({
   rank,
   isBestFit,
 }: CommanderDetailProps) {
-  const gradient = identityGradient(c.colorIdentity);
+  const gradient = commanderGradient(c.colorIdentity);
 
   return (
     <>
@@ -801,6 +801,15 @@ export function CommanderDetail({
                   {[...c.manaCost.matchAll(/\{([^}]+)\}/g)].map((m, i) => {
                     const sym = m[1];
                     const isWUBRG = /^[WUBRG]$/.test(sym);
+                    // Per §Mana pip text colors: B: #0E0C10, R: #1a0b08, G: #0c1608;
+                    // W and U are not explicitly listed — use generic #C6B79A fallback.
+                    const PIP_TEXT: Record<string, string> = {
+                      W: "#C6B79A",
+                      U: "#C6B79A",
+                      B: "#0E0C10",
+                      R: "#1a0b08",
+                      G: "#0c1608",
+                    };
                     return (
                       <span
                         key={i}
@@ -812,7 +821,7 @@ export function CommanderDetail({
                           background: isWUBRG
                             ? WUBRG_HEX[sym] ?? "#3A322A"
                             : "#3A322A",
-                          color: isWUBRG ? "#0c1608" : "#C6B79A",
+                          color: isWUBRG ? (PIP_TEXT[sym] ?? "#C6B79A") : "#C6B79A",
                           boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
                         }}
                       >

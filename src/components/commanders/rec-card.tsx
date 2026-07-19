@@ -5,7 +5,7 @@
 // Whole card links to /commanders/${slug}.
 
 import Link from "next/link";
-import { identityGradient } from "../../lib/collection/gradients";
+import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { fitSegments, receiptsPreview } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
@@ -16,17 +16,21 @@ import type { RankedCommander } from "../../lib/recs/recommend";
 type RecCardProps = {
   commander: RankedCommander;
   rank: number;
-  /** Global degraded flag — when false and fitSynergy===null, show per-card note */
+  /** Global degraded flag — retained for API compatibility; the inline note now
+   *  renders for any card where fitSynergy is null, regardless of scope. */
   globalDegraded: boolean;
 };
 
-export function RecCard({ commander: c, rank, globalDegraded }: RecCardProps) {
-  const gradient = identityGradient(c.colorIdentity);
+export function RecCard({ commander: c, rank }: RecCardProps) {
+  const gradient = commanderGradient(c.colorIdentity);
   const fit = fitSegments(c);
   const scoreDisplay = Math.round(fit.pct);
 
-  // Per-commander degraded: EDHREC missing for this card only, not a global outage
-  const perCmdDegraded = c.fitSynergy === null && !globalDegraded;
+  // Degraded note: show when fitSynergy is null — whether the cause is a global
+  // outage or a per-commander gap. The global DegradedBanner covers the full
+  // context; each card still shows its own receipt-hidden note per design table
+  // §Synergy Receipts Hidden Note and §Per-Commander Degraded Note.
+  const perCmdDegraded = c.fitSynergy === null;
 
   // Receipts preview from overlapOwned
   const receipts = receiptsPreview(c.overlapOwned);

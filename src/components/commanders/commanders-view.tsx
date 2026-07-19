@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { filterByColors } from "../../lib/commanders/filter";
+import { WUBRG_HEX } from "../../lib/collection/browse";
 import { RecCard } from "./rec-card";
 import { GuidedBanner } from "./guided-banner";
 import { DegradedBanner } from "./degraded-banner";
@@ -22,6 +23,24 @@ function serializeParams(colors: string[]): string {
   const s = p.toString();
   return s ? `?${s}` : "";
 }
+
+// ── Color pip background colors per table §Color pip (inactive) ───────────────
+
+const PIP_BG: Record<string, string> = {
+  W: "#E8E4D6",
+  U: "#4A7FB5",
+  B: "#5B5566",
+  R: "#C05A48",
+  G: "#6B9E63",
+};
+
+const COLOR_LABELS: Record<string, string> = {
+  W: "White",
+  U: "Blue",
+  B: "Black",
+  R: "Red",
+  G: "Green",
+};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -58,6 +77,11 @@ export function CommandersView({
   // Clear handler passed to FilteredEmpty
   const handleClearFilter = useCallback(() => setColors([]), []);
 
+  // Toggle a single color in/out of active set
+  const toggleColor = useCallback((c: string) => {
+    setColors((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
+  }, []);
+
   return (
     <div>
       {/* ── Global degraded banner (above everything) ── */}
@@ -77,10 +101,165 @@ export function CommandersView({
         </div>
       )}
 
-      {/* ── Main content: filter + list (or filtered-empty) ── */}
-      <div className="p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
-        {/* Color filter chips */}
-        <div className="mb-4 flex flex-wrap gap-2">
+      {/* ── Desktop sticky filter bar (§Filter container, desktop) ── */}
+      <div
+        className="hidden sm:block"
+        style={{
+          position: "sticky",
+          top: 0,
+          background: "#14110E",
+          padding: "18px 34px 14px",
+          borderBottom: "1px solid #2A241D",
+          zIndex: 2,
+        }}
+      >
+        {/* Filter row: pip wrapper + chips + Includes + Order + count */}
+        <div className="flex items-center gap-[12px] flex-wrap">
+          {/* Pip row wrapper (§Filter pip row wrapper) */}
+          <div
+            className="flex items-center gap-[8px]"
+            style={{
+              background: "#181410",
+              border: "1px solid #3A3229",
+              borderRadius: 8,
+              padding: "8px 12px",
+            }}
+          >
+            {/* "COLORS" label */}
+            <span
+              className="font-mono"
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                color: "#8E8269",
+              }}
+            >
+              COLORS
+            </span>
+            {/* Color pips */}
+            {(["W", "U", "B", "R", "G"] as const).map((c) => {
+              const active = colors.includes(c);
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  aria-pressed={active}
+                  aria-label={`Filter by ${COLOR_LABELS[c]}`}
+                  onClick={() => toggleColor(c)}
+                  className="block rounded-full cursor-pointer border-0 p-0 transition-opacity"
+                  style={{
+                    width: 16,
+                    height: 16,
+                    background: PIP_BG[c],
+                    opacity: active ? 1 : 0.35,
+                    boxShadow: active ? "0 0 0 2px #C9A24B" : "none",
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Active filter chips (desktop, §Active-filter chip desktop) */}
+          {colors.map((c) => (
+            <span
+              key={c}
+              className="inline-flex items-center gap-[7px]"
+              style={{
+                fontSize: 12.5,
+                color: "#EDE6D8",
+                background: "#2A241D",
+                border: "1px solid #3A3229",
+                borderRadius: 999,
+                padding: "5px 8px 5px 11px",
+              }}
+            >
+              {/* Color dot */}
+              <span
+                className="block rounded-full shrink-0"
+                style={{ width: 9, height: 9, background: PIP_BG[c] ?? WUBRG_HEX[c] }}
+              />
+              {COLOR_LABELS[c]}
+              {/* Dismiss ✕ */}
+              <button
+                type="button"
+                aria-label={`Remove ${COLOR_LABELS[c]} filter`}
+                onClick={() => toggleColor(c)}
+                className="cursor-pointer bg-transparent border-0 p-0 leading-none"
+                style={{ color: "#8E8269" }}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+
+          {/* Clear link (when any active) */}
+          {colors.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClearFilter}
+              className="bg-transparent border-0 p-0 cursor-pointer font-mono"
+              style={{ fontSize: 12, color: "#C9A24B" }}
+            >
+              Clear
+            </button>
+          )}
+
+          {/* "Includes ▾" dropdown affordance (desktop, styled-only) */}
+          <button
+            type="button"
+            disabled
+            className="font-sans cursor-default"
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: "#8E8269",
+              background: "#181410",
+              border: "1px solid #3A3229",
+              borderRadius: 8,
+              padding: "9px 14px",
+            }}
+          >
+            Includes ▾
+          </button>
+
+          {/* "Order: Fit ↓ · fixed" label (desktop, §Order label) */}
+          <span
+            className="font-mono"
+            style={{ fontSize: 11, color: "#8E8269", marginLeft: "auto" }}
+          >
+            Order: Fit ↓ · fixed
+          </span>
+
+          {/* "Showing N of 24" count — right-aligned amber label */}
+          <span
+            className="font-mono"
+            style={{ fontSize: 11, color: "#8E8269" }}
+          >
+            Showing {filtered.length} of {results.length}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Mobile filter strip ── */}
+      <div className="sm:hidden px-[14px] pt-[12px] pb-[4px]">
+        {/* Mobile pip row wrapper */}
+        <div
+          className="inline-flex items-center gap-[8px]"
+          style={{
+            background: "#181410",
+            border: "1px solid #3A3229",
+            borderRadius: 8,
+            padding: "8px 11px",
+          }}
+        >
+          {/* "COLORS" label */}
+          <span
+            className="font-mono"
+            style={{ fontSize: 10, letterSpacing: "0.1em", color: "#8E8269" }}
+          >
+            COLORS
+          </span>
+          {/* Color pips (mobile 14px) */}
           {(["W", "U", "B", "R", "G"] as const).map((c) => {
             const active = colors.includes(c);
             return (
@@ -88,52 +267,76 @@ export function CommandersView({
                 key={c}
                 type="button"
                 aria-pressed={active}
-                onClick={() =>
-                  setColors((prev) =>
-                    active ? prev.filter((x) => x !== c) : [...prev, c],
-                  )
-                }
-                // brand focus-visible outline treatment inherited from globals.css
-                className="rounded px-3 py-1 font-mono text-[12px] font-semibold transition-colors"
+                aria-label={`Filter by ${COLOR_LABELS[c]}`}
+                onClick={() => toggleColor(c)}
+                className="block rounded-full cursor-pointer border-0 p-0 transition-opacity"
                 style={{
-                  background: active ? "var(--brass)" : "var(--surface)",
-                  border: "1px solid var(--border-strong)",
-                  color: active ? "var(--bg)" : "var(--fg)",
-                  cursor: "pointer",
+                  width: 14,
+                  height: 14,
+                  background: PIP_BG[c],
+                  opacity: active ? 1 : 0.35,
+                  boxShadow: active ? "0 0 0 2px #C9A24B" : "none",
                 }}
-              >
-                {c}
-              </button>
+              />
             );
           })}
-          {colors.length > 0 && (
+
+          {/* Showing count (mobile inline, within pip row wrapper area) */}
+          <span
+            className="font-mono"
+            style={{ fontSize: 10.5, color: "#8E8269", marginLeft: "auto" }}
+          >
+            {filtered.length}/{results.length}
+          </span>
+        </div>
+
+        {/* Mobile active filter chips (§Active-filter chip mobile) */}
+        {colors.length > 0 && (
+          <div className="flex flex-wrap gap-[6px] mt-[8px]">
+            {colors.map((c) => (
+              <span
+                key={c}
+                className="inline-flex items-center gap-[6px]"
+                style={{
+                  fontSize: 12,
+                  color: "#EDE6D8",
+                  background: "#2A241D",
+                  border: "1px solid #3A3229",
+                  borderRadius: 999,
+                  padding: "4px 8px 4px 10px",
+                }}
+              >
+                <span
+                  className="block rounded-full shrink-0"
+                  style={{ width: 9, height: 9, background: PIP_BG[c] ?? WUBRG_HEX[c] }}
+                />
+                {COLOR_LABELS[c]}
+                <button
+                  type="button"
+                  aria-label={`Remove ${COLOR_LABELS[c]} filter`}
+                  onClick={() => toggleColor(c)}
+                  className="cursor-pointer bg-transparent border-0 p-0 leading-none"
+                  style={{ color: "#8E8269" }}
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+            {/* Clear link (mobile) */}
             <button
               type="button"
               onClick={handleClearFilter}
-              // brand focus-visible outline treatment inherited from globals.css
-              className="rounded px-3 py-1 font-mono text-[12px] transition-colors"
-              style={{
-                background: "transparent",
-                border: "1px solid var(--border-strong)",
-                color: "var(--fg-faint)",
-                cursor: "pointer",
-              }}
+              className="bg-transparent border-0 p-0 cursor-pointer font-mono"
+              style={{ fontSize: 11.5, color: "#C9A24B" }}
             >
               Clear
             </button>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-        {/* Stats line */}
-        <p
-          className="mb-4 font-mono text-[11px] md:text-[12px]"
-          style={{ color: "var(--fg-faint)" }}
-        >
-          {uniqueCardsRead.toLocaleString("en-US")} cards scanned · {candidateCount} eligible
-          commander{candidateCount === 1 ? "" : "s"}
-          {colors.length > 0 && ` · ${filtered.length} matching`}
-        </p>
-
+      {/* ── Main content: list (or filtered-empty) ── */}
+      <div className="p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
         {/* Result list or filtered-to-zero state */}
         {colors.length > 0 && filtered.length === 0 ? (
           <FilteredEmpty

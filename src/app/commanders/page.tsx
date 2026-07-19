@@ -2,8 +2,9 @@ import Link from "next/link";
 import { requireUserId } from "../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
 import { recommendCommanders } from "../../lib/recs/recommend";
-import { CardFan, XcixSeal } from "../../components/marks";
+import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
+import { PageHeader } from "../../components/commanders/page-header";
 import { retryRecs } from "./actions";
 
 export default async function CommandersPage() {
@@ -18,8 +19,8 @@ export default async function CommandersPage() {
         style={{ padding: "32px" }}
       >
         {/* Card-fan mark: same construction as collection empty state */}
-        <CardFan variant="mobile" className="mb-[22px] md:hidden" />
-        <CardFan variant="desktop" className="mb-[26px] hidden md:block" />
+        <CardFan variant="mobile" className="mb-[22px] sm:hidden" />
+        <CardFan variant="desktop" className="mb-[26px] hidden sm:block" />
 
         <h1
           className="font-display font-bold text-[28px]"
@@ -57,105 +58,134 @@ export default async function CommandersPage() {
   // No commander candidates in the collection.
   if (candidateCount === 0) {
     return (
-      <section
-        className="flex flex-col items-center justify-center text-center"
-        style={{ padding: "32px" }}
-      >
-        {/* XCIX seal: mobile 64×64, desktop 78×78 */}
-        <XcixSeal variant="mobile" className="mb-[22px] md:hidden" />
-        <XcixSeal variant="desktop" className="mb-[24px] hidden md:block" />
+      <section>
+        {/* Page header (mobile + desktop) */}
+        <PageHeader uniqueCardsRead={uniqueCardsRead} />
 
-        <h1
-          className="font-display font-bold text-[24px] leading-[1.25] md:text-[28px]"
-          style={{ color: "var(--brass)", margin: 0 }}
+        {/* Empty-no-candidates state (§Empty State — No Candidates) */}
+        {/* Container: padding 24px 30px mobile / 60px 40px desktop; min-height 520px desktop */}
+        <div
+          className="flex flex-col items-center justify-center text-center p-[24px_30px] sm:p-[60px_40px] sm:min-h-[520px]"
         >
-          No generals in the ranks — yet
-        </h1>
-
-        {/* Body copy: mobile 14px, desktop 16px; different content per breakpoint */}
-        <p
-          className="mt-[14px] max-w-[460px] text-[14px] leading-[1.6] md:mt-3 md:text-[16px]"
-          style={{ color: "var(--fg-body)" }}
-        >
-          <span className="md:hidden">
-            We scanned all {stats.uniqueCards.toLocaleString()} cards and none
-            can helm a legal 99 on their own. Add a legendary creature and
-            they&apos;ll show up here.
-          </span>
-          <span className="hidden md:inline">
-            We scanned all {stats.uniqueCards.toLocaleString()} cards and none
-            can helm a legal 99 on their own. Add a legendary creature — or a
-            planeswalker that can command — and they&apos;ll appear here, ranked.
-          </span>
-        </p>
-
-        {/* Scanned-count mono line: mobile 11px mt-[18px], desktop 12px mt-[18px] */}
-        <p
-          className="mt-[18px] font-mono text-[11px] md:text-[12px]"
-          style={{ color: "var(--fg-faint)" }}
-        >
-          <span className="md:hidden">
-            {stats.uniqueCards.toLocaleString()} cards · 0 eligible commanders
-          </span>
-          <span className="hidden md:inline">
-            {stats.uniqueCards.toLocaleString()} cards scanned · 0 eligible
-            commanders
-          </span>
-        </p>
-
-        {/* Retry: hidden on mobile (secondary style), flex row on desktop */}
-        <div className="mt-[22px] md:mt-[24px] md:flex md:gap-3">
-          <Link
-            href="/collection"
-            className={[
-              // Mobile: secondary style
-              "inline-block rounded-lg px-[22px] py-[12px] font-semibold text-[14px]",
-              "md:hidden",
-            ].join(" ")}
+          {/* XCIX seal badge: 96px mobile / 110px desktop, circle br-radius=999px, color #C9A24B */}
+          <div
+            className="sm:hidden flex items-center justify-center"
             style={{
-              background: "transparent",
-              border: "1px solid var(--border-strong)",
-              color: "var(--fg)",
+              width: 96,
+              height: 96,
+              borderRadius: 999,
+              border: "2px solid #C9A24B",
+              color: "#C9A24B",
+              fontFamily: "var(--font-display), 'Cinzel', serif",
+              fontWeight: 700,
+              fontSize: 26,
+              letterSpacing: "0.04em",
+              boxShadow: "0 0 0 8px rgba(201,162,75,0.05)",
             }}
           >
-            Add more cards
-          </Link>
-          {/* Desktop: primary "Add more cards" */}
-          <Link
-            href="/collection"
-            className="hidden rounded-lg px-[24px] py-[12px] font-semibold text-[14px] bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)] md:inline-block"
-          >
-            Add more cards
-          </Link>
-          {/* Desktop: secondary "View collection" */}
-          <Link
-            href="/collection"
-            className="hidden rounded-lg px-[24px] py-[12px] font-semibold text-[14px] md:inline-block"
+            XCIX
+          </div>
+          <div
+            className="hidden sm:flex items-center justify-center"
             style={{
-              background: "transparent",
-              border: "1px solid var(--border-strong)",
-              color: "var(--fg)",
+              width: 110,
+              height: 110,
+              borderRadius: 999,
+              border: "2px solid #C9A24B",
+              color: "#C9A24B",
+              fontFamily: "var(--font-display), 'Cinzel', serif",
+              fontWeight: 700,
+              fontSize: 30,
+              letterSpacing: "0.04em",
+              boxShadow: "0 0 0 10px rgba(201,162,75,0.05)",
             }}
           >
-            View collection
-          </Link>
-          {/* Retry — visible on both breakpoints when EDHREC was degraded */}
-          {degraded && (
-            <form action={retryRecs} className="md:inline-block">
-              <button
-                type="submit"
-                className="mt-3 rounded-lg px-[22px] py-[12px] font-semibold text-[14px] md:mt-0"
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--border-strong)",
-                  color: "var(--fg)",
-                  cursor: "pointer",
-                }}
-              >
-                Retry
-              </button>
-            </form>
-          )}
+            XCIX
+          </div>
+
+          {/* Heading: Cinzel 700, 22px mobile / 30px desktop, color #EDE6D8 */}
+          <h1
+            className="font-display font-bold text-[22px] sm:text-[30px] leading-[1.2]"
+            style={{
+              color: "#EDE6D8",
+              margin: "26px 0 0",
+            }}
+          >
+            No generals in the ranks — yet
+          </h1>
+
+          {/* Body paragraph: 13.5px mobile / 15px desktop */}
+          <p
+            className="text-[13.5px] sm:text-[15px] leading-[1.6] sm:leading-[1.65]"
+            style={{
+              color: "#C6B79A",
+              margin: "10px 0 0",
+              maxWidth: 480,
+            }}
+          >
+            <span className="sm:hidden">
+              We scanned all {stats.uniqueCards.toLocaleString()} cards and none
+              can helm a legal 99 on their own. Add a legendary creature and
+              they&apos;ll show up here.
+            </span>
+            <span className="hidden sm:inline">
+              We scanned all {stats.uniqueCards.toLocaleString()} cards and none
+              can helm a legal 99 on their own. Add a legendary creature — or a
+              planeswalker that can command — and they&apos;ll appear here, ranked.
+            </span>
+          </p>
+
+          {/* Button row: column on mobile (gap 10px, mt 24px, full-width), row on desktop (gap 12px, mt 26px) */}
+          <div
+            className="flex flex-col sm:flex-row mt-[24px] sm:mt-[26px] w-full sm:w-auto gap-[10px] sm:gap-[12px]"
+          >
+            {/* "Add more cards" button — primary: bg #C9A24B, color #14110E */}
+            {/* Mobile: full-width, padding 12px 0; Desktop: padding 12px 22px per table */}
+            <Link
+              href="/collection"
+              className="font-sans font-semibold text-[14px] rounded-[8px] text-center block p-[12px_0] sm:p-[12px_22px]"
+              style={{
+                color: "#14110E",
+                background: "#C9A24B",
+                border: "none",
+                textDecoration: "none",
+              }}
+            >
+              Add more cards
+            </Link>
+
+            {/* "View collection" button — secondary */}
+            <Link
+              href="/collection"
+              className="font-sans font-semibold text-[14px] rounded-[8px] text-center block p-[12px_0] sm:p-[12px_22px]"
+              style={{
+                color: "#EDE6D8",
+                background: "transparent",
+                border: "1px solid #3A3229",
+                textDecoration: "none",
+              }}
+            >
+              View collection
+            </Link>
+
+            {/* Retry — visible when EDHREC was degraded */}
+            {degraded && (
+              <form action={retryRecs} className="w-full sm:w-auto">
+                <button
+                  type="submit"
+                  className="font-sans font-semibold text-[14px] rounded-[8px] w-full p-[12px_0] sm:p-[12px_22px]"
+                  style={{
+                    color: "#EDE6D8",
+                    background: "transparent",
+                    border: "1px solid #3A3229",
+                    cursor: "pointer",
+                  }}
+                >
+                  Retry
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </section>
     );
@@ -167,12 +197,17 @@ export default async function CommandersPage() {
   const firstRun = decks.length === 0;
 
   return (
-    <CommandersView
-      results={results}
-      degraded={degraded}
-      uniqueCardsRead={uniqueCardsRead}
-      candidateCount={candidateCount}
-      firstRun={firstRun}
-    />
+    <section className="flex flex-col min-h-screen">
+      {/* Page header (mobile + desktop) */}
+      <PageHeader uniqueCardsRead={uniqueCardsRead} />
+
+      <CommandersView
+        results={results}
+        degraded={degraded}
+        uniqueCardsRead={uniqueCardsRead}
+        candidateCount={candidateCount}
+        firstRun={firstRun}
+      />
+    </section>
   );
 }
