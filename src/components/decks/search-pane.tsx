@@ -7,12 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { searchCards } from "../../app/decks/[id]/search-action";
 import { SearchResultRow } from "./search-result-row";
 import { SingletonFooterNote } from "./singleton-footer-note";
-
-// Build a label like "WUB-legal only" from a color identity array.
-function identityLabel(colors: string[]): string {
-  if (colors.length === 0) return "Colorless";
-  return colors.join("") + "-legal";
-}
+import { identityLabel } from "../../lib/decks/indeck";
 
 interface SearchPaneProps {
   deckId: string;
@@ -37,7 +32,8 @@ export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchP
 
     const q = query.trim();
     if (q.length < 2 || q.length > 100) {
-      // No sync setState — let the query display gate handle it.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setResultState(null);
       return;
     }
 

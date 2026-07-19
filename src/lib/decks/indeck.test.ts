@@ -1,23 +1,5 @@
 import { describe, expect, it } from "vitest";
-
-// Pure helpers tested here mirror the logic in AddPanel / SearchPane.
-// The actual Set construction lives in BuilderShell; we test the derivation logic.
-
-/** Derives a Set<oracleId> from the deck card list (as BuilderShell does). */
-function buildDeckOracleSet(cards: { oracleId: string }[]): Set<string> {
-  return new Set(cards.map((c) => c.oracleId));
-}
-
-/** Derives inDeck for a given oracleId — no server round-trip needed. */
-function isInDeck(set: Set<string>, oracleId: string): boolean {
-  return set.has(oracleId);
-}
-
-/** Label for commander color identity in search meta row. */
-function identityLabel(colors: string[]): string {
-  if (colors.length === 0) return "Colorless";
-  return colors.join("") + "-legal";
-}
+import { buildDeckOracleSet, isInDeck, identityLabel } from "./indeck";
 
 describe("buildDeckOracleSet", () => {
   it("builds a Set from deck cards", () => {

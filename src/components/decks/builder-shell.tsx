@@ -213,7 +213,6 @@ export function BuilderShell({
           deckId={deck.id}
           commanderIdentity={commanderIdentity}
           suggestions={suggestions}
-          degraded={degraded}
           deckOracleIds={deckOracleIds}
           variant="column"
         />
@@ -225,7 +224,6 @@ export function BuilderShell({
           deckId={deck.id}
           commanderIdentity={commanderIdentity}
           suggestions={suggestions}
-          degraded={degraded}
           deckOracleIds={deckOracleIds}
           variant="sheet"
           onCloseSheet={() => setSheetOpen(false)}

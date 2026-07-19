@@ -17,7 +17,6 @@ interface AddPanelProps {
   deckId: string;
   commanderIdentity: string[];
   suggestions: DeckSuggestion[];
-  degraded: boolean;
   deckOracleIds: string[];
   variant: "column" | "inline" | "sheet";
   onCloseSheet?: () => void;
@@ -81,12 +80,9 @@ function PanelContent({
                 fontWeight: isActive ? 600 : 500,
                 color: isActive ? "#EDE6D8" : "#8E8269",
                 padding: "9px 0",
+                border: "none",
                 borderBottom: `2px solid ${isActive ? "#C9A24B" : "transparent"}`,
                 background: "transparent",
-                border: "none",
-                borderBottomStyle: "solid",
-                borderBottomWidth: 2,
-                borderBottomColor: isActive ? "#C9A24B" : "transparent",
                 cursor: "pointer",
               }}
             >
@@ -128,7 +124,6 @@ function PanelContent({
       <div
         className="flex-1 overflow-hidden flex flex-col"
         style={{
-          gap: isDesktop ? 9 : 8,
           padding: isDesktop ? "12px 14px" : "6px 16px 14px",
         }}
       >

@@ -28,11 +28,10 @@ export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardPro
     // §Card container: border-radius 9px–10px mobile / 10px desktop, bg #1E1A15, border 1px #2A241D
     // padding 10px–11px 12px–13px mobile / 11px 12px desktop
     <div
-      className="rounded-[9px] md:rounded-[10px]"
+      className="rounded-[9px] md:rounded-[10px] px-[12px] py-[10px] md:py-[11px]"
       style={{
         background: "#1E1A15",
         border: "1px solid #2A241D",
-        padding: "10px 12px",
       }}
     >
       {/* §Suggestion card — top row: flex, align-items center, gap 8px–9px mobile / 8px desktop */}
