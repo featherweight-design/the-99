@@ -1,3 +1,6 @@
+"use client";
+// Uses document/Blob — client-only, mirroring src/lib/a11y/dialog.ts.
+
 export function downloadTextFile(filename: string, text: string): void {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);

@@ -180,7 +180,9 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<v
   } else {
     await db.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
   }
+  // /decks shows derived stats (built / to-buy) — keep the index fresh too.
   revalidatePath(`/decks/${deckId}`);
+  revalidatePath(`/decks`);
 }
 
 export async function removeCardFromDeck(deckId: string, oracleId: string): Promise<void> {
@@ -195,12 +197,14 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
     await db.delete(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
   }
   revalidatePath(`/decks/${deckId}`);
+  revalidatePath(`/decks`);
 }
 
 export async function deleteDeck(deckId: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   await db.delete(decks).where(eq(decks.id, deckId));
+  revalidatePath(`/decks`);
   redirect("/decks");
 }
 

@@ -19,10 +19,10 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   function handleCopy() {
-    const lineCount = text.split("\n").length;
+    const lineCount = text === "" ? 0 : text.split("\n").length;
 
     function onSuccess() {
-      const msg = `Copied · ${lineCount} lines`;
+      const msg = `Copied · ${lineCount} ${lineCount === 1 ? "line" : "lines"}`;
       onStatus(msg);
       setCopied(true);
       if (timerRef.current) clearTimeout(timerRef.current);
