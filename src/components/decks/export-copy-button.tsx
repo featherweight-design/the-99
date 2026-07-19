@@ -32,11 +32,7 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
       }, 1500);
     }
 
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(onSuccess).catch(() => {
-        // silent — already tried
-      });
-    } else {
+    function legacyCopy() {
       // Legacy fallback: create a temporary textarea to copy text without depending on
       // which DOM tree is visible (avoids selecting the hidden <pre> in the dual-layout).
       const ta = document.createElement("textarea");
@@ -49,6 +45,12 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
       document.execCommand("copy");
       ta.remove();
       onSuccess();
+    }
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(onSuccess).catch(legacyCopy);
+    } else {
+      legacyCopy();
     }
   }
 

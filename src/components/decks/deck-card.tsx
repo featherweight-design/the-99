@@ -2,29 +2,8 @@ import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import type { DeckListItem } from "../../lib/decks/read";
+import { colorLabel } from "../../lib/decks/format";
 import { DeckCardOverflow } from "./deck-card-overflow";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Label for the color-identity pip row — guild/type label beside the pips. */
-function colorLabel(identity: string[]): string {
-  if (identity.length === 0) return "Colorless";
-  if (identity.length === 1) {
-    const MAP: Record<string, string> = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" };
-    return MAP[identity[0]] ?? identity[0];
-  }
-  if (identity.length === 5) return "5-color";
-  if (identity.length >= 3) return "Multi";
-  // 2-color guild names
-  const key = identity.slice().sort().join("");
-  const GUILDS: Record<string, string> = {
-    UW: "Azorius", BU: "Dimir", BR: "Rakdos", GR: "Gruul", GW: "Selesnya",
-    BW: "Orzhov", RU: "Izzet", BG: "Golgari", RW: "Boros", GU: "Simic",
-  };
-  return GUILDS[key] ?? "Multi";
-}
 
 /** Progress bar fill colour by built bucket. §Deck card — progress bar fill */
 function progressFillColor(built: number): string {

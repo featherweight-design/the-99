@@ -3,8 +3,67 @@ import { describe, expect, it, vi } from "vitest";
 // Mock db before importing read to avoid DATABASE_URL at module init.
 vi.mock("../../db", () => ({ db: {} }));
 
-import { statusPill, cardTypeGroup, primaryRole, groupByCardType, groupByRole, shouldShowMetaRow } from "./read";
+import { statusPill, cardTypeGroup, primaryRole, groupByCardType, groupByRole, shouldShowMetaRow, colorIdentityMask, poolCountFromMaskTally } from "./read";
 import type { DeckDetailCard } from "./read";
+
+// ---------------------------------------------------------------------------
+// colorIdentityMask
+// ---------------------------------------------------------------------------
+describe("colorIdentityMask", () => {
+  it("colorless (empty) → 0", () => expect(colorIdentityMask([])).toBe(0));
+  it("W → 1", () => expect(colorIdentityMask(["W"])).toBe(1));
+  it("U → 2", () => expect(colorIdentityMask(["U"])).toBe(2));
+  it("B → 4", () => expect(colorIdentityMask(["B"])).toBe(4));
+  it("R → 8", () => expect(colorIdentityMask(["R"])).toBe(8));
+  it("G → 16", () => expect(colorIdentityMask(["G"])).toBe(16));
+  it("WU (Azorius) → 3", () => expect(colorIdentityMask(["W", "U"])).toBe(3));
+  it("WUBRG → 31", () => expect(colorIdentityMask(["W", "U", "B", "R", "G"])).toBe(31));
+  it("order-independent: GW same as WG", () =>
+    expect(colorIdentityMask(["G", "W"])).toBe(colorIdentityMask(["W", "G"])));
+});
+
+// ---------------------------------------------------------------------------
+// poolCountFromMaskTally
+// ---------------------------------------------------------------------------
+describe("poolCountFromMaskTally", () => {
+  it("empty tally → 0", () =>
+    expect(poolCountFromMaskTally(new Map(), colorIdentityMask(["W", "U", "B", "R", "G"]))).toBe(0));
+
+  it("colorless card (mask 0) fits every commander", () => {
+    const tally = new Map([[0, 3]]);
+    expect(poolCountFromMaskTally(tally, colorIdentityMask(["W"]))).toBe(3);
+  });
+
+  it("W card fits WU commander but not U commander", () => {
+    const tally = new Map([[colorIdentityMask(["W"]), 2]]);
+    expect(poolCountFromMaskTally(tally, colorIdentityMask(["W", "U"]))).toBe(2);
+    expect(poolCountFromMaskTally(tally, colorIdentityMask(["U"]))).toBe(0);
+  });
+
+  it("all submasks of WUBRG are included", () => {
+    const tally = new Map<number, number>();
+    // 5 single-colour cards, one each
+    for (const c of ["W", "U", "B", "R", "G"]) tally.set(colorIdentityMask([c]), 1);
+    expect(poolCountFromMaskTally(tally, colorIdentityMask(["W", "U", "B", "R", "G"]))).toBe(5);
+  });
+
+  it("cards outside identity are excluded", () => {
+    // R card should not fit a WU commander
+    const tally = new Map([[colorIdentityMask(["R"]), 4]]);
+    expect(poolCountFromMaskTally(tally, colorIdentityMask(["W", "U"]))).toBe(0);
+  });
+
+  it("sums multiple fitting buckets", () => {
+    const tally = new Map([
+      [colorIdentityMask(["W"]), 5],
+      [colorIdentityMask(["B"]), 3],
+      [colorIdentityMask(["W", "B"]), 2],
+      [colorIdentityMask(["R"]), 7],   // does not fit WB
+    ]);
+    // WB commander: W(5) + B(3) + WB(2) = 10
+    expect(poolCountFromMaskTally(tally, colorIdentityMask(["W", "B"]))).toBe(10);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Minimal card factory

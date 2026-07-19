@@ -5,6 +5,36 @@ import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 
 // ---------------------------------------------------------------------------
+// WUBRG bitmask helpers (tested)
+// ---------------------------------------------------------------------------
+
+const WUBRG_BITS: Record<string, number> = { W: 1, U: 2, B: 4, R: 8, G: 16 };
+
+/** Converts a color identity array to a 5-bit WUBRG bitmask. */
+export function colorIdentityMask(identity: string[]): number {
+  let mask = 0;
+  for (const c of identity) mask |= WUBRG_BITS[c] ?? 0;
+  return mask;
+}
+
+/**
+ * Given a tally of card counts keyed by WUBRG bitmask (0–31), returns the number
+ * of cards whose identity is a subset of `candidateMask`.
+ * A bucket fits when every bit in the bucket is also set in candidateMask,
+ * i.e. `(bucket & candidateMask) === bucket`.
+ */
+export function poolCountFromMaskTally(
+  tally: Map<number, number>,
+  candidateMask: number,
+): number {
+  let count = 0;
+  for (const [bucket, n] of tally) {
+    if ((bucket & candidateMask) === bucket) count += n;
+  }
+  return count;
+}
+
+// ---------------------------------------------------------------------------
 // Pure helpers (tested)
 // ---------------------------------------------------------------------------
 
@@ -226,9 +256,11 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
     (
       select sum(dc2.quantity)
       from ${deckCards} dc2
-      inner join ${collectionItems} ci
-        on ci.oracle_id = dc2.oracle_id and ci.user_id = ${userId}
       where dc2.deck_id = ${decks.id}
+        and exists (
+          select 1 from ${collectionItems} ci
+          where ci.oracle_id = dc2.oracle_id and ci.user_id = ${userId}
+        )
     ),
     0
   )::int`;
@@ -311,14 +343,19 @@ export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLeg
 
   if (candidates.length === 0) return [];
 
-  // For each candidate, count owned cards fitting within their color identity.
-  // Exclude the commander itself from its own pool count.
+  // Precompute: tally owned card counts per WUBRG bitmask (≤32 buckets).
+  // This lets each candidate's poolCount be computed in O(32) instead of O(ownedRows).
+  const maskTally = new Map<number, number>();
+  for (const r of ownedRows) {
+    const m = colorIdentityMask(r.colorIdentity);
+    maskTally.set(m, (maskTally.get(m) ?? 0) + 1);
+  }
+
   return candidates
     .map((c) => {
-      const identitySet = new Set(c.colorIdentity);
-      const poolCount = ownedRows.filter(
-        (r) => r.oracleId !== c.oracleId && r.colorIdentity.every((x) => identitySet.has(x)),
-      ).length;
+      const candidateMask = colorIdentityMask(c.colorIdentity);
+      // Subtract 1 to exclude the commander itself (it appears in ownedRows).
+      const poolCount = poolCountFromMaskTally(maskTally, candidateMask) - 1;
       return {
         oracleId: c.oracleId,
         name: c.name,
