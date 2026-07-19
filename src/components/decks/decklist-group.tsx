@@ -3,6 +3,7 @@
 // §Decklist Group (design table).
 
 import type { DeckDetailCard } from "../../lib/decks/read";
+import { shouldShowMetaRow } from "../../lib/decks/read";
 import { DecklistRow } from "./decklist-row";
 
 interface DecklistGroupProps {
@@ -25,7 +26,7 @@ export function DecklistGroup({ deckId, label, cards, note }: DecklistGroupProps
         className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-[#2A241D]"
       >
         {/* Left cluster: label + count */}
-        <div className="flex items-baseline gap-[0px] md:gap-[10px]">
+        <div className="flex items-baseline md:gap-[10px]">
           {/* Group label: mobile IBM Plex Sans 12.5px 600 | desktop Cinzel (font-display) 15px 600 */}
           <span
             className="font-sans md:font-display font-semibold text-[12.5px] md:text-[15px]"
@@ -64,7 +65,7 @@ export function DecklistGroup({ deckId, label, cards, note }: DecklistGroupProps
             <DecklistRow key={card.oracleId} deckId={deckId} card={card} />,
           ];
           // Basic lands with quantity > 1: render a "+N more" meta row
-          if (card.quantity > 1) {
+          if (shouldShowMetaRow(card)) {
             rows.push(
               <DecklistRow
                 key={`${card.oracleId}-meta`}

@@ -23,8 +23,7 @@ export function GroupToggle({
   return (
     /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px */
     <div
-      className="flex items-center gap-[7px] md:gap-[10px] px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px]"
-      style={{ borderBottom: "1px solid #2A241D" }}
+      className="flex items-center gap-[7px] md:gap-[10px] px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-[#2A241D] md:border-b-0"
     >
       {/* "All N" filter pill — active: brass bg dark text | idle: muted with border */}
       <button
@@ -74,12 +73,12 @@ export function GroupToggle({
         className={
           grouping === "type"
             ? "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-            : "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            : "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[#2A241D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
         }
         style={
           grouping === "type"
             ? { fontWeight: 600, color: "#EDE6D8", background: "#2A241D", border: "1px solid #3A3229" }
-            : { fontWeight: 500, color: "#8E8269", background: "transparent", border: "none" }
+            : { fontWeight: 500, color: "#8E8269", background: "transparent" }
         }
       >
         By type
@@ -92,12 +91,12 @@ export function GroupToggle({
         className={
           grouping === "role"
             ? "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-            : "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            : "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[#2A241D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
         }
         style={
           grouping === "role"
             ? { fontWeight: 600, color: "#EDE6D8", background: "#2A241D", border: "1px solid #3A3229" }
-            : { fontWeight: 500, color: "#8E8269", background: "transparent", border: "none" }
+            : { fontWeight: 500, color: "#8E8269", background: "transparent" }
         }
       >
         By role

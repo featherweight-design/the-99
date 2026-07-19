@@ -58,6 +58,14 @@ const ROLE_GROUP_LABELS: Record<"ramp" | "draw" | "removal" | "wipes" | "land" |
   other: "Other",
 };
 
+/**
+ * Returns true when a card should render a "+N more" meta row below its primary row.
+ * Only basic lands with quantity > 1 qualify.
+ */
+export function shouldShowMetaRow(card: Pick<DeckDetailCard, "quantity" | "typeLine">): boolean {
+  return card.quantity > 1 && card.typeLine.includes("Basic");
+}
+
 export function groupByCardType(cards: DeckDetailCard[]): [CardTypeGroup, DeckDetailCard[]][] {
   const map = new Map<CardTypeGroup, DeckDetailCard[]>();
   for (const g of CARD_TYPE_GROUP_ORDER) map.set(g, []);

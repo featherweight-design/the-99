@@ -27,18 +27,14 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel }: Decklis
       {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
       {!isMeta && (
         <span
-          className="flex-none rounded-full"
+          className="flex-none rounded-full w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
           style={
             card.owned
               ? {
-                  width: 7,
-                  height: 7,
                   background: "#6FA368",
                   border: "1px solid #6FA368",
                 }
               : {
-                  width: 7,
-                  height: 7,
                   background: "transparent",
                   border: "1px dashed #6E6353",
                 }
@@ -47,7 +43,7 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel }: Decklis
         />
       )}
       {/* For meta rows render a same-sized empty spacer so name aligns */}
-      {isMeta && <span className="flex-none" style={{ width: 7, height: 7 }} aria-hidden />}
+      {isMeta && <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />}
 
       {/* Card name (or meta label) */}
       <span
@@ -69,10 +65,10 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel }: Decklis
 
       {/* Remove ✕ button — desktop only, not shown for meta rows */}
       {!isMeta && (
-        <form action={removeCardFromDeck.bind(null, deckId, card.oracleId)}>
+        <form action={removeCardFromDeck.bind(null, deckId, card.oracleId)} className="hidden md:block">
           <button
             type="submit"
-            className="hidden md:block flex-none text-[13px] leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            className="flex-none text-[13px] leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
             style={{ color: "#4A4033", background: "transparent", border: "none", cursor: "pointer" }}
             aria-label={`Remove ${card.name}`}
           >
