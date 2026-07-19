@@ -99,7 +99,7 @@ export function ConfirmModal({
           </h2>
         </div>
 
-        {/* Body — §Modal Body Copy: 13.5/15px --fg-body */}
+        {/* Body — §Modal Body Copy: 13.5/15px --fg-body. Numeric counts, filename, and the "This can't be undone" clause are bolded per the mock in #34. Emphasis uses --fg (primary) so it reads against the muted body color. */}
         <p
           className="text-[13.5px] md:text-[15px] mt-[16px] md:mt-[18px] leading-[1.6] md:leading-[1.65]"
           style={{ color: "var(--fg-body)" }}
@@ -107,19 +107,19 @@ export function ConfirmModal({
           {preview.currentCollectionCount === 0 ? (
             <>
               <span className="md:hidden">
-                This imports the {preview.matchedCardCount.toLocaleString()} cards in {preview.filename} as your collection.
+                This imports the <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.matchedCardCount.toLocaleString()}</strong> cards in <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.filename}</strong> as your collection.
               </span>
               <span className="hidden md:inline">
-                This imports the {preview.matchedCardCount.toLocaleString()} cards in {preview.filename} as your collection. Decks and commander recommendations build from it.
+                This imports the <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.matchedCardCount.toLocaleString()}</strong> cards in <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.filename}</strong> as your collection. Decks and commander recommendations build from it.
               </span>
             </>
           ) : (
             <>
               <span className="md:hidden">
-                This permanently swaps your {preview.currentCollectionCount.toLocaleString()} cards for the {preview.matchedCardCount.toLocaleString()} in {preview.filename}. It can&apos;t be undone.
+                This permanently swaps your <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.currentCollectionCount.toLocaleString()}</strong> cards for the <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.matchedCardCount.toLocaleString()}</strong> in <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.filename}</strong>. <strong className="font-semibold" style={{ color: "var(--fg)" }}>It can&apos;t be undone.</strong>
               </span>
               <span className="hidden md:inline">
-                This permanently swaps your {preview.currentCollectionCount.toLocaleString()} cards for the {preview.matchedCardCount.toLocaleString()} cards in {preview.filename}. Decks and commander recommendations rebuild from the new collection. This can&apos;t be undone.
+                This permanently swaps your <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.currentCollectionCount.toLocaleString()}</strong> cards for the <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.matchedCardCount.toLocaleString()}</strong> cards in <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.filename}</strong>. Decks and commander recommendations rebuild from the new collection. <strong className="font-semibold" style={{ color: "var(--fg)" }}>This can&apos;t be undone.</strong>
               </span>
             </>
           )}
@@ -142,7 +142,6 @@ export function ConfirmModal({
             spellCheck={false}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            aria-describedby="confirm-hint"
             // §Confirm Input Field: bg #181410 (--surface-sunken), border 1px #C6533F (--danger), radius 8px, padding 12/13px 14/16px, mono 15/16px, --fg, letter-spacing 0.1/0.12em
             className="w-full rounded-lg font-mono text-[15px] md:text-[16px] tracking-[0.1em] md:tracking-[0.12em] p-[12px_14px] md:p-[13px_16px]"
             style={{
@@ -158,8 +157,32 @@ export function ConfirmModal({
           <p className="mt-[10px] text-[13px]" style={{ color: "var(--danger)" }}>{error}</p>
         )}
 
-        {/* Button row — §Button Row: desktop flex gap 12px margin-top 22px; mobile stacks */}
-        <div className="mt-[22px] flex flex-col md:flex-row gap-[12px]">
+        {/* Button row — §Button Row. Desktop: primary (destructive) on the right, secondary on the left; DOM order is [Secondary][Primary] so keyboard tab flows left→right in the same direction the eye reads. Mobile: flex-col-reverse keeps the primary visually on top of the stack while the DOM order stays consistent across breakpoints (mobile users are tapping, so DOM/visual divergence on the stacked layout is intentional). Initial-import secondary label is "Go back" (nothing to keep yet); replace flow keeps "Keep current". */}
+        <div className="mt-[22px] flex flex-col-reverse md:flex-row gap-[12px]">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={pending}
+            // §Cancel / Keep Button — mobile text-only #8E8269 (--fg-faint), padding 12px 0 0;
+            // desktop outlined 1px #3A3229 (--border-strong), padding 13px 22px, brass border on hover
+            className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--brass)]"
+            style={{
+              color: "var(--fg-faint)",
+              background: "transparent",
+            }}
+          >
+            {preview.currentCollectionCount === 0 ? (
+              <>
+                <span className="md:hidden">Go back</span>
+                <span className="hidden md:inline" style={{ color: "var(--fg)" }}>Go back</span>
+              </>
+            ) : (
+              <>
+                <span className="md:hidden">Keep my current collection</span>
+                <span className="hidden md:inline" style={{ color: "var(--fg)" }}>Keep current</span>
+              </>
+            )}
+          </button>
           <button
             type="button"
             onClick={onConfirm}
@@ -173,33 +196,15 @@ export function ConfirmModal({
               opacity: armed && !pending ? 1 : 0.6,
             }}
           >
-            {pending ? "Replacing…" : preview.currentCollectionCount === 0 ? `Import ${preview.matchedCardCount.toLocaleString()} cards` : `Replace ${preview.currentCollectionCount.toLocaleString()} cards`}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={pending}
-            // §Cancel / Keep Button — mobile text-only #8E8269 (--fg-faint), padding 12px 0 0;
-            // desktop outlined 1px #3A3229 (--border-strong), padding 13px 22px, brass border on hover
-            className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--brass)]"
-            style={{
-              color: "var(--fg-faint)",
-              background: "transparent",
-            }}
-          >
-            <span className="md:hidden">Keep my current collection</span>
-            <span className="hidden md:inline" style={{ color: "var(--fg)" }}>Keep current</span>
+            {pending
+              ? preview.currentCollectionCount === 0
+                ? "Importing…"
+                : "Replacing…"
+              : preview.currentCollectionCount === 0
+                ? `Import ${preview.matchedCardCount.toLocaleString()} cards`
+                : `Replace ${preview.currentCollectionCount.toLocaleString()} cards`}
           </button>
         </div>
-
-        {/* Hint — §Hint Text: mono 10.5px --fg-locked, letter-spacing 0.04em, text-center, margin-top 14px */}
-        <p
-          id="confirm-hint"
-          className="hidden md:block font-mono text-[10.5px] text-center mt-[14px] tracking-[0.04em]"
-          style={{ color: "var(--fg-locked)" }}
-        >
-          Button unlocks once REPLACE is typed in full
-        </p>
       </div>
     </div>
   );
