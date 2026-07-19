@@ -27,6 +27,27 @@ describe("classifyRoles", () => {
     expect(classifyRoles(card("Instant", "Destroy target artifact you control."))).toEqual([]);
   });
   it("exports role targets", () => {
-    expect(ROLE_TARGETS).toEqual({ ramp: 10, draw: 10, removal: 8 });
+    expect(ROLE_TARGETS).toEqual({ ramp: 10, draw: 10, removal: 8, wipes: 3 });
+  });
+});
+
+describe("wipes role", () => {
+  it("classifies 'destroy all creatures' as wipes, not removal", () => {
+    const roles = classifyRoles({ typeLine: "Sorcery", oracleText: "Destroy all creatures.", keywords: [] });
+    expect(roles).toContain("wipes");
+    expect(roles).not.toContain("removal");
+  });
+  it("classifies 'exile all' as wipes", () => {
+    expect(classifyRoles({ typeLine: "Sorcery", oracleText: "Exile all nonland permanents.", keywords: [] })).toContain("wipes");
+  });
+  it("classifies symmetric -X/-X as wipes", () => {
+    expect(classifyRoles({ typeLine: "Sorcery", oracleText: "All creatures get -2/-2 until end of turn.", keywords: [] })).toContain("wipes");
+  });
+  it("still classifies single-target removal as removal only", () => {
+    const roles = classifyRoles({ typeLine: "Instant", oracleText: "Destroy target creature.", keywords: [] });
+    expect(roles).toEqual(["removal"]);
+  });
+  it("has a wipes target of 3", () => {
+    expect(ROLE_TARGETS.wipes).toBe(3);
   });
 });

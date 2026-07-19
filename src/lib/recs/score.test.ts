@@ -57,8 +57,8 @@ describe("scoreCommander", () => {
 
   it("reports role counts and gaps against targets", () => {
     const s = scoreCommander({ commander, collection, edhrecTopCards: null });
-    expect(s.roleCounts).toEqual({ ramp: 2, draw: 1, removal: 0 });
-    expect(s.roleGaps).toEqual(["ramp", "draw", "removal"]);
+    expect(s.roleCounts).toEqual({ ramp: 2, draw: 1, removal: 0, wipes: 0 });
+    expect(s.roleGaps).toEqual(["ramp", "draw", "removal", "wipes"]);
   });
 
   it("degrades: null edhrec fields but still scores by pool+roles", () => {

@@ -13,8 +13,8 @@ export type CommanderScore = {
   colorPoolSize: number;
   edhrecOwnedCount: number | null;
   edhrecTotal: number | null;
-  roleCounts: Record<"ramp" | "draw" | "removal", number>;
-  roleGaps: ("ramp" | "draw" | "removal")[];
+  roleCounts: Record<"ramp" | "draw" | "removal" | "wipes", number>;
+  roleGaps: ("ramp" | "draw" | "removal" | "wipes")[];
   score: number;
 };
 
@@ -53,7 +53,7 @@ export function scoreCommander(args: {
     (c) => c.oracleId !== args.commander.oracleId && fitsIdentity(c, identity),
   );
 
-  const roleCounts = { ramp: 0, draw: 0, removal: 0 };
+  const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
   for (const c of pool) {
     for (const role of classifyRoles(c)) {
       if (role !== "land") roleCounts[role]++;
