@@ -113,6 +113,19 @@ export function NavRail({ locked }: { locked: boolean }) {
       {/* padding: 16px 12px; flex-col; gap: 4px                             */}
       {/* ------------------------------------------------------------------ */}
       <nav className="flex flex-col gap-1 px-3 py-4" aria-label="Primary">
+        {/* §Rail: Nav group label ("Play") — mono 10px, 0.18em, uppercase, faint */}
+        <div
+          className="uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.18em",
+            color: "var(--fg-faint)",
+            padding: "6px 12px 8px",
+          }}
+        >
+          Play
+        </div>
         {ITEMS.map(({ href, label, lockable }) => {
           const isLocked = locked && lockable;
           const active = !isLocked && isActive(pathname, href);
@@ -177,7 +190,7 @@ export function NavRail({ locked }: { locked: boolean }) {
       <div className="mt-auto py-[14px] px-3">
         {/* §Rail Account trigger — Hover: border-color accent (#C9A24B).
             Classes (not inline style) so the hover: variant applies. */}
-        <div className="flex items-center gap-3 rounded-[14px] py-[2px] pr-3 pl-[2px] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] hover:border-[color:var(--brass)] transition-colors">
+        <div className="flex cursor-pointer items-center gap-3 rounded-[14px] py-[2px] pr-3 pl-[2px] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] hover:border-[color:var(--brass)] transition-colors">
           {/* Clerk UserButton — avatar dimensions per §Rail: Avatar badge */}
           <UserButton
             appearance={{

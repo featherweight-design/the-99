@@ -41,7 +41,7 @@ export function HeroCommanderSkeleton() {
         className="hidden md:block w-[200px] shrink-0"
         style={{
           background:
-            "repeating-linear-gradient(135deg, #1E1A15 0 11px, #181209 11px 22px)",
+            "repeating-linear-gradient(135deg, #1E1A15 0 11px, #181209 11px 22px), var(--bg)",
           borderRight: "1px solid var(--border-strong)",
         }}
       />
@@ -105,7 +105,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
         className="hidden md:block w-[200px] shrink-0"
         style={{
           background:
-            "repeating-linear-gradient(135deg, #1E1A15 0 11px, #181209 11px 22px)",
+            "repeating-linear-gradient(135deg, #1E1A15 0 11px, #181209 11px 22px), var(--bg)",
           borderRight: "1px solid var(--border-strong)",
         }}
         aria-hidden

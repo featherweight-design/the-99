@@ -26,6 +26,12 @@ export function UploadEntry() {
   const [pasteText, setPasteText] = useState("");
   const [pending, startTransition] = useTransition();
 
+  // Live client-side parse — feeds the recognized-count label and the
+  // "Import {n} cards" button per §Paste-List View.
+  const pasteCardCount = pasteText.trim()
+    ? parsePasteList(pasteText).rows.reduce((n, r) => n + r.quantity, 0)
+    : 0;
+
   async function handleFile(file: File) {
     setError(null);
     const fd = new FormData();
@@ -292,7 +298,7 @@ export function UploadEntry() {
                 background: "var(--surface-sunken)",
                 border: "1px solid var(--border-strong)",
                 color: "var(--fg-body)",
-                caretColor: "var(--fg-mono-cursor)",
+                caretColor: "var(--fg-locked)", // §Paste textarea cursor color #6A6152
               }}
               placeholder={"3 Sol Ring\n1 Cultivate\nRhystic Study"}
             />
@@ -303,21 +309,16 @@ export function UploadEntry() {
                 style={{ color: "var(--fg-faint)" }}
               >
                 {pasteText.trim().split("\n").filter(Boolean).length} lines ·{" "}
-                {parsePasteList(pasteText).rows.reduce(
-                  (n, r) => n + r.quantity,
-                  0,
-                )}{" "}
-                cards recognized
+                {pasteCardCount} cards recognized
               </p>
             )}
             <button
               type="button"
               onClick={() => void handlePasteSubmit()}
               disabled={!pasteText.trim()}
-              className="mt-[16px] w-full rounded-lg py-[13px] font-semibold text-[15px] hover:bg-[color:var(--brass-hover)] disabled:opacity-50"
-              style={{ background: "var(--brass)", color: "var(--bg)" }}
+              className="mt-[16px] w-full rounded-lg py-[13px] font-semibold text-[15px] bg-brass text-bg hover:bg-brass-hover disabled:opacity-50"
             >
-              Import list
+              {pasteCardCount > 0 ? `Import ${pasteCardCount} cards` : "Import list"}
             </button>
           </div>
         </div>
