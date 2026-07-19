@@ -5,31 +5,32 @@ import { revalidatePath } from "next/cache";
 import { db } from "../../db";
 import { cards, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { parseManaBoxCsv, type ManaBoxRow, type ParseError } from "../../lib/manabox/parse";
+import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 
 export type UploadPreview = {
   uploadId: string;
   matchedCardCount: number;
-  unmatchedRows: { name: string; setCode: string }[];
+  unmatchedRows: { name: string; setCode: string; line: number }[];
   parseErrors: { line: number; reason: string }[];
   currentCollectionCount: number;
+  filename: string;
+  rowCount: number;
 };
 
 type PendingItem = { oracleId: string; setCode: string; foil: boolean; condition: string | null; quantity: number };
 
 /**
  * Shared post-parse pipeline for previewUpload / previewPaste.
- * Guards the zero-row case (empty preview would silently wipe on confirm),
- * matches rows against the catalog, aggregates matched rows to compact
- * (oracleId,setCode,foil) totals, records currentCollectionCount, and
- * writes the csv_uploads row that confirmUpload reads back.
+ * Guards the zero-row case, matches against the catalog, aggregates matched
+ * rows to compact (oracleId,setCode,foil) totals, records currentCollectionCount,
+ * and writes the csv_uploads row that confirmUpload reads back.
  */
 async function buildPreview(args: {
   userId: string;
   filename: string;
-  rows: ManaBoxRow[];
+  rows: CollectionRow[];
   errors: ParseError[];
 }): Promise<UploadPreview> {
   const { userId, filename, rows, errors } = args;
@@ -62,14 +63,15 @@ async function buildPreview(args: {
     .from(collectionItems)
     .where(eq(collectionItems.userId, userId));
 
+  const unmatchedPayload = unmatched.map((r) => ({ name: r.name, setCode: r.setCode, line: r.line }));
+
   const [upload] = await db.insert(csvUploads).values({
     userId,
     filename,
     rowCount: rows.length,
     unmatchedCount: unmatched.length,
-    // Strip `raw` — no need to persist user-provided input lines in JSONB.
     previewPayload: {
-      unmatched,
+      unmatched: unmatchedPayload,
       parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
       pendingItems,
     },
@@ -78,9 +80,11 @@ async function buildPreview(args: {
   return {
     uploadId: upload.id,
     matchedCardCount,
-    unmatchedRows: unmatched.map((r) => ({ name: r.name, setCode: r.setCode })),
+    unmatchedRows: unmatchedPayload,
     parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
     currentCollectionCount,
+    filename,
+    rowCount: rows.length,
   };
 }
 
@@ -89,7 +93,7 @@ export async function previewUpload(formData: FormData): Promise<UploadPreview> 
   const file = formData.get("file");
   if (!(file instanceof File)) throw new Error("No CSV file provided");
   if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5 MB)");
-  const { rows, errors } = parseManaBoxCsv(await file.text());
+  const { rows, errors } = parseCollectionCsv(await file.text());
   return buildPreview({ userId, filename: file.name, rows, errors });
 }
 
@@ -111,7 +115,6 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   const { pendingItems } = upload.previewPayload as { pendingItems: PendingItem[] };
   if (pendingItems.length === 0) throw new Error("Upload has no matched cards; refusing to replace collection");
   const values = pendingItems.map((v) => ({ userId, ...v }));
-  // Full replace, transactional.
   await db.transaction(async (tx) => {
     await tx.delete(collectionItems).where(eq(collectionItems.userId, userId));
     for (let i = 0; i < values.length; i += 500) {
@@ -119,5 +122,5 @@ export async function confirmUpload(uploadId: string): Promise<void> {
     }
   });
   revalidatePath("/collection");
-  revalidatePath("/"); // Task 10: dissolves the first-run checklist.
+  revalidatePath("/");
 }

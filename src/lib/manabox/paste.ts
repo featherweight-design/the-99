@@ -1,4 +1,4 @@
-import type { ManaBoxRow, ParseError } from "./parse";
+import type { CollectionRow, ParseError } from "./parse";
 
 /**
  * Parse a plain-text paste list.
@@ -7,19 +7,14 @@ import type { ManaBoxRow, ParseError } from "./parse";
  *   "3x Sol Ring"
  *   "Sol Ring"          → quantity 1
  * A leading integer <= 0, a quantity above MAX_QUANTITY, or an empty name
- * after quantity strip → ParseError.
- *
- * Produces ManaBoxRows compatible with matchRows() by name only:
- *   scryfallId is null (NOT "") so matchRows' `row.scryfallId && ...`
- *   short-circuits cleanly to the name-index lookup.
+ * after quantity strip → ParseError. Row.line is the 1-based input line
+ * (blank lines still count toward the index so the number matches the paste).
  */
-// Quantities aggregate into Postgres `integer` columns downstream; cap well
-// below overflow (no real collection holds more copies than this).
 const MAX_QUANTITY = 10_000;
 
-export function parsePasteList(text: string): { rows: ManaBoxRow[]; errors: ParseError[] } {
+export function parsePasteList(text: string): { rows: CollectionRow[]; errors: ParseError[] } {
   const lines = text.split(/\r?\n/);
-  const rows: ManaBoxRow[] = [];
+  const rows: CollectionRow[] = [];
   const errors: ParseError[] = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -27,7 +22,6 @@ export function parsePasteList(text: string): { rows: ManaBoxRow[]; errors: Pars
     const trimmed = raw.trim();
     if (trimmed === "") continue;
 
-    // "3 name", "3x name", "3X name", or bare "name"
     const m = /^([+-]?\d+)\s*[xX]?\s+(.+)$/.exec(trimmed);
     let quantity: number;
     let name: string;
@@ -39,7 +33,6 @@ export function parsePasteList(text: string): { rows: ManaBoxRow[]; errors: Pars
         continue;
       }
     } else if (/^[+-]?\d+[xX]?$/.test(trimmed)) {
-      // Only a quantity, no name.
       errors.push({ line: i + 1, raw, reason: "missing card name" });
       continue;
     } else {
@@ -56,7 +49,7 @@ export function parsePasteList(text: string): { rows: ManaBoxRow[]; errors: Pars
       name,
       setCode: "",
       quantity,
-      scryfallId: null, // matchRows: null lets `?? byName.get(...)` run
+      scryfallId: null,
       foil: false,
       condition: null,
       line: i + 1,

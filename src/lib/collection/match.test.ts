@@ -5,8 +5,8 @@ const catalog = [
   { oracleId: "o-1", scryfallId: "s-1", name: "Sol Ring" },
   { oracleId: "o-2", scryfallId: "s-2", name: "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki" },
 ];
-const row = (name: string, scryfallId: string | null = null) =>
-  ({ name, setCode: "X", quantity: 1, scryfallId, foil: false, condition: null, line: 2 });
+const row = (name: string, scryfallId: string | null = null, line = 2) =>
+  ({ name, setCode: "X", quantity: 1, scryfallId, foil: false, condition: null, line });
 
 describe("matchRows", () => {
   it("uses scryfall id when it matches the seeded printing (opportunistic fast path)", () => {
@@ -21,9 +21,9 @@ describe("matchRows", () => {
     const { matched } = matchRows([row("Fable of the Mirror-Breaker")], catalog);
     expect(matched[0].oracleId).toBe("o-2");
   });
-  it("reports unmatched rows", () => {
-    const { matched, unmatched } = matchRows([row("Not A Card")], catalog);
+  it("reports unmatched rows with their original line number", () => {
+    const { matched, unmatched } = matchRows([row("Not A Card", null, 7)], catalog);
     expect(matched).toHaveLength(0);
-    expect(unmatched).toHaveLength(1);
+    expect(unmatched[0].line).toBe(7);
   });
 });
