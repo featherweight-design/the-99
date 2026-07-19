@@ -1,8 +1,31 @@
-export type ManaBoxRow = {
-  name: string; setCode: string; quantity: number;
-  scryfallId: string | null; foil: boolean; condition: string | null;
+/**
+ * Flexible CSV parser (READINESS #1).
+ * Covers ManaBox, Moxfield, Archidekt, Deckbox, and plain "Name,Qty" exports.
+ * Header match is case-insensitive; only Name + Quantity are required.
+ *
+ * Row.line is the 1-based line number in the source CSV (header is line 1),
+ * so errors and unmatched rows can point the user back at the file (READINESS #2).
+ */
+export type CollectionRow = {
+  name: string;
+  setCode: string;
+  quantity: number;
+  scryfallId: string | null;
+  foil: boolean;
+  condition: string | null;
+  line: number;
 };
 export type ParseError = { line: number; raw: string; reason: string };
+
+const NAME_HEADERS = ["name", "card name", "card"];
+const QUANTITY_HEADERS = ["quantity", "count", "qty"];
+const SET_HEADERS = ["set code", "set", "edition"];
+const FOIL_HEADERS = ["foil", "finish"];
+const CONDITION_HEADERS = ["condition"];
+const SCRYFALL_HEADERS = ["scryfall id"];
+
+// Foil column values that mean "not foil". Empty string also means not foil.
+const NON_FOIL_VALUES = new Set(["", "normal", "false", "nonfoil"]);
 
 function splitCsvLine(line: string): string[] {
   const out: string[] = [];
@@ -21,41 +44,71 @@ function splitCsvLine(line: string): string[] {
   return out;
 }
 
-const REQUIRED = ["Name", "Set code", "Foil", "Quantity", "Scryfall ID", "Condition"] as const;
+function findHeaderIndex(header: string[], candidates: string[]): number {
+  const lower = header.map((h) => h.trim().toLowerCase());
+  for (const c of candidates) {
+    const i = lower.indexOf(c);
+    if (i !== -1) return i;
+  }
+  return -1;
+}
 
-export function parseManaBoxCsv(csvText: string): { rows: ManaBoxRow[]; errors: ParseError[] } {
-  // Keep original indices (blank lines skipped in the loop) so error line numbers match the file.
+// Temporary re-exports so consumers compile while they are migrated in later tasks.
+/** @deprecated Use CollectionRow */
+export type ManaBoxRow = CollectionRow;
+/** @deprecated Use parseCollectionCsv */
+export const parseManaBoxCsv = parseCollectionCsv;
+
+export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; errors: ParseError[] } {
   const lines = csvText.split(/\r?\n/);
-  if (lines.every((l) => l.trim() === "")) return { rows: [], errors: [{ line: 1, raw: "", reason: "empty file" }] };
-
-  const header = splitCsvLine(lines[0]);
-  const idx = Object.fromEntries(REQUIRED.map((c) => [c, header.indexOf(c)]));
-  const missing = REQUIRED.filter((c) => idx[c] === -1);
-  if (missing.length > 0) {
-    return { rows: [], errors: [{ line: 1, raw: lines[0], reason: `header missing columns: ${missing.join(", ")}` }] };
+  if (lines.every((l) => l.trim() === "")) {
+    return { rows: [], errors: [{ line: 1, raw: "", reason: "empty file" }] };
   }
 
-  const rows: ManaBoxRow[] = [];
+  const header = splitCsvLine(lines[0]);
+  const nameIdx = findHeaderIndex(header, NAME_HEADERS);
+  const qtyIdx = findHeaderIndex(header, QUANTITY_HEADERS);
+  if (nameIdx === -1) {
+    return { rows: [], errors: [{ line: 1, raw: lines[0], reason: "header missing Name column" }] };
+  }
+  if (qtyIdx === -1) {
+    return { rows: [], errors: [{ line: 1, raw: lines[0], reason: "header missing Quantity column" }] };
+  }
+  const setIdx = findHeaderIndex(header, SET_HEADERS);
+  const foilIdx = findHeaderIndex(header, FOIL_HEADERS);
+  const conditionIdx = findHeaderIndex(header, CONDITION_HEADERS);
+  const scryfallIdx = findHeaderIndex(header, SCRYFALL_HEADERS);
+
+  const rows: CollectionRow[] = [];
   const errors: ParseError[] = [];
   for (let i = 1; i < lines.length; i++) {
     if (lines[i].trim() === "") continue;
     const cols = splitCsvLine(lines[i]);
-    if (cols.length < header.length) {
-      errors.push({ line: i + 1, raw: lines[i], reason: `expected ${header.length} columns, got ${cols.length}` });
+    // A row is only fatal if it can't reach the required columns.
+    const requiredMax = Math.max(nameIdx, qtyIdx);
+    if (cols.length <= requiredMax) {
+      errors.push({ line: i + 1, raw: lines[i], reason: `expected at least ${requiredMax + 1} columns, got ${cols.length}` });
       continue;
     }
-    const quantity = Number(cols[idx["Quantity"]]);
+    const quantity = Number(cols[qtyIdx]);
     if (!Number.isInteger(quantity) || quantity < 1) {
-      errors.push({ line: i + 1, raw: lines[i], reason: `invalid quantity "${cols[idx["Quantity"]]}"` });
+      errors.push({ line: i + 1, raw: lines[i], reason: `invalid quantity "${cols[qtyIdx]}"` });
       continue;
     }
+    const name = cols[nameIdx].trim();
+    if (name === "") {
+      errors.push({ line: i + 1, raw: lines[i], reason: "missing card name" });
+      continue;
+    }
+    const foilRaw = foilIdx !== -1 ? (cols[foilIdx] ?? "").trim().toLowerCase() : "";
     rows.push({
-      name: cols[idx["Name"]].trim(),
-      setCode: cols[idx["Set code"]].trim(),
+      name,
+      setCode: setIdx !== -1 ? (cols[setIdx] ?? "").trim() : "",
       quantity,
-      scryfallId: cols[idx["Scryfall ID"]]?.trim() || null,
-      foil: cols[idx["Foil"]].trim().toLowerCase() !== "normal",
-      condition: cols[idx["Condition"]]?.trim() || null,
+      scryfallId: scryfallIdx !== -1 ? ((cols[scryfallIdx] ?? "").trim() || null) : null,
+      foil: !NON_FOIL_VALUES.has(foilRaw),
+      condition: conditionIdx !== -1 ? ((cols[conditionIdx] ?? "").trim() || null) : null,
+      line: i + 1,
     });
   }
   return { rows, errors };

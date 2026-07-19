@@ -59,6 +59,7 @@ export function parsePasteList(text: string): { rows: ManaBoxRow[]; errors: Pars
       scryfallId: null, // matchRows: null lets `?? byName.get(...)` run
       foil: false,
       condition: null,
+      line: i + 1,
     });
   }
 

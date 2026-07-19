@@ -6,7 +6,7 @@ const catalog = [
   { oracleId: "o-2", scryfallId: "s-2", name: "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki" },
 ];
 const row = (name: string, scryfallId: string | null = null) =>
-  ({ name, setCode: "X", quantity: 1, scryfallId, foil: false, condition: null });
+  ({ name, setCode: "X", quantity: 1, scryfallId, foil: false, condition: null, line: 2 });
 
 describe("matchRows", () => {
   it("uses scryfall id when it matches the seeded printing (opportunistic fast path)", () => {
