@@ -593,7 +593,9 @@
 | color | `#8E8269` (token: **faint**) | `#8E8269` (token: **faint**) |
 | margin-top | `6px` | `6px` |
 | letter-spacing | `0.06em` | `0.06em` |
-| content | `Moxfield · Archidekt · Deckbox · CSV` | `Moxfield · Archidekt · Deckbox · plain CSV` |
+| content | `ManaBox CSV export · more formats arrive with #6` | `ManaBox CSV export · more formats arrive with #6` |
+
+> **Scope note:** The original handoff copy ("Moxfield · Archidekt · Deckbox · CSV") reflects the multi-format ingest designed for epic #6. The #5 interim UI is deliberately ManaBox-only; multi-format support ships with #6. The content row above reflects the interim copy used in Task 9's `upload-entry.tsx` dropzone.
 
 ### Dropzone: "Browse files" button
 

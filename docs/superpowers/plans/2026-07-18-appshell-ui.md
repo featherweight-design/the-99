@@ -131,11 +131,13 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 
 /* Brand focus treatment — READINESS item 5.
  * Applies globally so every focusable control (rail item, tab, chip, button,
- * link, popover trigger, textarea) picks it up unless a component overrides. */
+ * link, popover trigger, textarea) picks it up unless a component overrides.
+ * border-radius is intentionally absent here — each component owns its own
+ * radius (e.g. rail items use 8px, account trigger uses 14px, buttons 8px).
+ * Adding a global radius here would override component-level values. */
 :focus-visible {
   outline: 2px solid var(--brass);
   outline-offset: 2px;
-  border-radius: 4px;
 }
 ```
 
@@ -213,6 +215,17 @@ git commit -m "feat(shell): brand tokens, focus treatment, Cinzel/Plex fonts"
 - Produces: `CardFan({ size, className }: { size?: number; className?: string })` — three overlapping rotated card rectangles; front card is brass-outlined with a "99" glyph.
 - Produces: `XcixSeal({ size, className }: { size?: number; className?: string })` — square rounded seal with a 2px brass border and centered "XCIX" glyph.
 - Consumes: none.
+
+> **Per-context sizing — design gate requirement.** The table (§SVG / Marks Summary) gives explicit pixel geometry for each usage context; uniform viewBox scaling that yields fractional px values will fail the design review gate. `Crowned99` must honour these exact values per context:
+>
+> | Context | Crown diamonds (s/l/s) | Numeral | Weight | Crown gap |
+> |---------|----------------------|---------|--------|-----------|
+> | Signed-out hero — mobile | 13/18/13px | 92px | 900 | 8px |
+> | Signed-out hero — desktop | 18/25/18px | 132px | 900 | 11px |
+> | Rail wordmark | 6/8/6px | 30px | 800 | 4px |
+> | Mobile header | 5/7/5px | 24px | 800 | 3px |
+>
+> `CardFan` and `XcixSeal` similarly vary by context (see table §Card-fan mark and §XCIX seal). Because the geometry changes per context — not just scale — a single `size` prop that scales one viewBox uniformly cannot satisfy the spec. The implementation must accept either explicit per-dimension props or a `variant` prop whose values map to exact pixel values from the table. The code block below shows the `size`-based scaffold; **before merging Task 2** ensure each call-site passes the correct per-context values matching the table exactly.
 
 Steps:
 
@@ -1433,15 +1446,16 @@ export default async function HomePage() {
     return (
       <section
         // Style per property table §Signed-Out Landing / Page layout.
-        // Radial gradient (signed-out only) applied via inline style so we can
-        // set both fallback bg and gradient in one place.
-        className="flex min-h-screen flex-col items-center justify-center px-8 md:px-10 text-center"
-        style={{
-          background:
-            "radial-gradient(1000px 520px at 50% 8%, rgba(201,162,75,0.10), transparent 70%), var(--bg)",
-        }}
+        // Radial gradient differs between mobile and desktop (table row appshell.md:346):
+        //   mobile:  600px 360px at 50% 22%, rgba(201,162,75,0.12)
+        //   desktop: 1000px 520px at 50% 8%,  rgba(201,162,75,0.10)
+        // Expressed as two Tailwind arbitrary-value bg utilities split at the md
+        // breakpoint so the inline style block is removed entirely.
+        className="flex min-h-screen flex-col items-center justify-center px-8 md:px-10 text-center bg-[radial-gradient(600px_360px_at_50%_22%,rgba(201,162,75,0.12),transparent_70%),var(--bg)] md:bg-[radial-gradient(1000px_520px_at_50%_8%,rgba(201,162,75,0.10),transparent_70%),var(--bg)]"
       >
-        <Crowned99 size={132} />
+        {/* table appshell.md:365 — 92px mobile, 132px desktop */}
+        <Crowned99 size={92} className="md:hidden" />
+        <Crowned99 size={132} className="hidden md:block" />
 
         <p
           className="mt-4"
@@ -1455,12 +1469,11 @@ export default async function HomePage() {
           THE NINETY-NINE
         </p>
 
+        {/* table appshell.md:387 — 17px mobile, 21px desktop; lineHeight 1.5 mobile only */}
         <p
-          className="mt-6 max-w-[280px] italic md:max-w-none"
+          className="mt-6 max-w-[280px] italic leading-[1.5] md:max-w-none text-[17px] md:text-[21px]"
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 21,
-            lineHeight: 1.5,
             color: "var(--fg-body)",
           }}
         >
@@ -1485,6 +1498,7 @@ export default async function HomePage() {
           </button>
         </SignInButton>
 
+        {/* table appshell.md:427-428 — mobile copy ends at "request"; desktop appends suffix */}
         <p
           className="mt-5"
           style={{
@@ -1494,7 +1508,8 @@ export default async function HomePage() {
             color: "var(--fg-faint)",
           }}
         >
-          Invite-only · access by request · a Commander companion
+          Invite-only · access by request
+          <span className="hidden md:inline"> · a Commander companion</span>
         </p>
       </section>
     );
@@ -1506,6 +1521,9 @@ export default async function HomePage() {
 ```
 
 - [ ] Verify: `pnpm typecheck && pnpm build` succeed.
+- [ ] Browser verification — open `localhost:3000` signed out and check both viewport sizes:
+  - **Mobile (<768px):** mark renders at ~92px tall; tagline font-size is 17px; radial gradient origin is at `50% 22%` (higher on screen, softer brass glow); invite-only note reads "Invite-only · access by request" (no "· a Commander companion" suffix).
+  - **Desktop (≥768px):** mark renders at ~132px tall; tagline font-size is 21px; radial gradient origin is at `50% 8%` (near top of viewport); invite-only note reads "Invite-only · access by request · a Commander companion".
 - [ ] Commit:
 
 ```bash
@@ -2543,22 +2561,23 @@ export default async function HomePage() {
   if (!userId) {
     return (
       <section
-        className="flex min-h-screen flex-col items-center justify-center px-8 md:px-10 text-center"
-        style={{
-          background:
-            "radial-gradient(1000px 520px at 50% 8%, rgba(201,162,75,0.10), transparent 70%), var(--bg)",
-        }}
+        // Radial gradient: mobile 600px 360px at 50% 22%; desktop 1000px 520px at 50% 8%
+        // (table appshell.md:346). Expressed via responsive Tailwind arbitrary utilities.
+        className="flex min-h-screen flex-col items-center justify-center px-8 md:px-10 text-center bg-[radial-gradient(600px_360px_at_50%_22%,rgba(201,162,75,0.12),transparent_70%),var(--bg)] md:bg-[radial-gradient(1000px_520px_at_50%_8%,rgba(201,162,75,0.10),transparent_70%),var(--bg)]"
       >
-        <Crowned99 size={132} />
+        {/* table appshell.md:365 — 92px mobile, 132px desktop */}
+        <Crowned99 size={92} className="md:hidden" />
+        <Crowned99 size={132} className="hidden md:block" />
         <p
           className="mt-4"
           style={{ fontFamily: "var(--font-mono)", fontSize: 13, letterSpacing: "0.44em", color: "var(--brass)" }}
         >
           THE NINETY-NINE
         </p>
+        {/* table appshell.md:387 — 17px mobile, 21px desktop */}
         <p
-          className="mt-6 max-w-[280px] italic md:max-w-none"
-          style={{ fontFamily: "var(--font-sans)", fontSize: 21, lineHeight: 1.5, color: "var(--fg-body)" }}
+          className="mt-6 max-w-[280px] italic leading-[1.5] md:max-w-none text-[17px] md:text-[21px]"
+          style={{ fontFamily: "var(--font-sans)", color: "var(--fg-body)" }}
         >
           99 problems, but your commander ain&apos;t one.
         </p>
@@ -2571,11 +2590,13 @@ export default async function HomePage() {
             Sign in
           </button>
         </SignInButton>
+        {/* table appshell.md:427-428 — mobile copy ends at "request"; desktop appends suffix */}
         <p
           className="mt-5"
           style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: "0.04em", color: "var(--fg-faint)" }}
         >
-          Invite-only · access by request · a Commander companion
+          Invite-only · access by request
+          <span className="hidden md:inline"> · a Commander companion</span>
         </p>
       </section>
     );
