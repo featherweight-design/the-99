@@ -16,9 +16,9 @@ MTG Commander companion: upload a collection CSV, get commander recommendations,
 
 ## Workflow
 
-- All work happens in worktrees under `.worktrees/<branch>`; copy `.env.local` from the repo root into a new worktree before running the app. The main checkout stays clean on `main`.
+- All work happens in worktrees under `.worktrees/<branch>`; copy `.env` from the repo root into a new worktree before running the app. The main checkout stays clean on `main`.
 - Pre-push gate, every push: `npm run typecheck && npm run lint && npm test` plus the stub-DB build, then `git fetch origin && git rebase origin/main`.
-- Stage files by name — never `git add -A` (`.env.local` and other untracked files must stay untracked).
+- Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 
 ## Design pipeline
