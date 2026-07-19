@@ -13,11 +13,20 @@ const BULK_INDEX = "https://api.scryfall.com/bulk-data/oracle_cards";
 // The bulk file is a ~150MB JSON array; stream-parse it so the seed never
 // materializes the whole payload (keeps the Vercel cron route within memory limits).
 export async function seedCards(): Promise<{ upserted: number; skipped: number }> {
-  const meta = await fetch(BULK_INDEX, { headers: { "User-Agent": "the-99/1.0" } }).then((r) => {
+  const meta = await fetch(BULK_INDEX, {
+    headers: { "User-Agent": "the-99/1.0" },
+    signal: AbortSignal.timeout(10_000),
+  }).then((r) => {
     if (!r.ok) throw new Error(`bulk-data index ${r.status}`);
     return r.json();
   });
-  const res = await fetch(meta.download_uri, { headers: { "User-Agent": "the-99/1.0" } });
+  // The timeout spans the whole request including body streaming; 240s stays
+  // inside the cron route's 300s maxDuration so a stalled download fails loudly
+  // instead of being killed by the platform mid-seed.
+  const res = await fetch(meta.download_uri, {
+    headers: { "User-Agent": "the-99/1.0" },
+    signal: AbortSignal.timeout(240_000),
+  });
   if (!res.ok || !res.body) throw new Error(`bulk download ${res.status}`);
 
   let upserted = 0, skipped = 0;
