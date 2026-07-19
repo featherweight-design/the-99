@@ -249,7 +249,7 @@ export function BuilderShell({
           decklistCards={deck.cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
           shoppingCards={deck.cards
             .filter((c) => !c.owned)
-            .map((c) => ({ name: c.name, role: c.role }))}
+            .map((c) => ({ name: c.name, role: c.role, quantity: c.quantity }))}
           open={exportOpen}
           onClose={() => setExportOpen(false)}
         />

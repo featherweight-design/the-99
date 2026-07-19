@@ -21,7 +21,7 @@ interface ExportDialogProps {
   /** Body cards (commander excluded). */
   decklistCards: { name: string; quantity: number }[];
   /** Unowned cards only. */
-  shoppingCards: { name: string; role?: string }[];
+  shoppingCards: { name: string; role?: string; quantity: number }[];
   open: boolean;
   onClose: () => void;
 }
@@ -77,32 +77,19 @@ export function ExportDialog({
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {status}
       </div>
-      {/* Sheet (mobile) / Modal (desktop) */}
+      {/* Positioning wrapper — pointer-events pass through to the overlay so
+          clicking outside either layout still dismisses. */}
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Export deck"
-        className="fixed z-50 left-0 right-0 bottom-0 md:left-auto md:right-auto md:bottom-auto md:top-1/2 md:left-1/2"
-        style={{
-          // Mobile: bottom sheet
-          background: "#1A160F",
-          borderTop: "1px solid #3A3229",
-          borderRadius: "22px 22px 0 0",
-          boxShadow: "0 -20px 50px rgba(0,0,0,0.5)",
-          height: 590,
-          // We can't toggle between mobile/desktop shapes with inline styles alone;
-          // desktop overrides applied via a nested absolutely-positioned container below.
-        }}
+        className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
       >
-        {/* Desktop modal container override — renders on top of mobile sheet */}
+        {/* Desktop modal — centered in the viewport by the flex wrapper */}
         <div
-          className="hidden md:flex md:flex-col"
+          className="hidden md:flex md:flex-col pointer-events-auto"
           style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
             width: 560,
             background: "#1A160F",
             border: "1px solid #3A3229",
@@ -126,8 +113,17 @@ export function ExportDialog({
           />
         </div>
 
-        {/* Mobile content */}
-        <div className="flex flex-col md:hidden h-full">
+        {/* Mobile bottom sheet */}
+        <div
+          className="flex flex-col md:hidden absolute left-0 right-0 bottom-0 pointer-events-auto"
+          style={{
+            background: "#1A160F",
+            borderTop: "1px solid #3A3229",
+            borderRadius: "22px 22px 0 0",
+            boxShadow: "0 -20px 50px rgba(0,0,0,0.5)",
+            height: 590,
+          }}
+        >
           <DialogContent
             deckName={deckName}
             tab={tab}
@@ -156,7 +152,7 @@ interface DialogContentProps {
   tab: Tab;
   setTab: (t: Tab) => void;
   activeText: string;
-  shoppingCards: { name: string; role?: string }[];
+  shoppingCards: { name: string; role?: string; quantity: number }[];
   commanderLine: string;
   bodyLines: string[];
   totalCards: number;
@@ -389,7 +385,7 @@ function DialogContent({
                 margin: 0,
               }}
             >
-              {shoppingCards.length} cards · unowned
+              {shoppingCards.reduce((sum, c) => sum + c.quantity, 0)} cards · unowned
             </p>
 
             {/* Mobile "names only" note */}
@@ -419,12 +415,12 @@ function DialogContent({
                     borderBottom: `1px solid ${isMobile ? "#1E1A15" : "#1A160F"}`,
                   }}
                 >
-                  {/* Quantity — shopping list shows 1x always (unowned) */}
+                  {/* Quantity — real per-card count (basics can run multiples) */}
                   <span
                     className="font-mono"
                     style={{ fontSize: 12, color: "#8E8269" }}
                   >
-                    1
+                    {card.quantity}
                   </span>
                   {/* Unowned dot (desktop) */}
                   {!isMobile && (
