@@ -70,8 +70,8 @@ export function UploadEntry({
         {/* Warning icon — §Warning Banner Icon: #E0913C (--warning), 15/17px */}
         <span
           aria-hidden
-          className="text-[15px] md:text-[17px]"
-          style={{ color: "var(--warning)", lineHeight: 1.3 }}
+          className="text-[15px] md:text-[17px] leading-[1.3] md:leading-[1.2]"
+          style={{ color: "var(--warning)" }}
         >
           ⚠
         </span>
@@ -169,8 +169,8 @@ export function UploadEntry({
             </button>
             {/* Helper — §Helper Text: 12/13px --fg-faint, margin-top 14px mobile */}
             <p
-              className="mt-[14px] md:mt-0 text-[12px] md:text-[13px]"
-              style={{ color: "var(--fg-faint)", lineHeight: 1.55 }}
+              className="mt-[14px] md:mt-0 text-[12px] md:text-[13px] leading-[1.55] md:leading-[1.5]"
+              style={{ color: "var(--fg-faint)" }}
             >
               <span className="md:hidden">
                 Only a Name and Quantity column are required.{" "}

@@ -12,7 +12,7 @@ import { matchRows } from "../../lib/collection/match";
 export type UploadPreview = {
   uploadId: string;
   matchedCardCount: number;
-  unmatchedRows: { name: string; setCode: string; line: number }[];
+  unmatchedRows: { name: string; setCode: string; line: number; quantity: number }[];
   parseErrors: { line: number; reason: string }[];
   currentCollectionCount: number;
   filename: string;
@@ -63,7 +63,7 @@ async function buildPreview(args: {
     .from(collectionItems)
     .where(eq(collectionItems.userId, userId));
 
-  const unmatchedPayload = unmatched.map((r) => ({ name: r.name, setCode: r.setCode, line: r.line }));
+  const unmatchedPayload = unmatched.map((r) => ({ name: r.name, setCode: r.setCode, line: r.line, quantity: r.quantity }));
 
   const [upload] = await db.insert(csvUploads).values({
     userId,

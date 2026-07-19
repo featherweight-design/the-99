@@ -56,10 +56,9 @@ export function ConfirmModal({
   return (
     // §Backdrop: rgba(8,6,4,0.74) desktop
     <div
-      className="fixed inset-0 z-50 flex items-center md:items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center md:items-center justify-center bg-[rgba(8,6,4,0.7)] md:bg-[rgba(8,6,4,0.74)]"
       role="presentation"
       onClick={() => { if (!pending) onClose(); }}
-      style={{ background: "rgba(8,6,4,0.74)" }}
     >
       <div
         ref={dialogRef}
@@ -69,10 +68,9 @@ export function ConfirmModal({
         onClick={(e) => e.stopPropagation()}
         // Mobile: bottom sheet (§Mobile: Bottom Sheet: bg #1A160F (--surface-rail), radius 22px 22px 34px 34px, padding 26px 22px 30px)
         // Desktop: §Desktop: Modal Container: 520px, bg #1A160F, border 1px #3A3229, radius 16px, padding 32px 34px 30px, shadow 0 40px 100px rgba(0,0,0,0.7)
-        className="w-full md:w-[520px] rounded-t-[22px] md:rounded-2xl p-[26px_22px_30px] md:p-[32px_34px_30px] mt-auto md:mt-0"
+        className="w-full md:w-[520px] rounded-[22px_22px_34px_34px] md:rounded-2xl p-[26px_22px_30px] md:p-[32px_34px_30px] mt-auto md:mt-0 [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)]"
         style={{
           background: "var(--surface-rail)",
-          border: "1px solid var(--border-strong)",
           boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
         }}
       >
@@ -103,8 +101,8 @@ export function ConfirmModal({
 
         {/* Body — §Modal Body Copy: 13.5/15px --fg-body */}
         <p
-          className="text-[13.5px] md:text-[15px] mt-[16px] md:mt-[18px]"
-          style={{ color: "var(--fg-body)", lineHeight: 1.65 }}
+          className="text-[13.5px] md:text-[15px] mt-[16px] md:mt-[18px] leading-[1.6] md:leading-[1.65]"
+          style={{ color: "var(--fg-body)" }}
         >
           {preview.currentCollectionCount === 0 ? (
             <>
@@ -151,6 +149,7 @@ export function ConfirmModal({
               background: "var(--surface-sunken)",
               border: "1px solid var(--danger)",
               color: "var(--fg)",
+              caretColor: "var(--brass)",
             }}
           />
         </div>

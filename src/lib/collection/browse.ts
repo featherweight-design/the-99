@@ -11,6 +11,7 @@ export type BrowseCard = {
   typeLine: string;
   manaCost: string | null;
   oracleText: string | null;
+  keywords: string[];
   rarity: "common" | "uncommon" | "rare" | "mythic";
   colorIdentity: string[];
   imageUri: string | null;
@@ -32,6 +33,11 @@ export function cssUrl(uri: string): string {
   return `url("${encodeURI(uri).replaceAll('"', "%22")}")`;
 }
 
+/** Shared WUBRG palette — used by mana-pips, rows-view, chip-row, card-modal. */
+export const WUBRG_HEX: Record<string, string> = {
+  W: "#E8E4D6", U: "#4A7FB5", B: "#5B5566", R: "#C05A48", G: "#6B9E63",
+};
+
 /** Coarse card-type options shown in the Type ▾ dropdown (property table §Filter Button). */
 export const AVAILABLE_TYPES = [
   "Creature", "Instant", "Sorcery", "Artifact", "Enchantment", "Planeswalker", "Land",
@@ -45,6 +51,7 @@ type RawCollectionRow = {
   typeLine: string;
   manaCost: string | null;
   oracleText: string | null;
+  keywords: string[];
   rarity: string;
   colorIdentity: string[];
   imageUri: string | null;
@@ -70,6 +77,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
         typeLine: r.typeLine,
         manaCost: r.manaCost,
         oracleText: r.oracleText,
+        keywords: r.keywords,
         rarity: (RARITY_ORDER[r.rarity] !== undefined ? r.rarity : "common") as BrowseCard["rarity"],
         colorIdentity: r.colorIdentity,
         imageUri: r.imageUri,
@@ -144,6 +152,7 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,
       oracleText: cards.oracleText,
+      keywords: cards.keywords,
       rarity: cards.rarity,
       colorIdentity: cards.colorIdentity,
       imageUri: cards.imageUri,

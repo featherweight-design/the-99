@@ -85,7 +85,7 @@ export function ReviewScreen({
                 {importCount.toLocaleString()}
               </div>
               {/* §Matched Count: Label */}
-              <div className="text-[11.5px] md:text-[13px] mt-[2px] md:mt-[4px]" style={{ color: "var(--fg-muted)" }}>
+              <div className="text-[11.5px] md:text-[13px] mt-[2px] md:mt-[4px] text-[color:var(--fg-faint)] md:text-[color:var(--fg-muted)]">
                 <span className="md:hidden">cards matched &amp; ready</span>
                 <span className="hidden md:inline">cards matched to the Oracle database — ready to import</span>
               </div>
@@ -161,6 +161,13 @@ export function ReviewScreen({
                         Line {r.line}{r.setCode ? ` · ${r.setCode}` : ""}
                       </span>
                     </span>
+                    {/* §Issue Row — Quantity (right): mono 11/12px --fg-faint */}
+                    <span
+                      className="font-mono text-[11px] md:text-[12px] flex-none"
+                      style={{ color: "var(--fg-faint)" }}
+                    >
+                      ×{r.quantity}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -231,8 +238,7 @@ export function ReviewScreen({
       >
         {/* Summary sentence — §Sticky Confirm Bar: Summary Sentence */}
         <p
-          className="text-[11.5px] md:text-[13.5px] text-center md:text-left mb-[10px] md:mb-0"
-          style={{ color: "var(--fg-body)" }}
+          className="text-[11.5px] md:text-[13.5px] text-center md:text-left mb-[10px] md:mb-0 text-[color:var(--fg-faint)] md:text-[color:var(--fg-body)]"
         >
           <span className="md:hidden">
             Skips {skipped} rows · replaces your {preview.currentCollectionCount.toLocaleString()} cards with {importCount.toLocaleString()}

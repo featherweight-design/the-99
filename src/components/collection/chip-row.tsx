@@ -3,10 +3,7 @@
 // The row + chip pills are wrapped in table-exact px/hex values below.
 
 import type { BrowseFilters, SortKey } from "../../lib/collection/browse";
-
-const COLOR_DOT_HEX: Record<string, string> = {
-  W: "#E8E4D6", U: "#4A7FB5", B: "#5B5566", R: "#C05A48", G: "#6B9E63",
-};
+import { WUBRG_HEX } from "../../lib/collection/browse";
 
 const SORT_LABEL: Record<SortKey, string> = {
   name: "Sort: Name", quantity: "Sort: Quantity", set: "Sort: Set",
@@ -47,7 +44,7 @@ export function ChipRow({
   // quantities across the whole collection (the "2,933" in the design copy).
   const desktopCopy = anyActive
     ? `Showing ${resultCount.toLocaleString()} of ${totalQuantity.toLocaleString()}`
-    : `No filters active · Showing ${uniqueCount.toLocaleString()} unique · ${totalQuantity.toLocaleString()} total`;
+    : `Showing ${uniqueCount.toLocaleString()} unique · ${totalQuantity.toLocaleString()} total`;
   const mobileCopy = `${resultCount.toLocaleString()} results`;
 
   return (
@@ -69,7 +66,7 @@ export function ChipRow({
         <Chip
           key={c}
           label={c}
-          leadingDot={COLOR_DOT_HEX[c]}
+          leadingDot={WUBRG_HEX[c]}
           onRemove={() => onRemoveColor(c)}
         />
       ))}

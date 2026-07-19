@@ -12,6 +12,7 @@ const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
   typeLine: "Artifact",
   manaCost: "{1}",
   oracleText: "Tap: Add {C}{C}.",
+  keywords: [],
   rarity: "uncommon",
   colorIdentity: [],
   imageUri: null,
@@ -24,8 +25,8 @@ const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
 describe("aggregateCollection", () => {
   it("sums quantities across variants of the same oracle id", () => {
     const rows = [
-      { oracleId: "o-1", quantity: 2, setCode: "C21", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: null, rarity: "uncommon", colorIdentity: [], imageUri: null },
-      { oracleId: "o-1", quantity: 1, setCode: "LEA", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: null, rarity: "uncommon", colorIdentity: [], imageUri: null },
+      { oracleId: "o-1", quantity: 2, setCode: "C21", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: null, keywords: [], rarity: "uncommon", colorIdentity: [], imageUri: null },
+      { oracleId: "o-1", quantity: 1, setCode: "LEA", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: null, keywords: [], rarity: "uncommon", colorIdentity: [], imageUri: null },
     ];
     const [agg] = aggregateCollection(rows);
     expect(agg.quantity).toBe(3);
@@ -34,7 +35,7 @@ describe("aggregateCollection", () => {
   });
   it("keeps oracle metadata from the first row seen", () => {
     const rows = [
-      { oracleId: "o-1", quantity: 1, setCode: "C21", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: "Tap: Add {C}{C}.", rarity: "uncommon", colorIdentity: [], imageUri: "img.png" },
+      { oracleId: "o-1", quantity: 1, setCode: "C21", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: "Tap: Add {C}{C}.", keywords: [], rarity: "uncommon", colorIdentity: [], imageUri: "img.png" },
     ];
     const [agg] = aggregateCollection(rows);
     expect(agg.imageUri).toBe("img.png");

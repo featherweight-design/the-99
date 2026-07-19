@@ -35,15 +35,13 @@ export function GridView({
         >
           {/* Art region — §Grid Tile: Art Region */}
           <div
-            className="relative"
+            className="relative shadow-[inset_0_-40px_40px_-30px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(0,0,0,0.25)] md:shadow-[inset_0_-50px_50px_-34px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(0,0,0,0.25)]"
             style={{
               aspectRatio: "63/88",
               background: c.imageUri ? undefined : identityGradient(c.colorIdentity),
               backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
               backgroundSize: "cover",
               backgroundPosition: "center",
-              // Inset shadows per §Grid Tile: Art Region
-              boxShadow: "inset 0 -50px 50px -34px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.25)",
             }}
           >
             {/* §Grid Tile: Quantity Badge — mono 11/12px 600, #14110E (--bg) on #C9A24B (--brass), radius 6px */}

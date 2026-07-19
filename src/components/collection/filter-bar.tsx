@@ -23,7 +23,7 @@ function subscribeDesktop(onStoreChange: () => void): () => void {
   return () => mq.removeEventListener("change", onStoreChange);
 }
 
-function useIsDesktop(): boolean {
+export function useIsDesktop(): boolean {
   return useSyncExternalStore(
     subscribeDesktop,
     () => window.matchMedia(DESKTOP_QUERY).matches,
@@ -61,7 +61,7 @@ export function FilterBar({
   return (
     // §Filter Bar Container: sticky top:0 desktop, bg #14110E (--bg), padding 18px 34px 14px desktop, border-bottom 1px #2A241D (--border), z-index 2
     <div
-      className="md:sticky md:top-0 md:z-[2] px-[16px] md:px-[34px] py-[14px] md:py-[18px]"
+      className="md:sticky md:top-0 md:z-[2] px-[16px] md:px-[34px] pt-[14px] pb-[14px] md:pt-[18px] md:pb-[14px]"
       style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
     >
       {/* §Filter Row: display flex, align center, gap 8px mobile / 12px desktop, horizontal-scroll on mobile */}
@@ -75,14 +75,14 @@ export function FilterBar({
           }}
         >
           {/* §Search Icon: #8E8269 (--fg-faint), 14/15px */}
-          <span aria-hidden style={{ color: "var(--fg-faint)", fontSize: 15 }}>⌕</span>
+          <span aria-hidden className="text-[14px] md:text-[15px]" style={{ color: "var(--fg-faint)" }}>⌕</span>
           <input
             type="search"
             value={filters.search}
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
             placeholder={isDesktop ? "Search by card name…" : "Search your cards…"}
             aria-label="Search your cards"
-            className="min-w-0 flex-1 bg-transparent outline-none text-[14px]"
+            className="min-w-0 flex-1 bg-transparent outline-none text-[14px] placeholder:text-[color:var(--fg-faint)]"
             style={{ color: "var(--fg)" }}
           />
         </label>
@@ -170,7 +170,7 @@ export function FilterBar({
           ))}
         </select>
 
-        {/* Sort ▾ — mobile shows "A–Z ▾", desktop shows "Sort: Name ▾" */}
+        {/* Sort ▾ — mobile shows short labels ("A–Z ▾"), desktop shows "Sort: Name ▾" */}
         <select
           value={sort}
           onChange={(e) => onSortChange(e.target.value as SortKey)}
@@ -182,11 +182,11 @@ export function FilterBar({
             border: "1px solid var(--border-strong)",
           }}
         >
-          <option value="name">Sort: Name</option>
-          <option value="quantity">Sort: Quantity</option>
-          <option value="set">Sort: Set</option>
-          <option value="rarity">Sort: Rarity</option>
-          <option value="color">Sort: Color</option>
+          <option value="name">{isDesktop ? "Sort: Name" : "A–Z ▾"}</option>
+          <option value="quantity">{isDesktop ? "Sort: Quantity" : "Qty ▾"}</option>
+          <option value="set">{isDesktop ? "Sort: Set" : "Set ▾"}</option>
+          <option value="rarity">{isDesktop ? "Sort: Rarity" : "Rarity ▾"}</option>
+          <option value="color">{isDesktop ? "Sort: Color" : "Color ▾"}</option>
         </select>
 
         {/* View toggle — §View Toggle Container: bg #181410 (--surface-sunken), border 1px #3A3229 (--border-strong), radius 8px, padding 2px, gap 2px */}

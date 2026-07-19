@@ -1,12 +1,10 @@
 "use client";
 // Mana-cost pips per property table §Mana Pip (generic {n}) / §Mana Pip (WUBRG colored).
 // Size: 22px mobile / 26px desktop; font 12/13px.
-// Generic {n}: --elevated bg + --fg glyph.
-// WUBRG:      identity token bg + --bg glyph (§Mana Pip WUBRG colored).
+// Generic {n}: #4A4033 bg + --fg glyph.
+// WUBRG:      design palette bg + --bg glyph (§Mana Pip WUBRG colored).
 
-const COLOR_TOKEN: Record<string, string> = {
-  W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)",
-};
+import { WUBRG_HEX } from "../../lib/collection/browse";
 
 function parseManaCost(cost: string): string[] {
   // Matches "{2}", "{U}", "{U/B}" (returns "U/B" as glyph). We only style
@@ -28,7 +26,7 @@ export function ManaCost({ cost }: { cost: string | null }) {
             key={i}
             className="inline-flex items-center justify-center rounded-full font-mono text-[12px] md:text-[13px] w-[22px] h-[22px] md:w-[26px] md:h-[26px]"
             style={{
-              background: wubrg ? COLOR_TOKEN[sym] : "var(--elevated)",
+              background: wubrg ? WUBRG_HEX[sym] ?? "#4A4033" : "#4A4033",
               color: wubrg ? "var(--bg)" : "var(--fg)",
               fontWeight: wubrg ? 600 : 400,
             }}

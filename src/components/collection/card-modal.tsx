@@ -5,11 +5,78 @@
 // - Focus trap (READINESS #5): queries focusable children, wraps Tab/Shift+Tab
 // - Escape closes; focus returns to the previously-focused element on close
 
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
-import { cssUrl } from "../../lib/collection/browse";
+import { cssUrl, WUBRG_HEX } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { ManaCost } from "./mana-pips";
+
+// Renders oracle text with paragraph breaks, italic reminder text, and bolded keywords.
+function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
+  const paragraphs = text.split("\n");
+
+  // Build a regex that matches parenthesized runs and keyword occurrences.
+  // Keywords are matched at word boundaries, case-insensitively, outside parens.
+  const escaped = keywords.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+
+  function renderParagraph(para: string, idx: number) {
+    // Tokenize into: (paren runs), keyword runs, and plain text.
+    // Process character by character: collect paren spans, then keyword matches on the rest.
+    const parts: React.ReactNode[] = [];
+    let remaining = para;
+    let key = 0;
+
+    while (remaining.length > 0) {
+      // Check for parenthesized run next.
+      const parenStart = remaining.indexOf("(");
+      const kwPattern = escaped.length > 0
+        ? new RegExp(`\\b(${escaped.join("|")})\\b`, "i")
+        : null;
+      const kwMatch = kwPattern ? kwPattern.exec(remaining) : null;
+
+      // Determine which comes first: paren or keyword.
+      const parenIdx = parenStart === -1 ? Infinity : parenStart;
+      const kwIdx = kwMatch ? kwMatch.index : Infinity;
+
+      if (parenIdx === Infinity && kwIdx === Infinity) {
+        // Only plain text remains.
+        parts.push(remaining);
+        break;
+      }
+
+      if (parenIdx <= kwIdx) {
+        // Flush text before paren.
+        if (parenStart > 0) {
+          parts.push(remaining.slice(0, parenStart));
+        }
+        const parenEnd = remaining.indexOf(")", parenStart);
+        if (parenEnd === -1) {
+          // Unclosed paren — treat rest as plain text.
+          parts.push(remaining.slice(parenStart));
+          break;
+        }
+        const parenContent = remaining.slice(parenStart, parenEnd + 1);
+        parts.push(<em key={key++} className="italic">{parenContent}</em>);
+        remaining = remaining.slice(parenEnd + 1);
+      } else {
+        // Keyword comes first — flush text before it.
+        if (kwMatch!.index > 0) {
+          parts.push(remaining.slice(0, kwMatch!.index));
+        }
+        parts.push(
+          <strong key={key++} className="font-semibold" style={{ color: "var(--fg)", fontWeight: 600 }}>
+            {kwMatch![0]}
+          </strong>
+        );
+        remaining = remaining.slice(kwMatch!.index + kwMatch![0].length);
+      }
+    }
+
+    return <p key={idx} className={idx > 0 ? "mt-[0.5em]" : ""}>{parts}</p>;
+  }
+
+  return <>{paragraphs.map(renderParagraph)}</>;
+}
 
 const RARITY_LABEL: Record<BrowseCard["rarity"], string> = {
   common: "Common", uncommon: "Uncommon", rare: "Rare", mythic: "Mythic",
@@ -108,9 +175,8 @@ export function CardModal({
         onClick={(e) => e.stopPropagation()}
         // Mobile: full-screen sheet (§Mobile: Full-Screen Sheet Container: bg #181410)
         // Desktop: 820px centered, bg #1A160F (--surface-rail), border 1px #3A3229 (--border-strong), radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7)
-        className="flex flex-col overflow-hidden w-full h-full md:h-auto md:w-[820px] md:flex-row md:rounded-2xl"
+        className="flex flex-col overflow-hidden w-full h-full md:h-auto md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"
         style={{
-          background: "var(--surface-sunken)",
           boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
         }}
       >
@@ -184,8 +250,8 @@ export function CardModal({
             <div className="min-w-0">
               <h3
                 id="card-modal-title"
-                className="font-display font-bold text-[22px] md:text-[29px] m-0"
-                style={{ color: "var(--fg)", lineHeight: 1.1 }}
+                className="font-display font-bold text-[22px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
+                style={{ color: "var(--fg)" }}
               >
                 {card.name}
               </h3>
@@ -203,15 +269,14 @@ export function CardModal({
           {/* Oracle text block — §Oracle Text Block: bg #14110E (--bg), border 1px #2A241D (--border), radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, #C6B79A (--fg-body), line-height 1.6/1.65 */}
           {card.oracleText && (
             <div
-              className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px] text-[13.5px] md:text-[15px] whitespace-pre-line"
+              className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65]"
               style={{
                 background: "var(--bg)",
                 border: "1px solid var(--border)",
                 color: "var(--fg-body)",
-                lineHeight: 1.65,
               }}
             >
-              {card.oracleText}
+              <OracleText text={card.oracleText} keywords={card.keywords} />
             </div>
           )}
 
@@ -289,7 +354,7 @@ function MetaCell({
             style={{
               width: 12, height: 12,
               background: identity.length === 1
-                ? { W: "#E8E4D6", U: "#4A7FB5", B: "#5B5566", R: "#C05A48", G: "#6B9E63" }[identity[0]] ?? "#8E8269"
+                ? WUBRG_HEX[identity[0]] ?? "#8E8269"
                 : "#8E8269",
             }}
           />
@@ -328,7 +393,7 @@ function MetaField({
             style={{
               width: 13, height: 13,
               background: identity.length === 1
-                ? { W: "#E8E4D6", U: "#4A7FB5", B: "#5B5566", R: "#C05A48", G: "#6B9E63" }[identity[0]] ?? "#8E8269"
+                ? WUBRG_HEX[identity[0]] ?? "#8E8269"
                 : "#8E8269",
             }}
           />

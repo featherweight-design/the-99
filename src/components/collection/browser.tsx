@@ -13,7 +13,7 @@ import {
   type BrowseFilters,
   type SortKey,
 } from "../../lib/collection/browse";
-import { FilterBar, type ViewMode } from "./filter-bar";
+import { FilterBar, useIsDesktop, type ViewMode } from "./filter-bar";
 import { ChipRow } from "./chip-row";
 import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
@@ -28,14 +28,14 @@ function parseColors(param: string | null): string[] {
   return param.split("").filter((c) => "WUBRG".includes(c));
 }
 
-function serializeParams(filters: BrowseFilters, sort: SortKey, view: ViewMode, card: string | null): string {
+function serializeParams(filters: BrowseFilters, sort: SortKey, view: ViewMode | null, card: string | null): string {
   const p = new URLSearchParams();
   if (filters.search.trim()) p.set("q", filters.search.trim());
   if (filters.colors.length > 0) p.set("c", filters.colors.join(""));
   if (filters.type) p.set("t", filters.type);
   if (filters.setCode) p.set("s", filters.setCode);
   if (sort !== "name") p.set("sort", sort);
-  if (view !== "grid") p.set("view", view);  // grid is the default → omit
+  if (view !== null) p.set("view", view);  // null = auto (no explicit choice) → omit
   if (card) p.set("card", card);
   const s = p.toString();
   return s ? `?${s}` : "";
@@ -43,13 +43,12 @@ function serializeParams(filters: BrowseFilters, sort: SortKey, view: ViewMode, 
 
 export function CollectionBrowser({
   cards,
-  defaultView,
 }: {
   cards: BrowseCard[];
-  defaultView: ViewMode;
 }) {
   const router = useRouter();
   const search = useSearchParams();
+  const isDesktop = useIsDesktop();
 
   const [filters, setFilters] = useState<BrowseFilters>(() => ({
     search: search.get("q") ?? "",
@@ -62,10 +61,12 @@ export function CollectionBrowser({
     const s = search.get("sort");
     return s !== null && (SORT_KEYS as readonly string[]).includes(s) ? (s as SortKey) : "name";
   });
-  const [view, setView] = useState<ViewMode>(() => {
+  // null = "auto" (no explicit user choice); resolves to rows on mobile, grid on desktop.
+  const [view, setView] = useState<ViewMode | null>(() => {
     const v = search.get("view");
-    return v === "rows" || v === "grid" ? v : defaultView;
+    return v === "rows" || v === "grid" ? v : null;
   });
+  const effectiveView: ViewMode = view ?? (isDesktop ? "grid" : "rows");
   const [openCardId, setOpenCardId] = useState<string | null>(() => search.get("card"));
   const [shown, setShown] = useState(PAGE_SIZE);
 
@@ -123,7 +124,7 @@ export function CollectionBrowser({
       <FilterBar
         filters={filters}
         sort={sort}
-        view={view}
+        view={effectiveView}
         availableSetCodes={availableSetCodes}
         onFiltersChange={updateFilters}
         onSortChange={updateSort}
@@ -157,7 +158,7 @@ export function CollectionBrowser({
           }}
           onKeepSearch={() => updateFilters({ search: filters.search, colors: [], type: null, setCode: null })}
         />
-      ) : view === "rows" ? (
+      ) : effectiveView === "rows" ? (
         <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown(shown + PAGE_SIZE)} onOpen={onOpen} />
       ) : (
         <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown(shown + PAGE_SIZE)} onOpen={onOpen} />

@@ -6,13 +6,10 @@
 // Rarity dot colors per §Rarity Dot Colors.
 
 import type { BrowseCard } from "../../lib/collection/browse";
+import { WUBRG_HEX } from "../../lib/collection/browse";
 
 const RARITY_DOT: Record<BrowseCard["rarity"], string> = {
   common: "#A89B84", uncommon: "#B7C4CE", rare: "#C9A24B", mythic: "#E0913C",
-};
-
-const COLOR_HEX: Record<string, string> = {
-  W: "#E8E4D6", U: "#4A7FB5", B: "#5B5566", R: "#C05A48", G: "#6B9E63",
 };
 
 export function RowsView({
@@ -60,7 +57,7 @@ export function RowsView({
                 key={col}
                 aria-hidden
                 className="w-[11px] h-[11px] md:w-[13px] md:h-[13px] rounded-full"
-                style={{ background: COLOR_HEX[col] ?? "#8E8269", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }}
+                style={{ background: WUBRG_HEX[col] ?? "#8E8269", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }}
               />
             ))}
           </span>
