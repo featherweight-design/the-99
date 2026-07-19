@@ -55,6 +55,7 @@ _Currently empty._
 | Ticket | Stage | Notes |
 |---|---|---|
 | **#7** Design: Commander recommendations — ranked, explainable list | Handoff prompt with Design | Workshop 2026-07-18: explanation depth is full breakdown + named cards ("receipts" — payload additions planned); color-identity filter only (ranking stays opinionated); commander detail view in scope; first-run state = shell guided-flow step 2 live; global + per-commander degraded states required. |
+| **#8** Design: Decks — list, create-from-commander, and deck builder | Handoff prompt with Design | Workshop 2026-07-18: advisory completeness (role counters + ~37-land guide, never blocking); exportable gaps/shopping list; standalone commander picker alongside create-from-#7-detail; first-run state = shell guided-flow step 3 live; suggestions panel + owned-first search per spec. |
 
 ---
 
@@ -70,9 +71,8 @@ Ranked by build order. Backend for each v1 surface proceeds ahead of design per 
 
 | Rank | Ticket | Adjacency / notes |
 |---|---|---|
-| 1 | **#8** Design: Decks — list, create-from-commander, and deck builder | Largest surface (suggestions panel, search, role counters, gaps/shopping list, export); entry point lives on #7's detail view; first-run state = shell guided-flow step 3 |
-| 2 | **#9** Design: Win/loss tracking for decks | Post-v1; extends the deck page from #8 |
-| 3 | **#10** Design: Deck tuning suggestions from play results | Post-v1; blocked on #9's data model |
+| 1 | **#9** Design: Win/loss tracking for decks | Post-v1; extends the deck page from #8 |
+| 2 | **#10** Design: Deck tuning suggestions from play results | Post-v1; blocked on #9's data model |
 
 ---
 
