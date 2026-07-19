@@ -1,0 +1,453 @@
+"use client";
+
+// §Create — Picker (/decks/new)
+// Search over owned+legal commanders, sticky Selected summary, name field.
+
+import { useState, useTransition } from "react";
+import { commanderGradient } from "../../lib/collection/gradients";
+import { WUBRG_HEX } from "../../lib/collection/browse";
+import { createDeck } from "../../app/decks/actions";
+import type { OwnedLegalCommander } from "../../lib/decks/read";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function colorLabel(identity: string[]): string {
+  if (identity.length === 0) return "Colorless";
+  if (identity.length === 1) {
+    const MAP: Record<string, string> = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" };
+    return MAP[identity[0]] ?? identity[0];
+  }
+  if (identity.length === 5) return "5-color";
+  if (identity.length >= 3) return "Multi";
+  const key = identity.slice().sort().join("");
+  const GUILDS: Record<string, string> = {
+    UW: "Azorius", BU: "Dimir", BR: "Rakdos", GR: "Gruul", GW: "Selesnya",
+    BW: "Orzhov", RU: "Izzet", BG: "Golgari", RW: "Boros", GU: "Simic",
+  };
+  return GUILDS[key] ?? "Multi";
+}
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+interface CreatePickerProps {
+  legalCommanders: OwnedLegalCommander[];
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function CreatePicker({ legalCommanders }: CreatePickerProps) {
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<OwnedLegalCommander | null>(null);
+  const [deckName, setDeckName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  // Client-side substring filter over loaded list
+  const filtered =
+    query.trim().length === 0
+      ? legalCommanders
+      : legalCommanders.filter((c) =>
+          c.name.toLowerCase().includes(query.trim().toLowerCase()),
+        );
+
+  const canCreate =
+    selected !== null && deckName.trim().length > 0 && deckName.trim().length <= 120;
+
+  function handleCreate() {
+    if (!selected) return;
+    const trimmed = deckName.trim();
+    if (trimmed.length === 0 || trimmed.length > 120) {
+      setError("Name must be 1–120 characters.");
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      try {
+        await createDeck(selected.oracleId, trimmed);
+      } catch {
+        setError("Failed to create deck. Try again.");
+      }
+    });
+  }
+
+  return (
+    <section>
+      {/* ── Page header ── */}
+      <div
+        className="p-[20px_18px_14px] md:p-[34px_40px_28px]"
+        style={{ borderBottom: "1px solid #2A241D" }}
+      >
+        {/* §Page header — "Pick a general" / "New deck" */}
+        <h1
+          className="font-display font-bold text-[20px] md:text-[28px] m-0"
+          style={{ color: "#EDE6D8" }}
+        >
+          <span className="md:hidden">Pick a general</span>
+          <span className="hidden md:inline">New deck</span>
+        </h1>
+        <p
+          className="font-mono text-[10px] md:text-[14px] mt-[2px] md:mt-[4px]"
+          style={{ color: "#8E8269" }}
+        >
+          <span className="md:hidden">Choose a commander you own.</span>
+          <span className="hidden md:inline" style={{ color: "#A89B84" }}>
+            Choose a commander from your collection.
+          </span>
+        </p>
+      </div>
+
+      {/* ── Body: mobile = single-col + sticky footer, desktop = two-col ── */}
+      <div className="md:flex md:items-start md:gap-0">
+
+        {/* ── Left: search + picker list ── */}
+        <div className="flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]">
+          {/* §Search input */}
+          <div
+            className="flex items-center rounded-[8px] md:rounded-[9px] mb-[16px] focus-within:ring-2 focus-within:ring-[#C9A24B]"
+            style={{
+              background: "#181410",
+              border: "1px solid #3A3229",
+              padding: "9px 12px",
+              gap: 8,
+            }}
+          >
+            {/* §Search input — icon: magnifying glass */}
+            <span
+              style={{ color: "#8E8269", fontSize: 14, userSelect: "none", flexShrink: 0 }}
+              aria-hidden
+            >
+              ⌕
+            </span>
+            {/* §Search input — text */}
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search commanders…"
+              className="flex-1 bg-transparent focus:outline-none text-[14px] md:text-[15px]"
+              style={{ color: "#EDE6D8" }}
+              aria-label="Search commanders"
+            />
+            {/* §Search input — results count (desktop only) */}
+            <span
+              className="hidden md:block font-mono ml-auto shrink-0"
+              style={{ fontSize: 11, color: "#8E8269" }}
+            >
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {/* §Commander picker rows */}
+          {legalCommanders.length === 0 ? (
+            <p
+              className="font-mono text-[12px] text-center py-[40px]"
+              style={{ color: "#8E8269" }}
+            >
+              No owned commanders found. Add cards to your collection first.
+            </p>
+          ) : filtered.length === 0 ? (
+            <p
+              className="font-mono text-[12px] text-center py-[40px]"
+              style={{ color: "#8E8269" }}
+            >
+              No commanders match &ldquo;{query}&rdquo;.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-[10px] md:gap-[11px]">
+              {filtered.map((c) => {
+                const isSelected = selected?.oracleId === c.oracleId;
+                const gradient = commanderGradient(c.colorIdentity);
+                return (
+                  <li key={c.oracleId}>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(isSelected ? null : c)}
+                      className="w-full flex items-center rounded-[10px] md:rounded-[11px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] transition-colors"
+                      style={{
+                        gap: 11,
+                        background: isSelected ? "#211C15" : "#1A160F",
+                        border: `1px solid ${isSelected ? "#C9A24B" : "#2A241D"}`,
+                        padding: "10px 12px",
+                      }}
+                      aria-pressed={isSelected}
+                    >
+                      {/* §Commander picker row — art thumb: 34×48px mobile / 40×56px desktop */}
+                      <div
+                        className="shrink-0 rounded-[6px] w-[34px] h-[48px] md:w-[40px] md:h-[56px]"
+                        style={{
+                          background: c.imageUri
+                            ? `url(${c.imageUri}) center/cover`
+                            : gradient,
+                          boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
+                        }}
+                      />
+
+                      {/* Name + pips + pool caption */}
+                      <div className="flex-1 min-w-0">
+                        {/* §Commander picker row — name: Cinzel 600 14/16px #EDE6D8, ellipsis */}
+                        <p
+                          className="font-display font-semibold truncate"
+                          style={{
+                            fontSize: 14,
+                            color: "#EDE6D8",
+                            lineHeight: 1.3,
+                            margin: 0,
+                          }}
+                        >
+                          {c.name}
+                        </p>
+
+                        {/* §Commander picker row — pip + pool caption */}
+                        <div
+                          className="flex items-center font-mono"
+                          style={{ gap: 5, marginTop: 4, fontSize: 10, color: "#A89B84" }}
+                        >
+                          {c.colorIdentity.map((color) => (
+                            <span
+                              key={color}
+                              className="rounded-full shrink-0"
+                              style={{
+                                width: 9,
+                                height: 9,
+                                background: WUBRG_HEX[color] ?? "#8E8269",
+                              }}
+                              aria-label={color}
+                            />
+                          ))}
+                          <span>{colorLabel(c.colorIdentity)} · {c.poolCount} cards</span>
+                        </div>
+                      </div>
+
+                      {/* §Commander picker row — radio control */}
+                      <div
+                        className="shrink-0 rounded-full"
+                        style={{
+                          width: 20,
+                          height: 20,
+                          border: `2px solid ${isSelected ? "#C9A24B" : "#4A4033"}`,
+                          background: isSelected ? "#C9A24B" : "transparent",
+                          flexShrink: 0,
+                        }}
+                        aria-hidden
+                      />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* ── Right: Selected summary (desktop sidebar / mobile sticky footer) ── */}
+
+        {/* Desktop sidebar */}
+        <div
+          className="hidden md:block shrink-0 sticky top-0 rounded-[12px] m-[24px_40px_24px_0]"
+          style={{
+            width: 300,
+            background: "#1A160F",
+            border: "1px solid #2A241D",
+            padding: 20,
+          }}
+        >
+          {/* §Selected summary — "Selected" label */}
+          <p
+            className="font-mono uppercase tracking-[0.14em]"
+            style={{ fontSize: 10, color: "#8E8269", marginBottom: 14 }}
+          >
+            Selected
+          </p>
+
+          {selected ? (
+            <>
+              <div className="flex items-start gap-[12px] mb-[16px]">
+                {/* §Selected summary — card art: 44×62px, br 7px */}
+                <div
+                  className="shrink-0 rounded-[7px]"
+                  style={{
+                    width: 44,
+                    height: 62,
+                    background: selected.imageUri
+                      ? `url(${selected.imageUri}) center/cover`
+                      : commanderGradient(selected.colorIdentity),
+                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
+                  }}
+                />
+                <div className="min-w-0">
+                  {/* §Selected summary — commander name: Cinzel 600 15px #EDE6D8 */}
+                  <p
+                    className="font-display font-semibold leading-[1.2]"
+                    style={{ fontSize: 15, color: "#EDE6D8", margin: 0 }}
+                  >
+                    {selected.name}
+                  </p>
+                  {/* §Selected summary — guild · pool caption: IBM Plex Mono 11px #A89B84 mt-[3px] */}
+                  <p
+                    className="font-mono"
+                    style={{ fontSize: 11, color: "#A89B84", marginTop: 3, marginBottom: 0 }}
+                  >
+                    {colorLabel(selected.colorIdentity)} · {selected.poolCount} cards
+                  </p>
+                </div>
+              </div>
+
+              {/* §Selected summary — deck name input */}
+              <input
+                type="text"
+                value={deckName}
+                onChange={(e) => setDeckName(e.target.value)}
+                maxLength={120}
+                placeholder="Deck name…"
+                disabled={isPending}
+                className="w-full rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+                style={{
+                  background: "#181410",
+                  border: "1px solid #3A3229",
+                  padding: "11px 13px",
+                  fontSize: 14,
+                  color: deckName ? "#EDE6D8" : "#8E8269",
+                  marginBottom: 16,
+                  display: "block",
+                }}
+              />
+            </>
+          ) : (
+            <p
+              className="font-mono text-[12px] mb-[16px]"
+              style={{ color: "#8E8269" }}
+            >
+              No commander selected.
+            </p>
+          )}
+
+          {error && (
+            <p
+              className="font-mono text-[11px] mb-[12px]"
+              style={{ color: "#C6533F" }}
+            >
+              {error}
+            </p>
+          )}
+
+          {/* §"Create deck →" button: full-width in sidebar */}
+          <button
+            type="button"
+            onClick={handleCreate}
+            disabled={!canCreate || isPending}
+            className="w-full rounded-[8px] font-sans font-semibold transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] disabled:opacity-40"
+            style={{
+              fontSize: 15,
+              color: "#14110E",
+              background: "#C9A24B",
+              border: "none",
+              padding: "13px 0",
+            }}
+          >
+            {isPending ? "Creating…" : "Create deck →"}
+          </button>
+        </div>
+
+        {/* Mobile sticky footer */}
+        <div
+          className="md:hidden fixed bottom-0 left-0 right-0 z-20"
+          style={{
+            padding: "14px 16px 20px",
+            borderTop: "1px solid #2A241D",
+            background: "#1A160F",
+          }}
+        >
+          {selected ? (
+            <>
+              {/* Selected mini-summary */}
+              <div className="flex items-center gap-[10px] mb-[12px]">
+                <div
+                  className="shrink-0 rounded-[6px]"
+                  style={{
+                    width: 30,
+                    height: 42,
+                    background: selected.imageUri
+                      ? `url(${selected.imageUri}) center/cover`
+                      : commanderGradient(selected.colorIdentity),
+                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
+                  }}
+                />
+                <div className="min-w-0">
+                  <p
+                    className="font-display font-semibold truncate"
+                    style={{ fontSize: 13, color: "#EDE6D8", margin: 0, lineHeight: 1.2 }}
+                  >
+                    {selected.name}
+                  </p>
+                  <p
+                    className="font-mono"
+                    style={{ fontSize: 10, color: "#A89B84", margin: 0 }}
+                  >
+                    {colorLabel(selected.colorIdentity)} · {selected.poolCount} cards
+                  </p>
+                </div>
+              </div>
+
+              {/* Name input */}
+              <input
+                type="text"
+                value={deckName}
+                onChange={(e) => setDeckName(e.target.value)}
+                maxLength={120}
+                placeholder="Deck name…"
+                disabled={isPending}
+                className="w-full rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] mb-[10px]"
+                style={{
+                  background: "#181410",
+                  border: "1px solid #3A3229",
+                  padding: "11px 13px",
+                  fontSize: 14,
+                  color: deckName ? "#EDE6D8" : "#8E8269",
+                  display: "block",
+                }}
+              />
+            </>
+          ) : (
+            <p
+              className="font-mono text-[11px] text-center mb-[12px]"
+              style={{ color: "#8E8269" }}
+            >
+              Select a commander above
+            </p>
+          )}
+
+          {error && (
+            <p
+              className="font-mono text-[11px] mb-[10px]"
+              style={{ color: "#C6533F" }}
+            >
+              {error}
+            </p>
+          )}
+
+          {/* §"Name & create →" button: full-width */}
+          <button
+            type="button"
+            onClick={handleCreate}
+            disabled={!canCreate || isPending}
+            className="w-full rounded-[8px] font-sans font-semibold transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] disabled:opacity-40"
+            style={{
+              fontSize: 15,
+              color: "#14110E",
+              background: "#C9A24B",
+              border: "none",
+              padding: "13px 0",
+            }}
+          >
+            {isPending ? "Creating…" : selected ? "Name & create →" : "Create deck →"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}

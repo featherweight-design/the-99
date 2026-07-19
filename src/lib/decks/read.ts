@@ -2,6 +2,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks } from "../../db/schema";
 import { classifyRoles } from "../recs/roles";
+import { isCommanderCandidate } from "../recs/score";
 
 // ---------------------------------------------------------------------------
 // Pure helpers (tested)
@@ -207,4 +208,76 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
       progressColor,
     };
   });
+}
+
+// ---------------------------------------------------------------------------
+// listOwnedLegalCommanders
+// ---------------------------------------------------------------------------
+
+export type OwnedLegalCommander = {
+  oracleId: string;
+  name: string;
+  colorIdentity: string[];
+  imageUri: string | null;
+  /** Number of cards in the user's collection that fit within this commander's color identity. */
+  poolCount: number;
+};
+
+/**
+ * Returns every commander-legal card the user owns, ordered by name ASC.
+ * For each candidate, poolCount = how many distinct oracle IDs the user owns
+ * that are commander_legal and fit within that candidate's color identity.
+ * (Mirrors the ownedColorLegalPool shape from actions.ts, flipped per-candidate.)
+ */
+export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLegalCommander[]> {
+  // Step 1: fetch all commander-legal cards the user owns (distinct by oracleId).
+  const ownedRows = await db
+    .selectDistinctOn([cards.oracleId], {
+      oracleId: cards.oracleId,
+      name: cards.name,
+      colorIdentity: cards.colorIdentity,
+      imageUri: cards.imageUri,
+      typeLine: cards.typeLine,
+      oracleText: cards.oracleText,
+    })
+    .from(collectionItems)
+    .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
+    .where(and(eq(collectionItems.userId, userId), eq(cards.commanderLegal, true)))
+    .orderBy(cards.oracleId);
+
+  // Step 2: filter to actual commander candidates (legendary creature or "can be your commander").
+  const candidates = ownedRows.filter((r) =>
+    isCommanderCandidate({ typeLine: r.typeLine, oracleText: r.oracleText }),
+  );
+
+  if (candidates.length === 0) return [];
+
+  // Step 3: fetch user's full owned-legal pool (distinct oracle IDs + their color identities)
+  // so we can count in-identity cards per candidate.
+  const allOwnedRows = await db
+    .selectDistinctOn([cards.oracleId], {
+      oracleId: cards.oracleId,
+      colorIdentity: cards.colorIdentity,
+    })
+    .from(collectionItems)
+    .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
+    .where(and(eq(collectionItems.userId, userId), eq(cards.commanderLegal, true)))
+    .orderBy(cards.oracleId);
+
+  // Step 4: for each candidate, count owned cards fitting within their identity.
+  return candidates
+    .map((c) => {
+      const identitySet = new Set(c.colorIdentity);
+      const poolCount = allOwnedRows.filter(
+        (r) => r.oracleId !== c.oracleId && r.colorIdentity.every((x) => identitySet.has(x)),
+      ).length;
+      return {
+        oracleId: c.oracleId,
+        name: c.name,
+        colorIdentity: c.colorIdentity,
+        imageUri: c.imageUri,
+        poolCount,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
