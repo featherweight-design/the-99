@@ -2,9 +2,8 @@
 // Tested in export-helpers.test.ts.
 
 /**
- * Assemble the full decklist text displayed / copied / downloaded.
- * The brief specifies: first line `# ${deckName}`, then commander line,
- * then body from toDecklistText (which does NOT include the `#` header line).
+ * Assemble the full decklist text displayed / copied / downloaded:
+ * first line `# ${deckName}`, then commander line, then one line per card.
  */
 export function buildDecklistText(args: {
   deckName: string;

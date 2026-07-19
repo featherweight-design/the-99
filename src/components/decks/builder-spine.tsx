@@ -45,36 +45,25 @@ export function BuilderSpine({ deck, onExport }: BuilderSpineProps) {
       className="flex flex-col items-center md:flex-row md:items-center md:gap-[18px] px-[16px] pt-[40px] pb-[12px] md:px-[30px] md:py-[20px]"
       style={{ borderBottom: "1px solid #2A241D" }}
     >
-      {/* §Spine — commander art thumb */}
+      {/* §Spine — commander art thumb (mobile) */}
       <div
-        className="flex-none rounded-[5px] md:rounded-[6px] overflow-hidden"
+        className="flex-none rounded-[5px] overflow-hidden md:hidden"
         style={{
           width: built === 0 ? 34 : 30,
           height: built === 0 ? 48 : 42,
-          // desktop
           boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
           background: commander.imageUri ? undefined : thumbGradient,
         }}
       >
-        {/* desktop overrides applied via inline style on a wrapper below */}
-        <div
-          className="hidden md:block w-full h-full"
-          style={{
-            width: 44,
-            height: 62,
-            backgroundImage: commander.imageUri ? undefined : thumbGradient,
-            background: commander.imageUri ? undefined : thumbGradient,
-          }}
-        />
         {commander.imageUri ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={commander.imageUri}
             alt={commander.name}
-            className="w-full h-full object-cover object-top md:hidden"
+            className="w-full h-full object-cover object-top"
           />
         ) : (
-          <div className="w-full h-full md:hidden" style={{ background: thumbGradient }} />
+          <div className="w-full h-full" style={{ background: thumbGradient }} />
         )}
       </div>
 

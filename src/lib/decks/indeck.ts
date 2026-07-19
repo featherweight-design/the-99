@@ -10,7 +10,7 @@ export function isInDeck(set: Set<string>, oracleId: string): boolean {
   return set.has(oracleId);
 }
 
-/** Build a label like "WUB-legal only" from a color identity array. */
+/** Build a label like "WUB-legal" from a color identity array. */
 export function identityLabel(colors: string[]): string {
   if (colors.length === 0) return "Colorless";
   return colors.join("") + "-legal";

@@ -23,7 +23,8 @@ export function SearchResultRow({ result, deckId, inDeck }: SearchResultRowProps
 
   function handleAdd() {
     startTransition(async () => {
-      await addCardToDeck(deckId, result.oracleId);
+      // Server rejects e.g. 99-card cap / legality — no error UI designed yet.
+      await addCardToDeck(deckId, result.oracleId).catch(console.error);
     });
   }
 

@@ -18,7 +18,8 @@ export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardPro
 
   function handleAdd() {
     startTransition(async () => {
-      await addCardToDeck(deckId, suggestion.oracleId);
+      // Server rejects e.g. 99-card cap / legality — no error UI designed yet.
+      await addCardToDeck(deckId, suggestion.oracleId).catch(console.error);
     });
   }
 
