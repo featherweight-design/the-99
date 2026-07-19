@@ -1,5 +1,5 @@
 "use client";
-// ExportDialog — modal (desktop) / bottom sheet (mobile), two tabs: Decklist + Shopping list.
+// ExportDialog — §Export Dialog / Sheet: modal (desktop) / bottom sheet (mobile), two tabs: Decklist + Shopping list.
 // Task 10. Reuses useDialogA11y for focus trap, Escape, focus-return.
 
 import { useRef, useState, useEffect } from "react";

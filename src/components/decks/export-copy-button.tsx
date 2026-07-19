@@ -1,5 +1,5 @@
 "use client";
-// ExportCopyButton — clipboard write with aria-live announcement + 1.5s label swap.
+// ExportCopyButton — §Export dialog — "Copy to clipboard" primary button: clipboard write with aria-live announcement + 1.5s label swap.
 // Falls back to document.execCommand("copy") when navigator.clipboard is unavailable.
 
 import { useState, useRef, useEffect } from "react";
