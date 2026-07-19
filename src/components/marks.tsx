@@ -6,7 +6,8 @@
 // Each component accepts a `variant` prop whose values map to exact pixel
 // geometry from the design table. A single `size`-based uniform viewBox
 // scale would produce fractional px values and fail the design-review gate.
-// Colors reference brand tokens via CSS custom properties — never raw hexes.
+// Colors reference brand tokens via CSS custom properties where possible;
+// some design-table values (e.g. card-fan fill layers) are raw hex by spec.
 
 // ---------------------------------------------------------------------------
 // Crowned99

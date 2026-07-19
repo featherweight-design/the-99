@@ -15,7 +15,7 @@ export const getCollectionStats = cache(async function getCollectionStats(
   const [row] = await db
     .select({
       totalCards: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int`,
-      uniqueCards: sql<number>`count(*)::int`,
+      uniqueCards: sql<number>`count(distinct ${collectionItems.oracleId})::int`,
     })
     .from(collectionItems)
     .where(eq(collectionItems.userId, userId));

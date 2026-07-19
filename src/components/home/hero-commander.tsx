@@ -162,6 +162,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
               className="h-[6px] flex-1 overflow-hidden rounded-[3px]"
               style={{ background: "var(--elevated)" }}
               role="progressbar"
+              aria-label="Deck completeness"
               aria-valuenow={pct}
               aria-valuemin={0}
               aria-valuemax={100}

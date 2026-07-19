@@ -26,7 +26,6 @@
   --fg-muted: #A89B84;      /* muted labels */
   --fg-faint: #8E8269;      /* mono meta / faint captions */
   --fg-locked: #6A6152;     /* locked / disabled */
-  --fg-mono-cursor: #6E6353;/* mono cursor tone */
 
   /* Brass accent */
   --brass: #C9A24B;
@@ -72,7 +71,6 @@
   --color-brass-hover: var(--brass-hover);
   --color-brass-strong: var(--brass-strong);
   --color-brass-shadow: var(--brass-shadow);
-  --color-fg-mono-cursor: var(--fg-mono-cursor);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);

@@ -118,12 +118,8 @@ export function UploadEntry() {
             type="button"
             onClick={handleConfirm}
             disabled={pending}
-            className="rounded-lg px-5 py-3 font-semibold hover:bg-[color:var(--brass-hover)]"
-            style={{
-              background: "var(--brass)",
-              color: "var(--bg)",
-              fontSize: 14,
-            }}
+            className="rounded-lg px-5 py-3 font-semibold bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)]"
+            style={{ fontSize: 14 }}
           >
             {pending ? "Importing…" : "Confirm import"}
           </button>
@@ -227,9 +223,9 @@ export function UploadEntry() {
                 "mt-[14px] rounded-lg font-semibold",
                 "px-[18px] py-[10px] text-[13px]",
                 "md:px-[22px] md:py-[11px] md:text-[14px] md:whitespace-nowrap",
+                "bg-[color:var(--brass)] text-[color:var(--bg)]",
                 "hover:bg-[color:var(--brass-hover)]",
               ].join(" ")}
-              style={{ background: "var(--brass)", color: "var(--bg)" }}
               onClick={(e) => e.stopPropagation()}
             >
               Browse files

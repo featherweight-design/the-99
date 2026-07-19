@@ -47,9 +47,9 @@ export default async function DecksPage() {
           className={[
             "mt-[24px] rounded-lg font-semibold text-[14px]",
             "px-[26px] py-[13px] md:py-[12px]",
+            "bg-[color:var(--brass)] text-[color:var(--bg)]",
             "hover:bg-[color:var(--brass-hover)]",
           ].join(" ")}
-          style={{ background: "var(--brass)", color: "var(--bg)" }}
         >
           Browse commanders
         </Link>
@@ -71,11 +71,7 @@ export default async function DecksPage() {
           <li key={d.id}>
             <Link
               href={`/decks/${d.id}`}
-              className="flex items-center gap-4 rounded-lg p-4 hover:bg-[color:var(--elevated)]"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border-strong)",
-              }}
+              className="flex items-center gap-4 rounded-lg p-4 bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] hover:bg-[color:var(--elevated)]"
             >
               <div className="min-w-0 flex-1">
                 <div

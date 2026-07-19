@@ -251,13 +251,11 @@ export function Dashboard({
               §"Update collection" button: border line, 8px br, 9px 16px pad, sans 600 13px primary */}
           <Link
             href="/collection"
-            className="mt-4 inline-block rounded-[8px] px-4 py-[9px] transition-colors hover:border-brass hover:text-brass-hover md:hidden"
+            className="mt-4 inline-block rounded-[8px] px-4 py-[9px] transition-colors [border:1px_solid_var(--border-strong)] [color:var(--fg)] hover:border-brass hover:text-brass-hover md:hidden"
             style={{
               fontFamily: "var(--font-sans)",
               fontWeight: 600,
               fontSize: 13,
-              color: "var(--fg)",
-              border: "1px solid var(--border-strong)",
             }}
           >
             Update collection

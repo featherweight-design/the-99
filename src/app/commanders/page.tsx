@@ -38,8 +38,7 @@ export default async function CommandersPage() {
 
         <Link
           href="/collection"
-          className="mt-6 rounded-lg px-[24px] py-[12px] font-semibold text-[14px] hover:bg-[color:var(--brass-hover)]"
-          style={{ background: "var(--brass)", color: "var(--bg)" }}
+          className="mt-6 rounded-lg px-[24px] py-[12px] font-semibold text-[14px] bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)]"
         >
           Upload collection
         </Link>
@@ -117,8 +116,7 @@ export default async function CommandersPage() {
         {/* Desktop: primary "Add more cards" */}
         <Link
           href="/collection"
-          className="hidden rounded-lg px-[24px] py-[12px] font-semibold text-[14px] hover:bg-[color:var(--brass-hover)] md:inline-block"
-          style={{ background: "var(--brass)", color: "var(--bg)" }}
+          className="hidden rounded-lg px-[24px] py-[12px] font-semibold text-[14px] bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)] md:inline-block"
         >
           Add more cards
         </Link>
