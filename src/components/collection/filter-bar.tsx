@@ -4,7 +4,7 @@
 // Position dropdowns are native <select> for a11y + parity; visual chrome
 // matches the §Filter Button spec (radius 999px mobile / 8px desktop).
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { AVAILABLE_TYPES, type BrowseFilters, type SortKey } from "../../lib/collection/browse";
 import { ColorPip } from "./color-pip";
 
@@ -14,17 +14,21 @@ export type ViewMode = "rows" | "grid";
 
 // Placeholder copy differs by breakpoint (§Copy (placeholders)) and the
 // placeholder attribute can't vary via CSS, so track the md breakpoint.
-// SSR/first paint uses the mobile copy; the effect corrects it post-hydration.
+// SSR snapshot is false (mobile copy); hydration corrects it.
+const DESKTOP_QUERY = "(min-width: 768px)";
+
+function subscribeDesktop(onStoreChange: () => void): () => void {
+  const mq = window.matchMedia(DESKTOP_QUERY);
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
 function useIsDesktop(): boolean {
-  const [desktop, setDesktop] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    setDesktop(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setDesktop(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return desktop;
+  return useSyncExternalStore(
+    subscribeDesktop,
+    () => window.matchMedia(DESKTOP_QUERY).matches,
+    () => false,
+  );
 }
 
 export function FilterBar({
@@ -203,11 +207,12 @@ export function FilterBar({
                 aria-pressed={active}
                 onClick={() => onViewChange(v)}
                 // §View Toggle Segment: 28×24 mobile / 30×28 desktop, radius 6px, font 12/13px
-                className="flex items-center justify-center rounded-md text-[12px] md:text-[13px] w-[28px] h-[24px] md:w-[30px] md:h-[28px]"
-                style={{
-                  background: active ? "var(--brass)" : "transparent",
-                  color: active ? "var(--bg)" : "var(--fg-faint)",
-                }}
+                className={[
+                  "flex items-center justify-center rounded-md text-[12px] md:text-[13px] w-[28px] h-[24px] md:w-[30px] md:h-[28px]",
+                  active
+                    ? "bg-[var(--brass)] text-[var(--bg)]"
+                    : "bg-transparent text-[var(--fg-faint)]",
+                ].join(" ")}
               >
                 {v === "rows" ? "≣" : "▦"}
               </button>

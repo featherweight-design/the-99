@@ -75,8 +75,16 @@ export function CollectionBrowser({
     router.replace(`/collection${qs}`, { scroll: false });
   }, [filters, sort, view, openCardId, router]);
 
-  // Any filter/sort change resets the window.
-  useEffect(() => { setShown(PAGE_SIZE); }, [filters, sort]);
+  // Any filter/sort change resets the window — folded into the update
+  // callbacks (not an effect) to avoid a cascading render.
+  const updateFilters = useCallback((f: BrowseFilters) => {
+    setFilters(f);
+    setShown(PAGE_SIZE);
+  }, []);
+  const updateSort = useCallback((s: SortKey) => {
+    setSort(s);
+    setShown(PAGE_SIZE);
+  }, []);
 
   const availableSetCodes = useMemo(() => {
     const s = new Set<string>();
@@ -115,8 +123,8 @@ export function CollectionBrowser({
         sort={sort}
         view={view}
         availableSetCodes={availableSetCodes}
-        onFiltersChange={setFilters}
-        onSortChange={setSort}
+        onFiltersChange={updateFilters}
+        onSortChange={updateSort}
         onViewChange={setView}
       />
       <div className="px-[16px] md:px-[34px]">
@@ -127,13 +135,13 @@ export function CollectionBrowser({
           uniqueCount={cards.length}
           totalQuantity={totalQuantity}
           onClearAll={() => {
-            setFilters({ search: "", colors: [], type: null, setCode: null });
-            setSort("name");
+            updateFilters({ search: "", colors: [], type: null, setCode: null });
+            updateSort("name");
           }}
-          onRemoveColor={(c) => setFilters({ ...filters, colors: filters.colors.filter((x) => x !== c) })}
-          onClearType={() => setFilters({ ...filters, type: null })}
-          onClearSet={() => setFilters({ ...filters, setCode: null })}
-          onClearSearch={() => setFilters({ ...filters, search: "" })}
+          onRemoveColor={(c) => updateFilters({ ...filters, colors: filters.colors.filter((x) => x !== c) })}
+          onClearType={() => updateFilters({ ...filters, type: null })}
+          onClearSet={() => updateFilters({ ...filters, setCode: null })}
+          onClearSearch={() => updateFilters({ ...filters, search: "" })}
         />
       </div>
 
@@ -142,10 +150,10 @@ export function CollectionBrowser({
           query={filters.search}
           totalCount={totalQuantity}
           onClearAll={() => {
-            setFilters({ search: "", colors: [], type: null, setCode: null });
-            setSort("name");
+            updateFilters({ search: "", colors: [], type: null, setCode: null });
+            updateSort("name");
           }}
-          onKeepSearch={() => setFilters({ search: filters.search, colors: [], type: null, setCode: null })}
+          onKeepSearch={() => updateFilters({ search: filters.search, colors: [], type: null, setCode: null })}
         />
       ) : view === "rows" ? (
         <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown(shown + PAGE_SIZE)} onOpen={onOpen} />

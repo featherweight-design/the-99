@@ -26,16 +26,11 @@ export function ColorPip({
       className={[
         "rounded-full transition-opacity",
         // selected uses brand focus-visible outline treatment inherited from globals.css
-        selected ? "opacity-100" : "opacity-40",
+        selected
+          ? "opacity-100 shadow-[0_0_0_2px_var(--brass)]"
+          : "opacity-40 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]",
       ].join(" ")}
-      style={{
-        width: size,
-        height: size,
-        background: COLOR_HEX[color],
-        boxShadow: selected
-          ? "0 0 0 2px var(--brass)"                  // selected ring
-          : "inset 0 0 0 1px rgba(0,0,0,0.3)",        // inactive shadow
-      }}
+      style={{ width: size, height: size, background: COLOR_HEX[color] }}
     />
   );
 }

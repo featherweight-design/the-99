@@ -108,14 +108,12 @@ export function ChipRow({
           short "N results" variant; desktop shows the full variants per
           §Copy (result count variants). */}
       <span
-        className="md:hidden font-mono text-[11px]"
-        style={{ color: resultCount === 0 ? "var(--warning)" : "var(--fg-faint)" }}
+        className={`md:hidden font-mono text-[11px] ${resultCount === 0 ? "text-[var(--warning)]" : "text-[var(--fg-faint)]"}`}
       >
         {mobileCopy}
       </span>
       <span
-        className="hidden md:inline md:ml-auto font-mono text-[11px]"
-        style={{ color: resultCount === 0 ? "var(--warning)" : "var(--fg-faint)" }}
+        className={`hidden md:inline md:ml-auto font-mono text-[11px] ${resultCount === 0 ? "text-[var(--warning)]" : "text-[var(--fg-faint)]"}`}
       >
         {desktopCopy}
       </span>
