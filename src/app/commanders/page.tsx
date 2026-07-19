@@ -124,12 +124,12 @@ export default async function CommandersPage() {
             }}
           >
             <span className="sm:hidden">
-              We scanned all {stats.uniqueCards.toLocaleString()} cards and none
+              We scanned all {uniqueCardsRead.toLocaleString()} cards and none
               can helm a legal 99 on their own. Add a legendary creature and
               they&apos;ll show up here.
             </span>
             <span className="hidden sm:inline">
-              We scanned all {stats.uniqueCards.toLocaleString()} cards and none
+              We scanned all {uniqueCardsRead.toLocaleString()} cards and none
               can helm a legal 99 on their own. Add a legendary creature — or a
               planeswalker that can command — and they&apos;ll appear here, ranked.
             </span>

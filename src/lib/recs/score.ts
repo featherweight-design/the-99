@@ -78,21 +78,21 @@ export function scoreCommander(args: {
   const roleGaps = (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
     .filter((r) => roleCounts[r] < ROLE_TARGETS[r]);
 
-  // Index full name AND front face: EDHREC lists DFCs/MDFCs by front face
-  // while Scryfall names them "Front // Back".
-  const poolNames = new Set<string>();
-  for (const c of pool) {
-    const lower = c.name.toLowerCase();
-    poolNames.add(lower);
-    poolNames.add(lower.split(" // ")[0]);
-  }
-
   let edhrecOwnedCount: number | null = null;
   let edhrecTotal: number | null = null;
   const overlapOwned: string[] = [];
   const overlapMissing: string[] = [];
 
   if (args.edhrecTopCards) {
+    // Index full name AND front face: EDHREC lists DFCs/MDFCs by front face
+    // while Scryfall names them "Front // Back".
+    const poolNames = new Set<string>();
+    for (const c of pool) {
+      const lower = c.name.toLowerCase();
+      poolNames.add(lower);
+      poolNames.add(lower.split(" // ")[0]);
+    }
+
     edhrecTotal = args.edhrecTopCards.length;
     for (const n of args.edhrecTopCards) {
       if (poolNames.has(n.toLowerCase())) {
