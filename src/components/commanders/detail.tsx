@@ -454,7 +454,6 @@ export function CommanderDetail({
           height: 236,
           background: gradient,
           boxShadow: "inset 0 -60px 60px -30px rgba(10,7,4,0.9)",
-          cursor: "pointer",
         }}
       >
         {/* Back chevron */}
@@ -472,6 +471,7 @@ export function CommanderDetail({
             color: "#EDE6D8",
             fontSize: 15,
             textDecoration: "none",
+            zIndex: 1,
           }}
           aria-label="Back to rankings"
         >
@@ -502,9 +502,10 @@ export function CommanderDetail({
         {/* ⛶ Full card trigger + lightbox (client component) */}
         <FullCardTrigger commander={c} />
 
-        {/* Art header overlay (bottom) */}
+        {/* Art header overlay (bottom) — pointer-events-none so taps fall
+            through to the full-band lightbox trigger */}
         <div
-          className="absolute"
+          className="absolute pointer-events-none"
           style={{ left: 16, right: 16, bottom: 14 }}
         >
           <p

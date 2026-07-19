@@ -39,12 +39,15 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
       : 0;
 
   return (
-    <Link
-      href={`/commanders/${c.slug}`}
-      // brand focus-visible outline treatment inherited from globals.css
-      className="block group"
-      style={{ textDecoration: "none" }}
-    >
+    <div className="relative group">
+      {/* Stretched link keeps the whole card clickable without nesting the
+          retry <form> inside an anchor (invalid HTML); the forms sit above it
+          on z-[2]. Brand focus-visible outline inherited from globals.css. */}
+      <Link
+        href={`/commanders/${c.slug}`}
+        aria-label={`${c.name} — view commander details`}
+        className="absolute inset-0 z-[1] rounded-[11px] sm:rounded-[12px]"
+      />
       {/* ── Mobile layout: stacked tile ── */}
       <div
         className="sm:hidden rounded-[11px] p-[12px_13px] flex flex-col gap-[9px] transition-colors group-hover:border-[#3A3229] group-hover:bg-[#211C15]"
@@ -140,7 +143,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
             <span style={{ color: "#8E8269", fontSize: 12 }}>⚠</span>
             <span style={{ fontSize: 12, color: "#A89B84" }}>
               Synergy data unavailable.{" "}
-              <form action={retryRecs} className="inline">
+              <form action={retryRecs} className="inline relative z-[2]">
                 <button
                   type="submit"
                   // brand focus-visible outline treatment inherited from globals.css
@@ -302,7 +305,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
                   Synergy data unavailable
                 </strong>{" "}
                 for this commander.{" "}
-                <form action={retryRecs} className="inline">
+                <form action={retryRecs} className="inline relative z-[2]">
                   <button
                     type="submit"
                     // brand focus-visible outline treatment inherited from globals.css
@@ -351,6 +354,6 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
           <FitBar fit={fit} legend />
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

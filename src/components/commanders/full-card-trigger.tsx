@@ -15,6 +15,17 @@ export function FullCardTrigger({
 
   return (
     <>
+      {/* Full-band tap target — per state table, tapping the art header opens
+          the lightbox. Hidden from a11y tree; the labeled ⛶ chip below is the
+          accessible control. */}
+      <button
+        type="button"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="absolute inset-0 cursor-pointer bg-transparent border-0 p-0"
+        onClick={() => setOpen(true)}
+      />
+
       {/* ⛶ Full card affordance chip — §"⛶ Full card" affordance chip */}
       <button
         type="button"
