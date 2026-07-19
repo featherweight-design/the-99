@@ -39,7 +39,7 @@ Complete on scope: browse (rows ⇄ grid toggle), sticky filter bar with chips, 
 
 ## Eng-side clarifications (Yellow)
 
-1. Broaden CSV ingest to match the designed promise: flexible header detection (Name + Quantity required; Set code/Foil/Condition/Scryfall ID optional) covering ManaBox/Moxfield/Archidekt/Deckbox/plain exports, plus a paste-list server action with identical preview → confirm semantics and the fatal-parse guard. *(If instead ManaBox-only is kept, this flips to an Orange copy addendum — decision: Hugh.)*
+1. Broaden CSV ingest to match the designed promise: flexible header detection (Name + Quantity required; Set code/Foil/Condition/Scryfall ID optional) covering ManaBox/Moxfield/Archidekt/Deckbox/plain exports, plus a paste-list server action with identical preview → confirm semantics and the fatal-parse guard. *(Decided 2026-07-18: Hugh approved broadening — no Design addendum needed.)*
 2. Add `line` to unmatched rows in `UploadPreview`.
 3. Define the sort option list (proposed: name, quantity, set, rarity, color).
 4. Specify gradient placeholder as the missing-art treatment.
