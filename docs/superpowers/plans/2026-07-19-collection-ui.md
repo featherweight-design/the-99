@@ -987,7 +987,7 @@ git commit -m "feat(collection): browse aggregation, filter, sort primitives + s
 **Interfaces:**
 - Produces: `<CollectionBrowser cards={BrowseCard[]} />` — top-level client component. Reads URL query params on mount (via `useSearchParams()`), holds derived filter/sort state, mirrors mutations to `router.replace(url, { scroll: false })` (shallow). Runs `filterCards` + `sortCards` inside `useMemo` keyed on `[cards, filters, sort]`. Renders `<FilterBar>` + `<ChipRow>` + slot for view (Task 5) + slot for modal (Task 6). Owns windowed pagination state (`shown: number`, initial 200, `+200` per "Show more") — reset to 200 whenever filters/sort change.
 - Produces: `<FilterBar filters, sort, view, onChange />` — sticky bar per §Filter Bar. Search input, WUBRG pip selector (desktop) / `Color` button (mobile), Type ▾ / Set ▾ / Sort ▾ dropdowns, view toggle segmented.
-- Produces: `<ChipRow filters, sort, resultCount, totalCount, onClearAll, onRemove />` — chips per §Filter Chip Row; result count label right-aligned; turns `#E0913C` when `resultCount === 0`.
+- Produces: `<ChipRow filters, sort, resultCount, uniqueCount, totalQuantity, onClearAll, onRemove />` — chips per §Filter Chip Row; result count label right-aligned (mobile "N results", desktop variants incl. no-filters "No filters active · Showing X unique · Y total"); turns `#E0913C` when `resultCount === 0`.
 - Produces: `<ColorPip color, selected, onToggle />` — the WUBRG pip primitive used both inside the filter bar and inside chips (`color` is one of `W|U|B|R|G`).
 - Consumes: `BrowseCard[]` from Task 3, URL param names (`q`, `c`, `t`, `s`, `sort`, `view`, `card`).
 
@@ -1061,7 +1061,8 @@ export function ChipRow({
   filters,
   sort,
   resultCount,
-  totalCount,
+  uniqueCount,
+  totalQuantity,
   onClearAll,
   onRemoveColor,
   onClearType,
@@ -1071,7 +1072,8 @@ export function ChipRow({
   filters: BrowseFilters;
   sort: SortKey;
   resultCount: number;
-  totalCount: number;
+  uniqueCount: number;
+  totalQuantity: number;
   onClearAll: () => void;
   onRemoveColor: (c: string) => void;
   onClearType: () => void;
@@ -1084,10 +1086,13 @@ export function ChipRow({
     filters.type !== null ||
     filters.setCode !== null;
 
-  // Result count copy per §Result Count Label / §Copy (result count variants)
-  const countCopy = !anyActive
-    ? `Showing ${totalCount.toLocaleString()} unique · ${totalCount.toLocaleString()} total`
-    : `Showing ${resultCount.toLocaleString()} of ${totalCount.toLocaleString()}`;
+  // Result count copy per §Result Count Label / §Copy (result count variants).
+  // uniqueCount = distinct cards in the whole collection; totalQuantity = sum of
+  // quantities across the whole collection (the "2,933" in the design copy).
+  const desktopCopy = anyActive
+    ? `Showing ${resultCount.toLocaleString()} of ${totalQuantity.toLocaleString()}`
+    : `No filters active · Showing ${uniqueCount.toLocaleString()} unique · ${totalQuantity.toLocaleString()} total`;
+  const mobileCopy = `${resultCount.toLocaleString()} results`;
 
   return (
     // Container: display flex, gap 6px mobile / 8px desktop, margin-top 10px mobile / 12px desktop, flex-wrap wrap on mobile.
@@ -1143,12 +1148,20 @@ export function ChipRow({
         </button>
       )}
 
-      {/* Result count — right-aligned, turns amber when zero */}
+      {/* Result count — right-aligned, turns amber when zero. Mobile shows the
+          short "N results" variant; desktop shows the full variants per
+          §Copy (result count variants). */}
       <span
-        className="md:ml-auto font-mono text-[11px]"
+        className="md:hidden font-mono text-[11px]"
         style={{ color: resultCount === 0 ? "var(--warning)" : "var(--fg-faint)" }}
       >
-        {countCopy}
+        {mobileCopy}
+      </span>
+      <span
+        className="hidden md:inline md:ml-auto font-mono text-[11px]"
+        style={{ color: resultCount === 0 ? "var(--warning)" : "var(--fg-faint)" }}
+      >
+        {desktopCopy}
       </span>
     </div>
   );
@@ -1207,12 +1220,28 @@ function Chip({
 // Position dropdowns are native <select> for a11y + parity; visual chrome
 // matches the §Filter Button spec (radius 999px mobile / 8px desktop).
 
+import { useEffect, useState } from "react";
 import { AVAILABLE_TYPES, type BrowseFilters, type SortKey } from "../../lib/collection/browse";
 import { ColorPip } from "./color-pip";
 
 const WUBRG = ["W", "U", "B", "R", "G"] as const;
 
 export type ViewMode = "rows" | "grid";
+
+// Placeholder copy differs by breakpoint (§Copy (placeholders)) and the
+// placeholder attribute can't vary via CSS, so track the md breakpoint.
+// SSR/first paint uses the mobile copy; the effect corrects it post-hydration.
+function useIsDesktop(): boolean {
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    setDesktop(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setDesktop(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return desktop;
+}
 
 export function FilterBar({
   filters,
@@ -1231,6 +1260,8 @@ export function FilterBar({
   onSortChange: (s: SortKey) => void;
   onViewChange: (v: ViewMode) => void;
 }) {
+  const isDesktop = useIsDesktop();
+
   function toggleColor(c: string) {
     const has = filters.colors.includes(c);
     onFiltersChange({
@@ -1261,7 +1292,7 @@ export function FilterBar({
             type="search"
             value={filters.search}
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            placeholder="Search your cards…"
+            placeholder={isDesktop ? "Search by card name…" : "Search your cards…"}
             aria-label="Search your cards"
             className="min-w-0 flex-1 bg-transparent outline-none text-[14px]"
             style={{ color: "var(--fg)" }}
@@ -1431,6 +1462,7 @@ import { NoResults } from "./no-results";
 import { CardModal } from "./card-modal";
 
 const PAGE_SIZE = 200;
+const SORT_KEYS = ["name", "quantity", "set", "rarity", "color"] as const satisfies readonly SortKey[];
 
 function parseColors(param: string | null): string[] {
   if (!param) return [];
@@ -1466,8 +1498,15 @@ export function CollectionBrowser({
     type: search.get("t"),
     setCode: search.get("s"),
   }));
-  const [sort, setSort] = useState<SortKey>(() => (search.get("sort") as SortKey) ?? "name");
-  const [view, setView] = useState<ViewMode>(() => (search.get("view") as ViewMode) ?? defaultView);
+  // Guard query params — shared URLs can carry unknown values; fall back to defaults.
+  const [sort, setSort] = useState<SortKey>(() => {
+    const s = search.get("sort");
+    return s !== null && (SORT_KEYS as readonly string[]).includes(s) ? (s as SortKey) : "name";
+  });
+  const [view, setView] = useState<ViewMode>(() => {
+    const v = search.get("view");
+    return v === "rows" || v === "grid" ? v : defaultView;
+  });
   const [openCardId, setOpenCardId] = useState<string | null>(() => search.get("card"));
   const [shown, setShown] = useState(PAGE_SIZE);
 
@@ -1485,6 +1524,8 @@ export function CollectionBrowser({
     for (const c of cards) for (const sc of c.setCodes) s.add(sc);
     return [...s].sort();
   }, [cards]);
+
+  const totalQuantity = useMemo(() => cards.reduce((sum, c) => sum + c.quantity, 0), [cards]);
 
   const filtered = useMemo(() => filterCards(cards, filters), [cards, filters]);
   const sorted = useMemo(() => sortCards(filtered, sort), [filtered, sort]);
@@ -1524,7 +1565,8 @@ export function CollectionBrowser({
           filters={filters}
           sort={sort}
           resultCount={sorted.length}
-          totalCount={cards.length}
+          uniqueCount={cards.length}
+          totalQuantity={totalQuantity}
           onClearAll={() => {
             setFilters({ search: "", colors: [], type: null, setCode: null });
             setSort("name");
@@ -1539,7 +1581,7 @@ export function CollectionBrowser({
       {sorted.length === 0 ? (
         <NoResults
           query={filters.search}
-          totalCount={cards.length}
+          totalCount={totalQuantity}
           onClearAll={() => {
             setFilters({ search: "", colors: [], type: null, setCode: null });
             setSort("name");

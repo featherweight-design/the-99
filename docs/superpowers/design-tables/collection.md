@@ -1059,7 +1059,7 @@
 | Previous | `‹ Prev` |
 | Next | `Next ›` |
 | Position counter | `6 of 1,418` (example) |
-| URL pattern | `?card=cyclonic-rift` (slug from card name) |
+| URL pattern | `?card=<oracleId>` (stable key — the design mock shows a name slug, but the implementation deep-links by oracle id to avoid slug collisions/renames) |
 
 ---
 
@@ -2032,7 +2032,8 @@
 
 | Element | Condition |
 |---------|-----------|
-| Filter chip row | Only shown when ≥1 active filter |
+| Filter chips + "FILTERS:" label (in chip row) | Only shown when ≥1 active filter |
+| Result count label (in chip row) | Always shown — no-filters variant per §Copy (result count variants) / "Filter Empty" state |
 | "Clear all" link | Only shown when ≥1 active filter |
 | Result count turns #E0913C | When `resultCount === 0` |
 | View toggle (≣/▦) | Always visible in filter bar; rows segment highlighted on mobile default, grid on desktop default |
