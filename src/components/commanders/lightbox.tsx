@@ -16,6 +16,7 @@ export function CommanderLightbox({
   commander: RankedCommander;
   onClose: () => void;
 }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
@@ -29,13 +30,13 @@ export function CommanderLightbox({
 
   // Focus first focusable child on mount.
   useEffect(() => {
-    const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
+    const focusables = overlayRef.current?.querySelectorAll<HTMLElement>(
       'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
     );
     focusables?.[0]?.focus();
   }, []);
 
-  // Escape closes; Tab wraps within dialog.
+  // Escape closes; Tab wraps within the overlay (includes the close button).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -43,8 +44,8 @@ export function CommanderLightbox({
         onClose();
         return;
       }
-      if (e.key !== "Tab" || !dialogRef.current) return;
-      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+      if (e.key !== "Tab" || !overlayRef.current) return;
+      const focusables = overlayRef.current.querySelectorAll<HTMLElement>(
         'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       if (focusables.length === 0) return;
@@ -68,6 +69,7 @@ export function CommanderLightbox({
   return (
     // §Lightbox overlay
     <div
+      ref={overlayRef}
       className="fixed inset-0 flex flex-col items-center justify-center"
       style={{
         background: "rgba(8,6,4,0.86)",
