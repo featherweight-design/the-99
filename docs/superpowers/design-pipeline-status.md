@@ -25,10 +25,8 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-| **#5** Design: App shell — nav, auth chrome, empty/first-run states | `design/design_handoff_the99_appshell/` | 🟡 Yellow (2026-07-18) | Rail + bottom tabs; home = dashboard / first-run checklist. Eng-side in plan PR: commander payload fields, paste-list action, un-gate `/`, focus states. CSV-format copy drift routed to #6; guided-flow steps 2–3 are #7/#8 first-run states. |
-| **#6** Design: Collection — CSV upload flow + collection view | `design/design_handoff_the99_collection/` | 🟡 Yellow (2026-07-18) | Rows⇄grid toggle, sticky filter bar + chips, card-detail modal (`?card=` deep-link), 3-step replace with type-to-confirm. Eng-side: broaden CSV ingest to multi-format + paste (approved 2026-07-18), `line` on unmatched rows, sort options, modal a11y, virtualization. |
-| **#7** Design: Commander recommendations — ranked, explainable list | `design/design_handoff_the99_commanders/` | 🟡 Yellow (2026-07-18) | Ranked cards w/ inline evidence, 3-part Fit bar, receipts preview + full chip clouds, dedicated `/commanders/:slug` detail, dual degraded scopes, dual empty states, guided step 2 live. Eng-side: receipts payload (names per component), `wipes` role (target 3), `fitNS` renormalization, slug route, focus/lightbox a11y. |
-| **#8** Design: Decks — list, create-from-commander, and deck builder | `design/design_handoff_the99_decks/` | 🟡 Yellow (2026-07-18) | Ledger+workbench builder, one Add panel (suggestions/search), advisory role strip (by-type default lens per reviewer round), in-place shopping markers, two-tab names-only export, both create doors, guided step 3 live. Eng-side: deck read-side queries + status derivation, suggestions payload (names/flags/EDHREC %/unowned staples), `wipes` role (shared w/ #7), `inDeck` on search, rename action, modal/sheet a11y. |
+
+_Currently empty._
 
 ---
 
@@ -57,7 +55,7 @@ _Currently empty._
 | Ticket | Stage | Notes |
 |---|---|---|
 
-_Currently empty — all four v1 UI surfaces (#5–#8) are 🟢 Ready for implementation._
+_Currently empty — all four v1 UI surfaces (#5–#8) shipped 2026-07-19._
 
 ---
 
@@ -69,15 +67,33 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-Ranked by build order. Backend for each v1 surface proceeds ahead of design per the UI gate.
+Ranked by build order per the post-v1 roadmap tracker (#44). A v1 visual-polish batch (Hugh's golden-path walkthrough list, forthcoming) plus #35/#36 run ahead of these features.
 
 | Rank | Ticket | Adjacency / notes |
 |---|---|---|
-| 1 | **#9** Design: Win/loss tracking for decks | Post-v1; extends the deck page from #8 |
-| 2 | **#10** Design: Deck tuning suggestions from play results | Post-v1; blocked on #9's data model |
+| 1 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
+| 2 | **#42** Design: Import existing decks (Moxfield) | Post-v1; lands in #8's deck surfaces; reconciliation UX is the core |
+| 3 | **#43** Design: Cross-check recommendations against committed cards | Post-v1; touches #7 recs + #8 builder; value scales with deck count, so after #42 |
+| 4 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — last, needs accumulated play data |
 
 ---
 
 ## ⏳ Ready for design (not yet workshopped)
 
-_Currently empty — all open design tickets are ranked in the Backlog above; each moves to 🎨 when its workshop starts._
+v1 polish follow-ups — sequenced ahead of the Backlog features above.
+
+| Ticket | Notes |
+|---|---|
+| **#35** Design: Branded user menu replacing Clerk default | Desktop popover + mobile bottom-sheet; pairs with eng ticket #13 |
+| **#36** Design: Full-list "Show all X unmatched" experience | Upload flow follow-up from #6 |
+
+---
+
+## ✅ Shipped
+
+| # / vertical | Handoff | Shipped |
+|---|---|---|
+| **#5** App shell — nav, auth chrome, empty/first-run states | `design/design_handoff_the99_appshell/` | 2026-07-19 (PR #15) |
+| **#6** Collection — CSV upload flow + collection view | `design/design_handoff_the99_collection/` | 2026-07-19 (PR #18) |
+| **#7** Commander recommendations — ranked, explainable list | `design/design_handoff_the99_commanders/` | 2026-07-19 (PR #21) |
+| **#8** Decks — list, create-from-commander, and deck builder | `design/design_handoff_the99_decks/` | 2026-07-19 (PR #25) |
