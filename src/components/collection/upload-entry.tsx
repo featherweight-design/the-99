@@ -160,7 +160,7 @@ export function UploadEntry({
               <span className="hidden md:inline">Moxfield · Archidekt · Deckbox · ManaBox · plain CSV</span>
             </div>
             {/* Browse files button — §"Browse files" Button.
-                Deviation vs handoff (#30): (a) desktop mt/mb 14px added — the flat design put the button flush against format meta above and helper text below; needs breathing room. (b) Background moved from inline style to Tailwind class so the hover:bg-brass-hover class actually applies (inline style outranks the utility). (c) Disabled + label swap while the upload transition is pending so the user gets feedback instead of a silent submit. */}
+                Deviation vs handoff (#30): (a) desktop mt/mb 14px added — the flat design put the button flush against format meta above and helper text below; needs breathing room. (b) Background moved from an inline style to a Tailwind utility so the hover-state class actually applies (inline styles outrank hover utilities and were shadowing the color swap). (c) Disabled + label swap while the upload transition is pending so the user gets feedback instead of a silent submit. */}
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
