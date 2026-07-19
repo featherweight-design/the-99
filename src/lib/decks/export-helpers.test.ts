@@ -48,6 +48,16 @@ describe("buildDecklistText", () => {
     expect(lines[4]).toBe("5 Forest");
   });
 
+  it("has no trailing newline when cards is empty", () => {
+    const out = buildDecklistText({
+      deckName: "My Deck",
+      commanderName: "Muldrotha, the Gravetide",
+      cards: [],
+    });
+    expect(out.endsWith("//")).toBe(true);
+    expect(out.split("\n")).toHaveLength(3);
+  });
+
   it("produces consistent text for copy and download (same string)", () => {
     const args = {
       deckName: "Reanimator",
@@ -77,6 +87,18 @@ describe("buildShoppingText", () => {
 describe("decklistFilename", () => {
   it("appends .txt", () => {
     expect(decklistFilename("My Deck")).toBe("My Deck.txt");
+  });
+
+  it("replaces path separators and reserved characters", () => {
+    expect(decklistFilename('a/b\\c:d*e?f"g<h>i|j')).toBe("a-b-c-d-e-f-g-h-i-j.txt");
+  });
+
+  it("replaces control characters like newlines and tabs", () => {
+    expect(decklistFilename("line1\nline2\tend")).toBe("line1-line2-end.txt");
+  });
+
+  it("falls back to 'deck' for whitespace-only names", () => {
+    expect(decklistFilename("   ")).toBe("deck.txt");
   });
 });
 

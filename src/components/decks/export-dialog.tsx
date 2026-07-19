@@ -44,9 +44,10 @@ export function ExportDialog({
   // Body scroll lock gated on open — hooks run unconditionally; effect guards internally.
   useEffect(() => {
     if (!open) return;
+    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = prev;
     };
   }, [open]);
 

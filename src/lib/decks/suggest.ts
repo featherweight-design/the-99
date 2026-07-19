@@ -10,7 +10,7 @@ export type DeckSuggestion = {
   reasonType: ReasonType;
   reasonLabel: string;
   owned: boolean;
-  inDeck: false;
+  inDeck: boolean;
 };
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };

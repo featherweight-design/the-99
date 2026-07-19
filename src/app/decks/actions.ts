@@ -27,6 +27,16 @@ async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise
   return owned.filter((c) => c.oracleId !== commander.oracleId && c.colorIdentity.every((x) => identity.has(x)));
 }
 
+// Deck names feed export headers and download filenames — reject control characters.
+function validateDeckName(name: string): string {
+  const trimmed = name.trim();
+   
+  if (trimmed.length === 0 || trimmed.length > 120 || /[\u0000-\u001F]/.test(trimmed)) {
+    throw new Error("deck name must be 1–120 characters without control characters");
+  }
+  return trimmed;
+}
+
 export async function createDeck(commanderOracleId: string, name: string): Promise<void> {
   const userId = await requireUserId();
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, commanderOracleId));
@@ -40,7 +50,7 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
   // Spec: suggestions are display-only — nothing is committed until the user adds it.
   // The deck starts empty; the deck page surfaces getDeckSuggestions.
   const [deck] = await db.insert(decks)
-    .values({ userId, name, commanderOracleId }).returning({ id: decks.id });
+    .values({ userId, name: validateDeckName(name), commanderOracleId }).returning({ id: decks.id });
   redirect(`/decks/${deck.id}`);
 }
 
@@ -185,10 +195,7 @@ export async function deleteDeck(deckId: string): Promise<void> {
 export async function renameDeck(deckId: string, name: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
-  const trimmed = name.trim();
-  if (trimmed.length === 0 || trimmed.length > 120) {
-    throw new Error("deck name must be 1–120 characters");
-  }
+  const trimmed = validateDeckName(name);
   await db.update(decks).set({ name: trimmed }).where(eq(decks.id, deckId));
   revalidatePath(`/decks/${deckId}`);
   revalidatePath(`/decks`);

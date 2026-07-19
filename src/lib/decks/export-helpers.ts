@@ -12,8 +12,8 @@ export function buildDecklistText(args: {
   cards: { name: string; quantity: number }[];
 }): string {
   const { deckName, commanderName, cards } = args;
-  const bodyLines = cards.map((c) => `${c.quantity} ${c.name}`).join("\n");
-  return `# ${deckName}\n1 ${commanderName}\n//\n${bodyLines}`;
+  const lines = [`# ${deckName}`, `1 ${commanderName}`, "//", ...cards.map((c) => `${c.quantity} ${c.name}`)];
+  return lines.join("\n");
 }
 
 /**
@@ -23,9 +23,10 @@ export function buildShoppingText(cards: { name: string }[]): string {
   return cards.map((c) => c.name).join("\n");
 }
 
-/** Deck names are user-controlled — strip path separators / OS-reserved characters. */
+/** Deck names are user-controlled — strip path separators, OS-reserved and control characters. */
 function sanitizeFilename(name: string): string {
-  const cleaned = name.replace(/[/\\:*?"<>|]/g, "-").trim();
+   
+  const cleaned = name.replace(/[\/\\:*?"<>|\u0000-\u001F]/g, "-").trim();
   return cleaned.length > 0 ? cleaned : "deck";
 }
 
