@@ -5,7 +5,7 @@
 // can complete end-to-end (parse → preview → confirm → dashboard).
 // Style per property table §CSV Dropzone / §Paste-List View (compact).
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { parsePasteList } from "../../lib/manabox/paste";
 import {
@@ -25,17 +25,23 @@ export function UploadEntry() {
   const [error, setError] = useState<string | null>(null);
   const [pasteText, setPasteText] = useState("");
   const [pending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Live client-side parse — feeds the recognized-count label and the
   // "Import {n} cards" button per §Paste-List View.
   // Memoised to avoid re-parsing on every render (only changes when pasteText changes).
-  const pasteCardCount = useMemo(
-    () =>
-      pasteText.trim()
-        ? parsePasteList(pasteText).rows.reduce((n, r) => n + r.quantity, 0)
-        : 0,
-    [pasteText],
-  );
+  const { pasteCardCount, pasteLineCount } = useMemo(() => {
+    if (!pasteText.trim()) return { pasteCardCount: 0, pasteLineCount: 0 };
+    // Same line semantics as parsePasteList: split on \r?\n, ignore blanks.
+    const pasteLineCount = pasteText
+      .split(/\r?\n/)
+      .filter((l) => l.trim() !== "").length;
+    const pasteCardCount = parsePasteList(pasteText).rows.reduce(
+      (n, r) => n + r.quantity,
+      0,
+    );
+    return { pasteCardCount, pasteLineCount };
+  }, [pasteText]);
 
   async function handleFile(file: File) {
     setError(null);
@@ -170,6 +176,7 @@ export function UploadEntry() {
           ].join(" ")}
         >
           <input
+            ref={fileInputRef}
             type="file"
             accept=".csv,text/csv"
             className="hidden"
@@ -226,7 +233,12 @@ export function UploadEntry() {
                 "bg-[color:var(--brass)] text-[color:var(--bg)]",
                 "hover:bg-[color:var(--brass-hover)]",
               ].join(" ")}
-              onClick={(e) => e.stopPropagation()}
+              // Interactive elements inside a <label> don't forward activation
+              // to the labeled input (HTML spec) — open the picker explicitly.
+              onClick={(e) => {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }}
             >
               Browse files
             </button>
@@ -310,8 +322,7 @@ export function UploadEntry() {
                 className="mt-[10px] font-mono text-[11px]"
                 style={{ color: "var(--fg-faint)" }}
               >
-                {pasteText.trim().split("\n").filter(Boolean).length} lines ·{" "}
-                {pasteCardCount} cards recognized
+                {pasteLineCount} lines · {pasteCardCount} cards recognized
               </p>
             )}
             <button
