@@ -80,12 +80,25 @@ export function UploadEntry({
           className="text-[12.5px] md:text-[14px] leading-[1.55] md:leading-[1.6]"
           style={{ color: "var(--fg-body)" }}
         >
-          <span className="md:hidden">
-            Uploading a new file replaces your current {currentCardCount.toLocaleString()} cards. There&apos;s no merge — the new export becomes your whole collection.
-          </span>
-          <span className="hidden md:inline">
-            Uploading replaces your entire collection. Your current {currentCardCount.toLocaleString()} cards will be swapped for whatever&apos;s in the new file — no merge, no append. You&apos;ll see exactly what matched before anything is committed.
-          </span>
+          {currentCardCount === 0 ? (
+            <>
+              <span className="md:hidden">
+                This upload becomes your collection. You&apos;ll see exactly what matched before anything is committed.
+              </span>
+              <span className="hidden md:inline">
+                This upload becomes your collection — you&apos;ll see exactly what matched before anything is committed.
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="md:hidden">
+                Uploading a new file replaces your current {currentCardCount.toLocaleString()} cards. There&apos;s no merge — the new export becomes your whole collection.
+              </span>
+              <span className="hidden md:inline">
+                Uploading replaces your entire collection. Your current {currentCardCount.toLocaleString()} cards will be swapped for whatever&apos;s in the new file — no merge, no append. You&apos;ll see exactly what matched before anything is committed.
+              </span>
+            </>
+          )}
         </p>
       </div>
 

@@ -33,6 +33,8 @@ export function ConfirmModal({
     return () => { triggerRef.current?.focus(); };
   }, []);
 
+  useEffect(() => { if (pending) inputRef.current?.focus(); }, [pending]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") { e.preventDefault(); if (!pending) onClose(); return; }
@@ -95,7 +97,7 @@ export function ConfirmModal({
             className="font-display font-bold text-[20px] md:text-[25px] m-0"
             style={{ color: "var(--fg)", lineHeight: 1.15 }}
           >
-            Replace your collection?
+            {preview.currentCollectionCount === 0 ? "Import this collection?" : "Replace your collection?"}
           </h2>
         </div>
 
@@ -104,12 +106,25 @@ export function ConfirmModal({
           className="text-[13.5px] md:text-[15px] mt-[16px] md:mt-[18px]"
           style={{ color: "var(--fg-body)", lineHeight: 1.65 }}
         >
-          <span className="md:hidden">
-            This permanently swaps your {preview.currentCollectionCount.toLocaleString()} cards for the {preview.matchedCardCount.toLocaleString()} in {preview.filename}. It can&apos;t be undone.
-          </span>
-          <span className="hidden md:inline">
-            This permanently swaps your {preview.currentCollectionCount.toLocaleString()} cards for the {preview.matchedCardCount.toLocaleString()} cards in {preview.filename}. Decks and commander recommendations rebuild from the new collection. This can&apos;t be undone.
-          </span>
+          {preview.currentCollectionCount === 0 ? (
+            <>
+              <span className="md:hidden">
+                This imports the {preview.matchedCardCount.toLocaleString()} cards in {preview.filename} as your collection.
+              </span>
+              <span className="hidden md:inline">
+                This imports the {preview.matchedCardCount.toLocaleString()} cards in {preview.filename} as your collection. Decks and commander recommendations build from it.
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="md:hidden">
+                This permanently swaps your {preview.currentCollectionCount.toLocaleString()} cards for the {preview.matchedCardCount.toLocaleString()} in {preview.filename}. It can&apos;t be undone.
+              </span>
+              <span className="hidden md:inline">
+                This permanently swaps your {preview.currentCollectionCount.toLocaleString()} cards for the {preview.matchedCardCount.toLocaleString()} cards in {preview.filename}. Decks and commander recommendations rebuild from the new collection. This can&apos;t be undone.
+              </span>
+            </>
+          )}
         </p>
 
         {/* Type-to-confirm section — §Type-to-Confirm Section: margin-top 18/22px */}
@@ -159,7 +174,7 @@ export function ConfirmModal({
               opacity: armed && !pending ? 1 : 0.6,
             }}
           >
-            {pending ? "Replacing…" : `Replace ${preview.currentCollectionCount.toLocaleString()} cards`}
+            {pending ? "Replacing…" : preview.currentCollectionCount === 0 ? `Import ${preview.matchedCardCount.toLocaleString()} cards` : `Replace ${preview.currentCollectionCount.toLocaleString()} cards`}
           </button>
           <button
             type="button"

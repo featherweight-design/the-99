@@ -11,7 +11,7 @@ import { UploadEntry } from "./upload-entry";
 import { ReviewScreen } from "./review-screen";
 import { ConfirmModal } from "./confirm-modal";
 
-export function ReplaceFlow({ currentCardCount }: { currentCardCount: number }) {
+export function ReplaceFlow({ currentCardCount, embedded }: { currentCardCount: number; embedded?: boolean }) {
   const router = useRouter();
   const [preview, setPreview] = useState<UploadPreview | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -43,6 +43,7 @@ export function ReplaceFlow({ currentCardCount }: { currentCardCount: number }) 
         preview={preview}
         onCancel={() => setPreview(null)}
         onContinue={() => setConfirming(true)}
+        embedded={embedded}
       />
       {confirming && (
         <ConfirmModal

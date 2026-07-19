@@ -69,12 +69,6 @@ export function CollectionBrowser({
   const [openCardId, setOpenCardId] = useState<string | null>(() => search.get("card"));
   const [shown, setShown] = useState(PAGE_SIZE);
 
-  // Push state → URL. Shallow via router.replace so it doesn't refetch the RSC.
-  useEffect(() => {
-    const qs = serializeParams(filters, sort, view, openCardId);
-    router.replace(`/collection${qs}`, { scroll: false });
-  }, [filters, sort, view, openCardId, router]);
-
   // Any filter/sort change resets the window — folded into the update
   // callbacks (not an effect) to avoid a cascading render.
   const updateFilters = useCallback((f: BrowseFilters) => {
@@ -102,6 +96,14 @@ export function CollectionBrowser({
     () => (openCardId ? sorted.find((c) => c.oracleId === openCardId) ?? null : null),
     [openCardId, sorted],
   );
+
+  // Push state → URL. Shallow via router.replace so it doesn't refetch the RSC.
+  // Serialize the card param only when the card actually resolved; avoids
+  // stale ?card= for IDs not in the current filtered result set.
+  useEffect(() => {
+    const qs = serializeParams(filters, sort, view, openCard ? openCardId : null);
+    router.replace(`/collection${qs}`, { scroll: false });
+  }, [filters, sort, view, openCardId, openCard, router]);
   const openIndex = useMemo(
     () => (openCard ? sorted.findIndex((c) => c.oracleId === openCard.oracleId) : -1),
     [openCard, sorted],

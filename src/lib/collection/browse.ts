@@ -28,6 +28,10 @@ export type BrowseFilters = {
 
 export type SortKey = "name" | "quantity" | "set" | "rarity" | "color";
 
+export function cssUrl(uri: string): string {
+  return `url("${encodeURI(uri).replaceAll('"', "%22")}")`;
+}
+
 /** Coarse card-type options shown in the Type ▾ dropdown (property table §Filter Button). */
 export const AVAILABLE_TYPES = [
   "Creature", "Instant", "Sorcery", "Artifact", "Enchantment", "Planeswalker", "Land",

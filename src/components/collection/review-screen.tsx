@@ -12,10 +12,12 @@ export function ReviewScreen({
   preview,
   onCancel,
   onContinue,
+  embedded,
 }: {
   preview: UploadPreview;
   onCancel: () => void;
   onContinue: () => void;
+  embedded?: boolean;
 }) {
   const [unmatchedExpanded, setUnmatchedExpanded] = useState(false);
   const [errorsExpanded, setErrorsExpanded] = useState(false);
@@ -31,7 +33,7 @@ export function ReviewScreen({
 
   return (
     // Wrapping section splits into scrollable content + sticky confirm bar
-    <section className="flex flex-col min-h-[calc(100vh-140px)]">
+    <section className={embedded ? "flex flex-col" : "flex flex-col min-h-[calc(100vh-140px)]"}>
       {/* Mobile page header (Cinzel title + filename) — §Page Header (mobile) / §Mobile Page Title */}
       <div
         className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]"
@@ -224,7 +226,7 @@ export function ReviewScreen({
 
       {/* Sticky confirm bar — §Sticky Confirm Bar: border-top 1px #3A3229 (--border-strong), bg #1A160F (--surface-rail), padding 14px 18px 22px mobile / 16px 56px desktop */}
       <div
-        className="md:sticky bottom-0 z-10 p-[14px_18px_22px] md:p-[16px_56px] md:flex md:items-center md:gap-[20px]"
+        className={`${embedded ? "" : "md:sticky"} bottom-0 z-10 p-[14px_18px_22px] md:p-[16px_56px] md:flex md:items-center md:gap-[20px]`}
         style={{ background: "var(--surface-rail)", borderTop: "1px solid var(--border-strong)" }}
       >
         {/* Summary sentence — §Sticky Confirm Bar: Summary Sentence */}

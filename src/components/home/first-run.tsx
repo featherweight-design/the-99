@@ -81,7 +81,7 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
           </span>
         </div>
         <div className="mt-5">
-          <ReplaceFlow currentCardCount={0} />
+          <ReplaceFlow currentCardCount={0} embedded />
         </div>
       </div>
 

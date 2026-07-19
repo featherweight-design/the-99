@@ -7,6 +7,7 @@
 
 import { useEffect, useRef } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
+import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { ManaCost } from "./mana-pips";
 
@@ -88,7 +89,7 @@ export function CardModal({
   }, [onClose]);
 
   const artStyle: React.CSSProperties = card.imageUri
-    ? { backgroundImage: `url(${card.imageUri})`, backgroundSize: "cover", backgroundPosition: "center" }
+    ? { backgroundImage: cssUrl(card.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
 
   return (
