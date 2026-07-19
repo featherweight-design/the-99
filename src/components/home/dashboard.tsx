@@ -5,7 +5,8 @@ import { COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
 import { HeroCommander, HeroCommanderSkeleton } from "./hero-commander";
 
 /* §Deck row state color: success ≥ high, warning ≥ mid, danger below —
-   derived from owned/99 like the hero completeness bar. */
+   derived from deck cardCount/99 (distinct from the hero bar's
+   EDHREC-owned/total metric, but sharing the same thresholds). */
 function deckStateColor(cardCount: number): string {
   const pct = (cardCount / 99) * 100;
   if (pct >= COMPLETENESS_THRESHOLDS.high) return "var(--success)";
