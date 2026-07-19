@@ -74,6 +74,7 @@ export function CommanderLightbox({
         background: "rgba(8,6,4,0.86)",
         backdropFilter: "blur(6px)",
         padding: "34px 30px",
+        zIndex: 50,
       }}
       role="presentation"
       onClick={onClose}

@@ -74,6 +74,13 @@ export function CommandersView({
 
   const filtered = useMemo(() => filterByColors(results, colors), [results, colors]);
 
+  // Global rank in the fixed Fit ordering — filtering hides cards but must not
+  // renumber the ones still shown.
+  const rankBySlug = useMemo(
+    () => new Map(results.map((r, i) => [r.slug, i + 1])),
+    [results],
+  );
+
   // Clear handler passed to FilteredEmpty
   const handleClearFilter = useCallback(() => setColors([]), []);
 
@@ -346,9 +353,9 @@ export function CommandersView({
           />
         ) : (
           <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
-            {filtered.map((r, i) => (
+            {filtered.map((r) => (
               <li key={r.slug}>
-                <RecCard commander={r} rank={i + 1} />
+                <RecCard commander={r} rank={rankBySlug.get(r.slug) ?? 0} />
               </li>
             ))}
           </ul>
