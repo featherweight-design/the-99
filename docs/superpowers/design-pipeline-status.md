@@ -25,8 +25,7 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-
-_Currently empty._
+| **#5** Design: App shell — nav, auth chrome, empty/first-run states | `design/design_handoff_the99_appshell/` | 🟡 Yellow (2026-07-18) | Rail + bottom tabs; home = dashboard / first-run checklist. Eng-side in plan PR: commander payload fields, paste-list action, un-gate `/`, focus states. CSV-format copy drift routed to #6; guided-flow steps 2–3 are #7/#8 first-run states. |
 
 ---
 
@@ -54,8 +53,7 @@ _Currently empty._
 
 | Ticket | Stage | Notes |
 |---|---|---|
-| **#5** Design: App shell — nav, auth chrome, empty/first-run states | Handoff prompt with Design | Workshop 2026-07-18: `/` is a real home surface (Design defines it), public — signed-out landing is minimal (wordmark, tagline, sign-in); access restriction via Clerk restricted mode (dashboard config, no designed state); tagline locked from spec: "99 problems, but your commander ain't one." |
-| **#6** Design: Collection — CSV upload flow + collection view | Handoff prompt with Design | Workshop 2026-07-18: browse scope is search + color/type/set filters + sorting (collection query API to be built to match); card detail view in scope (image, oracle text — container is Design's call); uploads remain full-replace, no merge in v1. |
+| **#6** Design: Collection — CSV upload flow + collection view | Handoff prompt with Design | Workshop 2026-07-18: browse scope is search + color/type/set filters + sorting (collection query API to be built to match); card detail view in scope (image, oracle text — container is Design's call); uploads remain full-replace, no merge in v1. Inherits from #5 audit: resolve dropzone CSV-format copy vs ManaBox-only parser. |
 
 ---
 
