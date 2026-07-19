@@ -174,14 +174,10 @@ export function NavRail({ locked }: { locked: boolean }) {
       {/* Account trigger — §Rail: Account trigger row                        */}
       {/* mt-auto; outer padding 14px 12px; inner: br 14px, p 2px 12px 2px 2px */}
       {/* ------------------------------------------------------------------ */}
-      <div className="mt-auto pt-[14px] px-3 pb-3">
-        <div
-          className="flex items-center gap-3 rounded-[14px] py-[2px] pr-3 pl-[2px]"
-          style={{
-            background: "var(--surface-raised)",  // #221D16
-            border: "1px solid var(--border-strong)", // #3A3229
-          }}
-        >
+      <div className="mt-auto py-[14px] px-3">
+        {/* §Rail Account trigger — Hover: border-color accent (#C9A24B).
+            Classes (not inline style) so the hover: variant applies. */}
+        <div className="flex items-center gap-3 rounded-[14px] py-[2px] pr-3 pl-[2px] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] hover:border-[color:var(--brass)] transition-colors">
           {/* Clerk UserButton — avatar dimensions per §Rail: Avatar badge */}
           <UserButton
             appearance={{
