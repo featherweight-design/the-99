@@ -299,7 +299,7 @@ export function BuilderShell({
           <div
             className="md:hidden fixed left-0 right-0 bottom-0 z-50 flex flex-col"
             style={{
-              height: 520,
+              height: 640,
               background: "#1A160F",
               borderTop: "1px solid #3A3229",
               borderRadius: "22px 22px 0 0",
@@ -341,7 +341,7 @@ export function BuilderShell({
           <div
             className="md:hidden fixed left-0 right-0 bottom-0 z-50 flex flex-col"
             style={{
-              height: 520,
+              height: 640,
               background: "#1A160F",
               borderTop: "1px solid #3A3229",
               borderRadius: "22px 22px 0 0",
@@ -381,7 +381,7 @@ export function BuilderShell({
             aria-hidden
           />
           <div
-            className="fixed z-50 left-0 right-0 bottom-0 md:left-1/2 md:top-1/2 md:bottom-auto md:right-auto"
+            className="fixed z-50 left-0 right-0 bottom-0 md:left-1/2 md:top-1/2 md:bottom-auto md:right-auto md:-translate-x-1/2 md:-translate-y-1/2"
             style={{
               // mobile: bottom sheet shape
               background: "#1A160F",

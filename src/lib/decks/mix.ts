@@ -4,6 +4,39 @@
 
 export type MixRole = "ramp" | "draw" | "removal" | "wipes" | "land";
 
+// ---------------------------------------------------------------------------
+// computeRoleCounts — quantity-weighted tally from server-computed card.role
+// ---------------------------------------------------------------------------
+
+/** Minimal card shape accepted by computeRoleCounts (subset of DeckDetailCard). */
+export type RoleCountCard = {
+  role: "ramp" | "draw" | "removal" | "wipes" | "land" | "other";
+  quantity: number;
+};
+
+/**
+ * Tallies quantity-weighted role counts from the pre-computed `card.role` field.
+ * Do NOT re-run classifyRoles here — card.role is derived from real oracleText
+ * on the server; re-classifying with null oracleText under-counts text-based roles.
+ */
+export function computeRoleCounts(
+  cards: RoleCountCard[],
+): Record<MixRole, number> {
+  const counts: Record<MixRole, number> = {
+    ramp: 0,
+    draw: 0,
+    removal: 0,
+    wipes: 0,
+    land: 0,
+  };
+  for (const card of cards) {
+    if (card.role in counts) {
+      counts[card.role as MixRole] += card.quantity;
+    }
+  }
+  return counts;
+}
+
 export const RECOMMENDED_MIX: Record<
   MixRole,
   {

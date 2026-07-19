@@ -13,14 +13,10 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
       mobile:  bg #1E1A15, border 1px #2A241D, border-left 3px #C9A24B, br 10px, p 12px 14px, block, m 20px 16px 0
       desktop: bg linear-gradient(120deg,#221D14,#1A160F 60%), border 1px #3A3229, br 14px,
                p 22px 26px, flex, items-center, gap 24px, m 26px 32px 0
+      Responsive background/border split handled by .guided-banner in globals.css.
     */
     <div
-      className="mx-[16px] mt-[20px] md:mx-[32px] md:mt-[26px] rounded-[10px] md:rounded-[14px] px-[14px] py-[12px] md:px-[26px] md:py-[22px] block md:flex md:items-center md:gap-[24px]"
-      style={{
-        background: "linear-gradient(120deg,#221D14,#1A160F 60%)",
-        border: "1px solid #3A3229",
-        borderLeft: "3px solid #C9A24B",
-      }}
+      className="guided-banner mx-[16px] mt-[20px] md:mx-[32px] md:mt-[26px] rounded-[10px] md:rounded-[14px] px-[14px] py-[12px] md:px-[26px] md:py-[22px] block md:flex md:items-center md:gap-[24px]"
     >
       {/* Left: step label + diamond crumb + title + body (fills remaining space on desktop) */}
       <div className="flex-1 min-w-0">

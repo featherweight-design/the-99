@@ -1,8 +1,8 @@
 // Role Counter Strip — §Role Counter Strip — 5 cells.
 // Server component — recomputes role counts from detail.cards.
 import type { DeckDetailCard } from "../../lib/decks/read";
-import { classifyRoles } from "../../lib/recs/roles";
 import {
+  computeRoleCounts,
   RECOMMENDED_MIX,
   RECOMMENDED_MIX_SOURCE_LINE,
   RECOMMENDED_MIX_WORKED_EXAMPLE,
@@ -12,31 +12,6 @@ import { RoleCounterCell } from "./role-counter-cell";
 
 interface RoleCounterStripProps {
   cards: DeckDetailCard[];
-}
-
-function computeRoleCounts(
-  cards: DeckDetailCard[],
-): Record<MixRole, number> {
-  const counts: Record<MixRole, number> = {
-    ramp: 0,
-    draw: 0,
-    removal: 0,
-    wipes: 0,
-    land: 0,
-  };
-  for (const card of cards) {
-    const roles = classifyRoles({
-      typeLine: card.typeLine,
-      oracleText: null, // DeckDetailCard doesn't expose oracleText; role is pre-computed
-      keywords: [],
-    });
-    for (const role of roles) {
-      if (role in counts) {
-        counts[role as MixRole] += card.quantity;
-      }
-    }
-  }
-  return counts;
 }
 
 const ROLE_ORDER: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
@@ -64,9 +39,9 @@ export function RoleCounterStrip({ cards }: RoleCounterStripProps) {
         className="flex items-baseline justify-between md:justify-start md:gap-[10px] mb-[6px] md:mb-[10px]"
       >
         {/* §Strip header — "Recommended mix" label */}
+        {/* mobile: #8E8269 · desktop: #C6B79A (design table §Strip header — "Recommended mix" label) */}
         <span
-          className="font-mono uppercase text-[9px] md:text-[11px] tracking-[0.1em] md:tracking-[0.12em]"
-          style={{ color: "#8E8269" }}
+          className="font-mono uppercase text-[9px] md:text-[11px] tracking-[0.1em] md:tracking-[0.12em] text-[#8E8269] md:text-[#C6B79A]"
         >
           Recommended mix
         </span>

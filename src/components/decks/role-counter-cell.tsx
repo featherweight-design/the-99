@@ -72,9 +72,10 @@ export function RoleCounterCell({
         </div>
 
         {/* §Role counter cell — "rec N" caption */}
+        {/* mobile: #6E6353 · desktop: #8E8269 (design table §Role counter cell — "rec N" caption) */}
         <p
-          className="font-mono text-[8px] md:text-[9px]"
-          style={{ color: "#6E6353", marginTop: 0 }}
+          className="font-mono text-[8px] md:text-[9px] text-[#6E6353] md:text-[#8E8269]"
+          style={{ marginTop: 0 }}
         >
           {advisory ? `rec ~${target}` : `rec ${target}`}
         </p>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RECOMMENDED_MIX, roleCellState } from "./mix";
+import { computeRoleCounts, RECOMMENDED_MIX, roleCellState } from "./mix";
 
 describe("RECOMMENDED_MIX", () => {
   it("locks the four role targets and the advisory land target", () => {
@@ -12,6 +12,38 @@ describe("RECOMMENDED_MIX", () => {
     for (const role of ["ramp", "draw", "removal", "wipes"] as const) {
       expect(RECOMMENDED_MIX[role].advisory).toBe(false);
     }
+  });
+});
+
+describe("computeRoleCounts", () => {
+  it("counts from card.role, not typeLine — a creature with role:draw is counted as draw", () => {
+    // A creature card: typeLine alone would classify it as nothing (no oracle text keywords),
+    // but the server set role:"draw" from real oracleText. We must count it as draw.
+    const cards = [
+      {
+        role: "draw" as const,
+        quantity: 2,
+        // typeLine is a creature — classifyRoles({ typeLine, oracleText: null }) returns []
+        // so any old code using classifyRoles would miss this card entirely.
+      },
+      { role: "ramp" as const, quantity: 3 },
+      { role: "land" as const, quantity: 37 },
+      { role: "other" as const, quantity: 5 }, // "other" must not inflate any MixRole
+    ];
+    const counts = computeRoleCounts(cards);
+    expect(counts.draw).toBe(2);
+    expect(counts.ramp).toBe(3);
+    expect(counts.land).toBe(37);
+    expect(counts.removal).toBe(0);
+    expect(counts.wipes).toBe(0);
+  });
+
+  it("weights by quantity", () => {
+    const cards = [
+      { role: "removal" as const, quantity: 4 },
+      { role: "removal" as const, quantity: 2 },
+    ];
+    expect(computeRoleCounts(cards).removal).toBe(6);
   });
 });
 
