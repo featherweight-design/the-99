@@ -85,8 +85,8 @@ export function scoreCommander(args: {
 
   let edhrecOwnedCount: number | null = null;
   let edhrecTotal: number | null = null;
-  let overlapOwned: string[] = [];
-  let overlapMissing: string[] = [];
+  const overlapOwned: string[] = [];
+  const overlapMissing: string[] = [];
 
   if (args.edhrecTopCards) {
     edhrecTotal = args.edhrecTopCards.length;
