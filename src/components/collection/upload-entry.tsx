@@ -5,7 +5,7 @@
 // can complete end-to-end (parse → preview → confirm → dashboard).
 // Style per property table §CSV Dropzone / §Paste-List View (compact).
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { parsePasteList } from "../../lib/manabox/paste";
 import {
@@ -28,9 +28,14 @@ export function UploadEntry() {
 
   // Live client-side parse — feeds the recognized-count label and the
   // "Import {n} cards" button per §Paste-List View.
-  const pasteCardCount = pasteText.trim()
-    ? parsePasteList(pasteText).rows.reduce((n, r) => n + r.quantity, 0)
-    : 0;
+  // Memoised to avoid re-parsing on every render (only changes when pasteText changes).
+  const pasteCardCount = useMemo(
+    () =>
+      pasteText.trim()
+        ? parsePasteList(pasteText).rows.reduce((n, r) => n + r.quantity, 0)
+        : 0,
+    [pasteText],
+  );
 
   async function handleFile(file: File) {
     setError(null);
@@ -293,7 +298,8 @@ export function UploadEntry() {
             <textarea
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
-              className="h-[300px] w-full rounded-[10px] p-[14px_16px] font-mono text-[13px] leading-[1.9] resize-none focus:outline-none"
+              aria-label="Paste your card list"
+              className="h-[300px] w-full rounded-[10px] p-[14px_16px] font-mono text-[13px] leading-[1.9] resize-none"
               style={{
                 background: "var(--surface-sunken)",
                 border: "1px solid var(--border-strong)",

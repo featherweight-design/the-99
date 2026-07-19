@@ -83,12 +83,14 @@ export async function previewUpload(formData: FormData): Promise<UploadPreview> 
   const userId = await requireUserId();
   const file = formData.get("file");
   if (!(file instanceof File)) throw new Error("No CSV file provided");
+  if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5 MB)");
   const { rows, errors } = parseManaBoxCsv(await file.text());
   return buildPreview({ userId, filename: file.name, rows, errors });
 }
 
 export async function previewPaste(text: string): Promise<UploadPreview> {
   const userId = await requireUserId();
+  if (text.length > 100_000) throw new Error("Paste too large (max 100 KB)");
   const { rows, errors } = parsePasteList(text);
   return buildPreview({ userId, filename: "paste.txt", rows, errors });
 }

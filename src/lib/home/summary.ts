@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks } from "../../db/schema";
@@ -8,7 +9,7 @@ import { cards, collectionItems, deckCards, decks } from "../../db/schema";
  * shape-shifting SQL does not.
  */
 
-export async function getCollectionStats(
+export const getCollectionStats = cache(async function getCollectionStats(
   userId: string,
 ): Promise<{ totalCards: number; uniqueCards: number }> {
   const [row] = await db
@@ -19,7 +20,7 @@ export async function getCollectionStats(
     .from(collectionItems)
     .where(eq(collectionItems.userId, userId));
   return { totalCards: row?.totalCards ?? 0, uniqueCards: row?.uniqueCards ?? 0 };
-}
+});
 
 export type RecentDeck = {
   id: string;
