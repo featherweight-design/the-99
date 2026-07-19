@@ -7,6 +7,15 @@ import { type RefObject, useEffect, useRef } from "react";
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+// Consumers render parallel mobile/desktop trees and hide one via display:none
+// (e.g. ExportDialog) — hidden elements have no client rects and must not
+// receive focus or participate in Tab wrapping.
+function visibleFocusables(root: HTMLElement): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+    (el) => el.getClientRects().length > 0,
+  );
+}
+
 export function useDialogA11y(
   dialogRef: RefObject<HTMLElement | null>,
   onClose: () => void,
@@ -21,10 +30,10 @@ export function useDialogA11y(
     };
   }, []);
 
-  // Auto-focus first focusable child on mount.
+  // Auto-focus first visible focusable child on mount.
   useEffect(() => {
-    const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
-    focusables?.[0]?.focus();
+    if (!dialogRef.current) return;
+    visibleFocusables(dialogRef.current)[0]?.focus();
   }, [dialogRef]);
 
   // Escape closes; Tab wraps within the dialog.
@@ -36,7 +45,7 @@ export function useDialogA11y(
         return;
       }
       if (e.key !== "Tab" || !dialogRef.current) return;
-      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE);
+      const focusables = visibleFocusables(dialogRef.current);
       if (focusables.length === 0) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];

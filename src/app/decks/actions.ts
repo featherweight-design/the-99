@@ -139,17 +139,23 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<v
   const deck = await requireDeck(deckId, userId);
 
   // Fetch commander color identity in the same round-trip as the card lookup.
-  const [[commander], [card], [builtRow]] = await Promise.all([
+  const [[commander], [card], [builtRow], [existingRow]] = await Promise.all([
     db.select({ colorIdentity: cards.colorIdentity })
       .from(cards).where(eq(cards.oracleId, deck.commanderOracleId)),
     db.select({ typeLine: cards.typeLine, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
       .from(cards).where(eq(cards.oracleId, oracleId)),
     db.select({ total: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
       .from(deckCards).where(eq(deckCards.deckId, deckId)),
+    db.select({ oracleId: deckCards.oracleId })
+      .from(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId))),
   ]);
 
   if (!card) throw new Error("card not found");
   if (!commander) throw new Error("commander not found");
+
+  // Re-adding a non-basic that's already in the deck is a no-op (singleton) —
+  // return before validation so a full deck doesn't spuriously reject it.
+  if (existingRow && !/\bBasic\b/.test(card.typeLine)) return;
 
   const built = builtRow?.total ?? 0;
   const error = validateCardForDeck(
