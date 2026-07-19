@@ -1,12 +1,41 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems } from "../../db/schema";
+import { commanderSlug } from "../edhrec/slug";
 import { getEdhrecData } from "../edhrec/client";
 import { isCommanderCandidate, scoreCommander, type CommanderScore, type PoolCard } from "./score";
 
+export type RankedCommander = CommanderScore & { slug: string };
+
+export type RecommendResult = {
+  results: RankedCommander[];
+  degraded: boolean;
+  uniqueCardsRead: number;
+  candidateCount: number;
+};
+
+/**
+ * Pure post-processing step: assigns unique slugs in rank order and wraps
+ * counts. Exported for unit testing without a live database.
+ */
+export function finalizeRecommendations(
+  results: CommanderScore[],
+  uniqueCardsRead: number,
+  candidateCount: number,
+): Omit<RecommendResult, "degraded"> & { degraded: boolean } {
+  const seen = new Map<string, number>();
+  const ranked: RankedCommander[] = results.map((r) => {
+    const base = commanderSlug(r.name);
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    return { ...r, slug: n === 1 ? base : `${base}-${n}` };
+  });
+  return { results: ranked, degraded: false, uniqueCardsRead, candidateCount };
+}
+
 export async function recommendCommanders(
   userId: string,
-): Promise<{ results: CommanderScore[]; degraded: boolean }> {
+): Promise<RecommendResult> {
   const owned = await db
     .selectDistinctOn([cards.oracleId], {
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
@@ -42,5 +71,7 @@ export async function recommendCommanders(
     results.push(...scored);
   }
   results.sort((a, b) => b.score - a.score);
-  return { results, degraded };
+
+  const finalized = finalizeRecommendations(results, owned.length, candidates.length);
+  return { ...finalized, degraded };
 }
