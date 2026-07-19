@@ -9,11 +9,17 @@ import type { RankedCommander } from "../../lib/recs/recommend";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 
+/** Only the fields the lightbox renders — keeps the client payload slim. */
+export type LightboxCommander = Pick<
+  RankedCommander,
+  "name" | "manaCost" | "typeLine" | "oracleText" | "colorIdentity"
+>;
+
 export function CommanderLightbox({
   commander: c,
   onClose,
 }: {
-  commander: RankedCommander;
+  commander: LightboxCommander;
   onClose: () => void;
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);

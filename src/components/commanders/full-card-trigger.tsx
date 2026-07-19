@@ -3,26 +3,23 @@
 // detail.tsx (server component) renders this, passing the commander data.
 
 import { useState } from "react";
-import type { RankedCommander } from "../../lib/recs/recommend";
-import { CommanderLightbox } from "./lightbox";
+import { CommanderLightbox, type LightboxCommander } from "./lightbox";
 
 export function FullCardTrigger({
   commander,
 }: {
-  commander: RankedCommander;
+  commander: LightboxCommander;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       {/* Full-band tap target — per state table, tapping the art header opens
-          the lightbox. Hidden from a11y tree; the labeled ⛶ chip below is the
-          accessible control. */}
-      <button
-        type="button"
+          the lightbox. Presentational (not a button, never focusable); the
+          labeled ⛶ chip below is the accessible control. */}
+      <div
         aria-hidden="true"
-        tabIndex={-1}
-        className="absolute inset-0 cursor-pointer bg-transparent border-0 p-0"
+        className="absolute inset-0 cursor-pointer"
         onClick={() => setOpen(true)}
       />
 

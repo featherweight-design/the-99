@@ -501,7 +501,15 @@ export function CommanderDetail({
         )}
 
         {/* ⛶ Full card trigger + lightbox (client component) */}
-        <FullCardTrigger commander={c} />
+        <FullCardTrigger
+          commander={{
+            name: c.name,
+            manaCost: c.manaCost,
+            typeLine: c.typeLine,
+            oracleText: c.oracleText,
+            colorIdentity: c.colorIdentity,
+          }}
+        />
 
         {/* Art header overlay (bottom) — pointer-events-none so taps fall
             through to the full-band lightbox trigger */}
