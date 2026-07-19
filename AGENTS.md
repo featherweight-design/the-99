@@ -10,14 +10,16 @@ MTG Commander companion: upload a collection CSV, get commander recommendations,
 
 ## Commands
 
-- `npm run dev` / `npm run build` — build needs `DATABASE_URL` to exist but runs no queries; a stub works: `DATABASE_URL="postgres://stub:stub@localhost/stub" npm run build`
-- `npm run typecheck` · `npm run lint` · `npm test`
-- `npm run db:generate` / `npm run db:migrate` / `npm run db:seed` (Drizzle Kit; seed pulls the Scryfall catalog)
+Package manager is **pnpm** (pinned via `packageManager` in package.json) — never npm or yarn; `pnpm-lock.yaml` is the only lockfile.
+
+- `pnpm dev` / `pnpm build` — build needs `DATABASE_URL` to exist but runs no queries; a stub works: `DATABASE_URL="postgres://stub:stub@localhost/stub" pnpm build`
+- `pnpm typecheck` · `pnpm lint` · `pnpm test`
+- `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:seed` (Drizzle Kit; seed pulls the Scryfall catalog)
 
 ## Workflow
 
 - All work happens in worktrees under `.worktrees/<branch>`; copy `.env` from the repo root into a new worktree before running the app. The main checkout stays clean on `main`.
-- Pre-push gate, every push: `npm run typecheck && npm run lint && npm test` plus the stub-DB build, then `git fetch origin && git rebase origin/main`.
+- Pre-push gate, every push: `pnpm typecheck && pnpm lint && pnpm test` plus the stub-DB build, then `git fetch origin && git rebase origin/main`.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 
