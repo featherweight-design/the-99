@@ -195,7 +195,9 @@ export function NavRail({ locked }: { locked: boolean }) {
       <div className="mt-auto py-[14px] px-3">
         {/* §Rail Account trigger — Hover: border-color accent (#C9A24B).
             Classes (not inline style) so the hover: variant applies. */}
-        <div className="flex cursor-pointer items-center gap-3 rounded-[14px] py-[2px] pr-3 pl-[2px] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] hover:border-[color:var(--brass)] transition-colors">
+        {/* Only the inner UserButton is interactive — no pointer cursor on the
+            wrapper, which would imply the whole row is clickable. */}
+        <div className="flex items-center gap-3 rounded-[14px] py-[2px] pr-3 pl-[2px] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] hover:border-[color:var(--brass)] transition-colors">
           {/* Clerk UserButton — avatar dimensions per §Rail: Avatar badge */}
           <UserButton
             appearance={{

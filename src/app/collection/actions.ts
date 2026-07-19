@@ -95,7 +95,9 @@ export async function previewUpload(formData: FormData): Promise<UploadPreview> 
 
 export async function previewPaste(text: string): Promise<UploadPreview> {
   const userId = await requireUserId();
-  if (text.length > 100_000) throw new Error("Paste too large (max 100 KB)");
+  // Byte-accurate cap — text.length counts UTF-16 code units, which lets
+  // multi-byte input exceed the intended size guard.
+  if (Buffer.byteLength(text, "utf8") > 100_000) throw new Error("Paste too large (max 100 KB)");
   const { rows, errors } = parsePasteList(text);
   return buildPreview({ userId, filename: "paste.txt", rows, errors });
 }
