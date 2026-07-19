@@ -7,7 +7,7 @@ Production stack: **Vercel** (Next.js hosting + cron) + **Neon** (serverless Pos
 - Vercel builds from `main` (`npm run build`); every route is dynamic (server-rendered on demand), so builds need no live database — `DATABASE_URL` only has to exist.
 - Neon hosts the Postgres database; the app connects via `@neondatabase/serverless` using `DATABASE_URL`.
 - Clerk handles auth; keys are environment-scoped (test vs. production instance).
-- Vercel Cron (`vercel.json`) hits `GET /api/cron/scryfall-refresh` Mondays 09:00 UTC to refresh the card catalog, authorized by `Authorization: Bearer $CRON_SECRET`.
+- Vercel Cron (`vercel.json`) hits `GET /api/cron/scryfall-refresh` Mondays 09:00 UTC to refresh the card catalog. The route (`src/app/api/cron/scryfall-refresh/route.ts`) rejects requests without `Authorization: Bearer $CRON_SECRET`; Vercel's cron docs state this header is sent automatically when the `CRON_SECRET` env var is set on the project.
 
 ## Environment variables (Vercel → Project → Settings → Environment Variables)
 
@@ -16,7 +16,7 @@ Production stack: **Vercel** (Next.js hosting + cron) + **Neon** (serverless Pos
 | `DATABASE_URL` | Neon dashboard → connection string | Use the pooled connection string |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk dashboard → API keys | `pk_live_…` for production |
 | `CLERK_SECRET_KEY` | Clerk dashboard → API keys | `sk_live_…` for production |
-| `CRON_SECRET` | Generate: `openssl rand -hex 32` | Vercel automatically sends it on cron invocations when the var is set |
+| `CRON_SECRET` | Generate: `openssl rand -hex 32` | Cron requests must carry `Authorization: Bearer $CRON_SECRET` (per-Vercel-docs, sent automatically when the var is set) |
 
 `.env.example` mirrors this list for local setup.
 
@@ -31,5 +31,5 @@ Production stack: **Vercel** (Next.js hosting + cron) + **Neon** (serverless Pos
 ## Ongoing
 
 - Deploys are automatic on merge to `main`; PRs get preview deploys.
-- CI (`.github/workflows/ci.yml`) gates PRs with typecheck/lint/test/build; Vercel's build is the deploy gate.
+- CI gates PRs with typecheck/lint/test/build (`.github/workflows/ci.yml`, shipping in PR #26); Vercel's build is the deploy gate.
 - Database schema changes: commit Drizzle migrations (`npm run db:generate`), then run `db:migrate` against production manually — migrations are not run automatically at deploy time.
