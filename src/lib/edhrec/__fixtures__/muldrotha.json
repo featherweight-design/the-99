@@ -1,0 +1,110 @@
+{
+  "container": {
+    "json_dict": {
+      "cardlists": [
+        {
+          "cardviews": [
+            {
+              "name": "Spore Frog"
+            },
+            {
+              "name": "Seal of Primordium"
+            },
+            {
+              "name": "Kaya's Ghostform"
+            },
+            {
+              "name": "Gravebreaker Lamia"
+            },
+            {
+              "name": "Secrets of the Dead"
+            },
+            {
+              "name": "Haywire Mite"
+            },
+            {
+              "name": "Sakura-Tribe Elder"
+            },
+            {
+              "name": "Pernicious Deed"
+            },
+            {
+              "name": "Doc Aurlock, Grizzled Genius"
+            },
+            {
+              "name": "Siren Stormtamer"
+            }
+          ]
+        },
+        {
+          "cardviews": [
+            {
+              "name": "Eternal Witness"
+            },
+            {
+              "name": "The Gitrog Monster"
+            },
+            {
+              "name": "Animate Dead"
+            },
+            {
+              "name": "Stitcher's Supplier"
+            },
+            {
+              "name": "Mystic Remora"
+            },
+            {
+              "name": "Syr Konrad, the Grim"
+            },
+            {
+              "name": "Baleful Strix"
+            },
+            {
+              "name": "Altar of Dementia"
+            },
+            {
+              "name": "Mulldrifter"
+            },
+            {
+              "name": "Lightning Greaves"
+            }
+          ]
+        },
+        {
+          "cardviews": [
+            {
+              "name": "Sol Ring"
+            },
+            {
+              "name": "Arcane Signet"
+            },
+            {
+              "name": "Lotus Petal"
+            },
+            {
+              "name": "Commander's Sphere"
+            },
+            {
+              "name": "Golgari Signet"
+            },
+            {
+              "name": "Simic Signet"
+            },
+            {
+              "name": "Dimir Signet"
+            },
+            {
+              "name": "Talisman of Resilience"
+            },
+            {
+              "name": "Mind Stone"
+            },
+            {
+              "name": "Talisman of Dominance"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
