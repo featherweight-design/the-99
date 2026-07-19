@@ -7,6 +7,44 @@ import { isCommanderCandidate, scoreCommander, type CommanderScore, type PoolCar
 
 export type RankedCommander = CommanderScore & { slug: string };
 
+/**
+ * Slim payload for the client-side list view. The full RankedCommander carries
+ * heavy detail-only fields (oracleText, roleCards, overlapMissing) that the
+ * list never renders — stripping them keeps the serialized RSC payload small.
+ */
+export type CommanderListItem = Pick<
+  RankedCommander,
+  | "slug"
+  | "name"
+  | "colorIdentity"
+  | "colorPoolSize"
+  | "roleCounts"
+  | "edhrecOwnedCount"
+  | "edhrecTotal"
+  | "overlapOwned"
+  | "fitPool"
+  | "fitRoles"
+  | "fitSynergy"
+  | "score"
+>;
+
+export function toListItem(r: RankedCommander): CommanderListItem {
+  return {
+    slug: r.slug,
+    name: r.name,
+    colorIdentity: r.colorIdentity,
+    colorPoolSize: r.colorPoolSize,
+    roleCounts: r.roleCounts,
+    edhrecOwnedCount: r.edhrecOwnedCount,
+    edhrecTotal: r.edhrecTotal,
+    overlapOwned: r.overlapOwned,
+    fitPool: r.fitPool,
+    fitRoles: r.fitRoles,
+    fitSynergy: r.fitSynergy,
+    score: r.score,
+  };
+}
+
 export type RecommendResult = {
   results: RankedCommander[];
   degraded: boolean;

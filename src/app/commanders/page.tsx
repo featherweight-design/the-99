@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUserId } from "../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
-import { recommendCommanders } from "../../lib/recs/recommend";
+import { recommendCommanders, toListItem } from "../../lib/recs/recommend";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
@@ -202,7 +202,7 @@ export default async function CommandersPage() {
       <PageHeader uniqueCardsRead={uniqueCardsRead} />
 
       <CommandersView
-        results={results}
+        results={results.map(toListItem)}
         degraded={degraded}
         uniqueCardsRead={uniqueCardsRead}
         candidateCount={candidateCount}

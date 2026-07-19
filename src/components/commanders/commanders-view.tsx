@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { RankedCommander } from "../../lib/recs/recommend";
+import type { CommanderListItem } from "../../lib/recs/recommend";
 import { filterByColors } from "../../lib/commanders/filter";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { RecCard } from "./rec-card";
@@ -45,7 +45,7 @@ const COLOR_LABELS: Record<string, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export type CommandersViewProps = {
-  results: RankedCommander[];
+  results: CommanderListItem[];
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;

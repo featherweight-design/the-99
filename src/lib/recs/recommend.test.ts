@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("../edhrec/client", () => ({ getEdhrecData: vi.fn() }));
 
-import { finalizeRecommendations } from "./recommend";
+import { finalizeRecommendations, toListItem } from "./recommend";
 import type { CommanderScore } from "./score";
 
 // Minimal CommanderScore stub for testing post-processing only.
@@ -85,6 +85,33 @@ describe("finalizeRecommendations", () => {
       expect(results).toHaveLength(0);
       expect(uniqueCardsRead).toBe(0);
       expect(candidateCount).toBe(0);
+    });
+  });
+
+  describe("toListItem", () => {
+    it("keeps list fields and drops heavy detail-only fields", () => {
+      const score = stubScore("Krenko, Mob Boss", 42);
+      score.oracleText = "Tap: create goblins.";
+      score.overlapOwned = ["Skirk Prospector"];
+      const { results } = finalizeRecommendations([score], 10, 1);
+      const item = toListItem(results[0]);
+      expect(item).toEqual({
+        slug: "krenko-mob-boss",
+        name: "Krenko, Mob Boss",
+        colorIdentity: [],
+        colorPoolSize: 0,
+        roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
+        edhrecOwnedCount: null,
+        edhrecTotal: null,
+        overlapOwned: ["Skirk Prospector"],
+        fitPool: 0,
+        fitRoles: 0,
+        fitSynergy: null,
+        score: 42,
+      });
+      expect(item).not.toHaveProperty("oracleText");
+      expect(item).not.toHaveProperty("roleCards");
+      expect(item).not.toHaveProperty("overlapMissing");
     });
   });
 

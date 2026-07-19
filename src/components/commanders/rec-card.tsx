@@ -11,10 +11,10 @@ import { fitSegments, receiptsPreview } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
 import { FitBar } from "./fit-bar";
 import { RoleChips } from "./role-chips";
-import type { RankedCommander } from "../../lib/recs/recommend";
+import type { CommanderListItem } from "../../lib/recs/recommend";
 
 type RecCardProps = {
-  commander: RankedCommander;
+  commander: CommanderListItem;
   rank: number;
 };
 

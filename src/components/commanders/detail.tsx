@@ -725,7 +725,7 @@ export function CommanderDetail({
           </span>
         </div>
         <Link
-          href={`/decks?commander=${c.slug}`}
+          href={`/decks?commander=${c.oracleId}`}
           // brand focus-visible outline treatment inherited from globals.css
           className="font-sans font-[600] rounded-[8px] text-center"
           style={{
@@ -902,7 +902,7 @@ export function CommanderDetail({
 
           {/* Build this deck button */}
           <Link
-            href={`/decks?commander=${c.slug}`}
+            href={`/decks?commander=${c.oracleId}`}
             // brand focus-visible outline treatment inherited from globals.css
             className="font-sans font-[600] rounded-[8px] text-center block"
             style={{
