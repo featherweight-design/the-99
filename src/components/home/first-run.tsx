@@ -7,7 +7,7 @@ import { ReplaceFlow } from "../collection/replace-flow";
  */
 export function FirstRunChecklist({ name }: { name: string | null }) {
   return (
-    <div className="max-w-[720px] p-5 md:px-10 md:pt-[34px] md:pb-11">
+    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11">
       {/* §Page heading:
           Mobile:  Cinzel 700 23px primary, line-height 1.2
           Desktop: Cinzel 700 30px primary
