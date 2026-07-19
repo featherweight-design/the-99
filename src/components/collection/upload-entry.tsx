@@ -159,14 +159,15 @@ export function UploadEntry({
               <span className="md:hidden">Moxfield · Archidekt · Deckbox · ManaBox · CSV</span>
               <span className="hidden md:inline">Moxfield · Archidekt · Deckbox · ManaBox · plain CSV</span>
             </div>
-            {/* Browse files button — §"Browse files" Button: font 13/14px 600, bg #C9A24B (--brass) color --bg, radius 8px, padding 11px 20px / 11px 22px, margin-top 16px mobile */}
+            {/* Browse files button — §"Browse files" Button.
+                Deviation vs handoff (#30): (a) desktop mt/mb 14px added — the flat design put the button flush against format meta above and helper text below; needs breathing room. (b) Background moved from an inline style to a Tailwind utility so the hover-state class actually applies (inline styles outrank hover utilities and were shadowing the color swap). (c) Disabled + label swap while the upload transition is pending so the user gets feedback instead of a silent submit. */}
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
-              className="rounded-lg font-semibold text-[13px] md:text-[14px] mt-[16px] md:mt-0 px-[20px] md:px-[22px] py-[11px] md:whitespace-nowrap hover:bg-[color:var(--brass-hover)]"
-              style={{ color: "var(--bg)", background: "var(--brass)", border: "none" }}
+              disabled={pending}
+              className="rounded-lg font-semibold text-[13px] md:text-[14px] mt-[16px] md:mt-[14px] md:mb-[14px] px-[20px] md:px-[22px] py-[11px] md:whitespace-nowrap border-none bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)] disabled:opacity-60 disabled:cursor-wait"
             >
-              Browse files
+              {pending ? "Uploading…" : "Browse files"}
             </button>
             {/* Helper — §Helper Text: 12/13px --fg-faint, margin-top 14px mobile */}
             <p
