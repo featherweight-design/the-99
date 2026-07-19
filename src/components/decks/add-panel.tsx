@@ -13,14 +13,19 @@ import { SearchPane } from "./search-pane";
 
 type Tab = "suggestions" | "search";
 
-interface AddPanelProps {
+interface AddPanelBaseProps {
   deckId: string;
   commanderIdentity: string[];
   suggestions: DeckSuggestion[];
   deckOracleIds: string[];
-  variant: "column" | "inline" | "sheet";
-  onCloseSheet?: () => void;
 }
+
+// Discriminated on variant — the sheet variant requires onCloseSheet.
+type AddPanelProps = AddPanelBaseProps &
+  (
+    | { variant: "column" | "inline"; onCloseSheet?: never }
+    | { variant: "sheet"; onCloseSheet: () => void }
+  );
 
 // Inner panel content (tab bar + pane) — shared between all variants.
 function PanelContent({
@@ -208,14 +213,8 @@ function SheetWrapper({
   );
 }
 
-export function AddPanel({
-  deckId,
-  commanderIdentity,
-  suggestions,
-  deckOracleIds: deckOracleIdsArray,
-  variant,
-  onCloseSheet,
-}: AddPanelProps) {
+export function AddPanel(props: AddPanelProps) {
+  const { deckId, commanderIdentity, suggestions, deckOracleIds: deckOracleIdsArray } = props;
   // Build a Set client-side — flips + Add ↔ ✓ In deck without server round-trips.
   const deckOracleIds = useMemo(() => new Set(deckOracleIdsArray), [deckOracleIdsArray]);
 
@@ -225,17 +224,13 @@ export function AddPanel({
       commanderIdentity={commanderIdentity}
       suggestions={suggestions}
       deckOracleIds={deckOracleIds}
-      variant={variant}
-      onCloseSheet={onCloseSheet}
+      variant={props.variant}
+      onCloseSheet={props.variant === "sheet" ? props.onCloseSheet : undefined}
     />
   );
 
-  if (variant === "sheet") {
-    return (
-      <SheetWrapper onClose={onCloseSheet ?? (() => {})}>
-        {content}
-      </SheetWrapper>
-    );
+  if (props.variant === "sheet") {
+    return <SheetWrapper onClose={props.onCloseSheet}>{content}</SheetWrapper>;
   }
 
   // "column" and "inline" — no extra chrome; the wrapper is provided by BuilderShell.

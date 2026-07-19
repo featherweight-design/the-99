@@ -24,9 +24,9 @@ export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchP
   const [resultState, setResultState] = useState<{ query: string; rows: SearchResult[] } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced search: kick off after 150ms of inactivity.
-  // We never call setState synchronously in the effect — the only setState path
-  // is the async callback (after await / in a timeout callback), which is fine.
+  // Debounced search: kick off after 150ms of inactivity. Out-of-bounds
+  // queries clear results synchronously (eslint-disable below); actual search
+  // results only land via the async timeout callback.
   useEffect(() => {
     if (timerRef.current !== null) clearTimeout(timerRef.current);
 
@@ -39,9 +39,14 @@ export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchP
 
     let cancelled = false;
     timerRef.current = setTimeout(() => {
-      searchCards(q, commanderIdentity, ownedOnly).then((rows) => {
-        if (!cancelled) setResultState({ query: q, rows });
-      });
+      searchCards(q, commanderIdentity, ownedOnly)
+        .then((rows) => {
+          if (!cancelled) setResultState({ query: q, rows });
+        })
+        .catch((err) => {
+          console.error(err);
+          if (!cancelled) setResultState(null);
+        });
     }, 150);
 
     return () => {

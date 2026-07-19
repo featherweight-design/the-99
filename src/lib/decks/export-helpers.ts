@@ -23,16 +23,22 @@ export function buildShoppingText(cards: { name: string }[]): string {
   return cards.map((c) => c.name).join("\n");
 }
 
+/** Deck names are user-controlled — strip path separators / OS-reserved characters. */
+function sanitizeFilename(name: string): string {
+  const cleaned = name.replace(/[/\\:*?"<>|]/g, "-").trim();
+  return cleaned.length > 0 ? cleaned : "deck";
+}
+
 /**
  * Filename for the decklist download.
  */
 export function decklistFilename(deckName: string): string {
-  return `${deckName}.txt`;
+  return `${sanitizeFilename(deckName)}.txt`;
 }
 
 /**
  * Filename for the shopping list download.
  */
 export function shoppingFilename(deckName: string): string {
-  return `${deckName} — shopping.txt`;
+  return `${sanitizeFilename(deckName)} — shopping.txt`;
 }
