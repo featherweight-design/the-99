@@ -44,8 +44,8 @@ export function ReviewScreen({
         <span className="ml-auto font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>{preview.filename}</span>
       </div>
 
-      {/* Desktop content area — §Desktop Content Area: padding 36px 56px 20px, max-width 940px */}
-      <div className="flex-1 md:max-w-[940px] md:mx-auto md:p-[36px_56px_20px] p-[16px_18px]">
+      {/* Desktop content area — §Desktop Content Area (padding 36px 56px 20px, max-width 940px). Cap widened to 1280px per #32 so the review fills the shell content column instead of leaving an empty right column at typical desktop widths. */}
+      <div className="flex-1 md:max-w-[1280px] md:mx-auto md:p-[36px_56px_20px] p-[16px_18px]">
         {/* Desktop step indicator — §Desktop Step Indicator */}
         <p
           className="hidden md:block font-mono text-[11px] tracking-[0.06em]"
@@ -127,8 +127,12 @@ export function ReviewScreen({
           </div>
         </div>
 
-        {/* Desktop 2-column issues layout — §Desktop Issues Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-[22px] mt-[16px] md:mt-[24px]">
+        {/* Desktop 2-column issues layout — §Desktop Issues Layout. Collapses to a single column when either section is empty (#32) so the remaining list spans the full width instead of leaving half the row blank. */}
+        <div
+          className={`grid grid-cols-1 gap-[22px] mt-[16px] md:mt-[24px] ${
+            preview.unmatchedRows.length > 0 && preview.parseErrors.length > 0 ? "md:grid-cols-2" : ""
+          }`}
+        >
           {/* Unmatched section */}
           {preview.unmatchedRows.length > 0 && (
             <div>
@@ -248,8 +252,8 @@ export function ReviewScreen({
           </span>
         </p>
 
-        {/* Buttons — mobile: full-width continue only, desktop: cancel + continue right-aligned */}
-        <div className="md:ml-auto flex gap-[12px]">
+        {/* Buttons — mobile: full-width continue only, desktop: cancel + continue right-aligned. md:whitespace-nowrap on Continue keeps the label on one line when the summary sentence eats horizontal space (#32 — was wrapping to "Continue / to / replace"); md:flex-none on the button group blocks flex-shrink so the label + padding stay intact. */}
+        <div className="md:ml-auto md:flex-none flex gap-[12px]">
           <button
             type="button"
             onClick={onCancel}
@@ -261,7 +265,7 @@ export function ReviewScreen({
           <button
             type="button"
             onClick={onContinue}
-            className="rounded-lg font-sans font-semibold text-[15px] md:text-[14px] w-full md:w-auto py-[13px] md:py-[12px] px-0 md:px-[24px] cursor-pointer hover:bg-[color:var(--brass-hover)]"
+            className="rounded-lg font-sans font-semibold text-[15px] md:text-[14px] w-full md:w-auto md:whitespace-nowrap py-[13px] md:py-[12px] px-0 md:px-[24px] cursor-pointer hover:bg-[color:var(--brass-hover)]"
             style={{ color: "var(--bg)", background: "var(--brass)", border: "none" }}
           >
             Continue to replace →
@@ -274,13 +278,13 @@ export function ReviewScreen({
 
 function MiniStat({ number, numberColor, label }: { number: number; numberColor: string; label: string }) {
   return (
-    // §Mini Stat Cell: flex 1, bg #181410 (--surface-sunken), border 1px #2A241D (--border), radius 8px, padding 9px 11px
+    // §Mini Stat Cell: flex 1, bg #181410 (--surface-sunken), border 1px #2A241D (--border), radius 8px, padding 10px 12px (was 9/11 — bumped for #33 to match the mock's tighter-looking pill with more prominent number/label breathing).
     <div
-      className="flex-1 rounded-lg p-[9px_11px]"
+      className="flex-1 rounded-lg p-[10px_12px]"
       style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}
     >
-      <div className="font-mono text-[15px]" style={{ color: numberColor }}>{number.toLocaleString()}</div>
-      <div className="text-[10.5px] mt-[1px]" style={{ color: "var(--fg-faint)" }}>{label}</div>
+      <div className="font-mono text-[16px] leading-none" style={{ color: numberColor }}>{number.toLocaleString()}</div>
+      <div className="text-[11px] mt-[3px]" style={{ color: "var(--fg-faint)" }}>{label}</div>
     </div>
   );
 }
