@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
-import { fitSegments, receiptsPreview } from "../../lib/recs/format";
+import { fitSegments } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
 import { FitBar } from "./fit-bar";
 import { RoleChips } from "./role-chips";
@@ -29,8 +29,8 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
   // §Synergy Receipts Hidden Note and §Per-Commander Degraded Note.
   const perCmdDegraded = c.fitSynergy === null;
 
-  // Receipts preview from overlapOwned
-  const receipts = receiptsPreview(c.overlapOwned);
+  // Receipts preview preformatted server-side (empty string = none)
+  const receipts = c.receipts;
 
   // Synergy bar pct
   const synergyPct =

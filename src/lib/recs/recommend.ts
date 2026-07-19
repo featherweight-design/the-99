@@ -4,6 +4,7 @@ import { cards, collectionItems } from "../../db/schema";
 import { commanderSlug } from "../edhrec/slug";
 import { getEdhrecData } from "../edhrec/client";
 import { isCommanderCandidate, scoreCommander, type CommanderScore, type PoolCard } from "./score";
+import { receiptsPreview } from "./format";
 
 export type RankedCommander = CommanderScore & { slug: string };
 
@@ -21,12 +22,15 @@ export type CommanderListItem = Pick<
   | "roleCounts"
   | "edhrecOwnedCount"
   | "edhrecTotal"
-  | "overlapOwned"
   | "fitPool"
   | "fitRoles"
   | "fitSynergy"
   | "score"
->;
+> & {
+  /** Preformatted receipts line — overlapOwned can be large, so only the
+      rendered preview string ships to the client. */
+  receipts: string;
+};
 
 export function toListItem(r: RankedCommander): CommanderListItem {
   return {
@@ -37,7 +41,7 @@ export function toListItem(r: RankedCommander): CommanderListItem {
     roleCounts: r.roleCounts,
     edhrecOwnedCount: r.edhrecOwnedCount,
     edhrecTotal: r.edhrecTotal,
-    overlapOwned: r.overlapOwned,
+    receipts: receiptsPreview(r.overlapOwned),
     fitPool: r.fitPool,
     fitRoles: r.fitRoles,
     fitSynergy: r.fitSynergy,

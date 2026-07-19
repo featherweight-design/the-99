@@ -103,13 +103,14 @@ describe("finalizeRecommendations", () => {
         roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
         edhrecOwnedCount: null,
         edhrecTotal: null,
-        overlapOwned: ["Skirk Prospector"],
+        receipts: "Skirk Prospector",
         fitPool: 0,
         fitRoles: 0,
         fitSynergy: null,
         score: 42,
       });
       expect(item).not.toHaveProperty("oracleText");
+      expect(item).not.toHaveProperty("overlapOwned");
       expect(item).not.toHaveProperty("roleCards");
       expect(item).not.toHaveProperty("overlapMissing");
     });

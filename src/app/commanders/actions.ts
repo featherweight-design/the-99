@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireUserId } from "../../lib/auth";
 
 /**
  * Retry action for the commanders recommendations page.
@@ -9,5 +10,6 @@ import { revalidatePath } from "next/cache";
  * Submit via: <form action={retryRecs}><button type="submit">Retry</button></form>
  */
 export async function retryRecs() {
+  await requireUserId();
   revalidatePath("/commanders");
 }
