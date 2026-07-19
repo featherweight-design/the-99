@@ -2,20 +2,21 @@
 // ExportCopyButton — clipboard write with aria-live announcement + 1.5s label swap.
 // Falls back to document.execCommand("copy") when navigator.clipboard is unavailable.
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface ExportCopyButtonProps {
   /** The text to copy to clipboard. */
   text: string;
   /** The aria-live status setter in the parent dialog (sr-only div). */
   onStatus: (msg: string) => void;
-  /** Optional pre element ref for execCommand fallback. */
-  preRef?: React.RefObject<HTMLPreElement | null>;
 }
 
-export function ExportCopyButton({ text, onStatus, preRef }: ExportCopyButtonProps) {
+export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear the 1.5s label-swap timer on unmount to prevent state updates on unmounted component.
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   function handleCopy() {
     const lineCount = text.split("\n").length;
@@ -36,27 +37,17 @@ export function ExportCopyButton({ text, onStatus, preRef }: ExportCopyButtonPro
         // silent — already tried
       });
     } else {
-      // Legacy fallback: select <pre> content and execCommand
-      if (preRef?.current) {
-        const selection = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(preRef.current);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-        document.execCommand("copy");
-        selection?.removeAllRanges();
-      } else {
-        // No pre ref — try creating a temporary textarea
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
-      }
+      // Legacy fallback: create a temporary textarea to copy text without depending on
+      // which DOM tree is visible (avoids selecting the hidden <pre> in the dual-layout).
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
       onSuccess();
     }
   }

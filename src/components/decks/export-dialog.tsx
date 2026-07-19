@@ -35,20 +35,20 @@ export function ExportDialog({
   onClose,
 }: ExportDialogProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
-  const preRef = useRef<HTMLPreElement | null>(null);
   const [tab, setTab] = useState<Tab>("decklist");
   const [status, setStatus] = useState("");
 
-  // Focus trap, Escape, focus-return
+  // Focus trap, Escape, focus-return — all hooks must run before any early return.
   useDialogA11y(dialogRef, onClose);
 
-  // Body scroll lock while open
+  // Body scroll lock gated on open — hooks run unconditionally; effect guards internally.
   useEffect(() => {
+    if (!open) return;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
-  }, []);
+  }, [open]);
 
   if (!open) return null;
 
@@ -73,13 +73,16 @@ export function ExportDialog({
 
   return (
     <>
-      {/* Overlay dim */}
+      {/* Overlay dim — 0.60 mobile / 0.68 desktop */}
       <div
-        className="fixed inset-0 z-40"
-        style={{ background: "rgba(8,6,4,0.60)" }}
+        className="fixed inset-0 z-40 bg-[rgba(8,6,4,0.60)] md:bg-[rgba(8,6,4,0.68)]"
         onClick={onClose}
         aria-hidden
       />
+      {/* Single aria-live status region — hoisted here so it renders exactly once regardless of layout path */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {status}
+      </div>
       {/* Sheet (mobile) / Modal (desktop) */}
       <div
         ref={dialogRef}
@@ -125,9 +128,7 @@ export function ExportDialog({
             isCommanderLine={isCommanderLine}
             isSeparatorLine={isSeparatorLine}
             getLineColor={getLineColor}
-            status={status}
             setStatus={setStatus}
-            preRef={preRef}
             onClose={onClose}
             isMobile={false}
           />
@@ -146,9 +147,7 @@ export function ExportDialog({
             isCommanderLine={isCommanderLine}
             isSeparatorLine={isSeparatorLine}
             getLineColor={getLineColor}
-            status={status}
             setStatus={setStatus}
-            preRef={preRef}
             onClose={onClose}
             isMobile={true}
           />
@@ -173,9 +172,7 @@ interface DialogContentProps {
   isCommanderLine: (line: string) => boolean;
   isSeparatorLine: (line: string) => boolean;
   getLineColor: (line: string) => string;
-  status: string;
   setStatus: (s: string) => void;
-  preRef: React.RefObject<HTMLPreElement | null>;
   onClose: () => void;
   isMobile: boolean;
 }
@@ -191,9 +188,7 @@ function DialogContent({
   isCommanderLine,
   isSeparatorLine,
   getLineColor,
-  status,
   setStatus,
-  preRef,
   onClose,
   isMobile,
 }: DialogContentProps) {
@@ -204,11 +199,6 @@ function DialogContent({
 
   return (
     <>
-      {/* aria-live status (sr-only) */}
-      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-        {status}
-      </div>
-
       {/* Header */}
       <div
         className="flex items-center justify-between"
@@ -324,7 +314,6 @@ function DialogContent({
           /* Decklist tab body */
           <div style={{ margin: isMobile ? "14px 18px" : "0 24px" }}>
             <pre
-              ref={preRef}
               className="font-mono"
               style={{
                 fontSize: isMobile ? 11.5 : 12.5,
@@ -516,7 +505,6 @@ function DialogContent({
         <ExportCopyButton
           text={activeText}
           onStatus={setStatus}
-          preRef={preRef}
         />
 
         {/* Download .txt — secondary (BOTH tabs, BOTH breakpoints) */}
