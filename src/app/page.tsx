@@ -1,6 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { Crowned99 } from "../components/marks";
+import { getCollectionStats, listRecentDecks } from "../lib/home/summary";
+import { FirstRunChecklist } from "../components/home/first-run";
+import { Dashboard } from "../components/home/dashboard";
 
 export default async function HomePage() {
   const { userId } = await auth();
@@ -68,6 +71,18 @@ export default async function HomePage() {
     );
   }
 
-  // Signed-in branch — Task 10 renders the dashboard here.
-  return <div className="p-6 text-fg" />;
+  // Fetch name + data in parallel. currentUser() is cheap (Clerk session cache).
+  // `user?.firstName` falls back to null gracefully when not set.
+  const [user, stats, decks] = await Promise.all([
+    currentUser(),
+    getCollectionStats(userId),
+    listRecentDecks(userId, 3),
+  ]);
+  const name = user?.firstName ?? null;
+
+  // First-run: user has zero unique cards (no collection uploaded yet).
+  if (stats.uniqueCards === 0) {
+    return <FirstRunChecklist name={name} />;
+  }
+  return <Dashboard userId={userId} stats={stats} decks={decks} name={name} />;
 }

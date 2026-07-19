@@ -1,0 +1,263 @@
+import { Suspense } from "react";
+import Link from "next/link";
+import type { RecentDeck } from "../../lib/home/summary";
+import { HeroCommander, HeroCommanderSkeleton } from "./hero-commander";
+
+export function Dashboard({
+  userId,
+  stats,
+  decks,
+  name,
+}: {
+  userId: string;
+  stats: { totalCards: number; uniqueCards: number };
+  decks: RecentDeck[];
+  name: string | null;
+}) {
+  return (
+    // §Signed-In Home Dashboard: Main content area — padding 20px mobile / 34px 40px 44px desktop
+    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11">
+      {/* ── Greeting header ──
+          §Page heading "Welcome back":
+            Mobile: Cinzel 700 24px primary — content "Welcome back" (no name)
+            Desktop: Cinzel 700 32px primary — content "Welcome back, {name}" */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              color: "var(--fg)",
+              margin: 0,
+            }}
+            className="text-[24px] md:text-[32px]"
+          >
+            <span className="md:hidden">Welcome back</span>
+            <span className="hidden md:inline">
+              {name ? `Welcome back, ${name}` : "Welcome back"}
+            </span>
+          </h1>
+          {/* §Stats sub-line:
+              Mobile:  mono 11px muted, mt 6px — "{N} commanders buildable · {M} decks"
+              Desktop: mono 13px muted, mt 8px — "{total} cards · {unique} unique · {N} commanders buildable · {M} decks"
+              (commander count not available here; omit and show card/unique/decks per available data) */}
+          <p
+            className="text-[11px] md:text-[13px] mt-[6px] md:mt-[8px]"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "var(--fg-muted)",
+            }}
+          >
+            {/* Mobile: compact */}
+            <span className="md:hidden">
+              {stats.totalCards.toLocaleString()} cards · {decks.length} deck
+              {decks.length === 1 ? "" : "s"}
+            </span>
+            {/* Desktop: full */}
+            <span className="hidden md:inline">
+              {stats.totalCards.toLocaleString()} cards ·{" "}
+              {stats.uniqueCards.toLocaleString()} unique · {decks.length} deck
+              {decks.length === 1 ? "" : "s"}
+            </span>
+          </p>
+        </div>
+
+        {/* §"Update collection" button (desktop header) — transparent bg, border line, 8px br, 9px 16px pad, Cinzel-Sans 600 13px primary */}
+        <Link
+          href="/collection"
+          className="hidden md:inline-block rounded-[8px] px-4 py-[9px] transition-colors hover:border-brass hover:text-brass-hover"
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontWeight: 600,
+            fontSize: 13,
+            color: "var(--fg)",
+            border: "1px solid var(--border-strong)",
+          }}
+        >
+          Update collection
+        </Link>
+      </div>
+
+      {/* ── Hero Commander ──
+          §Section label: mono 10px/11px uppercase 0.16em tracking, fg-faint, mt 22px mb 10px/12px */}
+      <div
+        className="mt-[22px] mb-[10px] md:mb-[12px] text-[10px] md:text-[11px] uppercase"
+        style={{
+          fontFamily: "var(--font-mono)",
+          letterSpacing: "0.16em",
+          color: "var(--fg-faint)",
+        }}
+      >
+        Most complete general
+      </div>
+      {/* Streamed — §READINESS item 4: HeroCommander is the expensive component.
+          Suspense boundary lets the rest of the page stream first. */}
+      <Suspense fallback={<HeroCommanderSkeleton />}>
+        <HeroCommander userId={userId} />
+      </Suspense>
+
+      {/* ── Recommended row label + "All commanders →" link ──
+          §"All N →" / "All decks →" links: 13px accent */}
+      <div className="mb-[12px] flex items-baseline justify-between">
+        <div
+          className="text-[10px] md:text-[11px] uppercase"
+          style={{
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.16em",
+            color: "var(--fg-faint)",
+          }}
+        >
+          Recommended
+        </div>
+        <Link
+          href="/commanders"
+          style={{ fontSize: 13, color: "var(--brass)" }}
+        >
+          All commanders →
+        </Link>
+      </div>
+
+      {/* ── Two-column grid: recent decks (1.5fr) + collection stats (1fr) ──
+          §Decks/stats section layout: grid, 1.5fr 1fr, gap 20px */}
+      <div className="mt-6 grid gap-5 md:grid-cols-[1.5fr_1fr]">
+        {/* Recent decks */}
+        <div>
+          {/* §Section label */}
+          <div
+            className="mb-[10px] md:mb-[12px] text-[10px] md:text-[11px] uppercase"
+            style={{
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.16em",
+              color: "var(--fg-faint)",
+            }}
+          >
+            Recent decks
+          </div>
+          {decks.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--fg-muted)" }}>No decks yet.</p>
+          ) : (
+            // §Deck rows gap: flex-col, gap 10px
+            <ul className="flex flex-col gap-[10px]">
+              {decks.map((d) => (
+                <li key={d.id}>
+                  {/* §Deck row: flex, align-items center, gap 14px, bg surface, border line, border-left 3px state-color,
+                      br 8px, padding 13px 16px, cursor pointer
+                      §Deck row hover: bg surface-raised (Tailwind class, not inline style per adjudication #3) */}
+                  <Link
+                    href={`/decks/${d.id}`}
+                    className="flex items-center gap-[14px] rounded-[8px] p-[13px_16px] hover:bg-surface-raised transition-colors"
+                    style={{
+                      background: "var(--surface)",
+                      border: "1px solid var(--border-strong)",
+                    }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      {/* §Deck name: Cinzel 600 16px primary */}
+                      <div
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontWeight: 600,
+                          fontSize: 16,
+                          color: "var(--fg)",
+                        }}
+                      >
+                        {d.name}
+                      </div>
+                      {/* §Deck commander line: 12px muted, mt 2px */}
+                      <div
+                        className="mt-[2px]"
+                        style={{ fontSize: 12, color: "var(--fg-muted)" }}
+                      >
+                        {d.commanderName}
+                      </div>
+                    </div>
+                    {/* §Deck owned count: mono 13px, color success/warning/danger
+                        We use fg here as cardCount color depends on deck progress data
+                        not available from RecentDeck shape; deferred to deck detail */}
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 13,
+                        color: "var(--fg)",
+                      }}
+                    >
+                      {d.cardCount}/99
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Collection stats + Update entry (mobile) */}
+        <aside>
+          {/* §Section label */}
+          <div
+            className="mb-[10px] md:mb-[12px] text-[10px] md:text-[11px] uppercase"
+            style={{
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.16em",
+              color: "var(--fg-faint)",
+            }}
+          >
+            Collection
+          </div>
+          {/* §Collection Stats Panel container: bg surface, border line, br 12px, padding 6px 20px */}
+          <div
+            className="rounded-[12px] px-5 py-[6px]"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border-strong)",
+            }}
+          >
+            {/* §Stat row: flex, justify-between, align-center, padding 14px 0, border-bottom elevated (except last)
+                §Stat label: 13px secondary (fg-body)
+                §Stat value: mono 15px primary */}
+            {[
+              { label: "Total cards", value: stats.totalCards.toLocaleString() },
+              { label: "Unique", value: stats.uniqueCards.toLocaleString() },
+              { label: "Decks built", value: String(decks.length) },
+            ].map(({ label, value }, i, arr) => (
+              <div
+                key={label}
+                className="flex items-center justify-between py-[14px]"
+                style={{
+                  borderBottom:
+                    i === arr.length - 1 ? "none" : "1px solid var(--border)",
+                }}
+              >
+                <span style={{ fontSize: 13, color: "var(--fg-body)" }}>{label}</span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 15,
+                    color: "var(--fg)",
+                  }}
+                >
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Update collection — mobile only (desktop has it in header)
+              §"Update collection" button: border line, 8px br, 9px 16px pad, sans 600 13px primary */}
+          <Link
+            href="/collection"
+            className="mt-4 inline-block rounded-[8px] px-4 py-[9px] transition-colors hover:border-brass hover:text-brass-hover md:hidden"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontWeight: 600,
+              fontSize: 13,
+              color: "var(--fg)",
+              border: "1px solid var(--border-strong)",
+            }}
+          >
+            Update collection
+          </Link>
+        </aside>
+      </div>
+    </div>
+  );
+}
