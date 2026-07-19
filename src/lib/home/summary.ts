@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, csvUploads, deckCards, decks } from "../../db/schema";
 
@@ -24,11 +24,12 @@ export const getCollectionStats = cache(async function getCollectionStats(
 
 export async function getCollectionLastUpdated(userId: string): Promise<Date | null> {
   const [row] = await db
-    .select({ lastUpdated: sql<string | Date | null>`max(${csvUploads.confirmedAt})` })
+    .select({ confirmedAt: csvUploads.confirmedAt })
     .from(csvUploads)
-    .where(eq(csvUploads.userId, userId));
-  // Raw aggregate bypasses drizzle's column mapping — the driver may hand back a string.
-  return row?.lastUpdated ? new Date(row.lastUpdated) : null;
+    .where(and(eq(csvUploads.userId, userId), isNotNull(csvUploads.confirmedAt)))
+    .orderBy(desc(csvUploads.confirmedAt))
+    .limit(1);
+  return row?.confirmedAt ?? null;
 }
 
 export type RecentDeck = {

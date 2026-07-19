@@ -39,6 +39,7 @@ export function ReplaceFlow({ currentCardCount, embedded }: { currentCardCount: 
         currentCardCount={currentCardCount}
         onPreview={(p) => {
           setConfirmError(null);
+          setConfirming(false);
           setPreview(p);
         }}
       />
@@ -49,7 +50,10 @@ export function ReplaceFlow({ currentCardCount, embedded }: { currentCardCount: 
     <>
       <ReviewScreen
         preview={preview}
-        onCancel={() => setPreview(null)}
+        onCancel={() => {
+          setConfirming(false);
+          setPreview(null);
+        }}
         onContinue={() => setConfirming(true)}
         embedded={embedded}
       />
