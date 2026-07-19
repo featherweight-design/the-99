@@ -327,6 +327,7 @@ export function UploadEntry() {
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
               aria-label="Paste your card list"
+              maxLength={100_000} // aligned with previewPaste's 100 KB server cap
               className="h-[300px] w-full rounded-[10px] p-[14px_16px] font-mono text-[13px] leading-[1.9] resize-none"
               style={{
                 background: "var(--surface-sunken)",

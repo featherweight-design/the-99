@@ -67,7 +67,12 @@ async function buildPreview(args: {
     filename,
     rowCount: rows.length,
     unmatchedCount: unmatched.length,
-    previewPayload: { unmatched, parseErrors: errors, pendingItems },
+    // Strip `raw` — no need to persist user-provided input lines in JSONB.
+    previewPayload: {
+      unmatched,
+      parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
+      pendingItems,
+    },
   }).returning({ id: csvUploads.id });
 
   return {
