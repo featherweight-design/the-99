@@ -20,6 +20,10 @@ interface SearchResultRowProps {
 
 export function SearchResultRow({ result, deckId, inDeck }: SearchResultRowProps) {
   const [isPending, startTransition] = useTransition();
+  // Basics may run multiple copies (server increments quantity), so they stay
+  // addable even when already in the deck.
+  const isBasic = /\bBasic\b/.test(result.typeLine);
+  const addable = !inDeck || isBasic;
 
   function handleAdd() {
     startTransition(async () => {
@@ -59,14 +63,7 @@ export function SearchResultRow({ result, deckId, inDeck }: SearchResultRowProps
       </div>
 
       {/* §Search result row — "+ Add" / "✓ In deck": 12.5px, fw 600 */}
-      {inDeck ? (
-        <span
-          className="flex-none font-sans text-[12.5px] font-semibold"
-          style={{ color: "#6FA368" }}
-        >
-          ✓ In deck
-        </span>
-      ) : (
+      {addable ? (
         <button
           type="button"
           onClick={handleAdd}
@@ -75,8 +72,15 @@ export function SearchResultRow({ result, deckId, inDeck }: SearchResultRowProps
           className="flex-none font-sans text-[12.5px] font-semibold cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
           style={{ color: "#C9A24B", background: "transparent", border: "none", padding: 0 }}
         >
-          {isPending ? "Adding…" : "+ Add"}
+          {isPending ? "Adding…" : inDeck ? "+ Add another" : "+ Add"}
         </button>
+      ) : (
+        <span
+          className="flex-none font-sans text-[12.5px] font-semibold"
+          style={{ color: "#6FA368" }}
+        >
+          ✓ In deck
+        </span>
       )}
     </div>
   );

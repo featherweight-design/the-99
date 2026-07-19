@@ -93,8 +93,7 @@ export default async function DecksPage({
         desktop: p 30px 34px, no border-bottom, flex flex-end space-between, mb 22px
       */}
       <div
-        className="flex items-center md:items-end justify-between p-[20px_18px_14px] md:p-[30px_34px] mb-[12px] md:mb-[22px]"
-        style={{ borderBottom: "1px solid #2A241D" }}
+        className="flex items-center md:items-end justify-between p-[20px_18px_14px] md:p-[30px_34px] mb-[12px] md:mb-[22px] border-b border-[#2A241D] md:border-b-0"
       >
         <div>
           {/* §Page header — title "Your decks": Cinzel 700, 22/28px, #EDE6D8 */}
