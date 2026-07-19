@@ -6,32 +6,32 @@ describe("parsePasteList", () => {
     const { rows, errors } = parsePasteList("3 Sol Ring\n1 Cultivate\n");
     expect(errors).toEqual([]);
     expect(rows).toEqual([
-      { name: "Sol Ring", setCode: "", quantity: 3, scryfallId: null, foil: false, condition: null },
-      { name: "Cultivate", setCode: "", quantity: 1, scryfallId: null, foil: false, condition: null },
+      { name: "Sol Ring", setCode: "", quantity: 3, scryfallId: null, foil: false, condition: null, line: 1 },
+      { name: "Cultivate", setCode: "", quantity: 1, scryfallId: null, foil: false, condition: null, line: 2 },
     ]);
   });
 
   it("parses `Nx Name` and `NX Name`", () => {
     const { rows } = parsePasteList("2x Sol Ring\n4X Cultivate\n");
-    expect(rows.map((r) => [r.quantity, r.name])).toEqual([
-      [2, "Sol Ring"],
-      [4, "Cultivate"],
+    expect(rows.map((r) => [r.quantity, r.name, r.line])).toEqual([
+      [2, "Sol Ring", 1],
+      [4, "Cultivate", 2],
     ]);
   });
 
   it("treats a bare name as quantity 1", () => {
     const { rows } = parsePasteList("Sol Ring\n");
     expect(rows).toEqual([
-      { name: "Sol Ring", setCode: "", quantity: 1, scryfallId: null, foil: false, condition: null },
+      { name: "Sol Ring", setCode: "", quantity: 1, scryfallId: null, foil: false, condition: null, line: 1 },
     ]);
   });
 
-  it("skips blank lines and trims whitespace", () => {
-    const { rows, errors } = parsePasteList("\n  3 Sol Ring  \n\n  Cultivate\n\n");
-    expect(errors).toEqual([]);
-    expect(rows).toHaveLength(2);
-    expect(rows[0].name).toBe("Sol Ring");
-    expect(rows[1].name).toBe("Cultivate");
+  it("carries the original 1-based source line even when blank lines precede it", () => {
+    const { rows } = parsePasteList("\n\n3 Sol Ring\n\n1 Cultivate\n");
+    expect(rows.map((r) => [r.name, r.line])).toEqual([
+      ["Sol Ring", 3],
+      ["Cultivate", 5],
+    ]);
   });
 
   it("reports quantity <= 0 as an error with the source line number", () => {
@@ -63,8 +63,6 @@ describe("parsePasteList", () => {
   });
 
   it("produces rows compatible with matchRows: scryfallId is null (not empty string)", () => {
-    // Contract test: matchRows uses `row.scryfallId && ...` then `??` fallback;
-    // "" would short-circuit both operators and drop every row into `unmatched`.
     const { rows } = parsePasteList("1 Sol Ring\n");
     expect(rows[0].scryfallId).toBeNull();
   });

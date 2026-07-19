@@ -1,58 +1,106 @@
-// INTERIM Collection surface — designed 3-step flow lives in #6.
-// Empty state per property table §Empty State — Collection Empty.
+// /collection — designed browse surface (#6).
+// Server component: loads full aggregated collection once and hands it to
+// the client browser for filter/sort/window/modal state.
+//
+// Empty-collection state remains the shell's design; this surface's own
+// "no results" case is triggered when filters return zero (Task 5).
+
 import { requireUserId } from "../../lib/auth";
-import { getCollectionStats } from "../../lib/home/summary";
+import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
+import { formatLastUpdated, loadBrowseCards } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
-import { UploadEntry } from "../../components/collection/upload-entry";
+import { CollectionBrowser } from "../../components/collection/browser";
 
 export default async function CollectionPage() {
   const userId = await requireUserId();
-  const stats = await getCollectionStats(userId);
+  const [stats, cards, lastUpdated] = await Promise.all([
+    getCollectionStats(userId),
+    loadBrowseCards(userId),
+    getCollectionLastUpdated(userId),
+  ]);
 
+  // Empty collection — shell's state, kept intact.
   if (stats.uniqueCards === 0) {
     return (
-      <section
-        className="flex flex-col items-center justify-center text-center p-8 md:p-[48px]"
-      >
-        {/* Card-fan mark: mobile variant → 100×110, desktop variant → 120×130 */}
+      <section className="flex flex-col items-center justify-center text-center p-8 md:p-[48px]">
         <CardFan variant="mobile" className="mb-[22px] md:hidden" />
         <CardFan variant="desktop" className="mb-[26px] hidden md:block" />
-
         <h1
           className="font-display font-bold text-[28px]"
           style={{ color: "var(--fg)", margin: 0 }}
         >
           Your collection is empty
         </h1>
-
         <p
-          className="mt-3 max-w-[420px] text-[16px] leading-[1.6]"
-          style={{ color: "var(--fg-body)" }}
+          className="mt-3 max-w-[420px] text-[16px]"
+          style={{ color: "var(--fg-body)", lineHeight: 1.6 }}
         >
           A pile of possibilities waiting for a general. Upload a CSV and the
           table fills — commanders and decks follow.
         </p>
-
-        {/* CTA row: upload entry inline (contains "Paste a list" toggle) */}
-        <div className="mt-[26px] w-full max-w-[480px]">
-          <UploadEntry />
+        <div className="mt-[26px]">
+          <a
+            href="/collection/replace"
+            className="rounded-lg font-semibold text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px] hover:bg-[color:var(--brass-hover)]"
+            style={{ color: "var(--bg)", background: "var(--brass)" }}
+          >
+            Upload your CSV
+          </a>
         </div>
       </section>
     );
   }
 
-  // Non-empty interim: show card count + upload entry to replace collection.
-  // NOTE: the full grid + filters + review flow ships in #6.
   return (
-    <section className="p-6 md:p-10">
-      <p
-        className="mb-6 font-mono text-[13px]"
-        style={{ color: "var(--fg-muted)" }}
+    <section className="flex flex-col min-h-[calc(100vh-80px)] md:min-h-screen">
+      {/* Header — §Collection Page Header */}
+      <div
+        className="flex items-center md:items-end justify-between gap-[20px] p-[20px_18px_12px] md:p-[28px_34px_0] mb-[14px] md:mb-0"
+        style={{ background: "var(--bg)" }}
       >
-        {stats.totalCards.toLocaleString()} cards ·{" "}
-        {stats.uniqueCards.toLocaleString()} unique
-      </p>
-      <UploadEntry />
+        <div>
+          {/* Title — §Page Title "Collection": Cinzel 700, 22/30px, #EDE6D8 (--fg) */}
+          <h1 className="font-display font-bold text-[22px] md:text-[30px] m-0" style={{ color: "var(--fg)" }}>
+            Collection
+          </h1>
+          {/* Subtitle — §Subtitle / Stats Line: mono 11/12px, #8E8269 (--fg-faint), margin-top 2/4px */}
+          <p
+            className="font-mono text-[11px] md:text-[12px] mt-[2px] md:mt-[4px]"
+            style={{ color: "var(--fg-faint)" }}
+          >
+            <span className="md:hidden">
+              {stats.totalCards.toLocaleString()} cards · {stats.uniqueCards.toLocaleString()} unique
+            </span>
+            <span className="hidden md:inline">
+              {stats.totalCards.toLocaleString()} cards · {stats.uniqueCards.toLocaleString()} unique
+              {lastUpdated ? ` · last updated ${formatLastUpdated(lastUpdated)}` : ""}
+            </span>
+          </p>
+        </div>
+        {/* Replace button — §Replace Collection Button (desktop-only per table) */}
+        <div className="flex items-center gap-[12px]">
+          <a
+            href="/collection/replace"
+            className="md:hidden text-[13px]"
+            style={{ color: "var(--brass)" }}
+          >
+            ↻ Replace
+          </a>
+          <a
+            href="/collection/replace"
+            className="hidden md:inline-block rounded-lg font-sans font-semibold text-[13px] px-[16px] py-[9px] cursor-pointer hover:[border:1px_solid_var(--brass)] hover:text-[color:var(--brass-hover)]"
+            style={{
+              color: "var(--fg)",
+              background: "transparent",
+              border: "1px solid var(--border-strong)",
+            }}
+          >
+            ↻ Replace collection
+          </a>
+        </div>
+      </div>
+
+      <CollectionBrowser cards={cards} />
     </section>
   );
 }

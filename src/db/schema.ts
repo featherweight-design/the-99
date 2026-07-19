@@ -58,4 +58,6 @@ export const csvUploads = pgTable("csv_uploads", {
   // compact aggregated (oracleId,setCode,foil) totals that confirm reads back.
   previewPayload: jsonb("preview_payload").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Set when the preview is confirmed into the collection; null = abandoned preview.
+  confirmedAt: timestamp("confirmed_at"),
 });

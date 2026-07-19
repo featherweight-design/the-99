@@ -1,15 +1,15 @@
-import type { ManaBoxRow } from "../manabox/parse";
+import type { CollectionRow } from "../manabox/parse";
 
 export type CatalogCard = { oracleId: string; scryfallId: string; name: string };
 export type MatchResult = {
-  matched: { row: ManaBoxRow; oracleId: string }[];
-  unmatched: ManaBoxRow[];
+  matched: { row: CollectionRow; oracleId: string }[];
+  unmatched: CollectionRow[];
 };
 
-export function matchRows(rows: ManaBoxRow[], catalog: CatalogCard[]): MatchResult {
+export function matchRows(rows: CollectionRow[], catalog: CatalogCard[]): MatchResult {
   // Name matching is the primary path for v1: the catalog is seeded from
   // Scryfall oracle-cards (one arbitrary printing per oracle id), while
-  // ManaBox "Scryfall ID" values are printing-level ids — the id map only
+  // export "Scryfall ID" values are printing-level ids — the id map only
   // hits when the collection happens to contain that exact printing.
   const byScryfallId = new Map(catalog.map((c) => [c.scryfallId, c.oracleId]));
   const byName = new Map<string, string>();
@@ -21,7 +21,7 @@ export function matchRows(rows: ManaBoxRow[], catalog: CatalogCard[]): MatchResu
   }
 
   const matched: MatchResult["matched"] = [];
-  const unmatched: ManaBoxRow[] = [];
+  const unmatched: CollectionRow[] = [];
   for (const row of rows) {
     const oracleId =
       (row.scryfallId && byScryfallId.get(row.scryfallId)) ??

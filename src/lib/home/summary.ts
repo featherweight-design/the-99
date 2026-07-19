@@ -1,7 +1,7 @@
 import { cache } from "react";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, decks } from "../../db/schema";
+import { cards, collectionItems, csvUploads, deckCards, decks } from "../../db/schema";
 
 /**
  * Thin, logic-free queries for the home dashboard.
@@ -21,6 +21,16 @@ export const getCollectionStats = cache(async function getCollectionStats(
     .where(eq(collectionItems.userId, userId));
   return { totalCards: row?.totalCards ?? 0, uniqueCards: row?.uniqueCards ?? 0 };
 });
+
+export async function getCollectionLastUpdated(userId: string): Promise<Date | null> {
+  const [row] = await db
+    .select({ confirmedAt: csvUploads.confirmedAt })
+    .from(csvUploads)
+    .where(and(eq(csvUploads.userId, userId), isNotNull(csvUploads.confirmedAt)))
+    .orderBy(desc(csvUploads.confirmedAt))
+    .limit(1);
+  return row?.confirmedAt ?? null;
+}
 
 export type RecentDeck = {
   id: string;
