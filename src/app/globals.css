@@ -32,6 +32,9 @@
   --brass-hover: #D8B25E;
   --brass-strong: #A9863E;
   --brass-shadow: #6E5B33;
+  /* Fit-bar ramp aliases (brief §Brass ramp tokens) */
+  --brass-dim: #6E5B33;
+  --brass-mid: #A9863E;
 
   /* Feedback */
   --success: #6FA368;
@@ -71,6 +74,8 @@
   --color-brass-hover: var(--brass-hover);
   --color-brass-strong: var(--brass-strong);
   --color-brass-shadow: var(--brass-shadow);
+  --color-brass-dim: var(--brass-dim);
+  --color-brass-mid: var(--brass-mid);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);

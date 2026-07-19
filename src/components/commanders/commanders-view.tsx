@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { filterByColors } from "../../lib/commanders/filter";
 import { retryRecs } from "../../app/commanders/actions";
+import { RecCard } from "./rec-card";
 
 // ── URL helpers (mirrors collection/browser.tsx pattern) ─────────────────────
 
@@ -146,7 +147,7 @@ export function CommandersView({
           ` · ${filtered.length} matching`}
       </p>
 
-      {/* ── Result list (placeholder rendering: name + score) ── */}
+      {/* ── Result list ── */}
       {filtered.length === 0 ? (
         <p
           className="text-[14px]"
@@ -155,28 +156,14 @@ export function CommandersView({
           No commanders match the selected colors.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {filtered.map((r) => (
-            <li
-              key={r.slug}
-              className="flex items-center justify-between rounded-lg px-4 py-3"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border-strong)",
-              }}
-            >
-              <span
-                className="font-semibold text-[15px]"
-                style={{ color: "var(--fg)" }}
-              >
-                {r.name}
-              </span>
-              <span
-                className="font-mono text-[13px]"
-                style={{ color: "var(--fg-muted)" }}
-              >
-                {r.score}
-              </span>
+        <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
+          {filtered.map((r, i) => (
+            <li key={r.slug}>
+              <RecCard
+                commander={r}
+                rank={i + 1}
+                globalDegraded={degraded}
+              />
             </li>
           ))}
         </ul>
