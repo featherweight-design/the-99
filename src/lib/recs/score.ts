@@ -23,7 +23,8 @@ export const COMPLETENESS_THRESHOLDS = { high: 90, mid: 75 } as const;
 /**
  * Completeness percentage for the hero-card / commander-card progress bar.
  * Returns null when EDHREC data is missing (degraded mode) or total is 0 —
- * caller renders a "synergy data offline" note instead of a bar.
+ * caller renders a fallback note instead of a bar ("synergy data offline"
+ * when the EDHREC fetch failed, "completeness unavailable" otherwise).
  */
 export function completeness(
   s: Pick<CommanderScore, "edhrecOwnedCount" | "edhrecTotal">,
