@@ -1,6 +1,6 @@
 # Design Property Table — Commanders
 
-> Source: `design_handoff_the99_commanders/The 99 - Commanders.dc.html` + README.md  
+> Source: `design/design_handoff_the99_commanders/The 99 - Commanders.dc.html` + README.md  
 > Breakpoint: 768 px (mobile = phone frame at 392 px outer / 368 px inner; desktop = 1300 px frame)  
 > All hex values are exact from the mockup; token names come from Brand README.
 
@@ -1703,7 +1703,7 @@
 |----------|--------|---------|
 | flex | 1 | 1 |
 | display | flex | flex |
-| flex-direction | column | flex-column |
+| flex-direction | column | column |
 | align-items | center | center |
 | justify-content | center | center |
 | text-align | center | center |
