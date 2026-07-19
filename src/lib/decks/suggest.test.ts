@@ -5,7 +5,7 @@ import type { PoolCard } from "../recs/score";
 let n = 0;
 const card = (over: Partial<PoolCard>): PoolCard => ({
   oracleId: `o-${n++}`, name: `Card ${n}`, typeLine: "Creature",
-  oracleText: "", keywords: [], colorIdentity: [], ...over,
+  oracleText: "", keywords: [], colorIdentity: [], imageUri: null, ...over,
 });
 const commander = card({ name: "Cmdr", typeLine: "Legendary Creature", colorIdentity: ["G"] });
 

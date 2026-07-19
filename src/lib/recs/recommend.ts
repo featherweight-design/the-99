@@ -12,6 +12,7 @@ export async function recommendCommanders(
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords,
       colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal,
+      imageUri: cards.imageUri,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
