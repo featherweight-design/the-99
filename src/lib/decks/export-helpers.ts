@@ -29,7 +29,11 @@ function sanitizeFilename(name: string): string {
     .trim()
     // Windows also rejects trailing dots/spaces and reserved names "." / "..".
     .replace(/[. ]+$/, "");
-  return cleaned.length > 0 ? cleaned : "deck";
+  // Windows-reserved device basenames are invalid even with an extension.
+  if (cleaned.length === 0 || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(cleaned)) {
+    return "deck";
+  }
+  return cleaned;
 }
 
 /**

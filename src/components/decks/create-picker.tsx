@@ -191,7 +191,7 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
                               style={{
                                 background: WUBRG_HEX[color] ?? "#8E8269",
                               }}
-                              aria-label={color}
+                              aria-hidden
                             />
                           ))}
                           <span>{colorLabel(c.colorIdentity)} · {c.poolCount} cards</span>

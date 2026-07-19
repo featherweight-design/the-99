@@ -172,7 +172,7 @@ export function CreatePreFilled({
                     background: WUBRG_HEX[color] ?? "#8E8269",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.5)",
                   }}
-                  aria-label={color}
+                  aria-hidden
                 />
               ))}
             </div>
@@ -244,7 +244,7 @@ export function CreatePreFilled({
                     height: 22,
                     background: WUBRG_HEX[color] ?? "#8E8269",
                   }}
-                  aria-label={color}
+                  aria-hidden
                 />
               ))}
               {/* §Colour identity caption: IBM Plex Mono 12px #A89B84 ml-[4px] */}

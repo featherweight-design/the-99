@@ -94,6 +94,15 @@ describe("decklistFilename", () => {
     expect(decklistFilename(".")).toBe("deck.txt");
     expect(decklistFilename("..")).toBe("deck.txt");
   });
+
+  it("falls back to 'deck' for Windows-reserved device basenames", () => {
+    expect(decklistFilename("CON")).toBe("deck.txt");
+    expect(decklistFilename("nul")).toBe("deck.txt");
+    expect(decklistFilename("COM1")).toBe("deck.txt");
+    expect(decklistFilename("Lpt9")).toBe("deck.txt");
+    // Not reserved — contains more than the bare device name.
+    expect(decklistFilename("CONTROL")).toBe("CONTROL.txt");
+  });
 });
 
 describe("shoppingFilename", () => {

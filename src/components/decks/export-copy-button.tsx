@@ -42,9 +42,18 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
       document.body.appendChild(ta);
       ta.focus();
       ta.select();
-      document.execCommand("copy");
+      let ok = false;
+      try {
+        ok = document.execCommand("copy");
+      } catch {
+        ok = false;
+      }
       ta.remove();
-      onSuccess();
+      if (ok) {
+        onSuccess();
+      } else {
+        onStatus("Copy failed — select the text and copy manually");
+      }
     }
 
     if (navigator.clipboard) {

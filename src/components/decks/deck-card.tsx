@@ -117,7 +117,7 @@ export function DeckCard({ deck }: DeckCardProps) {
                 style={{
                   background: WUBRG_HEX[color] ?? "#8E8269",
                 }}
-                aria-label={color}
+                aria-hidden
               />
             ))}
             {/* §Deck card — guild/type label: IBM Plex Mono 11/12px #A89B84, ml 2px */}
