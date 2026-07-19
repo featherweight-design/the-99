@@ -14,13 +14,13 @@ export default async function DeckBuilderPage({
   const { id } = await params;
   const userId = await requireUserId();
 
-  const [detail, { suggestions, degraded }, allDecks] = await Promise.all([
-    getDeckDetail(id, userId),
+  const detail = await getDeckDetail(id, userId);
+  if (!detail) notFound();
+
+  const [{ suggestions, degraded }, allDecks] = await Promise.all([
     getDeckSuggestions(id),
     listDecksWithStats(userId),
   ]);
-
-  if (!detail) notFound();
 
   // First-run: user's only deck and it has no cards yet.
   const firstRun = allDecks.length === 1 && detail.built === 0;

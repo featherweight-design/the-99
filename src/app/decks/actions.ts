@@ -9,6 +9,7 @@ import { requireUserId } from "../../lib/auth";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
+import { validateCardForDeck } from "../../lib/decks/add-validation";
 
 async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise<PoolCard[]> {
   const owned = await db
@@ -125,9 +126,28 @@ async function requireDeck(deckId: string, userId: string) {
 
 export async function addCardToDeck(deckId: string, oracleId: string): Promise<void> {
   const userId = await requireUserId();
-  await requireDeck(deckId, userId);
-  const [card] = await db.select({ typeLine: cards.typeLine }).from(cards).where(eq(cards.oracleId, oracleId));
+  const deck = await requireDeck(deckId, userId);
+
+  // Fetch commander color identity in the same round-trip as the card lookup.
+  const [[commander], [card], [builtRow]] = await Promise.all([
+    db.select({ colorIdentity: cards.colorIdentity })
+      .from(cards).where(eq(cards.oracleId, deck.commanderOracleId)),
+    db.select({ typeLine: cards.typeLine, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
+      .from(cards).where(eq(cards.oracleId, oracleId)),
+    db.select({ total: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
+      .from(deckCards).where(eq(deckCards.deckId, deckId)),
+  ]);
+
   if (!card) throw new Error("card not found");
+  if (!commander) throw new Error("commander not found");
+
+  const built = builtRow?.total ?? 0;
+  const error = validateCardForDeck(
+    { commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity, oracleId },
+    { commanderOracleId: deck.commanderOracleId, commanderColorIdentity: commander.colorIdentity, built },
+  );
+  if (error) throw new Error(error);
+
   // Commander is singleton: only basic lands may run multiple copies, so a
   // repeat add increments quantity for basics and stays a no-op otherwise.
   if (/\bBasic\b/.test(card.typeLine)) {

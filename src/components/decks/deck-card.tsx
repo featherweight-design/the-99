@@ -218,6 +218,7 @@ export function DeckCard({ deck }: DeckCardProps) {
             padding: "9px 0",
           }}
           tabIndex={-1}
+          aria-hidden="true"
         >
           Open builder
         </Link>
