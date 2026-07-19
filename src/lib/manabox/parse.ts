@@ -85,7 +85,8 @@ export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; er
       continue;
     }
     const quantity = Number(cols[qtyIdx]);
-    if (!Number.isInteger(quantity) || quantity < 1) {
+    // Cap matches parsePasteList's MAX_QUANTITY — collection_items.quantity is a PG integer.
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10_000) {
       errors.push({ line: i + 1, raw: lines[i], reason: `invalid quantity "${cols[qtyIdx]}"` });
       continue;
     }

@@ -25,7 +25,7 @@ const SORT_KEYS = ["name", "quantity", "set", "rarity", "color"] as const satisf
 
 function parseColors(param: string | null): string[] {
   if (!param) return [];
-  return [...new Set(param.split("").filter((c) => "WUBRG".includes(c)))];
+  return [...new Set(param.toUpperCase().split("").filter((c) => "WUBRG".includes(c)))];
 }
 
 function serializeParams(filters: BrowseFilters, sort: SortKey, view: ViewMode | null, card: string | null): string {

@@ -221,7 +221,7 @@ export function UploadEntry({
               <button
                 type="button"
                 onClick={handlePasteSubmit}
-                disabled={pending || pasteCount === 0}
+                disabled={pending || !pasteText.trim()}
                 className="rounded-lg font-semibold text-[13px] px-[16px] py-[10px] hover:bg-[color:var(--brass-hover)] disabled:opacity-50"
                 style={{ color: "var(--bg)", background: "var(--brass)", border: "none" }}
               >

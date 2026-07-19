@@ -84,6 +84,14 @@ describe("parseCollectionCsv", () => {
     expect(errors[0].reason).toMatch(/quantity/i);
   });
 
+  it("rejects quantities above the 10,000 cap", () => {
+    const { rows, errors } = parseCollectionCsv("Name,Quantity\nSol Ring,10001\nArcane Signet,10000\n");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ name: "Arcane Signet", quantity: 10_000 });
+    expect(errors).toHaveLength(1);
+    expect(errors[0].reason).toMatch(/quantity/i);
+  });
+
   it("handles CRLF line endings", () => {
     const { rows, errors } = parseCollectionCsv("Name,Quantity,Foil\r\nSol Ring,2,foil\r\nArcane Signet,1,\r\n");
     expect(errors).toHaveLength(0);
