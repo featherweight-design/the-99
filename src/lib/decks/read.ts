@@ -230,7 +230,9 @@ export type OwnedLegalCommander = {
  * (Mirrors the ownedColorLegalPool shape from actions.ts, flipped per-candidate.)
  */
 export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLegalCommander[]> {
-  // Step 1: fetch all commander-legal cards the user owns (distinct by oracleId).
+  // Single query: fetch all commander-legal cards the user owns (distinct by oracleId).
+  // The result is a superset of commander candidates, so we split in JS rather than
+  // issuing a second nearly-identical query.
   const ownedRows = await db
     .selectDistinctOn([cards.oracleId], {
       oracleId: cards.oracleId,
@@ -245,30 +247,20 @@ export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLeg
     .where(and(eq(collectionItems.userId, userId), eq(cards.commanderLegal, true)))
     .orderBy(cards.oracleId);
 
-  // Step 2: filter to actual commander candidates (legendary creature or "can be your commander").
+  // Split: candidates are legendary creatures / "can be your commander" cards;
+  // the full ownedRows set is used as the pool for poolCount calculation.
   const candidates = ownedRows.filter((r) =>
     isCommanderCandidate({ typeLine: r.typeLine, oracleText: r.oracleText }),
   );
 
   if (candidates.length === 0) return [];
 
-  // Step 3: fetch user's full owned-legal pool (distinct oracle IDs + their color identities)
-  // so we can count in-identity cards per candidate.
-  const allOwnedRows = await db
-    .selectDistinctOn([cards.oracleId], {
-      oracleId: cards.oracleId,
-      colorIdentity: cards.colorIdentity,
-    })
-    .from(collectionItems)
-    .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
-    .where(and(eq(collectionItems.userId, userId), eq(cards.commanderLegal, true)))
-    .orderBy(cards.oracleId);
-
-  // Step 4: for each candidate, count owned cards fitting within their identity.
+  // For each candidate, count owned cards fitting within their color identity.
+  // Exclude the commander itself from its own pool count.
   return candidates
     .map((c) => {
       const identitySet = new Set(c.colorIdentity);
-      const poolCount = allOwnedRows.filter(
+      const poolCount = ownedRows.filter(
         (r) => r.oracleId !== c.oracleId && r.colorIdentity.every((x) => identitySet.has(x)),
       ).length;
       return {

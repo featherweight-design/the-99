@@ -8,26 +8,7 @@ import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
 import type { OwnedLegalCommander } from "../../lib/decks/read";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function colorLabel(identity: string[]): string {
-  if (identity.length === 0) return "Colorless";
-  if (identity.length === 1) {
-    const MAP: Record<string, string> = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" };
-    return MAP[identity[0]] ?? identity[0];
-  }
-  if (identity.length === 5) return "5-color";
-  if (identity.length >= 3) return "Multi";
-  const key = identity.slice().sort().join("");
-  const GUILDS: Record<string, string> = {
-    UW: "Azorius", BU: "Dimir", BR: "Rakdos", GR: "Gruul", GW: "Selesnya",
-    BW: "Orzhov", RU: "Izzet", BG: "Golgari", RW: "Boros", GU: "Simic",
-  };
-  return GUILDS[key] ?? "Multi";
-}
+import { colorLabel } from "../../lib/decks/format";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -168,9 +149,8 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
                     <button
                       type="button"
                       onClick={() => setSelected(isSelected ? null : c)}
-                      className="w-full flex items-center rounded-[10px] md:rounded-[11px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] transition-colors"
+                      className="w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] transition-colors"
                       style={{
-                        gap: 11,
                         background: isSelected ? "#211C15" : "#1A160F",
                         border: `1px solid ${isSelected ? "#C9A24B" : "#2A241D"}`,
                         padding: "10px 12px",

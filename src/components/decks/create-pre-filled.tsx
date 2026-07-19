@@ -8,26 +8,7 @@ import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function colorLabel(identity: string[]): string {
-  if (identity.length === 0) return "Colorless";
-  if (identity.length === 1) {
-    const MAP: Record<string, string> = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" };
-    return MAP[identity[0]] ?? identity[0];
-  }
-  if (identity.length === 5) return "5-color";
-  if (identity.length >= 3) return "Multi";
-  const key = identity.slice().sort().join("");
-  const GUILDS: Record<string, string> = {
-    UW: "Azorius", BU: "Dimir", BR: "Rakdos", GR: "Gruul", GW: "Selesnya",
-    BW: "Orzhov", RU: "Izzet", BG: "Golgari", RW: "Boros", GU: "Simic",
-  };
-  return GUILDS[key] ?? "Multi";
-}
+import { colorLabel } from "../../lib/decks/format";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -226,23 +207,19 @@ export function CreatePreFilled({
         <div className="flex-1 min-w-0">
           {/* §Legal-validated strip */}
           <div
-            className="flex items-center rounded-[8px] md:rounded-[10px] mb-[24px] md:mb-[28px]"
+            className="flex items-center gap-[9px] md:gap-[11px] rounded-[8px] md:rounded-[10px] mb-[24px] md:mb-[28px]"
             style={{
-              gap: 9,
               background: "rgba(111,163,104,0.1)",
               border: "1px solid #33402F",
               padding: "10px 13px",
             }}
           >
-            {/* Checkmark icon: 20/24px circle */}
+            {/* Checkmark icon: 20×20px mobile / 24×24px desktop */}
             <div
-              className="shrink-0 flex items-center justify-center rounded-full"
+              className="shrink-0 flex items-center justify-center rounded-full w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[12px] md:text-[14px]"
               style={{
-                width: 20,
-                height: 20,
                 background: "rgba(111,163,104,0.2)",
                 color: "#6FA368",
-                fontSize: 12,
               }}
             >
               ✓
@@ -309,11 +286,10 @@ export function CreatePreFilled({
               maxLength={120}
               placeholder="My awesome deck"
               disabled={isPending}
-              className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] rounded-[8px] md:rounded-[9px]"
+              className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px]"
               style={{
                 background: "#181410",
                 border: "1px solid #C9A24B",
-                padding: "12px 14px",
                 fontSize: 15,
                 color: "#EDE6D8",
                 display: "block",
@@ -349,21 +325,20 @@ export function CreatePreFilled({
             {/* §"Change commander" secondary button */}
             <Link
               href="/decks/new"
-              className="block md:inline-block text-center rounded-[8px] font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-              style={{
-                fontWeight: 500,
-                fontSize: 13,
-                color: "#A89B84",
-                background: "transparent",
-                border: "1px solid #2A241D",
-                padding: "11px 0",
-                marginLeft: 0,
-              }}
+              className="block md:inline-block text-center rounded-[8px] font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] p-[11px_0] md:p-[13px_20px]"
+              style={{ background: "transparent", border: "1px solid #2A241D" }}
             >
-              <span className="md:hidden">Change commander</span>
+              {/* Mobile: 13px #A89B84 weight-500 */}
               <span
-                className="hidden md:inline"
-                style={{ padding: "0 20px", fontWeight: 600, fontSize: 14, color: "#EDE6D8" }}
+                className="md:hidden font-medium text-[13px]"
+                style={{ color: "#A89B84" }}
+              >
+                Change commander
+              </span>
+              {/* Desktop: 14px #EDE6D8 weight-600 */}
+              <span
+                className="hidden md:inline font-semibold text-[14px]"
+                style={{ color: "#EDE6D8" }}
               >
                 Change commander
               </span>
