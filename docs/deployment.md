@@ -31,5 +31,5 @@ Production stack: **Vercel** (Next.js hosting + cron) + **Neon** (serverless Pos
 ## Ongoing
 
 - Deploys are automatic on merge to `main`; PRs get preview deploys.
-- CI gates PRs with typecheck/lint/test/build (`.github/workflows/ci.yml`, shipping in PR #26); Vercel's build is the deploy gate.
+- CI gates PRs with typecheck/lint/test/build (`.github/workflows/ci.yml`); Vercel's build is the deploy gate.
 - Database schema changes: commit Drizzle migrations (`pnpm db:generate`), then run `db:migrate` against production manually — migrations are not run automatically at deploy time.
