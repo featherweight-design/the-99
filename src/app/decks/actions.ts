@@ -1,13 +1,13 @@
 "use server";
 
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, arrayContained, eq, gt, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { getEdhrecData } from "../../lib/edhrec/client";
-import { suggestDeck } from "../../lib/decks/suggest";
+import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 
 async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise<PoolCard[]> {
@@ -43,24 +43,79 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
   redirect(`/decks/${deck.id}`);
 }
 
-export type DeckSuggestion = { oracleId: string; name: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
+export type { DeckSuggestion };
 
-export async function getDeckSuggestions(deckId: string): Promise<DeckSuggestion[]> {
+export async function getDeckSuggestions(deckId: string): Promise<{ suggestions: DeckSuggestion[]; degraded: boolean }> {
   const userId = await requireUserId();
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
-  if (!commander) return [];
+  if (!commander) return { suggestions: [], degraded: false };
 
   const pool = await ownedColorLegalPool(userId, commander);
-  const inDeck = new Set(
-    (await db.select({ oracleId: deckCards.oracleId }).from(deckCards)
-      .where(eq(deckCards.deckId, deckId))).map((r) => r.oracleId),
-  );
+  const inDeckRows = await db.select({ oracleId: deckCards.oracleId }).from(deckCards)
+    .where(eq(deckCards.deckId, deckId));
+  const inDeck = new Set(inDeckRows.map((r) => r.oracleId));
   const available = pool.filter((c) => !inDeck.has(c.oracleId));
+
   const edhrec = await getEdhrecData(commander.oracleId, commander.name);
+  const degraded = edhrec === null;
+  const topCards = edhrec?.topCards ?? null;
+  const inclusionByName = edhrec?.inclusionByName ?? {};
+
+  // Build a map for name lookups
   const byId = new Map(available.map((c) => [c.oracleId, c]));
-  return suggestDeck({ commander, ownedPool: available, edhrecTopCards: edhrec?.topCards ?? null })
-    .map((s) => ({ oracleId: s.oracleId, name: byId.get(s.oracleId)!.name, reason: s.reason }));
+  const ownedByOracleId = new Set(pool.map((c) => c.oracleId));
+
+  // Compute owned pool suggestions
+  const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards });
+
+  // Enrich owned suggestions
+  const ownedSuggestions: DeckSuggestion[] = raw.map((s) => {
+    const c = byId.get(s.oracleId)!;
+    return buildSuggestionPayload({ ...s, name: c.name, owned: true }, inclusionByName);
+  });
+
+  // Unowned EDHREC staples: up to 5
+  let unownedSuggestions: DeckSuggestion[] = [];
+  if (topCards && topCards.length > 0) {
+    // Query cards by name (case-insensitive), commander_legal, and color identity
+    const lowerTopCards = topCards.map((n) => n.toLowerCase());
+    const candidateCards = await db
+      .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity })
+      .from(cards)
+      .where(
+        and(
+          inArray(sql`lower(${cards.name})`, lowerTopCards),
+          eq(cards.commanderLegal, true),
+          arrayContained(cards.colorIdentity, commander.colorIdentity),
+        ),
+      );
+
+    // Filter: not owned, not in deck, not the commander
+    const eligible = candidateCards.filter(
+      (c) => !ownedByOracleId.has(c.oracleId) && !inDeck.has(c.oracleId) && c.oracleId !== commander.oracleId,
+    );
+
+    // Order by position in topCards
+    const topCardIndex = new Map(lowerTopCards.map((n, i) => [n, i]));
+    eligible.sort((a, b) => {
+      const ia = topCardIndex.get(a.name.toLowerCase()) ?? Infinity;
+      const ib = topCardIndex.get(b.name.toLowerCase()) ?? Infinity;
+      return ia - ib;
+    });
+
+    unownedSuggestions = eligible.slice(0, 5).map((c) =>
+      buildSuggestionPayload(
+        { oracleId: c.oracleId, name: c.name, reason: "edhrec", owned: false },
+        inclusionByName,
+      ),
+    );
+  }
+
+  // Combine and truncate to 99
+  const suggestions = [...ownedSuggestions, ...unownedSuggestions].slice(0, 99);
+
+  return { suggestions, degraded };
 }
 
 async function requireDeck(deckId: string, userId: string) {
@@ -107,4 +162,16 @@ export async function deleteDeck(deckId: string): Promise<void> {
   await requireDeck(deckId, userId);
   await db.delete(decks).where(eq(decks.id, deckId));
   redirect("/decks");
+}
+
+export async function renameDeck(deckId: string, name: string): Promise<void> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+  const trimmed = name.trim();
+  if (trimmed.length === 0 || trimmed.length > 120) {
+    throw new Error("deck name must be 1–120 characters");
+  }
+  await db.update(decks).set({ name: trimmed }).where(eq(decks.id, deckId));
+  revalidatePath(`/decks/${deckId}`);
+  revalidatePath(`/decks`);
 }

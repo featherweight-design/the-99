@@ -1,9 +1,53 @@
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
 import type { PoolCard } from "../recs/score";
 
+export type ReasonType = "edhrec" | "role";
+
+export type DeckSuggestion = {
+  oracleId: string;
+  name: string;
+  reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land";
+  reasonType: ReasonType;
+  reasonLabel: string;
+  owned: boolean;
+  inDeck: false;
+};
+
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
 const MAX = 99;
-const LAND_TARGET = 37;
+export const LAND_TARGET = 37;
+
+export function humanRole(reason: Suggestion["reason"]): string {
+  return reason === "land" ? "lands" : reason;
+}
+
+export function buildSuggestionPayload(
+  s: Suggestion & { name: string; owned: boolean },
+  inclusionByName: Record<string, number>,
+): DeckSuggestion {
+  let reasonType: ReasonType;
+  let reasonLabel: string;
+
+  if (s.reason === "edhrec") {
+    reasonType = "edhrec";
+    const inclusion = inclusionByName[s.name.toLowerCase()];
+    reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
+  } else {
+    reasonType = "role";
+    const target = s.reason === "land" ? LAND_TARGET : (ROLE_TARGETS[s.reason] ?? LAND_TARGET);
+    reasonLabel = `Fills ${humanRole(s.reason)} · rec ${target}`;
+  }
+
+  return {
+    oracleId: s.oracleId,
+    name: s.name,
+    reason: s.reason,
+    reasonType,
+    reasonLabel,
+    owned: s.owned,
+    inDeck: false,
+  };
+}
 
 export function suggestDeck(args: {
   commander: PoolCard;
