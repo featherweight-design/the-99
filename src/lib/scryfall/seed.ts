@@ -20,6 +20,9 @@ export async function seedCards(): Promise<{ upserted: number; skipped: number }
     if (!r.ok) throw new Error(`bulk-data index ${r.status}`);
     return r.json();
   });
+  if (typeof meta?.download_uri !== "string") {
+    throw new Error("unexpected bulk-data index shape: missing download_uri");
+  }
   // The timeout spans the whole request including body streaming; 240s stays
   // inside the cron route's 300s maxDuration so a stalled download fails loudly
   // instead of being killed by the platform mid-seed.
