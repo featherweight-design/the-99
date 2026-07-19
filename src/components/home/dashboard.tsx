@@ -1,6 +1,16 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import type { RecentDeck } from "../../lib/home/summary";
+import { COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
+
+/* §Deck row state color: success ≥ high, warning ≥ mid, danger below —
+   derived from owned/99 like the hero completeness bar. */
+function deckStateColor(cardCount: number): string {
+  const pct = (cardCount / 99) * 100;
+  if (pct >= COMPLETENESS_THRESHOLDS.high) return "var(--success)";
+  if (pct >= COMPLETENESS_THRESHOLDS.mid) return "var(--warning)";
+  return "var(--danger)";
+}
 import { HeroCommander, HeroCommanderSkeleton } from "./hero-commander";
 
 export function Dashboard({
@@ -65,13 +75,11 @@ export function Dashboard({
         {/* §"Update collection" button (desktop header) — transparent bg, border line, 8px br, 9px 16px pad, Cinzel-Sans 600 13px primary */}
         <Link
           href="/collection"
-          className="hidden md:inline-block rounded-[8px] px-4 py-[9px] transition-colors hover:border-brass hover:text-brass-hover"
+          className="hidden md:inline-block rounded-[8px] px-4 py-[9px] border border-border-strong text-fg transition-colors hover:border-brass hover:text-brass-hover"
           style={{
             fontFamily: "var(--font-sans)",
             fontWeight: 600,
             fontSize: 13,
-            color: "var(--fg)",
-            border: "1px solid var(--border-strong)",
           }}
         >
           Update collection
@@ -145,10 +153,10 @@ export function Dashboard({
                       §Deck row hover: bg surface-raised (Tailwind class, not inline style per adjudication #3) */}
                   <Link
                     href={`/decks/${d.id}`}
-                    className="flex items-center gap-[14px] rounded-[8px] p-[13px_16px] hover:bg-surface-raised transition-colors"
+                    className="flex items-center gap-[14px] rounded-[8px] p-[13px_16px] bg-surface hover:bg-surface-raised transition-colors"
                     style={{
-                      background: "var(--surface)",
                       border: "1px solid var(--border-strong)",
+                      borderLeft: `3px solid ${deckStateColor(d.cardCount)}`,
                     }}
                   >
                     <div className="min-w-0 flex-1">
@@ -171,14 +179,12 @@ export function Dashboard({
                         {d.commanderName}
                       </div>
                     </div>
-                    {/* §Deck owned count: mono 13px, color success/warning/danger
-                        We use fg here as cardCount color depends on deck progress data
-                        not available from RecentDeck shape; deferred to deck detail */}
+                    {/* §Deck owned count: mono 13px, color = state color */}
                     <div
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: 13,
-                        color: "var(--fg)",
+                        color: deckStateColor(d.cardCount),
                       }}
                     >
                       {d.cardCount}/99
