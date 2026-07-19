@@ -34,7 +34,15 @@ export function ReplaceFlow({ currentCardCount, embedded }: { currentCardCount: 
   }
 
   if (!preview) {
-    return <UploadEntry currentCardCount={currentCardCount} onPreview={setPreview} />;
+    return (
+      <UploadEntry
+        currentCardCount={currentCardCount}
+        onPreview={(p) => {
+          setConfirmError(null);
+          setPreview(p);
+        }}
+      />
+    );
   }
 
   return (
@@ -50,7 +58,10 @@ export function ReplaceFlow({ currentCardCount, embedded }: { currentCardCount: 
           preview={preview}
           pending={pending}
           error={confirmError}
-          onClose={() => setConfirming(false)}
+          onClose={() => {
+            setConfirming(false);
+            setConfirmError(null);
+          }}
           onConfirm={onConfirm}
         />
       )}

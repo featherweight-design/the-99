@@ -1,4 +1,5 @@
 "use client";
+import type { ReactNode } from "react";
 // No results state per property table §No Results State.
 // Distinct from empty-collection (shell owns that). The "?" card fan here is
 // its own mark — different geometry/colors/glyph from the shared "99" CardFan
@@ -17,7 +18,7 @@ function FanCard({
   transformClass: string;
   background: string;
   borderColor: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <div

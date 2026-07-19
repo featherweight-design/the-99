@@ -159,9 +159,9 @@ export function CollectionBrowser({
           onKeepSearch={() => updateFilters({ search: filters.search, colors: [], type: null, setCode: null })}
         />
       ) : effectiveView === "rows" ? (
-        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown(shown + PAGE_SIZE)} onOpen={onOpen} />
+        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} />
       ) : (
-        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown(shown + PAGE_SIZE)} onOpen={onOpen} />
+        <GridView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} />
       )}
 
       {openCard && (
