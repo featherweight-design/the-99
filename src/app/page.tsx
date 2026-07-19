@@ -24,7 +24,7 @@ export default async function HomePage() {
             mobile: 11px / 0.4em; desktop: 13px / 0.44em
             margin-top: 14px mobile / 16px desktop */}
         <p
-          className="mt-[14px] md:mt-[16px] text-[11px] md:text-[13px] tracking-[0.4em] md:tracking-[0.44em] text-brass font-mono"
+          className="mt-[14px] md:mt-[16px] text-[11px] md:text-[13px] tracking-[0.4em] md:tracking-[0.44em] text-brass font-mono uppercase"
         >
           THE NINETY-NINE
         </p>
