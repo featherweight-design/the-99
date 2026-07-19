@@ -38,6 +38,60 @@ export function primaryRole(input: { typeLine: string; oracleText: string | null
 }
 
 // ---------------------------------------------------------------------------
+// Grouping helpers (tested)
+// ---------------------------------------------------------------------------
+
+const CARD_TYPE_GROUP_ORDER: CardTypeGroup[] = [
+  "Creatures", "Instants", "Sorceries", "Artifacts", "Enchantments", "Planeswalkers", "Lands", "Other",
+];
+
+const ROLE_GROUP_ORDER: Array<"ramp" | "draw" | "removal" | "wipes" | "land" | "other"> = [
+  "ramp", "draw", "removal", "wipes", "land", "other",
+];
+
+const ROLE_GROUP_LABELS: Record<"ramp" | "draw" | "removal" | "wipes" | "land" | "other", string> = {
+  ramp: "Ramp",
+  draw: "Draw",
+  removal: "Removal",
+  wipes: "Wipes",
+  land: "Land",
+  other: "Other",
+};
+
+export function groupByCardType(cards: DeckDetailCard[]): [CardTypeGroup, DeckDetailCard[]][] {
+  const map = new Map<CardTypeGroup, DeckDetailCard[]>();
+  for (const g of CARD_TYPE_GROUP_ORDER) map.set(g, []);
+  for (const c of cards) {
+    map.get(c.cardTypeGroup)!.push(c);
+  }
+  const result: [CardTypeGroup, DeckDetailCard[]][] = [];
+  for (const g of CARD_TYPE_GROUP_ORDER) {
+    const group = map.get(g)!;
+    if (group.length > 0) {
+      result.push([g, group.slice().sort((a, b) => a.name.localeCompare(b.name))]);
+    }
+  }
+  return result;
+}
+
+export function groupByRole(cards: DeckDetailCard[]): [string, DeckDetailCard[]][] {
+  const map = new Map<string, DeckDetailCard[]>();
+  for (const r of ROLE_GROUP_ORDER) map.set(r, []);
+  for (const c of cards) {
+    const key = c.role in ROLE_GROUP_LABELS ? c.role : "other";
+    map.get(key)!.push(c);
+  }
+  const result: [string, DeckDetailCard[]][] = [];
+  for (const r of ROLE_GROUP_ORDER) {
+    const group = map.get(r)!;
+    if (group.length > 0) {
+      result.push([ROLE_GROUP_LABELS[r], group.slice().sort((a, b) => a.name.localeCompare(b.name))]);
+    }
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // DB query types and functions (untested — same policy as recommend.ts)
 // ---------------------------------------------------------------------------
 

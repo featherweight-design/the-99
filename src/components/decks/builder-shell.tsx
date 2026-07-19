@@ -11,6 +11,7 @@ import { RoleCounterStrip } from "./role-counter-strip";
 import { DegradedBanner } from "./degraded-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
+import { Decklist } from "./decklist";
 
 interface BuilderShellProps {
   deck: DeckDetail;
@@ -35,8 +36,8 @@ export function BuilderShell({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
-  // Suppress unused warnings in skeleton — these will be consumed by Task 8/9/10 slots.
-  void tab; void filter; void grouping; void sheetOpen; void commanderIdentity;
+  // Suppress unused warnings in skeleton — these will be consumed by Task 9/10 slots.
+  void tab; void sheetOpen; void commanderIdentity;
   // _suggestions will be passed to the Task 9 Add panel slot.
   void _suggestions;
 
@@ -161,62 +162,17 @@ export function BuilderShell({
             </button>
           </section>
         ) : (
-          /* Task 8: Decklist body placeholder */
-          <div className="flex-1 px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
-            {/* Filter + group toggle — Task 8 */}
-            <div
-              className="flex items-center gap-[7px] md:gap-[10px] pb-[9px] md:pb-[10px] mb-[8px]"
-              style={{ borderBottom: "1px solid #2A241D" }}
-            >
-              <button
-                type="button"
-                onClick={() => setFilter("all")}
-                className="font-sans font-semibold text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-                style={{
-                  color: filter === "all" ? "#14110E" : "#8E8269",
-                  background: filter === "all" ? "#C9A24B" : "transparent",
-                  border: filter === "all" ? "none" : "1px solid #3A3229",
-                }}
-              >
-                All {deck.built}
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilter("shopping")}
-                className="font-sans font-medium text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-                style={{
-                  color: filter === "shopping" ? "#14110E" : "#E0913C",
-                  background: filter === "shopping" ? "#C9A24B" : "transparent",
-                  border: filter === "shopping" ? "none" : "1px solid #4A3A24",
-                }}
-              >
-                Shopping {deck.toBuyCount}
-              </button>
-              <div className="ml-auto flex items-center gap-[7px] md:gap-[10px]">
-                <button
-                  type="button"
-                  onClick={() => setGrouping("type")}
-                  className="font-sans font-medium text-[12px] md:text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-                  style={{ color: grouping === "type" ? "#C9A24B" : "#8E8269" }}
-                >
-                  By type
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGrouping("role")}
-                  className="font-sans font-medium text-[12px] md:text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-                  style={{ color: grouping === "role" ? "#C9A24B" : "#8E8269" }}
-                >
-                  By role
-                </button>
-              </div>
-            </div>
-
-            {/* Task 8: Decklist rows placeholder */}
-            <p className="font-mono text-[11px] text-center py-[20px]" style={{ color: "#6E6353" }}>
-              [Decklist — Task 8]
-            </p>
-          </div>
+          /* Task 8: Decklist body */
+          <Decklist
+            deckId={deck.id}
+            cards={deck.cards}
+            built={deck.built}
+            toBuyCount={deck.toBuyCount}
+            filter={filter}
+            grouping={grouping}
+            onFilterChange={setFilter}
+            onGroupingChange={setGrouping}
+          />
         )}
 
         {/* §"+ Add cards" sticky footer button (mobile mid-build) */}
