@@ -196,7 +196,13 @@ export function ConfirmModal({
               opacity: armed && !pending ? 1 : 0.6,
             }}
           >
-            {pending ? "Replacing…" : preview.currentCollectionCount === 0 ? `Import ${preview.matchedCardCount.toLocaleString()} cards` : `Replace ${preview.currentCollectionCount.toLocaleString()} cards`}
+            {pending
+              ? preview.currentCollectionCount === 0
+                ? "Importing…"
+                : "Replacing…"
+              : preview.currentCollectionCount === 0
+                ? `Import ${preview.matchedCardCount.toLocaleString()} cards`
+                : `Replace ${preview.currentCollectionCount.toLocaleString()} cards`}
           </button>
         </div>
       </div>
