@@ -1,6 +1,6 @@
 # Design Property Table — App Shell (#5)
 
-> Source of truth: `design_handoff_the99_appshell/The 99 - App Shell.dc.html` (Turn 2 resolved frames, lines 53–341) + README.md + brand/Brand README.md.
+> Source of truth: `design/design_handoff_the99_appshell/The 99 - App Shell.dc.html` (Turn 2 resolved frames, lines 53–341) + README.md + brand/Brand README.md.
 > Option 1b (Crown Bar) was NOT selected — all production specs are from 1a (The Rail). 1b dimensions are documented where they differ for reference only.
 > Token names from brand/Brand README.md; hex values from inline styles.
 

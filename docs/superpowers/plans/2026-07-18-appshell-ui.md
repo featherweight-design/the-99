@@ -118,9 +118,9 @@ Steps:
   --color-r: var(--r);
   --color-g: var(--g);
 
-  --font-display: var(--font-display);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
+  --font-display: var(--font-cinzel);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
 /* ------------------------------------------------------------------
@@ -139,7 +139,7 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 }
 ```
 
-- [ ] Replace `src/app/layout.tsx` — swap Geist for Cinzel/IBM Plex Sans/IBM Plex Mono via `next/font/google`, strip the placeholder header (Task 5's `<Shell>` will re-add nav chrome), keep `ClerkProvider`, expose the three font variables:
+- [ ] Replace `src/app/layout.tsx` — swap Geist for Cinzel/IBM Plex Sans/IBM Plex Mono via `next/font/google`, strip the placeholder header (Task 6's `<Shell>` will re-add nav chrome), keep `ClerkProvider`, expose the three font variables:
 
 ```tsx
 import type { Metadata } from "next";
@@ -148,14 +148,14 @@ import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 const cinzel = Cinzel({
-  variable: "--font-display",
+  variable: "--font-cinzel",
   weight: ["600", "700", "800", "900"],
   subsets: ["latin"],
   display: "swap",
 });
 
 const plexSans = IBM_Plex_Sans({
-  variable: "--font-sans",
+  variable: "--font-plex-sans",
   weight: ["400", "500", "600"],
   style: ["normal", "italic"],
   subsets: ["latin"],
@@ -163,7 +163,7 @@ const plexSans = IBM_Plex_Sans({
 });
 
 const plexMono = IBM_Plex_Mono({
-  variable: "--font-mono",
+  variable: "--font-plex-mono",
   weight: ["400", "500", "600"],
   subsets: ["latin"],
   display: "swap",
@@ -184,7 +184,7 @@ export default function RootLayout({
         className={`${cinzel.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col">
-          {/* Task 5 wraps children in <Shell>; keep passthrough until then. */}
+          {/* Task 6 wraps children in <Shell>; keep passthrough until then. */}
           <main className="flex-1">{children}</main>
         </body>
       </html>
@@ -901,7 +901,90 @@ git commit -m "feat(collection): paste-list parser + previewPaste server action"
 
 ---
 
-### Task 5: Shell chrome — NavRail + TabBar + Shell wrapper
+### Task 5: Home data layer — `getCollectionStats` + `listRecentDecks`
+
+**Files:**
+- Create: `src/lib/home/summary.ts`
+
+**Interfaces:**
+- Produces: `getCollectionStats(userId: string): Promise<{ totalCards: number; uniqueCards: number }>` — `totalCards` = SUM(collectionItems.quantity); `uniqueCards` = COUNT(*) of collectionItems rows for the user (each row is one distinct (oracleId, setCode, foil) triple — matches the "Unique" figure in the property table §Stat rows).
+- Produces: `listRecentDecks(userId: string, limit?: number): Promise<{ id: string; name: string; commanderName: string; colorIdentity: string[]; cardCount: number; createdAt: Date }[]>` — joins `decks` → `cards` on `commanderOracleId` for `commanderName` + `colorIdentity`; left-joins `deckCards` grouped by deck for `cardCount` (SUM(quantity)); ordered by `createdAt DESC`; default `limit = 3`.
+- Consumes: `decks`, `deckCards`, `cards`, `collectionItems` from `src/db/schema.ts`.
+
+Steps:
+
+- [ ] Create `src/lib/home/summary.ts`:
+
+```ts
+import { desc, eq, sql } from "drizzle-orm";
+import { db } from "../../db";
+import { cards, collectionItems, deckCards, decks } from "../../db/schema";
+
+/**
+ * Thin, logic-free queries for the home dashboard.
+ * Follows the untested-query pattern (see recommend.ts) — pure logic gets tests,
+ * shape-shifting SQL does not.
+ */
+
+export async function getCollectionStats(
+  userId: string,
+): Promise<{ totalCards: number; uniqueCards: number }> {
+  const [row] = await db
+    .select({
+      totalCards: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int`,
+      uniqueCards: sql<number>`count(*)::int`,
+    })
+    .from(collectionItems)
+    .where(eq(collectionItems.userId, userId));
+  return { totalCards: row?.totalCards ?? 0, uniqueCards: row?.uniqueCards ?? 0 };
+}
+
+export type RecentDeck = {
+  id: string;
+  name: string;
+  commanderName: string;
+  colorIdentity: string[];
+  cardCount: number;
+  createdAt: Date;
+};
+
+export async function listRecentDecks(
+  userId: string,
+  limit = 3,
+): Promise<RecentDeck[]> {
+  const rows = await db
+    .select({
+      id: decks.id,
+      name: decks.name,
+      commanderName: cards.name,
+      colorIdentity: cards.colorIdentity,
+      cardCount: sql<number>`coalesce((
+        select sum(${deckCards.quantity})::int
+        from ${deckCards}
+        where ${deckCards.deckId} = ${decks.id}
+      ), 0)`,
+      createdAt: decks.createdAt,
+    })
+    .from(decks)
+    .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
+    .where(eq(decks.userId, userId))
+    .orderBy(desc(decks.createdAt))
+    .limit(limit);
+  return rows;
+}
+```
+
+- [ ] Verify: `pnpm typecheck` passes (no test — thin query per codebase pattern).
+- [ ] Commit:
+
+```bash
+git add src/lib/home/summary.ts
+git commit -m "feat(home): getCollectionStats + listRecentDecks queries"
+```
+
+---
+
+### Task 6: Shell chrome — NavRail + TabBar + Shell wrapper
 
 **Files:**
 - Create: `src/components/shell/nav.tsx`
@@ -909,11 +992,11 @@ git commit -m "feat(collection): paste-list parser + previewPaste server action"
 - Modify: `src/app/layout.tsx`
 
 **Interfaces:**
-- Produces: `NavRail()` client component (uses `usePathname` for active state) — desktop only (`hidden md:flex`). Items: Home (`/`, Crowned99), Collection (`/collection`, CardFan), Commanders (`/commanders`, XcixSeal), Decks (`/decks`, CardFan). Wordmark + nav + Clerk `<UserButton />` mounted at the foot.
-- Produces: `TabBar()` client component — mobile only (`md:hidden`, `fixed bottom-0 inset-x-0`). Same four items, diamond bullet + label.
+- Produces: `NavRail({ locked }: { locked: boolean })` client component (uses `usePathname` for active state) — desktop only (`hidden md:flex`). Items: Home (`/`, Crowned99), Collection (`/collection`, CardFan), Commanders (`/commanders`, XcixSeal), Decks (`/decks`, CardFan). When `locked`, Collection/Commanders/Decks render non-interactive at `--fg-locked` (`#6A6152`) with a caption below. Home stays interactive always. Wordmark + nav + Clerk `<UserButton />` mounted at the foot.
+- Produces: `TabBar({ locked }: { locked: boolean })` client component — mobile only (`md:hidden`, `fixed bottom-0 inset-x-0`). Same four items; when `locked`, non-Home items render non-interactive at `--fg-locked`.
 - Produces: `MobileHeader()` client component — mobile only (`md:hidden`), wordmark + Clerk `<UserButton />`.
-- Produces: `Shell({ children })` server component — calls `auth()` from `@clerk/nextjs/server`; signed-out renders `{children}` bare (no chrome); signed-in wraps children with the rail (left), mobile header (top), scrollable main, and bottom tab bar.
-- Consumes: `Crowned99`, `CardFan`, `XcixSeal` (Task 2); Clerk `<UserButton />`.
+- Produces: `Shell({ children })` server component — calls `auth()` from `@clerk/nextjs/server`; signed-out renders `{children}` bare (no chrome); signed-in calls `getCollectionStats(userId)`, derives `locked = stats.uniqueCards === 0`, passes `locked` to `NavRail` and `TabBar`.
+- Consumes: `Crowned99`, `CardFan`, `XcixSeal` (Task 2); `getCollectionStats` (Task 5); Clerk `<UserButton />`.
 
 Steps:
 
@@ -932,15 +1015,16 @@ type NavItem = {
   href: "/" | "/collection" | "/commanders" | "/decks";
   label: string;
   Mark: ComponentType<{ size?: number; className?: string }>;
+  lockable: boolean; // Home is never locked; Collection/Commanders/Decks are.
 };
 
 // Mark usage map (design decision log #8): crowned-99 = identity/Home,
 // card-fan = Collection AND Decks, XCIX seal = Commanders.
 const ITEMS: NavItem[] = [
-  { href: "/",            label: "Home",       Mark: Crowned99 },
-  { href: "/collection",  label: "Collection", Mark: CardFan },
-  { href: "/commanders",  label: "Commanders", Mark: XcixSeal },
-  { href: "/decks",       label: "Decks",      Mark: CardFan },
+  { href: "/",            label: "Home",       Mark: Crowned99, lockable: false },
+  { href: "/collection",  label: "Collection", Mark: CardFan,   lockable: true  },
+  { href: "/commanders",  label: "Commanders", Mark: XcixSeal,  lockable: true  },
+  { href: "/decks",       label: "Decks",      Mark: CardFan,   lockable: true  },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -949,17 +1033,22 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 /** Small brass diamond bullet — active state per property table §Rail Nav item Active. */
-function Diamond({ active }: { active: boolean }) {
+function Diamond({ active, locked }: { active: boolean; locked: boolean }) {
+  const bg = locked
+    ? "var(--border-strong)"   // §Rail Nav item Locked: diamond at line color
+    : active
+      ? "var(--brass)"         // §Rail Nav item Active
+      : "var(--border-strong)";// §Rail Nav item Idle
   return (
     <span
       aria-hidden
       className="inline-block h-[6px] w-[6px] rotate-45"
-      style={{ background: active ? "var(--brass)" : "var(--border-strong)" }}
+      style={{ background: bg }}
     />
   );
 }
 
-export function NavRail() {
+export function NavRail({ locked }: { locked: boolean }) {
   const pathname = usePathname();
   return (
     <aside
@@ -991,30 +1080,65 @@ export function NavRail() {
 
       {/* Nav — style per §Rail Nav section */}
       <nav className="flex flex-col gap-1 px-3 py-4" aria-label="Primary">
-        {ITEMS.map(({ href, label, Mark }) => {
-          const active = isActive(pathname, href);
+        {ITEMS.map(({ href, label, Mark, lockable }) => {
+          const isLocked = locked && lockable;
+          const active = !isLocked && isActive(pathname, href);
+
+          if (isLocked) {
+            // §Rail Nav item — Locked state: non-interactive, color #6A6152.
+            return (
+              <div
+                key={href}
+                className="flex items-center gap-[11px] rounded-lg px-3 py-[10px] text-sm cursor-default"
+                style={{ color: "var(--fg-locked)", fontWeight: 500 }}
+                aria-hidden="true"
+              >
+                <Diamond active={false} locked={true} />
+                <Mark size={16} className="opacity-40" />
+                <span>{label}</span>
+              </div>
+            );
+          }
+
           return (
             <Link
               key={href}
               href={href}
-              // Style per §Rail Nav item Active/Idle/Hover
-              // Background lives in classes (not inline style) so the idle
-              // hover state (--elevated-hover, per §Rail Nav item Hover) works.
+              // Style per §Rail Nav item Active/Idle/Hover.
+              // ALL state-dependent visuals are in Tailwind classes so hover
+              // transitions work without inline-style specificity conflicts:
+              //   active  → bg-elevated text-fg font-semibold
+              //   idle    → bg-transparent text-fg-muted font-medium
+              //             hover:bg-elevated-hover hover:text-fg
               className={`flex items-center gap-[11px] rounded-lg px-3 py-[10px] text-sm transition-colors ${
-                active ? "bg-elevated" : "bg-transparent hover:bg-elevated-hover"
+                active
+                  ? "bg-elevated text-fg font-semibold"
+                  : "bg-transparent text-fg-muted font-medium hover:bg-elevated-hover hover:text-fg"
               }`}
-              style={{
-                color: active ? "var(--fg)" : "var(--fg-muted)",
-                fontWeight: active ? 600 : 500,
-              }}
               aria-current={active ? "page" : undefined}
             >
-              <Diamond active={active} />
+              <Diamond active={active} locked={false} />
               <Mark size={16} className="opacity-80" />
               <span>{label}</span>
             </Link>
           );
         })}
+
+        {/* §Rail: Locked surfaces caption — only shown when at least one item is locked. */}
+        {locked && (
+          <p
+            className="mt-1"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: "var(--fg-locked)", // #6A6152 per property table §Rail Locked surfaces caption
+              padding: "4px 12px",
+              lineHeight: 1.5,
+            }}
+          >
+            Surfaces unlock once your collection is uploaded.
+          </p>
+        )}
       </nav>
 
       {/* Account block — pinned to bottom. Style per §Rail Account trigger row. */}
@@ -1042,7 +1166,7 @@ export function NavRail() {
   );
 }
 
-export function TabBar() {
+export function TabBar({ locked }: { locked: boolean }) {
   const pathname = usePathname();
   return (
     <nav
@@ -1054,8 +1178,30 @@ export function TabBar() {
       }}
       aria-label="Primary"
     >
-      {ITEMS.map(({ href, label }) => {
-        const active = isActive(pathname, href);
+      {ITEMS.map(({ href, label, lockable }) => {
+        const isLocked = locked && lockable;
+        const active = !isLocked && isActive(pathname, href);
+
+        if (isLocked) {
+          // §Rail Nav item — Locked state: non-interactive tab.
+          return (
+            <div
+              key={href}
+              className="flex flex-1 flex-col items-center gap-[5px] cursor-default"
+              aria-hidden="true"
+            >
+              <span
+                aria-hidden
+                className="h-[8px] w-[8px] rotate-45"
+                style={{ background: "#4A4033" }}
+              />
+              <span style={{ fontSize: 10, color: "var(--fg-locked)", fontWeight: 500 }}>
+                {label}
+              </span>
+            </div>
+          );
+        }
+
         return (
           <Link
             key={href}
@@ -1117,17 +1263,21 @@ export function MobileHeader() {
   );
 }
 ```
-
 - [ ] Create `src/components/shell/shell.tsx`:
 
 ```tsx
 import { auth } from "@clerk/nextjs/server";
 import { NavRail, TabBar, MobileHeader } from "./nav";
+import { getCollectionStats } from "../../lib/home/summary";
 
 /**
- * Server component. Signed-out users get the bare page (Task 7 renders the
+ * Server component. Signed-out users get the bare page (Task 8 renders the
  * hero landing at "/"); signed-in users get the full shell with rail (≥ md),
  * mobile header + bottom tabs (< md), and a scrollable main column.
+ *
+ * `locked` = no cards uploaded yet (uniqueCards === 0). NavRail and TabBar use
+ * this to render Collection/Commanders/Decks as non-interactive until the user
+ * completes Step 1 of the first-run flow (§Rail Locked state, property table).
  */
 export default async function Shell({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();
@@ -1136,20 +1286,22 @@ export default async function Shell({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
+  const stats = await getCollectionStats(userId);
+  const locked = stats.uniqueCards === 0;
+
   return (
     <div className="flex min-h-screen">
-      <NavRail />
+      <NavRail locked={locked} />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader />
         {/* pb-[80px] on mobile leaves room for the fixed tab bar (48px content + 22px safe-area + gap). */}
         <main className="min-w-0 flex-1 pb-[80px] md:pb-0">{children}</main>
       </div>
-      <TabBar />
+      <TabBar locked={locked} />
     </div>
   );
 }
 ```
-
 - [ ] Modify `src/app/layout.tsx` — replace the passthrough `<main>` with `<Shell>`:
 
 ```tsx
@@ -1160,14 +1312,14 @@ import Shell from "../components/shell/shell";
 import "./globals.css";
 
 const cinzel = Cinzel({
-  variable: "--font-display",
+  variable: "--font-cinzel",
   weight: ["600", "700", "800", "900"],
   subsets: ["latin"],
   display: "swap",
 });
 
 const plexSans = IBM_Plex_Sans({
-  variable: "--font-sans",
+  variable: "--font-plex-sans",
   weight: ["400", "500", "600"],
   style: ["normal", "italic"],
   subsets: ["latin"],
@@ -1175,7 +1327,7 @@ const plexSans = IBM_Plex_Sans({
 });
 
 const plexMono = IBM_Plex_Mono({
-  variable: "--font-mono",
+  variable: "--font-plex-mono",
   weight: ["400", "500", "600"],
   subsets: ["latin"],
   display: "swap",
@@ -1205,16 +1357,17 @@ export default function RootLayout({
 ```
 
 - [ ] Verify: `pnpm typecheck && pnpm build` succeed.
+- [ ] Verify browser: a signed-in user with zero collection cards sees Collection, Commanders, and Decks rendered non-interactive at `#6A6152` with the caption "Surfaces unlock once your collection is uploaded." below; Home remains interactive. After upload (`confirmUpload`), rail reverts to normal idle/hover states.
 - [ ] Commit:
 
 ```bash
 git add src/components/shell/nav.tsx src/components/shell/shell.tsx src/app/layout.tsx
-git commit -m "feat(shell): NavRail + TabBar + auth-gated Shell wrapper"
+git commit -m "feat(shell): NavRail + TabBar + auth-gated Shell wrapper + locked-nav state"
 ```
 
 ---
 
-### Task 6: Un-gate `/` in `src/proxy.ts`
+### Task 7: Un-gate `/` in `src/proxy.ts`
 
 **Files:**
 - Modify: `src/proxy.ts`
@@ -1232,7 +1385,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 // Next.js 16 renamed the middleware entrypoint: `src/proxy.ts` is the
 // replacement for `src/middleware.ts` (same functionality, new file convention).
 //
-// "/" is public so the signed-out landing (Task 7) can render;
+// "/" is public so the signed-out landing (Task 8) can render;
 // everything else remains Clerk-protected. Sign-in/up still happen on Clerk's
 // hosted Account Portal — no in-app auth routes to allowlist.
 const isPublic = createRouteMatcher(["/", "/api/cron(.*)"]);
@@ -1256,7 +1409,7 @@ git commit -m "feat(shell): un-gate / for signed-out landing"
 
 ---
 
-### Task 7: Signed-out landing at `/`
+### Task 8: Signed-out landing at `/`
 
 **Files:**
 - Modify: `src/app/page.tsx`
@@ -1358,89 +1511,6 @@ export default async function HomePage() {
 ```bash
 git add src/app/page.tsx
 git commit -m "feat(shell): signed-out landing at /"
-```
-
----
-
-### Task 8: Home data layer — `getCollectionStats` + `listRecentDecks`
-
-**Files:**
-- Create: `src/lib/home/summary.ts`
-
-**Interfaces:**
-- Produces: `getCollectionStats(userId: string): Promise<{ totalCards: number; uniqueCards: number }>` — `totalCards` = SUM(collectionItems.quantity); `uniqueCards` = COUNT(*) of collectionItems rows for the user (each row is one distinct (oracleId, setCode, foil) triple — matches the "Unique" figure in the property table §Stat rows).
-- Produces: `listRecentDecks(userId: string, limit?: number): Promise<{ id: string; name: string; commanderName: string; colorIdentity: string[]; cardCount: number; createdAt: Date }[]>` — joins `decks` → `cards` on `commanderOracleId` for `commanderName` + `colorIdentity`; left-joins `deckCards` grouped by deck for `cardCount` (SUM(quantity)); ordered by `createdAt DESC`; default `limit = 3`.
-- Consumes: `decks`, `deckCards`, `cards`, `collectionItems` from `src/db/schema.ts`.
-
-Steps:
-
-- [ ] Create `src/lib/home/summary.ts`:
-
-```ts
-import { desc, eq, sql } from "drizzle-orm";
-import { db } from "../../db";
-import { cards, collectionItems, deckCards, decks } from "../../db/schema";
-
-/**
- * Thin, logic-free queries for the home dashboard.
- * Follows the untested-query pattern (see recommend.ts) — pure logic gets tests,
- * shape-shifting SQL does not.
- */
-
-export async function getCollectionStats(
-  userId: string,
-): Promise<{ totalCards: number; uniqueCards: number }> {
-  const [row] = await db
-    .select({
-      totalCards: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int`,
-      uniqueCards: sql<number>`count(*)::int`,
-    })
-    .from(collectionItems)
-    .where(eq(collectionItems.userId, userId));
-  return { totalCards: row?.totalCards ?? 0, uniqueCards: row?.uniqueCards ?? 0 };
-}
-
-export type RecentDeck = {
-  id: string;
-  name: string;
-  commanderName: string;
-  colorIdentity: string[];
-  cardCount: number;
-  createdAt: Date;
-};
-
-export async function listRecentDecks(
-  userId: string,
-  limit = 3,
-): Promise<RecentDeck[]> {
-  const rows = await db
-    .select({
-      id: decks.id,
-      name: decks.name,
-      commanderName: cards.name,
-      colorIdentity: cards.colorIdentity,
-      cardCount: sql<number>`coalesce((
-        select sum(${deckCards.quantity})::int
-        from ${deckCards}
-        where ${deckCards.deckId} = ${decks.id}
-      ), 0)`,
-      createdAt: decks.createdAt,
-    })
-    .from(decks)
-    .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
-    .where(eq(decks.userId, userId))
-    .orderBy(desc(decks.createdAt))
-    .limit(limit);
-  return rows;
-}
-```
-
-- [ ] Verify: `pnpm typecheck` passes (no test — thin query per codebase pattern).
-- [ ] Commit:
-
-```bash
-git add src/lib/home/summary.ts
-git commit -m "feat(home): getCollectionStats + listRecentDecks queries"
 ```
 
 ---
@@ -1957,11 +2027,11 @@ git commit -m "feat(shell): upload entry + interim empty-state pages for /collec
 - Modify: `src/app/page.tsx`
 
 **Interfaces:**
-- Produces: `FirstRunChecklist()` server component — page heading + subhead + step 1 (active, contains `<UploadEntry />` from Task 9) + steps 2 & 3 (dimmed/locked). Style per property table §First-Run.
+- Produces: `FirstRunChecklist({ name }: { name: string | null })` server component — heading "Welcome to the 99, {name}" when name present, else "Welcome to the 99" (fallback per property table §First-Run heading); subhead + step 1 (active, contains `<UploadEntry />` from Task 9) + steps 2 & 3 (dimmed/locked). Style per property table §First-Run.
 - Produces: `HeroCommander({ userId })` async server component — awaits `recommendCommanders(userId)`; renders the hero card (results[0]) with completeness bar (via `completeness()` + `COMPLETENESS_THRESHOLDS`), WUBRG pips from `colorIdentity`, plus a `degraded` banner when `results[]` reports it. Wrapped in `<Suspense>` by the dashboard so the rest streams first (READINESS item 4).
 - Produces: `HeroCommanderSkeleton()` sync component — striped-placeholder card + loading dots, same silhouette as the real hero. Renders as the Suspense fallback.
-- Produces: `Dashboard({ userId, stats, decks })` server component — composes greeting header, `<Suspense fallback={<HeroCommanderSkeleton />}><HeroCommander userId={userId} /></Suspense>`, "All N →" link (rendered but the count comes from the streaming client — for the interim we show a link without the count and note "→ /commanders"), recent decks list, collection stat tiles, "Update collection" link.
-- Consumes: `getCollectionStats`, `listRecentDecks` (Task 8), `recommendCommanders`, `completeness`, `COMPLETENESS_THRESHOLDS`, `UploadEntry` (Task 9).
+- Produces: `Dashboard({ userId, stats, decks, name })` server component — composes greeting header "Welcome back, {name}" (desktop) / "Welcome back" (mobile, no name suffix per property table §Dashboard heading); `<Suspense fallback={<HeroCommanderSkeleton />}><HeroCommander userId={userId} /></Suspense>`, "All N →" link, recent decks list, collection stat tiles, "Update collection" link.
+- Consumes: `getCollectionStats`, `listRecentDecks` (Task 5), `recommendCommanders`, `completeness`, `COMPLETENESS_THRESHOLDS`, `UploadEntry` (Task 9); `currentUser()` from `@clerk/nextjs/server` (in `page.tsx`, for `user?.firstName`).
 
 Steps:
 
@@ -2133,14 +2203,18 @@ export function Dashboard({
   userId,
   stats,
   decks,
+  name,
 }: {
   userId: string;
   stats: { totalCards: number; uniqueCards: number };
   decks: RecentDeck[];
+  name: string | null;
 }) {
   return (
     <div className="p-5 md:px-10 md:pt-[34px] md:pb-11">
-      {/* Greeting — style per §Signed-In Home Dashboard / Page heading */}
+      {/* Greeting — style per §Signed-In Home Dashboard / Page heading.
+          Mobile: "Welcome back" (no name suffix per property table §Dashboard heading).
+          Desktop: "Welcome back, {name}" when firstName is available. */}
       <h1
         style={{
           fontFamily: "var(--font-display)",
@@ -2149,7 +2223,10 @@ export function Dashboard({
           color: "var(--fg)",
         }}
       >
-        Welcome back
+        <span className="md:hidden">Welcome back</span>
+        <span className="hidden md:inline">
+          {name ? `Welcome back, ${name}` : "Welcome back"}
+        </span>
       </h1>
       <p
         className="mt-2"
@@ -2337,9 +2414,11 @@ import { UploadEntry } from "../collection/upload-entry";
  * Step 1 is active + wired to the upload flow. Steps 2 & 3 are locked/dimmed.
  * Style per property table §First-Run Home — Hybrid Checklist.
  */
-export function FirstRunChecklist() {
+export function FirstRunChecklist({ name }: { name: string | null }) {
   return (
     <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 max-w-[720px]">
+      {/* Heading per property table §First-Run heading: "Welcome to the 99, {name}"
+          (sample: "Welcome to the 99, Arden"). Omit ", {name}" suffix when null. */}
       <h1
         style={{
           fontFamily: "var(--font-display)",
@@ -2349,7 +2428,7 @@ export function FirstRunChecklist() {
           lineHeight: 1.2,
         }}
       >
-        Welcome to the 99
+        {name ? `Welcome to the 99, ${name}` : "Welcome to the 99"}
       </h1>
       <p
         className="mt-2 mb-7"
@@ -2451,7 +2530,7 @@ export function FirstRunChecklist() {
 - [ ] Modify `src/app/page.tsx` — signed-in branch calls the data layer and picks first-run vs. dashboard:
 
 ```tsx
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { Crowned99 } from "../components/marks";
 import { getCollectionStats, listRecentDecks } from "../lib/home/summary";
@@ -2502,24 +2581,29 @@ export default async function HomePage() {
     );
   }
 
-  const [stats, decks] = await Promise.all([
+  // Fetch name + data in parallel. currentUser() is cheap (Clerk session cache).
+  // `user?.firstName` falls back to null gracefully when not set.
+  const [user, stats, decks] = await Promise.all([
+    currentUser(),
     getCollectionStats(userId),
     listRecentDecks(userId, 3),
   ]);
+  const name = user?.firstName ?? null;
 
   if (stats.uniqueCards === 0) {
-    return <FirstRunChecklist />;
+    return <FirstRunChecklist name={name} />;
   }
-  return <Dashboard userId={userId} stats={stats} decks={decks} />;
+  return <Dashboard userId={userId} stats={stats} decks={decks} name={name} />;
 }
 ```
 
 - [ ] Verify: `pnpm typecheck && pnpm build` succeed.
+- [ ] Verify browser: signed-in user with a populated Clerk `firstName` sees "Welcome back, {name}" on desktop, "Welcome back" (no suffix) on mobile; null/missing firstName gracefully falls back to "Welcome back" / "Welcome to the 99" on both surfaces.
 - [ ] Commit:
 
 ```bash
 git add src/components/home/first-run.tsx src/components/home/dashboard.tsx src/components/home/hero-commander.tsx src/app/page.tsx
-git commit -m "feat(home): first-run checklist + dashboard with streamed hero"
+git commit -m "feat(home): first-run checklist + dashboard with streamed hero and name greetings"
 ```
 
 ---
