@@ -1,0 +1,2054 @@
+# Design Property Table — Collection (#6)
+
+> Breakpoint: 768px (Tailwind `md:`). "Mobile" = below 768px, "Desktop" = 768px and above.
+> All color values are raw hex from the design source; no CSS custom property names are defined in the handoff.
+> Art regions use color-identity gradients as placeholders; swap in real art while preserving aspect-ratio frame.
+
+---
+
+## Component: Page Shell (mobile bottom tab bar)
+
+### Bottom Tab Bar Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | — (not shown; desktop uses sidebar rail) |
+| border-top | 1px solid #3A3229 | — |
+| background | #1A160F | — |
+| padding | 10px 6px 22px | — |
+
+### Tab Item (inactive)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | 1 | — |
+| display | flex | — |
+| flex-direction | column | — |
+| align-items | center | — |
+| gap | 5px | — |
+| font-size | 10px | — |
+| color | #8E8269 | — |
+
+### Tab Item Diamond (inactive)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 8px | — |
+| height | 8px | — |
+| background | #4A4033 | — |
+| transform | rotate(45deg) | — |
+| display | block | — |
+
+### Tab Item (active — Collection)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| color | #C9A24B | — |
+| font-weight | 600 | — |
+
+### Tab Item Diamond (active)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | #C9A24B | — |
+
+---
+
+## Component: Desktop Sidebar Rail
+
+### Rail Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| flex-direction | — | column |
+| width | — | 236px |
+| flex | — | none |
+| background | — | #1A160F |
+| border-right | — | 1px solid #3A3229 |
+
+### Logomark Area
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| padding | — | 22px 20px 20px |
+| border-bottom | — | 1px solid #2A241D |
+| display | — | flex |
+| align-items | — | flex-end |
+| gap | — | 7px |
+
+### Wordmark "THE"
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | 'IBM Plex Mono', monospace |
+| font-size | — | 10px |
+| letter-spacing | — | 0.42em |
+| color | — | #C9A24B |
+| padding-bottom | — | 5px |
+
+### Crown Diamonds Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| flex-direction | — | column |
+| align-items | — | center |
+| gap | — | 5px |
+
+### Crown Diamond Row
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| gap | — | 4px |
+
+### Crown Diamond (small, left/right)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | — | 6px |
+| height | — | 6px |
+| background | — | #C9A24B |
+| transform | — | rotate(45deg) |
+| display | — | block |
+
+### Crown Diamond (large, center)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | — | 8px |
+| height | — | 8px |
+| background | — | #C9A24B |
+| transform | — | rotate(45deg) |
+| display | — | block |
+
+### "99" Numeral
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | 'Cinzel', serif |
+| font-weight | — | 800 |
+| font-size | — | 30px |
+| line-height | — | 0.8 |
+| color | — | #EDE6D8 |
+
+### Nav Section Label ("Play")
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | 'IBM Plex Mono', monospace |
+| font-size | — | 10px |
+| letter-spacing | — | 0.18em |
+| text-transform | — | uppercase |
+| color | — | #8E8269 |
+| padding | — | 6px 12px 8px |
+
+### Nav Item Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| padding | — | 16px 12px |
+| display | — | flex |
+| flex-direction | — | column |
+| gap | — | 4px |
+
+### Nav Item (inactive)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | center |
+| gap | — | 11px |
+| padding | — | 10px 12px |
+| border-radius | — | 8px |
+| color | — | #A89B84 |
+| font-size | — | 14px |
+| font-weight | — | 500 |
+
+### Nav Item Diamond (inactive)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | — | 6px |
+| height | — | 6px |
+| background | — | #3A3229 |
+| transform | — | rotate(45deg) |
+| display | — | block |
+
+### Nav Item (active — Collection)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | — | #2A241D |
+| color | — | #EDE6D8 |
+| font-weight | — | 600 |
+
+### Nav Item Diamond (active)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | — | #C9A24B |
+
+### Account Trigger Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| margin-top | — | auto |
+| padding | — | 14px 12px |
+
+### Account Trigger Pill
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | center |
+| gap | — | 12px |
+| background | — | #221D16 |
+| border | — | 1px solid #3A3229 |
+| padding | — | 2px 12px 2px 2px |
+| border-radius | — | 14px |
+
+### Avatar Badge
+| Property | Mobile (header) | Desktop (sidebar) |
+|----------|--------|---------|
+| width | 34px | 38px |
+| height | 34px | 38px |
+| flex | none | none |
+| border-radius | 10px | 12px |
+| background | #221D16 | #14110E |
+| border | 1px solid #C9A24B | 1px solid #C9A24B |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 11px | 13px |
+| color | #C9A24B | #C9A24B |
+
+### Account Name
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | — | 13px |
+| color | — | #EDE6D8 |
+| font-weight | — | 600 |
+| line-height | — | 1.25 |
+
+### Account Role
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | 'IBM Plex Mono', monospace |
+| font-size | — | 10px |
+| color | — | #8E8269 |
+
+### Account Overflow Menu Trigger ("⋯")
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| color | — | #8E8269 |
+| font-size | — | 15px |
+| line-height | — | 1 |
+| margin-left | — | auto |
+
+---
+
+## Component: Collection Page Header
+
+### Page Background
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | #14110E | #14110E |
+
+### Header Section (mobile)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| padding | 20px 18px 12px | 28px 34px 0 |
+| border-bottom | 1px solid #2A241D | — |
+| display | flex | flex |
+| align-items | center / space-between | flex-end / space-between |
+| justify-content | space-between | space-between |
+| gap | — | 20px |
+| margin-bottom | 14px | — |
+
+### Page Title "Collection"
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| font-weight | 700 | 700 |
+| font-size | 22px | 30px |
+| margin | 0 | 0 |
+| color | #EDE6D8 | #EDE6D8 |
+
+### Subtitle / Stats Line
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 11px | 12px |
+| color | #8E8269 | #8E8269 |
+| margin-top | 2px | 4px |
+
+### Copy (subtitle)
+| Context | Copy |
+|---------|------|
+| Mobile | `2,933 cards · 1,418 unique` |
+| Desktop | `2,933 cards · 1,418 unique · last updated Jul 12` |
+
+### Replace Collection Button
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-weight | 600 | 600 |
+| font-size | — | 13px |
+| color | — | #EDE6D8 |
+| background | — | transparent |
+| border | — | 1px solid #3A3229 |
+| border-radius | — | 8px |
+| padding | — | 9px 16px |
+| cursor | — | pointer |
+
+#### Hover State — Replace Collection Button
+| Property | Desktop hover |
+|----------|---------------|
+| border-color | #C9A24B |
+| color | #D8B25E |
+
+### Copy (button label)
+| Context | Copy |
+|---------|------|
+| Desktop | `↻ Replace collection` |
+
+---
+
+## Component: Filter Bar
+
+### Filter Bar Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | — | sticky |
+| top | — | 0 |
+| background | — | #14110E |
+| padding | — | 18px 34px 14px |
+| border-bottom | 1px solid #2A241D | 1px solid #2A241D |
+| z-index | — | 2 |
+
+### Filter Row (inner flex)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| gap | 8px | 12px |
+| overflow | hidden (horizontal scroll) | — |
+
+### Search Input
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | — | 1 |
+| display | flex | flex |
+| align-items | center | center |
+| gap | 8px | 10px |
+| background | #181410 | #181410 |
+| border | 1px solid #3A3229 | 1px solid #3A3229 |
+| border-radius | 8px | 8px |
+| padding | 9px 12px | 10px 14px |
+
+### Search Icon
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| color | #8E8269 | #8E8269 |
+| font-size | 14px | 15px |
+
+### Search Placeholder Text
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 14px | 14px |
+| color | #8E8269 | #8E8269 |
+
+### Copy (placeholders)
+| Context | Copy |
+|---------|------|
+| Mobile placeholder | `Search your cards…` |
+| Desktop placeholder | `Search by card name…` |
+
+### Color Filter (desktop — pip selector widget)
+| Property | Desktop |
+|----------|---------|
+| display | flex |
+| align-items | center |
+| gap | 6px |
+| background | #181410 |
+| border | 1px solid #3A3229 |
+| border-radius | 8px |
+| padding | 7px 10px |
+
+### Color Filter Label "COLOR"
+| Property | Desktop |
+|----------|---------|
+| font-family | 'IBM Plex Mono', monospace |
+| font-size | 10px |
+| color | #8E8269 |
+| letter-spacing | 0.1em |
+| margin-right | 2px |
+
+### WUBRG Color Pip (in filter widget)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | — | 15px |
+| height | — | 15px |
+| border-radius | — | 999px |
+| box-shadow (inactive) | — | inset 0 0 0 1px rgba(0,0,0,0.3) |
+| opacity (inactive) | — | 0.4 |
+| box-shadow (selected) | — | 0 0 0 2px #C9A24B |
+| opacity (selected) | — | 1 (no opacity) |
+
+### WUBRG Pip Colors
+| Color | Hex |
+|-------|-----|
+| W (White) | #E8E4D6 |
+| U (Blue) | #4A7FB5 |
+| B (Black) | #5B5566 |
+| R (Red) | #C05A48 |
+| G (Green) | #6B9E63 |
+
+### Filter Button (Type, Set, Sort dropdowns — mobile)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-size | 12.5px | 13px |
+| font-weight | 500 | 500 |
+| color | #EDE6D8 | #EDE6D8 |
+| background | #2A241D | #2A241D |
+| border | 1px solid #3A3229 | 1px solid #3A3229 |
+| border-radius | 999px | 8px |
+| padding | 6px 12px | 9px 14px |
+| white-space | nowrap | — |
+
+### Copy (filter button labels)
+| Context | Copy |
+|---------|------|
+| Mobile | `Color`, `Type ▾`, `Set ▾`, `A–Z ▾` |
+| Desktop | Color pip widget (no text button), `Type ▾`, `Set ▾`, `Sort: Name ▾` |
+
+### View Toggle Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| gap | 2px | 2px |
+| background | #181410 | #181410 |
+| border | 1px solid #3A3229 | 1px solid #3A3229 |
+| border-radius | 8px | 8px |
+| padding | 2px | 2px |
+| margin-left | — | 2px |
+
+### View Toggle Segment (active)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 28px | 30px |
+| height | 24px | 28px |
+| border-radius | 6px | 6px |
+| background | #C9A24B | #C9A24B |
+| color | #14110E | #14110E |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| font-size | 12px | 13px |
+
+### View Toggle Segment (inactive)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 28px | 30px |
+| height | 24px | 28px |
+| border-radius | 6px | 6px |
+| color | #8E8269 | #8E8269 |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| font-size | 12px | 13px |
+
+### Copy (toggle icons)
+| Context | Copy |
+|---------|------|
+| Rows icon | `≣` |
+| Grid icon | `▦` |
+
+---
+
+## Component: Filter Chip Row
+
+### Chip Row Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| gap | 6px (mobile wraps) | 8px |
+| margin-top | 10px | 12px |
+| flex-wrap | wrap | — |
+
+### "FILTERS:" Label (desktop only)
+| Property | Desktop |
+|----------|---------|
+| font-family | 'IBM Plex Mono', monospace |
+| font-size | 11px |
+| color | #8E8269 |
+
+### Filter Chip
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | inline-flex | inline-flex |
+| align-items | center | center |
+| gap | 6px | 7px |
+| font-size | 12px | 12.5px |
+| color | #EDE6D8 | #EDE6D8 |
+| background | #2A241D | #2A241D |
+| border | 1px solid #3A3229 | 1px solid #3A3229 |
+| border-radius | 999px | 999px |
+| padding | 5px 9px | 5px 8px 5px 11px |
+
+### Filter Chip WUBRG Dot (color chips only)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 9px | 9px |
+| height | 9px | 9px |
+| border-radius | 999px | 999px |
+
+### Filter Chip Dismiss "✕"
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| color | #8E8269 | #8E8269 |
+| cursor | pointer | pointer |
+
+### "Clear all" Link
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 12px | 12px |
+| color | #C9A24B | #C9A24B |
+| margin-left | — | 2px |
+
+### Result Count Label
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 11px | 11px |
+| color | #8E8269 (default) | #8E8269 (default) |
+| color (0 results) | — | #E0913C |
+| margin-left | — | auto |
+
+### Copy (result count variants)
+| Context | Copy |
+|---------|------|
+| Mobile default | `1,418 results` |
+| Desktop with filters | `Showing 3 of 2,933` |
+| Desktop zero results | `Showing 0 of 2,933` |
+| Desktop no filters | `No filters active` / `Showing 1,418 unique · 2,933 total` |
+
+---
+
+## Component: Collection Row (State 1a — Dense Rows)
+
+### Row Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | grid | grid |
+| grid-template-columns | 38px 40px 1fr auto | 52px 54px 1fr 150px 92px 18px |
+| align-items | center | center |
+| gap | 10px | 16px |
+| padding | 10px 12px | 12px 18px |
+| border-radius | 8px | 8px |
+| background | #1E1A15 | #1E1A15 |
+| border | 1px solid #2A241D | 1px solid #2A241D |
+| cursor | — | pointer |
+
+#### Hover State — Collection Row
+| Property | Desktop hover |
+|----------|---------------|
+| border-color | #3A3229 |
+| background | #221D16 |
+
+### Row: Quantity Column
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 13px | 14px |
+| font-weight | 500 | 500 |
+| color | #C9A24B | #C9A24B |
+
+### Row: Color Pip Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| gap | 3px | 4px |
+
+### Row: Color Pip
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 11px | 13px |
+| height | 11px | 13px |
+| border-radius | 999px | 999px |
+| display | block | block |
+| box-shadow | inset 0 0 0 1px rgba(0,0,0,0.35) | inset 0 0 0 1px rgba(0,0,0,0.35) |
+
+### Row: Name Column Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| min-width | 0 | 0 |
+
+### Row: Card Name
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 14px | 15px |
+| font-weight | 600 | 600 |
+| color | #EDE6D8 | #EDE6D8 |
+| white-space | nowrap | nowrap |
+| overflow | hidden | hidden |
+| text-overflow | ellipsis | ellipsis |
+
+### Row: Type Line (mobile only — combined with name column)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 11.5px | — |
+| color | #8E8269 | — |
+| white-space | nowrap | — |
+| overflow | hidden | — |
+| text-overflow | ellipsis | — |
+
+### Row: Type Line (desktop — separate column)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | — | 12.5px |
+| color | — | #A89B84 |
+| white-space | — | nowrap |
+| overflow | — | hidden |
+| text-overflow | — | ellipsis |
+
+### Row: Set/Rarity Column Container (desktop)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | center |
+| gap | — | 8px |
+
+### Row: Rarity Dot
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | — | 7px |
+| height | — | 7px |
+| border-radius | — | 999px |
+| display | — | block |
+
+### Rarity Dot Colors
+| Rarity | Color |
+|--------|-------|
+| common | #A89B84 |
+| uncommon | #B7C4CE |
+| rare | #C9A24B |
+| mythic | #E0913C |
+
+### Row: Set Code (desktop)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | 'IBM Plex Mono', monospace |
+| font-size | — | 11px |
+| color | — | #8E8269 |
+
+### Row: Set Code (mobile — right-aligned auto column)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | — |
+| font-size | 10.5px | — |
+| color | #8E8269 | — |
+| letter-spacing | 0.04em | — |
+
+### Row: Chevron (desktop only, last column)
+| Property | Desktop |
+|----------|---------|
+| color | #6A6152 |
+| font-size | 14px |
+
+### Rows Scroll Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | 1 | flex: 1 |
+| overflow | hidden | — |
+| padding | 2px 12px 12px | 12px 34px 34px |
+| display | flex | flex |
+| flex-direction | column | column |
+| gap | 6px | 7px |
+
+---
+
+## Component: Grid Tile (State 1b — Card Art Gallery)
+
+### Grid Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | grid | grid |
+| grid-template-columns | 1fr 1fr (2-up) | repeat(5, 1fr) (5-up) |
+| gap | 12px | 16px |
+| padding | 4px 14px 14px | 20px 34px 34px |
+
+### Grid Tile Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| border-radius | 9px | 10px |
+| overflow | hidden | hidden |
+| background | #1E1A15 | #1E1A15 |
+| border | 1px solid #2A241D | 1px solid #2A241D |
+| cursor | — | pointer |
+
+#### Hover State — Grid Tile
+| Property | Desktop hover |
+|----------|---------------|
+| border-color | #C9A24B |
+
+### Grid Tile: Art Region
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| aspect-ratio | 63/88 | 63/88 |
+| position | relative | relative |
+| box-shadow | inset 0 -40px 40px -30px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.25) | inset 0 -50px 50px -34px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.25) |
+| background | color-identity gradient (see Art Gradients) | color-identity gradient |
+
+### Art Placeholder Gradients (per identity)
+| Identity | Gradient |
+|----------|----------|
+| W (colorless/artifact) | `linear-gradient(150deg, #efe9d8, #cbbf9c 58%, #9d8f6b)` |
+| U | `linear-gradient(150deg, #6a9bcb, #305c88 58%, #1c3a57)` |
+| B | `linear-gradient(150deg, #5a5464, #2c2833 58%, #17151d)` |
+| R | `linear-gradient(150deg, #cf7157, #8c3627 58%, #571f16)` |
+| G | `linear-gradient(150deg, #84b277, #406f3b 58%, #264823)` |
+| C (colorless) | `linear-gradient(150deg, #b3a488, #726755 58%, #453e31)` |
+| Multi (2-color) | `linear-gradient(125deg, color1-mid, color1-light 40%, color2-light 60%, color2-mid)` |
+
+### Grid Tile: Quantity Badge
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| top | 6px | 8px |
+| right | 6px | 8px |
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 11px | 12px |
+| font-weight | 600 | 600 |
+| color | #14110E | #14110E |
+| background | #C9A24B | #C9A24B |
+| border-radius | 6px | 6px |
+| padding | 2px 6px | 2px 7px |
+
+### Grid Tile: Caption Area
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| padding | 7px 9px 9px | 9px 11px 11px |
+
+### Grid Tile: Card Name
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 12px | 13px |
+| font-weight | 600 | 600 |
+| color | #EDE6D8 | #EDE6D8 |
+| white-space | nowrap | nowrap |
+| overflow | hidden | hidden |
+| text-overflow | ellipsis | ellipsis |
+
+### Grid Tile: Set/Rarity Caption
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 9.5px | 10px |
+| color | #8E8269 | #8E8269 |
+| margin-top | 2px | 3px |
+
+### Copy (caption format)
+| Context | Copy |
+|---------|------|
+| Mobile | `{{ card.set }}` (set code only) |
+| Desktop | `{{ card.set }} · {{ card.rarity }}` |
+
+---
+
+## Component: Card Detail Modal
+
+### Backdrop
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute inset:0 | absolute inset:0 |
+| background | — | rgba(8,6,4,0.72) |
+| (blurred collection behind) | — | filter: blur(2px); opacity: 0.4 |
+
+### Mobile: Full-Screen Sheet Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | 1 | — |
+| overflow | hidden | — |
+| display | flex | — |
+| flex-direction | column | — |
+| background | #181410 | — |
+
+### Mobile: Art Header
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | relative | — |
+| padding | 44px 20px 20px | — |
+| background | color-identity gradient | — |
+| box-shadow | inset 0 -60px 60px -40px rgba(0,0,0,0.55) | — |
+
+### Mobile: Art Close Button
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | — |
+| top | 22px | — |
+| right | 18px | — |
+| width | 32px | — |
+| height | 32px | — |
+| border-radius | 999px | — |
+| background | rgba(10,8,6,0.55) | — |
+| color | #EDE6D8 | — |
+| display | flex | — |
+| align-items | center | — |
+| justify-content | center | — |
+| font-size | 16px | — |
+
+### Mobile: Art Image
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 180px | — |
+| aspect-ratio | 63/88 | — |
+| margin | 6px auto 0 | — |
+| border-radius | 10px | — |
+| box-shadow | 0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3) | — |
+
+### Mobile: Content Area
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | 1 | — |
+| overflow | hidden | — |
+| padding | 20px | — |
+
+### Mobile: Name + Type Header
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | — |
+| align-items | flex-start | — |
+| justify-content | space-between | — |
+| gap | 12px | — |
+
+### Desktop: Modal Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | — | absolute |
+| top | — | 50% |
+| left | — | 50% |
+| transform | — | translate(-50%, -50%) |
+| width | — | 820px |
+| background | — | #1A160F |
+| border | — | 1px solid #3A3229 |
+| border-radius | — | 16px |
+| box-shadow | — | 0 40px 100px rgba(0,0,0,0.7) |
+| display | — | flex |
+| overflow | — | hidden |
+
+### Desktop: Art Column
+| Property | Desktop |
+|----------|---------|
+| width | 320px |
+| flex | none |
+| padding | 28px |
+| background | #14110E |
+| display | flex |
+| align-items | center |
+| justify-content | center |
+
+### Desktop: Art Image
+| Property | Desktop |
+|----------|---------|
+| width | 100% |
+| aspect-ratio | 63/88 |
+| border-radius | 12px |
+| box-shadow | 0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3) |
+
+### Desktop: Content Column
+| Property | Desktop |
+|----------|---------|
+| flex | 1 |
+| padding | 30px 32px |
+| position | relative |
+
+### Desktop: Close Button
+| Property | Desktop |
+|----------|---------|
+| position | absolute |
+| top | 22px |
+| right | 24px |
+| width | 34px |
+| height | 34px |
+| border-radius | 999px |
+| background | #221D16 |
+| border | 1px solid #3A3229 |
+| color | #A89B84 |
+| display | flex |
+| align-items | center |
+| justify-content | center |
+| font-size | 15px |
+| cursor | pointer |
+
+### Card Name
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| font-weight | 700 | 700 |
+| font-size | 22px | 29px |
+| margin | 0 | 0 |
+| color | #EDE6D8 | #EDE6D8 |
+| line-height | 1.15 | 1.1 |
+
+### Card Type Line (below name)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 13px | 14px |
+| color | #A89B84 | #A89B84 |
+| margin-top | 4px | 6px |
+
+### Mana Cost Pip Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| gap | 4px | 5px |
+| flex | none | none |
+| padding-top | 4px | — |
+
+### Mana Pip (generic {n})
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 22px | 26px |
+| height | 22px | 26px |
+| border-radius | 999px | 999px |
+| background | #4A4033 | #4A4033 |
+| color | #EDE6D8 | #EDE6D8 |
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 12px | 13px |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+
+### Mana Pip (WUBRG colored)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 22px | 26px |
+| height | 22px | 26px |
+| border-radius | 999px | 999px |
+| background | WUBRG hex (e.g. #4A7FB5 for U) | WUBRG hex |
+| color | #14110E | #14110E |
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 12px | 13px |
+| font-weight | 600 | 600 |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+
+### Oracle Text Block
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | #14110E | #14110E |
+| border | 1px solid #2A241D | 1px solid #2A241D |
+| border-radius | 10px | 10px |
+| padding | 14px 16px | 18px 20px |
+| margin-top | 16px | 22px |
+| font-size | 13.5px | 15px |
+| line-height | 1.6 | 1.65 |
+| color | #C6B79A | #C6B79A |
+
+### Oracle Text: Keyword / bold
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| color | #EDE6D8 | #EDE6D8 |
+| font-weight | 600 | 600 |
+
+### Oracle Text: Reminder Text (italic)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-style | italic | italic |
+
+### Mobile: Meta 2×2 Grid
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | grid | — |
+| grid-template-columns | 1fr 1fr | — |
+| gap | 1px | — |
+| background | #2A241D | — |
+| border | 1px solid #2A241D | — |
+| border-radius | 10px | — |
+| overflow | hidden | — |
+| margin-top | 16px | — |
+
+### Mobile: Meta Cell
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | #1E1A15 | — |
+| padding | 11px 14px | — |
+
+### Desktop: Meta Fields (flex row)
+| Property | Desktop |
+|----------|---------|
+| display | flex |
+| gap | 26px |
+| margin-top | 24px |
+| flex-wrap | wrap |
+
+### Meta Label
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 9.5px | 10px |
+| letter-spacing | 0.12em | 0.14em |
+| color | #8E8269 | #8E8269 |
+| text-transform | uppercase | uppercase |
+
+### Meta Value (Set, Identity name)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 13px | 14px |
+| color | #EDE6D8 | #EDE6D8 |
+| margin-top | 3px | 5px |
+
+### Meta Value (Rarity)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 13px | 14px |
+| color | #C9A24B | #C9A24B |
+| margin-top | 3px | 5px |
+
+### Meta Value (You Own — quantity)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 13px | 14px |
+| color | #C9A24B | #C9A24B |
+| margin-top | 3px | 5px |
+
+### Copy (meta labels)
+| Field | Copy |
+|-------|------|
+| Set label | `Set` |
+| Rarity label | `Rarity` |
+| Identity label | `Identity` |
+| You own label | `You own` |
+
+### Copy (meta value examples)
+| Field | Mobile | Desktop |
+|-------|--------|---------|
+| Set value | `Return to Ravnica` | `Return to Ravnica · RTR` |
+| You own value | `×1` | `×1 copy` |
+
+### Identity Pip (in meta)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 12px | 13px |
+| height | 12px | 13px |
+| border-radius | 999px | 999px |
+
+### Desktop: Prev/Next Navigation
+| Property | Desktop |
+|----------|---------|
+| display | flex |
+| align-items | center |
+| gap | 10px |
+| margin-top | 28px |
+| border-top | 1px solid #2A241D |
+| padding-top | 20px |
+
+### Prev Button "‹ Prev"
+| Property | Desktop |
+|----------|---------|
+| color | #8E8269 |
+| font-size | 15px |
+| cursor | pointer |
+
+### Position Counter
+| Property | Desktop |
+|----------|---------|
+| font-family | 'IBM Plex Mono', monospace |
+| font-size | 11px |
+| color | #8E8269 |
+| margin-left | auto |
+
+### Next Button "Next ›"
+| Property | Desktop |
+|----------|---------|
+| color | #C9A24B |
+| font-size | 15px |
+| cursor | pointer |
+| margin-left | auto |
+
+### Copy (navigation)
+| Context | Copy |
+|---------|------|
+| Previous | `‹ Prev` |
+| Next | `Next ›` |
+| Position counter | `6 of 1,418` (example) |
+| URL pattern | `?card=<oracleId>` (stable key — the design mock shows a name slug, but the implementation deep-links by oracle id to avoid slug collisions/renames) |
+
+---
+
+## Component: No Results State
+
+### No Results Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | 1 | flex: 1 |
+| display | flex | flex |
+| flex-direction | column | column |
+| align-items | center | center |
+| justify-content | center | center |
+| text-align | center | center |
+| padding | 36px | 48px |
+
+### Card Fan Mark Container (mobile)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | relative | relative |
+| width | 96px | 112px |
+| height | 104px | 120px |
+| margin-bottom | 22px | 24px |
+| opacity | 0.9 | 0.9 |
+
+### Card Fan: Back Card (left, rotated)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| width | 48px | 56px |
+| height | 68px | 78px |
+| border-radius | 8px | 8px |
+| background | #221D16 | #221D16 |
+| border | 1.5px solid #3A3229 | 1.5px solid #3A3229 |
+| transform | translate(-50%,-50%) rotate(-15deg) translateX(-17px) | translate(-50%,-50%) rotate(-15deg) translateX(-20px) |
+
+### Card Fan: Middle Card
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| width | 48px | 56px |
+| height | 68px | 78px |
+| border-radius | 8px | 8px |
+| background | #2A241D | #2A241D |
+| border | 1.5px solid #4A4033 | 1.5px solid #4A4033 |
+| transform | translate(-50%,-50%) | translate(-50%,-50%) |
+
+### Card Fan: Front Card (right, rotated)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| width | 48px | 56px |
+| height | 68px | 78px |
+| border-radius | 8px | 8px |
+| background | #33291F | #33291F |
+| border | 1.5px solid #5A4B38 | 1.5px solid #5A4B38 |
+| transform | translate(-50%,-50%) rotate(15deg) translateX(17px) | translate(-50%,-50%) rotate(15deg) translateX(20px) |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+
+### Card Fan: "?" Glyph
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| font-weight | 800 | 800 |
+| font-size | 20px | 24px |
+| color | #8E8269 | #8E8269 |
+
+### No Results Heading
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| font-weight | 700 | 700 |
+| font-size | 21px | 26px |
+| margin | 0 | 0 |
+| color | #EDE6D8 | #EDE6D8 |
+
+### No Results Body Copy
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 13.5px | 15px |
+| color | #C6B79A | #C6B79A |
+| line-height | 1.55 | 1.6 |
+| margin | 10px 0 0 | 12px 0 0 |
+| max-width | — | 440px |
+
+### Copy (no results)
+| Element | Copy |
+|---------|------|
+| Heading | `Nothing matches that` |
+| Body (example) | `No red sorceries named "stormbind" in your collection. Loosen a filter, or check the spelling.` |
+| Desktop variant | `No red sorceries named "stormbind" in your collection. Loosen a filter or check the spelling — you own 2,933 cards, just not this one.` |
+| Primary CTA | `Clear all filters` |
+| Secondary CTA (desktop) | `Keep only search` |
+
+### No Results CTA Container (desktop)
+| Property | Desktop |
+|----------|---------|
+| display | flex |
+| gap | 12px |
+| margin-top | 26px |
+
+### "Clear all filters" Button (primary)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-weight | 600 | 600 |
+| font-size | 13px | 14px |
+| color | #14110E | #14110E |
+| background | #C9A24B | #C9A24B |
+| border | none | none |
+| border-radius | 8px | 8px |
+| padding | 11px 20px | 12px 22px |
+| cursor | pointer | pointer |
+| margin-top | 22px | — |
+
+### "Keep only search" Button (secondary, desktop only)
+| Property | Desktop |
+|----------|---------|
+| font-family | 'IBM Plex Sans' |
+| font-weight | 600 |
+| font-size | 14px |
+| color | #EDE6D8 |
+| background | transparent |
+| border | 1px solid #3A3229 |
+| border-radius | 8px |
+| padding | 12px 22px |
+| cursor | pointer |
+
+#### Hover State — "Keep only search"
+| Property | Desktop hover |
+|----------|---------------|
+| border-color | #C9A24B |
+
+---
+
+## Component: Replace Flow — Step 1 (Upload)
+
+### Page Header (mobile)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| padding | 20px 18px 14px | — |
+| display | flex | — |
+| align-items | center | — |
+| gap | 12px | — |
+| border-bottom | 1px solid #2A241D | — |
+
+### Back Chevron "‹"
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| color | #C9A24B | — |
+| font-size | 20px | — |
+
+### Page Title "Replace collection"
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| font-weight | 600 | 700 |
+| font-size | 19px | 30px |
+| color | #EDE6D8 | #EDE6D8 |
+
+### Desktop Breadcrumb Link "‹ Collection"
+| Property | Desktop |
+|----------|---------|
+| font-family | 'IBM Plex Mono', monospace |
+| font-size | 11px |
+| color | #8E8269 |
+| letter-spacing | 0.06em |
+
+### Desktop Content Area
+| Property | Desktop |
+|----------|---------|
+| padding | 44px 48px |
+| max-width | 760px |
+
+### Warning Banner (Replace Warning)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| gap | 10px | 12px |
+| align-items | flex-start | flex-start |
+| background | #211C15 | #211C15 |
+| border | 1px solid #3A3229 | 1px solid #3A3229 |
+| border-left | 3px solid #E0913C | 3px solid #E0913C |
+| border-radius | 8px | 10px |
+| padding | 12px 14px | 16px 18px |
+| margin-top | — | 20px |
+
+### Warning Banner Icon "⚠"
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| color | #E0913C | #E0913C |
+| font-size | 15px | 17px |
+| line-height | 1.3 | 1.2 |
+
+### Warning Banner Body
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 12.5px | 14px |
+| color | #C6B79A | #C6B79A |
+| line-height | 1.55 | 1.6 |
+
+### Copy (warning banner)
+| Context | Copy |
+|---------|------|
+| Mobile | `Uploading a new file replaces your current 2,933 cards. There's no merge — the new export becomes your whole collection.` |
+| Desktop | `Uploading replaces your entire collection. Your current 2,933 cards will be swapped for whatever's in the new file — no merge, no append. You'll see exactly what matched before anything is committed.` |
+
+### Upload Drop Zone
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| border | 1.5px dashed #4A4033 | 1.5px dashed #4A4033 |
+| border-radius | 12px | 12px |
+| background | #181410 | #181410 |
+| padding | 30px 18px | 40px |
+| text-align | center | — |
+| display | — | flex |
+| align-items | — | center |
+| gap | — | 28px |
+| margin-top | 16px | 18px |
+
+#### Hover State — Upload Drop Zone
+| Property | Desktop hover |
+|----------|---------------|
+| border-color | #C9A24B |
+| background | #1C1712 |
+
+### Upload Icon Circle
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 48px | 58px |
+| height | 48px | 58px |
+| flex | — | none |
+| border-radius | 999px | 999px |
+| border | 1px solid #C9A24B | 1px solid #C9A24B |
+| color | #C9A24B | #C9A24B |
+| font-size | 20px | 26px |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| margin | 0 auto 14px | — |
+
+### Upload Title
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 15px | 17px |
+| color | #EDE6D8 | #EDE6D8 |
+| font-weight | 600 | 600 |
+
+### Upload Subtitle (formats)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 10px | 11px |
+| color | #8E8269 | #8E8269 |
+| margin-top | 6px | 6px |
+| letter-spacing | 0.06em | 0.06em |
+
+### Copy (upload area)
+| Element | Copy |
+|---------|------|
+| Mobile title | `Drop your new CSV` |
+| Desktop title | `Drop your new collection CSV here` |
+| Formats | `Moxfield · Archidekt · Deckbox · ManaBox · CSV` (mobile) / `· plain CSV` (desktop) |
+
+### "Browse files" Button
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-weight | 600 | 600 |
+| font-size | 13px | 14px |
+| color | #14110E | #14110E |
+| background | #C9A24B | #C9A24B |
+| border | none | none |
+| border-radius | 8px | 8px |
+| padding | 11px 20px | 11px 22px |
+| cursor | pointer | pointer |
+| margin-top | 16px | — |
+| white-space | — | nowrap |
+
+#### Hover State — Browse Files Button
+| Property | Desktop hover |
+|----------|---------------|
+| background | #D8B25E |
+
+### Helper Text (column requirements)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 12px | 13px |
+| color | #8E8269 | #8E8269 |
+| line-height | 1.55 | 1.5 |
+| margin-top | 14px | — |
+
+### "Paste a list instead" Link
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| color | #C9A24B | #C9A24B |
+| font-size | 12px | 13px |
+| white-space | — | nowrap |
+
+### Copy (helper + link)
+| Element | Copy |
+|---------|------|
+| Helper (mobile) | `Only a Name and Quantity column are required. Paste a list instead` |
+| Helper (desktop) | `We only need a Name and Quantity column — most exports already include them.` |
+| Link | `Paste a list instead →` |
+
+---
+
+## Component: Replace Flow — Step 2 (Review, 2a — Single Scroll)
+
+### Page Header (mobile)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| padding | 20px 18px 14px | — |
+| display | flex | — |
+| align-items | center | — |
+| gap | 12px | — |
+| border-bottom | 1px solid #2A241D | — |
+
+### Mobile Page Title "Review import"
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'Cinzel', serif | — |
+| font-weight | 600 | — |
+| font-size | 18px | — |
+| color | #EDE6D8 | — |
+
+### Filename Label
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 10px | 11px |
+| color | #8E8269 | #8E8269 |
+| margin-left | auto (mobile) | — |
+
+### Desktop Step Indicator
+| Property | Desktop |
+|----------|---------|
+| font-family | 'IBM Plex Mono', monospace |
+| font-size | 11px |
+| color | #8E8269 |
+| letter-spacing | 0.06em |
+
+### Copy (step indicator)
+| Context | Copy |
+|---------|------|
+| Desktop step | `STEP 2 OF 3 · the-vault.csv · 2,933 rows` |
+
+### Desktop Page Title "Review before you replace"
+| Property | Desktop |
+|----------|---------|
+| font-family | 'Cinzel', serif |
+| font-weight | 700 |
+| font-size | 29px |
+| margin | 12px 0 0 |
+| color | #EDE6D8 |
+
+### Desktop Content Area
+| Property | Desktop |
+|----------|---------|
+| padding | 36px 56px 20px |
+| max-width | 940px |
+| margin | 0 auto |
+
+### Review Summary Banner: Matched Card
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | #1E1A15 | #1E1A15 |
+| border | 1px solid #2A241D | 1px solid #2A241D |
+| border-left | — | 3px solid #6FA368 |
+| border-radius | 12px | 12px |
+| padding | 16px | 20px 22px |
+| display | flex | flex |
+| align-items | center | center |
+| gap | 10px | 16px |
+| flex | — | 1.4 |
+
+### Matched Count: Success Icon
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 30px | 44px |
+| height | 30px | 44px |
+| border-radius | 999px | 999px |
+| background | rgba(111,163,104,0.15) | rgba(111,163,104,0.15) |
+| color | #6FA368 | #6FA368 |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| font-size | 15px | 20px |
+
+### Matched Count: Number
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 22px | 30px |
+| font-weight | 600 | 600 |
+| color | #EDE6D8 | #EDE6D8 |
+| line-height | 1 | 1 |
+
+### Matched Count: Label
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 11.5px | 13px |
+| color | #8E8269 | #A89B84 |
+| margin-top | 2px | 4px |
+
+### Copy (summary labels)
+| Element | Copy |
+|---------|------|
+| Matched label (mobile) | `cards matched & ready` |
+| Matched label (desktop) | `cards matched to the Oracle database — ready to import` |
+
+### Issue Summary Mini Stats (mobile)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | — |
+| gap | 8px | — |
+| margin-top | 14px | — |
+
+### Mini Stat Cell
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | 1 | — |
+| background | #181410 | — |
+| border | 1px solid #2A241D | — |
+| border-radius | 8px | — |
+| padding | 9px 11px | — |
+
+### Mini Stat Number
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | — |
+| font-size | 15px | — |
+
+### Mini Stat Number Colors
+| Stat | Color |
+|------|-------|
+| Unmatched count | #E0913C |
+| Parse errors count | #C6533F |
+| Rows read | #EDE6D8 |
+
+### Mini Stat Label
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 10.5px | — |
+| color | #8E8269 | — |
+| margin-top | 1px | — |
+
+### Desktop Summary: Issue Tally Panel
+| Property | Desktop |
+|----------|---------|
+| flex | 1 |
+| background | #1E1A15 |
+| border | 1px solid #2A241D |
+| border-radius | 12px |
+| padding | 16px 18px |
+| display | flex |
+| flex-direction | column |
+| justify-content | center |
+| gap | 10px |
+
+### Desktop Tally Row (unmatched)
+| Property | Desktop |
+|----------|---------|
+| display | flex |
+| align-items | center |
+| gap | 10px |
+
+### Tally Dot
+| Property | Desktop |
+|----------|---------|
+| width | 9px |
+| height | 9px |
+| border-radius | 999px |
+| flex | none |
+
+### Tally Count
+| Property | Desktop |
+|----------|---------|
+| font-family | 'IBM Plex Mono', monospace |
+| font-size | 16px |
+
+### Tally Count Colors
+| Type | Color |
+|------|-------|
+| Unmatched | #E0913C |
+| Parse errors | #C6533F |
+
+### Tally Label
+| Property | Desktop |
+|----------|---------|
+| font-size | 13px |
+| color | #A89B84 |
+
+### Skipped Rows Footnote
+| Property | Desktop |
+|----------|---------|
+| font-size | 11.5px |
+| color | #8E8269 |
+| border-top | 1px solid #2A241D |
+| padding-top | 9px |
+
+### Copy (issue tallies)
+| Element | Copy |
+|---------|------|
+| Unmatched | `21 unmatched names` |
+| Parse errors | `8 parse errors` |
+| Skipped footnote | `29 rows will be skipped` |
+
+### Issue Section Headers
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 10px | 10px |
+| letter-spacing | 0.14em | 0.14em |
+| text-transform | uppercase | uppercase |
+| margin-bottom | 8px | 10px |
+
+### Issue Section Header Colors
+| Type | Color |
+|------|-------|
+| Unmatched header | #E0913C |
+| Parse error header | #C6533F |
+
+### Copy (issue section headers)
+| Type | Copy |
+|------|------|
+| Unmatched | `Unmatched — 21 skipped` (mobile) / `Unmatched names — 21` (desktop) |
+| Parse errors | `Parse errors — 8` (desktop) |
+
+### Desktop Issues Layout
+| Property | Desktop |
+|----------|---------|
+| display | grid |
+| grid-template-columns | 1fr 1fr |
+| gap | 22px |
+| margin-top | 24px |
+
+### Issue Row — Unmatched Name
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center / space-between |
+| gap | 10px | 12px |
+| background | #1E1A15 | #1E1A15 |
+| border | 1px solid #2A241D | 1px solid #2A241D |
+| border-left | 3px solid #E0913C | 3px solid #E0913C |
+| border-radius | 8px | 8px |
+| padding | 9px 12px | 11px 14px |
+
+### Issue Row — Name Text
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 13px | 14px |
+| color | #EDE6D8 | #EDE6D8 |
+| white-space | nowrap | — |
+| overflow | hidden | — |
+| text-overflow | ellipsis | — |
+
+### Issue Row — Meta Line
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 10px | 10.5px |
+| color | #8E8269 | #8E8269 |
+| margin-top | — | 2px |
+
+### Issue Row — Quantity (right)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 11px | 12px |
+| color | #8E8269 | #8E8269 |
+
+### Issue Row — Parse Error
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center / flex-start | flex-start |
+| gap | 10px | 12px |
+| background | #1E1A15 | #1E1A15 |
+| border | 1px solid #2A241D | 1px solid #2A241D |
+| border-left | 3px solid #C6533F | 3px solid #C6533F |
+| border-radius | 8px | 8px |
+| padding | 9px 12px | 11px 14px |
+
+### Issue Row — Line Number Label
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 10px | 11px |
+| color | #C6533F | #C6533F |
+| flex | none | none |
+| padding-top | — | 1px |
+
+### Issue Row — Error Description
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 13px | 13px |
+| color | #C6B79A | #C6B79A |
+| line-height | — | 1.45 |
+
+### "Show all N" Link
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 12px | 12.5px |
+| color | #C9A24B | #C9A24B |
+| padding | — | 4px 2px |
+
+### Copy (issue links)
+| Element | Copy |
+|---------|------|
+| Mobile | `View all 29 issues →` |
+| Desktop unmatched | `Show all 21 unmatched →` |
+| Desktop errors | `Show all 8 errors →` |
+
+### Sticky Confirm Bar
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| border-top | 1px solid #3A3229 | 1px solid #3A3229 |
+| background | #1A160F | #1A160F |
+| padding | 14px 18px 22px | 16px 56px |
+| display | — | flex |
+| align-items | — | center |
+| gap | — | 20px |
+
+### Sticky Confirm Bar: Summary Sentence
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 11.5px | 13.5px |
+| color | #8E8269 | #C6B79A |
+| text-align | center | — |
+| margin-bottom | 10px | — |
+| line-height | — | 1.5 |
+
+### Copy (sticky confirm bar)
+| Element | Copy |
+|---------|------|
+| Mobile summary | `Skips 29 rows · replaces your 2,933 cards with 2,904` |
+| Desktop summary | `Importing 2,904 cards and skipping 29. This replaces your current 2,933 cards.` |
+| Mobile CTA | `Continue to replace →` |
+| Desktop CTA | `Continue to replace →` |
+| Desktop cancel | `Cancel` |
+
+### Cancel Button
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-weight | 600 | 600 |
+| font-size | — | 14px |
+| color | — | #EDE6D8 |
+| background | — | transparent |
+| border | — | 1px solid #3A3229 |
+| border-radius | — | 8px |
+| padding | — | 12px 20px |
+| cursor | — | pointer |
+
+#### Hover State — Cancel Button
+| Property | Desktop hover |
+|----------|---------------|
+| border-color | #C9A24B |
+
+### Continue Button
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-weight | 600 | 600 |
+| font-size | 15px | 14px |
+| color | #14110E | #14110E |
+| background | #C9A24B | #C9A24B |
+| border | none | none |
+| border-radius | 8px | 8px |
+| padding | 13px 0 (full width) | 12px 24px |
+| cursor | pointer | pointer |
+| width | 100% | — |
+
+#### Hover State — Continue Button
+| Property | Desktop hover |
+|----------|---------------|
+| background | #D8B25E |
+
+---
+
+## Component: Replace Flow — Step 3 (Type-to-Confirm Modal)
+
+### Backdrop (mobile)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute inset:0 | absolute inset:0 |
+| background | rgba(8,6,4,0.7) | rgba(8,6,4,0.74) |
+
+### Mobile: Bottom Sheet
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | relative | — |
+| background | #1A160F | — |
+| border-top | 1px solid #3A3229 | — |
+| border-radius | 22px 22px 34px 34px | — |
+| padding | 26px 22px 30px | — |
+| box-shadow | 0 -20px 60px rgba(0,0,0,0.5) | — |
+
+### Mobile: Sheet Drag Handle
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 40px | — |
+| height | 4px | — |
+| border-radius | 999px | — |
+| background | #3A3229 | — |
+| margin | 0 auto 20px | — |
+
+### Desktop: Modal Container
+| Property | Desktop |
+|----------|---------|
+| position | absolute top:50% left:50% |
+| transform | translate(-50%,-50%) |
+| width | 520px |
+| background | #1A160F |
+| border | 1px solid #3A3229 |
+| border-radius | 16px |
+| box-shadow | 0 40px 100px rgba(0,0,0,0.7) |
+| padding | 32px 34px 30px |
+
+### Warning Icon Header
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| gap | 12px | 14px |
+
+### Warning Icon
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 40px | 48px |
+| height | 40px | 48px |
+| flex | none | none |
+| border-radius | 999px | 999px |
+| background | rgba(198,83,63,0.14) | rgba(198,83,63,0.14) |
+| border | 1px solid #4A2F28 | 1px solid #4A2F28 |
+| color | #C6533F | #C6533F |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| font-size | 18px | 22px |
+
+### Modal Title "Replace your collection?"
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| font-weight | 700 | 700 |
+| font-size | 20px | 25px |
+| margin | 0 | 0 |
+| color | #EDE6D8 | #EDE6D8 |
+| line-height | 1.15 | — |
+
+### Modal Body Copy
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 13.5px | 15px |
+| color | #C6B79A | #C6B79A |
+| line-height | 1.6 | 1.65 |
+| margin | 16px 0 0 | 18px 0 0 |
+
+### Copy (modal body)
+| Context | Copy |
+|---------|------|
+| Mobile | `This permanently swaps your 2,933 cards for the 2,904 in the-vault.csv. It can't be undone.` |
+| Desktop | `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Decks and commander recommendations rebuild from the new collection. This can't be undone.` |
+
+### Type-to-Confirm Section
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| margin-top | 18px | 22px |
+
+### Confirm Instruction Label
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 10px | 10.5px |
+| letter-spacing | 0.1em | 0.1em |
+| color | #8E8269 | #8E8269 |
+| text-transform | uppercase | uppercase |
+| margin-bottom | 8px | 9px |
+
+### Copy (confirm instruction)
+| Context | Copy |
+|---------|------|
+| Label | `Type REPLACE to confirm` (where "REPLACE" is styled in #C6533F) |
+| Hint below button | `Button unlocks once REPLACE is typed in full` |
+
+### Confirm Input Field
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| background | #181410 | #181410 |
+| border | 1px solid #C6533F | 1px solid #C6533F |
+| border-radius | 8px | 8px |
+| padding | 12px 14px | 13px 16px |
+| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
+| font-size | 15px | 16px |
+| color | #EDE6D8 | #EDE6D8 |
+| letter-spacing | 0.1em | 0.12em |
+
+### Input Cursor
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 1.5px | 2px |
+| height | 18px | 19px |
+| background | #C9A24B | #C9A24B |
+| display | inline-block | inline-block |
+| margin-left | 1px | 2px |
+
+### Confirm Button ("Replace 2,933 cards") — Disabled State
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-weight | 600 | 600 |
+| font-size | 15px | 14px |
+| color | #EDE6D8 | #EDE6D8 |
+| background | #3A2019 | #3A2019 |
+| border | 1px solid #C6533F | 1px solid #C6533F |
+| border-radius | 8px | 8px |
+| padding | 14px 0 | 13px 0 |
+| cursor | pointer | pointer |
+| width | 100% | flex: 1 |
+| margin-top | 16px | — |
+| opacity | 0.6 | 0.6 |
+
+### Confirm Button — Armed State (REPLACE typed)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| opacity | 1 | 1 |
+
+### Cancel / Keep Button
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
+| font-weight | 600 | 600 |
+| font-size | 14px | 14px |
+| color | #8E8269 (mobile text-only) | #EDE6D8 |
+| background | transparent | transparent |
+| border | none | 1px solid #3A3229 |
+| padding | 12px 0 0 | 13px 22px |
+| cursor | pointer | pointer |
+| width | 100% | flex: none |
+
+### Button Row (desktop)
+| Property | Desktop |
+|----------|---------|
+| display | flex |
+| gap | 12px |
+| margin-top | 22px |
+
+### Copy (confirm modal buttons)
+| Element | Copy |
+|---------|------|
+| Confirm (disabled) | `Replace 2,933 cards` |
+| Cancel (mobile) | `Keep my current collection` |
+| Cancel (desktop) | `Keep current` |
+| Hint | `Button unlocks once REPLACE is typed in full` |
+
+### Hint Text
+| Property | Desktop |
+|----------|---------|
+| font-family | 'IBM Plex Mono', monospace |
+| font-size | 10.5px |
+| color | #6A6152 |
+| text-align | center |
+| margin-top | 14px |
+| letter-spacing | 0.04em |
+
+---
+
+## State Coverage — Collection (#6)
+
+| State | Triggering condition | Component rendered | Key props required |
+|-------|----------------------|--------------------|--------------------|
+| **Browse — Rows (1a)** | Default view on mobile; view toggle = rows on desktop | Filter bar + Collection row list | `cards[]`, view=rows, filter bar visible, result count |
+| **Browse — Grid (1b)** | Default view on desktop ≥768px; view toggle = grid | Filter bar + Grid tile list (5-up desktop, 2-up mobile) | `cards[]`, view=grid, result count |
+| **Card Detail** | User taps/clicks any card row or grid tile | Card detail modal (full-screen sheet mobile, centered overlay desktop) | `card` object with name/type/manaCost/oracleText/set/rarity/identity/qty, `?card=` URL param, position `n of total` |
+| **Card Detail — Prev/Next** | User clicks `‹ Prev` or `Next ›` in desktop modal | Same modal, different card, position counter updated | `currentIndex`, `totalFiltered`, same card data shape |
+| **No Results** | Search + filter combination returns 0 cards | No results empty state (card fan mark + heading + CTAs) | `resultCount = 0`, active filter chips still shown, count label turns #E0913C |
+| **Replace · Step 1** | User clicks `↻ Replace collection` button | Replace upload page (`/collection/replace`) | `currentCardCount` (for warning copy) |
+| **Replace · Step 2 (Review)** | CSV uploaded successfully; server returns preview | Review page with summary banner, unmatched rows, parse error rows, sticky confirm bar | `matched`, `unmatched[]` (name + set + line), `errors[]` (line + reason), `currentCount`, filename |
+| **Replace · Step 3 (Confirm)** | User clicks `Continue to replace →` from step 2 | Type-to-confirm modal over dimmed step-2 content | `importCount` (2,904), `currentCount` (2,933), filename; confirm button disabled until input === "REPLACE" |
+| **Type-to-Confirm — Armed** | User has typed exactly `REPLACE` in the input | Confirm button opacity goes from 0.6 → 1 | `inputValue === "REPLACE"` |
+| **Filter Active (chips shown)** | Any filter applied (color, type, set, or search has value) | Filter chip row visible below filter bar | `activeFilters[]`, `resultCount`, `totalCount` |
+| **Filter Empty (no filters)** | No active filters | Chip row shows "No filters active" / total count | — |
+
+---
+
+## Copy Inventory (all strings)
+
+### Page Title
+- `Collection`
+- `Replace your collection` (step 1 mobile header)
+- `Replace collection` (desktop button)
+- `Review import` (step 2 mobile header)
+- `Review before you replace` (step 2 desktop)
+- `Replace your collection?` (step 3 modal title)
+
+### Subtitle / Stats
+- `2,933 cards · 1,418 unique`
+- `2,933 cards · 1,418 unique · last updated Jul 12`
+- `N cards · N unique · last updated [date]`
+
+### Buttons
+- `↻ Replace collection`
+- `Browse files`
+- `Paste a list instead →`
+- `Clear all filters`
+- `Keep only search`
+- `Continue to replace →`
+- `Cancel`
+- `Replace 2,933 cards` (disabled until armed; uses real count)
+- `Keep my current collection` (mobile)
+- `Keep current` (desktop)
+
+### Filter bar / chips
+- `Search your cards…` (mobile placeholder)
+- `Search by card name…` (desktop placeholder)
+- `Color`, `Type ▾`, `Set ▾`, `A–Z ▾` (mobile filter buttons)
+- `Type ▾`, `Set ▾`, `Sort: Name ▾` (desktop filter buttons)
+- `FILTERS:` (chip row desktop label)
+- `Clear all`
+- `No filters active`
+- `Showing N of 2,933`
+- `Showing 0 of 2,933` (turns amber)
+- `1,418 results` (mobile)
+- `Showing 1,418 unique · 2,933 total` (desktop, no filters)
+
+### Card Detail
+- `‹ Prev`
+- `Next ›`
+- `6 of 1,418` (example position counter)
+
+### No Results
+- `Nothing matches that`
+- `No [type] named "[query]" in your collection. Loosen a filter, or check the spelling.` (mobile)
+- `No [type] named "[query]" in your collection. Loosen a filter or check the spelling — you own N cards, just not this one.` (desktop)
+
+### Replace — Step 1 Warning Banner
+- Mobile: `Uploading a new file replaces your current 2,933 cards. There's no merge — the new export becomes your whole collection.`
+- Desktop: `Uploading replaces your entire collection. Your current 2,933 cards will be swapped for whatever's in the new file — no merge, no append. You'll see exactly what matched before anything is committed.`
+
+### Replace — Step 2 Copy
+- `STEP 2 OF 3 · the-vault.csv · 2,933 rows`
+- `[N] cards matched to the Oracle database — ready to import`
+- `[N] unmatched names`
+- `[N] parse errors`
+- `[N] rows will be skipped`
+- `Unmatched names — [N]` (section header)
+- `Parse errors — [N]` (section header)
+- `View all 29 issues →` (mobile)
+- `Show all 21 unmatched →` / `Show all 8 errors →` (desktop)
+- Sticky bar (mobile): `Skips 29 rows · replaces your 2,933 cards with 2,904`
+- Sticky bar (desktop): `Importing 2,904 cards and skipping 29. This replaces your current 2,933 cards.`
+
+### Replace — Step 3 Copy
+- `Type REPLACE to confirm` (label; "REPLACE" in #C6533F)
+- Mobile body: `This permanently swaps your 2,933 cards for the 2,904 in the-vault.csv. It can't be undone.`
+- Desktop body: `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Decks and commander recommendations rebuild from the new collection. This can't be undone.`
+- `Button unlocks once REPLACE is typed in full`
+
+---
+
+## Conditional Rendering
+
+| Element | Condition |
+|---------|-----------|
+| Filter chips + "FILTERS:" label (in chip row) | Only shown when ≥1 active filter |
+| Result count label (in chip row) | Always shown — no-filters variant per §Copy (result count variants) / "Filter Empty" state |
+| "Clear all" link | Only shown when ≥1 active filter |
+| Result count turns #E0913C | When `resultCount === 0` |
+| View toggle (≣/▦) | Always visible in filter bar; rows segment highlighted on mobile default, grid on desktop default |
+| Card detail modal | Only when a card is selected; URL has `?card=` param |
+| Prev/Next navigation | Only in desktop modal; always shown but can be disabled at boundaries |
+| No results empty state | When `resultCount === 0` |
+| Sticky confirm bar (step 2) | Always visible at bottom of step 2; scrolls with content on mobile |
+| Confirm button disabled (opacity 0.6) | When typed input !== "REPLACE" |
+| Confirm button armed (opacity 1) | When typed input === "REPLACE" exactly |
+| Quantity badge on grid tile | Always shown; value from `card.qty` |
+| Rarity dot in row | Desktop rows only (not mobile) |
+| Type line as sub-line | Mobile rows only (under name in same column) |
+| Type line as own column | Desktop rows only (4th of 6 columns) |
+| Set+rarity caption (desktop grid) | Both set code and rarity; mobile shows only set code |
+
+---
+
+*End of Design Property Table — Collection (#6)*
