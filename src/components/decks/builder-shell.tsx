@@ -3,7 +3,7 @@
 // Task 8 (decklist body), Task 9 (Add panel), Task 10 (export dialog) — leave named slots.
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
@@ -12,6 +12,7 @@ import { DegradedBanner } from "./degraded-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Decklist } from "./decklist";
+import { AddPanel } from "./add-panel";
 
 interface BuilderShellProps {
   deck: DeckDetail;
@@ -24,22 +25,22 @@ interface BuilderShellProps {
 
 export function BuilderShell({
   deck,
-  suggestions: _suggestions,
+  suggestions,
   degraded,
   firstRun,
   commanderIdentity,
 }: BuilderShellProps) {
   // UI state
-  const [tab, setTab] = useState<"suggestions" | "search">("suggestions");
   const [filter, setFilter] = useState<"all" | "shopping">("all");
   const [grouping, setGrouping] = useState<"type" | "role">("type");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
-  // Suppress unused warnings in skeleton — these will be consumed by Task 9/10 slots.
-  void tab; void sheetOpen; void commanderIdentity;
-  // _suggestions will be passed to the Task 9 Add panel slot.
-  void _suggestions;
+  // Derive the set of oracle IDs already in the deck (client-side, no round-trip).
+  const deckOracleIds = useMemo(
+    () => deck.cards.map((c) => c.oracleId),
+    [deck.cards],
+  );
 
   const isEmpty = deck.built === 0;
 
@@ -197,134 +198,38 @@ export function BuilderShell({
         )}
       </div>
 
-      {/* ── Right column — Add panel (Task 9 placeholder) ── */}
-      {/* Desktop: always visible right column; Mobile: bottom sheet (when sheetOpen) */}
+      {/* ── Right column — Add panel (Task 9) ── */}
+      {/* Desktop: always visible right column */}
       <aside
-        className="hidden md:flex flex-col flex-none w-[340px] xl:w-[380px]"
+        className="hidden md:flex flex-col flex-none"
         style={{
+          width: 340,
           background: "#181410",
           borderLeft: "1px solid #2A241D",
           minHeight: "100vh",
         }}
       >
-        {/* Tab bar */}
-        <div
-          className="flex items-center gap-[0px]"
-          style={{ borderBottom: "1px solid #2A241D" }}
-        >
-          {(["suggestions", "search"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className="flex-1 font-mono text-[11px] uppercase tracking-[0.1em] px-[16px] py-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-              style={{
-                color: tab === t ? "#C9A24B" : "#8E8269",
-                borderBottom: tab === t ? "2px solid #C9A24B" : "2px solid transparent",
-                background: "transparent",
-                border: "none",
-                borderBottomStyle: "solid",
-                borderBottomWidth: 2,
-                borderBottomColor: tab === t ? "#C9A24B" : "transparent",
-              }}
-            >
-              {t === "suggestions" ? "Suggestions" : "Search"}
-            </button>
-          ))}
-        </div>
-
-        {/* Task 9: Add panel content placeholder */}
-        <div className="flex-1 flex items-center justify-center">
-          <p className="font-mono text-[11px]" style={{ color: "#6E6353" }}>
-            [Add panel — Task 9]
-          </p>
-        </div>
+        <AddPanel
+          deckId={deck.id}
+          commanderIdentity={commanderIdentity}
+          suggestions={suggestions}
+          degraded={degraded}
+          deckOracleIds={deckOracleIds}
+          variant="column"
+        />
       </aside>
 
-      {/* Mobile bottom sheet (mid-build) — Task 9 placeholder */}
-      {sheetOpen && !isEmpty && (
-        <>
-          {/* Overlay */}
-          <div
-            className="md:hidden fixed inset-0 z-40"
-            style={{ background: "rgba(8,6,4,0.60)" }}
-            onClick={() => setSheetOpen(false)}
-            aria-hidden
-          />
-          {/* Sheet */}
-          <div
-            className="md:hidden fixed left-0 right-0 bottom-0 z-50 flex flex-col"
-            style={{
-              height: 640,
-              background: "#1A160F",
-              borderTop: "1px solid #3A3229",
-              borderRadius: "22px 22px 0 0",
-              boxShadow: "0 -20px 50px rgba(0,0,0,0.5)",
-            }}
-          >
-            <div className="flex items-center px-[16px] pt-[14px] pb-[10px]">
-              <span className="font-mono text-[12px] font-semibold" style={{ color: "#C6B79A" }}>
-                Add cards
-              </span>
-              <button
-                type="button"
-                onClick={() => setSheetOpen(false)}
-                className="ml-auto font-mono text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-                style={{ color: "#8E8269" }}
-                aria-label="Close add cards panel"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="flex-1 flex items-center justify-center">
-              <p className="font-mono text-[11px]" style={{ color: "#6E6353" }}>
-                [Add panel — Task 9]
-              </p>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Mobile empty-deck sheet (open from CTA) — same shape */}
-      {sheetOpen && isEmpty && (
-        <>
-          <div
-            className="md:hidden fixed inset-0 z-40"
-            style={{ background: "rgba(8,6,4,0.60)" }}
-            onClick={() => setSheetOpen(false)}
-            aria-hidden
-          />
-          <div
-            className="md:hidden fixed left-0 right-0 bottom-0 z-50 flex flex-col"
-            style={{
-              height: 640,
-              background: "#1A160F",
-              borderTop: "1px solid #3A3229",
-              borderRadius: "22px 22px 0 0",
-              boxShadow: "0 -20px 50px rgba(0,0,0,0.5)",
-            }}
-          >
-            <div className="flex items-center px-[16px] pt-[14px] pb-[10px]">
-              <span className="font-mono text-[12px] font-semibold" style={{ color: "#C6B79A" }}>
-                Add your first card
-              </span>
-              <button
-                type="button"
-                onClick={() => setSheetOpen(false)}
-                className="ml-auto font-mono text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-                style={{ color: "#8E8269" }}
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="flex-1 flex items-center justify-center">
-              <p className="font-mono text-[11px]" style={{ color: "#6E6353" }}>
-                [Add panel — Task 9]
-              </p>
-            </div>
-          </div>
-        </>
+      {/* Mobile bottom sheet (mid-build and empty) — AddPanel variant="sheet" */}
+      {sheetOpen && (
+        <AddPanel
+          deckId={deck.id}
+          commanderIdentity={commanderIdentity}
+          suggestions={suggestions}
+          degraded={degraded}
+          deckOracleIds={deckOracleIds}
+          variant="sheet"
+          onCloseSheet={() => setSheetOpen(false)}
+        />
       )}
 
       {/* Export dialog — Task 10 placeholder */}
