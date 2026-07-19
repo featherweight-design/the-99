@@ -75,6 +75,7 @@ export function UploadEntry() {
 
   function handleConfirm() {
     if (!preview || pending) return;
+    setError(null);
     startTransition(async () => {
       try {
         await confirmUpload(preview.uploadId);
@@ -127,6 +128,11 @@ export function UploadEntry() {
             </li>
           )}
         </ul>
+        {error && (
+          <p className="mt-3 text-[13px]" style={{ color: "var(--danger)" }}>
+            {error}
+          </p>
+        )}
         <div className="mt-4 flex gap-3">
           <button
             type="button"
@@ -139,7 +145,10 @@ export function UploadEntry() {
           </button>
           <button
             type="button"
-            onClick={() => setPreview(null)}
+            onClick={() => {
+              setPreview(null);
+              setError(null);
+            }}
             className="rounded-lg px-5 py-3 hover:bg-[color:var(--elevated)]"
             style={{
               border: "1px solid var(--border-strong)",
