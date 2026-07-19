@@ -7,3 +7,7 @@ export function toDecklistText(args: {
     ...args.cards.map((c) => `${c.quantity} ${c.name}`),
   ].join("\n");
 }
+
+export function toShoppingListText(cards: { name: string }[]): string {
+  return cards.map((c) => c.name).join("\n");
+}
