@@ -85,6 +85,15 @@ describe("decklistFilename", () => {
   it("falls back to 'deck' for whitespace-only names", () => {
     expect(decklistFilename("   ")).toBe("deck.txt");
   });
+
+  it("strips Windows-invalid trailing dots and spaces", () => {
+    expect(decklistFilename("My Deck. . ")).toBe("My Deck.txt");
+  });
+
+  it("falls back to 'deck' for reserved names '.' and '..'", () => {
+    expect(decklistFilename(".")).toBe("deck.txt");
+    expect(decklistFilename("..")).toBe("deck.txt");
+  });
 });
 
 describe("shoppingFilename", () => {
