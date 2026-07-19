@@ -38,7 +38,7 @@ export function GridView({
             style={{
               aspectRatio: "63/88",
               background: c.imageUri ? undefined : identityGradient(c.colorIdentity),
-              backgroundImage: c.imageUri ? `url(${c.imageUri})` : undefined,
+              backgroundImage: c.imageUri ? `url("${c.imageUri}")` : undefined,
               backgroundSize: "cover",
               backgroundPosition: "center",
               // Inset shadows per §Grid Tile: Art Region

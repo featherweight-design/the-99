@@ -1,8 +1,64 @@
 "use client";
 // No results state per property table §No Results State.
-// Distinct from empty-collection (shell owns that). CardFan mark from marks.tsx.
+// Distinct from empty-collection (shell owns that). The "?" card fan here is
+// its own mark — different geometry/colors/glyph from the shared "99" CardFan
+// in marks.tsx — so it renders locally per §Card Fan Mark Container.
 
-import { CardFan } from "../marks";
+// One absolutely-positioned card of the fan. Table values (mobile/desktop):
+// cards 48×68 / 56×78, radius 8px, border 1.5px, centered then rotated ±15°
+// and shifted ±17px / ±20px. transformClass must be a static literal so
+// Tailwind's scanner generates the arbitrary-value CSS.
+function FanCard({
+  transformClass,
+  background,
+  borderColor,
+  children,
+}: {
+  transformClass: string;
+  background: string;
+  borderColor: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`absolute left-1/2 top-1/2 flex items-center justify-center rounded-lg w-[48px] h-[68px] md:w-[56px] md:h-[78px] ${transformClass}`}
+      style={{ background, border: `1.5px solid ${borderColor}` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function QuestionFan() {
+  return (
+    // §Card Fan Mark Container: 96×104 mobile / 112×120 desktop, opacity 0.9
+    <div
+      aria-hidden
+      className="relative opacity-90 mb-[22px] md:mb-[24px] w-[96px] h-[104px] md:w-[112px] md:h-[120px]"
+    >
+      <FanCard
+        transformClass="[transform:translate(-50%,-50%)_rotate(-15deg)_translateX(-17px)] md:[transform:translate(-50%,-50%)_rotate(-15deg)_translateX(-20px)]"
+        background="#221D16"
+        borderColor="#3A3229"
+      />
+      <FanCard
+        transformClass="[transform:translate(-50%,-50%)]"
+        background="#2A241D"
+        borderColor="#4A4033"
+      />
+      <FanCard
+        transformClass="[transform:translate(-50%,-50%)_rotate(15deg)_translateX(17px)] md:[transform:translate(-50%,-50%)_rotate(15deg)_translateX(20px)]"
+        background="#33291F"
+        borderColor="#5A4B38"
+      >
+        {/* §Card Fan "?" Glyph: Cinzel 800, 20/24px, #8E8269 */}
+        <span className="font-display font-extrabold text-[20px] md:text-[24px]" style={{ color: "#8E8269" }}>
+          ?
+        </span>
+      </FanCard>
+    </div>
+  );
+}
 
 export function NoResults({
   query,
@@ -19,11 +75,7 @@ export function NoResults({
   return (
     // §No Results Container: flex-1, column, centered, padding 36px mobile / 48px desktop
     <div className="flex-1 flex flex-col items-center justify-center text-center p-[36px] md:p-[48px]">
-      {/* CardFan mark — 96×104 mobile / 112×120 desktop, opacity 0.9 */}
-      <div className="opacity-90 mb-[22px] md:mb-[24px]">
-        <CardFan variant="mobile" className="md:hidden" />
-        <CardFan variant="desktop" className="hidden md:block" />
-      </div>
+      <QuestionFan />
 
       {/* Heading — §No Results Heading: Cinzel 700, 21/26px, #EDE6D8 (--fg) */}
       <h2
@@ -35,8 +87,8 @@ export function NoResults({
 
       {/* Body — §No Results Body Copy: 13.5/15px, #C6B79A (--fg-body), line-height 1.55/1.6, max-w 440px desktop */}
       <p
-        className="mt-[10px] md:mt-[12px] text-[13.5px] md:text-[15px] md:max-w-[440px]"
-        style={{ color: "var(--fg-body)", lineHeight: 1.6 }}
+        className="mt-[10px] md:mt-[12px] text-[13.5px] md:text-[15px] md:max-w-[440px] leading-[1.55] md:leading-[1.6]"
+        style={{ color: "var(--fg-body)" }}
       >
         <span className="md:hidden">
           {q
