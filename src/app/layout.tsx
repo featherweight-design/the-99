@@ -1,17 +1,29 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider, UserButton } from "@clerk/nextjs";
-import Link from "next/link";
+import { Cinzel, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import Shell from "../components/shell/shell";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  weight: ["600", "700", "800", "900"],
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
   subsets: ["latin"],
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  weight: ["400", "500", "600"],
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -21,31 +33,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider>
       <html
         lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`${cinzel.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col">
-          <header className="flex items-center justify-between px-6 py-3 border-b border-gray-200">
-            <nav className="flex items-center gap-6 text-sm">
-              <Link href="/collection" className="hover:underline">
-                Collection
-              </Link>
-              <Link href="/commanders" className="hover:underline">
-                Commanders
-              </Link>
-              <Link href="/decks" className="hover:underline">
-                Decks
-              </Link>
-            </nav>
-            <UserButton />
-          </header>
-          <main className="flex-1">{children}</main>
+        <body className="min-h-full bg-[color:var(--bg)] text-[color:var(--fg)]">
+          <Shell>{children}</Shell>
         </body>
       </html>
     </ClerkProvider>

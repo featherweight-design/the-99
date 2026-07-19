@@ -1,26 +1,103 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------
+ * Brand tokens — every hex called out in docs/superpowers/design-tables/appshell.md
+ * Semantic names first; raw hexes live only here.
+ * ------------------------------------------------------------------ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Backgrounds / surfaces */
+  --bg: #14110E;            /* base canvas */
+  --surface: #1E1A15;       /* card / panel */
+  --surface-raised: #221D16;/* account trigger row, deck-row hover */
+  --surface-rail: #1A160F;  /* rail + tab-bar background */
+  --surface-sunken: #181410;/* dropzone + textarea background */
+  --surface-inset: #1C1712; /* dropzone hover background */
+  --elevated: #2A241D;      /* active nav item, elevated inner */
+  --elevated-hover: #211C15;/* rail idle hover */
+
+  /* Borders / lines */
+  --border: #2A241D;        /* soft dividers */
+  --border-strong: #3A3229; /* card + rail borders */
+  --border-dashed: #4A4033; /* dropzone dashed border */
+
+  /* Text */
+  --fg: #EDE6D8;            /* primary text */
+  --fg-body: #C6B79A;       /* secondary body copy */
+  --fg-muted: #A89B84;      /* muted labels */
+  --fg-faint: #8E8269;      /* mono meta / faint captions */
+  --fg-locked: #6A6152;     /* locked / disabled */
+
+  /* Brass accent */
+  --brass: #C9A24B;
+  --brass-hover: #D8B25E;
+  --brass-strong: #A9863E;
+  --brass-shadow: #6E5B33;
+
+  /* Feedback */
+  --success: #6FA368;
+  --warning: #E0913C;
+  --danger: #C6533F;
+
+  /* WUBRG identity swatches */
+  --w: #F4E9C4;
+  --u: #3A6AA5;
+  --b: #1E1B1A;
+  --r: #C05A3E;
+  --g: #4B7A46;
 }
 
+/* ------------------------------------------------------------------
+ * Tailwind v4 theme wiring — Tailwind utility classes read these.
+ * `bg-bg`, `text-fg`, `border-border-strong`, `font-display`, etc.
+ * ------------------------------------------------------------------ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-rail: var(--surface-rail);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-inset: var(--surface-inset);
+  --color-elevated: var(--elevated);
+  --color-elevated-hover: var(--elevated-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-dashed: var(--border-dashed);
+  --color-fg: var(--fg);
+  --color-fg-body: var(--fg-body);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-fg-locked: var(--fg-locked);
+  --color-brass: var(--brass);
+  --color-brass-hover: var(--brass-hover);
+  --color-brass-strong: var(--brass-strong);
+  --color-brass-shadow: var(--brass-shadow);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-w: var(--w);
+  --color-u: var(--u);
+  --color-b: var(--b);
+  --color-r: var(--r);
+  --color-g: var(--g);
+
+  --font-display: var(--font-cinzel);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------ */
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Brand focus treatment — READINESS item 5.
+ * Applies globally so every focusable control (rail item, tab, chip, button,
+ * link, popover trigger, textarea) picks it up unless a component overrides.
+ * border-radius is intentionally absent here — each component owns its own
+ * radius (e.g. rail items use 8px, account trigger uses 14px, buttons 8px).
+ * Adding a global radius here would override component-level values. */
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
 }

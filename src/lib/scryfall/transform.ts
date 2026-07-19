@@ -5,6 +5,7 @@ export type CardRow = {
   cmc: number; colorIdentity: string[]; typeLine: string; oracleText: string | null;
   keywords: string[]; commanderLegal: boolean; imageUri: string | null; rarity: string;
 };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw Scryfall bulk JSON is untyped by design; toCardRow narrows it.
 export type ScryfallCard = Record<string, any>;
 
 const SKIP_LAYOUTS = new Set(["token", "double_faced_token", "emblem", "art_series"]);

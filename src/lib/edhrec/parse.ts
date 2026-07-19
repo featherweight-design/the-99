@@ -1,7 +1,9 @@
 export type EdhrecData = { topCards: string[] };
 
 export function parseEdhrecPayload(payload: unknown): EdhrecData {
-  const cardlists = (payload as any)?.container?.json_dict?.cardlists;
+  const cardlists = (
+    payload as { container?: { json_dict?: { cardlists?: unknown } } } | null
+  )?.container?.json_dict?.cardlists;
   if (!Array.isArray(cardlists)) return { topCards: [] };
   const seen = new Set<string>();
   for (const list of cardlists) {

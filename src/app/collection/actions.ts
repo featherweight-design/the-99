@@ -5,32 +5,37 @@ import { revalidatePath } from "next/cache";
 import { db } from "../../db";
 import { cards, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { parseManaBoxCsv } from "../../lib/manabox/parse";
+import { parseManaBoxCsv, type ManaBoxRow, type ParseError } from "../../lib/manabox/parse";
+import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 
 export type UploadPreview = {
   uploadId: string;
-  matchedCardCount: number; // total card quantity across matched rows
+  matchedCardCount: number;
   unmatchedRows: { name: string; setCode: string }[];
   parseErrors: { line: number; reason: string }[];
-  currentCollectionCount: number; // total card quantity in the current collection
+  currentCollectionCount: number;
 };
 
 type PendingItem = { oracleId: string; setCode: string; foil: boolean; condition: string | null; quantity: number };
 
-// Matched rows are aggregated to compact (oracleId,setCode,foil) totals before
-// being stashed on the upload record: the JSONB stays small for large collections
-// and confirm becomes a plain insert.
-export async function previewUpload(formData: FormData): Promise<UploadPreview> {
-  const userId = await requireUserId();
-  const file = formData.get("file");
-  if (!(file instanceof File)) throw new Error("No CSV file provided");
-  const { rows, errors } = parseManaBoxCsv(await file.text());
-  // Fatal-parse guard: a CSV yielding zero rows (wrong file, missing headers)
-  // must never become a confirmable preview — confirm replaces the collection,
-  // so an empty preview would silently wipe it.
+/**
+ * Shared post-parse pipeline for previewUpload / previewPaste.
+ * Guards the zero-row case (empty preview would silently wipe on confirm),
+ * matches rows against the catalog, aggregates matched rows to compact
+ * (oracleId,setCode,foil) totals, records currentCollectionCount, and
+ * writes the csv_uploads row that confirmUpload reads back.
+ */
+async function buildPreview(args: {
+  userId: string;
+  filename: string;
+  rows: ManaBoxRow[];
+  errors: ParseError[];
+}): Promise<UploadPreview> {
+  const { userId, filename, rows, errors } = args;
+
   if (rows.length === 0) {
-    throw new Error(errors[0] ? `CSV parse failed: ${errors[0].reason}` : "CSV contained no data rows");
+    throw new Error(errors[0] ? `Parse failed: ${errors[0].reason}` : "No card rows to import");
   }
 
   const catalog = await db
@@ -44,8 +49,6 @@ export async function previewUpload(formData: FormData): Promise<UploadPreview> 
     const existing = agg.get(key);
     if (existing) {
       existing.quantity += row.quantity;
-      // Same printing in multiple conditions collapses to one row (PK excludes condition);
-      // a mixed-condition stack has no single truthful condition, so store null.
       if (existing.condition !== row.condition) existing.condition = null;
     } else {
       agg.set(key, { oracleId, setCode: row.setCode, foil: row.foil, condition: row.condition, quantity: row.quantity });
@@ -61,10 +64,15 @@ export async function previewUpload(formData: FormData): Promise<UploadPreview> 
 
   const [upload] = await db.insert(csvUploads).values({
     userId,
-    filename: file.name,
+    filename,
     rowCount: rows.length,
     unmatchedCount: unmatched.length,
-    previewPayload: { unmatched, parseErrors: errors, pendingItems },
+    // Strip `raw` — no need to persist user-provided input lines in JSONB.
+    previewPayload: {
+      unmatched,
+      parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
+      pendingItems,
+    },
   }).returning({ id: csvUploads.id });
 
   return {
@@ -74,6 +82,24 @@ export async function previewUpload(formData: FormData): Promise<UploadPreview> 
     parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
     currentCollectionCount,
   };
+}
+
+export async function previewUpload(formData: FormData): Promise<UploadPreview> {
+  const userId = await requireUserId();
+  const file = formData.get("file");
+  if (!(file instanceof File)) throw new Error("No CSV file provided");
+  if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5 MB)");
+  const { rows, errors } = parseManaBoxCsv(await file.text());
+  return buildPreview({ userId, filename: file.name, rows, errors });
+}
+
+export async function previewPaste(text: string): Promise<UploadPreview> {
+  const userId = await requireUserId();
+  // Byte-accurate cap — text.length counts UTF-16 code units, which lets
+  // multi-byte input exceed the intended size guard.
+  if (Buffer.byteLength(text, "utf8") > 100_000) throw new Error("Paste too large (max 100 KB)");
+  const { rows, errors } = parsePasteList(text);
+  return buildPreview({ userId, filename: "paste.txt", rows, errors });
 }
 
 export async function confirmUpload(uploadId: string): Promise<void> {
@@ -93,4 +119,5 @@ export async function confirmUpload(uploadId: string): Promise<void> {
     }
   });
   revalidatePath("/collection");
+  revalidatePath("/"); // Task 10: dissolves the first-run checklist.
 }
