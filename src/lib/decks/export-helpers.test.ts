@@ -7,36 +7,16 @@ import {
 } from "./export-helpers";
 
 describe("buildDecklistText", () => {
-  it("starts with # deckName comment line", () => {
+  it("has commander as first line with '1 '", () => {
     const out = buildDecklistText({
-      deckName: "My Deck",
       commanderName: "Muldrotha, the Gravetide",
       cards: [],
     });
-    expect(out.split("\n")[0]).toBe("# My Deck");
+    expect(out.split("\n")[0]).toBe("1 Muldrotha, the Gravetide");
   });
 
-  it("has commander as second line with '1 '", () => {
+  it("includes body cards with quantities after the commander", () => {
     const out = buildDecklistText({
-      deckName: "My Deck",
-      commanderName: "Muldrotha, the Gravetide",
-      cards: [],
-    });
-    expect(out.split("\n")[1]).toBe("1 Muldrotha, the Gravetide");
-  });
-
-  it("has // separator as third line", () => {
-    const out = buildDecklistText({
-      deckName: "My Deck",
-      commanderName: "Muldrotha, the Gravetide",
-      cards: [{ name: "Sol Ring", quantity: 1 }],
-    });
-    expect(out.split("\n")[2]).toBe("//");
-  });
-
-  it("includes body cards with quantities after separator", () => {
-    const out = buildDecklistText({
-      deckName: "My Deck",
       commanderName: "Muldrotha, the Gravetide",
       cards: [
         { name: "Sol Ring", quantity: 1 },
@@ -44,23 +24,28 @@ describe("buildDecklistText", () => {
       ],
     });
     const lines = out.split("\n");
-    expect(lines[3]).toBe("1 Sol Ring");
-    expect(lines[4]).toBe("5 Forest");
+    expect(lines[1]).toBe("1 Sol Ring");
+    expect(lines[2]).toBe("5 Forest");
   });
 
-  it("has no trailing newline when cards is empty", () => {
+  it("contains no comment header or separator lines", () => {
     const out = buildDecklistText({
-      deckName: "My Deck",
+      commanderName: "Muldrotha, the Gravetide",
+      cards: [{ name: "Sol Ring", quantity: 1 }],
+    });
+    expect(out).not.toMatch(/^#|^\/\//m);
+  });
+
+  it("is just the commander line when cards is empty (no trailing newline)", () => {
+    const out = buildDecklistText({
       commanderName: "Muldrotha, the Gravetide",
       cards: [],
     });
-    expect(out.endsWith("//")).toBe(true);
-    expect(out.split("\n")).toHaveLength(3);
+    expect(out).toBe("1 Muldrotha, the Gravetide");
   });
 
   it("produces consistent text for copy and download (same string)", () => {
     const args = {
-      deckName: "Reanimator",
       commanderName: "Muldrotha, the Gravetide",
       cards: [{ name: "Gravecrawler", quantity: 1 }],
     };

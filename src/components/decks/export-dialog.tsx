@@ -53,24 +53,17 @@ export function ExportDialog({
 
   if (!open) return null;
 
-  const decklistText = buildDecklistText({ deckName, commanderName, cards: decklistCards });
+  const decklistText = buildDecklistText({ commanderName, cards: decklistCards });
   const shoppingText = buildShoppingText(shoppingCards);
   const activeText = tab === "decklist" ? decklistText : shoppingText;
 
-  // Parse decklist lines for colored rendering
+  // Preview rendering: line 0 is the commander, the rest are body lines. The
+  // muted `// name — count` header and separator in the preview are
+  // presentational only — never part of the copied/downloaded text.
   const decklistLines = decklistText.split("\n");
-
-  function getLineColor(line: string): string {
-    if (line.startsWith("#")) return "#8E8269"; // comment line (deckName)
-    if (line.startsWith("//")) return "#3A3229"; // separator
-    // Check if it's the commander line: second non-comment line = "1 ${commanderName}"
-    if (line === `1 ${commanderName}`) return "#C9A24B"; // brass
-    return "#C6B79A"; // body lines
-  }
-
-  const isCommanderLine = (line: string) => line === `1 ${commanderName}`;
-  const isSeparatorLine = (line: string) => line.startsWith("//");
-  const isCommentLine = (line: string) => line.startsWith("#");
+  const commanderLine = decklistLines[0];
+  const bodyLines = decklistLines.slice(1);
+  const totalCards = 1 + decklistCards.reduce((sum, c) => sum + c.quantity, 0);
 
   return (
     <>
@@ -124,11 +117,9 @@ export function ExportDialog({
             setTab={setTab}
             activeText={activeText}
             shoppingCards={shoppingCards}
-            decklistLines={decklistLines}
-            isCommentLine={isCommentLine}
-            isCommanderLine={isCommanderLine}
-            isSeparatorLine={isSeparatorLine}
-            getLineColor={getLineColor}
+            commanderLine={commanderLine}
+            bodyLines={bodyLines}
+            totalCards={totalCards}
             setStatus={setStatus}
             onClose={onClose}
             isMobile={false}
@@ -143,11 +134,9 @@ export function ExportDialog({
             setTab={setTab}
             activeText={activeText}
             shoppingCards={shoppingCards}
-            decklistLines={decklistLines}
-            isCommentLine={isCommentLine}
-            isCommanderLine={isCommanderLine}
-            isSeparatorLine={isSeparatorLine}
-            getLineColor={getLineColor}
+            commanderLine={commanderLine}
+            bodyLines={bodyLines}
+            totalCards={totalCards}
             setStatus={setStatus}
             onClose={onClose}
             isMobile={true}
@@ -168,11 +157,9 @@ interface DialogContentProps {
   setTab: (t: Tab) => void;
   activeText: string;
   shoppingCards: { name: string; role?: string }[];
-  decklistLines: string[];
-  isCommentLine: (line: string) => boolean;
-  isCommanderLine: (line: string) => boolean;
-  isSeparatorLine: (line: string) => boolean;
-  getLineColor: (line: string) => string;
+  commanderLine: string;
+  bodyLines: string[];
+  totalCards: number;
   setStatus: (s: string) => void;
   onClose: () => void;
   isMobile: boolean;
@@ -184,20 +171,13 @@ function DialogContent({
   setTab,
   activeText,
   shoppingCards,
-  decklistLines,
-  isCommentLine,
-  isCommanderLine,
-  isSeparatorLine,
-  getLineColor,
+  commanderLine,
+  bodyLines,
+  totalCards,
   setStatus,
   onClose,
   isMobile,
 }: DialogContentProps) {
-  // Body lines (non-commander, non-separator, non-comment) for two-column layout
-  const bodyLines = decklistLines.filter(
-    (l) => !isCommentLine(l) && !isCommanderLine(l) && !isSeparatorLine(l)
-  );
-
   return (
     <>
       {/* Header: border-bottom mobile only */}
@@ -330,19 +310,19 @@ function DialogContent({
                 whiteSpace: "pre-wrap",
               }}
             >
-              {/* Comment line: # deckName */}
-              <span style={{ color: "#8E8269" }}>
-                {decklistLines[0]}
+              {/* Preview-only comment header — not part of the copied text */}
+              <span aria-hidden style={{ color: "#8E8269" }}>
+                {`// ${deckName} — ${totalCards} cards`}
                 {"\n"}
               </span>
               {/* Commander line: 1 commanderName */}
               <span style={{ color: "#C9A24B" }}>
-                {decklistLines[1]}
+                {commanderLine}
                 {"\n"}
               </span>
-              {/* Separator line: // */}
-              <span style={{ color: "#3A3229" }}>
-                {decklistLines[2]}
+              {/* Preview-only separator — not part of the copied text */}
+              <span aria-hidden style={{ color: "#3A3229" }}>
+                {isMobile ? "—" : "————————————"}
                 {"\n"}
               </span>
               {/* Body lines (desktop: two columns) */}
@@ -354,7 +334,7 @@ function DialogContent({
                 }
               >
                 {bodyLines.map((line, i) => (
-                  <span key={i} style={{ color: getLineColor(line) }}>
+                  <span key={i} style={{ color: "#C6B79A" }}>
                     {line}
                     {i < bodyLines.length - 1 ? "\n" : ""}
                   </span>

@@ -2,17 +2,17 @@
 // Tested in export-helpers.test.ts.
 
 /**
- * Assemble the full decklist text displayed / copied / downloaded:
- * first line `# ${deckName}`, then commander line, then one line per card.
+ * Assemble the decklist text copied / downloaded — spec format (#8): commander
+ * first, then `N Card Name` lines, Moxfield/Archidekt-ready. The dialog's
+ * preview header/separator are presentational only and never part of this text.
  */
 export function buildDecklistText(args: {
-  deckName: string;
   commanderName: string;
   /** Body cards — commander excluded */
   cards: { name: string; quantity: number }[];
 }): string {
-  const { deckName, commanderName, cards } = args;
-  const lines = [`# ${deckName}`, `1 ${commanderName}`, "//", ...cards.map((c) => `${c.quantity} ${c.name}`)];
+  const { commanderName, cards } = args;
+  const lines = [`1 ${commanderName}`, ...cards.map((c) => `${c.quantity} ${c.name}`)];
   return lines.join("\n");
 }
 
