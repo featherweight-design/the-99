@@ -40,6 +40,7 @@ export function RecCard({ commander: c, rank, globalDegraded }: RecCardProps) {
   return (
     <Link
       href={`/commanders/${c.slug}`}
+      // brand focus-visible outline treatment inherited from globals.css
       className="block group"
       style={{ textDecoration: "none" }}
     >
@@ -141,6 +142,7 @@ export function RecCard({ commander: c, rank, globalDegraded }: RecCardProps) {
               <form action={retryRecs} className="inline">
                 <button
                   type="submit"
+                  // brand focus-visible outline treatment inherited from globals.css
                   className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
                   style={{ color: "#C9A24B", fontSize: 12 }}
                 >
@@ -302,6 +304,7 @@ export function RecCard({ commander: c, rank, globalDegraded }: RecCardProps) {
                 <form action={retryRecs} className="inline">
                   <button
                     type="submit"
+                    // brand focus-visible outline treatment inherited from globals.css
                     className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
                     style={{ color: "#C9A24B", fontSize: 12.5 }}
                   >

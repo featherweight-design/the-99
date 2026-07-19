@@ -18,6 +18,7 @@ export function FullCardTrigger({
       {/* ⛶ Full card affordance chip — §"⛶ Full card" affordance chip */}
       <button
         type="button"
+        // brand focus-visible outline treatment inherited from globals.css
         className="absolute inline-flex items-center rounded-full"
         style={{
           top: 56,

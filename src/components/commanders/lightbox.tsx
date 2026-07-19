@@ -115,6 +115,7 @@ export function CommanderLightbox({
           onClose();
         }}
         aria-label="Close full card view"
+        // brand focus-visible outline treatment inherited from globals.css
         className="absolute flex items-center justify-center rounded-full"
         style={{
           top: 20,

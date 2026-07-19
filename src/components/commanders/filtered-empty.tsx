@@ -131,6 +131,7 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
       <button
         type="button"
         onClick={onClear}
+        // brand focus-visible outline treatment inherited from globals.css
         className="sm:p-[10px_20px]"
         style={{
           fontFamily: "var(--font-sans), 'IBM Plex Sans', sans-serif",

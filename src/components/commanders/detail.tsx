@@ -460,6 +460,7 @@ export function CommanderDetail({
         {/* Back chevron */}
         <Link
           href="/commanders"
+          // brand focus-visible outline treatment inherited from globals.css
           className="absolute flex items-center justify-center rounded-full"
           style={{
             top: 16,
@@ -724,6 +725,7 @@ export function CommanderDetail({
         </div>
         <Link
           href={`/decks?commander=${c.slug}`}
+          // brand focus-visible outline treatment inherited from globals.css
           className="font-sans font-[600] rounded-[8px] text-center"
           style={{
             fontSize: 14,
@@ -758,6 +760,7 @@ export function CommanderDetail({
           {/* Back link */}
           <Link
             href="/commanders"
+            // brand focus-visible outline treatment inherited from globals.css
             className="inline-flex items-center gap-[7px] font-sans"
             style={{
               fontSize: 13,
@@ -890,6 +893,7 @@ export function CommanderDetail({
           {/* Build this deck button */}
           <Link
             href={`/decks?commander=${c.slug}`}
+            // brand focus-visible outline treatment inherited from globals.css
             className="font-sans font-[600] rounded-[8px] text-center block"
             style={{
               fontSize: 15,
@@ -908,6 +912,7 @@ export function CommanderDetail({
           {/* Compare button */}
           <button
             type="button"
+            // brand focus-visible outline treatment inherited from globals.css
             className="font-sans font-[600] rounded-[8px] w-full"
             style={{
               fontSize: 13,

@@ -93,6 +93,7 @@ export function CommandersView({
                     active ? prev.filter((x) => x !== c) : [...prev, c],
                   )
                 }
+                // brand focus-visible outline treatment inherited from globals.css
                 className="rounded px-3 py-1 font-mono text-[12px] font-semibold transition-colors"
                 style={{
                   background: active ? "var(--brass)" : "var(--surface)",
@@ -109,6 +110,7 @@ export function CommandersView({
             <button
               type="button"
               onClick={handleClearFilter}
+              // brand focus-visible outline treatment inherited from globals.css
               className="rounded px-3 py-1 font-mono text-[12px] transition-colors"
               style={{
                 background: "transparent",
