@@ -52,7 +52,10 @@ _Currently empty._
 
 ## 🎨 In flight
 
-_Currently empty._
+| Ticket | Stage | Notes |
+|---|---|---|
+| **#5** Design: App shell — nav, auth chrome, empty/first-run states | Handoff prompt with Design | Workshop 2026-07-18: `/` is a real home surface (Design defines it), public — signed-out landing is minimal (wordmark, tagline, sign-in); access restriction via Clerk restricted mode (dashboard config, no designed state); tagline locked from spec: "99 problems, but your commander ain't one." |
+| **#6** Design: Collection — CSV upload flow + collection view | Handoff prompt with Design | Workshop 2026-07-18: browse scope is search + color/type/set filters + sorting (collection query API to be built to match); card detail view in scope (image, oracle text — container is Design's call); uploads remain full-replace, no merge in v1. |
 
 ---
 
@@ -64,16 +67,14 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-Ranked by build order. #5 (app shell) blocks all other UI builds — every surface renders inside it. Backend for each v1 surface proceeds ahead of design per the UI gate.
+Ranked by build order. Backend for each v1 surface proceeds ahead of design per the UI gate.
 
 | Rank | Ticket | Adjacency / notes |
 |---|---|---|
-| 1 | **#5** Design: App shell — nav, auth chrome, empty/first-run states | Blocker — all other UI surfaces render inside this frame; first-run flow points at Collection upload |
-| 2 | **#6** Design: Collection — CSV upload flow + collection view | First real user action (ManaBox CSV → preview → confirm); feeds everything downstream |
-| 3 | **#7** Design: Commander recommendations — ranked, explainable list | Consumes collection data; per-commander EDHREC-degraded state must be designed |
-| 4 | **#8** Design: Decks — list, create-from-commander, and deck builder | Largest surface (suggestions panel, search, role counters, gaps/shopping list, export); entry point lives on #7's list |
-| 5 | **#9** Design: Win/loss tracking for decks | Post-v1; extends the deck page from #8 |
-| 6 | **#10** Design: Deck tuning suggestions from play results | Post-v1; blocked on #9's data model |
+| 1 | **#7** Design: Commander recommendations — ranked, explainable list | Consumes collection data; per-commander EDHREC-degraded state must be designed |
+| 2 | **#8** Design: Decks — list, create-from-commander, and deck builder | Largest surface (suggestions panel, search, role counters, gaps/shopping list, export); entry point lives on #7's list |
+| 3 | **#9** Design: Win/loss tracking for decks | Post-v1; extends the deck page from #8 |
+| 4 | **#10** Design: Deck tuning suggestions from play results | Post-v1; blocked on #9's data model |
 
 ---
 
