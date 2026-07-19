@@ -1,9 +1,6 @@
 "use client";
 // WUBRG pip primitive — per property table §WUBRG Color Pip / §WUBRG Pip Colors.
-// Design table uses raw hexes (not brand tokens) for these five swatches.
-const COLOR_HEX: Record<string, string> = {
-  W: "#E8E4D6", U: "#4A7FB5", B: "#5B5566", R: "#C05A48", G: "#6B9E63",
-};
+import { WUBRG_HEX } from "../../lib/collection/browse";
 
 export function ColorPip({
   color,
@@ -30,7 +27,7 @@ export function ColorPip({
           ? "opacity-100 shadow-[0_0_0_2px_var(--brass)]"
           : "opacity-40 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]",
       ].join(" ")}
-      style={{ width: size, height: size, background: COLOR_HEX[color] }}
+      style={{ width: size, height: size, background: WUBRG_HEX[color] }}
     />
   );
 }

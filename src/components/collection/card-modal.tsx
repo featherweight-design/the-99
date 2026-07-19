@@ -122,7 +122,7 @@ export function CardModal({
   // Focus first focusable child on mount.
   useEffect(() => {
     const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
-      'button, [href], input, [tabindex]:not([tabindex="-1"])',
+      'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
     );
     focusables?.[0]?.focus();
   }, []);
@@ -137,7 +137,7 @@ export function CardModal({
       }
       if (e.key !== "Tab" || !dialogRef.current) return;
       const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
-        'button, [href], input, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       if (focusables.length === 0) return;
       const first = focusables[0];
@@ -296,7 +296,7 @@ export function CardModal({
             <MetaField label="Set" value={`${card.primarySetCode}`} />
             <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
             <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-            <MetaField label="You own" value={`×${card.quantity} copy`} quantity />
+            <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
           </div>
 
           {/* DESKTOP Prev/Next — §Desktop: Prev/Next Navigation */}
