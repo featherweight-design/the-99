@@ -157,8 +157,32 @@ export function ConfirmModal({
           <p className="mt-[10px] text-[13px]" style={{ color: "var(--danger)" }}>{error}</p>
         )}
 
-        {/* Button row — §Button Row. Per #34: on desktop the primary (destructive) button sits on the right and the secondary sits on the left — use md:flex-row-reverse so JSX order [Confirm][Cancel] keeps the primary on top of the mobile stack while the row reads Cancel↔Confirm left-to-right on desktop. Also per #34: initial-import secondary label is "Go back" (nothing to keep yet); replace flow keeps "Keep current". */}
-        <div className="mt-[22px] flex flex-col md:flex-row-reverse gap-[12px]">
+        {/* Button row — §Button Row. Per #34 the primary (destructive) button sits on the right and the secondary on the left on desktop. DOM order matches the desktop visual reading order — [Secondary][Primary] — so keyboard tab flows left→right (Copilot #40 round 1 flagged the earlier md:flex-row-reverse arrangement for tab/visual mismatch). Mobile uses flex-col-reverse so the primary still sits on top of the stack. Initial-import secondary label is "Go back" (nothing to keep yet); replace flow keeps "Keep current". */}
+        <div className="mt-[22px] flex flex-col-reverse md:flex-row gap-[12px]">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={pending}
+            // §Cancel / Keep Button — mobile text-only #8E8269 (--fg-faint), padding 12px 0 0;
+            // desktop outlined 1px #3A3229 (--border-strong), padding 13px 22px, brass border on hover
+            className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--brass)]"
+            style={{
+              color: "var(--fg-faint)",
+              background: "transparent",
+            }}
+          >
+            {preview.currentCollectionCount === 0 ? (
+              <>
+                <span className="md:hidden">Go back</span>
+                <span className="hidden md:inline" style={{ color: "var(--fg)" }}>Go back</span>
+              </>
+            ) : (
+              <>
+                <span className="md:hidden">Keep my current collection</span>
+                <span className="hidden md:inline" style={{ color: "var(--fg)" }}>Keep current</span>
+              </>
+            )}
+          </button>
           <button
             type="button"
             onClick={onConfirm}
@@ -173,27 +197,6 @@ export function ConfirmModal({
             }}
           >
             {pending ? "Replacing…" : preview.currentCollectionCount === 0 ? `Import ${preview.matchedCardCount.toLocaleString()} cards` : `Replace ${preview.currentCollectionCount.toLocaleString()} cards`}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={pending}
-            // §Cancel / Keep Button — mobile text-only #8E8269 (--fg-faint), padding 12px 0 0;
-            // desktop outlined 1px #3A3229 (--border-strong), padding 13px 22px, brass border on hover
-            className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--brass)]"
-            style={{
-              color: "var(--fg-faint)",
-              background: "transparent",
-            }}
-          >
-            {preview.currentCollectionCount === 0 ? (
-              <span style={{ color: "var(--fg)" }}>Go back</span>
-            ) : (
-              <>
-                <span className="md:hidden">Keep my current collection</span>
-                <span className="hidden md:inline" style={{ color: "var(--fg)" }}>Keep current</span>
-              </>
-            )}
           </button>
         </div>
       </div>
