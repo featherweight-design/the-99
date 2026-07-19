@@ -27,6 +27,7 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 |---|---|---|---|
 | **#5** Design: App shell — nav, auth chrome, empty/first-run states | `design/design_handoff_the99_appshell/` | 🟡 Yellow (2026-07-18) | Rail + bottom tabs; home = dashboard / first-run checklist. Eng-side in plan PR: commander payload fields, paste-list action, un-gate `/`, focus states. CSV-format copy drift routed to #6; guided-flow steps 2–3 are #7/#8 first-run states. |
 | **#6** Design: Collection — CSV upload flow + collection view | `design/design_handoff_the99_collection/` | 🟡 Yellow (2026-07-18) | Rows⇄grid toggle, sticky filter bar + chips, card-detail modal (`?card=` deep-link), 3-step replace with type-to-confirm. Eng-side: broaden CSV ingest to multi-format + paste (approved 2026-07-18), `line` on unmatched rows, sort options, modal a11y, virtualization. |
+| **#7** Design: Commander recommendations — ranked, explainable list | `design/design_handoff_the99_commanders/` | 🟡 Yellow (2026-07-18) | Ranked cards w/ inline evidence, 3-part Fit bar, receipts preview + full chip clouds, dedicated `/commanders/:slug` detail, dual degraded scopes, dual empty states, guided step 2 live. Eng-side: receipts payload (names per component), `wipes` role (target 3), `fitNS` renormalization, slug route, focus/lightbox a11y. |
 
 ---
 
@@ -54,7 +55,6 @@ _Currently empty._
 
 | Ticket | Stage | Notes |
 |---|---|---|
-| **#7** Design: Commander recommendations — ranked, explainable list | Handoff prompt with Design | Workshop 2026-07-18: explanation depth is full breakdown + named cards ("receipts" — payload additions planned); color-identity filter only (ranking stays opinionated); commander detail view in scope; first-run state = shell guided-flow step 2 live; global + per-commander degraded states required. |
 | **#8** Design: Decks — list, create-from-commander, and deck builder | Handoff prompt with Design | Workshop 2026-07-18: advisory completeness (role counters + ~37-land guide, never blocking); exportable gaps/shopping list; standalone commander picker alongside create-from-#7-detail; first-run state = shell guided-flow step 3 live; suggestions panel + owned-first search per spec. |
 
 ---
