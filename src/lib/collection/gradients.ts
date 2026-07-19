@@ -31,8 +31,9 @@ export function identityGradient(identity: string[]): string {
 export function commanderGradient(identity: string[]): string {
   if (identity.length === 0) return COLORLESS;
   if (identity.length === 1) return MONO[identity[0]] ?? COLORLESS;
-  // 2+ colors: 5-stop 130deg gradient using first and last identity color
+  // 2+ colors: 5-stop 130deg gradient — id0, id1 (second color) at 55%, idN
   const first = identity[0];
+  const second = identity[1];
   const last = identity[identity.length - 1];
-  return `linear-gradient(130deg, ${MID[first]}, ${LIGHT[first]} 34%, ${LIGHT[last]} 55%, ${MID[last]} 82%, ${DARK[last]})`;
+  return `linear-gradient(130deg, ${MID[first]}, ${LIGHT[first]} 34%, ${LIGHT[second]} 55%, ${MID[last]} 82%, ${DARK[last]})`;
 }

@@ -264,7 +264,6 @@ function RolePanel({
   count: number;
 }) {
   const target = ROLE_TARGETS[role];
-  const met = count >= target;
 
   return (
     <div
@@ -296,9 +295,11 @@ function RolePanel({
           className="font-mono"
           style={{ fontSize: 12, color: "#8E8269", marginLeft: "auto" }}
         >
-          {met
+          {count > target
             ? `Well past the ${target}-source baseline`
-            : `${target - count} short of baseline`}
+            : count === target
+              ? `At the ${target}-source baseline`
+              : `${target - count} short of baseline`}
         </span>
       </div>
 
