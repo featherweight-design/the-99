@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import type { RecentDeck } from "../../lib/home/summary";
 import { COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
+import { HeroCommander, HeroCommanderSkeleton } from "./hero-commander";
 
 /* §Deck row state color: success ≥ high, warning ≥ mid, danger below —
    derived from owned/99 like the hero completeness bar. */
@@ -11,7 +12,6 @@ function deckStateColor(cardCount: number): string {
   if (pct >= COMPLETENESS_THRESHOLDS.mid) return "var(--warning)";
   return "var(--danger)";
 }
-import { HeroCommander, HeroCommanderSkeleton } from "./hero-commander";
 
 export function Dashboard({
   userId,

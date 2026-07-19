@@ -49,6 +49,13 @@ describe("parsePasteList", () => {
     expect(errors[0].line).toBe(1);
   });
 
+  it("reports a negative quantity as an error instead of treating it as a name", () => {
+    const { rows, errors } = parsePasteList("-1 Sol Ring\n");
+    expect(rows).toHaveLength(0);
+    expect(errors[0].reason).toMatch(/quantity/i);
+    expect(errors[0].line).toBe(1);
+  });
+
   it("produces rows compatible with matchRows: scryfallId is null (not empty string)", () => {
     // Contract test: matchRows uses `row.scryfallId && ...` then `??` fallback;
     // "" would short-circuit both operators and drop every row into `unmatched`.

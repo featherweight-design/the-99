@@ -23,7 +23,7 @@ export function parsePasteList(text: string): { rows: ManaBoxRow[]; errors: Pars
     if (trimmed === "") continue;
 
     // "3 name", "3x name", "3X name", or bare "name"
-    const m = /^(\d+)\s*[xX]?\s+(.+)$/.exec(trimmed);
+    const m = /^([+-]?\d+)\s*[xX]?\s+(.+)$/.exec(trimmed);
     let quantity: number;
     let name: string;
     if (m) {
@@ -33,7 +33,7 @@ export function parsePasteList(text: string): { rows: ManaBoxRow[]; errors: Pars
         errors.push({ line: i + 1, raw, reason: `invalid quantity "${m[1]}"` });
         continue;
       }
-    } else if (/^\d+[xX]?$/.test(trimmed)) {
+    } else if (/^[+-]?\d+[xX]?$/.test(trimmed)) {
       // Only a quantity, no name.
       errors.push({ line: i + 1, raw, reason: "missing card name" });
       continue;
