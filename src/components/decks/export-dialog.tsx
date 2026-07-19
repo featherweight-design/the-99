@@ -330,7 +330,7 @@ function DialogContent({
                 }
               >
                 {bodyLines.map((line, i) => (
-                  <span key={i} style={{ color: "#C6B79A" }}>
+                  <span key={line} style={{ color: "#C6B79A" }}>
                     {line}
                     {i < bodyLines.length - 1 ? "\n" : ""}
                   </span>
@@ -405,9 +405,9 @@ function DialogContent({
 
             {/* Item rows */}
             <div>
-              {shoppingCards.map((card, i) => (
+              {shoppingCards.map((card) => (
                 <div
-                  key={i}
+                  key={card.name}
                   className="flex items-center"
                   style={{
                     gap: isMobile ? 10 : 12,

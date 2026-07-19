@@ -145,13 +145,11 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<v
   const deck = await requireDeck(deckId, userId);
 
   // Fetch commander color identity in the same round-trip as the card lookup.
-  const [[commander], [card], [builtRow], [existingRow]] = await Promise.all([
+  const [[commander], [card], [existingRow]] = await Promise.all([
     db.select({ colorIdentity: cards.colorIdentity })
       .from(cards).where(eq(cards.oracleId, deck.commanderOracleId)),
     db.select({ typeLine: cards.typeLine, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
       .from(cards).where(eq(cards.oracleId, oracleId)),
-    db.select({ total: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
-      .from(deckCards).where(eq(deckCards.deckId, deckId)),
     db.select({ oracleId: deckCards.oracleId })
       .from(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId))),
   ]);
@@ -163,23 +161,30 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<v
   // return before validation so a full deck doesn't spuriously reject it.
   if (existingRow && !/\bBasic\b/.test(card.typeLine)) return;
 
-  const built = builtRow?.total ?? 0;
-  const error = validateCardForDeck(
-    { commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity, oracleId },
-    { commanderOracleId: deck.commanderOracleId, commanderColorIdentity: commander.colorIdentity, built },
-  );
-  if (error) throw new Error(error);
+  // Lock the deck row so the 99-card cap check and the write are atomic —
+  // concurrent adds serialize here instead of both passing the cap at 98.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    const [builtRow] = await tx.select({ total: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
+      .from(deckCards).where(eq(deckCards.deckId, deckId));
+    const built = builtRow?.total ?? 0;
+    const error = validateCardForDeck(
+      { commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity, oracleId },
+      { commanderOracleId: deck.commanderOracleId, commanderColorIdentity: commander.colorIdentity, built },
+    );
+    if (error) throw new Error(error);
 
-  // Commander is singleton: only basic lands may run multiple copies, so a
-  // repeat add increments quantity for basics and stays a no-op otherwise.
-  if (/\bBasic\b/.test(card.typeLine)) {
-    await db.insert(deckCards).values({ deckId, oracleId }).onConflictDoUpdate({
-      target: [deckCards.deckId, deckCards.oracleId],
-      set: { quantity: sql`${deckCards.quantity} + 1` },
-    });
-  } else {
-    await db.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
-  }
+    // Commander is singleton: only basic lands may run multiple copies, so a
+    // repeat add increments quantity for basics and stays a no-op otherwise.
+    if (/\bBasic\b/.test(card.typeLine)) {
+      await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoUpdate({
+        target: [deckCards.deckId, deckCards.oracleId],
+        set: { quantity: sql`${deckCards.quantity} + 1` },
+      });
+    } else {
+      await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
+    }
+  });
   // /decks shows derived stats (built / to-buy) — keep the index fresh too.
   revalidatePath(`/decks/${deckId}`);
   revalidatePath(`/decks`);
