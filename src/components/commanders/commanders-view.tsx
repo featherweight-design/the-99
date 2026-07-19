@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { filterByColors } from "../../lib/commanders/filter";
-import { retryRecs } from "../../app/commanders/actions";
 import { RecCard } from "./rec-card";
+import { GuidedBanner } from "./guided-banner";
+import { DegradedBanner } from "./degraded-banner";
+import { FilteredEmpty } from "./filtered-empty";
 
 // ── URL helpers (mirrors collection/browser.tsx pattern) ─────────────────────
 
@@ -53,121 +55,104 @@ export function CommandersView({
 
   const filtered = useMemo(() => filterByColors(results, colors), [results, colors]);
 
+  // Clear handler passed to FilteredEmpty
+  const handleClearFilter = useCallback(() => setColors([]), []);
+
   return (
-    <div className="p-5 md:px-[34px] md:pt-[34px] md:pb-11">
-      {/* ── Degraded banner ── */}
+    <div>
+      {/* ── Global degraded banner (above everything) ── */}
       {degraded && (
-        <div
-          className="mb-4 flex items-center justify-between rounded-lg px-4 py-3 text-[13px]"
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border-strong)",
-            color: "var(--fg-body)",
-          }}
-        >
-          <span>Synergy data is partially offline — some scores are estimates.</span>
-          <form action={retryRecs}>
-            <button
-              type="submit"
-              className="ml-4 rounded px-3 py-1 text-[12px] font-semibold"
-              style={{
-                background: "transparent",
-                border: "1px solid var(--border-strong)",
-                color: "var(--fg)",
-                cursor: "pointer",
-              }}
-            >
-              Retry
-            </button>
-          </form>
+        <div className="px-[14px] pt-[12px] sm:px-0 sm:pt-0">
+          <DegradedBanner />
         </div>
       )}
 
-      {/* ── First-run prompt ── */}
+      {/* ── First-run guided banner ── */}
       {firstRun && (
-        <p
-          className="mb-4 text-[13px]"
-          style={{ color: "var(--fg-body)" }}
-        >
-          Pick a commander and build your first deck.
-        </p>
+        <div className="px-[14px] pt-[12px] sm:px-0 sm:pt-0">
+          <GuidedBanner
+            uniqueCardsRead={uniqueCardsRead}
+            candidateCount={candidateCount}
+          />
+        </div>
       )}
 
-      {/* ── Color filter chips ── */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {(["W", "U", "B", "R", "G"] as const).map((c) => {
-          const active = colors.includes(c);
-          return (
+      {/* ── Main content: filter + list (or filtered-empty) ── */}
+      <div className="p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
+        {/* Color filter chips */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {(["W", "U", "B", "R", "G"] as const).map((c) => {
+            const active = colors.includes(c);
+            return (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={active}
+                onClick={() =>
+                  setColors((prev) =>
+                    active ? prev.filter((x) => x !== c) : [...prev, c],
+                  )
+                }
+                className="rounded px-3 py-1 font-mono text-[12px] font-semibold transition-colors"
+                style={{
+                  background: active ? "var(--brass)" : "var(--surface)",
+                  border: "1px solid var(--border-strong)",
+                  color: active ? "var(--bg)" : "var(--fg)",
+                  cursor: "pointer",
+                }}
+              >
+                {c}
+              </button>
+            );
+          })}
+          {colors.length > 0 && (
             <button
-              key={c}
               type="button"
-              aria-pressed={active}
-              onClick={() =>
-                setColors((prev) =>
-                  active ? prev.filter((x) => x !== c) : [...prev, c],
-                )
-              }
-              className="rounded px-3 py-1 font-mono text-[12px] font-semibold transition-colors"
+              onClick={handleClearFilter}
+              className="rounded px-3 py-1 font-mono text-[12px] transition-colors"
               style={{
-                background: active ? "var(--brass)" : "var(--surface)",
+                background: "transparent",
                 border: "1px solid var(--border-strong)",
-                color: active ? "var(--bg)" : "var(--fg)",
+                color: "var(--fg-faint)",
                 cursor: "pointer",
               }}
             >
-              {c}
+              Clear
             </button>
-          );
-        })}
-        {colors.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setColors([])}
-            className="rounded px-3 py-1 font-mono text-[12px] transition-colors"
-            style={{
-              background: "transparent",
-              border: "1px solid var(--border-strong)",
-              color: "var(--fg-faint)",
-              cursor: "pointer",
-            }}
-          >
-            Clear
-          </button>
+          )}
+        </div>
+
+        {/* Stats line */}
+        <p
+          className="mb-4 font-mono text-[11px] md:text-[12px]"
+          style={{ color: "var(--fg-faint)" }}
+        >
+          {uniqueCardsRead.toLocaleString("en-US")} cards scanned · {candidateCount} eligible
+          commander{candidateCount === 1 ? "" : "s"}
+          {colors.length > 0 && ` · ${filtered.length} matching`}
+        </p>
+
+        {/* Result list or filtered-to-zero state */}
+        {colors.length > 0 && filtered.length === 0 ? (
+          <FilteredEmpty
+            colors={colors}
+            total={results.length}
+            onClear={handleClearFilter}
+          />
+        ) : (
+          <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
+            {filtered.map((r, i) => (
+              <li key={r.slug}>
+                <RecCard
+                  commander={r}
+                  rank={i + 1}
+                  globalDegraded={degraded}
+                />
+              </li>
+            ))}
+          </ul>
         )}
       </div>
-
-      {/* ── Stats line ── */}
-      <p
-        className="mb-4 font-mono text-[11px] md:text-[12px]"
-        style={{ color: "var(--fg-faint)" }}
-      >
-        {uniqueCardsRead.toLocaleString()} cards scanned · {candidateCount} eligible commander
-        {candidateCount === 1 ? "" : "s"}
-        {colors.length > 0 &&
-          ` · ${filtered.length} matching`}
-      </p>
-
-      {/* ── Result list ── */}
-      {filtered.length === 0 ? (
-        <p
-          className="text-[14px]"
-          style={{ color: "var(--fg-muted)" }}
-        >
-          No commanders match the selected colors.
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
-          {filtered.map((r, i) => (
-            <li key={r.slug}>
-              <RecCard
-                commander={r}
-                rank={i + 1}
-                globalDegraded={degraded}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }
