@@ -1,4 +1,4 @@
-import { UploadEntry } from "../collection/upload-entry";
+import { ReplaceFlow } from "../collection/replace-flow";
 
 /**
  * First-run home is the checklist itself (design decision #4).
@@ -81,7 +81,7 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
           </span>
         </div>
         <div className="mt-5">
-          <UploadEntry />
+          <ReplaceFlow currentCardCount={0} />
         </div>
       </div>
 

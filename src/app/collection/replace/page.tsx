@@ -1,0 +1,26 @@
+// /collection/replace — three-step Replace flow.
+// Step 1 (UploadEntry, this task), step 2 (Task 8 ReviewScreen), step 3
+// (Task 9 ConfirmModal) are owned by the ReplaceFlow client component.
+
+import { requireUserId } from "../../../lib/auth";
+import { getCollectionStats } from "../../../lib/home/summary";
+import { ReplaceFlow } from "../../../components/collection/replace-flow";
+
+export default async function ReplacePage() {
+  const userId = await requireUserId();
+  const stats = await getCollectionStats(userId);
+  return (
+    // Page header — §Page Title "Replace collection" desktop / mobile back-chevron header
+    <section>
+      <div className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]" style={{ borderBottom: "1px solid var(--border)" }}>
+        <a href="/collection" aria-label="Back to Collection" className="text-[20px]" style={{ color: "var(--brass)" }}>‹</a>
+        <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
+      </div>
+      <div className="hidden md:block md:p-[28px_34px_0]">
+        <a href="/collection" className="font-mono text-[11px] tracking-[0.06em]" style={{ color: "var(--fg-faint)" }}>‹ Collection</a>
+        <h1 className="font-display font-bold text-[30px] mt-[8px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
+      </div>
+      <ReplaceFlow currentCardCount={stats.totalCards} />
+    </section>
+  );
+}

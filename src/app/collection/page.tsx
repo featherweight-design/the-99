@@ -3,7 +3,7 @@
 import { requireUserId } from "../../lib/auth";
 import { getCollectionStats } from "../../lib/home/summary";
 import { CardFan } from "../../components/marks";
-import { UploadEntry } from "../../components/collection/upload-entry";
+import { ReplaceFlow } from "../../components/collection/replace-flow";
 
 export default async function CollectionPage() {
   const userId = await requireUserId();
@@ -33,15 +33,15 @@ export default async function CollectionPage() {
           table fills — commanders and decks follow.
         </p>
 
-        {/* CTA row: upload entry inline (contains "Paste a list" toggle) */}
+        {/* CTA row: replace flow (step 1 = upload entry) */}
         <div className="mt-[26px] w-full max-w-[480px]">
-          <UploadEntry />
+          <ReplaceFlow currentCardCount={stats.totalCards} />
         </div>
       </section>
     );
   }
 
-  // Non-empty interim: show card count + upload entry to replace collection.
+  // Non-empty interim: show card count + replace flow.
   // NOTE: the full grid + filters + review flow ships in #6.
   return (
     <section className="p-6 md:p-10">
@@ -52,7 +52,7 @@ export default async function CollectionPage() {
         {stats.totalCards.toLocaleString()} cards ·{" "}
         {stats.uniqueCards.toLocaleString()} unique
       </p>
-      <UploadEntry />
+      <ReplaceFlow currentCardCount={stats.totalCards} />
     </section>
   );
 }
