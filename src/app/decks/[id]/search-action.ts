@@ -25,7 +25,9 @@ export async function searchCards(
     .from(cards)
     .where(and(
       ilike(cards.name, `%${escaped}%`),
-      arrayContained(cards.colorIdentity, colorIdentity),
+      colorIdentity.length === 0
+        ? sql`cardinality(${cards.colorIdentity}) = 0`
+        : arrayContained(cards.colorIdentity, colorIdentity),
       eq(cards.commanderLegal, true),
       ownedOnly ? ownedSql : undefined,
     ))

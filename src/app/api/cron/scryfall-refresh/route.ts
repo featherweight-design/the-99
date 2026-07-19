@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { seedCards } from "../../../../lib/scryfall/seed";
 
-// Pin to Node: the seed uses node:stream, stream-json, and ws, none of which run on Edge.
+// Pin to Node: the seed uses node:stream and stream-json for parsing, and the neon-serverless
+// websocket db driver — none of which run on Edge.
 export const runtime = "nodejs";
 export const maxDuration = 300;
 

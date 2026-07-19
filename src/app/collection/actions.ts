@@ -83,6 +83,7 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   if (!upload) throw new Error("upload not found");
 
   const { pendingItems } = upload.previewPayload as { pendingItems: PendingItem[] };
+  if (pendingItems.length === 0) throw new Error("Upload has no matched cards; refusing to replace collection");
   const values = pendingItems.map((v) => ({ userId, ...v }));
   // Full replace, transactional.
   await db.transaction(async (tx) => {

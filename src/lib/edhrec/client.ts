@@ -24,11 +24,12 @@ export async function getEdhrecData(
     );
     if (!res.ok) throw new Error(`edhrec ${res.status}`);
     const payload = await res.json();
+    const now = new Date();
     await db.insert(edhrecCache)
-      .values({ commanderOracleId, payload, fetchedAt: new Date() })
+      .values({ commanderOracleId, payload, fetchedAt: now })
       .onConflictDoUpdate({
         target: edhrecCache.commanderOracleId,
-        set: { payload, fetchedAt: new Date() },
+        set: { payload, fetchedAt: now },
       });
     return parseEdhrecPayload(payload);
   } catch {
