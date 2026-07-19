@@ -20,7 +20,6 @@ interface BuilderShellProps {
   suggestions: DeckSuggestion[];
   degraded: boolean;
   firstRun: boolean;
-  allDecksCount: number;
   commanderIdentity: string[];
 }
 
@@ -37,7 +36,8 @@ export function BuilderShell({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
-  // Derive the set of oracle IDs already in the deck (client-side, no round-trip).
+  // Derive the oracle IDs already in the deck (client-side, no round-trip);
+  // AddPanel builds its lookup Set from this list.
   const deckOracleIds = useMemo(
     () => deck.cards.map((c) => c.oracleId),
     [deck.cards],

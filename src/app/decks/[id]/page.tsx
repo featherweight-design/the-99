@@ -31,7 +31,6 @@ export default async function DeckBuilderPage({
       suggestions={suggestions}
       degraded={degraded}
       firstRun={firstRun}
-      allDecksCount={allDecks.length}
       commanderIdentity={detail.commander.colorIdentity}
     />
   );
