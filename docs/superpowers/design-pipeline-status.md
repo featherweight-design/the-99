@@ -54,6 +54,7 @@ _Currently empty._
 | Ticket | Stage | Notes |
 |---|---|---|
 | **#6** Design: Collection — CSV upload flow + collection view | Handoff prompt with Design | Workshop 2026-07-18: browse scope is search + color/type/set filters + sorting (collection query API to be built to match); card detail view in scope (image, oracle text — container is Design's call); uploads remain full-replace, no merge in v1. Inherits from #5 audit: resolve dropzone CSV-format copy vs ManaBox-only parser. |
+| **#7** Design: Commander recommendations — ranked, explainable list | Handoff prompt with Design | Workshop 2026-07-18: explanation depth is full breakdown + named cards ("receipts" — payload additions planned); color-identity filter only (ranking stays opinionated); commander detail view in scope; first-run state = shell guided-flow step 2 live; global + per-commander degraded states required. |
 
 ---
 
@@ -69,10 +70,9 @@ Ranked by build order. Backend for each v1 surface proceeds ahead of design per 
 
 | Rank | Ticket | Adjacency / notes |
 |---|---|---|
-| 1 | **#7** Design: Commander recommendations — ranked, explainable list | Consumes collection data; per-commander EDHREC-degraded state must be designed |
-| 2 | **#8** Design: Decks — list, create-from-commander, and deck builder | Largest surface (suggestions panel, search, role counters, gaps/shopping list, export); entry point lives on #7's list |
-| 3 | **#9** Design: Win/loss tracking for decks | Post-v1; extends the deck page from #8 |
-| 4 | **#10** Design: Deck tuning suggestions from play results | Post-v1; blocked on #9's data model |
+| 1 | **#8** Design: Decks — list, create-from-commander, and deck builder | Largest surface (suggestions panel, search, role counters, gaps/shopping list, export); entry point lives on #7's detail view; first-run state = shell guided-flow step 3 |
+| 2 | **#9** Design: Win/loss tracking for decks | Post-v1; extends the deck page from #8 |
+| 3 | **#10** Design: Deck tuning suggestions from play results | Post-v1; blocked on #9's data model |
 
 ---
 
