@@ -1,6 +1,6 @@
 "use server";
 
-import { and, arrayContained, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, arrayContained, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
@@ -95,7 +95,12 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
       .from(cards)
       .where(
         and(
-          inArray(sql`lower(${cards.name})`, lowerTopCards),
+          // EDHREC keys DFCs/MDFCs by front face while cards.name stores
+          // "Front // Back" — match either the full name or the front face.
+          or(
+            inArray(sql`lower(${cards.name})`, lowerTopCards),
+            inArray(sql`lower(split_part(${cards.name}, ' // ', 1))`, lowerTopCards),
+          ),
           eq(cards.commanderLegal, true),
           arrayContained(cards.colorIdentity, commander.colorIdentity),
         ),
@@ -106,13 +111,13 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
       (c) => !ownedByOracleId.has(c.oracleId) && !inDeck.has(c.oracleId) && c.oracleId !== commander.oracleId,
     );
 
-    // Order by position in topCards
+    // Order by position in topCards (front-face fallback for DFCs).
     const topCardIndex = new Map(lowerTopCards.map((n, i) => [n, i]));
-    eligible.sort((a, b) => {
-      const ia = topCardIndex.get(a.name.toLowerCase()) ?? Infinity;
-      const ib = topCardIndex.get(b.name.toLowerCase()) ?? Infinity;
-      return ia - ib;
-    });
+    const rankOf = (name: string): number => {
+      const lower = name.toLowerCase();
+      return topCardIndex.get(lower) ?? topCardIndex.get(lower.split(" // ")[0]) ?? Infinity;
+    };
+    eligible.sort((a, b) => rankOf(a.name) - rankOf(b.name));
 
     unownedSuggestions = eligible.slice(0, 5).map((c) =>
       buildSuggestionPayload(

@@ -15,6 +15,7 @@ type Tab = "suggestions" | "search";
 
 interface AddPanelBaseProps {
   deckId: string;
+  degraded: boolean;
   commanderIdentity: string[];
   suggestions: DeckSuggestion[];
   deckOracleIds: string[];
@@ -32,6 +33,7 @@ function PanelContent({
   deckId,
   commanderIdentity,
   suggestions,
+  degraded,
   deckOracleIds,
   variant,
   onCloseSheet,
@@ -39,6 +41,7 @@ function PanelContent({
   deckId: string;
   commanderIdentity: string[];
   suggestions: DeckSuggestion[];
+  degraded: boolean;
   deckOracleIds: Set<string>;
   variant: "column" | "inline" | "sheet";
   onCloseSheet?: () => void;
@@ -121,7 +124,9 @@ function PanelContent({
             borderBottom: isDesktop ? "1px solid #2A241D" : undefined,
           }}
         >
-          Based on your collection and EDHREC data for this commander.
+          {degraded
+            ? "Based on your collection — EDHREC is offline, so suggestions are ranked by role coverage."
+            : "Based on your collection and EDHREC data for this commander."}
         </p>
       )}
 
@@ -214,7 +219,7 @@ function SheetWrapper({
 }
 
 export function AddPanel(props: AddPanelProps) {
-  const { deckId, commanderIdentity, suggestions, deckOracleIds: deckOracleIdsArray } = props;
+  const { deckId, commanderIdentity, suggestions, degraded, deckOracleIds: deckOracleIdsArray } = props;
   // Build a Set client-side — flips + Add ↔ ✓ In deck without server round-trips.
   const deckOracleIds = useMemo(() => new Set(deckOracleIdsArray), [deckOracleIdsArray]);
 
@@ -223,6 +228,7 @@ export function AddPanel(props: AddPanelProps) {
       deckId={deckId}
       commanderIdentity={commanderIdentity}
       suggestions={suggestions}
+      degraded={degraded}
       deckOracleIds={deckOracleIds}
       variant={props.variant}
       onCloseSheet={props.variant === "sheet" ? props.onCloseSheet : undefined}
