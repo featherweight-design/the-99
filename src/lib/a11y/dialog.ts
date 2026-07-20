@@ -19,8 +19,10 @@ function visibleFocusables(root: HTMLElement): HTMLElement[] {
 export function useDialogA11y(
   dialogRef: RefObject<HTMLElement | null>,
   onClose: () => void,
+  options?: { initialFocusRef?: RefObject<HTMLElement | null> },
 ) {
   const triggerRef = useRef<HTMLElement | null>(null);
+  const initialFocusRef = options?.initialFocusRef;
 
   // Remember what had focus before the dialog opened; return it on close.
   useEffect(() => {
@@ -30,11 +32,16 @@ export function useDialogA11y(
     };
   }, []);
 
-  // Auto-focus first visible focusable child on mount.
+  // Focus initialFocusRef when provided (avoids a visible focus flash on the
+  // first DOM-order focusable); otherwise fall back to the first visible child.
   useEffect(() => {
+    if (initialFocusRef?.current) {
+      initialFocusRef.current.focus();
+      return;
+    }
     if (!dialogRef.current) return;
     visibleFocusables(dialogRef.current)[0]?.focus();
-  }, [dialogRef]);
+  }, [dialogRef, initialFocusRef]);
 
   // Escape closes; Tab wraps within the dialog.
   useEffect(() => {
