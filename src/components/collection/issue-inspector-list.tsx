@@ -4,7 +4,7 @@
 // includes the 6px flex gap so virtualized rows stay flush with the plain
 // list's rhythm.
 
-import type React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FixedSizeList, type ListChildComponentProps } from "react-window";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import {
@@ -15,40 +15,63 @@ import {
 
 const ROW_HEIGHT = 46; // 40px row + 6px gap
 const VIRTUALIZE_THRESHOLD = 150;
-const LIST_HEIGHT = 420; // matches the fixed-height scroll body in the mock
+const FALLBACK_VIRTUAL_HEIGHT = 420; // pre-measure fallback (SSR / first paint)
 
 type Props =
   | { variant: "unmatched"; rows: UnmatchedRow[]; query: string }
   | { variant: "errors"; rows: ParseErrorRow[]; query: string };
 
+// Measures the container's rendered height so react-window's FixedSizeList
+// (which needs a numeric height) can fill the parent's flex space.
+function useMeasuredHeight() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setHeight(el.getBoundingClientRect().height);
+    const ro = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height ?? 0;
+      setHeight(h);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return { ref, height };
+}
+
 export function IssueInspectorList(props: Props) {
+  const { ref, height } = useMeasuredHeight();
+
   if (props.rows.length > VIRTUALIZE_THRESHOLD) {
     return (
-      <FixedSizeList
-        height={LIST_HEIGHT}
-        itemCount={props.rows.length}
-        itemSize={ROW_HEIGHT}
-        width="100%"
-        overscanCount={8}
-      >
-        {({ index, style }: ListChildComponentProps) => (
-          <div style={style}>
-            {props.variant === "unmatched" ? (
-              <UnmatchedRowView row={props.rows[index]} query={props.query} />
-            ) : (
-              <ParseErrorRowView row={props.rows[index]} query={props.query} />
-            )}
-          </div>
-        )}
-      </FixedSizeList>
+      <div ref={ref} className="h-full w-full">
+        <FixedSizeList
+          height={height || FALLBACK_VIRTUAL_HEIGHT}
+          itemCount={props.rows.length}
+          itemSize={ROW_HEIGHT}
+          width="100%"
+          overscanCount={8}
+        >
+          {({ index, style }: ListChildComponentProps) => (
+            <div style={style}>
+              {props.variant === "unmatched" ? (
+                <UnmatchedRowView row={props.rows[index]} query={props.query} />
+              ) : (
+                <ParseErrorRowView row={props.rows[index]} query={props.query} />
+              )}
+            </div>
+          )}
+        </FixedSizeList>
+      </div>
     );
   }
 
+  // Plain list fills the parent's flex space; single overflow-y body per
+  // handoff. Last row previously clipped at fixed 420px cap — flex-fill
+  // means the container's own bottom padding is the only breathing room.
   return (
-    <ul
-      className="flex flex-col gap-[6px] overflow-y-auto"
-      style={{ maxHeight: LIST_HEIGHT }}
-    >
+    <ul className="flex flex-col gap-[6px] overflow-y-auto h-full w-full">
       {props.variant === "unmatched"
         ? props.rows.map((r) => (
             <li key={`${r.line}-${r.name}`}>

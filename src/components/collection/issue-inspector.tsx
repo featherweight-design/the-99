@@ -205,27 +205,31 @@ export function IssueInspector({
                 className="flex-1 bg-transparent outline-none text-[14px]"
                 style={{ color: "var(--fg)" }}
               />
-              {rawQuery !== "" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRawQuery("");
-                    setQuery("");
-                    filterInputRef.current?.focus();
-                  }}
-                  aria-label={issueInspectorCopy.filter.clearAriaLabel}
-                  className="flex-none rounded-full flex items-center justify-center"
-                  style={{
-                    width: 22,
-                    height: 22,
-                    background: "var(--border)",
-                    color: "var(--fg-muted)",
-                    fontSize: 12,
-                  }}
-                >
-                  ✕
-                </button>
-              )}
+              {/* Clear button — always rendered; hidden via visibility when
+                  input is empty so its 22px doesn't reflow the input width
+                  (avoids the visual jump when the last character is deleted). */}
+              <button
+                type="button"
+                onClick={() => {
+                  setRawQuery("");
+                  setQuery("");
+                  filterInputRef.current?.focus();
+                }}
+                aria-label={issueInspectorCopy.filter.clearAriaLabel}
+                aria-hidden={rawQuery === "" || undefined}
+                tabIndex={rawQuery === "" ? -1 : 0}
+                className="flex-none rounded-full flex items-center justify-center"
+                style={{
+                  width: 22,
+                  height: 22,
+                  background: "var(--border)",
+                  color: "var(--fg-muted)",
+                  fontSize: 12,
+                  visibility: rawQuery === "" ? "hidden" : "visible",
+                }}
+              >
+                ✕
+              </button>
             </div>
             {/* Visual count — no aria-live (would announce every keystroke). */}
             <span
@@ -243,12 +247,14 @@ export function IssueInspector({
           </div>
         </div>
 
-        {/* Panels */}
-        <div className="flex-1 min-h-0 p-[14px_20px_20px] md:p-[16px_26px_22px]">
+        {/* Panels — tabpanel gets h-full + flex so IssueInspectorList's plain
+            <ul> can flex-fill (fixes last-row clipping at fixed height cap). */}
+        <div className="flex-1 min-h-0 p-[14px_20px_20px] md:p-[16px_26px_22px] flex flex-col">
           <div
             role="tabpanel"
             id={`issue-inspector-panel-${tab}`}
             aria-labelledby={`issue-inspector-tab-${tab}`}
+            className="flex-1 min-h-0 flex flex-col"
           >
             {showEmptyFilter ? (
               <EmptyFilter
