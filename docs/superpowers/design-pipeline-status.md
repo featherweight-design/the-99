@@ -25,8 +25,7 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-
-_Currently empty._
+| **#36** Design: Issue Inspector (full-list "Show all X unmatched") | `design/design_handoff_the99_issue_inspector/` | 🟡 Yellow (2026-07-20) | Modal replaces inline-expand on the review page. All requested states delivered (A–E + mirror E2), copy exported verbatim, tokens throughout. Eng-side in the plan PR: virtualization library + threshold (Design's target ~150 rows), parse-error `reason` copy cross-check, confirm match-highlight ships as "all runs". |
 
 ---
 
@@ -45,7 +44,8 @@ _Currently empty._
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-| 1 | **#36** Design: Full-list "Show all X unmatched" experience | [`docs/superpowers/specs/2026-07-19-show-all-issues-modal-design.md`](../superpowers/specs/2026-07-19-show-all-issues-modal-design.md) | `design/design_handoff_the99_show_all_issues/` (once landed) | Workshopped 2026-07-19 (this PR). Modal replaces the current inline "Show all" expand on `/collection/replace/review`; view-only, Unmatched/Parse-errors tabs, filter. |
+
+_Currently empty._
 
 ---
 
