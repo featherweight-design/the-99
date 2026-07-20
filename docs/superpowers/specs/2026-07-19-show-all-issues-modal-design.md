@@ -57,38 +57,83 @@ Layout, control shapes, mobile pattern (full-screen sheet vs half-sheet), typogr
 
 ## Track 2 handoff prompt (paste into the design ticket brief)
 
-> ### Problem (objective)
+> ### Feature / surface + route
 >
-> On `/collection/replace/review`, users see a truncated preview of unmatched card names and parse errors from their uploaded CSV. To inspect the full list they click "Show all X …", but the current behavior expands the list inline on the review page, pushing the sticky action bar (Cancel / Continue to replace) off-screen and breaking the review layout. This gets worse the longer the list — a 200-row CSV with 60 unmatched names + 12 parse errors becomes unusable. Users need to inspect the full list without losing the review context and without the layout collapsing on them.
+> Full-list "Show all X unmatched" modal — triggered from `/collection/replace/review`, the Step 2-of-3 destructive replace flow.
 >
-> ### App context (reminders for Design)
+> ### Where it lives in the flow (entry → this → exit)
 >
-> - Lives inside the destructive replace flow at `/collection/replace/review` (Step 2 of 3). Step 3 is the type-to-confirm modal in `design/design_handoff_the99_collection/`.
-> - Ships on both mobile and desktop in the same PR. The review page itself is designed for both viewports already — this surface must match the parity requirement.
-> - Uses the brand system in `design/design_handoff_the99_brand/`. Palette A (Table Candlelight), Cinzel display + IBM Plex sans/mono.
-> - Same session lifetime as the review preview (uploadId-scoped, ephemeral). Not shareable via URL.
-> - View-only diagnostic — no follow-on actions on entries in v1.
+> - **Entry:** Two "Show all X unmatched →" / "Show all X errors →" links on the review page's issue tally block. Today they just drop the slice cap inline; this modal replaces that behavior.
+> - **This surface:** Modal with two tabs — Unmatched (default) / Parse errors — filter input above the list, long-list underneath.
+> - **Exit:** Modal dismisses (Escape / backdrop / close affordance) back to the review page. No navigation change — the review page stays exactly where the user left it and "Continue to replace" remains available.
 >
-> ### Technical requirements
+> ### Design system / files to build from
 >
-> - **Data available now** (no schema changes): `UploadPreview.unmatchedRows: { name, setCode, line, quantity }[]` and `UploadPreview.parseErrors: { line, reason }[]` — the same payload as the review page (`src/app/collection/actions.ts`).
-> - **Auth:** Clerk-authenticated (inherits from the review page).
-> - **Scale:** design for the worst case — 200+ entries per list. Note the max rendered target (row count) so the plan PR can decide `overflow-y-auto` vs virtualization.
-> - **A11y baseline:** focus trap while open, Escape closes, first-focusable is the filter input, ARIA-compliant tab semantics. Contrast per the brand sheet.
+> - Brand tokens: `design/design_handoff_the99_brand/` (Palette A "Table Candlelight", Cinzel + IBM Plex).
+> - Adjacent shipped surfaces: `design/design_handoff_the99_collection/` — the review page and type-to-confirm modal are the same visual family.
 >
-> ### Deliverables we expect
+> ### Interaction model
 >
-> - Hi-fi mockups for **both viewports**, covering:
->   - Default open state — tab 1 (Unmatched), populated
->   - Tab 2 (Parse errors), populated
->   - Filter active — matches found
->   - Filter active — no matches (empty-filter state)
->   - One-tab-empty edge case (e.g. 0 parse errors — is the tab hidden, disabled, or shown with a zero-state?)
-> - Component handoff with brand-token references (bg, border, radius, spacing, type)
-> - Decisions log in the handoff README, marking locked vs tentative
-> - Mobile pattern decision (full-screen sheet vs half-sheet)
+> - **Single close affordance.** Escape key OR backdrop tap OR one explicit close control in the header (X icon vs `Close` label is open). No footer "Done" button — this is view-only, there's nothing to confirm.
+> - **View-only.** No CTAs on individual rows. No retry, no dismiss, no edit. Row tap does nothing (or expands for readability at your discretion — non-actionable either way).
+> - **Non-blocking of the parent.** The review page's "Continue to replace" stays available underneath; opening the modal is opt-in inspection, not a gate.
+> - **Tab switch is instant, no confirmation.** Filter input state resets on tab switch.
+>
+> ### Data contract
+>
+> - `UploadPreview.unmatchedRows: { name, setCode, line, quantity }[]`
+> - `UploadPreview.parseErrors: { line, reason }[]`
+> - Both defined in `src/app/collection/actions.ts`. Same payload as the review page — the modal reads from it directly. No new API, no schema changes.
+> - **Treat every count and label in your mocks as real production data.** If a mock shows "Showing 27 of 213", eng will render that string faithfully — do not use placeholder counts that could ship as-is (e.g. "Showing 12 of 12" over 3 rows).
+>
+> ### States to cover (name all — do not skip)
+>
+> - Default open — tab 1 (Unmatched), populated
+> - Tab 2 (Parse errors), populated
+> - Filter active — matches found
+> - Filter active — no matches (empty-filter state)
+> - **Both empty-tab directions:** tab 1 populated + tab 2 has zero rows, AND tab 1 has zero rows + tab 2 populated. Show how each tab reads when its own list is empty (hidden? disabled? zero-state?).
+> - Long list — 200+ rows in either tab. Note density.
+>
+> ### Copy
+>
+> - **Lift copy verbatim into a copy file** (eng-side call for exact path — likely `src/lib/copy/…`). Every string in the surface — header, tab labels, filter placeholder, empty-filter state, per-row text — appears as final production copy in the mock. Do not paraphrase later.
+> - **Voice rule:** terse, mono for structured data (line numbers, counts, set codes), no reassurance fluff, no exclamation marks. Match the review page and confirm modal's tone.
+>
+> ### Locked (do not propose alternatives)
+>
+> - Pattern: modal, full-screen sheet on mobile, large centered dialog on desktop.
+> - Two tabs, Unmatched default. Filter on active tab only.
+> - View-only. No row actions.
+> - Default sort: CSV line order.
+> - Brand tokens.
+> - Adjacent flows (review page, confirm modal) unchanged — do not redesign them.
+>
+> ### Open — propose options
+>
+> - Modal size at desktop (85% vs 90% viewport vs fixed max-width)
+> - Per-row density at 200+ rows
 > - Filter input treatment (icon, placeholder, clear affordance)
-> - Per-row density recommendation at 200+ rows
+> - Close-affordance shape (X icon vs `Close` label)
+> - Empty-tab treatment (hidden / disabled / zero-state)
+>
+> ### Viewports + a11y baseline
+>
+> - Mobile + desktop parity, both ship in the same PR.
+> - Focus trap while open, Escape closes, first-focusable = filter input.
+> - ARIA-compliant tab semantics.
+> - Contrast per the brand sheet.
+>
+> ### Deliverables
+>
+> - Hi-fi mockups for both viewports covering **every** state above.
+> - Prefer a single component with variant props over separate components for the two tabs (per concert-crawl's shipped pattern in Price Transparency).
+> - Component handoff with brand-token references (bg, border, radius, spacing, type).
+> - Decisions log in the handoff README, marking locked vs tentative.
+> - Copy exported as strings ready to paste into eng's copy file.
+> - Recommended max-rendered row count so the plan PR can pick `overflow-y-auto` vs virtualization.
+>
+> **If any bullet above feels light, restate your interaction and copy assumptions in chat before building — cheaper to correct a bullet list than a mockup.**
 
 ---
 

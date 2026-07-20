@@ -106,37 +106,86 @@ Anything locked in the handoff or via prior Hugh conversation that the plan PR m
 
 ## Handoff prompt template (Track 2 → Design)
 
-The brief we hand to Claude Design when opening a design ticket. Keep it minimal — 2–4 short paragraphs' worth of content: problem + surfaces + technical hooks + ask. Design owns the decisions.
+The brief we hand to Claude Design when opening a design ticket. Design owns visual system decisions and lands the mock reliably from the brand files on its own — what needs your specificity is the **interaction model, entry/exit, copy intent, and locked-vs-open scope**. The more of that you lock, the less Design has to guess and the fewer iteration rounds it costs.
+
+This template was revised 2026-07-20 based on Claude Design's own post-mortem on The 99's early rounds (missed IA calls) and the concert-crawl handoffs that landed 🟢 Green on round 1. Do not skip sections — if any bullet feels light, tell Design to restate its assumptions before it builds.
 
 ```markdown
-## Problem (objective)
+### Feature / surface + route
 
-<One paragraph stating the user-visible problem, ideally with a real scenario.
-No solution language.>
+<One line — the thing being designed and where it lives (route or component slot).>
 
-## App context (reminders for Design)
+### Where it lives in the flow (entry → this → exit)
 
-- Where this lives in the product
-- Related features it interacts with
-- Constraints from the existing system (brand system in design_handoff_the99_brand; mobile-first; Tailwind theme derived from the brand tokens)
-- What user(s) this affects
+- **Entry:** <the exact trigger — link/button/keyboard/URL — name it, don't imply it>
+- **This surface:** <what the surface itself contains, at a shape level>
+- **Exit:** <how the user leaves — dismiss, navigate, blocking or non-blocking of the caller>
 
-## Technical requirements
+### Design system / files to build from
 
-- Data we have today (link to types / schema / plan sections)
-- Data we don't have (and whether we'd build it for this)
-- Auth requirements (all consumer surfaces are Clerk-authenticated)
-- Performance / scale considerations (if any)
+- Brand tokens: `design/design_handoff_the99_brand/`
+- Adjacent shipped surfaces to match: `design/design_handoff_the99_<feature>/`
 
-## Deliverables we expect
+### Interaction model
 
-- Hi-fi mockups for required states
-- Mobile + desktop both required
-- Decisions log in the handoff README
-- Component handoff with token references
+- **CTAs and what each does** — one CTA or many? Name each and its effect.
+- **Actionable vs view-only** — call it out explicitly. View-only surfaces do not get a "Done" button.
+- **Dismiss / navigation** — Escape, backdrop, close control? Where does focus go after?
+- **Any modal-state rules** — filter reset on tab switch, form clear on close, etc.
+
+### Data contract
+
+- Field shape from the server (`SomeType.field: type` — link the type)
+- Where in the codebase the type is defined
+- Whether new data is needed (default: no)
+- **Treat every count and label in your mocks as real production data.** Do not use placeholder counts that could ship as-is (e.g. "Showing 12 of 12" over 3 rows).
+
+### States to cover (name all — do not skip)
+
+- Loading / error / empty / edge — name each one
+- For any list with multiple sections: state BOTH empty-tab directions explicitly
+- Long-list case if scale matters
+
+### Copy
+
+- **Lift copy verbatim into a copy file** (eng-side call for exact path — usually `src/lib/copy/…`). Every string in the surface — header, labels, placeholders, empty states, per-row text — appears as final production copy in the mock, not paraphrased later.
+- **Voice rule** — one line (e.g. "terse, mono for data, no reassurance fluff") or point to a precedent handoff whose voice this should match.
+
+### Locked (do not propose alternatives)
+
+<Everything already decided — pattern, tabs, sort order, adjacent flows, brand tokens.>
+
+### Open — propose options
+
+<The specific things you want Design to explore — density, close-affordance shape, filter treatment, mobile pattern where both make sense, etc.>
+
+### Viewports + a11y baseline
+
+- Mobile + desktop parity, both ship in the same PR
+- Focus trap / Escape / first-focusable rules if it's a modal
+- ARIA semantics for the pattern (tabs, dialog, listbox, etc.)
+- Contrast per the brand sheet
+
+### Deliverables
+
+- Hi-fi mockups for both viewports covering **every** state above
+- Prefer a single component with variant props over separate components (per concert-crawl's shipped pattern)
+- Component handoff with brand-token references
+- Decisions log in the handoff README, marking locked vs tentative
+- Copy exported as strings ready to paste into eng's copy file
+- Any max-rendered / density recommendation eng needs to pick virtualization vs plain overflow
+
+**If any bullet feels light, restate interaction and copy assumptions in chat before building — cheaper to correct a bullet list than a mockup.**
 ```
 
-**Key principles:** don't pre-decide page sizes, control shapes, state lists, or mobile patterns; describe the user pain, not the proposed remedy; include app-context reminders because Claude Design doesn't have codebase access.
+### Key principles
+
+- **Interaction + copy = your job. Visual system = Design's.** Don't pre-decide brand-native visual choices; do decide behavior and words.
+- **Lock explicitly, open explicitly.** Anything not marked locked is fair game for Design to explore. Anything not marked open won't be revisited.
+- **Name every state.** Design covers what you name. Unnamed states get missed.
+- **Name entry and exit up front.** If the trigger isn't in the brief, it'll be added in round 2.
+- **Real copy in mocks.** Numeric counts and labels in the mock should be production-ready; ambiguity in "is this real?" costs a round.
+- **Meta-tip:** for light briefs, tell Design to restate its interaction/copy assumptions before building. Costs one message, saves a round.
 
 ---
 
