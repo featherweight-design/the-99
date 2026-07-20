@@ -45,8 +45,7 @@ _Currently empty._
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-
-_Currently empty._
+| 1 | **#36** Design: Full-list "Show all X unmatched" experience | [`docs/superpowers/specs/2026-07-19-show-all-issues-modal-design.md`](../superpowers/specs/2026-07-19-show-all-issues-modal-design.md) | `design/design_handoff_the99_show_all_issues/` (once landed) | Workshopped 2026-07-19 (this PR). Modal replaces the current inline "Show all" expand on `/collection/replace/review`; view-only, Unmatched/Parse-errors tabs, filter. |
 
 ---
 
@@ -85,7 +84,6 @@ v1 polish follow-ups — sequenced ahead of the Backlog features above.
 | Ticket | Notes |
 |---|---|
 | **#35** Design: Branded user menu replacing Clerk default | Desktop popover + mobile bottom-sheet; pairs with eng ticket #13 |
-| **#36** Design: Full-list "Show all X unmatched" experience | Upload flow follow-up from #6 |
 
 ---
 
