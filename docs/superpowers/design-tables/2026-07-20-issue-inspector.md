@@ -229,14 +229,33 @@ None.
 
 ### Deferred (out of scope for #36, filed for follow-up)
 
-5. **List body height on mobile** — fixed `LIST_HEIGHT: 420px` cap wastes vertical space on the full-screen sheet. Would need `react-virtualized-auto-sizer` or a `ResizeObserver` to fill remaining flex space in the virtualized branch. Non-blocking for the sheet's function.
-6. **Disabled tab color exactness** — `--fg-locked` (`#6A6152`) vs design's `#5A5245` (12 units off). Existing token used per plan's "tokens, not hex" constraint. Could add a new `--fg-locked-strong` token in a follow-up if Design flags it.
-7. **Parse-error offending-value bolding** — design mock shows bold portions of reason strings; backend emits plain strings without markup. Consistent with Task 6 addendum's decision.
+5. **Disabled tab color exactness** — `--fg-locked` (`#6A6152`) vs design's `#5A5245` (12 units off). Existing token used per plan's "tokens, not hex" constraint. Could add a new `--fg-locked-strong` token in a follow-up if Design flags it.
+6. **Parse-error offending-value bolding** — design mock shows bold portions of reason strings; backend emits plain strings without markup. Consistent with Task 6 addendum's decision.
+
+### Design-review-round-2 (Hugh's browser walk, 2026-07-20)
+
+Fixed inline in this PR:
+
+7. **Sticky bar CTA copy** — "Continue to replace" wrong when there's no existing collection to replace. Branched on `preview.currentCollectionCount === 0` (matches confirm-modal branching from #48). Fix in `review-screen.tsx`. *Not scoped to #36 but caught in the same walk.*
+8. **List last-row clipping** — `IssueInspectorList`'s plain `<ul>` was capped at fixed `maxHeight: 420` which cut off partial rows at the boundary. Refactored to flex-fill the panel; tabpanel wrapper became `flex flex-col h-full`. Virtualized branch (>150 rows) now uses `ResizeObserver` to measure container and pass numeric height to `FixedSizeList`. Fix in `issue-inspector-list.tsx` + `issue-inspector.tsx`.
+9. **Filter input reflow on last-character-deleted** — clear ✕ was conditionally rendered (`{rawQuery !== "" && ...}`), so removing the last char caused the input to jump wider by 22px + gap. Changed to always-rendered with `visibility: hidden` + `tabIndex=-1` when empty; layout stays stable. Fix in `issue-inspector.tsx`.
+
+Filed for Design follow-up (not fixed in this PR):
+
+10. **Empty-tab zero-note contrast** — Design's spec uses `--surface-sunken` (`#181410`) as the callout background on top of `--bg` (`#14110E`) mobile / `--surface-rail` (`#1A160F`) desktop — a ~2-unit green-channel delta that renders as near-invisible. The green 3px left border + dot + text carry the semantic, but Hugh flagged that visually the callout container disappears against the modal background. **Not an eng fix — Design's own token choice.** Options for a Design revisit:
+    - Bump callout bg to `--surface` (`#1E1A15`) — more visible
+    - Add a subtle green tint via `rgba(111,163,104,0.06)` bg
+    - Accept as-is (semantic carried by border/dot/text)
+    Punt to Design decision; no PR change here.
+
+11. **List body virtualization height on mobile edge case** — even after fix #8, the virtualized branch (>150 rows on full-screen mobile sheet) hasn't been visually verified. `useMeasuredHeight` should work but wasn't in Hugh's browser walk. Flag for follow-up if the edge case ships broken.
 
 ---
 
 ## Verdict
 
-**4 meaningful gaps to fix in this PR** (all localized to `issue-inspector.tsx`). 3 deferrals filed. No blockers.
+**Round 1: 4 meaningful gaps fixed** (all localized to `issue-inspector.tsx`).
+**Round 2: 3 more gaps fixed** (CTA copy, list clipping, input jump) after Hugh's browser walk.
+1 gap deferred to Design (zero-note contrast). No blockers remaining.
 
-Fix in one commit, re-verify, then push.
+Re-verify pre-push gate, then push.
