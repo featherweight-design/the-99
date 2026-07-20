@@ -1848,8 +1848,10 @@
 ### Copy (confirm instruction)
 | Context | Copy |
 |---------|------|
-| Label | `Type REPLACE to confirm` (where "REPLACE" is styled in #C6533F) |
-| Hint below button | `Button unlocks once REPLACE is typed in full` |
+| Label — replace flow | `Type REPLACE to confirm` (where "REPLACE" is styled in #C6533F) |
+| Label — initial import | `Type IMPORT to confirm` (where "IMPORT" is styled in #C6533F) |
+
+Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to replace on first upload — issue #47); non-zero → `REPLACE`.
 
 ### Confirm Input Field
 | Property | Mobile | Desktop |
@@ -1921,17 +1923,6 @@
 | Confirm (disabled) | `Replace 2,933 cards` |
 | Cancel (mobile) | `Keep my current collection` |
 | Cancel (desktop) | `Keep current` |
-| Hint | `Button unlocks once REPLACE is typed in full` |
-
-### Hint Text
-| Property | Desktop |
-|----------|---------|
-| font-family | 'IBM Plex Mono', monospace |
-| font-size | 10.5px |
-| color | #6A6152 |
-| text-align | center |
-| margin-top | 14px |
-| letter-spacing | 0.04em |
 
 ---
 
@@ -2021,10 +2012,9 @@
 - Sticky bar (desktop): `Importing 2,904 cards and skipping 29. This replaces your current 2,933 cards.`
 
 ### Replace — Step 3 Copy
-- `Type REPLACE to confirm` (label; "REPLACE" in #C6533F)
+- `Type REPLACE to confirm` (label; "REPLACE" in #C6533F). On initial import (`currentCollectionCount === 0`) the label becomes `Type IMPORT to confirm` — see §Copy (confirm instruction) above.
 - Mobile body: `This permanently swaps your 2,933 cards for the 2,904 in the-vault.csv. It can't be undone.`
 - Desktop body: `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Decks and commander recommendations rebuild from the new collection. This can't be undone.`
-- `Button unlocks once REPLACE is typed in full`
 
 ---
 
@@ -2041,8 +2031,8 @@
 | Prev/Next navigation | Only in desktop modal; always shown but can be disabled at boundaries |
 | No results empty state | When `resultCount === 0` |
 | Sticky confirm bar (step 2) | Always visible at bottom of step 2; scrolls with content on mobile |
-| Confirm button disabled (opacity 0.6) | When typed input !== "REPLACE" |
-| Confirm button armed (opacity 1) | When typed input === "REPLACE" exactly |
+| Confirm button disabled (opacity 0.6) | When typed input !== active token (`REPLACE` in replace flow; `IMPORT` on first upload — issue #47) |
+| Confirm button armed (opacity 1) | When typed input === active token exactly |
 | Quantity badge on grid tile | Always shown; value from `card.qty` |
 | Rarity dot in row | Desktop rows only (not mobile) |
 | Type line as sub-line | Mobile rows only (under name in same column) |

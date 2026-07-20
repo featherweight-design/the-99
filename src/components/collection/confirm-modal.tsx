@@ -1,12 +1,12 @@
 "use client";
 // Replace Flow — Step 3 (Type-to-Confirm Modal) per property table.
-// Danger dialog; button disabled at opacity 0.6 until input === "REPLACE".
+// Danger dialog; button disabled at opacity 0.6 until input matches the token.
+// Token branches with currentCollectionCount: initial import gates on IMPORT
+// (nothing is being replaced yet — issue #47); the replace flow keeps REPLACE.
 // READINESS #5: focus trap + Escape + labelled input.
 
 import { useEffect, useRef, useState } from "react";
 import type { UploadPreview } from "../../app/collection/actions";
-
-const CONFIRM_TOKEN = "REPLACE";
 
 export function ConfirmModal({
   preview,
@@ -25,7 +25,9 @@ export function ConfirmModal({
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
-  const armed = value === CONFIRM_TOKEN;
+  const isInitialImport = preview.currentCollectionCount === 0;
+  const confirmToken = isInitialImport ? "IMPORT" : "REPLACE";
+  const armed = value === confirmToken;
 
   useEffect(() => {
     triggerRef.current = document.activeElement as HTMLElement | null;
@@ -95,7 +97,7 @@ export function ConfirmModal({
             className="font-display font-bold text-[20px] md:text-[25px] m-0"
             style={{ color: "var(--fg)", lineHeight: 1.15 }}
           >
-            {preview.currentCollectionCount === 0 ? "Import this collection?" : "Replace your collection?"}
+            {isInitialImport ? "Import this collection?" : "Replace your collection?"}
           </h2>
         </div>
 
@@ -104,7 +106,7 @@ export function ConfirmModal({
           className="text-[13.5px] md:text-[15px] mt-[16px] md:mt-[18px] leading-[1.6] md:leading-[1.65]"
           style={{ color: "var(--fg-body)" }}
         >
-          {preview.currentCollectionCount === 0 ? (
+          {isInitialImport ? (
             <>
               <span className="md:hidden">
                 This imports the <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.matchedCardCount.toLocaleString()}</strong> cards in <strong className="font-semibold" style={{ color: "var(--fg)" }}>{preview.filename}</strong> as your collection.
@@ -132,7 +134,7 @@ export function ConfirmModal({
             className="block font-mono uppercase text-[10px] md:text-[10.5px] tracking-[0.1em] mb-[8px] md:mb-[9px]"
             style={{ color: "var(--fg-faint)" }}
           >
-            Type <span style={{ color: "var(--danger)" }}>REPLACE</span> to confirm
+            Type <span style={{ color: "var(--danger)" }}>{confirmToken}</span> to confirm
           </label>
           <input
             id="confirm-input"
@@ -171,7 +173,7 @@ export function ConfirmModal({
               background: "transparent",
             }}
           >
-            {preview.currentCollectionCount === 0 ? (
+            {isInitialImport ? (
               <>
                 <span className="md:hidden">Go back</span>
                 <span className="hidden md:inline" style={{ color: "var(--fg)" }}>Go back</span>
@@ -197,10 +199,10 @@ export function ConfirmModal({
             }}
           >
             {pending
-              ? preview.currentCollectionCount === 0
+              ? isInitialImport
                 ? "Importing…"
                 : "Replacing…"
-              : preview.currentCollectionCount === 0
+              : isInitialImport
                 ? `Import ${preview.matchedCardCount.toLocaleString()} cards`
                 : `Replace ${preview.currentCollectionCount.toLocaleString()} cards`}
           </button>
