@@ -1850,8 +1850,6 @@
 |---------|------|
 | Label — replace flow | `Type REPLACE to confirm` (where "REPLACE" is styled in #C6533F) |
 | Label — initial import | `Type IMPORT to confirm` (where "IMPORT" is styled in #C6533F) |
-| Hint below button — replace | `Button unlocks once REPLACE is typed in full` |
-| Hint below button — initial import | `Button unlocks once IMPORT is typed in full` |
 
 Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to replace on first upload — issue #47); non-zero → `REPLACE`.
 
@@ -1925,17 +1923,6 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 | Confirm (disabled) | `Replace 2,933 cards` |
 | Cancel (mobile) | `Keep my current collection` |
 | Cancel (desktop) | `Keep current` |
-| Hint | `Button unlocks once REPLACE is typed in full` |
-
-### Hint Text
-| Property | Desktop |
-|----------|---------|
-| font-family | 'IBM Plex Mono', monospace |
-| font-size | 10.5px |
-| color | #6A6152 |
-| text-align | center |
-| margin-top | 14px |
-| letter-spacing | 0.04em |
 
 ---
 
@@ -2025,10 +2012,9 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 - Sticky bar (desktop): `Importing 2,904 cards and skipping 29. This replaces your current 2,933 cards.`
 
 ### Replace — Step 3 Copy
-- `Type REPLACE to confirm` (label; "REPLACE" in #C6533F)
+- `Type REPLACE to confirm` (label; "REPLACE" in #C6533F). On initial import (`currentCollectionCount === 0`) the label becomes `Type IMPORT to confirm` — see §Copy (confirm instruction) above.
 - Mobile body: `This permanently swaps your 2,933 cards for the 2,904 in the-vault.csv. It can't be undone.`
 - Desktop body: `This permanently swaps your 2,933 cards for the 2,904 cards in the-vault.csv. Decks and commander recommendations rebuild from the new collection. This can't be undone.`
-- `Button unlocks once REPLACE is typed in full`
 
 ---
 
