@@ -80,7 +80,7 @@ the substring with a brass wash; live `Showing N of M` count sits to the right a
 
 ### 6. Row density at 200+ → **~40px single-line rows, ellipsis, fixed-height scroll body** — TENTATIVE (plan-PR call)
 Compact single-line rows (name + mono meta) keep ~14–16 rows visible per screen. The list body is
-a fixed-height `overflow-y:auto` region so header/tabs/filter/footer stay pinned. **Max rendered
+a fixed-height `overflow-y:auto` region so header/tabs/filter stay pinned. **Max rendered
 target: ~150 rows on plain `overflow-y:auto`; above that, virtualize** (react-window or equivalent).
 Worst case is 200+ per tab. Flagged tentative because the virtualize threshold is an engineering
 call for the plan PR — the visual row spec is locked either way.
@@ -94,8 +94,9 @@ call for the plan PR — the visual row spec is locked either way.
 
 ### 8. Scope → **view-only diagnostic** — LOCKED
 No per-row actions in v1 (no re-match, edit, or remove). The row is the diagnostic; the fix is to
-correct the export and re-upload. Footer states this plainly (`View only · fix in export &
-re-upload`). Keeps the inspector aligned with the collection's read-only model.
+correct the export and re-upload. There is intentionally no footer CTA (see the Footer row of
+the component table below) — the read-only surface must not imply an action. Keeps the inspector
+aligned with the collection's read-only model.
 
 ---
 
@@ -104,7 +105,7 @@ re-upload`). Keeps the inspector aligned with the collection's read-only model.
 | Component | Spec |
 |---|---|
 | **Dialog (desktop)** | 660px wide, height-capped ~600–640px; `#1A160F` / `1px #3A3229`, radius 16px, shadow `0 40px 100px rgba(0,0,0,.7)`. Backdrop `rgba(8,6,4,.72)` over the blurred (`blur(3px)`) review page. Focus-trapped; Esc closes; click-scrim closes. |
-| **Sheet (mobile)** | Full-screen on `#14110E`; pinned header + tabs + filter, single `overflow-y:auto` body, footer note. Same close/Esc/back semantics. |
+| **Sheet (mobile)** | Full-screen on `#14110E`; pinned header + tabs + filter, single `overflow-y:auto` body. Same close/Esc/back semantics as desktop. |
 | **Header** | Title Cinzel 700 22px (mobile 19px) `#EDE6D8`; sub Plex Mono 11.5px `#8E8269` (`file · N of T rows skipped`). Close `✕` `#221D16` circle, `1px #3A3229`, hover brass. |
 | **Tab** | Plex Sans 600 14px; active `#EDE6D8` + `box-shadow: inset 0 -2px 0 #C9A24B`; idle `#8E8269`. Count pill Plex Mono 11px, radius 999px, tinted to state (`rgba(224,145,60,.14)` unmatched / `rgba(198,83,63,.16)` errors / `rgba(111,163,104,.14)` success at 0). Disabled: `#5A5245`, `opacity .7`, `cursor:not-allowed`, `aria-disabled`. |
 | **Filter input** | `#181410` / `1px #3A3229`, radius 8px, 40px (44px mobile). Leading `⌕` `#8E8269`; trailing `✕` clear (`#2A241D` circle) when filled. Focus: border `#C9A24B` + ring `0 0 0 3px rgba(201,162,75,.16)`. |
@@ -119,7 +120,7 @@ re-upload`). Keeps the inspector aligned with the collection's read-only model.
 
 ## A11y
 - Focus trap while open; **Esc closes**; backdrop click closes (desktop).
-- **First focus = filter input.** Tab order: filter → clear (if shown) → list → footer → close.
+- **First focus = filter input.** Tab order: filter → clear (if shown) → tabs → list → close.
 - Tabs: `role=tablist` / `role=tab` / `aria-selected`; disabled tab `aria-disabled` + native `disabled`.
   Panels get `role=tabpanel` + `aria-labelledby` in production.
 - Contrast per brand sheet: body copy `#C6B79A`, meta `#8E8269`, state borders at 3px carry the

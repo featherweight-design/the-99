@@ -47,6 +47,7 @@ The Issue Inspector handoff is thorough. All requested states are delivered (A�
 - ✅ Eight numbered decisions plus a catch-all "Also locked" section, all with LOCKED / TENTATIVE markers.
 - ✅ Justifications given per decision (not just the choice, but the reasoning).
 - ✅ Copy strings exported verbatim in `Issue Inspector - copy strings.js` with a voice-rule header.
+- 🟡 Design's README had four stray "footer" references that contradicted its own explicitly-stated "no footer" rule (Footer row in the component table + decision #7's implicit no-footer + `Issue Inspector - Claude Code brief.md` §7). Reconciled in this PR — the four stray references (decision #6's list of pinned regions, decision #8's "Footer states this plainly" line, the Sheet mobile spec's "footer note", the A11y tab order) were rewritten to match the stated rule. Design's actual decision (no footer) is preserved; only the internal contradictions were removed.
 
 ## Eng-side clarifications (Yellow items to close in the plan PR)
 
