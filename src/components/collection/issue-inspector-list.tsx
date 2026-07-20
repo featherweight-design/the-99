@@ -1,0 +1,169 @@
+"use client";
+// Row list for the Issue Inspector. Plain overflow at ≤150 rows; react-window
+// FixedSizeList above (Design's target — locked in the plan PR). Row height
+// includes the 6px flex gap so virtualized rows stay flush with the plain
+// list's rhythm.
+
+import type React from "react";
+import { FixedSizeList, type ListChildComponentProps } from "react-window";
+import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
+import {
+  findMatchRanges,
+  type ParseErrorRow,
+  type UnmatchedRow,
+} from "../../lib/collection/issue-filter";
+
+const ROW_HEIGHT = 46; // 40px row + 6px gap
+const VIRTUALIZE_THRESHOLD = 150;
+const LIST_HEIGHT = 420; // matches the fixed-height scroll body in the mock
+
+type Props =
+  | { variant: "unmatched"; rows: UnmatchedRow[]; query: string }
+  | { variant: "errors"; rows: ParseErrorRow[]; query: string };
+
+export function IssueInspectorList(props: Props) {
+  if (props.rows.length > VIRTUALIZE_THRESHOLD) {
+    return (
+      <FixedSizeList
+        height={LIST_HEIGHT}
+        itemCount={props.rows.length}
+        itemSize={ROW_HEIGHT}
+        width="100%"
+        overscanCount={8}
+      >
+        {({ index, style }: ListChildComponentProps) => (
+          <div style={style}>
+            {props.variant === "unmatched" ? (
+              <UnmatchedRowView row={props.rows[index]} query={props.query} />
+            ) : (
+              <ParseErrorRowView row={props.rows[index]} query={props.query} />
+            )}
+          </div>
+        )}
+      </FixedSizeList>
+    );
+  }
+
+  return (
+    <ul
+      className="flex flex-col gap-[6px] overflow-y-auto"
+      style={{ maxHeight: LIST_HEIGHT }}
+    >
+      {props.variant === "unmatched"
+        ? props.rows.map((r) => (
+            <li key={`${r.line}-${r.name}`}>
+              <UnmatchedRowView row={r} query={props.query} />
+            </li>
+          ))
+        : props.rows.map((r) => (
+            <li key={`${r.line}-${r.reason}`}>
+              <ParseErrorRowView row={r} query={props.query} />
+            </li>
+          ))}
+    </ul>
+  );
+}
+
+function UnmatchedRowView({ row, query }: { row: UnmatchedRow; query: string }) {
+  return (
+    <div
+      // §Unmatched row: bg #1E1A15 (--surface), 1px #2A241D (--border),
+      // 3px left border --warning, radius 8px, ~40px tall.
+      className="flex items-center justify-between gap-[12px] rounded-lg p-[9px_12px] md:p-[10px_14px]"
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderLeft: "3px solid var(--warning)",
+        minHeight: 40,
+      }}
+    >
+      <span className="min-w-0">
+        <span
+          className="block truncate text-[13px] md:text-[14px]"
+          style={{ color: "var(--fg)" }}
+        >
+          <HighlightedText text={row.name} query={query} />
+        </span>
+        <span
+          className="font-mono text-[10px] md:text-[10.5px]"
+          style={{ color: "var(--fg-faint)" }}
+        >
+          <span className="md:hidden">
+            {issueInspectorCopy.unmatchedRow.metaCompact(row.line, row.setCode)}
+          </span>
+          <span className="hidden md:inline">
+            {issueInspectorCopy.unmatchedRow.metaLong(row.line, row.setCode)}
+          </span>
+        </span>
+      </span>
+      <span
+        className="font-mono text-[11px] md:text-[12px] flex-none"
+        style={{ color: "var(--fg-faint)" }}
+      >
+        {issueInspectorCopy.unmatchedRow.quantity(row.quantity)}
+      </span>
+    </div>
+  );
+}
+
+function ParseErrorRowView({ row, query }: { row: ParseErrorRow; query: string }) {
+  return (
+    <div
+      // §Parse-error row: same shell, 3px left border --danger. Leading L####
+      // in mono --danger, 46px fixed col; reason in --fg-body 1.45.
+      className="flex items-start gap-[12px] rounded-lg p-[10px_12px] md:p-[11px_14px]"
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderLeft: "3px solid var(--danger)",
+        minHeight: 40,
+      }}
+    >
+      <span
+        className="font-mono text-[10.5px] md:text-[11px] flex-none pt-[1px]"
+        style={{ color: "var(--danger)", width: 46 }}
+      >
+        <HighlightedText
+          text={issueInspectorCopy.parseErrorRow.lineBadge(row.line)}
+          query={query}
+        />
+      </span>
+      <span
+        className="text-[12.5px] md:text-[13px]"
+        style={{ color: "var(--fg-body)", lineHeight: 1.45 }}
+      >
+        <HighlightedText text={row.reason} query={query} />
+      </span>
+    </div>
+  );
+}
+
+// Wraps every match run in <mark> (all runs, not just the first — Yellow #3).
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  const ranges = findMatchRanges(text, query);
+  if (ranges.length === 0) return <>{text}</>;
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+  ranges.forEach(([start, end]) => {
+    if (start > cursor) nodes.push(text.slice(cursor, start));
+    nodes.push(
+      // §Match highlight: rgba(201,162,75,.28) bg, --fg color, radius 2px.
+      // Key uses range positions (stable across re-renders as query changes) —
+      // avoids React reusing stale <mark> nodes for a shifted match set.
+      <mark
+        key={`${start}-${end}`}
+        style={{
+          background: "rgba(201,162,75,0.28)",
+          color: "var(--fg)",
+          borderRadius: 2,
+          padding: "0 1px",
+        }}
+      >
+        {text.slice(start, end)}
+      </mark>,
+    );
+    cursor = end;
+  });
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return <>{nodes}</>;
+}
