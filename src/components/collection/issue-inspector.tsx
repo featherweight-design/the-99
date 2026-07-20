@@ -102,50 +102,35 @@ export function IssueInspector({
         aria-modal="true"
         aria-labelledby="issue-inspector-title"
         onClick={(e) => e.stopPropagation()}
-        // Mobile: full-screen sheet on --surface-sunken.
+        // Mobile: full-screen sheet on --bg (design's #14110E).
         // Desktop: 660px × ~600–640px, --surface-rail, 1px --border-strong,
         // radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7).
-        className="flex flex-col w-full h-full md:h-auto md:w-[660px] md:max-h-[640px] md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)] overflow-hidden"
+        // `relative` anchors the absolutely-positioned close button below.
+        className="relative flex flex-col w-full h-full md:h-auto md:w-[660px] md:max-h-[640px] md:rounded-2xl bg-[color:var(--bg)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)] overflow-hidden"
         style={{ boxShadow: "0 40px 100px rgba(0,0,0,0.7)" }}
       >
-        {/* Header — title, subtitle, close */}
-        <div className="flex items-start gap-[12px] p-[18px_20px_10px] md:p-[22px_26px_12px]">
-          <div className="min-w-0 flex-1">
-            <h2
-              id="issue-inspector-title"
-              className="font-display font-bold text-[19px] md:text-[22px]"
-              style={{ color: "var(--fg)" }}
-            >
-              {issueInspectorCopy.header.title}
-            </h2>
-            <p
-              className="font-mono text-[11.5px] mt-[4px]"
-              style={{ color: "var(--fg-faint)" }}
-            >
-              {issueInspectorCopy.header.subtitle(
-                preview.filename,
-                skipped,
-                preview.rowCount,
-              )}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={issueInspectorCopy.header.closeAriaLabel}
-            // §Close: --surface-raised circle, 1px --border-strong, hover brass.
-            className="flex-none rounded-full flex items-center justify-center hover:[color:var(--brass)]"
-            style={{
-              width: 32,
-              height: 32,
-              background: "var(--surface-raised)",
-              border: "1px solid var(--border-strong)",
-              color: "var(--fg-muted)",
-              fontSize: 15,
-            }}
+        {/* Header — title + subtitle only. Close button renders at the end of
+            the dialog (below) so DOM tab order goes filter → clear → tabs →
+            close (per handoff A11y tab-order spec). Close is anchored top-right
+            via absolute positioning against the `relative` dialog container. */}
+        <div className="p-[18px_60px_10px_20px] md:p-[22px_66px_12px_26px]">
+          <h2
+            id="issue-inspector-title"
+            className="font-display font-bold text-[19px] md:text-[22px]"
+            style={{ color: "var(--fg)" }}
           >
-            ✕
-          </button>
+            {issueInspectorCopy.header.title}
+          </h2>
+          <p
+            className="font-mono text-[11.5px] mt-[4px]"
+            style={{ color: "var(--fg-faint)" }}
+          >
+            {issueInspectorCopy.header.subtitle(
+              preview.filename,
+              skipped,
+              preview.rowCount,
+            )}
+          </p>
         </div>
 
         {/* Header help line — or hoisted zero-note when a tab is empty. */}
@@ -187,13 +172,11 @@ export function IssueInspector({
           />
 
           <div className="mt-[12px] flex items-center gap-[10px]">
-            {/* §Filter input: --surface-sunken, 1px --border-strong, radius 8, 40px (44 mobile). */}
+            {/* §Filter input: --surface-sunken, 1px --border-strong, radius 8, 40px (44 mobile).
+                Focus: border → --brass + 3px ring rgba(201,162,75,.16) via focus-within. */}
             <div
-              className="flex-1 flex items-center gap-[10px] rounded-lg px-[12px] h-[44px] md:h-[40px]"
-              style={{
-                background: "var(--surface-sunken)",
-                border: "1px solid var(--border-strong)",
-              }}
+              className="flex-1 flex items-center gap-[10px] rounded-lg px-[12px] h-[44px] md:h-[40px] border border-[color:var(--border-strong)] focus-within:border-[color:var(--brass)] focus-within:shadow-[0_0_0_3px_rgba(201,162,75,0.16)]"
+              style={{ background: "var(--surface-sunken)" }}
             >
               <span
                 aria-hidden
@@ -235,7 +218,7 @@ export function IssueInspector({
                   style={{
                     width: 22,
                     height: 22,
-                    background: "var(--surface-raised)",
+                    background: "var(--border)",
                     color: "var(--fg-muted)",
                     fontSize: 12,
                   }}
@@ -297,6 +280,27 @@ export function IssueInspector({
             )}
           </div>
         </div>
+
+        {/* Close button — rendered LAST in DOM so keyboard Tab order matches
+            the handoff spec (filter → clear → tabs → close). Positioned
+            absolutely against the `relative` dialog container. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={issueInspectorCopy.header.closeAriaLabel}
+          // §Close: --surface-raised circle, 1px --border-strong, hover brass.
+          className="absolute top-[18px] right-[20px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center hover:[color:var(--brass)]"
+          style={{
+            width: 32,
+            height: 32,
+            background: "var(--surface-raised)",
+            border: "1px solid var(--border-strong)",
+            color: "var(--fg-muted)",
+            fontSize: 15,
+          }}
+        >
+          ✕
+        </button>
       </div>
     </div>
   );
