@@ -31,6 +31,10 @@ export function ReviewScreen({
   // when Unmatched is empty (handoff decision #4).
   const initialInspectorTab: "unmatched" | "errors" =
     preview.unmatchedRows.length === 0 ? "errors" : "unmatched";
+  // Sticky-bar copy branches on initial-import vs replace (matches the
+  // confirm-modal branching landed in #48 — "replace" language is wrong when
+  // there's no existing collection to replace).
+  const isInitialImport = preview.currentCollectionCount === 0;
 
   return (
     // Wrapping section splits into scrollable content + sticky confirm bar
@@ -242,12 +246,25 @@ export function ReviewScreen({
         <p
           className="text-[11.5px] md:text-[13.5px] text-center md:text-left mb-[10px] md:mb-0 text-[color:var(--fg-faint)] md:text-[color:var(--fg-body)]"
         >
-          <span className="md:hidden">
-            Skips {skipped} rows · replaces your {preview.currentCollectionCount.toLocaleString()} cards with {importCount.toLocaleString()}
-          </span>
-          <span className="hidden md:inline">
-            Importing {importCount.toLocaleString()} cards and skipping {skipped}. This replaces your current {preview.currentCollectionCount.toLocaleString()} cards.
-          </span>
+          {isInitialImport ? (
+            <>
+              <span className="md:hidden">
+                Imports {importCount.toLocaleString()} cards · skips {skipped} rows
+              </span>
+              <span className="hidden md:inline">
+                Importing {importCount.toLocaleString()} cards and skipping {skipped}.
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="md:hidden">
+                Skips {skipped} rows · replaces your {preview.currentCollectionCount.toLocaleString()} cards with {importCount.toLocaleString()}
+              </span>
+              <span className="hidden md:inline">
+                Importing {importCount.toLocaleString()} cards and skipping {skipped}. This replaces your current {preview.currentCollectionCount.toLocaleString()} cards.
+              </span>
+            </>
+          )}
         </p>
 
         {/* Buttons — mobile: full-width continue only, desktop: cancel + continue right-aligned. md:whitespace-nowrap on Continue keeps the label on one line when the summary sentence eats horizontal space (#32 — was wrapping to "Continue / to / replace"); md:flex-none on the button group blocks flex-shrink so the label + padding stay intact. */}
@@ -266,7 +283,7 @@ export function ReviewScreen({
             className="rounded-lg font-sans font-semibold text-[15px] md:text-[14px] w-full md:w-auto md:whitespace-nowrap py-[13px] md:py-[12px] px-0 md:px-[24px] cursor-pointer hover:bg-[color:var(--brass-hover)]"
             style={{ color: "var(--bg)", background: "var(--brass)", border: "none" }}
           >
-            Continue to replace →
+            {isInitialImport ? "Continue to import →" : "Continue to replace →"}
           </button>
         </div>
       </div>
