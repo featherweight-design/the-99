@@ -1848,8 +1848,12 @@
 ### Copy (confirm instruction)
 | Context | Copy |
 |---------|------|
-| Label | `Type REPLACE to confirm` (where "REPLACE" is styled in #C6533F) |
-| Hint below button | `Button unlocks once REPLACE is typed in full` |
+| Label — replace flow | `Type REPLACE to confirm` (where "REPLACE" is styled in #C6533F) |
+| Label — initial import | `Type IMPORT to confirm` (where "IMPORT" is styled in #C6533F) |
+| Hint below button — replace | `Button unlocks once REPLACE is typed in full` |
+| Hint below button — initial import | `Button unlocks once IMPORT is typed in full` |
+
+Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to replace on first upload — issue #47); non-zero → `REPLACE`.
 
 ### Confirm Input Field
 | Property | Mobile | Desktop |
@@ -2041,8 +2045,8 @@
 | Prev/Next navigation | Only in desktop modal; always shown but can be disabled at boundaries |
 | No results empty state | When `resultCount === 0` |
 | Sticky confirm bar (step 2) | Always visible at bottom of step 2; scrolls with content on mobile |
-| Confirm button disabled (opacity 0.6) | When typed input !== "REPLACE" |
-| Confirm button armed (opacity 1) | When typed input === "REPLACE" exactly |
+| Confirm button disabled (opacity 0.6) | When typed input !== active token (`REPLACE` in replace flow; `IMPORT` on first upload — issue #47) |
+| Confirm button armed (opacity 1) | When typed input === active token exactly |
 | Quantity badge on grid tile | Always shown; value from `card.qty` |
 | Rarity dot in row | Desktop rows only (not mobile) |
 | Type line as sub-line | Mobile rows only (under name in same column) |
