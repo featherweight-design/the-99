@@ -5,8 +5,10 @@
 
 import { useState } from "react";
 import type { UploadPreview } from "../../app/collection/actions";
+import { IssueInspector } from "./issue-inspector";
+import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 
-const INITIAL_LIMIT = 8; // Show first N per section; "Show all" reveals the rest.
+const INITIAL_LIMIT = 8; // Per-section preview cap; full list lives in the Issue Inspector.
 
 export function ReviewScreen({
   preview,
@@ -19,17 +21,16 @@ export function ReviewScreen({
   onContinue: () => void;
   embedded?: boolean;
 }) {
-  const [unmatchedExpanded, setUnmatchedExpanded] = useState(false);
-  const [errorsExpanded, setErrorsExpanded] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
 
   const importCount = preview.matchedCardCount;
   const skipped = preview.unmatchedRows.length + preview.parseErrors.length;
-  const unmatchedShown = unmatchedExpanded
-    ? preview.unmatchedRows
-    : preview.unmatchedRows.slice(0, INITIAL_LIMIT);
-  const errorsShown = errorsExpanded
-    ? preview.parseErrors
-    : preview.parseErrors.slice(0, INITIAL_LIMIT);
+  const unmatchedShown = preview.unmatchedRows.slice(0, INITIAL_LIMIT);
+  const errorsShown = preview.parseErrors.slice(0, INITIAL_LIMIT);
+  // Inspector opens on the populated tab; Unmatched by default, Parse errors
+  // when Unmatched is empty (handoff decision #4).
+  const initialInspectorTab: "unmatched" | "errors" =
+    preview.unmatchedRows.length === 0 ? "errors" : "unmatched";
 
   return (
     // Wrapping section splits into scrollable content + sticky confirm bar
@@ -175,16 +176,6 @@ export function ReviewScreen({
                   </li>
                 ))}
               </ul>
-              {preview.unmatchedRows.length > INITIAL_LIMIT && !unmatchedExpanded && (
-                <button
-                  type="button"
-                  onClick={() => setUnmatchedExpanded(true)}
-                  className="mt-[8px] text-[12.5px] p-[4px_2px]"
-                  style={{ color: "var(--brass)" }}
-                >
-                  Show all {preview.unmatchedRows.length} unmatched →
-                </button>
-              )}
             </div>
           )}
 
@@ -220,19 +211,26 @@ export function ReviewScreen({
                   </li>
                 ))}
               </ul>
-              {preview.parseErrors.length > INITIAL_LIMIT && !errorsExpanded && (
-                <button
-                  type="button"
-                  onClick={() => setErrorsExpanded(true)}
-                  className="mt-[8px] text-[12.5px] p-[4px_2px]"
-                  style={{ color: "var(--brass)" }}
-                >
-                  Show all {preview.parseErrors.length} errors →
-                </button>
-              )}
             </div>
           )}
         </div>
+
+        {skipped > 0 && (
+          <div className="mt-[16px] md:mt-[20px] flex md:justify-center">
+            <button
+              type="button"
+              onClick={() => setInspectorOpen(true)}
+              className="w-full md:w-auto rounded-lg font-sans font-semibold text-[13.5px] px-[18px] py-[11px] cursor-pointer"
+              style={{
+                background: "transparent",
+                color: "var(--brass)",
+                border: "1px solid var(--border-strong)",
+              }}
+            >
+              {issueInspectorCopy.entry.cta(skipped)}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Sticky confirm bar — §Sticky Confirm Bar: border-top 1px #3A3229 (--border-strong), bg #1A160F (--surface-rail), padding 14px 18px 22px mobile / 16px 56px desktop */}
@@ -272,6 +270,14 @@ export function ReviewScreen({
           </button>
         </div>
       </div>
+
+      {inspectorOpen && (
+        <IssueInspector
+          preview={preview}
+          initialTab={initialInspectorTab}
+          onClose={() => setInspectorOpen(false)}
+        />
+      )}
     </section>
   );
 }
