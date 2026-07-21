@@ -7,7 +7,12 @@ export const issueInspectorCopy = {
     title: "Import issues",
     subtitle: (file: string, skipped: number, total: number) =>
       `${file} · ${skipped.toLocaleString()} of ${total.toLocaleString()} rows skipped`,
+    // Branched on initial-import vs replace to match the review-screen sticky
+    // bar's copy branching (added in #48's confirm-modal work and extended in
+    // this PR to the review-screen sticky bar). "Replaces your collection" is
+    // wrong when there's no existing collection to replace.
     help: "Skipped rows are left out of the import — every other row still replaces your collection.",
+    helpInitial: "Skipped rows are left out of the import — every other row still gets imported.",
     closeAriaLabel: "Close",
   },
   tabs: {

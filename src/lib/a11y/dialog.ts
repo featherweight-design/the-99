@@ -10,9 +10,16 @@ const FOCUSABLE =
 // Consumers render parallel mobile/desktop trees and hide one via display:none
 // (e.g. ExportDialog) — hidden elements have no client rects and must not
 // receive focus or participate in Tab wrapping.
+// Also filter out elements that opted OUT of keyboard focus: the FOCUSABLE
+// selector's `button:not([disabled])` clause matches buttons with
+// `tabindex="-1"`, which are usually intentionally excluded (e.g. the Issue
+// Inspector's clear ✕ when its input is empty and it's aria-hidden).
 function visibleFocusables(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-    (el) => el.getClientRects().length > 0,
+    (el) =>
+      el.getClientRects().length > 0 &&
+      el.tabIndex >= 0 &&
+      el.getAttribute("aria-hidden") !== "true",
   );
 }
 

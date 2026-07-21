@@ -74,6 +74,7 @@ export function IssueInspector({
   const isUnmatchedDisabled = unmatchedTotal === 0;
   const isErrorsDisabled = errorsTotal === 0;
   const skipped = unmatchedTotal + errorsTotal;
+  const isInitialImport = preview.currentCollectionCount === 0;
 
   // Memoize so per-keystroke rawQuery re-renders (which don't yet change
   // `query` — 120ms debounce hasn't fired) don't repeat the filter work.
@@ -175,7 +176,9 @@ export function IssueInspector({
             className="mx-[20px] md:mx-[26px] mb-[10px] text-[12px]"
             style={{ color: "var(--fg-muted)" }}
           >
-            {issueInspectorCopy.header.help}
+            {isInitialImport
+              ? issueInspectorCopy.header.helpInitial
+              : issueInspectorCopy.header.help}
           </p>
         )}
 
