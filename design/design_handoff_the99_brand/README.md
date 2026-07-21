@@ -142,9 +142,11 @@ No raster assets. Fonts load from Google Fonts. The logomark and all swatches ar
 CSS/markup and should be rebuilt as SVG/components in the target codebase.
 
 ## Files
-- `The 99 — Brand Sheet.dc.html` — the locked reference sheet (this handoff's source of truth).
+- `The 99 - Brand Sheet.dc.html` — the locked reference sheet (this handoff's source of truth).
 - `The 99 Brand Discovery.dc.html` — the fuller discovery board (tone, palette options, type
   specimens, logomark concepts) for additional context on how decisions were reached.
+- `support.js` — Design Component runtime the two `.dc.html` files load. Bundled alongside so
+  the pages render locally when opened directly from disk.
 
-Both are single self-contained HTML files; open directly in a browser. They are authored as
-Design Components but render standalone.
+Open the `.dc.html` files directly in a browser; each loads `./support.js` from this folder
+to boot the Design Component runtime.
