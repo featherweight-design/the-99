@@ -105,9 +105,12 @@ export async function recommendCommanders(
   for (let i = 0; i < candidates.length; i += CONCURRENCY) {
     const scored = await Promise.all(
       candidates.slice(i, i + CONCURRENCY).map(async (commander) => {
-        const edhrec = await getEdhrecData(commander.oracleId, commander.name);
-        if (edhrec === null) degraded = true;
-        return scoreCommander({ commander, collection, edhrecTopCards: edhrec?.topCards ?? null });
+        const { data, unreachable } = await getEdhrecData(commander.oracleId, commander.name);
+        // `unreachable` only flips true on real service outage (5xx/network/timeout
+        // with no cache). 4xx (commander not on EDHREC) is a per-commander data
+        // absence, not a service issue — data === null but unreachable === false.
+        if (unreachable) degraded = true;
+        return scoreCommander({ commander, collection, edhrecTopCards: data?.topCards ?? null });
       }),
     );
     results.push(...scored);
