@@ -202,8 +202,18 @@ export function IssueInspector({
                 }
                 autoComplete="off"
                 spellCheck={false}
-                className="flex-1 bg-transparent outline-none text-[14px]"
-                style={{ color: "var(--fg)" }}
+                // Focus indicator lives on the parent container (focus-within
+                // brass border + ring). The input itself must not render its
+                // own outline/border/shadow — nuke all three so only the
+                // container ring shows.
+                className="flex-1 bg-transparent text-[14px] focus:outline-none focus-visible:outline-none"
+                style={{
+                  color: "var(--fg)",
+                  outline: "none",
+                  border: "none",
+                  boxShadow: "none",
+                  background: "transparent",
+                }}
               />
               {/* Clear button — always rendered; hidden via visibility when
                   input is empty so its 22px doesn't reflow the input width
@@ -231,9 +241,13 @@ export function IssueInspector({
                 ✕
               </button>
             </div>
-            {/* Visual count — no aria-live (would announce every keystroke). */}
+            {/* Visual count — no aria-live (would announce every keystroke).
+                Fixed min-width + right-align + tabular-nums so the text can't
+                narrow as digit counts change (e.g. "110 of 110" → "7 of 110"),
+                which was previously letting the filter container grow into
+                the recovered space and causing a visible input jump. */}
             <span
-              className="font-mono text-[11px] flex-none whitespace-nowrap"
+              className="font-mono text-[11px] flex-none whitespace-nowrap tabular-nums text-right min-w-[150px]"
               style={{ color: countColor }}
             >
               {issueInspectorCopy.filter.count(activeShown, activeTotal)}
