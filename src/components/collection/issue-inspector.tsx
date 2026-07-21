@@ -53,12 +53,20 @@ export function IssueInspector({
   useDialogA11y(dialogRef, onClose, { initialFocusRef: filterInputRef });
 
   // Filter resets on tab switch (per handoff decision #7).
-  function switchTab(next: Tab) {
+  // `source` distinguishes click (→ jump focus to filter so typing continues)
+  // from keyboard arrow (→ keep focus in the tablist on the newly-selected
+  // tab, per WAI-ARIA roving-tabindex tabs pattern).
+  function switchTab(next: Tab, source: "click" | "keyboard" = "click") {
     setTab(next);
     setRawQuery("");
     setQuery("");
-    // Re-focus filter after switch so keyboard flow continues there.
-    queueMicrotask(() => filterInputRef.current?.focus());
+    queueMicrotask(() => {
+      if (source === "keyboard") {
+        document.getElementById(`issue-inspector-tab-${next}`)?.focus();
+      } else {
+        filterInputRef.current?.focus();
+      }
+    });
   }
 
   const unmatchedTotal = preview.unmatchedRows.length;
@@ -344,7 +352,7 @@ function TabList({
   tab: Tab;
   unmatchedTotal: number;
   errorsTotal: number;
-  onSwitch: (t: Tab) => void;
+  onSwitch: (t: Tab, source?: "click" | "keyboard") => void;
 }) {
   const enabled: Tab[] = [
     ...(unmatchedTotal > 0 ? (["unmatched"] as const) : []),
@@ -368,7 +376,8 @@ function TabList({
       next = (currentIdx - 1 + enabled.length) % enabled.length;
     else if (e.key === "Home") next = 0;
     else if (e.key === "End") next = enabled.length - 1;
-    onSwitch(enabled[next]);
+    // Roving focus: keep focus on the newly-selected tab, don't steal to filter.
+    onSwitch(enabled[next], "keyboard");
   }
 
   return (
