@@ -35,9 +35,12 @@ export async function getEdhrecData(
       { headers: { "User-Agent": "the-99/1.0" }, signal: AbortSignal.timeout(10_000) },
     );
     // 4xx = this commander isn't on EDHREC (e.g. non-legendary in the candidate
-    // pool, name→slug mismatch, novel legendary not yet indexed). That's a
-    // per-commander data absence, not a service outage — do not flip degraded.
+    // pool, name→slug mismatch, novel legendary not yet indexed, or a transient
+    // 403/429). That's a per-commander data absence, not a service outage —
+    // do not flip degraded. Prefer stale cache when available so a transient
+    // 4xx on a previously-cached commander doesn't drop otherwise-good data.
     if (res.status >= 400 && res.status < 500) {
+      if (cached) return { data: parseEdhrecPayload(cached.payload), unreachable: false };
       return { data: null, unreachable: false };
     }
     if (!res.ok) throw new Error(`edhrec ${res.status}`);
