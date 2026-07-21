@@ -152,7 +152,12 @@ function ParseErrorRowView({ row, query }: { row: ParseErrorRow; query: string }
         />
       </span>
       <span
-        className="text-[12.5px] md:text-[13px]"
+        // `truncate` (nowrap + ellipsis) prevents wrapping — critical for the
+        // virtualized branch where FixedSizeList uses a fixed ROW_HEIGHT and
+        // wrapped text would clip/overlap adjacent rows. Backend reasons are
+        // terse today; if they grow longer, bump ROW_HEIGHT + switch to
+        // line-clamp-2.
+        className="flex-1 min-w-0 text-[12.5px] md:text-[13px] truncate"
         style={{ color: "var(--fg-body)", lineHeight: 1.45 }}
       >
         <HighlightedText text={row.reason} query={query} />

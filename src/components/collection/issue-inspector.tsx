@@ -14,7 +14,7 @@
 //   only the zero-match state (no per-keystroke SR noise).
 // - Filter debounced 120ms per brief.md §2; input value stays responsive.
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { UploadPreview } from "../../app/collection/actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
@@ -67,8 +67,16 @@ export function IssueInspector({
   const isErrorsDisabled = errorsTotal === 0;
   const skipped = unmatchedTotal + errorsTotal;
 
-  const filteredUnmatched = filterUnmatched(preview.unmatchedRows, query);
-  const filteredErrors = filterParseErrors(preview.parseErrors, query);
+  // Memoize so per-keystroke rawQuery re-renders (which don't yet change
+  // `query` — 120ms debounce hasn't fired) don't repeat the filter work.
+  const filteredUnmatched = useMemo(
+    () => filterUnmatched(preview.unmatchedRows, query),
+    [preview.unmatchedRows, query],
+  );
+  const filteredErrors = useMemo(
+    () => filterParseErrors(preview.parseErrors, query),
+    [preview.parseErrors, query],
+  );
   const activeTotal = tab === "unmatched" ? unmatchedTotal : errorsTotal;
   const activeShown =
     tab === "unmatched" ? filteredUnmatched.length : filteredErrors.length;
@@ -428,7 +436,10 @@ function TabButton({
       role="tab"
       id={id}
       aria-selected={selected}
-      aria-controls={panelId}
+      // Only the ACTIVE tab's panel is rendered (id derived from `tab`).
+      // Referencing a non-existent panel from an inactive tab confuses AT —
+      // omit aria-controls unless selected.
+      aria-controls={selected ? panelId : undefined}
       aria-disabled={disabled || undefined}
       disabled={disabled}
       tabIndex={selected ? 0 : -1}
