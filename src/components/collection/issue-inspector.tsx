@@ -103,10 +103,11 @@ export function IssueInspector({
         aria-labelledby="issue-inspector-title"
         onClick={(e) => e.stopPropagation()}
         // Mobile: full-screen sheet on --bg (design's #14110E).
-        // Desktop: 660px × ~600–640px, --surface-rail, 1px --border-strong,
-        // radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7).
+        // Desktop: 660px × 640px (fixed height, not max-height — the dialog
+        // must not shrink as filter results narrow), --surface-rail, 1px
+        // --border-strong, radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7).
         // `relative` anchors the absolutely-positioned close button below.
-        className="relative flex flex-col w-full h-full md:h-auto md:w-[660px] md:max-h-[640px] md:rounded-2xl bg-[color:var(--bg)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)] overflow-hidden"
+        className="relative flex flex-col w-full h-full md:w-[660px] md:h-[640px] md:rounded-2xl bg-[color:var(--bg)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)] overflow-hidden"
         style={{ boxShadow: "0 40px 100px rgba(0,0,0,0.7)" }}
       >
         {/* Header — title + subtitle only. Close button renders at the end of
