@@ -453,7 +453,10 @@ export function CommanderDetail({
         className="sm:hidden relative flex-none"
         style={{
           height: 236,
-          background: gradient,
+          background: c.imageUri ? undefined : gradient,
+          backgroundImage: c.imageUri ? `url(${c.imageUri})` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
           boxShadow: "inset 0 -60px 60px -30px rgba(10,7,4,0.9)",
         }}
       >
@@ -781,12 +784,16 @@ export function CommanderDetail({
             ‹ Back to rankings
           </Link>
 
-          {/* Commander card frame — 63/88 aspect, gradient */}
+          {/* Commander card frame — 63/88 aspect. Image when available;
+              gradient is the fallback. */}
           <div
             className="flex flex-col rounded-[14px]"
             style={{
               aspectRatio: "63/88",
-              background: gradient,
+              background: c.imageUri ? undefined : gradient,
+              backgroundImage: c.imageUri ? `url(${c.imageUri})` : undefined,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
               boxShadow:
                 "inset 0 -70px 70px -40px rgba(10,7,4,0.85), inset 0 0 0 1px rgba(0,0,0,0.3), 0 20px 50px rgba(0,0,0,0.5)",
               padding: 16,
