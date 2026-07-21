@@ -65,10 +65,14 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   const inDeck = new Set(inDeckRows.map((r) => r.oracleId));
   const available = pool.filter((c) => !inDeck.has(c.oracleId));
 
-  const edhrec = await getEdhrecData(commander.oracleId, commander.name);
-  const degraded = edhrec === null;
-  const topCards = edhrec?.topCards ?? null;
-  const inclusionByName = edhrec?.inclusionByName ?? {};
+  // `unreachable` reflects real service outage (5xx/network/timeout with no
+  // cache). If EDHREC just doesn't index this commander (4xx), data === null
+  // but the deck-suggestions panel should NOT flag "degraded" — user's normal
+  // pool/role suggestions are unaffected.
+  const { data, unreachable } = await getEdhrecData(commander.oracleId, commander.name);
+  const degraded = unreachable;
+  const topCards = data?.topCards ?? null;
+  const inclusionByName = data?.inclusionByName ?? {};
 
   // Build a map for name lookups
   const byId = new Map(available.map((c) => [c.oracleId, c]));

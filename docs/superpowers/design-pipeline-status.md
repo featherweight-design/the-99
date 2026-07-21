@@ -25,7 +25,8 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-| **#36** Design: Issue Inspector (full-list "Show all X unmatched") | `design/design_handoff_the99_issue_inspector/` | 🟡 Yellow (2026-07-20) | Modal replaces inline-expand on the review page. All requested states delivered (A–E + mirror E2), copy exported verbatim, tokens throughout. Eng-side in the plan PR: virtualization library + threshold (Design's target ~150 rows), parse-error `reason` copy cross-check, confirm match-highlight ships as "all runs". |
+
+_Currently empty — #36 shipped 2026-07-20 (PR #50)._
 
 ---
 
@@ -95,3 +96,4 @@ v1 polish follow-ups — sequenced ahead of the Backlog features above.
 | **#6** Collection — CSV upload flow + collection view | `design/design_handoff_the99_collection/` | 2026-07-19 (PR #18) |
 | **#7** Commander recommendations — ranked, explainable list | `design/design_handoff_the99_commanders/` | 2026-07-19 (PR #21) |
 | **#8** Decks — list, create-from-commander, and deck builder | `design/design_handoff_the99_decks/` | 2026-07-19 (PR #25) |
+| **#36** Issue Inspector — full-list "Show all X unmatched" modal | `design/design_handoff_the99_issue_inspector/` | 2026-07-20 (PR #50) |
