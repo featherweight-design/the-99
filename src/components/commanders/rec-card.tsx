@@ -58,13 +58,18 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
       >
         {/* Mobile top row: art + name/info + fit score */}
         <div className="flex gap-[10px] items-start">
-          {/* Art thumbnail — mobile 36×50px */}
+          {/* Art thumbnail — mobile 36×50px. Image when available; gradient
+              is the fallback (per the pattern used across grid-view, card
+              modal, builder-spine, etc.). */}
           <div
             className="shrink-0 rounded-[6px]"
             style={{
               width: 36,
               height: 50,
-              background: gradient,
+              background: c.imageUri ? undefined : gradient,
+              backgroundImage: c.imageUri ? `url(${c.imageUri})` : undefined,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
               boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
             }}
           />
@@ -189,12 +194,17 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
           />
         </div>
 
-        {/* Art thumbnail — desktop aspect 63/88 */}
+        {/* Art thumbnail — desktop aspect 63/88. Image when available;
+            gradient is the fallback (matches grid-view / card-modal /
+            builder-spine pattern). */}
         <div
           className="rounded-[8px] relative"
           style={{
             aspectRatio: "63/88",
-            background: gradient,
+            background: c.imageUri ? undefined : gradient,
+            backgroundImage: c.imageUri ? `url(${c.imageUri})` : undefined,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
             boxShadow:
               "inset 0 -30px 34px -26px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.28)",
           }}

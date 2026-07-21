@@ -108,6 +108,7 @@ describe("finalizeRecommendations", () => {
         fitRoles: 0,
         fitSynergy: null,
         score: 42,
+        imageUri: null,
       });
       expect(item).not.toHaveProperty("oracleText");
       expect(item).not.toHaveProperty("overlapOwned");

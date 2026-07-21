@@ -26,6 +26,7 @@ export type CommanderListItem = Pick<
   | "fitRoles"
   | "fitSynergy"
   | "score"
+  | "imageUri"
 > & {
   /** Preformatted receipts line — overlapOwned can be large, so only the
       rendered preview string ships to the client. */
@@ -46,6 +47,7 @@ export function toListItem(r: RankedCommander): CommanderListItem {
     fitRoles: r.fitRoles,
     fitSynergy: r.fitSynergy,
     score: r.score,
+    imageUri: r.imageUri,
   };
 }
 
