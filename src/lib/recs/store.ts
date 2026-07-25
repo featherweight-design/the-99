@@ -140,20 +140,23 @@ export async function loadScores(
 export async function findScoredCommander(
   userId: string,
   slug: string,
-): Promise<{ oracleId: string; rank: number } | null> {
+): Promise<{ oracleId: string; rank: number; anyDegraded: boolean } | null> {
   const ranked = db.$with("ranked").as(
     db
       .select({
         oracleId: commanderScores.oracleId,
         slug: commanderScores.slug,
         rank: sql<number>`(row_number() over (order by ${commanderScores.score} desc, ${commanderScores.oracleId}))::int`.as("rank"),
+        // Same window pass, so the caller learns whether these ranks came from an
+        // outage-era compute without paying a second round trip.
+        anyDegraded: sql<boolean>`bool_or(${commanderScores.synergyState} = 'degraded') over ()`.as("any_degraded"),
       })
       .from(commanderScores)
       .where(eq(commanderScores.userId, userId)),
   );
   const [row] = await db
     .with(ranked)
-    .select({ oracleId: ranked.oracleId, rank: ranked.rank })
+    .select({ oracleId: ranked.oracleId, rank: ranked.rank, anyDegraded: ranked.anyDegraded })
     .from(ranked)
     .where(eq(ranked.slug, slug))
     .limit(1);

@@ -19,15 +19,22 @@ export default async function CommanderDetailPage({
   // Matching on the persisted slug also keeps this URL valid across a re-rank,
   // which a freshly-derived slug would not (dedup suffixes follow rank order).
   let found = await findScoredCommander(userId, slug);
-  if (!found) {
-    // No persisted rows yet — first visit, or arriving here before /commanders.
-    // Resolve from the computed ranking rather than re-reading the store:
-    // persistScores is best-effort, so a second store miss would 404 a commander
-    // that ranks perfectly well in memory.
+  // A miss means no persisted rows yet — first visit, or arriving here before
+  // /commanders. Degraded rows mean the persisted ranks came from an outage-era
+  // compute, so the rank beside a freshly-scored commander would disagree with
+  // the list. Both cases resolve from the computed ranking rather than re-reading
+  // the store: persistScores is best-effort, so a second store miss would 404 a
+  // commander that ranks perfectly well in memory.
+  if (!found || found.anyDegraded) {
     const { items } = await getRankedList(userId);
-    const rank = items.findIndex((i) => i.slug === slug) + 1;
-    if (rank === 0) notFound();
-    found = { oracleId: items[rank - 1].oracleId, rank };
+    const idx = items.findIndex((i) => i.slug === slug);
+    if (idx !== -1) {
+      found = { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };
+    } else if (!found) {
+      notFound();
+    }
+    // Otherwise keep the persisted row: the recompute reassigned this slug
+    // (duplicate names take rank-order suffixes), and a stale rank beats a 404.
   }
 
   const commander = await scoreOneCommander(userId, found.oracleId, slug);
