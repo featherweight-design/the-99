@@ -9,10 +9,9 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 | Layer | Handoff | Landed |
 |---|---|---|
 | Brand system — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens | `design/design_handoff_the99_brand/` | refreshed 2026-07-24 (PR #54) |
-| Richness pass — crab/kaiju character layer, density dials, animation posture, texture, contrast floor | `design/design_handoff_the99_richness/` | 2026-07-24 (PR #54), from #51 |
 | Voice — Kitchen Table (locked, verbatim in the richness README) | `design/design_handoff_the99_richness/README.md` | locked 2026-07-20 |
 
-Per `design-pipeline.md`, system layers don't get a READINESS verdict — feature audits check against them.
+The READINESS exemption is narrow: it covers only a handoff that ships no surfaces and names no states. The richness pass ships per-surface mocks, so it is audited like a feature and sits in 🟢 below rather than here.
 
 ---
 
@@ -35,8 +34,7 @@ Per `design-pipeline.md`, system layers don't get a READINESS verdict — featur
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-
-_Currently empty — #36 shipped 2026-07-20 (PR #50)._
+| **#51** Richness pass — applied across the four v1 surfaces via **#58** shell, **#59** collection, **#60** commanders, **#61** decks | `design/design_handoff_the99_richness/` | 🟡 Yellow (2026-07-24) | One plan PR sequences all four: #58 → #59/#60 → #61. Seven eng-side decisions in `READINESS.md` — chief among them that global loading and 404 are mocked but have no route files, and that `prefers-reduced-motion` has no pattern in `src/` yet. Mobile composition for the 99/99 celebration may need a Design addendum. |
 
 ---
 
@@ -95,7 +93,7 @@ v1 polish follow-ups — sequenced ahead of the Backlog features above.
 | Ticket | Notes |
 |---|---|
 | **#35** Design: Branded user menu replacing Clerk default | Desktop popover + mobile bottom-sheet; pairs with eng ticket #13. Was blocked on #51 — unblocked now that the richness pass has landed, so the menu inherits the character layer rather than being re-mocked after. |
-| Issue Inspector handoff reconciliation | `type: design`. Two copies of the #36 handoff exist (Yellow-verified standalone vs. newer collection-nested v2 with the crab). Needs a call on canonical location + which visual delta lands next. |
+| **#62** Issue Inspector handoff reconciliation | `type: design`. Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships. |
 
 ---
 
