@@ -72,7 +72,9 @@ export function guildLabel(colors: string[]): string {
 }
 
 /** Hyphenated color words in WUBRG order — "white-red". The richness pass's
- *  commanders copy uses this register rather than the guild name. */
+ *  commanders copy uses this register rather than the guild name.
+ *  Empty input yields "" — callers must guard. The filtered-empty state that
+ *  consumes this only renders when at least one color is selected. */
 export function colorWords(colors: string[]): string {
   return sortWubrg(colors)
     .map((c) => COLOR_WORDS[c] ?? c.toLowerCase())

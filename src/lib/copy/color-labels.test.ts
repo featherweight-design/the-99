@@ -29,4 +29,15 @@ describe("colorWords", () => {
   it("hyphenates three colors in WUBRG order", () => {
     expect(colorWords(["G", "W", "B"])).toBe("white-black-green");
   });
+  it("hyphenates four colors in WUBRG order", () => {
+    expect(colorWords(["G", "U", "R", "W"])).toBe("white-blue-red-green");
+  });
+  it("hyphenates all five colors in WUBRG order", () => {
+    expect(colorWords(["G", "R", "B", "U", "W"])).toBe(
+      "white-blue-black-red-green",
+    );
+  });
+  it("returns an empty string for empty input", () => {
+    expect(colorWords([])).toBe("");
+  });
 });
