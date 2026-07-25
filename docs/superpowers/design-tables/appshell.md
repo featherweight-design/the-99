@@ -138,7 +138,7 @@
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| color | — | `#6A6152` |
+| color | — | `#8E8269` (token: **faint**) — lifted from `#6A6152` for WCAG AA (4.76:1 on `--surface-rail`; richness pass Task 8) |
 | font-size | — | `14px` |
 | font-weight | — | `500` |
 | Diamond color | — | `#3A3229` (token: **line**) |
@@ -149,7 +149,7 @@
 |----------|--------|---------|
 | font-family | — | `'IBM Plex Mono', monospace` |
 | font-size | — | `10px` |
-| color | — | `#6A6152` |
+| color | — | `#8E8269` (token: **faint**) — lifted from `#6A6152` for WCAG AA (richness pass Task 8) |
 | padding | — | `4px 12px` |
 | line-height | — | `1.5` |
 | content | — | `"Surfaces unlock once your collection is uploaded."` |
@@ -1537,7 +1537,7 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 | font-size | `24px` | `28px` |
 | margin | `0` | `0` |
 | color | `#EDE6D8` (token: **primary**) | `#EDE6D8` (token: **primary**) |
-| content | `No decks yet` | `No decks yet` |
+| content | `No decks yet.` | `No decks yet.` |
 
 ### Empty state body — No decks
 
@@ -1823,6 +1823,353 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 
 ---
 
+## Component: Crab Mark (character layer — richness pass)
+
+> Source: `src/components/character/crab.tsx`. Geometry ported verbatim from `design/design_handoff_the99_richness/crab.svg`; hex tokens swapped for CSS custom properties.
+
+### Crab SVG
+
+| Property | Value |
+|----------|-------|
+| viewBox | `0 0 160 110` |
+| width / height | `size` prop (px) / `size × 110/160` (maintains 160:110 aspect ratio) |
+| aria-hidden | `true` |
+| focusable | `false` |
+| animation class | `anim-bob` (when `bobSeconds > 0`) |
+| `--bob-duration` CSS var | `${bobSeconds}s` (default `4.5s`) |
+| Leg strokes | `stroke: var(--brass)`, `strokeWidth: 3`, `strokeLinecap: round`, `strokeLinejoin: round`, `fill: none` |
+| Carapace fill | `var(--surface)` |
+| Carapace stroke | `var(--brass)`, `strokeWidth: 3` |
+| Pincer fill | `var(--surface)` |
+| Pincer stroke | `var(--brass)`, `strokeWidth: 3` |
+| Eye fill | `var(--brass)` (pupils) |
+| Eye sclera fill | `var(--surface)` |
+| Eye stroke | `var(--brass)`, `strokeWidth: 3` |
+| Mouth stroke | `var(--brass)`, `strokeWidth: 3`, `strokeLinecap: round` |
+
+### Crab — sizes by context
+
+| Context | Mobile size | Desktop size | Notes |
+|---------|-------------|--------------|-------|
+| First-run checklist heading | `72px` | `96px` | Beside h1 in `flex items-end` row |
+| Global loading state | `96px` | `96px` | Same size both breakpoints |
+| 404 state | `96px` | `96px` | Same size both breakpoints; `mt-[-14px] mb-[18px]` |
+| Decks empty state | `64px` | `80px` | Side-by-side with CardFan |
+
+### Crab — bob animation
+
+| Property | Value |
+|----------|-------|
+| Keyframe name | `bob` |
+| Keyframe | `0%,100% { transform: translateY(0) }; 50% { transform: translateY(-5px) }` |
+| Class | `.anim-bob` |
+| Default duration | `4.5s` (via `--bob-duration` CSS custom property, override per instance) |
+| Timing function | `ease-in-out` |
+| Iteration | `infinite` |
+| Reduced-motion fallback | `.anim-bob { animation: none }` in `@media (prefers-reduced-motion: reduce)` |
+
+---
+
+## Component: LoaderDots
+
+> Source: `src/components/character/loader-dots.tsx`. Three staggered brass dots paired with the Crab on loading surfaces.
+
+### LoaderDots container
+
+| Property | Value |
+|----------|-------|
+| display | `flex` |
+| gap | `6px` |
+| aria-hidden | `true` |
+
+### Each dot
+
+| Property | Value |
+|----------|-------|
+| width / height | `7px` / `7px` |
+| border-radius | `999px` (rounded-full) |
+| background | `var(--brass)` |
+| animation class | `anim-dots` |
+| animation-delay | `0s`, `0.2s`, `0.4s` (staggered) |
+
+### Dots animation
+
+| Property | Value |
+|----------|-------|
+| Keyframe name | `dots` |
+| Keyframe | `0%,100% { opacity: 0.25 }; 50% { opacity: 1 }` |
+| Class | `.anim-dots` |
+| Duration | `1.2s` |
+| Timing function | `ease-in-out` |
+| Iteration | `infinite` |
+| Reduced-motion fallback | `.anim-dots { animation: none }` in `@media (prefers-reduced-motion: reduce)` |
+
+---
+
+## Component: Motion tokens (globals.css — richness pass)
+
+> New CSS tokens and animation utilities added in the richness pass. Scoped reduced-motion pattern intentional: adding a new animation forces an explicit static-fallback decision rather than silently inheriting a blanket `* { animation: none }`.
+
+### New color tokens
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `--kaiju-body` | `#0B0907` | Kaiju silhouette fill — deeper than `--bg` so it reads as a hole in the canvas |
+| `--celebrate-top` | `#171310` | Celebration gradient top stop |
+| `--celebrate-bottom` | `#110E0B` | Celebration gradient bottom stop |
+
+### Animation keyframes
+
+| Keyframe | Definition | Use |
+|----------|------------|-----|
+| `bob` | `0%,100% { translateY(0) }; 50% { translateY(-5px) }` | Crab idle float |
+| `dots` | `0%,100% { opacity: 0.25 }; 50% { opacity: 1 }` | LoaderDots pulse |
+| `breathe` | `0%,100% { scale(1) }; 50% { scale(1.02) translateY(3px) }` | Kaiju idle (ships unused — pending #61) |
+| `rise` | `0% { translateY(18px); opacity: 0 }; 100% { translateY(0); opacity: 1 }` | Entry reveal |
+
+### Animation utility classes
+
+| Class | Animation | Duration | Timing | `--bob-duration` override |
+|-------|-----------|----------|--------|--------------------------|
+| `.anim-bob` | `bob` | `var(--bob-duration, 4.5s)` | `ease-in-out infinite` | Yes — set per instance via CSS custom property |
+| `.anim-dots` | `dots` | `1.2s` | `ease-in-out infinite` | No |
+| `.anim-breathe` | `breathe` | `10s` | `ease-in-out infinite` | No |
+| `.anim-rise` | `rise` | `0.8s` | `ease-out both` | No |
+
+### Reduced-motion block
+
+| Selector | Declaration |
+|----------|-------------|
+| `.anim-bob, .anim-dots, .anim-breathe, .anim-rise` (inside `@media (prefers-reduced-motion: reduce)`) | `animation: none` |
+
+---
+
+## Component: Global Loading State (`app/loading.tsx`)
+
+### Loading page container
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | `flex` | `flex` |
+| flex-direction | `column` | `column` |
+| align-items | `center` | `center` |
+| justify-content | `center` | `center` |
+| text-align | `center` | `center` |
+| padding | `40px` | `40px` |
+| min-height | `420px` | `520px` |
+| background | `radial-gradient(560px 320px at 50% 68%, rgba(201,162,75,0.08), transparent 70%), var(--bg)` | same |
+
+### Loading: Crab + dots cluster
+
+| Property | Value |
+|----------|-------|
+| Crab size | `96px` (both breakpoints) |
+| LoaderDots position | `absolute top-[-4px] right-[-22px]` relative to `inline-flex` wrapper |
+
+### Loading: Heading
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-display)` (Cinzel) | `var(--font-display)` |
+| font-weight | `700` (bold) | `700` |
+| font-size | `19px` | `22px` |
+| color | `var(--fg)` (`#EDE6D8`) | `var(--fg)` |
+| margin-top | `24px` | `24px` |
+| margin-bottom | `0` | `0` |
+| content | `"Reading your collection"` | `"Reading your collection"` |
+
+### Loading: Status line
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | `12px` | `13px` |
+| color | `var(--fg-faint)` (`#8E8269`) | `var(--fg-faint)` |
+| margin-top | `8px` | `8px` |
+| margin-bottom | `0` | `0` |
+| content | `"matching to Oracle…"` | `"matching to Oracle…"` |
+
+### Loading: Caption
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | `13.5px` | `15px` |
+| color | `var(--fg-body)` (`#C6B79A`) | `var(--fg-body)` |
+| max-width | `380px` | `380px` |
+| margin-top | `10px` | `10px` |
+| margin-bottom | `0` | `0` |
+| line-height | `1.6` | `1.6` |
+| content | `"This is the boring part. I'll flag anything that looks off."` | same |
+
+---
+
+## Component: 404 State (`app/not-found.tsx`)
+
+### 404 page container
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | `flex` | `flex` |
+| flex-direction | `column` | `column` |
+| align-items | `center` | `center` |
+| justify-content | `center` | `center` |
+| text-align | `center` | `center` |
+| padding | `40px` | `40px` |
+| min-height | `400px` | `480px` |
+| background | `radial-gradient(520px 300px at 50% 70%, rgba(201,162,75,0.07), transparent 70%), var(--bg)` | same |
+
+### 404: Numeral
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-display)` (Cinzel) | `var(--font-display)` |
+| font-weight | `900` | `900` |
+| font-size | `48px` | `64px` |
+| color | `var(--elevated)` (`#2A241D`) | `var(--elevated)` |
+| letter-spacing | `0.04em` | `0.04em` |
+| line-height | `1` (leading-none) | `1` |
+| content | `"404"` | `"404"` |
+
+### 404: Crab
+
+| Property | Value |
+|----------|-------|
+| size | `96px` (both breakpoints) |
+| margin-top | `-14px` |
+| margin-bottom | `18px` |
+
+### 404: Heading
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-display)` (Cinzel) | `var(--font-display)` |
+| font-weight | `700` (bold) | `700` |
+| font-size | `21px` | `24px` |
+| color | `var(--fg)` (`#EDE6D8`) | `var(--fg)` |
+| margin | `0` | `0` |
+| content | `"There's no page here."` | `"There's no page here."` |
+
+### 404: Caption
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | `13.5px` | `15px` |
+| color | `var(--fg-body)` (`#C6B79A`) | `var(--fg-body)` |
+| max-width | `380px` | `380px` |
+| margin-top | `10px` | `10px` |
+| margin-bottom | `0` | `0` |
+| line-height | `1.6` | `1.6` |
+| content | `"I checked. Twice. Probably a typo in the URL — happens to the best of us."` | same |
+
+### 404: CTA row
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | `flex` | `flex` |
+| flex-direction | `column` | `row` |
+| gap | `12px` | `12px` |
+| margin-top | `24px` | `24px` |
+
+### 404: Primary CTA ("Back home")
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-weight | `600` (semibold) | `600` |
+| font-size | `13px` | `14px` |
+| color | `var(--bg)` (`#14110E`) | `var(--bg)` |
+| background | `var(--brass)` (`#C9A24B`) | `var(--brass)` |
+| border-radius | `8px` | `8px` |
+| padding | `12px 22px` | `12px 22px` |
+| href | `/` | `/` |
+
+### 404: Primary CTA — Hover
+
+| Property | Value |
+|----------|-------|
+| background | `var(--brass-hover)` (`#D8B25E`) |
+
+### 404: Secondary CTA ("View decks")
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-weight | `600` (semibold) | `600` |
+| font-size | `13px` | `14px` |
+| color | `var(--fg)` (`#EDE6D8`) | `var(--fg)` |
+| border | `1px solid var(--border-strong)` (`#3A3229`) | same |
+| border-radius | `8px` | `8px` |
+| padding | `12px 22px` | `12px 22px` |
+| href | `/decks` | `/decks` |
+
+### 404: Secondary CTA — Hover
+
+| Property | Value |
+|----------|-------|
+| border-color | `var(--brass)` |
+| color | `var(--brass-hover)` (`#D8B25E`) |
+
+---
+
+## Component: Home Dashboard Vignette
+
+> Applied via Tailwind `bg-[…]` on the dashboard root div. Mobile and desktop share the same gradient spec; position shifts on first-run vs. signed-in.
+
+| Surface | Gradient spec | Applied in |
+|---------|---------------|------------|
+| Signed-in home dashboard | `radial-gradient(760px 380px at 45% -60px, rgba(201,162,75,0.08), transparent 70%)` | `src/components/home/dashboard.tsx` |
+| First-run checklist | `radial-gradient(640px 340px at 40% -40px, rgba(201,162,75,0.07), transparent 70%)` | `src/components/home/first-run.tsx` |
+| Global loading state | `radial-gradient(560px 320px at 50% 68%, rgba(201,162,75,0.08), transparent 70%), var(--bg)` | `src/app/loading.tsx` |
+| 404 state | `radial-gradient(520px 300px at 50% 70%, rgba(201,162,75,0.07), transparent 70%), var(--bg)` | `src/app/not-found.tsx` |
+
+---
+
+## Component: First-Run Checklist — Crab placement (richness pass)
+
+> Crab added beside the page heading in `src/components/home/first-run.tsx`. Wrapper uses `flex items-end` so the crab aligns to the heading baseline.
+
+### Heading + Crab row
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | `flex` | `flex` |
+| align-items | `flex-end` | `flex-end` |
+| gap | `16px` | `22px` |
+| Crab size | `72px` | `96px` |
+
+---
+
+## Component: Decks Empty State — Crab pairing (richness pass)
+
+> CardFan mark and Crab rendered side-by-side in `src/app/decks/page.tsx` empty state. Mobile uses `CardFan variant="mobile"` + `Crab size={64}`; desktop uses `CardFan variant="decks-desktop"` + `Crab size={80}`.
+
+### CardFan + Crab container
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | `flex` | `flex` |
+| align-items | `flex-end` | `flex-end` |
+| justify-content | `center` | `center` |
+| gap | `14px` | `18px` |
+| margin-bottom | `22px` | `26px` |
+
+### Crab sizes
+
+| Breakpoint | CardFan variant | Crab size |
+|------------|-----------------|-----------|
+| Mobile | `mobile` (100×110px container) | `64px` |
+| Desktop | `decks-desktop` (120×130px container) | `80px` |
+
+### No-decks heading
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| content | `"No decks yet."` | `"No decks yet."` |
+
+> Note: terminal period added in richness pass Task 11. Table row under §Empty State — No Decks updated accordingly.
+
+---
+
 ## State Coverage — App Shell
 
 | State | Triggering condition | Renders | Key data required |
@@ -1833,9 +2180,11 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 | **Commanders surface — populated** | Authenticated + collection has ≥1 legal commander candidate | Rail with Commanders active; page heading "Commanders"; sub-line `{n} buildable from cards you own · ranked by completeness`; color filter chips (WUBRG + All colors + Buildable ≥ 90%); commander grid (3 cols desktop) | List of buildable commanders each with: name, type, colorIdentity (pips), owned/99, completeness % |
 | **Collection empty state** | Authenticated + navigates to `/collection` + no CSV uploaded | Full shell; Collection active in nav; card-fan mark; "Your collection is empty" heading; body copy; "Upload collection" + "Paste a list" CTAs | None (no data needed to render) |
 | **No commander candidates** | Authenticated + CSV uploaded + 0 eligible commanders (no owned legendary creatures) | Full shell; Commanders active in nav; XCIX seal; "No generals in the ranks — yet" heading (brass); body copy; scanned-count mono line (`{n} cards scanned · 0 eligible commanders`); "Add more cards" (primary) + "View collection" (secondary) CTAs | `collection.totalCount` (for scanned-count display) |
-| **No decks** | Authenticated + navigates to `/decks` + 0 decks built | Full shell; Decks active in nav; card-fan mark; "No decks yet" heading; body copy; "Browse commanders" CTA | None |
+| **No decks** | Authenticated + navigates to `/decks` + 0 decks built | Full shell; Decks active in nav; card-fan mark + Crab (64px mobile / 80px desktop) side-by-side; "No decks yet." heading (terminal period); body copy; "Browse commanders" CTA | None |
 | **Account popover open (desktop)** | User clicks account trigger row in rail | Popover rendered above account row (absolute, z-index 20); shows avatar, name, email, "Manage account" (brass diamond), "Sign out" (red diamond), "SECURED BY CLERK" caption; rest of UI visible behind | `user.name`, `user.email`, user initials (for avatar) |
 | **Account bottom sheet open (mobile)** | User taps avatar in top-right of mobile header | Overlay backdrop `rgba(10,8,6,0.72)` covers page; bottom sheet slides up with drag handle, avatar (48px), name, email, "Manage account", "Sign out", "SECURED BY CLERK" | `user.name`, `user.email`, user initials |
 | **Nav active states** | Current route matches nav destination | Active item: `bg #2A241D`, `color #EDE6D8`, `font-weight 600`, brass diamond; Mobile: active tab gets brass diamond + brass label `font-weight 600`; all other items idle | Current route path |
-| **Nav locked state** | Authenticated + collection is empty (pre-upload) | Collection, Commanders, Decks rail items render at `color #6A6152` (dimmer than idle `#A89B84`); no hover state; lock caption shown below nav items | `collection.isEmpty` boolean |
+| **Nav locked state** | Authenticated + collection is empty (pre-upload) | Collection, Commanders, Decks rail items render at `color #8E8269` (token: **faint**); no hover state; lock caption shown below nav items. Note: lifted from `#6A6152` for WCAG AA contrast during richness pass Task 8. Two `--fg-locked` (`#6A6152`) sites intentionally remain and are SC 1.4.3-exempt: `caretColor` in `upload-entry.tsx` (non-text) and a disabled button in `issue-inspector.tsx` (inactive control). | `collection.isEmpty` boolean |
 | **Paste-list view (mobile)** | User taps "Paste a list instead" link in step 1 dropzone | Mobile only: replaces checklist content with paste view; back arrow (`‹`, brass), "Paste a list" heading; instructions; mono textarea; recognized-count label; "Import {n} cards" button; "Upload a CSV instead" link | Live recognized-count (client-side parsing: `{n} lines · {n} cards recognized`) |
+| **Global loading state** | Next.js Suspense fallback fires (any route data-fetching) | `app/loading.tsx`: crab (96px, bobbing) + LoaderDots absolute top-right; heading "Reading your collection"; mono status "matching to Oracle…"; body caption; warm vignette background | None |
+| **404 state** | User navigates to a non-existent route | `app/not-found.tsx`: brass "404" numeral (48px/64px, `--elevated`); crab (96px, mt -14px mb 18px); heading "There's no page here."; caption; "Back home" (primary brass) + "View decks" (secondary border) CTAs | None |
