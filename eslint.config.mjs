@@ -14,6 +14,10 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Vendored design-handoff assets — not app code.
     "design/**",
+    // Feature worktrees live inside the repo. The ".next/**" pattern above is
+    // anchored to the root, so without this, linting the main checkout also
+    // lints every worktree's src/ and its .next/ build output.
+    ".worktrees/**",
   ]),
   {
     files: ["src/**/*.tsx"],

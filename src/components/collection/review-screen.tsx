@@ -222,18 +222,13 @@ export function ReviewScreen({
 
         {skipped > 0 && (
           <div className="mt-[16px] md:mt-[20px] flex md:justify-center">
-            <button
+            <GhostButton
               type="button"
               onClick={() => setInspectorOpen(true)}
-              className="w-full md:w-auto rounded-lg font-sans font-semibold text-[13.5px] px-[18px] py-[11px] cursor-pointer"
-              style={{
-                background: "transparent",
-                color: "var(--brass)",
-                border: "1px solid var(--border-strong)",
-              }}
+              className="w-full md:w-auto text-[13.5px] px-[18px] py-[11px]"
             >
               {issueInspectorCopy.entry.cta(skipped)}
-            </button>
+            </GhostButton>
           </div>
         )}
       </div>
