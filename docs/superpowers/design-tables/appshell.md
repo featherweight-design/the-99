@@ -1957,7 +1957,8 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 | text-align | `center` | `center` |
 | padding | `40px` | `40px` |
 | min-height | `420px` | `520px` |
-| background | `radial-gradient(560px 320px at 50% 68%, rgba(201,162,75,0.08), transparent 70%), var(--bg)` | same |
+| background-color | `var(--bg)` | same |
+| background-image | `radial-gradient(560px 320px at 50% 68%, rgba(201,162,75,0.08), transparent 70%)` | same |
 
 ### Loading: Crab + dots cluster
 
@@ -2016,7 +2017,8 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 | text-align | `center` | `center` |
 | padding | `40px` | `40px` |
 | min-height | `400px` | `480px` |
-| background | `radial-gradient(520px 300px at 50% 70%, rgba(201,162,75,0.07), transparent 70%), var(--bg)` | same |
+| background-color | `var(--bg)` | same |
+| background-image | `radial-gradient(520px 300px at 50% 70%, rgba(201,162,75,0.07), transparent 70%)` | same |
 
 ### 404: Numeral
 
@@ -2114,13 +2116,15 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 ## Component: Home Dashboard Vignette
 
 > Applied via Tailwind `bg-[…]` on the dashboard root div. Mobile and desktop share the same gradient spec; position shifts on first-run vs. signed-in.
+>
+> Tailwind's `bg-[…]` arbitrary utility emits `background-image` only, so a trailing `, var(--bg)` colour makes the whole declaration invalid and the gradient silently disappears. Pair the gradient utility with a separate `bg-[color:var(--bg)]`.
 
 | Surface | Gradient spec | Applied in |
 |---------|---------------|------------|
 | Signed-in home dashboard | `radial-gradient(760px 380px at 45% -60px, rgba(201,162,75,0.08), transparent 70%)` | `src/components/home/dashboard.tsx` |
 | First-run checklist | `radial-gradient(640px 340px at 40% -40px, rgba(201,162,75,0.07), transparent 70%)` | `src/components/home/first-run.tsx` |
-| Global loading state | `radial-gradient(560px 320px at 50% 68%, rgba(201,162,75,0.08), transparent 70%), var(--bg)` | `src/app/loading.tsx` |
-| 404 state | `radial-gradient(520px 300px at 50% 70%, rgba(201,162,75,0.07), transparent 70%), var(--bg)` | `src/app/not-found.tsx` |
+| Global loading state | `radial-gradient(560px 320px at 50% 68%, rgba(201,162,75,0.08), transparent 70%)` over `var(--bg)` | `src/app/loading.tsx` |
+| 404 state | `radial-gradient(520px 300px at 50% 70%, rgba(201,162,75,0.07), transparent 70%)` over `var(--bg)` | `src/app/not-found.tsx` |
 
 ---
 
