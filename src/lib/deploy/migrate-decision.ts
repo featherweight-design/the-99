@@ -10,7 +10,9 @@ export type MigrationDecision =
  * silently skipping is exactly what shipped code without its schema in #70, so
  * the misconfigured case has to be louder than the healthy one, not quieter.
  */
-export function decideMigration(env: NodeJS.ProcessEnv): MigrationDecision {
+export function decideMigration(
+  env: Record<string, string | undefined>,
+): MigrationDecision {
   const vercelEnv = env.VERCEL_ENV;
 
   if (vercelEnv !== "production") {
