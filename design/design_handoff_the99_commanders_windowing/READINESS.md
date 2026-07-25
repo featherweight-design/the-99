@@ -58,7 +58,7 @@ review, but it needs no drawing and no new call.
 ### 2. The control is unreachable with current beta data — state a verification path
 
 Decision 2 makes `25 > 24` deliberate, so the reference collection can never render the control. The
-ticket needs an explicit way to verify all four states: temporarily set `REVEAL_STEP = 5`, or cover
+ticket needs an explicit way to verify all five states: temporarily set `REVEAL_STEP = 5`, or cover
 the slice/reset/count logic in unit tests. Otherwise it ships unverified against real data.
 
 ### 3. Focus-on-reveal mechanism (still open in the handoff, resolved here)
@@ -66,6 +66,15 @@ the slice/reset/count logic in unit tests. Otherwise it ships unverified against
 The list is `<ul><li key={r.slug}><RecCard/></li></ul>`. Put `tabIndex={-1}` and a ref on the `<li>` at
 index `shown - REVEAL_STEP`; focus it in the click handler. No `rec-card.tsx` change, no nth-child
 query.
+
+### 4. Two stale details in the handoff prose — read past them, don't copy them
+
+Neither changes a decision, and the handoff is left verbatim so the line references above stay valid.
+
+- `README.md:106` / `:110` write the attribute as `tabindex`. The implementation is TSX, so it is
+  `tabIndex` — as note 3 already has it.
+- `README.md:119` says "All four states exist on both." R2 added state 1b, so it is five: 1, 1b, 2,
+  3, 4. Parity itself is fine — the verification table above confirms all five at both viewports.
 
 ---
 
