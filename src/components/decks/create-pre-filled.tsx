@@ -9,7 +9,7 @@ import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
 import { colorLabel } from "../../lib/decks/format";
-import { PrimaryButton } from "@/components/ui/button";
+import { GhostButton, PrimaryButton } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -308,27 +308,15 @@ export function CreatePreFilled({
               {isPending ? "Creating…" : "Create deck →"}
             </PrimaryButton>
 
-            {/* §"Change commander" secondary button: mobile border #2A241D, desktop border #3A3229 */}
-            <Link
+            {/* §"Change commander" secondary button — ADDENDUM-secondary-cta-colour.md
+                item 2: the softer mobile treatment was drift, not intent. One
+                secondary treatment at both breakpoints. */}
+            <GhostButton
               href="/decks/new"
-              className="block md:inline-block text-center rounded-[8px] font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] p-[11px_0] md:p-[13px_20px] border border-[#2A241D] md:border-[#3A3229]"
-              style={{ background: "transparent" }}
+              className="block md:inline-block text-center text-[13px] md:text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] p-[11px_0] md:p-[13px_20px]"
             >
-              {/* Mobile: 13px #A89B84 weight-500 */}
-              <span
-                className="md:hidden font-medium text-[13px]"
-                style={{ color: "#A89B84" }}
-              >
-                Change commander
-              </span>
-              {/* Desktop: 14px #EDE6D8 weight-600 */}
-              <span
-                className="hidden md:inline font-semibold text-[14px]"
-                style={{ color: "#EDE6D8" }}
-              >
-                Change commander
-              </span>
-            </Link>
+              Change commander
+            </GhostButton>
 
             {/* §Helper text: mobile fs 12.5px lh 1.55; desktop fs 13px lh 1.6 border-top pt 16px */}
             <p
