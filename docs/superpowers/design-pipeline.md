@@ -17,7 +17,7 @@ Adopted 2026-07-18 from the Concert Crawl design pipeline (`concert-crawl/docs/s
 
 ## Voice & tone — locked
 
-The 99's voice ("Kitchen Table") was locked 2026-07-20 and is **not re-opened per ticket**. The canonical statement lives in the "Voice snapshot (locked — verbatim)" section of `design/design_handoff_the99_richness/README.md`. Copy that block verbatim into the **Copy → Voice rule** slot of a handoff prompt; deliberately not restated here, because a second copy is a second thing to drift.
+The 99's voice ("Kitchen Table") was locked 2026-07-20 and is **not re-opened per ticket**. The canonical statement lives in the "Voice snapshot (locked — verbatim)" section of `design/design_handoff_the99_richness/README.md`. A handoff prompt's **Copy → Voice rule** slot points at that section rather than reproducing it; deliberately not restated here either, because a second copy is a second thing to drift.
 
 The same handoff locks the character layer that carries the voice visually — the crab, and the kaiju it stares down — along with where character is and isn't allowed to appear. Surface work inherits both; neither is a per-ticket decision.
 
