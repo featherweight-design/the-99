@@ -34,6 +34,7 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
+| **#52** Commanders · list windowing | `design/design_handoff_the99_commanders_windowing/` | 🟡 Yellow (2026-07-25, R2) | R1 was 🟠 Orange; R2 closed both blockers — the window count now carries no total (`25 shown · 71 more below`) so it can't collide with the shipped `Showing 96 of 214`, and new state **1b** draws both figures together at desktop (1060px) + mobile (392px). Three eng-side notes in `READINESS.md`: the live-region announcement still uses the phrasing decision 5 forbids (apply decision 5's form); `REVEAL_STEP = 25 > 24` beta candidates means the control is unreachable, so the ticket needs an explicit verification path; focus-on-reveal goes on the `<li>` at index `shown - REVEAL_STEP`. |
 | **#51** Richness pass — applied across the four v1 surfaces via **#58** shell, **#59** collection, **#60** commanders, **#61** decks | `design/design_handoff_the99_richness/` | 🟡 Yellow (2026-07-24) | One plan PR sequences all four: #58 → #59/#60 → #61. Seven eng-side decisions in `READINESS.md` — chief among them that global loading and 404 are mocked but have no route files, and that `prefers-reduced-motion` has no pattern in `src/` yet. Mobile composition for the 99/99 celebration may need a Design addendum. |
 
 ---
@@ -45,7 +46,7 @@ Holds items whose readiness verdict was 🟠 Orange — per `design-pipeline.md`
 | # / handoff | Verdict PR | Blockers to close | Effort |
 |---|---|---|---|
 
-_Currently empty._
+_Currently empty — #52's R1 Orange was closed by the R2 revision (see 🟢 above)._
 
 ---
 
