@@ -5,6 +5,22 @@
 **Related ticket(s):** #35 (design), #13 (eng)
 **Plan PR target:** `docs/superpowers/plans/` — plan PR for #13
 
+## Corrections to the handoff text — read these before building from `README.md`
+
+The handoff is left **verbatim** so it records what Design actually delivered. Four factual claims in
+it are wrong, and each appears in **both** `README.md` and the canvas. Read past them; the corrected
+values are below and in the eng-side notes.
+
+| Claim as written | Locations | Correct value |
+|---|---|---|
+| Email contrast `4.6:1`, "All AA or better" | `README.md:151-152`, canvas §5 contrast table | **4.42:1 — fails AA.** Use `--fg-muted` (8.48:1). See note 1. |
+| Backdrop `rgba(10,8,6,0.72)` | `README.md:105`, `:134`, canvas §4 token map | **`rgba(8,6,4,0.72)`** — the value both shipped modals use. See note 5. |
+| Focus ring at `globals.css:130` | `README.md:75`, canvas §1 | **`:133-135`.** See note 4. |
+| Initials `7.4:1`, label `11.9:1`, ring `6.6:1` | `README.md:150-152`, canvas §5 | **7.84 / 13.47 / 7.51.** All understated, so all still pass — recompute rather than copy. |
+
+Only the first two would cause a defect if followed literally. `globals.css:166-173` (reduced motion) is
+cited three times across the two files and is **correct** in all three.
+
 ## Summary
 
 All eight locked decisions from `docs/superpowers/specs/2026-07-25-branded-user-menu-design.md` are
@@ -113,8 +129,9 @@ Leave the mobile sheet as specified: on `#1E1A15` the email already passes at 4.
 value across both panels, `--fg-muted` is safe on both. Do **not** "fix" this by enlarging the email —
 that fights the compact intent.
 
-Also correct the README's contrast table when this lands: the 4.6:1 figure is wrong, and three of the
-other four are understated (actuals 7.84 / 13.47 / 7.51). Recompute rather than copy.
+The wrong figure appears twice — `README.md:151` and the canvas §5 contrast table — so correct both if
+the handoff is ever revised, not just the README. Three of the other four figures are understated
+(actuals 7.84 / 13.47 / 7.51) and appear in the same two places. Recompute rather than copy.
 
 ### 2. The sheet background has a token — use it
 
@@ -141,8 +158,9 @@ top-anchored desktop trigger, the flip geometry is already specified and waiting
 
 ### 4. Focus-ring citation is off by three lines
 
-The handoff cites `globals.css:130` for the global focus ring. The `:focus-visible` selector is at
-`:133`, with `outline: 2px solid var(--brass)` and `outline-offset: 2px` at `:134-135`; `:130` lands
+The handoff cites `globals.css:130` for the global focus ring in two places — `README.md:75` and the
+canvas §1 trigger notes. The `:focus-visible` selector is at `:133`, with `outline: 2px solid
+var(--brass)` and `outline-offset: 2px` at `:134-135`; `:130` lands
 inside the preceding comment block. The substance of decision 7 is correct — the global ring is
 `2px` brass at `2px` offset and needs no override, and the offset does leave a band of `--bg` between
 ring and the trigger's brass border. Only the line number is wrong.
@@ -164,6 +182,13 @@ exists to prevent. Use `rgba(8,6,4,0.72)` for both the sheet backdrop and `modal
 This is safe to decide eng-side because Design's stated intent is explicit — match the existing
 overlays — and we are applying the actual existing value rather than choosing a new one. The
 `rgba(10,8,6,0.55)` at `card-modal.tsx:159` is a different element and not a counter-example.
+
+### 6. The appshell README reference is missing its `design/` prefix
+
+`README.md:10` says to read `design_handoff_the99_appshell/README.md` first. The path is
+`design/design_handoff_the99_appshell/README.md` — as written it resolves from neither the repo root
+nor the handoff folder. Harmless once you know where the file is, but it is the one instruction the
+handoff gives before anything else, so worth knowing it doesn't resolve as printed.
 
 ## Decisions inherited
 
