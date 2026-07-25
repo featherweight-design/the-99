@@ -6,6 +6,7 @@ import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
 import { retryRecs } from "./actions";
+import { GhostButton, PrimaryButton } from "../../components/ui/button";
 
 export default async function CommandersPage() {
   const userId = await requireUserId();
@@ -141,48 +142,30 @@ export default async function CommandersPage() {
           >
             {/* "Add more cards" button — primary: bg #C9A24B, color #14110E */}
             {/* Mobile: full-width, padding 12px 0; Desktop: padding 12px 22px per table */}
-            <Link
+            <PrimaryButton
               href="/collection"
-              className="font-sans font-semibold text-[14px] rounded-[8px] text-center block p-[12px_0] sm:p-[12px_22px]"
-              style={{
-                color: "#14110E",
-                background: "#C9A24B",
-                border: "none",
-                textDecoration: "none",
-              }}
+              className="text-[14px] text-center block p-[12px_0] sm:p-[12px_22px]"
             >
               Add more cards
-            </Link>
+            </PrimaryButton>
 
             {/* "View collection" button — secondary */}
-            <Link
+            <GhostButton
               href="/collection"
-              className="font-sans font-semibold text-[14px] rounded-[8px] text-center block p-[12px_0] sm:p-[12px_22px]"
-              style={{
-                color: "#EDE6D8",
-                background: "transparent",
-                border: "1px solid #3A3229",
-                textDecoration: "none",
-              }}
+              className="text-[14px] text-center block p-[12px_0] sm:p-[12px_22px]"
             >
               View collection
-            </Link>
+            </GhostButton>
 
             {/* Retry — visible when EDHREC was degraded */}
             {degraded && (
               <form action={retryRecs} className="w-full sm:w-auto">
-                <button
+                <GhostButton
                   type="submit"
-                  className="font-sans font-semibold text-[14px] rounded-[8px] w-full p-[12px_0] sm:p-[12px_22px]"
-                  style={{
-                    color: "#EDE6D8",
-                    background: "transparent",
-                    border: "1px solid #3A3229",
-                    cursor: "pointer",
-                  }}
+                  className="text-[14px] w-full p-[12px_0] sm:p-[12px_22px]"
                 >
                   Retry
-                </button>
+                </GhostButton>
               </form>
             )}
           </div>

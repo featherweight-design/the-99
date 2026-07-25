@@ -9,6 +9,7 @@ import { fitSegments } from "../../lib/recs/format";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { FullCardTrigger } from "./full-card-trigger";
+import { GhostButton, PrimaryButton } from "../ui/button";
 
 // ─── Internal sub-component types ───────────────────────────────────────────
 
@@ -736,22 +737,13 @@ export function CommanderDetail({
             {c.colorPoolSize} cards in your pool
           </span>
         </div>
-        <Link
+        <PrimaryButton
           href={`/decks?commander=${c.oracleId}`}
           // brand focus-visible outline treatment inherited from globals.css
-          className="font-sans font-[600] rounded-[8px] text-center"
-          style={{
-            fontSize: 14,
-            color: "#14110E",
-            background: "#C9A24B",
-            border: "none",
-            padding: "12px 20px",
-            textDecoration: "none",
-            whiteSpace: "nowrap",
-          }}
+          className="text-[14px] p-[12px_20px] text-center whitespace-nowrap"
         >
           Build this deck →
-        </Link>
+        </PrimaryButton>
       </div>
 
       {/* ── Desktop: two-column layout ──────────────────────────────── */}
@@ -917,40 +909,21 @@ export function CommanderDetail({
           )}
 
           {/* Build this deck button */}
-          <Link
+          <PrimaryButton
             href={`/decks?commander=${c.oracleId}`}
             // brand focus-visible outline treatment inherited from globals.css
-            className="font-sans font-[600] rounded-[8px] text-center block"
-            style={{
-              fontSize: 15,
-              color: "#14110E",
-              background: "#C9A24B",
-              border: "none",
-              padding: "14px 0",
-              width: "100%",
-              textDecoration: "none",
-              cursor: "pointer",
-            }}
+            className="text-[15px] p-[14px_0] text-center block w-full"
           >
             Build this deck →
-          </Link>
+          </PrimaryButton>
 
           {/* Compare button */}
-          <button
-            type="button"
+          <GhostButton
             // brand focus-visible outline treatment inherited from globals.css
-            className="font-sans font-[600] rounded-[8px] w-full"
-            style={{
-              fontSize: 13,
-              color: "#EDE6D8",
-              background: "transparent",
-              border: "1px solid #3A3229",
-              padding: "11px 0",
-              cursor: "pointer",
-            }}
+            className="text-[13px] p-[11px_0] w-full"
           >
             Compare with another general
-          </button>
+          </GhostButton>
 
           {/* Seed note */}
           <p
