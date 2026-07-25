@@ -60,15 +60,14 @@ Eight named states across the two v2 mocks. Reachability in current code:
 
 ### ♿ Cross-cutting
 
-- [🟡] **The contrast lift needs per-usage judgment, not a blanket token change.** `--fg-locked` (`#6A6152`) has five usage sites:
+- [🟡] **The contrast lift needs per-usage judgment, not a blanket token change.** `--fg-locked` (`#6A6152`) is consumed in four components:
 
   | Site | Nature | Lift? |
   |---|---|---|
-  | `src/components/shell/nav.tsx` (locked rail items, locked-surfaces caption) | informational text | **yes** — this is what the README names |
-  | `src/components/home/first-run.tsx` ("unlocks after upload" hint) | informational text | **yes** |
-  | `src/components/collection/rows-view.tsx` | separator/meta text | **yes** |
-  | `src/components/collection/upload-entry.tsx` (`caretColor`) | not text | no — SC 1.4.3 doesn't apply |
-  | `src/components/collection/issue-inspector.tsx` (disabled button) | disabled control | no — WCAG 1.4.3 explicitly exempts inactive controls |
+  | `src/components/shell/nav.tsx:141,183,283` (locked rail items desktop + mobile, "Surfaces unlock once your collection is uploaded" caption) | informational text | **yes** — this is what the README names |
+  | `src/components/home/first-run.tsx:136` ("unlocks after upload" hint) | informational text | **yes** |
+  | `src/components/collection/upload-entry.tsx:206` (`caretColor`) | not text | no — SC 1.4.3 doesn't apply |
+  | `src/components/collection/issue-inspector.tsx:468` (disabled button) | disabled control | no — WCAG 1.4.3 explicitly exempts inactive controls |
 
   Redefining `--fg-locked` globally would sweep the last two along with it. Recommend keeping `--fg-locked` for genuinely-disabled/non-text uses and moving the informational sites to `--fg-faint`.
 - [🔴] **`prefers-reduced-motion` has zero occurrences in `src/`.** The handoff requires it ("respect `prefers-reduced-motion`; app fully usable static") and this pass introduces the app's first real motion — bob 4.5s, glow pulse, breathe 9–10s, dots 1.2s. There is no existing pattern to follow, so the plan PR must establish one.
