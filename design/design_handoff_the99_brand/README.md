@@ -55,9 +55,8 @@ used; both are now resolved into the four-step ramp above:
 
 **Faint contrast fixed.** The draft faint `#7C7059` measured ~3.8:1 on base `#14110E` — below
 WCAG AA (4.5:1) for small text. The new faint `#8E8269` measures ~4.97:1 on base, passing AA
-for the 11px uppercase Plex Mono labels it's specced for. The sheet is updated; no `#7C7059`
-remains in the locked brand sheet. (The discovery board still shows draft values — it is a
-historical record of the exploration, not a token source.)
+for the 11px uppercase Plex Mono labels it's specced for. The sheet is updated; there is no
+remaining `#7C7059` in the system.
 
 ### Accent — brass
 | Token        | Hex       | Usage                        |
@@ -146,11 +145,8 @@ CSS/markup and should be rebuilt as SVG/components in the target codebase.
 - `The 99 - Brand Sheet.dc.html` — the locked reference sheet (this handoff's source of truth).
 - `The 99 Brand Discovery.dc.html` — the fuller discovery board (tone, palette options, type
   specimens, logomark concepts) for additional context on how decisions were reached.
+- `support.js` — Design Component runtime the two `.dc.html` files load. Bundled alongside so
+  the pages render locally when opened directly from disk.
 
-Each is a single HTML file with no local dependencies — open directly in a browser. An
-internet connection is required to load the fonts from Google Fonts. They are authored as
-Design Components: the in-body `<x-dc>`/`<helmet>` wrappers are DC authoring syntax, kept
-intentionally so the files round-trip back into the design tool. That placement is not
-standards-conformant HTML; mainstream browsers apply the contained `<link>`/`<style>` tags
-in practice, but other viewers/tools may not — treat the files as browser-viewed references,
-not validated markup.
+Open the `.dc.html` files directly in a browser; each loads `./support.js` from this folder
+to boot the Design Component runtime.
