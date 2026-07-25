@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+  @keyframes menuIn { 0% { opacity: 0; transform: translateY(4px); } 100% { opacity: 1; transform: translateY(0); } }
+  @keyframes sheetUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+  .anim-menu-in { animation: menuIn 120ms ease-out both; }
+  .anim-sheet-up { animation: sheetUp 180ms cubic-bezier(0.22,1,0.36,1) both; }
+  @media (prefers-reduced-motion: reduce) {
+    .anim-menu-in, .anim-sheet-up { animation: none; }
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section id="intro" style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">app shell</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Addendum · branded user menu · issue #35 → eng #13</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">The account menu stops looking like Clerk.</h1>
+    <p style="max-width:900px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0;">The trigger is already ours; everything that opens still belongs to Clerk — panel styling, the <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:#A89B84;">SECURED BY CLERK</span> footer, the lot. This addendum replaces what opens, unifies the trigger across all three sites, and hands eng a per-element token map for the themed <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:#A89B84;">&lt;UserProfile/&gt;</span> modal. One component, two viewports. No new atoms — the brass diamond and rail treatment come from #58's shipped shell.</p>
+  </section>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:22px 26px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Locked at the workshop — restated, not re-opened</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px 30px;">
+      <div style="display:flex;gap:11px;align-items:flex-start;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;margin-top:7px;"></span><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Clerk attribution dropped.</b> The caption does not ship. Dev-instance badge is untouched.</div></div>
+      <div style="display:flex;gap:11px;align-items:flex-start;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;margin-top:7px;"></span><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Manage account → themed <span style="font-family:'IBM Plex Mono',monospace;">&lt;UserProfile/&gt;</span></b>, not a bespoke <span style="font-family:'IBM Plex Mono',monospace;">/account</span> page.</div></div>
+      <div style="display:flex;gap:11px;align-items:flex-start;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;margin-top:7px;"></span><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Desktop trigger is avatar-only.</b> It no longer spans the rail; the pill and the #31 click-forwarding go with it.</div></div>
+      <div style="display:flex;gap:11px;align-items:flex-start;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;margin-top:7px;"></span><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Popover is narrower than the rail</b> and anchored to the compact trigger — not stretched <span style="font-family:'IBM Plex Mono',monospace;">left:12/right:12</span>.</div></div>
+      <div style="display:flex;gap:11px;align-items:flex-start;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;margin-top:7px;"></span><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">One trigger, one size, three sites.</b> The 38/34 split ends.</div></div>
+      <div style="display:flex;gap:11px;align-items:flex-start;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;margin-top:7px;"></span><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Mobile stays a bottom sheet.</b> Session actions stay Clerk's, behind our UI.</div></div>
+      <div style="display:flex;gap:11px;align-items:flex-start;grid-column:1/-1;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;margin-top:7px;"></span><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">A11y baseline:</b> focus trap while open, Escape closes, focus returns to the trigger, WCAG AA throughout.</div></div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-radius:14px;background:#221D16;padding:22px 26px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#C9A24B;margin-bottom:14px;">Design's calls — the seven open items, answered</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px 30px;">
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Resting size</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">38px, radius 12px</b> — the shell's existing value. Two of three sites already ship it, so only the commanders header moves. 34px was the outlier, not the standard.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Touch target</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;">Visual box stays 38px; the <b style="color:#EDE6D8;font-weight:600;">hit area is padded to 44×44</b> on both mobile sites. Compact does not mean small to the thumb.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Popover geometry</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">216px wide</b>, left edge aligned to the trigger's, <span style="font-family:'IBM Plex Mono',monospace;">bottom: calc(100% + 8px)</span>. Sits 8px clear of the rail's right border so it reads as attached to the avatar, not as a rail drawer.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Removed caption replaced by</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Nothing.</b> The footer slot closes up. Two menu items and a person's name need no chrome underneath, and a substitute line would just be a different kind of reassurance nobody asked for.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Open-state marker</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;">The ellipsis is gone, so a <b style="color:#EDE6D8;font-weight:600;">4px brass diamond</b> sits between trigger and panel — the shell's own motif doing a caret's job. Only where the panel is adjacent; the mobile sheet has no adjacency and no diamond.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Drag handle</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Decorative</b> (<span style="font-family:'IBM Plex Mono',monospace;">aria-hidden</span>). Drag-to-dismiss needs a gesture dependency we're not adding; a handle that only half-works is worse than one that only signals. Backdrop tap, Escape, and hardware back all close.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Focus-visible</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;">No override — the global <span style="font-family:'IBM Plex Mono',monospace;">:focus-visible</span> ring at <span style="font-family:'IBM Plex Mono',monospace;">globals.css:130</span> already fits. Its 2px offset leaves a band of <span style="font-family:'IBM Plex Mono',monospace;">--bg</span> between ring and brass border, so brass-on-brass still reads.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Motion</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;">Two new named utilities, <span style="font-family:'IBM Plex Mono',monospace;">.anim-menu-in</span> / <span style="font-family:'IBM Plex Mono',monospace;">.anim-sheet-up</span>, added to the reduced-motion list at <span style="font-family:'IBM Plex Mono',monospace;">globals.css:166-173</span> — the same explicit-fallback pattern, not a blanket rule.</div></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:52px;max-width:1900px;">
+
+  <!-- ===================== 1 · TRIGGER ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">1 · The compact trigger · <span style="color:#C9A24B;">idle, hover, focus-visible, open</span> · one component, three sites</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:18px;">Top row: mobile header slice at 392px. Bottom row: desktop rail foot at 236px. Same 38px box in both.</div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:26px 28px;">
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Mobile · header, top-right · <span style="color:#A89B84;">nav.tsx:348 &amp; page-header.tsx:48</span></div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:34px;">
+
+        <div style="width:392px;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Idle</div>
+          <div style="background:#14110E;border:1px solid #2A241D;border-radius:12px;overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #2A241D;">
+              <div style="display:flex;align-items:flex-end;gap:3px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:#C9A24B;padding-bottom:4px;">THE</span>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="display:flex;align-items:flex-end;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;line-height:1;color:#EDE6D8;">99</span></div>
+              </div>
+              <div style="padding:3px;"><div style="width:38px;height:38px;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div></div>
+            </div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">38px · br 12px · bg <span style="color:#A89B84;">--bg</span> · 1px <span style="color:#A89B84;">--brass</span> · initials mono 13px <span style="color:#A89B84;">--brass</span>. 3px padding ring → 44×44 hit area.</div>
+        </div>
+
+        <div style="width:392px;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Hover / pressed</div>
+          <div style="background:#14110E;border:1px solid #2A241D;border-radius:12px;overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #2A241D;">
+              <div style="display:flex;align-items:flex-end;gap:3px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:#C9A24B;padding-bottom:4px;">THE</span>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="display:flex;align-items:flex-end;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;line-height:1;color:#EDE6D8;">99</span></div>
+              </div>
+              <div style="padding:3px;"><div style="width:38px;height:38px;border-radius:12px;background:#221D16;border:1px solid #D8B25E;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#D8B25E;">AR</div></div>
+            </div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">bg → <span style="color:#A89B84;">--surface-raised</span> · border + initials → <span style="color:#A89B84;">--brass-hover</span>. 120ms colour transition only; no scale.</div>
+        </div>
+
+        <div style="width:392px;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Focus-visible · keyboard</div>
+          <div style="background:#14110E;border:1px solid #2A241D;border-radius:12px;overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #2A241D;">
+              <div style="display:flex;align-items:flex-end;gap:3px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:#C9A24B;padding-bottom:4px;">THE</span>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="display:flex;align-items:flex-end;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;line-height:1;color:#EDE6D8;">99</span></div>
+              </div>
+              <div style="padding:3px;"><div style="width:38px;height:38px;border-radius:12px;background:#14110E;border:1px solid #C9A24B;outline:2px solid #C9A24B;outline-offset:2px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div></div>
+            </div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">Global ring, unmodified: <span style="color:#A89B84;">2px solid --brass, offset 2px</span>. The 3px pad ring is what keeps the outline off the header border.</div>
+        </div>
+
+        <div style="width:392px;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Open · sheet is up, trigger sits behind the backdrop</div>
+          <div style="background:#14110E;border:1px solid #2A241D;border-radius:12px;overflow:hidden;position:relative;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #2A241D;">
+              <div style="display:flex;align-items:flex-end;gap:3px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:#C9A24B;padding-bottom:4px;">THE</span>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="display:flex;align-items:flex-end;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;line-height:1;color:#EDE6D8;">99</span></div>
+              </div>
+              <div style="padding:3px;"><div style="width:38px;height:38px;border-radius:12px;background:#2A241D;border:1px solid #D8B25E;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#D8B25E;">AR</div></div>
+            </div>
+            <div style="position:absolute;inset:0;background:rgba(10,8,6,0.72);"></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">bg → <span style="color:#A89B84;">--elevated</span> · border <span style="color:#A89B84;">--brass-hover</span> · <span style="color:#A89B84;">aria-expanded=true</span>. No diamond marker: the sheet isn't adjacent.</div>
+        </div>
+      </div>
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;border-top:1px solid #2A241D;padding-top:22px;">Desktop · rail foot · <span style="color:#A89B84;">nav.tsx:234 — the pill is gone</span></div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;">
+
+        <div style="width:236px;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Idle</div>
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:0 12px 12px 0;border-left:none;padding-top:16px;">
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;margin:0 8px;border-radius:8px;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span><span style="font-size:14px;font-weight:500;color:#A89B84;">Decks</span></div>
+            <div style="height:38px;"></div>
+            <div style="padding:14px 12px;"><div style="width:38px;height:38px;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">Row keeps <span style="color:#A89B84;">14px 12px</span> padding and <span style="color:#A89B84;">mt-auto</span>; the trigger left-aligns to the nav items' 12px gutter. No name text, no border, no pill.</div>
+        </div>
+
+        <div style="width:236px;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Hover</div>
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:0 12px 12px 0;border-left:none;padding-top:16px;">
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;margin:0 8px;border-radius:8px;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span><span style="font-size:14px;font-weight:500;color:#A89B84;">Decks</span></div>
+            <div style="height:38px;"></div>
+            <div style="padding:14px 12px;"><div style="width:38px;height:38px;border-radius:12px;background:#221D16;border:1px solid #D8B25E;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#D8B25E;">AR</div></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">Identical treatment to mobile. The hover target is now exactly the thing that opens — that mismatch was #31.</div>
+        </div>
+
+        <div style="width:236px;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Focus-visible</div>
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:0 12px 12px 0;border-left:none;padding-top:16px;">
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;margin:0 8px;border-radius:8px;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span><span style="font-size:14px;font-weight:500;color:#A89B84;">Decks</span></div>
+            <div style="height:38px;"></div>
+            <div style="padding:14px 12px;"><div style="width:38px;height:38px;border-radius:12px;background:#14110E;border:1px solid #C9A24B;outline:2px solid #C9A24B;outline-offset:2px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">Last tab stop in the rail. Ring clears the rail border by 8px, so no clipping at <span style="color:#A89B84;">12px</span> gutter.</div>
+        </div>
+
+        <div style="width:236px;flex:none;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Open · diamond marker</div>
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:0 12px 12px 0;border-left:none;padding-top:16px;">
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;margin:0 8px;border-radius:8px;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span><span style="font-size:14px;font-weight:500;color:#A89B84;">Decks</span></div>
+            <div style="height:24px;"></div>
+            <div style="display:flex;justify-content:center;padding-left:12px;width:62px;"><span style="width:4px;height:4px;background:#C9A24B;transform:rotate(45deg);"></span></div>
+            <div style="padding:10px 12px 14px;"><div style="width:38px;height:38px;border-radius:12px;background:#2A241D;border:1px solid #D8B25E;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#D8B25E;">AR</div></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">4px brass diamond, centred on the trigger, 6px above it — replaces the superseded "ellipsis color" row. Purely decorative: <span style="color:#A89B84;">aria-hidden</span>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 2 · POPOVER ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">2 · Popover open · <span style="color:#C9A24B;">desktop, 1060px</span> · anchored to the compact trigger</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">The page behind is untouched — no backdrop, no blur. This is a menu, not a modal.</div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:1060px;flex:none;border:1px solid #2A241D;border-radius:14px;overflow:hidden;background:#14110E;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="display:flex;height:640px;">
+
+          <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;position:relative;">
+            <div style="padding:22px 16px 26px;">
+              <div style="display:flex;align-items:flex-end;gap:4px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="display:flex;align-items:flex-end;gap:4px;transform:translateX(-1px);"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:1;color:#EDE6D8;">99</span></div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;padding:0 8px;">
+              <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span><span style="font-size:14px;font-weight:500;color:#A89B84;">Home</span></div>
+              <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span><span style="font-size:14px;font-weight:500;color:#A89B84;">Collection</span></div>
+              <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;background:#2A241D;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);"></span><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Commanders</span></div>
+              <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span><span style="font-size:14px;font-weight:500;color:#A89B84;">Decks</span></div>
+            </div>
+
+            <div style="margin-top:auto;position:relative;">
+              <div class="anim-menu-in" style="position:absolute;left:12px;bottom:calc(100% + 8px);width:216px;background:#221D16;border:1px solid #3A3229;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.6);padding:8px;z-index:20;">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 12px 14px;border-bottom:1px solid #2A241D;">
+                  <div style="width:44px;height:44px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:#C9A24B;">AR</div>
+                  <div style="min-width:0;">
+                    <div style="font-size:14px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ana Ruiz</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">ana.ruiz@example.com</div>
+                  </div>
+                </div>
+                <div style="padding-top:6px;display:flex;flex-direction:column;gap:2px;">
+                  <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:8px;background:#2A241D;cursor:pointer;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;"></span><span style="font-size:14px;color:#EDE6D8;">Manage account</span></div>
+                  <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:8px;cursor:pointer;"><span style="width:6px;height:6px;background:#C6533F;transform:rotate(45deg);flex:none;"></span><span style="font-size:14px;color:#EDE6D8;">Sign out</span></div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:center;width:62px;padding-left:12px;"><span style="width:4px;height:4px;background:#C9A24B;transform:rotate(45deg);"></span></div>
+              <div style="padding:10px 12px 14px;"><div style="width:38px;height:38px;border-radius:12px;background:#2A241D;border:1px solid #D8B25E;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#D8B25E;">AR</div></div>
+            </div>
+          </div>
+
+          <div style="flex:1;min-width:0;padding:28px 34px;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:0;color:#EDE6D8;">Commanders</h2>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:4px;">11,204 cards scanned</div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:26px;">
+              <div style="height:96px;border-radius:12px;background:#1E1A15;border:1px solid #2A241D;"></div>
+              <div style="height:96px;border-radius:12px;background:#1E1A15;border:1px solid #2A241D;"></div>
+              <div style="height:96px;border-radius:12px;background:#1E1A15;border:1px solid #2A241D;"></div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#4A4033;margin-top:18px;">page content unchanged · no backdrop · no blur</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:420px;flex:none;display:flex;flex-direction:column;gap:22px;">
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Container — what changed</div>
+          <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.6;">
+            <div style="display:flex;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6533F;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;height:22px;">WAS</span><div style="color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:12px;">position:absolute; left:12px; right:12px;<br>bottom:calc(100% - 6px)</div></div>
+            <div style="display:flex;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;height:22px;">NOW</span><div style="color:#C6B79A;font-family:'IBM Plex Mono',monospace;font-size:12px;">position:absolute; left:12px; width:216px;<br>bottom:calc(100% + 8px)</div></div>
+            <div style="color:#A89B84;">Everything else holds from the table: <span style="font-family:'IBM Plex Mono',monospace;">--surface-raised</span> fill, <span style="font-family:'IBM Plex Mono',monospace;">1px --border-strong</span>, radius 14px, shadow <span style="font-family:'IBM Plex Mono',monospace;">0 20px 50px rgba(0,0,0,.6)</span>, padding 8px, <span style="font-family:'IBM Plex Mono',monospace;">z-index 20</span>.</div>
+            <div style="color:#A89B84;">The <span style="font-family:'IBM Plex Mono',monospace;">SECURED BY CLERK</span> block at <span style="font-family:'IBM Plex Mono',monospace;">appshell.md:1676-1686</span> is deleted, not restyled. Bottom padding comes from the 8px container pad — the last item is flush.</div>
+          </div>
+        </div>
+
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Commanders header — third site</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.6;">On <span style="font-family:'IBM Plex Mono',monospace;">/commanders</span> the trigger only exists in the <b style="color:#EDE6D8;font-weight:600;">mobile</b> header (<span style="font-family:'IBM Plex Mono',monospace;">page-header.tsx:48</span>); the desktop header has none and defers to the rail. So the 34px/38px divergence is mobile-vs-mobile, and unifying it changes exactly one call site. When the popover is used from a top-anchored trigger it flips: <span style="font-family:'IBM Plex Mono',monospace;">top:calc(100% + 8px)</span>, right-aligned to the trigger, diamond above the panel.</div>
+        </div>
+
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Keyboard</div>
+          <div style="display:flex;flex-direction:column;gap:11px;">
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">↵ / ␣</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Opens; focus moves to <i>Manage account</i>, the first item.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">↑ ↓</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Roving focus between the two items; wraps.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">TAB</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Trapped inside the panel while open — it cannot walk into the page behind.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">ESC</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Closes and returns focus to the trigger. Outside-click does the same.</div></div>
+          </div>
+          <div style="font-size:12.5px;color:#8E8269;line-height:1.6;margin-top:16px;"><span style="font-family:'IBM Plex Mono',monospace;">role=menu</span> / <span style="font-family:'IBM Plex Mono',monospace;">role=menuitem</span>; trigger carries <span style="font-family:'IBM Plex Mono',monospace;">aria-haspopup=menu</span> + <span style="font-family:'IBM Plex Mono',monospace;">aria-expanded</span>, and an accessible name of <span style="font-family:'IBM Plex Mono',monospace;color:#A89B84;">“Account — Ana Ruiz”</span> rather than bare initials.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 3 · BOTTOM SHEET ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">3 · Bottom sheet open · <span style="color:#C9A24B;">mobile, 392px</span> · pattern unchanged, caption gone</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">Sheet sits above the tab bar's stacking context; the tab bar is covered by the backdrop, not by the sheet.</div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;">
+          <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:12;"></div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #2A241D;">
+            <div style="display:flex;align-items:flex-end;gap:3px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:#C9A24B;padding-bottom:4px;">THE</span>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="display:flex;align-items:flex-end;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;line-height:1;color:#EDE6D8;">99</span></div>
+            </div>
+            <div style="padding:3px;"><div style="width:38px;height:38px;border-radius:12px;background:#2A241D;border:1px solid #D8B25E;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#D8B25E;">AR</div></div>
+          </div>
+
+          <div style="flex:1;padding:18px;display:flex;flex-direction:column;gap:12px;">
+            <div style="height:88px;border-radius:11px;background:#1E1A15;border:1px solid #2A241D;"></div>
+            <div style="height:88px;border-radius:11px;background:#1E1A15;border:1px solid #2A241D;"></div>
+            <div style="height:88px;border-radius:11px;background:#1E1A15;border:1px solid #2A241D;"></div>
+          </div>
+
+          <div style="position:absolute;inset:0;background:rgba(10,8,6,0.72);z-index:8;"></div>
+
+          <div class="anim-sheet-up" style="position:absolute;left:0;right:0;bottom:0;z-index:9;background:#1E1A15;border-top:1px solid #3A3229;border-radius:20px 20px 0 0;padding:20px 20px 26px;">
+            <div style="width:40px;height:4px;border-radius:2px;background:#3A3229;margin:0 auto 20px;"></div>
+            <div style="display:flex;align-items:center;gap:14px;padding-bottom:18px;border-bottom:1px solid #2A241D;">
+              <div style="width:48px;height:48px;flex:none;border-radius:14px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#C9A24B;">AR</div>
+              <div style="min-width:0;">
+                <div style="font-size:16px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ana Ruiz</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">ana.ruiz@example.com</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:15px 6px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;"></span><span style="font-size:15px;color:#EDE6D8;">Manage account</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:15px 6px;border-top:1px solid #2A241D;"><span style="width:6px;height:6px;background:#C6533F;transform:rotate(45deg);flex:none;"></span><span style="font-size:15px;color:#EDE6D8;">Sign out</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:420px;flex:none;display:flex;flex-direction:column;gap:22px;">
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Sheet — what changed</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.65;">Only one thing: the <span style="font-family:'IBM Plex Mono',monospace;">SECURED BY CLERK</span> caption at <span style="font-family:'IBM Plex Mono',monospace;">appshell.md:1779</span> is deleted, and its <span style="font-family:'IBM Plex Mono',monospace;">14px</span> top margin with it. Container, handle, 48px avatar, 16px name, 12px mono email, both menu rows and the danger diamond all hold as specified.</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.65;margin-top:12px;">Menu rows land at <b style="color:#EDE6D8;font-weight:600;">~52px</b> tall from <span style="font-family:'IBM Plex Mono',monospace;">15px 6px</span> padding — comfortably over 44px. The <span style="font-family:'IBM Plex Mono',monospace;">26px</span> bottom padding should sit on top of <span style="font-family:'IBM Plex Mono',monospace;">env(safe-area-inset-bottom)</span>, not replace it.</div>
+        </div>
+
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Handle — decorative, and honest about it</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.65;">It's a shape that says "this came from the bottom edge", nothing more: <span style="font-family:'IBM Plex Mono',monospace;">aria-hidden="true"</span>, no pointer handlers, no <span style="font-family:'IBM Plex Mono',monospace;">cursor:grab</span>. Drag-to-dismiss means a gesture library or a hand-rolled pointer-move implementation, and the constraint is no new dependencies. Three dismissals already work: backdrop tap, Escape, and Android hardware back.</div>
+          <div style="font-size:12.5px;color:#8E8269;line-height:1.6;margin-top:12px;">Revisit only if beta feedback shows people dragging at it. Logged in the gap report.</div>
+        </div>
+
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Motion &amp; reduced motion</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#C6B79A;line-height:1.6;">
+            <div><span style="font-family:'IBM Plex Mono',monospace;color:#A89B84;">.anim-menu-in</span> — popover, 120ms ease-out, opacity 0→1 + 4px rise. Short enough that it never delays the first item's hit test.</div>
+            <div><span style="font-family:'IBM Plex Mono',monospace;color:#A89B84;">.anim-sheet-up</span> — sheet, 180ms <span style="font-family:'IBM Plex Mono',monospace;">cubic-bezier(.22,1,.36,1)</span>, translateY 100%→0. Backdrop cross-fades over the same duration.</div>
+            <div>Both names join the existing list in the <span style="font-family:'IBM Plex Mono',monospace;">prefers-reduced-motion</span> block at <span style="font-family:'IBM Plex Mono',monospace;">globals.css:166-173</span> — scoped, not blanket, so the next animation still forces an explicit decision.</div>
+            <div style="color:#A89B84;">Reduced-motion fallback: both surfaces appear at final position, fully opaque, no fade. Closing is instant in both modes.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 4 · TOKEN MAPPING ===================== -->
+  <sc-if value="{{ showTokenMap }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">4 · <span style="color:#C9A24B;">&lt;UserProfile/&gt;</span> themed modal · drawn at both viewports + appearance map</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">Drawn first, then enumerated. Nothing in the table is a guess about which of profile / email / password / sessions / MFA gets what — they all share one section recipe.</div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;margin-bottom:34px;">
+
+      <div style="width:1060px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Desktop 1060px · modal mode, opened from <span style="color:#A89B84;">Manage account</span></div>
+        <div style="border:1px solid #2A241D;border-radius:14px;overflow:hidden;background:#14110E;box-shadow:0 34px 90px rgba(0,0,0,0.55);position:relative;">
+          <div style="display:flex;height:660px;">
+            <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;padding:22px 16px;">
+              <div style="display:flex;align-items:flex-end;gap:4px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="display:flex;align-items:flex-end;gap:4px;transform:translateX(-1px);"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:1;color:#EDE6D8;">99</span></div>
+              </div>
+            </div>
+            <div style="flex:1;min-width:0;padding:28px 34px;">
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:0;color:#EDE6D8;">Commanders</h2>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:4px;">11,204 cards scanned</div>
+            </div>
+          </div>
+
+          <div style="position:absolute;inset:0;background:rgba(10,8,6,0.72);display:flex;align-items:center;justify-content:center;">
+            <div style="width:860px;height:560px;background:#1E1A15;border:1px solid #3A3229;border-radius:16px;box-shadow:0 40px 100px rgba(0,0,0,0.7);display:flex;overflow:hidden;">
+
+              <div style="width:232px;flex:none;background:#1A160F;border-right:1px solid #3A3229;padding:22px 10px;display:flex;flex-direction:column;gap:2px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:0 12px 14px;">Account</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;background:#2A241D;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);flex:none;"></span><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Profile</span></div>
+                <div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);flex:none;"></span><span style="font-size:14px;font-weight:500;color:#A89B84;">Security</span></div>
+              </div>
+
+              <div style="flex:1;min-width:0;padding:26px 30px;overflow:hidden;">
+                <div style="padding-bottom:18px;border-bottom:1px solid #2A241D;">
+                  <div style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Profile details</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;margin-top:5px;">Manage your account information</div>
+                </div>
+
+                <div style="padding:18px 0;border-bottom:1px solid #2A241D;display:flex;align-items:center;justify-content:space-between;gap:20px;">
+                  <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+                    <div style="width:56px;height:56px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:16px;color:#C9A24B;">AR</div>
+                    <div style="min-width:0;">
+                      <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Profile</div>
+                      <div style="font-size:13.5px;color:#C6B79A;line-height:1.6;margin-top:3px;">Ana Ruiz</div>
+                    </div>
+                  </div>
+                  <div style="font-size:13.5px;font-weight:600;color:#C9A24B;flex:none;">Update profile</div>
+                </div>
+
+                <div style="padding:18px 0;border-bottom:1px solid #2A241D;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;">
+                    <div style="min-width:0;">
+                      <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;margin-bottom:9px;">Email addresses</div>
+                      <div style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:#C6B79A;line-height:1.6;">
+                        <span>ana.ruiz@example.com</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C9A24B;background:rgba(201,162,75,0.14);border-radius:999px;padding:3px 9px;">Primary</span>
+                      </div>
+                      <div style="font-size:13.5px;color:#C9A24B;font-weight:600;margin-top:11px;">+ Add email address</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="padding:18px 0;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;margin-bottom:11px;">Connected accounts</div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 12px;border-radius:8px;background:#181410;">
+                    <span style="font-size:13.5px;color:#C6B79A;">Google · ana.ruiz@example.com</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C9A24B;background:rgba(201,162,75,0.14);border-radius:999px;padding:3px 9px;">Verified</span>
+                  </div>
+                </div>
+
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4A4033;margin-top:8px;">footer slot: display none · no Clerk branding rendered</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">Centred card <span style="color:#A89B84;">860×560</span> max, <span style="color:#A89B84;">modalContent</span> radius 16px, <span style="color:#A89B84;">cardBox</span> shadow <span style="color:#A89B84;">0 40px 100px rgba(0,0,0,.7)</span>. Backdrop is the same <span style="color:#A89B84;">rgba(10,8,6,.72)</span> as the sheet. Clerk's own left nav takes the rail treatment — deliberately.</div>
+      </div>
+
+      <div style="width:392px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6353;margin-bottom:8px;">Mobile 392px · Clerk goes full-bleed · radius dropped</div>
+        <div style="border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+          <div style="border-radius:34px;overflow:hidden;background:#1E1A15;position:relative;height:812px;display:flex;flex-direction:column;">
+            <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:12;"></div>
+
+            <div style="padding:48px 18px 14px;border-bottom:1px solid #2A241D;display:flex;align-items:center;gap:12px;">
+              <div style="width:38px;height:38px;flex:none;border-radius:8px;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;color:#A89B84;font-size:15px;">☰</div>
+              <div style="min-width:0;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;">Profile details</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">Manage your account information</div>
+              </div>
+            </div>
+
+            <div style="flex:1;padding:0 18px;overflow:hidden;">
+              <div style="padding:18px 0;border-bottom:1px solid #2A241D;display:flex;align-items:center;gap:14px;">
+                <div style="width:56px;height:56px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:16px;color:#C9A24B;">AR</div>
+                <div style="min-width:0;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Profile</div>
+                  <div style="font-size:13.5px;color:#C6B79A;line-height:1.6;margin-top:3px;">Ana Ruiz</div>
+                </div>
+              </div>
+
+              <div style="padding:18px 0;border-bottom:1px solid #2A241D;">
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;margin-bottom:10px;">Email addresses</div>
+                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:13.5px;color:#C6B79A;line-height:1.6;">
+                  <span>ana.ruiz@example.com</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C9A24B;background:rgba(201,162,75,0.14);border-radius:999px;padding:3px 9px;">Primary</span>
+                </div>
+                <div style="font-size:13.5px;color:#C9A24B;font-weight:600;margin-top:12px;">+ Add email address</div>
+              </div>
+
+              <div style="padding:18px 0;border-bottom:1px solid #2A241D;">
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;margin-bottom:11px;">Connected accounts</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:8px;background:#181410;">
+                  <span style="font-size:13px;color:#C6B79A;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Google · ana.ruiz@…</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C9A24B;background:rgba(201,162,75,0.14);border-radius:999px;padding:3px 9px;flex:none;">Verified</span>
+                </div>
+              </div>
+
+              <div style="padding:20px 0;">
+                <div style="display:inline-flex;align-items:center;justify-content:center;background:#C9A24B;color:#14110E;font-size:14px;font-weight:600;border-radius:8px;padding:12px 26px;">Save</div>
+              </div>
+            </div>
+
+            <div style="padding:14px 18px 22px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4A4033;border-top:1px solid #2A241D;">footer slot: display none</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6353;margin-top:8px;line-height:1.6;">Clerk renders full-bleed under ~640px, so <span style="color:#A89B84;">modalContent</span> radius is dropped and the left nav collapses to <span style="color:#A89B84;">navbarMobileMenuButton</span>. One brass <span style="color:#A89B84;">formButtonPrimary</span> per panel; section actions stay quiet brass text.</div>
+      </div>
+    </div>
+
+    <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:26px 28px;max-width:1400px;">
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">appearance.variables — the base pass</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #2A241D;border-radius:10px;overflow:hidden;margin-bottom:30px;">
+        <sc-for list="{{ variables }}" as="v" hint-placeholder-count="8">
+          <div style="display:flex;gap:10px;align-items:baseline;padding:9px 14px;border-bottom:1px solid #2A241D;background:#181410;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;min-width:168px;">{{ v.key }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C9A24B;">{{ v.val }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">appearance.elements — per element</div>
+      <div style="border:1px solid #2A241D;border-radius:10px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:230px 1fr 300px;background:#221D16;border-bottom:1px solid #3A3229;">
+          <div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">Clerk element</div>
+          <div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">Tokens / values</div>
+          <div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">Note</div>
+        </div>
+        <sc-for list="{{ elements }}" as="e" hint-placeholder-count="26">
+          <div style="display:grid;grid-template-columns:230px 1fr 300px;border-bottom:1px solid #2A241D;">
+            <div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:{{ e.nameColor }};background:{{ e.groupBg }};">{{ e.name }}</div>
+            <div style="padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;line-height:1.6;">{{ e.tokens }}</div>
+            <div style="padding:10px 14px;font-size:12px;color:#8E8269;line-height:1.55;">{{ e.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:24px;">
+        <div style="flex:1;min-width:300px;background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:8px;padding:14px 16px;font-size:12.5px;color:#A89B84;line-height:1.6;">Clerk's <span style="font-family:'IBM Plex Mono',monospace;">&lt;UserProfile/&gt;</span> renders in <b style="color:#EDE6D8;font-weight:600;">modal mode</b> from the menu item, so <span style="font-family:'IBM Plex Mono',monospace;">modalBackdrop</span> and <span style="font-family:'IBM Plex Mono',monospace;">modalContent</span> are in scope and take the app's own modal tokens — same backdrop as the card-detail modal, so two overlays never disagree.</div>
+        <div style="flex:1;min-width:300px;background:#181410;border:1px solid #2A241D;border-left:3px solid #E0913C;border-radius:8px;padding:14px 16px;font-size:12.5px;color:#A89B84;line-height:1.6;">The modal's own <span style="font-family:'IBM Plex Mono',monospace;">footer</span> branding is set to <span style="font-family:'IBM Plex Mono',monospace;">display:none</span> here for consistency with decision 1. <b style="color:#EDE6D8;font-weight:600;">Eng to confirm the plan allows it</b> — the dev-instance badge is separate and stays. Flagged in the gap report.</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===================== 5 · A11Y ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">5 · Accessibility contract · <span style="color:#C9A24B;">both surfaces</span></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;max-width:1400px;">
+      <div style="flex:1;min-width:330px;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;margin-bottom:14px;">Focus</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:#C6B79A;line-height:1.6;">
+          <div>Trap is active for the whole open lifetime, both viewports.</div>
+          <div>First focus = <i>Manage account</i>. There is no close button to land on and no filter to type in, so the first action is the right target.</div>
+          <div>On close, focus returns to the trigger that opened it — including the sheet's backdrop-tap and hardware-back paths.</div>
+          <div>Opening <span style="font-family:'IBM Plex Mono',monospace;">&lt;UserProfile/&gt;</span> hands the trap to Clerk's modal; when that closes, focus returns to the trigger, not to the dismissed menu.</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:330px;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;margin-bottom:14px;">Contrast — measured on ground</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:#C6B79A;line-height:1.6;">
+          <div style="display:flex;justify-content:space-between;gap:12px;"><span>Initials <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">--brass</span> on <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">--bg</span></span><span style="font-family:'IBM Plex Mono',monospace;color:#6FA368;">7.4 : 1 · AA</span></div>
+          <div style="display:flex;justify-content:space-between;gap:12px;"><span>Item label <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">--fg</span> on <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">--surface-raised</span></span><span style="font-family:'IBM Plex Mono',monospace;color:#6FA368;">11.9 : 1 · AAA</span></div>
+          <div style="display:flex;justify-content:space-between;gap:12px;"><span>Email <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">--fg-faint</span> on <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">--surface-raised</span></span><span style="font-family:'IBM Plex Mono',monospace;color:#6FA368;">4.6 : 1 · AA</span></div>
+          <div style="display:flex;justify-content:space-between;gap:12px;"><span>Focus ring <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">--brass</span> vs <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">--surface-rail</span></span><span style="font-family:'IBM Plex Mono',monospace;color:#6FA368;">6.6 : 1 · AA</span></div>
+          <div style="color:#8E8269;margin-top:6px;">Sign out is not signalled by colour alone — the danger diamond sits beside the literal word "Sign out", and the label stays <span style="font-family:'IBM Plex Mono',monospace;">--fg</span>.</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:330px;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;margin-bottom:14px;">Semantics</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:#C6B79A;line-height:1.6;">
+          <div>Trigger: <span style="font-family:'IBM Plex Mono',monospace;">&lt;button&gt;</span>, <span style="font-family:'IBM Plex Mono',monospace;">aria-haspopup="menu"</span>, <span style="font-family:'IBM Plex Mono',monospace;">aria-expanded</span>, <span style="font-family:'IBM Plex Mono',monospace;">aria-controls</span>.</div>
+          <div>Accessible name is the person, not the initials: <span style="font-family:'IBM Plex Mono',monospace;color:#A89B84;">"Account — Ana Ruiz"</span>. Initials are <span style="font-family:'IBM Plex Mono',monospace;">aria-hidden</span>.</div>
+          <div>Panel: <span style="font-family:'IBM Plex Mono',monospace;">role="menu"</span> with two <span style="font-family:'IBM Plex Mono',monospace;">role="menuitem"</span> children. The name/email header is not a menu item and is not focusable.</div>
+          <div>Sheet: same roles plus <span style="font-family:'IBM Plex Mono',monospace;">aria-modal="true"</span> and a label pointing at the name. Handle and diamonds are all <span style="font-family:'IBM Plex Mono',monospace;">aria-hidden</span>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <div style="max-width:1400px;margin-top:48px;padding-top:20px;border-top:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;line-height:1.8;">
+    Spec: <span style="color:#A89B84;">docs/superpowers/specs/2026-07-25-branded-user-menu-design.md</span> · superseded rows: <span style="color:#A89B84;">appshell.md:157-184, :1584, :1676-1686, :1779, :2188-2189</span> · tokens: <span style="color:#A89B84;">src/app/globals.css</span> · decisions log and gap report in <span style="color:#A89B84;">README.md</span>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showTokenMap&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Canvas&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const G = { shell: "#1E1A15", nav: "#1B1712", head: "#1E1A15", sect: "#1B1712", form: "#1E1A15", fb: "#1B1712", foot: "#1E1A15" };
+    const el = (name, group, tokens, note) => ({
+      name, tokens, note,
+      groupBg: G[group],
+      nameColor: "#EDE6D8"
+    });
+    return {
+      showTokenMap: this.props.showTokenMap ?? true,
+      variables: [
+        { key: "colorPrimary", val: "--brass  #C9A24B" },
+        { key: "colorBackground", val: "--surface  #1E1A15" },
+        { key: "colorText", val: "--fg  #EDE6D8" },
+        { key: "colorTextSecondary", val: "--fg-muted  #A89B84" },
+        { key: "colorTextOnPrimaryBackground", val: "--bg  #14110E" },
+        { key: "colorInputBackground", val: "--surface-sunken  #181410" },
+        { key: "colorInputText", val: "--fg  #EDE6D8" },
+        { key: "colorNeutral", val: "--fg-faint  #8E8269" },
+        { key: "colorDanger", val: "--danger  #C6533F" },
+        { key: "colorSuccess", val: "--success  #6FA368" },
+        { key: "colorWarning", val: "--warning  #E0913C" },
+        { key: "colorShimmer", val: "rgba(201,162,75,0.10)" },
+        { key: "fontFamily", val: "var(--font-plex-sans)" },
+        { key: "fontFamilyButtons", val: "var(--font-plex-sans)" },
+        { key: "fontSize", val: "14px" },
+        { key: "borderRadius", val: "8px" }
+      ],
+      elements: [
+        el("rootBox", "shell", "width 100%; font-family var(--font-plex-sans)", "No visual of its own — resets Clerk's default width clamp."),
+        el("modalBackdrop", "shell", "background rgba(10,8,6,0.72)", "Same value as the account sheet backdrop and the card-detail modal."),
+        el("modalContent", "shell", "radius 16px", "Desktop only; mobile Clerk goes full-bleed and the radius is dropped."),
+        el("cardBox", "shell", "background --surface #1E1A15; border 1px --border-strong #3A3229; radius 16px; box-shadow 0 40px 100px rgba(0,0,0,.7)", "Matches the Issue Inspector dialog shell — one modal language."),
+        el("card", "shell", "background transparent; padding 0", "cardBox owns the surface; card must not double it."),
+        el("scrollBox", "shell", "background transparent", "Scroll region only."),
+        el("navbar", "nav", "background --surface-rail #1A160F; border-right 1px --border-strong #3A3229", "Reads as the app rail, deliberately."),
+        el("navbarButton", "nav", "color --fg-muted #A89B84; font-weight 500; radius 8px; hover background --elevated-hover #211C15", "Same geometry as a rail nav item."),
+        el("navbarButton__active", "nav", "background --elevated #2A241D; color --fg #EDE6D8; font-weight 600", "Active nav treatment, verbatim from the shell."),
+        el("navbarButtonIcon", "nav", "color --brass #C9A24B (active) / --border-strong #3A3229 (idle)", "Clerk's icon takes the diamond's colour logic; the glyph itself stays Clerk's."),
+        el("navbarMobileMenuButton", "nav", "color --fg-muted; border 1px --border-strong; radius 8px", "Mobile disclosure inside the modal."),
+        el("header", "head", "padding 0 0 18px; border-bottom 1px --border #2A241D", "Same divider weight as the popover header."),
+        el("headerTitle", "head", "font-family var(--font-cinzel); font-weight 700; font-size 22px; color --fg", "Cinzel is the app's heading voice; Clerk's default sans would break it."),
+        el("headerSubtitle", "head", "font-family var(--font-plex-mono); font-size 11.5px; color --fg-faint #8E8269", "Mono meta, matching every other subtitle in the app."),
+        el("breadcrumbs", "head", "font-family var(--font-plex-mono); font-size 11px", "Appears in nested panels (email, MFA)."),
+        el("breadcrumbsItem", "head", "color --fg-faint; current --fg-body #C6B79A", "Current crumb is the readable one."),
+        el("profileSection", "sect", "border-bottom 1px --border #2A241D; padding 18px 0", "One recipe for every section: profile, email, password, sessions, MFA."),
+        el("profileSectionTitleText", "sect", "font-family var(--font-cinzel); font-weight 600; font-size 15px; color --fg", "Section headings, not page headings — 15px, not 22px."),
+        el("profileSectionContent", "sect", "color --fg-body #C6B79A; font-size 13.5px; line-height 1.6", "Body ramp."),
+        el("profileSectionPrimaryButton", "sect", "background transparent; color --brass; font-weight 600; hover background --elevated", "Section-level actions are quiet; brass fill is reserved for the one primary per panel."),
+        el("accordionTriggerButton", "sect", "color --fg; radius 8px; hover background --elevated-hover", "Used by connected accounts and sessions."),
+        el("accordionContent", "sect", "background --surface-sunken #181410; radius 8px", "Inset, so nested detail reads as inside the row."),
+        el("activeDeviceIcon", "sect", "color --fg-faint", "Sessions list."),
+        el("badge", "sect", "background rgba(201,162,75,.14); color --brass; font-family var(--font-plex-mono); font-size 10.5px; radius 999px", "\"Primary\" / \"Verified\" pills — the count-pill shape from the Issue Inspector."),
+        el("formFieldLabel", "form", "font-size 12.5px; font-weight 600; color --fg-muted", "Above the input, never floating."),
+        el("formFieldInput", "form", "background --surface-sunken #181410; border 1px --border-strong #3A3229; radius 8px; height 40px; color --fg; focus border --brass + ring 0 0 0 3px rgba(201,162,75,.16)", "Identical to the Issue Inspector filter input."),
+        el("formFieldHintText", "form", "font-family var(--font-plex-mono); font-size 11px; color --fg-faint", "Mono, like every other hint in the app."),
+        el("formFieldErrorText", "form", "color --danger #C6533F; font-size 12px", "Paired with an icon by Clerk — colour is not the only signal."),
+        el("formFieldSuccessText", "form", "color --success #6FA368; font-size 12px", "Same rule."),
+        el("formFieldAction", "form", "color --brass; font-weight 600", "\"Forgot password\"-style inline links."),
+        el("formButtonPrimary", "form", "background --brass #C9A24B; color --bg #14110E; font-weight 600; radius 8px; padding 12px 26px; hover background --brass-hover #D8B25E", "The app's primary button, verbatim. One per panel."),
+        el("formButtonReset", "form", "background transparent; border 1px --border-strong; color --fg-muted; radius 8px; hover border --brass", "Secondary/Cancel."),
+        el("avatarBox", "form", "radius 12px; border 1px --brass", "Same radius family as the trigger — 12px at every size Clerk renders."),
+        el("avatarImageActionsUpload", "form", "color --brass; font-weight 600", "\"Upload\" action text."),
+        el("fileDropAreaBox", "form", "background --surface-sunken; border 1.5px dashed --border-dashed #4A4033; radius 12px; hover border --brass, background --surface-inset #1C1712", "Reuses the collection dropzone exactly."),
+        el("fileDropAreaIconBox", "form", "color --brass; border 1px --brass; radius 999px", "The brass ring from the CSV dropzone."),
+        el("dividerLine", "fb", "background --border #2A241D", "Hairline only."),
+        el("dividerText", "fb", "font-family var(--font-plex-mono); font-size 10px; letter-spacing 0.08em; color --fg-faint; text-transform uppercase", "Mono caps, the app's divider voice."),
+        el("alert", "fb", "background --surface-sunken; border-left 3px; radius 8px", "Left border carries the semantic: --danger / --warning / --success."),
+        el("alertText", "fb", "color --fg-body #C6B79A; font-size 13px", "Body ramp."),
+        el("menuButton", "fb", "color --fg-muted; radius 8px; hover background --elevated-hover", "Row overflow menus inside sessions/emails."),
+        el("menuList", "fb", "background --surface-raised #221D16; border 1px --border-strong; radius 14px; box-shadow 0 20px 50px rgba(0,0,0,.6)", "Deliberately the account popover's container — same menu, same shell."),
+        el("menuItem", "fb", "font-size 14px; color --fg; padding 11px 12px; radius 8px; hover background --elevated; destructive color --fg with --danger marker", "Matches the popover's item metrics so nested menus don't feel foreign."),
+        el("footer", "foot", "display none", "Decision 1. Confirm the plan permits hiding UserProfile's branding — the dev-instance badge is separate and untouched."),
+        el("footerActionLink", "foot", "color --brass; hover color --brass-hover", "Only relevant if footer is restored.")
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
