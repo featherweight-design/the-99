@@ -67,7 +67,6 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
           type="submit"
           disabled={isPending}
           className="flex-1 rounded-[6px] py-[7px] text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-          style={isPending ? { cursor: "default" } : undefined}
         >
           {isPending ? "Saving…" : "Save"}
         </PrimaryButton>
