@@ -27,15 +27,13 @@ export default function NotFound() {
       <div className="flex flex-col md:flex-row gap-[12px] mt-[24px]">
         <Link
           href="/"
-          className="rounded-lg font-sans font-semibold text-[13px] md:text-[14px] px-[22px] py-[12px] hover:bg-[color:var(--brass-hover)]"
-          style={{ color: "var(--bg)", background: "var(--brass)" }}
+          className="rounded-lg font-sans font-semibold text-[13px] md:text-[14px] px-[22px] py-[12px] bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)]"
         >
           {shellCopy.notFound.primaryCta}
         </Link>
         <Link
           href="/decks"
-          className="rounded-lg font-sans font-semibold text-[13px] md:text-[14px] px-[22px] py-[12px] hover:border-[color:var(--brass)] hover:text-[color:var(--brass-hover)]"
-          style={{ color: "var(--fg)", border: "1px solid var(--border-strong)" }}
+          className="rounded-lg font-sans font-semibold text-[13px] md:text-[14px] px-[22px] py-[12px] text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] hover:[border:1px_solid_var(--brass)] hover:text-[color:var(--brass-hover)]"
         >
           {shellCopy.notFound.secondaryCta}
         </Link>
