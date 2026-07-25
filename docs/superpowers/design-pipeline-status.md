@@ -4,6 +4,16 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 
 > **Pipeline workflow reference:** `docs/superpowers/design-pipeline.md`
 
+## System layers (not tickets — everything below builds on these)
+
+| Layer | Handoff | Landed |
+|---|---|---|
+| Brand system — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens | `design/design_handoff_the99_brand/` | refreshed 2026-07-24 (PR #54) |
+| Richness pass — crab/kaiju character layer, density dials, animation posture, texture, contrast floor | `design/design_handoff_the99_richness/` | 2026-07-24 (PR #54), from #51 |
+| Voice — Kitchen Table (locked, verbatim in the richness README) | `design/design_handoff_the99_richness/README.md` | locked 2026-07-20 |
+
+Per `design-pipeline.md`, system layers don't get a READINESS verdict — feature audits check against them.
+
 ---
 
 ## Legend
@@ -67,7 +77,7 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-Ranked by build order per the post-v1 roadmap tracker (#44). A v1 visual-polish batch (Hugh's golden-path walkthrough list, forthcoming) plus #35/#36 run ahead of these features.
+Ranked by build order per the post-v1 roadmap tracker (#44). The per-surface brand + richness refresh tickets and #35 run ahead of these features.
 
 | Rank | Ticket | Adjacency / notes |
 |---|---|---|
@@ -84,11 +94,14 @@ v1 polish follow-ups — sequenced ahead of the Backlog features above.
 
 | Ticket | Notes |
 |---|---|
-| **#35** Design: Branded user menu replacing Clerk default | Desktop popover + mobile bottom-sheet; pairs with eng ticket #13 |
+| **#35** Design: Branded user menu replacing Clerk default | Desktop popover + mobile bottom-sheet; pairs with eng ticket #13. Was blocked on #51 — unblocked now that the richness pass has landed, so the menu inherits the character layer rather than being re-mocked after. |
+| Issue Inspector handoff reconciliation | `type: design`. Two copies of the #36 handoff exist (Yellow-verified standalone vs. newer collection-nested v2 with the crab). Needs a call on canonical location + which visual delta lands next. |
 
 ---
 
 ## ✅ Shipped
+
+All five shipped against the pre-richness baseline. The four v1 surfaces each have an open eng ticket to apply brand tokens + the richness pass — until those land, shipped UI and the current handoff mocks diverge.
 
 | # / vertical | Handoff | Shipped |
 |---|---|---|
