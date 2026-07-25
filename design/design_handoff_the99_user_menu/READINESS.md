@@ -15,7 +15,7 @@ values are below and in the eng-side notes.
 |---|---|---|
 | Email contrast `4.6:1`, "All AA or better" | `README.md:151-152`, canvas §5 contrast table | **4.42:1 — fails AA.** Use `--fg-muted` (8.48:1). See note 1. |
 | Backdrop `rgba(10,8,6,0.72)` | `README.md:105`, `:134`, canvas §4 token map | **`rgba(8,6,4,0.72)`** — the value both shipped modals use. See note 5. |
-| Focus ring at `globals.css:130` | `README.md:75`, canvas §1 | **`:133-135`.** See note 4. |
+| Focus ring at `globals.css:130` | `README.md:75`, canvas §1 | **`globals.css:133-135`.** See note 4. |
 | Initials `7.4:1`, label `11.9:1`, ring `6.6:1` | `README.md:150-152`, canvas §5 | **7.84 / 13.47 / 7.51.** All understated, so all still pass — recompute rather than copy. |
 
 Only the first two would cause a defect if followed literally. `globals.css:166-173` (reduced motion) is
