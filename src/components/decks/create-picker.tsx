@@ -92,7 +92,7 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
         <div className="flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]">
           {/* §Search input: mobile border #3A3229 p 9px 12px gap 8; desktop border #C9A24B p 12px 15px gap 10 */}
           <SearchField
-            containerClassName="md:rounded-[9px] mb-[16px] p-[9px_12px] md:p-[12px_15px] gap-[8px] md:gap-[10px] md:[border-color:var(--brass)]"
+            containerClassName="md:rounded-[9px] mb-[16px] p-[9px_12px] md:p-[12px_15px] gap-[8px] md:gap-[10px] md:border-[color:var(--brass)]"
             className="text-[14px] md:text-[15px]"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

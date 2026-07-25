@@ -13,9 +13,14 @@ import { twMerge } from "tailwind-merge";
 // Padding and font-size stay with the caller: the design tables specify them
 // differently per surface.
 
+// The border is three longhand utilities, not a `[border:…]` shorthand: a
+// caller passing `border-[color:…]` has to be able to win, and twMerge can only
+// drop a class it recognises as the same property. Against the shorthand the
+// caller's colour was silently reset — several fields lost their specified
+// border that way.
 const FIELD_CHROME =
   "rounded-lg bg-[color:var(--surface-sunken)] " +
-  "[border:1px_solid_var(--border-strong)] text-[color:var(--fg)] " +
+  "border border-solid border-[color:var(--border-strong)] text-[color:var(--fg)] " +
   "placeholder:text-[color:var(--fg-faint)] caret-[color:var(--brass)]";
 
 // ComponentPropsWithRef, not InputHTMLAttributes: React 19 passes ref as an
@@ -55,7 +60,7 @@ export function SearchField({
       className={twMerge(
         FIELD_CHROME,
         "flex items-center gap-[10px] px-[12px] " +
-          "focus-within:[border-color:var(--brass)] " +
+          "focus-within:border-[color:var(--brass)] " +
           "focus-within:shadow-[0_0_0_3px_rgba(201,162,75,0.16)]",
         containerClassName,
       )}

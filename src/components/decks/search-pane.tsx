@@ -75,7 +75,7 @@ export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchP
     <div className="flex flex-col gap-[0px] flex-1 overflow-hidden">
       {/* §Search input container: bg #14110E, border 1px #C9A24B, radius 8px, padding 11px 13px */}
       <SearchField
-        containerClassName="gap-[9px] flex-none bg-[#14110E] [border-color:var(--brass)] p-[11px_13px]"
+        containerClassName="gap-[9px] flex-none bg-[#14110E] border-[color:var(--brass)] p-[11px_13px]"
         // §Search input — query text: 15px mobile / 14.5px desktop
         className="text-[15px] md:text-[14.5px]"
         value={query}

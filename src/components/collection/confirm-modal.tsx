@@ -145,7 +145,7 @@ export function ConfirmModal({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             // §Confirm Input Field: bg #181410 (--surface-sunken), border 1px #C6533F (--danger), radius 8px, padding 12/13px 14/16px, mono 15/16px, --fg, letter-spacing 0.1/0.12em
-            className="w-full font-mono text-[15px] md:text-[16px] tracking-[0.1em] md:tracking-[0.12em] p-[12px_14px] md:p-[13px_16px] [border-color:var(--danger)]"
+            className="w-full font-mono text-[15px] md:text-[16px] tracking-[0.1em] md:tracking-[0.12em] p-[12px_14px] md:p-[13px_16px] border-[color:var(--danger)]"
           />
         </div>
 
