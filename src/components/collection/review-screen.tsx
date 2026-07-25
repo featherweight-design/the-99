@@ -7,6 +7,7 @@ import { useState } from "react";
 import type { UploadPreview } from "../../app/collection/actions";
 import { IssueInspector } from "./issue-inspector";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
+import { GhostButton, PrimaryButton } from "../ui/button";
 
 const INITIAL_LIMIT = 8; // Per-section preview cap; full list lives in the Issue Inspector.
 
@@ -269,22 +270,20 @@ export function ReviewScreen({
 
         {/* Buttons — mobile: full-width continue only, desktop: cancel + continue right-aligned. md:whitespace-nowrap on Continue keeps the label on one line when the summary sentence eats horizontal space (#32 — was wrapping to "Continue / to / replace"); md:flex-none on the button group blocks flex-shrink so the label + padding stay intact. */}
         <div className="md:ml-auto md:flex-none flex gap-[12px]">
-          <button
+          <GhostButton
             type="button"
             onClick={onCancel}
-            className="hidden md:inline-block rounded-lg font-sans font-semibold text-[14px] px-[20px] py-[12px] cursor-pointer hover:[border:1px_solid_var(--brass)]"
-            style={{ color: "var(--fg)", background: "transparent", border: "1px solid var(--border-strong)" }}
+            className="hidden md:inline-block text-[14px] px-[20px] py-[12px]"
           >
             Cancel
-          </button>
-          <button
+          </GhostButton>
+          <PrimaryButton
             type="button"
             onClick={onContinue}
-            className="rounded-lg font-sans font-semibold text-[15px] md:text-[14px] w-full md:w-auto md:whitespace-nowrap py-[13px] md:py-[12px] px-0 md:px-[24px] cursor-pointer hover:bg-[color:var(--brass-hover)]"
-            style={{ color: "var(--bg)", background: "var(--brass)", border: "none" }}
+            className="text-[15px] md:text-[14px] w-full md:w-auto md:whitespace-nowrap py-[13px] md:py-[12px] px-0 md:px-[24px]"
           >
             {isInitialImport ? "Continue to import →" : "Continue to replace →"}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
 

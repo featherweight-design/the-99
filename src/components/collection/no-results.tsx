@@ -1,5 +1,6 @@
 "use client";
 import type { ReactNode } from "react";
+import { PrimaryButton, GhostButton } from "../ui/button";
 // No results state per property table §No Results State.
 // Distinct from empty-collection (shell owns that). The "?" card fan here is
 // its own mark — different geometry/colors/glyph from the shared "99" CardFan
@@ -105,23 +106,21 @@ export function NoResults({
 
       {/* CTAs — §No Results CTA Container / §"Clear all filters" Button / §"Keep only search" Button */}
       <div className="mt-[22px] md:mt-[26px] flex flex-col md:flex-row gap-[12px]">
-        <button
+        <PrimaryButton
           type="button"
           onClick={onClearAll}
-          className="rounded-lg font-sans font-semibold text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px] md:py-[12px] cursor-pointer hover:bg-[color:var(--brass-hover)]"
-          style={{ color: "var(--bg)", background: "var(--brass)", border: "none" }}
+          className="text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px] md:py-[12px]"
         >
           Clear all filters
-        </button>
+        </PrimaryButton>
         {q && (
-          <button
+          <GhostButton
             type="button"
             onClick={onKeepSearch}
-            className="hidden md:inline-block rounded-lg font-sans font-semibold text-[14px] px-[22px] py-[12px] cursor-pointer hover:[border:1px_solid_var(--brass)]"
-            style={{ color: "var(--fg)", background: "transparent", border: "1px solid var(--border-strong)" }}
+            className="hidden md:inline-block text-[14px] px-[22px] py-[12px]"
           >
             Keep only search
-          </button>
+          </GhostButton>
         )}
       </div>
     </div>

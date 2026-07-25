@@ -10,6 +10,7 @@ import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/sum
 import { formatLastUpdated, loadBrowseCards } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
 import { CollectionBrowser } from "../../components/collection/browser";
+import { GhostButton, PrimaryButton } from "../../components/ui/button";
 
 export default async function CollectionPage() {
   const userId = await requireUserId();
@@ -39,13 +40,12 @@ export default async function CollectionPage() {
           table fills — commanders and decks follow.
         </p>
         <div className="mt-[26px]">
-          <a
+          <PrimaryButton
             href="/collection/replace"
-            className="rounded-lg font-semibold text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px] hover:bg-[color:var(--brass-hover)]"
-            style={{ color: "var(--bg)", background: "var(--brass)" }}
+            className="text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px]"
           >
             Upload your CSV
-          </a>
+          </PrimaryButton>
         </div>
       </section>
     );
@@ -86,17 +86,12 @@ export default async function CollectionPage() {
           >
             ↻ Replace
           </a>
-          <a
+          <GhostButton
             href="/collection/replace"
-            className="hidden md:inline-block rounded-lg font-sans font-semibold text-[13px] px-[16px] py-[9px] cursor-pointer hover:[border:1px_solid_var(--brass)] hover:text-[color:var(--brass-hover)]"
-            style={{
-              color: "var(--fg)",
-              background: "transparent",
-              border: "1px solid var(--border-strong)",
-            }}
+            className="hidden md:inline-block text-[13px] px-[16px] py-[9px]"
           >
             ↻ Replace collection
-          </a>
+          </GhostButton>
         </div>
       </div>
 

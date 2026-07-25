@@ -15,9 +15,12 @@ font-family (`font-sans`), font-weight (`font-semibold`), border-radius
 cursor (`cursor-pointer disabled:cursor-default`). Everything else — padding,
 font size, width, layout, focus ring — stays on the caller via `className`.
 
-The cursor pair matters during migration: `:disabled` suppresses the click but
-not the cursor, so a migrated site no longer needs its own
-`disabled:cursor-default` — the primitive supplies it.
+Two of those are really pairs, for one shared reason: `:disabled` suppresses a
+button's click but neither its cursor nor its `:hover`. Each is therefore
+matched by a `disabled:` override that pins it back — `disabled:cursor-default`
+for the cursor, and a `disabled:hover:` restoring the resting fill, border and
+text colour. A migrated site needs neither of its own; the primitive supplies
+both.
 
 Because font-family and font-weight are owned, migrating a site that today has
 no weight class, or a lighter one, changes its appearance. Report every such

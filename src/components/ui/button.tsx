@@ -21,12 +21,18 @@ import { twMerge } from "tailwind-merge";
 const BASE =
   "font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default";
 
+// Each hover is paired with a disabled: override for the same reason the cursor
+// utilities are paired: :disabled suppresses the click but not :hover, so a
+// disabled button would otherwise still light up under the pointer and read as
+// interactive.
 const PRIMARY =
-  "bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)]";
+  "bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)] " +
+  "disabled:hover:bg-[color:var(--brass)]";
 
 const GHOST =
   "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] " +
-  "hover:[border-color:var(--brass)] hover:[color:var(--brass-hover)]";
+  "hover:[border-color:var(--brass)] hover:[color:var(--brass-hover)] " +
+  "disabled:hover:[border-color:var(--border-strong)] disabled:hover:[color:var(--fg)]";
 
 type SharedProps = {
   className?: string;
