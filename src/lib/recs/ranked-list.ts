@@ -19,11 +19,21 @@ export type RankedList = {
  * second write path. A user with a collection but no legendary creatures also takes
  * the recompute branch on every load; that costs one collection query and zero
  * EDHREC calls, so it is not worth a sentinel row to avoid.
+ *
+ * getCollectionStats is React-cached, so sharing it with a caller that already
+ * needed stats costs no extra query.
  */
 export const getRankedList = cache(async function getRankedList(
   userId: string,
 ): Promise<RankedList> {
   const [stored, stats] = await Promise.all([loadScores(userId), getCollectionStats(userId)]);
+
+  // An empty collection has nothing to score, so skip both the pool query and the
+  // best-effort write. Checked ahead of the stored-rows path so a leftover row set
+  // can never outlive the collection it was derived from.
+  if (stats.uniqueCards === 0) {
+    return { items: [], degraded: false, uniqueCardsRead: 0, candidateCount: 0 };
+  }
 
   if (stored.items.length > 0 && stored.degradedOracleIds.length === 0) {
     return {

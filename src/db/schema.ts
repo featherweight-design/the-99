@@ -72,7 +72,9 @@ export const commanderScores = pgTable("commander_scores", {
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
-  index("commander_scores_rank_idx").on(t.userId, t.score.desc()),
+  // Third key matches the `score desc, oracle_id` tie-break that loadScores and the
+  // findScoredCommander rank window both use, so reads need no extra sort step.
+  index("commander_scores_rank_idx").on(t.userId, t.score.desc(), t.oracleId),
   // The column's enum option only narrows the TypeScript type; without these the
   // database would accept any text. Both invariants are load-bearing: the Retry
   // button keys off synergyState, and an "ok" row with a null fitSynergy is a row
