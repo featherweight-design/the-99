@@ -2,13 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 
 // Mock db and edhrec before importing recommend to avoid DATABASE_URL at module init.
 vi.mock("../../db", () => ({ db: {} }));
-vi.mock("../edhrec/client", () => ({ getEdhrecData: vi.fn() }));
+vi.mock("../edhrec/client", () => ({
+  getEdhrecData: vi.fn(),
+  readEdhrecCache: vi.fn(async () => new Map()),
+  resolveEdhrecData: vi.fn(async () => ({ data: null, unreachable: false })),
+}));
 
-import { finalizeRecommendations, toListItem } from "./recommend";
+import { byScoreThenOracleId, finalizeRecommendations, toListItem } from "./recommend";
 import type { CommanderScore } from "./score";
+import type { SynergyState } from "./synergy-state";
 
 // Minimal CommanderScore stub for testing post-processing only.
-function stubScore(name: string, score = 0): CommanderScore {
+function stubScore(name: string, score = 0): CommanderScore & { synergyState: SynergyState } {
   return {
     oracleId: `oracle-${name}`,
     name,
@@ -29,8 +34,32 @@ function stubScore(name: string, score = 0): CommanderScore {
     fitRoles: 0,
     fitSynergy: null,
     score,
+    synergyState: "ok",
   };
 }
+
+describe("byScoreThenOracleId", () => {
+  it("orders by descending score", () => {
+    const sorted = [{ score: 5, oracleId: "a" }, { score: 9, oracleId: "b" }].sort(byScoreThenOracleId);
+    expect(sorted.map((r) => r.oracleId)).toEqual(["b", "a"]);
+  });
+
+  it("breaks score ties by ascending oracleId regardless of input order", () => {
+    const rows = [
+      { score: 7, oracleId: "00000000-0000-0000-0000-00000000000c" },
+      { score: 7, oracleId: "00000000-0000-0000-0000-00000000000a" },
+      { score: 7, oracleId: "00000000-0000-0000-0000-00000000000b" },
+    ];
+    const forward = [...rows].sort(byScoreThenOracleId).map((r) => r.oracleId);
+    const reversed = [...rows].reverse().sort(byScoreThenOracleId).map((r) => r.oracleId);
+    expect(forward).toEqual([
+      "00000000-0000-0000-0000-00000000000a",
+      "00000000-0000-0000-0000-00000000000b",
+      "00000000-0000-0000-0000-00000000000c",
+    ]);
+    expect(reversed).toEqual(forward);
+  });
+});
 
 describe("finalizeRecommendations", () => {
   describe("slug uniquing", () => {
@@ -96,6 +125,7 @@ describe("finalizeRecommendations", () => {
       const { results } = finalizeRecommendations([score], 10, 1);
       const item = toListItem(results[0]);
       expect(item).toEqual({
+        oracleId: "oracle-Krenko, Mob Boss",
         slug: "krenko-mob-boss",
         name: "Krenko, Mob Boss",
         colorIdentity: [],

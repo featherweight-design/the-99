@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { edhrecCache } from "../../db/schema";
 import { commanderSlug } from "./slug";
@@ -18,14 +18,32 @@ export type EdhrecFetchResult = {
   unreachable: boolean;
 };
 
-export async function getEdhrecData(
+export type EdhrecCacheRow = {
+  commanderOracleId: string;
+  payload: unknown;
+  fetchedAt: Date;
+};
+
+/** One query for many commanders — the fanout would otherwise issue one SELECT each. */
+export async function readEdhrecCache(oracleIds: string[]): Promise<Map<string, EdhrecCacheRow>> {
+  if (oracleIds.length === 0) return new Map();
+  const rows = await db.select().from(edhrecCache)
+    .where(inArray(edhrecCache.commanderOracleId, oracleIds));
+  return new Map(rows.map((r) => [r.commanderOracleId, r]));
+}
+
+/**
+ * Cache-decision + fetch logic, driven by an already-read cache row so callers
+ * can bulk-read. `cached` undefined means "no row", not "not looked up".
+ */
+export async function resolveEdhrecData(
   commanderOracleId: string,
   commanderName: string,
+  cached: EdhrecCacheRow | undefined,
 ): Promise<EdhrecFetchResult> {
-  const [cached] = await db.select().from(edhrecCache)
-    .where(eq(edhrecCache.commanderOracleId, commanderOracleId));
-  const fresh = cached && Date.now() - cached.fetchedAt.getTime() < TTL_MS;
-  if (fresh) return { data: parseEdhrecPayload(cached.payload), unreachable: false };
+  if (cached && Date.now() - cached.fetchedAt.getTime() < TTL_MS) {
+    return { data: parseEdhrecPayload(cached.payload), unreachable: false };
+  }
 
   try {
     const res = await fetch(
@@ -59,4 +77,12 @@ export async function getEdhrecData(
     if (cached) return { data: parseEdhrecPayload(cached.payload), unreachable: false };
     return { data: null, unreachable: true };
   }
+}
+
+export async function getEdhrecData(
+  commanderOracleId: string,
+  commanderName: string,
+): Promise<EdhrecFetchResult> {
+  const cache = await readEdhrecCache([commanderOracleId]);
+  return resolveEdhrecData(commanderOracleId, commanderName, cache.get(commanderOracleId));
 }

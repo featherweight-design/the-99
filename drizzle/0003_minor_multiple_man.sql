@@ -1,0 +1,2 @@
+ALTER TABLE "commander_scores" ADD CONSTRAINT "commander_scores_synergy_state_check" CHECK ("commander_scores"."synergy_state" in ('ok', 'absent', 'degraded'));--> statement-breakpoint
+ALTER TABLE "commander_scores" ADD CONSTRAINT "commander_scores_synergy_null_check" CHECK (("commander_scores"."synergy_state" = 'ok') = ("commander_scores"."fit_synergy" is not null));
