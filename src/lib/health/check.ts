@@ -1,0 +1,36 @@
+import { sql } from "drizzle-orm";
+import { db } from "../../db";
+import { shippedMigrationTags } from "./migration-journal";
+import { compareMigrations, type MigrationHealth } from "./migration-status";
+
+export type HealthReport =
+  | (Omit<MigrationHealth, "state"> & { status: MigrationHealth["state"] })
+  | { status: "error" };
+
+/**
+ * Reads the migration ledger Drizzle maintains and compares it to what this
+ * build shipped. `drizzle.__drizzle_migrations` is Drizzle's own bookkeeping
+ * table, so it is queried raw rather than through the schema.
+ *
+ * Only the row count is used. That table's `created_at` is copied from the
+ * journal's `when` — the time the migration was *generated*, not applied — so it
+ * is identical across every database that has the migration and says nothing
+ * about when this deployment caught up. Reporting it as an applied-at time would
+ * be actively misleading, and `latestApplied` already identifies the migration.
+ */
+export async function checkHealth(): Promise<HealthReport> {
+  try {
+    const result = await db.execute(
+      sql`select count(*)::int as applied from drizzle.__drizzle_migrations`,
+    );
+    const row = (result as unknown as { rows: { applied: number }[] }).rows[0];
+
+    const { state, ...health } = compareMigrations(row?.applied ?? 0, shippedMigrationTags);
+
+    return { ...health, status: state };
+  } catch {
+    // The error is deliberately not echoed: a connection failure message can
+    // carry the host and database name, and this endpoint is unauthenticated.
+    return { status: "error" };
+  }
+}

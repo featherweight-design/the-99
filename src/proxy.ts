@@ -6,7 +6,10 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 // "/" is public so the signed-out landing (Task 8) can render;
 // everything else remains Clerk-protected. Sign-in/up still happen on Clerk's
 // hosted Account Portal — no in-app auth routes to allowlist.
-const isPublic = createRouteMatcher(["/", "/api/cron(.*)"]);
+//
+// /api/health is public so an uptime check can reach it without a session. It
+// returns migration counts and tags only — never connection details.
+const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health"]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (!isPublic(req)) await auth.protect();
