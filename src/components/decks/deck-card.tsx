@@ -4,6 +4,7 @@ import { WUBRG_HEX } from "../../lib/collection/browse";
 import type { DeckListItem } from "../../lib/decks/read";
 import { colorLabel } from "../../lib/decks/format";
 import { DeckCardOverflow } from "./deck-card-overflow";
+import { GhostButton } from "@/components/ui/button";
 
 /** Progress bar fill colour by built bucket. §Deck card — progress bar fill */
 function progressFillColor(built: number): string {
@@ -184,23 +185,14 @@ export function DeckCard({ deck }: DeckCardProps) {
       <div className="hidden md:flex gap-[9px]">
         {/* §Deck card — "Open builder" button: flex 1, IBM Plex Sans 600 13px #EDE6D8,
             transparent bg, border 1px #3A3229, br 8px, p 9px 0 */}
-        <Link
+        <GhostButton
           href={`/decks/${deck.id}`}
-          className="relative z-10 flex-1 text-center rounded-[8px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 13,
-            color: "#EDE6D8",
-            background: "transparent",
-            border: "1px solid #3A3229",
-            padding: "9px 0",
-          }}
+          className="relative z-10 flex-1 text-center text-[13px] py-[9px] px-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
           tabIndex={-1}
           aria-hidden="true"
         >
           Open builder
-        </Link>
+        </GhostButton>
 
         {/* §Deck card — "⋯" overflow button — client component, relative z-10 */}
         <DeckCardOverflow deckId={deck.id} deckName={deck.name} />

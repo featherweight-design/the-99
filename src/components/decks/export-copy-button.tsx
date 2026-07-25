@@ -3,6 +3,7 @@
 // Falls back to document.execCommand("copy") when navigator.clipboard is unavailable.
 
 import { useState, useRef, useEffect } from "react";
+import { PrimaryButton } from "@/components/ui/button";
 
 interface ExportCopyButtonProps {
   /** The text to copy to clipboard. */
@@ -64,17 +65,11 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
   }
 
   return (
-    <button
-      type="button"
+    <PrimaryButton
       onClick={handleCopy}
-      className="w-full md:w-auto font-sans font-semibold text-[14px] rounded-[8px] py-[12px] px-[0] md:py-[11px] md:px-[22px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-      style={{
-        color: "#14110E",
-        background: "#C9A24B",
-        border: "none",
-      }}
+      className="w-full md:w-auto text-[14px] py-[12px] px-[0] md:py-[11px] md:px-[22px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
     >
       {copied ? "Copied ✓" : "Copy to clipboard"}
-    </button>
+    </PrimaryButton>
   );
 }

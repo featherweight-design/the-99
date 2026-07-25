@@ -6,6 +6,7 @@
 import { useState, useMemo } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
+import { PrimaryButton } from "@/components/ui/button";
 import { BuilderSpine } from "./builder-spine";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { DegradedBanner } from "./degraded-banner";
@@ -158,18 +159,12 @@ export function BuilderShell({
             </p>
 
             {/* §"Add your first card" CTA button (mobile empty) */}
-            <button
-              type="button"
+            <PrimaryButton
               onClick={() => setSheetOpen(true)}
-              className="md:hidden font-sans font-semibold text-[15px] rounded-[8px] px-[26px] py-[13px] mt-[24px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-              style={{
-                color: "#14110E",
-                background: "#C9A24B",
-                border: "none",
-              }}
+              className="md:hidden text-[15px] px-[26px] py-[13px] mt-[24px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
             >
               Add your first card
-            </button>
+            </PrimaryButton>
           </section>
         ) : (
           /* Task 8: Decklist body */
@@ -191,18 +186,12 @@ export function BuilderShell({
             className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
             style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
           >
-            <button
-              type="button"
+            <PrimaryButton
               onClick={() => setSheetOpen(true)}
-              className="w-full font-sans font-semibold text-[15px] rounded-[8px] py-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-              style={{
-                color: "#14110E",
-                background: "#C9A24B",
-                border: "none",
-              }}
+              className="w-full text-[15px] py-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
             >
               + Add cards
-            </button>
+            </PrimaryButton>
           </div>
         )}
       </div>

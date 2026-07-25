@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { renameDeck } from "../../app/decks/actions";
+import { PrimaryButton } from "@/components/ui/button";
 
 interface RenameFormProps {
   deckId: string;
@@ -61,19 +62,14 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
         </p>
       )}
       <div className="flex gap-[8px]">
-        <button
+        {/* §rename-form — Save: PRIMARY submit — rounded-[6px] overrides primitive's rounded-lg */}
+        <PrimaryButton
           type="submit"
           disabled={isPending}
-          className="flex-1 rounded-[6px] py-[7px] text-[13px] font-sans font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-          style={{
-            background: "#C9A24B",
-            color: "#14110E",
-            border: "none",
-            cursor: isPending ? "default" : "pointer",
-          }}
+          className="flex-1 rounded-[6px] py-[7px] text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
         >
           {isPending ? "Saving…" : "Save"}
-        </button>
+        </PrimaryButton>
         <button
           type="button"
           onClick={onDone}
