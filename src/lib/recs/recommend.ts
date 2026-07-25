@@ -2,11 +2,12 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems } from "../../db/schema";
 import { commanderSlug } from "../edhrec/slug";
-import { getEdhrecData } from "../edhrec/client";
+import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
+import { synergyStateFrom, type SynergyState } from "./synergy-state";
 import { isCommanderCandidate, scoreCommander, type CommanderScore, type PoolCard } from "./score";
 import { receiptsPreview } from "./format";
 
-export type RankedCommander = CommanderScore & { slug: string };
+export type RankedCommander = CommanderScore & { slug: string; synergyState: SynergyState };
 
 /**
  * Slim payload for the client-side list view. The full RankedCommander carries
@@ -63,7 +64,7 @@ export type RecommendResult = {
  * counts. Exported for unit testing without a live database.
  */
 export function finalizeRecommendations(
-  results: CommanderScore[],
+  results: (CommanderScore & { synergyState: SynergyState })[],
   uniqueCardsRead: number,
   candidateCount: number,
 ): Omit<RecommendResult, "degraded"> {
@@ -77,9 +78,13 @@ export function finalizeRecommendations(
   return { results: ranked, uniqueCardsRead, candidateCount };
 }
 
-export async function recommendCommanders(
+/**
+ * The scoring pool for one user. Extracted so the detail page can score a
+ * single commander without re-running the whole fanout.
+ */
+export async function loadCollectionPool(
   userId: string,
-): Promise<RecommendResult> {
+): Promise<{ collection: PoolCard[]; uniqueCardsRead: number }> {
   const owned = await db
     .selectDistinctOn([cards.oracleId], {
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
@@ -96,29 +101,69 @@ export async function recommendCommanders(
   // Score against commander-legal cards only, matching the deck-suggestion and
   // search pools — banned/not-legal cards must not inflate pool size, role
   // counts, or EDHREC overlap.
-  const collection: PoolCard[] = owned.filter((c) => c.commanderLegal);
+  return { collection: owned.filter((c) => c.commanderLegal), uniqueCardsRead: owned.length };
+}
+
+export async function recommendCommanders(
+  userId: string,
+): Promise<RecommendResult> {
+  const { collection, uniqueCardsRead } = await loadCollectionPool(userId);
   const candidates = collection.filter((c) => isCommanderCandidate(c));
+
+  // One cache read for the whole fanout — a per-commander SELECT here meant
+  // ~196 round-trips on every compute, warm or cold.
+  const cache = await readEdhrecCache(candidates.map((c) => c.oracleId));
 
   // Fetch EDHREC data with bounded concurrency: sequential awaits would make
   // cold loads with dozens of candidates exceed the page's time budget.
   const CONCURRENCY = 5;
   let degraded = false;
-  const results: CommanderScore[] = [];
+  const results: (CommanderScore & { synergyState: SynergyState })[] = [];
   for (let i = 0; i < candidates.length; i += CONCURRENCY) {
     const scored = await Promise.all(
       candidates.slice(i, i + CONCURRENCY).map(async (commander) => {
-        const { data, unreachable } = await getEdhrecData(commander.oracleId, commander.name);
+        const result = await resolveEdhrecData(
+          commander.oracleId, commander.name, cache.get(commander.oracleId),
+        );
         // `unreachable` only flips true on real service outage (5xx/network/timeout
         // with no cache). 4xx (commander not on EDHREC) is a per-commander data
         // absence, not a service issue — data === null but unreachable === false.
-        if (unreachable) degraded = true;
-        return scoreCommander({ commander, collection, edhrecTopCards: data?.topCards ?? null });
+        if (result.unreachable) degraded = true;
+        return {
+          ...scoreCommander({
+            commander, collection, edhrecTopCards: result.data?.topCards ?? null,
+          }),
+          synergyState: synergyStateFrom(result),
+        };
       }),
     );
     results.push(...scored);
   }
   results.sort((a, b) => b.score - a.score);
 
-  const finalized = finalizeRecommendations(results, owned.length, candidates.length);
+  const finalized = finalizeRecommendations(results, uniqueCardsRead, candidates.length);
   return { ...finalized, degraded };
+}
+
+/**
+ * Full score for a single commander, for the detail page. Costs one collection
+ * query plus one EDHREC resolve instead of the ~196 the fanout would do.
+ * Returns null when the commander is no longer in the user's collection.
+ */
+export async function scoreOneCommander(
+  userId: string,
+  oracleId: string,
+  slug: string,
+): Promise<RankedCommander | null> {
+  const { collection } = await loadCollectionPool(userId);
+  const commander = collection.find((c) => c.oracleId === oracleId);
+  if (!commander) return null;
+
+  const cache = await readEdhrecCache([oracleId]);
+  const result = await resolveEdhrecData(oracleId, commander.name, cache.get(oracleId));
+  return {
+    ...scoreCommander({ commander, collection, edhrecTopCards: result.data?.topCards ?? null }),
+    slug,
+    synergyState: synergyStateFrom(result),
+  };
 }

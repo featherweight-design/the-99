@@ -2,13 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 
 // Mock db and edhrec before importing recommend to avoid DATABASE_URL at module init.
 vi.mock("../../db", () => ({ db: {} }));
-vi.mock("../edhrec/client", () => ({ getEdhrecData: vi.fn() }));
+vi.mock("../edhrec/client", () => ({
+  getEdhrecData: vi.fn(),
+  readEdhrecCache: vi.fn(async () => new Map()),
+  resolveEdhrecData: vi.fn(async () => ({ data: null, unreachable: false })),
+}));
 
 import { finalizeRecommendations, toListItem } from "./recommend";
 import type { CommanderScore } from "./score";
+import type { SynergyState } from "./synergy-state";
 
 // Minimal CommanderScore stub for testing post-processing only.
-function stubScore(name: string, score = 0): CommanderScore {
+function stubScore(name: string, score = 0): CommanderScore & { synergyState: SynergyState } {
   return {
     oracleId: `oracle-${name}`,
     name,
@@ -29,6 +34,7 @@ function stubScore(name: string, score = 0): CommanderScore {
     fitRoles: 0,
     fitSynergy: null,
     score,
+    synergyState: "ok",
   };
 }
 
