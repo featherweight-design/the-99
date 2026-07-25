@@ -1,0 +1,98 @@
+import { twMerge } from "tailwind-merge";
+
+// Shared text-entry primitives, sibling to button.tsx.
+//
+// These exist for one bug: every input in the app hand-rolled
+// `focus-visible:ring-2 focus-visible:ring-[#C9A24B]`, which has no offset and
+// so draws the brass indicator INSIDE the field's own border. globals.css
+// already ships `:focus-visible { outline: 2px solid var(--brass);
+// outline-offset: 2px }` — outside, where it belongs. The primitives' job is to
+// stop re-implementing it.
+//
+// As with the button primitives, everything owned here is a Tailwind class.
+// Padding and font-size stay with the caller: the design tables specify them
+// differently per surface.
+
+// The border is three longhand utilities, not a `[border:…]` shorthand: a
+// caller passing `border-[color:…]` has to be able to win, and twMerge can only
+// drop a class it recognises as the same property. Against the shorthand the
+// caller's colour was silently reset — several fields lost their specified
+// border that way.
+const FIELD_CHROME =
+  "rounded-lg bg-[color:var(--surface-sunken)] " +
+  "border border-solid border-[color:var(--border-strong)] text-[color:var(--fg)] " +
+  "placeholder:text-[color:var(--fg-faint)] caret-[color:var(--brass)]";
+
+// Dropped at runtime as well as in the types, exactly as button.tsx does it:
+// the type ban is erased at the JS boundary, so an untyped caller could still
+// smuggle a background or border through a spread and outrank the chrome.
+function dropStyle(rest: object) {
+  delete (rest as { style?: unknown }).style;
+}
+
+// ComponentPropsWithRef, not InputHTMLAttributes: React 19 passes ref as an
+// ordinary prop, and several callers focus the field imperatively.
+type TextFieldProps = Omit<React.ComponentPropsWithRef<"input">, "style">;
+
+/**
+ * A standalone labelled input. Focus is the global brass outline — do not add
+ * a ring utility, and do not pass an inline background/border (it would outrank
+ * the chrome classes the same way it does on the buttons).
+ */
+export function TextField({ className, type = "text", ...rest }: TextFieldProps) {
+  dropStyle(rest);
+  return <input type={type} className={twMerge(FIELD_CHROME, className)} {...rest} />;
+}
+
+type SearchFieldProps = TextFieldProps & {
+  /** Rendered after the input inside the box — clear buttons, result counts. */
+  trailing?: React.ReactNode;
+  containerClassName?: string;
+};
+
+/**
+ * Icon + input + optional trailing slot sharing one box. The focus indicator
+ * belongs to the container via focus-within, because the input is only part of
+ * the thing that looks focused; the inner input therefore has to suppress its
+ * own outline or two indicators stack.
+ *
+ * The container is a label so that the icon and the padding are click targets
+ * for the input, not dead chrome. A button in `trailing` still works: label
+ * activation is suppressed when the click lands on an interactive descendant,
+ * and callers pass an explicit aria-label, which outranks the label's text.
+ */
+export function SearchField({
+  className,
+  containerClassName,
+  trailing,
+  type = "search",
+  ...rest
+}: SearchFieldProps) {
+  dropStyle(rest);
+  return (
+    <label
+      className={twMerge(
+        FIELD_CHROME,
+        "flex items-center gap-[10px] px-[12px] " +
+          "focus-within:border-[color:var(--brass)] " +
+          "focus-within:shadow-[0_0_0_3px_rgba(201,162,75,0.16)]",
+        containerClassName,
+      )}
+    >
+      <span aria-hidden className="font-mono text-[15px] shrink-0 text-[color:var(--fg-faint)]">
+        ⌕
+      </span>
+      <input
+        type={type}
+        className={twMerge(
+          "min-w-0 flex-1 bg-transparent border-none outline-none shadow-none " +
+            "focus:outline-none focus-visible:outline-none " +
+            "text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]",
+          className,
+        )}
+        {...rest}
+      />
+      {trailing}
+    </label>
+  );
+}

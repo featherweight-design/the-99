@@ -73,18 +73,6 @@ export function Dashboard({
           </p>
         </div>
 
-        {/* §"Update collection" button (desktop header) — transparent bg, border line, 8px br, 9px 16px pad, Cinzel-Sans 600 13px primary */}
-        <Link
-          href="/collection"
-          className="hidden md:inline-block rounded-[8px] px-4 py-[9px] border border-border-strong text-fg transition-colors hover:border-brass hover:text-brass-hover"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 13,
-          }}
-        >
-          Update collection
-        </Link>
       </div>
 
       {/* ── Hero Commander ──
@@ -97,7 +85,7 @@ export function Dashboard({
           color: "var(--fg-faint)",
         }}
       >
-        Most complete general
+        Most complete deck
       </div>
       {/* Streamed — §READINESS item 4: HeroCommander is the expensive component.
           Suspense boundary lets the rest of the page stream first. */}
@@ -248,19 +236,6 @@ export function Dashboard({
             ))}
           </div>
 
-          {/* Update collection — mobile only (desktop has it in header)
-              §"Update collection" button: border line, 8px br, 9px 16px pad, sans 600 13px primary */}
-          <Link
-            href="/collection"
-            className="mt-4 inline-block rounded-[8px] px-4 py-[9px] transition-colors [border:1px_solid_var(--border-strong)] [color:var(--fg)] hover:border-brass hover:text-brass-hover md:hidden"
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 600,
-              fontSize: 13,
-            }}
-          >
-            Update collection
-          </Link>
         </aside>
       </div>
     </div>

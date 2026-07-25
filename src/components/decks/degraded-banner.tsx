@@ -53,7 +53,7 @@ export function DegradedBanner({ deckId }: DegradedBannerProps) {
           {/* Mobile: text link */}
           <button
             type="submit"
-            className="md:hidden text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            className="md:hidden text-[12px]"
             style={{ color: "#C9A24B", background: "transparent", border: "none" }}
           >
             Retry
@@ -62,7 +62,7 @@ export function DegradedBanner({ deckId }: DegradedBannerProps) {
           {/* Desktop: outlined button — rounded-[7px] overrides primitive's rounded-lg */}
           <GhostButton
             type="submit"
-            className="hidden md:inline-flex items-center rounded-[7px] text-[12px] px-[12px] py-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            className="hidden md:inline-flex items-center rounded-[7px] text-[12px] px-[12px] py-[6px]"
           >
             Retry
           </GhostButton>

@@ -12,6 +12,29 @@ import { CardFan } from "../../components/marks";
 import { CollectionBrowser } from "../../components/collection/browser";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
 
+/* The handoff spells this mark as the "↻" glyph, but glyph metrics render it
+   noticeably smaller than the label it sits beside and no font stack agrees on
+   its size. Same mark, drawn at an explicit 14px so it matches the 13px text. */
+function ReplaceIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="inline-block align-[-2px] mr-[6px]"
+    >
+      <path d="M13.5 8a5.5 5.5 0 1 1-1.9-4.16" />
+      <path d="M13.5 1.5v3.2h-3.2" />
+    </svg>
+  );
+}
+
 export default async function CollectionPage() {
   const userId = await requireUserId();
   const [stats, cards, lastUpdated] = await Promise.all([
@@ -36,7 +59,7 @@ export default async function CollectionPage() {
           className="mt-3 max-w-[420px] text-[16px]"
           style={{ color: "var(--fg-body)", lineHeight: 1.6 }}
         >
-          A pile of possibilities waiting for a general. Upload a CSV and the
+          A pile of possibilities waiting for a commander. Upload a CSV and the
           table fills — commanders and decks follow.
         </p>
         <div className="mt-[26px]">
@@ -84,13 +107,15 @@ export default async function CollectionPage() {
             className="md:hidden text-[13px]"
             style={{ color: "var(--brass)" }}
           >
-            ↻ Replace
+            <ReplaceIcon />
+            Replace
           </a>
           <GhostButton
             href="/collection/replace"
             className="hidden md:inline-block text-[13px] px-[16px] py-[9px]"
           >
-            ↻ Replace collection
+            <ReplaceIcon />
+            Replace collection
           </GhostButton>
         </div>
       </div>

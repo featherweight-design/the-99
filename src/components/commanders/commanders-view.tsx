@@ -211,24 +211,6 @@ export function CommandersView({
             </button>
           )}
 
-          {/* "Includes ▾" dropdown affordance (desktop, styled-only) */}
-          <button
-            type="button"
-            disabled
-            className="font-sans cursor-default"
-            style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: "#8E8269",
-              background: "#181410",
-              border: "1px solid #3A3229",
-              borderRadius: 8,
-              padding: "9px 14px",
-            }}
-          >
-            Includes ▾
-          </button>
-
           {/* "Order: Fit ↓ · fixed" label (desktop, §Order label) */}
           <span
             className="font-mono"

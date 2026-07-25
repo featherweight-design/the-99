@@ -8,6 +8,7 @@ import { searchCards } from "../../app/decks/[id]/search-action";
 import { SearchResultRow } from "./search-result-row";
 import { SingletonFooterNote } from "./singleton-footer-note";
 import { identityLabel } from "../../lib/decks/indeck";
+import { SearchField } from "../ui/text-field";
 
 interface SearchPaneProps {
   deckId: string;
@@ -73,35 +74,17 @@ export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchP
   return (
     <div className="flex flex-col gap-[0px] flex-1 overflow-hidden">
       {/* §Search input container: bg #14110E, border 1px #C9A24B, radius 8px, padding 11px 13px */}
-      <div
-        className="flex items-center gap-[9px] rounded-[8px] flex-none"
-        style={{
-          background: "#14110E",
-          border: "1px solid #C9A24B",
-          padding: "11px 13px",
-        }}
-      >
-        {/* §Search input — icon: #8E8269, 14px */}
-        <span
-          aria-hidden
-          className="text-[14px] flex-none"
-          style={{ color: "#8E8269" }}
-        >
-          ⌕
-        </span>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search cards…"
-          aria-label="Search cards by name"
-          // §Search input — query text: 15px mobile / 14.5px desktop
-          className="flex-1 bg-transparent text-[15px] md:text-[14.5px] outline-none placeholder:text-[#6E6353] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] rounded-sm"
-          style={{ color: "#EDE6D8", border: "none" }}
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </div>
+      <SearchField
+        containerClassName="gap-[9px] flex-none bg-[#14110E] border-[color:var(--brass)] p-[11px_13px]"
+        // §Search input — query text: 15px mobile / 14.5px desktop
+        className="text-[15px] md:text-[14.5px]"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search cards…"
+        aria-label="Search cards by name"
+        autoComplete="off"
+        spellCheck={false}
+      />
 
       {/* §Search meta row: flex, align-items center, justify-content space-between, margin-top 10px mobile / 11px desktop */}
       <div className="flex items-center justify-between mt-[10px] md:mt-[11px] flex-none">

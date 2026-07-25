@@ -86,7 +86,7 @@ export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardPro
             onClick={handleAdd}
             disabled={isPending}
             aria-label={`Add ${suggestion.name} to deck`}
-            className="flex-none font-sans text-[12px] font-semibold cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            className="flex-none font-sans text-[12px] font-semibold cursor-pointer disabled:opacity-50"
             style={{ color: "#C9A24B", background: "transparent", border: "none", padding: 0 }}
           >
             {isPending ? "Adding…" : "+ Add"}

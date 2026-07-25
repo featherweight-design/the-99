@@ -100,13 +100,14 @@ export async function HeroCommander({ userId }: { userId: string }) {
       className="mb-[34px] flex flex-col overflow-hidden rounded-[14px] md:flex-row"
       style={{ background: "var(--surface)", border: "1px solid var(--border-strong)" }}
     >
-      {/* Art placeholder — striped per handoff ("real art drops later").
-          §Hero card: Art placeholder — 200px, flex none, border-right line, bg base + stripe */}
+      {/* §Hero card: Art — 200px, flex none, border-right line. The striped
+          placeholder the handoff specified is now the no-art fallback only. */}
       <div
         className="hidden md:block w-[200px] shrink-0"
         style={{
-          background:
-            "repeating-linear-gradient(135deg, #1E1A15 0 11px, #181209 11px 22px), var(--bg)",
+          background: top.imageUri
+            ? `url(${top.imageUri}) center/cover`
+            : "repeating-linear-gradient(135deg, #1E1A15 0 11px, #181209 11px 22px), var(--bg)",
           borderRight: "1px solid var(--border-strong)",
         }}
         aria-hidden

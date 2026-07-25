@@ -10,7 +10,7 @@ export function NewDeckButton() {
   return (
     <PrimaryButton
       href="/decks/new"
-      className="block w-full text-center text-[14px] py-[11px] px-0 md:inline-block md:w-auto md:px-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+      className="block w-full text-center text-[14px] py-[11px] px-0 md:inline-block md:w-auto md:px-[20px]"
     >
       New Deck
     </PrimaryButton>

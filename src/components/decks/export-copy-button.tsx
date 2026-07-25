@@ -67,7 +67,7 @@ export function ExportCopyButton({ text, onStatus }: ExportCopyButtonProps) {
   return (
     <PrimaryButton
       onClick={handleCopy}
-      className="w-full md:w-auto text-[14px] py-[12px] px-[0] md:py-[11px] md:px-[22px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+      className="w-full md:w-auto text-[14px] py-[12px] px-[0] md:py-[11px] md:px-[22px]"
     >
       {copied ? "Copied ✓" : "Copy to clipboard"}
     </PrimaryButton>

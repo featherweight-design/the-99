@@ -7,6 +7,7 @@
 import { useSyncExternalStore } from "react";
 import { AVAILABLE_TYPES, type BrowseFilters, type SortKey } from "../../lib/collection/browse";
 import { ColorPip } from "./color-pip";
+import { SearchField } from "../ui/text-field";
 
 const WUBRG = ["W", "U", "B", "R", "G"] as const;
 
@@ -67,25 +68,14 @@ export function FilterBar({
       {/* §Filter Row: display flex, align center, gap 8px mobile / 12px desktop, horizontal-scroll on mobile */}
       <div className="flex items-center gap-[8px] md:gap-[12px] overflow-x-auto md:overflow-visible">
         {/* Search input — §Search Input: bg #181410 (--surface-sunken), border 1px #3A3229 (--border-strong), radius 8px, padding 9px 12px mobile / 10px 14px desktop */}
-        <label
-          className="flex items-center gap-[8px] md:gap-[10px] md:flex-1 rounded-lg px-[12px] md:px-[14px] py-[9px] md:py-[10px]"
-          style={{
-            background: "var(--surface-sunken)",
-            border: "1px solid var(--border-strong)",
-          }}
-        >
-          {/* §Search Icon: #8E8269 (--fg-faint), 14/15px */}
-          <span aria-hidden className="text-[14px] md:text-[15px]" style={{ color: "var(--fg-faint)" }}>⌕</span>
-          <input
-            type="search"
-            value={filters.search}
-            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            placeholder={isDesktop ? "Search by card name…" : "Search your cards…"}
-            aria-label="Search your cards"
-            className="min-w-0 flex-1 bg-transparent outline-none text-[14px] placeholder:text-[color:var(--fg-faint)]"
-            style={{ color: "var(--fg)" }}
-          />
-        </label>
+        <SearchField
+          containerClassName="gap-[8px] md:gap-[10px] md:flex-1 px-[12px] md:px-[14px] py-[9px] md:py-[10px]"
+          className="text-[14px]"
+          value={filters.search}
+          onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+          placeholder={isDesktop ? "Search by card name…" : "Search your cards…"}
+          aria-label="Search your cards"
+        />
 
         {/* WUBRG pip selector (desktop) — §Color Filter */}
         <div

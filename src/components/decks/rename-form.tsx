@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { renameDeck } from "../../app/decks/actions";
 import { PrimaryButton } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
 
 interface RenameFormProps {
   deckId: string;
@@ -40,21 +41,15 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-[8px]">
-      <input
+      <TextField
         ref={inputRef}
         autoFocus
-        type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         maxLength={120}
         disabled={isPending}
         aria-label="Deck name"
-        className="w-full rounded-[6px] px-[10px] py-[7px] text-[13px] font-sans focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-        style={{
-          background: "#14110E",
-          border: "1px solid #3A3229",
-          color: "#EDE6D8",
-        }}
+        className="w-full rounded-[6px] px-[10px] py-[7px] text-[13px] font-sans bg-[#14110E]"
       />
       {error && (
         <p className="font-mono text-[11px]" style={{ color: "#C6533F" }}>
@@ -66,7 +61,7 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
         <PrimaryButton
           type="submit"
           disabled={isPending}
-          className="flex-1 rounded-[6px] py-[7px] text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+          className="flex-1 rounded-[6px] py-[7px] text-[13px]"
         >
           {isPending ? "Saving…" : "Save"}
         </PrimaryButton>
@@ -74,7 +69,7 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
           type="button"
           onClick={onDone}
           disabled={isPending}
-          className="rounded-[6px] px-[12px] py-[7px] text-[13px] font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+          className="rounded-[6px] px-[12px] py-[7px] text-[13px] font-sans transition-colors"
           style={{
             background: "transparent",
             border: "1px solid #3A3229",

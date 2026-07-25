@@ -161,7 +161,7 @@ export function BuilderShell({
             {/* §"Add your first card" CTA button (mobile empty) */}
             <PrimaryButton
               onClick={() => setSheetOpen(true)}
-              className="md:hidden text-[15px] px-[26px] py-[13px] mt-[24px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+              className="md:hidden text-[15px] px-[26px] py-[13px] mt-[24px]"
             >
               Add your first card
             </PrimaryButton>
@@ -188,7 +188,7 @@ export function BuilderShell({
           >
             <PrimaryButton
               onClick={() => setSheetOpen(true)}
-              className="w-full text-[15px] py-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+              className="w-full text-[15px] py-[13px]"
             >
               + Add cards
             </PrimaryButton>

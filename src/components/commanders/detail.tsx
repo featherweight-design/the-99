@@ -9,7 +9,7 @@ import { fitSegments } from "../../lib/recs/format";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { FullCardTrigger } from "./full-card-trigger";
-import { GhostButton, PrimaryButton } from "../ui/button";
+import { PrimaryButton } from "../ui/button";
 
 // ─── Internal sub-component types ───────────────────────────────────────────
 
@@ -779,7 +779,7 @@ export function CommanderDetail({
           {/* Commander card frame — 63/88 aspect. Image when available;
               gradient is the fallback. */}
           <div
-            className="flex flex-col rounded-[14px]"
+            className="rounded-[14px]"
             style={{
               aspectRatio: "63/88",
               background: c.imageUri ? undefined : gradient,
@@ -787,101 +787,24 @@ export function CommanderDetail({
               backgroundSize: "cover",
               backgroundPosition: "center",
               boxShadow:
-                "inset 0 -70px 70px -40px rgba(10,7,4,0.85), inset 0 0 0 1px rgba(0,0,0,0.3), 0 20px 50px rgba(0,0,0,0.5)",
-              padding: 16,
+                "inset 0 0 0 1px rgba(0,0,0,0.3), 0 20px 50px rgba(0,0,0,0.5)",
             }}
-          >
-            {/* Card name + mana cost row */}
-            <div className="flex items-start justify-between gap-[8px]">
-              <h1
-                className="font-display font-[700] m-0"
-                style={{
-                  fontSize: 19,
-                  color: "#F4EEE0",
-                  textShadow: "0 1px 6px rgba(0,0,0,0.6)",
-                  lineHeight: 1.1,
-                }}
-              >
-                {c.name}
-              </h1>
-              {/* Mana cost pips */}
-              {c.manaCost && (
-                <div className="flex gap-[4px] flex-none">
-                  {[...c.manaCost.matchAll(/\{([^}]+)\}/g)].map((m, i) => {
-                    const sym = m[1];
-                    const isWUBRG = /^[WUBRG]$/.test(sym);
-                    // Per §Mana pip text colors: B: #0E0C10, R: #1a0b08, G: #0c1608;
-                    // W and U are not explicitly listed — use generic #C6B79A fallback.
-                    const PIP_TEXT: Record<string, string> = {
-                      W: "#C6B79A",
-                      U: "#C6B79A",
-                      B: "#0E0C10",
-                      R: "#1a0b08",
-                      G: "#0c1608",
-                    };
-                    return (
-                      <span
-                        key={i}
-                        className="inline-flex items-center justify-center rounded-full font-mono font-[600]"
-                        style={{
-                          width: 24,
-                          height: 24,
-                          fontSize: 13,
-                          background: isWUBRG
-                            ? WUBRG_HEX[sym] ?? "#3A322A"
-                            : "#3A322A",
-                          color: isWUBRG ? (PIP_TEXT[sym] ?? "#C6B79A") : "#C6B79A",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
-                        }}
-                      >
-                        {sym}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+          />
 
-            {/* Spacer pushes oracle glass to bottom */}
-            <div style={{ flex: 1 }} />
-
-            {/* Oracle glass panel */}
-            <div
-              className="rounded-[8px]"
-              style={{
-                background: "rgba(10,7,4,0.5)",
-                backdropFilter: "blur(3px)",
-                padding: "10px 12px",
-              }}
+          {/* Name + type line, below the card rather than over it. The card
+              scan prints both itself, but the desktop column needs a real
+              heading — the other h1 in this file is the mobile header and is
+              sm:hidden. */}
+          <div className="flex flex-col gap-[2px]">
+            <h1
+              className="font-display font-[700] m-0"
+              style={{ fontSize: 21, color: "#EDE6D8", lineHeight: 1.15 }}
             >
-              {/* Type line */}
-              <p
-                className="m-0 font-[500]"
-                style={{
-                  fontSize: 12,
-                  color: "#EDE6D8",
-                  textShadow: "0 1px 4px rgba(0,0,0,0.6)",
-                }}
-              >
-                {c.typeLine}
-              </p>
-              {/* Oracle text */}
-              {c.oracleText && (
-                <p
-                  className="m-0"
-                  style={{
-                    fontSize: 11,
-                    color: "#E4DCCB",
-                    lineHeight: 1.4,
-                    marginTop: 5,
-                    textShadow: "0 1px 3px rgba(0,0,0,0.7)",
-                    whiteSpace: "pre-line",
-                  }}
-                >
-                  {c.oracleText}
-                </p>
-              )}
-            </div>
+              {c.name}
+            </h1>
+            <p className="m-0" style={{ fontSize: 12.5, color: "#C6B79A" }}>
+              {c.typeLine}
+            </p>
           </div>
 
           {/* Identity pip row (below card) */}
@@ -916,14 +839,6 @@ export function CommanderDetail({
           >
             Build this deck →
           </PrimaryButton>
-
-          {/* Compare button */}
-          <GhostButton
-            // brand focus-visible outline treatment inherited from globals.css
-            className="text-[13px] p-[11px_0] w-full"
-          >
-            Compare with another general
-          </GhostButton>
 
           {/* Seed note */}
           <p

@@ -37,7 +37,7 @@ export function RoleCounterCell({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={rationaleId}
-        className="flex-1 min-w-0 rounded-[7px] md:rounded-[9px] px-[5px] py-[6px] md:px-[14px] md:py-[11px] text-center md:text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+        className="flex-1 min-w-0 rounded-[7px] md:rounded-[9px] px-[5px] py-[6px] md:px-[14px] md:py-[11px] text-center md:text-left"
         style={{
           background: "#181410",
           border: "1px solid #2A241D",

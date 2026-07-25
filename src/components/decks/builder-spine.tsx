@@ -110,7 +110,7 @@ export function BuilderSpine({ deck, onExport }: BuilderSpineProps) {
               }
             }}
             aria-label={`Rename deck: ${deck.name}`}
-            className="max-w-full truncate text-left font-display font-bold text-[16px] md:text-[21px] leading-[1.2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] rounded-[3px]"
+            className="max-w-full truncate text-left font-display font-bold text-[16px] md:text-[21px] leading-[1.2] rounded-[3px]"
             style={{ color: "#EDE6D8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
           >
             {deck.name}
@@ -209,7 +209,7 @@ export function BuilderSpine({ deck, onExport }: BuilderSpineProps) {
             <button
               type="button"
               onClick={onExport}
-              className="md:hidden flex items-center gap-[5px] rounded-[7px] font-mono text-[11px] px-[9px] py-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+              className="md:hidden flex items-center gap-[5px] rounded-[7px] font-mono text-[11px] px-[9px] py-[6px]"
               style={{
                 color: "#C9A24B",
                 background: "transparent",
@@ -238,7 +238,7 @@ export function BuilderSpine({ deck, onExport }: BuilderSpineProps) {
             {/* Desktop: filled brass button */}
             <PrimaryButton
               onClick={onExport}
-              className="hidden md:flex items-center gap-[6px] text-[13px] px-[18px] py-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+              className="hidden md:flex items-center gap-[6px] text-[13px] px-[18px] py-[11px]"
             >
               Export
             </PrimaryButton>
