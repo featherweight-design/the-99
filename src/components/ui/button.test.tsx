@@ -8,6 +8,26 @@ describe("PrimaryButton", () => {
     expect(screen.getByRole("button", { name: "Go" })).toBeTruthy();
   });
 
+  // The spread sits after className and before type deliberately: className is
+  // destructured out of props so a spread can never carry one, while type must
+  // stay overridable so a caller can opt into submit.
+  it("merges a spread className rather than letting it replace the contract", () => {
+    const props = { className: "px-4" } as Record<string, unknown>;
+    render(<PrimaryButton {...props}>Go</PrimaryButton>);
+    const el = screen.getByRole("button", { name: "Go" });
+    expect(el.className).toContain("px-4");
+    expect(el.className).toContain("bg-[color:var(--brass)]");
+  });
+
+  it("still honours a spread type so submit buttons keep working", () => {
+    const props = { type: "submit" } as Record<string, unknown>;
+    render(<PrimaryButton {...props}>Go</PrimaryButton>);
+    expect(screen.getByRole("button", { name: "Go" })).toHaveProperty(
+      "type",
+      "submit",
+    );
+  });
+
   it("drops a style smuggled in past the type ban", () => {
     const props = { style: { background: "red" } } as Record<string, unknown>;
     render(<PrimaryButton {...props}>Go</PrimaryButton>);
