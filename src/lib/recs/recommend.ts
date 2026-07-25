@@ -16,6 +16,7 @@ export type RankedCommander = CommanderScore & { slug: string; synergyState: Syn
  */
 export type CommanderListItem = Pick<
   RankedCommander,
+  | "oracleId"
   | "slug"
   | "name"
   | "colorIdentity"
@@ -36,6 +37,7 @@ export type CommanderListItem = Pick<
 
 export function toListItem(r: RankedCommander): CommanderListItem {
   return {
+    oracleId: r.oracleId,
     slug: r.slug,
     name: r.name,
     colorIdentity: r.colorIdentity,
@@ -70,7 +72,9 @@ export function byScoreThenOracleId(
   a: { score: number; oracleId: string },
   b: { score: number; oracleId: string },
 ): number {
-  return b.score - a.score || (a.oracleId < b.oracleId ? -1 : 1);
+  if (b.score !== a.score) return b.score - a.score;
+  if (a.oracleId === b.oracleId) return 0;
+  return a.oracleId < b.oracleId ? -1 : 1;
 }
 
 /**

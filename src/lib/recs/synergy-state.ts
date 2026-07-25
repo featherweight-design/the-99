@@ -9,6 +9,10 @@ import type { EdhrecFetchResult } from "../edhrec/client";
 export type SynergyState = "ok" | "absent" | "degraded";
 
 export function synergyStateFrom(r: EdhrecFetchResult): SynergyState {
-  if (r.data !== null) return "ok";
+  // Non-empty topCards, not merely non-null data: parseEdhrecPayload degrades to
+  // an empty topCards list on an unexpected payload shape, and scoreCommander
+  // leaves fitSynergy null for an empty list. Calling that "ok" would persist a
+  // row whose synergyState contradicts its null fitSynergy.
+  if (r.data !== null && r.data.topCards.length > 0) return "ok";
   return r.unreachable ? "degraded" : "absent";
 }

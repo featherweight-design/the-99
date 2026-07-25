@@ -6,6 +6,7 @@ import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
 
 export type ScoreRowWithCard = {
+  oracleId: string;
   slug: string;
   score: number;
   fitPool: number;
@@ -43,6 +44,7 @@ export function toScoreRow(userId: string, r: RankedCommander) {
 
 export function rowToListItem(row: ScoreRowWithCard): CommanderListItem {
   return {
+    oracleId: row.oracleId,
     slug: row.slug,
     name: row.name,
     colorIdentity: row.colorIdentity,

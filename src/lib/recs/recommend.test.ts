@@ -125,6 +125,7 @@ describe("finalizeRecommendations", () => {
       const { results } = finalizeRecommendations([score], 10, 1);
       const item = toListItem(results[0]);
       expect(item).toEqual({
+        oracleId: "oracle-Krenko, Mob Boss",
         slug: "krenko-mob-boss",
         name: "Krenko, Mob Boss",
         colorIdentity: [],
