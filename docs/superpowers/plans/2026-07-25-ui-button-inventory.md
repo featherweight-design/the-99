@@ -69,10 +69,16 @@ Each site is one of:
 - **GHOST** — bordered secondary CTA, migrates to `GhostButton`
 - **EXEMPT-DYNAMIC** — colour is computed at runtime (mana pips, colour
   identity); keeps its inline style with a rule disable and a reason
-- **EXEMPT-BESPOKE** — overrides 3 or more of the 6 properties the primitives
-  own (background, text colour, border, font-weight, border-radius, hover), so
-  wrapping it in a primitive would hide drift rather than prevent it
+- **EXEMPT-PATTERN** — belongs to a different shared pattern: a two-state
+  toggle pill, a selectable card row, or a plain text action whose text is
+  brass rather than `var(--fg)`
 
-The 3-override rule is the scope line. Most of the 225 sites are card wrappers,
-list rows, chips and toggles rather than CTAs, and are expected to land in the
-two EXEMPT buckets.
+An earlier draft of this document drew the line at "overrides 3 or more of the
+7 properties the primitives own." That test was wrong and has been dropped: it
+measures deviation from `PrimaryButton`, so it flags a two-state toggle as
+bespoke even though every toggle in the app is identical to every other one.
+Uniqueness, not deviation, is what makes a site exempt.
+
+Most of the 225 sites are card wrappers, list rows, chips and toggles rather
+than CTAs, and land in the two EXEMPT buckets. The migrations to date confirm
+this: 29 of the sites were true CTAs, and the rest were a different pattern.

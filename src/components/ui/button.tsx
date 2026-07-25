@@ -5,11 +5,11 @@ import { twMerge } from "tailwind-merge";
 // §404: Primary CTA and §404: Secondary CTA — the canonical statement of the
 // brass and ghost contracts.
 //
-// These own fill, text colour, border, font-weight, border-radius and hover
-// ONLY. Padding and font-size are deliberately left to the caller: the design
-// tables specify them differently for nearly every surface, so a primitive
-// that fixed them would be overridden everywhere and hide drift rather than
-// prevent it.
+// These own fill, text colour, border, font-family, font-weight, border-radius
+// and hover ONLY. Padding and font-size are deliberately left to the caller:
+// the design tables specify them differently for nearly every surface, so a
+// primitive that fixed them would be overridden everywhere and hide drift
+// rather than prevent it.
 //
 // Everything owned here is a Tailwind class, never an inline style. An inline
 // style background outranks a hover: utility and silently kills the hover —
@@ -32,7 +32,7 @@ type SharedProps = {
 
 type ButtonProps = SharedProps &
   (
-    | ({ href: string } & Omit<
+    | ({ href: React.ComponentPropsWithoutRef<typeof Link>["href"] } & Omit<
         React.ComponentPropsWithoutRef<typeof Link>,
         "href" | "className"
       >)
