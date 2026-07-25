@@ -47,6 +47,11 @@ type SearchFieldProps = TextFieldProps & {
  * belongs to the container via focus-within, because the input is only part of
  * the thing that looks focused; the inner input therefore has to suppress its
  * own outline or two indicators stack.
+ *
+ * The container is a label so that the icon and the padding are click targets
+ * for the input, not dead chrome. A button in `trailing` still works: label
+ * activation is suppressed when the click lands on an interactive descendant,
+ * and callers pass an explicit aria-label, which outranks the label's text.
  */
 export function SearchField({
   className,
@@ -56,7 +61,7 @@ export function SearchField({
   ...rest
 }: SearchFieldProps) {
   return (
-    <div
+    <label
       className={twMerge(
         FIELD_CHROME,
         "flex items-center gap-[10px] px-[12px] " +
@@ -79,6 +84,6 @@ export function SearchField({
         {...rest}
       />
       {trailing}
-    </div>
+    </label>
   );
 }
