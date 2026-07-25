@@ -23,6 +23,13 @@ const FIELD_CHROME =
   "border border-solid border-[color:var(--border-strong)] text-[color:var(--fg)] " +
   "placeholder:text-[color:var(--fg-faint)] caret-[color:var(--brass)]";
 
+// Dropped at runtime as well as in the types, exactly as button.tsx does it:
+// the type ban is erased at the JS boundary, so an untyped caller could still
+// smuggle a background or border through a spread and outrank the chrome.
+function dropStyle(rest: object) {
+  delete (rest as { style?: unknown }).style;
+}
+
 // ComponentPropsWithRef, not InputHTMLAttributes: React 19 passes ref as an
 // ordinary prop, and several callers focus the field imperatively.
 type TextFieldProps = Omit<React.ComponentPropsWithRef<"input">, "style">;
@@ -33,6 +40,7 @@ type TextFieldProps = Omit<React.ComponentPropsWithRef<"input">, "style">;
  * the chrome classes the same way it does on the buttons).
  */
 export function TextField({ className, type = "text", ...rest }: TextFieldProps) {
+  dropStyle(rest);
   return <input type={type} className={twMerge(FIELD_CHROME, className)} {...rest} />;
 }
 
@@ -60,6 +68,7 @@ export function SearchField({
   type = "search",
   ...rest
 }: SearchFieldProps) {
+  dropStyle(rest);
   return (
     <label
       className={twMerge(

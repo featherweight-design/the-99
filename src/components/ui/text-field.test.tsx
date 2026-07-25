@@ -20,6 +20,12 @@ describe("TextField", () => {
     expect(el.className).not.toContain("border-[color:var(--border-strong)]");
   });
 
+  it("drops a style smuggled in past the type ban", () => {
+    const props = { style: { border: "1px solid red" } } as Record<string, unknown>;
+    render(<TextField aria-label="Name" {...props} />);
+    expect(screen.getByLabelText("Name").getAttribute("style")).toBeNull();
+  });
+
   it("keeps the default border colour when the caller overrides only at a breakpoint", () => {
     render(<TextField aria-label="Name" className="md:border-[color:var(--brass)]" />);
     const el = screen.getByLabelText("Name");
@@ -42,6 +48,12 @@ describe("SearchField", () => {
     const input = screen.getByLabelText("Search cards");
     const clear = screen.getByRole("button", { name: "Clear" });
     expect(input.closest("label")?.contains(clear)).toBe(true);
+  });
+
+  it("drops a style smuggled in past the type ban", () => {
+    const props = { style: { background: "red" } } as Record<string, unknown>;
+    render(<SearchField aria-label="Search cards" {...props} />);
+    expect(screen.getByLabelText("Search cards").getAttribute("style")).toBeNull();
   });
 
   // The caller styles the box, not the input — a className meant for the input
