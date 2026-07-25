@@ -2,12 +2,15 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { db } from "../../db";
-import { cards, collectionItems, csvUploads } from "../../db/schema";
+import { cards, collectionItems, commanderScores, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
+import { recommendCommanders } from "../../lib/recs/recommend";
+import { persistScores } from "../../lib/recs/store";
 
 export type UploadPreview = {
   uploadId: string;
@@ -117,6 +120,8 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   const values = pendingItems.map((v) => ({ userId, ...v }));
   await db.transaction(async (tx) => {
     await tx.delete(collectionItems).where(eq(collectionItems.userId, userId));
+    // Every score component derives from the collection, so a replace invalidates all of them.
+    await tx.delete(commanderScores).where(eq(commanderScores.userId, userId));
     for (let i = 0; i < values.length; i += 500) {
       await tx.insert(collectionItems).values(values.slice(i, i + 500));
     }
@@ -124,4 +129,16 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   });
   revalidatePath("/collection");
   revalidatePath("/");
+
+  // Warm the new collection's scores without blocking the upload response. If this
+  // is cut short by the route's max duration, the read path recomputes on first
+  // visit — the warm is an optimisation, never a correctness requirement.
+  after(async () => {
+    try {
+      const recs = await recommendCommanders(userId);
+      await persistScores(userId, recs.results);
+    } catch {
+      // Swallow: the lazy path in getRankedList is the correctness backstop.
+    }
+  });
 }

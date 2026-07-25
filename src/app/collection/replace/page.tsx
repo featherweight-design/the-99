@@ -6,6 +6,11 @@ import { requireUserId } from "../../../lib/auth";
 import { getCollectionStats } from "../../../lib/home/summary";
 import { ReplaceFlow } from "../../../components/collection/replace-flow";
 
+// confirmUpload's after() warm scores every commander candidate, which on a cold
+// EDHREC cache is ~40 sequential fetch batches. maxDuration on a page also bounds
+// the Server Actions invoked from it.
+export const maxDuration = 300;
+
 export default async function ReplacePage() {
   const userId = await requireUserId();
   const stats = await getCollectionStats(userId);
