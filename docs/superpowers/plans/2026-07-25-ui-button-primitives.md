@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extract `PrimaryButton` and `GhostButton` primitives that own the brass/ghost visual contract, and migrate all 28 CTA sites onto them — eliminating the inline-`style` class of bug that silently kills hover states.
+**Goal:** Extract `PrimaryButton` and `GhostButton` primitives that own the brass/ghost visual contract, and migrate every CTA site onto them — eliminating the inline-`style` class of bug that silently kills hover states.
 
 **Architecture:** One new file, `src/components/ui/button.tsx`, exporting two components. Each owns background, text colour, border, font-weight, border-radius and hover — always via Tailwind classes, never inline `style`. Padding and font-size stay per-surface and arrive through `className`, because the design tables specify them differently for nearly every surface. Migration proceeds surface-by-surface so each task is independently reviewable.
+
+**On the site count:** roughly 30 CTAs migrate and roughly 13 are deliberately excluded, but treat those as estimates, not requirements. Two independent hand-audits of this codebase disagreed with each other, and each found real sites the other missed. Task 2 therefore generates the authoritative list mechanically before any migration begins; Tasks 3–6 migrate against *that* list, not against any number quoted here.
 
 **Tech Stack:** Next.js 16 App Router, React 19, Tailwind 4, Vitest.
 
@@ -12,7 +14,8 @@
 
 - **Never deliver background, border, or text colour via inline `style`.** Inline styles outrank Tailwind `hover:` utilities, which is the root cause this plan exists to fix. Colour goes in `className` or nowhere.
 - **Use CSS variables, never raw hex.** `var(--brass)`, `var(--brass-hover)`, `var(--bg)`, `var(--fg)`, `var(--border-strong)`. Several current sites hardcode `#C9A24B` / `#3A3229` / `#EDE6D8`; those become variables on migration.
-- **Preserve every spec'd pixel exactly.** Padding and font-size values must not change during migration. If a site's current padding disagrees with its design table, keep the current value and record the discrepancy in the task report — do not silently "fix" it. The one known disagreement is listed in Task 3.
+- **Preserve every spec'd pixel exactly.** Padding and font-size values must not change during migration. If a site's current padding disagrees with its design table, keep the current value and record the discrepancy in the task report — do not silently "fix" it. One known disagreement is listed in Task 4.
+- **Several sites set padding via inline `style`, which makes an existing `className` padding dead.** When migrating those, the inline value is the one currently rendering and therefore the one to preserve. Where a dead `className` padding disagrees with the live inline value, keep the inline value and flag the discrepancy — do not assume the dead class was the intent.
 - Primary contract (appshell.md §404: Primary CTA): background `var(--brass)`, colour `var(--bg)`, font-weight `600`, border-radius `8px`; hover background `var(--brass-hover)`.
 - Ghost contract (appshell.md §404: Secondary CTA): background transparent, colour `var(--fg)`, border `1px solid var(--border-strong)`, font-weight `600`, border-radius `8px`; hover border-colour `var(--brass)`, colour `var(--brass-hover)`.
 - `src/app/not-found.tsx` is the reference implementation — it already expresses both contracts correctly in classes.
@@ -25,8 +28,77 @@
 
 - **Create:** `src/components/ui/button.tsx` — `PrimaryButton`, `GhostButton`
 - **Create:** `src/components/ui/button.test.tsx` — contract tests
-- **Modify:** 15 files across `src/app/`, `src/components/home/`, `src/components/collection/`, `src/components/decks/`, `src/components/commanders/`
+- **Create:** `docs/superpowers/plans/2026-07-25-ui-button-inventory.md` — the generated site list (Task 2)
+- **Modify:** `vitest.config.ts`, `package.json`, `eslint.config.mjs` — test and lint infrastructure
+- **Modify:** ~18 component files across `src/app/`, `src/components/home/`, `src/components/collection/`, `src/components/decks/`, `src/components/commanders/`
 - **Modify:** `docs/superpowers/design-tables/appshell.md` — add a shared-primitive section
+
+---
+
+### Task 0: Component-test infrastructure
+
+**Files:**
+- Modify: `vitest.config.ts`
+- Modify: `package.json` (dev dependencies)
+- Test: `src/components/ui/smoke.test.tsx` (temporary — deleted in Task 1)
+
+**Why this task exists:** `vitest.config.ts` currently sets `include: ["src/**/*.test.ts"]` — no `.tsx` — and `environment: "node"`. There is no `@testing-library/react` and no `jsdom`; every existing test is a pure-function test under `src/lib/`. A `.tsx` test file is therefore invisible to the runner, and because `pnpm test` passes `--passWithNoTests`, the suite would go green having executed nothing. Task 1's tests cannot run until this is fixed, and without this task we would ship an untested primitive believing it was tested.
+
+**Interfaces:**
+- Consumes: nothing
+- Produces: a Vitest setup that executes `.tsx` tests in a DOM environment.
+
+- [ ] **Step 1: Install the dependencies**
+
+```bash
+pnpm add -D @testing-library/react @testing-library/jest-dom jsdom
+```
+
+- [ ] **Step 2: Widen the Vitest include and switch to a DOM environment**
+
+`src/lib/**` tests are pure-function and run fine under jsdom, so a single environment keeps the config simple.
+
+```ts
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    include: ["src/**/*.test.{ts,tsx}"],
+    environment: "jsdom",
+  },
+});
+```
+
+- [ ] **Step 3: Prove the runner actually picks up a .tsx file**
+
+This step is the whole point of the task — it must fail before it passes, or we have not proven anything. Create `src/components/ui/smoke.test.tsx` with a deliberately wrong assertion:
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import { expect, it } from "vitest";
+
+it("executes tsx tests in a DOM environment", () => {
+  render(<button>hello</button>);
+  expect(screen.getByRole("button").textContent).toBe("WRONG");
+});
+```
+
+Run: `pnpm test`
+Expected: **FAIL** with `expected 'hello' to be 'WRONG'`. A "no test files found" or a pass means the config change did not take effect — stop and fix it before continuing.
+
+- [ ] **Step 4: Correct the assertion and confirm the whole suite still passes**
+
+Change `"WRONG"` to `"hello"`.
+
+Run: `pnpm test`
+Expected: PASS, and the pre-existing `src/lib/**` tests still pass under jsdom (272 tests at time of writing). If any `src/lib` test breaks under jsdom, report it rather than working around it.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add package.json pnpm-lock.yaml vitest.config.ts src/components/ui/smoke.test.tsx
+git commit -m "test: run tsx component tests in a jsdom environment"
+```
 
 ---
 
@@ -51,6 +123,15 @@
   export function GhostButton(props: ButtonProps): React.JSX.Element;
   ```
   Both render a Next `<Link>` when `href` is present and a `<button>` otherwise, so `<Link>`-styled CTAs and real buttons share one primitive.
+
+- [ ] **Step 0: Add the class-merge dependency and drop the smoke test**
+
+```bash
+pnpm add tailwind-merge
+rm src/components/ui/smoke.test.tsx
+```
+
+`tailwind-merge` is a runtime dependency, not a dev dependency — it executes on every render.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -81,6 +162,13 @@ describe("PrimaryButton", () => {
   it("appends caller classes so per-surface padding wins", () => {
     render(<PrimaryButton className="px-[26px] py-[13px]">Go</PrimaryButton>);
     expect(screen.getByRole("button", { name: "Go" }).className).toContain("px-[26px] py-[13px]");
+  });
+
+  it("lets a caller class override a base utility", () => {
+    render(<PrimaryButton className="rounded-none">Go</PrimaryButton>);
+    const cls = screen.getByRole("button", { name: "Go" }).className;
+    expect(cls).toContain("rounded-none");
+    expect(cls).not.toContain("rounded-lg");
   });
 
   it("forwards button attributes", () => {
@@ -125,6 +213,8 @@ import Link from "next/link";
 // `style` background silently outranks `hover:` utilities — the bug this
 // primitive exists to make unrepresentable.
 
+import { twMerge } from "tailwind-merge";
+
 const BASE = "font-sans font-semibold rounded-lg transition-colors cursor-pointer";
 
 const PRIMARY =
@@ -146,7 +236,10 @@ type ButtonProps = SharedProps &
   );
 
 function renderButton(variant: string, { className, children, ...rest }: ButtonProps) {
-  const classes = className ? `${BASE} ${variant} ${className}` : `${BASE} ${variant}`;
+  // twMerge, not string concatenation: Tailwind resolves conflicting utilities
+  // by generated-stylesheet order, not class-string order, so a caller's
+  // `rounded-[7px]` would not reliably beat BASE's `rounded-lg`.
+  const classes = twMerge(BASE, variant, className);
   if (rest.href !== undefined) {
     const { href, ...linkProps } = rest;
     return (
@@ -188,10 +281,79 @@ git commit -m "feat(ui): add PrimaryButton and GhostButton primitives"
 
 ---
 
-### Task 2: Migrate the app-shell and home surfaces
+### Task 2: Add the ESLint rule and derive the authoritative offender list
 
 **Files:**
-- Modify: `src/app/page.tsx:52` (Sign in — primary, `14px 40px`, 15px)
+- Modify: `eslint.config.mjs`
+- Create: `docs/superpowers/plans/2026-07-25-ui-button-inventory.md` (generated offender list)
+
+**Why this task comes before the migrations:** two independent hand-audits of this codebase produced two different inventories. Each found real sites the other missed. A hand-audited list is not a trustworthy basis for a 30-site refactor, so this task replaces it with a mechanically generated one. The lint rule is both the discovery mechanism and the permanent regression guard.
+
+A source-grepping Vitest test was considered and rejected: a regex over `style={{...}}` breaks on any nested `}` (e.g. `detail.tsx` has a `${...}` template literal inside a style object, which would hide a real offender), and a hardcoded palette list silently misses hex values nobody remembered to add. An ESLint rule works on the JSX AST instead, already runs in the pre-push gate, and gives future authors a legible escape hatch via `eslint-disable-next-line` with a stated reason — where a grep test would simply get deleted.
+
+**Interfaces:**
+- Consumes: nothing
+- Produces: `docs/superpowers/plans/2026-07-25-ui-button-inventory.md` — the definitive site list that Tasks 3–6 migrate against.
+
+- [ ] **Step 1: Add the rule**
+
+```js
+{
+  files: ["src/**/*.tsx"],
+  rules: {
+    "no-restricted-syntax": [
+      "error",
+      {
+        selector:
+          "JSXAttribute[name.name='style'] Property[key.name=/^(background|backgroundColor|border|borderColor|color)$/]",
+        message:
+          "Deliver colour and border through Tailwind classes, not inline style — an inline style outranks hover: utilities and silently kills the hover state. Use PrimaryButton/GhostButton from src/components/ui/button.tsx, or disable this rule with a reason if the value is genuinely dynamic.",
+      },
+    ],
+  },
+}
+```
+
+- [ ] **Step 2: Generate the offender list**
+
+Run: `pnpm lint 2>&1 | tee /tmp/offenders.txt`
+
+Expected: a large number of errors. This is the point — do not fix them yet.
+
+- [ ] **Step 3: Classify every violation into the inventory document**
+
+For each violation, record a row: `file:line`, the element's visible label, and one of four classifications.
+
+| Classification | Meaning | Action |
+|---|---|---|
+| `PRIMARY` | Brass-filled CTA | Migrate to `PrimaryButton` |
+| `GHOST` | Bordered/transparent CTA | Migrate to `GhostButton` |
+| `EXEMPT-DYNAMIC` | Value is computed at runtime (progress width, synergy meter, animation delay) | `eslint-disable-next-line` with a reason |
+| `EXEMPT-BESPOKE` | Interactive, but would override 3 or more of the 6 properties a primitive owns | `eslint-disable-next-line` with a reason |
+
+**The 3-override rule is the scope line.** The primitives own six things: background, text colour, border, font-weight, border-radius, hover. A site that overrides three or more of them is not expressing the primitive's contract — wrapping it would hide drift rather than prevent it. Known `EXEMPT-BESPOKE` sites, all verified: the destructive Import/Replace button (`confirm-modal.tsx:188` — dark-red fill, danger border, `--fg` text); the disabled Export (`builder-spine.tsx:191` — muted colour, muted border, `not-allowed` cursor); the mobile Export (`builder-spine.tsx:209` — mono font, brass text, 7px radius, no fill); the two toggle-pill groups (`group-toggle.tsx`, `export-dialog.tsx:249`); the tab underline (`add-panel.tsx:78`); and the text-only Retry links in both `degraded-banner.tsx` files.
+
+**Also sweep for correctly-implemented CTAs the rule cannot see.** Sites that already use classes throughout are invisible to this lint rule but should still adopt the primitive for consistency. Grep for `bg-[color:var(--brass)]` and `[border:1px_solid_var(--border-strong)]` and add those rows too — `src/app/not-found.tsx`, `src/app/decks/page.tsx`, `src/app/commanders/page.tsx:39` and `src/components/collection/upload-entry.tsx:164` are known members of this set.
+
+- [ ] **Step 4: Commit the rule as a warning, not an error, until migration completes**
+
+Set the severity to `"warn"` for now so the pre-push gate stays green through Tasks 3–6. Task 7 flips it to `"error"`.
+
+```bash
+git add eslint.config.mjs docs/superpowers/plans/2026-07-25-ui-button-inventory.md
+git commit -m "chore(lint): flag inline colour styles and inventory every CTA site"
+```
+
+- [ ] **Step 5: Report the counts**
+
+Report how many sites fall into each of the four classifications, and explicitly name any site found here that neither prior audit caught. Tasks 3–6 below are grouped by surface; if the inventory reveals sites in a surface those tasks do not list, add them to the matching task and say so.
+
+---
+
+### Task 3: Migrate the app-shell and home surfaces
+
+**Files:**
+- Modify: `src/app/page.tsx:52` (Sign in — primary; already correct, `py-[14px] px-0 md:px-[40px]`, full-width to 260px on mobile). Note the coupling: this is a child of Clerk's `<SignInButton mode="modal">`, which `cloneElement`s an injected `onClick`. The primitive forwards unknown props, so this keeps working — but verify the sign-in modal still opens after migrating.
 - Modify: `src/app/not-found.tsx:28-39` (both CTAs — already correct, swap to primitives)
 - Modify: `src/app/decks/page.tsx:65-75` (Browse commanders — primary, `13px 26px` mobile / `12px 26px` desktop, 14px)
 - Modify: `src/components/home/dashboard.tsx:77-87` and `:253-262` (Update collection — ghost, `9px 16px`, 13px)
@@ -218,7 +380,7 @@ git commit -m "refactor(ui): migrate app-shell and home CTAs to button primitive
 
 ---
 
-### Task 3: Migrate the collection surface
+### Task 4: Migrate the collection surface
 
 **Files:**
 - Modify: `src/components/collection/upload-entry.tsx:164-171` (Browse files — primary), `:214-220` (Back — ghost), `:222-230` (Preview list — primary)
@@ -230,7 +392,9 @@ git commit -m "refactor(ui): migrate app-shell and home CTAs to button primitive
 - Consumes: `PrimaryButton`, `GhostButton` (Task 1)
 - Produces: nothing
 
-**Known design-table discrepancy — do not "fix":** `upload-entry.tsx:164` Browse files currently renders `11px 20px`; `appshell.md:611` specifies `10px 18px`. Preserve the current `11px 20px` and note the discrepancy in your report. Changing it is a design decision outside this refactor.
+**Known design-table discrepancy — do not "fix":** `upload-entry.tsx:164` Browse files currently renders `11px 20px` on mobile and `11px 22px` on desktop (`md:px-[22px]`); `appshell.md:611` specifies `10px 18px`. Preserve the current values exactly and note the discrepancy in your report. Changing it is a design decision outside this refactor.
+
+**`confirm-modal.tsx:164-186` needs a text-colour override:** it is `var(--fg-faint)` on mobile and `var(--fg)` on desktop, which collides with `GhostButton`'s own `text-[color:var(--fg)]`. `twMerge` resolves this correctly, but pass both explicitly (`text-[color:var(--fg-faint)] md:text-[color:var(--fg)]`) rather than relying on the primitive's default for the desktop half.
 
 **Out of scope:** `confirm-modal.tsx:188-208` (Replace N cards) is a destructive variant with an amber border and dark fill that neither primitive expresses. Leave it hand-rolled and note it.
 
@@ -250,7 +414,7 @@ git commit -m "refactor(ui): migrate collection CTAs to button primitives"
 
 ---
 
-### Task 4: Migrate the decks surface
+### Task 5: Migrate the decks surface
 
 **Files:**
 - Modify: `src/components/decks/new-deck-button.tsx:10-26` (New Deck — primary)
@@ -259,16 +423,21 @@ git commit -m "refactor(ui): migrate collection CTAs to button primitives"
 - Modify: `src/components/decks/builder-spine.tsx:191-203` (Export disabled — ghost), `:208-235` (Export mobile — ghost), `:238-249` (Export desktop — primary)
 - Modify: `src/components/decks/export-copy-button.tsx:67-78` (Copy to clipboard — primary)
 - Modify: `src/components/decks/export-dialog.tsx:488-508` (Download .txt — ghost)
+- Modify: `src/components/decks/create-picker.tsx:405` (Name & create / Create deck, mobile footer — primary; a second site in this file beyond the one listed above)
+- Modify: `src/components/decks/builder-shell.tsx:161` (Add your first card — primary), `:197` (+ Add cards, sticky footer — primary)
 
 **Interfaces:**
 - Consumes: `PrimaryButton`, `GhostButton` (Task 1)
 - Produces: nothing
 
-**Out of scope:** `export-dialog.tsx:249-264` and `:266-285` are tab pills with an active/inactive toggle, not CTAs. Leave them and note it.
+**Out of scope:**
+- `export-dialog.tsx:249-264` and `:266-285` are tab pills with an active/inactive toggle, not CTAs. Leave them and note it.
+- `builder-spine.tsx:208-235` (mobile Export) is **not** a ghost button despite appearances: it is `font-mono text-[11px] rounded-[7px]` with brass text, so it would override four of the six properties `GhostButton` owns. A primitive that gets overridden that heavily hides drift instead of preventing it. Leave it hand-rolled and note it. Task 4 therefore migrates two of the three `builder-spine` buttons, not all three.
 
-**Two traps here:**
+**Three traps here:**
 1. `new-deck-button.tsx` splits padding across two elements — `11px 0` on the `<Link>` plus `0 20px` on an inner desktop `<span>`. Collapse this into responsive `className` padding on the primitive (`py-[11px] w-full text-center md:w-auto md:px-[20px]`) and drop the inner span's style. It also uses `hover:opacity-90` rather than the spec'd `var(--brass-hover)`; the primitive supplies the correct hover, so remove `hover:opacity-90`.
-2. `builder-spine.tsx:191-203` is the **disabled** Export state. `GhostButton` renders the idle border; a disabled control needs its muted treatment preserved. Keep the existing disabled colours via `className` (e.g. `disabled:[border-color:#2A241D]`), and keep `disabled` on the element.
+2. `builder-spine.tsx:191-203` is the **disabled** Export state, and it overrides three things the primitive supplies: `color: "#8E8269"`, `border: "1px solid #2A241D"`, and `cursor: "not-allowed"` against `BASE`'s `cursor-pointer`. Preserve all three via `className` as `disabled:` variants — `disabled:[border-color:#2A241D] disabled:text-[#8E8269] disabled:cursor-not-allowed` — and keep the `disabled` attribute on the element.
+3. `export-dialog.tsx:488-508` sets padding through a JavaScript conditional (`isMobile ? "12px 16px" : "11px 18px"`) rather than a responsive class. Converting it to `className` responsive padding is correct and is the point of the migration, but it moves the breakpoint decision from a JS media hook to CSS — so the rendered output before hydration changes. Call this out explicitly in your report so the reviewer expects it.
 
 - [ ] **Step 1:** Migrate each site. Every primary here currently hardcodes `#C9A24B` in inline `style` — that becomes `var(--brass)` via the primitive.
 
@@ -286,11 +455,14 @@ git commit -m "refactor(ui): migrate decks CTAs to button primitives"
 
 ---
 
-### Task 5: Migrate commanders, then prove the class is gone
+### Task 6: Migrate commanders
 
 **Files:**
 - Modify: `src/components/commanders/filtered-empty.tsx:131-150` (Clear color filter — ghost, `11px 20px` mobile / `10px 20px` desktop, 13px)
-- Test: `src/components/ui/button.test.tsx`
+- Modify: `src/app/commanders/page.tsx:39` (Upload collection — primary, already class-correct), `:144` (Add more cards — primary, inline brass), `:158` (View collection — ghost, inline)
+- Modify: `src/components/commanders/detail.tsx:739` (Build this deck, mobile sticky — primary), `:920` (Build this deck, desktop — primary), `:939` (Compare with another general — ghost)
+
+All three `detail.tsx` sites set padding via inline `style` and hardcode `#C9A24B` / `#14110E` / `#3A3229` / `#EDE6D8`. Convert the hex values to their CSS variables and move padding into `className`. None of the three has any hover state today — the primitive supplies the spec'd one, which is a visible improvement, so call it out in your report rather than letting the reviewer wonder whether it was intended.
 
 **Interfaces:**
 - Consumes: `PrimaryButton`, `GhostButton` (Task 1)
@@ -298,32 +470,41 @@ git commit -m "refactor(ui): migrate decks CTAs to button primitives"
 
 `filtered-empty.tsx` is the worst site in the codebase: it hardcodes `#EDE6D8` and `#3A3229`, has no hover state at all, and its `sm:p-[10px_20px]` class is dead because inline `padding` overrides it. Migrating it fixes all three. Preserve `marginTop: 20` as `mt-[20px]`.
 
+**Decide the breakpoint deliberately:** the dead class uses `sm:` (640px), but every other file in this repo uses `md:` (768px). Reviving it verbatim would shift the padding change 128px earlier than any sibling surface. Use `md:` for consistency with the rest of the codebase, and state in your report that you changed `sm:` to `md:` and why — this is a real, if small, behaviour change and the reviewer must see it rather than discover it.
+
 - [ ] **Step 1:** Migrate the site.
 
-- [ ] **Step 2: Add the regression guard**
+- [ ] **Step 2: Confirm the ESLint rule from Task 2 now reports zero CTA offenders**
 
-Append to `src/components/ui/button.test.tsx` a test that walks the CTA source files and asserts none of them sets a background or border through inline `style`:
+Every remaining violation must be a documented non-CTA exemption. Report the final exemption list.
 
-```tsx
-import { globSync, readFileSync } from "node:fs";
+- [ ] **Step 3: Run the full gate**
 
-it("no CTA site delivers background or border via inline style", () => {
-  const files = globSync("src/{app,components}/**/*.tsx");
-  const offenders: string[] = [];
-  for (const f of files) {
-    const src = readFileSync(f, "utf8");
-    // Only flag style objects that set background/border — layout styles are fine.
-    for (const m of src.matchAll(/style=\{\{[^}]*\}\}/g)) {
-      if (/\b(background|border)\s*:/.test(m[0]) && /var\(--brass|#C9A24B|#3A3229/.test(m[0])) {
-        offenders.push(`${f}: ${m[0].slice(0, 60)}`);
-      }
-    }
-  }
-  expect(offenders).toEqual([]);
-});
+Run: `pnpm typecheck && pnpm lint && pnpm test` then `DATABASE_URL="postgres://stub:stub@localhost/stub" pnpm build`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/components/commanders/filtered-empty.tsx eslint.config.mjs
+git commit -m "refactor(ui): migrate commanders CTA and lint against inline colour styles"
 ```
 
-If this test finds sites the plan's inventory missed, fix them if they are CTAs, or add a narrow documented exemption if they genuinely are not. Report either way.
+---
+
+### Task 7: Document the primitives and enforce the rule
+
+**Files:**
+- Modify: `docs/superpowers/design-tables/appshell.md`
+
+- [ ] **Step 1:** Add a `## Component: Shared CTA primitives` section recording: the primary and ghost contracts as property tables; that padding and font-size are per-surface and owned by the caller; the 3-override rule that decides what stays bespoke; and the inline-`style` prohibition with its cause (inline styles outrank `hover:` utilities). Cross-reference `src/components/ui/button.tsx`.
+
+- [ ] **Step 2: Flip the ESLint rule from `warn` to `error`**
+
+Every CTA has now migrated and every remaining violation carries a documented exemption, so the rule can enforce.
+
+Run: `pnpm lint`
+Expected: clean.
 
 - [ ] **Step 3: Run the full gate**
 
@@ -333,30 +514,15 @@ Expected: PASS.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/components/commanders/filtered-empty.tsx src/components/ui/button.test.tsx
-git commit -m "refactor(ui): migrate commanders CTA and guard against inline-style regressions"
-```
-
----
-
-### Task 6: Document the primitives in the design table
-
-**Files:**
-- Modify: `docs/superpowers/design-tables/appshell.md`
-
-- [ ] **Step 1:** Add a `## Component: Shared CTA primitives` section recording: the primary and ghost contracts as property tables; that padding and font-size are per-surface and owned by the caller; and the inline-`style` prohibition with its cause (inline styles outrank `hover:` utilities). Cross-reference `src/components/ui/button.tsx`.
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add docs/superpowers/design-tables/appshell.md
-git commit -m "docs(design-table): record the shared CTA primitive contracts"
+git add docs/superpowers/design-tables/appshell.md eslint.config.mjs
+git commit -m "docs(design-table): record the shared CTA primitive contracts and enforce the lint rule"
 ```
 
 ---
 
 ## Notes for the executor
 
-- The inventory line numbers were captured against `04511e8`. Re-locate by content, not by line number, if they have drifted.
+- The line numbers throughout were captured against `04511e8` and will drift as earlier tasks edit the same files. Re-locate by content, never by line number.
+- Task 2's generated inventory outranks every site list in Tasks 3–6. Where they disagree, the generated list is right and the plan text is stale — migrate the site and note the discrepancy.
 - Do not add a `size` or `variant` prop for padding. That was considered and rejected: desktop padding across real sites runs `9×16, 11×18, 11×20, 11×22, 12×20, 12×22, 12×24, 12×26, 13×22, 13×26, 14×40`, each spec'd per surface. Tiers would either change pixels or need ten values. `src/components/marks.tsx` documents the same reasoning for its own variants.
-- 28 CTA sites were inventoried; 25 migrate. The 3 deliberate exclusions are the destructive Replace button and the two export tab pills.
+- The scope line is the **3-override rule**: a site that would override 3 or more of the 6 properties a primitive owns (background, text colour, border, font-weight, border-radius, hover) stays bespoke. Wrapping such a site in a primitive hides drift rather than preventing it.
