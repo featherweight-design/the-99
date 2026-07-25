@@ -1,5 +1,6 @@
 import { ReplaceFlow } from "../collection/replace-flow";
 import { shellCopy } from "../../lib/copy/shell";
+import { Crab } from "../character/crab";
 
 /**
  * First-run home is the checklist itself (design decision #4).
@@ -8,23 +9,27 @@ import { shellCopy } from "../../lib/copy/shell";
  */
 export function FirstRunChecklist({ name }: { name: string | null }) {
   return (
-    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11">
+    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 bg-[radial-gradient(640px_340px_at_40%_-40px,rgba(201,162,75,0.07),transparent_70%)]">
       {/* §Page heading:
           Mobile:  Cinzel 700 23px primary, line-height 1.2
           Desktop: Cinzel 700 30px primary
           Content: "Welcome to the 99, {name}" (or "Welcome to the 99" when name null) */}
-      <h1
-        className="text-[23px] md:text-[30px]"
-        style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          color: "var(--fg)",
-          lineHeight: 1.2,
-          margin: 0,
-        }}
-      >
-        {name ? `Welcome to the 99, ${name}` : "Welcome to the 99"}
-      </h1>
+      <div className="flex items-end gap-[16px] md:gap-[22px]">
+        <h1
+          className="text-[23px] md:text-[30px]"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            color: "var(--fg)",
+            lineHeight: 1.2,
+            margin: 0,
+          }}
+        >
+          {name ? `Welcome to the 99, ${name}` : "Welcome to the 99"}
+        </h1>
+        <Crab size={72} className="md:hidden" />
+        <Crab size={96} className="hidden md:block" />
+      </div>
 
       {/* §Page subhead:
           Mobile:  13px fg-body, margin 8px 0 20px, line-height 1.5
