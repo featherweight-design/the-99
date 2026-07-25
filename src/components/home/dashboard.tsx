@@ -27,7 +27,7 @@ export function Dashboard({
 }) {
   return (
     // §Signed-In Home Dashboard: Main content area — padding 20px mobile / 34px 40px 44px desktop
-    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11">
+    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 bg-[radial-gradient(760px_380px_at_45%_-60px,rgba(201,162,75,0.08),transparent_70%)]">
       {/* ── Greeting header ──
           §Page heading "Welcome back":
             Mobile: Cinzel 700 24px primary — content "Welcome back" (no name)

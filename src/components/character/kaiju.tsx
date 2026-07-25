@@ -1,0 +1,64 @@
+// The kaiju — reserved for rare wins. Appears in exactly one place: the decks
+// 99/99 completion reveal. Geometry is a verbatim port of
+// design/design_handoff_the99_richness/kaiju.svg.
+//
+// Faces LEFT by design; compose it looming from the right, gazing down at the
+// crab. The brass alphas below are opacity variants of --brass (#C9A24B) — the
+// palette is locked, so they stay as literal rgba() rather than becoming tokens.
+
+const VIEWBOX_W = 480;
+const VIEWBOX_H = 380;
+
+export function Kaiju({
+  size = 440,
+  breathe = true,
+  className,
+}: {
+  size?: number;
+  breathe?: boolean;
+  className?: string;
+}) {
+  const height = (size * VIEWBOX_H) / VIEWBOX_W;
+
+  return (
+    <svg
+      aria-hidden
+      focusable="false"
+      viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
+      width={size}
+      height={height}
+      className={[breathe ? "anim-breathe" : "", className].filter(Boolean).join(" ")}
+    >
+      {/* Dorsal fins — soft brass glow */}
+      <path
+        d="M132 96 C 142 82, 154 68, 162 60 C 168 80, 168 100, 170 116 C 182 102, 200 88, 214 84 C 216 104, 214 126, 208 142 C 222 126, 244 114, 258 116 C 258 136, 252 160, 244 176 C 258 162, 280 152, 296 156 C 294 176, 284 196, 272 212 C 288 200, 310 196, 326 202 C 320 222, 308 238, 296 252 C 312 244, 332 244, 348 252 C 340 270, 324 282, 310 292 C 324 288, 342 292, 356 302 C 346 316, 334 324, 322 330 Z"
+        fill="rgba(201,162,75,0.16)"
+        stroke="rgba(201,162,75,0.45)"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      {/* Body silhouette */}
+      <path
+        d="M56 120 C 54 106, 64 92, 84 86 C 102 80, 120 84, 132 96 C 180 118, 240 160, 280 220 C 300 252, 314 290, 318 330 C 322 344, 328 352, 340 356 C 380 360, 430 352, 456 336 C 430 356, 390 364, 340 364 L 150 364 C 132 356, 126 342, 132 326 C 108 284, 96 232, 98 190 C 99 168, 94 150, 80 142 C 68 136, 58 130, 56 120 Z"
+        fill="var(--kaiju-body)"
+        stroke="rgba(201,162,75,0.30)"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      {/* Jaw line with small teeth, and the tiny arm */}
+      <g stroke="rgba(201,162,75,0.55)" strokeWidth="2" fill="none" strokeLinecap="round">
+        <path d="M56 120 C 70 127, 84 127, 97 122" />
+        <path d="M60 124 L 65 130 L 70 124 L 75 130 L 80 124 L 85 129" />
+        <path d="M118 214 C 130 218, 136 224, 134 234" />
+        <path d="M134 234 L 140 236" />
+        <path d="M134 234 L 138 239" />
+        <path d="M134 234 L 134 240" />
+      </g>
+      {/* Smug half-lid eye */}
+      <circle cx="96" cy="102" r="4" fill="rgba(201,162,75,0.9)" />
+      <path d="M89 97 L 103 98" stroke="rgba(201,162,75,0.9)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      {/* Crown nod — brass diamond on the tail */}
+      <rect x="396" y="338" width="9" height="9" fill="rgba(201,162,75,0.55)" transform="rotate(45 400 342)" />
+    </svg>
+  );
+}

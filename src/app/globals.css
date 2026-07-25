@@ -36,6 +36,12 @@
   --brass-dim: #6E5B33;
   --brass-mid: #A9863E;
 
+  /* Character layer — richness pass. --kaiju-body is deliberately deeper than
+     --bg so the silhouette reads as a hole punched in the canvas. */
+  --kaiju-body: #0B0907;
+  --celebrate-top: #171310;
+  --celebrate-bottom: #110E0B;
+
   /* Feedback */
   --success: #6FA368;
   --warning: #E0913C;
@@ -76,6 +82,9 @@
   --color-brass-shadow: var(--brass-shadow);
   --color-brass-dim: var(--brass-dim);
   --color-brass-mid: var(--brass-mid);
+  --color-kaiju-body: var(--kaiju-body);
+  --color-celebrate-top: var(--celebrate-top);
+  --color-celebrate-bottom: var(--celebrate-bottom);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
@@ -124,4 +133,41 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 :focus-visible {
   outline: 2px solid var(--brass);
   outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------
+ * Character-layer motion — richness pass.
+ * Keyframes are verbatim from the v2 mocks. Reduced-motion is scoped to
+ * these four classes rather than a blanket `* { animation: none }` so that
+ * adding a new animation forces an explicit static-fallback decision.
+ * ------------------------------------------------------------------ */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes dots {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02) translateY(3px); }
+}
+@keyframes rise {
+  0% { transform: translateY(18px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.anim-bob { animation: bob var(--bob-duration, 4.5s) ease-in-out infinite; }
+.anim-dots { animation: dots 1.2s ease-in-out infinite; }
+.anim-breathe { animation: breathe 10s ease-in-out infinite; }
+.anim-rise { animation: rise 0.8s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-bob,
+  .anim-dots,
+  .anim-breathe,
+  .anim-rise {
+    animation: none;
+  }
 }

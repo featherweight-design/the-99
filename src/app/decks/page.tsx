@@ -6,6 +6,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { CardFan } from "../../components/marks";
+import { Crab } from "../../components/character/crab";
 import { DeckCard } from "../../components/decks/deck-card";
 import { NewDeckButton } from "../../components/decks/new-deck-button";
 
@@ -31,14 +32,18 @@ export default async function DecksPage({
         style={{ padding: "32px" }}
       >
         {/* Card-fan mark: mobile variant → 100×110, decks-desktop → 120×130 (−15° front) */}
-        <CardFan variant="mobile" className="mb-[22px] md:hidden" />
-        <CardFan variant="decks-desktop" className="mb-[26px] hidden md:block" />
+        <div className="mb-[22px] md:mb-[26px] flex items-end justify-center gap-[14px] md:gap-[18px]">
+          <CardFan variant="mobile" className="md:hidden" />
+          <Crab size={64} className="md:hidden" />
+          <CardFan variant="decks-desktop" className="hidden md:block" />
+          <Crab size={80} className="hidden md:block" />
+        </div>
 
         <h1
           className="font-display font-bold text-[24px] md:text-[28px]"
           style={{ color: "var(--fg)", margin: 0 }}
         >
-          No decks yet
+          No decks yet.
         </h1>
 
         {/* Body: mobile 14px different copy, desktop 16px different copy */}
