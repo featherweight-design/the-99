@@ -134,7 +134,11 @@ export function CardModal({
         onClick={(e) => e.stopPropagation()}
         // Mobile: full-screen sheet (§Mobile: Full-Screen Sheet Container: bg #181410)
         // Desktop: 820px centered, bg #1A160F (--surface-rail), border 1px #3A3229 (--border-strong), radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7)
-        className="flex flex-col overflow-hidden w-full h-full md:h-auto md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"
+        // Desktop height is fixed rather than h-auto: oracle text runs from one
+        // line to twelve, and paging Prev/Next through the collection resized
+        // the dialog under the cursor on every step. The content column scrolls
+        // instead.
+        className="flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"
         style={{
           boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
         }}
@@ -187,8 +191,11 @@ export function CardModal({
           />
         </div>
 
-        {/* Content column — mobile: flex-1 padding 20px; desktop: padding 30px 32px */}
-        <div className="flex-1 relative overflow-auto p-[20px] md:p-[30px_32px]">
+        {/* Content column — mobile: flex-1 padding 20px; desktop: padding 30px 32px.
+            On desktop the column is a flex stack: the body scrolls, the Prev/Next
+            row sits below it so it stays bottom-aligned whatever the oracle text
+            length. */}
+        <div className="flex-1 min-w-0 relative flex flex-col overflow-hidden">
           {/* Desktop close button — §Desktop: Close Button */}
           <button
             type="button"
@@ -204,63 +211,67 @@ export function CardModal({
             ✕
           </button>
 
-          {/* Name + type + mana pips — §Mobile: Name + Type Header */}
-          <div className="flex items-start justify-between gap-[12px]">
-            <div className="min-w-0">
-              <h3
-                id="card-modal-title"
-                className="font-display font-bold text-[22px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
-                style={{ color: "var(--fg)" }}
-              >
-                {card.name}
-              </h3>
-              {/* Type line — §Card Type Line: 13/14px, #A89B84 (--fg-muted), margin-top 4/6px */}
-              <p
-                className="text-[13px] md:text-[14px] mt-[4px] md:mt-[6px]"
-                style={{ color: "var(--fg-muted)" }}
-              >
-                {card.typeLine}
-              </p>
+          <div className="flex-1 overflow-auto p-[20px] md:p-[30px_32px]">
+            {/* Name + type + mana pips — §Mobile: Name + Type Header.
+                Right padding on desktop clears the absolutely-positioned close
+                button, which otherwise sits on top of the mana pips. */}
+            <div className="flex items-start justify-between gap-[12px] md:pr-[46px]">
+              <div className="min-w-0">
+                <h3
+                  id="card-modal-title"
+                  className="font-display font-bold text-[22px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
+                  style={{ color: "var(--fg)" }}
+                >
+                  {card.name}
+                </h3>
+                {/* Type line — §Card Type Line: 13/14px, #A89B84 (--fg-muted), margin-top 4/6px */}
+                <p
+                  className="text-[13px] md:text-[14px] mt-[4px] md:mt-[6px]"
+                  style={{ color: "var(--fg-muted)" }}
+                >
+                  {card.typeLine}
+                </p>
+              </div>
+              <ManaCost cost={card.manaCost} />
             </div>
-            <ManaCost cost={card.manaCost} />
-          </div>
 
-          {/* Oracle text block — §Oracle Text Block: bg #14110E (--bg), border 1px #2A241D (--border), radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, #C6B79A (--fg-body), line-height 1.6/1.65 */}
-          {card.oracleText && (
+            {/* Oracle text block — §Oracle Text Block: bg #14110E (--bg), border 1px #2A241D (--border), radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, #C6B79A (--fg-body), line-height 1.6/1.65 */}
+            {card.oracleText && (
+              <div
+                className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65]"
+                style={{
+                  background: "var(--bg)",
+                  border: "1px solid var(--border)",
+                  color: "var(--fg-body)",
+                }}
+              >
+                <OracleText text={card.oracleText} keywords={card.keywords} />
+              </div>
+            )}
+
+            {/* MOBILE meta 2×2 grid — §Mobile: Meta 2×2 Grid */}
             <div
-              className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65]"
-              style={{
-                background: "var(--bg)",
-                border: "1px solid var(--border)",
-                color: "var(--fg-body)",
-              }}
+              className="md:hidden mt-[16px] grid grid-cols-2 rounded-[10px] overflow-hidden"
+              style={{ background: "var(--border)", gap: 1, border: "1px solid var(--border)" }}
             >
-              <OracleText text={card.oracleText} keywords={card.keywords} />
+              <MetaCell label="Set" value={card.primarySetCode} />
+              <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
+              <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+              <MetaCell label="You own" value={`×${card.quantity}`} quantity />
             </div>
-          )}
 
-          {/* MOBILE meta 2×2 grid — §Mobile: Meta 2×2 Grid */}
-          <div
-            className="md:hidden mt-[16px] grid grid-cols-2 rounded-[10px] overflow-hidden"
-            style={{ background: "var(--border)", gap: 1, border: "1px solid var(--border)" }}
-          >
-            <MetaCell label="Set" value={card.primarySetCode} />
-            <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-            <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-            <MetaCell label="You own" value={`×${card.quantity}`} quantity />
-          </div>
-
-          {/* DESKTOP meta flex row — §Desktop: Meta Fields */}
-          <div className="hidden md:flex flex-wrap gap-[26px] mt-[24px]">
-            <MetaField label="Set" value={`${card.primarySetCode}`} />
-            <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-            <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-            <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
+            {/* DESKTOP meta flex row — §Desktop: Meta Fields */}
+            <div className="hidden md:flex flex-wrap gap-[26px] mt-[24px]">
+              <MetaField label="Set" value={`${card.primarySetCode}`} />
+              <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
+              <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+              <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
+            </div>
           </div>
 
           {/* DESKTOP Prev/Next — §Desktop: Prev/Next Navigation */}
           <div
-            className="hidden md:flex items-center gap-[10px] mt-[28px] pt-[20px]"
+            className="hidden md:flex items-center gap-[10px] flex-none mx-[32px] mb-[30px] pt-[20px]"
             style={{ borderTop: "1px solid var(--border)" }}
           >
             <button
