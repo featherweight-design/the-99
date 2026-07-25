@@ -3,7 +3,7 @@
 
 export function LoaderDots({ className }: { className?: string }) {
   return (
-    <div aria-hidden className={`flex gap-[6px] ${className ?? ""}`}>
+    <div aria-hidden className={["flex gap-[6px]", className].filter(Boolean).join(" ")}>
       {[0, 0.2, 0.4].map((delay) => (
         <span
           key={delay}

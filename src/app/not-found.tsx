@@ -5,9 +5,10 @@ import { shellCopy } from "../lib/copy/shell";
 export default function NotFound() {
   return (
     <div
-      className="flex flex-col items-center justify-center text-center p-[40px] min-h-[400px] md:min-h-[480px] bg-[radial-gradient(520px_300px_at_50%_70%,rgba(201,162,75,0.07),transparent_70%),var(--bg)]"
+      className="flex flex-col items-center justify-center text-center p-[40px] min-h-[400px] md:min-h-[480px] bg-[color:var(--bg)] bg-[radial-gradient(520px_300px_at_50%_70%,rgba(201,162,75,0.07),transparent_70%)]"
     >
       <span
+        aria-hidden="true"
         className="font-display leading-none text-[48px] md:text-[64px]"
         style={{ fontWeight: 900, color: "var(--elevated)", letterSpacing: "0.04em" }}
       >

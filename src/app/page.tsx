@@ -17,7 +17,7 @@ export default async function HomePage() {
         //   desktop: 1000px 520px at 50% 8%,  rgba(201,162,75,0.10)
         // Expressed as two Tailwind arbitrary-value bg utilities split at the md
         // breakpoint so no inline style is used on this element.
-        className="flex min-h-screen flex-col items-center justify-center px-8 md:px-10 text-center bg-[radial-gradient(600px_360px_at_50%_22%,rgba(201,162,75,0.12),transparent_70%),var(--bg)] md:bg-[radial-gradient(1000px_520px_at_50%_8%,rgba(201,162,75,0.10),transparent_70%),var(--bg)]"
+        className="flex min-h-screen flex-col items-center justify-center px-8 md:px-10 text-center bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_22%,rgba(201,162,75,0.12),transparent_70%)] md:bg-[color:var(--bg)] md:bg-[radial-gradient(1000px_520px_at_50%_8%,rgba(201,162,75,0.10),transparent_70%)]"
       >
         {/* Hero mark — 92px mobile / 132px desktop per §Hero numeral "99" */}
         <Crowned99 variant="hero-mobile" className="md:hidden" />
