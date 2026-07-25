@@ -12,6 +12,7 @@ import {
   shoppingFilename,
 } from "../../lib/decks/export-helpers";
 import { ExportCopyButton } from "./export-copy-button";
+import { GhostButton } from "@/components/ui/button";
 
 type Tab = "decklist" | "shopping";
 
@@ -485,8 +486,7 @@ function DialogContent({
         />
 
         {/* Download .txt — secondary (BOTH tabs, BOTH breakpoints) */}
-        <button
-          type="button"
+        <GhostButton
           onClick={() => {
             const filename =
               tab === "decklist"
@@ -494,19 +494,12 @@ function DialogContent({
                 : shoppingFilename(deckName);
             downloadTextFile(filename, activeText);
           }}
-          className="font-sans font-semibold text-[14px] rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-          style={{
-            color: "#EDE6D8",
-            background: "transparent",
-            border: "1px solid #3A3229",
-            padding: isMobile ? "12px 16px" : "11px 18px",
-            cursor: "pointer",
-          }}
+          className={`text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] ${isMobile ? "px-[16px] py-[12px]" : "px-[18px] py-[11px]"}`}
         >
           {/* Mobile label: ".txt", desktop: "Download .txt" */}
           <span className="md:hidden">.txt</span>
           <span className="hidden md:inline">Download .txt</span>
-        </button>
+        </GhostButton>
 
         {/* Desktop: "Moxfield · Archidekt ready" note (inline with footer, ml-auto) */}
         {!isMobile && (

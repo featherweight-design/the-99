@@ -1,6 +1,7 @@
 // Degraded Suggestions Banner — §Degraded Suggestions Banner.
 // Server component + inline retry <form>.
 import { retryDeck } from "../../app/decks/[id]/actions";
+import { GhostButton } from "@/components/ui/button";
 
 interface DegradedBannerProps {
   deckId: string;
@@ -58,18 +59,13 @@ export function DegradedBanner({ deckId }: DegradedBannerProps) {
             Retry
           </button>
 
-          {/* Desktop: outlined button */}
-          <button
+          {/* Desktop: outlined button — rounded-[7px] overrides primitive's rounded-lg */}
+          <GhostButton
             type="submit"
-            className="hidden md:inline-flex items-center rounded-[7px] font-sans font-semibold text-[12px] px-[12px] py-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-            style={{
-              color: "#EDE6D8",
-              background: "transparent",
-              border: "1px solid #3A3229",
-            }}
+            className="hidden md:inline-flex items-center rounded-[7px] text-[12px] px-[12px] py-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
           >
             Retry
-          </button>
+          </GhostButton>
         </form>
       </div>
 
