@@ -1922,10 +1922,10 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 
 | Keyframe | Definition | Use |
 |----------|------------|-----|
-| `bob` | `0%,100% { translateY(0) }; 50% { translateY(-5px) }` | Crab idle float |
+| `bob` | `0%,100% { transform: translateY(0) }; 50% { transform: translateY(-5px) }` | Crab idle float |
 | `dots` | `0%,100% { opacity: 0.25 }; 50% { opacity: 1 }` | LoaderDots pulse |
-| `breathe` | `0%,100% { scale(1) }; 50% { scale(1.02) translateY(3px) }` | Kaiju idle (ships unused — pending #61) |
-| `rise` | `0% { translateY(18px); opacity: 0 }; 100% { translateY(0); opacity: 1 }` | Entry reveal |
+| `breathe` | `0%,100% { transform: scale(1) }; 50% { transform: scale(1.02) translateY(3px) }` | Kaiju idle (ships unused — pending #61) |
+| `rise` | `0% { transform: translateY(18px); opacity: 0 }; 100% { transform: translateY(0); opacity: 1 }` | Entry reveal |
 
 ### Animation utility classes
 

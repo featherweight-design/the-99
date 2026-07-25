@@ -10,22 +10,22 @@ const VIEWBOX_W = 480;
 const VIEWBOX_H = 380;
 
 export function Kaiju({
-  width = 440,
+  size = 440,
   breathe = true,
   className,
 }: {
-  width?: number;
+  size?: number;
   breathe?: boolean;
   className?: string;
 }) {
-  const height = (width * VIEWBOX_H) / VIEWBOX_W;
+  const height = (size * VIEWBOX_H) / VIEWBOX_W;
 
   return (
     <svg
       aria-hidden
       focusable="false"
       viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
-      width={width}
+      width={size}
       height={height}
       className={[breathe ? "anim-breathe" : "", className].filter(Boolean).join(" ")}
     >

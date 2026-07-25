@@ -7,7 +7,7 @@
 
 import { WUBRG_HEX } from "../../lib/collection/browse";
 
-// Single-color guild names
+// Single-color names
 const MONO_NAMES: Record<string, string> = {
   W: "White",
   U: "Blue",
