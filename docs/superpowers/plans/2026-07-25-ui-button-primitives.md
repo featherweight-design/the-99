@@ -329,9 +329,27 @@ For each violation, record a row: `file:line`, the element's visible label, and 
 | `PRIMARY` | Brass-filled CTA | Migrate to `PrimaryButton` |
 | `GHOST` | Bordered/transparent CTA | Migrate to `GhostButton` |
 | `EXEMPT-DYNAMIC` | Value is computed at runtime (progress width, synergy meter, animation delay) | `eslint-disable-next-line` with a reason |
-| `EXEMPT-BESPOKE` | Interactive, but would override 3 or more of the 6 properties a primitive owns | `eslint-disable-next-line` with a reason |
+| `EXEMPT-PATTERN` | Interactive, but belongs to a different shared pattern: a two-state toggle pill, a selectable card row, or a plain text action whose text is brass rather than `var(--fg)` | `eslint-disable-next-line` with a reason |
 
-**The 3-override rule is the scope line.** The primitives own six things: background, text colour, border, font-weight, border-radius, hover. A site that overrides three or more of them is not expressing the primitive's contract — wrapping it would hide drift rather than prevent it. Known `EXEMPT-BESPOKE` sites, all verified: the destructive Import/Replace button (`confirm-modal.tsx:188` — dark-red fill, danger border, `--fg` text); the disabled Export (`builder-spine.tsx:191` — muted colour, muted border, `not-allowed` cursor); the mobile Export (`builder-spine.tsx:209` — mono font, brass text, 7px radius, no fill); the two toggle-pill groups (`group-toggle.tsx`, `export-dialog.tsx:249`); the tab underline (`add-panel.tsx:78`); and the text-only Retry links in both `degraded-banner.tsx` files.
+**Uniqueness, not deviation, is the scope line.** An earlier draft of this plan
+drew it at "overrides 3 or more of the properties a primitive owns" and called
+the bucket `EXEMPT-BESPOKE`. That test has been dropped, because it measures
+deviation from `PrimaryButton` rather than uniqueness: it flags a two-state
+toggle as bespoke even though every toggle in the app is identical to every
+other one. Such a site is not exempt — it is evidence of a *second* primitive
+waiting to be extracted, and should be recorded as `EXEMPT-PATTERN` so the
+pattern stays visible.
+
+`docs/superpowers/plans/2026-07-25-ui-button-inventory.md` is authoritative for
+the classification of individual sites; this plan defers to it wherever the two
+disagree. Known `EXEMPT-PATTERN` sites, all verified: the destructive
+Import/Replace button (`confirm-modal.tsx:188` — dark-red fill, danger border,
+`--fg` text); the disabled Export (`builder-spine.tsx:191` — muted colour,
+muted border, `not-allowed` cursor); the mobile Export
+(`builder-spine.tsx:209` — mono font, brass text, 7px radius, no fill); the two
+toggle-pill groups (`group-toggle.tsx`, `export-dialog.tsx:249`); the tab
+underline (`add-panel.tsx:78`); and the text-only Retry links in both
+`degraded-banner.tsx` files.
 
 **Also sweep for correctly-implemented CTAs the rule cannot see.** Sites that already use classes throughout are invisible to this lint rule but should still adopt the primitive for consistency. Grep for `bg-[color:var(--brass)]` and `[border:1px_solid_var(--border-strong)]` and add those rows too — `src/app/not-found.tsx`, `src/app/decks/page.tsx`, `src/app/commanders/page.tsx:39` and `src/components/collection/upload-entry.tsx:164` are known members of this set.
 
@@ -432,7 +450,7 @@ git commit -m "refactor(ui): migrate collection CTAs to button primitives"
 
 **Out of scope:**
 - `export-dialog.tsx:249-264` and `:266-285` are tab pills with an active/inactive toggle, not CTAs. Leave them and note it.
-- `builder-spine.tsx:208-235` (mobile Export) is **not** a ghost button despite appearances: it is `font-mono text-[11px] rounded-[7px]` with brass text, so it would override four of the six properties `GhostButton` owns. A primitive that gets overridden that heavily hides drift instead of preventing it. Leave it hand-rolled and note it. Task 4 therefore migrates two of the three `builder-spine` buttons, not all three.
+- `builder-spine.tsx:208-235` (mobile Export) is **not** a ghost button despite appearances: it is `font-mono text-[11px] rounded-[7px]` with brass text, a combination no other button in the app shares. It is exempt because it is one of a kind, not merely because it deviates. Leave it hand-rolled and note it. Task 4 therefore migrates two of the three `builder-spine` buttons, not all three.
 
 **Three traps here:**
 1. `new-deck-button.tsx` splits padding across two elements — `11px 0` on the `<Link>` plus `0 20px` on an inner desktop `<span>`. Collapse this into responsive `className` padding on the primitive (`py-[11px] w-full text-center md:w-auto md:px-[20px]`) and drop the inner span's style. It also uses `hover:opacity-90` rather than the spec'd `var(--brass-hover)`; the primitive supplies the correct hover, so remove `hover:opacity-90`.
@@ -497,7 +515,7 @@ git commit -m "refactor(ui): migrate commanders CTA and lint against inline colo
 **Files:**
 - Modify: `docs/superpowers/design-tables/appshell.md`
 
-- [ ] **Step 1:** Add a `## Component: Shared CTA primitives` section recording: the primary and ghost contracts as property tables; that padding and font-size are per-surface and owned by the caller; the 3-override rule that decides what stays bespoke; and the inline-`style` prohibition with its cause (inline styles outrank `hover:` utilities). Cross-reference `src/components/ui/button.tsx`.
+- [ ] **Step 1:** Add a `## Component: Shared CTA primitives` section recording: the primary and ghost contracts as property tables; that padding and font-size are per-surface and owned by the caller; the uniqueness test that decides what stays hand-rolled; and the inline-`style` prohibition with its cause (inline styles outrank `hover:` utilities). Cross-reference `src/components/ui/button.tsx`.
 
 - [ ] **Step 2: Flip the ESLint rule from `warn` to `error`**
 
@@ -525,4 +543,4 @@ git commit -m "docs(design-table): record the shared CTA primitive contracts and
 - The line numbers throughout were captured against `04511e8` and will drift as earlier tasks edit the same files. Re-locate by content, never by line number.
 - Task 2's generated inventory outranks every site list in Tasks 3–6. Where they disagree, the generated list is right and the plan text is stale — migrate the site and note the discrepancy.
 - Do not add a `size` or `variant` prop for padding. That was considered and rejected: desktop padding across real sites runs `9×16, 11×18, 11×20, 11×22, 12×20, 12×22, 12×24, 12×26, 13×22, 13×26, 14×40`, each spec'd per surface. Tiers would either change pixels or need ten values. `src/components/marks.tsx` documents the same reasoning for its own variants.
-- The scope line is the **3-override rule**: a site that would override 3 or more of the 6 properties a primitive owns (background, text colour, border, font-weight, border-radius, hover) stays bespoke. Wrapping such a site in a primitive hides drift rather than preventing it.
+- The scope line is **uniqueness, not deviation**: a site stays hand-rolled only when it is genuinely one of a kind. A site that deviates heavily from `PrimaryButton` but is identical to a dozen siblings is not exempt — it is a second primitive waiting to be extracted, and is recorded as `EXEMPT-PATTERN`. See the classification section of `2026-07-25-ui-button-inventory.md`, which is authoritative.
