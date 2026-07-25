@@ -1,10 +1,18 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { sql } from "drizzle-orm";
 
 // store.ts imports the db client, which throws at module init without DATABASE_URL.
 const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
-import { persistScores, rowToListItem, toScoreRow } from "./store";
+import {
+  findScoredCommander,
+  isSchemaLagError,
+  loadScores,
+  persistScores,
+  rowToListItem,
+  toScoreRow,
+} from "./store";
 import type { RankedCommander } from "./recommend";
 
 const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
@@ -160,5 +168,100 @@ describe("persistScores generation guard", () => {
     await persistScores("user_1", [ranked()], null);
 
     expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
+  });
+});
+
+const pgError = (code: string) => Object.assign(new Error(`pg error ${code}`), { code });
+
+type SelectChain = {
+  from: () => SelectChain;
+  innerJoin: () => SelectChain;
+  where: () => SelectChain;
+  orderBy: () => Promise<never>;
+};
+
+function rejectingSelect(err: unknown): () => SelectChain {
+  const chain: SelectChain = {
+    from: () => chain,
+    innerJoin: () => chain,
+    where: () => chain,
+    orderBy: () => Promise.reject(err),
+  };
+  return () => chain;
+}
+
+describe("isSchemaLagError", () => {
+  it("matches undefined_table, the code from the #70 outage", () => {
+    expect(isSchemaLagError(pgError("42P01"))).toBe(true);
+  });
+
+  it("matches undefined_column, the same class one deploy later", () => {
+    expect(isSchemaLagError(pgError("42703"))).toBe(true);
+  });
+
+  it("rejects other postgres errors so real faults still surface", () => {
+    expect(isSchemaLagError(pgError("57014"))).toBe(false);
+  });
+
+  it("rejects errors carrying no code", () => {
+    expect(isSchemaLagError(new Error("connection terminated"))).toBe(false);
+  });
+
+  it("rejects non-errors", () => {
+    expect(isSchemaLagError(null)).toBe(false);
+    expect(isSchemaLagError("42P01")).toBe(false);
+  });
+});
+
+describe("loadScores when the schema is behind the code", () => {
+  beforeEach(() => {
+    delete stub.db.select;
+  });
+
+  it("reads as an empty cache so the caller recomputes", async () => {
+    stub.db.select = rejectingSelect(pgError("42P01"));
+    await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+  });
+
+  it("treats a missing column the same way", async () => {
+    stub.db.select = rejectingSelect(pgError("42703"));
+    await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+  });
+
+  it("rethrows anything else rather than hiding it behind a recompute", async () => {
+    stub.db.select = rejectingSelect(pgError("53300"));
+    await expect(loadScores("user_1")).rejects.toThrow("pg error 53300");
+  });
+});
+
+describe("findScoredCommander when the schema is behind the code", () => {
+  // The ranked CTE columns are consumed by eq() and by the select builder, so they
+  // are stubbed with real SQL fragments rather than bare objects.
+  const col = sql`x`;
+  const rankedStub = { oracleId: col, rank: col, anyDegraded: col, slug: col };
+
+  function stubWith(err: unknown) {
+    const limit = vi.fn(() => Promise.reject(err));
+    stub.db.$with = () => ({ as: () => rankedStub });
+    stub.db.select = () => ({ from: () => ({ where: () => ({}) }) });
+    stub.db.with = () => ({
+      select: () => ({ from: () => ({ where: () => ({ limit }) }) }),
+    });
+    return limit;
+  }
+
+  it("resolves to null so the page falls back to the computed ranking", async () => {
+    const limit = stubWith(pgError("42P01"));
+    await expect(findScoredCommander("user_1", "atraxa-praetors-voice")).resolves.toBeNull();
+    // Proves the query chain actually executed rather than throwing early, which
+    // would make the null above a false pass.
+    expect(limit).toHaveBeenCalled();
+  });
+
+  it("rethrows anything else", async () => {
+    stubWith(pgError("53300"));
+    await expect(findScoredCommander("user_1", "atraxa-praetors-voice")).rejects.toThrow(
+      "pg error 53300",
+    );
   });
 });

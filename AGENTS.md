@@ -20,6 +20,7 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 
 - All work happens in worktrees under `.worktrees/<branch>`; copy `.env` from the repo root into a new worktree before running the app. The main checkout stays clean on `main`.
 - Pre-push gate, every push: `pnpm typecheck && pnpm lint && pnpm test` plus the stub-DB build, then `git fetch origin && git rebase origin/main`.
+- Database migrations apply automatically during each Vercel **production** build (`vercel-build` → `scripts/vercel-migrate.ts`). Every Vercel project therefore needs `MIGRATE_DATABASE_URL` set — non-sensitive, Production scope only, same value as that project's `DATABASE_URL` — or its production builds fail by design. Preview deployments skip migrations entirely.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 
