@@ -48,6 +48,32 @@ export const edhrecCache = pgTable("edhrec_cache", {
   fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
 });
 
+/** Mirrors the roleCounts shape produced by src/lib/recs/score.ts. */
+export type RoleCounts = Record<"ramp" | "draw" | "removal" | "wipes", number>;
+
+export const commanderScores = pgTable("commander_scores", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  slug: text("slug").notNull(),
+  score: real("score").notNull(),
+  fitPool: real("fit_pool").notNull(),
+  fitRoles: real("fit_roles").notNull(),
+  // Null iff synergyState !== "ok".
+  fitSynergy: real("fit_synergy"),
+  // "ok" = real EDHREC data; "absent" = 4xx, genuinely not indexed on EDHREC;
+  // "degraded" = 5xx/timeout, must be recomputed on next read.
+  synergyState: text("synergy_state", { enum: ["ok", "absent", "degraded"] }).notNull(),
+  edhrecOwnedCount: integer("edhrec_owned_count"),
+  edhrecTotal: integer("edhrec_total"),
+  receipts: text("receipts").notNull(),
+  colorPoolSize: integer("color_pool_size").notNull(),
+  roleCounts: jsonb("role_counts").$type<RoleCounts>().notNull(),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId] }),
+  index("commander_scores_rank_idx").on(t.userId, t.score.desc()),
+]);
+
 export const csvUploads = pgTable("csv_uploads", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),

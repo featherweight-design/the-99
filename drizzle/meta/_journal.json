@@ -15,6 +15,13 @@
       "when": 1784457256937,
       "tag": "0001_tranquil_gorilla_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784946465282,
+      "tag": "0002_cute_shiver_man",
+      "breakpoints": true
     }
   ]
 }
