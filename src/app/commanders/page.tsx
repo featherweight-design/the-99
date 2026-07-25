@@ -112,7 +112,7 @@ export default async function CommandersPage() {
               margin: "26px 0 0",
             }}
           >
-            No generals in the ranks — yet
+            No commanders in the ranks — yet
           </h1>
 
           {/* Body paragraph: 13.5px mobile / 15px desktop */}

@@ -110,7 +110,7 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
         className="font-display m-0 text-[20px] sm:text-[24px]"
         style={{ fontWeight: 700, color: "#EDE6D8" }}
       >
-        No generals in {label}
+        No commanders in {label}
       </h2>
 
       {/* Body */}

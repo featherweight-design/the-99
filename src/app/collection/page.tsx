@@ -36,7 +36,7 @@ export default async function CollectionPage() {
           className="mt-3 max-w-[420px] text-[16px]"
           style={{ color: "var(--fg-body)", lineHeight: 1.6 }}
         >
-          A pile of possibilities waiting for a general. Upload a CSV and the
+          A pile of possibilities waiting for a commander. Upload a CSV and the
           table fills — commanders and decks follow.
         </p>
         <div className="mt-[26px]">

@@ -65,12 +65,12 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
         className="p-[20px_18px_14px] md:p-[34px_40px_28px]"
         style={{ borderBottom: "1px solid #2A241D" }}
       >
-        {/* §Page header — "Pick a general" / "New deck" */}
+        {/* §Page header — "Pick a commander" / "New deck" */}
         <h1
           className="font-display font-bold text-[20px] md:text-[28px] m-0"
           style={{ color: "#EDE6D8" }}
         >
-          <span className="md:hidden">Pick a general</span>
+          <span className="md:hidden">Pick a commander</span>
           <span className="hidden md:inline">New deck</span>
         </h1>
         <p

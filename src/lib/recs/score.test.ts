@@ -28,6 +28,30 @@ describe("isCommanderCandidate", () => {
   it("rejects ordinary cards", () => {
     expect(isCommanderCandidate({ typeLine: "Instant", oracleText: "Draw a card." })).toBe(false);
   });
+  it("rejects a card whose back face is the legendary creature", () => {
+    expect(isCommanderCandidate({
+      typeLine: "Land // Legendary Creature — Demon",
+      oracleText: "{T}: Add {C}.\n//\nFlying, haste",
+    })).toBe(false);
+  });
+  it("accepts a double-faced card whose front face is the legendary creature", () => {
+    expect(isCommanderCandidate({
+      typeLine: "Legendary Creature — God // Legendary Creature — Bird",
+      oracleText: "Alrund gets +1/+1.\n//\nFlying",
+    })).toBe(true);
+  });
+  it("rejects a non-legendary werewolf transform card", () => {
+    expect(isCommanderCandidate({
+      typeLine: "Creature — Human Soldier Werewolf // Creature — Werewolf",
+      oracleText: "When this enters, exile target creature.\n//\nTrample",
+    })).toBe(false);
+  });
+  it("ignores 'can be your commander' printed on a back face", () => {
+    expect(isCommanderCandidate({
+      typeLine: "Land // Legendary Planeswalker — Nissa",
+      oracleText: "{T}: Add {G}.\n//\nNissa can be your commander.",
+    })).toBe(false);
+  });
 });
 
 describe("scoreCommander", () => {

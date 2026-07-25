@@ -44,9 +44,18 @@ export function completeness(
   return Math.round((100 * s.edhrecOwnedCount) / s.edhrecTotal);
 }
 
+// Scryfall joins both faces of a double-faced card into one type_line and one
+// oracle_text ("Land // Legendary Creature — Demon"). Only the front face can
+// make a card eligible to be a commander, so match against that face alone —
+// testing the joined string lets a back face qualify a card it shouldn't, which
+// is how Westvale Abbey (a Land) ended up in the candidate pool.
+const frontFace = (s: string) => s.split(" // ")[0];
+
 export function isCommanderCandidate(card: Pick<PoolCard, "typeLine" | "oracleText">): boolean {
-  if (/legendary/i.test(card.typeLine) && /creature/i.test(card.typeLine)) return true;
-  return /can be your commander/i.test(card.oracleText ?? "");
+  const typeLine = frontFace(card.typeLine);
+  if (/legendary/i.test(typeLine) && /creature/i.test(typeLine)) return true;
+  // transform.ts joins faces with "\n//\n" rather than " // ".
+  return /can be your commander/i.test((card.oracleText ?? "").split("\n//\n")[0]);
 }
 
 function fitsIdentity(card: PoolCard, identity: Set<string>): boolean {

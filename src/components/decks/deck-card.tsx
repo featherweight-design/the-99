@@ -79,7 +79,9 @@ export function DeckCard({ deck }: DeckCardProps) {
         <div
           className="shrink-0 w-[42px] h-[59px] rounded-[6px] md:w-[52px] md:h-[73px] md:rounded-[8px]"
           style={{
-            background: artGradient,
+            background: deck.commanderImageUri
+              ? `url(${deck.commanderImageUri}) center/cover`
+              : artGradient,
             boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
           }}
         />

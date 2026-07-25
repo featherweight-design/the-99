@@ -170,6 +170,7 @@ export type DeckListItem = {
   createdAt: Date;
   commanderName: string;
   commanderColorIdentity: string[];
+  commanderImageUri: string | null;
   built: number;
   ownedCount: number;
   toBuyCount: number;
@@ -197,6 +198,7 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
       createdAt: decks.createdAt,
       commanderName: cards.name,
       commanderColorIdentity: cards.colorIdentity,
+      commanderImageUri: cards.imageUri,
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
     })
@@ -204,7 +206,7 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
     .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))
-    .groupBy(decks.id, decks.name, decks.createdAt, cards.name, cards.colorIdentity)
+    .groupBy(decks.id, decks.name, decks.createdAt, cards.name, cards.colorIdentity, cards.imageUri)
     .orderBy(desc(decks.createdAt));
 
   return rows.map((row) => {
@@ -215,6 +217,7 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
       createdAt: row.createdAt,
       commanderName: row.commanderName,
       commanderColorIdentity: row.commanderColorIdentity,
+      commanderImageUri: row.commanderImageUri,
       built: row.built,
       ownedCount: row.ownedCount,
       toBuyCount: row.built - row.ownedCount,

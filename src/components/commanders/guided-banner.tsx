@@ -63,7 +63,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
           style={{ fontSize: 12.5, color: "#C6B79A", lineHeight: 1.5, marginTop: 3 }}
         >
           {uniqueCardsRead.toLocaleString("en-US")} cards →{" "}
-          {candidateCount} legal general{candidateCount === 1 ? "" : "s"}.
+          {candidateCount} legal commander{candidateCount === 1 ? "" : "s"}.
           Pick one and build your first 99.
         </p>
       </div>
@@ -130,7 +130,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
             className="font-display m-0"
             style={{ fontSize: 23, fontWeight: 700, color: "#EDE6D8", marginTop: 6 }}
           >
-            Meet your generals
+            Meet your commanders
           </h2>
 
           {/* Body */}
@@ -145,7 +145,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
             }}
           >
             {uniqueCardsRead.toLocaleString("en-US")} cards →{" "}
-            {candidateCount} legal general{candidateCount === 1 ? "" : "s"} ranked for your
+            {candidateCount} legal commander{candidateCount === 1 ? "" : "s"} ranked for your
             collection. Pick one to build your first 99.
           </p>
         </div>
