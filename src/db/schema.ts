@@ -1,5 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
-  pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index,
+  pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check,
 } from "drizzle-orm/pg-core";
 
 export const cards = pgTable("cards", {
@@ -72,6 +73,15 @@ export const commanderScores = pgTable("commander_scores", {
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
   index("commander_scores_rank_idx").on(t.userId, t.score.desc()),
+  // The column's enum option only narrows the TypeScript type; without these the
+  // database would accept any text. Both invariants are load-bearing: the Retry
+  // button keys off synergyState, and an "ok" row with a null fitSynergy is a row
+  // that contradicts itself (it scores as "no synergy" while claiming data).
+  check("commander_scores_synergy_state_check", sql`${t.synergyState} in ('ok', 'absent', 'degraded')`),
+  check(
+    "commander_scores_synergy_null_check",
+    sql`(${t.synergyState} = 'ok') = (${t.fitSynergy} is not null)`,
+  ),
 ]);
 
 export const csvUploads = pgTable("csv_uploads", {
