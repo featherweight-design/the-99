@@ -215,7 +215,7 @@ Traceability chain: design ticket → handoff folder → plan PR → implementat
 
 ## Status snapshot (as of 2026-07-24)
 
-Per-ticket state lives in `docs/superpowers/design-pipeline-status.md` — this section tracks only the system-level layers everything else builds on.
+Ticket-by-ticket state lives in `docs/superpowers/design-pipeline-status.md`. This section covers the system layers everything builds on, plus the places shipped UI currently diverges from them — the context a handoff author needs before writing a prompt.
 
 - **Brand system** (`design/design_handoff_the99_brand/`) — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens. Refreshed 2026-07-24 (PR #54); `support.js` is a runtime dependency of the `.dc.html` previews.
 - **Richness pass** (`design/design_handoff_the99_richness/`) — landed 2026-07-24 (PR #54), from design ticket #51. Adds the crab/kaiju character layer, per-surface density dials, animation posture, texture, and a contrast floor on top of the locked brand base. Merges into the existing surface property tables as the new baseline rather than replacing them.
