@@ -26,6 +26,11 @@ case.
 Both render a `<button>` by default and a `next/link` when given `href`.
 `className` is merged with `tailwind-merge`, so a caller class beats a base one.
 
+Neither accepts a `style` prop. That is deliberate: an inline style outranks
+the `hover:` utilities the primitives own, and the ESLint rule cannot see it on
+a `<PrimaryButton>` because the selector matches `button`/`a`/`Link`. Reach for
+a Tailwind class instead.
+
 ## Which sites to migrate
 
 Migrate a site when its inline `style` is **static** (no ternary) and matches:
@@ -79,8 +84,10 @@ override, or be left unmigrated.
 1. Preserve `type`, `onClick`, `disabled`, `href`, `aria-*` and `key`.
 2. Move padding, font-size, width and layout classes into `className`.
 3. Keep the existing `focus-visible:` ring classes.
-4. Delete the now-empty `style` prop. If `style` still carries a property the
-   primitives do not own (e.g. `cursor`), keep only that property.
+4. Delete the `style` prop entirely — the primitives do not accept one, and
+   passing it is a type error. A property they do not own (e.g. `cursor`) moves
+   to a Tailwind class: `cursor: "default"` when disabled becomes
+   `disabled:cursor-default`.
 5. Preserve the section comments that reference the design tables.
 
 ## Verification

@@ -8,6 +8,14 @@ describe("PrimaryButton", () => {
     expect(screen.getByRole("button", { name: "Go" })).toBeTruthy();
   });
 
+  it("drops a style smuggled in past the type ban", () => {
+    const props = { style: { background: "red" } } as Record<string, unknown>;
+    render(<PrimaryButton {...props}>Go</PrimaryButton>);
+    expect(
+      screen.getByRole("button", { name: "Go" }).getAttribute("style"),
+    ).toBeNull();
+  });
+
   it("renders a link when href is present", () => {
     render(<PrimaryButton href="/decks">Go</PrimaryButton>);
     expect(screen.getByRole("link", { name: "Go" }).getAttribute("href")).toBe(

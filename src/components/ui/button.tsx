@@ -30,20 +30,28 @@ type SharedProps = {
   children: React.ReactNode;
 };
 
+// style is omitted deliberately: an inline style outranks the hover: utilities
+// these primitives own, and the ESLint selector cannot see it here because it
+// matches button/a/Link, not <PrimaryButton>. Omitting it moves that failure
+// from a silent dead hover to a type error. Dynamic values belong in a
+// Tailwind arbitrary value or a CSS custom property.
 type ButtonProps = SharedProps &
   (
     | ({ href: React.ComponentPropsWithoutRef<typeof Link>["href"] } & Omit<
         React.ComponentPropsWithoutRef<typeof Link>,
-        "href" | "className"
+        "href" | "className" | "style"
       >)
     | ({ href?: undefined } & Omit<
         React.ButtonHTMLAttributes<HTMLButtonElement>,
-        "className"
+        "className" | "style"
       >)
   );
 
 function renderButton(variant: string, props: ButtonProps) {
   const { className, children, ...rest } = props;
+  // Dropped at runtime as well as in the types: the type ban is erased at the
+  // JS boundary, so an untyped caller could still smuggle one through a spread.
+  delete (rest as { style?: unknown }).style;
   // twMerge, not concatenation: Tailwind resolves conflicting utilities by
   // generated-stylesheet order, not class-string order, so a caller's
   // rounded-[7px] would not reliably beat BASE's rounded-lg.
