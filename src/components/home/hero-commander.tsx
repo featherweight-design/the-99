@@ -1,4 +1,4 @@
-import { recommendCommanders } from "../../lib/recs/recommend";
+import { getRankedList } from "../../lib/recs/ranked-list";
 import { completeness, COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
 
 /** WUBRG identity pip. Colors come from brand tokens (--w --u --b --r --g). */
@@ -62,13 +62,14 @@ export function HeroCommanderSkeleton() {
 }
 
 /**
- * Async server component — expensive (dozens of EDHREC fetches).
+ * Async server component — cheap once scores are persisted, expensive only on a
+ * cold miss (dozens of EDHREC fetches).
  * Dashboard wraps this in <Suspense> so the surrounding shell streams first.
  * READINESS item 4: degraded flag renders an interim "synergy data offline" note.
  */
 export async function HeroCommander({ userId }: { userId: string }) {
-  const { results, degraded } = await recommendCommanders(userId);
-  const top = results[0];
+  const { items, degraded } = await getRankedList(userId);
+  const top = items[0];
 
   if (!top) {
     // No candidates — dedicated empty surface lives at /commanders.

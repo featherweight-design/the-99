@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUserId } from "../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
-import { recommendCommanders, toListItem } from "../../lib/recs/recommend";
+import { getRankedList } from "../../lib/recs/ranked-list";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
@@ -48,12 +48,12 @@ export default async function CommandersPage() {
 
   // Fetch recommendations and recent decks in parallel.
   // decks is used only for the firstRun flag (no confirmed deck yet).
-  const [recs, decks] = await Promise.all([
-    recommendCommanders(userId),
+  const [list, decks] = await Promise.all([
+    getRankedList(userId),
     listRecentDecks(userId, 1),
   ]);
 
-  const { results, degraded, uniqueCardsRead, candidateCount } = recs;
+  const { items, degraded, uniqueCardsRead, candidateCount } = list;
 
   // No commander candidates in the collection.
   if (candidateCount === 0) {
@@ -202,7 +202,7 @@ export default async function CommandersPage() {
       <PageHeader uniqueCardsRead={uniqueCardsRead} />
 
       <CommandersView
-        results={results.map(toListItem)}
+        results={items}
         degraded={degraded}
         uniqueCardsRead={uniqueCardsRead}
         candidateCount={candidateCount}
