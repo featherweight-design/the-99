@@ -110,7 +110,7 @@ Anything locked in the handoff or via prior Hugh conversation that the plan PR m
 
 - After merging any new handoff, before opening its plan PR (parity gate — applies even to handoffs produced through this workflow).
 - Re-audit if the handoff changes after an addendum cycle.
-- The brand and richness handoffs (`design_handoff_the99_brand`, `design_handoff_the99_richness`) are systems, not features — they don't get a READINESS.md; feature audits check *against* them instead.
+- The brand and richness handoffs (`design/design_handoff_the99_brand/`, `design/design_handoff_the99_richness/`) are systems, not features — they don't get a READINESS.md; feature audits check *against* them instead.
 
 ---
 
@@ -219,8 +219,8 @@ Traceability chain: design ticket → handoff folder → plan PR → implementat
 
 Per-ticket state lives in `docs/superpowers/design-pipeline-status.md` — this section tracks only the system-level layers everything else builds on.
 
-- **Brand system** (`design_handoff_the99_brand`) — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens. Refreshed 2026-07-24 (PR #54); `support.js` is a runtime dependency of the `.dc.html` previews.
-- **Richness pass** (`design_handoff_the99_richness`) — landed 2026-07-24 (PR #54), from design ticket #51. Adds the crab/kaiju character layer, per-surface density dials, animation posture, texture, and a contrast floor on top of the locked brand base. Merges into the existing surface property tables as the new baseline rather than replacing them.
+- **Brand system** (`design/design_handoff_the99_brand/`) — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens. Refreshed 2026-07-24 (PR #54); `support.js` is a runtime dependency of the `.dc.html` previews.
+- **Richness pass** (`design/design_handoff_the99_richness/`) — landed 2026-07-24 (PR #54), from design ticket #51. Adds the crab/kaiju character layer, per-surface density dials, animation posture, texture, and a contrast floor on top of the locked brand base. Merges into the existing surface property tables as the new baseline rather than replacing them.
 - **Voice** — locked; see the Voice & tone section above.
 - **v1 UI surfaces** (#5 app shell, #6 collection, #7 commanders, #8 decks) all shipped 2026-07-19 against the pre-richness baseline. Each has a follow-up ticket to apply brand tokens + the richness pass; until those land, shipped UI and the handoff mocks diverge.
-- **Issue Inspector** (#36) shipped 2026-07-20 (PR #50). Two handoff copies now exist — the Yellow-verified standalone `design_handoff_the99_issue_inspector/` that drove the implementation, and a newer collection-nested v2. Canonical location is unresolved; tracked by a `type: design` reconciliation ticket.
+- **Issue Inspector** (#36) shipped 2026-07-20 (PR #50). Two handoff copies now exist — the Yellow-verified standalone `design/design_handoff_the99_issue_inspector/` that drove the implementation, and a newer collection-nested v2. Canonical location is unresolved; tracked by a `type: design` reconciliation ticket.
