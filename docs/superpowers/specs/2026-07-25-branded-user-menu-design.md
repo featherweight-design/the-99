@@ -57,7 +57,7 @@ fix. That workaround exists only because the pill is wider than its interactive 
 trigger removes the mismatch, so the forwarding logic goes away with it.
 
 Tokens are in `src/app/globals.css` — `--surface-raised` `:11`, `--border-strong` `:20`, `--brass`
-`:31`. A `prefers-reduced-motion` block landed with #58 at `:165-172` and disables the named
+`:31`. A `prefers-reduced-motion` block landed with #58 at `:166-173` and disables the named
 animation utilities; any open/close motion follows that pattern.
 
 ## Design owns
