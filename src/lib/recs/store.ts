@@ -121,7 +121,7 @@ export async function loadScores(
     .from(commanderScores)
     .innerJoin(cards, eq(commanderScores.oracleId, cards.oracleId))
     .where(eq(commanderScores.userId, userId))
-    .orderBy(desc(commanderScores.score));
+    .orderBy(desc(commanderScores.score), commanderScores.oracleId);
 
   return {
     items: rows.map(rowToListItem),
@@ -130,8 +130,10 @@ export async function loadScores(
 }
 
 /**
- * Resolves a persisted slug to its commander and rank without reading every row.
- * Rank comes from the stored ordering, so it matches the list the user clicked from.
+ * Resolves a persisted slug to its commander and rank in one query, returning a
+ * single row rather than pulling the user's whole scored list into memory.
+ * Rank comes from the stored ordering, so it matches the list the user clicked
+ * from — including the oracleId tie-break that recommendCommanders applies.
  */
 export async function findScoredCommander(
   userId: string,
@@ -142,7 +144,7 @@ export async function findScoredCommander(
       .select({
         oracleId: commanderScores.oracleId,
         slug: commanderScores.slug,
-        rank: sql<number>`(row_number() over (order by ${commanderScores.score} desc))::int`.as("rank"),
+        rank: sql<number>`(row_number() over (order by ${commanderScores.score} desc, ${commanderScores.oracleId}))::int`.as("rank"),
       })
       .from(commanderScores)
       .where(eq(commanderScores.userId, userId)),

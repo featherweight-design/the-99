@@ -60,6 +60,20 @@ export type RecommendResult = {
 };
 
 /**
+ * oracleId breaks score ties so the compute order matches `score desc, oracle_id`
+ * in loadScores/findScoredCommander. Without it, tied commanders (common after
+ * rounding) could swap places between a fresh compute and a persisted read,
+ * moving both their rank and their dedup slug suffix. Comparing the canonical
+ * UUID strings matches Postgres' byte ordering — the dashes sit at fixed offsets.
+ */
+export function byScoreThenOracleId(
+  a: { score: number; oracleId: string },
+  b: { score: number; oracleId: string },
+): number {
+  return b.score - a.score || (a.oracleId < b.oracleId ? -1 : 1);
+}
+
+/**
  * Pure post-processing step: assigns unique slugs in rank order and wraps
  * counts. Exported for unit testing without a live database.
  */
@@ -139,7 +153,7 @@ export async function recommendCommanders(
     );
     results.push(...scored);
   }
-  results.sort((a, b) => b.score - a.score);
+  results.sort(byScoreThenOracleId);
 
   const finalized = finalizeRecommendations(results, uniqueCardsRead, candidates.length);
   return { ...finalized, degraded };

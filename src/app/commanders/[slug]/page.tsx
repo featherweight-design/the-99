@@ -13,8 +13,9 @@ export default async function CommanderDetailPage({
   const { slug } = await params;
   const userId = await requireUserId();
 
-  // Resolving the slug is one indexed lookup, and only the requested commander
-  // is scored — the page used to rank the whole candidate set to render one.
+  // Resolving the slug is one query returning one row, and only the requested
+  // commander is scored — the page used to rank the whole candidate set to
+  // render one.
   // Matching on the persisted slug also keeps this URL valid across a re-rank,
   // which a freshly-derived slug would not (dedup suffixes follow rank order).
   let found = await findScoredCommander(userId, slug);

@@ -8,7 +8,7 @@ vi.mock("../edhrec/client", () => ({
   resolveEdhrecData: vi.fn(async () => ({ data: null, unreachable: false })),
 }));
 
-import { finalizeRecommendations, toListItem } from "./recommend";
+import { byScoreThenOracleId, finalizeRecommendations, toListItem } from "./recommend";
 import type { CommanderScore } from "./score";
 import type { SynergyState } from "./synergy-state";
 
@@ -37,6 +37,29 @@ function stubScore(name: string, score = 0): CommanderScore & { synergyState: Sy
     synergyState: "ok",
   };
 }
+
+describe("byScoreThenOracleId", () => {
+  it("orders by descending score", () => {
+    const sorted = [{ score: 5, oracleId: "a" }, { score: 9, oracleId: "b" }].sort(byScoreThenOracleId);
+    expect(sorted.map((r) => r.oracleId)).toEqual(["b", "a"]);
+  });
+
+  it("breaks score ties by ascending oracleId regardless of input order", () => {
+    const rows = [
+      { score: 7, oracleId: "00000000-0000-0000-0000-00000000000c" },
+      { score: 7, oracleId: "00000000-0000-0000-0000-00000000000a" },
+      { score: 7, oracleId: "00000000-0000-0000-0000-00000000000b" },
+    ];
+    const forward = [...rows].sort(byScoreThenOracleId).map((r) => r.oracleId);
+    const reversed = [...rows].reverse().sort(byScoreThenOracleId).map((r) => r.oracleId);
+    expect(forward).toEqual([
+      "00000000-0000-0000-0000-00000000000a",
+      "00000000-0000-0000-0000-00000000000b",
+      "00000000-0000-0000-0000-00000000000c",
+    ]);
+    expect(reversed).toEqual(forward);
+  });
+});
 
 describe("finalizeRecommendations", () => {
   describe("slug uniquing", () => {

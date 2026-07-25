@@ -35,7 +35,13 @@ export const getRankedList = cache(async function getRankedList(
   }
 
   const recs = await recommendCommanders(userId);
-  await persistScores(userId, recs.results);
+  // The computed list is already correct; persisting is only an optimisation for
+  // the next request, so a transient write failure must not fail this render.
+  try {
+    await persistScores(userId, recs.results);
+  } catch {
+    // Next load recomputes.
+  }
   return {
     items: recs.results.map(toListItem),
     degraded: recs.degraded,
