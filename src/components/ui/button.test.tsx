@@ -36,6 +36,13 @@ describe("PrimaryButton", () => {
     );
   });
 
+  it("pins the fill through hover when disabled", () => {
+    render(<PrimaryButton disabled>Go</PrimaryButton>);
+    expect(screen.getByRole("button", { name: "Go" }).className).toContain(
+      "disabled:hover:bg-[color:var(--brass)]",
+    );
+  });
+
   it("drops a style smuggled in past the type ban", () => {
     const props = { style: { background: "red" } } as Record<string, unknown>;
     render(<PrimaryButton {...props}>Go</PrimaryButton>);
@@ -99,6 +106,15 @@ describe("PrimaryButton", () => {
 });
 
 describe("GhostButton", () => {
+  it("pins the border and text through hover when disabled", () => {
+    render(<GhostButton disabled>Go</GhostButton>);
+    const el = screen.getByRole("button", { name: "Go" });
+    expect(el.className).toContain(
+      "disabled:hover:[border-color:var(--border-strong)]",
+    );
+    expect(el.className).toContain("disabled:hover:[color:var(--fg)]");
+  });
+
   it("carries the border and hover in classes, not inline style", () => {
     render(<GhostButton>Go</GhostButton>);
     const el = screen.getByRole("button", { name: "Go" });
