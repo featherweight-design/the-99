@@ -7,6 +7,7 @@ import { RenameForm } from "./rename-form";
 import type { DeckDetail } from "../../lib/decks/read";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { colorLabel } from "../../lib/decks/format";
+import { PrimaryButton } from "@/components/ui/button";
 
 interface BuilderSpineProps {
   deck: DeckDetail;
@@ -235,18 +236,12 @@ export function BuilderSpine({ deck, onExport }: BuilderSpineProps) {
             </button>
 
             {/* Desktop: filled brass button */}
-            <button
-              type="button"
+            <PrimaryButton
               onClick={onExport}
-              className="hidden md:flex items-center gap-[6px] rounded-[8px] font-sans font-semibold text-[13px] px-[18px] py-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-              style={{
-                color: "#14110E",
-                background: "#C9A24B",
-                border: "none",
-              }}
+              className="hidden md:flex items-center gap-[6px] text-[13px] px-[18px] py-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
             >
               Export
-            </button>
+            </PrimaryButton>
           </>
         )}
       </div>
