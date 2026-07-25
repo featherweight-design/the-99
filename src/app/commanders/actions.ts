@@ -2,14 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
+import { deleteAllScores } from "../../lib/recs/store";
 
 /**
  * Retry action for the commanders recommendations page.
- * Failed EDHREC fetches are not negatively cached, so revalidating
- * the path causes a fresh server render that re-fetches all data.
+ * Clears the user's persisted scores so the next render recomputes from scratch,
+ * refetching any commander whose synergy data was missed during an EDHREC outage.
+ * Deleting only the 'degraded' rows would leave a non-empty, non-degraded table —
+ * the fast path — and those commanders would drop out of the list for good.
  * Submit via: <form action={retryRecs}><button type="submit">Retry</button></form>
  */
 export async function retryRecs() {
-  await requireUserId();
+  const userId = await requireUserId();
+  await deleteAllScores(userId);
   revalidatePath("/commanders");
 }
