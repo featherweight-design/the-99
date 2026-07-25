@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   aggregateCollection,
+  cssUrl,
   filterCards,
   formatLastUpdated,
   sortCards,
@@ -131,5 +132,25 @@ describe("formatLastUpdated", () => {
   });
   it("prior year → includes year", () => {
     expect(formatLastUpdated(new Date(2025, 11, 3), now)).toBe("Dec 3, 2025");
+  });
+});
+
+describe("cssUrl", () => {
+  it("wraps a plain Scryfall URI in a quoted url()", () => {
+    expect(cssUrl("https://cards.scryfall.io/art_crop/front/a/b/abc.jpg?1234")).toBe(
+      'url("https://cards.scryfall.io/art_crop/front/a/b/abc.jpg?1234")',
+    );
+  });
+  it("escapes spaces", () => {
+    expect(cssUrl("https://x.test/a b.jpg")).toBe('url("https://x.test/a%20b.jpg")');
+  });
+  it("escapes double quotes so they cannot terminate the url() string", () => {
+    expect(cssUrl('https://x.test/a"b.jpg')).toBe('url("https://x.test/a%22b.jpg")');
+  });
+  it("escapes non-ASCII", () => {
+    expect(cssUrl("https://x.test/Æther.jpg")).toBe('url("https://x.test/%C3%86ther.jpg")');
+  });
+  it("leaves parentheses literal — legal inside the quoted string", () => {
+    expect(cssUrl("https://x.test/a(b).jpg")).toBe('url("https://x.test/a(b).jpg")');
   });
 });

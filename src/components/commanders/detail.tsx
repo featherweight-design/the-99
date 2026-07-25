@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_HEX, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import type { RankedCommander } from "../../lib/recs/recommend";
@@ -454,7 +454,7 @@ export function CommanderDetail({
         style={{
           height: 236,
           background: c.imageUri ? undefined : gradient,
-          backgroundImage: c.imageUri ? `url(${c.imageUri})` : undefined,
+          backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center top",
           boxShadow: "inset 0 -60px 60px -30px rgba(10,7,4,0.9)",
@@ -791,7 +791,7 @@ export function CommanderDetail({
             style={{
               aspectRatio: "63/88",
               background: c.imageUri ? undefined : gradient,
-              backgroundImage: c.imageUri ? `url(${c.imageUri})` : undefined,
+              backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
               backgroundSize: "cover",
               backgroundPosition: "center",
               boxShadow:

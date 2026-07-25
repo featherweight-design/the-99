@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_HEX, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
 import { FitBar } from "./fit-bar";
@@ -67,7 +67,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
               width: 36,
               height: 50,
               background: c.imageUri ? undefined : gradient,
-              backgroundImage: c.imageUri ? `url(${c.imageUri})` : undefined,
+              backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
               backgroundSize: "cover",
               backgroundPosition: "center",
               boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
@@ -202,7 +202,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
           style={{
             aspectRatio: "63/88",
             background: c.imageUri ? undefined : gradient,
-            backgroundImage: c.imageUri ? `url(${c.imageUri})` : undefined,
+            backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center",
             boxShadow:
