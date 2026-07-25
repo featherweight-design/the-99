@@ -15,8 +15,9 @@ import { twMerge } from "tailwind-merge";
 // style background outranks a hover: utility and silently kills the hover —
 // the bug these primitives exist to make unrepresentable.
 
-// disabled:cursor-default pairs with cursor-pointer: :disabled suppresses the
-// click, not the cursor, so without it a dead button still invites one.
+// The two cursor utilities are a pair. Disabling a button suppresses its click
+// but not its cursor, so cursor-pointer alone leaves a dead button still
+// showing a hand; disabled:cursor-default takes it back.
 const BASE =
   "font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default";
 

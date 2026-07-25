@@ -8,9 +8,10 @@ describe("PrimaryButton", () => {
     expect(screen.getByRole("button", { name: "Go" })).toBeTruthy();
   });
 
-  // The spread sits after className and before type deliberately: className is
-  // destructured out of props so a spread can never carry one, while type must
-  // stay overridable so a caller can opt into submit.
+  // The spread sits after both literals deliberately, and each for its own
+  // reason. type must stay overridable, so the spread has to follow it.
+  // className needs no such protection: it is destructured out of props, so a
+  // spread can never carry one and can only add to the merge.
   it("merges a spread className rather than letting it replace the contract", () => {
     const props = { className: "px-4" } as Record<string, unknown>;
     render(<PrimaryButton {...props}>Go</PrimaryButton>);
