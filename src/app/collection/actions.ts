@@ -10,7 +10,7 @@ import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../l
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
 import { recommendCommanders } from "../../lib/recs/recommend";
-import { persistScores } from "../../lib/recs/store";
+import { collectionGeneration, persistScores } from "../../lib/recs/store";
 
 export type UploadPreview = {
   uploadId: string;
@@ -140,8 +140,11 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   // visit — the warm is an optimisation, never a correctness requirement.
   after(async () => {
     try {
+      // Reads the generation this confirm just created, so the warm's write survives
+      // while an older in-flight compute's write is dropped.
+      const generation = await collectionGeneration(userId);
       const recs = await recommendCommanders(userId);
-      await persistScores(userId, recs.results);
+      await persistScores(userId, recs.results, generation);
     } catch {
       // Swallow: the lazy path in getRankedList is the correctness backstop.
     }

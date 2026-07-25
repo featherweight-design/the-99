@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { getCollectionStats } from "../home/summary";
 import { recommendCommanders, toListItem, type CommanderListItem } from "./recommend";
-import { loadScores, persistScores } from "./store";
+import { collectionGeneration, loadScores, persistScores } from "./store";
 
 export type RankedList = {
   items: CommanderListItem[];
@@ -44,11 +44,14 @@ export const getRankedList = cache(async function getRankedList(
     };
   }
 
+  // Captured before the pool read so persistScores can drop the write if an upload
+  // replaces the collection while this compute is in flight.
+  const generation = await collectionGeneration(userId);
   const recs = await recommendCommanders(userId);
   // The computed list is already correct; persisting is only an optimisation for
   // the next request, so a transient write failure must not fail this render.
   try {
-    await persistScores(userId, recs.results);
+    await persistScores(userId, recs.results, generation);
   } catch {
     // Next load recomputes.
   }

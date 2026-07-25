@@ -1,6 +1,6 @@
 import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, commanderScores, type RoleCounts } from "../../db/schema";
+import { cards, commanderScores, csvUploads, type RoleCounts } from "../../db/schema";
 import { receiptsPreview } from "./format";
 import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
@@ -62,16 +62,45 @@ export function rowToListItem(row: ScoreRowWithCard): CommanderListItem {
 }
 
 /**
+ * Fingerprint of the collection a score compute is about to read. confirmUpload is
+ * the only writer of collection_items, and it stamps confirmedAt in the same
+ * transaction, so the latest confirm time identifies the collection generation.
+ * Callers capture this *before* reading the pool and hand it to persistScores.
+ */
+export async function collectionGeneration(userId: string): Promise<number | null> {
+  const [row] = await db
+    .select({ at: sql<Date | null>`max(${csvUploads.confirmedAt})` })
+    .from(csvUploads)
+    .where(eq(csvUploads.userId, userId));
+  return row?.at ? new Date(row.at).getTime() : null;
+}
+
+/**
  * Upsert rather than delete-then-insert: the after() warm and an inline compute
  * from a concurrent page load can run at once, and under READ COMMITTED a second
  * transaction's DELETE cannot see the first's uncommitted rows — its INSERT would
- * then collide on the composite primary key and abort the render. Both writers
- * derive from the same collection snapshot, so last-write-wins is safe.
+ * then collide on the composite primary key and abort the render.
+ *
+ * Last-write-wins is only safe between writers reading the same collection, so the
+ * write is dropped when the generation moved after `generation` was captured. A
+ * compute that started before a confirmUpload would otherwise commit old-collection
+ * rows after the upload wiped the table, and loadScores' fast path would serve them
+ * indefinitely — nothing marks them stale.
  */
-export async function persistScores(userId: string, ranked: RankedCommander[]): Promise<void> {
+export async function persistScores(
+  userId: string,
+  ranked: RankedCommander[],
+  generation: number | null,
+): Promise<void> {
   const rows = ranked.map((r) => toScoreRow(userId, r));
   const keep = rows.map((r) => r.oracleId);
   await db.transaction(async (tx) => {
+    const [gen] = await tx
+      .select({ at: sql<Date | null>`max(${csvUploads.confirmedAt})` })
+      .from(csvUploads)
+      .where(eq(csvUploads.userId, userId));
+    const current = gen?.at ? new Date(gen.at).getTime() : null;
+    if (current !== generation) return;
     await tx.delete(commanderScores).where(
       keep.length === 0
         ? eq(commanderScores.userId, userId)

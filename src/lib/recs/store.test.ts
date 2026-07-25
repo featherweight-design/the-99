@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 // store.ts imports the db client, which throws at module init without DATABASE_URL.
-vi.mock("../../db", () => ({ db: {} }));
+const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
+vi.mock("../../db", () => ({ db: stub.db }));
 
-import { rowToListItem, toScoreRow } from "./store";
+import { persistScores, rowToListItem, toScoreRow } from "./store";
 import type { RankedCommander } from "./recommend";
 
 const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
@@ -99,5 +100,65 @@ describe("rowToListItem", () => {
     });
     expect(item.fitSynergy).toBeNull();
     expect(item.edhrecTotal).toBeNull();
+  });
+});
+
+/**
+ * Fake transaction exposing only what persistScores touches. `confirmedAt` is what
+ * the in-transaction generation re-read observes.
+ */
+function fakeDb(confirmedAt: Date | null) {
+  const inserted: unknown[][] = [];
+  let deleted = false;
+  const tx = {
+    select: () => ({ from: () => ({ where: async () => [{ at: confirmedAt }] }) }),
+    delete: () => ({ where: async () => { deleted = true; } }),
+    insert: () => ({
+      values: (rows: unknown[]) => ({ onConflictDoUpdate: async () => { inserted.push(rows); } }),
+    }),
+  };
+  return {
+    db: { transaction: (cb: (t: typeof tx) => Promise<void>) => cb(tx) },
+    wrote: () => ({ deleted, insertedRows: inserted.flat().length }),
+  };
+}
+
+describe("persistScores generation guard", () => {
+  it("writes when the collection generation is unchanged", async () => {
+    const at = new Date("2026-07-24T12:00:00Z");
+    const fake = fakeDb(at);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], at.getTime());
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  it("drops the write when an upload replaced the collection mid-compute", async () => {
+    const fake = fakeDb(new Date("2026-07-24T12:05:00Z"));
+    stub.db.transaction = fake.db.transaction;
+
+    // Captured before the newer confirm landed.
+    await persistScores("user_1", [ranked()], new Date("2026-07-24T12:00:00Z").getTime());
+
+    expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
+  });
+
+  it("writes for a user who has never confirmed an upload", async () => {
+    const fake = fakeDb(null);
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], null);
+
+    expect(fake.wrote()).toEqual({ deleted: true, insertedRows: 1 });
+  });
+
+  it("drops the write when the first-ever confirm lands mid-compute", async () => {
+    const fake = fakeDb(new Date("2026-07-24T12:05:00Z"));
+    stub.db.transaction = fake.db.transaction;
+
+    await persistScores("user_1", [ranked()], null);
+
+    expect(fake.wrote()).toEqual({ deleted: false, insertedRows: 0 });
   });
 });
