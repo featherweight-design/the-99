@@ -9,7 +9,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 //
 // /api/health is public so an uptime check can reach it without a session. It
 // returns migration counts and tags only — never connection details.
-const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health"]);
+const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (!isPublic(req)) await auth.protect();

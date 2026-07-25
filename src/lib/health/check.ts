@@ -20,12 +20,14 @@ export type HealthReport =
  */
 export async function checkHealth(): Promise<HealthReport> {
   try {
-    const result = await db.execute(
+    const result = await db.execute<{ applied: number }>(
       sql`select count(*)::int as applied from drizzle.__drizzle_migrations`,
     );
-    const row = (result as unknown as { rows: { applied: number }[] }).rows[0];
 
-    const { state, ...health } = compareMigrations(row?.applied ?? 0, shippedMigrationTags);
+    const { state, ...health } = compareMigrations(
+      result.rows[0]?.applied ?? 0,
+      shippedMigrationTags,
+    );
 
     return { ...health, status: state };
   } catch {
