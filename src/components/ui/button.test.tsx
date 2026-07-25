@@ -37,6 +37,22 @@ describe("PrimaryButton", () => {
     expect(cls).not.toContain("rounded-lg");
   });
 
+  it("defaults to type=button so it cannot submit a surrounding form", () => {
+    render(<PrimaryButton>Go</PrimaryButton>);
+    expect(screen.getByRole("button", { name: "Go" })).toHaveProperty(
+      "type",
+      "button",
+    );
+  });
+
+  it("lets a caller opt into type=submit", () => {
+    render(<PrimaryButton type="submit">Go</PrimaryButton>);
+    expect(screen.getByRole("button", { name: "Go" })).toHaveProperty(
+      "type",
+      "submit",
+    );
+  });
+
   it("forwards button attributes", () => {
     render(<PrimaryButton disabled>Go</PrimaryButton>);
     expect(screen.getByRole("button", { name: "Go" })).toHaveProperty(

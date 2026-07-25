@@ -58,8 +58,10 @@ function renderButton(variant: string, props: ButtonProps) {
     );
   }
 
+  // Default to "button": these are CTAs, and a bare <button> submits the form
+  // it sits in. A caller wanting a submit button passes type explicitly.
   return (
-    <button className={classes} {...rest}>
+    <button type="button" className={classes} {...rest}>
       {children}
     </button>
   );
