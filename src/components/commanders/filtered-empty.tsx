@@ -6,6 +6,7 @@
 // Mobile breakpoint: sm:640px (project uses sm: prefix, table breakpoint is 640px).
 
 import { WUBRG_HEX } from "../../lib/collection/browse";
+import { GhostButton } from "../ui/button";
 
 // Single-color names
 const MONO_NAMES: Record<string, string> = {
@@ -128,26 +129,13 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
       </p>
 
       {/* Clear color filter button */}
-      <button
-        type="button"
+      <GhostButton
         onClick={onClear}
         // brand focus-visible outline treatment inherited from globals.css
-        className="sm:p-[10px_20px]"
-        style={{
-          fontFamily: "var(--font-sans), 'IBM Plex Sans', sans-serif",
-          fontWeight: 600,
-          fontSize: 13,
-          color: "#EDE6D8",
-          background: "transparent",
-          border: "1px solid #3A3229",
-          borderRadius: 8,
-          padding: "11px 20px",
-          marginTop: 20,
-          cursor: "pointer",
-        }}
+        className="text-[13px] p-[11px_20px] sm:p-[10px_20px] mt-[20px] cursor-pointer"
       >
         Clear color filter
-      </button>
+      </GhostButton>
     </div>
   );
 }

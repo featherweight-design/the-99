@@ -5,6 +5,7 @@
 // Retry action: <form action={retryRecs}> secondary button.
 
 import { retryRecs } from "../../app/commanders/actions";
+import { GhostButton } from "../ui/button";
 
 export function DegradedBanner() {
   return (
@@ -91,23 +92,13 @@ export function DegradedBanner() {
 
         {/* Retry button */}
         <form action={retryRecs}>
-          <button
+          <GhostButton
             type="submit"
             // brand focus-visible outline treatment inherited from globals.css
-            className="flex-none cursor-pointer"
-            style={{
-              fontFamily: "var(--font-sans), 'IBM Plex Sans', sans-serif",
-              fontWeight: 600,
-              fontSize: 13,
-              color: "#EDE6D8",
-              background: "transparent",
-              border: "1px solid #3A3229",
-              borderRadius: 8,
-              padding: "10px 18px",
-            }}
+            className="flex-none text-[13px] p-[10px_18px] cursor-pointer"
           >
             Retry now
-          </button>
+          </GhostButton>
         </form>
       </div>
     </>
