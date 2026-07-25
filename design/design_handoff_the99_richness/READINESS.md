@@ -9,7 +9,7 @@
 
 The richness pass is coherent, well-scoped, and buildable. The character system (crab/kaiju), density dials, animation posture, and contrast constraint are all clearly stated, and copy in the mocks is production-ready. Six of the eight named states already have components in `src/` and are reachable today.
 
-Two states are **not reachable**: global loading and 404. `src/app` contains no `loading.tsx`, `not-found.tsx`, or `error.tsx` at any level, so the mock designs two surfaces that have no route to live in. That's eng work rather than a Design gap — the mock specifies both — but it is a hard-rule-3 violation that must be closed in the plan PR before #58 ships.
+Two states are **not reachable**: global loading and 404. `src/app` contains no `loading.tsx` or `not-found.tsx` at any level, so the mock designs two surfaces that have no route to live in. (There's no `error.tsx` either — out of scope for this pass, but worth folding into the same PR while the conventions are in hand.) That's eng work rather than a Design gap — the mock specifies both — but it is a hard-rule-3 violation that must be closed in the plan PR before #58 ships.
 
 Mobile is the thinnest area: both v2 mocks delegate it to a one-line note rather than hi-fi frames. For the re-skinned states that's fine, since the v1 handoffs already carry mobile mocks. For the 99/99 celebration it isn't — "celebration full-screen" is a different pattern, not a delta. That's the one item that may need a Design addendum; everything else resolves eng-side.
 
@@ -40,7 +40,7 @@ Eight named states across the two v2 mocks. Reachability in current code:
 | Decks builder empty | Surfaces v2 | `src/components/decks/builder-shell.tsx` (`isEmpty`) | ✅ |
 | Decks 99/99 completion reveal | Surfaces v2 | `statusPill()` returns `"Complete"` | 🟡 condition exists, event doesn't |
 
-- [🔴] Global loading and 404 have no route files. Next 16 conventions confirmed against `node_modules/next/dist/docs/01-app/01-getting-started/02-project-structure.md` — `loading.tsx` (Suspense boundary) and `not-found.tsx`. Both need creating; placement (root vs. per-route-group) is an eng call.
+- [🔴] Global loading and 404 have no route files. Next 16's App Router special-file conventions cover both — `loading.tsx` (an automatic Suspense boundary) and `not-found.tsx` — and were confirmed against the vendored docs in this repo's installed `next` package rather than from memory. Both need creating; placement (root vs. per-route-group) is an eng call.
 - [🟡] The 99/99 reveal is designed as a **celebration**, but `statusPill` in `src/lib/decks/read.ts:44` is a derived *status*, not an event. Nothing distinguishes "just completed" from "viewing a deck that was completed last week." Undefined whether the kaiju fires once on transition or renders whenever the deck is Complete. Eng-side call, but it changes the implementation shape materially.
 - [🟠] **Mobile is not mocked.** Both files carry a single note — App Shell v2: "Mobile variants follow the same deltas (crab scales to 72–90px; vignettes centered on content)"; Surfaces v2: "Mobile forms follow the same deltas (crab 72–90px, celebration full-screen)." Adequate for re-skins of surfaces whose v1 handoffs already have mobile frames. **Not** adequate for the celebration: a composition built around the kaiju looming from the right and gazing down at the crab does not have an obvious full-screen portrait form.
 
