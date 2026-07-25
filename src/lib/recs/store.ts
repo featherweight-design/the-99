@@ -5,6 +5,19 @@ import { receiptsPreview } from "./format";
 import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
 
+// Postgres codes meaning the schema is behind the code: 42P01 undefined_table,
+// 42703 undefined_column. commander_scores is a cache and both readers already
+// handle a miss, so treating these as a miss turns a late migration into a slow
+// page instead of the site-wide 500 in #70. Deliberately narrow — a blanket catch
+// would convert a real outage into a silent 196-commander recompute per request.
+const SCHEMA_LAG_CODES = new Set(["42P01", "42703"]);
+
+export function isSchemaLagError(err: unknown): boolean {
+  if (typeof err !== "object" || err === null || !("code" in err)) return false;
+  const { code } = err as { code: unknown };
+  return typeof code === "string" && SCHEMA_LAG_CODES.has(code);
+}
+
 export type ScoreRowWithCard = {
   oracleId: string;
   slug: string;
@@ -131,33 +144,38 @@ export async function persistScores(
 export async function loadScores(
   userId: string,
 ): Promise<{ items: CommanderListItem[]; degradedOracleIds: string[] }> {
-  const rows = await db
-    .select({
-      oracleId: commanderScores.oracleId,
-      slug: commanderScores.slug,
-      score: commanderScores.score,
-      fitPool: commanderScores.fitPool,
-      fitRoles: commanderScores.fitRoles,
-      fitSynergy: commanderScores.fitSynergy,
-      synergyState: commanderScores.synergyState,
-      edhrecOwnedCount: commanderScores.edhrecOwnedCount,
-      edhrecTotal: commanderScores.edhrecTotal,
-      receipts: commanderScores.receipts,
-      colorPoolSize: commanderScores.colorPoolSize,
-      roleCounts: commanderScores.roleCounts,
-      name: cards.name,
-      colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri,
-    })
-    .from(commanderScores)
-    .innerJoin(cards, eq(commanderScores.oracleId, cards.oracleId))
-    .where(eq(commanderScores.userId, userId))
-    .orderBy(desc(commanderScores.score), commanderScores.oracleId);
+  try {
+    const rows = await db
+      .select({
+        oracleId: commanderScores.oracleId,
+        slug: commanderScores.slug,
+        score: commanderScores.score,
+        fitPool: commanderScores.fitPool,
+        fitRoles: commanderScores.fitRoles,
+        fitSynergy: commanderScores.fitSynergy,
+        synergyState: commanderScores.synergyState,
+        edhrecOwnedCount: commanderScores.edhrecOwnedCount,
+        edhrecTotal: commanderScores.edhrecTotal,
+        receipts: commanderScores.receipts,
+        colorPoolSize: commanderScores.colorPoolSize,
+        roleCounts: commanderScores.roleCounts,
+        name: cards.name,
+        colorIdentity: cards.colorIdentity,
+        imageUri: cards.imageUri,
+      })
+      .from(commanderScores)
+      .innerJoin(cards, eq(commanderScores.oracleId, cards.oracleId))
+      .where(eq(commanderScores.userId, userId))
+      .orderBy(desc(commanderScores.score), commanderScores.oracleId);
 
-  return {
-    items: rows.map(rowToListItem),
-    degradedOracleIds: rows.filter((r) => r.synergyState === "degraded").map((r) => r.oracleId),
-  };
+    return {
+      items: rows.map(rowToListItem),
+      degradedOracleIds: rows.filter((r) => r.synergyState === "degraded").map((r) => r.oracleId),
+    };
+  } catch (err) {
+    if (!isSchemaLagError(err)) throw err;
+    return { items: [], degradedOracleIds: [] };
+  }
 }
 
 /**
@@ -170,26 +188,31 @@ export async function findScoredCommander(
   userId: string,
   slug: string,
 ): Promise<{ oracleId: string; rank: number; anyDegraded: boolean } | null> {
-  const ranked = db.$with("ranked").as(
-    db
-      .select({
-        oracleId: commanderScores.oracleId,
-        slug: commanderScores.slug,
-        rank: sql<number>`(row_number() over (order by ${commanderScores.score} desc, ${commanderScores.oracleId}))::int`.as("rank"),
-        // Same window pass, so the caller learns whether these ranks came from an
-        // outage-era compute without paying a second round trip.
-        anyDegraded: sql<boolean>`bool_or(${commanderScores.synergyState} = 'degraded') over ()`.as("any_degraded"),
-      })
-      .from(commanderScores)
-      .where(eq(commanderScores.userId, userId)),
-  );
-  const [row] = await db
-    .with(ranked)
-    .select({ oracleId: ranked.oracleId, rank: ranked.rank, anyDegraded: ranked.anyDegraded })
-    .from(ranked)
-    .where(eq(ranked.slug, slug))
-    .limit(1);
-  return row ?? null;
+  try {
+    const ranked = db.$with("ranked").as(
+      db
+        .select({
+          oracleId: commanderScores.oracleId,
+          slug: commanderScores.slug,
+          rank: sql<number>`(row_number() over (order by ${commanderScores.score} desc, ${commanderScores.oracleId}))::int`.as("rank"),
+          // Same window pass, so the caller learns whether these ranks came from an
+          // outage-era compute without paying a second round trip.
+          anyDegraded: sql<boolean>`bool_or(${commanderScores.synergyState} = 'degraded') over ()`.as("any_degraded"),
+        })
+        .from(commanderScores)
+        .where(eq(commanderScores.userId, userId)),
+    );
+    const [row] = await db
+      .with(ranked)
+      .select({ oracleId: ranked.oracleId, rank: ranked.rank, anyDegraded: ranked.anyDegraded })
+      .from(ranked)
+      .where(eq(ranked.slug, slug))
+      .limit(1);
+    return row ?? null;
+  } catch (err) {
+    if (!isSchemaLagError(err)) throw err;
+    return null;
+  }
 }
 
 export async function deleteAllScores(userId: string): Promise<void> {
