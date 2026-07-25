@@ -36,14 +36,16 @@ Two exposure questions were checked rather than assumed:
 ### 1. `package.json`
 
 ```json
-"vercel-build": "node scripts/vercel-migrate.mjs && next build"
+"vercel-build": "tsx scripts/vercel-migrate.ts && next build"
 ```
 
 Vercel runs `vercel-build` in preference to `build` when it exists. Local `pnpm build` and the CI stub build are unaffected, so CI keeps running `next build` with no database.
 
-### 2. `scripts/vercel-migrate.mjs`
+### 2. `scripts/vercel-migrate.ts`
 
-Plain `.mjs` so it runs under Node with no transpile step, ahead of any build tooling.
+TypeScript run through `tsx`, matching `scripts/seed-cards.ts` and the existing `db:seed` script. `tsx` is already a devDependency, so this adds no dependency and keeps the script type-checked by `pnpm typecheck` alongside the rest of the repo.
+
+The decision logic lives in `src/lib/deploy/migrate-decision.ts` rather than in the script. Vitest's `include` is `src/**/*.test.{ts,tsx}`, so a test file placed beside the script under `scripts/` would be collected by nothing and silently never run. Keeping the branching in `src/` leaves the script a thin shell — read the decision, act on it — with the logic under test.
 
 Behaviour, in order:
 
@@ -63,7 +65,7 @@ Add `MIGRATE_DATABASE_URL`, non-sensitive, Production scope only, matching that 
 
 ### 4. `AGENTS.md`
 
-A line under Workflow recording that migrations run automatically in the Vercel build, that the mechanism is `vercel-build` → `scripts/vercel-migrate.mjs`, and that `MIGRATE_DATABASE_URL` must exist in a Vercel project for its deployments to succeed. Without this note the failure mode for a newly created environment is a confusing build error.
+A line under Workflow recording that migrations run automatically in the Vercel build, that the mechanism is `vercel-build` → `scripts/vercel-migrate.ts`, and that `MIGRATE_DATABASE_URL` must exist in a Vercel project for its deployments to succeed. Without this note the failure mode for a newly created environment is a confusing build error.
 
 ## Failure behaviour
 
@@ -95,7 +97,7 @@ Writes are deliberately excluded. `persistScores` already runs inside a best-eff
 
 **Unit tests** cover what can be tested without a deployment:
 
-- `scripts/vercel-migrate.mjs`: exits 0 without invoking `drizzle-kit` when `VERCEL_ENV` is `preview`, `development`, or unset; exits non-zero when `VERCEL_ENV` is `production` and `MIGRATE_DATABASE_URL` is missing or empty; passes `MIGRATE_DATABASE_URL` through as `DATABASE_URL` in the child environment when both are present.
+- `src/lib/deploy/migrate-decision.ts`: `decideMigration` returns `skip` when `VERCEL_ENV` is `preview`, `development`, or unset; returns `fail` when `VERCEL_ENV` is `production` and `MIGRATE_DATABASE_URL` is missing or blank; returns `run` carrying the trimmed url when both are present. The script itself stays untested — mapping the three outcomes onto `process.exit` and one `spawnSync` is thin enough that a test would restate the implementation.
 - `store.ts`: `loadScores` returns the empty shape and `findScoredCommander` returns `null` when the query rejects with `code: "42P01"` or `"42703"`; both re-throw for any other error, including an error with no `code`.
 
 **End-to-end proof** requires a real deployment, satisfying the third acceptance criterion in #70. Generate an empty migration with `pnpm drizzle-kit generate --custom --name migration_pipeline_smoke_test`, which writes both the SQL file and a matching meta snapshot. Put `SELECT 1;` in it — enough to be recorded in `drizzle.__drizzle_migrations` without touching any object. Merge, then confirm both projects' build logs show it applied.
