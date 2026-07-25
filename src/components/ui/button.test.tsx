@@ -28,6 +28,13 @@ describe("PrimaryButton", () => {
     );
   });
 
+  it("drops the pointer cursor when disabled", () => {
+    render(<PrimaryButton disabled>Go</PrimaryButton>);
+    expect(screen.getByRole("button", { name: "Go" }).className).toContain(
+      "disabled:cursor-default",
+    );
+  });
+
   it("drops a style smuggled in past the type ban", () => {
     const props = { style: { background: "red" } } as Record<string, unknown>;
     render(<PrimaryButton {...props}>Go</PrimaryButton>);

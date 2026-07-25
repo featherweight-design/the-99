@@ -9,10 +9,15 @@ Shared instructions for migrating inline-styled CTAs onto the primitives in
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 ```
 
-They own exactly seven properties: background, text colour, border,
+They own exactly nine properties: background, text colour, border,
 font-family (`font-sans`), font-weight (`font-semibold`), border-radius
-(`rounded-lg` = 8px), and hover. Everything else — padding, font size, width,
-layout, focus ring — stays on the caller via `className`.
+(`rounded-lg` = 8px), hover, the hover transition (`transition-colors`), and
+cursor (`cursor-pointer disabled:cursor-default`). Everything else — padding,
+font size, width, layout, focus ring — stays on the caller via `className`.
+
+The cursor pair matters during migration: `:disabled` suppresses the click but
+not the cursor, so a migrated site no longer needs its own
+`disabled:cursor-default` — the primitive supplies it.
 
 Because font-family and font-weight are owned, migrating a site that today has
 no weight class, or a lighter one, changes its appearance. Report every such
@@ -47,7 +52,7 @@ Migrate a site when its inline `style` is **static** (no ternary) and matches:
 - Colour pips and mana pips, where the colour is computed from data
 - Card and list-row wrappers that happen to be a `<button>` or `Link`
 - Plain text links (brass text, no fill, no border)
-- Any site overriding the primitives' seven properties so heavily that the
+- Any site overriding the primitives' nine properties so heavily that the
   primitive would be entirely overridden
 
 When in doubt, leave it and note it in your report. A missed migration is

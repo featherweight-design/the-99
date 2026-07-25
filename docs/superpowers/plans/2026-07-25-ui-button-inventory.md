@@ -80,7 +80,7 @@ Each site is one of:
   brass rather than `var(--fg)`
 
 An earlier draft of this document drew the line at "overrides 3 or more of the
-7 properties the primitives own." That test was wrong and has been dropped: it
+properties the primitives own." That test was wrong and has been dropped: it
 measures deviation from `PrimaryButton`, so it flags a two-state toggle as
 bespoke even though every toggle in the app is identical to every other one.
 Uniqueness, not deviation, is what makes a site exempt.
