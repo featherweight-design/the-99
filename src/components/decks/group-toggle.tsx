@@ -29,7 +29,7 @@ export function GroupToggle({
       <button
         type="button"
         onClick={() => onFilterChange("all")}
-        className="font-sans font-semibold text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+        className="font-sans font-semibold text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]"
         style={
           filter === "all"
             ? { color: "#14110E", background: "#C9A24B" }
@@ -43,7 +43,7 @@ export function GroupToggle({
       <button
         type="button"
         onClick={() => onFilterChange("shopping")}
-        className="font-sans text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+        className="font-sans text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]"
         style={
           filter === "shopping"
             ? { fontWeight: 600, color: "#14110E", background: "#C9A24B" }
@@ -72,8 +72,8 @@ export function GroupToggle({
         onClick={() => onGroupingChange("type")}
         className={
           grouping === "type"
-            ? "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-            : "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[#2A241D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            ? "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px]"
+            : "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[#2A241D]"
         }
         style={
           grouping === "type"
@@ -90,8 +90,8 @@ export function GroupToggle({
         onClick={() => onGroupingChange("role")}
         className={
           grouping === "role"
-            ? "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-            : "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[#2A241D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            ? "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px]"
+            : "font-sans text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[#2A241D]"
         }
         style={
           grouping === "role"

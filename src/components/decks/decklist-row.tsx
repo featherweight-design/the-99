@@ -68,7 +68,7 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel }: Decklis
         <form action={removeCardFromDeck.bind(null, deckId, card.oracleId)} className="hidden md:block">
           <button
             type="submit"
-            className="flex-none text-[13px] leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            className="flex-none text-[13px] leading-none"
             style={{ color: "#4A4033", background: "transparent", border: "none", cursor: "pointer" }}
             aria-label={`Remove ${card.name}`}
           >

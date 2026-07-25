@@ -1,0 +1,79 @@
+import { twMerge } from "tailwind-merge";
+
+// Shared text-entry primitives, sibling to button.tsx.
+//
+// These exist for one bug: every input in the app hand-rolled
+// `focus-visible:ring-2 focus-visible:ring-[#C9A24B]`, which has no offset and
+// so draws the brass indicator INSIDE the field's own border. globals.css
+// already ships `:focus-visible { outline: 2px solid var(--brass);
+// outline-offset: 2px }` — outside, where it belongs. The primitives' job is to
+// stop re-implementing it.
+//
+// As with the button primitives, everything owned here is a Tailwind class.
+// Padding and font-size stay with the caller: the design tables specify them
+// differently per surface.
+
+const FIELD_CHROME =
+  "rounded-lg bg-[color:var(--surface-sunken)] " +
+  "[border:1px_solid_var(--border-strong)] text-[color:var(--fg)] " +
+  "placeholder:text-[color:var(--fg-faint)] caret-[color:var(--brass)]";
+
+// ComponentPropsWithRef, not InputHTMLAttributes: React 19 passes ref as an
+// ordinary prop, and several callers focus the field imperatively.
+type TextFieldProps = Omit<React.ComponentPropsWithRef<"input">, "style">;
+
+/**
+ * A standalone labelled input. Focus is the global brass outline — do not add
+ * a ring utility, and do not pass an inline background/border (it would outrank
+ * the chrome classes the same way it does on the buttons).
+ */
+export function TextField({ className, type = "text", ...rest }: TextFieldProps) {
+  return <input type={type} className={twMerge(FIELD_CHROME, className)} {...rest} />;
+}
+
+type SearchFieldProps = TextFieldProps & {
+  /** Rendered after the input inside the box — clear buttons, result counts. */
+  trailing?: React.ReactNode;
+  containerClassName?: string;
+};
+
+/**
+ * Icon + input + optional trailing slot sharing one box. The focus indicator
+ * belongs to the container via focus-within, because the input is only part of
+ * the thing that looks focused; the inner input therefore has to suppress its
+ * own outline or two indicators stack.
+ */
+export function SearchField({
+  className,
+  containerClassName,
+  trailing,
+  type = "search",
+  ...rest
+}: SearchFieldProps) {
+  return (
+    <div
+      className={twMerge(
+        FIELD_CHROME,
+        "flex items-center gap-[10px] px-[12px] " +
+          "focus-within:[border-color:var(--brass)] " +
+          "focus-within:shadow-[0_0_0_3px_rgba(201,162,75,0.16)]",
+        containerClassName,
+      )}
+    >
+      <span aria-hidden className="font-mono text-[15px] shrink-0 text-[color:var(--fg-faint)]">
+        ⌕
+      </span>
+      <input
+        type={type}
+        className={twMerge(
+          "min-w-0 flex-1 bg-transparent border-none outline-none shadow-none " +
+            "focus:outline-none focus-visible:outline-none " +
+            "text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]",
+          className,
+        )}
+        {...rest}
+      />
+      {trailing}
+    </div>
+  );
+}

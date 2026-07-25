@@ -10,6 +10,7 @@ import { WUBRG_HEX } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
 import { colorLabel } from "../../lib/decks/format";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -69,7 +70,7 @@ export function CreatePreFilled({
         {/* Mobile back chevron */}
         <Link
           href="/decks/new"
-          className="md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+          className="md:hidden"
           aria-label="Back to commander picker"
           style={{ color: "#8E8269", fontSize: 18, lineHeight: 1 }}
         >
@@ -80,7 +81,7 @@ export function CreatePreFilled({
           {/* Desktop back link */}
           <Link
             href="/decks/new"
-            className="hidden md:block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            className="hidden md:block"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
@@ -270,24 +271,18 @@ export function CreatePreFilled({
             </label>
 
             {/* §Deck name input: bg #181410, border 1px #C9A24B (active), br 8/9px */}
-            <input
+            <TextField
               id="deck-name-input"
               ref={inputRef}
               autoFocus
-              type="text"
               value={deckName}
               onChange={(e) => setDeckName(e.target.value)}
               maxLength={120}
               placeholder="My awesome deck"
               disabled={isPending}
-              className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px] text-[15px] md:text-[16px]"
-              style={{
-                background: "#181410",
-                border: "1px solid #C9A24B",
-                color: "#EDE6D8",
-                display: "block",
-                marginBottom: error ? 8 : 24,
-              }}
+              className={`block w-full rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px] text-[15px] md:text-[16px] [border-color:var(--brass)] ${
+                error ? "mb-[8px]" : "mb-[24px]"
+              }`}
             />
 
             {error && (
@@ -303,7 +298,7 @@ export function CreatePreFilled({
             <PrimaryButton
               type="submit"
               disabled={isPending || deckName.trim().length === 0}
-              className="w-full md:w-auto text-[15px] transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] disabled:opacity-40 mb-[12px] py-[13px] px-[26px]"
+              className="w-full md:w-auto text-[15px] transition-opacity disabled:opacity-40 mb-[12px] py-[13px] px-[26px]"
             >
               {isPending ? "Creating…" : "Create deck →"}
             </PrimaryButton>
@@ -313,7 +308,7 @@ export function CreatePreFilled({
                 secondary treatment at both breakpoints. */}
             <GhostButton
               href="/decks/new"
-              className="block md:inline-block text-center text-[13px] md:text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] p-[11px_0] md:p-[13px_20px]"
+              className="block md:inline-block text-center text-[13px] md:text-[14px] p-[11px_0] md:p-[13px_20px]"
             >
               Change commander
             </GhostButton>

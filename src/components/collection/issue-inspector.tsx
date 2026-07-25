@@ -25,6 +25,7 @@ import {
 import { IssueInspectorList } from "./issue-inspector-list";
 import { CardFanMark } from "./card-fan-mark";
 import { PrimaryButton } from "../ui/button";
+import { SearchField } from "../ui/text-field";
 
 type Tab = "unmatched" | "errors";
 
@@ -195,73 +196,53 @@ export function IssueInspector({
           <div className="mt-[12px] flex items-center gap-[10px]">
             {/* §Filter input: --surface-sunken, 1px --border-strong, radius 8, 40px (44 mobile).
                 Focus: border → --brass + 3px ring rgba(201,162,75,.16) via focus-within. */}
-            <div
-              className="flex-1 flex items-center gap-[10px] rounded-lg px-[12px] h-[44px] md:h-[40px] border border-[color:var(--border-strong)] focus-within:border-[color:var(--brass)] focus-within:shadow-[0_0_0_3px_rgba(201,162,75,0.16)]"
-              style={{ background: "var(--surface-sunken)" }}
-            >
-              <span
-                aria-hidden
-                className="font-mono text-[15px]"
-                style={{ color: "var(--fg-faint)" }}
-              >
-                ⌕
-              </span>
-              <input
-                ref={filterInputRef}
-                type="text"
-                value={rawQuery}
-                onChange={(e) => setRawQuery(e.target.value)}
-                placeholder={
-                  tab === "unmatched"
-                    ? issueInspectorCopy.filter.placeholderUnmatched(unmatchedTotal)
-                    : issueInspectorCopy.filter.placeholderErrors(errorsTotal)
-                }
-                aria-label={
-                  tab === "unmatched"
-                    ? issueInspectorCopy.filter.placeholderUnmatched(unmatchedTotal)
-                    : issueInspectorCopy.filter.placeholderErrors(errorsTotal)
-                }
-                autoComplete="off"
-                spellCheck={false}
-                // Focus indicator lives on the parent container (focus-within
-                // brass border + ring). The input itself must not render its
-                // own outline/border/shadow — nuke all three so only the
-                // container ring shows.
-                className="flex-1 bg-transparent text-[14px] focus:outline-none focus-visible:outline-none"
-                style={{
-                  color: "var(--fg)",
-                  outline: "none",
-                  border: "none",
-                  boxShadow: "none",
-                  background: "transparent",
-                }}
-              />
-              {/* Clear button — always rendered; hidden via visibility when
-                  input is empty so its 22px doesn't reflow the input width
-                  (avoids the visual jump when the last character is deleted). */}
-              <button
-                type="button"
-                onClick={() => {
-                  setRawQuery("");
-                  setQuery("");
-                  filterInputRef.current?.focus();
-                }}
-                aria-label={issueInspectorCopy.filter.clearAriaLabel}
-                aria-hidden={rawQuery === "" || undefined}
-                tabIndex={rawQuery === "" ? -1 : 0}
-                className="flex-none rounded-full flex items-center justify-center"
-                style={{
-                  width: 22,
-                  height: 22,
-                  background: "var(--border)",
-                  color: "var(--fg-muted)",
-                  fontSize: 12,
-                  visibility: rawQuery === "" ? "hidden" : "visible",
-                }}
-              >
-                ✕
-              </button>
-            </div>
+            <SearchField
+              ref={filterInputRef}
+              type="text"
+              containerClassName="flex-1 h-[44px] md:h-[40px]"
+              className="text-[14px]"
+              value={rawQuery}
+              onChange={(e) => setRawQuery(e.target.value)}
+              placeholder={
+                tab === "unmatched"
+                  ? issueInspectorCopy.filter.placeholderUnmatched(unmatchedTotal)
+                  : issueInspectorCopy.filter.placeholderErrors(errorsTotal)
+              }
+              aria-label={
+                tab === "unmatched"
+                  ? issueInspectorCopy.filter.placeholderUnmatched(unmatchedTotal)
+                  : issueInspectorCopy.filter.placeholderErrors(errorsTotal)
+              }
+              autoComplete="off"
+              spellCheck={false}
+              trailing={
+                /* Always rendered; hidden via visibility when the input is empty
+                   so its 22px doesn't reflow the input width (which made the
+                   field jump as the last character was deleted). */
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRawQuery("");
+                    setQuery("");
+                    filterInputRef.current?.focus();
+                  }}
+                  aria-label={issueInspectorCopy.filter.clearAriaLabel}
+                  aria-hidden={rawQuery === "" || undefined}
+                  tabIndex={rawQuery === "" ? -1 : 0}
+                  className="flex-none rounded-full flex items-center justify-center"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    background: "var(--border)",
+                    color: "var(--fg-muted)",
+                    fontSize: 12,
+                    visibility: rawQuery === "" ? "hidden" : "visible",
+                  }}
+                >
+                  ✕
+                </button>
+              }
+            />
             {/* Visual count — no aria-live (would announce every keystroke).
                 Fixed min-width + right-align + tabular-nums so the text can't
                 narrow as digit counts change (e.g. "110 of 110" → "7 of 110"),

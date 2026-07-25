@@ -68,7 +68,7 @@ export function DeckCard({ deck }: DeckCardProps) {
       {/* Whole-card tap target — absolute inset Link overlay, aria-labelledby the name */}
       <Link
         href={`/decks/${deck.id}`}
-        className="absolute inset-0 rounded-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+        className="absolute inset-0 rounded-[12px]"
         aria-labelledby={nameId}
       />
 
@@ -189,7 +189,7 @@ export function DeckCard({ deck }: DeckCardProps) {
             transparent bg, border 1px #3A3229, br 8px, p 9px 0 */}
         <GhostButton
           href={`/decks/${deck.id}`}
-          className="relative z-10 flex-1 text-center text-[13px] py-[9px] px-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+          className="relative z-10 flex-1 text-center text-[13px] py-[9px] px-0"
           tabIndex={-1}
           aria-hidden="true"
         >

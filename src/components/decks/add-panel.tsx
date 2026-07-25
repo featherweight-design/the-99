@@ -83,7 +83,7 @@ function PanelContent({
               onClick={() => setTab(t)}
               // §Panel — tab item (active): flex 1, center, IBM Plex Sans, fw 600, 13px, #EDE6D8, padding 9px 0, border-bottom 2px #C9A24B
               // §Panel — tab item (idle): fw 500, #8E8269, border-bottom 2px transparent
-              className="flex-1 text-center font-sans text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] rounded-sm"
+              className="flex-1 text-center font-sans text-[13px] rounded-sm"
               style={{
                 fontWeight: isActive ? 600 : 500,
                 color: isActive ? "#EDE6D8" : "#8E8269",
@@ -105,7 +105,7 @@ function PanelContent({
             type="button"
             onClick={onCloseSheet}
             aria-label="Close add cards panel"
-            className="font-mono text-[11px] px-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] rounded-sm"
+            className="font-mono text-[11px] px-[8px] rounded-sm"
             style={{ color: "#8E8269", background: "transparent", border: "none", cursor: "pointer" }}
           >
             ✕

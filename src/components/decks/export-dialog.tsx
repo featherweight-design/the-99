@@ -210,7 +210,7 @@ function DialogContent({
           <button
             type="button"
             onClick={onClose}
-            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            className=""
             style={{ color: "#8E8269", fontSize: 17, background: "none", border: "none" }}
             aria-label="Close export dialog"
           >
@@ -220,7 +220,7 @@ function DialogContent({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+            className="flex items-center justify-center"
             style={{
               width: 32,
               height: 32,
@@ -250,7 +250,7 @@ function DialogContent({
         <button
           type="button"
           onClick={() => setTab("decklist")}
-          className="font-sans font-semibold text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+          className="font-sans font-semibold text-[13px]"
           style={{
             borderRadius: isMobile ? 999 : 8,
             padding: isMobile ? "6px 15px" : "8px 16px",
@@ -267,7 +267,7 @@ function DialogContent({
         <button
           type="button"
           onClick={() => setTab("shopping")}
-          className="font-sans text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+          className="font-sans text-[13px]"
           style={{
             borderRadius: isMobile ? 999 : 8,
             padding: isMobile ? "6px 15px" : "8px 16px",
@@ -494,7 +494,7 @@ function DialogContent({
                 : shoppingFilename(deckName);
             downloadTextFile(filename, activeText);
           }}
-          className={`text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] ${isMobile ? "px-[16px] py-[12px]" : "px-[18px] py-[11px]"}`}
+          className={`text-[14px] ${isMobile ? "px-[16px] py-[12px]" : "px-[18px] py-[11px]"}`}
         >
           {/* Mobile label: ".txt", desktop: "Download .txt" */}
           <span className="md:hidden">.txt</span>

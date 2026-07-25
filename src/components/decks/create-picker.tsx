@@ -10,6 +10,7 @@ import { createDeck } from "../../app/decks/actions";
 import type { OwnedLegalCommander } from "../../lib/decks/read";
 import { colorLabel } from "../../lib/decks/format";
 import { PrimaryButton } from "@/components/ui/button";
+import { SearchField, TextField } from "@/components/ui/text-field";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -90,38 +91,23 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
         {/* ── Left: search + picker list ── */}
         <div className="flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]">
           {/* §Search input: mobile border #3A3229 p 9px 12px gap 8; desktop border #C9A24B p 12px 15px gap 10 */}
-          <div
-            className="flex items-center rounded-[8px] md:rounded-[9px] mb-[16px] focus-within:ring-2 focus-within:ring-[#C9A24B] p-[9px_12px] md:p-[12px_15px] gap-[8px] md:gap-[10px] border border-[#3A3229] md:border-[#C9A24B]"
-            style={{
-              background: "#181410",
-            }}
-          >
-            {/* §Search input — icon: mobile fs 14, desktop fs 16 */}
-            <span
-              className="text-[14px] md:text-[16px] shrink-0"
-              style={{ color: "#8E8269", userSelect: "none" }}
-              aria-hidden
-            >
-              ⌕
-            </span>
-            {/* §Search input — text */}
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search commanders…"
-              className="flex-1 bg-transparent text-[14px] md:text-[15px] rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-              style={{ color: "#EDE6D8" }}
-              aria-label="Search commanders"
-            />
-            {/* §Search input — results count (desktop only) */}
-            <span
-              className="hidden md:block font-mono ml-auto shrink-0"
-              style={{ fontSize: 11, color: "#8E8269" }}
-            >
-              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
-            </span>
-          </div>
+          <SearchField
+            containerClassName="md:rounded-[9px] mb-[16px] p-[9px_12px] md:p-[12px_15px] gap-[8px] md:gap-[10px] md:[border-color:var(--brass)]"
+            className="text-[14px] md:text-[15px]"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search commanders…"
+            aria-label="Search commanders"
+            trailing={
+              /* §Search input — results count (desktop only) */
+              <span
+                className="hidden md:block font-mono ml-auto shrink-0"
+                style={{ fontSize: 11, color: "#8E8269" }}
+              >
+                {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+              </span>
+            }
+          />
 
           {/* §Commander picker rows */}
           {legalCommanders.length === 0 ? (
@@ -148,7 +134,7 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
                     <button
                       type="button"
                       onClick={() => setSelected(isSelected ? null : c)}
-                      className="w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] transition-colors p-[10px_12px] md:p-[12px_15px]"
+                      className="w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left transition-colors p-[10px_12px] md:p-[12px_15px]"
                       style={{
                         background: isSelected ? "#211C15" : "#1A160F",
                         border: `1px solid ${isSelected ? "#C9A24B" : "#2A241D"}`,
@@ -270,23 +256,14 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
               </div>
 
               {/* §Selected summary — deck name input */}
-              <input
-                type="text"
+              <TextField
                 value={deckName}
                 onChange={(e) => setDeckName(e.target.value)}
                 maxLength={120}
                 placeholder="Deck name…"
                 disabled={isPending}
-                className="w-full rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
-                style={{
-                  background: "#181410",
-                  border: "1px solid #3A3229",
-                  padding: "11px 13px",
-                  fontSize: 14,
-                  color: deckName ? "#EDE6D8" : "#8E8269",
-                  marginBottom: 16,
-                  display: "block",
-                }}
+                aria-label="Deck name"
+                className="block w-full p-[11px_13px] text-[14px] mb-[16px]"
               />
             </>
           ) : (
@@ -311,7 +288,7 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
           <PrimaryButton
             onClick={handleCreate}
             disabled={!canCreate || isPending}
-            className="w-full text-[15px] transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] disabled:opacity-40 py-[13px] px-0"
+            className="w-full text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-0"
           >
             {isPending ? "Creating…" : "Create deck →"}
           </PrimaryButton>
@@ -358,22 +335,14 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
               </div>
 
               {/* Name input */}
-              <input
-                type="text"
+              <TextField
                 value={deckName}
                 onChange={(e) => setDeckName(e.target.value)}
                 maxLength={120}
                 placeholder="Deck name…"
                 disabled={isPending}
-                className="w-full rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] mb-[10px]"
-                style={{
-                  background: "#181410",
-                  border: "1px solid #3A3229",
-                  padding: "11px 13px",
-                  fontSize: 14,
-                  color: deckName ? "#EDE6D8" : "#8E8269",
-                  display: "block",
-                }}
+                aria-label="Deck name"
+                className="block w-full p-[11px_13px] text-[14px] mb-[10px]"
               />
             </>
           ) : (
@@ -398,7 +367,7 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
           <PrimaryButton
             onClick={handleCreate}
             disabled={!canCreate || isPending}
-            className="w-full text-[15px] transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] disabled:opacity-40 py-[13px] px-0"
+            className="w-full text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-0"
           >
             {isPending ? "Creating…" : selected ? "Name & create →" : "Create deck →"}
           </PrimaryButton>

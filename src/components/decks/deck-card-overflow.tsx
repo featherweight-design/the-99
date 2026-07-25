@@ -59,7 +59,7 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
         onClick={handleToggle}
         aria-label="Deck options"
         aria-expanded={open}
-        className="rounded-[8px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B]"
+        className="rounded-[8px] transition-colors"
         style={{
           fontFamily: "var(--font-sans)",
           fontWeight: 500,
@@ -89,7 +89,7 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
               <button
                 type="button"
                 onClick={handleRename}
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] hover:bg-[#2A241D]"
+                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors hover:bg-[#2A241D]"
                 style={{ color: "#EDE6D8", background: "transparent", border: "none", cursor: "pointer" }}
               >
                 Rename
@@ -98,7 +98,7 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
                 type="button"
                 onClick={handleDelete}
                 disabled={isPending}
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] hover:bg-[#2A241D]"
+                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors hover:bg-[#2A241D]"
                 style={{ color: "#C6533F", background: "transparent", border: "none", cursor: isPending ? "default" : "pointer" }}
               >
                 {isPending ? "Deleting…" : "Delete"}
