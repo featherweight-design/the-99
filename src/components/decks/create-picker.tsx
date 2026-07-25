@@ -9,6 +9,7 @@ import { WUBRG_HEX } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
 import type { OwnedLegalCommander } from "../../lib/decks/read";
 import { colorLabel } from "../../lib/decks/format";
+import { PrimaryButton } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -307,21 +308,13 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
           )}
 
           {/* §"Create deck →" button: full-width in sidebar */}
-          <button
-            type="button"
+          <PrimaryButton
             onClick={handleCreate}
             disabled={!canCreate || isPending}
-            className="w-full rounded-[8px] font-sans font-semibold transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] disabled:opacity-40"
-            style={{
-              fontSize: 15,
-              color: "#14110E",
-              background: "#C9A24B",
-              border: "none",
-              padding: "13px 0",
-            }}
+            className="w-full text-[15px] transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] disabled:opacity-40 py-[13px] px-0"
           >
             {isPending ? "Creating…" : "Create deck →"}
-          </button>
+          </PrimaryButton>
         </div>
 
         {/* Mobile sticky footer */}
@@ -402,21 +395,13 @@ export function CreatePicker({ legalCommanders }: CreatePickerProps) {
           )}
 
           {/* §"Name & create →" button: full-width */}
-          <button
-            type="button"
+          <PrimaryButton
             onClick={handleCreate}
             disabled={!canCreate || isPending}
-            className="w-full rounded-[8px] font-sans font-semibold transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] disabled:opacity-40"
-            style={{
-              fontSize: 15,
-              color: "#14110E",
-              background: "#C9A24B",
-              border: "none",
-              padding: "13px 0",
-            }}
+            className="w-full text-[15px] transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A24B] disabled:opacity-40 py-[13px] px-0"
           >
             {isPending ? "Creating…" : selected ? "Name & create →" : "Create deck →"}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </section>
