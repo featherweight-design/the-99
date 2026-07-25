@@ -10,11 +10,14 @@
 All eight locked decisions from `docs/superpowers/specs/2026-07-25-branded-user-menu-design.md` are
 honoured, including the three that supersede `appshell.md`. The handoff is unusually well-grounded:
 every one of the eleven tokens it cites exists in `src/app/globals.css` with the exact hex claimed, no
-new token is introduced, and the token map removes the guesswork the spec was worried about. One real
-defect: the popover's email line measures **4.42:1**, below the 4.5:1 AA floor the spec locks, though
-the README reports it as 4.6:1 and passing. The existing token scale supplies the fix, so this closes
-eng-side rather than returning to Design. Three smaller items below are a citation slip, an untokenized
-hex, and a specified state that no trigger site can reach.
+new token is introduced, and the token map removes the guesswork the spec was worried about. Two real
+defects, both in stated values rather than in design intent: the popover's email line measures
+**4.42:1**, below the 4.5:1 AA floor the spec locks, though the README reports it as 4.6:1 and passing;
+and the backdrop is specified as a value that appears nowhere in `src/`, which would leave the three new
+overlays as the only ones disagreeing with the two shipped modals the decision claims to match. Both
+have determinate fixes drawn from what the repo already ships, so they close eng-side rather than
+returning to Design. Three smaller items are a citation slip, an untokenized hex, and a specified state
+that no trigger site can reach.
 
 ## Per-dimension findings
 
@@ -57,6 +60,7 @@ hex, and a specified state that no trigger site can reach.
   deleted rather than ported, and gives the right reason: the workaround exists only because the pill
   is wider than its interactive child.
 - [🟡] One hex bypasses its own token — see eng-side item 2.
+- [🟡] The backdrop value does not match the shipped modals it claims to match — see eng-side item 5.
 
 ### ♿ Cross-cutting
 - [🟠→🟡] **Email contrast fails AA in the popover.** `--fg-faint` `#8E8269` on `--surface-raised`
@@ -142,6 +146,24 @@ The handoff cites `globals.css:130` for the global focus ring. The `:focus-visib
 inside the preceding comment block. The substance of decision 7 is correct — the global ring is
 `2px` brass at `2px` offset and needs no override, and the offset does leave a band of `--bg` between
 ring and the trigger's brass border. Only the line number is wrong.
+
+### 5. Backdrop is `rgba(8,6,4,0.72)`, not `rgba(10,8,6,0.72)`
+
+Decision 9 specifies `modalBackdrop` as `rgba(10,8,6,0.72)` and justifies it as shared "with the
+account sheet and the card-detail modal, so two overlays never disagree". The component notes give the
+sheet backdrop the same value. But `rgba(10,8,6,0.72)` appears **nowhere** in `src/`. The shipped
+backdrop is `rgba(8,6,4,0.72)`, used in both modals the decision names:
+
+- `src/components/collection/card-modal.tsx:122` and `:127` — the card-detail modal
+- `src/components/collection/issue-inspector.tsx:106` and `:111` — the Issue Inspector dialog
+
+Taken literally, the specified value would make the new popover, sheet, and `<UserProfile/>` modal the
+only three overlays in the app that *do* disagree with the other two — the precise outcome the decision
+exists to prevent. Use `rgba(8,6,4,0.72)` for both the sheet backdrop and `modalBackdrop`.
+
+This is safe to decide eng-side because Design's stated intent is explicit — match the existing
+overlays — and we are applying the actual existing value rather than choosing a new one. The
+`rgba(10,8,6,0.55)` at `card-modal.tsx:159` is a different element and not a counter-example.
 
 ## Decisions inherited
 
