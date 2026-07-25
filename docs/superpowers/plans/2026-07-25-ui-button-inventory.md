@@ -5,7 +5,7 @@ Generated mechanically by the `no-restricted-syntax` rule added in
 `2026-07-25-ui-button-primitives.md`). Regenerate with:
 
 ```bash
-npx eslint --format json | node -e '...'   # see plan Task 2
+npx eslint --format json src | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const R="no-restricted-syntax";for(const r of JSON.parse(s)){const ls=r.messages.filter(m=>m.ruleId===R).map(m=>m.line);if(!ls.length)continue;const p=r.filePath.replace(process.cwd()+"/","");console.log(`| ${p} | ${[...new Set(ls)].join(", ")} | ${new Set(ls).size} |`)}})'
 ```
 
 Two hand-audits of this surface disagreed with each other, so the list below is
@@ -17,6 +17,12 @@ The selector fires only on `button` / `a` / `Link` opening elements. An inline
 style can only kill a `hover:` utility on an element that has a hover state;
 inline colour on a static `div` is a separate and much larger concern (905
 findings across 58 files when the selector is unscoped) and is out of scope.
+
+Two counts appear below and they are not the same number. The rule reports one
+warning per offending property, so a single element carrying `background`,
+`border` and `color` produces three: **225 warnings across 38 files**. The
+`Sites` column counts distinct elements — **182** of them. Warnings are what
+`pnpm lint` totals; sites are what gets migrated.
 
 ## Offenders
 
@@ -79,6 +85,9 @@ measures deviation from `PrimaryButton`, so it flags a two-state toggle as
 bespoke even though every toggle in the app is identical to every other one.
 Uniqueness, not deviation, is what makes a site exempt.
 
-Most of the 225 sites are card wrappers, list rows, chips and toggles rather
-than CTAs, and land in the two EXEMPT buckets. The migrations to date confirm
-this: 29 of the sites were true CTAs, and the rest were a different pattern.
+Most of the 182 sites are card wrappers, list rows, chips and toggles rather
+than CTAs, and land in the two EXEMPT buckets. No call site is migrated in this
+PR — the primitives land first, and each surface follows in its own PR. The
+three surface branches prepared against this inventory classify 29 sites as
+true CTAs and the remainder as a different pattern; those numbers are final
+only once each surface PR merges.
