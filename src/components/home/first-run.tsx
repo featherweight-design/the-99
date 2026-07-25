@@ -1,4 +1,5 @@
 import { ReplaceFlow } from "../collection/replace-flow";
+import { shellCopy } from "../../lib/copy/shell";
 
 /**
  * First-run home is the checklist itself (design decision #4).
@@ -127,16 +128,16 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
           Review your commanders
         </span>
         {/* §Locked step "unlocks after upload" hint (desktop only):
-            ml-auto, mono 11px, color #6A6152, content "unlocks after upload" (step 2 only) */}
+            ml-auto, mono 11px, color #8E8269, content "unlocks after upload" (step 2 only) */}
         <span
           className="ml-auto hidden md:block"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "var(--fg-locked)",
+            color: "var(--fg-faint)",
           }}
         >
-          unlocks after upload
+          {shellCopy.firstRun.lockedHint}
         </span>
       </div>
 

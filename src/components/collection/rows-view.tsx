@@ -125,7 +125,7 @@ function SetRarityColumn({ card }: { card: BrowseCard }) {
           {card.primarySetCode}
         </span>
       </span>
-      <span className="hidden md:block text-[14px]" style={{ color: "#6A6152" }}>
+      <span className="hidden md:block text-[14px]" style={{ color: "var(--fg-faint)" }}>
         ›
       </span>
     </>

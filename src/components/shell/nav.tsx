@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { Crowned99 } from "../marks";
+import { shellCopy } from "../../lib/copy/shell";
 
 // ---------------------------------------------------------------------------
 // Nav items
@@ -132,13 +133,13 @@ export function NavRail({ locked }: { locked: boolean }) {
           const active = !isLocked && isActive(pathname, href);
 
           if (isLocked) {
-            // §Rail Nav item — Locked: non-interactive, color #6A6152 (--fg-locked)
+            // §Rail Nav item — Locked: non-interactive, color #8E8269 (--fg-faint) — lifted for AA per the richness pass
             // Diamond + label ONLY (adjudication #1 — no Mark icon)
             return (
               <div
                 key={href}
                 className="flex items-center gap-[11px] rounded-lg px-3 py-[10px] text-sm cursor-default"
-                style={{ color: "var(--fg-locked)", fontWeight: 500 }}
+                style={{ color: "var(--fg-faint)", fontWeight: 500 }}
                 // aria-disabled needs a widget role; per ARIA authoring
                 // practices, disabled items stay focusable (but inoperable)
                 // so AT users can discover them.
@@ -173,19 +174,19 @@ export function NavRail({ locked }: { locked: boolean }) {
           );
         })}
 
-        {/* §Rail: Locked surfaces caption — mono 10px, #6A6152, 4px 12px, lh 1.5 */}
+        {/* §Rail: Locked surfaces caption — mono 10px, #8E8269, 4px 12px, lh 1.5 */}
         {locked && (
           <p
             className="mt-1"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "var(--fg-locked)",
+              color: "var(--fg-faint)",
               padding: "4px 12px",
               lineHeight: 1.5,
             }}
           >
-            Surfaces unlock once your collection is uploaded.
+            {shellCopy.firstRun.railLockedCaption}
           </p>
         )}
       </nav>
@@ -280,7 +281,7 @@ export function TabBar({ locked }: { locked: boolean }) {
               <span
                 style={{
                   fontSize: 10,
-                  color: "var(--fg-locked)",
+                  color: "var(--fg-faint)",
                   fontWeight: 500,
                 }}
               >
