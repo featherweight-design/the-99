@@ -15,6 +15,25 @@ const eslintConfig = defineConfig([
     // Vendored design-handoff assets — not app code.
     "design/**",
   ]),
+  {
+    files: ["src/**/*.tsx"],
+    rules: {
+      // Ships as "warn" while the migration runs; flipped to "error" in the
+      // final task of docs/superpowers/plans/2026-07-25-ui-button-primitives.md.
+      "no-restricted-syntax": [
+        "warn",
+        {
+          // Scoped to interactive elements: an inline style can only kill a
+          // hover state on something that has one. Inline colour on a static
+          // div is a different (and far larger) concern, out of scope here.
+          selector:
+            "JSXOpeningElement[name.name=/^(button|a|Link)$/] > JSXAttribute[name.name='style'] Property[key.name=/^(background|backgroundColor|border|borderColor|color)$/]",
+          message:
+            "Deliver colour and border through Tailwind classes, not inline style — an inline style outranks hover: utilities and silently kills the hover state. Use PrimaryButton/GhostButton from src/components/ui/button.tsx, or disable this rule with a reason if the value is genuinely dynamic.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;
