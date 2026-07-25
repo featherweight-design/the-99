@@ -162,7 +162,7 @@ export default async function CommandersPage() {
               <form action={retryRecs} className="w-full sm:w-auto">
                 <GhostButton
                   type="submit"
-                  className="text-[14px] w-full p-[12px_0] sm:p-[12px_22px] cursor-pointer"
+                  className="text-[14px] w-full p-[12px_0] sm:p-[12px_22px]"
                 >
                   Retry
                 </GhostButton>

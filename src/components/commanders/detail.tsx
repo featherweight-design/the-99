@@ -912,7 +912,7 @@ export function CommanderDetail({
           <PrimaryButton
             href={`/decks?commander=${c.oracleId}`}
             // brand focus-visible outline treatment inherited from globals.css
-            className="text-[15px] p-[14px_0] text-center block w-full cursor-pointer"
+            className="text-[15px] p-[14px_0] text-center block w-full"
           >
             Build this deck →
           </PrimaryButton>
@@ -920,7 +920,7 @@ export function CommanderDetail({
           {/* Compare button */}
           <GhostButton
             // brand focus-visible outline treatment inherited from globals.css
-            className="text-[13px] p-[11px_0] w-full cursor-pointer"
+            className="text-[13px] p-[11px_0] w-full"
           >
             Compare with another general
           </GhostButton>

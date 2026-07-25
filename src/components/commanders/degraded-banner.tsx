@@ -95,7 +95,7 @@ export function DegradedBanner() {
           <GhostButton
             type="submit"
             // brand focus-visible outline treatment inherited from globals.css
-            className="flex-none text-[13px] p-[10px_18px] cursor-pointer"
+            className="flex-none text-[13px] p-[10px_18px]"
           >
             Retry now
           </GhostButton>

@@ -132,7 +132,7 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
       <GhostButton
         onClick={onClear}
         // brand focus-visible outline treatment inherited from globals.css
-        className="text-[13px] p-[11px_20px] sm:p-[10px_20px] mt-[20px] cursor-pointer"
+        className="text-[13px] p-[11px_20px] sm:p-[10px_20px] mt-[20px]"
       >
         Clear color filter
       </GhostButton>
