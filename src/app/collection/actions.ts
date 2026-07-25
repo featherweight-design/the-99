@@ -129,6 +129,11 @@ export async function confirmUpload(uploadId: string): Promise<void> {
   });
   revalidatePath("/collection");
   revalidatePath("/");
+  // Wiping commander_scores above changes what /commanders renders, and slugs are
+  // assigned in rank order so cached detail pages can point at the wrong
+  // commander. '[slug]' needs the 'page' type — it is a dynamic segment.
+  revalidatePath("/commanders");
+  revalidatePath("/commanders/[slug]", "page");
 
   // Warm the new collection's scores without blocking the upload response. If this
   // is cut short by the route's max duration, the read path recomputes on first

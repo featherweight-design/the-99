@@ -16,4 +16,7 @@ export async function retryRecs() {
   const userId = await requireUserId();
   await deleteAllScores(userId);
   revalidatePath("/commanders");
+  // A recompute can reorder the list, and slugs carry rank-order dedup suffixes,
+  // so cached detail pages go stale too.
+  revalidatePath("/commanders/[slug]", "page");
 }
