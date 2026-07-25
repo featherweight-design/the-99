@@ -7,6 +7,7 @@
 
 import type { BrowseCard } from "../../lib/collection/browse";
 import { WUBRG_HEX } from "../../lib/collection/browse";
+import { GhostButton } from "../ui/button";
 
 const RARITY_DOT: Record<BrowseCard["rarity"], string> = {
   common: "#A89B84", uncommon: "#B7C4CE", rare: "#C9A24B", mythic: "#E0913C",
@@ -80,18 +81,13 @@ export function RowsView({
       ))}
 
       {cards.length < totalCards && (
-        <button
+        <GhostButton
           type="button"
           onClick={onShowMore}
-          className="mt-[6px] mx-auto rounded-lg font-sans text-[13px] font-semibold px-[16px] py-[9px]"
-          style={{
-            color: "var(--brass)",
-            background: "transparent",
-            border: "1px solid var(--border-strong)",
-          }}
+          className="mt-[6px] mx-auto text-[13px] px-[16px] py-[9px]"
         >
           Show more ({(totalCards - cards.length).toLocaleString()} more)
-        </button>
+        </GhostButton>
       )}
     </div>
   );

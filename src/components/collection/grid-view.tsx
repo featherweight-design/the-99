@@ -6,6 +6,7 @@
 import type { BrowseCard } from "../../lib/collection/browse";
 import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
+import { GhostButton } from "../ui/button";
 
 export function GridView({
   cards,
@@ -69,18 +70,13 @@ export function GridView({
       ))}
 
       {cards.length < totalCards && (
-        <button
+        <GhostButton
           type="button"
           onClick={onShowMore}
-          className="col-span-2 md:col-span-5 mx-auto rounded-lg font-sans text-[13px] font-semibold px-[16px] py-[9px] mt-[6px]"
-          style={{
-            color: "var(--brass)",
-            background: "transparent",
-            border: "1px solid var(--border-strong)",
-          }}
+          className="col-span-2 md:col-span-5 mx-auto text-[13px] px-[16px] py-[9px] mt-[6px]"
         >
           Show more ({(totalCards - cards.length).toLocaleString()} more)
-        </button>
+        </GhostButton>
       )}
     </div>
   );
