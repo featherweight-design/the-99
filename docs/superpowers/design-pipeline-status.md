@@ -35,7 +35,8 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
 | **#52** Commanders · list windowing | `design/design_handoff_the99_commanders_windowing/` | 🟡 Yellow (2026-07-25, R2) | R1 was 🟠 Orange; R2 closed both blockers — the window count now carries no total (`25 shown · 71 more below`) so it can't collide with the shipped `Showing 96 of 214`, and new state **1b** draws both figures together at desktop (1060px) + mobile (392px). Three eng-side notes in `READINESS.md`: the live-region announcement still uses the phrasing decision 5 forbids (apply decision 5's form); `REVEAL_STEP = 25 > 24` beta candidates means the control is unreachable, so the ticket needs an explicit verification path; focus-on-reveal goes on the `<li>` at index `shown - REVEAL_STEP`. |
-| **#51** Richness pass — applied across the four v1 surfaces via **#58** shell, **#59** collection, **#60** commanders, **#61** decks | `design/design_handoff_the99_richness/` | 🟡 Yellow (2026-07-24) | One plan PR sequences all four: #58 → #59/#60 → #61. Seven eng-side decisions in `READINESS.md` — chief among them that global loading and 404 are mocked but have no route files, and that `prefers-reduced-motion` has no pattern in `src/` yet. Mobile composition for the 99/99 celebration may need a Design addendum. |
+| **#51** Richness pass — applied across the four v1 surfaces via ~~**#58** shell~~ (shipped), **#59** collection, **#60** commanders, **#61** decks | `design/design_handoff_the99_richness/` | 🟡 Yellow (2026-07-24) | One plan PR sequences all four: #58 → #59/#60 → #61. **#58 shipped 2026-07-25 (PR #66)** — it landed the `prefers-reduced-motion` pattern at `globals.css:166-173` and the global focus ring at `:133-135`, closing two of the seven eng-side decisions. #59/#60/#61 remain. Mobile composition for the 99/99 celebration may need a Design addendum. |
+| **#35** Branded user menu (eng **#13**) | `design/design_handoff_the99_user_menu/` | 🟡 Yellow (2026-07-25) | All eight locked decisions in `docs/superpowers/specs/2026-07-25-branded-user-menu-design.md` honoured, including the three superseding `appshell.md`. All eleven cited tokens verified against `globals.css` at the exact hex; no new token. Four eng-side notes in `READINESS.md`: the popover email is **4.42:1** and fails AA (use `--fg-muted`, 8.48:1 — the README's 4.6:1 figure is wrong); the sheet's `#1E1A15` is `--surface` and should be tokenized; the top-anchored popover flip in decision 3 is **unreachable** (mobile triggers open the sheet, and the `/commanders` desktop header has no trigger) so skip that branch; the focus-ring citation `:130` is actually `:133-135`. |
 
 ---
 
@@ -93,7 +94,6 @@ v1 polish follow-ups — sequenced ahead of the Backlog features above.
 
 | Ticket | Notes |
 |---|---|
-| **#35** Design: Branded user menu replacing Clerk default | Desktop popover + mobile bottom-sheet; pairs with eng ticket #13. Was blocked on #51 — unblocked now that the richness pass has landed, so the menu inherits the character layer rather than being re-mocked after. |
 | **#62** Issue Inspector handoff reconciliation | `type: design`. Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships. |
 
 ---
