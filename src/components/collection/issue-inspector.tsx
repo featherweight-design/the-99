@@ -24,6 +24,7 @@ import {
 } from "../../lib/collection/issue-filter";
 import { IssueInspectorList } from "./issue-inspector-list";
 import { CardFanMark } from "./card-fan-mark";
+import { PrimaryButton } from "../ui/button";
 
 type Tab = "unmatched" | "errors";
 
@@ -511,18 +512,13 @@ function EmptyFilter({
       </p>
       <p className="text-[13px] max-w-[380px]">{bodyText}</p>
       <p className="sr-only">Total available: {total.toLocaleString()}</p>
-      <button
+      <PrimaryButton
         type="button"
         onClick={onClear}
-        className="mt-[8px] rounded-lg font-sans font-semibold text-[13px] px-[16px] py-[9px] cursor-pointer"
-        style={{
-          background: "var(--brass)",
-          color: "var(--bg)",
-          border: "none",
-        }}
+        className="mt-[8px] text-[13px] px-[16px] py-[9px]"
       >
         {issueInspectorCopy.emptyFilter.action}
-      </button>
+      </PrimaryButton>
     </div>
   );
 }

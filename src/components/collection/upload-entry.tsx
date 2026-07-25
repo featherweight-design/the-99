@@ -6,6 +6,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { previewUpload, previewPaste, type UploadPreview } from "../../app/collection/actions";
 import { parsePasteList } from "../../lib/manabox/paste";
+import { GhostButton, PrimaryButton } from "../ui/button";
 
 type Mode = "dropzone" | "paste";
 
@@ -211,23 +212,21 @@ export function UploadEntry({
               {pasteCount > 0 ? `${pasteCount} cards recognized` : ""}
             </span>
             <div className="flex gap-[8px]">
-              <button
+              <GhostButton
                 type="button"
                 onClick={() => setMode("dropzone")}
-                className="rounded-lg text-[13px] px-[16px] py-[10px]"
-                style={{ color: "var(--fg)", background: "transparent", border: "1px solid var(--border-strong)" }}
+                className="text-[13px] px-[16px] py-[10px]"
               >
                 Back
-              </button>
-              <button
+              </GhostButton>
+              <PrimaryButton
                 type="button"
                 onClick={handlePasteSubmit}
                 disabled={pending || !pasteText.trim()}
-                className="rounded-lg font-semibold text-[13px] px-[16px] py-[10px] hover:bg-[color:var(--brass-hover)] disabled:opacity-50"
-                style={{ color: "var(--bg)", background: "var(--brass)", border: "none" }}
+                className="text-[13px] px-[16px] py-[10px] disabled:opacity-50"
               >
                 {pending ? "Previewing…" : `Preview ${pasteCount > 0 ? `${pasteCount} cards` : "list"}`}
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
