@@ -50,7 +50,7 @@ The payload is migration counts and tag names only. Tag names are repository con
 |---|---|
 | `src/lib/health/migration-status.ts` | `compareMigrations` — pure count-to-tags comparison |
 | `src/lib/health/migration-journal.ts` | Bundles the shipped tag list from `_journal.json` |
-| `src/lib/health/check.ts` | Queries the ledger, catches failure, returns the report |
+| `src/lib/health/check.ts` | Queries the ledger, catches failure, returns the report. The db client is imported inside the `try` — it throws at module init without `DATABASE_URL`, and a static import would turn that into an unhandled 500 instead of the `error` report |
 | `src/app/api/health/route.ts` | Maps the report to a status code |
 | `src/proxy.ts` | Adds `/api/health` to the public matcher |
 

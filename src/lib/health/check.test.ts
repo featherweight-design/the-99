@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-// check.ts imports the db client, which throws at module init without DATABASE_URL.
-const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
-vi.mock("../../db", () => ({ db: stub.db }));
+// The db client throws at module init without DATABASE_URL.
+const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown>, initThrows: false }));
+vi.mock("../../db", () => {
+  if (stub.initThrows) throw new Error("DATABASE_URL is not set");
+  return { db: stub.db };
+});
 vi.mock("./migration-journal", () => ({ shippedMigrationTags: ["0000_a", "0001_b"] }));
 
 import { checkHealth } from "./check";
@@ -38,5 +41,16 @@ describe("checkHealth", () => {
     const report = await checkHealth();
     expect(report).toEqual({ status: "error" });
     expect(JSON.stringify(report)).not.toContain("hunter2");
+  });
+
+  it("reports error when the db client cannot initialize", async () => {
+    stub.initThrows = true;
+    vi.resetModules();
+    try {
+      expect(await checkHealth()).toEqual({ status: "error" });
+    } finally {
+      stub.initThrows = false;
+      vi.resetModules();
+    }
   });
 });

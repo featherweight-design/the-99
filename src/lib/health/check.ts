@@ -1,5 +1,4 @@
 import { sql } from "drizzle-orm";
-import { db } from "../../db";
 import { shippedMigrationTags } from "./migration-journal";
 import { compareMigrations, type MigrationHealth } from "./migration-status";
 
@@ -20,6 +19,11 @@ export type HealthReport =
  */
 export async function checkHealth(): Promise<HealthReport> {
   try {
+    // Imported inside the try because `src/db` throws at module init when
+    // DATABASE_URL is unset — a static import would make that an unhandled 500
+    // instead of the `error` report this endpoint exists to give.
+    const { db } = await import("../../db");
+
     const result = await db.execute<{ applied: number }>(
       sql`select count(*)::int as applied from drizzle.__drizzle_migrations`,
     );

@@ -8,8 +8,10 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 // hosted Account Portal — no in-app auth routes to allowlist.
 //
 // /api/health is public so an uptime check can reach it without a session. It
-// returns migration counts and tags only — never connection details.
-const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health(.*)"]);
+// returns migration counts and tags only — never connection details. Listed as
+// the two exact forms rather than a prefix so a future /api/health-something
+// does not become public by accident.
+const isPublic = createRouteMatcher(["/", "/api/cron(.*)", "/api/health", "/api/health/"]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (!isPublic(req)) await auth.protect();
