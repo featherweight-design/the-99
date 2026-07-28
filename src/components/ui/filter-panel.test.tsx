@@ -245,6 +245,19 @@ describe("FilterPanel", () => {
     ).toHaveAttribute("data-code", "MH3");
   });
 
+  it("dismisses the popover on page scroll but not on scrolling the option list", () => {
+    setViewport(true);
+    renderPanel();
+    openPanel();
+    // The dismiss listener is on window in the capture phase, so it sees the list
+    // scrolling too — dismissing on that would make the list unscrollable.
+    fireEvent.scroll(screen.getByRole("listbox"));
+    expect(screen.queryByRole("listbox")).not.toBeNull();
+
+    fireEvent.scroll(document);
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
   it("does not wrap past either end of the list", () => {
     setViewport(true);
     renderPanel();

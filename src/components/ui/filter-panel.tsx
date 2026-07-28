@@ -141,7 +141,13 @@ export function FilterPanel({
     // Scroll unmounts whatever holds focus, so focus has to be put back rather
     // than dropped on the body — but only when it was inside the panel, and
     // without scrolling the trigger back into view against the user's gesture.
-    const onScroll = () => {
+    const onScroll = (e: Event) => {
+      // Only the PAGE scrolling dismisses. The listener is on window in the
+      // capture phase (scroll does not bubble), so it also sees the option list
+      // scrolling inside the panel — and dismissing on that would make the list
+      // unscrollable.
+      const target = e.target as Node | null;
+      if (target && panelRef.current?.contains(target)) return;
       if (panelRef.current?.contains(document.activeElement)) close({ preventScroll: true });
       else dismiss();
     };
