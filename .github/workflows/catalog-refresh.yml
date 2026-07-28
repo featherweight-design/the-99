@@ -42,8 +42,10 @@ jobs:
     # GitHub environment names are `catalog-staging` / `catalog-production`: a bare
     # `production` environment cannot be created because Vercel already owns `Production`
     # and the names are case-insensitively unique. Schedule and release carry no inputs, so
-    # they fall through to production — matching the Vercel cron this replaces.
-    environment: catalog-${{ inputs.target || 'production' }}
+    # they fall through to production — matching the Vercel cron this replaces. The `inputs`
+    # context only exists on workflow_dispatch, so read them through `github.event.inputs`,
+    # which resolves to null on the other triggers instead of failing to evaluate.
+    environment: catalog-${{ github.event.inputs.target || 'production' }}
     defaults:
       run:
         # GitHub expands `shell: bash` to `bash -eo pipefail`. Without it the seed steps' exit
@@ -53,7 +55,7 @@ jobs:
       # Each environment holds its own CATALOG_DATABASE_URL, following the
       # MIGRATE_DATABASE_URL precedent of a separate, explicitly-scoped connection string.
       DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
-      JOB: ${{ inputs.job || 'all' }}
+      JOB: ${{ github.event.inputs.job || 'all' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -72,7 +74,7 @@ jobs:
           {
             echo "## Catalog refresh"
             echo ""
-            echo "- Target: \`catalog-${{ inputs.target || 'production' }}\`"
+            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
             echo "- Job: \`$JOB\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
