@@ -123,9 +123,18 @@ export function CollectionBrowser({
 
   // Options are rebuilt when the OTHER filters move (counts are filter-aware)
   // but not when the set selection or the search box changes — see set-filter.ts.
+  // Depends on the two fields buildSetOptions actually reads, not on `filters` —
+  // that object is rebuilt on every keystroke, which would recount the lot. The
+  // spreads preserve `colors`' array identity, so it is a sound dep as-is.
+  const { colors: filterColors, type: filterType } = filters;
   const setOptions = useMemo(
-    () => buildSetOptions(cards, filters, ownedSets),
-    [cards, filters, ownedSets],
+    () =>
+      buildSetOptions(
+        cards,
+        { search: "", colors: filterColors, type: filterType, setCodes: [] },
+        ownedSets,
+      ),
+    [cards, filterColors, filterType, ownedSets],
   );
 
   // Chips read set NAMES, not codes — the locked "names over codes" decision.

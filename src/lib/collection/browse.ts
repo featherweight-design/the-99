@@ -224,7 +224,7 @@ export function filterCards(list: BrowseCard[], f: BrowseFilters): BrowseCard[] 
   const search = f.search.trim().toLowerCase();
   const type = f.type?.toLowerCase() ?? null;
   // Sets OR with each other and AND with every other filter.
-  const setCodes = f.setCodes.map((s) => s.toLowerCase());
+  const setCodes = new Set(f.setCodes.map((s) => s.toLowerCase()));
   return list.filter((c) => {
     if (search && !c.name.toLowerCase().includes(search)) return false;
     if (f.colors.length > 0) {
@@ -233,8 +233,8 @@ export function filterCards(list: BrowseCard[], f: BrowseFilters): BrowseCard[] 
     }
     if (type && !c.typeLine.toLowerCase().includes(type)) return false;
     if (
-      setCodes.length > 0 &&
-      !c.setCodes.some((s) => setCodes.includes(s.toLowerCase()))
+      setCodes.size > 0 &&
+      !c.setCodes.some((s) => setCodes.has(s.toLowerCase()))
     ) return false;
     return true;
   });

@@ -90,10 +90,19 @@ export function FilterPanel({
     (activateFirst: boolean) => {
       setPinned(selected);
       setQuery("");
-      setActiveCode(activateFirst ? options[0]?.code ?? null : null);
+      // The panel opens with the query cleared and `selected` pinned to the top,
+      // so the first VISIBLE row is the first selected option, not options[0].
+      // Mirrors buildGroups() under those about-to-be-set values.
+      let first: string | null = null;
+      if (activateFirst) {
+        const pins = new Set(selected);
+        const pinnedFirst = searchable ? options.find((o) => pins.has(o.code)) : undefined;
+        first = pinnedFirst?.code ?? options[0]?.code ?? null;
+      }
+      setActiveCode(first);
       setOpen(true);
     },
-    [options, selected],
+    [options, selected, searchable],
   );
 
   const close = useCallback(() => {
@@ -178,14 +187,15 @@ export function FilterPanel({
     }
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      if (matches.length === 0) return;
-      const i = matches.findIndex((o) => o.code === activeCode);
+      const visible = visibleOptions();
+      if (visible.length === 0) return;
+      const i = visible.findIndex((o) => o.code === activeCode);
       // No wrap at either end; from "nothing active", ↓ takes the first row.
       const next =
         e.key === "ArrowDown"
-          ? Math.min(i < 0 ? 0 : i + 1, matches.length - 1)
+          ? Math.min(i < 0 ? 0 : i + 1, visible.length - 1)
           : Math.max(i < 0 ? 0 : i - 1, 0);
-      const option = matches[next];
+      const option = visible[next];
       setActiveCode(option.code);
       onAnnounce?.(optionAria(option, selected.includes(option.code)));
       return;
@@ -193,7 +203,7 @@ export function FilterPanel({
     // Space toggles only while a row is active; with no active row the caret is
     // in the field and a space has to type a space (set names contain them).
     if ((e.key === "Enter" || e.key === " ") && activeCode) {
-      const option = matches.find((o) => o.code === activeCode);
+      const option = visibleOptions().find((o) => o.code === activeCode);
       if (option) {
         e.preventDefault();
         toggle(option);
@@ -243,14 +253,16 @@ export function FilterPanel({
       : copy.optionAria(option.label, option.count.toLocaleString(), isSelected);
   }
 
-  function groups(): { label: string; options: FilterPanelOption[] }[] {
+  function buildGroups(
+    pins: string[],
+  ): { label: string; options: FilterPanelOption[] }[] {
     if (hasQuery) {
       // Grouping is dropped under a query: one "N matches" label, ranked list.
       return [{ label: copy.groupMatches(matches.length), options: matches }];
     }
     // Group labels belong to the searchable (Set) panel; Type ▾ has none.
     if (!searchable) return [{ label: "", options }];
-    const pinnedSet = new Set(pinned);
+    const pinnedSet = new Set(pins);
     const top = options.filter((o) => pinnedSet.has(o.code));
     const rest = options.filter((o) => !pinnedSet.has(o.code));
     if (top.length === 0) return [{ label: copy.groupDefault, options: rest }];
@@ -258,6 +270,20 @@ export function FilterPanel({
       { label: copy.groupSelected(top.length), options: top },
       { label: copy.groupDefault, options: rest },
     ];
+  }
+
+  function groups() {
+    return buildGroups(pinned);
+  }
+
+  /**
+   * The rendered order, flattened. Arrow keys have to walk THIS and not `options`
+   * or `matches`: with a selection, the visible list pins the selected rows to the
+   * top, so the raw option order disagrees with what the user sees and with the
+   * `aria-posinset` the same row announces.
+   */
+  function visibleOptions(): FilterPanelOption[] {
+    return groups().flatMap((g) => g.options);
   }
 
   function renderRow(option: FilterPanelOption, posInSet: number, setSize: number) {
@@ -615,6 +641,9 @@ export function FilterPanel({
           <div
             ref={panelRef}
             role="dialog"
+            // Focusable only programmatically: a non-searchable panel has no input
+            // to take focus, so the dialog itself has to be able to receive it.
+            tabIndex={-1}
             aria-label={copy.panelAriaLabel}
             onKeyDown={onPanelKeyDown}
             onBlur={onPanelBlur}
@@ -634,6 +663,7 @@ export function FilterPanel({
               ref={panelRef}
               role="dialog"
               aria-modal="true"
+              tabIndex={-1}
               aria-label={copy.panelAriaLabel}
               onKeyDown={onPanelKeyDown}
               className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78vh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"

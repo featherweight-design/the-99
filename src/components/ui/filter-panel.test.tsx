@@ -217,6 +217,34 @@ describe("FilterPanel", () => {
     expect(document.activeElement).toBe(input);
   });
 
+  it("walks the arrow keys in the rendered order, which pins the selection to the top", () => {
+    setViewport(true);
+    // MH3 is second in OPTIONS but renders first once pinned, so walking the raw
+    // option order instead of the visible one would disagree with both the screen
+    // and the aria-posinset the row announces.
+    renderPanel({ selected: ["MH3"] });
+    const dialog = openPanel();
+    const input = screen.getByRole("combobox");
+    fireEvent.keyDown(dialog, { key: "ArrowDown" });
+    expect(
+      document.getElementById(input.getAttribute("aria-activedescendant")!),
+    ).toHaveAttribute("data-code", "MH3");
+    fireEvent.keyDown(dialog, { key: "ArrowDown" });
+    expect(
+      document.getElementById(input.getAttribute("aria-activedescendant")!),
+    ).toHaveAttribute("data-code", "BLB");
+  });
+
+  it("opens on the first VISIBLE row when ArrowDown opens the panel with a selection", () => {
+    setViewport(true);
+    renderPanel({ selected: ["MH3"] });
+    fireEvent.keyDown(screen.getByRole("button", { name: /Filter by set/ }), { key: "ArrowDown" });
+    const input = screen.getByRole("combobox");
+    expect(
+      document.getElementById(input.getAttribute("aria-activedescendant")!),
+    ).toHaveAttribute("data-code", "MH3");
+  });
+
   it("does not wrap past either end of the list", () => {
     setViewport(true);
     renderPanel();

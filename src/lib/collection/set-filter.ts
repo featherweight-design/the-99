@@ -130,7 +130,11 @@ export function parseSetCodesParam(param: string | null): string[] {
   return out;
 }
 
-/** `["BLB","MH3"]` → `blb,mh3` uppercased and comma-joined; `""` when empty. */
+/**
+ * `["BLB","MH3"]` → `BLB,MH3`. Codes are already uppercase by the time they get here —
+ * `parseSetCodesParam` uppercases on the way in and the options are built uppercase — so the
+ * URL form is uppercase and `parseSetCodesParam` round-trips it unchanged.
+ */
 export function serializeSetCodes(codes: string[]): string {
   return codes.join(",");
 }
