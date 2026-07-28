@@ -34,14 +34,19 @@ const SCRYFALL_HEADERS = ["scryfall id"];
 
 /**
  * Foil/Finish column values → Scryfall's finish vocabulary. ManaBox emits normal/foil/etched;
- * the other supported exports emit true/false or nothing at all. ANY unrecognised value falls
- * back to "nonfoil", which is exactly what the old boolean did and is what keeps the Moxfield /
- * Archidekt / Deckbox / bare "Name,Qty" exports importing.
+ * the other supported exports emit true/false, 1/0, or nothing at all. ANY unrecognised value
+ * falls back to "nonfoil", which keeps the Moxfield / Archidekt / Deckbox / bare "Name,Qty"
+ * exports importing.
+ *
+ * This inverts the old boolean, which allowlisted the NON-foil values and so called anything
+ * else foil — including "0". Every truthy spelling therefore has to be listed here explicitly
+ * or a CSV that encodes the column as 1/0 silently loses its foils.
  */
 const FINISH_VALUES = new Map<string, Finish>([
   ["foil", "foil"],
   ["true", "foil"],
   ["yes", "foil"],
+  ["1", "foil"],
   ["etched", "etched"],
   ["foil etched", "etched"],
   ["etched foil", "etched"],

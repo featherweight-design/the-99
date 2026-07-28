@@ -62,6 +62,13 @@ describe("parseCollectionCsv", () => {
     expect(rows.map((r) => r.finish)).toEqual(["nonfoil", "foil", "etched", "nonfoil", "etched"]);
   });
 
+  it("reads a boolean-encoded Foil column, where 1 is foil and 0 is not", () => {
+    // The old boolean allowlisted the non-foil values, so "1" was foil by falling through.
+    // Inverting the allowlist drops that unless "1" is listed explicitly.
+    const { rows } = parseCollectionCsv("Name,Quantity,Foil\nA,1,1\nB,1,0\n");
+    expect(rows.map((r) => r.finish)).toEqual(["foil", "nonfoil"]);
+  });
+
   it("falls back to nonfoil for any unrecognised finish value", () => {
     // Unknown strings must not become foil: that is what keeps the non-ManaBox exports
     // (Moxfield, Archidekt, Deckbox, bare Name,Qty) importing as they always have.
