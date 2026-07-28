@@ -4,39 +4,31 @@
 // Position dropdowns are native <select> for a11y + parity; visual chrome
 // matches the §Filter Button spec (radius 999px mobile / 8px desktop).
 
-import { useSyncExternalStore } from "react";
 import { AVAILABLE_TYPES, type BrowseFilters, type SortKey } from "../../lib/collection/browse";
+import type { SetOption } from "../../lib/collection/set-filter";
+import { collectionFilterCopy } from "../../lib/copy/collection";
 import { ColorPip } from "./color-pip";
 import { SearchField } from "../ui/text-field";
+import { FilterPanel } from "../ui/filter-panel";
+// Placeholder copy differs by breakpoint (§Copy (placeholders)) and the
+// placeholder attribute can't vary via CSS, so track the md breakpoint.
+// The hook moved to ui/use-is-desktop.ts when filter-panel.tsx needed it too;
+// it is re-exported here because browser.tsx already imports it from this file.
+import { useIsDesktop } from "../ui/use-is-desktop";
+
+export { useIsDesktop };
 
 const WUBRG = ["W", "U", "B", "R", "G"] as const;
 
 export type ViewMode = "rows" | "grid";
 
-// Placeholder copy differs by breakpoint (§Copy (placeholders)) and the
-// placeholder attribute can't vary via CSS, so track the md breakpoint.
-// SSR snapshot is false (mobile copy); hydration corrects it.
-const DESKTOP_QUERY = "(min-width: 768px)";
-
-function subscribeDesktop(onStoreChange: () => void): () => void {
-  const mq = window.matchMedia(DESKTOP_QUERY);
-  mq.addEventListener("change", onStoreChange);
-  return () => mq.removeEventListener("change", onStoreChange);
-}
-
-export function useIsDesktop(): boolean {
-  return useSyncExternalStore(
-    subscribeDesktop,
-    () => window.matchMedia(DESKTOP_QUERY).matches,
-    () => false,
-  );
-}
-
 export function FilterBar({
   filters,
   sort,
   view,
-  availableSetCodes,
+  setOptions,
+  announcement,
+  onAnnounce,
   onFiltersChange,
   onSortChange,
   onViewChange,
@@ -44,7 +36,11 @@ export function FilterBar({
   filters: BrowseFilters;
   sort: SortKey;
   view: ViewMode;
-  availableSetCodes: string[];
+  /** Owned sets, newest first, with counts under the other active filters. */
+  setOptions: SetOption[];
+  /** The bar's single live region content — the panel writes here too. */
+  announcement: string;
+  onAnnounce: (message: string) => void;
   onFiltersChange: (f: BrowseFilters) => void;
   onSortChange: (s: SortKey) => void;
   onViewChange: (v: ViewMode) => void;
@@ -142,23 +138,25 @@ export function FilterBar({
           ))}
         </select>
 
-        {/* Set ▾ */}
-        <select
-          value={filters.setCode ?? ""}
-          onChange={(e) => onFiltersChange({ ...filters, setCode: e.target.value || null })}
-          aria-label="Filter by set"
-          className="whitespace-nowrap rounded-full md:rounded-lg font-sans text-[12.5px] md:text-[13px] font-medium px-[12px] md:px-[14px] py-[6px] md:py-[9px] cursor-pointer"
-          style={{
-            color: "var(--fg)",
-            background: "var(--elevated)",
-            border: "1px solid var(--border-strong)",
-          }}
-        >
-          <option value="">Set ▾</option>
-          {availableSetCodes.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
+        {/* Set ▾ — the designed searchable multi-select panel (#86). Same tab
+            stop, same position, same external geometry as the <select> it
+            replaced; Type ▾ and Sort ▾ convert later. */}
+        <FilterPanel
+          copy={collectionFilterCopy.set}
+          options={setOptions}
+          selected={filters.setCodes}
+          searchable
+          onToggle={(code) =>
+            onFiltersChange({
+              ...filters,
+              setCodes: filters.setCodes.includes(code)
+                ? filters.setCodes.filter((c) => c !== code)
+                : [...filters.setCodes, code],
+            })
+          }
+          onClear={() => onFiltersChange({ ...filters, setCodes: [] })}
+          onAnnounce={onAnnounce}
+        />
 
         {/* Sort ▾ — mobile shows short labels ("A–Z ▾"), desktop shows "Sort: Name ▾" */}
         <select
@@ -210,6 +208,13 @@ export function FilterBar({
           })}
         </div>
       </div>
+
+      {/* The bar's single live region. One region for the whole bar, so two
+          filters changed in quick succession read in order rather than on top
+          of each other — the panel writes here instead of owning its own. */}
+      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </span>
     </div>
   );
 }

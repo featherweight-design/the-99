@@ -172,22 +172,44 @@ describe("filterCards", () => {
   ];
 
   it("substring search is case-insensitive on name", () => {
-    expect(filterCards(list, { search: "cyclonic", colors: [], type: null, setCode: null }).map((c) => c.oracleId)).toEqual(["c"]);
+    expect(filterCards(list, { search: "cyclonic", colors: [], type: null, setCodes: [] }).map((c) => c.oracleId)).toEqual(["c"]);
   });
   it("no filters returns everything (identity when empty search + no chips)", () => {
-    expect(filterCards(list, { search: "", colors: [], type: null, setCode: null })).toHaveLength(4);
+    expect(filterCards(list, { search: "", colors: [], type: null, setCodes: [] })).toHaveLength(4);
   });
   it("colors filter matches when EVERY selected color is in the card identity", () => {
     // R + U selected → only the R/U card matches
-    expect(filterCards(list, { search: "", colors: ["R", "U"], type: null, setCode: null }).map((c) => c.oracleId)).toEqual(["d"]);
+    expect(filterCards(list, { search: "", colors: ["R", "U"], type: null, setCodes: [] }).map((c) => c.oracleId)).toEqual(["d"]);
     // R alone matches both R and R/U cards
-    expect(filterCards(list, { search: "", colors: ["R"], type: null, setCode: null }).map((c) => c.oracleId).sort()).toEqual(["b", "d"]);
+    expect(filterCards(list, { search: "", colors: ["R"], type: null, setCodes: [] }).map((c) => c.oracleId).sort()).toEqual(["b", "d"]);
   });
   it("type filter is case-insensitive substring on typeLine", () => {
-    expect(filterCards(list, { search: "", colors: [], type: "instant", setCode: null }).map((c) => c.oracleId).sort()).toEqual(["b", "c"]);
+    expect(filterCards(list, { search: "", colors: [], type: "instant", setCodes: [] }).map((c) => c.oracleId).sort()).toEqual(["b", "c"]);
   });
-  it("setCode filter matches ANY of a card's variant sets, case-insensitive", () => {
-    expect(filterCards(list, { search: "", colors: [], type: null, setCode: "rtr" }).map((c) => c.oracleId)).toEqual(["c"]);
+  it("one selected set matches ANY of a card's variant sets, case-insensitive", () => {
+    expect(filterCards(list, { search: "", colors: [], type: null, setCodes: ["rtr"] }).map((c) => c.oracleId)).toEqual(["c"]);
+    expect(filterCards(list, { search: "", colors: [], type: null, setCodes: ["RTR"] }).map((c) => c.oracleId)).toEqual(["c"]);
+  });
+  it("many selected sets OR with each other", () => {
+    expect(
+      filterCards(list, { search: "", colors: [], type: null, setCodes: ["RTR", "2xm", "MID"] })
+        .map((c) => c.oracleId).sort(),
+    ).toEqual(["b", "c", "d"]);
+  });
+  it("no selected set is no set filter at all", () => {
+    expect(filterCards(list, { search: "", colors: [], type: null, setCodes: [] })).toHaveLength(4);
+  });
+  it("a card owned in several sets matches on any one of them", () => {
+    const multi = [card({ oracleId: "m", name: "Sol Ring", setCodes: ["C21", "LEA"], primarySetCode: "C21" })];
+    expect(filterCards(multi, { search: "", colors: [], type: null, setCodes: ["lea"] })).toHaveLength(1);
+    expect(filterCards(multi, { search: "", colors: [], type: null, setCodes: ["c21"] })).toHaveLength(1);
+    expect(filterCards(multi, { search: "", colors: [], type: null, setCodes: ["mid"] })).toHaveLength(0);
+  });
+  it("sets AND with the other filters", () => {
+    expect(
+      filterCards(list, { search: "", colors: ["U"], type: "instant", setCodes: ["RTR", "2XM"] })
+        .map((c) => c.oracleId),
+    ).toEqual(["c"]);
   });
 });
 

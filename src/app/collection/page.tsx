@@ -7,7 +7,7 @@
 
 import { requireUserId } from "../../lib/auth";
 import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
-import { formatLastUpdated, loadBrowseCards } from "../../lib/collection/browse";
+import { formatLastUpdated, loadBrowseCards, loadOwnedSetMeta } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
 import { CollectionBrowser } from "../../components/collection/browser";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
@@ -37,10 +37,12 @@ function ReplaceIcon() {
 
 export default async function CollectionPage() {
   const userId = await requireUserId();
-  const [stats, cards, lastUpdated] = await Promise.all([
+  const [stats, cards, lastUpdated, ownedSets] = await Promise.all([
     getCollectionStats(userId),
     loadBrowseCards(userId),
     getCollectionLastUpdated(userId),
+    // Set names + release dates for the Set ▾ panel (#86).
+    loadOwnedSetMeta(userId),
   ]);
 
   // Empty collection — shell's state, kept intact.
@@ -120,7 +122,7 @@ export default async function CollectionPage() {
         </div>
       </div>
 
-      <CollectionBrowser cards={cards} />
+      <CollectionBrowser cards={cards} ownedSets={ownedSets} />
     </section>
   );
 }
