@@ -142,9 +142,9 @@ No raster assets. Fonts load from Google Fonts. The logomark and all swatches ar
 CSS/markup and should be rebuilt as SVG/components in the target codebase.
 
 ## Files
-- `The 99 — Brand Sheet.dc.html` — the locked reference sheet (this handoff's source of truth).
-- `The 99 Brand Discovery.dc.html` — the fuller discovery board (tone, palette options, type
-  specimens, logomark concepts) for additional context on how decisions were reached.
+- `The 99 - Brand Sheet.dc.html` — the locked reference sheet (this handoff's source of truth).
+- `support.js` — the runtime the sheet loads; not production code.
 
-Both are single self-contained HTML files; open directly in a browser. They are authored as
-Design Components but render standalone.
+The sheet is a single self-contained HTML file; open it directly in a browser. It is authored as
+a Design Component but renders standalone. The fuller discovery board (tone, palette options,
+type specimens, logomark concepts) is not shipped in this handoff.

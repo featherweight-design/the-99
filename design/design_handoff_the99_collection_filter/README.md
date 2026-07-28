@@ -51,7 +51,7 @@ shipped card modal uses.
 ### 2. Selection → **multi-select, applied live, no Apply button**
 "Do I own anything from Bloomburrow *or* Modern Horizons 3" is the real question; a single-select
 set filter answers half of it and forces a re-open per set. Multi-select also costs nothing new
-downstream — the chip row already renders N dismissable chips and `Clear all`, and the query API
+downstream — the chip row already renders N dismissible chips and `Clear all`, and the query API
 already takes a list.
 
 **No Apply/Cancel.** Every other control in this bar applies on click; a staged panel in the middle
