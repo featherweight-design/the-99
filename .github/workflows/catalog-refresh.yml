@@ -1,0 +1,90 @@
+name: Catalog refresh
+
+# Replaces the Vercel cron that hit /api/cron/scryfall-refresh: the oracle bulk is 201MB and
+# the printings bulk 620MB, both of which have outgrown the cron's 300s maxDuration. A runner
+# gives us hours instead of minutes.
+on:
+  schedule:
+    # 09:00 UTC on the 1st of each month.
+    - cron: '0 9 1 * *'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which catalog database to refresh
+        type: choice
+        options: [staging, production]
+        default: staging
+      job:
+        description: Which ingest to run
+        type: choice
+        options: [all, sets, printings, oracle]
+        default: all
+
+concurrency:
+  group: catalog-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    # Kill switch for the automatic triggers; a manual dispatch always runs. Set the
+    # CATALOG_REFRESH_ENABLED repository variable to 'true' or scheduled refresh never fires.
+    if: vars.CATALOG_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # GitHub environment names are `catalog-staging` / `catalog-production`: a bare
+    # `production` environment cannot be created because Vercel already owns `Production`
+    # and the names are case-insensitively unique. Schedule and release carry no inputs, so
+    # they fall through to production — matching the Vercel cron this replaces.
+    environment: catalog-${{ inputs.target || 'production' }}
+    env:
+      # Each environment holds its own CATALOG_DATABASE_URL, following the
+      # MIGRATE_DATABASE_URL precedent of a separate, explicitly-scoped connection string.
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      JOB: ${{ inputs.job || 'all' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start run summary
+        run: |
+          {
+            echo "## Catalog refresh"
+            echo ""
+            echo "- Target: \`catalog-${{ inputs.target || 'production' }}\`"
+            echo "- Job: \`$JOB\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh sets
+        if: env.JOB == 'all' || env.JOB == 'sets'
+        run: |
+          echo "### Sets" >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed:sets | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh oracle cards
+        # Must precede printings: printings.oracle_id has an FK to cards.oracle_id, so a
+        # stale cards table would have every new printing filtered out as an orphan.
+        if: env.JOB == 'all' || env.JOB == 'oracle'
+        run: |
+          echo "### Oracle cards" >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh printings
+        if: env.JOB == 'all' || env.JOB == 'printings'
+        run: |
+          echo "### Printings" >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed:printings | tee -a "$GITHUB_STEP_SUMMARY"

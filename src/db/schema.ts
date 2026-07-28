@@ -1,7 +1,22 @@
 import { sql } from "drizzle-orm";
 import {
-  pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check,
+  pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
 } from "drizzle-orm/pg-core";
+
+/**
+ * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
+ * from the card bulk because only /sets carries release dates and set types, which is what
+ * lets the collection filter sort chronologically instead of alphabetically.
+ */
+export const sets = pgTable("sets", {
+  code: text("code").primaryKey(),          // lowercase, e.g. "ecl"
+  name: text("name").notNull(),             // "Lorwyn Eclipsed"
+  setType: text("set_type").notNull(),      // expansion | commander | token | promo | …
+  releasedAt: date("released_at"),          // nullable — undated/unreleased sets exist
+  cardCount: integer("card_count").notNull().default(0),
+  digital: boolean("digital").notNull().default(false),
+  iconSvgUri: text("icon_svg_uri"),
+});
 
 export const cards = pgTable("cards", {
   oracleId: uuid("oracle_id").primaryKey(),
@@ -17,6 +32,43 @@ export const cards = pgTable("cards", {
   imageUri: text("image_uri"),
   rarity: text("rarity").notNull(),
 }, (t) => [index("cards_name_idx").on(t.name)]);
+
+/**
+ * Every printing in existence, from Scryfall's `default_cards` bulk — as opposed to `cards`,
+ * which is oracle-level (one arbitrary printing per oracle_id) and therefore cannot answer
+ * "which art does this collection actually own?".
+ */
+export const printings = pgTable("printings", {
+  scryfallId: uuid("scryfall_id").primaryKey(),
+  // FK kept; orphans are filtered at ingest by pre-loading the known oracle ids, so the two
+  // catalog ingests need integrity without lock-stepping.
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  setCode: text("set_code").notNull(),                   // lowercase
+  // TEXT, never an integer — Scryfall uses "31", "12a", "★".
+  collectorNumber: text("collector_number").notNull(),
+  // Stored, not constructed: Scryfall's docs forbid building image URLs.
+  imageUri: text("image_uri"),
+  imageUriSmall: text("image_uri_small"),
+  finishes: text("finishes").array().notNull(),          // nonfoil | foil | etched
+  isVariant: boolean("is_variant").notNull().default(false),
+  // Computed by a post-load pass (see setRepresentativePrintings) so reads are a plain
+  // `where is_representative` instead of a natural-sort DISTINCT ON on every query.
+  isRepresentative: boolean("is_representative").notNull().default(false),
+}, (t) => [
+  index("printings_oracle_set_idx").on(t.oracleId, t.setCode),
+  index("printings_oracle_idx").on(t.oracleId),
+]);
+
+/**
+ * Token/emblem/art-series ledger. The FK on `printings.oracle_id` means these can never live
+ * in `printings` (they have no row in `cards`), but upload needs to tell "this ID is a token"
+ * from "this ID is genuinely unknown" without a network call.
+ */
+export const skippedPrintings = pgTable("skipped_printings", {
+  scryfallId: uuid("scryfall_id").primaryKey(),
+  layout: text("layout").notNull(),   // token | double_faced_token | emblem | art_series
+  name: text("name").notNull(),
+});
 
 export const collectionItems = pgTable("collection_items", {
   userId: text("user_id").notNull(),
