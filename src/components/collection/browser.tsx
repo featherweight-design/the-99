@@ -20,7 +20,7 @@ import {
   type OwnedSetMeta,
 } from "../../lib/collection/set-filter";
 import { collectionFilterCopy } from "../../lib/copy/collection";
-import { FilterBar, useIsDesktop, type ViewMode } from "./filter-bar";
+import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
 import { ChipRow } from "./chip-row";
 import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
@@ -60,18 +60,22 @@ function quantityOf(list: BrowseCard[]): number {
  * The live-region string for a change to the set selection, or null when the
  * selection did not move (a colour or type change announces nothing here).
  */
-function setChangeAnnouncement(
+export function setChangeAnnouncement(
   prev: BrowseFilters,
   next: BrowseFilters,
   cards: BrowseCard[],
   options: { code: string; label: string }[],
   totalQuantity: number,
+  intent?: FilterChangeIntent,
 ): string | null {
   const before = prev.setCodes;
   const after = next.setCodes;
   if (before.length === after.length && before.every((c, i) => c === after[i])) return null;
   const total = totalQuantity.toLocaleString();
-  if (after.length === 0 && before.length > 1) return setCopy.announceCleared(total);
+  // Always the cleared string for `Clear`, including at exactly one selection —
+  // "Bloomburrow removed. No set filter, …" belongs to toggling the last option
+  // off, not to pressing the button.
+  if (intent === "clear-sets") return setCopy.announceCleared(total);
   const label = (code: string) => options.find((o) => o.code === code)?.label ?? code;
   const shown = quantityOf(filterCards(cards, next)).toLocaleString();
   const added = after.find((c) => !before.includes(c));
@@ -135,11 +139,11 @@ export function CollectionBrowser({
   // Any filter/sort change resets the window — folded into the update
   // callbacks (not an effect) to avoid a cascading render.
   const updateFilters = useCallback(
-    (f: BrowseFilters) => {
+    (f: BrowseFilters, intent?: FilterChangeIntent) => {
       // The set panel's add/remove/clear announcements are composed here rather
       // than in the panel: only this component knows how many cards survive the
       // new filter set, and the string quotes that figure.
-      const message = setChangeAnnouncement(filters, f, cards, setOptions, totalQuantity);
+      const message = setChangeAnnouncement(filters, f, cards, setOptions, totalQuantity, intent);
       if (message) setAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
@@ -202,7 +206,7 @@ export function CollectionBrowser({
           uniqueCount={cards.length}
           totalQuantity={totalQuantity}
           onClearAll={() => {
-            updateFilters({ search: "", colors: [], type: null, setCodes: [] });
+            updateFilters({ search: "", colors: [], type: null, setCodes: [] }, "clear-sets");
             updateSort("name");
           }}
           onRemoveColor={(c) => updateFilters({ ...filters, colors: filters.colors.filter((x) => x !== c) })}
@@ -220,7 +224,7 @@ export function CollectionBrowser({
           query={filters.search}
           totalCount={totalQuantity}
           onClearAll={() => {
-            updateFilters({ search: "", colors: [], type: null, setCodes: [] });
+            updateFilters({ search: "", colors: [], type: null, setCodes: [] }, "clear-sets");
             updateSort("name");
           }}
           onKeepSearch={() => updateFilters({ search: filters.search, colors: [], type: null, setCodes: [] })}

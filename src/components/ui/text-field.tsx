@@ -48,6 +48,11 @@ type SearchFieldProps = TextFieldProps & {
   /** Rendered after the input inside the box — clear buttons, result counts. */
   trailing?: React.ReactNode;
   containerClassName?: string;
+  /**
+   * Classes for the leading `⌕`. It needs its own slot because `className`
+   * lands on the `<input>`, and the design tables size the glyph per surface.
+   */
+  iconClassName?: string;
 };
 
 /**
@@ -64,6 +69,7 @@ type SearchFieldProps = TextFieldProps & {
 export function SearchField({
   className,
   containerClassName,
+  iconClassName,
   trailing,
   type = "search",
   ...rest
@@ -79,7 +85,13 @@ export function SearchField({
         containerClassName,
       )}
     >
-      <span aria-hidden className="font-mono text-[15px] shrink-0 text-[color:var(--fg-faint)]">
+      <span
+        aria-hidden
+        className={twMerge(
+          "font-mono text-[15px] shrink-0 text-[color:var(--fg-faint)]",
+          iconClassName,
+        )}
+      >
         ⌕
       </span>
       <input

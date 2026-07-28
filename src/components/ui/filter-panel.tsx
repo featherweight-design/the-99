@@ -69,6 +69,9 @@ export function FilterPanel({
   // open, and NOT recomputed while it is open — re-sorting on every toggle would
   // move rows under the pointer mid-interaction.
   const [pinned, setPinned] = useState<string[]>([]);
+  // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
+  const [dragY, setDragY] = useState(0);
+  const dragStartY = useRef<number | null>(null);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -96,6 +99,8 @@ export function FilterPanel({
   const close = useCallback(() => {
     setOpen(false);
     setActiveCode(null);
+    dragStartY.current = null;
+    setDragY(0);
     triggerRef.current?.focus();
   }, []);
 
@@ -198,6 +203,40 @@ export function FilterPanel({
     if (e.key === "Tab" && !isDesktop) trapTab(e);
   }
 
+  // Desktop only: `Tab` out of the popover dismisses it (§Popover Dismiss, and
+  // the keyboard model — Tab moves to `Clear`, then out, closing the panel).
+  // React's onBlur is the bubbling `focusout`, so this fires for any descendant.
+  // Mobile is excluded because focus is trapped there and never leaves.
+  function onPanelBlur(e: React.FocusEvent) {
+    if (!isDesktop) return;
+    // relatedTarget is null for transient re-focus (and for clicks on inert
+    // chrome); treating that as "focus left" would close the panel mid-render.
+    const next = e.relatedTarget as Node | null;
+    if (!next) return;
+    if (panelRef.current?.contains(next) || triggerRef.current?.contains(next)) return;
+    setOpen(false);
+    setActiveCode(null);
+  }
+
+  // Sheet drag-to-dismiss. Tracked live: the sheet follows the pointer down and
+  // either snaps back or dismisses past the threshold.
+  const DRAG_DISMISS_PX = 80;
+  function onHandlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    dragStartY.current = e.clientY;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }
+  function onHandlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (dragStartY.current === null) return;
+    setDragY(Math.max(0, e.clientY - dragStartY.current));
+  }
+  function onHandlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (dragStartY.current === null) return;
+    const travelled = Math.max(0, e.clientY - dragStartY.current);
+    dragStartY.current = null;
+    setDragY(0);
+    if (travelled >= DRAG_DISMISS_PX) close();
+  }
+
   function optionAria(option: FilterPanelOption, isSelected: boolean): string {
     return option.disabled
       ? copy.optionAriaUnavailable(option.label)
@@ -221,7 +260,7 @@ export function FilterPanel({
     ];
   }
 
-  function renderRow(option: FilterPanelOption) {
+  function renderRow(option: FilterPanelOption, posInSet: number, setSize: number) {
     const isSelected = selected.includes(option.code);
     const isActive = activeCode === option.code;
     return (
@@ -236,16 +275,25 @@ export function FilterPanel({
         aria-selected={isSelected}
         aria-disabled={option.disabled || undefined}
         aria-label={optionAria(option, isSelected)}
+        // Position over the FLAT list of currently visible options: the options
+        // sit two levels down (group → inner ul), so AT cannot infer "2 of 254".
+        aria-posinset={posInSet}
+        aria-setsize={setSize}
         title={option.label}
         onClick={() => toggle(option)}
         className={[
-          "flex items-start md:items-center gap-[12px] md:gap-[11px] px-[16px] md:px-[14px] py-[12px] md:py-[9px]",
+          // items-center per §Option row, at the cost of a wrapped two-line name
+          // centring its checkbox instead of aligning it to the first line —
+          // deliberate, against misaligning every single-line row by ~4px.
+          "flex items-center gap-[12px] md:gap-[11px] px-[16px] md:px-[14px] py-[12px] md:py-[9px]",
           "min-h-[48px] md:min-h-[40px]",
-          option.disabled
-            ? "pointer-events-none opacity-[0.42]"
-            : "cursor-pointer md:hover:bg-[color:var(--surface-raised)]",
+          option.disabled ? "pointer-events-none opacity-[0.42]" : "cursor-pointer",
+          // The keyboard-active row never also takes the hover fill (§Keyboard-
+          // active: "Hover fill — none, never combined"). The class is withheld
+          // rather than overridden, so nothing rests on generated-CSS order.
+          !option.disabled && !isActive ? "md:hover:bg-[color:var(--surface-raised)]" : "",
           isActive
-            ? "rounded-[6px] outline outline-2 -outline-offset-2 outline-[color:var(--brass)] md:hover:bg-transparent"
+            ? "rounded-[6px] outline outline-2 -outline-offset-2 outline-[color:var(--brass)]"
             : "",
         ].join(" ")}
       >
@@ -253,7 +301,7 @@ export function FilterPanel({
         <span
           aria-hidden
           className={[
-            "mt-px md:mt-0 flex h-[18px] w-[18px] md:h-[16px] md:w-[16px] flex-none items-center justify-center",
+            "flex h-[18px] w-[18px] md:h-[16px] md:w-[16px] flex-none items-center justify-center",
             "rounded-[4px] border border-solid leading-none text-[12px] md:text-[11px]",
             isSelected
               ? "bg-[color:var(--brass)] border-[color:var(--brass)] text-[color:var(--bg)]"
@@ -277,7 +325,7 @@ export function FilterPanel({
         </span>
         <span
           className={[
-            "mt-[2px] md:mt-0 shrink-0 text-right font-mono text-[12px] md:text-[11.5px] tabular-nums",
+            "shrink-0 text-right font-mono text-[12px] md:text-[11.5px] tabular-nums",
             isSelected && !option.disabled
               ? "text-[color:var(--fg-body)]"
               : "text-[color:var(--fg-faint)]",
@@ -290,6 +338,12 @@ export function FilterPanel({
   }
 
   function renderList() {
+    const groupList = groups();
+    // Flat visible order — the setsize/posinset basis. Codes are unique, so a
+    // map by code survives the grouping without threading indices through.
+    const flat = groupList.flatMap((g) => g.options);
+    const setSize = flat.length;
+    const posOf = new Map(flat.map((o, i) => [o.code, i + 1]));
     return (
       <div className="relative">
         <ul
@@ -300,8 +354,15 @@ export function FilterPanel({
           aria-label={copy.panelAriaLabel}
           className="m-0 list-none overflow-y-auto p-0 max-h-[60vh] md:max-h-[384px]"
         >
-          {groups().map((group, gi) => (
-            <li key={group.label || "all"} role="presentation">
+          {groupList.map((group, gi) => (
+            // role=group (not presentation) so the label `<p>` is not a bare
+            // non-option child of the listbox; the inner ul stays presentational
+            // so the options still count as children of the group.
+            <li
+              key={group.label || "all"}
+              role={group.label !== "" ? "group" : "presentation"}
+              aria-label={group.label !== "" ? group.label : undefined}
+            >
               {group.label !== "" && (
                 <p
                   className={[
@@ -316,16 +377,19 @@ export function FilterPanel({
                 </p>
               )}
               <ul role="presentation" className="m-0 list-none p-0">
-                {group.options.map(renderRow)}
+                {group.options.map((o) => renderRow(o, posOf.get(o.code) ?? 1, setSize))}
               </ul>
             </li>
           ))}
         </ul>
-        {/* Scroll cue — a static gradient, not an animation. */}
-        <div
-          aria-hidden
-          className="pointer-events-none -mt-[22px] h-[22px] bg-gradient-to-b from-transparent to-[color:var(--surface-rail)]"
-        />
+        {/* Scroll cue — a static gradient, not an animation. Popover only:
+            §Transitions gives the sheet no bottom fade. */}
+        {isDesktop && (
+          <div
+            aria-hidden
+            className="pointer-events-none -mt-[22px] h-[22px] bg-gradient-to-b from-transparent to-[color:var(--surface-rail)]"
+          />
+        )}
       </div>
     );
   }
@@ -432,11 +496,23 @@ export function FilterPanel({
               setQuery(e.target.value);
               setActiveCode(null);
             }}
-            containerClassName="mx-[16px] mb-[8px] md:m-[10px] px-[12px] py-[12px] md:py-[9px] gap-[9px]"
+            // The trailing classes replace the primitive's focus halo with the
+            // canonical keyboard-walk ring: 2px #C9A24B at outline-offset 2px
+            // (§Panel search field · Focused). Overridden here, not in the
+            // primitive — every other field in the app keeps the halo.
+            containerClassName={
+              "mx-[16px] mb-[8px] md:m-[10px] px-[12px] py-[12px] md:py-[9px] gap-[9px] " +
+              "focus-within:shadow-none focus-within:outline focus-within:outline-2 " +
+              "focus-within:outline-offset-2 focus-within:outline-[color:var(--brass)]"
+            }
+            // §Leading icon: 14px mobile / 13px desktop, not the primitive's 15.
+            iconClassName="text-[14px] md:text-[13px]"
             // 14px mobile / 13px desktop as specced. 14px sits under Safari's
             // 16px focus-zoom floor; a global maximum-scale=1 is an App Shell
             // decision, not one to make inside a single control (gap 3).
-            className="text-[14px] md:text-[13px]"
+            // The placeholder is #6E6353 here, not --fg-faint; there is no token
+            // for it (see the table's token map) and twMerge drops the default.
+            className="text-[14px] md:text-[13px] placeholder:text-[#6E6353]"
             trailing={
               query !== "" ? (
                 <button
@@ -456,9 +532,11 @@ export function FilterPanel({
           />
         )}
         {noResults ? renderEmptyState() : renderList()}
-        {/* The footer is dropped ENTIRELY in the no-results state — a
-            "254 sets owned" bar under "no matches" contradicts itself. */}
-        {!noResults && renderFooter()}
+        {/* Desktop drops the footer entirely in the no-results state — a
+            "254 sets owned" bar under "no matches" contradicts itself. The sheet
+            keeps its bar in every state, because `Done` is its way out
+            (§Empty state, §`Done`: "Rendered always (all sheet states)"). */}
+        {(!noResults || !isDesktop) && renderFooter()}
       </>
     );
   }
@@ -468,10 +546,20 @@ export function FilterPanel({
     selected.length === 1
       ? options.find((o) => o.code === selected[0])?.label ?? selected[0]
       : null;
-  // The copy module has no key for the exactly-one accessible name; the canvas's
-  // keyboard-walk frame reads "Filter by set, Bloomburrow, collapsed".
-  const triggerAria =
+  // The copy module has no key for the exactly-one accessible name, nor for any
+  // of the expanded variants (every key it ships ends "collapsed"), so both are
+  // composed here from panelAriaLabel. The canvas's keyboard-walk frame reads
+  // "Filter by set, Bloomburrow, collapsed"; expanded swaps the last word, which
+  // has to track aria-expanded or the label contradicts it while the panel is up.
+  const triggerAriaDetail =
     selected.length === 0
+      ? ""
+      : selected.length === 1
+        ? `, ${oneName}`
+        : `, ${selected.length} selected`;
+  const triggerAria = open
+    ? `${copy.panelAriaLabel}${triggerAriaDetail}, expanded`
+    : selected.length === 0
       ? copy.triggerAriaCollapsed
       : selected.length === 1
         ? `${copy.panelAriaLabel}, ${oneName}, collapsed`
@@ -529,6 +617,7 @@ export function FilterPanel({
             role="dialog"
             aria-label={copy.panelAriaLabel}
             onKeyDown={onPanelKeyDown}
+            onBlur={onPanelBlur}
             className="absolute left-0 top-[calc(100%+6px)] z-10 w-[340px] overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
           >
             {renderBody()}
@@ -548,16 +637,25 @@ export function FilterPanel({
               aria-label={copy.panelAriaLabel}
               onKeyDown={onPanelKeyDown}
               className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78vh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"
+              // The drag offset is per-pixel and only exists mid-gesture, so it
+              // cannot be a class. Not colour or border — the inline-style rule
+              // is about styles that outrank hover: utilities.
+              style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
             >
-              {/* Drag handle — a tap target; the drag is not tracked live. */}
-              <button
-                type="button"
-                onClick={close}
-                aria-label="Close"
-                className="flex justify-center pt-[9px] pb-[4px]"
+              {/* Drag handle — drag-to-dismiss (§Sheet Dismiss), tracked live and
+                  snapping back under the threshold. aria-hidden and unfocusable
+                  on purpose: the `✕` below is the one accessible close control,
+                  and two identically-labelled buttons in a row is a defect. */}
+              <div
+                aria-hidden
+                onPointerDown={onHandlePointerDown}
+                onPointerMove={onHandlePointerMove}
+                onPointerUp={onHandlePointerUp}
+                onPointerCancel={onHandlePointerUp}
+                className="flex touch-none justify-center pt-[9px] pb-[4px]"
               >
-                <span aria-hidden className="h-[4px] w-[36px] rounded-full bg-[color:var(--border-strong)]" />
-              </button>
+                <span className="h-[4px] w-[36px] rounded-full bg-[color:var(--border-strong)]" />
+              </div>
               <div className="flex items-center justify-between px-[16px] pt-[4px] pb-[10px]">
                 <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
                   {copy.sheetTitle}

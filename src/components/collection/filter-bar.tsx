@@ -22,6 +22,13 @@ const WUBRG = ["W", "U", "B", "R", "G"] as const;
 
 export type ViewMode = "rows" | "grid";
 
+/**
+ * How the set selection was changed. `Clear` and "toggle the last set off" both
+ * end at an empty selection but announce DIFFERENT strings, and the end state
+ * cannot tell them apart — the caller says which it was.
+ */
+export type FilterChangeIntent = "clear-sets";
+
 export function FilterBar({
   filters,
   sort,
@@ -41,7 +48,11 @@ export function FilterBar({
   /** The bar's single live region content — the panel writes here too. */
   announcement: string;
   onAnnounce: (message: string) => void;
-  onFiltersChange: (f: BrowseFilters) => void;
+  /**
+   * `intent` distinguishes the panel's `Clear` from toggling the last set off:
+   * both land on an empty selection but announce different strings.
+   */
+  onFiltersChange: (f: BrowseFilters, intent?: FilterChangeIntent) => void;
   onSortChange: (s: SortKey) => void;
   onViewChange: (v: ViewMode) => void;
 }) {
@@ -154,7 +165,7 @@ export function FilterBar({
                 : [...filters.setCodes, code],
             })
           }
-          onClear={() => onFiltersChange({ ...filters, setCodes: [] })}
+          onClear={() => onFiltersChange({ ...filters, setCodes: [] }, "clear-sets")}
           onAnnounce={onAnnounce}
         />
 

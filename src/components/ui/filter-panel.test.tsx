@@ -1,6 +1,9 @@
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { collectionFilterCopy } from "../../lib/copy/collection";
+import type { BrowseFilters } from "../../lib/collection/browse";
+import { FilterBar } from "../collection/filter-bar";
+import { setChangeAnnouncement } from "../collection/browser";
 import { FilterPanel, type FilterPanelOption } from "./filter-panel";
 
 // jsdom ships no matchMedia, and useIsDesktop() decides which of the popover /
@@ -114,6 +117,64 @@ describe("FilterPanel", () => {
     // "254 sets owned" under "no matches" contradicts itself — the whole footer goes.
     expect(screen.queryByText(/sets owned/)).toBeNull();
     expect(screen.queryByRole("button", { name: "Clear" })).toBeNull();
+  });
+
+  it("keeps the sheet's Done bar in the no-results state", () => {
+    setViewport(false);
+    renderPanel();
+    openPanel();
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "zzzz" } });
+    expect(screen.getByText(collectionFilterCopy.set.emptyTitle)).toBeTruthy();
+    // Desktop drops the footer here; the sheet cannot — Done is its way out.
+    expect(screen.getByRole("button", { name: "Done" })).toBeTruthy();
+  });
+
+  it("closes the desktop popover when focus tabs out of it", () => {
+    setViewport(true);
+    renderPanel();
+    openPanel();
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    fireEvent.focusOut(screen.getByRole("combobox"), { relatedTarget: outside });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    outside.remove();
+  });
+
+  it("keeps the popover open while focus moves between its own controls", () => {
+    setViewport(true);
+    renderPanel({ selected: ["BLB"] });
+    openPanel();
+    const clear = screen.getByRole("button", { name: "Clear" });
+    fireEvent.focusOut(screen.getByRole("combobox"), { relatedTarget: clear });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    // A transient null relatedTarget is not "focus left the panel".
+    fireEvent.focusOut(clear, { relatedTarget: null });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("numbers every option over the flat visible list", () => {
+    setViewport(true);
+    renderPanel({ selected: ["MH3"] });
+    openPanel();
+    // MH3 is pinned into `Selected · 1`, so it leads the flat order across the
+    // two groups; the set size spans both.
+    expect(
+      screen.getAllByRole("option").map((el) => [
+        el.getAttribute("data-code"),
+        el.getAttribute("aria-posinset"),
+        el.getAttribute("aria-setsize"),
+      ]),
+    ).toEqual([
+      ["MH3", "1", "3"],
+      ["BLB", "2", "3"],
+      ["BRO", "3", "3"],
+    ]);
+
+    // Under a query the positions renumber over the matches, not the whole list.
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "b" } });
+    expect(
+      screen.getAllByRole("option").map((el) => el.getAttribute("aria-setsize")),
+    ).toEqual(["2", "2"]);
   });
 
   it("marks a zero-count row aria-disabled and never toggles it", () => {
@@ -271,5 +332,54 @@ describe("FilterPanel", () => {
     openPanel();
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(screen.queryByText(collectionFilterCopy.set.groupDefault)).toBeNull();
+  });
+});
+
+// `Clear` and "toggle the last set off" both end at an empty selection, so the
+// announcement cannot be inferred from the resulting count — the button says so.
+describe("FilterPanel Clear announcement", () => {
+  const filtersWith = (setCodes: string[]): BrowseFilters => ({
+    search: "",
+    colors: [],
+    type: null,
+    setCodes,
+  });
+
+  function renderBar(setCodes: string[]) {
+    const onFiltersChange = vi.fn();
+    render(
+      <FilterBar
+        filters={filtersWith(setCodes)}
+        sort="name"
+        view="grid"
+        setOptions={OPTIONS.map((o) => ({ ...o, releasedAt: null }))}
+        announcement=""
+        onAnnounce={() => {}}
+        onFiltersChange={onFiltersChange}
+        onSortChange={() => {}}
+        onViewChange={() => {}}
+      />,
+    );
+    return onFiltersChange;
+  }
+
+  it("flags the panel's Clear as a clear, at any selection size", () => {
+    setViewport(true);
+    const onFiltersChange = renderBar(["BLB"]);
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(onFiltersChange).toHaveBeenCalledWith(filtersWith([]), "clear-sets");
+  });
+
+  it("reads the cleared string for Clear with exactly one set selected", () => {
+    expect(
+      setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933, "clear-sets"),
+    ).toBe(collectionFilterCopy.set.announceCleared("2,933"));
+  });
+
+  it("still reads the removed string when the last set is toggled off", () => {
+    expect(setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933)).toBe(
+      collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, "0", "2,933"),
+    );
   });
 });
