@@ -145,8 +145,8 @@ export function ReviewScreen({
               <MiniStat number={preview.parseErrors.length} numberColor="var(--danger)" label="parse errors" />
               <MiniStat number={preview.rowCount} numberColor="var(--fg)" label="rows read" />
             </div>
-            {/* Same §Mini Stat Cell type ramp, on its own line: a fourth cell in the row would
-                squeeze all four below the label's legible width on a 360px viewport. */}
+            {/* Matches the mini-stat label's 11px/--fg-faint. Its own line because a fourth cell
+                would squeeze all four below the label's legible width on a 360px viewport. */}
             {skippedByDesign > 0 && (
               <p className="text-[11px]" style={{ color: "var(--fg-faint)" }}>
                 {skippedByDesign.toLocaleString()} token and emblem rows skipped
