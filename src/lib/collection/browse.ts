@@ -104,7 +104,12 @@ export function resolveImageUri(r: {
   return r.exactImageUri ?? r.representativeImageUri ?? r.cardImageUri ?? null;
 }
 
-/** Digits-only prefix of a collector number, or null when it has none ("★"). */
+/**
+ * A collector number's digits with every non-digit stripped, so "12a" and "A-12" both sort as 12
+ * and numberless values like "★" sort last. Deliberately the same rule as `numericPart` in
+ * transform-printings.ts: browse order has to agree with the order the ingest chose the
+ * representative printing by, or a tile shows one printing's art under another's caption.
+ */
 function collectorNumberSortKey(collectorNumber: string): number {
   const digits = collectorNumber.replace(/\D/g, "");
   return digits === "" ? Number.MAX_SAFE_INTEGER : Number(digits);

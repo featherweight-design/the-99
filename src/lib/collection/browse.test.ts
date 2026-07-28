@@ -114,6 +114,16 @@ describe("aggregateCollection", () => {
     expect(agg.printings.map((p) => `${p.setCode}-${p.collectorNumber}`))
       .toEqual(["2XM-5", "C21-9", "C21-100"]);
   });
+  it("sorts a numberless collector number last and a prefixed one by its digits", () => {
+    // Same rule as the ingest's numericPart, so browse order matches the order the
+    // representative printing was chosen by.
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "★" }),
+      raw({ collectorNumber: "A-12" }),
+      raw({ collectorNumber: "9" }),
+    ]);
+    expect(agg.printings.map((p) => p.collectorNumber)).toEqual(["9", "A-12", "★"]);
+  });
   it("picks the card image deterministically — first non-null in printing order, not row order", () => {
     const [agg] = aggregateCollection([
       raw({ collectorNumber: "600", exactImageUri: "late.png" }),
