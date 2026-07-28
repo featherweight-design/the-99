@@ -44,6 +44,11 @@ jobs:
     # and the names are case-insensitively unique. Schedule and release carry no inputs, so
     # they fall through to production — matching the Vercel cron this replaces.
     environment: catalog-${{ inputs.target || 'production' }}
+    defaults:
+      run:
+        # GitHub expands `shell: bash` to `bash -eo pipefail`. Without it the seed steps' exit
+        # status would be `tee`'s, so a failed ingest would report the job as green.
+        shell: bash
     env:
       # Each environment holds its own CATALOG_DATABASE_URL, following the
       # MIGRATE_DATABASE_URL precedent of a separate, explicitly-scoped connection string.
