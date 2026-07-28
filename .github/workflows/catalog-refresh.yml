@@ -26,7 +26,10 @@ on:
         default: all
 
 concurrency:
-  group: catalog-refresh
+  # Per target: the two environments hold different databases, so a manual staging refresh has
+  # no reason to queue behind — or delay — the scheduled production one. Never cancel in
+  # progress; a half-applied ingest leaves the representative pass unrun.
+  group: catalog-refresh-${{ github.event.inputs.target || 'production' }}
   cancel-in-progress: false
 
 permissions:
@@ -38,7 +41,10 @@ jobs:
     # CATALOG_REFRESH_ENABLED repository variable to 'true' or scheduled refresh never fires.
     if: vars.CATALOG_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # The printings bulk alone is 620MB and its download timeout is 30 minutes, before any
+    # parsing or upserting. A timeout here aborts mid-ingest and skips the representative
+    # recompute, so leave generous headroom rather than trimming to the expected runtime.
+    timeout-minutes: 180
     # GitHub environment names are `catalog-staging` / `catalog-production`: a bare
     # `production` environment cannot be created because Vercel already owns `Production`
     # and the names are case-insensitively unique. Schedule and release carry no inputs, so
