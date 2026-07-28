@@ -130,6 +130,25 @@ export const printings = pgTable("printings", {
 - **FK kept**, orphans filtered at ingest by pre-loading the ~34.7k known `oracle_id`s into a
   Set (~1.2MB). Integrity without lock-stepping the two ingests.
 
+#### 3.2.0 `skipped_printings` — the token/emblem ledger (§9.1)
+
+The FK above means tokens and emblems can never live in `printings`: they have no row in
+`cards`. But upload needs to answer "is this ID a token, or genuinely unknown?" without a
+network call, so the same ingest pass writes every `SKIP_LAYOUTS` entry to a second, minimal
+table.
+
+```ts
+export const skippedPrintings = pgTable("skipped_printings", {
+  scryfallId: uuid("scryfall_id").primaryKey(),
+  layout: text("layout").notNull(),   // token | double_faced_token | emblem | art_series
+  name: text("name").notNull(),
+});
+```
+
+No FK, no images, no oracle id. One extra `if` in the streaming loop, and it keeps
+`printings` clean rather than nullable-ing `oracle_id` to make room for cards that are not
+cards.
+
 #### ⚠︎ 3.2.1 Double-faced cards — must mirror the existing face fallback
 
 **This was the single worst error in the first draft.** `transform`, `modal_dfc` and
@@ -288,12 +307,12 @@ permissions: { contents: read }
 
 All three triggers coexist — monthly schedule, release-published, manual dispatch.
 
-**Judgment call — also migrate the existing oracle refresh?** `vercel.json` runs
+**Decided 2026-07-27 — the existing oracle refresh migrates here too.** `vercel.json` runs
 `/api/cron/scryfall-refresh` weekly at `maxDuration = 300`. Its comment describes the oracle
 file as "~150MB"; it is **201.4MB today**. It has outgrown its own documentation and shares the
-timeout failure mode we are avoiding for printings. Consolidating deletes the cron route, the
-`CRON_SECRET` handling and the `vercel.json` crons block. **Recommend doing it here** — a net
-deletion that removes a latent timeout. Flagged for your call, not assumed.
+timeout failure mode we are avoiding for printings. This phase therefore deletes the cron route,
+its `CRON_SECRET` handling and the `vercel.json` crons block, and folds oracle refresh into the
+`job: oracle` path of the workflow above — a net deletion that removes a latent timeout.
 
 ⚠︎ **This phase is not invisible.** If it deletes the Vercel cron, `CATALOG_REFRESH_ENABLED`
 must be set to `'true'` **before merge** or oracle refresh silently stops. No UI change, but a
@@ -310,6 +329,10 @@ lowercase existing `set_code` values (§3.3), drop and recreate the primary key.
   `Set name` (`findHeaderIndex` tries candidates in order, so `set code` wins — keep a test).
 - `actions.ts` — carry `scryfallId` + `collectorNumber` through `PendingItem`, the aggregation
   key, and the insert.
+- **Token/emblem reporting (§9.1).** Split the unmatched count in two: rows whose Scryfall ID
+  hits `skipped_printings` (§3.2.0) are *skipped by design*; everything else stays *unmatched*.
+  The review screen reports them on separate lines. Depends on the Phase 2 ingest, so it cannot
+  move earlier than this phase.
 
 ⚠︎ **There is no "upsert" to update.** `actions.ts:121-127` is `delete`-then-plain-`insert`
 inside a transaction — no `onConflictDo*` anywhere. The first draft referred to "the confirm
@@ -422,9 +445,9 @@ multi-printing cards, then promote.
   103 previously-collapsed rows persist separately (Safewright Cavalry correctly still merges).
 - **Gate:** `pnpm typecheck && pnpm lint && pnpm test` + stub-DB build.
 
-## 9. Adjacent findings — decisions needed
+## 9. Adjacent findings — decided 2026-07-27
 
-### 9.1 Tokens and emblems fail to import silently (113 rows, 3.9%)
+### 9.1 Tokens and emblems fail to import silently (113 rows, 3.9%) — **in scope, Phase 4**
 
 `transform.ts:11` excludes `token`, `double_faced_token`, `emblem` and `art_series`, so these
 cards are **absent from the catalog entirely** — verified against production, where `Food`,
@@ -434,23 +457,37 @@ do. All 113 land in "unmatched" with no explanation.
 Excluding them from a deck-building catalog is defensible — you do not build a 99 out of
 tokens. Reporting them as generic unmatched rows is not; it reads as a broken importer.
 
-**Recommendation:** keep the exclusion, count them separately on the upload review screen
-("113 token and emblem rows skipped"). **Not in scope until you say so.**
+**Decision:** keep the exclusion, count them separately. Phase 4 classifies a row as
+*skipped-by-design* rather than *unmatched* when its Scryfall ID resolves to a printing whose
+layout is in `SKIP_LAYOUTS`, and the review screen reports the two counts on separate lines
+("113 token and emblem rows skipped"). Requires the `printings` table to answer "what layout is
+this ID?" without a network call — which is why it lands in Phase 4 and not earlier.
 
-### 9.2 `#17` duplicates `#86`
+### 9.2 `#17` duplicates `#86` — **closed 2026-07-27**
 
-Close one into the other before work starts.
+### ⚠︎ 9.3 Etched foil — narrower than the first draft claimed
 
-### 9.3 Etched foil finish (§3.4)
+The first draft assumed etched foils would collapse into regular foils under a boolean. Checked
+against Scryfall: **920 of 1,205 etched printings are separate card objects with their own
+collector numbers** (`finishes: ["etched"]` exclusively), so `collector_number` in the new key
+already separates them. The real exposure is the **285 printings that carry `nonfoil`, `foil`
+and `etched` on one object** (STA, MH2 retro frames) — there, foil and foil-etched share a
+collector number and would merge.
 
-Follow-up ticket, not this work.
+`the-vault.csv` contains **zero** etched rows today; ManaBox's `Foil` column holds only `normal`
+and `foil`. **Decision pending §10.**
+
+**LOE if we do fix it:** `foil boolean` → `finish text` (`'nonfoil' | 'foil' | 'etched'`) in the
+same migration Phase 4 already writes, so no extra migration. Six source files touch `foil`
+(~16 non-test references): `schema.ts`, `parse.ts`, `paste.ts`, `actions.ts`, `browse.ts`, plus
+fixtures and four test files. Roughly half a day inside Phase 4; several days if retrofitted
+later, because by then the PK is in production and needs a second rewrite.
 
 ---
 
 ## 10. Open questions
 
-1. **Migrate the oracle cron to Actions (§Phase 3)?** Recommended; your call.
-2. **Commission the filter-panel design handoff now?** Gates Phase 6 only; covers
-   `Type ▾` / `Set ▾` / `Sort ▾` together.
-3. **Token/emblem reporting (§9.1)** — fold in, or separate ticket?
-4. **Etched foil (§9.3)** — accept the limitation for now?
+1. ~~Migrate the oracle cron to Actions~~ — **yes**, folded into Phase 3.
+2. ~~Commission the filter-panel design handoff~~ — **yes**, prompt issued 2026-07-27.
+3. ~~Token/emblem reporting~~ — **yes**, folded into Phase 4 (§9.1).
+4. **Etched foil (§9.3)** — open. Zero rows affected today; ~half a day now vs. days later.
