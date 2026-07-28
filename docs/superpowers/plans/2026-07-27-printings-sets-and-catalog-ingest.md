@@ -345,6 +345,35 @@ and recreate the primary key — in that order, since the old PK holds a referen
   The review screen reports them on separate lines. Depends on the Phase 2 ingest, so it cannot
   move earlier than this phase.
 
+#### 4.4a `pnpm db:seed:collection` — CLI collection import
+
+The key change invalidates every existing `collection_items` row, so the collection must be
+re-imported after this phase. Doing that through `/collection/replace` requires a browser and a
+Clerk session; a CLI path is both faster and reusable for seeding a fresh Neon branch.
+
+```
+scripts/seed-collection.ts        →  pnpm db:seed:collection
+  --file <path>     required, a ManaBox-shaped CSV (default data/the-vault.csv)
+  --user <clerkId>  required, the Clerk user id the rows belong to
+  --dry-run         parse, match and report; write nothing
+```
+
+- **Reuses the real code path**, it does not reimplement it: `parseCollectionCsv` (`parse.ts`)
+  → `matchRows` (`match.ts`) → the same aggregation and the same delete-then-insert transaction
+  that `actions.ts` runs. A second implementation would drift from the server action and stop
+  being a test of it.
+- **Prints the same three counts the review screen shows** — imported, skipped-by-design,
+  unmatched — so a CLI run and a UI run are comparable. On `data/the-vault.csv` post-Phase-4
+  that should read 2,821 imported / 113 skipped / 0 unmatched.
+- **`--dry-run` is the default in CI.** A test asserts the three counts against the checked-in
+  fixture, which makes this script a regression test for the whole import pipeline rather than
+  a one-off utility.
+- **Guardrail:** refuses to run without `--user`, and prints the target database host plus the
+  existing row count for that user before deleting anything. Wiping the wrong branch's
+  collection is the only destructive thing here.
+- Not wired into GitHub Actions — this is a local/manual utility. Catalog ingest is automated
+  (Phase 3); a user's collection is not.
+
 ⚠︎ **There is no "upsert" to update.** `actions.ts:121-127` is `delete`-then-plain-`insert`
 inside a transaction — no `onConflictDo*` anywhere. The first draft referred to "the confirm
 upsert's conflict target," which does not exist. Consequence: the aggregation key **must
