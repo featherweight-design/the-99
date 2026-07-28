@@ -6,12 +6,17 @@
  * Row.line is the 1-based line number in the source CSV (header is line 1),
  * so errors and unmatched rows can point the user back at the file (READINESS #2).
  */
+import type { Finish } from "../collection/key";
+
 export type CollectionRow = {
   name: string;
+  /** Lowercased at parse time — Scryfall's codes are lowercase and the printings join is exact. */
   setCode: string;
+  /** "" when the export has no collector-number column, matching the column default. */
+  collectorNumber: string;
   quantity: number;
   scryfallId: string | null;
-  foil: boolean;
+  finish: Finish;
   condition: string | null;
   line: number;
 };
@@ -19,13 +24,32 @@ export type ParseError = { line: number; raw: string; reason: string };
 
 const NAME_HEADERS = ["name", "card name", "card"];
 const QUANTITY_HEADERS = ["quantity", "count", "qty"];
+// "set code" first: ManaBox ships both `Set code` and `Set name`, and findHeaderIndex
+// returns the first candidate that exists, so the code column must be tried first.
 const SET_HEADERS = ["set code", "set", "edition"];
+const COLLECTOR_NUMBER_HEADERS = ["collector number", "collector no", "number", "cn"];
 const FOIL_HEADERS = ["foil", "finish"];
 const CONDITION_HEADERS = ["condition"];
 const SCRYFALL_HEADERS = ["scryfall id"];
 
-// Foil column values that mean "not foil". Empty string also means not foil.
-const NON_FOIL_VALUES = new Set(["", "normal", "false", "nonfoil"]);
+/**
+ * Foil/Finish column values → Scryfall's finish vocabulary. ManaBox emits normal/foil/etched;
+ * the other supported exports emit true/false or nothing at all. ANY unrecognised value falls
+ * back to "nonfoil", which is exactly what the old boolean did and is what keeps the Moxfield /
+ * Archidekt / Deckbox / bare "Name,Qty" exports importing.
+ */
+const FINISH_VALUES = new Map<string, Finish>([
+  ["foil", "foil"],
+  ["true", "foil"],
+  ["yes", "foil"],
+  ["etched", "etched"],
+  ["foil etched", "etched"],
+  ["etched foil", "etched"],
+]);
+
+export function parseFinish(raw: string): Finish {
+  return FINISH_VALUES.get(raw.trim().toLowerCase()) ?? "nonfoil";
+}
 
 function splitCsvLine(line: string): string[] {
   const out: string[] = [];
@@ -69,6 +93,7 @@ export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; er
     return { rows: [], errors: [{ line: 1, raw: lines[0], reason: "header missing Quantity column" }] };
   }
   const setIdx = findHeaderIndex(header, SET_HEADERS);
+  const collectorIdx = findHeaderIndex(header, COLLECTOR_NUMBER_HEADERS);
   const foilIdx = findHeaderIndex(header, FOIL_HEADERS);
   const conditionIdx = findHeaderIndex(header, CONDITION_HEADERS);
   const scryfallIdx = findHeaderIndex(header, SCRYFALL_HEADERS);
@@ -95,13 +120,15 @@ export function parseCollectionCsv(csvText: string): { rows: CollectionRow[]; er
       errors.push({ line: i + 1, raw: lines[i], reason: "missing card name" });
       continue;
     }
-    const foilRaw = foilIdx !== -1 ? (cols[foilIdx] ?? "").trim().toLowerCase() : "";
     rows.push({
       name,
-      setCode: setIdx !== -1 ? (cols[setIdx] ?? "").trim() : "",
+      // Lowercased on write (§3.3): ManaBox stores set codes raw and UPPERCASE while Scryfall's
+      // are lowercase, so the printings join would match zero rows without this.
+      setCode: setIdx !== -1 ? (cols[setIdx] ?? "").trim().toLowerCase() : "",
+      collectorNumber: collectorIdx !== -1 ? (cols[collectorIdx] ?? "").trim() : "",
       quantity,
       scryfallId: scryfallIdx !== -1 ? ((cols[scryfallIdx] ?? "").trim() || null) : null,
-      foil: !NON_FOIL_VALUES.has(foilRaw),
+      finish: parseFinish(foilIdx !== -1 ? (cols[foilIdx] ?? "") : ""),
       condition: conditionIdx !== -1 ? ((cols[conditionIdx] ?? "").trim() || null) : null,
       line: i + 1,
     });

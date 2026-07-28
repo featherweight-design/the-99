@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
 } from "drizzle-orm/pg-core";
+import { FINISHES } from "../lib/collection/key";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -70,14 +71,37 @@ export const skippedPrintings = pgTable("skipped_printings", {
   name: text("name").notNull(),
 });
 
+/**
+ * A holding is a *printing*, not an oracle card: `(user, oracle, set, collector number, finish)`.
+ *
+ * `scryfall_id` is nullable because only ManaBox exports carry one — Moxfield, Archidekt,
+ * Deckbox and bare "Name,Qty" lists do not, and `collector_number NOT NULL DEFAULT ''` keeps
+ * those imports behaving exactly as they did under the old key.
+ *
+ * `finish` is text rather than the old `foil boolean` so it matches Scryfall's `finishes`
+ * vocabulary exactly (nonfoil | foil | etched) and never needs translating; 285 Scryfall
+ * printings carry all three finishes under one collector number, which a boolean would merge.
+ *
+ * The aggregation key in src/lib/collection/key.ts MUST equal this primary key — confirm is a
+ * delete-then-plain-insert with no ON CONFLICT, so a mismatch raises 23505 instead of merging.
+ */
 export const collectionItems = pgTable("collection_items", {
   userId: text("user_id").notNull(),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
   quantity: integer("quantity").notNull(),
-  setCode: text("set_code").notNull(),
-  foil: boolean("foil").notNull().default(false),
+  setCode: text("set_code").notNull(),                              // lowercase, as Scryfall emits
+  // The exact printing owned, when the export tells us. Null when it does not, or when rows
+  // that share the rest of the key disagree (same rule as `condition`).
+  scryfallId: uuid("scryfall_id"),
+  collectorNumber: text("collector_number").notNull().default(""),  // TEXT — "31", "12a", "★"
+  finish: text("finish", { enum: FINISHES }).notNull().default("nonfoil"),
   condition: text("condition"),
-}, (t) => [primaryKey({ columns: [t.userId, t.oracleId, t.setCode, t.foil] })]);
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId, t.setCode, t.collectorNumber, t.finish] }),
+  // The column's enum option only narrows the TypeScript type; a text column with a closed
+  // vocabulary drifts without a database-level constraint.
+  check("collection_items_finish_check", sql`${t.finish} in ('nonfoil', 'foil', 'etched')`),
+]);
 
 export const decks = pgTable("decks", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -144,8 +168,10 @@ export const csvUploads = pgTable("csv_uploads", {
   filename: text("filename").notNull(),
   rowCount: integer("row_count").notNull(),
   unmatchedCount: integer("unmatched_count").notNull(),
-  // Full preview payload: { unmatched, parseErrors, pendingItems } — pendingItems are
-  // compact aggregated (oracleId,setCode,foil) totals that confirm reads back.
+  // Full preview payload: { unmatched, skipped, parseErrors, pendingItems } — pendingItems are
+  // compact aggregated (oracleId,setCode,collectorNumber,finish) totals that confirm reads
+  // back. A preview written before migration 0008 has no collectorNumber/finish, so confirm
+  // coerces both rather than spreading undefined (which would NOT take the column default).
   previewPayload: jsonb("preview_payload").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // Set when the preview is confirmed into the collection; null = abandoned preview.

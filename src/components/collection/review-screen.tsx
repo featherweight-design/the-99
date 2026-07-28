@@ -26,6 +26,10 @@ export function ReviewScreen({
 
   const importCount = preview.matchedCardCount;
   const skipped = preview.unmatchedRows.length + preview.parseErrors.length;
+  // Tokens and emblems are excluded from the Oracle catalog by design, so they are reported
+  // on their own line rather than inside the unmatched tally — 113 of them reading as
+  // "unmatched names" makes a working import look broken (§9.1).
+  const skippedByDesign = preview.skippedByDesignCount ?? 0;
   const unmatchedShown = preview.unmatchedRows.slice(0, INITIAL_LIMIT);
   const errorsShown = preview.parseErrors.slice(0, INITIAL_LIMIT);
   // Inspector opens on the populated tab; Unmatched by default, Parse errors
@@ -117,6 +121,15 @@ export function ReviewScreen({
               </span>
               <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>parse errors</span>
             </div>
+            {skippedByDesign > 0 && (
+              <div className="flex items-center gap-[10px]">
+                <span aria-hidden className="rounded-full flex-none" style={{ width: 9, height: 9, background: "var(--fg-faint)" }} />
+                <span className="font-mono text-[16px]" style={{ color: "var(--fg-faint)" }}>
+                  {skippedByDesign.toLocaleString()}
+                </span>
+                <span className="text-[13px]" style={{ color: "var(--fg-muted)" }}>token and emblem rows skipped</span>
+              </div>
+            )}
             <div
               className="text-[11.5px] pt-[9px]"
               style={{ color: "var(--fg-faint)", borderTop: "1px solid var(--border)" }}
@@ -126,10 +139,19 @@ export function ReviewScreen({
           </div>
 
           {/* Mobile mini stats — §Issue Summary Mini Stats */}
-          <div className="md:hidden flex gap-[8px] mt-[14px]">
-            <MiniStat number={preview.unmatchedRows.length} numberColor="var(--warning)" label="unmatched" />
-            <MiniStat number={preview.parseErrors.length} numberColor="var(--danger)" label="parse errors" />
-            <MiniStat number={preview.rowCount} numberColor="var(--fg)" label="rows read" />
+          <div className="md:hidden flex flex-col gap-[8px] mt-[14px]">
+            <div className="flex gap-[8px]">
+              <MiniStat number={preview.unmatchedRows.length} numberColor="var(--warning)" label="unmatched" />
+              <MiniStat number={preview.parseErrors.length} numberColor="var(--danger)" label="parse errors" />
+              <MiniStat number={preview.rowCount} numberColor="var(--fg)" label="rows read" />
+            </div>
+            {/* Same §Mini Stat Cell type ramp, on its own line: a fourth cell in the row would
+                squeeze all four below the label's legible width on a 360px viewport. */}
+            {skippedByDesign > 0 && (
+              <p className="text-[11px]" style={{ color: "var(--fg-faint)" }}>
+                {skippedByDesign.toLocaleString()} token and emblem rows skipped
+              </p>
+            )}
           </div>
         </div>
 

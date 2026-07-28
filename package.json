@@ -18,7 +18,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed-cards.ts",
     "db:seed:sets": "tsx scripts/seed-sets.ts",
-    "db:seed:printings": "tsx scripts/seed-printings.ts"
+    "db:seed:printings": "tsx scripts/seed-printings.ts",
+    "db:seed:collection": "tsx scripts/seed-collection.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",

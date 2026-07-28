@@ -7,7 +7,7 @@
 
 import React, { useRef } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
-import { cssUrl, WUBRG_HEX } from "../../lib/collection/browse";
+import { cssUrl, printingCaption, WUBRG_HEX } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { ManaCost } from "./mana-pips";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -254,7 +254,9 @@ export function CardModal({
               className="md:hidden mt-[16px] grid grid-cols-2 rounded-[10px] overflow-hidden"
               style={{ background: "var(--border)", gap: 1, border: "1px solid var(--border)" }}
             >
-              <MetaCell label="Set" value={card.primarySetCode} />
+              {/* Set + collector number of the printing on screen (§Phase 5) — the art is a
+                  specific printing now, so the caption names it. */}
+              <MetaCell label="Set" value={printingCaption(card)} />
               <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
               <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
               <MetaCell label="You own" value={`×${card.quantity}`} quantity />
@@ -262,7 +264,7 @@ export function CardModal({
 
             {/* DESKTOP meta flex row — §Desktop: Meta Fields */}
             <div className="hidden md:flex flex-wrap gap-[26px] mt-[24px]">
-              <MetaField label="Set" value={`${card.primarySetCode}`} />
+              <MetaField label="Set" value={printingCaption(card)} />
               <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
               <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
               <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
