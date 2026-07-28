@@ -105,18 +105,24 @@ export function FilterPanel({
     [options, selected, searchable],
   );
 
-  const close = useCallback(() => {
+  // `preventScroll` is for the scroll-dismiss path only: the panel closes because
+  // the user scrolled, so yanking the page back to the trigger would fight them.
+  const close = useCallback((opts?: { preventScroll?: boolean }) => {
     setOpen(false);
     setActiveCode(null);
     dragStartY.current = null;
     setDragY(0);
-    triggerRef.current?.focus();
+    triggerRef.current?.focus({ preventScroll: opts?.preventScroll ?? false });
   }, []);
 
   // Focus the search field on open — DOM focus then stays there for the panel's
-  // whole life, which is what keeps typing uninterrupted by the arrow keys.
+  // whole life, which is what keeps typing uninterrupted by the arrow keys. With
+  // no search field the dialog itself takes focus, or the key handler (which is
+  // bound to the dialog) would never fire and the panel would be keyboard-dead.
   useEffect(() => {
-    if (open && searchable) inputRef.current?.focus();
+    if (!open) return;
+    if (searchable) inputRef.current?.focus();
+    else panelRef.current?.focus();
   }, [open, searchable]);
 
   // Outside click and page scroll dismiss the desktop popover. (The sheet has a
@@ -132,13 +138,20 @@ export function FilterPanel({
       if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
       dismiss();
     };
+    // Scroll unmounts whatever holds focus, so focus has to be put back rather
+    // than dropped on the body — but only when it was inside the panel, and
+    // without scrolling the trigger back into view against the user's gesture.
+    const onScroll = () => {
+      if (panelRef.current?.contains(document.activeElement)) close({ preventScroll: true });
+      else dismiss();
+    };
     document.addEventListener("mousedown", onPointerDown);
-    window.addEventListener("scroll", dismiss, true);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
-      window.removeEventListener("scroll", dismiss, true);
+      window.removeEventListener("scroll", onScroll, true);
     };
-  }, [open, isDesktop]);
+  }, [open, isDesktop, close]);
 
   // Keep the active row in view. No wrap at the ends, so this only ever nudges.
   useEffect(() => {
@@ -494,7 +507,7 @@ export function FilterPanel({
             {/* Dismiss only — it commits nothing. */}
             <button
               type="button"
-              onClick={close}
+              onClick={() => close()}
               className="rounded-lg px-[22px] py-[10px] font-sans text-[13.5px] font-semibold bg-[color:var(--brass)] text-[color:var(--bg)]"
             >
               {copy.done}
@@ -656,7 +669,7 @@ export function FilterPanel({
             {/* Scrim — the same one the shipped card modal uses. Tap dismisses. */}
             <div
               role="presentation"
-              onClick={close}
+              onClick={() => close()}
               className="fixed inset-0 z-40 bg-[rgba(8,6,4,0.72)]"
             />
             <div
@@ -697,7 +710,7 @@ export function FilterPanel({
                 </h2>
                 <button
                   type="button"
-                  onClick={close}
+                  onClick={() => close()}
                   aria-label="Close"
                   className="flex h-[30px] w-[30px] items-center justify-center rounded-full text-[13px] bg-[color:var(--surface-raised)] text-[color:var(--fg-muted)] border border-solid border-[color:var(--border-strong)]"
                 >
