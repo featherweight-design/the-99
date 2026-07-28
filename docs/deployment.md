@@ -32,7 +32,7 @@ Manual runs: **Actions → Catalog refresh → Run workflow**, choosing `target`
 
 ## First-time setup
 
-1. **Neon:** create a project (or reuse the dev project with a `production` branch), run migrations against it: `DATABASE_URL=<prod url> pnpm db:migrate`, then seed the catalog: `DATABASE_URL=<prod url> pnpm db:seed && pnpm db:seed:sets && pnpm db:seed:printings` (oracle cards before printings — the printings FK filters against them).
+1. **Neon:** create a project (or reuse the dev project with a `production` branch), run migrations against it: `DATABASE_URL=<prod url> pnpm db:migrate`, then seed the catalog: `export DATABASE_URL=<prod url>` and run `pnpm db:seed && pnpm db:seed:sets && pnpm db:seed:printings` (oracle cards before printings — the printings FK filters against them).
 2. **Clerk:** create a production instance for the-99.dev, note the `pk_live_`/`sk_live_` keys, and configure the domain per Clerk's DNS instructions.
 3. **Vercel:** import the GitHub repo, framework preset Next.js, set the three env vars for Production (and Preview if desired — previews can share the dev Neon branch + Clerk test keys).
 4. **Domain:** add `the-99.dev` in Vercel → Domains; create the CNAME/A records it prescribes in Cloudflare DNS (DNS-only/grey-cloud, per Vercel's guidance).
