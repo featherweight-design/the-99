@@ -37,8 +37,13 @@ export const collectionFilterCopy = {
 
     // Empty state — the one place this control carries the voice
     emptyTitle: "Nothing in the pile by that name",
-    emptyBody: (query: string) =>
-      `No owned set matches “${query}”. Only sets you own are listed here.`,
+    // Split into parts rather than one string so the echoed query can carry its
+    // own colour and weight without the sentence being duplicated in the JSX.
+    emptyBody: (query: string) => ({
+      before: "No owned set matches ",
+      query: `“${query}”`,
+      after: ". Only sets you own are listed here.",
+    }),
 
     // Live region (shared with the filter bar — one region for the whole bar)
     announceMatches: (n: number, query: string) =>

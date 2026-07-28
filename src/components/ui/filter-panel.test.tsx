@@ -26,8 +26,11 @@ function setViewport(desktop: boolean) {
 }
 
 // jsdom implements no layout, so it ships no scrollIntoView. The panel calls it
-// to keep the keyboard-active row in view; a no-op is the right stand-in.
-Element.prototype.scrollIntoView = () => {};
+// to keep the keyboard-active row in view; a no-op is the right stand-in. Only
+// patched when it is genuinely missing, so a real implementation is never masked.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
 
 afterEach(() => {
   vi.useRealTimers();

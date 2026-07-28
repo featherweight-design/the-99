@@ -440,6 +440,7 @@ export function FilterPanel({
   }
 
   function renderEmptyState() {
+    const emptyBody = copy.emptyBody(query.trim());
     return (
       <div className="px-[22px] pt-[26px] pb-[22px] text-center md:px-[20px] md:pt-[20px]">
         <div
@@ -453,12 +454,10 @@ export function FilterPanel({
         <p className="m-0 mb-[7px] font-display text-[17px] font-semibold text-[color:var(--fg)] md:mb-[6px] md:text-[15.5px]">
           {copy.emptyTitle}
         </p>
-        {/* Same sentence as copy.emptyBody, split so the echoed query can carry
-            its own colour and weight (the copy module returns a plain string). */}
         <p className="m-0 font-sans text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] md:text-[12.5px]">
-          No owned set matches{" "}
-          <span className="font-semibold text-[color:var(--fg-body)]">“{query.trim()}”</span>. Only
-          sets you own are listed here.
+          {emptyBody.before}
+          <span className="font-semibold text-[color:var(--fg-body)]">{emptyBody.query}</span>
+          {emptyBody.after}
         </p>
         <button
           type="button"
