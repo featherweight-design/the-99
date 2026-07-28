@@ -71,7 +71,9 @@ export function toCollectionItemValues(userId: string, items: PendingItem[]) {
   return items.map((v) => ({
     userId,
     oracleId: v.oracleId,
-    setCode: v.setCode,
+    // Lowercased here as well as at parse time: a preview written before 0008 can be confirmed
+    // after it, and an uppercase code stored here joins against nothing in `printings`.
+    setCode: v.setCode.toLowerCase(),
     scryfallId: v.scryfallId ?? null,
     collectorNumber: v.collectorNumber ?? "",
     finish: v.finish && isFinish(v.finish) ? v.finish : ("nonfoil" as Finish),

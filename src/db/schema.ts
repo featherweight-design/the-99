@@ -168,8 +168,8 @@ export const csvUploads = pgTable("csv_uploads", {
   filename: text("filename").notNull(),
   rowCount: integer("row_count").notNull(),
   unmatchedCount: integer("unmatched_count").notNull(),
-  // Full preview payload: { unmatched, skipped, parseErrors, pendingItems } — pendingItems are
-  // compact aggregated (oracleId,setCode,collectorNumber,finish) totals that confirm reads
+  // Full preview payload: { unmatched, skippedByDesignCount, parseErrors, pendingItems } —
+  // pendingItems are compact aggregated (oracleId,setCode,collectorNumber,finish) totals that confirm reads
   // back. A preview written before migration 0008 has no collectorNumber/finish, so confirm
   // coerces both rather than spreading undefined (which would NOT take the column default).
   previewPayload: jsonb("preview_payload").notNull(),

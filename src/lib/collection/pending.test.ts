@@ -92,6 +92,11 @@ describe("toCollectionItemValues", () => {
     expect(value.scryfallId).toBeNull();
   });
 
+  it("lowercases a set code from a pre-0008 payload written before parse-time lowercasing", () => {
+    const legacy: PendingItem = { oracleId: "o-1", setCode: "C21", condition: null, quantity: 1 };
+    expect(toCollectionItemValues("user_1", [legacy])[0].setCode).toBe("c21");
+  });
+
   it("falls back to nonfoil for a finish outside the check constraint's vocabulary", () => {
     const rogue = { oracleId: "o-1", setCode: "c21", collectorNumber: "1", finish: "gilded", condition: null, quantity: 1 } as unknown as PendingItem;
     expect(toCollectionItemValues("user_1", [rogue])[0].finish).toBe("nonfoil");
