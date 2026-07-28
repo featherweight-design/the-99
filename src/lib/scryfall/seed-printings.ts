@@ -5,7 +5,7 @@ import { parser } from "stream-json";
 import { streamArray } from "stream-json/streamers/stream-array.js";
 import { db } from "../../db";
 import { cards, printings, skippedPrintings } from "../../db/schema";
-import { SCRYFALL_HEADERS } from "./seed-sets";
+import { SCRYFALL_HEADERS } from "./http";
 import {
   classifyPrinting,
   type PrintingRow,

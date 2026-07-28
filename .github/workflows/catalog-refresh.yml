@@ -17,7 +17,10 @@ on:
         options: [staging, production]
         default: staging
       job:
-        description: Which ingest to run
+        # `printings` alone exists to re-run a failed printings ingest against an oracle
+        # catalog already known to be current. Against a stale one, genuinely new printings
+        # are filtered out as FK orphans, so that run reports its orphan count loudly.
+        description: Which ingest to run (`printings` alone assumes a current oracle catalog)
         type: choice
         options: [all, sets, printings, oracle]
         default: all
@@ -87,4 +90,9 @@ jobs:
         if: env.JOB == 'all' || env.JOB == 'printings'
         run: |
           echo "### Printings" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$JOB" = "printings" ]; then
+            echo "> Oracle cards were **not** refreshed in this run. Printings whose card is" \
+                 "missing from the oracle catalog are counted below as orphans, not imported." \
+                 >> "$GITHUB_STEP_SUMMARY"
+          fi
           pnpm --silent db:seed:printings | tee -a "$GITHUB_STEP_SUMMARY"

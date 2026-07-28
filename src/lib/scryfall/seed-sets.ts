@@ -1,17 +1,10 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { sets } from "../../db/schema";
+import { SCRYFALL_HEADERS } from "./http";
 import { toSetRows } from "./transform-sets";
 
 const SETS_INDEX = "https://api.scryfall.com/sets";
-
-// Scryfall requires a User-Agent and 400s on requests without an explicit Accept header.
-// (The older seed.ts sends only User-Agent and survives on Node's default `*/*`; new code
-// is explicit rather than relying on that.)
-export const SCRYFALL_HEADERS = {
-  "User-Agent": "the-99/1.0",
-  Accept: "application/json",
-} as const;
 
 /** Ingests the full Scryfall set catalog. Idempotent: upserts on `code`. */
 export async function seedSets(): Promise<{ upserted: number }> {
