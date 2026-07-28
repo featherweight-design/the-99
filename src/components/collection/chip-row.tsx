@@ -19,7 +19,8 @@ export function ChipRow({
   onClearAll,
   onRemoveColor,
   onClearType,
-  onClearSet,
+  setLabels,
+  onRemoveSet,
   onClearSearch,
 }: {
   filters: BrowseFilters;
@@ -30,14 +31,16 @@ export function ChipRow({
   onClearAll: () => void;
   onRemoveColor: (c: string) => void;
   onClearType: () => void;
-  onClearSet: () => void;
+  /** Set code → set name. Chips read names, never raw codes (#86). */
+  setLabels: Record<string, string>;
+  onRemoveSet: (code: string) => void;
   onClearSearch: () => void;
 }) {
   const anyActive =
     filters.search.trim() !== "" ||
     filters.colors.length > 0 ||
     filters.type !== null ||
-    filters.setCode !== null;
+    filters.setCodes.length > 0;
 
   // Result count copy per §Result Count Label / §Copy (result count variants).
   // uniqueCount = distinct cards in the whole collection; totalQuantity = sum of
@@ -72,8 +75,11 @@ export function ChipRow({
       ))}
       {/* Type chip */}
       {filters.type && <Chip label={filters.type} onRemove={onClearType} />}
-      {/* Set chip */}
-      {filters.setCode && <Chip label={filters.setCode} onRemove={onClearSet} />}
+      {/* One chip per selected set, in selection order. Labelled with the set
+          name; falls back to the code when the `sets` catalog has no row. */}
+      {filters.setCodes.map((code) => (
+        <Chip key={code} label={setLabels[code] ?? code} onRemove={() => onRemoveSet(code)} />
+      ))}
 
       {/* Sort chip — non-removable, shows current sort */}
       {sort !== "name" && (

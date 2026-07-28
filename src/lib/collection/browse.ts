@@ -1,5 +1,7 @@
 import { cache } from "react";
 import { and, eq, sql } from "drizzle-orm";
+// Type-only, so the set-filter → browse dependency stays one-way at runtime.
+import type { OwnedSetMeta } from "./set-filter";
 
 /** Rarity ordering for the "rarity" sort key. */
 const RARITY_ORDER: Record<string, number> = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
@@ -38,7 +40,8 @@ export type BrowseFilters = {
   search: string;
   colors: string[];       // subset of ["W","U","B","R","G"]
   type: string | null;    // substring match against typeLine
-  setCode: string | null; // matches any variant setCode, case-insensitive
+  /** Multi-select (#86): a card matches when ANY selected code is one of its setCodes. */
+  setCodes: string[];
 };
 
 export type SortKey = "name" | "quantity" | "set" | "rarity" | "color";
@@ -220,7 +223,8 @@ export function printingCaption(card: BrowseCard): string {
 export function filterCards(list: BrowseCard[], f: BrowseFilters): BrowseCard[] {
   const search = f.search.trim().toLowerCase();
   const type = f.type?.toLowerCase() ?? null;
-  const setCode = f.setCode?.toLowerCase() ?? null;
+  // Sets OR with each other and AND with every other filter.
+  const setCodes = new Set(f.setCodes.map((s) => s.toLowerCase()));
   return list.filter((c) => {
     if (search && !c.name.toLowerCase().includes(search)) return false;
     if (f.colors.length > 0) {
@@ -228,7 +232,10 @@ export function filterCards(list: BrowseCard[], f: BrowseFilters): BrowseCard[] 
       for (const col of f.colors) if (!id.has(col)) return false;
     }
     if (type && !c.typeLine.toLowerCase().includes(type)) return false;
-    if (setCode && !c.setCodes.some((s) => s.toLowerCase() === setCode)) return false;
+    if (
+      setCodes.size > 0 &&
+      !c.setCodes.some((s) => setCodes.has(s.toLowerCase()))
+    ) return false;
     return true;
   });
 }
@@ -308,4 +315,27 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
     )
     .where(eq(collectionItems.userId, userId));
   return aggregateCollection(rows);
+});
+
+/**
+ * Server query — the `sets` catalog rows for the sets this user owns, for the
+ * Set ▾ panel's names and release-date ordering (#86).
+ *
+ * Same untested-query pattern as above: an inner join over the user's distinct
+ * owned set codes, no logic. A code with no `sets` row simply does not come
+ * back; buildSetOptions falls the option back to the uppercased code.
+ */
+export const loadOwnedSetMeta = cache(async function loadOwnedSetMeta(
+  userId: string,
+): Promise<OwnedSetMeta[]> {
+  const { db } = await import("../../db");
+  const { collectionItems, sets } = await import("../../db/schema");
+  const rows = await db
+    .selectDistinct({ code: sets.code, name: sets.name, releasedAt: sets.releasedAt })
+    .from(collectionItems)
+    // set_code is stored lowercase on both sides since 0008; lower() keeps a row
+    // written by an older build from dropping out of the join.
+    .innerJoin(sets, eq(sets.code, sql`lower(${collectionItems.setCode})`))
+    .where(eq(collectionItems.userId, userId));
+  return rows;
 });
