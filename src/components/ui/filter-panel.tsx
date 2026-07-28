@@ -530,8 +530,11 @@ export function FilterPanel({
           <SearchField
             ref={inputRef}
             role="combobox"
-            aria-controls={listId}
-            aria-expanded
+            // The listbox is unmounted in the no-results state, so the reference
+            // has to go with it — a combobox pointing at a missing element is a
+            // broken relationship, not an empty one.
+            aria-controls={noResults ? undefined : listId}
+            aria-expanded={!noResults}
             aria-activedescendant={activeCode ? optionDomId(activeCode) : undefined}
             aria-label={copy.searchAriaLabel}
             placeholder={copy.searchPlaceholder}
