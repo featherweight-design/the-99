@@ -22,7 +22,7 @@ export type PrintingClassification =
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw Scryfall bulk JSON is untyped by design; classifyPrinting narrows it.
 type Raw = Record<string, any>;
 
-/** Layouts excluded from the catalog by transform.ts:11 — they have no row in `cards`. */
+/** Layouts the oracle transform excludes from `cards` — a printing of one has no FK target. */
 const SKIP_LAYOUTS = new Set(["token", "double_faced_token", "emblem", "art_series"]);
 
 /**
@@ -100,7 +100,7 @@ export function classifyPrinting(raw: Raw): PrintingClassification {
   };
 }
 
-/** Digits-only prefix of a collector number, or null when it has none ("★"). */
+/** Every digit in a collector number, non-digits stripped, or null when it has none ("★"). */
 function numericPart(collectorNumber: string): number | null {
   const digits = collectorNumber.replace(/\D/g, "");
   return digits === "" ? null : Number(digits);
