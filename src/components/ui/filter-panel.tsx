@@ -716,7 +716,7 @@ export function FilterPanel({
                 <button
                   type="button"
                   onClick={() => close()}
-                  aria-label="Close"
+                  aria-label={copy.closeLabel}
                   className="flex h-[30px] w-[30px] items-center justify-center rounded-full text-[13px] bg-[color:var(--surface-raised)] text-[color:var(--fg-muted)] border border-solid border-[color:var(--border-strong)]"
                 >
                   ✕

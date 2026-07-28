@@ -34,6 +34,8 @@ export const collectionFilterCopy = {
     footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
     clear: "Clear",
     done: "Done",
+    /** Accessible name for the sheet's ✕ — the sheet's one accessible close control. */
+    closeLabel: "Close",
 
     // Empty state — the one place this control carries the voice
     emptyTitle: "Nothing in the pile by that name",
