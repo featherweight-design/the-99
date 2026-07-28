@@ -187,7 +187,7 @@ button[aria-haspopup=dialog][aria-expanded]
 - **Theme-aware values** (`base`, `surface`, `elevated`, `line`, text ramp, `accent`) come from
   `src/app/globals.css` `var(--*)`; the hexes above are Palette A values for theme-independent
   reference only. No new token is introduced.
-- **Copy** lives in `src/lib/copy/collection.ts` — see `collection-filter · copy strings.ts` in this
+- **Copy** belongs in a new `src/lib/copy/collection.ts` — see `collection-filter · copy strings.ts` in this
   folder for the exact strings, keyed and ready to paste, following `shell.ts`'s shape.
 - Mock data: set names, codes and release dates are real; owned counts and the 254 / 2,933 figures
   mirror `data/the-vault.csv`'s shape and are fabricated.
