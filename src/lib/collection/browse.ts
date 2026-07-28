@@ -179,10 +179,23 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
   for (const card of byOracle.values()) {
     card.printings = [...printingsByOracle.get(card.oracleId)!.values()].sort(comparePrintings);
     card.setCodes.sort();
-    card.primarySetCode = card.printings[0].setCode;
-    card.imageUri = card.printings.find((p) => p.imageUri !== null)?.imageUri ?? null;
+    const primary = primaryPrinting(card.printings);
+    card.primarySetCode = primary.setCode;
+    card.imageUri = primary.imageUri;
   }
   return [...byOracle.values()];
+}
+
+/**
+ * The one printing a card is represented by: the first in display order that has art, falling
+ * back to the first overall when the user owns no printing with an image.
+ *
+ * Art and caption MUST come from this same printing. Picking the image from the first
+ * image-bearing printing while captioning the first printing outright is #84 again in miniature:
+ * the tile would show one printing's art under another printing's set code.
+ */
+function primaryPrinting(printings: BrowsePrinting[]): BrowsePrinting {
+  return printings.find((p) => p.imageUri !== null) ?? printings[0];
 }
 
 /**
@@ -191,7 +204,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
  * line of a dense list — but the modal shows one specific piece of art and has to say which.
  */
 export function printingCaption(card: BrowseCard): string {
-  const primary = card.printings[0];
+  const primary = primaryPrinting(card.printings);
   const base = primary?.collectorNumber
     ? `${primary.setCode} · ${primary.collectorNumber}`
     : card.primarySetCode;

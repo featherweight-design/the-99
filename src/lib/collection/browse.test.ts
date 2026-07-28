@@ -128,6 +128,15 @@ describe("aggregateCollection", () => {
     ]);
     expect(agg.imageUri).toBe("b.png");
   });
+  it("captions the printing the art came from when the first printing has no image", () => {
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263" }),
+      raw({ collectorNumber: "600", exactImageUri: "b.png" }),
+    ]);
+    expect(agg.imageUri).toBe("b.png");
+    expect(agg.primarySetCode).toBe("C21");
+    expect(printingCaption(agg)).toBe("C21 · 600 +1 more");
+  });
 });
 
 describe("printingCaption", () => {

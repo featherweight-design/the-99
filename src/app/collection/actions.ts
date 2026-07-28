@@ -59,7 +59,14 @@ async function buildPreview(args: {
     .from(collectionItems)
     .where(eq(collectionItems.userId, userId));
 
-  const unmatchedPayload = unmatched.map((r) => ({ name: r.name, setCode: r.setCode, line: r.line, quantity: r.quantity }));
+  // Set codes are stored lowercase to join against `printings` but displayed uppercase
+  // everywhere else, and this payload is read straight back out by the issue inspector.
+  const unmatchedPayload = unmatched.map((r) => ({
+    name: r.name,
+    setCode: r.setCode.toUpperCase(),
+    line: r.line,
+    quantity: r.quantity,
+  }));
 
   const [upload] = await db.insert(csvUploads).values({
     userId,
