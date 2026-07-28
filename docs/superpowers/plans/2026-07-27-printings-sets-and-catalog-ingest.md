@@ -203,7 +203,7 @@ join instead would require an expression index to stay usable.
 
 ```
 current: (user_id, oracle_id, set_code, foil)
-new:     (user_id, oracle_id, set_code, collector_number, foil)
+new:     (user_id, oracle_id, set_code, collector_number, finish)
        + scryfall_id uuid NULL
 ```
 
@@ -212,12 +212,21 @@ Deckbox and bare `Name,Qty`** exports (`parse.ts:20-25`) and only ManaBox suppli
 ID. `collector_number` is `NOT NULL DEFAULT ''`, so a bare `Name,Qty` import behaves exactly as
 it does today. `oracle_id` stays in the key because every recommendation and deck join uses it.
 
-⚠︎ **Etched foils still collide.** `finishes` includes `etched`, and `parse.ts:28` maps it to
-the boolean `foil`. An etched and a traditional foil of the same collector number remain one
-row. So "distinct printings are distinct holdings" is delivered *except* for finish. Fixing it
-means replacing the `foil` boolean with a `finish` text column — a wider change touching every
-read path. **Recommend accepting the limitation and documenting it; raise as a follow-up
-ticket.** Flagged rather than silently shipped.
+⚠︎ **`foil boolean` becomes `finish text` — decided 2026-07-27, in scope.** See §9.3 for the
+sizing. Values are `'nonfoil' | 'foil' | 'etched'`, matching Scryfall's `finishes` vocabulary
+exactly so the two never need translating.
+
+- **Migration.** Same migration as the key change, so there is no second rewrite:
+  `ALTER TABLE collection_items ADD COLUMN finish text NOT NULL DEFAULT 'nonfoil'`, backfill
+  `finish = CASE WHEN foil THEN 'foil' ELSE 'nonfoil' END`, drop `foil`, then recreate the PK.
+  Order matters — the old PK references `foil`, so it must be dropped before the column is.
+- **Parser.** `parse.ts:28`'s `NON_FOIL_VALUES` set becomes a map to the three-value union.
+  ManaBox emits `normal` / `foil` / `etched`; unknown values fall back to `'nonfoil'`, which is
+  today's behaviour for unrecognised strings and keeps the non-ManaBox exports working.
+- **Constraint.** A `CHECK (finish IN ('nonfoil','foil','etched'))` — the column is a closed
+  vocabulary and a text column without one drifts.
+- Six source files touch `foil` (~16 non-test references): `schema.ts`, `parse.ts`, `paste.ts`,
+  `actions.ts`, `browse.ts`, plus fixtures and four test files.
 
 ### ⚠︎ 3.5 Image resolution is a COALESCE, not a first-tier-wins cascade
 
@@ -322,11 +331,13 @@ checklist.
 ### Phase 4 — persist printing identity through upload
 
 Migration `0008`: add `scryfall_id` (nullable) and `collector_number` (`NOT NULL DEFAULT ''`),
-lowercase existing `set_code` values (§3.3), drop and recreate the primary key.
+add `finish` and retire `foil` (§3.4), lowercase existing `set_code` values (§3.3), then drop
+and recreate the primary key — in that order, since the old PK holds a reference to `foil`.
 
 - `parse.ts` — parse `Collector number` (candidates: `collector number`, `collector no`,
-  `number`, `cn`); lowercase `setCode`. Header matching must still pick `Set code` over
-  `Set name` (`findHeaderIndex` tries candidates in order, so `set code` wins — keep a test).
+  `number`, `cn`); lowercase `setCode`; map the `Foil` column to the `finish` union (§3.4).
+  Header matching must still pick `Set code` over `Set name` (`findHeaderIndex` tries candidates
+  in order, so `set code` wins — keep a test).
 - `actions.ts` — carry `scryfallId` + `collectorNumber` through `PendingItem`, the aggregation
   key, and the insert.
 - **Token/emblem reporting (§9.1).** Split the unmatched count in two: rows whose Scryfall ID
@@ -337,17 +348,17 @@ lowercase existing `set_code` values (§3.3), drop and recreate the primary key.
 ⚠︎ **There is no "upsert" to update.** `actions.ts:121-127` is `delete`-then-plain-`insert`
 inside a transaction — no `onConflictDo*` anywhere. The first draft referred to "the confirm
 upsert's conflict target," which does not exist. Consequence: the aggregation key **must
-exactly equal the new PK** (`oracleId|setCode|collectorNumber|foil`) or the insert raises
+exactly equal the new PK** (`oracleId|setCode|collectorNumber|finish`) or the insert raises
 `23505` instead of merging. This is now the single most important invariant in the phase, and
 needs a direct test.
 
 ⚠︎ **Specify the `scryfallId` collapse rule.** `actions.ts:56` nulls `condition` when rows in a
 group disagree. The same question applies to `scryfallId`: two rows sharing
-`oracleId|setCode|collectorNumber|foil` but carrying different IDs must collapse to NULL, by
+`oracleId|setCode|collectorNumber|finish` but carrying different IDs must collapse to NULL, by
 the same rule and for the same reason.
 
 ⚠︎ **`csv_uploads.preview_payload` — doc drift and in-flight previews.** `schema.ts:95-96`
-hard-codes "compact aggregated `(oracleId,setCode,foil)` totals" and must be updated. A preview
+hard-codes "compact aggregated `(oracleId,setCode,foil)` totals" (now `(oracleId,setCode,collectorNumber,finish)`) and must be updated. A preview
 created *before* the migration and confirmed *after* has no `collectorNumber`; the
 `{userId, ...v}` spread would pass `undefined`, which is **not** the same as omitting the key
 and will not take the column default. Coerce with `collectorNumber: v.collectorNumber ?? ''`.
@@ -475,13 +486,11 @@ and `etched` on one object** (STA, MH2 retro frames) — there, foil and foil-et
 collector number and would merge.
 
 `the-vault.csv` contains **zero** etched rows today; ManaBox's `Foil` column holds only `normal`
-and `foil`. **Decision pending §10.**
+and `foil`.
 
-**LOE if we do fix it:** `foil boolean` → `finish text` (`'nonfoil' | 'foil' | 'etched'`) in the
-same migration Phase 4 already writes, so no extra migration. Six source files touch `foil`
-(~16 non-test references): `schema.ts`, `parse.ts`, `paste.ts`, `actions.ts`, `browse.ts`, plus
-fixtures and four test files. Roughly half a day inside Phase 4; several days if retrofitted
-later, because by then the PK is in production and needs a second rewrite.
+**Decision 2026-07-27: fix it now**, in Phase 4's migration (§3.4). Half a day inside this work
+versus several days retrofitted, because by then the key is in production and needs a second
+rewrite plus a re-upload. The trigger for the bug is buying one Strixhaven-style etched foil.
 
 ---
 
@@ -490,4 +499,8 @@ later, because by then the PK is in production and needs a second rewrite.
 1. ~~Migrate the oracle cron to Actions~~ — **yes**, folded into Phase 3.
 2. ~~Commission the filter-panel design handoff~~ — **yes**, prompt issued 2026-07-27.
 3. ~~Token/emblem reporting~~ — **yes**, folded into Phase 4 (§9.1).
-4. **Etched foil (§9.3)** — open. Zero rows affected today; ~half a day now vs. days later.
+4. ~~Etched foil~~ — **fix now**, folded into Phase 4's migration (§3.4, §9.3).
+
+All four resolved. No open questions block execution; Phase 6 waits on the design handoff
+(spec: `docs/superpowers/specs/2026-07-27-collection-filter-panel-design.md`, handed off
+2026-07-27).
