@@ -18,9 +18,15 @@ type Args = { file: string; user: string | null; dryRun: boolean };
 
 function parseArgs(argv: string[]): Args {
   const args: Args = { file: "data/the-vault.csv", user: null, dryRun: false };
+  // A missing value has to fail here rather than swallow the following flag: `--user --dry-run`
+  // would otherwise wipe and reseed a user literally named "--dry-run".
+  const value = (flag: string, next: string | undefined) => {
+    if (next === undefined || next.startsWith("--")) throw new Error(`${flag} needs a value`);
+    return next;
+  };
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--file") args.file = argv[++i] ?? "";
-    else if (argv[i] === "--user") args.user = argv[++i] ?? null;
+    if (argv[i] === "--file") args.file = value("--file", argv[++i]);
+    else if (argv[i] === "--user") args.user = value("--user", argv[++i]);
     else if (argv[i] === "--dry-run") args.dryRun = true;
     else throw new Error(`unknown argument "${argv[i]}"`);
   }

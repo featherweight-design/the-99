@@ -30,6 +30,9 @@ export function ReviewScreen({
   // on their own line rather than inside the unmatched tally — 113 of them reading as
   // "unmatched names" makes a working import look broken (§9.1).
   const skippedByDesign = preview.skippedByDesignCount ?? 0;
+  // The footer counts every row that will not be imported; `skipped` above stays on the two
+  // the issue inspector can actually show you, because it gates the button that opens it.
+  const skippedTotal = skipped + skippedByDesign;
   const unmatchedShown = preview.unmatchedRows.slice(0, INITIAL_LIMIT);
   const errorsShown = preview.parseErrors.slice(0, INITIAL_LIMIT);
   // Inspector opens on the populated tab; Unmatched by default, Parse errors
@@ -134,7 +137,7 @@ export function ReviewScreen({
               className="text-[11.5px] pt-[9px]"
               style={{ color: "var(--fg-faint)", borderTop: "1px solid var(--border)" }}
             >
-              {skipped.toLocaleString()} rows will be skipped
+              {skippedTotal.toLocaleString()} rows will be skipped
             </div>
           </div>
 
