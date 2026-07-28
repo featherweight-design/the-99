@@ -7,7 +7,7 @@ model that replacing a native widget obliges us to specify. Nothing else on the 
 redesigned.
 
 File: `The 99 - Collection · Filter Panel.dc.html` (canvas — pan/zoom). Each state leads with the
-phone, desktop beside it. Read `design_handoff_the99_collection/README.md` first — this document
+phone, desktop beside it. Read `design/design_handoff_the99_collection/README.md` first — this document
 only records what **changes**.
 
 **Locked decisions honoured** (spec §locked): set **names** over codes · **searchable** ·
