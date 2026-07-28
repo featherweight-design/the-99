@@ -1,0 +1,111 @@
+name: Catalog refresh
+
+# Replaces the Vercel cron that hit /api/cron/scryfall-refresh: the oracle bulk is 201MB and
+# the printings bulk 620MB, both of which have outgrown the cron's 300s maxDuration. A runner
+# gives us hours instead of minutes.
+on:
+  schedule:
+    # 09:00 UTC on the 1st of each month.
+    - cron: '0 9 1 * *'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which catalog database to refresh
+        type: choice
+        options: [staging, production]
+        default: staging
+      job:
+        # `printings` alone exists to re-run a failed printings ingest against an oracle
+        # catalog already known to be current. Against a stale one, genuinely new printings
+        # are filtered out as FK orphans, so that run reports its orphan count loudly.
+        description: Which ingest to run (`printings` alone assumes a current oracle catalog)
+        type: choice
+        options: [all, sets, printings, oracle]
+        default: all
+
+concurrency:
+  # Per target: the two environments hold different databases, so a manual staging refresh has
+  # no reason to queue behind — or delay — the scheduled production one. Never cancel in
+  # progress; a half-applied ingest leaves the representative pass unrun.
+  group: catalog-refresh-${{ github.event.inputs.target || 'production' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    # Kill switch for the automatic triggers; a manual dispatch always runs. Set the
+    # CATALOG_REFRESH_ENABLED repository variable to 'true' or scheduled refresh never fires.
+    if: vars.CATALOG_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # The printings bulk alone is 620MB and its download timeout is 30 minutes, before any
+    # parsing or upserting. A timeout here aborts mid-ingest and skips the representative
+    # recompute, so leave generous headroom rather than trimming to the expected runtime.
+    timeout-minutes: 180
+    # GitHub environment names are `catalog-staging` / `catalog-production`: a bare
+    # `production` environment cannot be created because Vercel already owns `Production`
+    # and the names are case-insensitively unique. Schedule and release carry no inputs, so
+    # they fall through to production — matching the Vercel cron this replaces. The `inputs`
+    # context only exists on workflow_dispatch, so read them through `github.event.inputs`,
+    # which resolves to null on the other triggers instead of failing to evaluate.
+    environment: catalog-${{ github.event.inputs.target || 'production' }}
+    defaults:
+      run:
+        # GitHub expands `shell: bash` to `bash -eo pipefail`. Without it the seed steps' exit
+        # status would be `tee`'s, so a failed ingest would report the job as green.
+        shell: bash
+    env:
+      # Each environment holds its own CATALOG_DATABASE_URL, following the
+      # MIGRATE_DATABASE_URL precedent of a separate, explicitly-scoped connection string.
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      JOB: ${{ github.event.inputs.job || 'all' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start run summary
+        run: |
+          {
+            echo "## Catalog refresh"
+            echo ""
+            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
+            echo "- Job: \`$JOB\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh sets
+        if: env.JOB == 'all' || env.JOB == 'sets'
+        run: |
+          echo "### Sets" >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed:sets | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh oracle cards
+        # Must precede printings: printings.oracle_id has an FK to cards.oracle_id, so a
+        # stale cards table would have every new printing filtered out as an orphan.
+        if: env.JOB == 'all' || env.JOB == 'oracle'
+        run: |
+          echo "### Oracle cards" >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh printings
+        if: env.JOB == 'all' || env.JOB == 'printings'
+        run: |
+          echo "### Printings" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$JOB" = "printings" ]; then
+            echo "> Oracle cards were **not** refreshed in this run. Printings whose card is" \
+                 "missing from the oracle catalog are counted below as orphans, not imported." \
+                 >> "$GITHUB_STEP_SUMMARY"
+          fi
+          pnpm --silent db:seed:printings | tee -a "$GITHUB_STEP_SUMMARY"

@@ -5,17 +5,18 @@ import { parser } from "stream-json";
 import { streamArray } from "stream-json/streamers/stream-array.js";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
+import { SCRYFALL_HEADERS } from "./http";
 import { toCardRow, type CardRow } from "./transform";
 
 // Scryfall's documented bulk-data type identifier (the hyphenated alias also resolves).
 const BULK_INDEX = "https://api.scryfall.com/bulk-data/oracle_cards";
 
-// The bulk file is a ~150MB JSON array; stream-parse it so the seed never
-// materializes the whole payload (keeps the Vercel cron route within memory limits).
+// The bulk file is a ~200MB JSON array; stream-parse it so the seed never
+// materializes the whole payload.
 export async function seedCards(): Promise<{ upserted: number; skipped: number }> {
   const meta = await fetch(BULK_INDEX, {
-    headers: { "User-Agent": "the-99/1.0" },
-    signal: AbortSignal.timeout(10_000),
+    headers: SCRYFALL_HEADERS,
+    signal: AbortSignal.timeout(30_000),
   }).then((r) => {
     if (!r.ok) throw new Error(`bulk-data index ${r.status}`);
     return r.json();
@@ -23,12 +24,12 @@ export async function seedCards(): Promise<{ upserted: number; skipped: number }
   if (typeof meta?.download_uri !== "string") {
     throw new Error("unexpected bulk-data index shape: missing download_uri");
   }
-  // The timeout spans the whole request including body streaming; 240s stays
-  // inside the cron route's 300s maxDuration so a stalled download fails loudly
-  // instead of being killed by the platform mid-seed.
+  // The timeout spans the whole request including body streaming. This was 240s to stay inside
+  // the Vercel cron's 300s maxDuration; that ceiling is gone with the cron, and 240s was already
+  // tight for a 200MB file. 30 minutes still fails loudly inside the workflow's timeout-minutes.
   const res = await fetch(meta.download_uri, {
-    headers: { "User-Agent": "the-99/1.0" },
-    signal: AbortSignal.timeout(240_000),
+    headers: SCRYFALL_HEADERS,
+    signal: AbortSignal.timeout(1_800_000),
   });
   if (!res.ok || !res.body) throw new Error(`bulk download ${res.status}`);
 

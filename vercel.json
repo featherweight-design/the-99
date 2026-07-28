@@ -1,3 +1,0 @@
-{
-  "crons": [{ "path": "/api/cron/scryfall-refresh", "schedule": "0 9 * * 1" }]
-}

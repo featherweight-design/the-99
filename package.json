@@ -16,7 +16,9 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx scripts/seed-cards.ts"
+    "db:seed": "tsx scripts/seed-cards.ts",
+    "db:seed:sets": "tsx scripts/seed-sets.ts",
+    "db:seed:printings": "tsx scripts/seed-printings.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.5.20",
