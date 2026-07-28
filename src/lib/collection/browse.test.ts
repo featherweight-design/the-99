@@ -4,9 +4,17 @@ import {
   cssUrl,
   filterCards,
   formatLastUpdated,
+  printingCaption,
+  resolveImageUri,
   sortCards,
   type BrowseCard,
+  type BrowsePrinting,
+  type RawCollectionRow,
 } from "./browse";
+
+const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
+  setCode: "C21", collectorNumber: "263", quantity: 1, imageUri: null, ...over,
+});
 
 const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
   oracleId: "o-1",
@@ -19,29 +27,139 @@ const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
   colorIdentity: [],
   imageUri: null,
   quantity: 1,
+  printings: [printing()],
   setCodes: ["C21"],
   primarySetCode: "C21",
   ...over,
 });
 
+const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
+  oracleId: "o-1", quantity: 1, setCode: "c21", collectorNumber: "263",
+  name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: null,
+  keywords: [], rarity: "uncommon", colorIdentity: [],
+  exactImageUri: null, representativeImageUri: null, cardImageUri: null,
+  ...over,
+});
+
+describe("resolveImageUri (§3.5 — COALESCE on value, not on match)", () => {
+  it("tier 1: the exact printing owned wins", () => {
+    expect(resolveImageUri({ exactImageUri: "exact.png", representativeImageUri: "rep.png", cardImageUri: "card.png" }))
+      .toBe("exact.png");
+  });
+  it("tier 2: the representative printing when no exact printing is joined", () => {
+    expect(resolveImageUri({ exactImageUri: null, representativeImageUri: "rep.png", cardImageUri: "card.png" }))
+      .toBe("rep.png");
+  });
+  it("tier 3: a double-faced card whose printing row exists but carries a NULL image falls to the oracle image", () => {
+    // The join SUCCEEDED here — transform/modal_dfc printings have no top-level image_uris.
+    // Selecting on match success rather than on a non-null value would blank this tile.
+    expect(resolveImageUri({ exactImageUri: null, representativeImageUri: null, cardImageUri: "card.png" }))
+      .toBe("card.png");
+  });
+  it("tier 4: all three null hands off to the identity gradient downstream", () => {
+    expect(resolveImageUri({ exactImageUri: null, representativeImageUri: null, cardImageUri: null }))
+      .toBeNull();
+  });
+});
+
 describe("aggregateCollection", () => {
   it("sums quantities across variants of the same oracle id", () => {
-    const rows = [
-      { oracleId: "o-1", quantity: 2, setCode: "C21", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: null, keywords: [], rarity: "uncommon", colorIdentity: [], imageUri: null },
-      { oracleId: "o-1", quantity: 1, setCode: "LEA", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: null, keywords: [], rarity: "uncommon", colorIdentity: [], imageUri: null },
-    ];
-    const [agg] = aggregateCollection(rows);
+    const [agg] = aggregateCollection([
+      raw({ quantity: 2, setCode: "c21", collectorNumber: "263" }),
+      raw({ quantity: 1, setCode: "lea", collectorNumber: "270" }),
+    ]);
     expect(agg.quantity).toBe(3);
     expect(agg.setCodes.sort()).toEqual(["C21", "LEA"]);
-    expect(agg.primarySetCode).toBe("C21"); // min() lexicographic
+    expect(agg.primarySetCode).toBe("C21");
   });
   it("keeps oracle metadata from the first row seen", () => {
-    const rows = [
-      { oracleId: "o-1", quantity: 1, setCode: "C21", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: "Tap: Add {C}{C}.", keywords: [], rarity: "uncommon", colorIdentity: [], imageUri: "img.png" },
-    ];
-    const [agg] = aggregateCollection(rows);
+    const [agg] = aggregateCollection([
+      raw({ oracleText: "Tap: Add {C}{C}.", cardImageUri: "img.png" }),
+    ]);
     expect(agg.imageUri).toBe("img.png");
     expect(agg.oracleText).toBe("Tap: Add {C}{C}.");
+  });
+  it("uppercases stored-lowercase set codes for display (§3.3)", () => {
+    const [agg] = aggregateCollection([raw({ setCode: "2xm" })]);
+    expect(agg.setCodes).toEqual(["2XM"]);
+    expect(agg.printings[0].setCode).toBe("2XM");
+  });
+  it("groups printings on collector number, not on set alone", () => {
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263" }),
+      raw({ collectorNumber: "600" }), // same set, borderless art
+    ]);
+    expect(agg.printings.map((p) => p.collectorNumber)).toEqual(["263", "600"]);
+    expect(agg.setCodes).toEqual(["C21"]);
+  });
+  it("collapses the finishes of one printing into a single entry", () => {
+    // nonfoil + foil are two collection_items rows but one piece of art.
+    const [agg] = aggregateCollection([raw({ quantity: 2 }), raw({ quantity: 1 })]);
+    expect(agg.printings).toHaveLength(1);
+    expect(agg.printings[0].quantity).toBe(3);
+  });
+  it("resolves each printing's image independently", () => {
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263", exactImageUri: "a.png" }),
+      raw({ collectorNumber: "600", representativeImageUri: "b.png" }),
+    ]);
+    expect(agg.printings.map((p) => p.imageUri)).toEqual(["a.png", "b.png"]);
+  });
+  it("sorts printings by set then natural collector number", () => {
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "100" }),
+      raw({ collectorNumber: "9" }),
+      raw({ setCode: "2xm", collectorNumber: "5" }),
+    ]);
+    expect(agg.printings.map((p) => `${p.setCode}-${p.collectorNumber}`))
+      .toEqual(["2XM-5", "C21-9", "C21-100"]);
+  });
+  it("sorts a numberless collector number last and a prefixed one by its digits", () => {
+    // Same rule as the ingest's numericPart, so browse order matches the order the
+    // representative printing was chosen by.
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "★" }),
+      raw({ collectorNumber: "A-12" }),
+      raw({ collectorNumber: "9" }),
+    ]);
+    expect(agg.printings.map((p) => p.collectorNumber)).toEqual(["9", "A-12", "★"]);
+  });
+  it("picks the card image deterministically — first non-null in printing order, not row order", () => {
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "600", exactImageUri: "late.png" }),
+      raw({ collectorNumber: "263", exactImageUri: "early.png" }),
+    ]);
+    expect(agg.imageUri).toBe("early.png");
+  });
+  it("skips a null-image printing when choosing the card image", () => {
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263" }),
+      raw({ collectorNumber: "600", exactImageUri: "b.png" }),
+    ]);
+    expect(agg.imageUri).toBe("b.png");
+  });
+  it("captions the printing the art came from when the first printing has no image", () => {
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263" }),
+      raw({ collectorNumber: "600", exactImageUri: "b.png" }),
+    ]);
+    expect(agg.imageUri).toBe("b.png");
+    expect(agg.primarySetCode).toBe("C21");
+    expect(printingCaption(agg)).toBe("C21 · 600 +1 more");
+  });
+});
+
+describe("printingCaption", () => {
+  it("reads set · collector number for a single printing", () => {
+    expect(printingCaption(card())).toBe("C21 · 263");
+  });
+  it("appends a count of the other printings owned", () => {
+    expect(printingCaption(card({
+      printings: [printing(), printing({ collectorNumber: "600" }), printing({ setCode: "LEA", collectorNumber: "270" })],
+    }))).toBe("C21 · 263 +2 more");
+  });
+  it("falls back to the set code alone when the export carried no collector number", () => {
+    expect(printingCaption(card({ printings: [printing({ collectorNumber: "" })] }))).toBe("C21");
   });
 });
 

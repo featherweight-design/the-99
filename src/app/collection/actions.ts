@@ -4,11 +4,13 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { db } from "../../db";
-import { cards, collectionItems, commanderScores, csvUploads } from "../../db/schema";
+import { collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
+import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
+import { aggregatePendingItems, totalQuantity, type PendingItem } from "../../lib/collection/pending";
 import { recommendCommanders } from "../../lib/recs/recommend";
 import { collectionGeneration, persistScores } from "../../lib/recs/store";
 
@@ -16,19 +18,23 @@ export type UploadPreview = {
   uploadId: string;
   matchedCardCount: number;
   unmatchedRows: { name: string; setCode: string; line: number; quantity: number }[];
+  /**
+   * Tokens, emblems and art-series rows (§9.1). Excluded from the catalog by design — they
+   * are reported apart from unmatchedRows so 113 skipped tokens do not read as an importer
+   * that dropped 113 cards on the floor.
+   */
+  skippedByDesignCount: number;
   parseErrors: { line: number; reason: string }[];
   currentCollectionCount: number;
   filename: string;
   rowCount: number;
 };
 
-type PendingItem = { oracleId: string; setCode: string; foil: boolean; condition: string | null; quantity: number };
-
 /**
  * Shared post-parse pipeline for previewUpload / previewPaste.
- * Guards the zero-row case, matches against the catalog, aggregates matched
- * rows to compact (oracleId,setCode,foil) totals, records currentCollectionCount,
- * and writes the csv_uploads row that confirmUpload reads back.
+ * Guards the zero-row case, matches against the catalog + printings, aggregates matched rows
+ * to compact (oracleId,setCode,collectorNumber,finish) totals, records
+ * currentCollectionCount, and writes the csv_uploads row that confirmUpload reads back.
  */
 async function buildPreview(args: {
   userId: string;
@@ -42,31 +48,25 @@ async function buildPreview(args: {
     throw new Error(errors[0] ? `Parse failed: ${errors[0].reason}` : "No card rows to import");
   }
 
-  const catalog = await db
-    .select({ oracleId: cards.oracleId, scryfallId: cards.scryfallId, name: cards.name })
-    .from(cards);
-  const { matched, unmatched } = matchRows(rows, catalog);
+  const { catalog, indexes } = await loadMatchInputs(rows);
+  const { matched, skipped, unmatched } = matchRows(rows, catalog, indexes);
 
-  const agg = new Map<string, PendingItem>();
-  for (const { row, oracleId } of matched) {
-    const key = `${oracleId}|${row.setCode}|${row.foil}`;
-    const existing = agg.get(key);
-    if (existing) {
-      existing.quantity += row.quantity;
-      if (existing.condition !== row.condition) existing.condition = null;
-    } else {
-      agg.set(key, { oracleId, setCode: row.setCode, foil: row.foil, condition: row.condition, quantity: row.quantity });
-    }
-  }
-  const pendingItems = [...agg.values()];
-  const matchedCardCount = pendingItems.reduce((n, i) => n + i.quantity, 0);
+  const pendingItems = aggregatePendingItems(matched);
+  const matchedCardCount = totalQuantity(pendingItems);
 
   const [{ count: currentCollectionCount }] = await db
     .select({ count: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int` })
     .from(collectionItems)
     .where(eq(collectionItems.userId, userId));
 
-  const unmatchedPayload = unmatched.map((r) => ({ name: r.name, setCode: r.setCode, line: r.line, quantity: r.quantity }));
+  // Set codes are stored lowercase to join against `printings` but displayed uppercase
+  // everywhere else, and this payload is read straight back out by the issue inspector.
+  const unmatchedPayload = unmatched.map((r) => ({
+    name: r.name,
+    setCode: r.setCode.toUpperCase(),
+    line: r.line,
+    quantity: r.quantity,
+  }));
 
   const [upload] = await db.insert(csvUploads).values({
     userId,
@@ -75,6 +75,7 @@ async function buildPreview(args: {
     unmatchedCount: unmatched.length,
     previewPayload: {
       unmatched: unmatchedPayload,
+      skippedByDesignCount: skipped.length,
       parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
       pendingItems,
     },
@@ -84,6 +85,7 @@ async function buildPreview(args: {
     uploadId: upload.id,
     matchedCardCount,
     unmatchedRows: unmatchedPayload,
+    skippedByDesignCount: skipped.length,
     parseErrors: errors.map((e) => ({ line: e.line, reason: e.reason })),
     currentCollectionCount,
     filename,
@@ -117,16 +119,9 @@ export async function confirmUpload(uploadId: string): Promise<void> {
 
   const { pendingItems } = upload.previewPayload as { pendingItems: PendingItem[] };
   if (pendingItems.length === 0) throw new Error("Upload has no matched cards; refusing to replace collection");
-  const values = pendingItems.map((v) => ({ userId, ...v }));
-  await db.transaction(async (tx) => {
-    await tx.delete(collectionItems).where(eq(collectionItems.userId, userId));
-    // Every score component derives from the collection, so a replace invalidates all of them.
-    await tx.delete(commanderScores).where(eq(commanderScores.userId, userId));
-    for (let i = 0; i < values.length; i += 500) {
-      await tx.insert(collectionItems).values(values.slice(i, i + 500));
-    }
-    await tx.update(csvUploads).set({ confirmedAt: new Date() }).where(eq(csvUploads.id, uploadId));
-  });
+  // A preview written before migration 0008 carries no collectorNumber/finish;
+  // replaceCollection coerces both rather than spreading undefined into the insert.
+  await replaceCollection(userId, pendingItems, { confirmUploadId: uploadId });
   revalidatePath("/collection");
   revalidatePath("/");
   // Wiping commander_scores above changes what /commanders renders, and slugs are

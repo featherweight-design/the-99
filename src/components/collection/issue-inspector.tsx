@@ -75,7 +75,9 @@ export function IssueInspector({
   const errorsTotal = preview.parseErrors.length;
   const isUnmatchedDisabled = unmatchedTotal === 0;
   const isErrorsDisabled = errorsTotal === 0;
-  const skipped = unmatchedTotal + errorsTotal;
+  // The subtitle says "N of M rows skipped", so N must be every skipped row — including the
+  // tokens and emblems neither tab lists — or it contradicts the review screen's footer.
+  const skipped = unmatchedTotal + errorsTotal + (preview.skippedByDesignCount ?? 0);
   const isInitialImport = preview.currentCollectionCount === 0;
 
   // Memoize so per-keystroke rawQuery re-renders (which don't yet change

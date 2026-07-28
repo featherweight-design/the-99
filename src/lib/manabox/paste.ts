@@ -48,9 +48,12 @@ export function parsePasteList(text: string): { rows: CollectionRow[]; errors: P
     rows.push({
       name,
       setCode: "",
+      // A paste list carries no printing identity at all, so both fall back to the
+      // collection_items column defaults and a pasted holding keys as it always has.
+      collectorNumber: "",
       quantity,
       scryfallId: null,
-      foil: false,
+      finish: "nonfoil",
       condition: null,
       line: i + 1,
     });

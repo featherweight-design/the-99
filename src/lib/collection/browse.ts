@@ -1,9 +1,21 @@
 import { cache } from "react";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 /** Rarity ordering for the "rarity" sort key. */
 const RARITY_ORDER: Record<string, number> = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
 const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
+
+/**
+ * One printing the user owns, with the image resolved for that printing specifically.
+ * A card owned in four printings has four of these — a single resolved URI on BrowseCard
+ * could not represent that, which is why the modal caption reads set + collector number here.
+ */
+export type BrowsePrinting = {
+  setCode: string;          // uppercased for display; stored lowercase
+  collectorNumber: string;  // "" for exports that carry no collector number
+  quantity: number;
+  imageUri: string | null;
+};
 
 export type BrowseCard = {
   oracleId: string;
@@ -14,8 +26,10 @@ export type BrowseCard = {
   keywords: string[];
   rarity: "common" | "uncommon" | "rare" | "mythic";
   colorIdentity: string[];
+  /** The primary printing's image — first non-null across printings in display order. */
   imageUri: string | null;
   quantity: number;
+  printings: BrowsePrinting[];
   setCodes: string[];
   primarySetCode: string;
 };
@@ -54,10 +68,11 @@ export const AVAILABLE_TYPES = [
   "Creature", "Instant", "Sorcery", "Artifact", "Enchantment", "Planeswalker", "Land",
 ] as const;
 
-type RawCollectionRow = {
+export type RawCollectionRow = {
   oracleId: string;
   quantity: number;
   setCode: string;
+  collectorNumber: string;
   name: string;
   typeLine: string;
   manaCost: string | null;
@@ -65,22 +80,77 @@ type RawCollectionRow = {
   keywords: string[];
   rarity: string;
   colorIdentity: string[];
-  imageUri: string | null;
+  /** Tier 1 — the printing joined on collection_items.scryfall_id. */
+  exactImageUri: string | null;
+  /** Tier 2 — the representative printing for (oracle_id, set_code). */
+  representativeImageUri: string | null;
+  /** Tier 3 — the oracle-level catalog image, i.e. today's behaviour. */
+  cardImageUri: string | null;
 };
 
 /**
- * Aggregate collection_items × cards rows into one BrowseCard per oracleId.
- * Quantities sum across setCode/foil variants; setCodes collect distinct values;
- * primarySetCode = min(setCodes) lexicographic so the row/tile caption stays stable.
+ * Image resolution (§3.5) — a COALESCE on non-null VALUE, never a first-tier-wins cascade.
+ *
+ * Selecting on match success would send a double-faced card, whose printing row exists but
+ * whose top-level image_uris is absent, straight to a blank tile. Falling through on null is
+ * the whole point: tier 4 (the identity gradient, already implemented downstream) only applies
+ * when all three tiers are genuinely null.
+ */
+export function resolveImageUri(r: {
+  exactImageUri: string | null;
+  representativeImageUri: string | null;
+  cardImageUri: string | null;
+}): string | null {
+  return r.exactImageUri ?? r.representativeImageUri ?? r.cardImageUri ?? null;
+}
+
+/**
+ * A collector number's digits with every non-digit stripped, so "12a" and "A-12" both sort as 12
+ * and numberless values like "★" sort last. Deliberately the same rule as `numericPart` in
+ * transform-printings.ts: browse order has to agree with the order the ingest chose the
+ * representative printing by, or a tile shows one printing's art under another's caption.
+ */
+function collectorNumberSortKey(collectorNumber: string): number {
+  const digits = collectorNumber.replace(/\D/g, "");
+  return digits === "" ? Number.MAX_SAFE_INTEGER : Number(digits);
+}
+
+/** Deterministic printing order: set code, then natural collector number, then the raw value. */
+function comparePrintings(a: BrowsePrinting, b: BrowsePrinting): number {
+  if (a.setCode !== b.setCode) return a.setCode < b.setCode ? -1 : 1;
+  const na = collectorNumberSortKey(a.collectorNumber);
+  const nb = collectorNumberSortKey(b.collectorNumber);
+  if (na !== nb) return na - nb;
+  if (a.collectorNumber === b.collectorNumber) return 0;
+  return a.collectorNumber < b.collectorNumber ? -1 : 1;
+}
+
+/**
+ * Aggregate collection_items × printings × cards rows into one BrowseCard per oracleId.
+ *
+ * Quantities sum across printings; printings are grouped on (setCode, collectorNumber) rather
+ * than on set alone, so the same card in two arts is two entries. Set codes are uppercased for
+ * display — they are stored lowercase so the printings join is exact (§3.3), but the captions
+ * have always read "C21".
+ *
+ * The card-level imageUri is the first non-null image in printing order, not "whatever row the
+ * database returned first": under the printing-level primary key, "first" is arbitrary.
  */
 export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
   const byOracle = new Map<string, BrowseCard>();
+  const printingsByOracle = new Map<string, Map<string, BrowsePrinting>>();
   for (const r of rows) {
+    const setCode = r.setCode.toUpperCase();
+    const printing: BrowsePrinting = {
+      setCode,
+      collectorNumber: r.collectorNumber,
+      quantity: r.quantity,
+      imageUri: resolveImageUri(r),
+    };
     const existing = byOracle.get(r.oracleId);
     if (existing) {
       existing.quantity += r.quantity;
-      if (!existing.setCodes.includes(r.setCode)) existing.setCodes.push(r.setCode);
-      if (r.setCode < existing.primarySetCode) existing.primarySetCode = r.setCode;
+      if (!existing.setCodes.includes(setCode)) existing.setCodes.push(setCode);
     } else {
       byOracle.set(r.oracleId, {
         oracleId: r.oracleId,
@@ -91,14 +161,60 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
         keywords: r.keywords,
         rarity: (RARITY_ORDER[r.rarity] !== undefined ? r.rarity : "common") as BrowseCard["rarity"],
         colorIdentity: r.colorIdentity,
-        imageUri: r.imageUri,
+        imageUri: null,
         quantity: r.quantity,
-        setCodes: [r.setCode],
-        primarySetCode: r.setCode,
+        printings: [],
+        setCodes: [setCode],
+        primarySetCode: setCode,
       });
+      printingsByOracle.set(r.oracleId, new Map());
+    }
+    // Finishes of one printing share art, so they collapse to a single entry here.
+    const printings = printingsByOracle.get(r.oracleId)!;
+    const printingKey = `${setCode}|${r.collectorNumber}`;
+    const seen = printings.get(printingKey);
+    if (seen) {
+      seen.quantity += r.quantity;
+      seen.imageUri ??= printing.imageUri;
+    } else {
+      printings.set(printingKey, printing);
     }
   }
+
+  for (const card of byOracle.values()) {
+    card.printings = [...printingsByOracle.get(card.oracleId)!.values()].sort(comparePrintings);
+    card.setCodes.sort();
+    const primary = primaryPrinting(card.printings);
+    card.primarySetCode = primary.setCode;
+    card.imageUri = primary.imageUri;
+  }
   return [...byOracle.values()];
+}
+
+/**
+ * The one printing a card is represented by: the first in display order that has art, falling
+ * back to the first overall when the user owns no printing with an image.
+ *
+ * Art and caption MUST come from this same printing. Picking the image from the first
+ * image-bearing printing while captioning the first printing outright is #84 again in miniature:
+ * the tile would show one printing's art under another printing's set code.
+ */
+function primaryPrinting(printings: BrowsePrinting[]): BrowsePrinting {
+  return printings.find((p) => p.imageUri !== null) ?? printings[0];
+}
+
+/**
+ * Modal caption for the printing whose art is on screen: "C21 · 263", plus a count of the
+ * other printings owned. Grid and row captions stay on primarySetCode alone — they are one
+ * line of a dense list — but the modal shows one specific piece of art and has to say which.
+ */
+export function printingCaption(card: BrowseCard): string {
+  const primary = primaryPrinting(card.printings);
+  const base = primary?.collectorNumber
+    ? `${primary.setCode} · ${primary.collectorNumber}`
+    : card.primarySetCode;
+  const others = card.printings.length - 1;
+  return others > 0 ? `${base} +${others} more` : base;
 }
 
 export function filterCards(list: BrowseCard[], f: BrowseFilters): BrowseCard[] {
@@ -153,12 +269,19 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   userId: string,
 ): Promise<BrowseCard[]> {
   const { db } = await import("../../db");
-  const { cards, collectionItems } = await import("../../db/schema");
+  const { cards, collectionItems, printings } = await import("../../db/schema");
+  const { alias } = await import("drizzle-orm/pg-core");
+  // Two aliases of `printings`: the exact printing owned (tier 1) and the representative
+  // printing for that (oracle, set) (tier 2). Both are LEFT joins — a missing row must fall
+  // through to the next tier, and resolveImageUri falls through on a null image too.
+  const exact = alias(printings, "exact_printing");
+  const representative = alias(printings, "representative_printing");
   const rows = await db
     .select({
       oracleId: collectionItems.oracleId,
       quantity: collectionItems.quantity,
       setCode: collectionItems.setCode,
+      collectorNumber: collectionItems.collectorNumber,
       name: cards.name,
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,
@@ -166,10 +289,23 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
       keywords: cards.keywords,
       rarity: cards.rarity,
       colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri,
+      exactImageUri: exact.imageUri,
+      representativeImageUri: representative.imageUri,
+      cardImageUri: cards.imageUri,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
+    .leftJoin(exact, eq(exact.scryfallId, collectionItems.scryfallId))
+    .leftJoin(
+      representative,
+      and(
+        eq(representative.oracleId, collectionItems.oracleId),
+        // set_code is stored lowercase on both sides since 0008; lower() here keeps any row
+        // written by an older build from silently dropping to tier 3.
+        eq(representative.setCode, sql`lower(${collectionItems.setCode})`),
+        eq(representative.isRepresentative, true),
+      ),
+    )
     .where(eq(collectionItems.userId, userId));
   return aggregateCollection(rows);
 });

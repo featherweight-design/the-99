@@ -6,8 +6,8 @@ describe("parsePasteList", () => {
     const { rows, errors } = parsePasteList("3 Sol Ring\n1 Cultivate\n");
     expect(errors).toEqual([]);
     expect(rows).toEqual([
-      { name: "Sol Ring", setCode: "", quantity: 3, scryfallId: null, foil: false, condition: null, line: 1 },
-      { name: "Cultivate", setCode: "", quantity: 1, scryfallId: null, foil: false, condition: null, line: 2 },
+      { name: "Sol Ring", setCode: "", quantity: 3, collectorNumber: "", scryfallId: null, finish: "nonfoil", condition: null, line: 1 },
+      { name: "Cultivate", setCode: "", quantity: 1, collectorNumber: "", scryfallId: null, finish: "nonfoil", condition: null, line: 2 },
     ]);
   });
 
@@ -22,7 +22,7 @@ describe("parsePasteList", () => {
   it("treats a bare name as quantity 1", () => {
     const { rows } = parsePasteList("Sol Ring\n");
     expect(rows).toEqual([
-      { name: "Sol Ring", setCode: "", quantity: 1, scryfallId: null, foil: false, condition: null, line: 1 },
+      { name: "Sol Ring", setCode: "", quantity: 1, collectorNumber: "", scryfallId: null, finish: "nonfoil", condition: null, line: 1 },
     ]);
   });
 
