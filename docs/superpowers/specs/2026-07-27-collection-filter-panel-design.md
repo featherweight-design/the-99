@@ -14,10 +14,10 @@ Design spec for the visible half of GitHub issue [#86](https://github.com/Hartig
 
 ## Problem
 
-The `Set ▾` control is a native `<select>` listing **raw lowercase set codes** —
-`tla`, `pip`, `tdc`, `ons`. Two failures compound:
+The `Set ▾` control is a native `<select>` listing **raw set codes** exactly as the CSV
+supplied them — `ECL`, `TLA`, `PIP`, `2X2`. Two failures compound:
 
-1. **Codes are not names.** Nobody scanning a list recognises `ltr` as *The Lord of the
+1. **Codes are not names.** Nobody scanning a list recognises `LTR` as *The Lord of the
    Rings: Tales of Middle-earth*. The catalog has never stored set names; the backend
    half of this plan adds a `sets` table that does.
 2. **The list is unusable at real scale.** `the-vault.csv` spans **254 distinct sets**,
@@ -38,7 +38,7 @@ in the same row — which is why they are handed off together rather than Set al
 | 4 | Per-set count | Each row shows how many cards the user owns from that set |
 | 5 | Default ordering | Release date, newest first — the `sets` table supplies `released_at` |
 | 6 | Native `<select>` is replaced for Set | It cannot host a search field. Type and Sort may keep theirs if the row still reads as one control family |
-| 7 | Selection surfaces as a chip | Reuses the existing `chip-row.tsx` dismissable-chip pattern, unchanged |
+| 7 | Selection surfaces as a chip | Reuses the existing `chip-row.tsx` dismissible-chip pattern, unchanged |
 | 8 | Scope | `/collection` only. Deck-builder and commander search are out of scope |
 
 ## Open for Design to call
@@ -73,3 +73,8 @@ in the same row — which is why they are handed off together rather than Set al
 
 The panel cannot ship until the `sets` table lands (Phase 1) and set names reach the
 browse layer (Phase 6). Design work is not blocked by either.
+
+Note on casing: Phase 4 normalises stored set codes to lowercase, so by the time the panel
+ships the raw values are `ecl`, not `ECL`. Set codes are shown to users **uppercased for
+display** regardless of storage — that is the convention players read them in. Design should
+spec them uppercase; eng owns the transform.
