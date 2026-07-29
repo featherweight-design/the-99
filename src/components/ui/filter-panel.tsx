@@ -40,6 +40,33 @@ export type FilterPanelOption = {
   disabled: boolean;
 };
 
+/** Desktop popover width. Mirrors the `w-[340px]` on the dialog. */
+const POPOVER_WIDTH = 340;
+/** Smallest gap the popover keeps between itself and the viewport edge. */
+const POPOVER_GUTTER = 16;
+
+/**
+ * The popover's `left`, in px, relative to the trigger's left edge.
+ *
+ * The design anchors the popover to the trigger's left edge, which works for the
+ * filter row's leftmost controls and runs off-screen for the rightmost — `Set ▾`
+ * sits ~500px from the right edge of a wide window with a 340px panel under it.
+ * Pull left by exactly the overflow, and no further than the gutter, so a
+ * narrower window trims the right side rather than losing the left.
+ */
+function popoverShift(triggerLeft: number, viewportWidth: number): number {
+  const overflow = Math.max(0, triggerLeft + POPOVER_WIDTH + POPOVER_GUTTER - viewportWidth);
+  return Math.max(-overflow, POPOVER_GUTTER - triggerLeft);
+}
+
+/**
+ * `clientWidth`, not `window.innerWidth`: innerWidth counts a classic scrollbar,
+ * which would eat most of the gutter on platforms that reserve one.
+ */
+function layoutViewportWidth(): number {
+  return document.documentElement.clientWidth;
+}
+
 export function FilterPanel({
   copy,
   options,
@@ -71,6 +98,8 @@ export function FilterPanel({
   const [pinned, setPinned] = useState<string[]>([]);
   // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
+  // Desktop popover `left`, measured against the viewport. See popoverShift.
+  const [popoverLeft, setPopoverLeft] = useState(0);
   const dragStartY = useRef<number | null>(null);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -100,6 +129,11 @@ export function FilterPanel({
         first = pinnedFirst?.code ?? options[0]?.code ?? null;
       }
       setActiveCode(first);
+      // Measured here rather than in a layout effect: the trigger is already
+      // mounted, so the placement is known before the popover paints. A layout
+      // effect would either flash at the wrong offset or warn under SSR.
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (rect) setPopoverLeft(popoverShift(rect.left, layoutViewportWidth()));
       setOpen(true);
     },
     [options, selected, searchable],
@@ -158,6 +192,17 @@ export function FilterPanel({
       window.removeEventListener("scroll", onScroll, true);
     };
   }, [open, isDesktop, close]);
+
+  // Re-place the popover if the window is resized while it is open.
+  useEffect(() => {
+    if (!open || !isDesktop) return;
+    const place = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (rect) setPopoverLeft(popoverShift(rect.left, layoutViewportWidth()));
+    };
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [open, isDesktop]);
 
   // Keep the active row in view. No wrap at the ends, so this only ever nudges.
   useEffect(() => {
@@ -547,10 +592,25 @@ export function FilterPanel({
             // canonical keyboard-walk ring: 2px #C9A24B at outline-offset 2px
             // (§Panel search field · Focused). Overridden here, not in the
             // primitive — every other field in the app keeps the halo.
+            //
+            // The border stands down to --border-strong while focused. The table
+            // also turns it brass, but a 1px brass border inside a 2px brass
+            // outline reads as two stacked focus rings; the outline is the row
+            // the table itself calls canonical, so the border yields.
+            //
+            // It comes back brass once there is a query (§Filled), where it
+            // signals "this field is filtering" rather than focus. That state
+            // needs the focus-within variant to outrank the line above, because
+            // DOM focus never leaves this input while the panel is open — the
+            // unprefixed border alone would always lose.
             containerClassName={
               "mx-[16px] mb-[8px] md:m-[10px] px-[12px] py-[12px] md:py-[9px] gap-[9px] " +
+              "focus-within:border-[color:var(--border-strong)] " +
               "focus-within:shadow-none focus-within:outline focus-within:outline-2 " +
-              "focus-within:outline-offset-2 focus-within:outline-[color:var(--brass)]"
+              "focus-within:outline-offset-2 focus-within:outline-[color:var(--brass)] " +
+              (hasQuery
+                ? "border-[color:var(--brass)] focus-within:border-[color:var(--brass)]"
+                : "")
             }
             // §Leading icon: 14px mobile / 13px desktop, not the primitive's 15.
             iconClassName="text-[14px] md:text-[13px]"
@@ -668,7 +728,11 @@ export function FilterPanel({
             aria-label={copy.panelAriaLabel}
             onKeyDown={onPanelKeyDown}
             onBlur={onPanelBlur}
-            className="absolute left-0 top-[calc(100%+6px)] z-10 w-[340px] overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+            className="absolute top-[calc(100%+6px)] z-10 w-[340px] overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+            // A measured per-pixel offset, so it cannot be a class. Not colour
+            // or border — the inline-style rule is about styles that outrank
+            // hover: utilities.
+            style={{ left: popoverLeft }}
           >
             {renderBody()}
           </div>
