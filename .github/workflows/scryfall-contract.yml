@@ -1,0 +1,28 @@
+name: Scryfall contract check
+
+# The catalog refresh only runs monthly, so an upstream shape change used to surface as a
+# failed refresh up to 30 days later (#103). This canary hits the bulk-data index and the first
+# line of each bulk download daily. No database, no secrets.
+on:
+  schedule:
+    # 07:00 UTC daily — two hours ahead of the monthly refresh, so a break on the 1st is known
+    # before the refresh itself runs.
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:scryfall

@@ -1,18 +1,13 @@
-import { Readable } from "node:stream";
 import { sql } from "drizzle-orm";
-import chain from "stream-chain";
-import { parser } from "stream-json";
-import { streamArray } from "stream-json/streamers/stream-array.js";
 import { db } from "../../db";
 import { cards, printings, skippedPrintings } from "../../db/schema";
-import { SCRYFALL_HEADERS } from "./http";
+import { fetchBulkIndex, streamBulkEntries } from "./bulk";
 import {
   classifyPrinting,
   type PrintingRow,
   type SkippedPrintingRow,
 } from "./transform-printings";
 
-const BULK_INDEX = "https://api.scryfall.com/bulk-data/default_cards";
 const BATCH_SIZE = 500;
 
 export type SeedPrintingsResult = {
@@ -58,22 +53,13 @@ export async function setRepresentativePrintings(): Promise<number> {
 }
 
 /**
- * Ingests every printing from Scryfall's `default_cards` bulk (~620MB).
+ * Ingests every printing from Scryfall's `default_cards` bulk (~77MB gzipped).
  *
  * The file is stream-parsed so it is never materialized. Idempotent throughout: printings and
  * the skipped ledger both upsert on `scryfall_id`, and the representative pass is reset-then-set.
  */
 export async function seedPrintings(): Promise<SeedPrintingsResult> {
-  const meta = await fetch(BULK_INDEX, {
-    headers: SCRYFALL_HEADERS,
-    signal: AbortSignal.timeout(30_000),
-  }).then((r) => {
-    if (!r.ok) throw new Error(`bulk-data index ${r.status}`);
-    return r.json();
-  });
-  if (typeof meta?.download_uri !== "string") {
-    throw new Error("unexpected bulk-data index shape: missing download_uri");
-  }
+  const index = await fetchBulkIndex("default_cards");
 
   // printings.oracle_id has an FK to cards.oracle_id, and the two ingests are not
   // lock-stepped. Pre-loading the ~35k known ids (~1.2MB) lets orphans be filtered in the
@@ -84,14 +70,6 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
   if (known.size === 0) {
     throw new Error("cards table is empty — run `pnpm db:seed` before seeding printings");
   }
-
-  // The timeout spans the whole request including body streaming. 30 minutes is generous for
-  // a 620MB download and still fails loudly well inside the workflow's timeout-minutes: 60.
-  const res = await fetch(meta.download_uri, {
-    headers: SCRYFALL_HEADERS,
-    signal: AbortSignal.timeout(1_800_000),
-  });
-  if (!res.ok || !res.body) throw new Error(`bulk download ${res.status}`);
 
   let upserted = 0, skippedOrphan = 0, skippedLayout = 0, skippedReversible = 0;
   let batch: PrintingRow[] = [];
@@ -128,13 +106,8 @@ export async function seedPrintings(): Promise<SeedPrintingsResult> {
     skippedBatch = [];
   };
 
-  const pipeline = chain([
-    Readable.fromWeb(res.body as import("node:stream/web").ReadableStream),
-    parser(),
-    streamArray(),
-  ]);
-  for await (const { value } of pipeline) {
-    const result = classifyPrinting(value as Record<string, unknown>);
+  for await (const value of streamBulkEntries(index)) {
+    const result = classifyPrinting(value);
     if (result.kind === "skipped-reversible") { skippedReversible++; continue; }
     // Digital-only printings are dropped entirely — neither a printing nor worth a ledger row.
     if (result.kind === "skipped-digital") continue;
