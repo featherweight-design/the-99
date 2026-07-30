@@ -8,9 +8,13 @@
  */
 import { fetchBulkIndex, streamBulkEntries, type BulkType } from "../src/lib/scryfall/bulk";
 
-// Fields the transforms read and cannot work around if they disappear.
+// Fields the transforms read and cannot work around if they disappear. `layout` is on both
+// lists because both transforms exclude on it — losing it would silently ingest tokens and
+// emblems rather than fail, which is exactly the kind of quiet break this canary exists for.
 const REQUIRED: Record<BulkType, readonly string[]> = {
-  oracle_cards: ["oracle_id", "id", "name", "cmc", "color_identity", "type_line", "legalities"],
+  oracle_cards: [
+    "oracle_id", "id", "name", "cmc", "color_identity", "type_line", "legalities", "layout",
+  ],
   default_cards: ["oracle_id", "id", "name", "set", "collector_number", "layout", "digital"],
 };
 
@@ -30,8 +34,10 @@ async function check(type: BulkType): Promise<string[]> {
   for (const field of REQUIRED[type]) {
     if (!(field in first)) failures.push(`${type}: entry missing required field \`${field}\``);
   }
-  const name = typeof first.name === "string" ? first.name : "<unnamed>";
-  console.log(`${type}: ok (${index.compressedSize} bytes compressed, entry \`${name}\`)`);
+  if (failures.length === 0) {
+    const name = typeof first.name === "string" ? first.name : "<unnamed>";
+    console.log(`${type}: ok (${index.compressedSize} bytes compressed, entry \`${name}\`)`);
+  }
   return failures;
 }
 
