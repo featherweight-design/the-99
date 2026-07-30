@@ -35,7 +35,7 @@ export async function seedCards(): Promise<{ upserted: number; skipped: number }
   };
 
   for await (const value of streamBulkEntries(index)) {
-    const row = toCardRow(value as unknown as import("./transform").ScryfallCard);
+    const row = toCardRow(value as import("./transform").ScryfallCard);
     if (!row) { skipped++; continue; }
     batch.push(row);
     if (batch.length >= 500) await flush();

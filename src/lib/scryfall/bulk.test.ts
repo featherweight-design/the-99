@@ -78,6 +78,14 @@ describe("streamBulkEntries", () => {
     await expect(collect()).rejects.toThrow(SyntaxError);
   });
 
+  it.each([["null", "null"], ["an array", "[1,2]"], ["a primitive", '"Forest"']])(
+    "rejects a line that parses to %s",
+    async (_label, line) => {
+      stubDownload(gzipSync(`{"name":"Forest"}\n${line}\n`));
+      await expect(collect()).rejects.toThrow(/not a JSON object/);
+    },
+  );
+
   it("rejects a non-OK download", async () => {
     vi.stubGlobal("fetch", () => Promise.resolve(new Response("nope", { status: 503 })));
     await expect(collect()).rejects.toThrow(/bulk download 503/);

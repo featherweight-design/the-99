@@ -18,7 +18,16 @@ const REQUIRED: Record<BulkType, readonly string[]> = {
   default_cards: ["oracle_id", "id", "name", "set", "collector_number", "layout", "digital"],
 };
 
+/** Never rejects: a thrown fetch/parse failure is reported as a type-prefixed failure. */
 async function check(type: BulkType): Promise<string[]> {
+  try {
+    return await run(type);
+  } catch (err) {
+    return [`${type}: ${err instanceof Error ? err.message : String(err)}`];
+  }
+}
+
+async function run(type: BulkType): Promise<string[]> {
   const failures: string[] = [];
   const index = await fetchBulkIndex(type);
 
@@ -42,14 +51,9 @@ async function check(type: BulkType): Promise<string[]> {
 }
 
 async function main(): Promise<void> {
-  const results = await Promise.allSettled(
-    (Object.keys(REQUIRED) as BulkType[]).map((t) => check(t)),
-  );
-  const failures = results.flatMap((r) =>
-    r.status === "fulfilled"
-      ? r.value
-      : [String(r.reason instanceof Error ? r.reason.message : r.reason)],
-  );
+  // Both types are checked even when the first fails, so one alert reports the whole picture.
+  const results = await Promise.all((Object.keys(REQUIRED) as BulkType[]).map(check));
+  const failures = results.flat();
 
   if (failures.length > 0) {
     console.error("Scryfall bulk-data contract check FAILED:");

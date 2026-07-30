@@ -74,7 +74,13 @@ export async function* streamBulkEntries(
     for await (const line of lines) {
       // Scryfall's JSONL has no wrapper, but a trailing newline yields one empty line.
       if (line.length === 0) continue;
-      yield JSON.parse(line) as Record<string, unknown>;
+      const parsed: unknown = JSON.parse(line);
+      // Without this the generator's own type is a lie, and a stray null or array would fail
+      // somewhere downstream in the transforms with a far less actionable message.
+      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error(`bulk entry is not a JSON object: ${line.slice(0, 80)}`);
+      }
+      yield parsed as Record<string, unknown>;
     }
   } finally {
     lines.close();
