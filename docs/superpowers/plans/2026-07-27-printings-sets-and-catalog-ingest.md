@@ -286,7 +286,19 @@ Printing rows carry no oracle text or keyword arrays, so estimate **+40–60MB**
   Ordering: non-variant first, then natural-sorted collector number
   (`nullif(regexp_replace(collector_number,'\D','','g'),'')::int NULLS LAST, collector_number`).
 - Returns `{upserted, skippedOrphan, skippedLayout, skippedReversible, representatives}`.
-- **Record measured runtime and row count in this doc after the first real run.**
+- **Measured, first real runs (2026-07-28, GitHub Actions `ubuntu-latest`):**
+
+| Measure | Value |
+|---|---|
+| Printings upserted | 100,601 (79,642 representative) |
+| Skipped | 6,197 token/emblem · 81 reversible · **0 orphan** |
+| Sets upserted | 1,047 |
+| Printings step | 1m09s |
+| Whole workflow (sets + oracle + printings) | 1m57s staging / 2m09s production |
+
+  Comfortably inside `timeout-minutes: 60` — the 620MB streaming parse, not the runner, was
+  never the constraint. 0 orphans confirms the pre-loaded `oracle_id` Set (§3.2) is in step
+  with the oracle catalog when all three jobs run together.
 
 ### Phase 3 — GitHub Actions catalog refresh
 
@@ -363,8 +375,11 @@ scripts/seed-collection.ts        →  pnpm db:seed:collection
   that `actions.ts` runs. A second implementation would drift from the server action and stop
   being a test of it.
 - **Prints the same three counts the review screen shows** — imported, skipped-by-design,
-  unmatched — so a CLI run and a UI run are comparable. On `data/the-vault.csv` post-Phase-4
-  that should read 2,821 imported / 113 skipped / 0 unmatched.
+  unmatched — so a CLI run and a UI run are comparable. ⚠︎ **Measured on `data/the-vault.csv`
+  (staging, 2026-07-29): 3,659 cards in 2,820 holdings / 113 skipped / 0 unmatched / 0 parse
+  errors.** Note **2,820 holdings, not the 2,821 importable rows** — Safewright Cavalry (ECL
+  191) is two rows differing only by `condition`, which is not in the key, so it correctly
+  merges into one holding (§2).
 - **`--dry-run` is the default in CI.** A test asserts the three counts against the checked-in
   fixture, which makes this script a regression test for the whole import pipeline rather than
   a one-off utility.
@@ -455,6 +470,18 @@ Phases 1–5 are unaffected.
 
 Per branch: migrate, `seed-sets`, `seed-printings`, verify counts, spot-check the 70 known
 multi-printing cards, then promote.
+
+**Status 2026-07-29.** `staging` and `production` both hold 1,047 sets / 100,601 printings.
+`staging`'s collection re-imported via `db:seed:collection` — 2,820 holdings, all carrying
+`scryfall_id` and `collector_number`, **2,819 resolving at tier 1** with a non-null image.
+The single tier-1 miss is the predicted `reversible_card` (§3.2.3) — Secret Lair *Teferi's
+Ageless Insight* (SLD 2214) — which falls back to its representative printing, as designed.
+`production` has no collection rows, so nothing to re-import there.
+
+⚠︎ Verifying "distinct art per printing" needs the finish dimension in mind: 6 of 63
+multi-printing groups show fewer distinct images than holdings, because a nonfoil/foil pair
+shares one collector number and therefore one image. Distinctness holds per *collector
+number*, which is the actual invariant.
 
 ## 7. Risks
 
