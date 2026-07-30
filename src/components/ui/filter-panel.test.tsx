@@ -261,6 +261,73 @@ describe("FilterPanel", () => {
     expect(screen.queryByRole("listbox")).toBeNull();
   });
 
+  // Focus draws ONE brass ring — the 2px outline at +2px. The brass border is
+  // reserved for the filled state, where it means "this field is filtering";
+  // drawing both at once read as two stacked focus rings.
+  it("turns the search field's border brass only once there is a query", () => {
+    setViewport(true);
+    renderPanel();
+    openPanel();
+    const field = () => screen.getByRole("combobox").closest("label")!;
+    expect(field().className).not.toContain("focus-within:border-[color:var(--brass)]");
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "blo" } });
+    expect(field().className).toContain("focus-within:border-[color:var(--brass)]");
+  });
+
+  describe("desktop popover placement", () => {
+    afterEach(() => {
+      Reflect.deleteProperty(document.documentElement, "clientWidth");
+      vi.restoreAllMocks();
+    });
+
+    // jsdom implements no layout, so the trigger's rect and the viewport width
+    // both have to be declared. Placement is measured on open, hence before the
+    // click. Returns the opened dialog.
+    function openAt(triggerLeft: number, viewportWidth: number) {
+      Object.defineProperty(document.documentElement, "clientWidth", {
+        writable: true,
+        configurable: true,
+        value: viewportWidth,
+      });
+      const trigger = screen.getByRole("button", { name: /Filter by set/ });
+      vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
+        left: triggerLeft,
+        right: triggerLeft + 90,
+        top: 100,
+        bottom: 134,
+        width: 90,
+        height: 34,
+        x: triggerLeft,
+        y: 100,
+        toJSON: () => ({}),
+      });
+      fireEvent.click(trigger);
+      return screen.getByRole("dialog");
+    }
+
+    it("aligns to the trigger's left edge when the popover fits", () => {
+      setViewport(true);
+      renderPanel();
+      expect(openAt(400, 1400).style.left).toBe("0px");
+    });
+
+    it("pulls left by the overflow when the trigger sits near the right edge", () => {
+      setViewport(true);
+      renderPanel();
+      // 764 + 340 overshoots a 1000px viewport by 104, plus the 16px gutter.
+      expect(openAt(764, 1000).style.left).toBe("-120px");
+    });
+
+    it("stops at the gutter rather than pulling the left edge off-screen", () => {
+      setViewport(true);
+      renderPanel();
+      // The overflow alone would be 76px, which would put the panel's left edge
+      // at -56. The clamp leaves it on the gutter and lets the right side trim.
+      expect(openAt(20, 300).style.left).toBe("-4px");
+    });
+  });
+
   it("does not wrap past either end of the list", () => {
     setViewport(true);
     renderPanel();
