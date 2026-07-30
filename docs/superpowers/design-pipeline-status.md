@@ -55,8 +55,7 @@ _Currently empty — #52's R1 Orange was closed by the R2 revision (see 🟢 abo
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-
-_Currently empty._
+| 1 | **#105** Per-printing art selection — choose which printing's art represents a card you own | `docs/superpowers/specs/2026-07-29-per-printing-art-selection-design.md` | Handoff → readiness audit → plan PR. Ten locked decisions; five items left open for Design (§Open for Design to call) | Only item in this state. Addendum to the shipped `/collection` card modal (`design-tables/collection.md:743-1023`), so no new property table — but the mobile composition is genuinely unsolved: `card-modal.tsx:180` is `hidden md:flex`, so mobile has **no art panel to attach a picker to**. Overflow is bigger than it looks — the real collection owns **54 printings of `Forest`**. Bundle with **#101**'s filter-panel ratification: same surface, same Design round |
 
 ---
 
@@ -82,7 +81,7 @@ Ranked by build order per the post-v1 roadmap tracker (#44). The per-surface bra
 | Rank | Ticket | Adjacency / notes |
 |---|---|---|
 | 1 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
-| 2 | **#42** Design: Import existing decks (Moxfield) | Post-v1; lands in #8's deck surfaces; reconciliation UX is the core |
+| 2 | **#42** Design: Import existing decks (Moxfield) | Post-v1; lands in #8's deck surfaces; reconciliation UX is the core. **Also now owns #105's deferred scope** — choosing a different printing *per deck* was explicitly ruled out of #105 (which is a collection-level preference) and belongs here, since a deck-level override needs a deck to attach to |
 | 3 | **#43** Design: Cross-check recommendations against committed cards | Post-v1; touches #7 recs + #8 builder; value scales with deck count, so after #42 |
 | 4 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — last, needs accumulated play data |
 
