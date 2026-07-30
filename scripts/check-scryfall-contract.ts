@@ -30,7 +30,8 @@ async function check(type: BulkType): Promise<string[]> {
   for (const field of REQUIRED[type]) {
     if (!(field in first)) failures.push(`${type}: entry missing required field \`${field}\``);
   }
-  console.log(`${type}: ok (${index.compressedSize} bytes compressed, entry \`${first.name}\`)`);
+  const name = typeof first.name === "string" ? first.name : "<unnamed>";
+  console.log(`${type}: ok (${index.compressedSize} bytes compressed, entry \`${name}\`)`);
   return failures;
 }
 

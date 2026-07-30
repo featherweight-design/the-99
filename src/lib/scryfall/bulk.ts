@@ -50,9 +50,15 @@ export async function fetchBulkIndex(type: BulkType): Promise<BulkIndex> {
 export async function* streamBulkEntries(
   index: BulkIndex,
 ): AsyncGenerator<Record<string, unknown>> {
+  // A consumer that stops early — the canary reads one line of ~77MB — would otherwise leave
+  // the download running to completion, with any later socket error surfacing unhandled after
+  // the generator is gone. Aborting the fetch in the finally below cancels it for real.
+  const controller = new AbortController();
   const res = await fetch(index.jsonlDownloadUri, {
     headers: SCRYFALL_HEADERS,
-    signal: AbortSignal.timeout(1_800_000),
+    // The timeout spans the whole request including body streaming. 30 minutes is generous for
+    // the largest bulk and still fails loudly inside the refresh workflow's timeout-minutes: 60.
+    signal: AbortSignal.any([controller.signal, AbortSignal.timeout(1_800_000)]),
   });
   if (!res.ok || !res.body) throw new Error(`bulk download ${res.status}`);
 
@@ -62,10 +68,24 @@ export async function* streamBulkEntries(
   // the reader instead of rejecting it.
   source.on("error", (err) => gunzip.destroy(err));
   source.pipe(gunzip);
+  const lines = createInterface({ input: gunzip, crlfDelay: Infinity });
 
-  for await (const line of createInterface({ input: gunzip, crlfDelay: Infinity })) {
-    // Scryfall's JSONL has no wrapper, but a trailing newline yields one empty line.
-    if (line.length === 0) continue;
-    yield JSON.parse(line) as Record<string, unknown>;
+  try {
+    for await (const line of lines) {
+      // Scryfall's JSONL has no wrapper, but a trailing newline yields one empty line.
+      if (line.length === 0) continue;
+      yield JSON.parse(line) as Record<string, unknown>;
+    }
+  } finally {
+    lines.close();
+    // Teardown errors say nothing a caller can act on — a real streaming failure has already
+    // rejected the loop above — but an unhandled 'error' event would crash the process.
+    source.on("error", () => {});
+    gunzip.on("error", () => {});
+    // Abort before destroying: destroying the source alone leaves fetch's own reader holding
+    // the connection.
+    controller.abort();
+    source.destroy();
+    gunzip.destroy();
   }
 }
