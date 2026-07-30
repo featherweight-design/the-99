@@ -1,37 +1,13 @@
-import { Readable } from "node:stream";
 import { sql } from "drizzle-orm";
-import chain from "stream-chain";
-import { parser } from "stream-json";
-import { streamArray } from "stream-json/streamers/stream-array.js";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
-import { SCRYFALL_HEADERS } from "./http";
+import { fetchBulkIndex, streamBulkEntries } from "./bulk";
 import { toCardRow, type CardRow } from "./transform";
 
-// Scryfall's documented bulk-data type identifier (the hyphenated alias also resolves).
-const BULK_INDEX = "https://api.scryfall.com/bulk-data/oracle_cards";
-
-// The bulk file is a ~200MB JSON array; stream-parse it so the seed never
-// materializes the whole payload.
+// The bulk file is gzipped JSONL; stream-parse it so the seed never materializes the
+// whole payload.
 export async function seedCards(): Promise<{ upserted: number; skipped: number }> {
-  const meta = await fetch(BULK_INDEX, {
-    headers: SCRYFALL_HEADERS,
-    signal: AbortSignal.timeout(30_000),
-  }).then((r) => {
-    if (!r.ok) throw new Error(`bulk-data index ${r.status}`);
-    return r.json();
-  });
-  if (typeof meta?.download_uri !== "string") {
-    throw new Error("unexpected bulk-data index shape: missing download_uri");
-  }
-  // The timeout spans the whole request including body streaming. This was 240s to stay inside
-  // the Vercel cron's 300s maxDuration; that ceiling is gone with the cron, and 240s was already
-  // tight for a 200MB file. 30 minutes still fails loudly inside the workflow's timeout-minutes.
-  const res = await fetch(meta.download_uri, {
-    headers: SCRYFALL_HEADERS,
-    signal: AbortSignal.timeout(1_800_000),
-  });
-  if (!res.ok || !res.body) throw new Error(`bulk download ${res.status}`);
+  const index = await fetchBulkIndex("oracle_cards");
 
   let upserted = 0, skipped = 0;
   let batch: CardRow[] = [];
@@ -58,12 +34,7 @@ export async function seedCards(): Promise<{ upserted: number; skipped: number }
     batch = [];
   };
 
-  const pipeline = chain([
-    Readable.fromWeb(res.body as import("node:stream/web").ReadableStream),
-    parser(),
-    streamArray(),
-  ]);
-  for await (const { value } of pipeline) {
+  for await (const value of streamBulkEntries(index)) {
     const row = toCardRow(value as import("./transform").ScryfallCard);
     if (!row) { skipped++; continue; }
     batch.push(row);

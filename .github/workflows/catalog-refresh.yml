@@ -1,8 +1,8 @@
 name: Catalog refresh
 
-# Replaces the Vercel cron that hit /api/cron/scryfall-refresh: the oracle bulk is 201MB and
-# the printings bulk 620MB, both of which have outgrown the cron's 300s maxDuration. A runner
-# gives us hours instead of minutes.
+# Replaces the Vercel cron that hit /api/cron/scryfall-refresh: the bulk files are ~24MB and
+# ~77MB gzipped and expand to hundreds of MB, which outgrew the cron's 300s maxDuration. A
+# runner gives us hours instead of minutes.
 on:
   schedule:
     # 09:00 UTC on the 1st of each month.
@@ -41,7 +41,7 @@ jobs:
     # CATALOG_REFRESH_ENABLED repository variable to 'true' or scheduled refresh never fires.
     if: vars.CATALOG_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # The printings bulk alone is 620MB and its download timeout is 30 minutes, before any
+    # The printings bulk download timeout alone is 30 minutes, before any
     # parsing or upserting. A timeout here aborts mid-ingest and skips the representative
     # recompute, so leave generous headroom rather than trimming to the expected runtime.
     timeout-minutes: 180
