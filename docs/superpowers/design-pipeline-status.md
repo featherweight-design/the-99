@@ -46,8 +46,9 @@ Holds items whose readiness verdict was 🟠 Orange — per `design-pipeline.md`
 
 | # / handoff | Verdict PR | Blockers to close | Effort |
 |---|---|---|---|
+| **#105** Per-printing art selection — `design/design_handoff_the99_printing_picker/` (R1, 2026-07-29) | 🟠 Orange | **One blocker.** Handoff decision 1 makes the chooser a **second view of the same modal** (`card-modal.tsx` gains `view: 'card' \| 'printings'`) — the option locked decision 4 explicitly rejects ("no modal modes"). Placement *is* the composition, so it needs a redraw: picker inline **inside** the card view (region under the desktop art panel; on mobile, inline expansion of the promoted full-width `Set` row — keep that promotion). Settle the stale mobile-art-panel contradiction in the same pass, since `card-modal.tsx:180` is `hidden md:flex`. Five further corrections are eng-side and listed in `READINESS.md` — notably Design's own pin-identity blocker is **disproved by data**: `(oracle_id, set_code, collector_number)` has zero duplicates across 100,601 printings, and `collection_items.scryfall_id` is nullable for bare-CSV imports, so the Scryfall print id is the *wrong* key. | One Design round — placement only; states, copy, overflow and a11y all survive |
 
-_Currently empty — #52's R1 Orange was closed by the R2 revision (see 🟢 above)._
+_#52's R1 Orange was closed by the R2 revision (see 🟢 above)._
 
 ---
 
@@ -55,7 +56,8 @@ _Currently empty — #52's R1 Orange was closed by the R2 revision (see 🟢 abo
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-| 1 | **#105** Per-printing art selection — choose which printing's art represents a card you own | `docs/superpowers/specs/2026-07-29-per-printing-art-selection-design.md` | Handoff → readiness audit → plan PR. Ten locked decisions; five items left open for Design (§Open for Design to call) | Only item in this state. Addendum to the shipped `/collection` card modal (`design-tables/collection.md:743-1023`), so no new property table — but the mobile composition is genuinely unsolved: `card-modal.tsx:180` is `hidden md:flex`, so mobile has **no art panel to attach a picker to**. Overflow is bigger than it looks — the real collection owns **54 printings of `Forest`**. Bundle with **#101**'s filter-panel ratification: same surface, same Design round |
+
+_Currently empty — #105's R1 handoff landed 2026-07-29 and audited 🟠 Orange; it now sits in 🟡 above awaiting one Design round on placement._
 
 ---
 
