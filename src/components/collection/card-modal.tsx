@@ -591,7 +591,9 @@ function PickerTrigger({
       type="button"
       onClick={onClick}
       aria-expanded={expanded}
-      aria-controls={controls}
+      // The region is unmounted while collapsed, so the reference goes with it — a trigger
+      // pointing at a missing element is a broken relationship, not an empty one.
+      aria-controls={expanded ? controls : undefined}
       aria-label={expanded ? pickerCopy.triggerCollapseAria : pickerCopy.triggerAria(count, caption)}
       className="cursor-pointer text-left rounded-[8px] p-[8px_12px] m-[-8px_-12px]"
       style={{ background: "var(--elevated)", border: "1px solid var(--border-dashed)" }}
@@ -632,7 +634,9 @@ function MobileSetRow({
       type="button"
       onClick={onClick}
       aria-expanded={expanded}
-      aria-controls={controls}
+      // The region is unmounted while collapsed, so the reference goes with it — a trigger
+      // pointing at a missing element is a broken relationship, not an empty one.
+      aria-controls={expanded ? controls : undefined}
       aria-label={expanded ? pickerCopy.triggerCollapseAria : pickerCopy.triggerAria(count, caption)}
       className="cursor-pointer w-full text-left flex items-center gap-[12px] p-[11px_14px]"
       style={{

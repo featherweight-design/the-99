@@ -165,8 +165,8 @@ describe("PrintingRegion", () => {
     it("does not let the dormant tile be picked or reached by arrow keys", () => {
       const { onPick } = renderRegion(dormant);
       const dormantTile = screen.getByRole("radio", { name: copy.dormantAria("MMQ") });
-      expect(dormantTile).toHaveAttribute("aria-disabled", "true");
-      expect(dormantTile).toHaveAttribute("tabindex", "-1");
+      // Natively disabled so the modal's `button:not([disabled])` focus trap skips it.
+      expect(dormantTile).toBeDisabled();
       fireEvent.click(dormantTile);
       expect(onPick).not.toHaveBeenCalled();
     });

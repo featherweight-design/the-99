@@ -425,7 +425,9 @@ function PrintingTile({
       type="button"
       role="radio"
       aria-checked={picked}
-      aria-disabled={entry.dormant || undefined}
+      // Natively disabled, not just aria-disabled: the modal's focus trap collects
+      // `button:not([disabled])`, so anything short of this leaves the tile in the Tab cycle.
+      disabled={entry.dormant}
       aria-label={
         entry.dormant
           ? copy.dormantAria(setLabel)
