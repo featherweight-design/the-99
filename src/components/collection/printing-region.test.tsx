@@ -1,0 +1,242 @@
+import { render, screen, fireEvent, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { BrowsePrinting } from "../../lib/collection/browse";
+import { printingPickerCopy } from "../../lib/copy/collection";
+import { PrintingRegion, OVERFLOW_THRESHOLD, printingKey } from "./printing-region";
+
+const copy = printingPickerCopy.printing;
+
+const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
+  setCode: "C21",
+  setName: "Commander 2021",
+  collectorNumber: "263",
+  releasedAt: "2021-04-23",
+  quantity: 1,
+  finishes: { nonfoil: 1 },
+  imageUri: null,
+  ...over,
+});
+
+function renderRegion(over: Partial<React.ComponentProps<typeof PrintingRegion>> = {}) {
+  const onPick = vi.fn();
+  const onReset = vi.fn();
+  const onForget = vi.fn();
+  const onAnnounce = vi.fn();
+  const printings = over.printings ?? [
+    printing(),
+    printing({ setCode: "LEA", setName: "Limited Edition Alpha", collectorNumber: "270", releasedAt: "1993-08-05" }),
+    printing({ setCode: "ZNR", setName: "Zendikar Rising", collectorNumber: "12", releasedAt: "2020-09-25" }),
+  ];
+  const utils = render(
+    <PrintingRegion
+      id="printings"
+      printings={printings}
+      preferred={null}
+      resolvedKey={printingKey(printings[0])}
+      cardName="Arcane Signet"
+      colorIdentity={[]}
+      onPick={onPick}
+      onReset={onReset}
+      onForget={onForget}
+      onAnnounce={onAnnounce}
+      {...over}
+    />,
+  );
+  return { ...utils, onPick, onReset, onForget, onAnnounce, printings };
+}
+
+describe("PrintingRegion", () => {
+  it("renders one radio per owned printing", () => {
+    renderRegion();
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+  });
+
+  it("checks nothing when no pick is stored (decision 10)", () => {
+    renderRegion();
+    for (const tile of screen.getAllByRole("radio")) {
+      expect(tile).toHaveAttribute("aria-checked", "false");
+    }
+  });
+
+  it("marks the resolved printing 'shown now', not 'your pick'", () => {
+    renderRegion();
+    expect(screen.getByText(copy.badgeShownNow)).toBeInTheDocument();
+    expect(screen.queryByText(copy.badgePicked)).not.toBeInTheDocument();
+  });
+
+  it("checks the stored pick and shows no shown-now badge on it", () => {
+    renderRegion({ preferred: { setCode: "LEA", collectorNumber: "270" } });
+    const picked = screen.getByRole("radio", { checked: true });
+    expect(within(picked).getByText(copy.badgePicked)).toBeInTheDocument();
+  });
+
+  it("reports the picked printing and announces it", () => {
+    const { onPick, onAnnounce } = renderRegion();
+    fireEvent.click(screen.getAllByRole("radio")[1]);
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ setCode: "LEA", collectorNumber: "270" }));
+    expect(onAnnounce).toHaveBeenCalledWith(copy.announcePicked("Limited Edition Alpha", "270"));
+  });
+
+  it("offers the reset only once a pick exists", () => {
+    const { rerender, onReset } = renderRegion();
+    expect(screen.queryByText(copy.resetToDefault)).not.toBeInTheDocument();
+    rerender(
+      <PrintingRegion
+        id="printings"
+        printings={[printing(), printing({ setCode: "LEA", collectorNumber: "270" })]}
+        preferred={{ setCode: "LEA", collectorNumber: "270" }}
+        resolvedKey="LEA|270"
+        cardName="Arcane Signet"
+        colorIdentity={[]}
+        onPick={vi.fn()}
+        onReset={onReset}
+        onForget={vi.fn()}
+        onAnnounce={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByText(copy.resetToDefault));
+    expect(onReset).toHaveBeenCalled();
+  });
+
+  describe("keyboard (radiogroup)", () => {
+    it("arrow keys move and select, and do not wrap at the ends", () => {
+      const { onPick } = renderRegion();
+      const tiles = screen.getAllByRole("radio");
+      fireEvent.keyDown(tiles[0], { key: "ArrowLeft" });
+      expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ setCode: "C21" }));
+      onPick.mockClear();
+      fireEvent.keyDown(tiles[0], { key: "ArrowRight" });
+      expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ setCode: "LEA" }));
+    });
+
+    it("Home and End jump the ends", () => {
+      const { onPick } = renderRegion();
+      fireEvent.keyDown(screen.getAllByRole("radio")[0], { key: "End" });
+      expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ setCode: "ZNR" }));
+    });
+
+    it("parks the tab stop on the shown-now entry when nothing is picked", () => {
+      renderRegion();
+      const tiles = screen.getAllByRole("radio");
+      expect(tiles[0]).toHaveAttribute("tabindex", "0");
+      expect(tiles[1]).toHaveAttribute("tabindex", "-1");
+    });
+  });
+
+  describe("finish captions (decision 9)", () => {
+    it("renders no finish string for a plain nonfoil printing", () => {
+      renderRegion({ printings: [printing({ quantity: 2, finishes: { nonfoil: 2 } }), printing({ setCode: "LEA" })] });
+      expect(screen.getByText(copy.entryMeta("263", copy.entryQty(2)))).toBeInTheDocument();
+    });
+
+    it("labels an all-foil printing", () => {
+      renderRegion({ printings: [printing({ quantity: 2, finishes: { foil: 2 } }), printing({ setCode: "LEA" })] });
+      expect(screen.getByText(copy.entryMeta("263", copy.entryQtyAllFoil(2)))).toBeInTheDocument();
+    });
+
+    it("labels a mixed printing with the foil count", () => {
+      renderRegion({ printings: [printing({ quantity: 3, finishes: { nonfoil: 2, foil: 1 } }), printing({ setCode: "LEA" })] });
+      expect(screen.getByText(copy.entryMeta("263", copy.entryQtyMixed(3, 1)))).toBeInTheDocument();
+    });
+
+    it("counts etched as foil", () => {
+      renderRegion({ printings: [printing({ quantity: 2, finishes: { etched: 2 } }), printing({ setCode: "LEA" })] });
+      expect(screen.getByText(copy.entryMeta("263", copy.entryQtyAllFoil(2)))).toBeInTheDocument();
+    });
+  });
+
+  it("omits the collector number and its separator on a bare import", () => {
+    renderRegion({ printings: [printing({ collectorNumber: "", quantity: 4 }), printing({ setCode: "LEA" })] });
+    const bare = screen.getAllByRole("radio")[0];
+    expect(within(bare).getByText(copy.entryQty(4))).toBeInTheDocument();
+    expect(within(bare).queryByText(/#/)).not.toBeInTheDocument();
+  });
+
+  describe("dormant pick (ratified exception to decision 5)", () => {
+    const dormant = { preferred: { setCode: "MMQ", collectorNumber: "9" } };
+
+    it("shows a tile and a note for a pick no longer owned", () => {
+      renderRegion(dormant);
+      expect(screen.getByText(copy.dormantNote("MMQ"))).toBeInTheDocument();
+      expect(screen.getByText(copy.dormantBadge)).toBeInTheDocument();
+      expect(screen.getAllByRole("radio")).toHaveLength(4);
+    });
+
+    it("does not let the dormant tile be picked or reached by arrow keys", () => {
+      const { onPick } = renderRegion(dormant);
+      const dormantTile = screen.getByRole("radio", { name: copy.dormantAria("MMQ") });
+      expect(dormantTile).toHaveAttribute("aria-disabled", "true");
+      expect(dormantTile).toHaveAttribute("tabindex", "-1");
+      fireEvent.click(dormantTile);
+      expect(onPick).not.toHaveBeenCalled();
+    });
+
+    it("forgets the pick on request", () => {
+      const { onForget, onAnnounce } = renderRegion(dormant);
+      fireEvent.click(screen.getByText(copy.dormantClear));
+      expect(onForget).toHaveBeenCalled();
+      expect(onAnnounce).toHaveBeenCalledWith(copy.announceForget);
+    });
+
+    it("renders nothing dormant once the printing is owned again", () => {
+      renderRegion({ preferred: { setCode: "LEA", collectorNumber: "270" } });
+      expect(screen.queryByText(copy.dormantBadge)).not.toBeInTheDocument();
+      expect(screen.getAllByRole("radio")).toHaveLength(3);
+    });
+  });
+
+  describe(`overflow (past ${OVERFLOW_THRESHOLD})`, () => {
+    const many = Array.from({ length: 20 }, (_, i) =>
+      printing({
+        setCode: `S${i.toString().padStart(2, "0")}`,
+        setName: `Set ${i}`,
+        collectorNumber: `${i + 1}`,
+        releasedAt: `20${(10 + i).toString()}-01-01`,
+        finishes: i % 2 === 0 ? { nonfoil: 1 } : { foil: 1 },
+      }),
+    );
+
+    it("renders no search or chips at or below the threshold", () => {
+      renderRegion({ printings: many.slice(0, OVERFLOW_THRESHOLD) });
+      expect(screen.queryByLabelText(copy.searchAriaLabel)).not.toBeInTheDocument();
+    });
+
+    it("renders search, finish chips and set headers past it", () => {
+      renderRegion({ printings: many });
+      expect(screen.getByLabelText(copy.searchAriaLabel)).toBeInTheDocument();
+      expect(screen.getByText(copy.filterAll(20))).toBeInTheDocument();
+      expect(screen.getByText(copy.filterFoil(10))).toBeInTheDocument();
+      expect(screen.getByText(copy.filterNonFoil(10))).toBeInTheDocument();
+      expect(screen.getByText(copy.groupSet("Set 0", "S00", 1))).toBeInTheDocument();
+    });
+
+    it("orders set groups newest release first", () => {
+      renderRegion({ printings: many });
+      const headers = screen.getAllByText(/^SET \d+ · S\d+ · 1$/i).map((el) => el.textContent);
+      expect(headers[0]).toBe(copy.groupSet("Set 19", "S19", 1));
+    });
+
+    it("filters on set name, code and collector number — never card name", () => {
+      renderRegion({ printings: many });
+      const field = screen.getByLabelText(copy.searchAriaLabel);
+      fireEvent.change(field, { target: { value: "S07" } });
+      expect(screen.getAllByRole("radio")).toHaveLength(1);
+      fireEvent.change(field, { target: { value: "Arcane" } });
+      expect(screen.getByText(copy.emptyTitle)).toBeInTheDocument();
+    });
+
+    it("narrows to one finish and back", () => {
+      renderRegion({ printings: many });
+      fireEvent.click(screen.getByText(copy.filterFoil(10)));
+      expect(screen.getAllByRole("radio")).toHaveLength(10);
+      fireEvent.click(screen.getByText(copy.filterAll(20)));
+      expect(screen.getAllByRole("radio")).toHaveLength(20);
+    });
+
+    it("announces the match count as the query changes", () => {
+      const { onAnnounce } = renderRegion({ printings: many });
+      fireEvent.change(screen.getByLabelText(copy.searchAriaLabel), { target: { value: "S07" } });
+      expect(onAnnounce).toHaveBeenCalledWith(copy.announceMatches(1, "S07"));
+    });
+  });
+});
