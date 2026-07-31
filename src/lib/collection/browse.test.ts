@@ -13,7 +13,8 @@ import {
 } from "./browse";
 
 const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
-  setCode: "C21", collectorNumber: "263", quantity: 1, imageUri: null, ...over,
+  setCode: "C21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23",
+  quantity: 1, finishes: { nonfoil: 1 }, imageUri: null, ...over,
 });
 
 const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
@@ -30,11 +31,14 @@ const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
   printings: [printing()],
   setCodes: ["C21"],
   primarySetCode: "C21",
+  preferredPrinting: null,
   ...over,
 });
 
 const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
-  oracleId: "o-1", quantity: 1, setCode: "c21", collectorNumber: "263",
+  oracleId: "o-1", quantity: 1, setCode: "c21", collectorNumber: "263", finish: "nonfoil",
+  setName: "Commander 2021", releasedAt: "2021-04-23",
+  preferredSetCode: null, preferredCollectorNumber: null,
   name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: null,
   keywords: [], rarity: "uncommon", colorIdentity: [],
   exactImageUri: null, representativeImageUri: null, cardImageUri: null,
@@ -160,6 +164,105 @@ describe("printingCaption", () => {
   });
   it("falls back to the set code alone when the export carried no collector number", () => {
     expect(printingCaption(card({ printings: [printing({ collectorNumber: "" })] }))).toBe("C21");
+  });
+});
+
+describe("art preference (#105 — tier 0)", () => {
+  const twoPrintings = [printing(), printing({ setCode: "LEA", collectorNumber: "270" })];
+  /** A stored pick of LEA · 270, as the query returns it: on every row of the card. */
+  const picked = { preferredSetCode: "lea", preferredCollectorNumber: "270" };
+
+  it("represents the card by the chosen printing, not the sort-order first", () => {
+    // The preference is oracle-level, so the join repeats it on every row of the card.
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263", exactImageUri: "first.png", ...picked }),
+      raw({ setCode: "lea", collectorNumber: "270", exactImageUri: "chosen.png", ...picked }),
+    ]);
+    expect(agg.imageUri).toBe("chosen.png");
+    expect(agg.primarySetCode).toBe("LEA");
+    expect(printingCaption(agg)).toBe("LEA · 270 +1 more");
+  });
+
+  it("uppercases the stored set code so the lowercase preference still matches", () => {
+    // The join-time trap from the printings epic: preferences are stored lowercase while
+    // BrowsePrinting.setCode is uppercased, so comparing them raw would never match.
+    const [agg] = aggregateCollection([
+      raw({ preferredSetCode: "c21", preferredCollectorNumber: "263" }),
+    ]);
+    expect(agg.preferredPrinting).toEqual({ setCode: "C21", collectorNumber: "263" });
+  });
+
+  it("captions the chosen printing even when that printing has no art", () => {
+    // The caption states the user's intent, which stays true when the art cannot render.
+    // Only the image falls back — losing the caption too would make the choice vanish.
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263", exactImageUri: "has-art.png", ...picked }),
+      raw({ setCode: "lea", collectorNumber: "270", exactImageUri: null, ...picked }),
+    ]);
+    expect(printingCaption(agg)).toBe("LEA · 270 +1 more");
+    expect(agg.imageUri).toBeNull();
+  });
+
+  it("falls back silently when the chosen printing is no longer owned", () => {
+    // Decision 5 — the pick outlives the holding, so it stays on the card for the dormant
+    // tile, but the art resolves as though no pick existed.
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263", exactImageUri: "owned.png", preferredSetCode: "unowned", preferredCollectorNumber: "5" }),
+    ]);
+    expect(agg.imageUri).toBe("owned.png");
+    expect(agg.preferredPrinting).toEqual({ setCode: "UNOWNED", collectorNumber: "5" });
+  });
+
+  it("leaves preferredPrinting null when the user has never chosen", () => {
+    const [agg] = aggregateCollection([raw()]);
+    expect(agg.preferredPrinting).toBeNull();
+  });
+
+  it("does not paint every printing with the chosen printing's art", () => {
+    // Tier 0 selects WHICH printing represents the card; it is not an arm of the per-printing
+    // resolver. Injecting it there would render every tile in the picker as the same image.
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263", exactImageUri: "a.png", ...picked }),
+      raw({ setCode: "lea", collectorNumber: "270", exactImageUri: "b.png", ...picked }),
+    ]);
+    expect(agg.printings.map((p) => p.imageUri)).toEqual(["a.png", "b.png"]);
+  });
+
+  it("ignores a preference belonging to a different card", () => {
+    expect(printingCaption(card({ printings: twoPrintings }))).toBe("C21 · 263 +1 more");
+  });
+});
+
+describe("finish aggregation (#105 decision 9)", () => {
+  it("sums copies per finish across the rows that collapse into one printing", () => {
+    // Foil and nonfoil share one Scryfall image, so they are one entry — but the picker
+    // still names the split, or "×4" would hide that one of them is the foil.
+    const [agg] = aggregateCollection([
+      raw({ finish: "nonfoil", quantity: 3 }),
+      raw({ finish: "foil", quantity: 1 }),
+    ]);
+    expect(agg.printings).toHaveLength(1);
+    expect(agg.printings[0].quantity).toBe(4);
+    expect(agg.printings[0].finishes).toEqual({ nonfoil: 3, foil: 1 });
+  });
+
+  it("keeps finishes separate per printing", () => {
+    const [agg] = aggregateCollection([
+      raw({ collectorNumber: "263", finish: "foil", quantity: 2 }),
+      raw({ setCode: "lea", collectorNumber: "270", finish: "etched", quantity: 1 }),
+    ]);
+    expect(agg.printings.map((p) => p.finishes)).toEqual([{ foil: 2 }, { etched: 1 }]);
+  });
+
+  it("carries the set name and release date from the sets catalog", () => {
+    const [agg] = aggregateCollection([raw({ setName: "Commander 2021", releasedAt: "2021-04-23" })]);
+    expect(agg.printings[0].setName).toBe("Commander 2021");
+    expect(agg.printings[0].releasedAt).toBe("2021-04-23");
+  });
+
+  it("tolerates a set with no catalog row", () => {
+    const [agg] = aggregateCollection([raw({ setName: null, releasedAt: null })]);
+    expect(agg.printings[0].setName).toBeNull();
   });
 });
 

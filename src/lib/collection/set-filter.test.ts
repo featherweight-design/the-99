@@ -9,7 +9,8 @@ import {
 import type { BrowseCard, BrowsePrinting } from "./browse";
 
 const printing = (over: Partial<BrowsePrinting> = {}): BrowsePrinting => ({
-  setCode: "BLB", collectorNumber: "1", quantity: 1, imageUri: null, ...over,
+  setCode: "BLB", setName: "Bloomburrow", collectorNumber: "1", releasedAt: "2024-08-02",
+  quantity: 1, finishes: { nonfoil: 1 }, imageUri: null, ...over,
 });
 
 const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
@@ -26,6 +27,7 @@ const card = (over: Partial<BrowseCard> = {}): BrowseCard => ({
   printings: [printing()],
   setCodes: ["BLB"],
   primarySetCode: "BLB",
+  preferredPrinting: null,
   ...over,
 });
 
