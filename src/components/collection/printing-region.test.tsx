@@ -248,6 +248,15 @@ describe("PrintingRegion", () => {
       expect(screen.getAllByRole("radio")).toHaveLength(20);
     });
 
+    it("counts the announcement through the active finish chip, not around it", () => {
+      const { onAnnounce } = renderRegion({ printings: many });
+      fireEvent.click(screen.getByText(copy.filterFoil(10)));
+      // "1" matches S00's collector number 1 plus 1x, 12x…; only the foil ones are on screen.
+      fireEvent.change(screen.getByLabelText(copy.searchAriaLabel), { target: { value: "1" } });
+      const announced = onAnnounce.mock.calls.at(-1)?.[0];
+      expect(announced).toBe(copy.announceMatches(screen.getAllByRole("radio").length, "1"));
+    });
+
     it("keeps the radiogroup and its id mounted when the search matches nothing", () => {
       const { container } = renderRegion({ printings: many });
       fireEvent.change(screen.getByLabelText(copy.searchAriaLabel), { target: { value: "zzz" } });

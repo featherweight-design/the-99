@@ -5,7 +5,7 @@
 // trap, no live region of its own. The modal owns the single live region and
 // receives strings through `onAnnounce`.
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import type { BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
 import { comparePrintings, cssUrl, matchesPreference } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
@@ -90,8 +90,10 @@ export function PrintingRegion({
   id: string;
   printings: BrowsePrinting[];
   preferred: PreferredPrinting | null;
-  /** `printingKey` of the printing whose art is on screen right now. */
-  /** Null only when the card carries no printings at all — no tile takes the "shown now" badge. */
+  /**
+   * `printingKey` of the printing whose art is on screen right now. Null only when the card
+   * carries no printings at all, in which case no tile takes the "shown now" badge.
+   */
   resolvedKey: string | null;
   cardName: string;
   colorIdentity: string[];
@@ -126,8 +128,6 @@ export function PrintingRegion({
   const entries: Entry[] = useMemo(() => {
     const owned: Entry[] = printings.map((p) => ({ ...p, dormant: false }));
     if (dormantPick === null) return owned;
-    // Keeps its position in set order rather than being appended, so the tile does not
-    // move once the card is re-acquired.
     // The same comparator the list is already sorted by, so re-acquiring the printing puts
     // a real tile exactly where the dormant one stood — comparing set codes alone would drop
     // it after every other printing from the same set.
@@ -149,21 +149,29 @@ export function PrintingRegion({
     return { all: entries.length, foil, nonfoil };
   }, [printings, entries.length]);
 
-  const visible = useMemo(() => {
-    if (!overflow) return entries;
-    const q = query.trim().toLowerCase();
-    return entries.filter((p) => {
-      if (finish === "foil" && foilCount(p) === 0) return false;
-      if (finish === "nonfoil" && (p.finishes.nonfoil ?? 0) === 0) return false;
-      if (q === "") return true;
-      // Card-name search is useless here — every entry shares the name.
-      return (
-        (p.setName ?? "").toLowerCase().includes(q) ||
-        p.setCode.toLowerCase().includes(q) ||
-        p.collectorNumber.toLowerCase().includes(q)
-      );
-    });
-  }, [entries, overflow, query, finish]);
+  // The one predicate the grid and the live announcement both run. Kept together on purpose:
+  // announcing a count the chips did not narrow tells a screen-reader user a different story
+  // than the tiles do.
+  const matching = useCallback(
+    (q: string, f: FinishFilter) =>
+      entries.filter((p) => {
+        if (f === "foil" && foilCount(p) === 0) return false;
+        if (f === "nonfoil" && (p.finishes.nonfoil ?? 0) === 0) return false;
+        if (q === "") return true;
+        // Card-name search is useless here — every entry shares the name.
+        return (
+          (p.setName ?? "").toLowerCase().includes(q) ||
+          p.setCode.toLowerCase().includes(q) ||
+          p.collectorNumber.toLowerCase().includes(q)
+        );
+      }),
+    [entries],
+  );
+
+  const visible = useMemo(
+    () => (overflow ? matching(query.trim().toLowerCase(), finish) : entries),
+    [entries, overflow, query, finish, matching],
+  );
 
   // Past the threshold the tiles are grouped under set headers; below it they are one flat
   // grid in the order aggregateCollection produced.
@@ -232,12 +240,7 @@ export function PrintingRegion({
     setQuery(value);
     const q = value.trim();
     if (q === "") return;
-    const matches = entries.filter(
-      (p) => (p.setName ?? "").toLowerCase().includes(q.toLowerCase())
-        || p.setCode.toLowerCase().includes(q.toLowerCase())
-        || p.collectorNumber.toLowerCase().includes(q.toLowerCase()),
-    ).length;
-    onAnnounce(copy.announceMatches(matches, q));
+    onAnnounce(copy.announceMatches(matching(q.toLowerCase(), finish).length, q));
   }
 
   return (
