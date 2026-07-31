@@ -4,7 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { db } from "../../db";
-import { collectionItems, csvUploads } from "../../db/schema";
+import { cardArtPreferences, collectionItems, csvUploads } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
@@ -144,4 +144,51 @@ export async function confirmUpload(uploadId: string): Promise<void> {
       // Swallow: the lazy path in getRankedList is the correctness backstop.
     }
   });
+}
+
+/**
+ * Choose which printing represents a card across the collection surfaces (#105).
+ *
+ * Reachable outside the picker, which only ever offers printings the user owns — so the holding
+ * is verified here rather than trusted. Silently returning on a miss keeps the action from
+ * leaking whether some other user owns that printing.
+ */
+export async function setCardArtPreference(
+  oracleId: string,
+  setCode: string,
+  collectorNumber: string,
+): Promise<void> {
+  const userId = await requireUserId();
+  // Normalise on write (§3.3) — every set code in the database is lowercase, and the picker
+  // hands back the uppercased display value.
+  const normalisedSetCode = setCode.toLowerCase();
+  const [owned] = await db.select({ one: sql<number>`1` })
+    .from(collectionItems)
+    .where(and(
+      eq(collectionItems.userId, userId),
+      eq(collectionItems.oracleId, oracleId),
+      eq(collectionItems.setCode, normalisedSetCode),
+      // May legitimately be '' — a bare `Name,Qty` import carries no collector number.
+      eq(collectionItems.collectorNumber, collectorNumber),
+    ))
+    .limit(1);
+  if (!owned) return;
+
+  await db.insert(cardArtPreferences)
+    .values({ userId, oracleId, setCode: normalisedSetCode, collectorNumber })
+    .onConflictDoUpdate({
+      target: [cardArtPreferences.userId, cardArtPreferences.oracleId],
+      set: { setCode: normalisedSetCode, collectorNumber },
+    });
+  revalidatePath("/collection");
+}
+
+/** Forget the pick, returning the card to the resolver's choice. */
+export async function clearCardArtPreference(oracleId: string): Promise<void> {
+  const userId = await requireUserId();
+  await db.delete(cardArtPreferences).where(and(
+    eq(cardArtPreferences.userId, userId),
+    eq(cardArtPreferences.oracleId, oracleId),
+  ));
+  revalidatePath("/collection");
 }
