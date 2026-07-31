@@ -36,7 +36,6 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 |---|---|---|---|
 | **#52** Commanders · list windowing | `design/design_handoff_the99_commanders_windowing/` | 🟡 Yellow (2026-07-25, R2) | R1 was 🟠 Orange; R2 closed both blockers — the window count now carries no total (`25 shown · 71 more below`) so it can't collide with the shipped `Showing 96 of 214`, and new state **1b** draws both figures together at desktop (1060px) + mobile (392px). Three eng-side notes in `READINESS.md`: the live-region announcement still uses the phrasing decision 5 forbids (apply decision 5's form); `REVEAL_STEP = 25 > 24` beta candidates means the control is unreachable, so the ticket needs an explicit verification path; focus-on-reveal goes on the `<li>` at index `shown - REVEAL_STEP`. |
 | **#51** Richness pass — applied across the four v1 surfaces via ~~**#58** shell~~ (shipped), **#59** collection, **#60** commanders, **#61** decks | `design/design_handoff_the99_richness/` | 🟡 Yellow (2026-07-24) | One plan PR sequences all four: #58 → #59/#60 → #61. **#58 shipped 2026-07-25 (PR #66)** — it landed the `prefers-reduced-motion` pattern at `globals.css:166-173` and the global focus ring at `globals.css:133-135`, closing two of the seven eng-side decisions. #59/#60/#61 remain. Mobile composition for the 99/99 celebration may need a Design addendum. |
-| **#105** Per-printing art selection | `design/design_handoff_the99_printing_picker/` | 🟢 Green (2026-07-31, R3) | R1 🟠 (chooser drawn as a second modal view, which locked decision 4 forbids) and R2 🟠 (mobile art removed on a **bad steer from the R1 audit** — the modal ships a `md:hidden` art header at `card-modal.tsx:146-177`, documented at `design-tables/collection.md:761`/`:785`). R3 was rebuilt against the repo and won all three rulings it asked for, two of them against the R2 audit: the modal keeps its shipped `820×620/85vh` because the fixed height is a **bug fix with a source comment** (`card-modal.tsx:136-140` — `h-auto` resized the dialog under the cursor while paging Prev/Next), and the always-on printing caption is withdrawn because decision 6 says a single-printing card renders the modal *exactly as today* — the shipped `Set` `MetaField`, which already carries `printingCaption(card)`, becomes the trigger instead. Decision 5's spec text amended to ratify the dormant tile. Five eng-side notes in `READINESS.md`: the modal has **no** live region today; the mobile art collapse and meta-row reorder each need a property-table row; the overflow threshold of 12 ships as a named constant; `finish` must be carried onto `BrowsePrinting` and `primaryPrinting` must honour the preference. |
 | **#35** Branded user menu (eng **#13**) | `design/design_handoff_the99_user_menu/` | 🟡 Yellow (2026-07-25) | All eight locked decisions in `docs/superpowers/specs/2026-07-25-branded-user-menu-design.md` honoured, including the three superseding `appshell.md`. All eleven cited tokens verified against `globals.css` at the exact hex; no new token. Six eng-side notes in `READINESS.md`: the popover email is **4.42:1** and fails AA (use `--fg-muted`, 8.48:1 — the README's 4.6:1 figure is wrong); the backdrop is specified `rgba(10,8,6,0.72)` but the shipped modals both use `rgba(8,6,4,0.72)`, so the stated "overlays never disagree" rationale inverts itself; the sheet's `#1E1A15` is `--surface` and should be tokenized; the top-anchored popover flip in decision 3 is **unreachable** (mobile triggers open the sheet, and the `/commanders` desktop header has no trigger) so skip that branch; the focus-ring citation `globals.css:130` is actually `globals.css:133-135`; and the appshell README reference at `README.md:10` is missing its `design/` prefix. A corrections table at the top of `READINESS.md` lists every wrong claim with its location in **both** the README and the canvas — the handoff itself is left verbatim. |
 
 ---
@@ -48,7 +47,7 @@ Holds items whose readiness verdict was 🟠 Orange — per `design-pipeline.md`
 | # / handoff | Verdict PR | Blockers to close | Effort |
 |---|---|---|---|
 
-_Currently empty — #52's R1 Orange was closed by its R2 revision, and #105's by its R3 (both in 🟢 above)._
+_Currently empty — #52's R1 Orange was closed by its R2 revision (🟢 above), and #105's by its R3 (shipped below)._
 
 ---
 
@@ -57,7 +56,7 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision, and #105's b
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
 
-_Currently empty — #105's R1 handoff landed 2026-07-29 and audited 🟠 Orange; it now sits in 🟡 above awaiting one Design round on placement._
+_Currently empty — #105's R1 handoff landed 2026-07-29 and audited 🟠 Orange; R3 closed it 🟢 Green and it shipped 2026-07-31 (below)._
 
 ---
 
@@ -101,7 +100,7 @@ v1 polish follow-ups — sequenced ahead of the Backlog features above.
 
 ## ✅ Shipped
 
-All five shipped against the pre-richness baseline. The four v1 surfaces each have an open eng ticket to apply brand tokens + the richness pass — until those land, shipped UI and the current handoff mocks diverge.
+All six shipped against the pre-richness baseline. The four v1 surfaces each have an open eng ticket to apply brand tokens + the richness pass — until those land, shipped UI and the current handoff mocks diverge.
 
 | # / vertical | Handoff | Shipped |
 |---|---|---|
@@ -110,3 +109,4 @@ All five shipped against the pre-richness baseline. The four v1 surfaces each ha
 | **#7** Commander recommendations — ranked, explainable list | `design/design_handoff_the99_commanders/` | 2026-07-19 (PR #21) |
 | **#8** Decks — list, create-from-commander, and deck builder | `design/design_handoff_the99_decks/` | 2026-07-19 (PR #25) |
 | **#36** Issue Inspector — full-list "Show all X unmatched" modal | `design/design_handoff_the99_issue_inspector/` | 2026-07-20 (PR #50) |
+| **#105** Per-printing art selection | `design/design_handoff_the99_printing_picker/` | 2026-07-31 (PR #109) |
