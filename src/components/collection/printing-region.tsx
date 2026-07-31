@@ -28,6 +28,16 @@ export function printingKey(p: { setCode: string; collectorNumber: string }): st
   return `${p.setCode}|${p.collectorNumber}`;
 }
 
+/**
+ * Tiles the region will render, which is the owned printings plus the dormant tile for a pick
+ * that is no longer owned. The modal collapses its art header on the same count the region
+ * overflows on, so both must count the dormant tile or the two thresholds part company.
+ */
+export function printingEntryCount(printings: BrowsePrinting[], preferred: PreferredPrinting | null): number {
+  const dormant = preferred !== null && !printings.some((p) => matchesPreference(p, preferred));
+  return printings.length + (dormant ? 1 : 0);
+}
+
 type FinishFilter = "all" | "foil" | "nonfoil";
 
 /** A printing entry, plus the pick the user no longer owns (quantity 0, not selectable). */
@@ -230,6 +240,9 @@ export function PrintingRegion({
     // Mobile: a bordered continuation of the promoted Set row. Desktop: a block below the
     // meta row on the Prev/Next divider's rhythm.
     <div
+      // The trigger's aria-controls points here, not at the radiogroup — the region must keep
+      // its id through the empty-search branch, where there is no radiogroup to carry it.
+      id={id}
       className={
         "-mt-px rounded-b-[10px] border border-t-0 border-dashed border-[color:var(--border-dashed)] p-[14px] " +
         "md:mt-[24px] md:rounded-none md:border-0 md:border-t md:border-solid md:border-[color:var(--border)] md:p-0 md:pt-[22px]"
@@ -318,7 +331,7 @@ export function PrintingRegion({
           </button>
         </div>
       ) : (
-        <div id={id} role="radiogroup" aria-label={copy.regionLabel} className="mt-[16px]">
+        <div role="radiogroup" aria-label={copy.regionLabel} className="mt-[16px]">
           {groups.map((g) => (
             <div key={g.key} className={g.key === "" ? "" : "mt-[16px] first:mt-0"}>
               {overflow && (
@@ -329,7 +342,9 @@ export function PrintingRegion({
                   {copy.groupSet(g.label, g.code, g.items.length)}
                 </div>
               )}
-              <div className="grid grid-cols-3 gap-[12px] md:gap-[16px]">
+              {/* Three across wherever the tiles clear the 100px legibility floor. Inside the
+                  modal's padding a 375px viewport leaves 281px, so those phones drop to two. */}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-[12px] md:grid-cols-3 md:gap-[16px]">
                 {g.items.map((p) => {
                   const key = printingKey(p);
                   const picked = key === preferredKey && !p.dormant;
@@ -448,7 +463,7 @@ function PrintingTile({
         {!entry.dormant && foilCount(entry) > 0 && (
           <span
             aria-hidden
-            className="absolute inset-0 rounded-[10px]"
+            className="pointer-events-none absolute inset-0 rounded-[10px]"
             style={{
               background:
                 "linear-gradient(115deg, rgba(255,255,255,0.20) 4%, transparent 24%, " +

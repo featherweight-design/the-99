@@ -12,7 +12,7 @@ import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import { ManaCost } from "./mana-pips";
-import { PrintingRegion, OVERFLOW_THRESHOLD, printingKey } from "./printing-region";
+import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 
 const pickerCopy = printingPickerCopy.printing;
@@ -133,7 +133,7 @@ export function CardModal({
   const preview = useMemo<BrowseCard>(() => ({ ...card, preferredPrinting: pick }), [card, pick]);
   const resolved = resolvedPrinting(preview);
   const hasPicker = card.printings.length > 1;
-  const overflowing = card.printings.length > OVERFLOW_THRESHOLD;
+  const overflowing = printingEntryCount(card.printings, pick) > OVERFLOW_THRESHOLD;
   // The 180px phone header plus a 62px row plus search plus chips leaves about one tile row on
   // an 812px phone, so past the threshold — and only there — the header collapses.
   const compactArt = hasPicker && expanded && overflowing;
@@ -538,7 +538,7 @@ function MetaField({
  * diamond + `Your pick · of N ▾` after one.
  */
 function TriggerHint({ count, picked, expanded }: { count: number; picked: boolean; expanded: boolean }) {
-  const chevron = expanded ? "▴" : "▾";
+  const chevron = pickerCopy.triggerChevron(expanded);
   if (!picked) {
     return (
       <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--brass)" }}>
@@ -589,7 +589,7 @@ function PickerTrigger({
       style={{ background: "var(--elevated)", border: "1px solid var(--border-dashed)" }}
     >
       <div className="font-mono uppercase text-[10px] tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
-        Set
+        {pickerCopy.triggerLabel}
       </div>
       <div className="mt-[5px] text-[14px]" style={{ color: "var(--fg)" }}>{caption}</div>
       <TriggerHint count={count} picked={picked} expanded={expanded} />
@@ -645,7 +645,7 @@ function MobileSetRow({
           className="block font-mono uppercase text-[9.5px] tracking-[0.12em]"
           style={{ color: "var(--fg-faint)" }}
         >
-          Set
+          {pickerCopy.triggerLabel}
         </span>
         <span className="block mt-[3px] text-[13px]" style={{ color: "var(--fg)" }}>{caption}</span>
         <TriggerHint count={count} picked={picked} expanded={expanded} />
