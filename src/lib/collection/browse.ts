@@ -273,6 +273,15 @@ function primaryPrinting(
 }
 
 /**
+ * The printing whose art the card is currently showing. The picker needs it to mark one tile
+ * "shown now" (decision 10), and it must be the same call the caption and the grid tile make or
+ * the badge lands on a tile whose art is not the one on screen.
+ */
+export function resolvedPrinting(card: BrowseCard): BrowsePrinting {
+  return primaryPrinting(card.printings, card.preferredPrinting);
+}
+
+/**
  * Modal caption for the printing whose art is on screen: "C21 · 263", plus a count of the
  * other printings owned. Grid and row captions stay on primarySetCode alone — they are one
  * line of a dense list — but the modal shows one specific piece of art and has to say which.

@@ -1,0 +1,511 @@
+"use client";
+// Per-printing art selection (#105) per the R3 handoff §Component notes.
+//
+// Renders INSIDE the card modal's scrolling content column: no dialog, no focus
+// trap, no live region of its own. The modal owns the single live region and
+// receives strings through `onAnnounce`.
+
+import React, { useMemo, useRef, useState } from "react";
+import type { BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
+import { cssUrl, matchesPreference } from "../../lib/collection/browse";
+import { identityGradient } from "../../lib/collection/gradients";
+import { printingPickerCopy } from "../../lib/copy/collection";
+import { SearchField } from "../ui/text-field";
+
+const copy = printingPickerCopy.printing;
+
+/**
+ * Entry count past which search, finish chips and set group headers appear.
+ *
+ * A judgement, not a measurement (handoff gap 3): it sits above Sol Ring's 13 —
+ * the last non-basic tier — and well below Forest's 54, which is the case the
+ * affordances exist for.
+ */
+export const OVERFLOW_THRESHOLD = 12;
+
+/** Stable identity of a printing within one card: uppercased set code + collector number. */
+export function printingKey(p: { setCode: string; collectorNumber: string }): string {
+  return `${p.setCode}|${p.collectorNumber}`;
+}
+
+type FinishFilter = "all" | "foil" | "nonfoil";
+
+/** A printing entry, plus the pick the user no longer owns (quantity 0, not selectable). */
+type Entry = BrowsePrinting & { dormant: boolean };
+
+/**
+ * Etched is a foil treatment, so the chips count it as foil. Splitting it out would give a
+ * third chip that reads 0 on all but 285 printings in Scryfall's catalog.
+ */
+function foilCount(p: BrowsePrinting): number {
+  return (p.finishes.foil ?? 0) + (p.finishes.etched ?? 0);
+}
+
+/** Decision 9: a plain nonfoil printing produces no finish string at all. */
+function quantityLabel(p: Entry): string {
+  if (p.dormant) return copy.dormantQty;
+  const foil = foilCount(p);
+  const nonfoil = p.finishes.nonfoil ?? 0;
+  if (foil === 0) return copy.entryQty(p.quantity);
+  if (nonfoil === 0) return copy.entryQtyAllFoil(p.quantity);
+  return copy.entryQtyMixed(p.quantity, foil);
+}
+
+/** Release date descending, ties A→Z, undated last — the filter panel's rule (#101). */
+function compareSetGroups(
+  a: { releasedAt: string | null; label: string },
+  b: { releasedAt: string | null; label: string },
+): number {
+  if (a.releasedAt !== b.releasedAt) {
+    if (a.releasedAt === null) return 1;
+    if (b.releasedAt === null) return -1;
+    return a.releasedAt < b.releasedAt ? 1 : -1;
+  }
+  return a.label.localeCompare(b.label);
+}
+
+export function PrintingRegion({
+  id,
+  printings,
+  preferred,
+  resolvedKey,
+  cardName,
+  colorIdentity,
+  onPick,
+  onReset,
+  onForget,
+  onAnnounce,
+}: {
+  /** Matches the trigger's aria-controls. Two instances would collide, so the modal owns it. */
+  id: string;
+  printings: BrowsePrinting[];
+  preferred: PreferredPrinting | null;
+  /** `printingKey` of the printing whose art is on screen right now. */
+  resolvedKey: string;
+  cardName: string;
+  colorIdentity: string[];
+  onPick: (p: BrowsePrinting) => void;
+  onReset: () => void;
+  onForget: () => void;
+  onAnnounce: (message: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [finish, setFinish] = useState<FinishFilter>("all");
+  const tileRefs = useRef(new Map<string, HTMLButtonElement>());
+
+  // A pick the user no longer owns keeps a tile, greyed and unselectable — a ratified
+  // exception to decision 5's "fall back silently" (handoff conflict table row 2).
+  const dormantPick: Entry | null = useMemo(() => {
+    if (preferred === null) return null;
+    if (printings.some((p) => matchesPreference(p, preferred))) return null;
+    return {
+      setCode: preferred.setCode,
+      // The catalog is only joined for sets the user owns, and by definition this one is
+      // no longer owned. The code is the honest label.
+      setName: null,
+      collectorNumber: preferred.collectorNumber,
+      releasedAt: null,
+      quantity: 0,
+      finishes: {},
+      imageUri: null,
+      dormant: true,
+    };
+  }, [preferred, printings]);
+
+  const entries: Entry[] = useMemo(() => {
+    const owned: Entry[] = printings.map((p) => ({ ...p, dormant: false }));
+    if (dormantPick === null) return owned;
+    // Keeps its position in set order rather than being appended, so the tile does not
+    // move once the card is re-acquired.
+    const at = owned.findIndex((p) => p.setCode > dormantPick.setCode);
+    const out = [...owned];
+    out.splice(at === -1 ? owned.length : at, 0, dormantPick);
+    return out;
+  }, [printings, dormantPick]);
+
+  const overflow = entries.length > OVERFLOW_THRESHOLD;
+
+  const counts = useMemo(() => {
+    let foil = 0;
+    let nonfoil = 0;
+    for (const p of printings) {
+      if (foilCount(p) > 0) foil += 1;
+      if ((p.finishes.nonfoil ?? 0) > 0) nonfoil += 1;
+    }
+    return { all: entries.length, foil, nonfoil };
+  }, [printings, entries.length]);
+
+  const visible = useMemo(() => {
+    if (!overflow) return entries;
+    const q = query.trim().toLowerCase();
+    return entries.filter((p) => {
+      if (finish === "foil" && foilCount(p) === 0) return false;
+      if (finish === "nonfoil" && (p.finishes.nonfoil ?? 0) === 0) return false;
+      if (q === "") return true;
+      // Card-name search is useless here — every entry shares the name.
+      return (
+        (p.setName ?? "").toLowerCase().includes(q) ||
+        p.setCode.toLowerCase().includes(q) ||
+        p.collectorNumber.toLowerCase().includes(q)
+      );
+    });
+  }, [entries, overflow, query, finish]);
+
+  // Past the threshold the tiles are grouped under set headers; below it they are one flat
+  // grid in the order aggregateCollection produced.
+  const groups = useMemo(() => {
+    if (!overflow) return [{ key: "", label: "", code: "", releasedAt: null as string | null, items: visible }];
+    const byCode = new Map<string, { key: string; label: string; code: string; releasedAt: string | null; items: Entry[] }>();
+    for (const p of visible) {
+      const g = byCode.get(p.setCode);
+      if (g) g.items.push(p);
+      else byCode.set(p.setCode, {
+        key: p.setCode,
+        label: p.setName ?? p.setCode,
+        code: p.setCode,
+        releasedAt: p.releasedAt,
+        items: [p],
+      });
+    }
+    return [...byCode.values()].sort(compareSetGroups);
+  }, [visible, overflow]);
+
+  /** Selectable entries in render order — the roving-tabindex sequence. Dormant is excluded. */
+  const navigable = useMemo(
+    () => groups.flatMap((g) => g.items).filter((p) => !p.dormant),
+    [groups],
+  );
+
+  const preferredKey = preferred === null ? null : printingKey(preferred);
+  // Decision 10: with no preference stored nothing is checked, and the roving tabindex parks
+  // on the shown-now entry instead.
+  const tabStopKey =
+    navigable.find((p) => printingKey(p) === preferredKey) !== undefined
+      ? preferredKey
+      : navigable.find((p) => printingKey(p) === resolvedKey) !== undefined
+        ? resolvedKey
+        : navigable.length > 0
+          ? printingKey(navigable[0])
+          : null;
+
+  function focusAndSelect(index: number) {
+    const next = navigable[index];
+    if (next === undefined) return;
+    tileRefs.current.get(printingKey(next))?.focus();
+    pick(next);
+  }
+
+  function pick(p: Entry) {
+    onPick(p);
+    onAnnounce(copy.announcePicked(p.setName ?? p.setCode, p.collectorNumber));
+  }
+
+  function onKeyDown(e: React.KeyboardEvent, index: number) {
+    // Arrows move and select; Tab leaves; Home/End jump the ends; no wrap.
+    const last = navigable.length - 1;
+    const next =
+      e.key === "ArrowRight" || e.key === "ArrowDown" ? Math.min(index + 1, last)
+        : e.key === "ArrowLeft" || e.key === "ArrowUp" ? Math.max(index - 1, 0)
+          : e.key === "Home" ? 0
+            : e.key === "End" ? last
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    focusAndSelect(next);
+  }
+
+  function onQueryChange(value: string) {
+    setQuery(value);
+    const q = value.trim();
+    if (q === "") return;
+    const matches = entries.filter(
+      (p) => (p.setName ?? "").toLowerCase().includes(q.toLowerCase())
+        || p.setCode.toLowerCase().includes(q.toLowerCase())
+        || p.collectorNumber.toLowerCase().includes(q.toLowerCase()),
+    ).length;
+    onAnnounce(copy.announceMatches(matches, q));
+  }
+
+  return (
+    // Mobile: a bordered continuation of the promoted Set row. Desktop: a block below the
+    // meta row on the Prev/Next divider's rhythm.
+    <div
+      className={
+        "-mt-px rounded-b-[10px] border border-t-0 border-dashed border-[color:var(--border-dashed)] p-[14px] " +
+        "md:mt-[24px] md:rounded-none md:border-0 md:border-t md:border-solid md:border-[color:var(--border)] md:p-0 md:pt-[22px]"
+      }
+    >
+      <div className="flex items-start justify-between gap-[12px]">
+        <p className="text-[13.5px] m-0" style={{ color: "var(--fg-muted)" }}>
+          {preferred === null ? copy.regionIntro(printings.length) : copy.regionIntroPicked}
+        </p>
+        {preferred !== null && (
+          <button
+            type="button"
+            onClick={() => {
+              onReset();
+              onAnnounce(copy.announceReset(cardName));
+            }}
+            aria-label={copy.resetAria}
+            className="shrink-0 cursor-pointer text-[13px]"
+            style={{ color: "var(--brass)" }}
+          >
+            {copy.resetToDefault}
+          </button>
+        )}
+      </div>
+
+      {dormantPick !== null && (
+        <div
+          className="mt-[12px] flex items-start gap-[10px] rounded-[9px] p-[12px_14px]"
+          style={{ background: "var(--elevated-hover)", border: "1px solid var(--border-strong)" }}
+        >
+          <span
+            aria-hidden
+            className="mt-[4px] shrink-0 rotate-45"
+            style={{ width: 7, height: 7, background: "var(--fg-faint)" }}
+          />
+          <p className="m-0 flex-1 text-[12.5px]" style={{ color: "var(--fg-body)" }}>
+            {copy.dormantNote(dormantPick.setName ?? dormantPick.setCode)}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              onForget();
+              onAnnounce(copy.announceForget);
+            }}
+            aria-label={copy.dormantClearAria}
+            className="shrink-0 cursor-pointer text-[12.5px]"
+            style={{ color: "var(--brass)" }}
+          >
+            {copy.dormantClear}
+          </button>
+        </div>
+      )}
+
+      {overflow && (
+        <div className="mt-[14px] flex flex-col gap-[10px]">
+          {/* SearchField reused unmodified — 16px on mobile is the iOS zoom floor (#101). */}
+          <SearchField
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder={copy.searchPlaceholder}
+            aria-label={copy.searchAriaLabel}
+            className="text-[16px] md:text-[13.5px] py-[9px]"
+          />
+          {/* chip-row.tsx's geometry, not its component: single-select, no dismiss ✕. */}
+          <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
+            <FinishChip label={copy.filterAll(counts.all)} active={finish === "all"} onClick={() => setFinish("all")} />
+            <FinishChip label={copy.filterFoil(counts.foil)} active={finish === "foil"} onClick={() => setFinish("foil")} />
+            <FinishChip label={copy.filterNonFoil(counts.nonfoil)} active={finish === "nonfoil"} onClick={() => setFinish("nonfoil")} />
+          </div>
+        </div>
+      )}
+
+      {visible.length === 0 ? (
+        <div className="mt-[18px]">
+          <p className="m-0 text-[14px]" style={{ color: "var(--fg)" }}>{copy.emptyTitle}</p>
+          <p className="mt-[4px] mb-0 text-[13px]" style={{ color: "var(--fg-muted)" }}>
+            {copy.emptyBody(query.trim(), cardName)}
+          </p>
+          <button
+            type="button"
+            onClick={() => onQueryChange("")}
+            className="mt-[10px] cursor-pointer text-[13px]"
+            style={{ color: "var(--brass)" }}
+          >
+            {copy.clearSearch}
+          </button>
+        </div>
+      ) : (
+        <div id={id} role="radiogroup" aria-label={copy.regionLabel} className="mt-[16px]">
+          {groups.map((g) => (
+            <div key={g.key} className={g.key === "" ? "" : "mt-[16px] first:mt-0"}>
+              {overflow && (
+                <div
+                  className="mb-[8px] font-mono uppercase text-[9.5px] md:text-[10px] tracking-[0.16em]"
+                  style={{ color: "var(--fg-faint)" }}
+                >
+                  {copy.groupSet(g.label, g.code, g.items.length)}
+                </div>
+              )}
+              <div className="grid grid-cols-3 gap-[12px] md:gap-[16px]">
+                {g.items.map((p) => {
+                  const key = printingKey(p);
+                  const picked = key === preferredKey && !p.dormant;
+                  const shownNow = !picked && !p.dormant && key === resolvedKey;
+                  const index = navigable.findIndex((n) => printingKey(n) === key);
+                  return (
+                    <PrintingTile
+                      key={key}
+                      entry={p}
+                      picked={picked}
+                      shownNow={shownNow}
+                      colorIdentity={colorIdentity}
+                      tabStop={key === tabStopKey}
+                      onSelect={() => pick(p)}
+                      onKeyDown={(e) => onKeyDown(e, index)}
+                      registerRef={(el) => {
+                        if (el) tileRefs.current.set(key, el);
+                        else tileRefs.current.delete(key);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FinishChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="cursor-pointer inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] px-[11px] py-[5px]"
+      style={{
+        color: active ? "var(--bg)" : "var(--fg)",
+        background: active ? "var(--brass)" : "var(--elevated)",
+        border: "1px solid var(--border-strong)",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function PrintingTile({
+  entry,
+  picked,
+  shownNow,
+  colorIdentity,
+  tabStop,
+  onSelect,
+  onKeyDown,
+  registerRef,
+}: {
+  entry: Entry;
+  picked: boolean;
+  shownNow: boolean;
+  colorIdentity: string[];
+  tabStop: boolean;
+  onSelect: () => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+  registerRef: (el: HTMLButtonElement | null) => void;
+}) {
+  const setLabel = entry.setName ?? entry.setCode;
+  const qty = quantityLabel(entry);
+  const state = picked ? "picked" : shownNow ? "shown-now" : "plain";
+  const artStyle: React.CSSProperties = entry.imageUri
+    ? { backgroundImage: cssUrl(entry.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: identityGradient(colorIdentity) };
+
+  return (
+    <button
+      ref={registerRef}
+      type="button"
+      role="radio"
+      aria-checked={picked}
+      aria-disabled={entry.dormant || undefined}
+      aria-label={
+        entry.dormant
+          ? copy.dormantAria(setLabel)
+          : copy.entryAria(setLabel, entry.collectorNumber, qty, state)
+      }
+      // Dormant keeps its tile but is not selectable: the printing is not in the collection,
+      // so picking it would write a preference the resolver could not honour.
+      tabIndex={entry.dormant ? -1 : tabStop ? 0 : -1}
+      onClick={entry.dormant ? undefined : onSelect}
+      onKeyDown={entry.dormant ? undefined : onKeyDown}
+      className={`text-left ${entry.dormant ? "" : "cursor-pointer"}`}
+      style={{ opacity: entry.dormant ? 0.55 : undefined }}
+    >
+      <div
+        className="relative w-full rounded-[10px]"
+        style={{
+          aspectRatio: "63/88",
+          ...artStyle,
+          filter: entry.dormant ? "grayscale(0.55)" : undefined,
+          boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
+          // Three signals, none of them colour (decision 3) — the tile sits on card art, so
+          // contrast under it is unpredictable. Outline, not border: it must not eat the frame.
+          outline: picked
+            ? "2px solid var(--brass)"
+            : entry.dormant
+              ? "2px dashed var(--brass)"
+              : shownNow
+                ? "1px dashed var(--fg-faint)"
+                : undefined,
+          outlineOffset: 3,
+        }}
+      >
+        {/* Foil sheen — decorative. */}
+        {!entry.dormant && foilCount(entry) > 0 && (
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-[10px]"
+            style={{
+              background:
+                "linear-gradient(115deg, rgba(255,255,255,0.20) 4%, transparent 24%, " +
+                "rgba(201,162,75,0.20) 44%, rgba(255,255,255,0.16) 56%, transparent 80%)",
+            }}
+          />
+        )}
+        {(picked || shownNow || entry.dormant) && (
+          <span
+            aria-hidden
+            className="absolute flex items-center justify-center rounded-[5px]"
+            style={{
+              top: 8,
+              right: 8,
+              width: picked ? 21 : 19,
+              height: picked ? 21 : 19,
+              fontSize: 11,
+              background: picked
+                ? "var(--brass)"
+                : entry.dormant
+                  ? "rgba(10,8,6,0.78)"
+                  : "rgba(10,8,6,0.72)",
+              border: picked
+                ? undefined
+                : entry.dormant
+                  ? "1px solid var(--brass)"
+                  : "1px dashed var(--fg-faint)",
+              color: picked ? "var(--bg)" : entry.dormant ? "var(--brass)" : "var(--fg-body)",
+            }}
+          >
+            {shownNow ? "◇" : "✓"}
+          </span>
+        )}
+      </div>
+      <div
+        className="mt-[7px] text-[12px] md:text-[13px]"
+        style={{ color: "var(--fg)", fontWeight: picked ? 600 : 400 }}
+      >
+        {setLabel}
+      </div>
+      <div
+        className="mt-[2px] font-mono text-[10.5px] md:text-[11px]"
+        style={{ color: picked ? "var(--fg-body)" : "var(--fg-faint)" }}
+      >
+        {copy.entryMeta(entry.collectorNumber, qty)}
+      </div>
+      {(picked || shownNow || entry.dormant) && (
+        <div
+          className="mt-[3px] flex items-center gap-[5px] font-mono uppercase text-[9.5px] tracking-[0.14em]"
+          style={{ color: picked || entry.dormant ? "var(--brass)" : "var(--fg-muted)" }}
+        >
+          {(picked || entry.dormant) && (
+            <span aria-hidden className="rotate-45" style={{ width: 7, height: 7, background: "var(--brass)" }} />
+          )}
+          {picked ? copy.badgePicked : entry.dormant ? copy.dormantBadge : copy.badgeShownNow}
+        </div>
+      )}
+    </button>
+  );
+}
