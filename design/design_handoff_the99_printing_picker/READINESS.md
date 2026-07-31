@@ -1,73 +1,88 @@
 # READINESS — Collection · Per-printing art selection (#105)
 
-**Verdict: 🟠 Orange (R2)** — the R1 blocker is genuinely cleared and the desktop composition is
-Green as drawn. One blocker remains, and it is **my error, not Design's**: R1's audit told Design
-that mobile has no art panel. It does. Every mobile state needs redrawing against the art that
-actually ships.
+**Verdict: 🟢 Green (R3)** — buildable as drawn. The three rulings R3 asked for are made below, and
+R3 wins all three, including the two where it contradicts the R2 audit. One spec amendment follows
+from ruling 2 and is applied in the same PR.
 
-Audited 2026-07-30 against `docs/superpowers/specs/2026-07-29-per-printing-art-selection-design.md`,
-`src/components/collection/card-modal.tsx`, and `docs/superpowers/design-tables/collection.md`.
-R1's verdict is in git history; R1's canvas is retained as `(R1 superseded).dc.html`.
-
----
-
-## R1 findings — all six closed
-
-| R1 finding | R2 |
-|---|---|
-| **Blocker:** second modal view violates locked decision 4 | **Cleared.** Inline region inside the card view, no `view` state, no back link, no `Done`. The reasoning for spanning the modal rather than living in the `320px` art column is right, and the "compare printings *against the card*" argument is exactly what the lock was protecting. |
-| Pin dropped on replace | **Corrected**, with a dormant state (6) and `Forget that pick` that the spec didn't ask for and should have. |
-| Pin scope promised decks | **Corrected.** `regionSubtitleChosen` now says "wherever this card appears in your collection." |
-| Per-finish attributed to decision 5 | **Corrected** to decision 3. |
-| Pin identity | **Withdrawn**, key accepted. |
-| `no number` nullability | **Corrected** to the empty string. |
+Audited 2026-07-31 against the spec's ten locked decisions and against
+`card-modal.tsx`, `grid-view.tsx`, `browse.ts`, `globals.css`, `design-tables/collection.md` and
+`app/decks/actions.ts`. R1 and R2 are retained as `(R# superseded).dc.html` for the audit trail.
 
 ---
 
-## Blocker — mobile art. My correction, wrongly given.
+## Rulings
 
-R1's audit asserted that `card-modal.tsx:180` being `hidden md:flex` meant mobile has no card art,
-that the brief was right and the Collection handoff's drawing stale. Design acted on that in good
-faith and removed mobile art from R2 entirely — decision 1 now rests on it ("its `40×56` thumbnail is
-the only card art on the phone").
+**1 · The modal keeps its shipped `820×620 / 85vh`. R3 is right; the R2 audit was wrong.**
 
-**The opposite is true.** `card-modal.tsx:146-177` is a `md:hidden` **mobile art header**: a
-gradient-backed block with a `180px`, `63/88`, `10px`-radius art image and the close button over it.
-`hidden md:flex` at line 180 is only the *desktop* art column — mobile has its own. The shipped
-property table documents both: `design-tables/collection.md:761` **Mobile: Art Header** and `:785`
-**Mobile: Art Image**. The Collection handoff's drawing was correct all along.
+R2 grew the modal to `980px/92vh` and I approved it as a property-table update. R3 reverts it, and
+the reason is in the source: `card-modal.tsx:136-140` documents the fixed height as a *bug fix* —
+the dialog was `h-auto`, and paging Prev/Next between a one-line and a twelve-line oracle "resized
+the dialog under the cursor on every step." A picker that grows the modal 360px on expand rebuilds
+that bug in a worse form, because it fires on click rather than on navigation. The region belongs in
+`.flex-1.overflow-auto`, which already scrolls. R3's gap 2 is closed as moot; no property-table row
+changes.
 
-So R2's mobile states remove a documented, shipped element, which the handoff itself lists under
-"Not in this ticket." Every phone frame needs redrawing with the `180px` art header present, and the
-promoted `Set` row's disclosure has to find its room underneath it rather than standing in for the
-art. The desktop composition is unaffected.
+I had that comment on screen when I approved the growth and did not connect it. Design caught it by
+reading the file I cited.
 
-## Corrections eng applies without a Design round
+**2 · The dormant tile stays. The spec is amended, not the drawing.**
 
-| # | Handoff says | Correct |
-|---|---|---|
-| 1 | Picking writes to "the modal's **existing** live region. **No second live region is introduced.**" | `card-modal.tsx` has **no live region** — `aria-live` appears only in `filter-bar.tsx`, `issue-inspector.tsx` and three deck components. Eng adds one to the modal. Design's intent (one region, owned by the modal, not the picker) is right and is what gets built. |
-| 2 | The modal "grows to `980px` (capped at `92vh`)" when the region opens | Shipped geometry is `md:h-[620px] md:max-h-[85vh] md:w-[820px]`. Growing it is a real change to a documented row, so `design-tables/collection.md` gets updated in the build PR rather than treated as unchanged. Design's gap 2 assumed the table still holds; for the desktop height it doesn't. |
-| 3 | "`chip-row.tsx` / `text-field.tsx` are untouched" | Correct, but they live in different places: `src/components/collection/chip-row.tsx` and `src/components/ui/text-field.tsx`. `SearchField` and `ChipRow` are both exported as named. |
-| 4 | Gap 3 — a dormant printing whose set is otherwise absent renders a group header with a count of 1 | Confirmed correct as drawn. The header is generated per set present in the entry list, and a dormant entry is still an entry. |
+Decision 5 reads "keep the pick, fall back **silently**." A visible dormant tile is a knowing
+exception, and R3 is right to refuse to let it pass as drift. The intent behind "silently" was *no
+banner, no prompt, no interruption of the import flow* — not *no trace anywhere*. The tile lives
+inside a region you have to open, and without it there is no affordance for `Forget that pick`, so a
+pin on a card you'll never re-own would be unclearable. Decision 5's text is amended in this PR to
+say so.
 
-## Confirmed against code, not taken on trust
+**3 · No permanent printing caption. The `Set` field is the trigger. R3 is right again.**
 
-- The tile is genuinely the collection grid's tile: `grid-view.tsx:41` is `aspectRatio: "63/88"`, same
-  as the modal's own art at `card-modal.tsx:172` and `:187`. No new tile language.
-- The caption as a `MetaField` matches the shipped property grammar — `MetaCell` at
-  `card-modal.tsx:309`, `MetaField` at `:348`.
-- The `320px` / `28px` desktop art column the region docks under is exactly `card-modal.tsx:180-182`.
-- Overflow model is right for the real ceiling: **54** printings of `Forest`, and 102 of 2,470 unique
-  cards get a picker at all.
-- Pin key holds: `(oracle_id, set_code, collector_number)` has zero duplicate groups across all
-  100,601 rows of `printings`; `collection_items.scryfall_id` is nullable.
-- Copy corrections both applied (`copy strings.ts:35`, and the dormant block at `:74-79`).
+Decision 6 says one owned printing "renders the modal **exactly as it does today**." R1 and R2 added
+an always-on printing caption to all 2,470 cards, and I confirmed it in the R2 audit without
+checking it against decision 6. R3 withdraws it: the shipped `MetaField label="Set"` already carries
+`printingCaption(card)` (`card-modal.tsx:259,267`; `browse.ts:214`), which renders `CLB · 298 +10
+more` — so the trigger already exists and already names the printing. Wrapping it in a button at
+`printings.length > 1` is a smaller change than R1/R2 proposed and satisfies decision 8 (art and
+caption can't disagree, because there is only one caption).
+
+---
+
+## Verified against the repo, not taken on trust
+
+- Every token cited resolves in `globals.css` — `--brass`, `--fg-faint`, `--fg-body`, `--fg-muted`,
+  `--border-dashed`, `--border-strong`, `--elevated`, `--elevated-hover`, `--surface-rail`. No new
+  token, as claimed.
+- The global `:focus-visible` (`globals.css:133`) and the `prefers-reduced-motion` block (`:175`) are
+  where R3 says, so the picker inherits both rather than restyling focus.
+- `grid-view.tsx:41` is `aspectRatio: "63/88"` — the tile really is the collection grid's tile.
+- `useDialogA11y` already owns the modal's focus trap and `Esc` (`card-modal.tsx`), so the region
+  adding no trap and no second handler is correct.
+- `revalidatePath` at `app/decks/actions.ts:193` is the exact write-path precedent cited.
+- The mobile art header is real and R3 draws on it: `card-modal.tsx:146-177`, table rows
+  `collection.md:761` and `:785`.
+- Overflow ceiling confirmed against the real collection: **54** printings of `Forest`, and 102 of
+  2,470 unique cards get a picker at all.
+
+## Eng-side notes for the build
+
+1. **The modal has no live region today.** `aria-live` appears only in `filter-bar.tsx`,
+   `issue-inspector.tsx` and three deck components. Add the single one the copy file specifies, owned
+   by the modal. Don't add a second inside the region.
+2. **Two new behaviours need property-table rows** (R3's gap 4): the mobile art header's compact
+   variant, and the mobile meta-row reorder while the region is open. Add them to
+   `design-tables/collection.md` in the build PR.
+3. **Threshold of 12** is a judgement, not a measurement (R3's gap 3). Ship it as a named constant so
+   it's cheap to re-look; it sits deliberately below Sol Ring's 13.
+4. **`BrowsePrinting` needs `finish`** carried through and aggregated per collector number, and
+   `primaryPrinting` (`browse.ts:205`) must honour the stored preference so grid and modal agree.
+5. **`chip-row.tsx` is `src/components/collection/`; `text-field.tsx` is `src/components/ui/`.**
+   `SearchField` and `ChipRow` are both named exports.
 
 ## Risk notes carried forward
 
-- **#59 collision** — tile ring weights, badge plate opacity, caption fill `#221D16`, region attach
-  border `#4A4033`. Unchanged from R1, plus the region border.
-- **Region height budget.** Design's gap 5 is the right thing to defend: two full tile rows is the
-  floor, and the collapsed art strip is what buys them.
-- `no number` will be logged as a defect at least once. Accepted.
+- **States 2–4 are drawn scrolled**, which is honest rather than a defect — the content column
+  already scrolls for long oracle text. If the region should fit unscrolled, the lever is tile size,
+  not modal height.
+- **#59 collision** — tile ring weights, badge plate opacity, the Set field's `--elevated` fill, the
+  compact art header. Plus R3's gap 6: the picker badge shares a corner with the grid tile's quantity
+  badge, harmless until #59 adds one.
+- **`reversible_card` holdings** render as state 1 with no explanation. Correct, and someone will ask.

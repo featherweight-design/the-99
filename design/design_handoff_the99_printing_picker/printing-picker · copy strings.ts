@@ -1,82 +1,85 @@
-// src/lib/copy/collection.ts — per-printing art selection block.
+// src/lib/copy/collection.ts — per-printing art selection block (#105).
 // Shape follows src/lib/copy/shell.ts: flat const object, functions for
 // interpolated strings, no JSX, no number formatting (callers pass
 // pre-formatted, thousands-separated strings).
 //
-// Voice: Kitchen Table. Nothing here says "asset", "variant" or "select an
-// option". A printing is a card you own, out of a set, with a number on it.
+// Voice: Kitchen Table. A printing is a card you own, out of a set, with a
+// number on it.
 //
-// R2: the picker is an inline region inside the card view (locked decision 4),
-// so there is no back link and no Done button. Scope corrected to collection
-// surfaces only — per-deck art is #42. Dormant-pin strings added.
+// R3, against the locked spec:
+//   - decision 6  → nothing here renders at one printing
+//   - decision 10 → the fallback is "shown now", never "default"/"selected"
+//   - decision 2  → the pick applies to collection surfaces, never decks (#42)
+//   - decision 9  → plain nonfoil produces no finish string at all
+//
+// The dormant-pick strings below are a RATIFIED EXCEPTION to decision 5's
+// "fall back silently" — kept at review's direction. Amend decision 5 rather
+// than deleting these.
 
 export const printingPickerCopy = {
   printing: {
-    // ---- Caption under the art (desktop) / Set property row (mobile) -------
-    // Single printing: plain text, never a control.
-    captionLabel: 'Printing',
-    caption: (setName: string, collectorNumber: string) =>
-      collectorNumber ? `${setName} · #${collectorNumber}` : setName,
-
-    // Multiple printings owned: the caption becomes the disclosure trigger.
+    // ---- Set field, when 2+ printings are owned ----------------------------
+    // At one printing the Set field is untouched — no strings from this block.
     triggerCount: (n: number) => `${n} printings you own`,
-    triggerAria: (n: number, setName: string) =>
-      `Printing: ${setName}. ${n} printings owned. Choose which one shows.`,
-    triggerCollapse: 'Close',
+    triggerAria: (n: number, caption: string) =>
+      `Set: ${caption}. ${n} printings owned. Choose which one represents this card.`,
+    triggerPicked: 'Your pick',
+    triggerPickedOf: (n: number) => `· of ${n}`,
     triggerCollapseAria: 'Hide the printings you own',
 
-    // ---- Inline region ----------------------------------------------------
+    // ---- Region -----------------------------------------------------------
     regionLabel: 'Printings you own',
-    regionTitle: 'Which printing?',
-    regionSubtitleDefault: (n: number) =>
-      `You own ${n} of these. We show the newest one unless you pick.`,
-    // Scope is collection surfaces only. Per-deck art selection is deferred
-    // to #42 — do not promise decks here.
-    regionSubtitleChosen: 'Your pick shows wherever this card appears in your collection.',
-    regionCount: (n: number) => (n === 1 ? '1 printing' : `${n} printings`),
-    regionCountSets: (n: number, sets: number) => `${n} printings · ${sets} sets`,
+    regionIntro: (n: number) =>
+      `You own ${n} of these. Pick the one that represents this card.`,
+    // Scope is collection surfaces only (decision 2). Do not mention decks.
+    regionIntroPicked: 'Your pick shows wherever this card appears in your collection.',
 
-    // ---- Entry (one printing in the region) -------------------------------
+    // ---- Entry ------------------------------------------------------------
+    // Quantity + finish. Decision 9: plain nonfoil shows nothing extra.
     entryQty: (n: number) => `×${n}`,
-    entryFoil: (n: number) => (n === 1 ? '1 foil' : `${n} foil`),
-    entryFoilAll: (n: number) => `×${n} foil`,
-    entryNoNumber: 'no number',
-    badgeDefault: 'Default',
-    badgeDefaultLong: 'Default · newest you own',
-    badgeChosen: 'Your pick',
+    entryQtyAllFoil: (n: number) => `×${n} foil`,
+    entryQtyMixed: (n: number, foil: number) => `×${n} · ${foil} foil`,
+    // Collector number may be '' (bare Name,Qty import). Omit the field and its
+    // separator entirely — never "#—", never a leading "· ".
+    entryMeta: (collectorNumber: string, qty: string) =>
+      collectorNumber ? `#${collectorNumber} · ${qty}` : qty,
+    badgeShownNow: 'Shown now',
+    badgePicked: 'Your pick',
     entryAria: (
       setName: string,
       collectorNumber: string,
       qty: string,
-      state: 'chosen' | 'default' | 'plain',
+      state: 'picked' | 'shown-now' | 'plain',
     ) =>
       [
         setName,
         collectorNumber ? `number ${collectorNumber}` : 'no collector number',
         qty,
-        state === 'chosen'
+        state === 'picked'
           ? 'your pick'
-          : state === 'default'
-            ? 'shown by default'
+          : state === 'shown-now'
+            ? 'shown now, not chosen'
             : '',
       ]
         .filter(Boolean)
         .join(', '),
 
-    // ---- Commit / reset ---------------------------------------------------
-    // Picking commits immediately; this is the only escape hatch.
+    // ---- Reset ------------------------------------------------------------
+    // Commit is immediate (decision 7); this is the only escape hatch.
     resetToDefault: 'Use the default again',
-    resetAria: 'Stop pinning a printing and go back to the default art',
+    resetAria: 'Stop using your pick and go back to the automatic art',
 
-    // ---- Dormant pin ------------------------------------------------------
-    // A pin survives a replace that loses its printing, and reactivates if
-    // the card comes back. While dormant we show the default and say so.
+    // ---- Dormant pick (ratified exception to decision 5) ------------------
+    // Shown only inside the region, only on the affected card. Never on the
+    // review screen, never as a toast. Reactivation is silent — no strings.
     dormantNote: (setName: string) =>
-      `You picked the ${setName} printing before. It's not in your collection right now, so we're showing the newest one you own.`,
+      `You picked the ${setName} printing before. It's not in your collection right now, so we're showing another one you own.`,
     dormantBadge: 'Your pick · not owned now',
+    dormantQty: '×0',
     dormantAria: (setName: string) =>
       `${setName}, your earlier pick, not in your collection right now`,
     dormantClear: 'Forget that pick',
+    dormantClearAria: 'Forget the printing you picked earlier',
 
     // ---- Overflow (search + finish filter) --------------------------------
     searchPlaceholder: 'Search sets',
@@ -94,12 +97,13 @@ export const printingPickerCopy = {
     // ---- Live region (the modal's existing one — do not add a second) -----
     announceOpen: (n: number) =>
       `Showing ${n} printings you own. Use the arrow keys to choose.`,
-    announceChosen: (setName: string, collectorNumber: string) =>
+    announcePicked: (setName: string, collectorNumber: string) =>
       collectorNumber
-        ? `Pinned ${setName} number ${collectorNumber}.`
-        : `Pinned ${setName}.`,
+        ? `Now showing ${setName} number ${collectorNumber}.`
+        : `Now showing ${setName}.`,
     announceReset: (setName: string) =>
-      `Pin removed. Showing the default, ${setName}.`,
+      `Your pick was removed. Now showing ${setName}.`,
+    announceForget: 'Your earlier pick was forgotten.',
     announceMatches: (n: number, query: string) =>
       n === 0
         ? `No sets match ${query}`
