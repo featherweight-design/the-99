@@ -264,6 +264,18 @@ describe("PrintingRegion", () => {
       expect(announced).toBe(copy.announceMatches(screen.getAllByRole("radio").length, "1"));
     });
 
+    it("keeps the dormant tile through a finish chip and a search that excludes it", () => {
+      renderRegion({ printings: many, preferred: { setCode: "MMQ", collectorNumber: "9" } });
+      const dormantTile = () => screen.queryByRole("radio", { name: copy.dormantAria("MMQ") });
+      fireEvent.click(screen.getByText(copy.filterFoil(11)));
+      expect(dormantTile()).toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText(copy.searchAriaLabel), { target: { value: "S07" } });
+      // The note is still on screen, so stranding it above a grid without its tile would
+      // leave the explanation pointing at nothing.
+      expect(screen.getByText(copy.dormantNote("MMQ"))).toBeInTheDocument();
+      expect(dormantTile()).toBeInTheDocument();
+    });
+
     it("keeps the radiogroup and its id mounted when the search matches nothing", () => {
       const { container } = renderRegion({ printings: many });
       fireEvent.change(screen.getByLabelText(copy.searchAriaLabel), { target: { value: "zzz" } });

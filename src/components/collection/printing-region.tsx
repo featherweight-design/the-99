@@ -146,7 +146,10 @@ export function PrintingRegion({
       if (foilCount(p) > 0) foil += 1;
       if ((p.finishes.nonfoil ?? 0) > 0) nonfoil += 1;
     }
-    return { all: entries.length, foil, nonfoil };
+    // The dormant tile survives every filter (see `matching`), so it is in each chip's total —
+    // a chip label counts the tiles that chip reveals.
+    const dormant = entries.length - printings.length;
+    return { all: entries.length, foil: foil + dormant, nonfoil: nonfoil + dormant };
   }, [printings, entries.length]);
 
   // The one predicate the grid and the live announcement both run. Kept together on purpose:
@@ -155,6 +158,11 @@ export function PrintingRegion({
   const matching = useCallback(
     (q: string, f: FinishFilter) =>
       entries.filter((p) => {
+        // The design table binds the dormant tile and its note to one condition — a stored
+        // pick the collection no longer contains — so a filter must not strand the note above
+        // a grid the tile has vanished from. It owns no finishes and matches no query, and
+        // would fall out of every narrowing otherwise.
+        if (p.dormant) return true;
         if (f === "foil" && foilCount(p) === 0) return false;
         if (f === "nonfoil" && (p.finishes.nonfoil ?? 0) === 0) return false;
         if (q === "") return true;
@@ -196,6 +204,12 @@ export function PrintingRegion({
   const navigable = useMemo(
     () => groups.flatMap((g) => g.items).filter((p) => !p.dormant),
     [groups],
+  );
+
+  /** Built once per render so the grid does not scan `navigable` for every tile it draws. */
+  const navigableIndex = useMemo(
+    () => new Map(navigable.map((p, i) => [printingKey(p), i])),
+    [navigable],
   );
 
   const preferredKey = preferred === null ? null : printingKey(preferred);
@@ -357,7 +371,7 @@ export function PrintingRegion({
                   const key = printingKey(p);
                   const picked = key === preferredKey && !p.dormant;
                   const shownNow = !picked && !p.dormant && key === resolvedKey;
-                  const index = navigable.findIndex((n) => printingKey(n) === key);
+                  const index = navigableIndex.get(key) ?? -1;
                   return (
                     <PrintingTile
                       key={key}
