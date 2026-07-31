@@ -288,9 +288,14 @@ export function resolvedPrinting(card: BrowseCard): BrowsePrinting {
  */
 export function printingCaption(card: BrowseCard): string {
   const primary = primaryPrinting(card.printings, card.preferredPrinting);
-  const base = primary?.collectorNumber
-    ? `${primary.setCode} · ${primary.collectorNumber}`
-    : card.primarySetCode;
+  // The set code comes off the resolved printing even with no collector number to pair it
+  // with: `primarySetCode` is the server's answer, which lags an optimistic pick by a
+  // revalidate and would caption a bare `Name,Qty` printing with the set it replaced.
+  const base = primary === null
+    ? card.primarySetCode
+    : primary.collectorNumber
+      ? `${primary.setCode} · ${primary.collectorNumber}`
+      : primary.setCode;
   const others = card.printings.length - 1;
   return others > 0 ? `${base} +${others} more` : base;
 }

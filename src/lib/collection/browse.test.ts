@@ -165,6 +165,15 @@ describe("printingCaption", () => {
   it("falls back to the set code alone when the export carried no collector number", () => {
     expect(printingCaption(card({ printings: [printing({ collectorNumber: "" })] }))).toBe("C21");
   });
+  it("takes even the bare set code off the pick, not the server's primarySetCode", () => {
+    // The modal captions an optimistic pick before the revalidate lands, so primarySetCode
+    // still names the printing being replaced.
+    expect(printingCaption(card({
+      primarySetCode: "C21",
+      preferredPrinting: { setCode: "LEA", collectorNumber: "" },
+      printings: [printing(), printing({ setCode: "LEA", collectorNumber: "" })],
+    }))).toBe("LEA +1 more");
+  });
 });
 
 describe("art preference (#105 — tier 0)", () => {
