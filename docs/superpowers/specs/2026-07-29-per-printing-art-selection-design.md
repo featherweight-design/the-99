@@ -40,7 +40,7 @@ Two distinct wants sit behind this, and only the first is in scope here:
 | 2 | Where the pick applies | **Collection surfaces only** (grid, rows, modal). Deck builder, recommendations and commander surfaces keep the resolver's choice |
 | 3 | Entry granularity | **One entry per collector number.** Finish is a text detail on the entry, never its own entry — foil and nonfoil share one Scryfall image, so two entries would offer two choices with an identical outcome |
 | 4 | Surface | **Inside the existing card detail modal.** No new route, no modal modes |
-| 5 | Pick outlives the holding | **Keep the pick, fall back silently.** A pick whose printing is no longer owned stays stored; the art falls back to the normal resolver, and re-acquiring the card reactivates the pick |
+| 5 | Pick outlives the holding | **Keep the pick, fall back silently.** A pick whose printing is no longer owned stays stored; the art falls back to the normal resolver, and re-acquiring the card reactivates the pick. **Amended 2026-07-31 (R3 audit, ruling 2):** "silently" means no banner, no prompt, no interruption of the import or replace flow — *not* no trace anywhere. Inside the picker the dormant pick renders as a disabled tile, because without it `Forget that pick` has no affordance and a pin on a card you'll never re-own would be unclearable |
 | 6 | Picker visibility | **Only when there is a choice** — one owned printing renders the modal exactly as it does today. This is the overwhelmingly common case: **2,368 of 2,470 unique cards** in the real collection own exactly one printing; only **102** would show a picker |
 | 7 | Commit model | **Immediate.** No Save button, no confirmation |
 | 8 | Caption follows the pick | Art *and* caption derive from the chosen printing — they must never disagree (see Edge cases for the one exception) |
@@ -60,10 +60,13 @@ Two distinct wants sit behind this, and only the first is in scope here:
    `Mountain` 32, `Plains` 30, `Island` 28, then `Sol Ring` 13. Basic lands dominate the top of that
    list, which is exactly where art choice is the point, so the picker cannot be designed only for
    the ~11-printing case. Scroll, wrap, capped-with-reveal, or grouped by set are all open.
-5. **Mobile composition.** This is the real problem in this ticket and deserves the most
-   attention: the mobile modal has **no art panel at all** — `card-modal.tsx:180` is
-   `hidden md:flex`, so mobile shows no card image today. A printing picker on mobile therefore
-   has no existing anchor to attach to.
+5. **Mobile composition.** ⚠︎ **Corrected 2026-07-31 (R3 audit).** This item was written on a false
+   premise and the error propagated into two design rounds. It claimed the mobile modal has no art
+   panel because `card-modal.tsx:180` is `hidden md:flex`. That line is only the *desktop* art
+   column. Mobile has its own art: `card-modal.tsx:146-177` is a `md:hidden` art header with a
+   `180px`, `63/88`, `10px`-radius image, documented at `design-tables/collection.md:761` and
+   `:785`. The picker's mobile anchor therefore already exists, and the composition question
+   collapses into placement.
 
 ## Architecture
 
