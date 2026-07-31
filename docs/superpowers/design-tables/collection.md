@@ -1063,6 +1063,178 @@
 
 ---
 
+## Component: Printing Picker (#105)
+
+Rendered only when `card.printings.length > 1`. At one printing the modal is byte-for-byte
+what it is today (handoff decision 6), so every row below is conditional on that count.
+
+### Set Field — 2+ printings, collapsed (desktop)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| element | — | `button[aria-expanded][aria-controls]` wrapping the shipped MetaField markup |
+| background | — | #2A241D (--elevated) |
+| border | — | 1px solid #4A4033 (--border-dashed) |
+| border-radius | — | 8px |
+| padding | — | 8px 12px |
+| margin | — | -8px -12px (so the meta row's 26px gap rhythm is unchanged) |
+| label line | — | mono 10px, 0.14em, uppercase, #8E8269 — `Set` |
+| value line | — | 14px #EDE6D8 — `printingCaption(card)` |
+| hint line (no pick) | — | mono 11px #C9A24B — `N printings you own ▾` |
+| hint line (expanded) | — | same, chevron `▴` |
+| hint line (picked) | — | 7px #C9A24B diamond + `Your pick` (mono 10px, 0.14em, uppercase, #C9A24B) + `· of N ▾` (mono 11px #8E8269) |
+
+### Set Row — 2+ printings (mobile)
+Promoted out of the 2×2 MetaCell grid into a full-width row. Rarity and Identity stay in the
+grid above it, so the disclosure and its region are last in the column.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 100% | — |
+| display | flex | — |
+| align-items | center | — |
+| gap | 12px | — |
+| min-height | 62px | — |
+| padding | 11px 14px | — |
+| background | #2A241D (--elevated) | — |
+| border | 1px solid #4A4033 (--border-dashed) | — |
+| border-radius | 10px collapsed; 10px 10px 0 0 expanded | — |
+| thumbnail | 40×56, border-radius 5px, inset 0 0 0 1px rgba(0,0,0,0.35) | — |
+| label line | mono 9.5px, 0.12em, uppercase, #8E8269 | — |
+| value line | 13px #EDE6D8 | — |
+| hint line | as desktop | — |
+
+### Region Container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | continuation of the Set row | block inside `.flex-1.overflow-auto` |
+| margin-top | -1px | 24px |
+| padding | 14px | 22px 0 0 |
+| border | 1px dashed #4A4033, border-top none | none; border-top 1px solid #2A241D (--border) |
+| border-radius | 0 0 10px 10px | 0 |
+| role | radiogroup, aria-label `Printings you own` | same |
+
+### Region Intro
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 13.5px | 13.5px |
+| color | #A89B84 (--fg-muted) | #A89B84 |
+| reset link | right-aligned, 13px #C9A24B, only once a pick exists | same |
+
+### Tile Grid
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | grid | grid |
+| grid-template-columns | repeat(3, 1fr) | repeat(3, 1fr) |
+| gap | 12px (~101px tiles) | 16px (~135px tiles) |
+| margin-top | 16px | 16px |
+
+### Tile — art region
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| aspect-ratio | 63/88 | 63/88 |
+| border-radius | 10px | 10px |
+| box-shadow | inset 0 0 0 1px rgba(0,0,0,0.35) | same |
+| background | Scryfall image, else color-identity gradient | same |
+| outline-offset | 3px | 3px |
+| outline — your pick | 2px solid #C9A24B | same |
+| outline — shown now | 1px dashed #8E8269 | same |
+| outline — dormant | 2px dashed #C9A24B | same |
+| outline — rest | none | none |
+| focus | global `:focus-visible` — 2px #C9A24B at 2px offset, not overridden | same |
+| filter — dormant | grayscale(0.55) | same |
+| opacity — dormant | 0.55 (on the tile wrapper) | same |
+
+### Tile — badge
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute, top 8px right 8px | same |
+| size — your pick | 21×21, border-radius 5px | same |
+| size — shown now / dormant | 19×19, border-radius 5px | same |
+| your pick | background #C9A24B, `✓` in #14110E (≈9.4:1) | same |
+| shown now | background rgba(10,8,6,0.72), 1px dashed #8E8269, `◇` in #C6B79A | same |
+| dormant | background rgba(10,8,6,0.78), 1px solid #C9A24B, `✓` in #C9A24B | same |
+| font-size | 11px | 11px |
+
+### Tile — caption
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| set name | 12px #EDE6D8, wraps to 2 lines, no truncation | 13px |
+| set name weight — your pick | 600 | 600 |
+| meta line | mono 10.5px #8E8269 | mono 11px |
+| meta line — your pick | #C6B79A (--fg-body) | same |
+| meta content | `#<collector> · ×N`; the field and its separator are omitted entirely when the collector number is `''` | same |
+| badge line | mono 9.5px, 0.14em, uppercase | same |
+| badge line — your pick / dormant | #C9A24B, preceded by a 7px brass diamond | same |
+| badge line — shown now | #A89B84, no diamond | same |
+
+### Foil Sheen (decorative)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| condition | printing has any foil or etched copies | same |
+| background | linear-gradient(115deg, rgba(255,255,255,0.20) 4%, transparent 24%, rgba(201,162,75,0.20) 44%, rgba(255,255,255,0.16) 56%, transparent 80%) | same |
+| clipping | inside the 10px radius, pointer-events none | same |
+
+### Dormant Note
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | #211C15 (--elevated-hover) | same |
+| border | 1px solid #3A3229 (--border-strong) | same |
+| border-radius | 9px | 9px |
+| padding | 12px 14px | 12px 14px |
+| leading mark | 7px #8E8269 diamond | same |
+| body | 12.5px #C6B79A | same |
+| forget link | 12.5px #C9A24B | same |
+
+### Overflow Affordances (past 12 entries)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| search field | `SearchField` from text-field.tsx, unmodified | same |
+| search font-size | 16px (iOS zoom floor) | 13.5px |
+| search matches | set name, set code, collector number — never card name | same |
+| finish chips | chip-row.tsx geometry: --elevated fill, 1px #3A3229, radius 999px, 12px | 12.5px |
+| finish chips — active | background #C9A24B, color #14110E; single-select, no dismiss ✕ | same |
+| finish chip labels | `All N` / `Foil N` / `Non-foil N`; etched counts as foil | same |
+| set group header | mono 9.5px, 0.16em, uppercase, #8E8269 — `Bloomburrow · BLB · 4` | mono 10px |
+| set group order | release date descending, ties A→Z, undated last | same |
+
+### Mobile: Art Header — compact variant
+Applies only while the region is expanded **and** the card is past the overflow threshold.
+Below the threshold the shipped 180px header is untouched.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| padding | 44px 20px 14px | — |
+| display | flex | — |
+| align-items | flex-end | — |
+| gap | 14px | — |
+| art width | 72px, aspect-ratio 63/88, border-radius 10px | — |
+| name | display 22px/1.15 bold #EDE6D8, beside the art | — |
+| type line | 13px #A89B84 | — |
+| text-shadow | 0 2px 8px rgba(0,0,0,0.5) | — |
+| a11y | visual only (`aria-hidden`); the dialog's accessible name stays on the h3 in the content column | — |
+
+### Accessibility
+| Property | Value |
+|----------|-------|
+| trigger | `button[aria-expanded][aria-controls=<region id>]` |
+| region | `div[role=radiogroup][aria-label="Printings you own"]` |
+| tile | `button[role=radio][aria-checked]` |
+| dormant tile | `aria-disabled`, `tabindex=-1`, not in the arrow-key sequence |
+| checked state | nothing is checked until a pick exists (decision 10) |
+| roving tabindex | parks on the pick, else on the shown-now entry |
+| arrow keys | move **and** select; Home/End jump the ends; no wrap |
+| Tab | leaves the group |
+| Escape | first press collapses the region and returns focus to the Set field; second closes the dialog |
+| focus trap | the existing dialog trap already covers the region — no new trap |
+| live region | exactly one `aria-live="polite"` in the modal; the region never renders its own |
+| minimum tile | ≥ 100×140 |
+
+### Copy Inventory — Printing Picker
+All strings live in `printingPickerCopy.printing` (`src/lib/copy/collection.ts`). No string
+literals in the components.
+
+---
+
 ## Component: No Results State
 
 ### No Results Container
@@ -2038,6 +2210,14 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 | Type line as sub-line | Mobile rows only (under name in same column) |
 | Type line as own column | Desktop rows only (4th of 6 columns) |
 | Set+rarity caption (desktop grid) | Both set code and rarity; mobile shows only set code |
+| Printing picker (Set field disclosure) | Only when `card.printings.length > 1` |
+| Region search + finish chips + set group headers | Only when the entry count exceeds 12 |
+| Mobile compact art header (72px) | Only when the region is expanded AND past the overflow threshold |
+| Mobile Set row promoted out of the 2×2 grid | Only when `card.printings.length > 1`; Rarity/Identity stay in the grid above it |
+| Dormant tile + dormant note | Only when a stored pick names a printing the collection no longer contains |
+| `Use the default again` | Only when a pick exists |
+| Tile finish suffix (`foil` / `N foil`) | Only when the printing has foil or etched copies — plain nonfoil renders no finish string |
+| Tile collector-number field | Omitted with its separator when the collector number is `''` (bare Name,Qty import) |
 
 ---
 
