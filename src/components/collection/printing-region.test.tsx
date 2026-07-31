@@ -173,6 +173,13 @@ describe("PrintingRegion", () => {
       expect(onPick).not.toHaveBeenCalled();
     });
 
+    it("reports the dormant tile as the checked one", () => {
+      renderRegion(dormant);
+      // It wears the ✓ badge and the "Your pick" label, so announcing nothing selected
+      // would contradict the screen.
+      expect(screen.getByRole("radio", { name: copy.dormantAria("MMQ") })).toHaveAttribute("aria-checked", "true");
+    });
+
     it("forgets the pick on request", () => {
       const { onForget, onAnnounce } = renderRegion(dormant);
       fireEvent.click(screen.getByText(copy.dormantClear));

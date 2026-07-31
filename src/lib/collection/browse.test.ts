@@ -237,8 +237,19 @@ describe("art preference (#105 — tier 0)", () => {
     expect(agg.printings.map((p) => p.imageUri)).toEqual(["a.png", "b.png"]);
   });
 
-  it("ignores a preference belonging to a different card", () => {
+  it("captions the first printing when no preference is stored", () => {
     expect(printingCaption(card({ printings: twoPrintings }))).toBe("C21 · 263 +1 more");
+  });
+
+  it("captions the fallback printing when the stored pick is no longer owned", () => {
+    // The art has already fallen back per decision 5, so the caption follows it. Naming the
+    // dormant pick here would label the fallback art with a set that is not on screen.
+    expect(
+      printingCaption(card({
+        printings: twoPrintings,
+        preferredPrinting: { setCode: "MMQ", collectorNumber: "9" },
+      })),
+    ).toBe("C21 · 263 +1 more");
   });
 });
 

@@ -432,7 +432,10 @@ function PrintingTile({
       ref={registerRef}
       type="button"
       role="radio"
-      aria-checked={picked}
+      // The dormant tile is the stored pick — it wears the ✓ badge and "Your pick" label, so
+      // reporting it unchecked would tell assistive tech nothing is selected while the screen
+      // says otherwise. `picked` stays false because it drives the selectable styling.
+      aria-checked={picked || entry.dormant}
       // Both, and neither is redundant: the focus trap collects `button:not([disabled])`, so
       // only the native attribute keeps the tile out of the Tab cycle — but `role="radio"`
       // overrides the button role that native `disabled` maps from, so AT needs the ARIA one
