@@ -7,7 +7,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import type { BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
-import { cssUrl, matchesPreference } from "../../lib/collection/browse";
+import { comparePrintings, cssUrl, matchesPreference } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { SearchField } from "../ui/text-field";
@@ -127,7 +127,10 @@ export function PrintingRegion({
     if (dormantPick === null) return owned;
     // Keeps its position in set order rather than being appended, so the tile does not
     // move once the card is re-acquired.
-    const at = owned.findIndex((p) => p.setCode > dormantPick.setCode);
+    // The same comparator the list is already sorted by, so re-acquiring the printing puts
+    // a real tile exactly where the dormant one stood — comparing set codes alone would drop
+    // it after every other printing from the same set.
+    const at = owned.findIndex((p) => comparePrintings(p, dormantPick) > 0);
     const out = [...owned];
     out.splice(at === -1 ? owned.length : at, 0, dormantPick);
     return out;

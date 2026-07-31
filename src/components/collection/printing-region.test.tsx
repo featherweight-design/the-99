@@ -178,6 +178,19 @@ describe("PrintingRegion", () => {
       expect(onAnnounce).toHaveBeenCalledWith(copy.announceForget);
     });
 
+    it("sorts the dormant tile among its own set, not after it", () => {
+      renderRegion({
+        preferred: { setCode: "C21", collectorNumber: "264" },
+        printings: [
+          printing({ collectorNumber: "263" }),
+          printing({ collectorNumber: "265" }),
+          printing({ setCode: "ZNR", setName: "Zendikar Rising", collectorNumber: "12" }),
+        ],
+      });
+      const labels = screen.getAllByRole("radio").map((t) => t.getAttribute("aria-label"));
+      expect(labels[1]).toBe(copy.dormantAria("C21"));
+    });
+
     it("renders nothing dormant once the printing is owned again", () => {
       renderRegion({ preferred: { setCode: "LEA", collectorNumber: "270" } });
       expect(screen.queryByText(copy.dormantBadge)).not.toBeInTheDocument();

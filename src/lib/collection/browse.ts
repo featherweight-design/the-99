@@ -158,7 +158,7 @@ function collectorNumberSortKey(collectorNumber: string): number {
 }
 
 /** Deterministic printing order: set code, then natural collector number, then the raw value. */
-function comparePrintings(a: BrowsePrinting, b: BrowsePrinting): number {
+export function comparePrintings(a: BrowsePrinting, b: BrowsePrinting): number {
   if (a.setCode !== b.setCode) return a.setCode < b.setCode ? -1 : 1;
   const na = collectorNumberSortKey(a.collectorNumber);
   const nb = collectorNumberSortKey(b.collectorNumber);
