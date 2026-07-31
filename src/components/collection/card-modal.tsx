@@ -146,6 +146,10 @@ export function CardModal({
       return;
     }
     setExpanded(false);
+    // Collapsing by Escape has to empty the live region for the same reason toggleExpanded
+    // does: reopening writes the identical open string, and a live region whose text did not
+    // change is silent in most screen readers.
+    setAnnouncement("");
     for (const ref of [mobileTriggerRef, desktopTriggerRef]) {
       if (ref.current && ref.current.getClientRects().length > 0) {
         ref.current.focus();
