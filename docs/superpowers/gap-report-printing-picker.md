@@ -23,7 +23,7 @@ Verified row-by-row against the property table; all matched unless listed under 
 - Copy — every rendered string resolves through `printingPickerCopy.printing`, verbatim
 - Accessibility — radiogroup semantics, decision-10 nothing-checked, roving tabindex, non-wrapping arrows, Home/End, dormant excluded from navigation, Escape collapse-then-close with focus return, exactly one live region
 
-## GAPS
+## GAPS — all closed in f69eda3, confirmed 0 remaining by Agent 3
 
 1. Foil sheen has no `pointer-events: none`, so the overlay can swallow pointer events on the art — printing-region.tsx:449
 2. Tiles fall below the ≥100×140 floor on a 375px viewport (≈94×131) — the table's "~101px tiles" note assumes ~26px less chrome than the modal actually has — printing-region.tsx:332
