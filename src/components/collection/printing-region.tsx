@@ -255,10 +255,9 @@ export function PrintingRegion({
         {preferred !== null && (
           <button
             type="button"
-            onClick={() => {
-              onReset();
-              onAnnounce(copy.announceReset(cardName));
-            }}
+            // The modal announces this one — the string names the printing that becomes
+            // current, which only the resolver knows.
+            onClick={onReset}
             aria-label={copy.resetAria}
             className="shrink-0 cursor-pointer text-[13px]"
             style={{ color: "var(--brass)" }}

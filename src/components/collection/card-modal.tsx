@@ -177,6 +177,14 @@ export function CardModal({
     });
   }
 
+  // Announced here rather than in the region: the string names the printing that becomes
+  // current once the pick is gone, and only the resolver knows which one that is.
+  function onReset() {
+    onClearPick();
+    const fallback = resolvedPrinting({ ...card, preferredPrinting: null });
+    setAnnouncement(pickerCopy.announceReset(fallback.setName ?? fallback.setCode));
+  }
+
   const caption = printingCaption(preview);
 
   // The mobile and desktop meta blocks are parallel trees with one hidden by CSS, so the
@@ -190,7 +198,7 @@ export function CardModal({
       cardName={card.name}
       colorIdentity={card.colorIdentity}
       onPick={onPick}
-      onReset={onClearPick}
+      onReset={onReset}
       onForget={onClearPick}
       onAnnounce={setAnnouncement}
     />
