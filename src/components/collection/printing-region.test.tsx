@@ -165,8 +165,10 @@ describe("PrintingRegion", () => {
     it("does not let the dormant tile be picked or reached by arrow keys", () => {
       const { onPick } = renderRegion(dormant);
       const dormantTile = screen.getByRole("radio", { name: copy.dormantAria("MMQ") });
-      // Natively disabled so the modal's `button:not([disabled])` focus trap skips it.
+      // Natively disabled so the modal's `button:not([disabled])` focus trap skips it, and
+      // aria-disabled because role="radio" overrides the role native disabled maps from.
       expect(dormantTile).toBeDisabled();
+      expect(dormantTile).toHaveAttribute("aria-disabled", "true");
       fireEvent.click(dormantTile);
       expect(onPick).not.toHaveBeenCalled();
     });
@@ -244,6 +246,16 @@ describe("PrintingRegion", () => {
       expect(screen.getAllByRole("radio")).toHaveLength(10);
       fireEvent.click(screen.getByText(copy.filterAll(20)));
       expect(screen.getAllByRole("radio")).toHaveLength(20);
+    });
+
+    it("keeps the radiogroup and its id mounted when the search matches nothing", () => {
+      const { container } = renderRegion({ printings: many });
+      fireEvent.change(screen.getByLabelText(copy.searchAriaLabel), { target: { value: "zzz" } });
+      expect(screen.getByText(copy.emptyTitle)).toBeInTheDocument();
+      // The trigger's aria-controls names this element, so it must survive every branch.
+      const group = container.querySelector("#printings");
+      expect(group).toHaveAttribute("role", "radiogroup");
+      expect(group).toHaveAttribute("aria-label", copy.regionLabel);
     });
 
     it("announces the match count as the query changes", () => {

@@ -91,7 +91,8 @@ export function PrintingRegion({
   printings: BrowsePrinting[];
   preferred: PreferredPrinting | null;
   /** `printingKey` of the printing whose art is on screen right now. */
-  resolvedKey: string;
+  /** Null only when the card carries no printings at all — no tile takes the "shown now" badge. */
+  resolvedKey: string | null;
   cardName: string;
   colorIdentity: string[];
   onPick: (p: BrowsePrinting) => void;
@@ -243,9 +244,6 @@ export function PrintingRegion({
     // Mobile: a bordered continuation of the promoted Set row. Desktop: a block below the
     // meta row on the Prev/Next divider's rhythm.
     <div
-      // The trigger's aria-controls points here, not at the radiogroup — the region must keep
-      // its id through the empty-search branch, where there is no radiogroup to carry it.
-      id={id}
       className={
         "-mt-px rounded-b-[10px] border border-t-0 border-dashed border-[color:var(--border-dashed)] p-[14px] " +
         "md:mt-[24px] md:rounded-none md:border-0 md:border-t md:border-solid md:border-[color:var(--border)] md:p-0 md:pt-[22px]"
@@ -317,7 +315,7 @@ export function PrintingRegion({
         </div>
       )}
 
-      {visible.length === 0 ? (
+      {visible.length === 0 && (
         <div className="mt-[18px]">
           <p className="m-0 text-[14px]" style={{ color: "var(--fg)" }}>{copy.emptyTitle}</p>
           <p className="mt-[4px] mb-0 text-[13px]" style={{ color: "var(--fg-muted)" }}>
@@ -332,9 +330,14 @@ export function PrintingRegion({
             {copy.clearSearch}
           </button>
         </div>
-      ) : (
-        <div role="radiogroup" aria-label={copy.regionLabel} className="mt-[16px]">
-          {groups.map((g) => (
+      )}
+
+      {/* The element the trigger's aria-controls names is the radiogroup itself, per the design
+          a11y tree. It stays mounted through the empty-search branch — an empty radiogroup is
+          valid, a dangling aria-controls is not. Search and chips sit outside it deliberately:
+          they are not radios. */}
+      <div id={id} role="radiogroup" aria-label={copy.regionLabel} className={visible.length === 0 ? "" : "mt-[16px]"}>
+        {groups.map((g) => (
             <div key={g.key} className={g.key === "" ? "" : "mt-[16px] first:mt-0"}>
               {overflow && (
                 <div
@@ -371,9 +374,8 @@ export function PrintingRegion({
                 })}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
@@ -428,9 +430,12 @@ function PrintingTile({
       type="button"
       role="radio"
       aria-checked={picked}
-      // Natively disabled, not just aria-disabled: the modal's focus trap collects
-      // `button:not([disabled])`, so anything short of this leaves the tile in the Tab cycle.
+      // Both, and neither is redundant: the focus trap collects `button:not([disabled])`, so
+      // only the native attribute keeps the tile out of the Tab cycle — but `role="radio"`
+      // overrides the button role that native `disabled` maps from, so AT needs the ARIA one
+      // to announce the state. The design tree specifies aria-disabled.
       disabled={entry.dormant}
+      aria-disabled={entry.dormant || undefined}
       aria-label={
         entry.dormant
           ? copy.dormantAria(setLabel)

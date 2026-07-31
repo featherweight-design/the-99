@@ -238,9 +238,12 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
   for (const card of byOracle.values()) {
     card.printings = [...printingsByOracle.get(card.oracleId)!.values()].sort(comparePrintings);
     card.setCodes.sort();
+    // Every card here was built from at least one collection row, so a primary always exists.
     const primary = primaryPrinting(card.printings, card.preferredPrinting);
-    card.primarySetCode = primary.setCode;
-    card.imageUri = primary.imageUri;
+    if (primary) {
+      card.primarySetCode = primary.setCode;
+      card.imageUri = primary.imageUri;
+    }
   }
   return [...byOracle.values()];
 }
@@ -265,7 +268,9 @@ export function matchesPreference(p: BrowsePrinting, pref: PreferredPrinting | n
 function primaryPrinting(
   printings: BrowsePrinting[],
   preference: PreferredPrinting | null = null,
-): BrowsePrinting {
+  // Undefined only when `printings` is empty. A collection row always has one, but the type
+  // says so honestly rather than handing callers an index that can miss.
+): BrowsePrinting | undefined {
   const preferred = printings.find((p) => matchesPreference(p, preference));
   // A pick the user no longer owns is absent here, so it falls through to the normal
   // resolver — silently, per decision 5. The dormant tile is the picker's business, not this.
@@ -277,7 +282,7 @@ function primaryPrinting(
  * "shown now" (decision 10), and it must be the same call the caption and the grid tile make or
  * the badge lands on a tile whose art is not the one on screen.
  */
-export function resolvedPrinting(card: BrowseCard): BrowsePrinting {
+export function resolvedPrinting(card: BrowseCard): BrowsePrinting | undefined {
   return primaryPrinting(card.printings, card.preferredPrinting);
 }
 
@@ -291,7 +296,7 @@ export function printingCaption(card: BrowseCard): string {
   // The set code comes off the resolved printing even with no collector number to pair it
   // with: `primarySetCode` is the server's answer, which lags an optimistic pick by a
   // revalidate and would caption a bare `Name,Qty` printing with the set it replaced.
-  const base = primary === null
+  const base = primary === undefined
     ? card.primarySetCode
     : primary.collectorNumber
       ? `${primary.setCode} · ${primary.collectorNumber}`

@@ -182,7 +182,7 @@ export function CardModal({
   function onReset() {
     onClearPick();
     const fallback = resolvedPrinting({ ...card, preferredPrinting: null });
-    setAnnouncement(pickerCopy.announceReset(fallback.setName ?? fallback.setCode));
+    if (fallback) setAnnouncement(pickerCopy.announceReset(fallback.setName ?? fallback.setCode));
   }
 
   const caption = printingCaption(preview);
@@ -194,7 +194,7 @@ export function CardModal({
       id={id}
       printings={card.printings}
       preferred={pick}
-      resolvedKey={printingKey(resolved)}
+      resolvedKey={resolved === undefined ? null : printingKey(resolved)}
       cardName={card.name}
       colorIdentity={card.colorIdentity}
       onPick={onPick}
@@ -209,7 +209,7 @@ export function CardModal({
 
   // Art follows the resolved printing, not the card-level image: they are the same value
   // today, but an optimistic pick updates `resolved` a revalidate earlier.
-  const artStyle: React.CSSProperties = resolved.imageUri
+  const artStyle: React.CSSProperties = resolved?.imageUri
     ? { backgroundImage: cssUrl(resolved.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
 
@@ -390,7 +390,7 @@ export function CardModal({
                   count={card.printings.length}
                   picked={pick !== null}
                   expanded={expanded}
-                  imageUri={resolved.imageUri}
+                  imageUri={resolved?.imageUri ?? null}
                   colorIdentity={card.colorIdentity}
                   onClick={toggleExpanded}
                 />
