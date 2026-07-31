@@ -5,12 +5,17 @@
 // - Focus trap (READINESS #5): queries focusable children, wraps Tab/Shift+Tab
 // - Escape closes; focus returns to the previously-focused element on close
 
-import React, { useRef } from "react";
-import type { BrowseCard } from "../../lib/collection/browse";
-import { cssUrl, printingCaption, WUBRG_HEX } from "../../lib/collection/browse";
+import React, { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
+import { cssUrl, printingCaption, resolvedPrinting, WUBRG_HEX } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
+import { printingPickerCopy } from "../../lib/copy/collection";
+import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import { ManaCost } from "./mana-pips";
+import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+
+const pickerCopy = printingPickerCopy.printing;
 
 // Renders oracle text with paragraph breaks, italic reminder text, and bolded keywords.
 function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
@@ -110,12 +115,106 @@ export function CardModal({
   onNext: (() => void) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  // One trigger per breakpoint tree; only one has layout at a time, and focus() on the
+  // display:none one is a no-op, so Escape hands focus to whichever is actually on screen.
+  const mobileTriggerRef = useRef<HTMLButtonElement>(null);
+  const desktopTriggerRef = useRef<HTMLButtonElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const [, startWrite] = useTransition();
+
+  // The pick the user just made, before the server action's revalidate lands. Seeding it from
+  // the card is only correct because the caller keys this component on oracleId — paging
+  // Prev/Next remounts rather than reusing the state of the card you just left.
+  const [pick, setPick] = useState<PreferredPrinting | null>(card.preferredPrinting);
+
+  // Everything the modal shows about the current printing — art, caption, shown-now badge —
+  // reads from this one object, so an optimistic pick moves all three together or none.
+  const preview = useMemo<BrowseCard>(() => ({ ...card, preferredPrinting: pick }), [card, pick]);
+  const resolved = resolvedPrinting(preview);
+  const hasPicker = card.printings.length > 1;
+  const overflowing = printingEntryCount(card.printings, pick) > OVERFLOW_THRESHOLD;
+  // The 180px phone header plus a 62px row plus search plus chips leaves about one tile row on
+  // an 812px phone, so past the threshold — and only there — the header collapses.
+  const compactArt = hasPicker && expanded && overflowing;
+
+  // Escape collapses the region first and returns focus to the Set field; a second Escape
+  // closes the dialog exactly as it does today.
+  const onEscape = useCallback(() => {
+    if (!expanded) {
+      onClose();
+      return;
+    }
+    setExpanded(false);
+    // Collapsing by Escape has to empty the live region for the same reason toggleExpanded
+    // does: reopening writes the identical open string, and a live region whose text did not
+    // change is silent in most screen readers.
+    setAnnouncement("");
+    for (const ref of [mobileTriggerRef, desktopTriggerRef]) {
+      if (ref.current && ref.current.getClientRects().length > 0) {
+        ref.current.focus();
+        return;
+      }
+    }
+  }, [expanded, onClose]);
 
   // Focus trap + Escape + focus-return — shared hook (3 consumers: CardModal, AddPanel sheet, Export dialog).
-  useDialogA11y(dialogRef, onClose);
+  useDialogA11y(dialogRef, onEscape);
 
-  const artStyle: React.CSSProperties = card.imageUri
-    ? { backgroundImage: cssUrl(card.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
+  function toggleExpanded() {
+    const next = !expanded;
+    setExpanded(next);
+    setAnnouncement(next ? pickerCopy.announceOpen(card.printings.length) : "");
+  }
+
+  function onPick(p: { setCode: string; collectorNumber: string }) {
+    setPick({ setCode: p.setCode, collectorNumber: p.collectorNumber });
+    startWrite(() => {
+      void setCardArtPreference(card.oracleId, p.setCode, p.collectorNumber);
+    });
+  }
+
+  function onClearPick() {
+    setPick(null);
+    startWrite(() => {
+      void clearCardArtPreference(card.oracleId);
+    });
+  }
+
+  // Announced here rather than in the region: the string names the printing that becomes
+  // current once the pick is gone, and only the resolver knows which one that is.
+  function onReset() {
+    onClearPick();
+    const fallback = resolvedPrinting({ ...card, preferredPrinting: null });
+    if (fallback) setAnnouncement(pickerCopy.announceReset(fallback.setName ?? fallback.setCode));
+  }
+
+  const caption = printingCaption(preview);
+
+  // The mobile and desktop meta blocks are parallel trees with one hidden by CSS, so the
+  // region is instantiated twice and each instance needs its own id for aria-controls.
+  const renderRegion = (id: string) => hasPicker && expanded ? (
+    <PrintingRegion
+      id={id}
+      printings={card.printings}
+      preferred={pick}
+      resolvedKey={resolved === undefined ? null : printingKey(resolved)}
+      cardName={card.name}
+      colorIdentity={card.colorIdentity}
+      onPick={onPick}
+      onReset={onReset}
+      onForget={onClearPick}
+      onAnnounce={setAnnouncement}
+    />
+  ) : null;
+
+  const REGION_MOBILE = "printings-mobile";
+  const REGION_DESKTOP = "printings-desktop";
+
+  // Art follows the resolved printing, not the card-level image: they are the same value
+  // today, but an optimistic pick updates `resolved` a revalidate earlier.
+  const artStyle: React.CSSProperties = resolved?.imageUri
+    ? { backgroundImage: cssUrl(resolved.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
 
   return (
@@ -145,9 +244,9 @@ export function CardModal({
       >
         {/* MOBILE art header — §Mobile: Art Header */}
         <div
-          className="relative md:hidden"
+          className={`relative md:hidden ${compactArt ? "flex items-end gap-[14px]" : ""}`}
           style={{
-            padding: "44px 20px 20px",
+            padding: compactArt ? "44px 20px 14px" : "44px 20px 20px",
             ...artStyle,
             boxShadow: "inset 0 -60px 60px -40px rgba(0,0,0,0.55)",
           }}
@@ -165,15 +264,29 @@ export function CardModal({
           >
             ✕
           </button>
-          {/* §Mobile: Art Image — 180px, aspect 63/88, radius 10px */}
+          {/* §Mobile: Art Image — 180px, aspect 63/88, radius 10px. Past the overflow
+              threshold it collapses to a 72px thumbnail and the name comes with it. */}
           <div
-            className="mx-auto rounded-[10px]"
+            className={compactArt ? "flex-none rounded-[10px]" : "mx-auto rounded-[10px]"}
             style={{
-              width: 180, aspectRatio: "63/88", marginTop: 6,
+              width: compactArt ? 72 : 180, aspectRatio: "63/88",
+              marginTop: compactArt ? 0 : 6,
               ...artStyle,
               boxShadow: "0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
             }}
           />
+          {compactArt && (
+            // The dialog's accessible name still comes from the h3 below, which stays in the
+            // DOM (display:none on phone) — this copy is the visual half of the same heading.
+            <div aria-hidden className="min-w-0" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+              <div className="font-display font-bold text-[22px] leading-[1.15]" style={{ color: "var(--fg)" }}>
+                {card.name}
+              </div>
+              <p className="text-[13px] mt-[4px] m-0" style={{ color: "var(--fg-muted)" }}>
+                {card.typeLine}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg #14110E (--bg) */}
@@ -216,7 +329,7 @@ export function CardModal({
                 Right padding on desktop clears the absolutely-positioned close
                 button, which otherwise sits on top of the mana pips. */}
             <div className="flex items-start justify-between gap-[12px] md:pr-[46px]">
-              <div className="min-w-0">
+              <div className={compactArt ? "min-w-0 hidden md:block" : "min-w-0"}>
                 <h3
                   id="card-modal-title"
                   className="font-display font-bold text-[22px] md:text-[29px] m-0 leading-[1.15] md:leading-[1.1]"
@@ -249,27 +362,71 @@ export function CardModal({
               </div>
             )}
 
-            {/* MOBILE meta 2×2 grid — §Mobile: Meta 2×2 Grid */}
+            {/* MOBILE meta grid — §Mobile: Meta 2×2 Grid. At 2+ printings the Set cell is
+                promoted out of the grid into a full-width row below Rarity and Identity, so
+                the disclosure and its region are last in the column and the grid is not
+                pushed off-screen the moment you expand. */}
             <div
               className="md:hidden mt-[16px] grid grid-cols-2 rounded-[10px] overflow-hidden"
               style={{ background: "var(--border)", gap: 1, border: "1px solid var(--border)" }}
             >
-              {/* Set + collector number of the printing on screen (§Phase 5) — the art is a
-                  specific printing now, so the caption names it. */}
-              <MetaCell label="Set" value={printingCaption(card)} />
+              {!hasPicker && (
+                // Set + collector number of the printing on screen (§Phase 5) — the art is a
+                // specific printing now, so the caption names it.
+                <MetaCell label="Set" value={caption} />
+              )}
               <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
               <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-              <MetaCell label="You own" value={`×${card.quantity}`} quantity />
+              <MetaCell
+                label="You own"
+                value={`×${card.quantity}`}
+                quantity
+                span={hasPicker ? 2 : undefined}
+              />
             </div>
+
+            {hasPicker && (
+              <div className="md:hidden mt-[12px]">
+                <MobileSetRow
+                  ref={mobileTriggerRef}
+                  controls={REGION_MOBILE}
+                  caption={caption}
+                  count={card.printings.length}
+                  picked={pick !== null}
+                  expanded={expanded}
+                  imageUri={resolved?.imageUri ?? null}
+                  colorIdentity={card.colorIdentity}
+                  onClick={toggleExpanded}
+                />
+                {renderRegion(REGION_MOBILE)}
+              </div>
+            )}
 
             {/* DESKTOP meta flex row — §Desktop: Meta Fields */}
             <div className="hidden md:flex flex-wrap gap-[26px] mt-[24px]">
-              <MetaField label="Set" value={printingCaption(card)} />
+              {hasPicker ? (
+                <PickerTrigger
+                  ref={desktopTriggerRef}
+                  controls={REGION_DESKTOP}
+                  caption={caption}
+                  count={card.printings.length}
+                  picked={pick !== null}
+                  expanded={expanded}
+                  onClick={toggleExpanded}
+                />
+              ) : (
+                <MetaField label="Set" value={caption} />
+              )}
               <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
               <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
               <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
             </div>
+
+            {hasPicker && <div className="hidden md:block">{renderRegion(REGION_DESKTOP)}</div>}
           </div>
+
+          {/* The modal's one live region (handoff §Accessibility). Do not add a second. */}
+          <div aria-live="polite" className="sr-only">{announcement}</div>
 
           {/* DESKTOP Prev/Next — §Desktop: Prev/Next Navigation */}
           <div
@@ -307,11 +464,18 @@ export function CardModal({
 }
 
 function MetaCell({
-  label, value, identity, quantity, rarity,
-}: { label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean }) {
+  label, value, identity, quantity, rarity, span,
+}: {
+  label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean;
+  /** 2 when the Set cell has been promoted out and an odd cell would leave a hole. */
+  span?: 2;
+}) {
   return (
     // §Mobile: Meta Cell: bg #1E1A15 (--surface), padding 11px 14px
-    <div className="p-[11px_14px]" style={{ background: "var(--surface)" }}>
+    <div
+      className={span === 2 ? "p-[11px_14px] col-span-2" : "p-[11px_14px]"}
+      style={{ background: "var(--surface)" }}
+    >
       <div
         className="font-mono uppercase text-[9.5px] tracking-[0.12em]"
         style={{ color: "var(--fg-faint)" }}
@@ -378,5 +542,130 @@ function MetaField({
         </span>
       </div>
     </div>
+  );
+}
+
+/**
+ * The third line both triggers share: `N printings you own ▾` before a pick, and the brand
+ * diamond + `Your pick · of N ▾` after one.
+ */
+function TriggerHint({ count, picked, expanded }: { count: number; picked: boolean; expanded: boolean }) {
+  const chevron = pickerCopy.triggerChevron(expanded);
+  if (!picked) {
+    return (
+      <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--brass)" }}>
+        {pickerCopy.triggerCount(count)} {chevron}
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-[5px] mt-[4px]">
+      <span aria-hidden className="rotate-45" style={{ width: 7, height: 7, background: "var(--brass)" }} />
+      <span
+        className="font-mono uppercase text-[10px] tracking-[0.14em]"
+        style={{ color: "var(--brass)" }}
+      >
+        {pickerCopy.triggerPicked}
+      </span>
+      <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
+        {pickerCopy.triggerPickedOf(count)} {chevron}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Desktop: the shipped `Set` MetaField wrapped in a disclosure button. The negative margin
+ * cancels the padding so the meta row's 26px gap rhythm is unchanged.
+ */
+function PickerTrigger({
+  ref, controls, caption, count, picked, expanded, onClick,
+}: {
+  ref: React.Ref<HTMLButtonElement>;
+  controls: string;
+  caption: string;
+  count: number;
+  picked: boolean;
+  expanded: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      aria-expanded={expanded}
+      // The region is unmounted while collapsed, so the reference goes with it — a trigger
+      // pointing at a missing element is a broken relationship, not an empty one.
+      aria-controls={expanded ? controls : undefined}
+      aria-label={expanded ? pickerCopy.triggerCollapseAria : pickerCopy.triggerAria(count, caption)}
+      className="cursor-pointer text-left rounded-[8px] p-[8px_12px] m-[-8px_-12px]"
+      style={{ background: "var(--elevated)", border: "1px solid var(--border-dashed)" }}
+    >
+      <div className="font-mono uppercase text-[10px] tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
+        {pickerCopy.triggerLabel}
+      </div>
+      <div className="mt-[5px] text-[14px]" style={{ color: "var(--fg)" }}>{caption}</div>
+      <TriggerHint count={count} picked={picked} expanded={expanded} />
+    </button>
+  );
+}
+
+/**
+ * Mobile: the Set cell promoted out of the 2×2 grid into a full-width row. The 40×56 thumbnail
+ * identifies the current printing beside art that is already showing it — it is not a
+ * substitute for the art panel.
+ */
+function MobileSetRow({
+  ref, controls, caption, count, picked, expanded, imageUri, colorIdentity, onClick,
+}: {
+  ref: React.Ref<HTMLButtonElement>;
+  controls: string;
+  caption: string;
+  count: number;
+  picked: boolean;
+  expanded: boolean;
+  imageUri: string | null;
+  colorIdentity: string[];
+  onClick: () => void;
+}) {
+  const thumbStyle: React.CSSProperties = imageUri
+    ? { backgroundImage: cssUrl(imageUri), backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: identityGradient(colorIdentity) };
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      aria-expanded={expanded}
+      // The region is unmounted while collapsed, so the reference goes with it — a trigger
+      // pointing at a missing element is a broken relationship, not an empty one.
+      aria-controls={expanded ? controls : undefined}
+      aria-label={expanded ? pickerCopy.triggerCollapseAria : pickerCopy.triggerAria(count, caption)}
+      className="cursor-pointer w-full text-left flex items-center gap-[12px] p-[11px_14px]"
+      style={{
+        minHeight: 62,
+        background: "var(--elevated)",
+        border: "1px solid var(--border-dashed)",
+        // Square-bottomed while open so the region reads as a continuation of this row.
+        borderRadius: expanded ? "10px 10px 0 0" : 10,
+      }}
+    >
+      <span
+        aria-hidden
+        className="flex-none rounded-[5px]"
+        style={{ width: 40, height: 56, ...thumbStyle, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }}
+      />
+      <span className="min-w-0 flex-1">
+        <span
+          className="block font-mono uppercase text-[9.5px] tracking-[0.12em]"
+          style={{ color: "var(--fg-faint)" }}
+        >
+          {pickerCopy.triggerLabel}
+        </span>
+        <span className="block mt-[3px] text-[13px]" style={{ color: "var(--fg)" }}>{caption}</span>
+        <TriggerHint count={count} picked={picked} expanded={expanded} />
+      </span>
+    </button>
   );
 }

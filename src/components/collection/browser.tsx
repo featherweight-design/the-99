@@ -246,6 +246,9 @@ export function CollectionBrowser({
 
       {openCard && (
         <CardModal
+          // Paging Prev/Next must not carry the previous card's expanded region or its
+          // optimistic art pick across; remounting is cheaper than resetting both.
+          key={openCard.oracleId}
           card={openCard}
           position={openIndex + 1}
           total={sorted.length}

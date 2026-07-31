@@ -103,6 +103,25 @@ export const collectionItems = pgTable("collection_items", {
   check("collection_items_finish_check", sql`${t.finish} in ('nonfoil', 'foil', 'etched')`),
 ]);
 
+/**
+ * Which printing of a card the user chose to represent it (#105). One row per card per user,
+ * so re-picking is an upsert on the primary key and (set_code, collector_number) is the value.
+ *
+ * Keyed on (set_code, collector_number) rather than scryfall_id because bare `Name,Qty` exports
+ * carry no Scryfall ID at all, and collector number is the granularity the picker offers.
+ *
+ * There is deliberately NO foreign key to collection_items. replaceCollection deletes and
+ * re-inserts every holding on each upload, so a FK — cascading or not — would wipe every pick
+ * on every re-import. A pick whose printing is no longer owned lies dormant instead, and
+ * re-acquiring the card reactivates it.
+ */
+export const cardArtPreferences = pgTable("card_art_preferences", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  setCode: text("set_code").notNull(),                              // lowercase, as stored everywhere
+  collectorNumber: text("collector_number").notNull().default(""),  // TEXT — "31", "12a", "★", ""
+}, (t) => [primaryKey({ columns: [t.userId, t.oracleId] })]);
+
 export const decks = pgTable("decks", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
