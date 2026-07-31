@@ -100,11 +100,13 @@ describe("PrintingRegion", () => {
 
   describe("keyboard (radiogroup)", () => {
     it("arrow keys move and select, and do not wrap at the ends", () => {
-      const { onPick } = renderRegion();
+      const { onPick, onAnnounce } = renderRegion();
       const tiles = screen.getAllByRole("radio");
+      // The end absorbs the key. Re-selecting from a standstill would re-run the server
+      // action and re-announce a pick that never moved.
       fireEvent.keyDown(tiles[0], { key: "ArrowLeft" });
-      expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ setCode: "C21" }));
-      onPick.mockClear();
+      expect(onPick).not.toHaveBeenCalled();
+      expect(onAnnounce).not.toHaveBeenCalled();
       fireEvent.keyDown(tiles[0], { key: "ArrowRight" });
       expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ setCode: "LEA" }));
     });
@@ -230,6 +232,15 @@ describe("PrintingRegion", () => {
       expect(screen.getByText(copy.filterFoil(10))).toBeInTheDocument();
       expect(screen.getByText(copy.filterNonFoil(10))).toBeInTheDocument();
       expect(screen.getByText(copy.groupSet("Set 0", "S00", 1))).toBeInTheDocument();
+    });
+
+    it("names and dates a set group from an owned sibling when the dormant tile opens it", () => {
+      // The dormant entry knows only the set code, so a group it opens would header as a bare
+      // code and sort as undated if it were the only source of the group's metadata.
+      renderRegion({ printings: many, preferred: { setCode: "S05", collectorNumber: "0" } });
+      expect(screen.getByText(copy.groupSet("Set 5", "S05", 2))).toBeInTheDocument();
+      const headers = screen.getAllByText(/· S\d+ · \d+$/i).map((el) => el.textContent);
+      expect(headers[0]).toBe(copy.groupSet("Set 19", "S19", 1));
     });
 
     it("orders set groups newest release first", () => {

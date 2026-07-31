@@ -36,6 +36,16 @@ Verified row-by-row against the property table; all matched unless listed under 
 
 None.
 
+## FOR DESIGN TO RATIFY
+
+- **The dormant tile bypasses the search box and the finish chips.** The design table binds the
+  dormant tile and its note to one condition (row 2217 — a stored pick the collection no longer
+  contains) and says nothing about how it behaves under the overflow filters. It owns no finishes
+  and matches no query, so every narrowing would drop it and strand the dormant note above a grid
+  the tile had vanished from. Eng resolved it by exempting the tile from both predicates and
+  counting it inside every finish chip, so a chip label still equals the tiles it reveals. This is
+  an eng reading of row 2217, not an explicit Design ruling — please confirm or overrule.
+
 ## DEVIATIONS FROM THE PLAN (ratified in implementation)
 
 - **Tier 0 lives in `primaryPrinting`, not `resolveImageUri`.** The spec's literal instruction to make

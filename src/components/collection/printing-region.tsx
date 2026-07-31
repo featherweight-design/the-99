@@ -188,8 +188,13 @@ export function PrintingRegion({
     const byCode = new Map<string, { key: string; label: string; code: string; releasedAt: string | null; items: Entry[] }>();
     for (const p of visible) {
       const g = byCode.get(p.setCode);
-      if (g) g.items.push(p);
-      else byCode.set(p.setCode, {
+      if (g) {
+        g.items.push(p);
+        // The dormant entry carries no set name or release date, so a group it opens would
+        // header as a bare code and sort as undated. Any owned sibling knows both.
+        if (p.setName !== null) g.label = p.setName;
+        if (p.releasedAt !== null) g.releasedAt ??= p.releasedAt;
+      } else byCode.set(p.setCode, {
         key: p.setCode,
         label: p.setName ?? p.setCode,
         code: p.setCode,
@@ -247,6 +252,9 @@ export function PrintingRegion({
               : null;
     if (next === null) return;
     e.preventDefault();
+    // No wrap means the ends absorb the key. Selecting again from there would re-run the
+    // server action and re-announce a pick that never moved.
+    if (next === index) return;
     focusAndSelect(next);
   }
 
