@@ -7,8 +7,9 @@ afterEach(() => {
   document.body.style.overflow = "";
 });
 
-// The hook takes a ref, so each case drives it through a tiny harness that
-// creates one and mounts a real element for the trap to look at.
+// Scroll locking only. The hook takes a ref, so the harness supplies an empty
+// one — nothing is attached, which leaves the focus trap inert and keeps these
+// cases isolated to the lock.
 function renderDialog(options?: Parameters<typeof useDialogA11y>[2]) {
   return renderHook(
     ({ opts }: { opts?: Parameters<typeof useDialogA11y>[2] }) => {
@@ -39,8 +40,8 @@ describe("useDialogA11y scroll lock", () => {
     expect(document.body.style.overflow).toBe("scroll");
   });
 
-  // ExportDialog stays mounted while closed and passes lockScroll={open}, so
-  // toggling the flag has to release and re-take the lock.
+  // lockScroll is a plain option, so a caller may flip it on a mounted dialog
+  // rather than unmounting. The lock has to follow the flag either way.
   it("releases the lock when the flag goes false without unmounting", () => {
     const { rerender } = renderDialog({ lockScroll: true });
     expect(document.body.style.overflow).toBe("hidden");
