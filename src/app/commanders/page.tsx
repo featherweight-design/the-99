@@ -6,6 +6,11 @@ import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
 import { retryRecs } from "./actions";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
+import {
+  EmptyState,
+  EmptyStateBody,
+  EmptyStateTitle,
+} from "../../components/ui/empty-state";
 
 export default async function CommandersPage() {
   const userId = await requireUserId();
@@ -14,27 +19,18 @@ export default async function CommandersPage() {
   if (stats.uniqueCards === 0) {
     // No cards → collection-empty analog: send the user to upload.
     return (
-      <section
-        className="flex flex-col items-center justify-center text-center"
-        style={{ padding: "32px" }}
-      >
+      <EmptyState>
         {/* Card-fan mark: same construction as collection empty state */}
         <CardFan variant="mobile" className="mb-[22px] sm:hidden" />
         <CardFan variant="desktop" className="mb-[26px] hidden sm:block" />
 
-        <h1
-          className="font-display font-bold text-[28px]"
-          style={{ color: "var(--fg)", margin: 0 }}
-        >
+        <EmptyStateTitle className="text-[28px]">
           No collection yet
-        </h1>
+        </EmptyStateTitle>
 
-        <p
-          className="mt-3 max-w-[420px] text-[16px] leading-[1.6]"
-          style={{ color: "var(--fg-body)" }}
-        >
+        <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
           Upload your cards and we&apos;ll rank every commander you can build.
-        </p>
+        </EmptyStateBody>
 
         <PrimaryButton
           href="/collection"
@@ -42,7 +38,7 @@ export default async function CommandersPage() {
         >
           Upload collection
         </PrimaryButton>
-      </section>
+      </EmptyState>
     );
   }
 
@@ -107,7 +103,7 @@ export default async function CommandersPage() {
           <h1
             className="font-display font-bold text-[22px] sm:text-[30px] leading-[1.2]"
             style={{
-              color: "#EDE6D8",
+              color: "var(--fg)",
               margin: "26px 0 0",
             }}
           >

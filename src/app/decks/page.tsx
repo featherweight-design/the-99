@@ -1,6 +1,5 @@
 // /decks — Deck list page.
 // §Deck List: populated grid, empty state preserved, ?commander redirect.
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
@@ -9,6 +8,12 @@ import { CardFan } from "../../components/marks";
 import { Crab } from "../../components/character/crab";
 import { DeckCard } from "../../components/decks/deck-card";
 import { NewDeckButton } from "../../components/decks/new-deck-button";
+import { PrimaryButton } from "../../components/ui/button";
+import {
+  EmptyState,
+  EmptyStateBody,
+  EmptyStateTitle,
+} from "../../components/ui/empty-state";
 
 export default async function DecksPage({
   searchParams,
@@ -27,10 +32,7 @@ export default async function DecksPage({
   // ── Empty state — §Empty State — No Decks. Verbatim from interim; not regressed. ──
   if (decks.length === 0) {
     return (
-      <section
-        className="flex flex-col items-center justify-center text-center"
-        style={{ padding: "32px" }}
-      >
+      <EmptyState>
         {/* Card-fan mark: mobile variant → 100×110, decks-desktop → 120×130 (−15° front) */}
         <div className="mb-[22px] md:mb-[26px] flex items-end justify-center gap-[14px] md:gap-[18px]">
           <CardFan variant="mobile" className="md:hidden" />
@@ -39,18 +41,12 @@ export default async function DecksPage({
           <Crab size={80} className="hidden md:block" />
         </div>
 
-        <h1
-          className="font-display font-bold text-[24px] md:text-[28px]"
-          style={{ color: "var(--fg)", margin: 0 }}
-        >
+        <EmptyStateTitle className="text-[24px] md:text-[28px]">
           No decks yet.
-        </h1>
+        </EmptyStateTitle>
 
         {/* Body: mobile 14px different copy, desktop 16px different copy */}
-        <p
-          className="mt-3 text-[14px] leading-[1.6] md:max-w-[420px] md:text-[16px]"
-          style={{ color: "var(--fg-body)" }}
-        >
+        <EmptyStateBody className="mt-3 text-[14px] md:max-w-[420px] md:text-[16px]">
           <span className="md:hidden">
             Pick a commander and we&apos;ll assemble the 99 from cards you
             already own.
@@ -59,21 +55,16 @@ export default async function DecksPage({
             Pick a commander and we&apos;ll assemble the 99 from cards you
             already own — then track what&apos;s missing.
           </span>
-        </p>
+        </EmptyStateBody>
 
         {/* "Browse commanders" CTA: mobile pad 13px 26px mt-[24px], desktop 12px 26px */}
-        <Link
+        <PrimaryButton
           href="/commanders"
-          className={[
-            "mt-[24px] rounded-lg font-semibold text-[14px]",
-            "px-[26px] py-[13px] md:py-[12px]",
-            "bg-[color:var(--brass)] text-[color:var(--bg)]",
-            "hover:bg-[color:var(--brass-hover)]",
-          ].join(" ")}
+          className="mt-[24px] text-[14px] px-[26px] py-[13px] md:py-[12px]"
         >
           Browse commanders
-        </Link>
-      </section>
+        </PrimaryButton>
+      </EmptyState>
     );
   }
 
