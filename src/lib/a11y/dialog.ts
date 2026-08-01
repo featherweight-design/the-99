@@ -23,6 +23,11 @@ function visibleFocusables(root: HTMLElement): HTMLElement[] {
   );
 }
 
+// Module-level because the lock is a property of the page, not of any one
+// dialog: every hook instance has to see the same count.
+let scrollLocks = 0;
+let overflowBeforeLock = "";
+
 export function useDialogA11y(
   dialogRef: RefObject<HTMLElement | null>,
   onClose: () => void,
@@ -61,14 +66,24 @@ export function useDialogA11y(
     visibleFocusables(dialogRef.current)[0]?.focus();
   }, [dialogRef, initialFocusRef]);
 
-  // Restores the prior value rather than clearing it, so a dialog opened over
-  // an already-locked page hands the lock back instead of freeing it.
+  // Counted rather than saved-and-restored per dialog. Two dialogs can be up at
+  // once — the deck builder's add sheet and export dialog are independent flags
+  // — and whichever unmounts first would otherwise restore the overflow it
+  // captured and free a page the other one still needs held. The count releases
+  // only on the last unlock, and the original value is captured once, by the
+  // first locker.
   useEffect(() => {
     if (!lockScroll) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (scrollLocks === 0) {
+      overflowBeforeLock = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    scrollLocks += 1;
     return () => {
-      document.body.style.overflow = prev;
+      scrollLocks -= 1;
+      if (scrollLocks === 0) {
+        document.body.style.overflow = overflowBeforeLock;
+      }
     };
   }, [lockScroll]);
 

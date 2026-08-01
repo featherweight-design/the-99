@@ -50,4 +50,19 @@ describe("useDialogA11y scroll lock", () => {
     rerender({ opts: { lockScroll: true } });
     expect(document.body.style.overflow).toBe("hidden");
   });
+
+  // The deck builder's add sheet and export dialog are independent flags, so
+  // both can be up at once and either may close first.
+  it("holds the lock until the last of two dialogs releases it", () => {
+    document.body.style.overflow = "scroll";
+    const first = renderDialog({ lockScroll: true });
+    const second = renderDialog({ lockScroll: true });
+    expect(document.body.style.overflow).toBe("hidden");
+
+    first.unmount();
+    expect(document.body.style.overflow).toBe("hidden");
+
+    second.unmount();
+    expect(document.body.style.overflow).toBe("scroll");
+  });
 });
