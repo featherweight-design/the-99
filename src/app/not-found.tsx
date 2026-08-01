@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { Crab } from "../components/character/crab";
 import { shellCopy } from "../lib/copy/shell";
+import { GhostButton, PrimaryButton } from "../components/ui/button";
 
 export default function NotFound() {
   return (
@@ -25,18 +25,18 @@ export default function NotFound() {
         {shellCopy.notFound.caption}
       </p>
       <div className="flex flex-col md:flex-row gap-[12px] mt-[24px]">
-        <Link
+        <PrimaryButton
           href="/"
-          className="rounded-lg font-sans font-semibold text-[13px] md:text-[14px] px-[22px] py-[12px] bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)]"
+          className="text-[13px] md:text-[14px] px-[22px] py-[12px]"
         >
           {shellCopy.notFound.primaryCta}
-        </Link>
-        <Link
+        </PrimaryButton>
+        <GhostButton
           href="/decks"
-          className="rounded-lg font-sans font-semibold text-[13px] md:text-[14px] px-[22px] py-[12px] text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] hover:[border:1px_solid_var(--brass)] hover:text-[color:var(--brass-hover)]"
+          className="text-[13px] md:text-[14px] px-[22px] py-[12px]"
         >
           {shellCopy.notFound.secondaryCta}
-        </Link>
+        </GhostButton>
       </div>
     </div>
   );

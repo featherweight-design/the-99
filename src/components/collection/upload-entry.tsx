@@ -162,14 +162,13 @@ export function UploadEntry({
             </div>
             {/* Browse files button — §"Browse files" Button.
                 Deviation vs handoff (#30): (a) desktop mt/mb 14px added — the flat design put the button flush against format meta above and helper text below; needs breathing room. (b) Background moved from an inline style to a Tailwind utility so the hover-state class actually applies (inline styles outrank hover utilities and were shadowing the color swap). (c) Disabled + label swap while the upload transition is pending so the user gets feedback instead of a silent submit. */}
-            <button
-              type="button"
+            <PrimaryButton
               onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
               disabled={pending}
-              className="rounded-lg font-semibold text-[13px] md:text-[14px] mt-[16px] md:mt-[14px] md:mb-[14px] px-[20px] md:px-[22px] py-[11px] md:whitespace-nowrap border-none bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)] disabled:opacity-60 disabled:cursor-wait"
+              className="text-[13px] md:text-[14px] mt-[16px] md:mt-[14px] md:mb-[14px] px-[20px] md:px-[22px] py-[11px] md:whitespace-nowrap disabled:opacity-60 disabled:cursor-wait"
             >
               {pending ? "Uploading…" : "Browse files"}
-            </button>
+            </PrimaryButton>
             {/* Helper — §Helper Text: 12/13px --fg-faint, margin-top 14px mobile */}
             <p
               className="mt-[14px] md:mt-0 text-[12px] md:text-[13px] leading-[1.55] md:leading-[1.5]"
