@@ -6,6 +6,7 @@
 import { useTransition } from "react";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
+import { OwnershipDot } from "../ui/ownership-dot";
 
 interface SuggestionCardProps {
   suggestion: DeckSuggestion;
@@ -38,18 +39,7 @@ export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardPro
       {/* §Suggestion card — top row: flex, align-items center, gap 8px–9px mobile / 8px desktop */}
       <div className="flex items-center gap-[8px] md:gap-[8px]">
         {/* §Suggestion card — ownership dot: 8×8px, radius 999px */}
-        <span
-          aria-hidden
-          className="flex-none rounded-full"
-          style={{
-            width: 8,
-            height: 8,
-            background: suggestion.owned ? "#6FA368" : "transparent",
-            border: suggestion.owned
-              ? "1px solid #6FA368"
-              : "1px dashed #6E6353",
-          }}
-        />
+        <OwnershipDot owned={suggestion.owned} className="w-[8px] h-[8px]" />
 
         {/* §Suggestion card — card name: 13px–13.5px mobile / 13.5px desktop, flex 1, truncate */}
         <span

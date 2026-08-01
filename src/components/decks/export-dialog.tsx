@@ -4,6 +4,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { OwnershipDot } from "../ui/ownership-dot";
 import { downloadTextFile } from "../../lib/decks/download";
 import {
   buildDecklistText,
@@ -425,16 +426,7 @@ function DialogContent({
                   </span>
                   {/* Unowned dot (desktop) */}
                   {!isMobile && (
-                    <div
-                      className="flex-none"
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: 999,
-                        background: "transparent",
-                        border: "1px dashed #6E6353",
-                      }}
-                    />
+                    <OwnershipDot owned={false} className="w-[7px] h-[7px]" />
                   )}
                   {/* Card name */}
                   <span
