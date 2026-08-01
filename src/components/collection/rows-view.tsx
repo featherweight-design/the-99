@@ -33,12 +33,9 @@ export function RowsView({
           type="button"
           onClick={() => onOpen(c.oracleId)}
           // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 8px, bg #1E1A15 (--surface), border 1px #2A241D (--border)
-          className="grid items-center text-left rounded-lg gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer hover:bg-[color:var(--surface-raised)] hover:[border:1px_solid_var(--border-strong)] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]"
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            gridTemplateColumns: "38px 40px 1fr auto",
-          }}
+          // Background and border are utilities, not inline style: inline values
+          // outrank the hover: variants and neither hover state ever lands.
+          className="grid items-center text-left rounded-lg gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border)] hover:bg-[color:var(--surface-raised)] hover:[border:1px_solid_var(--border-strong)] [grid-template-columns:38px_40px_1fr_auto] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]"
         >
           {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, #C9A24B (--brass), font-weight 500 */}
           <span className="font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--brass)" }}>
