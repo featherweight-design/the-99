@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks } from "../../db/schema";
+import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import type { CardTypeGroup, DeckDetailCard } from "./grouping";
@@ -260,7 +261,8 @@ export async function listOwnedLegalCommanders(userId: string): Promise<OwnedLeg
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
-    .where(and(eq(collectionItems.userId, userId), eq(cards.commanderLegal, true)))
+    .where(ownedCardsWhere(userId, { commanderLegalOnly: true }))
+    // Postgres requires DISTINCT ON expressions to lead the ORDER BY.
     .orderBy(cards.oracleId);
 
   // Split: candidates are legendary creatures / "can be your commander" cards;
