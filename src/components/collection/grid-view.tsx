@@ -28,11 +28,9 @@ export function GridView({
           type="button"
           onClick={() => onOpen(c.oracleId)}
           // §Grid Tile Container: radius 9/10px, overflow hidden, bg #1E1A15 (--surface), border 1px #2A241D (--border)
-          className="text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer hover:[border:1px_solid_var(--brass)]"
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-          }}
+          // Background and border are utilities, not inline style: an inline
+          // border outranks the hover: variant and the brass hover never lands.
+          className="text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border)] hover:[border:1px_solid_var(--brass)]"
         >
           {/* Art region — §Grid Tile: Art Region */}
           <div

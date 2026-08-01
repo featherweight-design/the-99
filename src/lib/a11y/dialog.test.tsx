@@ -3,8 +3,13 @@ import { useRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useDialogA11y } from "./dialog";
 
+// The trap roots below are appended by hand rather than rendered, so Testing
+// Library's automatic cleanup does not know about them.
+const appended: HTMLElement[] = [];
+
 afterEach(() => {
   document.body.style.overflow = "";
+  while (appended.length) appended.pop()?.remove();
 });
 
 // Scroll locking only. The hook takes a ref, so the harness supplies an empty
@@ -20,6 +25,38 @@ function renderDialog(options?: Parameters<typeof useDialogA11y>[2]) {
     { initialProps: { opts: options } },
   );
 }
+
+// Escape is wired to a window listener but no-ops unless the ref holds an
+// element, so these cases attach a real one.
+describe("useDialogA11y closeOnEscape", () => {
+  function renderWithElement(options?: Parameters<typeof useDialogA11y>[2]) {
+    const onClose = vi.fn();
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    appended.push(el);
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(el);
+      useDialogA11y(ref, onClose, options);
+    });
+    return { onClose };
+  }
+
+  function pressEscape() {
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+  }
+
+  it("closes on Escape by default", () => {
+    const { onClose } = renderWithElement();
+    pressEscape();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores Escape when closeOnEscape is false", () => {
+    const { onClose } = renderWithElement({ closeOnEscape: false });
+    pressEscape();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
 
 describe("useDialogA11y scroll lock", () => {
   it("leaves body scroll alone by default", () => {

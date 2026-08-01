@@ -1,6 +1,7 @@
 "use client";
 // useDialogA11y — shared focus-trap + Escape + focus-return hook.
-// Consumers: CardModal (collection), AddPanel sheet (deck builder), Export dialog (Task 10).
+// Consumers: every role="dialog" surface — CardModal, Issue Inspector, AddPanel
+// sheet, Export dialog, ConfirmModal, and the commander Lightbox.
 
 import { type RefObject, useEffect, useRef } from "react";
 
@@ -41,11 +42,18 @@ export function useDialogA11y(
      * component's lifetime.
      */
     lockScroll?: boolean;
+    /**
+     * Let Escape dismiss the dialog. On by default. ConfirmModal passes false
+     * while its replace is in flight: the work is already running and
+     * un-undoable, so closing would only hide it.
+     */
+    closeOnEscape?: boolean;
   },
 ) {
   const triggerRef = useRef<HTMLElement | null>(null);
   const initialFocusRef = options?.initialFocusRef;
   const lockScroll = options?.lockScroll ?? false;
+  const closeOnEscape = options?.closeOnEscape ?? true;
 
   // Remember what had focus before the dialog opened; return it on close.
   useEffect(() => {
@@ -94,8 +102,10 @@ export function useDialogA11y(
       const root = dialogRef.current;
       if (!root) return;
       if (e.key === "Escape") {
+        // Swallowed either way: a dialog that refuses Escape should still stop
+        // the key reaching whatever is behind it.
         e.preventDefault();
-        onClose();
+        if (closeOnEscape) onClose();
         return;
       }
       if (e.key !== "Tab") return;
@@ -114,5 +124,5 @@ export function useDialogA11y(
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dialogRef, onClose]);
+  }, [dialogRef, onClose, closeOnEscape]);
 }

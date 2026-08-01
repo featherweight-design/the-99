@@ -89,8 +89,10 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
               <button
                 type="button"
                 onClick={handleRename}
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors hover:bg-[#2A241D]"
-                style={{ color: "#EDE6D8", background: "transparent", border: "none", cursor: "pointer" }}
+                // bg/border as utilities, not inline: an inline background
+                // outranks hover: and the row never highlights.
+                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none cursor-pointer hover:bg-[#2A241D]"
+                style={{ color: "#EDE6D8" }}
               >
                 Rename
               </button>
@@ -98,8 +100,8 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
                 type="button"
                 onClick={handleDelete}
                 disabled={isPending}
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors hover:bg-[#2A241D]"
-                style={{ color: "#C6533F", background: "transparent", border: "none", cursor: isPending ? "default" : "pointer" }}
+                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none hover:bg-[#2A241D]"
+                style={{ color: "#C6533F", cursor: isPending ? "default" : "pointer" }}
               >
                 {isPending ? "Deleting…" : "Delete"}
               </button>
