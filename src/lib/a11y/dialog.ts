@@ -23,13 +23,29 @@ function visibleFocusables(root: HTMLElement): HTMLElement[] {
   );
 }
 
+// Module-level because the lock is a property of the page, not of any one
+// dialog: every hook instance has to see the same count.
+let scrollLocks = 0;
+let overflowBeforeLock = "";
+
 export function useDialogA11y(
   dialogRef: RefObject<HTMLElement | null>,
   onClose: () => void,
-  options?: { initialFocusRef?: RefObject<HTMLElement | null> },
+  options?: {
+    initialFocusRef?: RefObject<HTMLElement | null>;
+    /**
+     * Hold the body at overflow:hidden while the dialog is up. Off by default —
+     * CardModal and the Issue Inspector deliberately let the page scroll behind
+     * them. Consumers that stay mounted while closed pass their open flag here
+     * rather than a literal, so the lock tracks the dialog rather than the
+     * component's lifetime.
+     */
+    lockScroll?: boolean;
+  },
 ) {
   const triggerRef = useRef<HTMLElement | null>(null);
   const initialFocusRef = options?.initialFocusRef;
+  const lockScroll = options?.lockScroll ?? false;
 
   // Remember what had focus before the dialog opened; return it on close.
   useEffect(() => {
@@ -49,6 +65,27 @@ export function useDialogA11y(
     if (!dialogRef.current) return;
     visibleFocusables(dialogRef.current)[0]?.focus();
   }, [dialogRef, initialFocusRef]);
+
+  // Counted rather than saved-and-restored per dialog. Two dialogs can be up at
+  // once — the deck builder's add sheet and export dialog are independent flags
+  // — and whichever unmounts first would otherwise restore the overflow it
+  // captured and free a page the other one still needs held. The count releases
+  // only on the last unlock, and the original value is captured once, by the
+  // first locker.
+  useEffect(() => {
+    if (!lockScroll) return;
+    if (scrollLocks === 0) {
+      overflowBeforeLock = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    scrollLocks += 1;
+    return () => {
+      scrollLocks -= 1;
+      if (scrollLocks === 0) {
+        document.body.style.overflow = overflowBeforeLock;
+      }
+    };
+  }, [lockScroll]);
 
   // Escape closes; Tab wraps within the dialog.
   useEffect(() => {

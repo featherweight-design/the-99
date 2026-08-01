@@ -1,0 +1,68 @@
+import { renderHook } from "@testing-library/react";
+import { useRef } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { useDialogA11y } from "./dialog";
+
+afterEach(() => {
+  document.body.style.overflow = "";
+});
+
+// Scroll locking only. The hook takes a ref, so the harness supplies an empty
+// one — nothing is attached, which leaves the focus trap inert and keeps these
+// cases isolated to the lock.
+function renderDialog(options?: Parameters<typeof useDialogA11y>[2]) {
+  return renderHook(
+    ({ opts }: { opts?: Parameters<typeof useDialogA11y>[2] }) => {
+      const ref = useRef<HTMLDivElement | null>(null);
+      useDialogA11y(ref, vi.fn(), opts);
+      return ref;
+    },
+    { initialProps: { opts: options } },
+  );
+}
+
+describe("useDialogA11y scroll lock", () => {
+  it("leaves body scroll alone by default", () => {
+    renderDialog();
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  it("locks body scroll when asked", () => {
+    renderDialog({ lockScroll: true });
+    expect(document.body.style.overflow).toBe("hidden");
+  });
+
+  it("restores the previous overflow on unmount", () => {
+    document.body.style.overflow = "scroll";
+    const { unmount } = renderDialog({ lockScroll: true });
+    expect(document.body.style.overflow).toBe("hidden");
+    unmount();
+    expect(document.body.style.overflow).toBe("scroll");
+  });
+
+  // lockScroll is a plain option, so a caller may flip it on a mounted dialog
+  // rather than unmounting. The lock has to follow the flag either way.
+  it("releases the lock when the flag goes false without unmounting", () => {
+    const { rerender } = renderDialog({ lockScroll: true });
+    expect(document.body.style.overflow).toBe("hidden");
+    rerender({ opts: { lockScroll: false } });
+    expect(document.body.style.overflow).toBe("");
+    rerender({ opts: { lockScroll: true } });
+    expect(document.body.style.overflow).toBe("hidden");
+  });
+
+  // The deck builder's add sheet and export dialog are independent flags, so
+  // both can be up at once and either may close first.
+  it("holds the lock until the last of two dialogs releases it", () => {
+    document.body.style.overflow = "scroll";
+    const first = renderDialog({ lockScroll: true });
+    const second = renderDialog({ lockScroll: true });
+    expect(document.body.style.overflow).toBe("hidden");
+
+    first.unmount();
+    expect(document.body.style.overflow).toBe("hidden");
+
+    second.unmount();
+    expect(document.body.style.overflow).toBe("scroll");
+  });
+});

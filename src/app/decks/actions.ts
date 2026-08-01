@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
+import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
@@ -20,7 +21,7 @@ async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
-    .where(and(eq(collectionItems.userId, userId), eq(cards.commanderLegal, true)))
+    .where(ownedCardsWhere(userId, { commanderLegalOnly: true }))
     // Postgres requires DISTINCT ON expressions to lead the ORDER BY.
     .orderBy(cards.oracleId);
   const identity = new Set(commander.colorIdentity);

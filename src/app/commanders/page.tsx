@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { requireUserId } from "../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
 import { getRankedList } from "../../lib/recs/ranked-list";
@@ -37,12 +36,12 @@ export default async function CommandersPage() {
           Upload your cards and we&apos;ll rank every commander you can build.
         </p>
 
-        <Link
+        <PrimaryButton
           href="/collection"
-          className="mt-6 rounded-lg px-[24px] py-[12px] font-semibold text-[14px] bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)]"
+          className="mt-6 px-[24px] py-[12px] text-[14px]"
         >
           Upload collection
-        </Link>
+        </PrimaryButton>
       </section>
     );
   }

@@ -5,6 +5,7 @@
 
 import { removeCardFromDeck } from "../../app/decks/actions";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { OwnershipDot } from "../ui/ownership-dot";
 
 interface DecklistRowProps {
   deckId: string;
@@ -26,20 +27,10 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel }: Decklis
     >
       {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
       {!isMeta && (
-        <span
-          className="flex-none rounded-full w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
-          style={
-            card.owned
-              ? {
-                  background: "#6FA368",
-                  border: "1px solid #6FA368",
-                }
-              : {
-                  background: "transparent",
-                  border: "1px dashed #6E6353",
-                }
-          }
-          aria-label={card.owned ? "Owned" : "Not owned"}
+        <OwnershipDot
+          owned={card.owned}
+          className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
+          label={card.owned ? "Owned" : "Not owned"}
         />
       )}
       {/* For meta rows render a same-sized empty spacer so name aligns */}

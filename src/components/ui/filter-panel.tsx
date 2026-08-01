@@ -28,6 +28,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { rankSetOptions } from "../../lib/collection/set-filter";
 import type { FilterPanelCopy } from "../../lib/copy/collection";
+import { PrimaryButton } from "./button";
 import { SearchField } from "./text-field";
 import { useIsDesktop } from "./use-is-desktop";
 
@@ -555,13 +556,12 @@ export function FilterPanel({
               <span className="font-mono text-[11px] text-[#6E6353]">{status}</span>
             )}
             {/* Dismiss only — it commits nothing. */}
-            <button
-              type="button"
+            <PrimaryButton
               onClick={() => close()}
-              className="rounded-lg px-[22px] py-[10px] font-sans text-[13.5px] font-semibold bg-[color:var(--brass)] text-[color:var(--bg)]"
+              className="px-[22px] py-[10px] text-[13.5px]"
             >
               {copy.done}
-            </button>
+            </PrimaryButton>
           </>
         )}
       </div>

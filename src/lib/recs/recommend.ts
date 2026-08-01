@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems } from "../../db/schema";
+import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { synergyStateFrom, type SynergyState } from "./synergy-state";
@@ -112,7 +113,9 @@ export async function loadCollectionPool(
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
-    .where(eq(collectionItems.userId, userId))
+    // Not commanderLegalOnly: uniqueCardsRead below counts the whole
+    // collection, so legality is filtered in JS rather than in SQL.
+    .where(ownedCardsWhere(userId, { commanderLegalOnly: false }))
     // Postgres requires DISTINCT ON expressions to lead the ORDER BY.
     .orderBy(cards.oracleId);
 

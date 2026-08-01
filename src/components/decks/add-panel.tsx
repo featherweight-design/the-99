@@ -5,7 +5,7 @@
 //   "inline"  — mobile, shown inline when deck is empty
 //   "sheet"   — mobile, bottom-sheet chrome (focus-trap, Escape, focus-return, body-scroll-lock)
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useMemo } from "react";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { SuggestionCard } from "./suggestion-card";
@@ -176,17 +176,9 @@ function SheetWrapper({
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  // Body scroll lock when sheet is open.
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, []);
-
-  // Focus trap + Escape + focus-return.
-  useDialogA11y(sheetRef, onClose);
+  // Focus trap + Escape + focus-return + body scroll lock. The sheet unmounts
+  // when it closes, so the lock is tied to the mount.
+  useDialogA11y(sheetRef, onClose, { lockScroll: true });
 
   return (
     <>
