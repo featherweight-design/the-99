@@ -10,6 +10,11 @@ import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/sum
 import { formatLastUpdated, loadBrowseCards, loadOwnedSetMeta } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
 import { CollectionBrowser } from "../../components/collection/browser";
+import {
+  EmptyState,
+  EmptyStateBody,
+  EmptyStateTitle,
+} from "../../components/ui/empty-state";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
 
 /* The handoff spells this mark as the "↻" glyph, but glyph metrics render it
@@ -48,22 +53,16 @@ export default async function CollectionPage() {
   // Empty collection — shell's state, kept intact.
   if (stats.uniqueCards === 0) {
     return (
-      <section className="flex flex-col items-center justify-center text-center p-8 md:p-[48px]">
+      <EmptyState className="md:p-[48px]">
         <CardFan variant="mobile" className="mb-[22px] md:hidden" />
         <CardFan variant="desktop" className="mb-[26px] hidden md:block" />
-        <h1
-          className="font-display font-bold text-[28px]"
-          style={{ color: "var(--fg)", margin: 0 }}
-        >
+        <EmptyStateTitle className="text-[28px]">
           Your collection is empty
-        </h1>
-        <p
-          className="mt-3 max-w-[420px] text-[16px]"
-          style={{ color: "var(--fg-body)", lineHeight: 1.6 }}
-        >
+        </EmptyStateTitle>
+        <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
           A pile of possibilities waiting for a commander. Upload a CSV and the
           table fills — commanders and decks follow.
-        </p>
+        </EmptyStateBody>
         <div className="mt-[26px]">
           <PrimaryButton
             href="/collection/replace"
@@ -72,7 +71,7 @@ export default async function CollectionPage() {
             Upload your CSV
           </PrimaryButton>
         </div>
-      </section>
+      </EmptyState>
     );
   }
 

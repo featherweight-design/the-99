@@ -6,6 +6,11 @@ import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
 import { retryRecs } from "./actions";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
+import {
+  EmptyState,
+  EmptyStateBody,
+  EmptyStateTitle,
+} from "../../components/ui/empty-state";
 
 export default async function CommandersPage() {
   const userId = await requireUserId();
@@ -14,27 +19,18 @@ export default async function CommandersPage() {
   if (stats.uniqueCards === 0) {
     // No cards → collection-empty analog: send the user to upload.
     return (
-      <section
-        className="flex flex-col items-center justify-center text-center"
-        style={{ padding: "32px" }}
-      >
+      <EmptyState>
         {/* Card-fan mark: same construction as collection empty state */}
         <CardFan variant="mobile" className="mb-[22px] sm:hidden" />
         <CardFan variant="desktop" className="mb-[26px] hidden sm:block" />
 
-        <h1
-          className="font-display font-bold text-[28px]"
-          style={{ color: "var(--fg)", margin: 0 }}
-        >
+        <EmptyStateTitle className="text-[28px]">
           No collection yet
-        </h1>
+        </EmptyStateTitle>
 
-        <p
-          className="mt-3 max-w-[420px] text-[16px] leading-[1.6]"
-          style={{ color: "var(--fg-body)" }}
-        >
+        <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
           Upload your cards and we&apos;ll rank every commander you can build.
-        </p>
+        </EmptyStateBody>
 
         <PrimaryButton
           href="/collection"
@@ -42,7 +38,7 @@ export default async function CommandersPage() {
         >
           Upload collection
         </PrimaryButton>
-      </section>
+      </EmptyState>
     );
   }
 
@@ -67,15 +63,15 @@ export default async function CommandersPage() {
         <div
           className="flex flex-col items-center justify-center text-center p-[24px_30px] sm:p-[60px_40px] sm:min-h-[520px]"
         >
-          {/* XCIX seal badge: 96px mobile / 110px desktop, circle br-radius=999px, color #C9A24B */}
+          {/* XCIX seal badge: 96px mobile / 110px desktop, circle br-radius=999px, brass */}
           <div
             className="sm:hidden flex items-center justify-center"
             style={{
               width: 96,
               height: 96,
               borderRadius: 999,
-              border: "2px solid #C9A24B",
-              color: "#C9A24B",
+              border: "2px solid var(--brass)",
+              color: "var(--brass)",
               fontFamily: "var(--font-display), 'Cinzel', serif",
               fontWeight: 700,
               fontSize: 26,
@@ -91,8 +87,8 @@ export default async function CommandersPage() {
               width: 110,
               height: 110,
               borderRadius: 999,
-              border: "2px solid #C9A24B",
-              color: "#C9A24B",
+              border: "2px solid var(--brass)",
+              color: "var(--brass)",
               fontFamily: "var(--font-display), 'Cinzel', serif",
               fontWeight: 700,
               fontSize: 30,
@@ -103,11 +99,11 @@ export default async function CommandersPage() {
             XCIX
           </div>
 
-          {/* Heading: Cinzel 700, 22px mobile / 30px desktop, color #EDE6D8 */}
+          {/* Heading: Cinzel 700, 22px mobile / 30px desktop, --fg */}
           <h1
             className="font-display font-bold text-[22px] sm:text-[30px] leading-[1.2]"
             style={{
-              color: "#EDE6D8",
+              color: "var(--fg)",
               margin: "26px 0 0",
             }}
           >
@@ -118,7 +114,7 @@ export default async function CommandersPage() {
           <p
             className="text-[13.5px] sm:text-[15px] leading-[1.6] sm:leading-[1.65]"
             style={{
-              color: "#C6B79A",
+              color: "var(--fg-body)",
               margin: "10px 0 0",
               maxWidth: 480,
             }}
@@ -139,7 +135,7 @@ export default async function CommandersPage() {
           <div
             className="flex flex-col sm:flex-row mt-[24px] sm:mt-[26px] w-full sm:w-auto gap-[10px] sm:gap-[12px]"
           >
-            {/* "Add more cards" button — primary: bg #C9A24B, color #14110E */}
+            {/* "Add more cards" button — primary: brass on base canvas */}
             {/* Mobile: full-width, padding 12px 0; Desktop: padding 12px 22px per table */}
             <PrimaryButton
               href="/collection"
