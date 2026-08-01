@@ -2,7 +2,7 @@
 // ExportDialog — §Export Dialog / Sheet: modal (desktop) / bottom sheet (mobile), two tabs: Decklist + Shopping list.
 // Task 10. Reuses useDialogA11y for focus trap, Escape, focus-return.
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { downloadTextFile } from "../../lib/decks/download";
@@ -40,18 +40,9 @@ export function ExportDialog({
   const [tab, setTab] = useState<Tab>("decklist");
   const [status, setStatus] = useState("");
 
-  // Focus trap, Escape, focus-return — all hooks must run before any early return.
-  useDialogA11y(dialogRef, onClose);
-
-  // Body scroll lock gated on open — hooks run unconditionally; effect guards internally.
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  // Focus trap, Escape, focus-return, body scroll lock — all hooks must run
+  // before any early return, so the lock tracks `open` rather than the mount.
+  useDialogA11y(dialogRef, onClose, { lockScroll: open });
 
   if (!open) return null;
 

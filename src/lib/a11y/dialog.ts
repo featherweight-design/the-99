@@ -26,10 +26,21 @@ function visibleFocusables(root: HTMLElement): HTMLElement[] {
 export function useDialogA11y(
   dialogRef: RefObject<HTMLElement | null>,
   onClose: () => void,
-  options?: { initialFocusRef?: RefObject<HTMLElement | null> },
+  options?: {
+    initialFocusRef?: RefObject<HTMLElement | null>;
+    /**
+     * Hold the body at overflow:hidden while the dialog is up. Off by default —
+     * CardModal and the Issue Inspector deliberately let the page scroll behind
+     * them. Consumers that stay mounted while closed pass their open flag here
+     * rather than a literal, so the lock tracks the dialog rather than the
+     * component's lifetime.
+     */
+    lockScroll?: boolean;
+  },
 ) {
   const triggerRef = useRef<HTMLElement | null>(null);
   const initialFocusRef = options?.initialFocusRef;
+  const lockScroll = options?.lockScroll ?? false;
 
   // Remember what had focus before the dialog opened; return it on close.
   useEffect(() => {
@@ -49,6 +60,17 @@ export function useDialogA11y(
     if (!dialogRef.current) return;
     visibleFocusables(dialogRef.current)[0]?.focus();
   }, [dialogRef, initialFocusRef]);
+
+  // Restores the prior value rather than clearing it, so a dialog opened over
+  // an already-locked page hands the lock back instead of freeing it.
+  useEffect(() => {
+    if (!lockScroll) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [lockScroll]);
 
   // Escape closes; Tab wraps within the dialog.
   useEffect(() => {
