@@ -21,6 +21,37 @@ function renderDialog(options?: Parameters<typeof useDialogA11y>[2]) {
   );
 }
 
+// Escape is wired to a window listener but no-ops unless the ref holds an
+// element, so these cases attach a real one.
+describe("useDialogA11y closeOnEscape", () => {
+  function renderWithElement(options?: Parameters<typeof useDialogA11y>[2]) {
+    const onClose = vi.fn();
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    renderHook(() => {
+      const ref = useRef<HTMLElement | null>(el);
+      useDialogA11y(ref, onClose, options);
+    });
+    return { onClose };
+  }
+
+  function pressEscape() {
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+  }
+
+  it("closes on Escape by default", () => {
+    const { onClose } = renderWithElement();
+    pressEscape();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores Escape when closeOnEscape is false", () => {
+    const { onClose } = renderWithElement({ closeOnEscape: false });
+    pressEscape();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
 describe("useDialogA11y scroll lock", () => {
   it("leaves body scroll alone by default", () => {
     renderDialog();

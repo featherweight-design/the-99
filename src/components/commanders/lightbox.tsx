@@ -4,7 +4,8 @@
 // Focus moves into the dialog on open and returns to the trigger on close.
 // Closes on backdrop tap AND Escape key.
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
@@ -22,52 +23,13 @@ export function CommanderLightbox({
   commander: LightboxCommander;
   onClose: () => void;
 }) {
+  // The trap root is the overlay, not the inner role="dialog": the close ✕ sits
+  // outside the dialog element and has to stay reachable by Tab.
   const overlayRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
 
-  // Remember what had focus before the lightbox opened so we can return it on close.
-  useEffect(() => {
-    triggerRef.current = document.activeElement as HTMLElement | null;
-    return () => {
-      triggerRef.current?.focus();
-    };
-  }, []);
-
-  // Focus first focusable child on mount.
-  useEffect(() => {
-    const focusables = overlayRef.current?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
-    focusables?.[0]?.focus();
-  }, []);
-
-  // Escape closes; Tab wraps within the overlay (includes the close button).
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab" || !overlayRef.current) return;
-      const focusables = overlayRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // Focus trap, Escape, focus-return. No scroll lock — the lightbox covers the
+  // viewport, so there is nothing behind it to scroll.
+  useDialogA11y(overlayRef, onClose);
 
   const gradient = commanderGradient(c.colorIdentity);
 

@@ -6,6 +6,7 @@
 // READINESS #5: focus trap + Escape + labelled input.
 
 import { useEffect, useRef, useState } from "react";
+import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { UploadPreview } from "../../app/collection/actions";
 import { TextField } from "../ui/text-field";
 
@@ -25,36 +26,21 @@ export function ConfirmModal({
   const [value, setValue] = useState("");
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
   const isInitialImport = preview.currentCollectionCount === 0;
   const confirmToken = isInitialImport ? "IMPORT" : "REPLACE";
   const armed = value === confirmToken;
 
-  useEffect(() => {
-    triggerRef.current = document.activeElement as HTMLElement | null;
-    inputRef.current?.focus();
-    return () => { triggerRef.current?.focus(); };
-  }, []);
+  // Focus trap, Escape, focus-return. Escape is refused while pending: the
+  // replace is already running and can't be undone, so dismissing would only
+  // hide it. The backdrop click below is guarded on pending for the same reason.
+  useDialogA11y(dialogRef, onClose, {
+    initialFocusRef: inputRef,
+    closeOnEscape: !pending,
+  });
 
+  // Both buttons disable while pending, which would drop focus out of the
+  // dialog; the input is the only thing left to hold it.
   useEffect(() => { if (pending) inputRef.current?.focus(); }, [pending]);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") { e.preventDefault(); if (!pending) onClose(); return; }
-      if (e.key !== "Tab" || !dialogRef.current) return;
-      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input, [href], [tabindex]:not([tabindex="-1"])',
-      );
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, pending]);
 
   return (
     // §Backdrop: rgba(8,6,4,0.74) desktop
