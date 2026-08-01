@@ -3,8 +3,13 @@ import { useRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useDialogA11y } from "./dialog";
 
+// The trap roots below are appended by hand rather than rendered, so Testing
+// Library's automatic cleanup does not know about them.
+const appended: HTMLElement[] = [];
+
 afterEach(() => {
   document.body.style.overflow = "";
+  while (appended.length) appended.pop()?.remove();
 });
 
 // Scroll locking only. The hook takes a ref, so the harness supplies an empty
@@ -28,6 +33,7 @@ describe("useDialogA11y closeOnEscape", () => {
     const onClose = vi.fn();
     const el = document.createElement("div");
     document.body.appendChild(el);
+    appended.push(el);
     renderHook(() => {
       const ref = useRef<HTMLElement | null>(el);
       useDialogA11y(ref, onClose, options);
