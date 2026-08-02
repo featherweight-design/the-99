@@ -16,6 +16,15 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // The server changing its mind settles the question the message was answering:
+  // if the card is committed now, "we couldn't add that" is no longer true. The
+  // row outlives revalidation, so without this the stale refusal stays on screen.
+  const [lastCommitted, setLastCommitted] = useState(committed);
+  if (lastCommitted !== committed) {
+    setLastCommitted(committed);
+    setError(null);
+  }
+
   function run(mutate: () => Promise<DeckMutationResult | void>) {
     startTransition(async () => {
       setApplied(true);

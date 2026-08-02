@@ -134,4 +134,34 @@ describe("SearchResultRow", () => {
       pending.resolve({ ok: true });
     });
   });
+
+  // A refusal answers a question the server can later settle differently — the
+  // card gets added in another tab. The row survives revalidation, so the stale
+  // message would otherwise sit under a row that now reads "in deck".
+  it("clears a stale refusal once the server commits the card", async () => {
+    addCardToDeck.mockResolvedValue({ ok: false, message: "This deck is full." });
+
+    function Harness() {
+      const [inDeck, setInDeck] = useState(false);
+      return (
+        <>
+          <SearchResultRow result={result} deckId="d1" inDeck={inDeck} />
+          <button type="button" onClick={() => setInDeck(true)}>
+            revalidate
+          </button>
+        </>
+      );
+    }
+
+    renderRow(<Harness />);
+    await clickAdd();
+    expect(screen.getByRole("alert")).toHaveTextContent("This deck is full.");
+
+    await act(async () => {
+      screen.getByRole("button", { name: "revalidate" }).click();
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText("✓ In deck")).toBeInTheDocument();
+  });
 });

@@ -1,7 +1,7 @@
 /**
  * User-facing outcome of a deck mutation.
  *
- * Rejections that the user can act on (deck full, off-colour, illegal) are
+ * Rejections that the user can act on (deck full, off-color, illegal) are
  * returned rather than thrown: a thrown server action is redacted to an opaque
  * digest in production, so the client could never tell the reasons apart.
  */
