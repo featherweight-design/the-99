@@ -194,7 +194,9 @@ export function FilterBar({
           onToggle={(code) => {
             const next = nextSortState({ sort, direction: sortDirection }, code as SortKey);
             onSortChange(next.sort, next.direction);
-            onAnnounce(`Sorted by ${sortOrderLabel(next.sort, next.direction).toLowerCase()}.`);
+            // Announced as authored, not lowercased: the labels carry "A–Z" and
+            // "WUBRG", and "a–z" / "wubrg" change how a screen reader says them.
+            onAnnounce(`Sorted by ${sortOrderLabel(next.sort, next.direction)}.`);
           }}
           onClear={() => {}}
           onAnnounce={onAnnounce}

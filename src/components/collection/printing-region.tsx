@@ -443,6 +443,12 @@ function PrintingTile({
   registerRef: (el: HTMLButtonElement | null) => void;
 }) {
   const setLabel = entry.setName ?? entry.setCode;
+  // The abbreviation is what this picker's search matches, so it has to be
+  // visible and announced — searching "MH3" against a tile that only ever says
+  // "Modern Horizons 3" is the #118 complaint. Suppressed when the name IS the
+  // code (no catalog row), so the tile doesn't read "MH3 MH3".
+  const setHint = entry.setName ? entry.setCode.toUpperCase() : undefined;
+  const setAria = setHint ? `${setLabel} (${setHint})` : setLabel;
   const qty = quantityLabel(entry);
   const state = picked ? "picked" : shownNow ? "shown-now" : "plain";
   const artStyle: React.CSSProperties = entry.imageUri
@@ -466,8 +472,8 @@ function PrintingTile({
       aria-disabled={entry.dormant || undefined}
       aria-label={
         entry.dormant
-          ? copy.dormantAria(setLabel)
-          : copy.entryAria(setLabel, entry.collectorNumber, qty, state)
+          ? copy.dormantAria(setAria)
+          : copy.entryAria(setAria, entry.collectorNumber, qty, state)
       }
       // Dormant keeps its tile but is not selectable: the printing is not in the collection,
       // so picking it would write a preference the resolver could not honour.
@@ -540,6 +546,13 @@ function PrintingTile({
         style={{ color: "var(--fg)", fontWeight: picked ? 600 : 400 }}
       >
         {setLabel}
+        {setHint ? (
+          // aria-hidden: the button's aria-label already carries the code, so
+          // announcing it here would repeat it.
+          <span aria-hidden className="ml-[5px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
+            {setHint}
+          </span>
+        ) : null}
       </div>
       <div
         className="mt-[2px] font-mono text-[10.5px] md:text-[11px]"

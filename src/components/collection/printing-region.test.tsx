@@ -303,4 +303,30 @@ describe("PrintingRegion", () => {
       expect(onAnnounce).toHaveBeenCalledWith(copy.announceMatches(1, "S07"));
     });
   });
+
+  describe("set abbreviation (#118)", () => {
+    it("shows the set code alongside the name on every tile", () => {
+      renderRegion();
+      for (const code of ["C21", "LEA", "ZNR"]) {
+        expect(screen.getByText(code)).toBeInTheDocument();
+      }
+    });
+
+    it("carries the code in the tile's aria-label, so search-by-code is announced", () => {
+      renderRegion();
+      expect(
+        screen.getByRole("radio", { name: /Commander 2021 \(C21\)/ }),
+      ).toBeInTheDocument();
+    });
+
+    it("suppresses the code when the name IS the code, so the tile does not read it twice", () => {
+      renderRegion({
+        printings: [
+          printing({ setCode: "MH3", setName: null }),
+          printing({ setCode: "LEA", setName: "Limited Edition Alpha", collectorNumber: "270" }),
+        ],
+      });
+      expect(screen.getAllByText("MH3")).toHaveLength(1);
+    });
+  });
 });
