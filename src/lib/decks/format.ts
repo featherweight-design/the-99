@@ -42,15 +42,17 @@ export function colorLabel(identity: string[]): string {
   // to fall out here — otherwise ["W","U","B","X"] reads "Non-red", naming a
   // combination the card does not have.
   if (identity.some((c) => lookup(COLOR_NAMES, c) === undefined)) return "Multi";
+  // Every branch below reads length as a count of distinct colors, so a repeat
+  // would misname the identity: ["W","U","B","R","R"] is four colors, not five.
+  if (new Set(identity).size !== identity.length) return "Multi";
   if (identity.length === 5) return "5-color";
 
   const key = identity.slice().sort().join("");
   if (identity.length === 2) return lookup(GUILDS, key) ?? "Multi";
   if (identity.length === 3) return lookup(TRIOMES, key) ?? "Multi";
 
-  // Named explicitly rather than left as the fallthrough: a duplicate-bearing
-  // identity like ["W","W","U","U","B","B"] is length 6 with every code known,
-  // and would otherwise reach the find() below and throw on the assertion.
+  // Named explicitly rather than left as the fallthrough, so the assertion below
+  // rests on this branch rather than on nothing having reached it.
   if (identity.length === 4) {
     const missing = Object.keys(COLOR_NAMES).find((c) => !identity.includes(c))!;
     return `Non-${COLOR_NAMES[missing].toLowerCase()}`;
