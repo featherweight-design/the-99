@@ -78,7 +78,7 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-One ranked queue. Ranks 1–3 are v1 polish follow-ups against already-shipped surfaces; ranks 4–7 are post-v1 features ordered by the roadmap tracker (#44). The per-surface brand + richness refresh tickets and #35 run ahead of everything here.
+One ranked queue. Ranks 1–2 are v1 polish follow-ups against already-shipped surfaces; ranks 3–7 are post-v1 features ordered by the roadmap tracker (#44). Rank 3 sorts ahead of the other post-v1 work because both of its eng dependencies have already shipped. The per-surface brand + richness refresh tickets and #35 run ahead of everything here.
 
 This list previously ran as two — a "Backlog" and a "Ready for design" — but the legend gave them the same definition (`type: design`, not yet workshopped), so nothing could be sorted between them by rule. The split was really a priority band, which the Rank column now carries.
 
