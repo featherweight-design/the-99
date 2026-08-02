@@ -659,7 +659,7 @@
 |----------|--------|---------|
 | display | grid | grid |
 | grid-template-columns | 1fr 1fr (2-up) | repeat(5, 1fr) (5-up) |
-| gap | 12px | 16px |
+| gap | 12px | 20px (v2: 16 + 4, browse loosening) |
 | padding | 4px 14px 14px | 20px 34px 34px |
 
 ### Grid Tile Container
@@ -712,7 +712,14 @@
 ### Grid Tile: Caption Area
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| padding | 7px 9px 9px | 9px 11px 11px |
+| padding | 7px 9px 9px | 13px 15px 15px (v2: each +4, browse loosening) |
+
+> **v2 density delta (Surfaces v2 §Collection).** The mock states "grid tiles:
+> padding 12→16, gap 14→18". Neither "before" matches shipped code, so the **+4
+> delta is authoritative and the mock's absolute targets are not**. Mobile stays
+> at v1 throughout: the loosening is browse comfort, which desktop dominates,
+> and a 375px two-column grid loses more than it gains. Rows view keeps v1
+> density per the same mock line.
 
 ### Grid Tile: Card Name
 | Property | Mobile | Desktop |
@@ -1248,58 +1255,25 @@ literals in the components.
 | text-align | center | center |
 | padding | 36px | 48px |
 
-### Card Fan Mark Container (mobile)
+### Crab Mark (v2 — replaces the "?" card fan)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| position | relative | relative |
-| width | 96px | 112px |
-| height | 104px | 120px |
-| margin-bottom | 22px | 24px |
-| opacity | 0.9 | 0.9 |
+| component | `<Crab size={72}>` | `<Crab size={96}>` |
+| width × height | 72 × 49.5px | 96 × 66px |
+| stroke | var(--brass) #C9A24B | var(--brass) #C9A24B |
+| fill | var(--surface) #1E1A15 | var(--surface) #1E1A15 |
+| animation | `anim-bob`, 4.5s | `anim-bob`, 4.5s |
+| reduced motion | `animation: none` (globals.css) | `animation: none` (globals.css) |
+| aria | `aria-hidden` | `aria-hidden` |
 
-### Card Fan: Back Card (left, rotated)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| position | absolute | absolute |
-| width | 48px | 56px |
-| height | 68px | 78px |
-| border-radius | 8px | 8px |
-| background | #221D16 | #221D16 |
-| border | 1.5px solid #3A3229 | 1.5px solid #3A3229 |
-| transform | translate(-50%,-50%) rotate(-15deg) translateX(-17px) | translate(-50%,-50%) rotate(-15deg) translateX(-20px) |
+> The v1 `"?"` card fan (`FanCard` / `QuestionFan`) is **deleted**, not dormant.
+> Its Card Fan Mark Container / Back / Middle / Front / "?" Glyph rows are
+> retired with it.
 
-### Card Fan: Middle Card
+### No Results Container: Vignette (v2)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| position | absolute | absolute |
-| width | 48px | 56px |
-| height | 68px | 78px |
-| border-radius | 8px | 8px |
-| background | #2A241D | #2A241D |
-| border | 1.5px solid #4A4033 | 1.5px solid #4A4033 |
-| transform | translate(-50%,-50%) | translate(-50%,-50%) |
-
-### Card Fan: Front Card (right, rotated)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| position | absolute | absolute |
-| width | 48px | 56px |
-| height | 68px | 78px |
-| border-radius | 8px | 8px |
-| background | #33291F | #33291F |
-| border | 1.5px solid #5A4B38 | 1.5px solid #5A4B38 |
-| transform | translate(-50%,-50%) rotate(15deg) translateX(17px) | translate(-50%,-50%) rotate(15deg) translateX(20px) |
-| display | flex | flex |
-| align-items | center | center |
-| justify-content | center | center |
-
-### Card Fan: "?" Glyph
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'Cinzel', serif | 'Cinzel', serif |
-| font-weight | 800 | 800 |
-| font-size | 20px | 24px |
-| color | #8E8269 | #8E8269 |
+| background | `radial-gradient(440px 260px at 50% 78%, rgba(201,162,75,0.07), transparent 70%)` | same |
 
 ### No Results Heading
 | Property | Mobile | Desktop |
@@ -1307,7 +1281,7 @@ literals in the components.
 | font-family | 'Cinzel', serif | 'Cinzel', serif |
 | font-weight | 700 | 700 |
 | font-size | 21px | 26px |
-| margin | 0 | 0 |
+| margin | 18px 0 0 | 18px 0 0 |
 | color | #EDE6D8 | #EDE6D8 |
 
 ### No Results Body Copy
@@ -1317,16 +1291,28 @@ literals in the components.
 | color | #C6B79A | #C6B79A |
 | line-height | 1.55 | 1.6 |
 | margin | 10px 0 0 | 12px 0 0 |
-| max-width | — | 440px |
+| max-width | — | 360px (v2) |
 
 ### Copy (no results)
 | Element | Copy |
 |---------|------|
-| Heading | `Nothing matches that` |
-| Body (example) | `No red sorceries named "stormbind" in your collection. Loosen a filter, or check the spelling.` |
-| Desktop variant | `No red sorceries named "stormbind" in your collection. Loosen a filter or check the spelling — you own 2,933 cards, just not this one.` |
-| Primary CTA | `Clear all filters` |
+| Heading (query + color) | `Nothing matches "counterspell" in Red.` |
+| Heading (query only) | `Nothing matches "counterspell".` |
+| Heading (color only) | `Nothing matches in Red.` |
+| Heading (fallback) | `Nothing matches those filters.` |
+| Body | `Which, honestly, checks out. Drop the color filter or try another name.` |
+| Primary CTA | `Clear filters` |
 | Secondary CTA (desktop) | `Keep only search` |
+
+> **v2 copy, verbatim from Surfaces v2 §Collection.** One caption at both
+> breakpoints — the v1 mobile/desktop split and the `totalCount` sentence ("you
+> own 2,933 cards, just not this one") are gone. `totalCount` is **retained as a
+> prop** so re-adding it is not a signature change. "Keep only search" is
+> **retained**: it is the only way to escape a color filter without also losing
+> the query, and the mock is a single frame that does not assert its removal.
+> Collection carries four filter dimensions (search, colors, types, setCodes)
+> and the mock's heading names two; type- or set-only zero states land on the
+> fallback heading by design. All three are flagged for Design to ratify.
 
 ### No Results CTA Container (desktop)
 | Property | Desktop |
@@ -1335,7 +1321,7 @@ literals in the components.
 | gap | 12px |
 | margin-top | 26px |
 
-### "Clear all filters" Button (primary)
+### "Clear filters" Button (primary)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-family | 'IBM Plex Sans' | 'IBM Plex Sans' |
@@ -2106,7 +2092,7 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 | **Browse — Grid (1b)** | Default view on desktop ≥768px; view toggle = grid | Filter bar + Grid tile list (5-up desktop, 2-up mobile) | `cards[]`, view=grid, result count |
 | **Card Detail** | User taps/clicks any card row or grid tile | Card detail modal (full-screen sheet mobile, centered overlay desktop) | `card` object with name/type/manaCost/oracleText/set/rarity/identity/qty, `?card=` URL param, position `n of total` |
 | **Card Detail — Prev/Next** | User clicks `‹ Prev` or `Next ›` in desktop modal | Same modal, different card, position counter updated | `currentIndex`, `totalFiltered`, same card data shape |
-| **No Results** | Search + filter combination returns 0 cards | No results empty state (card fan mark + heading + CTAs) | `resultCount = 0`, active filter chips still shown, count label turns #E0913C |
+| **No Results** | Search + filter combination returns 0 cards | No results empty state (crab mark + heading + caption + CTAs) | `resultCount = 0`, active filter chips still shown, count label turns #E0913C |
 | **Replace · Step 1** | User clicks `↻ Replace collection` button | Replace upload page (`/collection/replace`) | `currentCardCount` (for warning copy) |
 | **Replace · Step 2 (Review)** | CSV uploaded successfully; server returns preview | Review page with summary banner, unmatched rows, parse error rows, sticky confirm bar | `matched`, `unmatched[]` (name + set + line), `errors[]` (line + reason), `currentCount`, filename |
 | **Replace · Step 3 (Confirm)** | User clicks `Continue to replace →` from step 2 | Type-to-confirm modal over dimmed step-2 content | `importCount` (2,904), `currentCount` (2,933), filename; confirm button disabled until input === "REPLACE" |
@@ -2161,10 +2147,10 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 - `Next ›`
 - `6 of 1,418` (example position counter)
 
-### No Results
-- `Nothing matches that`
-- `No [type] named "[query]" in your collection. Loosen a filter, or check the spelling.` (mobile)
-- `No [type] named "[query]" in your collection. Loosen a filter or check the spelling — you own N cards, just not this one.` (desktop)
+### No Results (v2)
+- `Nothing matches "[query]" in [Color].` — falls back to `Nothing matches "[query]".`, `Nothing matches in [Color].`, `Nothing matches those filters.`
+- `Which, honestly, checks out. Drop the color filter or try another name.` (both breakpoints)
+- `Clear filters` / `Keep only search` (desktop only)
 
 ### Replace — Step 1 Warning Banner
 - Mobile: `Uploading a new file replaces your current 2,933 cards. There's no merge — the new export becomes your whole collection.`
@@ -2178,10 +2164,30 @@ Token branches on `preview.currentCollectionCount`: `0` → `IMPORT` (nothing to
 - `[N] rows will be skipped`
 - `Unmatched names — [N]` (section header)
 - `Parse errors — [N]` (section header)
-- `View all 29 issues →` (mobile)
+- Issue CTA strip (v2, Surfaces v2 §Collection): heading `That CSV put up a fight.`, body `[N] rows didn't parse — quantity columns, mostly. Nothing fatal. Want to see the carnage?` (singular `1 row` derived), CTA `View [N] issues`
+- `View all 29 issues →` (v1, replaced by the strip above)
 - `Show all 21 unmatched →` / `Show all 8 errors →` (desktop)
 - Sticky bar (mobile): `Skips 29 rows · replaces your 2,933 cards with 2,904`
 - Sticky bar (desktop): `Importing 2,904 cards and skipping 29. This replaces your current 2,933 cards.`
+
+### Issue CTA Strip (v2)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| layout | column | row, items centered |
+| margin-top | 16px | 20px |
+| gap | 12px | 16px |
+| border-radius | 12px | 12px |
+| padding | 14px 16px | 16px 20px |
+| background | var(--surface) | var(--surface) |
+| border | 1px solid var(--border) | 1px solid var(--border) |
+| crab | `<Crab size={56}>`, self-start | `<Crab size={56}>`, self-center |
+| heading | Cinzel 700, 15px | Cinzel 700, 17px |
+| body | 13px / 1.55, var(--fg-body) | 13.5px / 1.55, var(--fg-body) |
+| CTA | `GhostButton`, full width | `GhostButton`, auto width |
+
+> **Step 3 (type-to-confirm) is deliberately untouched.** Replacing a collection
+> is destructive; the mock states "Type-to-confirm stays dead straight —
+> destructive, no crab." `confirm-modal.tsx` is absent from this change.
 
 ### Replace — Step 3 Copy
 - `Type REPLACE to confirm` (label; "REPLACE" in #C6533F). On initial import (`currentCollectionCount === 0`) the label becomes `Type IMPORT to confirm` — see §Copy (confirm instruction) above.

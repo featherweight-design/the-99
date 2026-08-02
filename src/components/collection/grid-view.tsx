@@ -20,8 +20,8 @@ export function GridView({
   onOpen: (oracleId: string) => void;
 }) {
   return (
-    // §Grid Container: grid, 1fr 1fr mobile / repeat(5,1fr) desktop, gap 12/16px, padding 4px 14px 14px mobile / 20px 34px 34px desktop
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] md:gap-[16px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
+    // §Grid Container: grid, 1fr 1fr mobile / repeat(5,1fr) desktop, gap 12/20px (desktop +4 per Surfaces v2 browse loosening; mobile stays v1), padding 4px 14px 14px mobile / 20px 34px 34px desktop
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
       {cards.map((c) => (
         <button
           key={c.oracleId}
@@ -53,7 +53,7 @@ export function GridView({
           </div>
 
           {/* Caption — §Grid Tile: Caption Area */}
-          <div className="px-[9px] md:px-[11px] py-[7px] md:py-[9px] pb-[9px] md:pb-[11px]">
+          <div className="px-[9px] md:px-[15px] py-[7px] md:py-[13px] pb-[9px] md:pb-[15px]">
             {/* Name — 12/13px 600, ellipsis */}
             <div className="truncate text-[12px] md:text-[13px] font-semibold" style={{ color: "var(--fg)" }}>
               {c.name}

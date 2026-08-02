@@ -342,6 +342,7 @@ export function CollectionBrowser({
       {sorted.length === 0 ? (
         <NoResults
           query={filters.search}
+          colors={filters.colors}
           totalCount={totalQuantity}
           onClearAll={() => {
             updateFilters({ search: "", colors: [], types: [], setCodes: [] }, "clear-sets");
