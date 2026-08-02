@@ -95,6 +95,13 @@ v1 polish follow-ups — sequenced ahead of the Backlog features above.
 | Ticket | Notes |
 |---|---|
 | **#62** Issue Inspector handoff reconciliation | `type: design`. Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships. |
+| **#130** Pre-populate a deck from commander recommendations | `type: design`, `phase: post-v1`. "Build this deck" drops the user into an empty deck at the moment of highest intent. Open: full auto-fill vs. opt-in per role vs. a reviewable "suggested starting 30"; what happens when the user owns too few cards for a role; how an auto-added card reads differently from a chosen one. |
+| **#131** Make Role Coverage explanatory and inspectable | `type: design`, `phase: post-v1`. Three gaps as one piece of work — no reasoning behind a grouping's picks, no way to open a recommended card, and no path from "good fit" to acting on it. |
+| **#132** Suggest and add cards the user does not own | `type: design`, `phase: post-v1`. The All / Shopping split promises a buying workflow that cannot happen, because every recommendation path is scoped to the collection. Needs recommendations that reach outside it, and a way to add an unowned card. First question is whether #44 already scopes it. |
+
+**#130–#132 are one design cycle, not three.** Hugh flagged them as groupable when he filed them, and they share a premise: a recommendation the user cannot interrogate or act on is decoration. #131 is the seam — it needs #132's unowned cards to have anything to recommend beyond the collection, and it is where #130's "why was this picked" reasoning would surface. Split apart, each brief answers a third of one question.
+
+Eng-side work already in flight that these depend on: **#127** builds the card-detail modal wiring #131's inspection gap needs, and **#129** is the immediate bug under #132 (the "Owned only" toggle does not widen the search).
 
 ---
 
