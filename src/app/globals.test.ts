@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const css = readFileSync(join(__dirname, "globals.css"), "utf8");
+// import.meta.url, not __dirname: Vitest runs tests as ESM.
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "globals.css"), "utf8");
 
 describe("global focus treatment", () => {
   // Unlayered rules outrank every layered one regardless of specificity, so an
