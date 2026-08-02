@@ -1,117 +1,58 @@
 "use client";
-import type { ReactNode } from "react";
 import { PrimaryButton, GhostButton } from "../ui/button";
-// No results state per property table §No Results State.
-// Distinct from empty-collection (shell owns that). The "?" card fan here is
-// its own mark — different geometry/colors/glyph from the shared "99" CardFan
-// in marks.tsx — so it renders locally per §Card Fan Mark Container.
-
-// One absolutely-positioned card of the fan. Table values (mobile/desktop):
-// cards 48×68 / 56×78, radius 8px, border 1.5px, centered then rotated ±15°
-// and shifted ±17px / ±20px. transformClass must be a static literal so
-// Tailwind's scanner generates the arbitrary-value CSS.
-function FanCard({
-  transformClass,
-  background,
-  borderColor,
-  children,
-}: {
-  transformClass: string;
-  background: string;
-  borderColor: string;
-  children?: ReactNode;
-}) {
-  return (
-    <div
-      className={`absolute left-1/2 top-1/2 flex items-center justify-center rounded-lg w-[48px] h-[68px] md:w-[56px] md:h-[78px] ${transformClass}`}
-      style={{ background, border: `1.5px solid ${borderColor}` }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function QuestionFan() {
-  return (
-    // §Card Fan Mark Container: 96×104 mobile / 112×120 desktop, opacity 0.9
-    <div
-      aria-hidden
-      className="relative opacity-90 mb-[22px] md:mb-[24px] w-[96px] h-[104px] md:w-[112px] md:h-[120px]"
-    >
-      <FanCard
-        transformClass="[transform:translate(-50%,-50%)_rotate(-15deg)_translateX(-17px)] md:[transform:translate(-50%,-50%)_rotate(-15deg)_translateX(-20px)]"
-        background="#221D16"
-        borderColor="#3A3229"
-      />
-      <FanCard
-        transformClass="[transform:translate(-50%,-50%)]"
-        background="#2A241D"
-        borderColor="#4A4033"
-      />
-      <FanCard
-        transformClass="[transform:translate(-50%,-50%)_rotate(15deg)_translateX(17px)] md:[transform:translate(-50%,-50%)_rotate(15deg)_translateX(20px)]"
-        background="#33291F"
-        borderColor="#5A4B38"
-      >
-        {/* §Card Fan "?" Glyph: Cinzel 800, 20/24px, #8E8269 */}
-        <span className="font-display font-extrabold text-[20px] md:text-[24px]" style={{ color: "#8E8269" }}>
-          ?
-        </span>
-      </FanCard>
-    </div>
-  );
-}
+import { Crab } from "../character/crab";
+import { collectionBrowseCopy, colorLabelFor } from "../../lib/copy/collection-browse";
+// No results state per property table §No Results State, as re-skinned by the
+// richness pass (Surfaces v2 §Collection). The v1 "?" card fan is gone: the
+// crab is the mark for this state now.
 
 export function NoResults({
   query,
-  totalCount,
+  colors,
   onClearAll,
   onKeepSearch,
 }: {
   query: string;
+  colors: string[];
+  /** Retained for the caller's contract even though the v2 copy no longer
+   *  renders the owned-card total — see the plan's Task 13 note. */
   totalCount: number;
   onClearAll: () => void;
   onKeepSearch: () => void;
 }) {
   const q = query.trim();
+  const colorLabel = colorLabelFor(colors);
   return (
-    // §No Results Container: flex-1, column, centered, padding 36px mobile / 48px desktop
-    <div className="flex-1 flex flex-col items-center justify-center text-center p-[36px] md:p-[48px]">
-      <QuestionFan />
+    // §No Results Container: flex-1, column, centered, padding 36px mobile / 48px desktop.
+    // Vignette per Surfaces v2 — brass at 7%, existing token, no new hex.
+    <div className="flex-1 flex flex-col items-center justify-center text-center p-[36px] md:p-[48px] bg-[radial-gradient(440px_260px_at_50%_78%,rgba(201,162,75,0.07),transparent_70%)]">
+      <Crab size={72} className="md:hidden" />
+      <Crab size={96} className="hidden md:block" />
 
       {/* Heading — §No Results Heading: Cinzel 700, 21/26px, #EDE6D8 (--fg) */}
       <h2
-        className="font-display font-bold text-[21px] md:text-[26px] m-0"
+        className="font-display font-bold text-[21px] md:text-[26px] mt-[18px] mb-0 mx-0"
         style={{ color: "var(--fg)" }}
       >
-        Nothing matches that
+        {collectionBrowseCopy.noResults.heading(query, colorLabel)}
       </h2>
 
-      {/* Body — §No Results Body Copy: 13.5/15px, #C6B79A (--fg-body), line-height 1.55/1.6, max-w 440px desktop */}
+      {/* Body — §No Results Body Copy: 13.5/15px, #C6B79A (--fg-body), line-height 1.55/1.6 */}
       <p
-        className="mt-[10px] md:mt-[12px] text-[13.5px] md:text-[15px] md:max-w-[440px] leading-[1.55] md:leading-[1.6]"
+        className="mt-[10px] md:mt-[12px] text-[13.5px] md:text-[15px] md:max-w-[380px] leading-[1.55] md:leading-[1.6]"
         style={{ color: "var(--fg-body)" }}
       >
-        <span className="md:hidden">
-          {q
-            ? `No cards named "${q}" in your collection. Loosen a filter, or check the spelling.`
-            : "No cards match those filters. Loosen a filter, or clear all."}
-        </span>
-        <span className="hidden md:inline">
-          {q
-            ? `No cards named "${q}" in your collection. Loosen a filter or check the spelling — you own ${totalCount.toLocaleString()} cards, just not this one.`
-            : `No cards match those filters — you own ${totalCount.toLocaleString()} cards. Loosen a filter or clear all.`}
-        </span>
+        {collectionBrowseCopy.noResults.caption}
       </p>
 
-      {/* CTAs — §No Results CTA Container / §"Clear all filters" Button / §"Keep only search" Button */}
+      {/* CTAs — §No Results CTA Container / §"Clear filters" Button / §"Keep only search" Button */}
       <div className="mt-[22px] md:mt-[26px] flex flex-col md:flex-row gap-[12px]">
         <PrimaryButton
           type="button"
           onClick={onClearAll}
           className="text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px] md:py-[12px]"
         >
-          Clear all filters
+          {collectionBrowseCopy.noResults.cta}
         </PrimaryButton>
         {q && (
           <GhostButton
