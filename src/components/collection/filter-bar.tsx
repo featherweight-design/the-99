@@ -4,8 +4,9 @@
 // Position dropdowns are native <select> for a11y + parity; visual chrome
 // matches the §Filter Button spec (radius 999px mobile / 8px desktop).
 
-import { AVAILABLE_TYPES, type BrowseFilters, type SortKey } from "../../lib/collection/browse";
+import { type BrowseFilters, type SortKey } from "../../lib/collection/browse";
 import type { SetOption } from "../../lib/collection/set-filter";
+import type { TypeOption } from "../../lib/collection/type-filter";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import { ColorPip } from "./color-pip";
 import { SearchField } from "../ui/text-field";
@@ -23,17 +24,18 @@ const WUBRG = ["W", "U", "B", "R", "G"] as const;
 export type ViewMode = "rows" | "grid";
 
 /**
- * How the set selection was changed. `Clear` and "toggle the last set off" both
+ * How the selection was changed. `Clear` and "toggle the last one off" both
  * end at an empty selection but announce DIFFERENT strings, and the end state
  * cannot tell them apart — the caller says which it was.
  */
-export type FilterChangeIntent = "clear-sets";
+export type FilterChangeIntent = "clear-sets" | "clear-types";
 
 export function FilterBar({
   filters,
   sort,
   view,
   setOptions,
+  typeOptions,
   announcement,
   onAnnounce,
   onFiltersChange,
@@ -45,6 +47,8 @@ export function FilterBar({
   view: ViewMode;
   /** Owned sets, newest first, with counts under the other active filters. */
   setOptions: SetOption[];
+  /** The whole type vocabulary, in the design's fixed order, with counts. */
+  typeOptions: TypeOption[];
   /** The bar's single live region content — the panel writes here too. */
   announcement: string;
   onAnnounce: (message: string) => void;
@@ -131,27 +135,31 @@ export function FilterBar({
           </div>
         </details>
 
-        {/* Type ▾ */}
-        <select
-          value={filters.type ?? ""}
-          onChange={(e) => onFiltersChange({ ...filters, type: e.target.value || null })}
-          aria-label="Filter by type"
-          className="whitespace-nowrap rounded-full md:rounded-lg font-sans text-[12.5px] md:text-[13px] font-medium px-[12px] md:px-[14px] py-[6px] md:py-[9px] cursor-pointer"
-          style={{
-            color: "var(--fg)",
-            background: "var(--elevated)",
-            border: "1px solid var(--border-strong)",
-          }}
-        >
-          <option value="">Type ▾</option>
-          {AVAILABLE_TYPES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
+        {/* Type ▾ — the same panel as Set ▾ with the search field off (#100).
+            The vocabulary is fixed and short, so there is nothing to search and
+            no footer total worth showing. */}
+        <FilterPanel
+          copy={collectionFilterCopy.type}
+          options={typeOptions}
+          selected={filters.types}
+          searchable={false}
+          widthClassName="w-[300px]"
+          footerStatus={false}
+          onToggle={(code) =>
+            onFiltersChange({
+              ...filters,
+              types: filters.types.includes(code)
+                ? filters.types.filter((t) => t !== code)
+                : [...filters.types, code],
+            })
+          }
+          onClear={() => onFiltersChange({ ...filters, types: [] }, "clear-types")}
+          onAnnounce={onAnnounce}
+        />
 
         {/* Set ▾ — the designed searchable multi-select panel (#86). Same tab
             stop, same position, same external geometry as the <select> it
-            replaced; Type ▾ and Sort ▾ convert later. */}
+            replaced; Sort ▾ converts later. */}
         <FilterPanel
           copy={collectionFilterCopy.set}
           options={setOptions}

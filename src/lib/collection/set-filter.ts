@@ -58,7 +58,7 @@ export function buildSetOptions(
   const surviving = filterCards(cards, {
     search: "",
     colors: filters.colors,
-    type: filters.type,
+    types: filters.types,
     setCodes: [],
   });
   const counts = new Map<string, number>();

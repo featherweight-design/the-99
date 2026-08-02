@@ -76,6 +76,8 @@ export function FilterPanel({
   onClear,
   searchable = false,
   disabled = false,
+  widthClassName = "w-[340px]",
+  footerStatus = true,
   onAnnounce,
 }: {
   copy: FilterPanelCopy;
@@ -84,6 +86,17 @@ export function FilterPanel({
   onToggle: (code: string) => void;
   onClear: () => void;
   searchable?: boolean;
+  /**
+   * Desktop popover width. A full class rather than a number so Tailwind can see
+   * it: Set is 340px, Type is 300px (property table §Type ▾).
+   */
+  widthClassName?: string;
+  /**
+   * Whether the desktop footer carries the "N of M selected" text on the left.
+   * Type ▾ is drawn with `Clear` alone, right-aligned. The sheet is unaffected —
+   * its footer is governed by the shared sheet rules.
+   */
+  footerStatus?: boolean;
   /** Empty collection — the whole bar is disabled there. */
   disabled?: boolean;
   /** Writes to the filter bar's single live region. */
@@ -550,10 +563,19 @@ export function FilterPanel({
     // right; the sheet swaps Clear into the left slot because Done owns the
     // right one (property table §Panel footer).
     return (
-      <div className="flex items-center justify-between gap-[12px] border-t border-solid border-[color:var(--border)] px-[16px] py-[12px] pb-[20px] md:px-[14px] md:py-[9px] md:pb-[9px]">
+      <div
+        className={[
+          "flex items-center gap-[12px] border-t border-solid border-[color:var(--border)] px-[16px] py-[12px] pb-[20px] md:px-[14px] md:py-[9px] md:pb-[9px]",
+          // Without the status text there is one child, and justify-between
+          // would park it on the left.
+          !footerStatus && isDesktop ? "justify-end" : "justify-between",
+        ].join(" ")}
+      >
         {isDesktop ? (
           <>
-            <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{status}</span>
+            {footerStatus && (
+              <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{status}</span>
+            )}
             {clearButton}
           </>
         ) : (
@@ -736,7 +758,7 @@ export function FilterPanel({
             aria-label={copy.panelAriaLabel}
             onKeyDown={onPanelKeyDown}
             onBlur={onPanelBlur}
-            className="absolute top-[calc(100%+6px)] z-10 w-[340px] overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+            className={`absolute top-[calc(100%+6px)] z-10 ${widthClassName} overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]`}
             // A measured per-pixel offset, so it cannot be a class. Not colour
             // or border — the inline-style rule is about styles that outrank
             // hover: utilities.

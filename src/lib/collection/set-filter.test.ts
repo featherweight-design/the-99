@@ -37,7 +37,7 @@ const meta: OwnedSetMeta[] = [
   { code: "blc", name: "Bloomburrow Commander", releasedAt: "2024-08-02" },
 ];
 
-const noFilters = { search: "", colors: [], type: null, setCodes: [] };
+const noFilters = { search: "", colors: [], types: [], setCodes: [] };
 
 describe("buildSetOptions", () => {
   it("orders by release date descending, ties A→Z by name", () => {
@@ -93,7 +93,7 @@ describe("buildSetOptions", () => {
       card({ oracleId: "a", typeLine: "Instant", setCodes: ["BLB"], printings: [printing({ setCode: "BLB", quantity: 2 })] }),
       card({ oracleId: "b", typeLine: "Creature", setCodes: ["MH3"], printings: [printing({ setCode: "MH3", quantity: 9 })] }),
     ];
-    const options = buildSetOptions(cards, { ...noFilters, type: "Instant" }, meta);
+    const options = buildSetOptions(cards, { ...noFilters, types: ["Instant"] }, meta);
     expect(options.map((o) => [o.code, o.count, o.disabled])).toEqual([
       ["BLB", 2, false],
       ["MH3", 0, true],

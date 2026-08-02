@@ -18,7 +18,7 @@ export function ChipRow({
   totalQuantity,
   onClearAll,
   onRemoveColor,
-  onClearType,
+  onRemoveType,
   setLabels,
   onRemoveSet,
   onClearSearch,
@@ -30,7 +30,7 @@ export function ChipRow({
   totalQuantity: number;
   onClearAll: () => void;
   onRemoveColor: (c: string) => void;
-  onClearType: () => void;
+  onRemoveType: (type: string) => void;
   /** Set code → set name. Chips read names, never raw codes (#86). */
   setLabels: Record<string, string>;
   onRemoveSet: (code: string) => void;
@@ -39,7 +39,7 @@ export function ChipRow({
   const anyActive =
     filters.search.trim() !== "" ||
     filters.colors.length > 0 ||
-    filters.type !== null ||
+    filters.types.length > 0 ||
     filters.setCodes.length > 0;
 
   // Result count copy per §Result Count Label / §Copy (result count variants).
@@ -73,8 +73,10 @@ export function ChipRow({
           onRemove={() => onRemoveColor(c)}
         />
       ))}
-      {/* Type chip */}
-      {filters.type && <Chip label={filters.type} onRemove={onClearType} />}
+      {/* One chip per selected type, in selection order — same treatment as sets. */}
+      {filters.types.map((t) => (
+        <Chip key={t} label={t} onRemove={() => onRemoveType(t)} />
+      ))}
       {/* One chip per selected set, in selection order. Labelled with the set
           name; falls back to the code when the `sets` catalog has no row. */}
       {filters.setCodes.map((code) => (

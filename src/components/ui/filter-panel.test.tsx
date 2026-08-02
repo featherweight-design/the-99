@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import type { BrowseFilters } from "../../lib/collection/browse";
 import { FilterBar } from "../collection/filter-bar";
-import { setChangeAnnouncement } from "../collection/browser";
+import { setChangeAnnouncement, typeChangeAnnouncement } from "../collection/browser";
 import { FilterPanel, type FilterPanelOption } from "./filter-panel";
 
 // jsdom ships no matchMedia, and useIsDesktop() decides which of the popover /
@@ -525,7 +525,7 @@ describe("FilterPanel Clear announcement", () => {
   const filtersWith = (setCodes: string[]): BrowseFilters => ({
     search: "",
     colors: [],
-    type: null,
+    types: [],
     setCodes,
   });
 
@@ -537,6 +537,7 @@ describe("FilterPanel Clear announcement", () => {
         sort="name"
         view="grid"
         setOptions={OPTIONS.map((o) => ({ ...o, releasedAt: null }))}
+        typeOptions={[]}
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -565,5 +566,93 @@ describe("FilterPanel Clear announcement", () => {
     expect(setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933)).toBe(
       collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, "0", "2,933"),
     );
+  });
+});
+
+// Type ▾ is the same panel with the search field off (#100). These cover the
+// wiring — that the bar reaches the multi-select, not the old single <select>.
+describe("Type ▾ in the filter bar", () => {
+  const TYPE_OPTIONS = [
+    { code: "Creature", label: "Creature", count: 120, disabled: false },
+    { code: "Land", label: "Land", count: 40, disabled: false },
+  ];
+  const filtersWith = (types: string[]): BrowseFilters => ({
+    search: "",
+    colors: [],
+    types,
+    setCodes: [],
+  });
+
+  function renderBar(types: string[]) {
+    const onFiltersChange = vi.fn();
+    render(
+      <FilterBar
+        filters={filtersWith(types)}
+        sort="name"
+        view="grid"
+        setOptions={[]}
+        typeOptions={TYPE_OPTIONS}
+        announcement=""
+        onAnnounce={() => {}}
+        onFiltersChange={onFiltersChange}
+        onSortChange={() => {}}
+        onViewChange={() => {}}
+      />,
+    );
+    return onFiltersChange;
+  }
+
+  function openType() {
+    fireEvent.click(screen.getByRole("button", { name: /Filter by type/ }));
+  }
+
+  it("opens a panel with no search field", () => {
+    setViewport(true);
+    renderBar([]);
+    openType();
+    const panel = screen.getByRole("dialog", { name: "Filter by type" });
+    // The Sort <select> is also a combobox, so scope this to the panel.
+    expect(within(panel).queryByRole("combobox")).toBeNull();
+  });
+
+  it("adds a type without dropping the one already selected", () => {
+    setViewport(true);
+    const onFiltersChange = renderBar(["Creature"]);
+    openType();
+    fireEvent.click(screen.getByRole("option", { name: /Land/ }));
+    expect(onFiltersChange).toHaveBeenCalledWith(filtersWith(["Creature", "Land"]));
+  });
+
+  it("toggles a selected type back off", () => {
+    setViewport(true);
+    const onFiltersChange = renderBar(["Creature", "Land"]);
+    openType();
+    fireEvent.click(screen.getByRole("option", { name: /Creature/ }));
+    expect(onFiltersChange).toHaveBeenCalledWith(filtersWith(["Land"]));
+  });
+
+  it("flags the panel's Clear as a type clear, not a set clear", () => {
+    setViewport(true);
+    const onFiltersChange = renderBar(["Creature"]);
+    openType();
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(onFiltersChange).toHaveBeenCalledWith(filtersWith([]), "clear-types");
+  });
+
+  it("reads the cleared string for Clear, and the removed string for a toggle", () => {
+    expect(
+      typeChangeAnnouncement(
+        filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933, "clear-types",
+      ),
+    ).toBe(collectionFilterCopy.type.announceCleared("2,933"));
+    expect(
+      typeChangeAnnouncement(filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933),
+    ).toBe(collectionFilterCopy.type.announceRemoved("Creature", 0, "0", "2,933"));
+  });
+
+  it("says nothing about types when only the set selection moved", () => {
+    const before = filtersWith([]);
+    const after = { ...before, setCodes: ["BLB"] };
+    expect(typeChangeAnnouncement(before, after, [], TYPE_OPTIONS, 2933)).toBeNull();
   });
 });
