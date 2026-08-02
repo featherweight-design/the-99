@@ -27,9 +27,12 @@ Phase 1's, so the file is not a progress record.
 Confirmed present on `origin/main` @ `65a5140`:
 
 - `src/components/character/crab.tsx`, `kaiju.tsx`, `loader-dots.tsx`
-- `src/lib/copy/shell.ts`, `src/lib/collection/color-labels.ts`
-- `prefers-reduced-motion` block at `globals.css:166-173`; global focus ring at
-  `globals.css:133-135`
+- `src/lib/copy/shell.ts`, `src/lib/copy/color-labels.ts` (`guildLabel` and
+  `colorWords` are both exported; the READINESS doc's
+  `src/lib/collection/color-labels.ts` was never the real path)
+- a `prefers-reduced-motion: reduce` block and a global `:focus-visible` rule,
+  both in `src/app/globals.css` — grep for them rather than trusting a line
+  number; this file has moved twice since the plan was written
 - `src/app/not-found.tsx` and the loading screen — the two states the audit
   flagged as unreachable are now reachable
 
@@ -43,8 +46,8 @@ Confirmed **absent**, i.e. the actual remaining work:
   `shell.ts` and `color-labels.ts` are present.
 - `no-results.tsx` still renders the v1 `"?"` card fan; `filtered-empty.tsx`
   still renders v1 dimmed pips. Neither hosts the crab.
-- 99/99 in `builder-spine.tsx:184` still resolves to a green progress bar —
-  the v1 completion treatment.
+- 99/99 in `builder-spine.tsx` still resolves to a green progress bar
+  (`built >= 99 ? "#6FA368"`) — the v1 completion treatment.
 
 `#58` is still open on GitHub despite having shipped: the closing keyword bound
 only the first `#N` in PR #66's body. Close it during this run's bookkeeping.
@@ -93,6 +96,20 @@ FilterPanel.** Phase 2's density deltas (grid gap, tile padding) were written
 against the pre-FilterPanel layout. Re-measure before applying; a padding delta
 applied on top of a shared primitive can regress every consumer, not just
 collection.
+
+**D. Collection now has four filter dimensions, and the mock's heading covers
+two.** `filters` carries `search`, `colors`, `types` and `setCodes` (#114, #99,
+#134). The Surfaces v2 no-results heading names only the query and the colour
+(`Nothing matches "counterspell" in Red.`), so a user filtered to zero by type
+or set alone falls through to the generic `"Nothing matches those filters."`.
+That degrades correctly rather than breaking, and inventing copy Design did not
+write is out of scope for this pass — but flag it in #59's PR body so Design can
+decide whether the heading should name the other two dimensions.
+
+**Line numbers throughout the execution plan are stale.** Task 13's references
+are off by one or two (`NoResults` is at `no-results.tsx:65`, not 64; `FanCard`
+and `QuestionFan` at 13 and 34); other tasks will be worse. Grep for the symbol
+rather than seeking to a line, in this briefing and in the plan.
 
 ### Tooling that does not exist here
 
