@@ -569,6 +569,58 @@ describe("FilterPanel Clear announcement", () => {
   });
 });
 
+// Design review of #100 found these five: each is a way the non-searchable
+// panel diverged from the Set ▾ panel it inherited from.
+describe("FilterPanel, the non-searchable variant's own hazards", () => {
+  it("sizes the desktop popover from widthPx, so a narrow panel is not over-shifted", () => {
+    setViewport(true);
+    renderPanel({ searchable: false, widthPx: 300 });
+    const panel = openPanel();
+    expect((panel as HTMLElement).style.width).toBe("300px");
+  });
+
+  it("drops the bottom scroll fade when the list does not scroll", () => {
+    setViewport(true);
+    const { container } = renderPanel({ searchable: false });
+    openPanel();
+    // jsdom reports scrollHeight === clientHeight === 0, i.e. never scrollable.
+    expect(container.querySelector(".bg-gradient-to-b")).toBeNull();
+  });
+
+  it("keeps the card-count status out of the sheet footer when footerStatus is off", () => {
+    setViewport(false);
+    renderPanel({ searchable: false, footerStatus: false, copy: collectionFilterCopy.type });
+    fireEvent.click(screen.getByRole("button", { name: /Filter by type/ }));
+    // "7 cards" would be a lie about a list of types.
+    expect(screen.queryByText(/cards$/)).toBeNull();
+    expect(screen.getByRole("button", { name: collectionFilterCopy.type.done })).toBeTruthy();
+  });
+
+  it("keeps the sheet's option list inside the tab cycle", () => {
+    setViewport(false);
+    renderPanel({ searchable: false });
+    const panel = openPanel();
+    const list = within(panel).getByRole("listbox");
+    list.focus();
+    fireEvent.keyDown(panel, { key: "Tab", shiftKey: true });
+    // Shift+Tab off the first focusable wraps to the last, so the list must have
+    // been recognised as a stop rather than skipped over.
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it("adopts the first row on Space rather than scrolling the page behind it", () => {
+    setViewport(true);
+    const { onToggle } = renderPanel({ searchable: false });
+    const panel = openPanel();
+    const space = fireEvent.keyDown(panel, { key: " " });
+    // Returns false when a handler called preventDefault.
+    expect(space).toBe(false);
+    expect(onToggle).not.toHaveBeenCalled();
+    const list = within(panel).getByRole("listbox");
+    expect(list.getAttribute("aria-activedescendant")).toBeTruthy();
+  });
+});
+
 // Type ▾ is the same panel with the search field off (#100). These cover the
 // wiring — that the bar reaches the multi-select, not the old single <select>.
 describe("Type ▾ in the filter bar", () => {

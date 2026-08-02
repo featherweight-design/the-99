@@ -41,7 +41,7 @@ export type FilterPanelOption = {
   disabled: boolean;
 };
 
-/** Desktop popover width. Mirrors the `w-[340px]` on the dialog. */
+/** Desktop popover width, when the caller does not ask for a narrower one. */
 const POPOVER_WIDTH = 340;
 /** Smallest gap the popover keeps between itself and the viewport edge. */
 const POPOVER_GUTTER = 16;
@@ -55,8 +55,8 @@ const POPOVER_GUTTER = 16;
  * Pull left by exactly the overflow, and no further than the gutter, so a
  * narrower window trims the right side rather than losing the left.
  */
-function popoverShift(triggerLeft: number, viewportWidth: number): number {
-  const overflow = Math.max(0, triggerLeft + POPOVER_WIDTH + POPOVER_GUTTER - viewportWidth);
+function popoverShift(triggerLeft: number, viewportWidth: number, width = POPOVER_WIDTH): number {
+  const overflow = Math.max(0, triggerLeft + width + POPOVER_GUTTER - viewportWidth);
   return Math.max(-overflow, POPOVER_GUTTER - triggerLeft);
 }
 
@@ -76,7 +76,7 @@ export function FilterPanel({
   onClear,
   searchable = false,
   disabled = false,
-  widthClassName = "w-[340px]",
+  widthPx = POPOVER_WIDTH,
   footerStatus = true,
   onAnnounce,
 }: {
@@ -87,14 +87,15 @@ export function FilterPanel({
   onClear: () => void;
   searchable?: boolean;
   /**
-   * Desktop popover width. A full class rather than a number so Tailwind can see
-   * it: Set is 340px, Type is 300px (property table §Type ▾).
+   * Desktop popover width in px: Set is 340, Type is 300 (property table §Type
+   * ▾). A number, not a class, because the same value also feeds the
+   * viewport-overflow math in popoverShift, which a class could never reach.
    */
-  widthClassName?: string;
+  widthPx?: number;
   /**
-   * Whether the desktop footer carries the "N of M selected" text on the left.
-   * Type ▾ is drawn with `Clear` alone, right-aligned. The sheet is unaffected —
-   * its footer is governed by the shared sheet rules.
+   * Whether the footer carries the "N of M selected" text. Type ▾ is drawn
+   * without it — and must be, since footerTotal counts cards, which would be a
+   * lie about a list of types.
    */
   footerStatus?: boolean;
   /** Empty collection — the whole bar is disabled there. */
@@ -112,6 +113,9 @@ export function FilterPanel({
   const [pinned, setPinned] = useState<string[]>([]);
   // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
+  // Whether the option list overflows its cap. The bottom fade is a scroll cue,
+  // so a list short enough to fit — Type ▾ always is — must not wear one.
+  const [scrollable, setScrollable] = useState(false);
   // Desktop popover `left`, measured against the viewport. See popoverShift.
   const [popoverLeft, setPopoverLeft] = useState(0);
   const dragStartY = useRef<number | null>(null);
@@ -147,10 +151,10 @@ export function FilterPanel({
       // mounted, so the placement is known before the popover paints. A layout
       // effect would either flash at the wrong offset or warn under SSR.
       const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect) setPopoverLeft(popoverShift(rect.left, layoutViewportWidth()));
+      if (rect) setPopoverLeft(popoverShift(rect.left, layoutViewportWidth(), widthPx));
       setOpen(true);
     },
-    [options, selected, searchable],
+    [options, selected, searchable, widthPx],
   );
 
   // `preventScroll` is for the scroll-dismiss path only: the panel closes because
@@ -172,6 +176,13 @@ export function FilterPanel({
     if (searchable) inputRef.current?.focus();
     else (listRef.current ?? panelRef.current)?.focus();
   }, [open, searchable]);
+
+  // Measured after paint rather than derived from options.length: how many rows
+  // fit depends on wrapping, which only the browser knows.
+  useEffect(() => {
+    const el = listRef.current;
+    setScrollable(el ? el.scrollHeight > el.clientHeight : false);
+  }, [open, options, matches]);
 
   // Outside click and page scroll dismiss the desktop popover. (The sheet has a
   // backdrop instead, and closes on tap.)
@@ -212,7 +223,7 @@ export function FilterPanel({
     if (!open || !isDesktop) return;
     const place = () => {
       const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect) setPopoverLeft(popoverShift(rect.left, layoutViewportWidth()));
+      if (rect) setPopoverLeft(popoverShift(rect.left, layoutViewportWidth(), widthPx));
     };
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
@@ -242,8 +253,15 @@ export function FilterPanel({
   function trapTab(e: React.KeyboardEvent) {
     const root = panelRef.current;
     if (!root) return;
-    const focusable = [...root.querySelectorAll<HTMLElement>("button, input")].filter(
-      (el) => !el.hasAttribute("disabled") && el.tabIndex !== -1,
+    // The listbox is included even though it is tabIndex=-1: with no search
+    // field it is the only thing carrying aria-activedescendant, so leaving it
+    // out of the cycle strands a sheet keyboard user outside the options.
+    const focusable = [
+      ...root.querySelectorAll<HTMLElement>("button, input, [role='listbox']"),
+    ].filter(
+      (el) =>
+        !el.hasAttribute("disabled") &&
+        (el.tabIndex !== -1 || el.getAttribute("role") === "listbox"),
     );
     if (focusable.length === 0) return;
     const first = focusable[0];
@@ -280,7 +298,18 @@ export function FilterPanel({
     }
     // Space toggles only while a row is active; with no active row the caret is
     // in the field and a space has to type a space (set names contain them).
-    if ((e.key === "Enter" || e.key === " ") && activeCode) {
+    // Without a field there is nothing to type into, so the first press adopts
+    // the first row rather than scrolling the page behind the panel.
+    if (e.key === "Enter" || e.key === " ") {
+      if (!activeCode && !searchable) {
+        const first = visibleOptions()[0];
+        if (!first) return;
+        e.preventDefault();
+        setActiveCode(first.code);
+        onAnnounce?.(optionAria(first, selected.includes(first.code)));
+        return;
+      }
+      if (!activeCode) return;
       const option = visibleOptions().find((o) => o.code === activeCode);
       if (option) {
         e.preventDefault();
@@ -496,7 +525,7 @@ export function FilterPanel({
         </ul>
         {/* Scroll cue — a static gradient, not an animation. Popover only:
             §Transitions gives the sheet no bottom fade. */}
-        {isDesktop && (
+        {isDesktop && scrollable && (
           <div
             aria-hidden
             className="pointer-events-none -mt-[22px] h-[22px] bg-gradient-to-b from-transparent to-[color:var(--surface-rail)]"
@@ -562,37 +591,32 @@ export function FilterPanel({
     // Desktop always carries the status text on the left with Clear on the
     // right; the sheet swaps Clear into the left slot because Done owns the
     // right one (property table §Panel footer).
+    const left = isDesktop ? (
+      footerStatus ? (
+        <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{status}</span>
+      ) : null
+    ) : selected.length > 0 ? (
+      clearButton
+    ) : footerStatus ? (
+      <span className="font-mono text-[11px] text-[#6E6353]">{status}</span>
+    ) : null;
     return (
       <div
         className={[
           "flex items-center gap-[12px] border-t border-solid border-[color:var(--border)] px-[16px] py-[12px] pb-[20px] md:px-[14px] md:py-[9px] md:pb-[9px]",
-          // Without the status text there is one child, and justify-between
-          // would park it on the left.
-          !footerStatus && isDesktop ? "justify-end" : "justify-between",
+          // With nothing in the left slot there is one child, and
+          // justify-between would park it on the left.
+          left ? "justify-between" : "justify-end",
         ].join(" ")}
       >
+        {left}
         {isDesktop ? (
-          <>
-            {footerStatus && (
-              <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{status}</span>
-            )}
-            {clearButton}
-          </>
+          clearButton
         ) : (
-          <>
-            {selected.length > 0 ? (
-              clearButton
-            ) : (
-              <span className="font-mono text-[11px] text-[#6E6353]">{status}</span>
-            )}
-            {/* Dismiss only — it commits nothing. */}
-            <PrimaryButton
-              onClick={() => close()}
-              className="px-[22px] py-[10px] text-[13.5px]"
-            >
-              {copy.done}
-            </PrimaryButton>
-          </>
+          // Dismiss only — it commits nothing.
+          <PrimaryButton onClick={() => close()} className="px-[22px] py-[10px] text-[13.5px]">
+            {copy.done}
+          </PrimaryButton>
         )}
       </div>
     );
@@ -758,11 +782,11 @@ export function FilterPanel({
             aria-label={copy.panelAriaLabel}
             onKeyDown={onPanelKeyDown}
             onBlur={onPanelBlur}
-            className={`absolute top-[calc(100%+6px)] z-10 ${widthClassName} overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]`}
+            className="absolute top-[calc(100%+6px)] z-10 overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
             // A measured per-pixel offset, so it cannot be a class. Not colour
             // or border — the inline-style rule is about styles that outrank
             // hover: utilities.
-            style={{ left: popoverLeft }}
+            style={{ left: popoverLeft, width: widthPx }}
           >
             {renderBody()}
           </div>

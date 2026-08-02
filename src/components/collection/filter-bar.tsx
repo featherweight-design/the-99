@@ -143,7 +143,7 @@ export function FilterBar({
           options={typeOptions}
           selected={filters.types}
           searchable={false}
-          widthClassName="w-[300px]"
+          widthPx={300}
           footerStatus={false}
           onToggle={(code) =>
             onFiltersChange({
