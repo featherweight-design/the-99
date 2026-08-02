@@ -65,6 +65,14 @@ export function BuilderShell({
   const isEmpty = deck.built === 0;
   const commanderShortName = shortCommanderName(deck.commander.name);
 
+  // Every route into the export dialog dismisses the reveal, not just the one
+  // inside it — the user has acted on the moment, so leaving the band standing
+  // behind the dialog is noise.
+  const openExport = () => {
+    markCelebrated();
+    setExportOpen(true);
+  };
+
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     <CardDetailProvider>
@@ -76,17 +84,12 @@ export function BuilderShell({
             <CompletionReveal
               commanderShortName={commanderShortName}
               onDismiss={markCelebrated}
-              onExport={() => {
-                // Dismiss on export too: the user has acted on the moment, so
-                // re-showing it behind the dialog would be noise.
-                markCelebrated();
-                setExportOpen(true);
-              }}
+              onExport={openExport}
             />
           )}
 
           {/* Builder Spine */}
-          <BuilderSpine deck={deck} onExport={() => setExportOpen(true)} />
+          <BuilderSpine deck={deck} onExport={openExport} />
 
           {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
           <RoleCounterStrip cards={deck.cards} />

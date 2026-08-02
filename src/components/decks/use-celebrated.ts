@@ -24,13 +24,18 @@ const listeners = new Set<() => void>();
 // next visit" rather than "never goes away".
 const dismissedThisSession = new Set<string>();
 
-function subscribe(onStoreChange: () => void): () => void {
+function subscribeToKey(key: string, onStoreChange: () => void): () => void {
   listeners.add(onStoreChange);
-  // Cross-tab: dismissing in one tab should settle the other.
-  window.addEventListener("storage", onStoreChange);
+  // Cross-tab: dismissing in one tab should settle the other. Filtered to this
+  // deck's key — every other deck's dismissal fires the same global event, and
+  // an unfiltered handler would re-render every open builder tab.
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === key) onStoreChange();
+  };
+  window.addEventListener("storage", onStorage);
   return () => {
     listeners.delete(onStoreChange);
-    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener("storage", onStorage);
   };
 }
 
@@ -46,6 +51,11 @@ function readCelebrated(key: string): boolean {
 /** Returns `[alreadyCelebrated, markCelebrated]`. */
 export function useCelebrated(deckId: string): [boolean, () => void] {
   const key = celebrationKey(deckId);
+
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => subscribeToKey(key, onStoreChange),
+    [key],
+  );
 
   const celebrated = useSyncExternalStore(
     subscribe,

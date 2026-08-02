@@ -2,7 +2,7 @@
 // There is no browser gate on this repo (no Playwright, /decks is behind
 // Clerk), so this is the only place the localStorage keying is verified.
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import { celebrationKey } from "../../lib/decks/celebration";
 
@@ -67,6 +67,12 @@ describe("BuilderShell — 99/99 celebration", () => {
     localStorage.clear();
   });
 
+  // The storage-throws test spies on Storage.prototype; a failing assertion
+  // would otherwise leak those spies into every test after it.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("fires on a 99/99 all-owned deck the first time", async () => {
     await act(async () => {
       renderBuilder(makeDeck());
@@ -124,6 +130,14 @@ describe("BuilderShell — 99/99 celebration", () => {
     expect(localStorage.getItem(celebrationKey("deck-export"))).toBe("1");
   });
 
+  it("dismisses when the user exports from the spine rather than the band", async () => {
+    await act(async () => {
+      renderBuilder(makeDeck({ id: "deck-spine-export" }));
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: "Export" })[0]);
+    expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
+  });
+
   // Safari private mode and blocked storage throw on both read and write. The
   // band must still dismiss, or it is stuck on screen for the whole session.
   it("stays dismissable when storage throws", async () => {
@@ -140,7 +154,5 @@ describe("BuilderShell — 99/99 celebration", () => {
     expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Back to the deck" }));
     expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
-
-    vi.restoreAllMocks();
   });
 });
