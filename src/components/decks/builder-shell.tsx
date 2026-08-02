@@ -67,9 +67,11 @@ export function BuilderShell({
 
   // Every route into the export dialog dismisses the reveal, not just the one
   // inside it — the user has acted on the moment, so leaving the band standing
-  // behind the dialog is noise.
+  // behind the dialog is noise. Only while the band is actually up, though:
+  // the spine's Export is live from the first card on, and marking there would
+  // burn the one-shot flag long before the deck ever reaches 99/99.
   const openExport = () => {
-    markCelebrated();
+    if (showReveal) markCelebrated();
     setExportOpen(true);
   };
 

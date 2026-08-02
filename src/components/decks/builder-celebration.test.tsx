@@ -138,6 +138,20 @@ describe("BuilderShell — 99/99 celebration", () => {
     expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
   });
 
+  it("mid-build export does not burn the flag — the reveal still fires at 99/99", async () => {
+    const mid = await act(async () =>
+      renderBuilder(makeDeck({ id: "deck-mid-export", built: 40, ownedCount: 40 })),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Export" })[0]);
+    expect(localStorage.getItem(celebrationKey("deck-mid-export"))).toBeNull();
+    mid.unmount();
+
+    await act(async () => {
+      renderBuilder(makeDeck({ id: "deck-mid-export" }));
+    });
+    expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
+  });
+
   // Safari private mode and blocked storage throw on both read and write. The
   // band must still dismiss, or it is stuck on screen for the whole session.
   it("stays dismissable when storage throws", async () => {
