@@ -11,6 +11,7 @@ import { getEdhrecData } from "../../lib/edhrec/client";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { validateCardForDeck } from "../../lib/decks/add-validation";
+import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
 
 async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise<PoolCard[]> {
   const owned = await db
@@ -145,7 +146,7 @@ async function requireDeck(deckId: string, userId: string) {
   return deck;
 }
 
-export async function addCardToDeck(deckId: string, oracleId: string): Promise<void> {
+export async function addCardToDeck(deckId: string, oracleId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const deck = await requireDeck(deckId, userId);
 
@@ -164,11 +165,18 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<v
 
   // Re-adding a non-basic that's already in the deck is a no-op (singleton) —
   // return before validation so a full deck doesn't spuriously reject it.
-  if (existingRow && !/\bBasic\b/.test(card.typeLine)) return;
+  // Still revalidate: the click means this page's HTML disagreed with the row
+  // that exists, and without a fresh render the optimistic "✓ In deck" would
+  // flash back to "+ Add" when the transition ends.
+  if (existingRow && !/\bBasic\b/.test(card.typeLine)) {
+    revalidatePath(`/decks/${deckId}`);
+    revalidatePath(`/decks`);
+    return { ok: true };
+  }
 
   // Lock the deck row so the 99-card cap check and the write are atomic —
   // concurrent adds serialize here instead of both passing the cap at 98.
-  await db.transaction(async (tx) => {
+  const rejection = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     const [builtRow] = await tx.select({ total: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
       .from(deckCards).where(eq(deckCards.deckId, deckId));
@@ -177,7 +185,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<v
       { commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity, oracleId },
       { commanderOracleId: deck.commanderOracleId, commanderColorIdentity: commander.colorIdentity, built },
     );
-    if (error) throw new Error(error);
+    if (error) return error;
 
     // Commander is singleton: only basic lands may run multiple copies, so a
     // repeat add increments quantity for basics and stays a no-op otherwise.
@@ -189,10 +197,13 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<v
     } else {
       await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
     }
+    return null;
   });
+  if (rejection) return { ok: false, message: deckAddRejectionMessage(rejection) };
   // /decks shows derived stats (built / to-buy) — keep the index fresh too.
   revalidatePath(`/decks/${deckId}`);
   revalidatePath(`/decks`);
+  return { ok: true };
 }
 
 export async function removeCardFromDeck(deckId: string, oracleId: string): Promise<void> {
