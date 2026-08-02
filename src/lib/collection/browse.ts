@@ -60,7 +60,12 @@ export type BrowseCard = {
 export type BrowseFilters = {
   search: string;
   colors: string[];       // subset of ["W","U","B","R","G"]
-  type: string | null;    // substring match against typeLine
+  /**
+   * Multi-select (#100): a card matches when ANY selected type is a substring of
+   * its typeLine. ORs internally, ANDs with every other filter — the same shape
+   * as `setCodes`, because "Creature AND Land" would match almost nothing.
+   */
+  types: string[];
   /** Multi-select (#86): a card matches when ANY selected code is one of its setCodes. */
   setCodes: string[];
 };
@@ -307,8 +312,8 @@ export function printingCaption(card: BrowseCard): string {
 
 export function filterCards(list: BrowseCard[], f: BrowseFilters): BrowseCard[] {
   const search = f.search.trim().toLowerCase();
-  const type = f.type?.toLowerCase() ?? null;
-  // Sets OR with each other and AND with every other filter.
+  // Types and sets each OR internally and AND with every other filter.
+  const types = f.types.map((t) => t.toLowerCase());
   const setCodes = new Set(f.setCodes.map((s) => s.toLowerCase()));
   return list.filter((c) => {
     if (search && !c.name.toLowerCase().includes(search)) return false;
@@ -316,7 +321,10 @@ export function filterCards(list: BrowseCard[], f: BrowseFilters): BrowseCard[] 
       const id = new Set(c.colorIdentity);
       for (const col of f.colors) if (!id.has(col)) return false;
     }
-    if (type && !c.typeLine.toLowerCase().includes(type)) return false;
+    if (types.length > 0) {
+      const line = c.typeLine.toLowerCase();
+      if (!types.some((t) => line.includes(t))) return false;
+    }
     if (
       setCodes.size > 0 &&
       !c.setCodes.some((s) => setCodes.has(s.toLowerCase()))

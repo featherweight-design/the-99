@@ -58,13 +58,95 @@ export const collectionFilterCopy = {
         : `${setName} removed. ${sets} ${sets === 1 ? "set" : "sets"}, ${shown} of ${total} cards shown.`,
     announceCleared: (total: string) => `Set filter cleared. ${total} cards shown.`,
   },
+
+  // Type ▾ (#100) — the same panel with `searchable={false}`. The search and
+  // group-label strings are still here, and still unused, because the shape is
+  // shared: a partial block would make FilterPanelCopy optional for everyone.
+  type: {
+    triggerLabel: "Type",
+    triggerOne: (typeName: string) => `Type: ${typeName}`,
+    triggerAriaCollapsed: "Filter by type, collapsed",
+    triggerAriaWithSelection: (n: number) => `Filter by type, ${n} selected, collapsed`,
+
+    panelAriaLabel: "Filter by type",
+    sheetTitle: "Types",
+    searchPlaceholder: "Search types",
+    searchAriaLabel: "Search card types",
+    clearSearch: "Clear search",
+
+    groupDefault: "All types",
+    groupSelected: (n: number) => `Selected · ${n}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+
+    optionAria: (typeName: string, count: string, selected: boolean) =>
+      `${typeName}, ${count} cards${selected ? ", selected" : ""}`,
+    optionAriaUnavailable: (typeName: string) =>
+      `${typeName}, no cards match your other filters`,
+
+    footerTotal: (total: string) => `${total} cards`,
+    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    clear: "Clear",
+    done: "Done",
+    closeLabel: "Close",
+
+    emptyTitle: "No types to show",
+    emptyBody: (query: string) => ({
+      before: "No card type matches ",
+      query: `“${query}”`,
+      after: ".",
+    }),
+
+    announceMatches: (n: number, query: string) =>
+      n === 0 ? `No types match ${query}` : `${n} ${n === 1 ? "type matches" : "types match"} ${query}`,
+    announceAdded: (typeName: string, types: number, shown: string, total: string) =>
+      `${typeName} added. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${total} cards shown.`,
+    announceRemoved: (typeName: string, types: number, shown: string, total: string) =>
+      types === 0
+        ? `${typeName} removed. No type filter, ${total} cards shown.`
+        : `${typeName} removed. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${total} cards shown.`,
+    announceCleared: (total: string) => `Type filter cleared. ${total} cards shown.`,
+  },
 } as const;
 
 /**
- * The copy a FilterPanel needs. `collectionFilterCopy.set` satisfies it; the
- * follow-up Type ▾ conversion will pass its own block of the same shape.
+ * The copy a FilterPanel needs. Both `collectionFilterCopy.set` and
+ * `.type` satisfy it. Spelled out rather than `typeof …set`, which pinned every
+ * string to the Set block's literal type and so accepted nothing else.
  */
-export type FilterPanelCopy = typeof collectionFilterCopy.set;
+export type FilterPanelCopy = {
+  triggerLabel: string;
+  triggerOne: (name: string) => string;
+  triggerAriaCollapsed: string;
+  triggerAriaWithSelection: (n: number) => string;
+
+  panelAriaLabel: string;
+  sheetTitle: string;
+  searchPlaceholder: string;
+  searchAriaLabel: string;
+  clearSearch: string;
+
+  groupDefault: string;
+  groupSelected: (n: number) => string;
+  groupMatches: (n: number) => string;
+
+  optionAria: (name: string, count: string, selected: boolean) => string;
+  optionAriaUnavailable: (name: string) => string;
+
+  footerTotal: (total: string) => string;
+  footerSelected: (n: number, total: string) => string;
+  clear: string;
+  done: string;
+  /** Accessible name for the sheet's ✕ — the sheet's one accessible close control. */
+  closeLabel: string;
+
+  emptyTitle: string;
+  emptyBody: (query: string) => { before: string; query: string; after: string };
+
+  announceMatches: (n: number, query: string) => string;
+  announceAdded: (name: string, n: number, shown: string, total: string) => string;
+  announceRemoved: (name: string, n: number, shown: string, total: string) => string;
+  announceCleared: (total: string) => string;
+};
 
 // Voice: Kitchen Table. A printing is a card you own, out of a set, with a
 // number on it.

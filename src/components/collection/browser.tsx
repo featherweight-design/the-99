@@ -19,7 +19,12 @@ import {
   serializeSetCodes,
   type OwnedSetMeta,
 } from "../../lib/collection/set-filter";
-import { collectionFilterCopy } from "../../lib/copy/collection";
+import {
+  buildTypeOptions,
+  parseTypesParam,
+  serializeTypes,
+} from "../../lib/collection/type-filter";
+import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
 import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
 import { ChipRow } from "./chip-row";
 import { RowsView } from "./rows-view";
@@ -39,7 +44,8 @@ function serializeParams(filters: BrowseFilters, sort: SortKey, view: ViewMode |
   const p = new URLSearchParams();
   if (filters.search.trim()) p.set("q", filters.search.trim());
   if (filters.colors.length > 0) p.set("c", filters.colors.join(""));
-  if (filters.type) p.set("t", filters.type);
+  // Comma-joined; a single bare type still parses, so pre-#100 links survive.
+  if (filters.types.length > 0) p.set("t", serializeTypes(filters.types));
   // Comma-joined; a single bare code still parses, so pre-#86 links survive.
   if (filters.setCodes.length > 0) p.set("s", serializeSetCodes(filters.setCodes));
   if (sort !== "name") p.set("sort", sort);
@@ -50,6 +56,7 @@ function serializeParams(filters: BrowseFilters, sort: SortKey, view: ViewMode |
 }
 
 const setCopy = collectionFilterCopy.set;
+const typeCopy = collectionFilterCopy.type;
 
 /** Sum of quantities, i.e. the "2,933 cards" figure the announcements quote. */
 function quantityOf(list: BrowseCard[]): number {
@@ -57,9 +64,38 @@ function quantityOf(list: BrowseCard[]): number {
 }
 
 /**
- * The live-region string for a change to the set selection, or null when the
- * selection did not move (a colour or type change announces nothing here).
+ * The live-region string for a change to one multi-select, or null when that
+ * selection did not move. Set and Type share it: the two copy blocks have the
+ * same shape, and only the field read and the clear intent differ.
  */
+function selectionAnnouncement(
+  before: string[],
+  after: string[],
+  copy: FilterPanelCopy,
+  cleared: boolean,
+  next: BrowseFilters,
+  cards: BrowseCard[],
+  options: { code: string; label: string }[],
+  totalQuantity: number,
+): string | null {
+  if (before.length === after.length && before.every((c, i) => c === after[i])) return null;
+  const total = totalQuantity.toLocaleString();
+  // Always the cleared string for `Clear`, including at exactly one selection —
+  // "Bloomburrow removed. No set filter, …" belongs to toggling the last option
+  // off, not to pressing the button.
+  if (cleared) return copy.announceCleared(total);
+  const label = (code: string) => options.find((o) => o.code === code)?.label ?? code;
+  const shown = quantityOf(filterCards(cards, next)).toLocaleString();
+  const added = after.find((c) => !before.includes(c));
+  if (added !== undefined) return copy.announceAdded(label(added), after.length, shown, total);
+  const removed = before.find((c) => !after.includes(c));
+  if (removed !== undefined) {
+    return copy.announceRemoved(label(removed), after.length, shown, total);
+  }
+  return null;
+}
+
+/** The live-region string for a change to the set selection. */
 export function setChangeAnnouncement(
   prev: BrowseFilters,
   next: BrowseFilters,
@@ -68,23 +104,25 @@ export function setChangeAnnouncement(
   totalQuantity: number,
   intent?: FilterChangeIntent,
 ): string | null {
-  const before = prev.setCodes;
-  const after = next.setCodes;
-  if (before.length === after.length && before.every((c, i) => c === after[i])) return null;
-  const total = totalQuantity.toLocaleString();
-  // Always the cleared string for `Clear`, including at exactly one selection —
-  // "Bloomburrow removed. No set filter, …" belongs to toggling the last option
-  // off, not to pressing the button.
-  if (intent === "clear-sets") return setCopy.announceCleared(total);
-  const label = (code: string) => options.find((o) => o.code === code)?.label ?? code;
-  const shown = quantityOf(filterCards(cards, next)).toLocaleString();
-  const added = after.find((c) => !before.includes(c));
-  if (added !== undefined) return setCopy.announceAdded(label(added), after.length, shown, total);
-  const removed = before.find((c) => !after.includes(c));
-  if (removed !== undefined) {
-    return setCopy.announceRemoved(label(removed), after.length, shown, total);
-  }
-  return null;
+  return selectionAnnouncement(
+    prev.setCodes, next.setCodes, setCopy, intent === "clear-sets",
+    next, cards, options, totalQuantity,
+  );
+}
+
+/** The live-region string for a change to the type selection. */
+export function typeChangeAnnouncement(
+  prev: BrowseFilters,
+  next: BrowseFilters,
+  cards: BrowseCard[],
+  options: { code: string; label: string }[],
+  totalQuantity: number,
+  intent?: FilterChangeIntent,
+): string | null {
+  return selectionAnnouncement(
+    prev.types, next.types, typeCopy, intent === "clear-types",
+    next, cards, options, totalQuantity,
+  );
 }
 
 export function CollectionBrowser({
@@ -102,7 +140,7 @@ export function CollectionBrowser({
   const [filters, setFilters] = useState<BrowseFilters>(() => ({
     search: search.get("q") ?? "",
     colors: parseColors(search.get("c")),
-    type: search.get("t"),
+    types: parseTypesParam(search.get("t")),
     setCodes: parseSetCodesParam(search.get("s")),
   }));
   // Guard query params — shared URLs can carry unknown values; fall back to defaults.
@@ -126,15 +164,28 @@ export function CollectionBrowser({
   // Depends on the two fields buildSetOptions actually reads, not on `filters` —
   // that object is rebuilt on every keystroke, which would recount the lot. The
   // spreads preserve `colors`' array identity, so it is a sound dep as-is.
-  const { colors: filterColors, type: filterType } = filters;
+  const { colors: filterColors, types: filterTypes, setCodes: filterSetCodes } = filters;
   const setOptions = useMemo(
     () =>
       buildSetOptions(
         cards,
-        { search: "", colors: filterColors, type: filterType, setCodes: [] },
+        { search: "", colors: filterColors, types: filterTypes, setCodes: [] },
         ownedSets,
       ),
-    [cards, filterColors, filterType, ownedSets],
+    [cards, filterColors, filterTypes, ownedSets],
+  );
+
+  // Same rule the other way round: type counts move with the colours and the
+  // set selection, not with the type selection or the search box.
+  const typeOptions = useMemo(
+    () =>
+      buildTypeOptions(cards, {
+        search: "",
+        colors: filterColors,
+        types: [],
+        setCodes: filterSetCodes,
+      }),
+    [cards, filterColors, filterSetCodes],
   );
 
   // Chips read set NAMES, not codes — the locked "names over codes" decision.
@@ -149,15 +200,18 @@ export function CollectionBrowser({
   // callbacks (not an effect) to avoid a cascading render.
   const updateFilters = useCallback(
     (f: BrowseFilters, intent?: FilterChangeIntent) => {
-      // The set panel's add/remove/clear announcements are composed here rather
-      // than in the panel: only this component knows how many cards survive the
-      // new filter set, and the string quotes that figure.
-      const message = setChangeAnnouncement(filters, f, cards, setOptions, totalQuantity, intent);
+      // The panels' add/remove/clear announcements are composed here rather than
+      // in the panel: only this component knows how many cards survive the new
+      // filter set, and the string quotes that figure. At most one of the two
+      // selections moves per change, so the first non-null wins outright.
+      const message =
+        setChangeAnnouncement(filters, f, cards, setOptions, totalQuantity, intent) ??
+        typeChangeAnnouncement(filters, f, cards, typeOptions, totalQuantity, intent);
       if (message) setAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
     },
-    [filters, cards, setOptions, totalQuantity],
+    [filters, cards, setOptions, typeOptions, totalQuantity],
   );
   const updateSort = useCallback((s: SortKey) => {
     setSort(s);
@@ -201,6 +255,7 @@ export function CollectionBrowser({
         sort={sort}
         view={effectiveView}
         setOptions={setOptions}
+        typeOptions={typeOptions}
         announcement={announcement}
         onAnnounce={setAnnouncement}
         onFiltersChange={updateFilters}
@@ -215,11 +270,13 @@ export function CollectionBrowser({
           uniqueCount={cards.length}
           totalQuantity={totalQuantity}
           onClearAll={() => {
-            updateFilters({ search: "", colors: [], type: null, setCodes: [] }, "clear-sets");
+            updateFilters({ search: "", colors: [], types: [], setCodes: [] }, "clear-sets");
             updateSort("name");
           }}
           onRemoveColor={(c) => updateFilters({ ...filters, colors: filters.colors.filter((x) => x !== c) })}
-          onClearType={() => updateFilters({ ...filters, type: null })}
+          onRemoveType={(t) =>
+            updateFilters({ ...filters, types: filters.types.filter((x) => x !== t) })
+          }
           setLabels={setLabels}
           onRemoveSet={(code) =>
             updateFilters({ ...filters, setCodes: filters.setCodes.filter((c) => c !== code) })
@@ -233,10 +290,10 @@ export function CollectionBrowser({
           query={filters.search}
           totalCount={totalQuantity}
           onClearAll={() => {
-            updateFilters({ search: "", colors: [], type: null, setCodes: [] }, "clear-sets");
+            updateFilters({ search: "", colors: [], types: [], setCodes: [] }, "clear-sets");
             updateSort("name");
           }}
-          onKeepSearch={() => updateFilters({ search: filters.search, colors: [], type: null, setCodes: [] })}
+          onKeepSearch={() => updateFilters({ search: filters.search, colors: [], types: [], setCodes: [] })}
         />
       ) : effectiveView === "rows" ? (
         <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} />

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import type { BrowseFilters } from "../../lib/collection/browse";
 import { FilterBar } from "../collection/filter-bar";
-import { setChangeAnnouncement } from "../collection/browser";
+import { setChangeAnnouncement, typeChangeAnnouncement } from "../collection/browser";
 import { FilterPanel, type FilterPanelOption } from "./filter-panel";
 
 // jsdom ships no matchMedia, and useIsDesktop() decides which of the popover /
@@ -446,13 +446,86 @@ describe("FilterPanel", () => {
   });
 });
 
+// The non-searchable path is what Type ▾ uses. With no search field there is no
+// combobox to hold DOM focus or aria-activedescendant, so focus, the keyboard
+// walk and the grouping all take a different branch from the Set panel above.
+describe("FilterPanel, not searchable", () => {
+  function openBare(over: Partial<React.ComponentProps<typeof FilterPanel>> = {}) {
+    const utils = renderPanel({ searchable: false, ...over });
+    return { ...utils, panel: openPanel() };
+  }
+
+  it("moves DOM focus onto the listbox, since there is no field to take it", () => {
+    setViewport(true);
+    const { panel } = openBare();
+    expect(document.activeElement).toBe(screen.getByRole("listbox"));
+    expect(panel).toContainElement(document.activeElement as HTMLElement);
+  });
+
+  it("exposes the keyboard-active row on the focused element", () => {
+    setViewport(true);
+    renderPanel({ searchable: false });
+    fireEvent.keyDown(screen.getByRole("button", { name: /Filter by set/ }), { key: "ArrowDown" });
+    const focused = document.activeElement as HTMLElement;
+    const active = focused.getAttribute("aria-activedescendant");
+    expect(active).toBeTruthy();
+    expect(document.getElementById(active!)).toHaveAttribute("data-code", "BLB");
+  });
+
+  it("walks and toggles with the arrow keys while the panel holds focus", () => {
+    setViewport(true);
+    const { panel, onToggle } = openBare();
+    fireEvent.keyDown(panel, { key: "ArrowDown" });
+    fireEvent.keyDown(panel, { key: "ArrowDown" });
+    fireEvent.keyDown(panel, { key: "Enter" });
+    expect(onToggle).toHaveBeenCalledWith("MH3");
+  });
+
+  it("leaves the options in their given order rather than pinning the selection", () => {
+    setViewport(true);
+    openBare({ selected: ["MH3"] });
+    const rows = within(screen.getByRole("listbox")).getAllByRole("option");
+    expect(rows.map((r) => r.getAttribute("data-code"))).toEqual(["BLB", "MH3", "BRO"]);
+    expect(screen.queryByRole("group")).toBeNull();
+  });
+
+  it("numbers the flat list without a group wrapper", () => {
+    setViewport(true);
+    openBare();
+    const rows = within(screen.getByRole("listbox")).getAllByRole("option");
+    expect(rows.map((r) => r.getAttribute("aria-posinset"))).toEqual(["1", "2", "3"]);
+    expect(rows[0]).toHaveAttribute("aria-setsize", "3");
+  });
+
+  it("closes on Esc and hands focus back to the trigger", () => {
+    setViewport(true);
+    const { panel } = openBare();
+    fireEvent.keyDown(panel, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /Filter by set/ }));
+  });
+
+  it("still clears from the footer", () => {
+    setViewport(true);
+    const { onClear } = openBare({ selected: ["BLB"] });
+    fireEvent.click(screen.getByRole("button", { name: collectionFilterCopy.set.clear }));
+    expect(onClear).toHaveBeenCalled();
+  });
+
+  it("takes focus on the sheet too, below the breakpoint", () => {
+    setViewport(false);
+    openBare();
+    expect(document.activeElement).toBe(screen.getByRole("listbox"));
+  });
+});
+
 // `Clear` and "toggle the last set off" both end at an empty selection, so the
 // announcement cannot be inferred from the resulting count — the button says so.
 describe("FilterPanel Clear announcement", () => {
   const filtersWith = (setCodes: string[]): BrowseFilters => ({
     search: "",
     colors: [],
-    type: null,
+    types: [],
     setCodes,
   });
 
@@ -464,6 +537,7 @@ describe("FilterPanel Clear announcement", () => {
         sort="name"
         view="grid"
         setOptions={OPTIONS.map((o) => ({ ...o, releasedAt: null }))}
+        typeOptions={[]}
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -492,5 +566,150 @@ describe("FilterPanel Clear announcement", () => {
     expect(setChangeAnnouncement(filtersWith(["BLB"]), filtersWith([]), [], OPTIONS, 2933)).toBe(
       collectionFilterCopy.set.announceRemoved("Bloomburrow", 0, "0", "2,933"),
     );
+  });
+});
+
+// Design review of #100 found these five: each is a way the non-searchable
+// panel diverged from the Set ▾ panel it inherited from.
+describe("FilterPanel, the non-searchable variant's own hazards", () => {
+  it("sizes the desktop popover from widthPx, so a narrow panel is not over-shifted", () => {
+    setViewport(true);
+    renderPanel({ searchable: false, widthPx: 300 });
+    const panel = openPanel();
+    expect((panel as HTMLElement).style.width).toBe("300px");
+  });
+
+  it("drops the bottom scroll fade when the list does not scroll", () => {
+    setViewport(true);
+    const { container } = renderPanel({ searchable: false });
+    openPanel();
+    // jsdom reports scrollHeight === clientHeight === 0, i.e. never scrollable.
+    expect(container.querySelector(".bg-gradient-to-b")).toBeNull();
+  });
+
+  it("keeps the card-count status out of the sheet footer when footerStatus is off", () => {
+    setViewport(false);
+    renderPanel({ searchable: false, footerStatus: false, copy: collectionFilterCopy.type });
+    fireEvent.click(screen.getByRole("button", { name: /Filter by type/ }));
+    // "7 cards" would be a lie about a list of types.
+    expect(screen.queryByText(/cards$/)).toBeNull();
+    expect(screen.getByRole("button", { name: collectionFilterCopy.type.done })).toBeTruthy();
+  });
+
+  it("leaves the option list reachable by Tab when there is no search field", () => {
+    setViewport(false);
+    renderPanel({ searchable: false });
+    const list = within(openPanel()).getByRole("listbox");
+    // At -1 the list takes focus on open but can never be Tabbed back to, and
+    // the options are only reachable through it.
+    expect(list.tabIndex).toBe(0);
+    expect(document.activeElement).toBe(list);
+  });
+
+  it("keeps the search field owning focus when there IS one", () => {
+    setViewport(false);
+    renderPanel({ searchable: true });
+    const list = within(openPanel()).getByRole("listbox");
+    expect(list.hasAttribute("tabindex")).toBe(false);
+  });
+
+  it("adopts the first row on Space rather than scrolling the page behind it", () => {
+    setViewport(true);
+    const { onToggle } = renderPanel({ searchable: false });
+    const panel = openPanel();
+    const space = fireEvent.keyDown(panel, { key: " " });
+    // Returns false when a handler called preventDefault.
+    expect(space).toBe(false);
+    expect(onToggle).not.toHaveBeenCalled();
+    const list = within(panel).getByRole("listbox");
+    expect(list.getAttribute("aria-activedescendant")).toBeTruthy();
+  });
+});
+
+// Type ▾ is the same panel with the search field off (#100). These cover the
+// wiring — that the bar reaches the multi-select, not the old single <select>.
+describe("Type ▾ in the filter bar", () => {
+  const TYPE_OPTIONS = [
+    { code: "Creature", label: "Creature", count: 120, disabled: false },
+    { code: "Land", label: "Land", count: 40, disabled: false },
+  ];
+  const filtersWith = (types: string[]): BrowseFilters => ({
+    search: "",
+    colors: [],
+    types,
+    setCodes: [],
+  });
+
+  function renderBar(types: string[]) {
+    const onFiltersChange = vi.fn();
+    render(
+      <FilterBar
+        filters={filtersWith(types)}
+        sort="name"
+        view="grid"
+        setOptions={[]}
+        typeOptions={TYPE_OPTIONS}
+        announcement=""
+        onAnnounce={() => {}}
+        onFiltersChange={onFiltersChange}
+        onSortChange={() => {}}
+        onViewChange={() => {}}
+      />,
+    );
+    return onFiltersChange;
+  }
+
+  function openType() {
+    fireEvent.click(screen.getByRole("button", { name: /Filter by type/ }));
+  }
+
+  it("opens a panel with no search field", () => {
+    setViewport(true);
+    renderBar([]);
+    openType();
+    const panel = screen.getByRole("dialog", { name: "Filter by type" });
+    // The Sort <select> is also a combobox, so scope this to the panel.
+    expect(within(panel).queryByRole("combobox")).toBeNull();
+  });
+
+  it("adds a type without dropping the one already selected", () => {
+    setViewport(true);
+    const onFiltersChange = renderBar(["Creature"]);
+    openType();
+    fireEvent.click(screen.getByRole("option", { name: /Land/ }));
+    expect(onFiltersChange).toHaveBeenCalledWith(filtersWith(["Creature", "Land"]));
+  });
+
+  it("toggles a selected type back off", () => {
+    setViewport(true);
+    const onFiltersChange = renderBar(["Creature", "Land"]);
+    openType();
+    fireEvent.click(screen.getByRole("option", { name: /Creature/ }));
+    expect(onFiltersChange).toHaveBeenCalledWith(filtersWith(["Land"]));
+  });
+
+  it("flags the panel's Clear as a type clear, not a set clear", () => {
+    setViewport(true);
+    const onFiltersChange = renderBar(["Creature"]);
+    openType();
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(onFiltersChange).toHaveBeenCalledWith(filtersWith([]), "clear-types");
+  });
+
+  it("reads the cleared string for Clear, and the removed string for a toggle", () => {
+    expect(
+      typeChangeAnnouncement(
+        filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933, "clear-types",
+      ),
+    ).toBe(collectionFilterCopy.type.announceCleared("2,933"));
+    expect(
+      typeChangeAnnouncement(filtersWith(["Creature"]), filtersWith([]), [], TYPE_OPTIONS, 2933),
+    ).toBe(collectionFilterCopy.type.announceRemoved("Creature", 0, "0", "2,933"));
+  });
+
+  it("says nothing about types when only the set selection moved", () => {
+    const before = filtersWith([]);
+    const after = { ...before, setCodes: ["BLB"] };
+    expect(typeChangeAnnouncement(before, after, [], TYPE_OPTIONS, 2933)).toBeNull();
   });
 });
