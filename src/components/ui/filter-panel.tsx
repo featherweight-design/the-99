@@ -227,7 +227,7 @@ export function FilterPanel({
     };
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
-  }, [open, isDesktop]);
+  }, [open, isDesktop, widthPx]);
 
   // Keep the active row in view. No wrap at the ends, so this only ever nudges.
   useEffect(() => {
