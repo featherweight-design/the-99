@@ -18,7 +18,7 @@ describe("commandersCopy.filteredEmpty", () => {
 
   it("agrees in number when exactly one candidate is filtered out", () => {
     expect(commandersCopy.filteredEmpty.caption("white-red", 1)).toBe(
-      "Your collection has opinions about white-red. All 1 candidate is one filter away.",
+      "Your collection has opinions about white-red. Only 1 candidate is one filter away.",
     );
   });
 
