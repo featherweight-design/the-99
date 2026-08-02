@@ -6,64 +6,8 @@
 // Mobile breakpoint: sm:640px (project uses sm: prefix, table breakpoint is 640px).
 
 import { WUBRG_HEX } from "../../lib/collection/browse";
+import { guildLabel } from "../../lib/copy/color-labels";
 import { GhostButton } from "../ui/button";
-
-// Single-color names
-const MONO_NAMES: Record<string, string> = {
-  W: "White",
-  U: "Blue",
-  B: "Black",
-  R: "Red",
-  G: "Green",
-};
-
-// Two-color guild names (sorted WUBRG key)
-const GUILD_NAMES: Record<string, string> = {
-  WU: "Azorius",
-  WB: "Orzhov",
-  UB: "Dimir",
-  UR: "Izzet",
-  BR: "Rakdos",
-  BG: "Golgari",
-  WR: "Boros",
-  WG: "Selesnya",
-  UG: "Simic",
-  RG: "Gruul",
-};
-
-// Three-color shard/wedge names
-const TRIO_NAMES: Record<string, string> = {
-  WUB: "Esper",
-  WUR: "Jeskai",
-  WUG: "Bant",
-  WBR: "Mardu",
-  WBG: "Abzan",
-  UBR: "Grixis",
-  UBG: "Sultai",
-  URG: "Temur",
-  BRG: "Jund",
-  WRG: "Naya",
-};
-
-// Four-color names
-const QUAD_NAMES: Record<string, string> = {
-  WUBR: "Yore-Tiller (non-Green)",
-  WUBG: "Witch-Maw (non-Red)",
-  WURG: "Ink-Treader (non-Black)",
-  WBRG: "Dune-Brood (non-Blue)",
-  UBRG: "Chaos (non-White)",
-};
-
-function colorFilterLabel(colors: string[]): string {
-  if (colors.length === 0) return "this filter";
-  const sorted = [...colors].sort((a, b) => "WUBRG".indexOf(a) - "WUBRG".indexOf(b));
-  const key = sorted.join("");
-  if (sorted.length === 1) return MONO_NAMES[key] ?? key;
-  if (sorted.length === 2) return GUILD_NAMES[key] ?? key;
-  if (sorted.length === 3) return TRIO_NAMES[key] ?? key;
-  if (sorted.length === 4) return QUAD_NAMES[key] ?? key;
-  return "5-color"; // WUBRG
-}
 
 type FilteredEmptyProps = {
   colors: string[];
@@ -72,7 +16,7 @@ type FilteredEmptyProps = {
 };
 
 export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
-  const label = colorFilterLabel(colors);
+  const label = guildLabel(colors);
 
   return (
     <div
