@@ -16,6 +16,12 @@ describe("commandersCopy.filteredEmpty", () => {
     );
   });
 
+  it("agrees in number when exactly one candidate is filtered out", () => {
+    expect(commandersCopy.filteredEmpty.caption("white-red", 1)).toBe(
+      "Your collection has opinions about white-red. All 1 candidate is one filter away.",
+    );
+  });
+
   it("keeps the diagnostic count straight", () => {
     expect(commandersCopy.filteredEmpty.count(24)).toBe("Showing 0 of 24");
   });
@@ -25,6 +31,12 @@ describe("commandersCopy.firstRun", () => {
   it("reproduces the mock's first-run line", () => {
     expect(commandersCopy.firstRun.line(1418, 24)).toBe(
       "1,418 cards read. 24 can lead. I ranked them — you're welcome.",
+    );
+  });
+
+  it("agrees in number for a one-card, one-commander collection", () => {
+    expect(commandersCopy.firstRun.line(1, 1)).toBe(
+      "1 card read. 1 can lead. I ranked it — you're welcome.",
     );
   });
 
