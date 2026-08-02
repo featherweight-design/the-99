@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "./empty-state";
 
 describe("EmptyState", () => {
-  it("centres its content in a column", () => {
+  it("centers its content in a column", () => {
     const { container } = render(<EmptyState>mark</EmptyState>);
     const section = container.firstElementChild as HTMLElement;
     expect(section.className).toContain("flex-col");

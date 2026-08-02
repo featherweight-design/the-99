@@ -19,13 +19,6 @@ const TRIOMES: Record<string, string> = {
 };
 
 /**
- * Returns a human-readable color identity label for a Magic commander.
- *
- * Four-color identities are named for the color they are missing rather than by
- * their Nephilim names (Glint-Eye, Dune-Brood, …). Those names exist, but almost
- * nobody uses them, and "Non-green" is legible without a lookup.
- */
-/**
  * Own-property lookup. Plain `map[key]` reaches the Object prototype, so an
  * identity of `["toString"]` would otherwise yield a function from a map of
  * strings.
@@ -34,11 +27,18 @@ function lookup(map: Record<string, string>, key: string): string | undefined {
   return Object.hasOwn(map, key) ? map[key] : undefined;
 }
 
+/**
+ * Returns a human-readable color identity label for a Magic commander.
+ *
+ * Four-color identities are named for the color they are missing rather than by
+ * their Nephilim names (Glint-Eye, Dune-Brood, …). Those names exist, but almost
+ * nobody uses them, and "Non-green" is legible without a lookup.
+ */
 export function colorLabel(identity: string[]): string {
   if (identity.length === 0) return "Colorless";
   if (identity.length === 1) return lookup(COLOR_NAMES, identity[0]) ?? identity[0];
 
-  // Every branch below names a specific combination, so an unrecognised code has
+  // Every branch below names a specific combination, so an unrecognized code has
   // to fall out here — otherwise ["W","U","B","X"] reads "Non-red", naming a
   // combination the card does not have.
   if (identity.some((c) => lookup(COLOR_NAMES, c) === undefined)) return "Multi";

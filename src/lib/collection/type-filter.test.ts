@@ -102,7 +102,7 @@ describe("parseTypesParam", () => {
     expect(parseTypesParam("Creature")).toEqual(["Creature"]);
   });
 
-  it("normalises case to the known vocabulary", () => {
+  it("normalizes case to the known vocabulary", () => {
     expect(parseTypesParam("creature,LAND")).toEqual(["Creature", "Land"]);
   });
 

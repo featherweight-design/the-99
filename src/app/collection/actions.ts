@@ -161,13 +161,13 @@ export async function setCardArtPreference(
   const userId = await requireUserId();
   // Normalise on write (§3.3) — every set code in the database is lowercase, and the picker
   // hands back the uppercased display value.
-  const normalisedSetCode = setCode.toLowerCase();
+  const normalizedSetCode = setCode.toLowerCase();
   const [owned] = await db.select({ one: sql<number>`1` })
     .from(collectionItems)
     .where(and(
       eq(collectionItems.userId, userId),
       eq(collectionItems.oracleId, oracleId),
-      eq(collectionItems.setCode, normalisedSetCode),
+      eq(collectionItems.setCode, normalizedSetCode),
       // May legitimately be '' — a bare `Name,Qty` import carries no collector number.
       eq(collectionItems.collectorNumber, collectorNumber),
     ))
@@ -175,10 +175,10 @@ export async function setCardArtPreference(
   if (!owned) return;
 
   await db.insert(cardArtPreferences)
-    .values({ userId, oracleId, setCode: normalisedSetCode, collectorNumber })
+    .values({ userId, oracleId, setCode: normalizedSetCode, collectorNumber })
     .onConflictDoUpdate({
       target: [cardArtPreferences.userId, cardArtPreferences.oracleId],
-      set: { setCode: normalisedSetCode, collectorNumber },
+      set: { setCode: normalizedSetCode, collectorNumber },
     });
   revalidatePath("/collection");
 }

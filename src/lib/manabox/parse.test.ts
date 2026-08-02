@@ -69,7 +69,7 @@ describe("parseCollectionCsv", () => {
     expect(rows.map((r) => r.finish)).toEqual(["foil", "nonfoil"]);
   });
 
-  it("falls back to nonfoil for any unrecognised finish value", () => {
+  it("falls back to nonfoil for any unrecognized finish value", () => {
     // Unknown strings must not become foil: that is what keeps the non-ManaBox exports
     // (Moxfield, Archidekt, Deckbox, bare Name,Qty) importing as they always have.
     const { rows } = parseCollectionCsv("Name,Quantity,Foil\nA,1,shiny\nB,1,0\nC,1,rainbow\n");

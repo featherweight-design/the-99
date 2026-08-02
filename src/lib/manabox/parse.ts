@@ -34,7 +34,7 @@ const SCRYFALL_HEADERS = ["scryfall id"];
 
 /**
  * Foil/Finish column values → Scryfall's finish vocabulary. ManaBox emits normal/foil/etched;
- * the other supported exports emit true/false, 1/0, or nothing at all. ANY unrecognised value
+ * the other supported exports emit true/false, 1/0, or nothing at all. ANY unrecognized value
  * falls back to "nonfoil", which keeps the Moxfield / Archidekt / Deckbox / bare "Name,Qty"
  * exports importing.
  *

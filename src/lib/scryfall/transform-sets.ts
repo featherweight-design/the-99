@@ -26,7 +26,7 @@ function required(raw: Raw, field: string): string {
  * Maps one `https://api.scryfall.com/sets` response to `sets` rows.
  *
  * `/sets` is NOT paginated — verified live 2026-07-27: 1,047 sets in a single response with
- * `has_more: false`. Rather than write pagination handling for behaviour that never occurs,
+ * `has_more: false`. Rather than write pagination handling for behavior that never occurs,
  * we assert the invariant and fail loudly if Scryfall ever changes it.
  */
 export function toSetRows(payload: Raw): SetRow[] {
