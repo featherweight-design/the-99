@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { completeness, COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
+import type { SynergyState } from "../../lib/recs/synergy-state";
 
 /** WUBRG identity pip. Colors come from brand tokens (--w --u --b --r --g). */
 function ColorPip({ color }: { color: string }) {
@@ -27,6 +29,19 @@ function fillColor(pct: number): string {
   if (pct >= COMPLETENESS_THRESHOLDS.mid) return "var(--warning)";
   return "var(--danger)";
 }
+
+/**
+ * Completeness needs EDHREC's top-cards list, so the reason it is missing is the
+ * reason EDHREC gave. "absent" is settled — the commander isn't indexed — while
+ * "degraded" is an outage that fixes itself, and the two must not read alike.
+ * "ok" is unreachable in practice (an ok row always has counts) but stays a
+ * total map so a future state can't silently render nothing.
+ */
+const COMPLETENESS_FALLBACK: Record<SynergyState, string> = {
+  ok: "Deck completeness isn't available for this commander yet.",
+  absent: "EDHREC doesn't track this commander, so there's no completeness to show.",
+  degraded: "We couldn't reach EDHREC — completeness returns once it's back.",
+};
 
 export function HeroCommanderSkeleton() {
   return (
@@ -97,9 +112,17 @@ export async function HeroCommander({ userId }: { userId: string }) {
   return (
     <div
       // §Hero card container: display flex, bg surface, border line, border-radius 14px, overflow hidden, mb 34px
-      className="mb-[34px] flex flex-col overflow-hidden rounded-[14px] md:flex-row"
+      className="relative mb-[34px] flex flex-col overflow-hidden rounded-[14px] md:flex-row"
       style={{ background: "var(--surface)", border: "1px solid var(--border-strong)" }}
     >
+      {/* Stretched link — same pattern as commanders/rec-card.tsx. The hero has
+          no interactive children, so nothing needs lifting above it. */}
+      <Link
+        href={`/commanders/${top.slug}`}
+        aria-label={`${top.name} — view commander details`}
+        className="absolute inset-0 z-[1] rounded-[14px]"
+      />
+
       {/* §Hero card: Art — 200px, flex none, border-right line. The striped
           placeholder the handoff specified is now the no-art fallback only. */}
       <div
@@ -185,7 +208,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
               color: "var(--fg-faint)",
             }}
           >
-            completeness unavailable
+            {COMPLETENESS_FALLBACK[top.synergyState]}
           </p>
         )}
       </div>

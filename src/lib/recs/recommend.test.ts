@@ -137,6 +137,7 @@ describe("finalizeRecommendations", () => {
         fitPool: 0,
         fitRoles: 0,
         fitSynergy: null,
+        synergyState: "ok",
         score: 42,
         imageUri: null,
       });

@@ -69,6 +69,7 @@ export function rowToListItem(row: ScoreRowWithCard): CommanderListItem {
     fitPool: row.fitPool,
     fitRoles: row.fitRoles,
     fitSynergy: row.fitSynergy,
+    synergyState: row.synergyState,
     score: row.score,
     imageUri: row.imageUri,
   };
