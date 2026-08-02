@@ -117,10 +117,30 @@ describe("BuilderShell — 99/99 celebration", () => {
 
   it("dismisses when the user exports instead", async () => {
     await act(async () => {
-      renderBuilder(makeDeck());
+      renderBuilder(makeDeck({ id: "deck-export" }));
     });
     fireEvent.click(screen.getByRole("button", { name: "Export decklist" }));
     expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
-    expect(localStorage.getItem(celebrationKey("deck-1"))).toBe("1");
+    expect(localStorage.getItem(celebrationKey("deck-export"))).toBe("1");
+  });
+
+  // Safari private mode and blocked storage throw on both read and write. The
+  // band must still dismiss, or it is stuck on screen for the whole session.
+  it("stays dismissable when storage throws", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+
+    await act(async () => {
+      renderBuilder(makeDeck({ id: "deck-nostorage" }));
+    });
+    expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Back to the deck" }));
+    expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
+
+    vi.restoreAllMocks();
   });
 });

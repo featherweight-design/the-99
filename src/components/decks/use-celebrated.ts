@@ -9,12 +9,20 @@ import { celebrationKey } from "../../lib/decks/celebration";
 // device shows the reveal once more.
 //
 // useSyncExternalStore rather than useState + useEffect: localStorage is an
-// external store, and reading it into state inside an effect is the cascading
-// -render pattern the lint rule rejects. The server snapshot is `true` —
-// "assume seen" — so the server render and the hydration pass never contain a
-// kaiju, and a returning user cannot catch a flash of celebration.
+// external store, and reading it into state inside an effect is the
+// cascading-render pattern the lint rule rejects. The server snapshot is
+// `true` — "assume seen" — so the server render and the hydration pass never
+// contain a kaiju, and a returning user cannot catch a flash of celebration.
 
 const listeners = new Set<() => void>();
+
+// Storage can throw outright — Safari private mode, blocked storage, full
+// quota. Dismissal is driven entirely by the write below, so an unguarded
+// throw does not merely lose persistence: it leaves the band on screen with a
+// dismiss button that cannot work. This session-scoped set is the fallback, so
+// the reveal is always dismissable and the worst case degrades to "shows again
+// next visit" rather than "never goes away".
+const dismissedThisSession = new Set<string>();
 
 function subscribe(onStoreChange: () => void): () => void {
   listeners.add(onStoreChange);
@@ -26,18 +34,32 @@ function subscribe(onStoreChange: () => void): () => void {
   };
 }
 
+function readCelebrated(key: string): boolean {
+  if (dismissedThisSession.has(key)) return true;
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
 /** Returns `[alreadyCelebrated, markCelebrated]`. */
 export function useCelebrated(deckId: string): [boolean, () => void] {
   const key = celebrationKey(deckId);
 
   const celebrated = useSyncExternalStore(
     subscribe,
-    () => localStorage.getItem(key) === "1",
+    () => readCelebrated(key),
     () => true,
   );
 
   const markCelebrated = useCallback(() => {
-    localStorage.setItem(key, "1");
+    dismissedThisSession.add(key);
+    try {
+      localStorage.setItem(key, "1");
+    } catch {
+      // Persistence is best-effort; the session set already settled the UI.
+    }
     for (const listener of listeners) listener();
   }, [key]);
 
