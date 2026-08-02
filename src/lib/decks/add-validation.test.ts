@@ -31,9 +31,7 @@ describe("validateCardForDeck", () => {
 
   it("rejects a non-legal card", () => {
     const illegalCard: CardForValidation = { ...legalGreenCard, commanderLegal: false };
-    const result = validateCardForDeck(illegalCard, greenCommander);
-    expect(result).not.toBeNull();
-    expect(result).toContain("not legal");
+    expect(validateCardForDeck(illegalCard, greenCommander)).toBe("not-commander-legal");
   });
 
   it("rejects an off-color card", () => {
@@ -42,9 +40,7 @@ describe("validateCardForDeck", () => {
       colorIdentity: ["U"],
       oracleId: "blue-card",
     };
-    const result = validateCardForDeck(blueCard, greenCommander);
-    expect(result).not.toBeNull();
-    expect(result).toContain("color identity");
+    expect(validateCardForDeck(blueCard, greenCommander)).toBe("off-color-identity");
   });
 
   it("rejects a multicolor card that exceeds the commander's identity", () => {
@@ -53,8 +49,7 @@ describe("validateCardForDeck", () => {
       colorIdentity: ["G", "R"],
       oracleId: "gruul-card",
     };
-    const result = validateCardForDeck(gruulCard, greenCommander);
-    expect(result).not.toBeNull();
+    expect(validateCardForDeck(gruulCard, greenCommander)).toBe("off-color-identity");
   });
 
   it("rejects the commander oracle id itself", () => {
@@ -63,16 +58,12 @@ describe("validateCardForDeck", () => {
       colorIdentity: ["G"],
       oracleId: "cmdr-oracle-id",
     };
-    const result = validateCardForDeck(commanderAsCard, greenCommander);
-    expect(result).not.toBeNull();
-    expect(result).toContain("commander");
+    expect(validateCardForDeck(commanderAsCard, greenCommander)).toBe("is-commander");
   });
 
   it("rejects any card when deck is already at 99", () => {
     const fullDeck: DeckContextForValidation = { ...greenCommander, built: 99 };
-    const result = validateCardForDeck(legalGreenCard, fullDeck);
-    expect(result).not.toBeNull();
-    expect(result).toContain("full");
+    expect(validateCardForDeck(legalGreenCard, fullDeck)).toBe("deck-full");
   });
 
   it("allows a card when deck is at 98 (one slot remaining)", () => {

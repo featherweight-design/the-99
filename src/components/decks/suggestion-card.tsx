@@ -3,11 +3,13 @@
 // Renders ownership dot, card name, reason chip (synergy=brass, role=neutral),
 // owned/unowned label, and Add / In-deck button.
 
-import { useTransition } from "react";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
+import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { CardDetailTrigger } from "./card-detail-provider";
+import { MutationError } from "./mutation-error";
+import { useDeckMutation } from "./use-deck-mutation";
 
 interface SuggestionCardProps {
   suggestion: DeckSuggestion;
@@ -16,13 +18,10 @@ interface SuggestionCardProps {
 }
 
 export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardProps) {
-  const [isPending, startTransition] = useTransition();
+  const { applied, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
 
   function handleAdd() {
-    startTransition(async () => {
-      // Server rejects e.g. 99-card cap / legality — no error UI designed yet.
-      await addCardToDeck(deckId, suggestion.oracleId).catch(console.error);
-    });
+    run(() => addCardToDeck(deckId, suggestion.oracleId));
   }
 
   const isEdhrec = suggestion.reasonType === "edhrec";
@@ -67,7 +66,7 @@ export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardPro
         </span>
 
         {/* §Suggestion card — "+ Add" / "✓ In deck" button */}
-        {inDeck ? (
+        {applied ? (
           <span
             className="flex-none font-sans text-[12px] font-semibold"
             style={{ color: "#6FA368" }}
@@ -78,12 +77,11 @@ export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardPro
           <button
             type="button"
             onClick={handleAdd}
-            disabled={isPending}
             aria-label={`Add ${suggestion.name} to deck`}
-            className="flex-none font-sans text-[12px] font-semibold cursor-pointer disabled:opacity-50"
+            className="flex-none font-sans text-[12px] font-semibold cursor-pointer"
             style={{ color: "#C9A24B", background: "transparent", border: "none", padding: 0 }}
           >
-            {isPending ? "Adding…" : "+ Add"}
+            + Add
           </button>
         )}
       </div>
@@ -95,6 +93,8 @@ export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardPro
       >
         {suggestion.owned ? "owned" : "not owned"}
       </div>
+
+      {error && <MutationError message={error} />}
     </div>
   );
 }

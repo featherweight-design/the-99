@@ -2,9 +2,11 @@
 // SearchResultRow — per §Search result row design table.
 // Mirrors SuggestionCard's Add/In-deck legibility, with sub-line for type + owned label.
 
-import { useTransition } from "react";
 import { addCardToDeck } from "../../app/decks/actions";
+import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { CardDetailTrigger } from "./card-detail-provider";
+import { MutationError } from "./mutation-error";
+import { useDeckMutation } from "./use-deck-mutation";
 
 interface SearchResult {
   oracleId: string;
@@ -20,72 +22,73 @@ interface SearchResultRowProps {
 }
 
 export function SearchResultRow({ result, deckId, inDeck }: SearchResultRowProps) {
-  const [isPending, startTransition] = useTransition();
+  const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   // Basics may run multiple copies (server increments quantity), so they stay
   // addable even when already in the deck.
   const isBasic = /\bBasic\b/.test(result.typeLine);
-  const addable = !inDeck || isBasic;
+  const addable = !applied || isBasic;
 
   function handleAdd() {
-    startTransition(async () => {
-      // Server rejects e.g. 99-card cap / legality — no error UI designed yet.
-      await addCardToDeck(deckId, result.oracleId).catch(console.error);
-    });
+    run(() => addCardToDeck(deckId, result.oracleId));
   }
 
   return (
     // §Search result row: flex, align-items center, gap 10px mobile / 11px desktop
     // bg #1E1A15, border 1px #2A241D, border-radius 9px, padding 11px 13px
     <div
-      className="flex items-center gap-[10px] md:gap-[11px] rounded-[9px]"
+      className="rounded-[9px]"
       style={{
         background: "#1E1A15",
         border: "1px solid #2A241D",
         padding: "11px 13px",
       }}
     >
-      {/* Name + sub-line */}
-      <div className="flex-1 min-w-0">
-        {/* §Search result row — name: 13.5px, #EDE6D8, truncate.
-            Also the click target for the detail modal (#127). */}
-        <CardDetailTrigger
-          oracleId={result.oracleId}
-          name={result.name}
-          title={result.name}
-          className="block w-full text-left text-[13.5px] truncate"
-          style={{ color: "#EDE6D8", background: "transparent", border: "none", padding: 0 }}
-        >
-          {result.name}
-        </CardDetailTrigger>
-        {/* §Search result row — own label sub-line: mono 9.5px, #8E8269, margin-top 1px */}
-        <div
-          className="font-mono text-[9.5px] mt-[1px]"
-          style={{ color: "#8E8269" }}
-        >
-          {result.owned ? "owned" : "not owned"} · {result.typeLine}
+      <div className="flex items-center gap-[10px] md:gap-[11px]">
+        {/* Name + sub-line */}
+        <div className="flex-1 min-w-0">
+          {/* §Search result row — name: 13.5px, #EDE6D8, truncate.
+              Also the click target for the detail modal (#127). */}
+          <CardDetailTrigger
+            oracleId={result.oracleId}
+            name={result.name}
+            title={result.name}
+            className="block w-full text-left text-[13.5px] truncate"
+            style={{ color: "#EDE6D8", background: "transparent", border: "none", padding: 0 }}
+          >
+            {result.name}
+          </CardDetailTrigger>
+          {/* §Search result row — own label sub-line: mono 9.5px, #8E8269, margin-top 1px */}
+          <div
+            className="font-mono text-[9.5px] mt-[1px]"
+            style={{ color: "#8E8269" }}
+          >
+            {result.owned ? "owned" : "not owned"} · {result.typeLine}
+          </div>
         </div>
+
+        {/* §Search result row — "+ Add" / "✓ In deck": 12.5px, fw 600 */}
+        {addable ? (
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={isPending}
+            aria-label={`Add ${result.name} to deck`}
+            className="flex-none font-sans text-[12.5px] font-semibold cursor-pointer disabled:opacity-50"
+            style={{ color: "#C9A24B", background: "transparent", border: "none", padding: 0 }}
+          >
+            {isPending ? "Adding…" : applied ? "+ Add another" : "+ Add"}
+          </button>
+        ) : (
+          <span
+            className="flex-none font-sans text-[12.5px] font-semibold"
+            style={{ color: "#6FA368" }}
+          >
+            ✓ In deck
+          </span>
+        )}
       </div>
 
-      {/* §Search result row — "+ Add" / "✓ In deck": 12.5px, fw 600 */}
-      {addable ? (
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={isPending}
-          aria-label={`Add ${result.name} to deck`}
-          className="flex-none font-sans text-[12.5px] font-semibold cursor-pointer disabled:opacity-50"
-          style={{ color: "#C9A24B", background: "transparent", border: "none", padding: 0 }}
-        >
-          {isPending ? "Adding…" : inDeck ? "+ Add another" : "+ Add"}
-        </button>
-      ) : (
-        <span
-          className="flex-none font-sans text-[12.5px] font-semibold"
-          style={{ color: "#6FA368" }}
-        >
-          ✓ In deck
-        </span>
-      )}
+      {error && <MutationError message={error} />}
     </div>
   );
 }
