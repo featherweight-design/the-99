@@ -1,0 +1,36 @@
+import { describe, expect, it } from "vitest";
+import { commandersCopy } from "./commanders";
+
+// The mock renders one instance of each string (Boros / white-red / 24
+// candidates, and 1,418 cards read). These pin the templates to it verbatim —
+// the commanders surfaces sit behind Clerk auth, so there is no browser gate.
+
+describe("commandersCopy.filteredEmpty", () => {
+  it("reproduces the mock's heading", () => {
+    expect(commandersCopy.filteredEmpty.heading("Boros")).toBe("No generals in Boros.");
+  });
+
+  it("reproduces the mock's caption", () => {
+    expect(commandersCopy.filteredEmpty.caption("white-red", 24)).toBe(
+      "Your collection has opinions about white-red. All 24 candidates are one filter away.",
+    );
+  });
+
+  it("keeps the diagnostic count straight", () => {
+    expect(commandersCopy.filteredEmpty.count(24)).toBe("Showing 0 of 24");
+  });
+});
+
+describe("commandersCopy.firstRun", () => {
+  it("reproduces the mock's first-run line", () => {
+    expect(commandersCopy.firstRun.line(1418, 24)).toBe(
+      "1,418 cards read. 24 can lead. I ranked them — you're welcome.",
+    );
+  });
+
+  it("pins the thousands separator to en-US regardless of host locale", () => {
+    expect(commandersCopy.firstRun.line(1418, 1200)).toBe(
+      "1,418 cards read. 1,200 can lead. I ranked them — you're welcome.",
+    );
+  });
+});
