@@ -21,19 +21,24 @@ const TRIOMES: Record<string, string> = {
 /**
  * Returns a human-readable color identity label for a Magic commander.
  *
- * Four-colour identities are named for the colour they are missing rather than
- * by their Nephilim names (Glint-Eye, Dune-Brood, …). Those names exist, but
- * almost nobody uses them, and "Non-green" is legible without a lookup.
+ * Four-color identities are named for the color they are missing rather than by
+ * their Nephilim names (Glint-Eye, Dune-Brood, …). Those names exist, but almost
+ * nobody uses them, and "Non-green" is legible without a lookup.
  */
 export function colorLabel(identity: string[]): string {
   if (identity.length === 0) return "Colorless";
   if (identity.length === 1) return COLOR_NAMES[identity[0]] ?? identity[0];
+
+  // Every branch below names a specific combination, so an unrecognised code has
+  // to fall out here — otherwise ["W","U","B","X"] reads "Non-red", naming a
+  // combination the card does not have.
+  if (identity.some((c) => !(c in COLOR_NAMES))) return "Multi";
   if (identity.length === 5) return "5-color";
 
   const key = identity.slice().sort().join("");
   if (identity.length === 2) return GUILDS[key] ?? "Multi";
   if (identity.length === 3) return TRIOMES[key] ?? "Multi";
 
-  const missing = Object.keys(COLOR_NAMES).find((c) => !identity.includes(c));
-  return missing ? `Non-${COLOR_NAMES[missing].toLowerCase()}` : "Multi";
+  const missing = Object.keys(COLOR_NAMES).find((c) => !identity.includes(c))!;
+  return `Non-${COLOR_NAMES[missing].toLowerCase()}`;
 }
