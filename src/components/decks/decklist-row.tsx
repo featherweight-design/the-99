@@ -6,6 +6,7 @@
 import { removeCardFromDeck } from "../../app/decks/actions";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { OwnershipDot } from "../ui/ownership-dot";
+import { CardDetailTrigger } from "./card-detail-provider";
 
 interface DecklistRowProps {
   deckId: string;
@@ -14,10 +15,14 @@ interface DecklistRowProps {
   isMeta?: boolean;
   /** Label override for meta rows ("+N more"). */
   metaLabel?: string;
+  /** The decklist in display order, so the modal's Prev/Next page through it. */
+  siblings?: string[];
 }
 
-export function DecklistRow({ deckId, card, isMeta = false, metaLabel }: DecklistRowProps) {
+export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings }: DecklistRowProps) {
   const label = isMeta ? metaLabel! : card.name;
+  const nameClass =
+    "flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
 
   return (
     /* Row container */
@@ -36,13 +41,23 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel }: Decklis
       {/* For meta rows render a same-sized empty spacer so name aligns */}
       {isMeta && <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />}
 
-      {/* Card name (or meta label) */}
-      <span
-        className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-[12.5px] md:text-[13.5px]"
-        style={{ color: isMeta ? "#8E8269" : "#EDE6D8" }}
-      >
-        {label}
-      </span>
+      {/* Card name — the click target for the detail modal (#127). A meta row names no card
+          of its own, so it stays inert text. */}
+      {isMeta ? (
+        <span className={nameClass} style={{ color: "#8E8269" }}>
+          {label}
+        </span>
+      ) : (
+        <CardDetailTrigger
+          oracleId={card.oracleId}
+          name={card.name}
+          siblings={siblings}
+          className={nameClass}
+          style={{ color: "#EDE6D8", background: "transparent", border: "none", padding: 0 }}
+        >
+          {label}
+        </CardDetailTrigger>
+      )}
 
       {/* Buy tag — unowned non-meta only */}
       {!isMeta && !card.owned && (

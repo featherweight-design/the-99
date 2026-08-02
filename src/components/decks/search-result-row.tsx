@@ -4,6 +4,7 @@
 
 import { useTransition } from "react";
 import { addCardToDeck } from "../../app/decks/actions";
+import { CardDetailTrigger } from "./card-detail-provider";
 
 interface SearchResult {
   oracleId: string;
@@ -45,14 +46,17 @@ export function SearchResultRow({ result, deckId, inDeck }: SearchResultRowProps
     >
       {/* Name + sub-line */}
       <div className="flex-1 min-w-0">
-        {/* §Search result row — name: 13.5px, #EDE6D8, truncate */}
-        <div
-          className="text-[13.5px] truncate"
-          style={{ color: "#EDE6D8" }}
+        {/* §Search result row — name: 13.5px, #EDE6D8, truncate.
+            Also the click target for the detail modal (#127). */}
+        <CardDetailTrigger
+          oracleId={result.oracleId}
+          name={result.name}
           title={result.name}
+          className="block w-full text-left text-[13.5px] truncate"
+          style={{ color: "#EDE6D8", background: "transparent", border: "none", padding: 0 }}
         >
           {result.name}
-        </div>
+        </CardDetailTrigger>
         {/* §Search result row — own label sub-line: mono 9.5px, #8E8269, margin-top 1px */}
         <div
           className="font-mono text-[9.5px] mt-[1px]"

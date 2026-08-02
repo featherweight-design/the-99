@@ -37,6 +37,10 @@ export function Decklist({
   const groups =
     grouping === "type" ? groupByCardType(visibleCards) : groupByRole(visibleCards);
 
+  // Flattened in render order, so Prev/Next walks the list the way the eye does — across
+  // group boundaries rather than restarting inside each one.
+  const orderedIds = groups.flatMap(([, groupCards]) => groupCards.map((c) => c.oracleId));
+
   return (
     <div className="flex flex-col">
       {/* Toggle bar */}
@@ -65,6 +69,7 @@ export function Decklist({
             deckId={deckId}
             label={label}
             cards={groupCards}
+            siblings={orderedIds}
           />
         ))}
       </div>

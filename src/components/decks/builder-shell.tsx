@@ -15,6 +15,7 @@ import { CardFan } from "../marks";
 import { Decklist } from "./decklist";
 import { AddPanel } from "./add-panel";
 import { ExportDialog } from "./export-dialog";
+import { CardDetailProvider } from "./card-detail-provider";
 
 interface BuilderShellProps {
   deck: DeckDetail;
@@ -47,203 +48,206 @@ export function BuilderShell({
   const isEmpty = deck.built === 0;
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen" style={{ background: "#100D0A" }}>
-      {/* ── Left / main column ── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Builder Spine */}
-        <BuilderSpine deck={deck} onExport={() => setExportOpen(true)} />
+    // One card-detail modal for every surface below — spine, decklist, suggestions, search.
+    <CardDetailProvider>
+      <div className="flex flex-col md:flex-row min-h-screen" style={{ background: "#100D0A" }}>
+        {/* ── Left / main column ── */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Builder Spine */}
+          <BuilderSpine deck={deck} onExport={() => setExportOpen(true)} />
 
-        {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
-        <RoleCounterStrip cards={deck.cards} />
+          {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
+          <RoleCounterStrip cards={deck.cards} />
 
-        {/* Degraded suggestions banner */}
-        {degraded && <DegradedBanner deckId={deck.id} />}
+          {/* Degraded suggestions banner */}
+          {degraded && <DegradedBanner deckId={deck.id} />}
 
-        {/* Guided first-run banner (only when firstRun === true) */}
-        {firstRun && <GuidedBanner commanderName={deck.commander.name} />}
+          {/* Guided first-run banner (only when firstRun === true) */}
+          {firstRun && <GuidedBanner commanderName={deck.commander.name} />}
 
-        {/* ── Decklist body — Task 8 placeholder ── */}
-        {isEmpty ? (
-          /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
-          <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px]">
-            {/* §Mark container */}
-            <div
-              className="relative md:hidden mb-[20px]"
-              style={{ width: 96, height: 104 }}
-              aria-hidden
-            >
-              {/* Back card: tilted left */}
+          {/* ── Decklist body — Task 8 placeholder ── */}
+          {isEmpty ? (
+            /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
+            <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px]">
+              {/* §Mark container */}
               <div
-                className="absolute rounded-[8px]"
-                style={{
-                  left: "50%",
-                  top: "50%",
-                  width: 48,
-                  height: 68,
-                  background: "#221D16",
-                  border: "1.5px solid #3A3229",
-                  transform: "translate(-50%, -50%) rotate(-15deg) translateX(-18px)",
-                }}
-              />
-              {/* Middle card: upright */}
-              <div
-                className="absolute rounded-[8px]"
-                style={{
-                  left: "50%",
-                  top: "50%",
-                  width: 48,
-                  height: 68,
-                  background: "#2A241D",
-                  border: "1.5px solid #4A4033",
-                  transform: "translate(-50%, -50%)",
-                }}
-              />
-              {/* Front card: tilted right, brass-outlined, "99" */}
-              <div
-                className="absolute rounded-[8px] flex items-center justify-center"
-                style={{
-                  left: "50%",
-                  top: "50%",
-                  width: 48,
-                  height: 68,
-                  background: "#3E3020",
-                  border: "1.5px solid #C9A24B",
-                  transform: "translate(-50%, -50%) rotate(15deg) translateX(18px)",
-                }}
+                className="relative md:hidden mb-[20px]"
+                style={{ width: 96, height: 104 }}
+                aria-hidden
               >
-                {/* §Front card — "99" numeral */}
-                <span
-                  className="font-display font-extrabold text-[18px]"
-                  style={{ color: "#C9A24B" }}
+                {/* Back card: tilted left */}
+                <div
+                  className="absolute rounded-[8px]"
+                  style={{
+                    left: "50%",
+                    top: "50%",
+                    width: 48,
+                    height: 68,
+                    background: "#221D16",
+                    border: "1.5px solid #3A3229",
+                    transform: "translate(-50%, -50%) rotate(-15deg) translateX(-18px)",
+                  }}
+                />
+                {/* Middle card: upright */}
+                <div
+                  className="absolute rounded-[8px]"
+                  style={{
+                    left: "50%",
+                    top: "50%",
+                    width: 48,
+                    height: 68,
+                    background: "#2A241D",
+                    border: "1.5px solid #4A4033",
+                    transform: "translate(-50%, -50%)",
+                  }}
+                />
+                {/* Front card: tilted right, brass-outlined, "99" */}
+                <div
+                  className="absolute rounded-[8px] flex items-center justify-center"
+                  style={{
+                    left: "50%",
+                    top: "50%",
+                    width: 48,
+                    height: 68,
+                    background: "#3E3020",
+                    border: "1.5px solid #C9A24B",
+                    transform: "translate(-50%, -50%) rotate(15deg) translateX(18px)",
+                  }}
                 >
-                  99
-                </span>
+                  {/* §Front card — "99" numeral */}
+                  <span
+                    className="font-display font-extrabold text-[18px]"
+                    style={{ color: "#C9A24B" }}
+                  >
+                    99
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* Desktop mark: §Mark container desktop 100-110 × 110-120; constrain to 104×112 */}
+              {/* Desktop mark: §Mark container desktop 100-110 × 110-120; constrain to 104×112 */}
+              <div
+                className="hidden md:block mb-[22px] overflow-hidden"
+                style={{ width: 104, height: 112 }}
+                aria-hidden
+              >
+                {/* scale(104/120 ≈ 0.867) shrinks the 120×130 CardFan into the 104×112 target */}
+                <CardFan
+                  variant="decks-desktop"
+                  className="origin-top-left scale-[0.867]"
+                />
+              </div>
+
+              {/* §Empty state heading */}
+              <h2
+                className="font-display font-bold text-[21px] md:text-[24px] m-0"
+                style={{ color: "#EDE6D8" }}
+              >
+                Your deck is empty
+              </h2>
+
+              {/* §Empty state body */}
+              <p
+                className="text-[13.5px] md:text-[14px] leading-[1.6] md:leading-[1.65] mt-[10px] md:mt-[12px] md:max-w-[440px]"
+                style={{ color: "#C6B79A" }}
+              >
+                Add cards from your suggestions or search your collection to build your 99.
+              </p>
+
+              {/* §Empty state role hint (desktop) */}
+              <p
+                className="hidden md:block font-mono text-[11px] mt-[20px]"
+                style={{ color: "#8E8269" }}
+              >
+                Try filling your ramp, draw, removal, and wipe slots first.
+              </p>
+
+              {/* §"Add your first card" CTA button (mobile empty) */}
+              <PrimaryButton
+                onClick={() => setSheetOpen(true)}
+                className="md:hidden text-[15px] px-[26px] py-[13px] mt-[24px]"
+              >
+                Add your first card
+              </PrimaryButton>
+            </section>
+          ) : (
+            /* Task 8: Decklist body */
+            <Decklist
+              deckId={deck.id}
+              cards={deck.cards}
+              built={deck.built}
+              toBuyCount={deck.toBuyCount}
+              filter={filter}
+              grouping={grouping}
+              onFilterChange={setFilter}
+              onGroupingChange={setGrouping}
+            />
+          )}
+
+          {/* §"+ Add cards" sticky footer button (mobile mid-build) */}
+          {!isEmpty && (
             <div
-              className="hidden md:block mb-[22px] overflow-hidden"
-              style={{ width: 104, height: 112 }}
-              aria-hidden
+              className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
+              style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
             >
-              {/* scale(104/120 ≈ 0.867) shrinks the 120×130 CardFan into the 104×112 target */}
-              <CardFan
-                variant="decks-desktop"
-                className="origin-top-left scale-[0.867]"
-              />
+              <PrimaryButton
+                onClick={() => setSheetOpen(true)}
+                className="w-full text-[15px] py-[13px]"
+              >
+                + Add cards
+              </PrimaryButton>
             </div>
+          )}
+        </div>
 
-            {/* §Empty state heading */}
-            <h2
-              className="font-display font-bold text-[21px] md:text-[24px] m-0"
-              style={{ color: "#EDE6D8" }}
-            >
-              Your deck is empty
-            </h2>
-
-            {/* §Empty state body */}
-            <p
-              className="text-[13.5px] md:text-[14px] leading-[1.6] md:leading-[1.65] mt-[10px] md:mt-[12px] md:max-w-[440px]"
-              style={{ color: "#C6B79A" }}
-            >
-              Add cards from your suggestions or search your collection to build your 99.
-            </p>
-
-            {/* §Empty state role hint (desktop) */}
-            <p
-              className="hidden md:block font-mono text-[11px] mt-[20px]"
-              style={{ color: "#8E8269" }}
-            >
-              Try filling your ramp, draw, removal, and wipe slots first.
-            </p>
-
-            {/* §"Add your first card" CTA button (mobile empty) */}
-            <PrimaryButton
-              onClick={() => setSheetOpen(true)}
-              className="md:hidden text-[15px] px-[26px] py-[13px] mt-[24px]"
-            >
-              Add your first card
-            </PrimaryButton>
-          </section>
-        ) : (
-          /* Task 8: Decklist body */
-          <Decklist
+        {/* ── Right column — Add panel (Task 9) ── */}
+        {/* Desktop: always visible right column */}
+        <aside
+          className="hidden md:flex flex-col flex-none"
+          style={{
+            width: 340,
+            background: "#181410",
+            borderLeft: "1px solid #2A241D",
+            minHeight: "100vh",
+          }}
+        >
+          <AddPanel
             deckId={deck.id}
-            cards={deck.cards}
-            built={deck.built}
-            toBuyCount={deck.toBuyCount}
-            filter={filter}
-            grouping={grouping}
-            onFilterChange={setFilter}
-            onGroupingChange={setGrouping}
+            commanderIdentity={commanderIdentity}
+            suggestions={suggestions}
+            degraded={degraded}
+            deckOracleIds={deckOracleIds}
+            variant="column"
+          />
+        </aside>
+
+        {/* Mobile bottom sheet (mid-build and empty) — AddPanel variant="sheet" */}
+        {sheetOpen && (
+          <AddPanel
+            deckId={deck.id}
+            commanderIdentity={commanderIdentity}
+            suggestions={suggestions}
+            degraded={degraded}
+            deckOracleIds={deckOracleIds}
+            variant="sheet"
+            onCloseSheet={() => setSheetOpen(false)}
           />
         )}
 
-        {/* §"+ Add cards" sticky footer button (mobile mid-build) */}
-        {!isEmpty && (
-          <div
-            className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
-            style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
-          >
-            <PrimaryButton
-              onClick={() => setSheetOpen(true)}
-              className="w-full text-[15px] py-[13px]"
-            >
-              + Add cards
-            </PrimaryButton>
-          </div>
+        {/* Export dialog — Task 10 */}
+        {exportOpen && (
+          <ExportDialog
+            deckName={deck.name}
+            commanderName={deck.commander.name}
+            decklistCards={deck.cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
+            shoppingCards={deck.cards
+              .filter((c) => !c.owned)
+              .map((c) => ({ name: c.name, role: c.role, quantity: c.quantity }))}
+            open={exportOpen}
+            onClose={() => setExportOpen(false)}
+          />
         )}
       </div>
-
-      {/* ── Right column — Add panel (Task 9) ── */}
-      {/* Desktop: always visible right column */}
-      <aside
-        className="hidden md:flex flex-col flex-none"
-        style={{
-          width: 340,
-          background: "#181410",
-          borderLeft: "1px solid #2A241D",
-          minHeight: "100vh",
-        }}
-      >
-        <AddPanel
-          deckId={deck.id}
-          commanderIdentity={commanderIdentity}
-          suggestions={suggestions}
-          degraded={degraded}
-          deckOracleIds={deckOracleIds}
-          variant="column"
-        />
-      </aside>
-
-      {/* Mobile bottom sheet (mid-build and empty) — AddPanel variant="sheet" */}
-      {sheetOpen && (
-        <AddPanel
-          deckId={deck.id}
-          commanderIdentity={commanderIdentity}
-          suggestions={suggestions}
-          degraded={degraded}
-          deckOracleIds={deckOracleIds}
-          variant="sheet"
-          onCloseSheet={() => setSheetOpen(false)}
-        />
-      )}
-
-      {/* Export dialog — Task 10 */}
-      {exportOpen && (
-        <ExportDialog
-          deckName={deck.name}
-          commanderName={deck.commander.name}
-          decklistCards={deck.cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
-          shoppingCards={deck.cards
-            .filter((c) => !c.owned)
-            .map((c) => ({ name: c.name, role: c.role, quantity: c.quantity }))}
-          open={exportOpen}
-          onClose={() => setExportOpen(false)}
-        />
-      )}
-    </div>
+    </CardDetailProvider>
   );
 }
 

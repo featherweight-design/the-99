@@ -10,11 +10,13 @@ interface DecklistGroupProps {
   deckId: string;
   label: string;
   cards: DeckDetailCard[];
+  /** The whole decklist in display order, for the detail modal's Prev/Next. */
+  siblings?: string[];
   /** Optional note shown right-aligned on desktop (e.g. "37 recommended"). */
   note?: string;
 }
 
-export function DecklistGroup({ deckId, label, cards, note }: DecklistGroupProps) {
+export function DecklistGroup({ deckId, label, cards, siblings, note }: DecklistGroupProps) {
   const count = cards.reduce((sum, c) => sum + c.quantity, 0);
 
   return (
@@ -62,7 +64,7 @@ export function DecklistGroup({ deckId, label, cards, note }: DecklistGroupProps
       >
         {cards.flatMap((card) => {
           const rows = [
-            <DecklistRow key={card.oracleId} deckId={deckId} card={card} />,
+            <DecklistRow key={card.oracleId} deckId={deckId} card={card} siblings={siblings} />,
           ];
           // Basic lands with quantity > 1: render a "+N more" meta row
           if (shouldShowMetaRow(card)) {
