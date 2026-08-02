@@ -150,7 +150,7 @@ export function CreatePreFilled({
 
           {/* Desktop: full card §Commander full card: 220px wide, 63/88 aspect, br 12px */}
           <div
-            className="relative hidden md:block"
+            className="hidden md:block"
             style={{
               width: 220,
               aspectRatio: "63/88",
@@ -158,27 +158,10 @@ export function CreatePreFilled({
               background: imageUri ? `url(${imageUri}) center/cover` : gradient,
               boxShadow: "0 24px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
             }}
-          >
-            {/* §Commander card — pip inset: absolute bottom-left */}
-            <div
-              className="absolute flex"
-              style={{ left: 10, bottom: 10, gap: 5 }}
-            >
-              {colorIdentity.map((color) => (
-                <span
-                  key={color}
-                  className="rounded-full"
-                  style={{
-                    width: 16,
-                    height: 16,
-                    background: WUBRG_HEX[color] ?? "#8E8269",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.5)",
-                  }}
-                  aria-hidden
-                />
-              ))}
-            </div>
-          </div>
+          />
+          {/* No pip inset on the art: the locked "Color identity" row to the
+              right of it shows the same pips at the same moment, with a label
+              and the identity's name (#123). */}
 
           {/* Desktop: commander name + type below card */}
           <div className="hidden md:block" style={{ marginTop: 14 }}>
@@ -226,17 +209,17 @@ export function CreatePreFilled({
             </span>
           </div>
 
-          {/* Desktop: colour identity locked row */}
+          {/* Desktop: color identity locked row */}
           <div className="hidden md:block mb-[24px]">
-            {/* §Colour identity locked row label */}
+            {/* §Color identity locked row label */}
             <p
               className="font-mono uppercase tracking-[0.14em]"
               style={{ fontSize: 10, color: "#8E8269", marginBottom: 9 }}
             >
-              Colour identity
+              Color identity
             </p>
             <div className="flex items-center" style={{ gap: 8 }}>
-              {/* §Colour identity locked row — pip chips: 22×22px */}
+              {/* §Color identity locked row — pip chips: 22×22px */}
               {colorIdentity.map((color) => (
                 <span
                   key={color}
@@ -249,7 +232,7 @@ export function CreatePreFilled({
                   aria-hidden
                 />
               ))}
-              {/* §Colour identity caption: IBM Plex Mono 12px #A89B84 ml-[4px] */}
+              {/* §Color identity caption: IBM Plex Mono 12px #A89B84 ml-[4px] */}
               <span
                 className="font-mono"
                 style={{ fontSize: 12, color: "#A89B84", marginLeft: 4 }}
@@ -294,31 +277,36 @@ export function CreatePreFilled({
               </p>
             )}
 
-            {/* §"Create deck →" primary button */}
-            <PrimaryButton
-              type="submit"
-              disabled={isPending || deckName.trim().length === 0}
-              className="w-full md:w-auto text-[15px] transition-opacity disabled:opacity-40 mb-[12px] py-[13px] px-[26px]"
-            >
-              {isPending ? "Creating…" : "Create deck →"}
-            </PrimaryButton>
+            {/* The two CTAs are a flex row (column on mobile) with an explicit
+                gap. They used to be a margin plus the whitespace between two
+                inline-blocks, which collapsed to nothing on desktop (#125). */}
+            <div className="flex flex-col md:flex-row md:items-center gap-[12px]">
+              {/* §"Create deck →" primary button */}
+              <PrimaryButton
+                type="submit"
+                disabled={isPending || deckName.trim().length === 0}
+                className="w-full md:w-auto text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-[26px]"
+              >
+                {isPending ? "Creating…" : "Create deck →"}
+              </PrimaryButton>
 
-            {/* §"Change commander" secondary button — ADDENDUM-secondary-cta-colour.md
-                item 2: the softer mobile treatment was drift, not intent. One
-                secondary treatment at both breakpoints. */}
-            <GhostButton
-              href="/decks/new"
-              className="block md:inline-block text-center text-[13px] md:text-[14px] p-[11px_0] md:p-[13px_20px]"
-            >
-              Change commander
-            </GhostButton>
+              {/* §"Change commander" secondary button — ADDENDUM-secondary-cta-colour.md
+                  item 2: the softer mobile treatment was drift, not intent. One
+                  secondary treatment at both breakpoints. */}
+              <GhostButton
+                href="/decks/new"
+                className="block text-center text-[13px] md:text-[14px] p-[11px_0] md:p-[13px_20px]"
+              >
+                Change commander
+              </GhostButton>
+            </div>
 
             {/* §Helper text: mobile fs 12.5px lh 1.55; desktop fs 13px lh 1.6 border-top pt 16px */}
             <p
               className="mt-[20px] text-[12.5px] md:text-[13px] leading-[1.55] md:leading-[1.6] md:border-t md:border-[#2A241D] md:pt-[16px]"
               style={{ color: "#8E8269" }}
             >
-              Colour identity is locked to your commander. Cards outside this
+              Color identity is locked to your commander. Cards outside this
               identity won&apos;t be suggested.
             </p>
           </form>
