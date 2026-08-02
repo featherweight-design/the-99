@@ -1,18 +1,22 @@
 "use client";
 // Top-level collection browse client component.
 // Owns filter/sort/view/window/modal state, mirrors to URL query params
-// (?q= &c= &t= &s= &sort= &view= &card=) via router.replace shallow so
+// (?q= &c= &t= &s= &sort= &dir= &view= &card=) via router.replace shallow so
 // chips + view + open card deep-link (READINESS #6).
 
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  DEFAULT_SORT_DIRECTION,
   filterCards,
   sortCards,
   type BrowseCard,
   type BrowseFilters,
+  type SortDirection,
   type SortKey,
 } from "../../lib/collection/browse";
+import { parseSortDirection } from "../../lib/collection/sort-options";
+import { buildColorOptions } from "../../lib/collection/color-filter";
 import {
   buildSetOptions,
   parseSetCodesParam,
@@ -40,7 +44,13 @@ function parseColors(param: string | null): string[] {
   return [...new Set(param.toUpperCase().split("").filter((c) => "WUBRG".includes(c)))];
 }
 
-function serializeParams(filters: BrowseFilters, sort: SortKey, view: ViewMode | null, card: string | null): string {
+function serializeParams(
+  filters: BrowseFilters,
+  sort: SortKey,
+  direction: SortDirection,
+  view: ViewMode | null,
+  card: string | null,
+): string {
   const p = new URLSearchParams();
   if (filters.search.trim()) p.set("q", filters.search.trim());
   if (filters.colors.length > 0) p.set("c", filters.colors.join(""));
@@ -49,6 +59,9 @@ function serializeParams(filters: BrowseFilters, sort: SortKey, view: ViewMode |
   // Comma-joined; a single bare code still parses, so pre-#86 links survive.
   if (filters.setCodes.length > 0) p.set("s", serializeSetCodes(filters.setCodes));
   if (sort !== "name") p.set("sort", sort);
+  // Only when it is NOT the key's natural direction, so the common case keeps a
+  // clean URL and a pre-#119 link still lands on the order it always did.
+  if (direction !== DEFAULT_SORT_DIRECTION[sort]) p.set("dir", direction);
   if (view !== null) p.set("view", view);  // null = auto (no explicit choice) → omit
   if (card) p.set("card", card);
   const s = p.toString();
@@ -148,6 +161,9 @@ export function CollectionBrowser({
     const s = search.get("sort");
     return s !== null && (SORT_KEYS as readonly string[]).includes(s) ? (s as SortKey) : "name";
   });
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() =>
+    parseSortDirection(search.get("dir"), sort),
+  );
   // null = "auto" (no explicit user choice); resolves to rows on mobile, grid on desktop.
   const [view, setView] = useState<ViewMode | null>(() => {
     const v = search.get("view");
@@ -188,6 +204,19 @@ export function CollectionBrowser({
     [cards, filterColors, filterSetCodes],
   );
 
+  // Same rule again: colour counts move with the types and sets, not with the
+  // colour selection or the search box.
+  const colorOptions = useMemo(
+    () =>
+      buildColorOptions(cards, {
+        search: "",
+        colors: [],
+        types: filterTypes,
+        setCodes: filterSetCodes,
+      }),
+    [cards, filterTypes, filterSetCodes],
+  );
+
   // Chips read set NAMES, not codes — the locked "names over codes" decision.
   const setLabels = useMemo(
     () => Object.fromEntries(setOptions.map((o) => [o.code, o.label])),
@@ -213,13 +242,14 @@ export function CollectionBrowser({
     },
     [filters, cards, setOptions, typeOptions, totalQuantity],
   );
-  const updateSort = useCallback((s: SortKey) => {
+  const updateSort = useCallback((s: SortKey, direction: SortDirection) => {
     setSort(s);
+    setSortDirection(direction);
     setShown(PAGE_SIZE);
   }, []);
 
   const filtered = useMemo(() => filterCards(cards, filters), [cards, filters]);
-  const sorted = useMemo(() => sortCards(filtered, sort), [filtered, sort]);
+  const sorted = useMemo(() => sortCards(filtered, sort, sortDirection), [filtered, sort, sortDirection]);
   const windowed = useMemo(() => sorted.slice(0, shown), [sorted, shown]);
 
   const openCard = useMemo(
@@ -231,9 +261,9 @@ export function CollectionBrowser({
   // Serialize the card param only when the card actually resolved; avoids
   // stale ?card= for IDs not in the current filtered result set.
   useEffect(() => {
-    const qs = serializeParams(filters, sort, view, openCard ? openCardId : null);
+    const qs = serializeParams(filters, sort, sortDirection, view, openCard ? openCardId : null);
     router.replace(`/collection${qs}`, { scroll: false });
-  }, [filters, sort, view, openCardId, openCard, router]);
+  }, [filters, sort, sortDirection, view, openCardId, openCard, router]);
   const openIndex = useMemo(
     () => (openCard ? sorted.findIndex((c) => c.oracleId === openCard.oracleId) : -1),
     [openCard, sorted],
@@ -259,6 +289,8 @@ export function CollectionBrowser({
         announcement={announcement}
         onAnnounce={setAnnouncement}
         onFiltersChange={updateFilters}
+        sortDirection={sortDirection}
+        colorOptions={colorOptions}
         onSortChange={updateSort}
         onViewChange={setView}
       />
@@ -271,7 +303,7 @@ export function CollectionBrowser({
           totalQuantity={totalQuantity}
           onClearAll={() => {
             updateFilters({ search: "", colors: [], types: [], setCodes: [] }, "clear-sets");
-            updateSort("name");
+            updateSort("name", DEFAULT_SORT_DIRECTION.name);
           }}
           onRemoveColor={(c) => updateFilters({ ...filters, colors: filters.colors.filter((x) => x !== c) })}
           onRemoveType={(t) =>
@@ -291,7 +323,7 @@ export function CollectionBrowser({
           totalCount={totalQuantity}
           onClearAll={() => {
             updateFilters({ search: "", colors: [], types: [], setCodes: [] }, "clear-sets");
-            updateSort("name");
+            updateSort("name", DEFAULT_SORT_DIRECTION.name);
           }}
           onKeepSearch={() => updateFilters({ search: filters.search, colors: [], types: [], setCodes: [] })}
         />

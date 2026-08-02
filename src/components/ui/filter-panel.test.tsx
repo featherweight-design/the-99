@@ -535,6 +535,8 @@ describe("FilterPanel Clear announcement", () => {
       <FilterBar
         filters={filtersWith(setCodes)}
         sort="name"
+        sortDirection="asc"
+        colorOptions={[]}
         view="grid"
         setOptions={OPTIONS.map((o) => ({ ...o, releasedAt: null }))}
         typeOptions={[]}
@@ -646,6 +648,8 @@ describe("Type ▾ in the filter bar", () => {
       <FilterBar
         filters={filtersWith(types)}
         sort="name"
+        sortDirection="asc"
+        colorOptions={[]}
         view="grid"
         setOptions={[]}
         typeOptions={TYPE_OPTIONS}
@@ -711,5 +715,119 @@ describe("Type ▾ in the filter bar", () => {
     const before = filtersWith([]);
     const after = { ...before, setCodes: ["BLB"] };
     expect(typeChangeAnnouncement(before, after, [], TYPE_OPTIONS, 2933)).toBeNull();
+  });
+});
+
+// Sort ▾ (#119) and mobile Color ▾ (#116) are the same panel in new modes, so
+// they are exercised through the real FilterBar rather than the panel directly:
+// what broke before was the wiring, not the panel.
+describe("FilterBar sort and colour controls", () => {
+  const NO_FILTERS: BrowseFilters = { search: "", colors: [], types: [], setCodes: [] };
+  const COLOR_OPTIONS = [
+    { code: "W", label: "White", hint: "W", count: 4, disabled: false },
+    { code: "U", label: "Blue", hint: "U", count: 2, disabled: false },
+    { code: "B", label: "Black", hint: "B", count: 0, disabled: true },
+    { code: "R", label: "Red", hint: "R", count: 3, disabled: false },
+    { code: "G", label: "Green", hint: "G", count: 1, disabled: false },
+  ];
+
+  function renderBar(over: Partial<React.ComponentProps<typeof FilterBar>> = {}) {
+    const onFiltersChange = vi.fn();
+    const onSortChange = vi.fn();
+    render(
+      <FilterBar
+        filters={NO_FILTERS}
+        sort="name"
+        sortDirection="asc"
+        colorOptions={COLOR_OPTIONS}
+        view="grid"
+        setOptions={[]}
+        typeOptions={[]}
+        announcement=""
+        onAnnounce={() => {}}
+        onFiltersChange={onFiltersChange}
+        onSortChange={onSortChange}
+        onViewChange={() => {}}
+        {...over}
+      />,
+    );
+    return { onFiltersChange, onSortChange };
+  }
+
+  it("sorting is a panel, not a native select", () => {
+    setViewport(true);
+    renderBar();
+    expect(screen.queryByRole("combobox", { name: "Sort cards" })).toBeNull();
+    expect(screen.getByRole("button", { name: /Sort cards/ })).toBeTruthy();
+  });
+
+  it("the trigger names the order AND its direction", () => {
+    setViewport(true);
+    renderBar({ sort: "quantity", sortDirection: "desc" });
+    expect(screen.getByRole("button", { name: /Sort cards/ }).textContent).toContain("Quantity · Most");
+  });
+
+  it("picking a different key switches to it in that key's natural direction", () => {
+    setViewport(true);
+    const { onSortChange } = renderBar();
+    fireEvent.click(screen.getByRole("button", { name: /Sort cards/ }));
+    fireEvent.click(screen.getByRole("option", { name: /Quantity/ }));
+    expect(onSortChange).toHaveBeenCalledWith("quantity", "desc");
+  });
+
+  it("picking the current key reverses it — the only direction control there is", () => {
+    setViewport(true);
+    const { onSortChange } = renderBar({ sort: "name", sortDirection: "asc" });
+    fireEvent.click(screen.getByRole("button", { name: /Sort cards/ }));
+    fireEvent.click(screen.getByRole("option", { name: /Name/ }));
+    expect(onSortChange).toHaveBeenCalledWith("name", "desc");
+  });
+
+  it("the sort list is single-select and dismisses on choice", () => {
+    setViewport(true);
+    renderBar();
+    fireEvent.click(screen.getByRole("button", { name: /Sort cards/ }));
+    expect(screen.getByRole("listbox").getAttribute("aria-multiselectable")).toBeNull();
+    fireEvent.click(screen.getByRole("option", { name: /Rarity/ }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("the sort panel offers no Clear — a list is always sorted by something", () => {
+    setViewport(true);
+    renderBar();
+    fireEvent.click(screen.getByRole("button", { name: /Sort cards/ }));
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Clear" })).toBeNull();
+  });
+
+  it("mobile colour is an overlaid panel, not an in-flow <details>", () => {
+    setViewport(false);
+    const { container } = render(
+      <FilterBar
+        filters={NO_FILTERS}
+        sort="name"
+        sortDirection="asc"
+        colorOptions={COLOR_OPTIONS}
+        view="rows"
+        setOptions={[]}
+        typeOptions={[]}
+        announcement=""
+        onAnnounce={() => {}}
+        onFiltersChange={() => {}}
+        onSortChange={() => {}}
+        onViewChange={() => {}}
+      />,
+    );
+    expect(container.querySelector("details")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Filter by color/ }));
+    expect(screen.getByRole("dialog", { name: "Filter by color" })).toBeTruthy();
+  });
+
+  it("colour rows toggle the filter and a zero-count colour is disabled, not hidden", () => {
+    setViewport(false);
+    const { onFiltersChange } = renderBar({ view: "rows" });
+    fireEvent.click(screen.getByRole("button", { name: /Filter by color/ }));
+    expect(screen.getByRole("option", { name: /Black/ }).getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(screen.getByRole("option", { name: /Red/ }));
+    expect(onFiltersChange).toHaveBeenCalledWith({ ...NO_FILTERS, colors: ["R"] });
   });
 });

@@ -1,10 +1,17 @@
 "use client";
 // Filter bar per property table §Filter Bar.
 // Sticky top:0 on desktop; horizontal scroll on mobile.
-// Position dropdowns are native <select> for a11y + parity; visual chrome
-// matches the §Filter Button spec (radius 999px mobile / 8px desktop).
+// Every dropdown in the row is a FilterPanel: Type and Set multi-select, Color
+// on mobile only (desktop keeps the inline pip row), and Sort single-select.
+// Visual chrome matches the §Filter Button spec (radius 999px mobile / 8px desktop).
 
-import { type BrowseFilters, type SortKey } from "../../lib/collection/browse";
+import { type BrowseFilters, type SortDirection, type SortKey } from "../../lib/collection/browse";
+import {
+  buildSortOptions,
+  nextSortState,
+  sortOrderLabel,
+} from "../../lib/collection/sort-options";
+import type { ColorOption } from "../../lib/collection/color-filter";
 import type { SetOption } from "../../lib/collection/set-filter";
 import type { TypeOption } from "../../lib/collection/type-filter";
 import { collectionFilterCopy } from "../../lib/copy/collection";
@@ -28,11 +35,13 @@ export type ViewMode = "rows" | "grid";
  * end at an empty selection but announce DIFFERENT strings, and the end state
  * cannot tell them apart — the caller says which it was.
  */
-export type FilterChangeIntent = "clear-sets" | "clear-types";
+export type FilterChangeIntent = "clear-sets" | "clear-types" | "clear-colors";
 
 export function FilterBar({
   filters,
   sort,
+  sortDirection,
+  colorOptions,
   view,
   setOptions,
   typeOptions,
@@ -44,6 +53,9 @@ export function FilterBar({
 }: {
   filters: BrowseFilters;
   sort: SortKey;
+  sortDirection: SortDirection;
+  /** WUBRG, with counts under the other active filters — the mobile Color panel. */
+  colorOptions: ColorOption[];
   view: ViewMode;
   /** Owned sets, newest first, with counts under the other active filters. */
   setOptions: SetOption[];
@@ -57,7 +69,7 @@ export function FilterBar({
    * both land on an empty selection but announce different strings.
    */
   onFiltersChange: (f: BrowseFilters, intent?: FilterChangeIntent) => void;
-  onSortChange: (s: SortKey) => void;
+  onSortChange: (s: SortKey, direction: SortDirection) => void;
   onViewChange: (v: ViewMode) => void;
 }) {
   const isDesktop = useIsDesktop();
@@ -110,30 +122,21 @@ export function FilterBar({
           ))}
         </div>
 
-        {/* Mobile "Color" pill — opens a stacked color chooser. Uses the same
-            filter-button styling as Type/Set/Sort. Cycles through WUBRG one tap at a time. */}
-        <details className="md:hidden">
-          <summary
-            className="cursor-pointer list-none whitespace-nowrap rounded-full px-[12px] py-[6px] font-sans text-[12.5px] font-medium"
-            style={{
-              color: "var(--fg)",
-              background: "var(--elevated)",
-              border: "1px solid var(--border-strong)",
-            }}
-          >
-            Color
-          </summary>
-          <div className="mt-2 flex gap-2 p-2 rounded-lg" style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-strong)" }}>
-            {WUBRG.map((c) => (
-              <ColorPip
-                key={c}
-                color={c}
-                selected={filters.colors.includes(c)}
-                onToggle={() => toggleColor(c)}
-              />
-            ))}
-          </div>
-        </details>
+        {/* Mobile Color ▾ (#116) — the same overlaid panel as Type/Set. The
+            <details> this replaces expanded in flow, pushing the filter row and
+            the whole grid below it down the page on every open. */}
+        <div className="md:hidden">
+          <FilterPanel
+            copy={collectionFilterCopy.color}
+            options={colorOptions}
+            selected={filters.colors}
+            searchable={false}
+            widthPx={260}
+            onToggle={toggleColor}
+            onClear={() => onFiltersChange({ ...filters, colors: [] }, "clear-colors")}
+            onAnnounce={onAnnounce}
+          />
+        </div>
 
         {/* Type ▾ — the same panel as Set ▾ with the search field off (#100).
             The vocabulary is fixed and short, so there is nothing to search and
@@ -157,9 +160,8 @@ export function FilterBar({
           onAnnounce={onAnnounce}
         />
 
-        {/* Set ▾ — the designed searchable multi-select panel (#86). Same tab
-            stop, same position, same external geometry as the <select> it
-            replaced; Sort ▾ converts later. */}
+        {/* Set ▾ — the designed searchable multi-select panel (#86). Rows carry
+            the set abbreviation, which is also what the search matches (#118). */}
         <FilterPanel
           copy={collectionFilterCopy.set}
           options={setOptions}
@@ -177,24 +179,26 @@ export function FilterBar({
           onAnnounce={onAnnounce}
         />
 
-        {/* Sort ▾ — mobile shows short labels ("A–Z ▾"), desktop shows "Sort: Name ▾" */}
-        <select
-          value={sort}
-          onChange={(e) => onSortChange(e.target.value as SortKey)}
-          aria-label="Sort cards"
-          className="whitespace-nowrap rounded-full md:rounded-lg font-sans text-[12.5px] md:text-[13px] font-medium px-[12px] md:px-[14px] py-[6px] md:py-[9px] cursor-pointer"
-          style={{
-            color: "var(--fg)",
-            background: "var(--elevated)",
-            border: "1px solid var(--border-strong)",
+        {/* Sort ▾ — the same panel as Type/Set in single-select mode (#119).
+            Picking the chosen order again reverses it; `Clear` never renders,
+            since a list is always sorted by something. */}
+        <FilterPanel
+          copy={collectionFilterCopy.sort}
+          options={buildSortOptions(sort, sortDirection)}
+          selected={[sort]}
+          selectionMode="single"
+          showCounts={false}
+          searchable={false}
+          widthPx={260}
+          footerStatus={false}
+          onToggle={(code) => {
+            const next = nextSortState({ sort, direction: sortDirection }, code as SortKey);
+            onSortChange(next.sort, next.direction);
+            onAnnounce(`Sorted by ${sortOrderLabel(next.sort, next.direction).toLowerCase()}.`);
           }}
-        >
-          <option value="name">{isDesktop ? "Sort: Name" : "A–Z ▾"}</option>
-          <option value="quantity">{isDesktop ? "Sort: Quantity" : "Qty ▾"}</option>
-          <option value="set">{isDesktop ? "Sort: Set" : "Set ▾"}</option>
-          <option value="rarity">{isDesktop ? "Sort: Rarity" : "Rarity ▾"}</option>
-          <option value="color">{isDesktop ? "Sort: Color" : "Color ▾"}</option>
-        </select>
+          onClear={() => {}}
+          onAnnounce={onAnnounce}
+        />
 
         {/* View toggle — §View Toggle Container: bg #181410 (--surface-sunken), border 1px #3A3229 (--border-strong), radius 8px, padding 2px, gap 2px */}
         <div

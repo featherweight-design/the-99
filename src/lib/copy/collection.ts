@@ -106,6 +106,93 @@ export const collectionFilterCopy = {
         : `${typeName} removed. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${total} cards shown.`,
     announceCleared: (total: string) => `Type filter cleared. ${total} cards shown.`,
   },
+
+  // Color ▾ (#116) — mobile only. Desktop keeps the inline pip row, so nothing
+  // here is reachable above 768px.
+  color: {
+    triggerLabel: "Color",
+    triggerOne: (colorName: string) => `Color: ${colorName}`,
+    triggerAriaCollapsed: "Filter by color, collapsed",
+    triggerAriaWithSelection: (n: number) => `Filter by color, ${n} selected, collapsed`,
+
+    panelAriaLabel: "Filter by color",
+    sheetTitle: "Colors",
+    searchPlaceholder: "Search colors",
+    searchAriaLabel: "Search colors",
+    clearSearch: "Clear search",
+
+    groupDefault: "All colors",
+    groupSelected: (n: number) => `Selected · ${n}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+
+    optionAria: (colorName: string, count: string, selected: boolean) =>
+      `${colorName}, ${count} cards${selected ? ", selected" : ""}`,
+    optionAriaUnavailable: (colorName: string) =>
+      `${colorName}, no cards match your other filters`,
+
+    footerTotal: (total: string) => `${total} cards`,
+    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    clear: "Clear",
+    done: "Done",
+    closeLabel: "Close",
+
+    emptyTitle: "No colors to show",
+    emptyBody: (query: string) => ({ before: "No color matches ", query: `“${query}”`, after: "." }),
+
+    announceMatches: (n: number, query: string) =>
+      n === 0 ? `No colors match ${query}` : `${n} ${n === 1 ? "color matches" : "colors match"} ${query}`,
+    // Colors AND with each other, so the announcement says "and" rather than a
+    // bare count — two colors selected means cards in BOTH, not either.
+    announceAdded: (colorName: string, colors: number, shown: string, total: string) =>
+      `${colorName} added. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${total} cards shown.`,
+    announceRemoved: (colorName: string, colors: number, shown: string, total: string) =>
+      colors === 0
+        ? `${colorName} removed. No color filter, ${total} cards shown.`
+        : `${colorName} removed. ${colors} ${colors === 1 ? "color" : "colors"}, ${shown} of ${total} cards shown.`,
+    announceCleared: (total: string) => `Color filter cleared. ${total} cards shown.`,
+  },
+
+  // Sort ▾ (#119) — the same panel in single-select mode. Sorting never narrows
+  // anything, so the count-shaped strings below are unreachable: `showCounts` is
+  // off, `Clear` never renders, and one row is always chosen so there is no
+  // "cleared" state. They are still written out because the shape is shared.
+  sort: {
+    triggerLabel: "Sort",
+    triggerOne: (order: string) => `Sort: ${order}`,
+    triggerAriaCollapsed: "Sort cards, collapsed",
+    triggerAriaWithSelection: () => "Sort cards, collapsed",
+
+    panelAriaLabel: "Sort cards",
+    sheetTitle: "Sort by",
+    searchPlaceholder: "Search",
+    searchAriaLabel: "Search sort orders",
+    clearSearch: "Clear search",
+
+    groupDefault: "Sort by",
+    groupSelected: () => "Current",
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+
+    // The hint carries the direction ("A–Z"), so the name reads as the whole
+    // order — and the chosen row says how to reverse it, since re-picking is
+    // the only way and nothing else on screen says so.
+    optionAria: (order: string, _count: string, selected: boolean) =>
+      selected ? `${order}, current order, choose again to reverse` : order,
+    optionAriaUnavailable: (order: string) => order,
+
+    footerTotal: () => "",
+    footerSelected: () => "",
+    clear: "Clear",
+    done: "Done",
+    closeLabel: "Close",
+
+    emptyTitle: "No sort orders",
+    emptyBody: (query: string) => ({ before: "No sort order matches ", query: `“${query}”`, after: "." }),
+
+    announceMatches: (n: number) => `${n} sort orders`,
+    announceAdded: (order: string) => `Sorted by ${order}.`,
+    announceRemoved: (order: string) => `Sorted by ${order}.`,
+    announceCleared: () => "",
+  },
 } as const;
 
 /**

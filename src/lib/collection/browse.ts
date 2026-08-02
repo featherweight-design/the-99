@@ -71,6 +71,7 @@ export type BrowseFilters = {
 };
 
 export type SortKey = "name" | "quantity" | "set" | "rarity" | "color";
+export type SortDirection = "asc" | "desc";
 
 export function cssUrl(uri: string): string {
   return `url("${encodeURI(uri).replaceAll('"', "%22")}")`;
@@ -339,25 +340,39 @@ function colorSortKey(identity: string[]): number {
   return WUBRG_ORDER[identity[0]] ?? 40;         // mono: WUBRG position (0–4)
 }
 
-export function sortCards(list: BrowseCard[], sort: SortKey): BrowseCard[] {
-  const copy = [...list];
-  switch (sort) {
-    case "name":
-      copy.sort((a, b) => a.name.localeCompare(b.name));
-      return copy;
-    case "quantity":
-      copy.sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
-      return copy;
-    case "set":
-      copy.sort((a, b) => a.primarySetCode.localeCompare(b.primarySetCode) || a.name.localeCompare(b.name));
-      return copy;
-    case "rarity":
-      copy.sort((a, b) => (RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]) || a.name.localeCompare(b.name));
-      return copy;
-    case "color":
-      copy.sort((a, b) => (colorSortKey(a.colorIdentity) - colorSortKey(b.colorIdentity)) || a.name.localeCompare(b.name));
-      return copy;
-  }
+/** Each key's primary comparator, always in ascending form. */
+const SORT_COMPARATORS: Record<SortKey, (a: BrowseCard, b: BrowseCard) => number> = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  quantity: (a, b) => a.quantity - b.quantity,
+  set: (a, b) => a.primarySetCode.localeCompare(b.primarySetCode),
+  rarity: (a, b) => RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity],
+  color: (a, b) => colorSortKey(a.colorIdentity) - colorSortKey(b.colorIdentity),
+};
+
+/**
+ * The direction each key opens in. Quantity is the odd one out: "sort by
+ * quantity" means most-owned-first to everyone, so its natural order is
+ * descending even though every other key reads forwards.
+ */
+export const DEFAULT_SORT_DIRECTION: Record<SortKey, SortDirection> = {
+  name: "asc",
+  quantity: "desc",
+  set: "asc",
+  rarity: "asc",
+  color: "asc",
+};
+
+export function sortCards(
+  list: BrowseCard[],
+  sort: SortKey,
+  direction: SortDirection = DEFAULT_SORT_DIRECTION[sort],
+): BrowseCard[] {
+  const primary = SORT_COMPARATORS[sort];
+  const sign = direction === "asc" ? 1 : -1;
+  // The name tiebreak stays A→Z in both directions. It is not part of what the
+  // user asked to reverse, and flipping it would shuffle every equal-quantity
+  // run on a direction change for no reason the user could name.
+  return [...list].sort((a, b) => sign * primary(a, b) || a.name.localeCompare(b.name));
 }
 
 /**
