@@ -389,6 +389,24 @@ describe("sortCards", () => {
       "White", "Blue", "Red", "Multi", "Colorless",
     ]);
   });
+  it("reverses the primary key when asked, keeping the name tiebreak A→Z", () => {
+    const list = [
+      card({ oracleId: "a", name: "B", quantity: 4 }),
+      card({ oracleId: "b", name: "A", quantity: 4 }),
+      card({ oracleId: "c", name: "C", quantity: 1 }),
+    ];
+    expect(sortCards(list, "quantity", "asc").map((c) => c.name)).toEqual(["C", "A", "B"]);
+    expect(sortCards(list, "quantity", "desc").map((c) => c.name)).toEqual(["A", "B", "C"]);
+  });
+  it("defaults to each key's natural direction", () => {
+    const list = [card({ oracleId: "a", name: "A", quantity: 1 }), card({ oracleId: "b", name: "B", quantity: 4 })];
+    expect(sortCards(list, "quantity")).toEqual(sortCards(list, "quantity", "desc"));
+    expect(sortCards(list, "name")).toEqual(sortCards(list, "name", "asc"));
+  });
+  it("name Z→A", () => {
+    const list = [card({ oracleId: "a", name: "Cyclonic Rift" }), card({ oracleId: "b", name: "Ancestral Recall" })];
+    expect(sortCards(list, "name", "desc").map((c) => c.name)).toEqual(["Cyclonic Rift", "Ancestral Recall"]);
+  });
   it("returns a new array — does not mutate input", () => {
     const list = [card({ oracleId: "a", name: "B" }), card({ oracleId: "b", name: "A" })];
     const copy = [...list];

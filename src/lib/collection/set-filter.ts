@@ -19,6 +19,8 @@ export type OwnedSetMeta = {
 export type SetOption = {
   code: string;
   label: string;
+  /** The set abbreviation, shown after the name. Absent when it would repeat the label. */
+  hint?: string;
   count: number;
   disabled: boolean;
   releasedAt: string | null;
@@ -75,6 +77,9 @@ export function buildSetOptions(
     return {
       code,
       label: m?.name ?? code, // never a lowercase raw code
+      // Suppressed when the name already IS the code (no catalog row), so the
+      // fallback row doesn't read "MH3  MH3".
+      hint: m?.name ? code : undefined,
       count,
       disabled: count === 0,
       releasedAt: m?.releasedAt ?? null,

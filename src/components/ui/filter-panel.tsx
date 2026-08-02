@@ -3,9 +3,9 @@
 // design/design_handoff_the99_collection_filter (property table:
 // docs/superpowers/design-tables/collection-filter-panel.md).
 //
-// Built once and used by `Set ▾` today; the Type ▾ conversion is follow-up work
-// and passes `searchable={false}` (the field, and the group labels with it, are
-// omitted entirely).
+// Used by all four dropdowns in the collection filter row. `searchable={false}`
+// drops the field and the group labels with it (Type, Color, Sort);
+// `selectionMode="single"` makes it a one-of-many chooser (Sort).
 //
 // Three rules from the table shape the whole file:
 //
@@ -33,12 +33,26 @@ import { SearchField } from "./text-field";
 import { useIsDesktop } from "./use-is-desktop";
 
 export type FilterPanelOption = {
-  /** Stable identity — the uppercased set code for Set ▾. */
+  /**
+   * Stable identity — the uppercased set code for Set ▾, the type name for
+   * Type ▾, the WUBRG letter for Color ▾, the sort key for Sort ▾.
+   */
   code: string;
   label: string;
-  /** Owned cards surviving the OTHER active filters. 0 ⇒ the row is disabled. */
+  /**
+   * Owned cards surviving the OTHER active filters. Whether 0 disables the row
+   * is the caller's call, not this type's: Sort ▾ passes `showCounts={false}`
+   * and 0 for every row, all of them enabled.
+   */
   count: number;
   disabled: boolean;
+  /**
+   * A short secondary token shown after the label: the set abbreviation for
+   * Set ▾, the WUBRG letter for Color ▾, the current direction for Sort ▾.
+   * Optional because Type ▾'s code is just the type name again, and repeating
+   * it would be noise.
+   */
+  hint?: string;
 };
 
 /** Desktop popover width, when the caller does not ask for a narrower one. */
@@ -78,6 +92,8 @@ export function FilterPanel({
   disabled = false,
   widthPx = POPOVER_WIDTH,
   footerStatus = true,
+  selectionMode = "multi",
+  showCounts = true,
   onAnnounce,
 }: {
   copy: FilterPanelCopy;
@@ -86,6 +102,17 @@ export function FilterPanel({
   onToggle: (code: string) => void;
   onClear: () => void;
   searchable?: boolean;
+  /**
+   * `single` is Sort ▾: exactly one row is always chosen, so choosing another
+   * replaces it and dismisses the panel the way a `<select>` would. There is no
+   * empty selection to offer a `Clear` for, so the desktop footer goes with it.
+   */
+  selectionMode?: "multi" | "single";
+  /**
+   * Whether rows carry a trailing count. Sort ▾ has none — a sort order does not
+   * narrow anything, so any number next to it would be the same number.
+   */
+  showCounts?: boolean;
   /**
    * Desktop popover width in px: Set is 340, Type is 300 (property table §Type
    * ▾). A number, not a class, because the same value also feeds the
@@ -247,6 +274,10 @@ export function FilterPanel({
   function toggle(option: FilterPanelOption) {
     if (option.disabled) return; // 0-count rows never toggle, by pointer or by key
     onToggle(option.code);
+    // Single-select commits and dismisses: with one row always chosen there is
+    // nothing further to do in the panel, and leaving it up invites a second
+    // choice that would silently discard the first.
+    if (selectionMode === "single") close();
   }
 
   // Mobile only: aria-modal means focus must not escape the sheet.
@@ -350,9 +381,12 @@ export function FilterPanel({
   }
 
   function optionAria(option: FilterPanelOption, isSelected: boolean): string {
+    // The hint joins the accessible name because it is searchable: someone
+    // typing "MH3" needs to hear which row matched their query.
+    const name = option.hint ? `${option.label} (${option.hint})` : option.label;
     return option.disabled
-      ? copy.optionAriaUnavailable(option.label)
-      : copy.optionAria(option.label, option.count.toLocaleString(), isSelected);
+      ? copy.optionAriaUnavailable(name)
+      : copy.optionAria(name, option.count.toLocaleString(), isSelected);
   }
 
   function buildGroups(
@@ -430,7 +464,10 @@ export function FilterPanel({
           aria-hidden
           className={[
             "flex h-[18px] w-[18px] md:h-[16px] md:w-[16px] flex-none items-center justify-center",
-            "rounded-[4px] border border-solid leading-none text-[12px] md:text-[11px]",
+            // Round for single-select: the shape is the affordance, and a square
+            // tick on a one-of-many list promises you can have two.
+            selectionMode === "single" ? "rounded-full" : "rounded-[4px]",
+            "border border-solid leading-none text-[12px] md:text-[11px]",
             isSelected
               ? "bg-[color:var(--brass)] border-[color:var(--brass)] text-[color:var(--bg)]"
               : option.disabled
@@ -438,7 +475,7 @@ export function FilterPanel({
                 : "bg-[color:var(--bg)] border-[color:var(--border-dashed)]",
           ].join(" ")}
         >
-          {isSelected ? "✓" : ""}
+          {isSelected ? (selectionMode === "single" ? "●" : "✓") : ""}
         </span>
         {/* Wraps to two lines in the sheet; ellipsis in the 340px popover. The
             accessible name above always carries the full name either way. */}
@@ -451,16 +488,29 @@ export function FilterPanel({
         >
           {option.label}
         </span>
-        <span
-          className={[
-            "shrink-0 text-right font-mono text-[12px] md:text-[11.5px] tabular-nums",
-            isSelected && !option.disabled
-              ? "text-[color:var(--fg-body)]"
-              : "text-[color:var(--fg-faint)]",
-          ].join(" ")}
-        >
-          {option.count.toLocaleString()}
-        </span>
+        {option.hint ? (
+          <span
+            aria-hidden
+            className={[
+              "shrink-0 font-mono text-[11.5px] md:text-[11px] tracking-[0.04em]",
+              option.disabled ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-faint)]",
+            ].join(" ")}
+          >
+            {option.hint}
+          </span>
+        ) : null}
+        {showCounts ? (
+          <span
+            className={[
+              "shrink-0 text-right font-mono text-[12px] md:text-[11.5px] tabular-nums",
+              isSelected && !option.disabled
+                ? "text-[color:var(--fg-body)]"
+                : "text-[color:var(--fg-faint)]",
+            ].join(" ")}
+          >
+            {option.count.toLocaleString()}
+          </span>
+        ) : null}
       </li>
     );
   }
@@ -478,7 +528,7 @@ export function FilterPanel({
           ref={listRef}
           id={listId}
           role="listbox"
-          aria-multiselectable="true"
+          aria-multiselectable={selectionMode === "multi" ? "true" : undefined}
           aria-label={copy.panelAriaLabel}
           // With a search field the combobox owns focus and the active row; with
           // none the listbox has to, or the keyboard walk moves a highlight that
@@ -566,6 +616,9 @@ export function FilterPanel({
   }
 
   function renderFooter() {
+    // Single-select has no Clear and no "N of M" to report, which leaves the
+    // desktop bar with nothing in it. The sheet still needs its `Done`.
+    if (selectionMode === "single" && isDesktop) return null;
     const total = options.length.toLocaleString();
     const status =
       selected.length === 0 ? copy.footerTotal(total) : copy.footerSelected(selected.length, total);
@@ -591,7 +644,7 @@ export function FilterPanel({
       footerStatus ? (
         <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{status}</span>
       ) : null
-    ) : selected.length > 0 ? (
+    ) : selectionMode === "single" ? null : selected.length > 0 ? (
       clearButton
     ) : footerStatus ? (
       <span className="font-mono text-[11px] text-[#6E6353]">{status}</span>
@@ -699,10 +752,17 @@ export function FilterPanel({
   }
 
   // ——— Trigger ———————————————————————————————————————————————
+  const oneOption = selected.length === 1 ? options.find((o) => o.code === selected[0]) : undefined;
+  // Under single-select the hint is state, not identity — it is the direction
+  // the list is currently in — so the trigger has to carry it or the bar cannot
+  // say which way the collection is sorted. Under multi-select the hint is just
+  // an abbreviation of the label, and repeating it in the trigger is noise.
   const oneName =
-    selected.length === 1
-      ? options.find((o) => o.code === selected[0])?.label ?? selected[0]
-      : null;
+    selected.length !== 1
+      ? null
+      : selectionMode === "single" && oneOption?.hint
+        ? `${oneOption.label} · ${oneOption.hint}`
+        : oneOption?.label ?? selected[0];
   // The copy module has no key for the exactly-one accessible name, nor for any
   // of the expanded variants (every key it ships ends "collapsed"), so both are
   // composed here from panelAriaLabel. The canvas's keyboard-walk frame reads

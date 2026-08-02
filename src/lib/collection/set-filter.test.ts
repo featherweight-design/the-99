@@ -70,8 +70,16 @@ describe("buildSetOptions", () => {
   it("falls back to the uppercased code when no sets row exists, keeping the count", () => {
     const cards = [card({ setCodes: ["XYZ"], printings: [printing({ setCode: "XYZ", quantity: 3 })] })];
     expect(buildSetOptions(cards, noFilters, meta)).toEqual([
-      { code: "XYZ", label: "XYZ", count: 3, disabled: false, releasedAt: null },
+      { code: "XYZ", label: "XYZ", hint: undefined, count: 3, disabled: false, releasedAt: null },
     ]);
+  });
+
+  it("carries the set code as a hint alongside the name", () => {
+    const cards = [card({ setCodes: ["MH3"], printings: [printing({ setCode: "MH3" })] })];
+    expect(buildSetOptions(cards, noFilters, meta)[0]).toMatchObject({
+      label: "Modern Horizons 3",
+      hint: "MH3",
+    });
   });
 
   it("counts sum owned quantities per printing, not distinct oracle cards", () => {

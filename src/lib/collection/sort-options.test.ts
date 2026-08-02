@@ -1,0 +1,60 @@
+import { describe, expect, it } from "vitest";
+import {
+  buildSortOptions,
+  nextSortState,
+  parseSortDirection,
+  sortOrderLabel,
+} from "./sort-options";
+
+describe("buildSortOptions", () => {
+  it("lists every sort key with only the chosen one carrying a direction hint", () => {
+    const options = buildSortOptions("quantity", "desc");
+    expect(options.map((o) => o.code)).toEqual(["name", "quantity", "set", "rarity", "color"]);
+    expect(options.filter((o) => o.hint !== undefined).map((o) => [o.code, o.hint])).toEqual([
+      ["quantity", "Most"],
+    ]);
+  });
+  it("never disables a row — a sort order cannot be unavailable", () => {
+    expect(buildSortOptions("name", "asc").every((o) => !o.disabled)).toBe(true);
+  });
+});
+
+describe("nextSortState", () => {
+  it("switching keys adopts the new key's natural direction", () => {
+    expect(nextSortState({ sort: "name", direction: "desc" }, "quantity")).toEqual({
+      sort: "quantity",
+      direction: "desc",
+    });
+    expect(nextSortState({ sort: "quantity", direction: "asc" }, "name")).toEqual({
+      sort: "name",
+      direction: "asc",
+    });
+  });
+  it("picking the current key reverses it", () => {
+    expect(nextSortState({ sort: "name", direction: "asc" }, "name")).toEqual({
+      sort: "name",
+      direction: "desc",
+    });
+    expect(nextSortState({ sort: "name", direction: "desc" }, "name")).toEqual({
+      sort: "name",
+      direction: "asc",
+    });
+  });
+});
+
+describe("parseSortDirection", () => {
+  it("falls back to the key's default for absent or junk values", () => {
+    expect(parseSortDirection(null, "quantity")).toBe("desc");
+    expect(parseSortDirection("sideways", "name")).toBe("asc");
+  });
+  it("honours an explicit direction even when it is the non-default one", () => {
+    expect(parseSortDirection("asc", "quantity")).toBe("asc");
+  });
+});
+
+describe("sortOrderLabel", () => {
+  it("reads as the whole order, not just the key", () => {
+    expect(sortOrderLabel("name", "asc")).toBe("Name · A–Z");
+    expect(sortOrderLabel("rarity", "desc")).toBe("Rarity · Mythic first");
+  });
+});
