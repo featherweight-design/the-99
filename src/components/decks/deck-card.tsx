@@ -57,9 +57,12 @@ export function DeckCard({ deck }: DeckCardProps) {
   const artGradient = commanderGradient(deck.commanderColorIdentity);
 
   return (
-    // §Deck card: br 12px, bg #1E1A15, border 1px #2A241D, p 13px/18px, flex col, gap 11px/14px
+    // §Deck card: br 12px, bg #1E1A15, border 1px #2A241D, p 13px/22px, flex col, gap 11px/18px
+    // Desktop padding and gap lifted by the richness pass ("deck-list cards
+    // padding 16→22, gap +4"); mobile is unchanged. Browse loosens, working
+    // surfaces (the decklist ledger, the Add panel) stay tight.
     <article
-      className="relative rounded-[12px] flex flex-col gap-[11px] md:gap-[14px] p-[13px] md:p-[18px]"
+      className="relative rounded-[12px] flex flex-col gap-[11px] md:gap-[18px] p-[13px] md:p-[22px]"
       style={{
         background: "#1E1A15",
         border: "1px solid #2A241D",

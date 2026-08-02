@@ -252,10 +252,18 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 | border-radius | 12px | 12px |
 | background | #1E1A15 | #1E1A15 |
 | border | 1px solid #2A241D | 1px solid #2A241D |
-| padding | 13px | 18px |
+| padding | 13px | 22px (v2: was 18px) |
 | display | flex | flex |
 | flex-direction | column | column |
-| gap | 11px | 14px |
+| gap | 11px | 18px (v2: was 14px) |
+
+> **v2 density delta.** Surfaces v2 §Decks: "deck-list cards padding 16→22,
+> gap +4". The mock's stated "before" (16) is not what shipped (18); the delta
+> is authoritative and `18 + 4 = 22` also lands on the mock's stated target, so
+> both readings agree at 22px. Gap takes the same +4 (14 → 18). Mobile is
+> untouched — the loosening is a desktop browse gesture. The working surfaces
+> named in the handoff (decklist ledger, Add panel, search, export) stay tight
+> and are not edited by this pass.
 
 ### Deck card — art thumb
 | Property | Mobile | Desktop |
@@ -2048,13 +2056,46 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 
 ## Component: Empty Builder Mark
 
+### Empty state section (v2 vignette)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background-image | radial-gradient(400px 220px at 50% 80%, rgba(201,162,75,0.07), transparent 70%) | same |
+
+### Mark row (v2 — crab + card mark)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | flex-end | flex-end |
+| justify-content | center | center |
+| gap | 16px | 16px |
+| order | crab, then card mark | crab, then card mark |
+| margin-bottom | 20px | 22px |
+
+### Crab Mark (v2 — builder empty)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| component | `<Crab size={72}>` | `<Crab size={88}>` |
+| width × height | 72 × 49.5px | 88 × 60.5px |
+| flex | none | none |
+| stroke | var(--brass) #C9A24B | var(--brass) #C9A24B |
+| fill | var(--surface) #1E1A15 | var(--surface) #1E1A15 |
+| animation | `anim-bob`, 4.5s | `anim-bob`, 4.5s |
+| reduced motion | `animation: none` (globals.css) | `animation: none` (globals.css) |
+| aria | `aria-hidden` | `aria-hidden` |
+
+> The two breakpoints keep their **separate** marks. Mobile renders three
+> absolutely-positioned card rects at 96 × 104; desktop renders
+> `<CardFan variant="decks-desktop">` scaled 0.867 into a fixed 104 × 112 box.
+> They are distinct pixel geometries, so each gets its own crab rather than one
+> responsive pair.
+
 ### Mark container (3 stacked card rects)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | position | relative | relative |
 | width | 96px | 100px–110px |
 | height | 104px | 110px–120px |
-| margin-bottom | 20px | 22px–24px |
+| margin-bottom | — (v2: moved to the mark row) | — (v2: moved to the mark row) |
 
 ### Back card (tilted left)
 | Property | Mobile | Desktop |
@@ -2120,7 +2161,25 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 | color | — | #8E8269 |
 | margin-top | — | 20px |
 
-### "Add your first card" CTA button (mobile empty)
+> **v2 copy delta (heading / body / CTA).** Surfaces v2 §Decks replaces the v1
+> strings with, verbatim:
+> heading *"A king with no army."*;
+> body *"Ninety-nine slots, zero filled. Suggestions are primed on the right —
+> {Commander} eats everything anyway."*;
+> CTA *"Open suggestions"*.
+> `{Commander}` is the live commander name shortened to the first comma
+> ("Korvold", not "Korvold, Fae-Cursed King"), matching the mock's own register.
+>
+> Two amendments, both flagged for ratification:
+> 1. **Mobile body copy.** "primed on the right" describes the desktop Add
+>    panel; on mobile the panel is a bottom sheet. Mobile renders
+>    *"…Suggestions are one tap away — {Commander} eats everything anyway."*
+>    The mock gives no mobile string ("Mobile forms follow the same deltas").
+> 2. **The desktop role hint stays.** *"Try filling your ramp, draw, removal,
+>    and wipe slots first."* is the only line telling a new builder what to do
+>    next; the richness caption is flavour and replaces the body copy only.
+
+### "Open suggestions" CTA button (mobile empty)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-family | 'IBM Plex Sans', sans-serif | — (suggestions visible directly) |
@@ -2144,6 +2203,121 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 | border | none | — |
 | border-radius | 8px | — |
 | padding | 13px 0 (full-width) | — |
+
+---
+
+## Component: Completion Reveal (v2 — the 99/99 kaiju)
+
+The app's **only** kaiju appearance. Fires once per deck, the first time it
+reads `Complete` (99 cards, all owned). Implemented in
+`src/components/decks/completion-reveal.tsx`, gated by
+`src/lib/decks/celebration.ts` + `src/components/decks/use-celebrated.ts`.
+
+### Band container
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | relative (in flow, above the Spine) | relative (in flow, above the Spine) |
+| height | 420px (derived) | 380px |
+| overflow | hidden | hidden |
+| background | linear-gradient(180deg, var(--celebrate-top) #171310, var(--celebrate-bottom) #110E0B) | same |
+| aria | `<section aria-labelledby>` the heading | same |
+
+### Kaiju mark
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| component | `<Kaiju size={300}>` (derived) | `<Kaiju size={440}>` |
+| width × height | 300 × 237.5px | 440 × 348.3px |
+| position | absolute; right −70px; bottom −8px (derived) | absolute; right −60px; bottom −12px |
+| opacity | 0.94 | 0.94 |
+| filter | drop-shadow(0 0 46px rgba(0,0,0,0.6)) | same |
+| animation | `anim-breathe`, 10s | `anim-breathe`, 10s |
+| reduced motion | `animation: none` — kaiju holds at scale 1, full opacity | same |
+| aria | `aria-hidden` | `aria-hidden` |
+
+### Crab mark
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| component | `<Crab size={64}>` (derived) | `<Crab size={84}>` |
+| position | absolute; left 24px; bottom 28px (derived) | absolute; left 46%; bottom 32px |
+| animation | `anim-bob`, 4.5s | `anim-bob`, 4.5s |
+| reduced motion | `animation: none` | `animation: none` |
+
+### Brass horizon line
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute; left 0; right 0; bottom 44px (derived) | absolute; left 0; right 0; bottom 52px |
+| height | 1px | 1px |
+| background | linear-gradient(90deg, transparent, rgba(201,162,75,0.4), transparent) | same |
+
+### Text block
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute; top 32px; left 24px; right 24px (derived, no max-width) | absolute; top 56px; left 40px; max-width 330px |
+| animation | `anim-rise`, 0.8s ease-out both | same |
+| reduced motion | `animation: none` — nothing else sets opacity/transform, so the block sits at opacity 1 | same |
+
+### Text block — crown crumb (3 brass diamonds)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | inline-flex | inline-flex |
+| gap | 7px | 7px |
+| small diamond | 9 × 9px, rotate(45deg), var(--brass) | same |
+| large diamond | 13 × 13px, rotate(45deg), var(--brass) | same |
+| margin-bottom | 12px | 12px |
+| aria | `aria-hidden` | `aria-hidden` |
+
+### Heading "The 99 is complete."
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | 'Cinzel', serif | 'Cinzel', serif |
+| font-weight | 800 | 800 |
+| font-size | 24px (derived) | 32px |
+| color | var(--fg) #EDE6D8 | var(--fg) #EDE6D8 |
+| margin | 0 | 0 |
+
+### Body "{Commander} is fed — 99 of 99, all owned. Try not to let it get to your head at the table."
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-size | 14px (derived) | 15px |
+| line-height | 1.6 | 1.6 |
+| color | var(--fg-body) #C6B79A | var(--fg-body) #C6B79A |
+| margin | 10px 0 0 | 10px 0 0 |
+
+### Button row
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex; flex-wrap: wrap | flex |
+| gap | 12px | 12px |
+| margin-top | 18px | 18px |
+| primary | `<PrimaryButton>` "Export decklist" — 13px, padding 10px 20px | same |
+| secondary | `<GhostButton>` "Back to the deck" — 13px, padding 10px 20px | same |
+
+> **Three interpretive calls, awaiting Design ratification.**
+>
+> 1. **Band, not full surface.** The mock captions this "full-surface moment …
+>    then dissolves to the builder". A fixed overlay on the route the user
+>    reached by adding their 99th card would hide the deck they just finished
+>    and needs a focus trap, a scroll lock and an escape hatch, none of which
+>    the mock specifies. A 420/380px band at the top of the builder keeps the
+>    reveal above the fold at both breakpoints while the deck stays reachable.
+> 2. **Dismissible only — no ~4s auto-dismiss.** The mock says "~4s or
+>    dismissible"; a timer racing a reader is worse than a button, and "Back to
+>    the deck" is already the mock's own dismiss affordance.
+> 3. **The mobile composition is derived, not mocked.** `kaiju.svg` is a
+>    480 × 380 landscape viewBox that does not fold into portrait, so it is
+>    anchored bottom-right at 300px and bled off both edges — preserving the
+>    "larger than frame" read instead of shrinking into a cute full-body figure.
+>    The crab moves hard left so the kaiju's gaze still crosses the diagonal.
+>
+> **One-shot trigger.** `statusPill()` is a *derived* status: it reads
+> `Complete` forever once a deck is 99/99, so rendering on status alone would
+> show the kaiju on every visit and the handoff reserves it for rare wins. The
+> flag is persisted per deck in `localStorage` under `the99:celebrated:<deckId>`
+> — a cosmetic flag does not justify a migration, and the failure mode (a second
+> device shows it once more) is benign. Deck ids are `uuid().defaultRandom()`
+> primary keys and are never reused, so an entry orphaned by a deleted deck is
+> inert. The status is read from the **server-rendered** counts, never from the
+> optimistic per-row state in `use-deck-mutation.ts`.
 
 ---
 
@@ -2195,6 +2369,8 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 | Builder · mid-build · filter Shopping | "Shopping" pill active | Decklist filtered to unowned cards only | `filter: 'shopping'` |
 | Builder · mid-build · group By type | "By type" pill active (default) | Decklist grouped by card type (Creatures / Instants / Sorceries / Artifacts / Enchantments / Lands) | `grouping: 'type'` |
 | Builder · mid-build · group By role | "By role" pill active | Decklist grouped by role (Ramp / Card draw / Removal / Board wipes / Payoffs / Lands) | `grouping: 'role'` |
+| Builder · completion reveal | Deck reads `Complete` (99 built, all owned) **and** `the99:celebrated:<deckId>` is absent | CompletionReveal band above the Spine: kaiju, crab, brass horizon, crown crumb, two CTAs | `deck.built`, `deck.ownedCount`, `deck.commander.name`; `onDismiss`, `onExport` |
+| Builder · completion already seen | Same deck, `the99:celebrated:<deckId> === "1"` — including after dropping to 98/99 and returning to 99/99 | No band; the builder renders normally | same |
 | Builder · search tab active | User taps Search tab in Add Panel | Search input + results list | `searchQ: string`, `search.results[]` |
 | Builder · search · min 2 chars | Query length ≥ 2 | Results list populated | `searchQ.length >= 2` |
 | Builder · search · owned-only off | Toggle in off state | All results (owned + unowned) shown | `ownedOnly: false` |
