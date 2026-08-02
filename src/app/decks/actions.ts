@@ -165,7 +165,14 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
 
   // Re-adding a non-basic that's already in the deck is a no-op (singleton) —
   // return before validation so a full deck doesn't spuriously reject it.
-  if (existingRow && !/\bBasic\b/.test(card.typeLine)) return { ok: true };
+  // Still revalidate: the click means this page's HTML disagreed with the row
+  // that exists, and without a fresh render the optimistic "✓ In deck" would
+  // flash back to "+ Add" when the transition ends.
+  if (existingRow && !/\bBasic\b/.test(card.typeLine)) {
+    revalidatePath(`/decks/${deckId}`);
+    revalidatePath(`/decks`);
+    return { ok: true };
+  }
 
   // Lock the deck row so the 99-card cap check and the write are atomic —
   // concurrent adds serialize here instead of both passing the cap at 98.
