@@ -18,5 +18,10 @@ export const commandersCopy = {
     // "1 418" under a European locale, and these strings are verbatim.
     line: (cardsRead: number, candidates: number) =>
       `${cardsRead.toLocaleString("en-US")} cards read. ${candidates.toLocaleString("en-US")} can lead. I ranked them — you're welcome.`,
+    // Not from the mock. The mock wrote this line for a crumb row; here it sits
+    // in the guided-setup banner, whose job is to say what to do next. The v1
+    // body it replaces carried this instruction, and the mock line carries no
+    // directive — dropping it would leave step 2 of 3 with nothing to act on.
+    directive: "Pick one to build your first 99.",
   },
 } as const;

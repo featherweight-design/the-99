@@ -70,7 +70,8 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
         <div className="flex items-center gap-[10px]" style={{ marginTop: 3 }}>
           <Crab size={52} className="flex-none" />
           <p className="m-0" style={{ fontSize: 12.5, color: "#C6B79A", lineHeight: 1.5 }}>
-            {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}
+            {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}{" "}
+            {commandersCopy.firstRun.directive}
           </p>
         </div>
       </div>
@@ -151,7 +152,8 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
               maxWidth: 640,
             }}
           >
-            {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}
+            {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}{" "}
+            {commandersCopy.firstRun.directive}
           </p>
         </div>
 
