@@ -490,7 +490,7 @@ function PrintingTile({
           ...artStyle,
           filter: entry.dormant ? "grayscale(0.55)" : undefined,
           boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-          // Three signals, none of them colour (decision 3) — the tile sits on card art, so
+          // Three signals, none of them color (decision 3) — the tile sits on card art, so
           // contrast under it is unpredictable. Outline, not border: it must not eat the frame.
           outline: picked
             ? "2px solid var(--brass)"

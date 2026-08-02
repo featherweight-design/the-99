@@ -5,7 +5,7 @@ import { twMerge } from "tailwind-merge";
 // §404: Primary CTA and §404: Secondary CTA — the canonical statement of the
 // brass and ghost contracts.
 //
-// These own nine properties ONLY: fill, text colour, border, font-family,
+// These own nine properties ONLY: fill, text color, border, font-family,
 // font-weight, border-radius, hover, the hover transition, and cursor. Padding
 // and font-size are deliberately left to the caller: the design tables specify
 // them differently for nearly every surface, so a primitive that fixed them

@@ -132,7 +132,7 @@ export type RawCollectionRow = {
   exactImageUri: string | null;
   /** Tier 2 — the representative printing for (oracle_id, set_code). */
   representativeImageUri: string | null;
-  /** Tier 3 — the oracle-level catalog image, i.e. today's behaviour. */
+  /** Tier 3 — the oracle-level catalog image, i.e. today's behavior. */
   cardImageUri: string | null;
 };
 

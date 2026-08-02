@@ -725,7 +725,7 @@ describe("Type ▾ in the filter bar", () => {
 // Sort ▾ (#119) and mobile Color ▾ (#116) are the same panel in new modes, so
 // they are exercised through the real FilterBar rather than the panel directly:
 // what broke before was the wiring, not the panel.
-describe("FilterBar sort and colour controls", () => {
+describe("FilterBar sort and color controls", () => {
   const NO_FILTERS: BrowseFilters = { search: "", colors: [], types: [], setCodes: [] };
   const COLOR_OPTIONS = [
     { code: "W", label: "White", hint: "W", count: 4, disabled: false },
@@ -803,7 +803,7 @@ describe("FilterBar sort and colour controls", () => {
     expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Clear" })).toBeNull();
   });
 
-  it("mobile colour is an overlaid panel, not an in-flow <details>", () => {
+  it("mobile color is an overlaid panel, not an in-flow <details>", () => {
     setViewport(false);
     const { container } = render(
       <FilterBar
@@ -826,7 +826,7 @@ describe("FilterBar sort and colour controls", () => {
     expect(screen.getByRole("dialog", { name: "Filter by color" })).toBeTruthy();
   });
 
-  it("colour rows toggle the filter and a zero-count colour is disabled, not hidden", () => {
+  it("color rows toggle the filter and a zero-count color is disabled, not hidden", () => {
     setViewport(false);
     const { onFiltersChange } = renderBar({ view: "rows" });
     fireEvent.click(screen.getByRole("button", { name: /Filter by color/ }));

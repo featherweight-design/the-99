@@ -32,7 +32,7 @@ export type SetOption = {
  *
  * Two judgment calls worth stating:
  *
- * 1. "Other filters" is the structured filters (colours, type) only — not the
+ * 1. "Other filters" is the structured filters (colors, type) only — not the
  *    collection's free-text search box, and not the set selection itself. The
  *    handoff draws it this way (gap 4) so the number stays stable while typing
  *    and a selected set does not read as its own subset.

@@ -839,7 +839,7 @@ export function FilterPanel({
             onKeyDown={onPanelKeyDown}
             onBlur={onPanelBlur}
             className="absolute top-[calc(100%+6px)] z-10 overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)] shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
-            // A measured per-pixel offset, so it cannot be a class. Not colour
+            // A measured per-pixel offset, so it cannot be a class. Not color
             // or border — the inline-style rule is about styles that outrank
             // hover: utilities.
             style={{ left: popoverLeft, width: widthPx }}
@@ -863,7 +863,7 @@ export function FilterPanel({
               onKeyDown={onPanelKeyDown}
               className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78vh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"
               // The drag offset is per-pixel and only exists mid-gesture, so it
-              // cannot be a class. Not colour or border — the inline-style rule
+              // cannot be a class. Not color or border — the inline-style rule
               // is about styles that outrank hover: utilities.
               style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
             >

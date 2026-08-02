@@ -21,7 +21,7 @@ export type TypeOption = {
  * The two judgment calls match set-filter.ts deliberately, so the two panels
  * never disagree about what a count means:
  *
- * 1. "Other filters" is colours and sets — not the free-text search box, and
+ * 1. "Other filters" is colors and sets — not the free-text search box, and
  *    not the type selection itself, so the numbers stay still while typing and
  *    a selected type does not read as its own subset.
  * 2. A count is the sum of quantities owned, not the number of distinct oracle

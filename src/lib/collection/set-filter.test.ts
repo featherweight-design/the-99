@@ -108,7 +108,7 @@ describe("buildSetOptions", () => {
     ]);
   });
 
-  it("counts respect the colour filter", () => {
+  it("counts respect the color filter", () => {
     const cards = [
       card({ oracleId: "a", colorIdentity: ["R"], setCodes: ["BLB"], printings: [printing({ setCode: "BLB", quantity: 2 })] }),
       card({ oracleId: "b", colorIdentity: ["U"], setCodes: ["MH3"], printings: [printing({ setCode: "MH3", quantity: 4 })] }),

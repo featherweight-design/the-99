@@ -6,7 +6,7 @@ import { colorLabel } from "../../lib/decks/format";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { GhostButton } from "@/components/ui/button";
 
-/** Progress bar fill colour by built bucket. §Deck card — progress bar fill */
+/** Progress bar fill color by built bucket. §Deck card — progress bar fill */
 function progressFillColor(built: number): string {
   if (built >= 99) return "#6FA368";
   if (built >= 55) return "#E0913C";
@@ -113,7 +113,7 @@ export function DeckCard({ deck }: DeckCardProps) {
           {/* §Deck card — pip row: flex, center, gap 7/8px, mt 4/6px */}
           <div className="flex items-center gap-[7px] md:gap-[8px] mt-[4px] md:mt-[6px]">
             {deck.commanderColorIdentity.map((color) => (
-              // §Deck card — WUBRG pip: 11/12px, br 999px, colour hex
+              // §Deck card — WUBRG pip: 11/12px, br 999px, color hex
               <span
                 key={color}
                 className="shrink-0 rounded-[999px] w-[11px] h-[11px] md:w-[12px] md:h-[12px]"
@@ -171,7 +171,7 @@ export function DeckCard({ deck }: DeckCardProps) {
           aria-valuemax={99}
           aria-label={`${deck.built} of 99 cards built`}
         >
-          {/* §Deck card — progress bar fill: h 100%, br 999px, colour by built bucket */}
+          {/* §Deck card — progress bar fill: h 100%, br 999px, color by built bucket */}
           <div
             className="h-full rounded-[999px]"
             style={{

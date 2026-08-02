@@ -21,7 +21,7 @@ describe("OwnershipDot", () => {
   });
 
   // The three call sites size the dot differently (7px responsive, 8px, 7px),
-  // so the primitive owns colour and shape only and sizing arrives by class.
+  // so the primitive owns color and shape only and sizing arrives by class.
   it("merges caller sizing classes", () => {
     const el = renderDot(
       <OwnershipDot owned className="w-[7px] h-[7px] md:w-[8px]" />,
@@ -45,7 +45,7 @@ describe("OwnershipDot", () => {
     expect(el.getAttribute("aria-hidden")).toBeNull();
   });
 
-  it("carries colour in classes, not inline style", () => {
+  it("carries color in classes, not inline style", () => {
     const el = renderDot(<OwnershipDot owned={false} />);
     expect(el.getAttribute("style")).toBeNull();
   });
