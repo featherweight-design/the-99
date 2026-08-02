@@ -184,7 +184,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
 
       {/* ── Desktop layout: grid 40px 100px 1fr 236px ── */}
       <div
-        className="hidden sm:grid rounded-[12px] p-[18px_20px] transition-colors group-hover:border-[#3A3229] group-hover:bg-[#211C15]"
+        className="hidden sm:grid rounded-[12px] p-[24px_26px] transition-colors group-hover:border-[#3A3229] group-hover:bg-[#211C15]"
         style={{
           gridTemplateColumns: "40px 100px 1fr 236px",
           gap: 20,
@@ -251,7 +251,7 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
         </div>
 
         {/* Evidence column */}
-        <div className="flex flex-col gap-[9px]" style={{ minWidth: 0 }}>
+        <div className="flex flex-col gap-[13px]" style={{ minWidth: 0 }}>
           {/* Commander name */}
           <h3
             className="font-display font-[600] m-0"
