@@ -38,13 +38,21 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
     committedRef.current = committed;
   }, [committed]);
 
+  // `disabled={isPending}` only lands once the transition has re-rendered, and
+  // transition updates are low-priority — two clicks in the same tick both reach
+  // `run` and fire the action twice. A ref settles it synchronously.
+  const inFlightRef = useRef(false);
+
   function run(mutate: () => Promise<DeckMutationResult | void>) {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     startTransition(async () => {
       setApplied(true);
       setError(null);
       const result = await mutate().catch(
         (): DeckMutationResult => ({ ok: false, message: fallbackMessage }),
       );
+      inFlightRef.current = false;
       if (result && !result.ok) {
         // Drop the override in the same pass as the message. The transition's own
         // revert only lands when it ends, so without this there is a frame drawing

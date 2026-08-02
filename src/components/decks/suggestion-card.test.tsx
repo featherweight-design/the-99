@@ -85,4 +85,23 @@ describe("SuggestionCard", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(DECK_ADD_FALLBACK_MESSAGE);
     expect(screen.getByRole("button", { name: /Add Sol Ring to deck/ })).toBeInTheDocument();
   });
+
+  // Transition updates are low-priority, so the optimistic swap to "✓ In deck"
+  // is not guaranteed to land before a second click does.
+  it("refuses a second click while the add is in flight", async () => {
+    const pending = deferred<DeckMutationResult>();
+    addCardToDeck.mockReturnValue(pending.promise);
+
+    renderRow(<SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />);
+    const button = screen.getByRole("button", { name: /Add Sol Ring to deck/ });
+    await act(async () => {
+      button.click();
+      button.click();
+    });
+
+    expect(addCardToDeck).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      pending.resolve({ ok: true });
+    });
+  });
 });

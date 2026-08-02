@@ -18,7 +18,7 @@ interface SuggestionCardProps {
 }
 
 export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardProps) {
-  const { applied, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
+  const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
 
   function handleAdd() {
     run(() => addCardToDeck(deckId, suggestion.oracleId));
@@ -77,8 +77,9 @@ export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardPro
           <button
             type="button"
             onClick={handleAdd}
+            disabled={isPending}
             aria-label={`Add ${suggestion.name} to deck`}
-            className="flex-none font-sans text-[12px] font-semibold cursor-pointer"
+            className="flex-none font-sans text-[12px] font-semibold cursor-pointer disabled:opacity-50"
             style={{ color: "#C9A24B", background: "transparent", border: "none", padding: 0 }}
           >
             + Add

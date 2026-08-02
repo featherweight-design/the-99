@@ -28,7 +28,7 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
     "flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
   // The server drops the row from the decklist on success, so "removed" is
   // never a committed prop — the override holds until that re-render lands.
-  const { applied, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
+  const { applied, isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
 
   function handleRemove() {
     run(() => removeCardFromDeck(deckId, card.oracleId));
@@ -88,8 +88,9 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
           <button
             type="button"
             onClick={handleRemove}
-            className="hidden md:block flex-none text-[13px] leading-none"
-            style={{ color: "#4A4033", background: "transparent", border: "none", cursor: "pointer" }}
+            disabled={isPending}
+            className="hidden md:block flex-none text-[13px] leading-none cursor-pointer disabled:opacity-50 disabled:cursor-default"
+            style={{ color: "#4A4033", background: "transparent", border: "none" }}
             aria-label={`Remove ${card.name}`}
           >
             ✕
