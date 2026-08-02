@@ -229,8 +229,9 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
         )}
       </div>
 
-      {/* Per-commander degraded note when fitSynergy is null */}
-      {c.fitSynergy === null && (
+      {/* Per-commander note when there is no synergy data. "absent" is permanent
+          — EDHREC does not index the commander — so it must not read as an outage. */}
+      {c.synergyState !== "ok" && (
         <div
           className="flex items-center gap-[9px] rounded-[8px] mt-[16px]"
           style={{
@@ -242,10 +243,22 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
         >
           <span style={{ color: "#8E8269", fontSize: 13 }}>⚠</span>
           <span style={{ fontSize: 12.5, color: "#A89B84", lineHeight: 1.45 }}>
-            <strong style={{ color: "#C6B79A", fontWeight: 600 }}>
-              Synergy data unavailable
-            </strong>{" "}
-            — EDHREC receipts are hidden for this commander.
+            {c.synergyState === "degraded" ? (
+              <>
+                <strong style={{ color: "#C6B79A", fontWeight: 600 }}>
+                  Synergy data unavailable
+                </strong>{" "}
+                — we couldn&apos;t reach EDHREC, so receipts are hidden for now.
+              </>
+            ) : (
+              <>
+                <strong style={{ color: "#C6B79A", fontWeight: 600 }}>
+                  No synergy data
+                </strong>{" "}
+                — EDHREC doesn&apos;t track this commander, so fit comes from pool
+                and roles alone.
+              </>
+            )}
           </span>
         </div>
       )}

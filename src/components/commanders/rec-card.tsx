@@ -23,11 +23,12 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
   const fit = fitSegments(c);
   const scoreDisplay = Math.round(fit.pct);
 
-  // Degraded note: show when fitSynergy is null — whether the cause is a global
-  // outage or a per-commander gap. The global DegradedBanner covers the full
-  // context; each card still shows its own receipt-hidden note per design table
-  // §Synergy Receipts Hidden Note and §Per-Commander Degraded Note.
-  const perCmdDegraded = c.fitSynergy === null;
+  // §Synergy Receipts Hidden Note / §Per-Commander Degraded Note. Split by
+  // synergyState, not by a null fitSynergy: an "absent" commander is one EDHREC
+  // does not index, so offering Retry there gives the user a button that can
+  // never change anything.
+  const perCmdDegraded = c.synergyState === "degraded";
+  const perCmdAbsent = c.synergyState === "absent";
 
   // Receipts preview preformatted server-side (empty string = none)
   const receipts = c.receipts;
@@ -158,6 +159,24 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
                   Retry
                 </button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Per-commander absent note (mobile) — settled fact, so no Retry */}
+        {perCmdAbsent && (
+          <div
+            className="flex items-center gap-[8px] rounded-[7px]"
+            style={{
+              background: "#211C15",
+              border: "1px solid #3A3229",
+              borderLeft: "2px solid #8E8269",
+              padding: "7px 11px",
+            }}
+          >
+            <span style={{ color: "#8E8269", fontSize: 12 }}>⚠</span>
+            <div style={{ fontSize: 12, color: "#A89B84" }}>
+              EDHREC doesn&apos;t track this commander, so fit comes from pool and roles alone.
             </div>
           </div>
         )}
@@ -325,6 +344,28 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
                     Retry
                   </button>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Per-commander absent note (desktop) — settled fact, so no Retry */}
+          {perCmdAbsent && (
+            <div
+              className="flex items-center gap-[9px] rounded-[7px]"
+              style={{
+                background: "#211C15",
+                border: "1px solid #3A3229",
+                borderLeft: "2px solid #8E8269",
+                padding: "9px 13px",
+              }}
+            >
+              <span style={{ color: "#8E8269", fontSize: 13 }}>⚠</span>
+              <div style={{ fontSize: 12.5, color: "#A89B84", lineHeight: 1.45 }}>
+                <strong style={{ color: "#C6B79A", fontWeight: 600 }}>
+                  No synergy data
+                </strong>{" "}
+                — EDHREC doesn&apos;t track this commander, so fit comes from pool
+                and roles alone.
               </div>
             </div>
           )}
