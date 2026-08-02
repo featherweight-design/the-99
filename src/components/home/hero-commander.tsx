@@ -115,7 +115,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
       // Border and background are classes, not inline style, so the hover state can
       // reach them — the card became clickable and had no hover feedback at all.
       // Hover values match commanders/rec-card.tsx.
-      className="relative mb-[34px] flex flex-col overflow-hidden rounded-[14px] border border-[var(--border-strong)] bg-[var(--surface)] transition-colors hover:border-[#3A3229] hover:bg-[#211C15] md:flex-row"
+      className="relative mb-[34px] flex flex-col overflow-hidden rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] transition-colors hover:border-[#3A3229] hover:bg-[#211C15] md:flex-row"
     >
       {/* Stretched link — same pattern as commanders/rec-card.tsx. The hero has
           no interactive children, so nothing needs lifting above it. */}
