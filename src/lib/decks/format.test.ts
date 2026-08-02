@@ -65,4 +65,10 @@ describe("colorLabel", () => {
     expect(colorLabel(["W", "U", "X"])).toBe("Multi");
     expect(colorLabel(["W", "U", "B", "R", "X"])).toBe("Multi");
   });
+
+  // A duplicate-bearing identity is longer than 5 with every code known, which
+  // used to reach the four-color branch's non-null assertion and throw.
+  it("does not throw on a duplicate-bearing identity", () => {
+    expect(colorLabel(["W", "W", "U", "U", "B", "B"])).toBe("Multi");
+  });
 });

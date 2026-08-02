@@ -48,6 +48,12 @@ export function colorLabel(identity: string[]): string {
   if (identity.length === 2) return lookup(GUILDS, key) ?? "Multi";
   if (identity.length === 3) return lookup(TRIOMES, key) ?? "Multi";
 
-  const missing = Object.keys(COLOR_NAMES).find((c) => !identity.includes(c))!;
-  return `Non-${COLOR_NAMES[missing].toLowerCase()}`;
+  // Named explicitly rather than left as the fallthrough: a duplicate-bearing
+  // identity like ["W","W","U","U","B","B"] is length 6 with every code known,
+  // and would otherwise reach the find() below and throw on the assertion.
+  if (identity.length === 4) {
+    const missing = Object.keys(COLOR_NAMES).find((c) => !identity.includes(c))!;
+    return `Non-${COLOR_NAMES[missing].toLowerCase()}`;
+  }
+  return "Multi";
 }
