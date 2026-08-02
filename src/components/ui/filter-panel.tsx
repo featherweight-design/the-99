@@ -253,16 +253,11 @@ export function FilterPanel({
   function trapTab(e: React.KeyboardEvent) {
     const root = panelRef.current;
     if (!root) return;
-    // The listbox is included even though it is tabIndex=-1: with no search
-    // field it is the only thing carrying aria-activedescendant, so leaving it
-    // out of the cycle strands a sheet keyboard user outside the options.
+    // The listbox counts too: with no search field it is the only thing
+    // carrying aria-activedescendant, so the options live behind it.
     const focusable = [
       ...root.querySelectorAll<HTMLElement>("button, input, [role='listbox']"),
-    ].filter(
-      (el) =>
-        !el.hasAttribute("disabled") &&
-        (el.tabIndex !== -1 || el.getAttribute("role") === "listbox"),
-    );
+    ].filter((el) => !el.hasAttribute("disabled") && el.tabIndex !== -1);
     if (focusable.length === 0) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
@@ -488,8 +483,9 @@ export function FilterPanel({
           // With a search field the combobox owns focus and the active row; with
           // none the listbox has to, or the keyboard walk moves a highlight that
           // no assistive tech is told about. Keydown still reaches the dialog's
-          // handler by bubbling.
-          tabIndex={searchable ? undefined : -1}
+          // handler by bubbling. A real tab stop, not -1: at -1 you could Tab
+          // away from the options and never Tab back to them.
+          tabIndex={searchable ? undefined : 0}
           aria-activedescendant={
             !searchable && activeCode ? optionDomId(activeCode) : undefined
           }

@@ -596,16 +596,21 @@ describe("FilterPanel, the non-searchable variant's own hazards", () => {
     expect(screen.getByRole("button", { name: collectionFilterCopy.type.done })).toBeTruthy();
   });
 
-  it("keeps the sheet's option list inside the tab cycle", () => {
+  it("leaves the option list reachable by Tab when there is no search field", () => {
     setViewport(false);
     renderPanel({ searchable: false });
-    const panel = openPanel();
-    const list = within(panel).getByRole("listbox");
-    list.focus();
-    fireEvent.keyDown(panel, { key: "Tab", shiftKey: true });
-    // Shift+Tab off the first focusable wraps to the last, so the list must have
-    // been recognised as a stop rather than skipped over.
-    expect(document.activeElement).not.toBe(document.body);
+    const list = within(openPanel()).getByRole("listbox");
+    // At -1 the list takes focus on open but can never be Tabbed back to, and
+    // the options are only reachable through it.
+    expect(list.tabIndex).toBe(0);
+    expect(document.activeElement).toBe(list);
+  });
+
+  it("keeps the search field owning focus when there IS one", () => {
+    setViewport(false);
+    renderPanel({ searchable: true });
+    const list = within(openPanel()).getByRole("listbox");
+    expect(list.hasAttribute("tabindex")).toBe(false);
   });
 
   it("adopts the first row on Space rather than scrolling the page behind it", () => {
