@@ -157,7 +157,7 @@ export function FilterPanel({
   useEffect(() => {
     if (!open) return;
     if (searchable) inputRef.current?.focus();
-    else panelRef.current?.focus();
+    else (listRef.current ?? panelRef.current)?.focus();
   }, [open, searchable]);
 
   // Outside click and page scroll dismiss the desktop popover. (The sheet has a
@@ -443,6 +443,14 @@ export function FilterPanel({
           role="listbox"
           aria-multiselectable="true"
           aria-label={copy.panelAriaLabel}
+          // With a search field the combobox owns focus and the active row; with
+          // none the listbox has to, or the keyboard walk moves a highlight that
+          // no assistive tech is told about. Keydown still reaches the dialog's
+          // handler by bubbling.
+          tabIndex={searchable ? undefined : -1}
+          aria-activedescendant={
+            !searchable && activeCode ? optionDomId(activeCode) : undefined
+          }
           className="m-0 list-none overflow-y-auto p-0 max-h-[60vh] md:max-h-[384px]"
         >
           {groupList.map((group, gi) => (

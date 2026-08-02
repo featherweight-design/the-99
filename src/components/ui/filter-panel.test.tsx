@@ -446,6 +446,79 @@ describe("FilterPanel", () => {
   });
 });
 
+// The non-searchable path is what Type ▾ uses. With no search field there is no
+// combobox to hold DOM focus or aria-activedescendant, so focus, the keyboard
+// walk and the grouping all take a different branch from the Set panel above.
+describe("FilterPanel, not searchable", () => {
+  function openBare(over: Partial<React.ComponentProps<typeof FilterPanel>> = {}) {
+    const utils = renderPanel({ searchable: false, ...over });
+    return { ...utils, panel: openPanel() };
+  }
+
+  it("moves DOM focus onto the listbox, since there is no field to take it", () => {
+    setViewport(true);
+    const { panel } = openBare();
+    expect(document.activeElement).toBe(screen.getByRole("listbox"));
+    expect(panel).toContainElement(document.activeElement as HTMLElement);
+  });
+
+  it("exposes the keyboard-active row on the focused element", () => {
+    setViewport(true);
+    renderPanel({ searchable: false });
+    fireEvent.keyDown(screen.getByRole("button", { name: /Filter by set/ }), { key: "ArrowDown" });
+    const focused = document.activeElement as HTMLElement;
+    const active = focused.getAttribute("aria-activedescendant");
+    expect(active).toBeTruthy();
+    expect(document.getElementById(active!)).toHaveAttribute("data-code", "BLB");
+  });
+
+  it("walks and toggles with the arrow keys while the panel holds focus", () => {
+    setViewport(true);
+    const { panel, onToggle } = openBare();
+    fireEvent.keyDown(panel, { key: "ArrowDown" });
+    fireEvent.keyDown(panel, { key: "ArrowDown" });
+    fireEvent.keyDown(panel, { key: "Enter" });
+    expect(onToggle).toHaveBeenCalledWith("MH3");
+  });
+
+  it("leaves the options in their given order rather than pinning the selection", () => {
+    setViewport(true);
+    openBare({ selected: ["MH3"] });
+    const rows = within(screen.getByRole("listbox")).getAllByRole("option");
+    expect(rows.map((r) => r.getAttribute("data-code"))).toEqual(["BLB", "MH3", "BRO"]);
+    expect(screen.queryByRole("group")).toBeNull();
+  });
+
+  it("numbers the flat list without a group wrapper", () => {
+    setViewport(true);
+    openBare();
+    const rows = within(screen.getByRole("listbox")).getAllByRole("option");
+    expect(rows.map((r) => r.getAttribute("aria-posinset"))).toEqual(["1", "2", "3"]);
+    expect(rows[0]).toHaveAttribute("aria-setsize", "3");
+  });
+
+  it("closes on Esc and hands focus back to the trigger", () => {
+    setViewport(true);
+    const { panel } = openBare();
+    fireEvent.keyDown(panel, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /Filter by set/ }));
+  });
+
+  it("still clears from the footer", () => {
+    setViewport(true);
+    const { onClear } = openBare({ selected: ["BLB"] });
+    fireEvent.click(screen.getByRole("button", { name: collectionFilterCopy.set.clear }));
+    expect(onClear).toHaveBeenCalled();
+  });
+
+  it("takes focus on the sheet too, below the breakpoint", () => {
+    setViewport(false);
+    openBare();
+    expect(document.activeElement).toBe(screen.getByRole("listbox"));
+  });
+});
+
 // `Clear` and "toggle the last set off" both end at an empty selection, so the
 // announcement cannot be inferred from the resulting count — the button says so.
 describe("FilterPanel Clear announcement", () => {
