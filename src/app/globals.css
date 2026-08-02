@@ -129,10 +129,20 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
  * link, popover trigger, textarea) picks it up unless a component overrides.
  * border-radius is intentionally absent here — each component owns its own
  * radius (e.g. rail items use 8px, account trigger uses 14px, buttons 8px).
- * Adding a global radius here would override component-level values. */
-:focus-visible {
-  outline: 2px solid var(--brass);
-  outline-offset: 2px;
+ * Adding a global radius here would override component-level values.
+ *
+ * `@layer base` is load-bearing. Unlayered rules beat every layered one no
+ * matter the specificity, so while this sat outside a layer no component could
+ * opt out: `focus-visible:outline-none` compiles into Tailwind's `utilities`
+ * layer and always lost. That is why a field inside a focused container drew
+ * the container's indicator AND this outline — two stacked rings. Declaring it
+ * in `base` puts it below `utilities`, which is what makes "unless a component
+ * overrides" above actually true. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
+  }
 }
 
 /* ------------------------------------------------------------------

@@ -27,8 +27,10 @@ export function CommanderLightbox({
   // outside the dialog element and has to stay reachable by Tab.
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Focus trap, Escape, focus-return. No scroll lock — the lightbox covers the
-  // viewport, so there is nothing behind it to scroll.
+  // Focus trap, Escape, focus-return, and the shared scroll lock. The lightbox
+  // covers the viewport, so nothing behind it is visible to scroll — but on
+  // touch a drag still rubber-bands the page underneath, which is the whole
+  // reason the lock is the default.
   useDialogA11y(overlayRef, onClose);
 
   const gradient = commanderGradient(c.colorIdentity);

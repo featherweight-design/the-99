@@ -35,10 +35,11 @@ export function useDialogA11y(
   options?: {
     initialFocusRef?: RefObject<HTMLElement | null>;
     /**
-     * Hold the body at overflow:hidden while the dialog is up. Off by default —
-     * CardModal and the Issue Inspector deliberately let the page scroll behind
-     * them. Consumers that stay mounted while closed pass their open flag here
-     * rather than a literal, so the lock tracks the dialog rather than the
+     * Hold the body at overflow:hidden while the dialog is up. On by default:
+     * a modal that lets the page scroll behind it reads as broken, and every
+     * consumer that opted in individually was really just correcting the
+     * default. Consumers that stay mounted while closed pass their open flag
+     * here rather than a literal, so the lock tracks the dialog rather than the
      * component's lifetime.
      */
     lockScroll?: boolean;
@@ -52,7 +53,7 @@ export function useDialogA11y(
 ) {
   const triggerRef = useRef<HTMLElement | null>(null);
   const initialFocusRef = options?.initialFocusRef;
-  const lockScroll = options?.lockScroll ?? false;
+  const lockScroll = options?.lockScroll ?? true;
   const closeOnEscape = options?.closeOnEscape ?? true;
 
   // Remember what had focus before the dialog opened; return it on close.
