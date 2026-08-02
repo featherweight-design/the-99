@@ -1,69 +1,15 @@
 "use client";
-// Empty State — Filtered to Zero (§Empty State — Filtered to Zero).
-// Shows when the active color filter yields zero results.
-// Contains: dimmed WUBRG pips of active filter, "Showing 0 of N" count,
-// Cinzel heading, body text, "Clear color filter" button.
+// Empty State — Filtered to Zero (§Empty State — Filtered to Zero), as
+// re-skinned by the richness pass (Surfaces v2 §Commanders).
+// Contains: dimmed WUBRG pips of the active filter beside the crab, Cinzel
+// heading, body copy, the "Showing 0 of N" diagnostic, "Clear color filter".
 // Mobile breakpoint: sm:640px (project uses sm: prefix, table breakpoint is 640px).
 
 import { WUBRG_HEX } from "../../lib/collection/browse";
+import { guildLabel, colorWords } from "../../lib/copy/color-labels";
+import { commandersCopy } from "../../lib/copy/commanders";
+import { Crab } from "../character/crab";
 import { GhostButton } from "../ui/button";
-
-// Single-color names
-const MONO_NAMES: Record<string, string> = {
-  W: "White",
-  U: "Blue",
-  B: "Black",
-  R: "Red",
-  G: "Green",
-};
-
-// Two-color guild names (sorted WUBRG key)
-const GUILD_NAMES: Record<string, string> = {
-  WU: "Azorius",
-  WB: "Orzhov",
-  UB: "Dimir",
-  UR: "Izzet",
-  BR: "Rakdos",
-  BG: "Golgari",
-  WR: "Boros",
-  WG: "Selesnya",
-  UG: "Simic",
-  RG: "Gruul",
-};
-
-// Three-color shard/wedge names
-const TRIO_NAMES: Record<string, string> = {
-  WUB: "Esper",
-  WUR: "Jeskai",
-  WUG: "Bant",
-  WBR: "Mardu",
-  WBG: "Abzan",
-  UBR: "Grixis",
-  UBG: "Sultai",
-  URG: "Temur",
-  BRG: "Jund",
-  WRG: "Naya",
-};
-
-// Four-color names
-const QUAD_NAMES: Record<string, string> = {
-  WUBR: "Yore-Tiller (non-Green)",
-  WUBG: "Witch-Maw (non-Red)",
-  WURG: "Ink-Treader (non-Black)",
-  WBRG: "Dune-Brood (non-Blue)",
-  UBRG: "Chaos (non-White)",
-};
-
-function colorFilterLabel(colors: string[]): string {
-  if (colors.length === 0) return "this filter";
-  const sorted = [...colors].sort((a, b) => "WUBRG".indexOf(a) - "WUBRG".indexOf(b));
-  const key = sorted.join("");
-  if (sorted.length === 1) return MONO_NAMES[key] ?? key;
-  if (sorted.length === 2) return GUILD_NAMES[key] ?? key;
-  if (sorted.length === 3) return TRIO_NAMES[key] ?? key;
-  if (sorted.length === 4) return QUAD_NAMES[key] ?? key;
-  return "5-color"; // WUBRG
-}
 
 type FilteredEmptyProps = {
   colors: string[];
@@ -72,69 +18,74 @@ type FilteredEmptyProps = {
 };
 
 export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
-  const label = colorFilterLabel(colors);
+  const label = guildLabel(colors);
 
   return (
-    <div
-      className="flex flex-1 flex-col items-center justify-center text-center p-[24px_30px] sm:p-[40px]"
-    >
-      {/* Dimmed WUBRG pips (active filter colors) */}
-      <div
-        className="flex gap-[6px] mb-[18px] sm:mb-[20px]"
-        aria-hidden="true"
-      >
-        {colors.map((c) => (
-          <span
-            key={c}
-            className="block rounded-full"
-            style={{
-              width: 20,
-              height: 20,
-              background: WUBRG_HEX[c] ?? "#8E8269",
-              opacity: 0.5,
-            }}
-          />
-        ))}
-      </div>
+    // Vignette per Surfaces v2 — brass at 7%, existing token, no new hex.
+    <div className="flex flex-1 flex-col items-center justify-center text-center p-[24px_30px] sm:p-[40px] bg-[radial-gradient(420px_240px_at_50%_76%,rgba(201,162,75,0.07),transparent_70%)]">
+      {/* Mark row — the mock composes the dimmed pips and the crab side by
+          side (display:flex; align-items:center; gap:16px). */}
+      <div className="flex items-center gap-[16px]">
+        {/* Dimmed WUBRG pips (active filter colors) */}
+        <div className="flex gap-[6px]" aria-hidden="true">
+          {colors.map((c) => (
+            <span
+              key={c}
+              className="block rounded-full"
+              style={{
+                width: 16,
+                height: 16,
+                background: WUBRG_HEX[c] ?? "#8E8269",
+                opacity: 0.5,
+                boxShadow: "0 0 0 2px var(--brass)",
+              }}
+            />
+          ))}
+        </div>
 
-      {/* "Showing 0 of N" count — amber warning color */}
-      <p
-        className="m-0 font-mono text-[10.5px] sm:text-[11px]"
-        style={{ color: "#E0913C", marginBottom: 12 }}
-      >
-        Showing 0 of {total}
-      </p>
+        <Crab size={72} className="sm:hidden" />
+        <Crab size={88} className="hidden sm:block" />
+      </div>
 
       {/* Heading */}
       <h2
-        className="font-display m-0 text-[20px] sm:text-[24px]"
-        style={{ fontWeight: 700, color: "#EDE6D8" }}
+        className="font-display m-0 mt-[16px] text-[20px] sm:text-[24px]"
+        style={{ fontWeight: 700, color: "var(--fg)" }}
       >
-        No commanders in {label}
+        {commandersCopy.filteredEmpty.heading(label)}
       </h2>
 
       {/* Body */}
       <p
         className="m-0 text-[13px] sm:text-[14px]"
         style={{
-          color: "#C6B79A",
+          color: "var(--fg-body)",
           lineHeight: 1.6,
-          marginTop: 10,
-          maxWidth: 420,
+          marginTop: 8,
+          maxWidth: 380,
         }}
       >
-        None of your {total} ranked commander{total === 1 ? "" : "s"}{" "}
-        include{total === 1 ? "s" : ""} {label} in their color identity. Try a
-        different filter or clear it to see all results.
+        {commandersCopy.filteredEmpty.caption(colorWords(colors), total)}
+      </p>
+
+      {/* "Showing 0 of N" count — amber, and now below the caption: the
+          character leads, the diagnostic follows. It is the only place the
+          user learns the filter matched nothing rather than the list being
+          empty, so it stays. */}
+      <p
+        className="m-0 font-mono text-[10.5px] sm:text-[11px]"
+        style={{ color: "var(--warning)", marginTop: 12 }}
+      >
+        {commandersCopy.filteredEmpty.count(total)}
       </p>
 
       {/* Clear color filter button */}
       <GhostButton
         onClick={onClear}
         // brand focus-visible outline treatment inherited from globals.css
-        className="text-[13px] p-[11px_20px] sm:p-[10px_20px] mt-[20px]"
+        className="text-[13px] p-[11px_20px] sm:p-[10px_20px] mt-[16px]"
       >
-        Clear color filter
+        {commandersCopy.filteredEmpty.cta}
       </GhostButton>
     </div>
   );

@@ -328,7 +328,7 @@
 | grid-template-columns | — | 40px 100px 1fr 236px |
 | gap | — | 20px |
 | align-items | — | stretch |
-| padding | — | 18px 20px |
+| padding | — | 24px 26px (v2: 18→24, browse loosening) |
 | border-radius | — | 12px |
 | background | — | #1E1A15 |
 | border | — | 1px solid #2A241D |
@@ -427,7 +427,15 @@
 | min-width | — | 0 |
 | display | — | flex |
 | flex-direction | — | column |
-| gap | — | 9px |
+| gap | — | 13px (v2: 9 + 4, browse loosening) |
+
+> **v2 density delta (Surfaces v2 §Commanders).** The mock states "rec cards
+> padding 18→24, evidence row-gap +4". The "before" matches shipped desktop
+> code, so the absolute target is authoritative for padding. Mobile stays at v1
+> (`12px 13px`, `gap 9px`): the loosening is browse comfort, which desktop
+> dominates. The list gap between cards, the fit bar, the receipts and the sort
+> order are all unchanged — the mock's line ends "Fit bar, receipts, order
+> unchanged."
 
 ### Commander name (list card)
 | Property | Mobile | Desktop |
@@ -921,14 +929,57 @@
 | color | #EDE6D8 | #EDE6D8 |
 | margin-top | 7px | 6px |
 
+### Banner body row (v2 — mobile only; crab inline with the copy)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | — (desktop crab is a sibling of the content block) |
+| align-items | center | — |
+| gap | 10px | — |
+| margin-top | 3px | — |
+
 ### Banner body
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-size | 12.5px | 14px |
 | color | #C6B79A | #C6B79A |
 | line-height | 1.5 | 1.55 |
-| margin-top | 3px | 4px |
+| margin-top | — (v2: moved to the body row) | 4px |
 | max-width | — | 640px |
+
+### Crab Mark (v2 — first-run banner)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| component | `<Crab size={52}>` inline with the body copy | `<Crab size={88}>` at the far end of the banner row |
+| width × height | 52 × 35.75px | 88 × 60.5px |
+| flex | none | none |
+| stroke | var(--brass) #C9A24B | var(--brass) #C9A24B |
+| fill | var(--surface) #1E1A15 | var(--surface) #1E1A15 |
+| animation | `anim-bob`, 4.5s | `anim-bob`, 4.5s |
+| reduced motion | `animation: none` (globals.css) | `animation: none` (globals.css) |
+| aria | `aria-hidden` | `aria-hidden` |
+
+> **v2 copy delta.** Surfaces v2 §Commanders: "crab joins the XCIX crumb row,
+> copy: *1,418 cards read. 24 can lead. I ranked them — you're welcome.*" That
+> line **replaces** the v1 banner body (`{n} cards → {m} legal commanders…`)
+> rather than joining it; both state the same fact, and shipping both would put
+> two redundant strings on one surface. Numbers are live counts formatted with
+> `toLocaleString("en-US")`.
+>
+> The desktop crab sits at the end of the flex row rather than beside the 52px
+> XCIX seal, so the seal keeps its leading position; the mobile ribbon is too
+> tight for that, so the crab goes inline with the body copy at 52px.
+
+### Degraded / EDHREC-unavailable states — **no character** (v2)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| crab | absent — deliberately | absent — deliberately |
+| copy register | straight, amber, retry | straight, amber, retry |
+
+> Surfaces v2 ships the degraded banner as the **counter-example**: "Degraded
+> states — unchanged. Data-outage copy is utility: straight, amber, retry. The
+> discipline is the system." This covers both `degraded-banner.tsx` (EDHREC
+> offline) and the separate "EDHREC doesn't track this commander" note on the
+> rec card and detail page. Neither may take character copy or the crab.
 
 ---
 
@@ -1708,43 +1759,72 @@
 | justify-content | center | center |
 | text-align | center | center |
 | padding | 24px 30px | 40px |
+| background-image (v2) | `radial-gradient(420px 240px at 50% 76%, rgba(201,162,75,0.07), transparent 70%)` | same |
 
-### Active-filter pip row (dimmed, above heading)
+### Mark row (v2 — pips + crab, side by side)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| gap | 16px | 16px |
+
+> **v2 delta (Surfaces v2 §Commanders).** The mock composes the dimmed pips and
+> the crab as one centred row rather than stacking the crab above them. The v1
+> pip row's `margin-bottom` moves onto the heading's `margin-top`.
+
+### Active-filter pip row (dimmed, beside the crab)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | display | flex | flex |
 | gap | 6px | 6px |
-| margin-bottom | 18px | 20px |
-| Pip width | 20px | 20px |
-| Pip height | 20px | 20px |
+| margin-bottom | — (v2: moved to heading margin-top) | — |
+| Pip width | 16px (v2: was 20px) | 16px (v2: was 20px) |
+| Pip height | 16px (v2: was 20px) | 16px (v2: was 20px) |
 | Pip border-radius | 999px | 999px |
 | Pip opacity | 0.5 | 0.5 |
+| Pip box-shadow (v2) | 0 0 0 2px var(--brass) | 0 0 0 2px var(--brass) |
 
-### "Showing 0 of 24" count
+### Crab Mark (v2)
 | Property | Mobile | Desktop |
 |----------|--------|---------|
-| font-family | IBM Plex Mono, monospace | IBM Plex Mono, monospace |
-| font-size | 10.5px | 11px |
-| color | #E0913C | #E0913C |
-| margin-left | auto | auto |
+| component | `<Crab size={72}>` | `<Crab size={88}>` |
+| width × height | 72 × 49.5px | 88 × 60.5px |
+| stroke | var(--brass) #C9A24B | var(--brass) #C9A24B |
+| fill | var(--surface) #1E1A15 | var(--surface) #1E1A15 |
+| animation | `anim-bob`, 4.5s | `anim-bob`, 4.5s |
+| reduced motion | `animation: none` (globals.css) | `animation: none` (globals.css) |
+| aria | `aria-hidden` | `aria-hidden` |
 
-### Heading "No generals in {guild}"
+### Heading "No generals in {guild}."
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-family | Cinzel, serif | Cinzel, serif |
 | font-weight | 700 | 700 |
 | font-size | 20px | 24px |
-| color | #EDE6D8 | #EDE6D8 |
-| margin | 0 | 0 |
+| color | var(--fg) #EDE6D8 | var(--fg) #EDE6D8 |
+| margin | 16px 0 0 (v2: was 0) | 16px 0 0 (v2: was 0) |
 
 ### Body paragraph
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | font-size | 13px | 14px |
-| color | #C6B79A | #C6B79A |
+| color | var(--fg-body) #C6B79A | var(--fg-body) #C6B79A |
 | line-height | 1.6 | 1.6 |
-| margin | 10px 0 0 | 10px 0 0 |
-| max-width | — | 420px |
+| margin | 8px 0 0 (v2: was 10px) | 8px 0 0 (v2: was 10px) |
+| max-width | — | 380px (v2: was 420px) |
+
+### "Showing 0 of 24" count (v2 — demoted below the body copy)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| order | after the body paragraph (v2: was above the heading) | same |
+| font-family | IBM Plex Mono, monospace | IBM Plex Mono, monospace |
+| font-size | 10.5px | 11px |
+| color | var(--warning) #E0913C | var(--warning) #E0913C |
+| margin | 12px 0 0 (v2: was margin-bottom 12px) | 12px 0 0 |
+
+> The count is **retained**, not deleted: it is the only signal distinguishing
+> "your filter matched nothing" from "the list is empty". The v2 order puts the
+> character first and the diagnostic after, which is the point of the pass.
 
 ### "Clear color filter" button
 | Property | Mobile | Desktop |
@@ -1757,7 +1837,7 @@
 | border | 1px solid #3A3229 | 1px solid #3A3229 |
 | border-radius | 8px | 8px |
 | padding | 11px 20px | 10px 20px |
-| margin-top | 20px | 20px |
+| margin-top | 16px (v2: was 20px) | 16px (v2: was 20px) |
 | cursor | — | pointer |
 
 ---

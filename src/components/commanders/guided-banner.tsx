@@ -2,6 +2,15 @@
 // Desktop: gradient card with XCIX ring seal, step label, 3-diamond progress crumb, heading, body.
 // Mobile: ribbon style (left brass border) with step label + crumb, heading, body.
 // Shown when firstRun===true, above the list.
+//
+// Richness pass (Surfaces v2 §Commanders): "crab joins the XCIX crumb row,
+// copy: '1,418 cards read. 24 can lead. I ranked them — you're welcome.'"
+// That line *replaces* the v1 body copy rather than joining it — the v1 body
+// said the same thing in a straight register ("N cards → M legal commanders"),
+// and shipping both would put two strings with identical content on one surface.
+
+import { commandersCopy } from "../../lib/copy/commanders";
+import { Crab } from "../character/crab";
 
 type GuidedBannerProps = {
   uniqueCardsRead: number;
@@ -57,15 +66,14 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
           Review your commanders
         </h2>
 
-        {/* Body */}
-        <p
-          className="m-0"
-          style={{ fontSize: 12.5, color: "#C6B79A", lineHeight: 1.5, marginTop: 3 }}
-        >
-          {uniqueCardsRead.toLocaleString("en-US")} cards →{" "}
-          {candidateCount} legal commander{candidateCount === 1 ? "" : "s"}.
-          Pick one and build your first 99.
-        </p>
+        {/* Body — crab inline, sized down for the tighter ribbon */}
+        <div className="flex items-center gap-[10px]" style={{ marginTop: 3 }}>
+          <Crab size={52} className="flex-none" />
+          <p className="m-0" style={{ fontSize: 12.5, color: "#C6B79A", lineHeight: 1.5 }}>
+            {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}{" "}
+            {commandersCopy.firstRun.directive}
+          </p>
+        </div>
       </div>
 
       {/* ── Desktop banner ── */}
@@ -144,11 +152,15 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
               maxWidth: 640,
             }}
           >
-            {uniqueCardsRead.toLocaleString("en-US")} cards →{" "}
-            {candidateCount} legal commander{candidateCount === 1 ? "" : "s"} ranked for your
-            collection. Pick one to build your first 99.
+            {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}{" "}
+            {commandersCopy.firstRun.directive}
           </p>
         </div>
+
+        {/* Crab — at the far end of the row so it never crowds the 52px XCIX
+            ring seal on the left. The content block is flex-1 min-w-0, so it
+            absorbs the width the crab takes. */}
+        <Crab size={88} className="flex-none" />
       </div>
     </>
   );
