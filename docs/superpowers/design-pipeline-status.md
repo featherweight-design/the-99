@@ -24,9 +24,10 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | 📐 | Brief locked, awaiting Claude Design handoff production (mocks, components) |
 | 🎨 | Design in flight (workshop / handoff iteration / audit) |
 | 🚦 | Paused (mid-workshop; awaiting Hugh input or external dependency) |
-| 🕰️ | Backlog (design cycle not started) |
-| ⏳ | Ready for design (labelled `type: design`, not yet workshopped) |
+| 🕰️ | Backlog — labelled `type: design`, design cycle not started (no workshop, no brief). Ranked; the top of this list is what Design picks up next |
 | ✅ | Fully implemented + shipped |
+
+**Every `type: design` ticket sits in exactly one state above.** A ticket that fits none of them is a gap in this legend, not a ticket to file under the closest match — add it here as an unplaced row and say why, so the mismatch is visible instead of absorbed.
 
 ---
 
@@ -77,31 +78,27 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-Ranked by build order per the post-v1 roadmap tracker (#44). The per-surface brand + richness refresh tickets and #35 run ahead of these features.
+One ranked queue. Ranks 1–3 are v1 polish follow-ups against already-shipped surfaces; ranks 4–7 are post-v1 features ordered by the roadmap tracker (#44). The per-surface brand + richness refresh tickets and #35 run ahead of everything here.
+
+This list previously ran as two — a "Backlog" and a "Ready for design" — but the legend gave them the same definition (`type: design`, not yet workshopped), so nothing could be sorted between them by rule. The split was really a priority band, which the Rank column now carries.
 
 | Rank | Ticket | Adjacency / notes |
 |---|---|---|
-| 1 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
-| 2 | **#42** Design: Import existing decks (Moxfield) | Post-v1; lands in #8's deck surfaces; reconciliation UX is the core. **Also now owns #105's deferred scope** — choosing a different printing *per deck* was explicitly ruled out of #105 (which is a collection-level preference) and belongs here, since a deck-level override needs a deck to attach to |
-| 3 | **#43** Design: Cross-check recommendations against committed cards | Post-v1; touches #7 recs + #8 builder; value scales with deck count, so after #42 |
-| 4 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — last, needs accumulated play data |
+| 1 | **#140** Design: Inline error state for refused deck mutations | Ratification, not net-new design — the UI is **already live on `main`** (PR #139), which is why it outranks the rest. Five refusal strings need Design's sign-off or a rewrite; they are listed on the ticket |
+| 2 | **#62** Design: Issue Inspector handoff reconciliation | Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships |
+| 3 | **#130** + **#131** + **#132** Design: recommendations you can interrogate and act on — pre-populate a deck from recommendations · make Role Coverage explanatory and inspectable · suggest and add unowned cards | Post-v1. **One design cycle, not three** — Hugh flagged them as groupable when he filed them, and they share a premise: a recommendation the user cannot interrogate or act on is decoration. #131 is the seam; it needs #132's unowned cards to have anything to recommend beyond the collection, and it is where #130's "why was this picked" reasoning would surface. Split apart, each brief answers a third of one question. Both eng dependencies have now shipped — #127 landed the card-detail modal wiring #131's inspection gap needs, and #129 fixed the "Owned only" toggle under #132 — so nothing blocks this but a workshop. Open for #132: whether #44 already scopes it |
+| 4 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
+| 5 | **#42** Design: Import existing decks (Moxfield) | Post-v1; lands in #8's deck surfaces; reconciliation UX is the core. **Also now owns #105's deferred scope** — choosing a different printing *per deck* was explicitly ruled out of #105 (which is a collection-level preference) and belongs here, since a deck-level override needs a deck to attach to |
+| 6 | **#43** Design: Cross-check recommendations against committed cards | Post-v1; touches #7 recs + #8 builder; value scales with deck count, so after #42 |
+| 7 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — last, needs accumulated play data |
 
----
+### Rank 3 — open questions carried into the workshop
 
-## ⏳ Ready for design (not yet workshopped)
+Kept here rather than in the table cell, since one cycle covers three tickets:
 
-v1 polish follow-ups — sequenced ahead of the Backlog features above.
-
-| Ticket | Notes |
-|---|---|
-| **#62** Issue Inspector handoff reconciliation | `type: design`. Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships. |
-| **#130** Pre-populate a deck from commander recommendations | `type: design`, `phase: post-v1`. "Build this deck" drops the user into an empty deck at the moment of highest intent. Open: full auto-fill vs. opt-in per role vs. a reviewable "suggested starting 30"; what happens when the user owns too few cards for a role; how an auto-added card reads differently from a chosen one. |
-| **#131** Make Role Coverage explanatory and inspectable | `type: design`, `phase: post-v1`. Three gaps as one piece of work — no reasoning behind a grouping's picks, no way to open a recommended card, and no path from "good fit" to acting on it. |
-| **#132** Suggest and add cards the user does not own | `type: design`, `phase: post-v1`. The All / Shopping split promises a buying workflow that cannot happen, because every recommendation path is scoped to the collection. Needs recommendations that reach outside it, and a way to add an unowned card. First question is whether #44 already scopes it. |
-
-**#130–#132 are one design cycle, not three.** Hugh flagged them as groupable when he filed them, and they share a premise: a recommendation the user cannot interrogate or act on is decoration. #131 is the seam — it needs #132's unowned cards to have anything to recommend beyond the collection, and it is where #130's "why was this picked" reasoning would surface. Split apart, each brief answers a third of one question.
-
-Eng-side work already in flight that these depend on: **#127** builds the card-detail modal wiring #131's inspection gap needs, and **#129** is the immediate bug under #132 (the "Owned only" toggle does not widen the search).
+- **#130** — "Build this deck" drops the user into an empty deck at the moment of highest intent. Full auto-fill vs. opt-in per role vs. a reviewable "suggested starting 30"; what happens when the user owns too few cards for a role; how an auto-added card reads differently from a chosen one.
+- **#131** — three gaps as one piece of work: no reasoning behind a grouping's picks, no way to open a recommended card, and no path from "good fit" to acting on it.
+- **#132** — the All / Shopping split promises a buying workflow that cannot happen, because every recommendation path is scoped to the collection. Needs recommendations that reach outside it, and a way to add an unowned card.
 
 ---
 
