@@ -11,7 +11,7 @@ export function LoadingScreen({ copy }: { copy: LoadingCopy }) {
   return (
     <div
       role="status"
-      className="flex flex-col items-center justify-center text-center p-[40px] min-h-[420px] md:min-h-[520px] bg-[color:var(--bg)] bg-[radial-gradient(560px_320px_at_50%_68%,rgba(201,162,75,0.08),transparent_70%)]"
+      className="flex flex-1 flex-col items-center justify-center text-center p-[40px] min-h-[420px] md:min-h-[520px] bg-[color:var(--bg)] bg-[radial-gradient(560px_320px_at_50%_68%,rgba(201,162,75,0.08),transparent_70%)]"
     >
       <div className="relative inline-flex">
         <Crab size={96} />

@@ -22,13 +22,16 @@ export default async function Shell({ children }: { children: React.ReactNode })
   const locked = stats.uniqueCards === 0;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen flex-1">
       <NavRail locked={locked} />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader />
         {/* pb-[80px] on mobile leaves room for the fixed tab bar
             (48px content + 22px safe-area + ~10px gap). */}
-        <main className="min-w-0 flex-1 pb-[80px] md:pb-0">{children}</main>
+        {/* `flex flex-col` continues the stretch chain the rail already starts,
+            so a route child can claim the leftover height with flex-1 instead
+            of guessing at the header/tab-bar offsets in a calc(). */}
+        <main className="flex min-w-0 flex-1 flex-col pb-[80px] md:pb-0">{children}</main>
       </div>
       <TabBar locked={locked} />
     </div>

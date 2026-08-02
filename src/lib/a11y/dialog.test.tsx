@@ -59,14 +59,19 @@ describe("useDialogA11y closeOnEscape", () => {
 });
 
 describe("useDialogA11y scroll lock", () => {
-  it("leaves body scroll alone by default", () => {
+  it("locks body scroll by default", () => {
     renderDialog();
-    expect(document.body.style.overflow).toBe("");
+    expect(document.body.style.overflow).toBe("hidden");
   });
 
   it("locks body scroll when asked", () => {
     renderDialog({ lockScroll: true });
     expect(document.body.style.overflow).toBe("hidden");
+  });
+
+  it("leaves body scroll alone when a consumer opts out", () => {
+    renderDialog({ lockScroll: false });
+    expect(document.body.style.overflow).toBe("");
   });
 
   it("restores the previous overflow on unmount", () => {

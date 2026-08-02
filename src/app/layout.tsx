@@ -40,7 +40,9 @@ export default function RootLayout({
         lang="en"
         className={`${cinzel.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
       >
-        <body className="min-h-full bg-[color:var(--bg)] text-[color:var(--fg)]">
+        {/* Signed-out routes render without the shell, so the stretch chain has
+            to start here or a full-height child has nothing to grow into. */}
+        <body className="flex min-h-full flex-col bg-[color:var(--bg)] text-[color:var(--fg)]">
           <Shell>{children}</Shell>
         </body>
       </html>
