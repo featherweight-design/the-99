@@ -8,6 +8,7 @@ import type { UploadPreview } from "../../app/collection/actions";
 import { IssueInspector } from "./issue-inspector";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { Crab } from "../character/crab";
 
 const INITIAL_LIMIT = 8; // Per-section preview cap; full list lives in the Issue Inspector.
 
@@ -245,12 +246,26 @@ export function ReviewScreen({
           )}
         </div>
 
+        {/* Issue CTA strip — Surfaces v2 §Collection. The crab is allowed here
+            because nothing was lost; the type-to-confirm modal stays straight. */}
         {skipped > 0 && (
-          <div className="mt-[16px] md:mt-[20px] flex md:justify-center">
+          <div
+            className="mt-[16px] md:mt-[20px] flex flex-col md:flex-row md:items-center gap-[12px] md:gap-[16px] rounded-[12px] p-[14px_16px] md:p-[16px_20px]"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          >
+            <Crab size={56} className="flex-none self-start md:self-center" />
+            <div className="min-w-0 flex-1">
+              <div className="font-display font-bold text-[15px] md:text-[17px]" style={{ color: "var(--fg)" }}>
+                {issueInspectorCopy.entry.heading}
+              </div>
+              <p className="mt-[4px] m-0 text-[13px] md:text-[13.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
+                {issueInspectorCopy.entry.body(skipped)}
+              </p>
+            </div>
             <GhostButton
               type="button"
               onClick={() => setInspectorOpen(true)}
-              className="w-full md:w-auto text-[13.5px] px-[18px] py-[11px]"
+              className="w-full md:w-auto flex-none text-[13.5px] px-[18px] py-[11px]"
             >
               {issueInspectorCopy.entry.cta(skipped)}
             </GhostButton>

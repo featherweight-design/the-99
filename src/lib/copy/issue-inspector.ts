@@ -56,7 +56,13 @@ export const issueInspectorCopy = {
     noUnmatched:
       "No unmatched names — every card matched the Oracle database. The Unmatched tab is disabled.",
   },
+  // Richness pass §Non-safety-critical error moment — the crab gets to be funny
+  // here because nothing was lost. Transcribed from Surfaces v2 §Collection.
+  // Singular forms are derived, not mocked: a one-row import is reachable.
   entry: {
-    cta: (total: number) => `View all ${total.toLocaleString()} issues →`,
+    heading: "That CSV put up a fight.",
+    body: (total: number) =>
+      `${total.toLocaleString("en-US")} row${total === 1 ? "" : "s"} didn't parse — quantity columns, mostly. Nothing fatal. Want to see the carnage?`,
+    cta: (total: number) => `View ${total.toLocaleString("en-US")} issue${total === 1 ? "" : "s"}`,
   },
 };
