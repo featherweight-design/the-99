@@ -163,6 +163,11 @@ function collectorNumberSortKey(collectorNumber: string): number {
   return digits === "" ? Number.MAX_SAFE_INTEGER : Number(digits);
 }
 
+/** Scryfall occasionally emits a rarity outside the four the UI knows (e.g. "bonus"). */
+export function coerceRarity(rarity: string): BrowseCard["rarity"] {
+  return (RARITY_ORDER[rarity] !== undefined ? rarity : "common") as BrowseCard["rarity"];
+}
+
 /** Deterministic printing order: set code, then natural collector number, then the raw value. */
 export function comparePrintings(a: BrowsePrinting, b: BrowsePrinting): number {
   if (a.setCode !== b.setCode) return a.setCode < b.setCode ? -1 : 1;
@@ -210,7 +215,7 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
         manaCost: r.manaCost,
         oracleText: r.oracleText,
         keywords: r.keywords,
-        rarity: (RARITY_ORDER[r.rarity] !== undefined ? r.rarity : "common") as BrowseCard["rarity"],
+        rarity: coerceRarity(r.rarity),
         colorIdentity: r.colorIdentity,
         imageUri: null,
         quantity: r.quantity,
@@ -376,13 +381,17 @@ export function sortCards(
 }
 
 /**
- * Server query — joins collection_items × cards for the user and aggregates.
- * Untested-query pattern (see recommend.ts / summary.ts): thin, logic-free SQL,
+ * Server query — joins collection_items × cards for the user, optionally narrowed to one
+ * oracle id. Untested-query pattern (see recommend.ts / summary.ts): thin, logic-free SQL,
  * pure aggregation covered by tests above.
+ *
+ * Rooted in collection_items, so a card the user does not own yields no rows at all —
+ * card-detail.ts falls those through to the catalog rather than reporting "no such card".
  */
-export const loadBrowseCards = cache(async function loadBrowseCards(
+export async function selectCollectionRows(
   userId: string,
-): Promise<BrowseCard[]> {
+  oracleId?: string,
+): Promise<RawCollectionRow[]> {
   const { db } = await import("../../db");
   const { cardArtPreferences, cards, collectionItems, printings, sets } =
     await import("../../db/schema");
@@ -437,8 +446,17 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
         eq(cardArtPreferences.oracleId, collectionItems.oracleId),
       ),
     )
-    .where(eq(collectionItems.userId, userId));
-  return aggregateCollection(rows);
+    .where(and(
+      eq(collectionItems.userId, userId),
+      oracleId === undefined ? undefined : eq(collectionItems.oracleId, oracleId),
+    ));
+  return rows;
+}
+
+export const loadBrowseCards = cache(async function loadBrowseCards(
+  userId: string,
+): Promise<BrowseCard[]> {
+  return aggregateCollection(await selectCollectionRows(userId));
 });
 
 /**

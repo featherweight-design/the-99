@@ -8,6 +8,7 @@ import type { DeckDetail } from "../../lib/decks/read";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { colorLabel } from "../../lib/decks/format";
 import { PrimaryButton } from "@/components/ui/button";
+import { CardDetailTrigger } from "./card-detail-provider";
 
 interface BuilderSpineProps {
   deck: DeckDetail;
@@ -46,47 +47,56 @@ export function BuilderSpine({ deck, onExport }: BuilderSpineProps) {
       className="flex flex-col items-center md:flex-row md:items-center md:gap-[18px] px-[16px] pt-[40px] pb-[12px] md:px-[30px] md:py-[20px]"
       style={{ borderBottom: "1px solid #2A241D" }}
     >
-      {/* §Spine — commander art thumb (mobile) */}
-      <div
-        className="flex-none rounded-[5px] overflow-hidden md:hidden"
+      {/* §Spine — commander art thumb (mobile). The thumb is the commander's only
+          representation on this page, so it is also the way into its details (#91). */}
+      <CardDetailTrigger
+        oracleId={commander.oracleId}
+        name={commander.name}
+        className="block flex-none rounded-[5px] overflow-hidden md:hidden"
         style={{
           width: built === 0 ? 34 : 30,
           height: built === 0 ? 48 : 42,
           boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
           background: commander.imageUri ? undefined : thumbGradient,
+          border: "none",
+          padding: 0,
         }}
       >
         {commander.imageUri ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={commander.imageUri}
-            alt={commander.name}
+            alt=""
             className="w-full h-full object-cover object-top"
           />
         ) : (
-          <div className="w-full h-full" style={{ background: thumbGradient }} />
+          <span className="block w-full h-full" style={{ background: thumbGradient }} />
         )}
-      </div>
+      </CardDetailTrigger>
 
       {/* Commander thumb — desktop (different size) */}
-      <div
-        className="hidden md:flex flex-none rounded-[6px] overflow-hidden flex-shrink-0"
+      <CardDetailTrigger
+        oracleId={commander.oracleId}
+        name={commander.name}
+        className="hidden md:block flex-none rounded-[6px] overflow-hidden flex-shrink-0"
         style={{
           width: 44,
           height: 62,
           boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
           background: thumbGradient,
+          border: "none",
+          padding: 0,
         }}
       >
         {commander.imageUri && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={commander.imageUri}
-            alt={commander.name}
+            alt=""
             className="w-full h-full object-cover object-top"
           />
         )}
-      </div>
+      </CardDetailTrigger>
 
       {/* Center column: name + meta + progress */}
       <div className="flex-1 min-w-0 flex flex-col items-center md:items-start mt-[8px] md:mt-0">

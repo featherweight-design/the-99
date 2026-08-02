@@ -7,6 +7,7 @@ import { useTransition } from "react";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
 import { OwnershipDot } from "../ui/ownership-dot";
+import { CardDetailTrigger } from "./card-detail-provider";
 
 interface SuggestionCardProps {
   suggestion: DeckSuggestion;
@@ -41,14 +42,17 @@ export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardPro
         {/* §Suggestion card — ownership dot: 8×8px, radius 999px */}
         <OwnershipDot owned={suggestion.owned} className="w-[8px] h-[8px]" />
 
-        {/* §Suggestion card — card name: 13px–13.5px mobile / 13.5px desktop, flex 1, truncate */}
-        <span
-          className="flex-1 min-w-0 truncate text-[13px] md:text-[13.5px] font-medium"
-          style={{ color: "#EDE6D8" }}
+        {/* §Suggestion card — card name: 13px–13.5px mobile / 13.5px desktop, flex 1, truncate.
+            Also the click target for the detail modal (#127). */}
+        <CardDetailTrigger
+          oracleId={suggestion.oracleId}
+          name={suggestion.name}
           title={suggestion.name}
+          className="flex-1 min-w-0 truncate text-left text-[13px] md:text-[13.5px] font-medium"
+          style={{ color: "#EDE6D8", background: "transparent", border: "none", padding: 0 }}
         >
           {suggestion.name}
-        </span>
+        </CardDetailTrigger>
 
         {/* §Suggestion card — reason chip */}
         <span

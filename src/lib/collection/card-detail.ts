@@ -1,0 +1,139 @@
+// One card's full detail, for surfaces that hold nothing but an oracle id — the decklist,
+// the Add panel and the builder spine (#127, #91). loadBrowseCards cannot serve them: it is
+// rooted in collection_items, and a deck routinely lists cards the user does not own.
+
+import { cache } from "react";
+import type { BrowseCard, BrowsePrinting } from "./browse";
+import {
+  aggregateCollection,
+  coerceRarity,
+  comparePrintings,
+  resolveImageUri,
+  resolvedPrinting,
+  selectCollectionRows,
+} from "./browse";
+
+/** The `cards` columns the modal reads. */
+export type CatalogCardRow = {
+  oracleId: string;
+  name: string;
+  typeLine: string;
+  manaCost: string | null;
+  oracleText: string | null;
+  keywords: string[];
+  rarity: string;
+  colorIdentity: string[];
+  imageUri: string | null;
+};
+
+/** One `printings` row joined to its `sets` row. */
+export type CatalogPrintingRow = {
+  setCode: string;
+  setName: string | null;
+  collectorNumber: string;
+  releasedAt: string | null;
+  imageUri: string | null;
+};
+
+/**
+ * A BrowseCard for a card nobody owns: every printing the catalog knows, at quantity 0.
+ *
+ * The empty `finishes` is the honest answer rather than `{nonfoil: 0}` — the picker captions
+ * a breakdown only when copies exist, and a zeroed finish would caption one that does not.
+ */
+export function catalogCard(
+  card: CatalogCardRow,
+  printingRows: CatalogPrintingRow[],
+): BrowseCard {
+  const printings: BrowsePrinting[] = printingRows
+    .map((p) => ({
+      setCode: p.setCode.toUpperCase(),
+      setName: p.setName,
+      collectorNumber: p.collectorNumber,
+      releasedAt: p.releasedAt,
+      quantity: 0,
+      finishes: {},
+      // Same tier order as an owned printing, minus the representative tier: this row IS the
+      // exact printing, so tier 2 could only ever repeat it.
+      imageUri: resolveImageUri({
+        exactImageUri: p.imageUri,
+        representativeImageUri: null,
+        cardImageUri: card.imageUri,
+      }),
+    }))
+    .sort(comparePrintings);
+
+  const result: BrowseCard = {
+    oracleId: card.oracleId,
+    name: card.name,
+    typeLine: card.typeLine,
+    manaCost: card.manaCost,
+    oracleText: card.oracleText,
+    keywords: card.keywords,
+    rarity: coerceRarity(card.rarity),
+    colorIdentity: card.colorIdentity,
+    imageUri: card.imageUri,
+    quantity: 0,
+    printings,
+    setCodes: [...new Set(printings.map((p) => p.setCode))],
+    primarySetCode: "",
+    preferredPrinting: null,
+  };
+
+  // Art and caption come from the same printing, exactly as aggregateCollection insists.
+  // A card whose printings never ingested keeps the oracle-level image and an empty set code.
+  const primary = resolvedPrinting(result);
+  if (primary) {
+    result.primarySetCode = primary.setCode;
+    result.imageUri = primary.imageUri;
+  }
+  return result;
+}
+
+/**
+ * Server query — the owned view of a card when the user has one, else the catalog view.
+ * Returns null only when the oracle id is not in `cards` at all.
+ *
+ * Untested-query pattern: the SQL is logic-free and the synthesis lives in `catalogCard`,
+ * which is covered by tests.
+ */
+export const loadCardDetail = cache(async function loadCardDetail(
+  userId: string,
+  oracleId: string,
+): Promise<BrowseCard | null> {
+  const owned = aggregateCollection(await selectCollectionRows(userId, oracleId));
+  if (owned.length > 0) return owned[0];
+
+  const { db } = await import("../../db");
+  const { cards, printings, sets } = await import("../../db/schema");
+  const { eq } = await import("drizzle-orm");
+  const [card] = await db
+    .select({
+      oracleId: cards.oracleId,
+      name: cards.name,
+      typeLine: cards.typeLine,
+      manaCost: cards.manaCost,
+      oracleText: cards.oracleText,
+      keywords: cards.keywords,
+      rarity: cards.rarity,
+      colorIdentity: cards.colorIdentity,
+      imageUri: cards.imageUri,
+    })
+    .from(cards)
+    .where(eq(cards.oracleId, oracleId));
+  if (!card) return null;
+
+  const printingRows = await db
+    .select({
+      setCode: printings.setCode,
+      setName: sets.name,
+      collectorNumber: printings.collectorNumber,
+      releasedAt: sets.releasedAt,
+      imageUri: printings.imageUri,
+    })
+    .from(printings)
+    // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
+    .leftJoin(sets, eq(sets.code, printings.setCode))
+    .where(eq(printings.oracleId, oracleId));
+  return catalogCard(card, printingRows);
+});
