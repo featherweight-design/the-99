@@ -4,7 +4,7 @@ import { twMerge } from "tailwind-merge";
 // when it is not. Shared by the decklist row, the suggestion card and the
 // export dialog's shopping list.
 //
-// Colour and shape only. Sizing stays with the caller: the design tables put
+// Color and shape only. Sizing stays with the caller: the design tables put
 // the dot at 7px responsive in the decklist row, a flat 8px on the suggestion
 // card and a flat 7px in the export dialog, so a fixed size here would be
 // overridden at every call site.

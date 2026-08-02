@@ -212,7 +212,7 @@ export function CollectionBrowser({
     [cards, filterColors, filterTypes, ownedSets],
   );
 
-  // Same rule the other way round: type counts move with the colours and the
+  // Same rule the other way round: type counts move with the colors and the
   // set selection, not with the type selection or the search box.
   const typeOptions = useMemo(
     () =>

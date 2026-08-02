@@ -313,7 +313,7 @@ export function IssueInspector({
           onClick={onClose}
           aria-label={issueInspectorCopy.header.closeAriaLabel}
           // §Close: --surface-raised circle, 1px --border-strong, hover brass.
-          // Colour is a utility, not inline style: an inline color outranks the
+          // Color is a utility, not inline style: an inline color outranks the
           // hover: variant and the brass hover never lands.
           className="absolute top-[18px] right-[20px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center text-[color:var(--fg-muted)] hover:[color:var(--brass)]"
           style={{

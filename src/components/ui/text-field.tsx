@@ -16,7 +16,7 @@ import { twMerge } from "tailwind-merge";
 // The border is three longhand utilities, not a `[border:…]` shorthand: a
 // caller passing `border-[color:…]` has to be able to win, and twMerge can only
 // drop a class it recognises as the same property. Against the shorthand the
-// caller's colour was silently reset — several fields lost their specified
+// caller's color was silently reset — several fields lost their specified
 // border that way.
 const FIELD_CHROME =
   "rounded-lg bg-[color:var(--surface-sunken)] " +

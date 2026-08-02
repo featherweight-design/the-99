@@ -12,8 +12,8 @@ describe("TextField", () => {
 
   // The border is three longhand utilities precisely so this can happen. As a
   // [border:…] shorthand it outranked the caller and three fields silently lost
-  // the colour their design table specifies.
-  it("lets a caller override the border colour", () => {
+  // the color their design table specifies.
+  it("lets a caller override the border color", () => {
     render(<TextField aria-label="Name" className="border-[color:var(--danger)]" />);
     const el = screen.getByLabelText("Name");
     expect(el.className).toContain("border-[color:var(--danger)]");
@@ -26,7 +26,7 @@ describe("TextField", () => {
     expect(screen.getByLabelText("Name").getAttribute("style")).toBeNull();
   });
 
-  it("keeps the default border colour when the caller overrides only at a breakpoint", () => {
+  it("keeps the default border color when the caller overrides only at a breakpoint", () => {
     render(<TextField aria-label="Name" className="md:border-[color:var(--brass)]" />);
     const el = screen.getByLabelText("Name");
     expect(el.className).toContain("border-[color:var(--border-strong)]");

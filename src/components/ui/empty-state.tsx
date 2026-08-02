@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 
 // Shared shell for the page-level empty states (/decks, /collection,
-// /commanders). Like the button primitives, these own tokens only — colour,
+// /commanders). Like the button primitives, these own tokens only — color,
 // family, weight, line-height, layout — and leave font-size, spacing and the
 // mark to the caller, because every surface's design table sizes them
 // differently. Fixing sizes here would only mean overriding them everywhere.

@@ -43,7 +43,7 @@ describe("poolCountFromMaskTally", () => {
 
   it("all submasks of WUBRG are included", () => {
     const tally = new Map<number, number>();
-    // 5 single-colour cards, one each
+    // 5 single-color cards, one each
     for (const c of ["W", "U", "B", "R", "G"]) tally.set(colorIdentityMask([c]), 1);
     expect(poolCountFromMaskTally(tally, colorIdentityMask(["W", "U", "B", "R", "G"]))).toBe(5);
   });

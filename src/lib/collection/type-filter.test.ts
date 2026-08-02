@@ -64,7 +64,7 @@ describe("buildTypeOptions", () => {
     expect(land.disabled).toBe(true);
   });
 
-  it("counts under the colour filter", () => {
+  it("counts under the color filter", () => {
     const counts = Object.fromEntries(
       buildTypeOptions(cards, { ...noFilters, colors: ["G"] }).map((o) => [o.code, o.count]),
     );
