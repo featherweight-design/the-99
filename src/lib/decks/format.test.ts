@@ -49,6 +49,14 @@ describe("colorLabel", () => {
     expect(colorLabel(["X"])).toBe("X");
   });
 
+  // Plain map indexing reaches the Object prototype, which would return a
+  // function where the signature promises a string.
+  it("does not treat inherited object keys as color codes", () => {
+    expect(colorLabel(["toString"])).toBe("toString");
+    expect(colorLabel(["W", "constructor"])).toBe("Multi");
+    expect(colorLabel(["valueOf", "hasOwnProperty"])).toBe("Multi");
+  });
+
   it("falls back to Multi when any code in a combination is unknown", () => {
     // Without the guard this reads "Non-red", naming a combination the card
     // does not have.
