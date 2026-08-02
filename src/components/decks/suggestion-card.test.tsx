@@ -72,7 +72,8 @@ describe("SuggestionCard", () => {
     expect(screen.getByRole("button", { name: /Add Sol Ring to deck/ })).toBeInTheDocument();
     const alert = screen.getByRole("alert");
     expect(alert).toHaveTextContent("This card sits outside your commander's colors.");
-    expect(alert).toHaveAttribute("aria-live", "polite");
+    // role="alert" carries the implicit assertive live region; no aria-live needed.
+    expect(alert).not.toHaveAttribute("aria-live");
   });
 
   it("reverts with a plain message when the action throws", async () => {

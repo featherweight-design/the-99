@@ -25,7 +25,9 @@ export type DeckAddRejection =
 /**
  * Validates that a card may be added to a Commander deck.
  * Returns a rejection code when the card is rejected, or null when it is
- * allowed. Codes (not prose) so the UI owns the wording — see mutation-result.
+ * allowed. Codes rather than prose keeps the wording in one place — every
+ * refusal string lives in mutation-result.ts, which both the action and the
+ * rows read, so a copy change never has to be made twice.
  *
  * Rules:
  *  - Deck must be under 99 built cards.

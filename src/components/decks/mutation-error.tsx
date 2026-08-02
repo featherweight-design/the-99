@@ -6,10 +6,12 @@ interface MutationErrorProps {
 }
 
 export function MutationError({ message }: MutationErrorProps) {
+  // role="alert" already implies an assertive live region, and the refusal answers
+  // a click the user is waiting on, so interrupting is correct. A redundant
+  // aria-live="polite" alongside it only fights the implicit value.
   return (
     <p
       role="alert"
-      aria-live="polite"
       className="text-[11px] md:text-[11.5px] leading-[1.45] mt-[6px]"
       style={{ color: "#E0913C" }}
     >

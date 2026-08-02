@@ -65,6 +65,7 @@ describe("DecklistRow", () => {
     expect(screen.getByText("Sol Ring")).toBeInTheDocument();
     const alert = screen.getByRole("alert");
     expect(alert).toHaveTextContent(DECK_REMOVE_FALLBACK_MESSAGE);
-    expect(alert).toHaveAttribute("aria-live", "polite");
+    // role="alert" carries the implicit assertive live region; no aria-live needed.
+    expect(alert).not.toHaveAttribute("aria-live");
   });
 });

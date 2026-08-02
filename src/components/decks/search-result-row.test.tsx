@@ -75,7 +75,8 @@ describe("SearchResultRow", () => {
     expect(screen.queryByText("✓ In deck")).not.toBeInTheDocument();
     const alert = screen.getByRole("alert");
     expect(alert).toHaveTextContent("This deck is already at 99 cards.");
-    expect(alert).toHaveAttribute("aria-live", "polite");
+    // role="alert" carries the implicit assertive live region; no aria-live needed.
+    expect(alert).not.toHaveAttribute("aria-live");
   });
 
   it("reverts with a plain message when the action throws", async () => {
