@@ -37,7 +37,13 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
       const result = await mutate().catch(
         (): DeckMutationResult => ({ ok: false, message: fallbackMessage }),
       );
-      if (result && !result.ok) setError(result.message);
+      if (result && !result.ok) {
+        // Drop the override in the same pass as the message. The transition's own
+        // revert only lands when it ends, so without this there is a frame drawing
+        // "✓ In deck" above the reason it could not be added.
+        setApplied(committed);
+        setError(result.message);
+      }
     });
   }
 
