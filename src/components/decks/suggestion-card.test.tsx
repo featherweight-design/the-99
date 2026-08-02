@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { CardDetailProvider } from "./card-detail-provider";
 
 const { addCardToDeck } = vi.hoisted(() => ({ addCardToDeck: vi.fn() }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
@@ -35,12 +36,20 @@ beforeEach(() => {
   addCardToDeck.mockReset();
 });
 
+// These rows wrap their card name in CardDetailTrigger (#127), which needs the
+// provider's context; the mutation behaviour under test is independent of it.
+function renderRow(ui: React.ReactNode) {
+  render(
+    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>{ui}</CardDetailProvider>,
+  );
+}
+
 describe("SuggestionCard", () => {
   it("shows the committed state before the action resolves", async () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
 
-    render(<SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />);
+    renderRow(<SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />);
     await clickAdd();
 
     expect(screen.getByText("✓ In deck")).toBeInTheDocument();
@@ -54,7 +63,7 @@ describe("SuggestionCard", () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
 
-    render(<SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />);
+    renderRow(<SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />);
     await clickAdd();
     await act(async () => {
       pending.resolve({ ok: false, message: "This card sits outside your commander's colors." });
@@ -69,7 +78,7 @@ describe("SuggestionCard", () => {
   it("reverts with a plain message when the action throws", async () => {
     addCardToDeck.mockRejectedValue(new Error("boom"));
 
-    render(<SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />);
+    renderRow(<SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />);
     await clickAdd();
 
     expect(screen.getByRole("alert")).toHaveTextContent(DECK_ADD_FALLBACK_MESSAGE);

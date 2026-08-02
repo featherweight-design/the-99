@@ -3,6 +3,7 @@ import { useState } from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { CardDetailProvider } from "./card-detail-provider";
 
 const { addCardToDeck } = vi.hoisted(() => ({ addCardToDeck: vi.fn() }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
@@ -36,12 +37,20 @@ beforeEach(() => {
   addCardToDeck.mockReset();
 });
 
+// These rows wrap their card name in CardDetailTrigger (#127), which needs the
+// provider's context; the mutation behaviour under test is independent of it.
+function renderRow(ui: React.ReactNode) {
+  render(
+    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>{ui}</CardDetailProvider>,
+  );
+}
+
 describe("SearchResultRow", () => {
   it("shows the committed state before the action resolves", async () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
 
-    render(<SearchResultRow result={result} deckId="d1" inDeck={false} />);
+    renderRow(<SearchResultRow result={result} deckId="d1" inDeck={false} />);
     await clickAdd();
 
     expect(screen.getByText("✓ In deck")).toBeInTheDocument();
@@ -56,7 +65,7 @@ describe("SearchResultRow", () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
 
-    render(<SearchResultRow result={result} deckId="d1" inDeck={false} />);
+    renderRow(<SearchResultRow result={result} deckId="d1" inDeck={false} />);
     await clickAdd();
     await act(async () => {
       pending.resolve({ ok: false, message: "This deck is already at 99 cards." });
@@ -72,7 +81,7 @@ describe("SearchResultRow", () => {
   it("reverts with a plain message when the action throws", async () => {
     addCardToDeck.mockRejectedValue(new Error("boom"));
 
-    render(<SearchResultRow result={result} deckId="d1" inDeck={false} />);
+    renderRow(<SearchResultRow result={result} deckId="d1" inDeck={false} />);
     await clickAdd();
 
     expect(screen.getByRole("alert")).toHaveTextContent(DECK_ADD_FALLBACK_MESSAGE);
@@ -97,7 +106,7 @@ describe("SearchResultRow", () => {
       );
     }
 
-    render(<Harness />);
+    renderRow(<Harness />);
     await clickAdd();
     await act(async () => {
       pending.resolve({ ok: true });
@@ -113,7 +122,7 @@ describe("SearchResultRow", () => {
     addCardToDeck.mockReturnValue(pending.promise);
     const forest = { oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", owned: true };
 
-    render(<SearchResultRow result={forest} deckId="d1" inDeck />);
+    renderRow(<SearchResultRow result={forest} deckId="d1" inDeck />);
     await act(async () => {
       screen.getByRole("button", { name: /Add Forest to deck/ }).click();
     });

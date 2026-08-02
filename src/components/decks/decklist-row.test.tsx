@@ -2,6 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { CardDetailProvider } from "./card-detail-provider";
 
 const { removeCardFromDeck } = vi.hoisted(() => ({ removeCardFromDeck: vi.fn() }));
 vi.mock("../../app/decks/actions", () => ({ removeCardFromDeck }));
@@ -32,12 +33,20 @@ beforeEach(() => {
   removeCardFromDeck.mockReset();
 });
 
+// These rows wrap their card name in CardDetailTrigger (#127), which needs the
+// provider's context; the mutation behaviour under test is independent of it.
+function renderRow(ui: React.ReactNode) {
+  render(
+    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>{ui}</CardDetailProvider>,
+  );
+}
+
 describe("DecklistRow", () => {
   it("hides the card before the removal resolves", async () => {
     const pending = deferred<void>();
     removeCardFromDeck.mockReturnValue(pending.promise);
 
-    render(<DecklistRow deckId="d1" card={card} />);
+    renderRow(<DecklistRow deckId="d1" card={card} />);
     await clickRemove();
 
     expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
@@ -50,7 +59,7 @@ describe("DecklistRow", () => {
   it("brings the card back and explains when the removal fails", async () => {
     removeCardFromDeck.mockRejectedValue(new Error("boom"));
 
-    render(<DecklistRow deckId="d1" card={card} />);
+    renderRow(<DecklistRow deckId="d1" card={card} />);
     await clickRemove();
 
     expect(screen.getByText("Sol Ring")).toBeInTheDocument();
