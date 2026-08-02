@@ -33,10 +33,17 @@ import { SearchField } from "./text-field";
 import { useIsDesktop } from "./use-is-desktop";
 
 export type FilterPanelOption = {
-  /** Stable identity — the uppercased set code for Set ▾. */
+  /**
+   * Stable identity — the uppercased set code for Set ▾, the type name for
+   * Type ▾, the WUBRG letter for Color ▾, the sort key for Sort ▾.
+   */
   code: string;
   label: string;
-  /** Owned cards surviving the OTHER active filters. 0 ⇒ the row is disabled. */
+  /**
+   * Owned cards surviving the OTHER active filters. Whether 0 disables the row
+   * is the caller's call, not this type's: Sort ▾ passes `showCounts={false}`
+   * and 0 for every row, all of them enabled.
+   */
   count: number;
   disabled: boolean;
   /**

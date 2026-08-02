@@ -6,7 +6,19 @@
 // live here, which is what makes them testable without rendering a panel.
 
 import { DEFAULT_SORT_DIRECTION, type SortDirection, type SortKey } from "./browse";
-import type { FilterPanelOption } from "../../components/ui/filter-panel";
+
+/**
+ * Structurally what FilterPanel renders, declared here rather than imported from
+ * the component: set-filter and color-filter each own their option type too, and
+ * src/lib stays free of UI imports.
+ */
+export type SortOption = {
+  code: string;
+  label: string;
+  hint?: string;
+  count: number;
+  disabled: boolean;
+};
 
 export const SORT_KEYS = ["name", "quantity", "set", "rarity", "color"] as const satisfies readonly SortKey[];
 
@@ -44,7 +56,7 @@ export function sortOrderLabel(sort: SortKey, direction: SortDirection): string 
  * row has no direction yet — picking it adopts that key's default — so labelling
  * one would be a promise about a state the click does not produce.
  */
-export function buildSortOptions(sort: SortKey, direction: SortDirection): FilterPanelOption[] {
+export function buildSortOptions(sort: SortKey, direction: SortDirection): SortOption[] {
   return SORT_KEYS.map((key) => ({
     code: key,
     label: SORT_LABELS[key],
