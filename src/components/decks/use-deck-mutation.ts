@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
 /**
@@ -30,6 +30,14 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
     setError(null);
   }
 
+  // `run`'s closure captures the committed value from the click's render, which
+  // a revalidation mid-flight can outdate. The revert below has to land on the
+  // server's current answer, not the one that was true when the user clicked.
+  const committedRef = useRef(committed);
+  useEffect(() => {
+    committedRef.current = committed;
+  }, [committed]);
+
   function run(mutate: () => Promise<DeckMutationResult | void>) {
     startTransition(async () => {
       setApplied(true);
@@ -41,7 +49,7 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
         // Drop the override in the same pass as the message. The transition's own
         // revert only lands when it ends, so without this there is a frame drawing
         // "✓ In deck" above the reason it could not be added.
-        setApplied(committed);
+        setApplied(committedRef.current);
         setError(result.message);
       }
     });
