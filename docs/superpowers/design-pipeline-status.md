@@ -11,7 +11,7 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 | Brand system — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens | `design/design_handoff_the99_brand/` | refreshed 2026-07-24 (PR #54) |
 | Voice — Kitchen Table (locked, verbatim in the richness README) | `design/design_handoff_the99_richness/README.md` | locked 2026-07-20 |
 
-The READINESS exemption is narrow: it covers only a handoff that ships no surfaces and names no states. The richness pass ships per-surface mocks, so it is audited like a feature and sits in 🟢 below rather than here.
+The READINESS exemption is narrow: it covers only a handoff that ships no surfaces and names no states. The richness pass ships per-surface mocks, so it was audited like a feature and sits in ✅ Shipped below rather than here.
 
 ---
 
@@ -77,21 +77,22 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-One ranked queue. Ranks 1–2 are v1 polish follow-ups against already-shipped surfaces; ranks 3–7 are post-v1 features ordered by the roadmap tracker (#44). Rank 3 sorts ahead of the other post-v1 work because both of its eng dependencies have already shipped. The per-surface brand + richness refresh tickets and #35 run ahead of everything here.
+One ranked queue. Ranks 1–3 are v1 polish follow-ups against already-shipped surfaces; ranks 4–8 are post-v1 features ordered by the roadmap tracker (#44). Rank 4 sorts ahead of the other post-v1 work because both of its eng dependencies have already shipped. The per-surface brand + richness refresh tickets and #35 run ahead of everything here.
 
 This list previously ran as two — a "Backlog" and a "Ready for design" — but the legend gave them the same definition (`type: design`, not yet workshopped), so nothing could be sorted between them by rule. The split was really a priority band, which the Rank column now carries.
 
 | Rank | Ticket | Adjacency / notes |
 |---|---|---|
 | 1 | **#140** Design: Inline error state for refused deck mutations | Ratification, not net-new design — the UI is **already live on `main`** (PR #139), which is why it outranks the rest. Five refusal strings need Design's sign-off or a rewrite; they are listed on the ticket |
-| 2 | **#62** Design: Issue Inspector handoff reconciliation | Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships |
-| 3 | **#130** + **#131** + **#132** Design: recommendations you can interrogate and act on — pre-populate a deck from recommendations · make Role Coverage explanatory and inspectable · suggest and add unowned cards | Post-v1. **One design cycle, not three** — Hugh flagged them as groupable when he filed them, and they share a premise: a recommendation the user cannot interrogate or act on is decoration. #131 is the seam; it needs #132's unowned cards to have anything to recommend beyond the collection, and it is where #130's "why was this picked" reasoning would surface. Split apart, each brief answers a third of one question. Both eng dependencies have now shipped — #127 landed the card-detail modal wiring #131's inspection gap needs, and #129 fixed the "Owned only" toggle under #132 — so nothing blocks this but a workshop. Open for #132: whether #44 already scopes it |
-| 4 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
-| 5 | **#42** Design: Import existing decks (Moxfield) | Post-v1; lands in #8's deck surfaces; reconciliation UX is the core. **Also now owns #105's deferred scope** — choosing a different printing *per deck* was explicitly ruled out of #105 (which is a collection-level preference) and belongs here, since a deck-level override needs a deck to attach to |
-| 6 | **#43** Design: Cross-check recommendations against committed cards | Post-v1; touches #7 recs + #8 builder; value scales with deck count, so after #42 |
-| 7 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — last, needs accumulated play data |
+| 2 | **#148** Design: ratify the richness pass interpretive calls | Ratification, same class as #140 — the UI is **already live on `main`** (PRs #66, #144, #145, #146). Three calls on the 99/99 completion reveal (band not surface, dismissible-only, a derived mobile composition) plus two invented strings the mock did not supply: a mobile empty-builder caption, and the guided banner's directive, which the mock's richness line would otherwise have deleted |
+| 3 | **#62** Design: Issue Inspector handoff reconciliation | Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships |
+| 4 | **#130** + **#131** + **#132** Design: recommendations you can interrogate and act on — pre-populate a deck from recommendations · make Role Coverage explanatory and inspectable · suggest and add unowned cards | Post-v1. **One design cycle, not three** — Hugh flagged them as groupable when he filed them, and they share a premise: a recommendation the user cannot interrogate or act on is decoration. #131 is the seam; it needs #132's unowned cards to have anything to recommend beyond the collection, and it is where #130's "why was this picked" reasoning would surface. Split apart, each brief answers a third of one question. Both eng dependencies have now shipped — #127 landed the card-detail modal wiring #131's inspection gap needs, and #129 fixed the "Owned only" toggle under #132 — so nothing blocks this but a workshop. Open for #132: whether #44 already scopes it |
+| 5 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
+| 6 | **#42** Design: Import existing decks (Moxfield) | Post-v1; lands in #8's deck surfaces; reconciliation UX is the core. **Also now owns #105's deferred scope** — choosing a different printing *per deck* was explicitly ruled out of #105 (which is a collection-level preference) and belongs here, since a deck-level override needs a deck to attach to |
+| 7 | **#43** Design: Cross-check recommendations against committed cards | Post-v1; touches #7 recs + #8 builder; value scales with deck count, so after #42 |
+| 8 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — last, needs accumulated play data |
 
-### Rank 3 — open questions carried into the workshop
+### Rank 4 — open questions carried into the workshop
 
 Kept here rather than in the table cell, since one cycle covers three tickets:
 
@@ -103,7 +104,7 @@ Kept here rather than in the table cell, since one cycle covers three tickets:
 
 ## ✅ Shipped
 
-The first six shipped against the pre-richness baseline; **#51** then applied brand tokens + the richness pass across all four v1 surfaces, so shipped UI and the current handoff mocks no longer diverge. Three interpretive calls on the 99/99 completion reveal — band rather than full surface, dismissible-only rather than a ~4s timer, and a derived mobile composition — are recorded in `docs/superpowers/design-tables/decks.md` §Completion Reveal and await Design ratification.
+The first six shipped against the pre-richness baseline; **#51** then applied brand tokens + the richness pass across all four v1 surfaces, so shipped UI and the current handoff mocks no longer diverge. Three interpretive calls on the 99/99 completion reveal — band rather than full surface, dismissible-only rather than a ~4s timer, and a derived mobile composition — are recorded in `docs/superpowers/design-tables/decks.md` §Completion Reveal. Those, plus two strings invented where the mock supplied none, await Design ratification as **#148** (backlog rank 2).
 
 | # / vertical | Handoff | Shipped |
 |---|---|---|
