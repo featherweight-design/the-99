@@ -15,7 +15,9 @@ import {
   type SortDirection,
   type SortKey,
 } from "../../lib/collection/browse";
-import { parseSortDirection } from "../../lib/collection/sort-options";
+// SORT_KEYS lives with the Sort ▾ option builder, so the panel's rows and this
+// query-param guard cannot drift apart when a key is added.
+import { SORT_KEYS, parseSortDirection } from "../../lib/collection/sort-options";
 import { buildColorOptions } from "../../lib/collection/color-filter";
 import {
   buildSetOptions,
@@ -37,7 +39,6 @@ import { NoResults } from "./no-results";
 import { CardModal } from "./card-modal";
 
 const PAGE_SIZE = 200;
-const SORT_KEYS = ["name", "quantity", "set", "rarity", "color"] as const satisfies readonly SortKey[];
 
 function parseColors(param: string | null): string[] {
   if (!param) return [];
@@ -70,6 +71,7 @@ function serializeParams(
 
 const setCopy = collectionFilterCopy.set;
 const typeCopy = collectionFilterCopy.type;
+const colorCopy = collectionFilterCopy.color;
 
 /** Sum of quantities, i.e. the "2,933 cards" figure the announcements quote. */
 function quantityOf(list: BrowseCard[]): number {
@@ -119,6 +121,25 @@ export function setChangeAnnouncement(
 ): string | null {
   return selectionAnnouncement(
     prev.setCodes, next.setCodes, setCopy, intent === "clear-sets",
+    next, cards, options, totalQuantity,
+  );
+}
+
+/**
+ * The live-region string for a change to the colour selection. Fires for the
+ * desktop pip row too, not just the mobile Color ▾ panel — the pips are the same
+ * selection and used to change it silently.
+ */
+export function colorChangeAnnouncement(
+  prev: BrowseFilters,
+  next: BrowseFilters,
+  cards: BrowseCard[],
+  options: { code: string; label: string }[],
+  totalQuantity: number,
+  intent?: FilterChangeIntent,
+): string | null {
+  return selectionAnnouncement(
+    prev.colors, next.colors, colorCopy, intent === "clear-colors",
     next, cards, options, totalQuantity,
   );
 }
@@ -235,12 +256,13 @@ export function CollectionBrowser({
       // selections moves per change, so the first non-null wins outright.
       const message =
         setChangeAnnouncement(filters, f, cards, setOptions, totalQuantity, intent) ??
-        typeChangeAnnouncement(filters, f, cards, typeOptions, totalQuantity, intent);
+        typeChangeAnnouncement(filters, f, cards, typeOptions, totalQuantity, intent) ??
+        colorChangeAnnouncement(filters, f, cards, colorOptions, totalQuantity, intent);
       if (message) setAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
     },
-    [filters, cards, setOptions, typeOptions, totalQuantity],
+    [filters, cards, setOptions, typeOptions, colorOptions, totalQuantity],
   );
   const updateSort = useCallback((s: SortKey, direction: SortDirection) => {
     setSort(s);

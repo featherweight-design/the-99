@@ -3,7 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import type { BrowseFilters } from "../../lib/collection/browse";
 import { FilterBar } from "../collection/filter-bar";
-import { setChangeAnnouncement, typeChangeAnnouncement } from "../collection/browser";
+import {
+  colorChangeAnnouncement,
+  setChangeAnnouncement,
+  typeChangeAnnouncement,
+} from "../collection/browser";
 import { FilterPanel, type FilterPanelOption } from "./filter-panel";
 
 // jsdom ships no matchMedia, and useIsDesktop() decides which of the popover /
@@ -829,5 +833,40 @@ describe("FilterBar sort and colour controls", () => {
     expect(screen.getByRole("option", { name: /Black/ }).getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(screen.getByRole("option", { name: /Red/ }));
     expect(onFiltersChange).toHaveBeenCalledWith({ ...NO_FILTERS, colors: ["R"] });
+  });
+});
+
+// The desktop WUBRG pip row and the mobile Color ▾ panel are the same selection,
+// and neither announced until #116.
+describe("colorChangeAnnouncement", () => {
+  const OPTIONS = [
+    { code: "W", label: "White" },
+    { code: "R", label: "Red" },
+  ];
+  const base: BrowseFilters = { search: "", colors: [], types: [], setCodes: [] };
+  const withColors = (colors: string[]): BrowseFilters => ({ ...base, colors });
+
+  it("reads the added string when a color is toggled on", () => {
+    expect(colorChangeAnnouncement(base, withColors(["R"]), [], OPTIONS, 2933)).toBe(
+      collectionFilterCopy.color.announceAdded("Red", 1, "0", "2,933"),
+    );
+  });
+
+  it("reads the removed string when a color is toggled off", () => {
+    expect(colorChangeAnnouncement(withColors(["R"]), base, [], OPTIONS, 2933)).toBe(
+      collectionFilterCopy.color.announceRemoved("Red", 0, "0", "2,933"),
+    );
+  });
+
+  it("reads the cleared string for Clear rather than the removed string", () => {
+    expect(
+      colorChangeAnnouncement(withColors(["R"]), base, [], OPTIONS, 2933, "clear-colors"),
+    ).toBe(collectionFilterCopy.color.announceCleared("2,933"));
+  });
+
+  it("says nothing about colors when only the type selection moved", () => {
+    expect(
+      colorChangeAnnouncement(base, { ...base, types: ["Creature"] }, [], OPTIONS, 2933),
+    ).toBeNull();
   });
 });
