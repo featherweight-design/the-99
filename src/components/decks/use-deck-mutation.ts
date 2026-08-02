@@ -19,6 +19,11 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
   // The server changing its mind settles the question the message was answering:
   // if the card is committed now, "we couldn't add that" is no longer true. The
   // row outlives revalidation, so without this the stale refusal stays on screen.
+  //
+  // Adjusting state during render, guarded by a comparison, is React's documented
+  // way to derive state from a changed prop. It is not an effect: an effect paints
+  // the stale message first and only then clears it, which is the flicker this
+  // whole hook exists to avoid. The guard makes it converge in one extra pass.
   const [lastCommitted, setLastCommitted] = useState(committed);
   if (lastCommitted !== committed) {
     setLastCommitted(committed);
