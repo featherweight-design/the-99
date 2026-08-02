@@ -5,6 +5,10 @@
 
 import { useState, useMemo } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
+import { statusPill } from "../../lib/decks/read";
+import { shouldCelebrate } from "../../lib/decks/celebration";
+import { CompletionReveal } from "./completion-reveal";
+import { useCelebrated } from "./use-celebrated";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { PrimaryButton } from "@/components/ui/button";
 import { BuilderSpine } from "./builder-spine";
@@ -40,6 +44,17 @@ export function BuilderShell({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
+  const [celebrated, markCelebrated] = useCelebrated(deck.id);
+
+  // Keyed off the SERVER-derived counts, never off optimistic per-row state:
+  // use-deck-mutation's useOptimistic wraps a single per-row "in deck" boolean
+  // and never touches these aggregates, so the reveal cannot fire on a
+  // mutation that later fails.
+  const showReveal = shouldCelebrate({
+    status: statusPill({ built: deck.built, ownedCount: deck.ownedCount }),
+    alreadyCelebrated: celebrated,
+  });
+
   // Derive the oracle IDs already in the deck (client-side, no round-trip);
   // AddPanel builds its lookup Set from this list.
   const deckOracleIds = useMemo(
@@ -56,6 +71,20 @@ export function BuilderShell({
       <div className="flex flex-col md:flex-row min-h-screen" style={{ background: "#100D0A" }}>
         {/* ── Left / main column ── */}
         <div className="flex-1 flex flex-col min-w-0">
+          {/* The 99/99 kaiju reveal — one-shot, above the builder body */}
+          {showReveal && (
+            <CompletionReveal
+              commanderShortName={commanderShortName}
+              onDismiss={markCelebrated}
+              onExport={() => {
+                // Dismiss on export too: the user has acted on the moment, so
+                // re-showing it behind the dialog would be noise.
+                markCelebrated();
+                setExportOpen(true);
+              }}
+            />
+          )}
+
           {/* Builder Spine */}
           <BuilderSpine deck={deck} onExport={() => setExportOpen(true)} />
 
