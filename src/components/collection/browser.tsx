@@ -126,7 +126,7 @@ export function setChangeAnnouncement(
 }
 
 /**
- * The live-region string for a change to the colour selection. Fires for the
+ * The live-region string for a change to the color selection. Fires for the
  * desktop pip row too, not just the mobile Color ▾ panel — the pips are the same
  * selection and used to change it silently.
  */
@@ -225,8 +225,8 @@ export function CollectionBrowser({
     [cards, filterColors, filterSetCodes],
   );
 
-  // Same rule again: colour counts move with the types and sets, not with the
-  // colour selection or the search box.
+  // Same rule again: color counts move with the types and sets, not with the
+  // color selection or the search box.
   const colorOptions = useMemo(
     () =>
       buildColorOptions(cards, {

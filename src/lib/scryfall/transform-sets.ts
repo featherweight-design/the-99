@@ -38,7 +38,7 @@ export function toSetRows(payload: Raw): SetRow[] {
   }
   return (payload.data as Raw[]).map((raw) => ({
     // Scryfall emits lowercase codes already, but ManaBox exports are uppercase and the
-    // whole join story depends on one canonical case. Normalise on write.
+    // whole join story depends on one canonical case. Normalize on write.
     code: required(raw, "code").toLowerCase(),
     name: required(raw, "name"),
     setType: required(raw, "set_type"),

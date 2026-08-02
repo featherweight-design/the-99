@@ -159,7 +159,7 @@ export async function setCardArtPreference(
   collectorNumber: string,
 ): Promise<void> {
   const userId = await requireUserId();
-  // Normalise on write (§3.3) — every set code in the database is lowercase, and the picker
+  // Normalize on write (§3.3) — every set code in the database is lowercase, and the picker
   // hands back the uppercased display value.
   const normalizedSetCode = setCode.toLowerCase();
   const [owned] = await db.select({ one: sql<number>`1` })
