@@ -39,7 +39,7 @@ export function NoResults({
 
       {/* Body — §No Results Body Copy: 13.5/15px, #C6B79A (--fg-body), line-height 1.55/1.6 */}
       <p
-        className="mt-[10px] md:mt-[12px] text-[13.5px] md:text-[15px] md:max-w-[380px] leading-[1.55] md:leading-[1.6]"
+        className="mt-[10px] md:mt-[12px] text-[13.5px] md:text-[15px] md:max-w-[360px] leading-[1.55] md:leading-[1.6]"
         style={{ color: "var(--fg-body)" }}
       >
         {collectionBrowseCopy.noResults.caption}
