@@ -14,7 +14,9 @@ import { celebrationKey } from "../../lib/decks/celebration";
 // `true` — "assume seen" — so the server render and the hydration pass never
 // contain a kaiju, and a returning user cannot catch a flash of celebration.
 
-const listeners = new Set<() => void>();
+// Keyed by celebration key, so a dismissal wakes only the builders watching
+// that deck — same reason the cross-tab handler below filters on the key.
+const listeners = new Map<string, Set<() => void>>();
 
 // Storage can throw outright — Safari private mode, blocked storage, full
 // quota. Dismissal is driven entirely by the write below, so an unguarded
@@ -25,7 +27,9 @@ const listeners = new Set<() => void>();
 const dismissedThisSession = new Set<string>();
 
 function subscribeToKey(key: string, onStoreChange: () => void): () => void {
-  listeners.add(onStoreChange);
+  const forKey = listeners.get(key) ?? new Set<() => void>();
+  forKey.add(onStoreChange);
+  listeners.set(key, forKey);
   // Cross-tab: dismissing in one tab should settle the other. Filtered to this
   // deck's key — every other deck's dismissal fires the same global event, and
   // an unfiltered handler would re-render every open builder tab.
@@ -34,7 +38,8 @@ function subscribeToKey(key: string, onStoreChange: () => void): () => void {
   };
   window.addEventListener("storage", onStorage);
   return () => {
-    listeners.delete(onStoreChange);
+    forKey.delete(onStoreChange);
+    if (forKey.size === 0) listeners.delete(key);
     window.removeEventListener("storage", onStorage);
   };
 }
@@ -70,7 +75,7 @@ export function useCelebrated(deckId: string): [boolean, () => void] {
     } catch {
       // Persistence is best-effort; the session set already settled the UI.
     }
-    for (const listener of listeners) listener();
+    for (const listener of listeners.get(key) ?? []) listener();
   }, [key]);
 
   return [celebrated, markCelebrated];
