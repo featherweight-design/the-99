@@ -12,6 +12,8 @@ import { RoleCounterStrip } from "./role-counter-strip";
 import { DegradedBanner } from "./degraded-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
+import { Crab } from "../character/crab";
+import { decksBuilderCopy, shortCommanderName } from "../../lib/copy/decks-builder";
 import { Decklist } from "./decklist";
 import { AddPanel } from "./add-panel";
 import { ExportDialog } from "./export-dialog";
@@ -46,6 +48,7 @@ export function BuilderShell({
   );
 
   const isEmpty = deck.built === 0;
+  const commanderShortName = shortCommanderName(deck.commander.name);
 
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
@@ -68,73 +71,82 @@ export function BuilderShell({
           {/* ── Decklist body — Task 8 placeholder ── */}
           {isEmpty ? (
             /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
-            <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px]">
-              {/* §Mark container */}
-              <div
-                className="relative md:hidden mb-[20px]"
-                style={{ width: 96, height: 104 }}
-                aria-hidden
-              >
-                {/* Back card: tilted left */}
+            <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,rgba(201,162,75,0.07),transparent_70%)]">
+              {/* §Mark container (mobile). The richness mock composes the crab
+                  and the card mark as one flex row — crab first, gap 16px,
+                  baselines aligned — so each breakpoint's existing mark keeps
+                  its own geometry and gains a crab sized for it. */}
+              <div className="md:hidden mb-[20px] flex items-end justify-center gap-[16px]">
+                <Crab size={72} className="flex-none" />
                 <div
-                  className="absolute rounded-[8px]"
-                  style={{
-                    left: "50%",
-                    top: "50%",
-                    width: 48,
-                    height: 68,
-                    background: "#221D16",
-                    border: "1.5px solid #3A3229",
-                    transform: "translate(-50%, -50%) rotate(-15deg) translateX(-18px)",
-                  }}
-                />
-                {/* Middle card: upright */}
-                <div
-                  className="absolute rounded-[8px]"
-                  style={{
-                    left: "50%",
-                    top: "50%",
-                    width: 48,
-                    height: 68,
-                    background: "#2A241D",
-                    border: "1.5px solid #4A4033",
-                    transform: "translate(-50%, -50%)",
-                  }}
-                />
-                {/* Front card: tilted right, brass-outlined, "99" */}
-                <div
-                  className="absolute rounded-[8px] flex items-center justify-center"
-                  style={{
-                    left: "50%",
-                    top: "50%",
-                    width: 48,
-                    height: 68,
-                    background: "#3E3020",
-                    border: "1.5px solid #C9A24B",
-                    transform: "translate(-50%, -50%) rotate(15deg) translateX(18px)",
-                  }}
+                  className="relative flex-none"
+                  style={{ width: 96, height: 104 }}
+                  aria-hidden
                 >
-                  {/* §Front card — "99" numeral */}
-                  <span
-                    className="font-display font-extrabold text-[18px]"
-                    style={{ color: "#C9A24B" }}
+                  {/* Back card: tilted left */}
+                  <div
+                    className="absolute rounded-[8px]"
+                    style={{
+                      left: "50%",
+                      top: "50%",
+                      width: 48,
+                      height: 68,
+                      background: "#221D16",
+                      border: "1.5px solid #3A3229",
+                      transform: "translate(-50%, -50%) rotate(-15deg) translateX(-18px)",
+                    }}
+                  />
+                  {/* Middle card: upright */}
+                  <div
+                    className="absolute rounded-[8px]"
+                    style={{
+                      left: "50%",
+                      top: "50%",
+                      width: 48,
+                      height: 68,
+                      background: "#2A241D",
+                      border: "1.5px solid #4A4033",
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                  {/* Front card: tilted right, brass-outlined, "99" */}
+                  <div
+                    className="absolute rounded-[8px] flex items-center justify-center"
+                    style={{
+                      left: "50%",
+                      top: "50%",
+                      width: 48,
+                      height: 68,
+                      background: "#3E3020",
+                      border: "1.5px solid #C9A24B",
+                      transform: "translate(-50%, -50%) rotate(15deg) translateX(18px)",
+                    }}
                   >
-                    99
-                  </span>
+                    {/* §Front card — "99" numeral */}
+                    <span
+                      className="font-display font-extrabold text-[18px]"
+                      style={{ color: "#C9A24B" }}
+                    >
+                      99
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Desktop mark: §Mark container desktop 100-110 × 110-120; constrain to 104×112 */}
-              <div
-                className="hidden md:block mb-[22px] overflow-hidden"
-                style={{ width: 104, height: 112 }}
-                aria-hidden
-              >
-                {/* scale(104/120 ≈ 0.867) shrinks the 120×130 CardFan into the 104×112 target */}
-                <CardFan
-                  variant="decks-desktop"
-                  className="origin-top-left scale-[0.867]"
-                />
+              <div className="hidden md:flex mb-[22px] items-end justify-center gap-[16px]">
+                <Crab size={88} className="flex-none" />
+                <div
+                  className="overflow-hidden flex-none"
+                  style={{ width: 104, height: 112 }}
+                  aria-hidden
+                >
+                  {/* scale(104/120 ≈ 0.867) shrinks the 120×130 CardFan into the 104×112 target */}
+                  <CardFan
+                    variant="decks-desktop"
+                    className="origin-top-left scale-[0.867]"
+                  />
+                </div>
               </div>
 
               {/* §Empty state heading */}
@@ -142,31 +154,42 @@ export function BuilderShell({
                 className="font-display font-bold text-[21px] md:text-[24px] m-0"
                 style={{ color: "#EDE6D8" }}
               >
-                Your deck is empty
+                {decksBuilderCopy.builderEmpty.heading}
               </h2>
 
-              {/* §Empty state body */}
+              {/* §Empty state body. Two strings, one per breakpoint: the mock's
+                  verbatim line says the suggestions are "on the right", which is
+                  only true of the desktop Add panel. */}
               <p
-                className="text-[13.5px] md:text-[14px] leading-[1.6] md:leading-[1.65] mt-[10px] md:mt-[12px] md:max-w-[440px]"
+                className="md:hidden text-[13.5px] leading-[1.6] mt-[10px]"
                 style={{ color: "#C6B79A" }}
               >
-                Add cards from your suggestions or search your collection to build your 99.
+                {decksBuilderCopy.builderEmpty.captionForMobile(commanderShortName)}
+              </p>
+              <p
+                className="hidden md:block text-[14px] leading-[1.65] mt-[12px] md:max-w-[440px]"
+                style={{ color: "#C6B79A" }}
+              >
+                {decksBuilderCopy.builderEmpty.captionFor(commanderShortName)}
               </p>
 
-              {/* §Empty state role hint (desktop) */}
+              {/* §Empty state role hint (desktop). Kept: the richness caption is
+                  flavour, and this is the only line telling a new builder what
+                  to fill first. */}
               <p
                 className="hidden md:block font-mono text-[11px] mt-[20px]"
                 style={{ color: "#8E8269" }}
               >
-                Try filling your ramp, draw, removal, and wipe slots first.
+                {decksBuilderCopy.builderEmpty.roleHint}
               </p>
 
-              {/* §"Add your first card" CTA button (mobile empty) */}
+              {/* §CTA button (mobile empty) — opens the Add sheet, which is
+                  where suggestions live at this breakpoint. */}
               <PrimaryButton
                 onClick={() => setSheetOpen(true)}
                 className="md:hidden text-[15px] px-[26px] py-[13px] mt-[24px]"
               >
-                Add your first card
+                {decksBuilderCopy.builderEmpty.cta}
               </PrimaryButton>
             </section>
           ) : (
