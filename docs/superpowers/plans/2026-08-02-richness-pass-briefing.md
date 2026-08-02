@@ -38,8 +38,10 @@ Confirmed present on `origin/main` @ `65a5140`:
 
 Confirmed **absent**, i.e. the actual remaining work:
 
-- `Kaiju` is imported by nothing. Its own file comment reads
-  `// 99/99 completion reveal`. The pass's single biggest visual moment is dead code.
+- `Kaiju` is imported by nothing. Its own file comment claims it "Appears in
+  exactly one place: the decks 99/99 completion reveal" — a statement that is
+  currently false in both directions: it appears in no place, and the reveal it
+  names does not exist. The pass's single biggest visual moment is dead code.
 - `src/components/decks/completion-reveal.tsx` does not exist.
 - Copy modules for the three remaining surfaces do not exist. Only
   `collection.ts` (from the filter work, unrelated), `issue-inspector.ts`,
