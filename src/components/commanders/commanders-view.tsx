@@ -141,8 +141,9 @@ export function CommandersView({
       setAnnouncement("");
       return;
     }
+    const n = (v: number) => v.toLocaleString("en-US");
     setAnnouncement(
-      `${shown} shown, ${filtered.length - shown} more below. Ranks ${before + 1} to ${shown} added.`,
+      `${n(shown)} shown, ${n(filtered.length - shown)} more below. Ranks ${n(before + 1)} to ${n(shown)} added.`,
     );
     // preventScroll: revealing must not move the reader's place. The brass ring
     // is the cue that keyboard position advanced, not a jump down the page.
