@@ -1,0 +1,110 @@
+// Why the crab and kaiju "stepped" instead of floating, and the check that they
+// no longer do. Reads the real keyframes out of globals.css, runs them in
+// Chromium, and reports peak per-frame velocity.
+//
+// The threshold: a display can only render motion as continuous if the element
+// covers a pixel in a handful of frames. At the mock's 5px/4.5s the bob peaked
+// at 0.034px/frame — one pixel per ~29 frames — so it visibly held, then
+// jumped. Compositing was never the problem.
+//
+// Run by hand: `node scripts/probe-bob.mjs`. Not part of `pnpm test` (needs a
+// browser); kept because the next person to touch these numbers needs the
+// measurement, not the anecdote.
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium } from "playwright";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const css = readFileSync(resolve(HERE, "../src/app/globals.css"), "utf8");
+
+// Tailwind's @import can't resolve here, so lift only the rules under test.
+// Brace-depth rather than a regex for the closing brace: @keyframes nests, and
+// matching on a literal "\n}" would make a reformat of globals.css look like an
+// animation regression.
+function extractBlocks(source, headerPattern) {
+  const out = [];
+  for (const match of source.matchAll(headerPattern)) {
+    let depth = 0;
+    for (let i = match.index; i < source.length; i++) {
+      if (source[i] === "{") depth++;
+      else if (source[i] === "}" && --depth === 0) {
+        out.push(source.slice(match.index, i + 1));
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+const rules = extractBlocks(css, /@keyframes (?:bob|breathe)\s*\{/g);
+const classes = extractBlocks(css, /\.anim-(?:bob|breathe)\s*\{/g);
+if (rules.length !== 2 || classes.length !== 2) {
+  throw new Error(`Expected 2 keyframes and 2 classes, got ${rules.length} and ${classes.length}`);
+}
+
+const PEAK_FLOOR = 0.06; // px/frame — below this the motion reads as stepping.
+
+// One full period of the slowest animation under test (breathe, 5s), plus a
+// margin. A shorter window happens to contain both peaks today — each is a
+// quarter-period in — but that only holds while the periods stay what they are,
+// and this probe exists precisely to be run after someone changes them.
+const SAMPLE_MS = 6000;
+
+async function measure(browser) {
+  const page = await browser.newPage({ viewport: { width: 600, height: 800 } });
+  await page.setContent(
+    // Sizes match the real call sites, because breathe scales: the same scale
+    // factor moves the kaiju's edge far more than it would a crab-sized box.
+    `<!doctype html><style>
+      body { margin: 0; background: #14110E; }
+      div { background: #C9A24B; }
+      #bob { width: 96px; height: 66px; }
+      #breathe { width: 440px; height: 348px; }
+      ${rules.join("\n")}
+      ${classes.join("\n")}
+    </style>
+    <div class="anim-bob" id="bob"></div>
+    <div class="anim-breathe" id="breathe"></div>`,
+  );
+
+  return await page.evaluate(async (sampleMs) => {
+    const out = { bob: [], breathe: [] };
+    const start = performance.now();
+    return await new Promise((done) => {
+      function tick() {
+        for (const id of Object.keys(out)) {
+          const r = document.getElementById(id).getBoundingClientRect();
+          // The bottom edge, which moves under translate and under scale alike,
+          // so the same sample serves bob and breathe.
+          out[id].push(r.y + r.height);
+        }
+        if (performance.now() - start > sampleMs) return done(out);
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    });
+  }, SAMPLE_MS);
+}
+
+const browser = await chromium.launch();
+let profile;
+try {
+  profile = await measure(browser);
+} finally {
+  // Without this, a throw anywhere in measure() orphans a Chromium process.
+  await browser.close();
+}
+
+let failed = false;
+for (const [id, samples] of Object.entries(profile)) {
+  const deltas = samples.slice(1).map((v, i) => Math.abs(v - samples[i]));
+  const peak = Math.max(...deltas);
+  const ok = peak >= PEAK_FLOOR;
+  if (!ok) failed = true;
+  console.log(
+    `${ok ? "ok  " : "SLOW"} ${id.padEnd(8)} peak ${peak.toFixed(3)} px/frame — ` +
+      `1px every ${Math.round(1 / peak)} frames (floor: ${PEAK_FLOOR})`,
+  );
+}
+process.exit(failed ? 1 : 0);

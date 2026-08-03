@@ -64,10 +64,10 @@ export function CompletionReveal({
       />
 
       {/* Crab — hard left on mobile so the kaiju's gaze still crosses the frame */}
-      <Crab size={64} bobSeconds={4.5} className="absolute left-[24px] bottom-[28px] md:hidden" />
+      <Crab size={64} bobSeconds={3} className="absolute left-[24px] bottom-[28px] md:hidden" />
       <Crab
         size={84}
-        bobSeconds={4.5}
+        bobSeconds={3}
         className="absolute hidden md:block md:left-[46%] md:bottom-[32px]"
       />
 

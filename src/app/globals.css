@@ -143,31 +143,47 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
     outline: 2px solid var(--brass);
     outline-offset: 2px;
   }
+
+  /* ui/button.tsx carries cursor-pointer, but a dozen components hand-roll a
+     bare <button> and inherit the UA's default arrow, so a control that is
+     plainly clickable does not say so. Stated once here rather than patched per
+     component, which is what let the gap open in the first place. Sits in
+     `base` for the same reason as the rule above: a component that wants a
+     different cursor writes a utility and wins. */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 /* ------------------------------------------------------------------
  * Character-layer motion — richness pass.
- * Keyframes are verbatim from the v2 mocks. Reduced-motion is scoped to
+ * Keyframes follow the v2 mocks except for bob and breathe, whose amplitudes
+ * and periods are noted below. Reduced-motion is scoped to
  * these four classes rather than a blanket `* { animation: none }` so that
  * adding a new animation forces an explicit static-fallback decision.
  * ------------------------------------------------------------------ */
-/* translate3d rather than translateY: the bob travels 5px over 4.5s — about
-   2px per second — and an uncomposited transform rasterises to whole pixels, so
-   it reads as a few discrete steps instead of a float. Promoting the element to
-   its own layer restores sub-pixel interpolation. Same distance and timing as
-   the mock; only the smoothness differs. */
+/* Amplitude and period are deliberately faster than the mock's 5px/4.5s, which
+   read as stepping rather than floating. Measured with scripts/probe-bob.mjs:
+   at 5px/4.5s the peak velocity is 0.034px per frame, so a whole pixel takes
+   ~29 frames — roughly half a second of visually held position, then a jump.
+   Nothing was wrong with the compositing; the motion was below the threshold at
+   which a display can render it as continuous. 10px/3s peaks at 0.098px/frame,
+   about a pixel every 10 frames, which is the slowest that still reads smooth.
+   A deviation from the mock, so it is flagged for Design ratification on #148. */
 @keyframes bob {
   0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(0, -5px, 0); }
+  50% { transform: translate3d(0, -10px, 0); }
 }
 @keyframes dots {
   0%, 100% { opacity: 0.25; }
   50% { opacity: 1; }
 }
-/* Same sub-pixel reasoning as bob, and more acute: 3px over 10s. */
+/* Same threshold problem as bob and worse: 3px over 10s is 0.6px/sec, so the
+   kaiju held position for over a second at a time. Halving the period and
+   widening the travel puts it in the same band as the bob. */
 @keyframes breathe {
   0%, 100% { transform: scale(1) translate3d(0, 0, 0); }
-  50% { transform: scale(1.02) translate3d(0, 3px, 0); }
+  50% { transform: scale(1.035) translate3d(0, 6px, 0); }
 }
 @keyframes rise {
   0% { transform: translateY(18px); opacity: 0; }
@@ -182,13 +198,16 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
   100% { transform: translateY(0); }
 }
 
+/* Sinusoidal in-out rather than the default cubic ease-in-out: cubic dwells
+   near both extremes (peak:mean velocity 1.85x vs 1.57x), and a dwell is the
+   very thing being fixed here. */
 .anim-bob {
-  animation: bob var(--bob-duration, 4.5s) ease-in-out infinite;
+  animation: bob var(--bob-duration, 3s) cubic-bezier(0.37, 0, 0.63, 1) infinite;
   will-change: transform;
 }
 .anim-dots { animation: dots 1.2s ease-in-out infinite; }
 .anim-breathe {
-  animation: breathe 10s ease-in-out infinite;
+  animation: breathe 5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
   will-change: transform;
 }
 .anim-rise { animation: rise 0.8s ease-out both; }
