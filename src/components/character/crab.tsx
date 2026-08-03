@@ -15,7 +15,7 @@ const VIEWBOX_H = 110;
 
 export function Crab({
   size = 96,
-  bobSeconds = 4.5,
+  bobSeconds = 3,
   className,
 }: {
   size?: number;
