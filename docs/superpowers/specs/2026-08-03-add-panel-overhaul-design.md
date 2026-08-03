@@ -19,7 +19,7 @@ Four findings from Hugh's 2026-08-02 staging walk, all on this surface:
 
 Design does not need to invent these, and should reuse rather than re-solve:
 
-- **Card art is available and cheap.** It lives on the `cards` table as `imageUri` (`src/db/schema.ts`) and is already ingested for the whole catalogue. On the suggestions path it is one line from being free: `PoolCard` carries it (`src/lib/recs/score.ts:6`) and `src/lib/decks/suggest.ts` simply drops it when building `DeckSuggestion`. On the search path it is slightly more — `searchCards` neither selects nor returns it today (`src/app/decks/[id]/search-action.ts:33-55`), so it needs one column added to the select and one field to `SearchResult`. Neither is a backend project; "we can't show art" is not a reason.
+- **Card art is available and cheap.** It lives on the `cards` table as `imageUri` (`src/db/schema.ts`) and is already ingested for the whole catalogue. On the suggestions path it is a single payload field: `PoolCard` carries it (`src/lib/recs/score.ts:6`) and `src/lib/decks/suggest.ts` simply drops it when building `DeckSuggestion`. On the search path it is slightly more — `searchCards` neither selects nor returns it today (`src/app/decks/[id]/search-action.ts:33-55`), so it needs one column added to the select and one field to `SearchResult`. Neither is a backend project; "we can't show art" is not a reason.
 - **An art pattern is already shipped.** `src/components/commanders/rec-card.tsx` renders card art at 36×50 mobile and 63×88 desktop, with a `commanderGradient()` fallback when `imageUri` is null.
 - **Type and role are already on the payload.** `DeckSuggestion` carries `typeLine`, `cardTypeGroup` and `role` (`src/lib/decks/suggest.ts:19-21`). Surfacing them is presentational only.
 - **A card detail modal already exists.** `src/components/decks/card-detail-provider.tsx` mounts above the whole builder tree and opens a modal with full art, formatted oracle text, and the printing picker. Design should not re-solve "see the card properly" — but should decide how a suggestion invites it.
@@ -38,7 +38,7 @@ Researched 2026-08-03. Verified against Archidekt, EDHREC, Moxfield and Deckstat
 ## Constraints — locked
 
 - **Mobile and desktop parity in the same pass.** The current mobile sheet exists only to impersonate a desktop-only rail. Whatever replaces it should not require a construct that exists at one width only.
-- **Art is on the table** at both widths, at no backend cost. It is not required, but "we can't show art" is not a reason.
+- **Art is on the table** at both widths. The catalogue is already ingested; putting art on a row costs a payload field on the suggestions path and a select column plus a payload field on the search path. It is not required, but "we can't show art" is not a reason.
 - **The card detail modal is the answer to card detail.** Design decides the invitation, not the destination.
 - **Suggestions must not go stale on accept.** Accepting a suggestion must not leave a dead row or a list that no longer reflects the deck.
 - **Optimistic-first.** Adding a card draws immediately and only reverts on server error (`src/components/decks/use-deck-mutation.ts`). Any new add affordance inherits this.
