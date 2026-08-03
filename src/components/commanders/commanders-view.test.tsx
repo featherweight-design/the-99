@@ -115,6 +115,12 @@ describe("CommandersView windowing", () => {
     expect(screen.queryByText(/End of ranking/)).toBeNull();
   });
 
+  it("leaves the short-list surface untouched — no live region, no row focus targets", () => {
+    const { container } = view(results(24));
+    expect(container.querySelector('[aria-live="polite"]')).toBeNull();
+    expect(container.querySelector("li[tabindex]")).toBeNull();
+  });
+
   it("renders no windowing furniture at all when there are no results", () => {
     view(results(0));
     expect(control()).toBeNull();

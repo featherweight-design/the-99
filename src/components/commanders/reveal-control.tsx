@@ -28,7 +28,7 @@ export function RevealControl({
     <button
       type="button"
       onClick={onReveal}
-      aria-label={`Show ${REVEAL_STEP} more commanders, ${remaining.toLocaleString()} remaining`}
+      aria-label={`Show ${REVEAL_STEP} more commanders, ${remaining.toLocaleString("en-US")} remaining`}
       className="group w-full rounded-lg flex flex-col items-center gap-[3px] min-h-[52px] px-[16px] py-[14px] sm:min-h-0 sm:flex-row sm:justify-center sm:gap-[12px] sm:px-[20px] sm:py-[15px] sm:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] hover:bg-[color:var(--elevated-hover)] hover:[border:1px_solid_var(--border-dashed)] focus-visible:bg-[color:var(--elevated-hover)] focus-visible:[border:1px_solid_var(--border-dashed)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brass)]"
     >
       <span
@@ -38,7 +38,7 @@ export function RevealControl({
         Show {REVEAL_STEP} more<span className="sm:hidden"> ↓</span>
       </span>
       <span className="font-mono text-[11px] sm:text-[11.5px] text-[color:var(--fg-faint)] group-hover:text-[color:var(--fg-muted)] group-focus-visible:text-[color:var(--fg-muted)]">
-        {remaining.toLocaleString()} remaining
+        {remaining.toLocaleString("en-US")} remaining
       </span>
       <span
         aria-hidden
@@ -61,7 +61,7 @@ export function EndOfRanking({ total }: { total: number }) {
         className="font-mono uppercase text-[9.5px] sm:text-[10.5px] tracking-[0.16em]"
         style={{ color: "var(--fg-faint)" }}
       >
-        End of ranking · {total.toLocaleString()} of {total.toLocaleString()}
+        End of ranking · {total.toLocaleString("en-US")} of {total.toLocaleString("en-US")}
       </span>
       <Diamond />
       <Hairline />
@@ -122,7 +122,7 @@ export function WindowCount({
 function Figure({ children }: { children: number }) {
   return (
     <b style={{ color: "var(--fg-body)", fontWeight: 600 }}>
-      {children.toLocaleString()}
+      {children.toLocaleString("en-US")}
     </b>
   );
 }

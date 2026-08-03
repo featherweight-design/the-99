@@ -152,10 +152,13 @@ export function CommandersView({
   return (
     <div>
       {/* Present before the first reveal — a live region inserted at announce
-          time is frequently not read. */}
-      <span className="sr-only" aria-live="polite" aria-atomic="true">
-        {announcement}
-      </span>
+          time is frequently not read. A list too short to window can never
+          announce, so it renders the pre-windowing surface untouched. */}
+      {wasWindowed && (
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </span>
+      )}
 
       {/* ── Global degraded banner (above everything) ── */}
       {degraded && (
@@ -431,11 +434,19 @@ export function CommandersView({
               {windowed.map((r, i) => (
                 <li
                   key={r.slug}
-                  tabIndex={-1}
-                  ref={(el) => {
-                    itemRefs.current[i] = el;
-                  }}
-                  className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brass)]"
+                  tabIndex={wasWindowed ? -1 : undefined}
+                  ref={
+                    wasWindowed
+                      ? (el) => {
+                          itemRefs.current[i] = el;
+                        }
+                      : undefined
+                  }
+                  className={
+                    wasWindowed
+                      ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brass)]"
+                      : undefined
+                  }
                 >
                   <RecCard commander={r} rank={rankBySlug.get(r.slug) ?? 0} />
                 </li>
