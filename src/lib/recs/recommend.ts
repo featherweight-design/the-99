@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems } from "../../db/schema";
+import { cards, collectionItems, decks } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
@@ -131,7 +131,23 @@ export async function recommendCommanders(
   userId: string,
 ): Promise<RecommendResult> {
   const { collection, uniqueCardsRead } = await loadCollectionPool(userId);
-  const candidates = collection.filter((c) => isCommanderCandidate(c));
+
+  // A commander you have already built a deck around is not a recommendation —
+  // the page's whole question is "what should I build next", and answering it
+  // with a deck the user is already holding wastes the top of the list. The
+  // detail page deliberately does not filter: arriving there from a deck link
+  // should still render.
+  const built = new Set(
+    (await db
+      .select({ oracleId: decks.commanderOracleId })
+      .from(decks)
+      .where(eq(decks.userId, userId))
+    ).map((d) => d.oracleId),
+  );
+
+  const candidates = collection.filter(
+    (c) => isCommanderCandidate(c) && !built.has(c.oracleId),
+  );
 
   // One cache read for the whole fanout — a per-commander SELECT here meant
   // ~196 round-trips on every compute, warm or cold.
