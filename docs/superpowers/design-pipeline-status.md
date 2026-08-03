@@ -55,8 +55,7 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (🟢 above),
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-
-_Currently empty — #105's R1 handoff landed 2026-07-29 and audited 🟠 Orange; R3 closed it 🟢 Green and it shipped 2026-07-31 (below)._
+| 1 | **#42** Design: Import existing decks (Moxfield) | `docs/superpowers/specs/2026-08-02-deck-import-design.md` | Handoff prompt goes to Claude Design next — 19 named states across entry, entry failures, commander selection, deck arrival and row resolution, mobile + desktop — then a READINESS audit | Only brief in the queue. Workshopped 2026-08-02: no review gate (the deck exists as soon as it can), unmatched lines persist as unresolved rows that block the Complete pill, and the entry point accepts a Moxfield URL alongside paste and file, which is what adds the third-party failure family Design has to draw |
 
 ---
 
@@ -88,9 +87,9 @@ This list previously ran as two — a "Backlog" and a "Ready for design" — but
 | 3 | **#62** Design: Issue Inspector handoff reconciliation | Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships |
 | 4 | **#130** + **#131** + **#132** Design: recommendations you can interrogate and act on — pre-populate a deck from recommendations · make Role Coverage explanatory and inspectable · suggest and add unowned cards | Post-v1. **One design cycle, not three** — Hugh flagged them as groupable when he filed them, and they share a premise: a recommendation the user cannot interrogate or act on is decoration. #131 is the seam; it needs #132's unowned cards to have anything to recommend beyond the collection, and it is where #130's "why was this picked" reasoning would surface. Split apart, each brief answers a third of one question. Both eng dependencies have now shipped — #127 landed the card-detail modal wiring #131's inspection gap needs, and #129 fixed the "Owned only" toggle under #132 — so nothing blocks this but a workshop. Open for #132: whether #44 already scopes it |
 | 5 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
-| 6 | **#42** Design: Import existing decks (Moxfield) | Post-v1; lands in #8's deck surfaces; reconciliation UX is the core. **Also now owns #105's deferred scope** — choosing a different printing *per deck* was explicitly ruled out of #105 (which is a collection-level preference) and belongs here, since a deck-level override needs a deck to attach to |
-| 7 | **#43** Design: Cross-check recommendations against committed cards | Post-v1; touches #7 recs + #8 builder; value scales with deck count, so after #42 |
-| 8 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — last, needs accumulated play data |
+| 6 | **#43** Design: Cross-check recommendations against committed cards | Post-v1; touches #7 recs + #8 builder; value scales with deck count, so it sorts behind #42 (now 📐 above) |
+| 7 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — needs accumulated play data |
+| 8 | **#151** Design: per-deck printing override for a card's art | Post-v1. **Split out of #42** at the 2026-08-02 workshop — #42 had inherited it from #105 on the reasoning that a deck-level override needs a deck to attach to, but it is unrelated to import (import is getting a deck in; this is how a deck looks once it is there) and #42's brief was already large. Last because it is polish: `card_art_preferences` is keyed `(user_id, oracle_id)` and `deck_cards` has no printing column, so it needs new storage and a new read path for no functional gain |
 
 ### Rank 4 — open questions carried into the workshop
 
