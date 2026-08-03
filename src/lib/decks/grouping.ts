@@ -16,6 +16,17 @@ export type DeckDetailCard = {
 };
 
 /**
+ * Basic lands are the only card a Commander deck may run copies of, which makes
+ * this the hinge for three separate behaviours: the server increments quantity
+ * instead of no-op'ing, the search row stays addable after the first add, and
+ * the optimistic reducer merges rather than ignores. Those three were testing
+ * the type line independently; one definition keeps them from drifting apart.
+ */
+export function isBasicLand(typeLine: string): boolean {
+  return /\bBasic\b/.test(typeLine);
+}
+
+/**
  * The deck's three headline counts, derived from the card list alone.
  *
  * The only definition, because the builder now renders these from an optimistic
@@ -54,7 +65,7 @@ const ROLE_GROUP_LABELS: Record<"ramp" | "draw" | "removal" | "wipes" | "land" |
  * Only basic lands with quantity > 1 qualify.
  */
 export function shouldShowMetaRow(card: Pick<DeckDetailCard, "quantity" | "typeLine">): boolean {
-  return card.quantity > 1 && card.typeLine.includes("Basic");
+  return card.quantity > 1 && isBasicLand(card.typeLine);
 }
 
 export function groupByCardType(cards: DeckDetailCard[]): [CardTypeGroup, DeckDetailCard[]][] {

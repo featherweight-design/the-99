@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useOptimistic } from "react";
-import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { isBasicLand, type DeckDetailCard } from "../../lib/decks/grouping";
 
 /**
  * Deck-wide optimistic card list.
@@ -26,10 +26,11 @@ export function useOptimisticDeckCards(serverCards: DeckDetailCard[]) {
     serverCards,
     (current, card: DeckDetailCard) => {
       const at = current.findIndex((c) => c.oracleId === card.oracleId);
-      // Basic lands are the one card a deck may hold copies of, and the server
-      // increments quantity rather than inserting a second row. Mirroring that
-      // here keeps the optimistic list a valid prediction of the server's.
       if (at === -1) return [...current, card];
+      // Basic lands are the one card a deck may hold copies of: the server
+      // increments quantity for them and no-ops for everything else. Predicting
+      // a second copy of a non-basic would show a count the server never reaches.
+      if (!isBasicLand(card.typeLine)) return current;
       const next = [...current];
       next[at] = { ...next[at], quantity: next[at].quantity + card.quantity };
       return next;

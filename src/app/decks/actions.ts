@@ -10,6 +10,7 @@ import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
+import { isBasicLand } from "../../lib/decks/grouping";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { validateCardForDeck } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
@@ -195,7 +196,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
   // Still revalidate: the click means this page's HTML disagreed with the row
   // that exists, and without a fresh render the optimistic "✓ In deck" would
   // flash back to "+ Add" when the transition ends.
-  if (existingRow && !/\bBasic\b/.test(card.typeLine)) {
+  if (existingRow && !isBasicLand(card.typeLine)) {
     revalidatePath(`/decks/${deckId}`);
     revalidatePath(`/decks`);
     return { ok: true };
@@ -216,7 +217,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
 
     // Commander is singleton: only basic lands may run multiple copies, so a
     // repeat add increments quantity for basics and stays a no-op otherwise.
-    if (/\bBasic\b/.test(card.typeLine)) {
+    if (isBasicLand(card.typeLine)) {
       await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoUpdate({
         target: [deckCards.deckId, deckCards.oracleId],
         set: { quantity: sql`${deckCards.quantity} + 1` },
