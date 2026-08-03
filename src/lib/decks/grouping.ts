@@ -16,11 +16,16 @@ export type DeckDetailCard = {
 };
 
 /**
- * Basic lands are the only card a Commander deck may run copies of, which makes
- * this the hinge for three separate behaviours: the server increments quantity
- * instead of no-op'ing, the search row stays addable after the first add, and
- * the optimistic reducer merges rather than ignores. Those three were testing
- * the type line independently; one definition keeps them from drifting apart.
+ * Basic lands are the only multi-copy exception this app supports. Commander's
+ * rules also exempt cards that name themselves ("A deck can have any number of
+ * cards named…"), which we do not read — so this is a deliberate implementation
+ * limit, not a statement of the rules. Widening it means parsing oracle text,
+ * and every behaviour below would follow from this one function.
+ *
+ * It is the hinge for three of them: the server increments quantity instead of
+ * no-op'ing, the search row stays addable after the first add, and the
+ * optimistic reducer merges rather than ignores. Those three were testing the
+ * type line independently; one definition keeps them from drifting apart.
  */
 export function isBasicLand(typeLine: string): boolean {
   return /\bBasic\b/.test(typeLine);

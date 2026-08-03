@@ -215,8 +215,9 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
     );
     if (error) return error;
 
-    // Commander is singleton: only basic lands may run multiple copies, so a
-    // repeat add increments quantity for basics and stays a no-op otherwise.
+    // Commander is singleton apart from the multi-copy exception (see
+    // isBasicLand), so a repeat add increments quantity there and stays a
+    // no-op otherwise.
     if (isBasicLand(card.typeLine)) {
       await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoUpdate({
         target: [deckCards.deckId, deckCards.oracleId],

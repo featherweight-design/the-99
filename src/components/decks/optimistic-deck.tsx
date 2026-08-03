@@ -27,9 +27,9 @@ export function useOptimisticDeckCards(serverCards: DeckDetailCard[]) {
     (current, card: DeckDetailCard) => {
       const at = current.findIndex((c) => c.oracleId === card.oracleId);
       if (at === -1) return [...current, card];
-      // Basic lands are the one card a deck may hold copies of: the server
-      // increments quantity for them and no-ops for everything else. Predicting
-      // a second copy of a non-basic would show a count the server never reaches.
+      // Mirrors the server, which increments quantity for the multi-copy
+      // exception and no-ops for everything else. Predicting a second copy the
+      // server won't write would show a count it never reaches.
       if (!isBasicLand(card.typeLine)) return current;
       const next = [...current];
       next[at] = { ...next[at], quantity: next[at].quantity + card.quantity };
