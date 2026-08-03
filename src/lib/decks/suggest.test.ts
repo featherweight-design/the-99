@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { suggestDeck, humanRole, buildSuggestionPayload } from "./suggest";
 import type { PoolCard } from "../recs/score";
-import type { Suggestion } from "./suggest";
+import type { DeckSuggestion, Suggestion } from "./suggest";
 
 let n = 0;
 const card = (over: Partial<PoolCard>): PoolCard => ({
@@ -50,9 +50,10 @@ describe("humanRole", () => {
 });
 
 describe("buildSuggestionPayload", () => {
-  const base: Suggestion & { name: string } = {
+  const base = {
     oracleId: "abc", name: "Sol Ring", reason: "edhrec",
-  };
+    typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp",
+  } satisfies Suggestion & Pick<DeckSuggestion, "name" | "typeLine" | "cardTypeGroup" | "role">;
 
   it("owned edhrec suggestion with inclusion → EDHREC · N% of decks", () => {
     const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": 71 });
@@ -70,9 +71,7 @@ describe("buildSuggestionPayload", () => {
   it("resolves inclusion label for mixed-case card name against lowercase keys", () => {
     // Simulates the real scenario: parse.ts stores lowercase keys ("sol ring"),
     // suggest.ts looks up s.name.toLowerCase() — these must match.
-    const mixedCaseSuggestion: Suggestion & { name: string } = {
-      oracleId: "abc", name: "Sol Ring", reason: "edhrec",
-    };
+    const mixedCaseSuggestion = { ...base, oracleId: "abc", name: "Sol Ring", reason: "edhrec" } as const;
     const inclusionByName = { "sol ring": 84.2 }; // stored by parse.ts in lowercase
     const result = buildSuggestionPayload({ ...mixedCaseSuggestion, owned: true }, inclusionByName);
     expect(result.reasonLabel).toBe("EDHREC · 84.2% of decks");
@@ -80,15 +79,16 @@ describe("buildSuggestionPayload", () => {
 
   it("falls back to front-face name for DFC inclusion lookup", () => {
     // Scryfall names DFCs "Front // Back"; EDHREC keys inclusion by front face.
-    const dfc: Suggestion & { name: string } = {
+    const dfc = {
+      ...base,
       oracleId: "dfc1", name: "Valki, God of Lies // Tibalt, Cosmic Impostor", reason: "edhrec",
-    };
+    } as const;
     const result = buildSuggestionPayload({ ...dfc, owned: true }, { "valki, god of lies": 12 });
     expect(result.reasonLabel).toBe("EDHREC · 12% of decks");
   });
 
   it("role-fill suggestion → Fills ramp · rec 10", () => {
-    const rampSuggestion: Suggestion & { name: string } = { oracleId: "xyz", name: "Rampant Growth", reason: "ramp" };
+    const rampSuggestion = { ...base, oracleId: "xyz", name: "Rampant Growth", reason: "ramp" } as const;
     const result = buildSuggestionPayload({ ...rampSuggestion, owned: true }, {});
     expect(result.reasonType).toBe("role");
     expect(result.reasonLabel).toBe("Fills ramp · rec 10");

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { cardTypeGroup, primaryRole, colorIdentityMask, poolCountFromMaskTally } from "./read";
-import { groupByCardType, groupByRole, shouldShowMetaRow } from "./grouping";
+import { deckCounts, groupByCardType, groupByRole, shouldShowMetaRow } from "./grouping";
 import type { DeckDetailCard } from "./grouping";
 
 // ---------------------------------------------------------------------------
@@ -219,5 +219,28 @@ describe("groupByRole", () => {
     const result = groupByRole(cards);
     const names = result[0][1].map((c) => c.name);
     expect(names).toEqual(["Arcane Signet", "Zenith"]);
+  });
+});
+
+describe("deckCounts", () => {
+  const card = (over: Partial<DeckDetailCard>): DeckDetailCard => ({
+    oracleId: "o", name: "n", typeLine: "Artifact", cardTypeGroup: "Artifacts",
+    role: "other", owned: true, quantity: 1, ...over,
+  });
+
+  it("counts quantities, not rows", () => {
+    expect(deckCounts([card({ quantity: 7 })]).built).toBe(7);
+  });
+
+  it("splits owned from to-buy by quantity", () => {
+    const counts = deckCounts([
+      card({ oracleId: "a", owned: true, quantity: 2 }),
+      card({ oracleId: "b", owned: false, quantity: 3 }),
+    ]);
+    expect(counts).toEqual({ built: 5, ownedCount: 2, toBuyCount: 3 });
+  });
+
+  it("is zeroed for an empty deck", () => {
+    expect(deckCounts([])).toEqual({ built: 0, ownedCount: 0, toBuyCount: 0 });
   });
 });

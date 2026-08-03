@@ -16,7 +16,8 @@ interface SearchPaneProps {
   deckOracleIds: Set<string>;
 }
 
-type SearchResult = { oracleId: string; name: string; typeLine: string; owned: boolean };
+// Shape comes from the search action; re-declaring it here let the two drift.
+type SearchResult = Awaited<ReturnType<typeof searchCards>>[number];
 
 export function SearchPane({ deckId, commanderIdentity, deckOracleIds }: SearchPaneProps) {
   const [query, setQuery] = useState("");

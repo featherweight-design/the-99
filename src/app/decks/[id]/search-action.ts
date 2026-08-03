@@ -4,10 +4,23 @@ import { and, arrayContained, eq, ilike, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { cards } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
+import type { DeckDetailCard } from "../../../lib/decks/grouping";
+import { cardTypeGroup, primaryRole } from "../../../lib/decks/read";
+
+export type SearchResult = {
+  oracleId: string;
+  name: string;
+  typeLine: string;
+  owned: boolean;
+  // Server-derived for the same reason as DeckSuggestion's: the client has no
+  // way to classify a card, and a guessed group means the optimistic row jumps.
+  cardTypeGroup: DeckDetailCard["cardTypeGroup"];
+  role: DeckDetailCard["role"];
+};
 
 export async function searchCards(
   query: string, colorIdentity: string[], ownedOnly: boolean,
-): Promise<{ oracleId: string; name: string; typeLine: string; owned: boolean }[]> {
+): Promise<SearchResult[]> {
   const userId = await requireUserId();
   const q = query.trim();
   if (q.length < 2 || q.length > 100) return [];
@@ -21,6 +34,7 @@ export async function searchCards(
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       owned: ownedSql,
+      oracleText: cards.oracleText, keywords: cards.keywords,
     })
     .from(cards)
     .where(and(
@@ -34,5 +48,9 @@ export async function searchCards(
     .limit(20);
   // Substring (not prefix) match is intentional: "gravetide" must find
   // "Muldrotha, the Gravetide". A scan over the ~35k-row cards table is cheap.
-  return rows;
+  return rows.map(({ oracleText, keywords, ...row }) => ({
+    ...row,
+    cardTypeGroup: cardTypeGroup(row.typeLine),
+    role: primaryRole({ typeLine: row.typeLine, oracleText, keywords }),
+  }));
 }

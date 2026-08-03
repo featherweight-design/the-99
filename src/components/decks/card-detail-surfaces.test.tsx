@@ -83,6 +83,7 @@ describe("deck card-detail triggers", () => {
     const suggestion: DeckSuggestion = {
       oracleId: "o-sol", name: "Sol Ring", reason: "edhrec", reasonType: "edhrec",
       reasonLabel: "98% of decks", owned: false, inDeck: false,
+      typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp",
     };
     const { fetchCard } = renderInProvider(
       <SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />,
@@ -94,7 +95,10 @@ describe("deck card-detail triggers", () => {
   it("opens details from a search result", async () => {
     const { fetchCard } = renderInProvider(
       <SearchResultRow
-        result={{ oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", owned: true }}
+        result={{
+          oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", owned: true,
+          cardTypeGroup: "Artifacts", role: "ramp",
+        }}
         deckId="d1"
         inDeck={false}
       />,

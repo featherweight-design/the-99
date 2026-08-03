@@ -22,6 +22,8 @@ import { Decklist } from "./decklist";
 import { AddPanel } from "./add-panel";
 import { ExportDialog } from "./export-dialog";
 import { CardDetailProvider } from "./card-detail-provider";
+import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
+import { deckCounts } from "../../lib/decks/grouping";
 
 interface BuilderShellProps {
   deck: DeckDetail;
@@ -46,23 +48,31 @@ export function BuilderShell({
 
   const [celebrated, markCelebrated] = useCelebrated(deck.id);
 
-  // Keyed off the SERVER-derived counts, never off optimistic per-row state:
-  // use-deck-mutation's useOptimistic wraps a single per-row "in deck" boolean
-  // and never touches these aggregates, so the reveal cannot fire on a
-  // mutation that later fails.
+  // Every count and row below is drawn from this list rather than the server
+  // props, so an add lands across the whole builder in the same frame as the
+  // click. `deck.cards` remains the base React reverts to.
+  const { cards, addOptimisticCard } = useOptimisticDeckCards(deck.cards);
+  const { built, toBuyCount } = deckCounts(cards);
+
+  // The one deliberate exception. Keyed off the SERVER counts because the
+  // reveal is a one-shot that burns a persisted flag — firing it on a predicted
+  // 99th card that the server then rejects would spend the moment on a deck
+  // that never reached 99, and there is no way to give it back.
   const showReveal = shouldCelebrate({
     status: statusPill({ built: deck.built, ownedCount: deck.ownedCount }),
     alreadyCelebrated: celebrated,
   });
 
-  // Derive the oracle IDs already in the deck (client-side, no round-trip);
-  // AddPanel builds its lookup Set from this list.
-  const deckOracleIds = useMemo(
-    () => deck.cards.map((c) => c.oracleId),
-    [deck.cards],
-  );
+  // Deliberately the SERVER list, not the optimistic one. AddPanel feeds this to
+  // each row's `inDeck`, which use-deck-mutation treats as committed truth — and
+  // it clears the row's error whenever that value changes, on the reasoning that
+  // the server has since settled the question. Wire the optimistic list in here
+  // and a failed add flips the value twice (add, then revert), the second flip
+  // wiping the refusal before the user can read it. Rows still show their own
+  // optimistic "✓ In deck", so nothing is lost by keeping this one committed.
+  const deckOracleIds = useMemo(() => deck.cards.map((c) => c.oracleId), [deck.cards]);
 
-  const isEmpty = deck.built === 0;
+  const isEmpty = built === 0;
   const commanderShortName = shortCommanderName(deck.commander.name);
 
   // Every route into the export dialog dismisses the reveal, not just the one
@@ -78,232 +88,234 @@ export function BuilderShell({
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     <CardDetailProvider>
-      <div className="flex flex-col md:flex-row min-h-screen" style={{ background: "#100D0A" }}>
-        {/* ── Left / main column ── */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* The 99/99 kaiju reveal — one-shot, above the builder body */}
-          {showReveal && (
-            <CompletionReveal
-              commanderShortName={commanderShortName}
-              onDismiss={markCelebrated}
-              onExport={openExport}
-            />
-          )}
+      <AddOptimisticCardProvider value={addOptimisticCard}>
+        <div className="flex flex-col md:flex-row min-h-screen" style={{ background: "#100D0A" }}>
+          {/* ── Left / main column ── */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* The 99/99 kaiju reveal — one-shot, above the builder body */}
+            {showReveal && (
+              <CompletionReveal
+                commanderShortName={commanderShortName}
+                onDismiss={markCelebrated}
+                onExport={openExport}
+              />
+            )}
 
-          {/* Builder Spine */}
-          <BuilderSpine deck={deck} onExport={openExport} />
+            {/* Builder Spine */}
+            <BuilderSpine deck={deck} onExport={openExport} />
 
-          {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
-          <RoleCounterStrip cards={deck.cards} />
+            {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
+            <RoleCounterStrip cards={cards} />
 
-          {/* Degraded suggestions banner */}
-          {degraded && <DegradedBanner deckId={deck.id} />}
+            {/* Degraded suggestions banner */}
+            {degraded && <DegradedBanner deckId={deck.id} />}
 
-          {/* Guided first-run banner (only when firstRun === true) */}
-          {firstRun && <GuidedBanner commanderName={deck.commander.name} />}
+            {/* Guided first-run banner (only when firstRun === true) */}
+            {firstRun && <GuidedBanner commanderName={deck.commander.name} />}
 
-          {/* ── Decklist body — Task 8 placeholder ── */}
-          {isEmpty ? (
-            /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
-            <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,rgba(201,162,75,0.07),transparent_70%)]">
-              {/* §Mark container (mobile). The richness mock composes the crab
-                  and the card mark as one flex row — crab first, gap 16px,
-                  baselines aligned — so each breakpoint's existing mark keeps
-                  its own geometry and gains a crab sized for it. */}
-              <div className="md:hidden mb-[20px] flex items-end justify-center gap-[16px]">
-                <Crab size={72} className="flex-none" />
-                <div
-                  className="relative flex-none"
-                  style={{ width: 96, height: 104 }}
-                  aria-hidden
-                >
-                  {/* Back card: tilted left */}
+            {/* ── Decklist body — Task 8 placeholder ── */}
+            {isEmpty ? (
+              /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
+              <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,rgba(201,162,75,0.07),transparent_70%)]">
+                {/* §Mark container (mobile). The richness mock composes the crab
+                    and the card mark as one flex row — crab first, gap 16px,
+                    baselines aligned — so each breakpoint's existing mark keeps
+                    its own geometry and gains a crab sized for it. */}
+                <div className="md:hidden mb-[20px] flex items-end justify-center gap-[16px]">
+                  <Crab size={72} className="flex-none" />
                   <div
-                    className="absolute rounded-[8px]"
-                    style={{
-                      left: "50%",
-                      top: "50%",
-                      width: 48,
-                      height: 68,
-                      background: "#221D16",
-                      border: "1.5px solid #3A3229",
-                      transform: "translate(-50%, -50%) rotate(-15deg) translateX(-18px)",
-                    }}
-                  />
-                  {/* Middle card: upright */}
-                  <div
-                    className="absolute rounded-[8px]"
-                    style={{
-                      left: "50%",
-                      top: "50%",
-                      width: 48,
-                      height: 68,
-                      background: "#2A241D",
-                      border: "1.5px solid #4A4033",
-                      transform: "translate(-50%, -50%)",
-                    }}
-                  />
-                  {/* Front card: tilted right, brass-outlined, "99" */}
-                  <div
-                    className="absolute rounded-[8px] flex items-center justify-center"
-                    style={{
-                      left: "50%",
-                      top: "50%",
-                      width: 48,
-                      height: 68,
-                      background: "#3E3020",
-                      border: "1.5px solid #C9A24B",
-                      transform: "translate(-50%, -50%) rotate(15deg) translateX(18px)",
-                    }}
+                    className="relative flex-none"
+                    style={{ width: 96, height: 104 }}
+                    aria-hidden
                   >
-                    {/* §Front card — "99" numeral */}
-                    <span
-                      className="font-display font-extrabold text-[18px]"
-                      style={{ color: "#C9A24B" }}
+                    {/* Back card: tilted left */}
+                    <div
+                      className="absolute rounded-[8px]"
+                      style={{
+                        left: "50%",
+                        top: "50%",
+                        width: 48,
+                        height: 68,
+                        background: "#221D16",
+                        border: "1.5px solid #3A3229",
+                        transform: "translate(-50%, -50%) rotate(-15deg) translateX(-18px)",
+                      }}
+                    />
+                    {/* Middle card: upright */}
+                    <div
+                      className="absolute rounded-[8px]"
+                      style={{
+                        left: "50%",
+                        top: "50%",
+                        width: 48,
+                        height: 68,
+                        background: "#2A241D",
+                        border: "1.5px solid #4A4033",
+                        transform: "translate(-50%, -50%)",
+                      }}
+                    />
+                    {/* Front card: tilted right, brass-outlined, "99" */}
+                    <div
+                      className="absolute rounded-[8px] flex items-center justify-center"
+                      style={{
+                        left: "50%",
+                        top: "50%",
+                        width: 48,
+                        height: 68,
+                        background: "#3E3020",
+                        border: "1.5px solid #C9A24B",
+                        transform: "translate(-50%, -50%) rotate(15deg) translateX(18px)",
+                      }}
                     >
-                      99
-                    </span>
+                      {/* §Front card — "99" numeral */}
+                      <span
+                        className="font-display font-extrabold text-[18px]"
+                        style={{ color: "#C9A24B" }}
+                      >
+                        99
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Desktop mark: §Mark container desktop 100-110 × 110-120; constrain to 104×112 */}
-              <div className="hidden md:flex mb-[22px] items-end justify-center gap-[16px]">
-                <Crab size={88} className="flex-none" />
-                <div
-                  className="overflow-hidden flex-none"
-                  style={{ width: 104, height: 112 }}
-                  aria-hidden
-                >
-                  {/* scale(104/120 ≈ 0.867) shrinks the 120×130 CardFan into the 104×112 target */}
-                  <CardFan
-                    variant="decks-desktop"
-                    className="origin-top-left scale-[0.867]"
-                  />
+                {/* Desktop mark: §Mark container desktop 100-110 × 110-120; constrain to 104×112 */}
+                <div className="hidden md:flex mb-[22px] items-end justify-center gap-[16px]">
+                  <Crab size={88} className="flex-none" />
+                  <div
+                    className="overflow-hidden flex-none"
+                    style={{ width: 104, height: 112 }}
+                    aria-hidden
+                  >
+                    {/* scale(104/120 ≈ 0.867) shrinks the 120×130 CardFan into the 104×112 target */}
+                    <CardFan
+                      variant="decks-desktop"
+                      className="origin-top-left scale-[0.867]"
+                    />
+                  </div>
                 </div>
+
+                {/* §Empty state heading */}
+                <h2
+                  className="font-display font-bold text-[21px] md:text-[24px] m-0"
+                  style={{ color: "#EDE6D8" }}
+                >
+                  {decksBuilderCopy.builderEmpty.heading}
+                </h2>
+
+                {/* §Empty state body. Two strings, one per breakpoint: the mock's
+                    verbatim line says the suggestions are "on the right", which is
+                    only true of the desktop Add panel. */}
+                <p
+                  className="md:hidden text-[13.5px] leading-[1.6] mt-[10px]"
+                  style={{ color: "#C6B79A" }}
+                >
+                  {decksBuilderCopy.builderEmpty.captionForMobile(commanderShortName)}
+                </p>
+                <p
+                  className="hidden md:block text-[14px] leading-[1.65] mt-[12px] md:max-w-[440px]"
+                  style={{ color: "#C6B79A" }}
+                >
+                  {decksBuilderCopy.builderEmpty.captionFor(commanderShortName)}
+                </p>
+
+                {/* §Empty state role hint (desktop). Kept: the richness caption is
+                    flavour, and this is the only line telling a new builder what
+                    to fill first. */}
+                <p
+                  className="hidden md:block font-mono text-[11px] mt-[20px]"
+                  style={{ color: "#8E8269" }}
+                >
+                  {decksBuilderCopy.builderEmpty.roleHint}
+                </p>
+
+                {/* §CTA button (mobile empty) — opens the Add sheet, which is
+                    where suggestions live at this breakpoint. */}
+                <PrimaryButton
+                  onClick={() => setSheetOpen(true)}
+                  className="md:hidden text-[15px] px-[26px] py-[13px] mt-[24px]"
+                >
+                  {decksBuilderCopy.builderEmpty.cta}
+                </PrimaryButton>
+              </section>
+            ) : (
+              /* Task 8: Decklist body */
+              <Decklist
+                deckId={deck.id}
+                cards={cards}
+                built={built}
+                toBuyCount={toBuyCount}
+                filter={filter}
+                grouping={grouping}
+                onFilterChange={setFilter}
+                onGroupingChange={setGrouping}
+              />
+            )}
+
+            {/* §"+ Add cards" sticky footer button (mobile mid-build) */}
+            {!isEmpty && (
+              <div
+                className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
+                style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
+              >
+                <PrimaryButton
+                  onClick={() => setSheetOpen(true)}
+                  className="w-full text-[15px] py-[13px]"
+                >
+                  + Add cards
+                </PrimaryButton>
               </div>
+            )}
+          </div>
 
-              {/* §Empty state heading */}
-              <h2
-                className="font-display font-bold text-[21px] md:text-[24px] m-0"
-                style={{ color: "#EDE6D8" }}
-              >
-                {decksBuilderCopy.builderEmpty.heading}
-              </h2>
-
-              {/* §Empty state body. Two strings, one per breakpoint: the mock's
-                  verbatim line says the suggestions are "on the right", which is
-                  only true of the desktop Add panel. */}
-              <p
-                className="md:hidden text-[13.5px] leading-[1.6] mt-[10px]"
-                style={{ color: "#C6B79A" }}
-              >
-                {decksBuilderCopy.builderEmpty.captionForMobile(commanderShortName)}
-              </p>
-              <p
-                className="hidden md:block text-[14px] leading-[1.65] mt-[12px] md:max-w-[440px]"
-                style={{ color: "#C6B79A" }}
-              >
-                {decksBuilderCopy.builderEmpty.captionFor(commanderShortName)}
-              </p>
-
-              {/* §Empty state role hint (desktop). Kept: the richness caption is
-                  flavour, and this is the only line telling a new builder what
-                  to fill first. */}
-              <p
-                className="hidden md:block font-mono text-[11px] mt-[20px]"
-                style={{ color: "#8E8269" }}
-              >
-                {decksBuilderCopy.builderEmpty.roleHint}
-              </p>
-
-              {/* §CTA button (mobile empty) — opens the Add sheet, which is
-                  where suggestions live at this breakpoint. */}
-              <PrimaryButton
-                onClick={() => setSheetOpen(true)}
-                className="md:hidden text-[15px] px-[26px] py-[13px] mt-[24px]"
-              >
-                {decksBuilderCopy.builderEmpty.cta}
-              </PrimaryButton>
-            </section>
-          ) : (
-            /* Task 8: Decklist body */
-            <Decklist
+          {/* ── Right column — Add panel (Task 9) ── */}
+          {/* Desktop: always visible right column */}
+          <aside
+            className="hidden md:flex flex-col flex-none"
+            style={{
+              width: 340,
+              background: "#181410",
+              borderLeft: "1px solid #2A241D",
+              minHeight: "100vh",
+            }}
+          >
+            <AddPanel
               deckId={deck.id}
-              cards={deck.cards}
-              built={deck.built}
-              toBuyCount={deck.toBuyCount}
-              filter={filter}
-              grouping={grouping}
-              onFilterChange={setFilter}
-              onGroupingChange={setGrouping}
+              commanderIdentity={commanderIdentity}
+              suggestions={suggestions}
+              degraded={degraded}
+              deckOracleIds={deckOracleIds}
+              variant="column"
+            />
+          </aside>
+
+          {/* Mobile bottom sheet (mid-build and empty) — AddPanel variant="sheet" */}
+          {sheetOpen && (
+            <AddPanel
+              deckId={deck.id}
+              commanderIdentity={commanderIdentity}
+              suggestions={suggestions}
+              degraded={degraded}
+              deckOracleIds={deckOracleIds}
+              variant="sheet"
+              onCloseSheet={() => setSheetOpen(false)}
             />
           )}
 
-          {/* §"+ Add cards" sticky footer button (mobile mid-build) */}
-          {!isEmpty && (
-            <div
-              className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
-              style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
-            >
-              <PrimaryButton
-                onClick={() => setSheetOpen(true)}
-                className="w-full text-[15px] py-[13px]"
-              >
-                + Add cards
-              </PrimaryButton>
-            </div>
+          {/* Export dialog — Task 10 */}
+          {exportOpen && (
+            <ExportDialog
+              deckName={deck.name}
+              commanderName={deck.commander.name}
+              decklistCards={cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
+              shoppingCards={cards
+                .filter((c) => !c.owned)
+                .map((c) => ({ name: c.name, role: c.role, quantity: c.quantity }))}
+              open={exportOpen}
+              onClose={() => setExportOpen(false)}
+            />
           )}
         </div>
-
-        {/* ── Right column — Add panel (Task 9) ── */}
-        {/* Desktop: always visible right column */}
-        <aside
-          className="hidden md:flex flex-col flex-none"
-          style={{
-            width: 340,
-            background: "#181410",
-            borderLeft: "1px solid #2A241D",
-            minHeight: "100vh",
-          }}
-        >
-          <AddPanel
-            deckId={deck.id}
-            commanderIdentity={commanderIdentity}
-            suggestions={suggestions}
-            degraded={degraded}
-            deckOracleIds={deckOracleIds}
-            variant="column"
-          />
-        </aside>
-
-        {/* Mobile bottom sheet (mid-build and empty) — AddPanel variant="sheet" */}
-        {sheetOpen && (
-          <AddPanel
-            deckId={deck.id}
-            commanderIdentity={commanderIdentity}
-            suggestions={suggestions}
-            degraded={degraded}
-            deckOracleIds={deckOracleIds}
-            variant="sheet"
-            onCloseSheet={() => setSheetOpen(false)}
-          />
-        )}
-
-        {/* Export dialog — Task 10 */}
-        {exportOpen && (
-          <ExportDialog
-            deckName={deck.name}
-            commanderName={deck.commander.name}
-            decklistCards={deck.cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
-            shoppingCards={deck.cards
-              .filter((c) => !c.owned)
-              .map((c) => ({ name: c.name, role: c.role, quantity: c.quantity }))}
-            open={exportOpen}
-            onClose={() => setExportOpen(false)}
-          />
-        )}
-      </div>
+      </AddOptimisticCardProvider>
     </CardDetailProvider>
   );
 }

@@ -43,12 +43,20 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
   // `run` and fire the action twice. A ref settles it synchronously.
   const inFlightRef = useRef(false);
 
-  function run(mutate: () => Promise<DeckMutationResult | void>) {
+  // `applyOptimistic` must be dispatched inside this transition, not before the
+  // click handler calls `run` — an optimistic update outside a transition is
+  // discarded immediately, and one dispatched in a *different* transition would
+  // expire on that transition's clock rather than this mutation's.
+  function run(
+    mutate: () => Promise<DeckMutationResult | void>,
+    applyOptimistic?: () => void,
+  ) {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     startTransition(async () => {
       setApplied(true);
       setError(null);
+      applyOptimistic?.();
       const result = await mutate().catch(
         (): DeckMutationResult => ({ ok: false, message: fallbackMessage }),
       );

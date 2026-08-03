@@ -15,6 +15,23 @@ export type DeckDetailCard = {
   quantity: number;
 };
 
+/**
+ * The deck's three headline counts, derived from the card list alone.
+ *
+ * The only definition, because the builder now renders these from an optimistic
+ * client-side card list as well as from the server's. Two implementations would
+ * let the counter strip and the decklist disagree mid-mutation.
+ */
+export function deckCounts(cards: DeckDetailCard[]): {
+  built: number;
+  ownedCount: number;
+  toBuyCount: number;
+} {
+  const built = cards.reduce((sum, c) => sum + c.quantity, 0);
+  const ownedCount = cards.reduce((sum, c) => sum + (c.owned ? c.quantity : 0), 0);
+  return { built, ownedCount, toBuyCount: built - ownedCount };
+}
+
 const CARD_TYPE_GROUP_ORDER: CardTypeGroup[] = [
   "Creatures", "Instants", "Sorceries", "Artifacts", "Enchantments", "Planeswalkers", "Lands", "Other",
 ];
