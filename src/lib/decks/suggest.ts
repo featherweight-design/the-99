@@ -1,3 +1,4 @@
+import type { DeckDetailCard } from "./grouping";
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
 import type { PoolCard } from "../recs/score";
 
@@ -11,6 +12,13 @@ export type DeckSuggestion = {
   reasonLabel: string;
   owned: boolean;
   inDeck: boolean;
+  // Carried so a click can draw the decklist row before the server answers.
+  // Both are server-derived: the client cannot classify a card it has only a
+  // name for, and guessing puts the optimistic row in a group it then jumps out
+  // of — which is more jarring than the latency it was meant to hide.
+  typeLine: string;
+  cardTypeGroup: DeckDetailCard["cardTypeGroup"];
+  role: DeckDetailCard["role"];
 };
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
@@ -22,7 +30,13 @@ export function humanRole(reason: Suggestion["reason"]): string {
 }
 
 export function buildSuggestionPayload(
-  s: Suggestion & { name: string; owned: boolean },
+  s: Suggestion & {
+    name: string;
+    owned: boolean;
+    typeLine: string;
+    cardTypeGroup: DeckDetailCard["cardTypeGroup"];
+    role: DeckDetailCard["role"];
+  },
   inclusionByName: Record<string, number>,
 ): DeckSuggestion {
   let reasonType: ReasonType;
@@ -49,6 +63,9 @@ export function buildSuggestionPayload(
     reasonLabel,
     owned: s.owned,
     inDeck: false,
+    typeLine: s.typeLine,
+    cardTypeGroup: s.cardTypeGroup,
+    role: s.role,
   };
 }
 

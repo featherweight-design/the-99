@@ -4,16 +4,12 @@
 
 import { addCardToDeck } from "../../app/decks/actions";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { isBasicLand } from "../../lib/decks/grouping";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
+import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
-
-interface SearchResult {
-  oracleId: string;
-  name: string;
-  typeLine: string;
-  owned: boolean;
-}
+import type { SearchResult } from "../../app/decks/[id]/search-action";
 
 interface SearchResultRowProps {
   result: SearchResult;
@@ -25,11 +21,24 @@ export function SearchResultRow({ result, deckId, inDeck }: SearchResultRowProps
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   // Basics may run multiple copies (server increments quantity), so they stay
   // addable even when already in the deck.
-  const isBasic = /\bBasic\b/.test(result.typeLine);
+  const isBasic = isBasicLand(result.typeLine);
   const addable = !applied || isBasic;
+  const addOptimisticCard = useAddOptimisticCard();
 
   function handleAdd() {
-    run(() => addCardToDeck(deckId, result.oracleId));
+    run(
+      () => addCardToDeck(deckId, result.oracleId),
+      () =>
+        addOptimisticCard({
+          oracleId: result.oracleId,
+          name: result.name,
+          typeLine: result.typeLine,
+          cardTypeGroup: result.cardTypeGroup,
+          role: result.role,
+          owned: result.owned,
+          quantity: 1,
+        }),
+    );
   }
 
   return (

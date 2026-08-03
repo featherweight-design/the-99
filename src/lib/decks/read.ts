@@ -4,7 +4,7 @@ import { cards, collectionItems, deckCards, decks } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
-import type { CardTypeGroup, DeckDetailCard } from "./grouping";
+import { deckCounts, type CardTypeGroup, type DeckDetailCard } from "./grouping";
 import { statusPill, type StatusPill } from "./status";
 
 // ---------------------------------------------------------------------------
@@ -143,18 +143,13 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     quantity: row.quantity,
   }));
 
-  const built = detailCards.reduce((sum, c) => sum + c.quantity, 0);
-  const ownedCount = detailCards.reduce((sum, c) => sum + (c.owned ? c.quantity : 0), 0);
-
   return {
     id: deck.id,
     name: deck.name,
     createdAt: deck.createdAt,
     commander,
     cards: detailCards,
-    built,
-    ownedCount,
-    toBuyCount: built - ownedCount,
+    ...deckCounts(detailCards),
   };
 }
 

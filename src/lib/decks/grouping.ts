@@ -15,6 +15,39 @@ export type DeckDetailCard = {
   quantity: number;
 };
 
+/**
+ * Basic lands are the only multi-copy exception this app supports. Commander's
+ * rules also exempt cards that name themselves ("A deck can have any number of
+ * cards named…"), which we do not read — so this is a deliberate implementation
+ * limit, not a statement of the rules. Widening it means parsing oracle text,
+ * and every behaviour below would follow from this one function.
+ *
+ * It is the hinge for three of them: the server increments quantity instead of
+ * no-op'ing, the search row stays addable after the first add, and the
+ * optimistic reducer merges rather than ignores. Those three were testing the
+ * type line independently; one definition keeps them from drifting apart.
+ */
+export function isBasicLand(typeLine: string): boolean {
+  return /\bBasic\b/.test(typeLine);
+}
+
+/**
+ * The deck's three headline counts, derived from the card list alone.
+ *
+ * The only definition, because the builder now renders these from an optimistic
+ * client-side card list as well as from the server's. Two implementations would
+ * let the counter strip and the decklist disagree mid-mutation.
+ */
+export function deckCounts(cards: DeckDetailCard[]): {
+  built: number;
+  ownedCount: number;
+  toBuyCount: number;
+} {
+  const built = cards.reduce((sum, c) => sum + c.quantity, 0);
+  const ownedCount = cards.reduce((sum, c) => sum + (c.owned ? c.quantity : 0), 0);
+  return { built, ownedCount, toBuyCount: built - ownedCount };
+}
+
 const CARD_TYPE_GROUP_ORDER: CardTypeGroup[] = [
   "Creatures", "Instants", "Sorceries", "Artifacts", "Enchantments", "Planeswalkers", "Lands", "Other",
 ];
@@ -37,7 +70,7 @@ const ROLE_GROUP_LABELS: Record<"ramp" | "draw" | "removal" | "wipes" | "land" |
  * Only basic lands with quantity > 1 qualify.
  */
 export function shouldShowMetaRow(card: Pick<DeckDetailCard, "quantity" | "typeLine">): boolean {
-  return card.quantity > 1 && card.typeLine.includes("Basic");
+  return card.quantity > 1 && isBasicLand(card.typeLine);
 }
 
 export function groupByCardType(cards: DeckDetailCard[]): [CardTypeGroup, DeckDetailCard[]][] {

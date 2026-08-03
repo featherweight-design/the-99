@@ -9,6 +9,8 @@ import { requireUserId } from "../../lib/auth";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
+import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
+import { isBasicLand } from "../../lib/decks/grouping";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { validateCardForDeck } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
@@ -86,7 +88,17 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   // Enrich owned suggestions
   const ownedSuggestions: DeckSuggestion[] = raw.map((s) => {
     const c = byId.get(s.oracleId)!;
-    return buildSuggestionPayload({ ...s, name: c.name, owned: true }, inclusionByName);
+    return buildSuggestionPayload(
+      {
+        ...s,
+        name: c.name,
+        owned: true,
+        typeLine: c.typeLine,
+        cardTypeGroup: cardTypeGroup(c.typeLine),
+        role: primaryRole(c),
+      },
+      inclusionByName,
+    );
   });
 
   // Unowned EDHREC staples: up to 5
@@ -97,7 +109,15 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
     // EDHREC's ranking is more than enough candidates.
     const lowerTopCards = topCards.slice(0, 100).map((n) => n.toLowerCase());
     const candidateCards = await db
-      .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity })
+      .select({
+        oracleId: cards.oracleId,
+        name: cards.name,
+        colorIdentity: cards.colorIdentity,
+        // Only needed to classify the card for an optimistic decklist row.
+        typeLine: cards.typeLine,
+        oracleText: cards.oracleText,
+        keywords: cards.keywords,
+      })
       .from(cards)
       .where(
         and(
@@ -127,7 +147,15 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
 
     unownedSuggestions = eligible.slice(0, 5).map((c) =>
       buildSuggestionPayload(
-        { oracleId: c.oracleId, name: c.name, reason: "edhrec", owned: false },
+        {
+          oracleId: c.oracleId,
+          name: c.name,
+          reason: "edhrec",
+          owned: false,
+          typeLine: c.typeLine,
+          cardTypeGroup: cardTypeGroup(c.typeLine),
+          role: primaryRole(c),
+        },
         inclusionByName,
       ),
     );
@@ -168,7 +196,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
   // Still revalidate: the click means this page's HTML disagreed with the row
   // that exists, and without a fresh render the optimistic "✓ In deck" would
   // flash back to "+ Add" when the transition ends.
-  if (existingRow && !/\bBasic\b/.test(card.typeLine)) {
+  if (existingRow && !isBasicLand(card.typeLine)) {
     revalidatePath(`/decks/${deckId}`);
     revalidatePath(`/decks`);
     return { ok: true };
@@ -187,9 +215,10 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
     );
     if (error) return error;
 
-    // Commander is singleton: only basic lands may run multiple copies, so a
-    // repeat add increments quantity for basics and stays a no-op otherwise.
-    if (/\bBasic\b/.test(card.typeLine)) {
+    // Commander is singleton apart from the multi-copy exception (see
+    // isBasicLand), so a repeat add increments quantity there and stays a
+    // no-op otherwise.
+    if (isBasicLand(card.typeLine)) {
       await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoUpdate({
         target: [deckCards.deckId, deckCards.oracleId],
         set: { quantity: sql`${deckCards.quantity} + 1` },

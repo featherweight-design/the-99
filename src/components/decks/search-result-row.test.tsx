@@ -4,6 +4,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { CardDetailProvider } from "./card-detail-provider";
+import type { SearchResult } from "../../app/decks/[id]/search-action";
 
 const { addCardToDeck } = vi.hoisted(() => ({ addCardToDeck: vi.fn() }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
@@ -25,7 +26,9 @@ const result = {
   name: "Sol Ring",
   typeLine: "Artifact",
   owned: true,
-};
+  cardTypeGroup: "Artifacts",
+  role: "ramp",
+} satisfies SearchResult;
 
 function clickAdd() {
   return act(async () => {
@@ -121,7 +124,10 @@ describe("SearchResultRow", () => {
   it("keeps basics addable after an optimistic add", async () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
-    const forest = { oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", owned: true };
+    const forest = {
+      oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", owned: true,
+      cardTypeGroup: "Lands", role: "land",
+    } satisfies SearchResult;
 
     renderRow(<SearchResultRow result={forest} deckId="d1" inDeck />);
     await act(async () => {

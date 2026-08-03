@@ -43,16 +43,32 @@ export function useDeckMutation(committed: boolean, fallbackMessage: string) {
   // `run` and fire the action twice. A ref settles it synchronously.
   const inFlightRef = useRef(false);
 
-  function run(mutate: () => Promise<DeckMutationResult | void>) {
+  // `applyOptimistic` must be dispatched inside this transition, not before the
+  // click handler calls `run` — an optimistic update outside a transition is
+  // discarded immediately, and one dispatched in a *different* transition would
+  // expire on that transition's clock rather than this mutation's.
+  function run(
+    mutate: () => Promise<DeckMutationResult | void>,
+    applyOptimistic?: () => void,
+  ) {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     startTransition(async () => {
       setApplied(true);
       setError(null);
-      const result = await mutate().catch(
-        (): DeckMutationResult => ({ ok: false, message: fallbackMessage }),
-      );
-      inFlightRef.current = false;
+      // `finally`, not a `.catch` on the promise: a throw from `applyOptimistic`
+      // or a synchronous throw from `mutate` would both escape a promise-level
+      // catch, leaving the in-flight latch stuck and the control dead for the
+      // rest of the page's life.
+      let result: DeckMutationResult | void;
+      try {
+        applyOptimistic?.();
+        result = await mutate();
+      } catch {
+        result = { ok: false, message: fallbackMessage };
+      } finally {
+        inFlightRef.current = false;
+      }
       if (result && !result.ok) {
         // Drop the override in the same pass as the message. The transition's own
         // revert only lands when it ends, so without this there is a frame drawing

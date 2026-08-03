@@ -9,6 +9,7 @@ import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
+import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
 interface SuggestionCardProps {
@@ -19,9 +20,22 @@ interface SuggestionCardProps {
 
 export function SuggestionCard({ suggestion, deckId, inDeck }: SuggestionCardProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
+  const addOptimisticCard = useAddOptimisticCard();
 
   function handleAdd() {
-    run(() => addCardToDeck(deckId, suggestion.oracleId));
+    run(
+      () => addCardToDeck(deckId, suggestion.oracleId),
+      () =>
+        addOptimisticCard({
+          oracleId: suggestion.oracleId,
+          name: suggestion.name,
+          typeLine: suggestion.typeLine,
+          cardTypeGroup: suggestion.cardTypeGroup,
+          role: suggestion.role,
+          owned: suggestion.owned,
+          quantity: 1,
+        }),
+    );
   }
 
   const isEdhrec = suggestion.reasonType === "edhrec";
