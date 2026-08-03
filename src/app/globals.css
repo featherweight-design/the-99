@@ -151,17 +151,23 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
  * these four classes rather than a blanket `* { animation: none }` so that
  * adding a new animation forces an explicit static-fallback decision.
  * ------------------------------------------------------------------ */
+/* translate3d rather than translateY: the bob travels 5px over 4.5s — about
+   2px per second — and an uncomposited transform rasterises to whole pixels, so
+   it reads as a few discrete steps instead of a float. Promoting the element to
+   its own layer restores sub-pixel interpolation. Same distance and timing as
+   the mock; only the smoothness differs. */
 @keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -5px, 0); }
 }
 @keyframes dots {
   0%, 100% { opacity: 0.25; }
   50% { opacity: 1; }
 }
+/* Same sub-pixel reasoning as bob, and more acute: 3px over 10s. */
 @keyframes breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02) translateY(3px); }
+  0%, 100% { transform: scale(1) translate3d(0, 0, 0); }
+  50% { transform: scale(1.02) translate3d(0, 3px, 0); }
 }
 @keyframes rise {
   0% { transform: translateY(18px); opacity: 0; }
@@ -176,9 +182,15 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
   100% { transform: translateY(0); }
 }
 
-.anim-bob { animation: bob var(--bob-duration, 4.5s) ease-in-out infinite; }
+.anim-bob {
+  animation: bob var(--bob-duration, 4.5s) ease-in-out infinite;
+  will-change: transform;
+}
 .anim-dots { animation: dots 1.2s ease-in-out infinite; }
-.anim-breathe { animation: breathe 10s ease-in-out infinite; }
+.anim-breathe {
+  animation: breathe 10s ease-in-out infinite;
+  will-change: transform;
+}
 .anim-rise { animation: rise 0.8s ease-out both; }
 .anim-sheet-in { animation: filter-sheet-in 0.18s ease-out both; }
 
@@ -190,5 +202,8 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
   /* Reduced motion: the sheet appears in place, no translate. */
   .anim-sheet-in {
     animation: none;
+    /* Nothing moves, so drop the compositing hint rather than holding a layer
+       for an animation that will never run. */
+    will-change: auto;
   }
 }

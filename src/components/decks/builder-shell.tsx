@@ -5,7 +5,7 @@
 
 import { useState, useMemo } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
-import { statusPill } from "../../lib/decks/read";
+import { statusPill } from "../../lib/decks/status";
 import { shouldCelebrate } from "../../lib/decks/celebration";
 import { CompletionReveal } from "./completion-reveal";
 import { useCelebrated } from "./use-celebrated";

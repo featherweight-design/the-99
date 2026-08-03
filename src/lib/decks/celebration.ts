@@ -1,4 +1,4 @@
-import type { StatusPill } from "./read";
+import type { StatusPill } from "./status";
 
 /** The 99/99 reveal is a one-shot event, but statusPill() is a derived status
  *  that reads "Complete" forever. Gate on a persisted per-deck flag so the

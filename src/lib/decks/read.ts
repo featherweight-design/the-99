@@ -5,6 +5,7 @@ import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import type { CardTypeGroup, DeckDetailCard } from "./grouping";
+import { statusPill, type StatusPill } from "./status";
 
 // ---------------------------------------------------------------------------
 // WUBRG bitmask helpers (tested)
@@ -39,14 +40,6 @@ export function poolCountFromMaskTally(
 // ---------------------------------------------------------------------------
 // Pure helpers (tested)
 // ---------------------------------------------------------------------------
-
-export type StatusPill = "Draft" | "Building" | "Playable" | "Complete";
-
-export function statusPill(args: { built: number; ownedCount: number }): StatusPill {
-  if (args.built === 0) return "Draft";
-  if (args.built < 99) return "Building";
-  return args.ownedCount === args.built ? "Complete" : "Playable";
-}
 
 export function cardTypeGroup(typeLine: string): CardTypeGroup {
   const t = typeLine.toLowerCase();
