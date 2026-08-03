@@ -119,27 +119,29 @@ export function CommandersView({
 
   const [announcement, setAnnouncement] = useState("");
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
-  // The row to focus doesn't exist yet when the click handler runs, so the move
-  // is deferred to the layout effect below.
-  const pendingFocus = useRef<number | null>(null);
+  const prevShown = useRef(shown);
 
   const handleReveal = useCallback(() => {
-    const next = Math.min(shown + REVEAL_STEP, filtered.length);
-    pendingFocus.current = shown;
-    setAnnouncement(
-      `${next} shown, ${filtered.length - next} more below. Ranks ${shown + 1} to ${next} added.`,
-    );
-    setShown(shown + REVEAL_STEP);
-  }, [shown, filtered.length]);
+    setShown((s) => Math.min(s + REVEAL_STEP, filtered.length));
+  }, [filtered.length]);
 
+  // Both the announcement and the focus move are derived from the *committed*
+  // window rather than computed in the click handler: the row to focus doesn't
+  // exist yet when the handler runs, and reading `shown` there would let two
+  // fast clicks announce a range that was never actually revealed.
   useLayoutEffect(() => {
-    const index = pendingFocus.current;
-    if (index === null) return;
-    pendingFocus.current = null;
+    const before = prevShown.current;
+    prevShown.current = shown;
+    // Only a reveal widens the window; a filter change narrows it back and must
+    // announce nothing.
+    if (shown <= before) return;
+    setAnnouncement(
+      `${shown} shown, ${filtered.length - shown} more below. Ranks ${before + 1} to ${shown} added.`,
+    );
     // preventScroll: revealing must not move the reader's place. The brass ring
     // is the cue that keyboard position advanced, not a jump down the page.
-    itemRefs.current[index]?.focus({ preventScroll: true });
-  }, [shown]);
+    itemRefs.current[before]?.focus({ preventScroll: true });
+  }, [shown, filtered.length]);
 
   return (
     <div>

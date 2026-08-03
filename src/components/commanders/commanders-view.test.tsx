@@ -97,6 +97,17 @@ describe("CommandersView windowing", () => {
     expect(screen.getByText(/End of ranking · 30 of 30/)).toBeInTheDocument();
   });
 
+  it("clamps to the list length rather than overshooting on rapid activations", () => {
+    const { container } = view(results(60));
+    fireEvent.click(control()!);
+    fireEvent.click(control()!);
+    expect(cards()).toHaveLength(60);
+    expect(control()).toBeNull();
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent(
+      "60 shown, 0 more below. Ranks 51 to 60 added.",
+    );
+  });
+
   it("renders neither control nor rule on a list too short to window", () => {
     view(results(24));
     expect(cards()).toHaveLength(24);
