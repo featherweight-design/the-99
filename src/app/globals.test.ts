@@ -59,3 +59,37 @@ describe("global focus treatment", () => {
     expect(only.body).toContain("b {");
   });
 });
+
+describe("animation utilities", () => {
+  // The reduced-motion block is scoped to a class list rather than a blanket
+  // `* { animation: none }` precisely so that adding an animation forces an
+  // explicit static-fallback decision. Nothing enforced that until this test:
+  // a new `.anim-*` could silently skip the block and keep moving for users who
+  // asked it not to.
+  const reducedMotionBlock = css.match(
+    /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/,
+  );
+  // Empty string rather than `!`, so a regex that stops matching fails as a
+  // readable assertion instead of a TypeError.
+  const reducedMotionBody = reducedMotionBlock?.[1] ?? "";
+  const declaredUtilities = () =>
+    new Set([...css.matchAll(/^\.(anim-[\w-]+)\s*\{/gm)].map((m) => m[1]));
+  const exemptedUtilities = () =>
+    [...reducedMotionBody.matchAll(/\.(anim-[\w-]+)/g)].map((m) => m[1]);
+
+  it("declares a prefers-reduced-motion block", () => {
+    expect(reducedMotionBlock).not.toBeNull();
+  });
+
+  it("lists every .anim-* utility in the reduced-motion block", () => {
+    const declared = declaredUtilities();
+    expect(declared.size).toBeGreaterThan(0);
+    const exempted = new Set(exemptedUtilities());
+    expect([...declared].filter((c) => !exempted.has(c))).toEqual([]);
+  });
+
+  it("references only real utilities in the reduced-motion block", () => {
+    const declared = declaredUtilities();
+    expect(exemptedUtilities().filter((c) => !declared.has(c))).toEqual([]);
+  });
+});

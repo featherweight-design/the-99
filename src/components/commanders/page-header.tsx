@@ -1,11 +1,11 @@
 "use client";
 // Page Header — /commanders list (§Page Header — /commanders list).
-// Mobile: padding 20px 18px 12px, border-bottom 1px solid #2A241D, account avatar trigger 34×34px.
+// Mobile: padding 20px 18px 12px, border-bottom 1px solid #2A241D.
+// #35 dropped this header's own account avatar: the shell's MobileHeader renders
+// on every signed-in route, so below sm the page showed two account triggers.
 // Desktop: padding 28px 34px 0, no border-bottom.
 // Title: Cinzel 700, 22px mobile / 30px desktop, #EDE6D8.
 // Subtitle: IBM Plex Mono, 11px mobile / 12px desktop, #8E8269, margin-top 2/4px.
-
-import { UserButton } from "@clerk/nextjs";
 
 type PageHeaderProps = {
   uniqueCardsRead: number;
@@ -43,16 +43,6 @@ export function PageHeader({ uniqueCardsRead }: PageHeaderProps) {
           </p>
         </div>
 
-        {/* Mobile account avatar trigger: 34×34px, border-radius 10px, brass border */}
-        {/* §Mobile — account avatar trigger: width 34px, height 34px, br 10px, border #C9A24B */}
-        <UserButton
-          appearance={{
-            elements: {
-              userButtonAvatarBox:
-                "h-[34px] w-[34px] rounded-[10px] border border-[#C9A24B]",
-            },
-          }}
-        />
       </div>
 
       {/* ── Desktop header ── */}
