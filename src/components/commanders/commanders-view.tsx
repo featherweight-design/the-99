@@ -132,9 +132,15 @@ export function CommandersView({
   useLayoutEffect(() => {
     const before = prevShown.current;
     prevShown.current = shown;
-    // Only a reveal widens the window; a filter change narrows it back and must
-    // announce nothing.
-    if (shown <= before) return;
+    // Only a reveal widens the window; a filter change narrows it back. Clearing
+    // rather than returning matters twice over: it drops stale screen-reader text
+    // that no longer describes the list, and it stops React bailing out later if
+    // a reveal happens to produce the string already sitting in the region — an
+    // unchanged node is never re-announced.
+    if (shown <= before) {
+      setAnnouncement("");
+      return;
+    }
     setAnnouncement(
       `${shown} shown, ${filtered.length - shown} more below. Ranks ${before + 1} to ${shown} added.`,
     );

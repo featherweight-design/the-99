@@ -190,6 +190,20 @@ describe("CommandersView reveal a11y", () => {
     expect(live).toHaveTextContent("50 shown, 164 more below. Ranks 26 to 50 added.");
   });
 
+  it("clears the announcement when a filter resets the window", () => {
+    const mixed = [...results(40, ["R"]), ...results(40, ["U"]).map((r, i) => ({
+      ...r,
+      slug: `blue-${i}`,
+      oracleId: `blue-${i}`,
+    }))];
+    const { container } = view(mixed);
+    const live = container.querySelector('[aria-live="polite"]')!;
+    fireEvent.click(control()!);
+    expect(live).toHaveTextContent(/Ranks 26 to 50 added/);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Red" })[0]);
+    expect(live).toHaveTextContent("");
+  });
+
   it("moves focus to the first revealed row, not to the control", () => {
     view(results(214));
     fireEvent.click(control()!);
