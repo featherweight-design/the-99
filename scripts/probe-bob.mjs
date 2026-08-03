@@ -19,8 +19,26 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(resolve(HERE, "../src/app/globals.css"), "utf8");
 
 // Tailwind's @import can't resolve here, so lift only the rules under test.
-const rules = [...css.matchAll(/@keyframes (?:bob|breathe)\s*\{[\s\S]*?\n\}/g)].map((m) => m[0]);
-const classes = [...css.matchAll(/\.anim-(?:bob|breathe)\s*\{[\s\S]*?\n\}/g)].map((m) => m[0]);
+// Brace-depth rather than a regex for the closing brace: @keyframes nests, and
+// matching on a literal "\n}" would make a reformat of globals.css look like an
+// animation regression.
+function extractBlocks(source, headerPattern) {
+  const out = [];
+  for (const match of source.matchAll(headerPattern)) {
+    let depth = 0;
+    for (let i = match.index; i < source.length; i++) {
+      if (source[i] === "{") depth++;
+      else if (source[i] === "}" && --depth === 0) {
+        out.push(source.slice(match.index, i + 1));
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+const rules = extractBlocks(css, /@keyframes (?:bob|breathe)\s*\{/g);
+const classes = extractBlocks(css, /\.anim-(?:bob|breathe)\s*\{/g);
 if (rules.length !== 2 || classes.length !== 2) {
   throw new Error(`Expected 2 keyframes and 2 classes, got ${rules.length} and ${classes.length}`);
 }
