@@ -198,6 +198,24 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
   100% { transform: translateY(0); }
 }
 
+/* Account menu. Closing is instant in both motion modes, so neither surface
+   gets an exit pair. The sheet reuses filter-sheet-in's shape but not its
+   timing — the handoff specs its own easing. */
+@keyframes menu-in {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes sheet-up {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+/* The backdrop cross-fades over the sheet's own duration rather than snapping
+   to full opacity while the sheet is still travelling. */
+@keyframes backdrop-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
 /* Sinusoidal in-out rather than the default cubic ease-in-out: cubic dwells
    near both extremes (peak:mean velocity 1.85x vs 1.57x), and a dwell is the
    very thing being fixed here. */
@@ -212,6 +230,9 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 }
 .anim-rise { animation: rise 0.8s ease-out both; }
 .anim-sheet-in { animation: filter-sheet-in 0.18s ease-out both; }
+.anim-menu-in { animation: menu-in 0.12s ease-out both; }
+.anim-sheet-up { animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-backdrop-in { animation: backdrop-in 0.18s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
@@ -219,7 +240,11 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
   .anim-breathe,
   .anim-rise,
   /* Reduced motion: the sheet appears in place, no translate. */
-  .anim-sheet-in {
+  .anim-sheet-in,
+  /* Both account-menu surfaces appear at final position, fully opaque. */
+  .anim-menu-in,
+  .anim-backdrop-in,
+  .anim-sheet-up {
     animation: none;
     /* Nothing moves, so drop the compositing hint rather than holding a layer
        for an animation that will never run. */

@@ -1,7 +1,6 @@
 // /decks — Deck list page.
 // §Deck List: populated grid, empty state preserved, ?commander redirect.
 import { redirect } from "next/navigation";
-import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { CardFan } from "../../components/marks";
@@ -26,7 +25,7 @@ export default async function DecksPage({
     redirect(`/decks/new?commander=${encodeURIComponent(params.commander)}`);
   }
 
-  const [userId, user] = await Promise.all([requireUserId(), currentUser()]);
+  const userId = await requireUserId();
   const decks = await listDecksWithStats(userId);
 
   // ── Empty state — §Empty State — No Decks. Verbatim from interim; not regressed. ──
@@ -72,15 +71,6 @@ export default async function DecksPage({
   // Aggregate subtitle values
   const totalBuilt = decks.reduce((sum, d) => sum + d.built, 0);
 
-  // Mobile avatar: initials from firstName + lastName (or email prefix)
-  const initials = (() => {
-    const first = user?.firstName?.[0] ?? "";
-    const last = user?.lastName?.[0] ?? "";
-    if (first || last) return (first + last).toUpperCase();
-    const email = user?.emailAddresses?.[0]?.emailAddress ?? "";
-    return email[0]?.toUpperCase() ?? "?";
-  })();
-
   return (
     <section>
       {/*
@@ -108,30 +98,12 @@ export default async function DecksPage({
           </p>
         </div>
 
-        {/* Right side: mobile shows avatar, desktop shows "New Deck" button */}
-        <div className="flex items-center gap-[12px]">
-          {/*
-            §Page header — avatar (mobile only):
-            34×34px, br 10px, bg #221D16, border 1px #C9A24B, mono 11px #C9A24B initials
-          */}
-          <div
-            className="md:hidden flex items-center justify-center rounded-[10px] font-mono text-[11px]"
-            style={{
-              width: 34,
-              height: 34,
-              background: "#221D16",
-              border: "1px solid #C9A24B",
-              color: "#C9A24B",
-            }}
-            aria-hidden
-          >
-            {initials}
-          </div>
-
-          {/* §New Deck button — desktop only (mobile has full-width below) */}
-          <div className="hidden md:block">
-            <NewDeckButton />
-          </div>
+        {/* §New Deck button — desktop only (mobile has full-width below).
+            #35 removed the decorative mobile avatar that used to sit beside it:
+            it duplicated the shell header's real account trigger a few pixels
+            away, in the pre-#35 34×34/r10 styling. */}
+        <div className="hidden md:block">
+          <NewDeckButton />
         </div>
       </div>
 
