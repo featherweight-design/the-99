@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cinzel, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import Shell from "../components/shell/shell";
+import { clerkAppearance } from "../lib/shell/clerk-appearance";
 import "./globals.css";
 
 const cinzel = Cinzel({
@@ -35,7 +36,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider appearance={clerkAppearance}>
       <html
         lang="en"
         className={`${cinzel.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
