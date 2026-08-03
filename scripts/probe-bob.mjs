@@ -27,46 +27,56 @@ if (rules.length !== 2 || classes.length !== 2) {
 
 const PEAK_FLOOR = 0.06; // px/frame — below this the motion reads as stepping.
 
-const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 600, height: 800 } });
-await page.setContent(
-  // Sizes match the real call sites, because breathe scales: the same scale
-  // factor moves the kaiju's edge far more than it would a crab-sized box.
-  `<!doctype html><style>
-    body { margin: 0; background: #14110E; }
-    div { background: #C9A24B; }
-    #bob { width: 96px; height: 66px; }
-    #breathe { width: 440px; height: 348px; }
-    ${rules.join("\n")}
-    ${classes.join("\n")}
-  </style>
-  <div class="anim-bob" id="bob"></div>
-  <div class="anim-breathe" id="breathe"></div>`,
-);
-
 // One full period of the slowest animation under test (breathe, 5s), plus a
 // margin. A shorter window happens to contain both peaks today — each is a
 // quarter-period in — but that only holds while the periods stay what they are,
 // and this probe exists precisely to be run after someone changes them.
 const SAMPLE_MS = 6000;
 
-const profile = await page.evaluate(async (sampleMs) => {
-  const out = { bob: [], breathe: [] };
-  const start = performance.now();
-  return await new Promise((done) => {
-    function tick() {
-      for (const id of Object.keys(out)) {
-        const r = document.getElementById(id).getBoundingClientRect();
-        // breathe scales as well as translates, so track both edges.
-        out[id].push(r.y + r.height);
+async function measure(browser) {
+  const page = await browser.newPage({ viewport: { width: 600, height: 800 } });
+  await page.setContent(
+    // Sizes match the real call sites, because breathe scales: the same scale
+    // factor moves the kaiju's edge far more than it would a crab-sized box.
+    `<!doctype html><style>
+      body { margin: 0; background: #14110E; }
+      div { background: #C9A24B; }
+      #bob { width: 96px; height: 66px; }
+      #breathe { width: 440px; height: 348px; }
+      ${rules.join("\n")}
+      ${classes.join("\n")}
+    </style>
+    <div class="anim-bob" id="bob"></div>
+    <div class="anim-breathe" id="breathe"></div>`,
+  );
+
+  return await page.evaluate(async (sampleMs) => {
+    const out = { bob: [], breathe: [] };
+    const start = performance.now();
+    return await new Promise((done) => {
+      function tick() {
+        for (const id of Object.keys(out)) {
+          const r = document.getElementById(id).getBoundingClientRect();
+          // The bottom edge, which moves under translate and under scale alike,
+          // so the same sample serves bob and breathe.
+          out[id].push(r.y + r.height);
+        }
+        if (performance.now() - start > sampleMs) return done(out);
+        requestAnimationFrame(tick);
       }
-      if (performance.now() - start > sampleMs) return done(out);
       requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-  });
-}, SAMPLE_MS);
-await browser.close();
+    });
+  }, SAMPLE_MS);
+}
+
+const browser = await chromium.launch();
+let profile;
+try {
+  profile = await measure(browser);
+} finally {
+  // Without this, a throw anywhere in measure() orphans a Chromium process.
+  await browser.close();
+}
 
 let failed = false;
 for (const [id, samples] of Object.entries(profile)) {
