@@ -20,7 +20,7 @@ Four findings from Hugh's 2026-08-02 staging walk, all on this surface:
 Design does not need to invent these, and should reuse rather than re-solve:
 
 - **Card art is available and cheap.** It lives on the `cards` table as `imageUri` (`src/db/schema.ts`) and is already ingested for the whole catalogue. On the suggestions path it is a single payload field: `PoolCard` carries it (`src/lib/recs/score.ts:6`) and `src/lib/decks/suggest.ts` simply drops it when building `DeckSuggestion`. On the search path it is slightly more — `searchCards` neither selects nor returns it today (`src/app/decks/[id]/search-action.ts:33-55`), so it needs one column added to the select and one field to `SearchResult`. Neither is a backend project; "we can't show art" is not a reason.
-- **An art pattern is already shipped.** `src/components/commanders/rec-card.tsx` renders card art at 36×50 mobile and 63×88 desktop, with a `commanderGradient()` fallback when `imageUri` is null.
+- **An art pattern is already shipped.** `src/components/commanders/rec-card.tsx` renders card art at 36×50px on mobile (`:68-69`) and at a 63/88 aspect ratio in a 100px desktop grid column (`:189`, `:222`), with a `commanderGradient()` fallback when `imageUri` is null (`:22`).
 - **Type and role are already on the payload.** `DeckSuggestion` carries `typeLine`, `cardTypeGroup` and `role` (`src/lib/decks/suggest.ts:19-21`). Surfacing them is presentational only.
 - **A card detail modal already exists.** `src/components/decks/card-detail-provider.tsx` mounts above the whole builder tree and opens a modal with full art, formatted oracle text, and the printing picker. Design should not re-solve "see the card properly" — but should decide how a suggestion invites it.
 - **The role counter strip already tells the player what the deck lacks.** `src/components/decks/role-counter-strip.tsx` shows Ramp · Draw · Removal · Wipes · Land against targets. Today it sits in the main column while the suggestions that would fix a gap sit in a separate rail, ungrouped by role.
@@ -49,9 +49,9 @@ Researched 2026-08-03. Verified against Archidekt, EDHREC, Moxfield and Deckstat
 
 There are two different "Other" labels and only one is the problem.
 
-`cardTypeGroup: "Other"` (`src/lib/decks/read.ts:53`) is a genuine and rare residue — Tribal and similar oddities. It is fine.
+The `"Other"` card-type group — the fallback `cardTypeGroup()` returns when a type line matches none of the seven known groups (`src/lib/decks/read.ts:44-54`) — is a genuine and rare residue, Tribal and similar oddities. It is fine.
 
-`role: "other"` (`src/lib/decks/grouping.ts:65`) is the problem, and it is **the largest group in almost every deck**, because it catches everything that is not ramp, draw, removal, a wipe or a land. That is the deck's win conditions and its entire commander synergy package, filed under a label that means "unclassified."
+The `"other"` **role** is the problem. It is the fallback `primaryRole()` returns when `classifyRoles()` matches nothing (`src/lib/decks/read.ts:56-59`), and it surfaces to the player as the group heading "Other" (`src/lib/decks/grouping.ts:65`). It is **the largest group in almost every deck**, because it catches everything that is not ramp, draw, removal, a wipe or a land. That is the deck's win conditions and its entire commander synergy package, filed under a label that means "unclassified."
 
 **Proposed position, open to Design's revision:** the five roles are not a taxonomy, they are a *coverage checklist* — quantities a deck needs enough of. Everything else is not leftover; it is the deck's gameplan. The group should therefore not be named for what it lacks. The direction is something like "Threats & synergy," with the role strip framed as coverage rather than classification.
 
