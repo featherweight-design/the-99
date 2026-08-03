@@ -90,9 +90,16 @@ export function BuilderShell({
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     <CardDetailProvider>
       <AddOptimisticCardProvider value={addOptimisticCard}>
-        <div className="flex flex-col md:flex-row min-h-screen" style={{ background: "#100D0A" }}>
+        {/* On desktop the viewport is the frame and each column scrolls inside it,
+            rather than the page growing to the taller of the two. The columns are
+            lists of unrelated length, so a page-level scroll leaves whichever one
+            ran out first sitting above dead space. Mobile stays a single flow. */}
+        <div
+          className="flex flex-col md:flex-row min-h-screen md:h-screen md:min-h-0 md:overflow-hidden"
+          style={{ background: "#100D0A" }}
+        >
           {/* ── Left / main column ── */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 md:min-h-0 md:overflow-y-auto">
             {/* The 99/99 kaiju reveal — one-shot, above the builder body */}
             {showReveal && (
               <CompletionReveal
@@ -271,12 +278,11 @@ export function BuilderShell({
           {/* ── Right column — Add panel (Task 9) ── */}
           {/* Desktop: always visible right column */}
           <aside
-            className="hidden md:flex flex-col flex-none"
+            className="hidden md:flex flex-col flex-none min-h-0"
             style={{
               width: 340,
               background: "#181410",
               borderLeft: "1px solid #2A241D",
-              minHeight: "100vh",
             }}
           >
             <AddPanel
