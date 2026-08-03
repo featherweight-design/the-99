@@ -170,6 +170,8 @@ function AccountSheet(props: PanelProps) {
   return (
     <>
       <div
+        // A visual dismiss target only — the sheet carries the semantics.
+        aria-hidden
         // z-45, not z-40: TabBar is z-40 and paints later in the DOM, so an
         // equal layer would leave the tab bar sitting on top of the backdrop.
         className="anim-backdrop-in fixed inset-0 z-[45]"
@@ -341,6 +343,8 @@ export function AccountMenu({ panel }: { panel: PanelKind }) {
         {/* Hover and pressed are one state (N2): colour only, no scale. Open
             wins over hover, so its classes are applied instead of alongside. */}
         <span
+          // X4: the glyphs are decoration; aria-label on the button is the name.
+          aria-hidden
           className={`flex h-[38px] w-[38px] items-center justify-center rounded-[12px] border border-solid font-mono text-[13px] transition-colors duration-[120ms] ${
             open
               ? "bg-[color:var(--elevated)] border-[color:var(--brass-hover)] text-[color:var(--brass-hover)]"

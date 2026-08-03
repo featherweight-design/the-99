@@ -47,7 +47,7 @@ describe("AccountMenu trigger", () => {
     expect(button).toHaveAttribute("aria-expanded", "false");
     // "AR" must not reach the accessible name.
     expect(button.textContent).toBe("AR");
-    expect(screen.queryByText("AR")).toBe(button.firstElementChild);
+    expect(button.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
 
   it("points aria-controls at the panel only while it is open", () => {
@@ -168,7 +168,9 @@ describe("AccountMenu sheet", () => {
   it("stacks the backdrop above the tab bar and below the sheet", () => {
     const { container } = render(<AccountMenu panel="sheet" />);
     fireEvent.click(trigger());
-    expect(container.querySelector(".fixed.inset-0")?.className).toContain("z-[45]");
+    const backdrop = container.querySelector(".fixed.inset-0")!;
+    expect(backdrop.className).toContain("z-[45]");
+    expect(backdrop).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByRole("dialog").className).toContain("z-50");
   });
 
