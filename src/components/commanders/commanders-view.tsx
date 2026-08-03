@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { filterByColors } from "../../lib/commanders/filter";
@@ -9,6 +16,12 @@ import { RecCard } from "./rec-card";
 import { GuidedBanner } from "./guided-banner";
 import { DegradedBanner } from "./degraded-banner";
 import { FilteredEmpty } from "./filtered-empty";
+import {
+  REVEAL_STEP,
+  RevealControl,
+  EndOfRanking,
+  WindowCount,
+} from "./reveal-control";
 
 // ── URL helpers (mirrors collection/browser.tsx pattern) ─────────────────────
 
@@ -81,16 +94,73 @@ export function CommandersView({
     [results],
   );
 
+  // ── Windowing (#52) ────────────────────────────────────────────────────────
+  // The window belongs to the current result set, not the session, so every
+  // filter change puts it back to the first batch.
+  const [shown, setShown] = useState(REVEAL_STEP);
+
   // Clear handler passed to FilteredEmpty
-  const handleClearFilter = useCallback(() => setColors([]), []);
+  const handleClearFilter = useCallback(() => {
+    setColors([]);
+    setShown(REVEAL_STEP);
+  }, []);
 
   // Toggle a single color in/out of active set
   const toggleColor = useCallback((c: string) => {
     setColors((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
+    setShown(REVEAL_STEP);
   }, []);
+
+  const windowed = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
+  const remaining = Math.max(0, filtered.length - shown);
+  // A list too short to have ever been windowed ends on a plain spacer — the
+  // rule means "you've revealed everything", not "the list ended".
+  const wasWindowed = filtered.length > REVEAL_STEP;
+
+  const [announcement, setAnnouncement] = useState("");
+  const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const prevShown = useRef(shown);
+
+  const handleReveal = useCallback(() => {
+    setShown((s) => Math.min(s + REVEAL_STEP, filtered.length));
+  }, [filtered.length]);
+
+  // Both the announcement and the focus move are derived from the *committed*
+  // window rather than computed in the click handler: the row to focus doesn't
+  // exist yet when the handler runs, and reading `shown` there would let two
+  // fast clicks announce a range that was never actually revealed.
+  useLayoutEffect(() => {
+    const before = prevShown.current;
+    prevShown.current = shown;
+    // Only a reveal widens the window; a filter change narrows it back. Clearing
+    // rather than returning matters twice over: it drops stale screen-reader text
+    // that no longer describes the list, and it stops React bailing out later if
+    // a reveal happens to produce the string already sitting in the region — an
+    // unchanged node is never re-announced.
+    if (shown <= before) {
+      setAnnouncement("");
+      return;
+    }
+    const n = (v: number) => v.toLocaleString("en-US");
+    setAnnouncement(
+      `${n(shown)} shown, ${n(filtered.length - shown)} more below. Ranks ${n(before + 1)} to ${n(shown)} added.`,
+    );
+    // preventScroll: revealing must not move the reader's place. The brass ring
+    // is the cue that keyboard position advanced, not a jump down the page.
+    itemRefs.current[before]?.focus({ preventScroll: true });
+  }, [shown, filtered.length]);
 
   return (
     <div>
+      {/* Present before the first reveal — a live region inserted at announce
+          time is frequently not read. A list too short to window can never
+          announce, so it renders the pre-windowing surface untouched. */}
+      {wasWindowed && (
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </span>
+      )}
+
       {/* ── Global degraded banner (above everything) ── */}
       {degraded && (
         <div className="px-[14px] pt-[12px] sm:px-0 sm:pt-0">
@@ -211,10 +281,21 @@ export function CommandersView({
             </button>
           )}
 
+          {/* Window count (§Header window count, desktop) — sits ahead of the
+              order label. It is omitted entirely on a list short enough never to
+              window, so that surface stays byte-identical to what shipped. */}
+          {wasWindowed && (
+            <WindowCount
+              shown={shown}
+              filteredTotal={filtered.length}
+              className="font-mono text-[11px] tracking-[0.12em] uppercase ml-auto"
+            />
+          )}
+
           {/* "Order: Fit ↓ · fixed" label (desktop, §Order label) */}
           <span
             className="font-mono"
-            style={{ fontSize: 11, color: "#8E8269", marginLeft: "auto" }}
+            style={{ fontSize: 11, color: "#8E8269", marginLeft: wasWindowed ? undefined : "auto" }}
           >
             Order: Fit ↓ · fixed
           </span>
@@ -279,6 +360,21 @@ export function CommandersView({
           </span>
         </div>
 
+        {/* Window count (§Header window count, mobile) — its own row under the
+            colour filter. */}
+        {wasWindowed && (
+          <div className="flex items-center justify-between mt-[9px]">
+            <WindowCount
+              shown={shown}
+              filteredTotal={filtered.length}
+              className="font-mono text-[10.5px]"
+            />
+            <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+              Fit ↓ · fixed
+            </span>
+          </div>
+        )}
+
         {/* Mobile active filter chips (§Active-filter chip mobile) */}
         {colors.length > 0 && (
           <div className="flex flex-wrap gap-[6px] mt-[8px]">
@@ -334,13 +430,40 @@ export function CommandersView({
             onClear={handleClearFilter}
           />
         ) : (
-          <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
-            {filtered.map((r) => (
-              <li key={r.slug}>
-                <RecCard commander={r} rank={rankBySlug.get(r.slug) ?? 0} />
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
+              {windowed.map((r, i) => (
+                <li
+                  key={r.slug}
+                  tabIndex={wasWindowed ? -1 : undefined}
+                  ref={
+                    wasWindowed
+                      ? (el) => {
+                          itemRefs.current[i] = el;
+                        }
+                      : undefined
+                  }
+                  className={
+                    wasWindowed
+                      ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brass)]"
+                      : undefined
+                  }
+                >
+                  <RecCard commander={r} rank={rankBySlug.get(r.slug) ?? 0} />
+                </li>
+              ))}
+              {remaining > 0 && (
+                <li>
+                  <RevealControl remaining={remaining} onReveal={handleReveal} />
+                </li>
+              )}
+            </ul>
+            {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}
+            {remaining > 0 && <div className="h-[24px] sm:hidden" />}
+            {remaining === 0 && wasWindowed && (
+              <EndOfRanking total={filtered.length} />
+            )}
+          </>
         )}
       </div>
     </div>

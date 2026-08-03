@@ -35,8 +35,8 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-| **#52** Commanders · list windowing | `design/design_handoff_the99_commanders_windowing/` | 🟡 Yellow (2026-07-25, R2) | R1 was 🟠 Orange; R2 closed both blockers — the window count now carries no total (`25 shown · 71 more below`) so it can't collide with the shipped `Showing 96 of 214`, and new state **1b** draws both figures together at desktop (1060px) + mobile (392px). Three eng-side notes in `READINESS.md`: the live-region announcement still uses the phrasing decision 5 forbids (apply decision 5's form); `REVEAL_STEP = 25 > 24` beta candidates means the control is unreachable, so the ticket needs an explicit verification path; focus-on-reveal goes on the `<li>` at index `shown - REVEAL_STEP`. |
-| **#35** Branded user menu (eng **#13**) | `design/design_handoff_the99_user_menu/` | 🟡 Yellow (2026-07-25) | All eight locked decisions in `docs/superpowers/specs/2026-07-25-branded-user-menu-design.md` honoured, including the three superseding `appshell.md`. All eleven cited tokens verified against `globals.css` at the exact hex; no new token. Six eng-side notes in `READINESS.md`: the popover email is **4.42:1** and fails AA (use `--fg-muted`, 8.48:1 — the README's 4.6:1 figure is wrong); the backdrop is specified `rgba(10,8,6,0.72)` but the shipped modals both use `rgba(8,6,4,0.72)`, so the stated "overlays never disagree" rationale inverts itself; the sheet's `#1E1A15` is `--surface` and should be tokenized; the top-anchored popover flip in decision 3 is **unreachable** (mobile triggers open the sheet, and the `/commanders` desktop header has no trigger) so skip that branch; the focus-ring citation `globals.css:130` is actually `globals.css:133-135`; and the appshell README reference at `README.md:10` is missing its `design/` prefix. A corrections table at the top of `READINESS.md` lists every wrong claim with its location in **both** the README and the canvas — the handoff itself is left verbatim. |
+
+_Currently empty._
 
 ---
 
@@ -47,7 +47,7 @@ Holds items whose readiness verdict was 🟠 Orange — per `design-pipeline.md`
 | # / handoff | Verdict PR | Blockers to close | Effort |
 |---|---|---|---|
 
-_Currently empty — #52's R1 Orange was closed by its R2 revision (🟢 above), and #105's by its R3 (shipped below)._
+_Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped below), and #105's by its R3 (shipped below)._
 
 ---
 
@@ -76,7 +76,7 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-One ranked queue. Ranks 1–6 are v1 polish follow-ups against already-shipped surfaces; ranks 7–11 are post-v1 features ordered by the roadmap tracker (#44). Rank 7 sorts ahead of the other post-v1 work because both of its eng dependencies have already shipped. The per-surface brand + richness refresh tickets and #35 run ahead of everything here.
+One ranked queue. Ranks 1–6 are v1 polish follow-ups against already-shipped surfaces; ranks 7–11 are post-v1 features ordered by the roadmap tracker (#44). Rank 7 sorts ahead of the other post-v1 work because both of its eng dependencies have already shipped. The per-surface brand + richness refresh tickets and #35 shipped ahead of everything here.
 
 This list previously ran as two — a "Backlog" and a "Ready for design" — but the legend gave them the same definition (`type: design`, not yet workshopped), so nothing could be sorted between them by rule. The split was really a priority band, which the Rank column now carries.
 
@@ -85,7 +85,7 @@ This list previously ran as two — a "Backlog" and a "Ready for design" — but
 | 1 | **#140** Design: Inline error state for refused deck mutations | Ratification, not net-new design — the UI is **already live on `main`** (PR #139), which is why it outranks the rest. Five refusal strings need Design's sign-off or a rewrite; they are listed on the ticket |
 | 2 | **#148** Design: ratify the richness pass interpretive calls | Ratification, same class as #140 — the UI is **already live on `main`** (PRs #66, #144, #145, #146). Three calls on the 99/99 completion reveal (band not surface, dismissible-only, a derived mobile composition) plus two invented strings the mock did not supply: a mobile empty-builder caption, and the guided banner's directive, which the mock's richness line would otherwise have deleted |
 | 3 | **#158** Design: deck builder Add panel overhaul | From Hugh's 2026-08-02 staging walk of the live builder. Four findings that all land on the same surface, so one cycle: the suggestions rail can't be scanned for what a deck is missing (no type or role on a row), the role "Other" is shown as though it were a role when it's the residue of the taxonomy, the 340px column truncates names, and there's no owned/unowned filter. Ranks here because the surface is live and Hugh is building on it daily. The data is already there — `primaryRole` and `cardTypeGroup` ride on `DeckSuggestion` after PR #154 — so this is entirely a presentation call |
-| 4 | **#159** Design: narrowing the commander recommendations | Same walk. The list offers no way in beyond scroll order — no filter by colour, mechanic, popularity or obscurity. Adjacent to **#52** (windowing, 🟢 above), which changes how much of the list is on screen but not how the user aims at it; whoever picks these up should read them together |
+| 4 | **#159** Design: narrowing the commander recommendations | Same walk. The list offers no way in beyond scroll order — no filter by colour, mechanic, popularity or obscurity. Adjacent to **#52** (windowing — design shipped, eng ticket still open), which changes how much of the list is on screen but not how the user aims at it; whoever picks these up should read them together |
 | 5 | **#160** Design: deck completeness guidance (lands, curve, multi-copy adds) | Same walk. Two halves: the builder never says how many lands a deck wants or how the curve looks, and adding several copies of a basic takes one click per copy. The second half is the eng-side "bulk add" from the feedback batch, held here because the affordance is a design question — a stepper on the row, a quantity field in the modal, or a lands-specific control |
 | 6 | **#62** Design: Issue Inspector handoff reconciliation | Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships |
 | 7 | **#130** + **#131** + **#132** Design: recommendations you can interrogate and act on — pre-populate a deck from recommendations · make Role Coverage explanatory and inspectable · suggest and add unowned cards | Post-v1. **One design cycle, not three** — Hugh flagged them as groupable when he filed them, and they share a premise: a recommendation the user cannot interrogate or act on is decoration. #131 is the seam; it needs #132's unowned cards to have anything to recommend beyond the collection, and it is where #130's "why was this picked" reasoning would surface. Split apart, each brief answers a third of one question. Both eng dependencies have now shipped — #127 landed the card-detail modal wiring #131's inspection gap needs, and #129 fixed the "Owned only" toggle under #132 — so nothing blocks this but a workshop. Open for #132: whether #44 already scopes it |
@@ -117,3 +117,5 @@ The first six shipped against the pre-richness baseline; **#51** then applied br
 | **#36** Issue Inspector — full-list "Show all X unmatched" modal | `design/design_handoff_the99_issue_inspector/` | 2026-07-20 (PR #50) |
 | **#105** Per-printing art selection | `design/design_handoff_the99_printing_picker/` | 2026-07-31 (PR #109) |
 | **#51** Richness pass — shell **#58**, collection **#59**, commanders **#60**, decks **#61** | `design/design_handoff_the99_richness/` | 2026-08-02 (PRs #66, #144, #145, #146) |
+| **#35** Branded user menu (eng **#13**) | `design/design_handoff_the99_user_menu/` | 2026-08-03 (PRs #156, #164) |
+| **#52** Commanders · list windowing | `design/design_handoff_the99_commanders_windowing/` | 2026-08-03 (PR #165) — the *design* is fully shipped; eng ticket **#52** stays open for the server-side half (EDHREC fanout still runs for every candidate before first render) |
