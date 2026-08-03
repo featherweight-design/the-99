@@ -12,6 +12,13 @@ import { CardDetailTrigger } from "./card-detail-provider";
 
 interface BuilderSpineProps {
   deck: DeckDetail;
+  /**
+   * From the builder's optimistic list, not `deck` — the spine holds the
+   * progress bar, which is the largest thing on the page and the one the user
+   * is watching when they click. Leaving it on server counts would make the
+   * headline number the last thing to move.
+   */
+  counts: { built: number; ownedCount: number; toBuyCount: number };
   onExport: () => void;
 }
 
@@ -24,10 +31,11 @@ const PIP_HEX: Record<string, string> = {
   G: "#6B9E63",
 };
 
-export function BuilderSpine({ deck, onExport }: BuilderSpineProps) {
+export function BuilderSpine({ deck, counts, onExport }: BuilderSpineProps) {
   const [renaming, setRenaming] = useState(false);
 
-  const { commander, built, ownedCount, toBuyCount } = deck;
+  const { commander } = deck;
+  const { built, ownedCount, toBuyCount } = counts;
   const pct = Math.min(100, Math.round((built / 99) * 100));
   const exportDisabled = built === 0;
 

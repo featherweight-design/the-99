@@ -118,7 +118,13 @@ describe("deck card-detail triggers", () => {
       },
       cards: [], built: 0, ownedCount: 0, toBuyCount: 0,
     } as unknown as DeckDetail;
-    const { fetchCard } = renderInProvider(<BuilderSpine deck={deck} onExport={vi.fn()} />);
+    const { fetchCard } = renderInProvider(
+      <BuilderSpine
+        deck={deck}
+        counts={{ built: 0, ownedCount: 0, toBuyCount: 0 }}
+        onExport={vi.fn()}
+      />,
+    );
 
     // Mobile and desktop thumbs are parallel trees; both must lead to the same card.
     const triggers = screen.getAllByRole("button", {

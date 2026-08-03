@@ -127,6 +127,23 @@ describe("optimistic deck list", () => {
     await act(async () => { pending.resolve({ ok: true }); });
   });
 
+  it("moves the spine's progress figure, not just the decklist", async () => {
+    const pending = deferred<DeckMutationResult>();
+    addCardToDeck.mockReturnValue(pending.promise);
+
+    renderBuilder();
+    // The progress bar is the biggest thing on the page and the thing the user
+    // is looking at when they click, so it is the worst possible place to wait
+    // for the round-trip.
+    expect(screen.getByText("1 owned · 0 to buy")).toBeInTheDocument();
+
+    await act(async () => { addSolRing(); });
+
+    expect(screen.getByText("1 owned · 1 to buy")).toBeInTheDocument();
+
+    await act(async () => { pending.resolve({ ok: true }); });
+  });
+
   it("withdraws the row when the server rejects the add", async () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);

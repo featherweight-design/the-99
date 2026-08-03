@@ -52,7 +52,8 @@ export function BuilderShell({
   // props, so an add lands across the whole builder in the same frame as the
   // click. `deck.cards` remains the base React reverts to.
   const { cards, addOptimisticCard } = useOptimisticDeckCards(deck.cards);
-  const { built, toBuyCount } = deckCounts(cards);
+  const counts = deckCounts(cards);
+  const { built, toBuyCount } = counts;
 
   // The one deliberate exception. Keyed off the SERVER counts because the
   // reveal is a one-shot that burns a persisted flag — firing it on a predicted
@@ -102,7 +103,7 @@ export function BuilderShell({
             )}
 
             {/* Builder Spine */}
-            <BuilderSpine deck={deck} onExport={openExport} />
+            <BuilderSpine deck={deck} counts={counts} onExport={openExport} />
 
             {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
             <RoleCounterStrip cards={cards} />
