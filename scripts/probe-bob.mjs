@@ -44,7 +44,13 @@ await page.setContent(
   <div class="anim-breathe" id="breathe"></div>`,
 );
 
-const profile = await page.evaluate(async () => {
+// One full period of the slowest animation under test (breathe, 5s), plus a
+// margin. A shorter window happens to contain both peaks today — each is a
+// quarter-period in — but that only holds while the periods stay what they are,
+// and this probe exists precisely to be run after someone changes them.
+const SAMPLE_MS = 6000;
+
+const profile = await page.evaluate(async (sampleMs) => {
   const out = { bob: [], breathe: [] };
   const start = performance.now();
   return await new Promise((done) => {
@@ -54,12 +60,12 @@ const profile = await page.evaluate(async () => {
         // breathe scales as well as translates, so track both edges.
         out[id].push(r.y + r.height);
       }
-      if (performance.now() - start > 1600) return done(out);
+      if (performance.now() - start > sampleMs) return done(out);
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
   });
-});
+}, SAMPLE_MS);
 await browser.close();
 
 let failed = false;
