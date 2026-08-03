@@ -69,27 +69,27 @@ describe("animation utilities", () => {
   const reducedMotionBlock = css.match(
     /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/,
   );
+  // Empty string rather than `!`, so a regex that stops matching fails as a
+  // readable assertion instead of a TypeError.
+  const reducedMotionBody = reducedMotionBlock?.[1] ?? "";
+  const declaredUtilities = () =>
+    new Set([...css.matchAll(/^\.(anim-[\w-]+)\s*\{/gm)].map((m) => m[1]));
+  const exemptedUtilities = () =>
+    [...reducedMotionBody.matchAll(/\.(anim-[\w-]+)/g)].map((m) => m[1]);
 
   it("declares a prefers-reduced-motion block", () => {
     expect(reducedMotionBlock).not.toBeNull();
   });
 
   it("lists every .anim-* utility in the reduced-motion block", () => {
-    const declared = new Set(
-      [...css.matchAll(/^\.(anim-[\w-]+)\s*\{/gm)].map((m) => m[1]),
-    );
+    const declared = declaredUtilities();
     expect(declared.size).toBeGreaterThan(0);
-    const exempted = new Set(
-      [...reducedMotionBlock![1].matchAll(/\.(anim-[\w-]+)/g)].map((m) => m[1]),
-    );
+    const exempted = new Set(exemptedUtilities());
     expect([...declared].filter((c) => !exempted.has(c))).toEqual([]);
   });
 
   it("references only real utilities in the reduced-motion block", () => {
-    const declared = new Set(
-      [...css.matchAll(/^\.(anim-[\w-]+)\s*\{/gm)].map((m) => m[1]),
-    );
-    const exempted = [...reducedMotionBlock![1].matchAll(/\.(anim-[\w-]+)/g)].map((m) => m[1]);
-    expect(exempted.filter((c) => !declared.has(c))).toEqual([]);
+    const declared = declaredUtilities();
+    expect(exemptedUtilities().filter((c) => !declared.has(c))).toEqual([]);
   });
 });

@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "./account-menu";
 
 const openUserProfile = vi.fn();
-const signOut = vi.fn();
+// Clerk's signOut is thenable — the component releases `busy` on rejection.
+const signOut = vi.fn(() => Promise.resolve());
 
 vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({
@@ -27,16 +28,19 @@ function press(el: HTMLElement) {
   fireEvent.click(el);
 }
 
+// useDialogA11y skips elements with no client rects so a display:none branch
+// can't take focus. jsdom gives everything zero rects, which would disable the
+// focus trap entirely. Installed once — this config has no restoreMocks, so a
+// per-test spy would stack.
+const rects = vi
+  .spyOn(HTMLElement.prototype, "getClientRects")
+  .mockReturnValue({ length: 1, item: () => null } as unknown as DOMRectList);
+
+afterAll(() => rects.mockRestore());
+
 beforeEach(() => {
   openUserProfile.mockClear();
   signOut.mockClear();
-  // useDialogA11y skips elements with no client rects so a display:none branch
-  // can't take focus. jsdom gives everything zero rects, which would disable the
-  // focus trap entirely.
-  vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue({
-    length: 1,
-    item: () => null,
-  } as unknown as DOMRectList);
 });
 
 describe("AccountMenu trigger", () => {
@@ -241,6 +245,18 @@ describe("AccountMenu items", () => {
     // A second press cannot double-fire.
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
     expect(signOut).toHaveBeenCalledOnce();
+  });
+
+  // A successful sign-out navigates away, so the disabled state is only ever
+  // released on failure — without that release the menu stays dead until reload.
+  it("re-enables the items when sign-out rejects", async () => {
+    signOut.mockRejectedValueOnce(new Error("network"));
+    render(<AccountMenu panel="popover" />);
+    fireEvent.click(trigger());
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    await waitFor(() =>
+      expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeEnabled(),
+    );
   });
 
   it("signals Sign out with words plus a danger marker, never colour alone", () => {

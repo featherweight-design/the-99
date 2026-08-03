@@ -185,6 +185,7 @@ function AccountSheet(props: PanelProps) {
           semantics the handoff asks for (X7), expressed legally. */}
       <div
         ref={ref}
+        id={props.panelId}
         role="dialog"
         aria-modal="true"
         aria-labelledby={props.nameId}
@@ -227,7 +228,7 @@ function AccountSheet(props: PanelProps) {
             )}
           </div>
         </div>
-        <div id={props.panelId} role="menu" aria-labelledby={props.nameId} className="flex flex-col">
+        <div role="menu" aria-labelledby={props.nameId} className="flex flex-col">
           <MenuItems {...props} />
         </div>
       </div>
@@ -293,9 +294,11 @@ export function AccountMenu({ panel }: { panel: PanelKind }) {
     clerk.openUserProfile();
   }
 
+  // A successful sign-out navigates away, so `busy` is only ever released on
+  // failure — without that release the menu stays dead until a reload.
   function onSignOut() {
     setBusy(true);
-    void clerk.signOut();
+    void clerk.signOut().catch(() => setBusy(false));
   }
 
   const label = triggerLabel(identity.name);
@@ -331,7 +334,9 @@ export function AccountMenu({ panel }: { panel: PanelKind }) {
       )}
       <button
         type="button"
-        aria-haspopup="menu"
+        // The sheet is a modal dialog wrapping the menu, so the trigger has to
+        // announce what it actually opens.
+        aria-haspopup={isPopover ? "menu" : "dialog"}
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-label={label}
