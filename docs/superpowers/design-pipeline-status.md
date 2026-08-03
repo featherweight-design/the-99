@@ -94,7 +94,7 @@ This list previously ran as two — a "Backlog" and a "Ready for design" — but
 | 9 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — needs accumulated play data |
 | 10 | **#151** Design: per-deck printing override for a card's art | Post-v1. **Split out of #42** at the 2026-08-02 workshop — #42 had inherited it from #105 on the reasoning that a deck-level override needs a deck to attach to, but it is unrelated to import (import is getting a deck in; this is how a deck looks once it is there) and #42's brief was already large. Last because it is polish: `card_art_preferences` is keyed `(user_id, oracle_id)` and `deck_cards` has no printing column, so it needs new storage and a new read path for no functional gain |
 
-### Rank 7 — open questions carried into the workshop
+### Rank 6 — open questions carried into the workshop
 
 Kept here rather than in the table cell, since one cycle covers three tickets:
 
