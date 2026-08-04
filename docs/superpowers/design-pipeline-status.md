@@ -35,8 +35,7 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-
-_Currently empty._
+| **#158** Design: deck builder Add panel overhaul | `design/design_handoff_the99_add_panel/` | 🟢 Green (R2) | Plan at `docs/superpowers/plans/2026-08-04-add-panel-overhaul-plan.md` — six PRs, payload first. R1 came back Yellow on three items; two closed audit-side (the EDHREC lift figure is a parse line off a payload we already cache, and the decks design table was in the repo, just not Design's tree) and R2 drew the one genuine gap — the empty *deck* state, whose `Open suggestions` CTA pointed at the retired sheet. R2 also found a shipped string the audit missed: the empty-builder caption says suggestions are "primed on the right", true only of the 340px column this pass deletes. One open product call — the owned-only default flips `false` → `true`; every state is drawn with both positions, so it is a one-line revert either way |
 
 ---
 
@@ -55,8 +54,7 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-| 1 | **#158** Design: deck builder Add panel overhaul | `docs/superpowers/specs/2026-08-03-add-panel-overhaul-design.md` | Handoff prompt goes to Claude Design next — the Add surface end to end at both widths — then a READINESS audit | The only `priority: high` ticket in the design queue, against a surface that is live and built on daily. Workshopped 2026-08-03: the brief deliberately does **not** pick a layout, because the four findings turned out to be one problem — search (retrieval) and suggestions (discovery) share a 340px lane sized for neither, and the mobile sheet exists only to impersonate a desktop-only rail. It locks the constraints (parity at both widths; art is affordable at both widths — the catalogue is ingested, so it costs a payload field on the suggestions path and a select column plus a payload field on search; the existing card-detail modal is the destination for card detail; suggestions must not go stale on accept) and a position on role `other` — the five roles are a coverage checklist, not a taxonomy, so that group is the deck's gameplan and should not be named for what it lacks. Whether search and suggestions stay one surface, and where discovery lives, are Design's calls |
-| 2 | **#42** Design: Import existing decks (Moxfield) | `docs/superpowers/specs/2026-08-02-deck-import-design.md` | Handoff prompt goes to Claude Design after #158 — 19 named states across entry, entry failures, commander selection, deck arrival and row resolution, mobile + desktop — then a READINESS audit | Sorts behind #158 on priority alone — this brief is the larger and more complete of the two, and is otherwise ready to go to Design. Workshopped 2026-08-02: no review gate (the deck exists as soon as it can), unmatched lines persist as unresolved rows that block the Complete pill, and the entry point accepts a Moxfield URL alongside paste and file, which is what adds the third-party failure family Design has to draw |
+| 1 | **#42** Design: Import existing decks (Moxfield) | `docs/superpowers/specs/2026-08-02-deck-import-design.md` | Handoff prompt goes to Claude Design next — 19 named states across entry, entry failures, commander selection, deck arrival and row resolution, mobile + desktop — then a READINESS audit | The only brief in the queue now that #158 has its handoff and has moved to 🟢. The larger and more complete of the two, and ready to go to Design. Workshopped 2026-08-02: no review gate (the deck exists as soon as it can), unmatched lines persist as unresolved rows that block the Complete pill, and the entry point accepts a Moxfield URL alongside paste and file, which is what adds the third-party failure family Design has to draw |
 
 ---
 
