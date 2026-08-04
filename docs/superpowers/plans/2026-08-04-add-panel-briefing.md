@@ -94,8 +94,11 @@ No row here is unfillable, which is the bar this section has to clear before PR 
 
 ## User journeys — walk script
 
-Walked mid-run at Gate 5, and by Hugh after. Every journey is exercisable on local dev; none
-needs staging.
+Walked mid-run at Gate 5, and by Hugh after. Every journey is exercisable on **local dev** —
+nothing here needs staging-only data or infrastructure, so Gate 5 never blocks on a deploy. That
+is a statement about where the *development* passes run, not about acceptance: the same journeys
+are walked once more on **https://staging.the-99.dev** before the epic is called done, per "Done
+means" below. Local dev is sufficient to build against; staging is required to accept.
 
 ### Journey A — Quick add (retrieval)
 
