@@ -38,12 +38,13 @@ one width only.
 
 ## Decisions log
 
-### 1. Search and suggestions → **two surfaces, and the tab bar goes**
-Not "two tabs, wider." The tab bar was the mistake: it makes two unlike things trade places, so
-every quick add costs a switch back and every browse sits behind a control the player has to
-notice first. Retrieval is a **persistent bar** — always mounted, live in both views, never a
-mode. Discovery is a **view**. Archidekt names this split (pinned quick-add bar + separate
-visual search); Moxfield ships it too. What we had was neither one.
+### 1. Search and suggestions → **two surfaces, and the panel's tab bar goes**
+Not "two tabs, wider." The panel's Suggestions/Search tab bar was the mistake: it makes two
+unlike things trade places, so every quick add costs a switch back and every browse sits
+behind a control the player has to notice first. Retrieval is a **persistent bar** — always
+mounted, live in both views, never a mode. Discovery is a **view**. Archidekt names this
+split (pinned quick-add bar + separate visual search); Moxfield ships it too. What we had
+was neither one.
 
 ### 2. Discovery lives in the **main column, full width, as a peer tab to the decklist**
 `Your deck · 47 | Consider · 99`. One tap from the deck at any deck length, full width at both
