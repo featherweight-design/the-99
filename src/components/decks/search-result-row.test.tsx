@@ -28,6 +28,7 @@ const result = {
   owned: true,
   cardTypeGroup: "Artifacts",
   role: "ramp",
+  imageUri: null,
 } satisfies SearchResult;
 
 function clickAdd() {
@@ -126,7 +127,7 @@ describe("SearchResultRow", () => {
     addCardToDeck.mockReturnValue(pending.promise);
     const forest = {
       oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", owned: true,
-      cardTypeGroup: "Lands", role: "land",
+      cardTypeGroup: "Lands", role: "land", imageUri: null,
     } satisfies SearchResult;
 
     renderRow(<SearchResultRow result={forest} deckId="d1" inDeck />);

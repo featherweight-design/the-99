@@ -16,6 +16,7 @@ export type SearchResult = {
   // way to classify a card, and a guessed group means the optimistic row jumps.
   cardTypeGroup: DeckDetailCard["cardTypeGroup"];
   role: DeckDetailCard["role"];
+  imageUri: string | null;
 };
 
 export async function searchCards(
@@ -35,6 +36,7 @@ export async function searchCards(
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       owned: ownedSql,
       oracleText: cards.oracleText, keywords: cards.keywords,
+      imageUri: cards.imageUri,
     })
     .from(cards)
     .where(and(

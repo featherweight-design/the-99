@@ -19,6 +19,11 @@ export type DeckSuggestion = {
   typeLine: string;
   cardTypeGroup: DeckDetailCard["cardTypeGroup"];
   role: DeckDetailCard["role"];
+  imageUri: string | null;
+  // The same figure reasonLabel interpolates, kept as a number so a tile can
+  // size a bar without parsing a sentence. Null is the drawn "no EDHREC figure"
+  // state and must render as absence, never as 0%.
+  inclusionPct: number | null;
 };
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
@@ -36,11 +41,13 @@ export function buildSuggestionPayload(
     typeLine: string;
     cardTypeGroup: DeckDetailCard["cardTypeGroup"];
     role: DeckDetailCard["role"];
+    imageUri: string | null;
   },
   inclusionByName: Record<string, number>,
 ): DeckSuggestion {
   let reasonType: ReasonType;
   let reasonLabel: string;
+  let inclusionPct: number | null = null;
 
   if (s.reason === "edhrec") {
     reasonType = "edhrec";
@@ -48,6 +55,7 @@ export function buildSuggestionPayload(
     // "Front // Back" — fall back to the front face on a miss.
     const lower = s.name.toLowerCase();
     const inclusion = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
+    inclusionPct = inclusion ?? null;
     reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
   } else {
     reasonType = "role";
@@ -66,6 +74,8 @@ export function buildSuggestionPayload(
     typeLine: s.typeLine,
     cardTypeGroup: s.cardTypeGroup,
     role: s.role,
+    imageUri: s.imageUri,
+    inclusionPct,
   };
 }
 

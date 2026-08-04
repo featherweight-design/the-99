@@ -84,6 +84,7 @@ describe("deck card-detail triggers", () => {
       oracleId: "o-sol", name: "Sol Ring", reason: "edhrec", reasonType: "edhrec",
       reasonLabel: "98% of decks", owned: false, inDeck: false,
       typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp",
+      imageUri: null, inclusionPct: null,
     };
     const { fetchCard } = renderInProvider(
       <SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />,
@@ -97,7 +98,7 @@ describe("deck card-detail triggers", () => {
       <SearchResultRow
         result={{
           oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", owned: true,
-          cardTypeGroup: "Artifacts", role: "ramp",
+          cardTypeGroup: "Artifacts", role: "ramp", imageUri: null,
         }}
         deckId="d1"
         inDeck={false}
