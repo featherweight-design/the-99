@@ -1,11 +1,11 @@
-# The 99 — Decks · Add panel overhaul (design handoff, R1)
+# The 99 — Decks · Add panel overhaul (design handoff, R2)
 
 Ticket **#158**. A surface redesign of the deck builder's "Add cards" panel, end to end, at
 mobile and desktop. The 340px right rail and the mobile sheet that impersonates it are both
 retired; the two jobs they shared are given separate shapes.
 
 File: `The 99 - Decks · Add Panel.dc.html` (canvas — pan/zoom). Every state leads with the
-phone, desktop beside it. Read `design_handoff_the99_richness/README.md` for the locked voice
+phone, desktop beside it. Read `design/design_handoff_the99_richness/README.md` for the locked voice
 before auditing the copy.
 
 **The one-line summary:** *retrieval is a bar, discovery is a room.*
