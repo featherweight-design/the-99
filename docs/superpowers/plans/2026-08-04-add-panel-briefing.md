@@ -205,6 +205,8 @@ Entry: `/decks/[id]`, deck partially built.
 6. `docs/superpowers/design-tables/decks.md` regenerated for the new components, with the five
    superseded sections removed and nothing else disturbed.
 7. Tracker updated: #158 moves 🟢 → ✅ Shipped.
-8. #158 closed with a `Closes` keyword of its own — GitHub binds only the first `#N` in a list.
+8. #158 closed by giving it its own explicit `Closes #158` line. Do not append it to a
+   comma-separated list behind another issue number — a bare `#N` after the first carries no
+   keyword of its own and will not close.
 9. Final report via the `feature-run-report` skill. Not free-form. Its infrastructure table
    will read "none", and that is the correct answer here rather than an omission.
