@@ -53,7 +53,9 @@ describe("buildSuggestionPayload", () => {
   const base = {
     oracleId: "abc", name: "Sol Ring", reason: "edhrec",
     typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp",
-  } satisfies Suggestion & Pick<DeckSuggestion, "name" | "typeLine" | "cardTypeGroup" | "role">;
+    imageUri: "https://cards.example/sol-ring.jpg",
+  } satisfies Suggestion &
+    Pick<DeckSuggestion, "name" | "typeLine" | "cardTypeGroup" | "role" | "imageUri">;
 
   it("owned edhrec suggestion with inclusion → EDHREC · N% of decks", () => {
     const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": 71 });
@@ -92,5 +94,39 @@ describe("buildSuggestionPayload", () => {
     const result = buildSuggestionPayload({ ...rampSuggestion, owned: true }, {});
     expect(result.reasonType).toBe("role");
     expect(result.reasonLabel).toBe("Fills ramp · rec 10");
+  });
+
+  it("carries inclusionPct as a number alongside the unchanged label", () => {
+    const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": 71 });
+    expect(result.inclusionPct).toBe(71);
+    expect(result.reasonLabel).toBe("EDHREC · 71% of decks");
+  });
+
+  it("edhrec suggestion with no inclusion entry → inclusionPct null", () => {
+    // The drawn `no EDHREC figure` state: absent, never a 0% bar.
+    const result = buildSuggestionPayload({ ...base, owned: true }, {});
+    expect(result.inclusionPct).toBeNull();
+  });
+
+  it("role-sourced suggestion → inclusionPct null", () => {
+    const rampSuggestion = { ...base, oracleId: "xyz", name: "Rampant Growth", reason: "ramp" } as const;
+    const result = buildSuggestionPayload({ ...rampSuggestion, owned: true }, { "rampant growth": 40 });
+    expect(result.inclusionPct).toBeNull();
+  });
+
+  it("resolves inclusionPct through the DFC front-face fallback", () => {
+    const dfc = {
+      ...base,
+      oracleId: "dfc1", name: "Valki, God of Lies // Tibalt, Cosmic Impostor", reason: "edhrec",
+    } as const;
+    const result = buildSuggestionPayload({ ...dfc, owned: true }, { "valki, god of lies": 12 });
+    expect(result.inclusionPct).toBe(12);
+  });
+
+  it("passes imageUri through, including null (the `no art on file` state)", () => {
+    expect(buildSuggestionPayload({ ...base, owned: true }, {}).imageUri)
+      .toBe("https://cards.example/sol-ring.jpg");
+    expect(buildSuggestionPayload({ ...base, imageUri: null, owned: true }, {}).imageUri)
+      .toBeNull();
   });
 });

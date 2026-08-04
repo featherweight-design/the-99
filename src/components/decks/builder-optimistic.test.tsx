@@ -33,6 +33,8 @@ const suggestion: DeckSuggestion = {
   name: "Sol Ring",
   reason: "edhrec",
   reasonType: "edhrec",
+  imageUri: null,
+  inclusionPct: null,
   reasonLabel: "EDHREC staple",
   owned: false,
   inDeck: false,

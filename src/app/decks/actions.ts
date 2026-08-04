@@ -96,6 +96,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
         typeLine: c.typeLine,
         cardTypeGroup: cardTypeGroup(c.typeLine),
         role: primaryRole(c),
+        imageUri: c.imageUri,
       },
       inclusionByName,
     );
@@ -117,6 +118,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
         typeLine: cards.typeLine,
         oracleText: cards.oracleText,
         keywords: cards.keywords,
+        imageUri: cards.imageUri,
       })
       .from(cards)
       .where(
@@ -155,6 +157,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
           typeLine: c.typeLine,
           cardTypeGroup: cardTypeGroup(c.typeLine),
           role: primaryRole(c),
+          imageUri: c.imageUri,
         },
         inclusionByName,
       ),
