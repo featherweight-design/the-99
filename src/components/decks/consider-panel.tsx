@@ -150,7 +150,12 @@ function ShelfSection({
 interface ConsiderPanelProps {
   deckId: string;
   suggestions: DeckSuggestion[];
-  /** The server's decklist. Feeds both the coverage figures and each tile's inDeck. */
+  /**
+   * The optimistic decklist, so the coverage figures move the moment a card is
+   * added. Membership is not read from here: `deckOracleIds` is the committed
+   * truth behind each tile's inDeck, and a tile that flipped optimistically
+   * would un-flip if the server rejected the add.
+   */
   deckCards: DeckDetailCard[];
   deckOracleIds: string[];
   commanderShortName: string;

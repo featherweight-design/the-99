@@ -56,4 +56,21 @@ describe("BuilderTabs — keyboard contract", () => {
     fireEvent.keyDown(tabs()[0], { key: "a" });
     expect(onViewChange).not.toHaveBeenCalled();
   });
+
+  // The desktop toolbar rides the tab row, so its controls are descendants of
+  // the tablist. Acting on their arrow keys would make the sort select
+  // unusable by keyboard: every press would jump focus back to a tab.
+  it("ignores arrow keys from the toolbar sharing its row", () => {
+    const onViewChange = vi.fn();
+    render(
+      <BuilderTabs view="deck" onViewChange={onViewChange} deckCount={12} considerCount={30}>
+        <select aria-label="Sort">
+          <option>Best fit</option>
+          <option>Cheapest</option>
+        </select>
+      </BuilderTabs>,
+    );
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Sort" }), { key: "ArrowDown" });
+    expect(onViewChange).not.toHaveBeenCalled();
+  });
 });

@@ -87,6 +87,10 @@ export function BuilderTabs({
         // Selection follows focus, which is the pattern's default for two
         // panels that are both cheap to render.
         onKeyDown={(e) => {
+          // The desktop toolbar rides this row, so its sort <select> is a
+          // descendant and its own arrow/Home/End keys bubble through here.
+          // Only a tab's keys are the tablist's to act on.
+          if ((e.target as HTMLElement).getAttribute("role") !== "tab") return;
           const next =
             e.key === "ArrowRight" || e.key === "ArrowDown"
               ? "consider"
