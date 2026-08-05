@@ -5,8 +5,9 @@ and closed every blocker eng-side. **No redraw.** One string changed on the audi
 and the notes took two corrections. The last open item — the completion reveal — was ruled by Hugh on
 2026-08-04, as recorded below.
 
-**Build order:** #42 cannot start until #158's PR 6 merges. As of 2026-08-04, #158 PRs 1–3 are merged
-(#169–#171); `quick-add-bar.tsx` does not exist yet.
+**Build order:** partially gated. The plan's PRs 1–6 can start now; PRs 7–9 wait on #158's PR 6,
+because `quick-add-bar.tsx` does not exist yet and the arrival chrome sits inside the shell #158
+rewrites. As of 2026-08-04, #158 PRs 1–3 are merged (#169–#171).
 
 ## Closed at the audit
 

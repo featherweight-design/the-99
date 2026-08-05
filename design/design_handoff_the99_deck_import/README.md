@@ -15,18 +15,16 @@ failures, commander) are untouched — nothing in #158 reaches them.
 
 ---
 
-## ⚠ Read this before auditing
+## ⚠ Where this was built from
 
-**The spec is not in this project.** The brief points at
-`docs/superpowers/specs/2026-08-02-deck-import-design.md`; the local `docs/superpowers/` tree
-carries only `design-tables/appshell.md`. R1 was built by reading the spec **from the repo at
-`HartiganHM/the-99@main`**, together with the components it names. Everything below is grounded in
-that source, not in a paraphrase. If the local tree is meant to be the working copy, it needs a
-pull — see gap report 6.
+**Design's working copy is not the repo.** R1 and R2 were built by reading the spec and every
+component they name **from `HartiganHM/the-99@main`**, because Design's local tree carried only a
+handful of files. Everything below is grounded in that source, not in a paraphrase.
 
-Same for `src/`: the local tree holds `src/components/shell/nav.tsx` only. Token values, the button
-and text-field primitives, `DecklistRow`, `DecklistGroup`, `SearchPane`, `SearchResultRow`,
-`BuilderSpine`, `CreatePicker`, `UploadEntry` and `EmptyState` were all read from the repo.
+**Now that this handoff is committed, that caveat no longer applies to you.** The spec is at
+`docs/superpowers/specs/2026-08-02-deck-import-design.md`, `docs/superpowers/design-tables/` carries
+eight tables including `decks.md`, and `src/` is complete — read them directly. Gap report 6 records
+the drift as a Design-tooling issue, not an instruction to go elsewhere.
 
 ---
 
@@ -391,9 +389,9 @@ Hexes live only in `globals.css`; everything below is `var(--*)`. **No new token
 5. **No design-table rows exist for any of this.** The unresolved row, the unresolved group header,
    the mode chip row, the failure banner and the resolution panel all need entries in
    `docs/superpowers/design-tables/`. There is no `decks.md` section covering an import surface.
-6. **The spec and `src/` are not in this project.** Both were read from the repo. If the local
-   `docs/superpowers/` and `src/` trees are meant to be the working copies, they are behind — the
-   local tree has one `src` file and one design table.
+6. **Design's local `docs/superpowers/` and `src/` trees are behind the repo.** Both were read from
+   `HartiganHM/the-99@main` instead. A Design-tooling issue, not an engineering one — the committed
+   repo is complete and is what eng should read.
 9. **Consider can suggest the card an unresolved row was meant to be.** The dedupe is by oracle ID
    and the row has none. Adding it from Consider gives the deck the card *and* leaves the unresolved
    line — 100 wanted, one of them a duplicate. Not silent (the line is still visibly unresolved), but
