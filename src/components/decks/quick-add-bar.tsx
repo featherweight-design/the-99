@@ -338,7 +338,11 @@ function QuickAddRow({
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
 
+  // The guard lives here rather than on the click handler alone: Enter reaches
+  // the row through registerAdd, which would otherwise re-fire the mutation
+  // while the optimistic row is showing but deckOracleIds has not caught up.
   const handleAdd = useCallback(() => {
+    if (applied) return;
     run(
       () => addCardToDeck(deckId, result.oracleId),
       () =>
@@ -352,7 +356,7 @@ function QuickAddRow({
           quantity: 1,
         }),
     );
-  }, [run, deckId, result, addOptimisticCard]);
+  }, [applied, run, deckId, result, addOptimisticCard]);
 
   // The bar's Enter handler adds through whichever row is active. Layout rather
   // than passive: a passive effect runs after paint, leaving a window in which
@@ -379,7 +383,7 @@ function QuickAddRow({
         .filter(Boolean)
         .join(", ")}
       onMouseEnter={onActivate}
-      onClick={applied ? undefined : handleAdd}
+      onClick={handleAdd}
       // An in-deck row is not actionable, so it must not offer a pointer.
       className={`flex flex-col rounded-[9px] ${applied ? "cursor-default" : "cursor-pointer"}`}
       style={{

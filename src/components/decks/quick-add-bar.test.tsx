@@ -240,6 +240,25 @@ describe("QuickAddBar — result rows", () => {
     expect(screen.getByText("not owned")).toBeInTheDocument();
   });
 
+  // Enter reaches the row through registerAdd rather than the click handler, so
+  // it needs its own proof that a held-open add is not fired twice.
+  it("refuses a second Enter while the first add is still in flight", async () => {
+    let settle: () => void = () => {};
+    addCardToDeck.mockReturnValue(new Promise<{ ok: true }>((res) => {
+      settle = () => res({ ok: true });
+    }));
+    searchCards.mockResolvedValue([rhystic]);
+    mount();
+    await search();
+
+    fireEvent.keyDown(field(), { key: "Enter" });
+    await waitFor(() => expect(addCardToDeck).toHaveBeenCalledTimes(1));
+
+    fireEvent.keyDown(field(), { key: "Enter" });
+    expect(addCardToDeck).toHaveBeenCalledTimes(1);
+    settle();
+  });
+
   it("makes an in-deck row non-actionable by keyboard and by click alike", async () => {
     searchCards.mockResolvedValue([rhystic]);
     mount({ deckOracleIds: [rhystic.oracleId] });
