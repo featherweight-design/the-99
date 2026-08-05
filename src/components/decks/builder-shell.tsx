@@ -17,7 +17,7 @@ import { DegradedBanner } from "./degraded-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crab } from "../character/crab";
-import { decksBuilderCopy, shortCommanderName } from "../../lib/copy/decks-builder";
+import { addPanelCopy, decksBuilderCopy, shortCommanderName } from "../../lib/copy/decks-builder";
 import { Decklist } from "./decklist";
 import { AddPanel } from "./add-panel";
 import { ExportDialog } from "./export-dialog";
@@ -207,43 +207,26 @@ export function BuilderShell({
                   className="font-display font-bold text-[21px] md:text-[24px] m-0"
                   style={{ color: "#EDE6D8" }}
                 >
-                  {decksBuilderCopy.builderEmpty.heading}
+                  {addPanelCopy.builderEmpty.heading}
                 </h2>
 
-                {/* §Empty state body. Two strings, one per breakpoint: the mock's
-                    verbatim line says the suggestions are "on the right", which is
-                    only true of the desktop Add panel. */}
+                {/* §Empty state body. One string at both widths now that both
+                    point at the same two entrances. */}
                 <p
-                  className="md:hidden text-[13.5px] leading-[1.6] mt-[10px]"
+                  className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
                   style={{ color: "#C6B79A" }}
                 >
-                  {decksBuilderCopy.builderEmpty.captionForMobile(commanderShortName)}
-                </p>
-                <p
-                  className="hidden md:block text-[14px] leading-[1.65] mt-[12px] md:max-w-[440px]"
-                  style={{ color: "#C6B79A" }}
-                >
-                  {decksBuilderCopy.builderEmpty.captionFor(commanderShortName)}
+                  {addPanelCopy.builderEmpty.caption(commanderShortName)}
                 </p>
 
-                {/* §Empty state role hint (desktop). Kept: the richness caption is
-                    flavour, and this is the only line telling a new builder what
-                    to fill first. */}
+                {/* §Empty state role hint, now at both widths — mobile spent
+                    that vertical budget on the deleted CTA. */}
                 <p
-                  className="hidden md:block font-mono text-[11px] mt-[20px]"
+                  className="font-mono text-[11px] mt-[20px]"
                   style={{ color: "#8E8269" }}
                 >
-                  {decksBuilderCopy.builderEmpty.roleHint}
+                  {addPanelCopy.builderEmpty.roleHint}
                 </p>
-
-                {/* §CTA button (mobile empty) — opens the Add sheet, which is
-                    where suggestions live at this breakpoint. */}
-                <PrimaryButton
-                  onClick={() => setSheetOpen(true)}
-                  className="md:hidden text-[15px] px-[26px] py-[13px] mt-[24px]"
-                >
-                  {decksBuilderCopy.builderEmpty.cta}
-                </PrimaryButton>
               </section>
             ) : (
               /* Task 8: Decklist body */
@@ -259,20 +242,22 @@ export function BuilderShell({
               />
             )}
 
-            {/* §"+ Add cards" sticky footer button (mobile mid-build) */}
-            {!isEmpty && (
-              <div
-                className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
-                style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
+            {/* §"+ Add cards" sticky footer button (mobile). Shown when the deck
+                is empty too, now that the empty state's own CTA is gone: the
+                sheet is still the only mobile entrance until PR 6 replaces it
+                with the Consider tab and the quick-add bar, and without this
+                an empty deck would have no way to add a first card. */}
+            <div
+              className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
+              style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
+            >
+              <PrimaryButton
+                onClick={() => setSheetOpen(true)}
+                className="w-full text-[15px] py-[13px]"
               >
-                <PrimaryButton
-                  onClick={() => setSheetOpen(true)}
-                  className="w-full text-[15px] py-[13px]"
-                >
-                  + Add cards
-                </PrimaryButton>
-              </div>
-            )}
+                + Add cards
+              </PrimaryButton>
+            </div>
           </div>
 
           {/* ── Right column — Add panel (Task 9) ── */}

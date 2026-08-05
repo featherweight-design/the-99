@@ -201,13 +201,13 @@ describe("groupByRole", () => {
     ];
     const result = groupByRole(cards);
     const labels = result.map(([label]) => label);
-    expect(labels).toEqual(["Ramp", "Draw", "Removal", "Wipes", "Land", "Other"]);
+    expect(labels).toEqual(["Ramp", "Draw", "Removal", "Wipes", "Land", "Threats & synergy"]);
   });
 
-  it("card with role='other' lands in Other group", () => {
+  it("card with role='other' lands in the Threats & synergy group", () => {
     const c = makeCard({ name: "Bear", typeLine: "Creature — Bear", cardTypeGroup: "Creatures", role: "other" });
     const result = groupByRole([c]);
-    expect(result[0][0]).toBe("Other");
+    expect(result[0][0]).toBe("Threats & synergy");
     expect(result[0][1][0].name).toBe("Bear");
   });
 
