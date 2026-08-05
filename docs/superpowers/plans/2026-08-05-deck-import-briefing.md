@@ -85,8 +85,9 @@ beats one you can.
 stops after PR 3 leaves production exactly as it is today, and one that stops after PR 5 leaves an
 unlinked route only a URL-typer can find.
 
-**PR 6 is the PR that makes the vertical live.** This repo has no `releases.ts`; user-visible
-change is recorded in the PR body and in `docs/superpowers/progress.md`, so nothing is held back.
+**PR 6 is the PR that makes the vertical live.** This repo has no `releases.ts` and no
+`progress.md`; user-visible change is recorded in the PR body and in
+`docs/superpowers/design-pipeline-status.md`, so nothing is held back.
 
 ## Off-happy-path homes
 
@@ -229,7 +230,7 @@ expect a clean entry surface, not a stuck one.
 1. **All nine PRs merged**, each at the full Copilot bar, with CI green and deploys verified.
 2. **PR 6 has shipped the entry point**, so the vertical is live and linked from `/decks`.
 3. **Gate artifacts committed, with evidence — commands run and output observed, not
-   attestations:**
+   attestations.** None of the three exist yet; each is created by the run, in the PR named:
    - `docs/superpowers/state-coverage-deck-import.md` — Gate 1, in **two passes** (states 1–10
      before PR 4; states 11–19 after PR 6). Every row ✅; any ⚠️ ❌ 🚫 resolved before the dependent
      UI PR builds.
@@ -246,6 +247,8 @@ expect a clean entry surface, not a stuck one.
 6. **The stale build-order text is corrected** in the plan, `READINESS.md` and the pipeline tracker
    (this PR does it), and `docs/superpowers/design-pipeline-status.md` moves #42 to ✅ Shipped at
    the end of the run.
-7. **`docs/superpowers/progress.md`** carries a row for each substantive PR.
+7. **Each substantive PR's body carries its own record** — Gate 2's forced conditions, Gate 3's
+   sweep, and the user-visible change. This repo has neither a `releases.ts` nor a `progress.md`;
+   epic-run's generic bookkeeping step names both, and neither applies here.
 8. **A morning report** in the `feature-run-report` format, including the infrastructure and
    environment-variable section — which, for this epic, is expected to read "none."
