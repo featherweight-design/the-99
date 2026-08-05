@@ -61,10 +61,16 @@ export function buildSuggestionPayload(
     // EDHREC keys DFCs/MDFCs by front face while Scryfall names them
     // "Front // Back" — fall back to the front face on a miss.
     const lower = s.name.toLowerCase();
-    const inclusion = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
+    // Both maps arrive as parameters, so this is their own boundary — parse.ts
+    // filtering non-finite figures upstream does not bind a caller that builds
+    // a map some other way. A NaN would otherwise reach the label as
+    // "EDHREC · NaN% of decks", and an Infinity would clear the `> 0` test and
+    // render as a real lift.
+    const raw = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
+    const inclusion = Number.isFinite(raw) ? raw : undefined;
     inclusionPct = inclusion ?? null;
     const synergy = synergyByName[lower] ?? synergyByName[lower.split(" // ")[0]];
-    lift = typeof synergy === "number" && synergy > 0 ? synergy : null;
+    lift = Number.isFinite(synergy) && synergy > 0 ? synergy : null;
     reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
   } else {
     reasonType = "role";

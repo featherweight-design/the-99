@@ -123,6 +123,15 @@ describe("buildSuggestionPayload", () => {
     expect(result.inclusionPct).toBe(12);
   });
 
+  it.each([NaN, Infinity])(
+    "treats a non-finite inclusion of %p as absent, in both the figure and the label",
+    (pct) => {
+      const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": pct });
+      expect(result.inclusionPct).toBeNull();
+      expect(result.reasonLabel).toBe("EDHREC staple");
+    },
+  );
+
   it("passes imageUri through, including null (the `no art on file` state)", () => {
     expect(buildSuggestionPayload({ ...base, owned: true }, {}).imageUri)
       .toBe("https://cards.example/sol-ring.jpg");
@@ -154,6 +163,13 @@ describe("buildSuggestionPayload", () => {
 
     it("defaults lift to null when no synergy map is supplied at all", () => {
       expect(buildSuggestionPayload({ ...base, owned: true }, {}).lift).toBeNull();
+    });
+
+    // The map is a parameter, so this function is its own boundary — parse.ts
+    // filtering upstream does not bind a caller who builds a map another way.
+    it.each([NaN, Infinity, -Infinity])("resolves a non-finite synergy of %p to null", (synergy) => {
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": synergy }).lift)
+        .toBeNull();
     });
 
     it("resolves lift through the DFC front-face fallback", () => {
