@@ -28,13 +28,19 @@ export const decksBuilderCopy = {
 // Functions for interpolated strings, no JSX, no number formatting: callers
 // pass pre-formatted strings. Voice is Kitchen Table — utility copy stays
 // straight, and the two expressive moments are marked below.
+// The handoff's own `resultCount` sets the singular/plural pattern for this
+// block; the count strings below follow it. Applied by eng where the handoff
+// pluralised unconditionally — flagged to Design for ratification, since a
+// deck of one card reads "1 cards" otherwise.
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
 export const addPanelCopy = {
   // ── Tabs (replaces the Suggestions | Search tab bar) ──────────────────
   tabs: {
     deck: "Your deck",
     consider: "Consider",
-    deckAria: (n: number) => `Your deck, ${n} cards`,
-    considerAria: (n: number) => `Cards to consider, ${n} suggestions`,
+    deckAria: (n: number) => `Your deck, ${plural(n, "card", "cards")}`,
+    considerAria: (n: number) => `Cards to consider, ${plural(n, "suggestion", "suggestions")}`,
     panelAria: "Cards to consider",
   },
 
@@ -43,7 +49,7 @@ export const addPanelCopy = {
     // Replaces the old "Based on your collection and EDHREC data…" sub-caption.
     // Provenance for the collection; the EDHREC claim now sits on the shelf
     // that actually uses it.
-    provenance: (n: number) => `${n} cards you already own`,
+    provenance: (n: number) => `${plural(n, "card", "cards")} you already own`,
 
     sortLabel: "Sort",
     sortGaps: "Coverage gaps first",
@@ -52,7 +58,8 @@ export const addPanelCopy = {
     sortAria: "Sort suggestions",
 
     showAll: (n: number) => `Show all ${n}`,
-    showAllAria: (role: string, n: number) => `Show all ${n} ${role} suggestions`,
+    showAllAria: (role: string, n: number) =>
+      `Show all ${n} ${role} ${n === 1 ? "suggestion" : "suggestions"}`,
     collapse: "Show fewer",
   },
 

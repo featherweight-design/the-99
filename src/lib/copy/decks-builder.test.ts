@@ -41,6 +41,32 @@ describe("addPanelCopy.builderEmpty", () => {
   });
 });
 
+// A deck of one card and a shelf of one suggestion are both ordinary states,
+// and these are accessible names — a screen reader reads "1 cards" aloud.
+describe("addPanelCopy counts at n = 1", () => {
+  it("pluralises the tab accessible names", () => {
+    expect(addPanelCopy.tabs.deckAria(1)).toBe("Your deck, 1 card");
+    expect(addPanelCopy.tabs.deckAria(2)).toBe("Your deck, 2 cards");
+    expect(addPanelCopy.tabs.considerAria(1)).toBe("Cards to consider, 1 suggestion");
+    expect(addPanelCopy.tabs.considerAria(2)).toBe("Cards to consider, 2 suggestions");
+  });
+
+  it("pluralises the collection provenance line", () => {
+    expect(addPanelCopy.consider.provenance(1)).toBe("1 card you already own");
+    expect(addPanelCopy.consider.provenance(2)).toBe("2 cards you already own");
+  });
+
+  it("pluralises the show-all accessible name", () => {
+    expect(addPanelCopy.consider.showAllAria("Ramp", 1)).toBe("Show all 1 Ramp suggestion");
+    expect(addPanelCopy.consider.showAllAria("Ramp", 4)).toBe("Show all 4 Ramp suggestions");
+  });
+
+  it("keeps the handoff's existing match-count pattern", () => {
+    expect(addPanelCopy.quickAdd.resultCount(1)).toBe("1 match");
+    expect(addPanelCopy.quickAdd.resultCount(2)).toBe("2 matches");
+  });
+});
+
 describe("decksBuilderCopy", () => {
   it("reproduces the mock's completion caption verbatim", () => {
     expect(decksBuilderCopy.completion.caption("Korvold")).toBe(
