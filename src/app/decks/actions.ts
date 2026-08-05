@@ -15,12 +15,16 @@ import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { validateCardForDeck } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
 
-async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise<PoolCard[]> {
+// The pool carries mana on top of PoolCard so a tile can draw cost pips and the
+// Consider panel can sort by cost without a second round trip.
+type SuggestionPoolCard = PoolCard & { manaValue: number };
+
+async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise<SuggestionPoolCard[]> {
   const owned = await db
     .selectDistinctOn([cards.oracleId], {
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords, colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri, manaCost: cards.manaCost,
+      imageUri: cards.imageUri, manaCost: cards.manaCost, manaValue: cards.cmc,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
@@ -98,6 +102,8 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
         cardTypeGroup: cardTypeGroup(c.typeLine),
         role: primaryRole(c),
         imageUri: c.imageUri,
+        manaCost: c.manaCost,
+        manaValue: c.manaValue,
       },
       inclusionByName,
       synergyByName,
@@ -121,6 +127,8 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
         oracleText: cards.oracleText,
         keywords: cards.keywords,
         imageUri: cards.imageUri,
+        manaCost: cards.manaCost,
+        manaValue: cards.cmc,
       })
       .from(cards)
       .where(
@@ -160,6 +168,8 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
           cardTypeGroup: cardTypeGroup(c.typeLine),
           role: primaryRole(c),
           imageUri: c.imageUri,
+          manaCost: c.manaCost,
+          manaValue: c.manaValue,
         },
         inclusionByName,
         synergyByName,

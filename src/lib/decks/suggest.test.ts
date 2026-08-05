@@ -54,8 +54,12 @@ describe("buildSuggestionPayload", () => {
     oracleId: "abc", name: "Sol Ring", reason: "edhrec",
     typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp",
     imageUri: "https://cards.example/sol-ring.jpg",
+    manaCost: "{1}", manaValue: 1,
   } satisfies Suggestion &
-    Pick<DeckSuggestion, "name" | "typeLine" | "cardTypeGroup" | "role" | "imageUri">;
+    Pick<
+      DeckSuggestion,
+      "name" | "typeLine" | "cardTypeGroup" | "role" | "imageUri" | "manaCost" | "manaValue"
+    >;
 
   it("owned edhrec suggestion with inclusion → EDHREC · N% of decks", () => {
     const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": 71 });

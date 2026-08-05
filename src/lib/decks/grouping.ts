@@ -1,6 +1,8 @@
 // Pure grouping helpers + card shapes shared by client components.
 // Must stay free of db/server imports — client components import these as values.
 
+import { addPanelCopy } from "../copy/decks-builder";
+
 export type CardTypeGroup =
   | "Creatures" | "Instants" | "Sorceries"
   | "Artifacts" | "Enchantments" | "Planeswalkers" | "Lands" | "Other";
@@ -56,17 +58,17 @@ const ROLE_GROUP_ORDER: Array<"ramp" | "draw" | "removal" | "wipes" | "land" | "
   "ramp", "draw", "removal", "wipes", "land", "other",
 ];
 
-const ROLE_GROUP_LABELS: Record<"ramp" | "draw" | "removal" | "wipes" | "land" | "other", string> = {
-  ramp: "Ramp",
-  draw: "Draw",
-  removal: "Removal",
-  wipes: "Wipes",
-  land: "Land",
-  // The role bucket, not the card-type group. CARD_TYPE_GROUP_ORDER's "Other"
-  // above is a different taxonomy of the same name and stays as it is. The
-  // `role` value on the payload is still "other".
-  other: "Threats & synergy",
-};
+// The decklist's role groups and the Consider view's shelves name the same six
+// buckets, so they read from one map. The "other" bucket is the role bucket,
+// not the card-type group — CARD_TYPE_GROUP_ORDER's "Other" above is a
+// different taxonomy of the same name, and the `role` value on the payload is
+// still "other".
+// Keyed off ROLE_GROUP_ORDER rather than spread, so `edhrec` — a template for
+// the EDHREC shelf, not a role — stays out of a map groupByRole tests
+// membership of.
+const ROLE_GROUP_LABELS = Object.fromEntries(
+  ROLE_GROUP_ORDER.map((r) => [r, addPanelCopy.shelf.labels[r]]),
+) as Record<(typeof ROLE_GROUP_ORDER)[number], string>;
 
 /**
  * Returns true when a card should render a "+N more" meta row below its primary row.

@@ -84,6 +84,7 @@ describe("deck card-detail triggers", () => {
       oracleId: "o-sol", name: "Sol Ring", reason: "edhrec", reasonType: "edhrec",
       reasonLabel: "98% of decks", owned: false, inDeck: false,
       typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp",
+      manaCost: "{1}", manaValue: 1,
       imageUri: null, inclusionPct: null, lift: null,
     };
     const { fetchCard } = renderInProvider(

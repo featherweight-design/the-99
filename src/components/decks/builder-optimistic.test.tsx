@@ -33,6 +33,8 @@ const suggestion: DeckSuggestion = {
   name: "Sol Ring",
   reason: "edhrec",
   reasonType: "edhrec",
+  manaCost: "{1}",
+  manaValue: 1,
   imageUri: null,
   inclusionPct: null,
   lift: null,
