@@ -104,8 +104,11 @@ describe("QuickAddBar — combobox contract", () => {
 
     // Once the new results land, Enter works again. Matched by option label
     // rather than by text: the row splits the name around the brass-highlighted
-    // run of the query, so no single node holds the whole string.
-    expect(await screen.findByRole("option", { name: new RegExp(stuxor.name) })).toBeInTheDocument();
+    // run of the query, so no single node holds the whole string. A predicate
+    // rather than a RegExp, because a card name is free to contain `(` or `[`.
+    expect(
+      await screen.findByRole("option", { name: (name) => name.includes(stuxor.name) }),
+    ).toBeInTheDocument();
     fireEvent.keyDown(field(), { key: "Enter" });
     await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", stuxor.oracleId));
   });
