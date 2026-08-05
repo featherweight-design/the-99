@@ -229,6 +229,16 @@ describe("ConsiderPanel — tiles", () => {
     expect(within(tile).queryByText(/ramp/i)).toBeNull();
   });
 
+  // A pip is 14px, so a symbol's colours are drawn and never spelled. The one
+  // thing that must survive is a numeral: a two-brid pip with no "2" claims a
+  // cost the card does not have.
+  it("draws colours as fill and keeps a numeral when the symbol has one", () => {
+    mount({ suggestions: [suggestion({ name: "Sol Ring", manaCost: "{2}{U/B}{2/W}{G/P}" })] });
+    const tile = screen.getByRole("listitem");
+    const pips = tile.querySelectorAll("span.rounded-full.w-\\[14px\\]");
+    expect([...pips].map((p) => p.textContent)).toEqual(["2", "", "2", ""]);
+  });
+
   it("offers exactly three targets — art, name and Add", () => {
     mount({ suggestions: [suggestion({ name: "Sol Ring" })] });
     const tile = screen.getByRole("listitem");

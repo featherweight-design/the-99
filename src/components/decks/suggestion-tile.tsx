@@ -31,9 +31,12 @@ function CostPips({ cost }: { cost: string }) {
       {symbols.map((sym, i) => {
         // "U/B" and "G/P" carry their colours in the halves, so a pip draws
         // them rather than printing them: three characters in a 14px circle
-        // clamp to noise. Two colours split the pip, one fills it, and only a
-        // symbol with no colour at all (numerals, X, C) keeps its numeral.
-        const colours = sym.split("/").filter((p) => /^[WUBRG]$/.test(p));
+        // clamp to noise. Two colours split the pip and one fills it. The
+        // numeral is drawn whenever the symbol has one, so two-brid "2/W" is a
+        // white pip reading 2 rather than a white pip claiming to be free.
+        const parts = sym.split("/");
+        const colours = parts.filter((p) => /^[WUBRG]$/.test(p));
+        const numeral = parts.find((p) => /^\d+$/.test(p));
         const background = colours.length >= 2
           ? `linear-gradient(135deg, ${WUBRG_HEX[colours[0]]} 50%, ${WUBRG_HEX[colours[1]]} 50%)`
           : colours.length === 1
@@ -49,7 +52,7 @@ function CostPips({ cost }: { cost: string }) {
               boxShadow: "inset 0 0 0 1px rgba(0,0,0,.45)",
             }}
           >
-            {colours.length > 0 ? "" : sym}
+            {colours.length > 0 ? (numeral ?? "") : sym}
           </span>
         );
       })}
