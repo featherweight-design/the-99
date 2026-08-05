@@ -24,9 +24,18 @@ type DeckEdit =
   | { kind: "add"; card: DeckDetailCard }
   | { kind: "remove"; oracleId: string };
 
+/**
+ * A failed removal has nowhere to draw itself: the prediction has already taken
+ * the row out of the deck-wide list, so the row is unmounted by the time its own
+ * `useDeckMutation` has a message, and it remounts clean when the transition
+ * reverts. The reason has to be handed to something that outlives the row.
+ */
+type ReportRemoveFailure = (cardName: string) => void;
+
 const DeckEditContext = createContext<{
   add: AddOptimisticCard;
   remove: RemoveOptimisticCard;
+  reportRemoveFailure: ReportRemoveFailure;
 } | null>(null);
 
 export function useOptimisticDeckCards(serverCards: DeckDetailCard[]) {
@@ -66,7 +75,11 @@ export function AddOptimisticCardProvider({
   value,
   children,
 }: {
-  value: { add: AddOptimisticCard; remove: RemoveOptimisticCard };
+  value: {
+    add: AddOptimisticCard;
+    remove: RemoveOptimisticCard;
+    reportRemoveFailure: ReportRemoveFailure;
+  };
   children: React.ReactNode;
 }) {
   return <DeckEditContext.Provider value={value}>{children}</DeckEditContext.Provider>;
@@ -83,6 +96,14 @@ export function useAddOptimisticCard(): AddOptimisticCard {
 
 export function useRemoveOptimisticCard(): RemoveOptimisticCard {
   return useContext(DeckEditContext)?.remove ?? noop;
+}
+
+/**
+ * Outside a provider nothing removes the row, so its own inline message is
+ * still the right surface and this stays a no-op.
+ */
+export function useReportRemoveFailure(): ReportRemoveFailure {
+  return useContext(DeckEditContext)?.reportRemoveFailure ?? noop;
 }
 
 function noop() {}

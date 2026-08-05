@@ -9,7 +9,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
-import { useRemoveOptimisticCard } from "./optimistic-deck";
+import { useRemoveOptimisticCard, useReportRemoveFailure } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
 interface DecklistRowProps {
@@ -32,13 +32,24 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
   // re-render lands.
   const { applied, isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
+  const reportRemoveFailure = useReportRemoveFailure();
 
   function handleRemove() {
     // Dispatched into the deck-wide list as well as this row's own state, or
     // the row vanishes while the header, the tab counts, the role strip and the
     // group heading all keep claiming it for the length of the round-trip.
     run(
-      () => removeCardFromDeck(deckId, card.oracleId),
+      async () => {
+        try {
+          await removeCardFromDeck(deckId, card.oracleId);
+        } catch (cause) {
+          // Reported upward before rethrowing: that same prediction has already
+          // unmounted this row, so the message `run` is about to set would be
+          // written to a component that is no longer on screen.
+          reportRemoveFailure(card.name);
+          throw cause;
+        }
+      },
       () => removeOptimisticCard(card.oracleId),
     );
   }

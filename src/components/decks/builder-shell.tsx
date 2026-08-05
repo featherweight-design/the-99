@@ -25,6 +25,8 @@ import { QuickAddBar } from "./quick-add-bar";
 import { ExportDialog } from "./export-dialog";
 import { CardDetailProvider } from "./card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
+import { MutationError } from "./mutation-error";
+import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { deckCounts } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 
@@ -119,11 +121,24 @@ export function BuilderShell({
     [addOptimisticCard, cards],
   );
 
+  // A failed removal outlives the row that asked for it, so its reason is held
+  // here. Cleared when the server answers again: any successful edit replaces
+  // deck.cards, which settles the question the refusal was answering.
+  const [removeFailure, setRemoveFailure] = useState<string | null>(null);
+  const [lastServerCards, setLastServerCards] = useState(deck.cards);
+  if (lastServerCards !== deck.cards) {
+    setLastServerCards(deck.cards);
+    setRemoveFailure(null);
+  }
+  const reportRemoveFailure = useCallback((cardName: string) => {
+    setRemoveFailure(`${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}`);
+  }, []);
+
   // One object, memoised, so every add and remove control below does not
   // re-render on each pass of the shell.
   const deckEdits = useMemo(
-    () => ({ add: announceAdd, remove: removeOptimisticCard }),
-    [announceAdd, removeOptimisticCard],
+    () => ({ add: announceAdd, remove: removeOptimisticCard, reportRemoveFailure }),
+    [announceAdd, removeOptimisticCard, reportRemoveFailure],
   );
 
   // A shelf link is a two-step move: switch to Consider, then scroll to the
@@ -183,6 +198,12 @@ export function BuilderShell({
                 onDismiss={markCelebrated}
                 onExport={openExport}
               />
+            )}
+
+            {removeFailure && (
+              <div className="px-[14px] md:px-[20px] pt-[10px]">
+                <MutationError message={removeFailure} />
+              </div>
             )}
 
             {/* Builder Spine */}
