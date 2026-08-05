@@ -137,10 +137,18 @@ test.
    via `loadMatchInputs` (`src/lib/collection/import.ts:32`), run the pipeline, then insert the deck,
    its `deck_cards` and its `deck_unresolved_rows` **in one transaction**. A deck that exists without
    its unresolved rows is a deck that silently lost the player's data.
-5. **Extract the size limits rather than "reusing" them** — `src/app/collection/actions.ts:100`
-   inlines `5 * 1024 * 1024` and there is no constant to import. Lift both limits (5 MB file,
-   100 KB paste) into a shared module and repoint the collection action at it, so the two flows
-   cannot drift apart. This is a real task, not a note.
+5. **Extract the size limits as named constants — and do not standardise the file limit on the
+   collection's.** `src/app/collection/actions.ts:100` inlines `5 * 1024 * 1024` with no constant to
+   import, so both flows need lifting into one module. But they hold **different numbers on
+   purpose**: a collection CSV can be twenty thousand rows and gets 5 MB; a 100-card decklist is a
+   few kilobytes, and the handoff's copy says `.csv or .txt, under 2 MB` in three places. Deck
+   import gets its own 2 MB constant.
+   **This is not cosmetic.** State 8's drawn example is a `4.1 MB` `.xlsx` — a file that *passes* a
+   5 MB check. Standardising on 5 MB would make the handoff's own illustration of the failure not a
+   failure, and the copy would be lying about a limit the code doesn't enforce. The paste limit
+   (100 KB) is genuinely shared and should be one constant.
+   Add a test asserting the deck-import limit and the string in `deck-import.ts` agree, so the copy
+   and the check cannot drift apart later.
 6. **`src/lib/decks/read.ts`** — `getDeckDetail` also selects the deck's unresolved rows and returns
    them, so every consumer sees them without a second query.
 7. `read.test.ts` — assert a deck with no unresolved rows returns an empty array and that its other
