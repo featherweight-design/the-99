@@ -242,20 +242,22 @@ export function BuilderShell({
               />
             )}
 
-            {/* §"+ Add cards" sticky footer button (mobile mid-build) */}
-            {!isEmpty && (
-              <div
-                className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
-                style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
+            {/* §"+ Add cards" sticky footer button (mobile). Shown when the deck
+                is empty too, now that the empty state's own CTA is gone: the
+                sheet is still the only mobile entrance until PR 6 replaces it
+                with the Consider tab and the quick-add bar, and without this
+                an empty deck would have no way to add a first card. */}
+            <div
+              className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
+              style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
+            >
+              <PrimaryButton
+                onClick={() => setSheetOpen(true)}
+                className="w-full text-[15px] py-[13px]"
               >
-                <PrimaryButton
-                  onClick={() => setSheetOpen(true)}
-                  className="w-full text-[15px] py-[13px]"
-                >
-                  + Add cards
-                </PrimaryButton>
-              </div>
-            )}
+                + Add cards
+              </PrimaryButton>
+            </div>
           </div>
 
           {/* ── Right column — Add panel (Task 9) ── */}

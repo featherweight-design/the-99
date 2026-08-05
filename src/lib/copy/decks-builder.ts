@@ -159,9 +159,13 @@ export const addPanelCopy = {
   // defect this overhaul exists to stop shipping.
   //
   // 1. `cta: "Open suggestions"` is DELETED. Its only job was opening the
-  //    bottom sheet, which no longer exists; the Consider tab sits 40px above
-  //    the mark with its count on it, and the quick-add bar is focusable at the
-  //    bottom of the same screen. Two live entrances, no button.
+  //    bottom sheet. In the finished shape the Consider tab sits 40px above the
+  //    mark with its count on it and the quick-add bar is focusable at the
+  //    bottom of the same screen — two live entrances, no button. Both of those
+  //    arrive with the shell rewiring, so until then BuilderShell still renders
+  //    the sheet and keeps its "+ Add cards" footer visible on an empty deck;
+  //    deleting this string without that would strand a mobile empty deck with
+  //    no way to add a first card.
   // 2. `captionFor` / `captionForMobile` COLLAPSE INTO ONE. The split existed
   //    only because the two widths pointed at different constructs ("on the
   //    right" vs "one tap away"); they now point at the same two. This also
