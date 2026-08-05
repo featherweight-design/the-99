@@ -5,9 +5,15 @@ and closed every blocker eng-side. **No redraw.** One string changed on the audi
 and the notes took two corrections. The last open item — the completion reveal — was ruled by Hugh on
 2026-08-04, as recorded below.
 
-**Build order:** partially gated. The plan's PRs 1–6 can start now; PRs 7–9 wait on #158's PR 6,
-because `quick-add-bar.tsx` does not exist yet and the arrival chrome sits inside the shell #158
-rewrites. As of 2026-08-04, #158 PRs 1–3 are merged (#169–#171).
+**Build order:** ungated as of 2026-08-05. This previously read "PRs 7–9 wait on #158's PR 6";
+**#158 is now fully merged** (#169–#171, #173, #175, #180, close-out #186), so `quick-add-bar.tsx`
+exists and all nine PRs can run in sequence. Launch gating is separate and deliberate:
+`/decks/import` ships unlinked in PR 4 and becomes reachable from `/decks` in PR 6.
+
+**Two product calls ruled 2026-08-05** and recorded in
+`docs/superpowers/plans/2026-08-05-deck-import-briefing.md`: a deck with unresolved rows carries a
+count **badge on its `DeckCard`** so the state has a home outside the builder (no new `statusPill`
+value), and the import route is gated by the **absence of a link**, not a flag.
 
 ## Closed at the audit
 

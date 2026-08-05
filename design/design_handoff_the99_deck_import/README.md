@@ -351,9 +351,9 @@ Hexes live only in `globals.css`; everything below is `var(--*)`. **No new token
 - **Optimistic:** resolve and delete both go through `use-deck-mutation` and
   `useOptimisticDeckCards` so the group count and the spine figure move in the click's frame, as
   adds already do.
-- **Sequencing.** Every state from 13 on mounts inside components that ship in #158's PRs 4–6;
-  `quick-add-bar.tsx` does not exist yet. **#42 cannot start building until #158's PR 6 merges.** No
-  impact on this canvas — it sets the order.
+- **Sequencing.** Every state from 13 on mounts inside components that shipped in #158's PRs 4–6.
+  **That dependency is now satisfied — #158 merged in full on 2026-08-05**, so `quick-add-bar.tsx`
+  exists and #42 can build straight through. No impact on this canvas — it set the order.
 - **No new dependencies**, no new tokens, no virtualisation.
 - **Copy:** `deck-import · copy strings.ts` → `src/lib/copy/deck-import.ts`.
 - **Mock data:** the import is a mono-green Bristly Bill deck with two deliberate failures — a typo
