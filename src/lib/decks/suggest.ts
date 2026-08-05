@@ -20,6 +20,12 @@ export type DeckSuggestion = {
   cardTypeGroup: DeckDetailCard["cardTypeGroup"];
   role: DeckDetailCard["role"];
   imageUri: string | null;
+  // Scryfall's cost string ("{2}{G}{G}") and its numeric value. Both are drawn:
+  // the pips come from the string, the "cheapest first" sort from the number,
+  // and parsing one out of the other on the client would guess at hybrid and
+  // Phyrexian symbols the string spells out exactly.
+  manaCost: string | null;
+  manaValue: number;
   // The same figure reasonLabel interpolates, kept as a number so a tile can
   // size a bar without parsing a sentence. Null is the drawn "no EDHREC figure"
   // state and must render as absence, never as 0%.
@@ -47,6 +53,8 @@ export function buildSuggestionPayload(
     cardTypeGroup: DeckDetailCard["cardTypeGroup"];
     role: DeckDetailCard["role"];
     imageUri: string | null;
+    manaCost: string | null;
+    manaValue: number;
   },
   inclusionByName: Record<string, number>,
   synergyByName: Record<string, number> = {},
@@ -90,6 +98,8 @@ export function buildSuggestionPayload(
     cardTypeGroup: s.cardTypeGroup,
     role: s.role,
     imageUri: s.imageUri,
+    manaCost: s.manaCost,
+    manaValue: s.manaValue,
     inclusionPct,
     lift,
   };
