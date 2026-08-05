@@ -43,10 +43,10 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
         try {
           await removeCardFromDeck(deckId, card.oracleId);
         } catch (cause) {
-          // Reported upward before rethrowing: that same prediction has already
-          // unmounted this row, so the message `run` is about to set would be
-          // written to a component that is no longer on screen.
-          reportRemoveFailure(card.name);
+          // Only when this was the last copy, because only then has the
+          // prediction unmounted the row and left `run`'s message with nothing
+          // to draw on. A decremented stack still has its own line to say it.
+          if (card.quantity <= 1) reportRemoveFailure(card.name);
           throw cause;
         }
       },

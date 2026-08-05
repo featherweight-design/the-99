@@ -134,12 +134,14 @@ export function BuilderShell({
     setRemoveFailure(`${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}`);
   }, []);
 
-  // One object, memoised, so every add and remove control below does not
-  // re-render on each pass of the shell.
-  const deckEdits = useMemo(
-    () => ({ add: announceAdd, remove: removeOptimisticCard, reportRemoveFailure }),
-    [announceAdd, removeOptimisticCard, reportRemoveFailure],
-  );
+  // Not memoised: `removeOptimisticCard` is rebuilt every render and
+  // `announceAdd` follows the card list, so a useMemo here would recompute on
+  // essentially every pass while reading as though it prevented one.
+  const deckEdits = {
+    add: announceAdd,
+    remove: removeOptimisticCard,
+    reportRemoveFailure,
+  };
 
   // A shelf link is a two-step move: switch to Consider, then scroll to the
   // heading. The scroll cannot happen in the click handler, because the shelf

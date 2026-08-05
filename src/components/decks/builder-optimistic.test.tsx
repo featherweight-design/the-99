@@ -136,6 +136,27 @@ describe("optimistic deck list", () => {
     expect(screen.getByRole("button", { name: "Remove Forest" })).toBeInTheDocument();
   });
 
+  // A decremented stack keeps its row, so the row explains itself and the shell
+  // must stay quiet — otherwise one failure is announced in two places.
+  it("says it once when the row survives to say it", async () => {
+    removeCardFromDeck.mockRejectedValue(new Error("boom"));
+
+    render(
+      <BuilderShell
+        deck={{ ...makeDeck(), cards: [{ ...makeDeck().cards[0], quantity: 9 }] }}
+        suggestions={[suggestion]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Remove Forest" }));
+    });
+
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+  });
+
   it("draws the card in the decklist before the server answers", async () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
