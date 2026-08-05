@@ -113,10 +113,11 @@ Not run, and this is a tooling gap rather than a judgement that it was unnecessa
 Everything past that is Clerk-gated: `/decks`, `/collection` and `/commanders` all return
 404 to a signed-out client (the same response production gives, so not a regression).
 
-There are no `E2E_AUDIT_USER_*` credentials in the repo's `.env` — it carries only
-`CLERK_SECRET_KEY`, `CRON_SECRET`, `DATABASE_URL` and
-`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — and no Vercel token, so an authenticated walk cannot
-be driven headlessly and a deployment could not be pinned to a commit from here.
+No `E2E_AUDIT_USER_*` credentials exist. `.env.example`, the only tracked template, names
+just `DATABASE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`, and the
+untracked local `.env` this run used adds nothing beyond a `CRON_SECRET`. There is no
+Vercel token either, so an authenticated walk cannot be driven headlessly and a deployment
+could not be pinned to a commit from here.
 
 The four passes recorded above were therefore all exercised against local dev with seeded
 data, which is the same fallback the mid-run capture used. Tracked as **#143**. Until it is
