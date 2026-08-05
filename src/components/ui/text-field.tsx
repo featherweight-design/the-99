@@ -99,6 +99,10 @@ export function SearchField({
         className={twMerge(
           "min-w-0 flex-1 bg-transparent border-none outline-none shadow-none " +
             "focus:outline-none focus-visible:outline-none " +
+            // WebKit draws its own cancel ✕ on type="search", in its own blue,
+            // beside whatever the caller passes as `trailing` — two adjacent
+            // glyphs doing one job, one of them off-palette.
+            "[&::-webkit-search-cancel-button]:appearance-none " +
             "text-[color:var(--fg)] placeholder:text-[color:var(--fg-faint)]",
           className,
         )}

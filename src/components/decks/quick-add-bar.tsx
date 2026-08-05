@@ -264,13 +264,29 @@ export function QuickAddBar({
         </span>
       </div>
 
+      {/* §Results panel — "rises off the bar", per the handoff's upward shadow.
+          `order-first` lifts it above the field visually while leaving the DOM
+          in combobox-then-listbox order, which is what a screen reader wants and
+          what `aria-activedescendant` describes. Rendered in flow below the
+          field instead, it grew off the bottom of the phone viewport and put the
+          no-results escape hatch under the tab bar, unreachable. The negative
+          margins bleed it to the edges of the sticky container it sits in. */}
+      {(open || noResults) && (
+        <div
+          className="order-first -mx-[16px] md:-mx-[30px] -mt-[10px] md:-mt-[11px] mb-[10px] md:mb-[11px] px-[16px] md:px-[30px] py-[12px] max-h-[290px] md:max-h-[400px] overflow-y-auto"
+          style={{
+            background: "var(--bg)",
+            borderTop: "1px solid var(--border-strong)",
+            boxShadow: "0 -16px 40px rgba(0,0,0,0.5)",
+          }}
+        >
       {open && (
         <>
           <ul
             id={listId}
             role="listbox"
             aria-label={addPanelCopy.quickAdd.resultsAria}
-            className="anim-quickadd-in list-none m-0 mt-[8px] p-0 flex flex-col gap-[6px]"
+            className="anim-quickadd-in list-none m-0 p-0 flex flex-col gap-[6px]"
           >
             {results.map((r, i) => (
               <QuickAddRow
@@ -292,7 +308,7 @@ export function QuickAddBar({
       )}
 
       {noResults && (
-        <div className="mt-[12px]">
+        <div>
           <p className="text-[14px] font-semibold m-0" style={{ color: "#EDE6D8" }}>
             {addPanelCopy.quickAddEmpty.heading}
           </p>
@@ -313,6 +329,8 @@ export function QuickAddBar({
               {addPanelCopy.quickAddEmpty.dropFilter}
             </button>
           )}
+        </div>
+      )}
         </div>
       )}
     </div>

@@ -211,7 +211,11 @@ export function SuggestionTile({
           oracleId={suggestion.oracleId}
           name={suggestion.name}
           siblings={siblings}
-          className="block w-full text-left text-[13px] md:text-[12.5px] font-semibold leading-[1.25] p-0"
+          // Always two lines tall, clamped or not: a shelf is a grid, and a
+          // one-line name beside a wrapped one pushed its type line, bar and
+          // Add button half a line up out of alignment with its row-mates.
+          // 2.5em is the clamp height exactly — two lines at leading 1.25.
+          className="block w-full text-left text-[13px] md:text-[12.5px] font-semibold leading-[1.25] min-h-[2.5em] p-0"
           style={{
             color: applied ? "var(--fg-muted)" : "var(--fg)",
             background: "transparent",

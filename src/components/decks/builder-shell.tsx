@@ -281,8 +281,12 @@ export function BuilderShell({
                 widths, and it takes the slot the mobile "+ Add cards" footer
                 used to hold. `mt-auto` keeps it at the foot of a short column
                 rather than floating under a two-line empty state. */}
+            {/* `bottom-[80px]` at phone width, not `bottom-0`: the shell's
+                tab bar is `fixed` and 80px tall, and the `pb-[80px]` main
+                carries to reserve it does nothing to a sticky element, which
+                pins to the scrollport edge and so sat underneath it. */}
             <div
-              className="sticky bottom-0 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]"
+              className="sticky bottom-[80px] md:bottom-0 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]"
               style={{ background: "var(--bg)", borderTop: "1px solid var(--border)" }}
             >
               <QuickAddBar
