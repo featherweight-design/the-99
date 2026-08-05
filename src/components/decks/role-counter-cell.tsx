@@ -92,12 +92,12 @@ export function RoleCounterCell({
       {onSeeShelf && (
         <a
           href={`#shelf-${role}`}
-          // The href is the honest destination and survives a middle-click, but
-          // the default navigation is suppressed: the Consider panel is not
-          // mounted yet, so the browser would set the hash against a heading
-          // that does not exist and scroll nowhere. The shell switches views
-          // and scrolls once the shelf is on screen.
+          // A plain click is handled by the shell, because the Consider panel
+          // is not mounted yet and the browser would set the hash against a
+          // heading that does not exist. A modified click is left alone: it
+          // opens a fresh document, where the hash resolves on load.
           onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
             e.preventDefault();
             onSeeShelf();
           }}

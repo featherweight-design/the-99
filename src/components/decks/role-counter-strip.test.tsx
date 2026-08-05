@@ -61,6 +61,17 @@ describe("role counter strip — shelf links", () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
+  // A modified click opens a fresh document, where the hash resolves on load —
+  // so the reason for suppressing the plain click does not apply to it.
+  it("lets a cmd-click through to the browser", () => {
+    const onSeeShelf = vi.fn();
+    render(<RoleCounterStrip cards={[]} onSeeShelf={onSeeShelf} />);
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true, metaKey: true });
+    linkFor(RECOMMENDED_MIX.ramp.label.toLowerCase())!.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(onSeeShelf).not.toHaveBeenCalled();
+  });
+
   it("draws no links at all when the strip is given nowhere to send the user", () => {
     render(<RoleCounterStrip cards={[]} />);
     expect(screen.queryAllByRole("link")).toHaveLength(0);

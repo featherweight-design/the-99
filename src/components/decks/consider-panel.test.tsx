@@ -288,7 +288,11 @@ describe("ConsiderPanel — tiles", () => {
 describe("ConsiderPanel — panel states", () => {
   it("is a tabpanel, not an overlay", () => {
     mount();
-    expect(screen.getByRole("tabpanel", { name: "Cards to consider" })).toBeInTheDocument();
+    // Named by its tab rather than carrying a label of its own, which
+    // aria-labelledby would win against anyway. The tab lives in BuilderTabs,
+    // so the name resolves only in the shell — the wiring is this panel's half.
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "tab-consider");
+    expect(screen.getByRole("tabpanel")).not.toHaveAttribute("aria-label");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

@@ -178,8 +178,9 @@ export function ConsiderPanel({
     <section
       id="panel-consider"
       role="tabpanel"
+      // The tab is the panel's name, and aria-labelledby wins over aria-label
+      // regardless — a second name here would simply never be read.
       aria-labelledby="tab-consider"
-      aria-label={addPanelCopy.tabs.panelAria}
       className="px-[16px] pt-[12px] md:px-[30px] md:pt-[16px]"
     >
       {degraded && (

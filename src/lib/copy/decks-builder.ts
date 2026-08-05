@@ -41,7 +41,9 @@ export const addPanelCopy = {
     consider: "Consider",
     deckAria: (n: number) => `Your deck, ${plural(n, "card", "cards")}`,
     considerAria: (n: number) => `Cards to consider, ${plural(n, "suggestion", "suggestions")}`,
-    panelAria: "Cards to consider",
+    // No `panelAria`: each tabpanel is named by its tab through
+    // aria-labelledby, which wins over aria-label, so a panel-side name would
+    // never reach a screen reader.
   },
 
   // ── Consider toolbar ──────────────────────────────────────────────────
