@@ -17,6 +17,11 @@ export type SearchResult = {
   cardTypeGroup: DeckDetailCard["cardTypeGroup"];
   role: DeckDetailCard["role"];
   imageUri: string | null;
+  // Copies owned across every printing and finish, which is what the row draws
+  // as "×N owned". A card is one row per (set, collector number, finish) in
+  // `collection_items`, so this is a SUM rather than a count — four nonfoil and
+  // one foil Sol Ring is "×5 owned", not "×2".
+  ownedQty: number;
 };
 
 export async function searchCards(
@@ -28,13 +33,16 @@ export async function searchCards(
   // The query string is parameterized (no SQL injection risk); escaping stops
   // user-typed %/_/\ from acting as LIKE wildcards and changing match behavior.
   const escaped = q.replace(/[\\%_]/g, (m) => `\\${m}`);
-  const ownedSql = sql<boolean>`exists (select 1 from collection_items ci where ci.oracle_id = ${cards.oracleId} and ci.user_id = ${userId})`;
+  // One subquery drives both the figure and the boolean, so the row cannot
+  // claim a card is owned and then draw "×0 owned" beside it. `::int` because
+  // the driver hands back sum() as a string.
+  const ownedQtySql = sql<number>`coalesce((select sum(ci.quantity) from collection_items ci where ci.oracle_id = ${cards.oracleId} and ci.user_id = ${userId}), 0)::int`;
   // All constraints live in SQL so LIMIT can't starve results when early
   // name matches are off-color or unowned.
   const rows = await db
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
-      owned: ownedSql,
+      ownedQty: ownedQtySql,
       oracleText: cards.oracleText, keywords: cards.keywords,
       imageUri: cards.imageUri,
     })
@@ -45,13 +53,14 @@ export async function searchCards(
         ? sql`cardinality(${cards.colorIdentity}) = 0`
         : arrayContained(cards.colorIdentity, colorIdentity),
       eq(cards.commanderLegal, true),
-      ownedOnly ? ownedSql : undefined,
+      ownedOnly ? sql`${ownedQtySql} > 0` : undefined,
     ))
     .limit(20);
   // Substring (not prefix) match is intentional: "gravetide" must find
   // "Muldrotha, the Gravetide". A scan over the ~35k-row cards table is cheap.
   return rows.map(({ oracleText, keywords, ...row }) => ({
     ...row,
+    owned: row.ownedQty > 0,
     cardTypeGroup: cardTypeGroup(row.typeLine),
     role: primaryRole({ typeLine: row.typeLine, oracleText, keywords }),
   }));

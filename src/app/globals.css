@@ -216,6 +216,13 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
   100% { opacity: 1; }
 }
 
+/* Quick-add results. Dismissal is instant in both motion modes — a list that
+   fades out keeps stale rows under the cursor while the next query is typed. */
+@keyframes quickadd-in {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* Sinusoidal in-out rather than the default cubic ease-in-out: cubic dwells
    near both extremes (peak:mean velocity 1.85x vs 1.57x), and a dwell is the
    very thing being fixed here. */
@@ -233,6 +240,7 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 .anim-menu-in { animation: menu-in 0.12s ease-out both; }
 .anim-sheet-up { animation: sheet-up 0.18s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .anim-backdrop-in { animation: backdrop-in 0.18s ease-out both; }
+.anim-quickadd-in { animation: quickadd-in 0.14s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   .anim-bob,
@@ -244,6 +252,8 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
   /* Both account-menu surfaces appear at final position, fully opaque. */
   .anim-menu-in,
   .anim-backdrop-in,
+  /* Results appear in place and opaque; the rise is the only thing dropped. */
+  .anim-quickadd-in,
   .anim-sheet-up {
     animation: none;
     /* Nothing moves, so drop the compositing hint rather than holding a layer

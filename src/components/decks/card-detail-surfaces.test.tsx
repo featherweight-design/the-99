@@ -97,7 +97,7 @@ describe("deck card-detail triggers", () => {
     const { fetchCard } = renderInProvider(
       <SearchResultRow
         result={{
-          oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", owned: true,
+          oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", owned: true, ownedQty: 1,
           cardTypeGroup: "Artifacts", role: "ramp", imageUri: null,
         }}
         deckId="d1"
