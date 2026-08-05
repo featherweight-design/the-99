@@ -23,11 +23,14 @@ function parseManaCost(cost: string): string[] {
   return [...cost.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
 }
 
-function CostPips({ cost }: { cost: string }) {
+export function CostPips({ cost, className }: { cost: string; className?: string }) {
   const symbols = parseManaCost(cost);
   if (symbols.length === 0) return null;
   return (
-    <span aria-hidden className="absolute left-[6px] bottom-[6px] flex gap-[3px]">
+    <span
+      aria-hidden
+      className={className ?? "absolute left-[6px] bottom-[6px] flex gap-[3px]"}
+    >
       {symbols.map((sym, i) => {
         // "U/B" and "G/P" carry their colours in the halves, so a pip draws
         // them rather than printing them: three characters in a 14px circle

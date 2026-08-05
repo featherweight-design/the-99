@@ -23,6 +23,7 @@ const row = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
   cardTypeGroup: "Enchantments",
   role: "draw",
   imageUri: null,
+  manaCost: null,
   ...over,
 });
 
@@ -240,6 +241,17 @@ describe("QuickAddBar — result rows", () => {
 
     expect(screen.getByText("×5 owned")).toBeInTheDocument();
     expect(screen.getByText("not owned")).toBeInTheDocument();
+  });
+
+  // The phone row has no room for four columns, so type and ownership fold into
+  // one meta line rather than the type line being dropped — which is what the
+  // row did before, losing the only field that separates two same-named cards.
+  it("keeps the type line at phone width by folding it into the meta line", async () => {
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study", ownedQty: 5 })]);
+    mount();
+    await search();
+
+    expect(screen.getByText("Enchantment · ×5 owned")).toBeInTheDocument();
   });
 
   it("brasses the run of the name the query matched, wherever it falls", async () => {

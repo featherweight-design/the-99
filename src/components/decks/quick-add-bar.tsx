@@ -19,6 +19,7 @@ import { identityLabel } from "../../lib/decks/indeck";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { SearchField } from "../ui/text-field";
 import { MutationError } from "./mutation-error";
+import { CostPips } from "./suggestion-tile";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
@@ -389,6 +390,9 @@ function QuickAddRow({
 }: QuickAddRowProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
+  const ownership = result.owned
+    ? addPanelCopy.quickAdd.rowOwned(result.ownedQty)
+    : addPanelCopy.quickAdd.rowNotOwned;
 
   // The guard lives here rather than on the click handler alone: Enter reaches
   // the row through registerAdd, which would otherwise re-fire the mutation
@@ -437,14 +441,13 @@ function QuickAddRow({
       onMouseEnter={onActivate}
       onClick={handleAdd}
       // An in-deck row is not actionable, so it must not offer a pointer.
-      className={`flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] ${applied ? "cursor-default" : "cursor-pointer"}`}
+      className={`flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] px-[10px] md:px-[12px] py-[8px] ${applied ? "cursor-default" : "cursor-pointer"}`}
       style={{
         background: "#1E1A15",
         border: `1px solid ${active ? "#C9A24B" : "#2A241D"}`,
-        padding: "8px 12px",
       }}
     >
-      <div className="flex items-center gap-[12px]">
+      <div className="flex items-center gap-[10px] md:gap-[12px]">
         {/* A crop settles which "Study" this is faster than the type line does —
             a deliberate divergence from Archidekt, which ships no thumbnail. */}
         <span
@@ -462,35 +465,50 @@ function QuickAddRow({
           )}
         </span>
 
-        <span
-          className="flex-1 min-w-0 text-[14px] font-semibold truncate"
-          style={{ color: applied ? "#A89B84" : "#EDE6D8" }}
-        >
-          <HighlightedName name={result.name} query={query} dim={applied} />
+        {/* The two widths are different compositions, not one scaled. Desktop
+            lays name, type, pips and ownership out as columns; the phone row
+            has no room for four, so type and ownership fold into a single mono
+            meta line under the name. Both are drawn — hiding the type line at
+            phone width was the shortcut, and it dropped the one field that
+            separates two cards with the same name. */}
+        <span className="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col">
+          <span
+            className="text-[14px] font-semibold truncate"
+            style={{ color: applied ? "#A89B84" : "#EDE6D8" }}
+          >
+            <HighlightedName name={result.name} query={query} dim={applied} />
+          </span>
+          <span className="md:hidden font-mono text-[10px] truncate" style={{ color: "#8E8269" }}>
+            {result.typeLine} · {ownership}
+          </span>
         </span>
 
         <span
-          className="hidden md:block flex-none font-mono text-[11px] truncate max-w-[140px]"
+          className="hidden md:block flex-1 min-w-0 font-mono text-[11px] truncate"
           style={{ color: applied ? "#6A6152" : "#8E8269" }}
         >
           {result.typeLine}
         </span>
 
+        {/* A fixed slot whether or not the card has a cost, so the ownership
+            column stays on one vertical line down the list. */}
+        <span aria-hidden className="hidden md:flex flex-none w-[34px] justify-start">
+          {result.manaCost && <CostPips cost={result.manaCost} className="flex gap-[3px]" />}
+        </span>
+
         {/* Ownership as a word and a figure. Never colour alone. */}
         <span
-          className="flex-none font-mono text-[11px] text-right"
+          className="hidden md:block flex-none w-[80px] font-mono text-[11px] text-right"
           style={{ color: result.owned ? "#8E8269" : "#E0913C" }}
         >
-          {result.owned
-            ? addPanelCopy.quickAdd.rowOwned(result.ownedQty)
-            : addPanelCopy.quickAdd.rowNotOwned}
+          {ownership}
         </span>
 
         {applied ? (
           // Label as well as greyscale, and aria-disabled on the option above.
           <span
-            className="flex-none font-sans text-[12.5px] font-semibold text-right"
-            style={{ color: "#6FA368", minWidth: 56 }}
+            className="flex-none font-sans text-[12.5px] font-semibold text-right md:w-[56px]"
+            style={{ color: "#6FA368" }}
           >
             {addPanelCopy.quickAdd.rowInDeck}
           </span>
@@ -500,10 +518,13 @@ function QuickAddRow({
           // one the keyboard is already pointed at.
           <span
             aria-hidden
-            className="flex-none font-mono text-[11px] text-right"
-            style={{ opacity: isPending ? 0.5 : undefined, color: "#C9A24B", minWidth: 56 }}
+            className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[56px]"
+            style={{ opacity: isPending ? 0.5 : undefined, color: "#C9A24B" }}
           >
-            {addPanelCopy.quickAdd.rowAddActive}
+            {/* The phone row's meta line has already used the width the words
+                would need, so it keeps the glyph alone. */}
+            <span className="md:hidden">↵</span>
+            <span className="hidden md:inline">{addPanelCopy.quickAdd.rowAddActive}</span>
           </span>
         ) : (
           // Drawn as a control, but not one: a real <button> inside a
@@ -513,15 +534,13 @@ function QuickAddRow({
           // the duplicate semantics go.
           <span
             aria-hidden
-            className="flex-none font-sans text-[12.5px] font-semibold flex items-center justify-center"
+            className="flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px]"
             style={{
               opacity: isPending ? 0.5 : undefined,
               color: "#C9A24B",
               background: "transparent",
               border: "1px solid #3A3229",
               borderRadius: 7,
-              minWidth: 56,
-              minHeight: 44,
             }}
           >
             {addPanelCopy.quickAdd.rowAdd}
