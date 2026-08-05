@@ -2,8 +2,9 @@ export type EdhrecData = {
   topCards: string[];
   inclusionByName: Record<string, number>;
   // How much more this commander's decks run a card than decks generally.
-  // Read defensively: the field is absent from some payloads, and an absent key
-  // must stay absent rather than becoming 0 — a 0 draws a real bar for no data.
+  // The map itself is always present; a card whose upstream `synergy` is missing
+  // or non-numeric is simply left out of it, rather than entered as 0 — a 0
+  // draws a real bar for no data.
   synergyByName: Record<string, number>;
 };
 
