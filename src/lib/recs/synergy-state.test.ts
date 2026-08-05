@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { synergyStateFrom } from "./synergy-state";
 
-const data = { topCards: ["Sol Ring"], inclusionByName: { "Sol Ring": 90 } };
+// Mirrors what parseEdhrecPayload actually emits: topCards keeps the card's
+// own casing, while the name-keyed maps are lowercased.
+const data = { topCards: ["Sol Ring"], inclusionByName: { "sol ring": 90 }, synergyByName: {} };
 
 describe("synergyStateFrom", () => {
   it("real data → ok", () => {
@@ -16,11 +18,11 @@ describe("synergyStateFrom", () => {
   it("parsed but empty topCards → absent, matching the null fitSynergy it scores to", () => {
     // parseEdhrecPayload returns this shape when the payload doesn't match the
     // expected container.json_dict.cardlists structure.
-    const empty = { topCards: [], inclusionByName: {} };
+    const empty = { topCards: [], inclusionByName: {}, synergyByName: {} };
     expect(synergyStateFrom({ data: empty, unreachable: false })).toBe("absent");
   });
   it("parsed but empty topCards during an outage → degraded", () => {
-    expect(synergyStateFrom({ data: { topCards: [], inclusionByName: {} }, unreachable: true })).toBe("degraded");
+    expect(synergyStateFrom({ data: { topCards: [], inclusionByName: {}, synergyByName: {} }, unreachable: true })).toBe("degraded");
   });
   it("data present wins even if unreachable is somehow set", () => {
     // client.ts returns stale-cache hits as unreachable:false, but the state

@@ -123,10 +123,63 @@ describe("buildSuggestionPayload", () => {
     expect(result.inclusionPct).toBe(12);
   });
 
+  it.each([NaN, Infinity])(
+    "treats a non-finite inclusion of %p as absent, in both the figure and the label",
+    (pct) => {
+      const result = buildSuggestionPayload({ ...base, owned: true }, { "sol ring": pct });
+      expect(result.inclusionPct).toBeNull();
+      expect(result.reasonLabel).toBe("EDHREC staple");
+    },
+  );
+
   it("passes imageUri through, including null (the `no art on file` state)", () => {
     expect(buildSuggestionPayload({ ...base, owned: true }, {}).imageUri)
       .toBe("https://cards.example/sol-ring.jpg");
     expect(buildSuggestionPayload({ ...base, imageUri: null, owned: true }, {}).imageUri)
       .toBeNull();
+  });
+
+  describe("lift", () => {
+    // Decision 6: surface lift only where positive. A zero or negative figure is
+    // not a selling point, and drawing one is worse than the drawn omission.
+    it("carries a positive synergy as lift", () => {
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": 0.23 }).lift)
+        .toBe(0.23);
+    });
+
+    it("resolves zero synergy to null", () => {
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": 0 }).lift)
+        .toBeNull();
+    });
+
+    it("resolves negative synergy to null", () => {
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": -0.4 }).lift)
+        .toBeNull();
+    });
+
+    it("resolves absent synergy to null", () => {
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, {}).lift).toBeNull();
+    });
+
+    it("defaults lift to null when no synergy map is supplied at all", () => {
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}).lift).toBeNull();
+    });
+
+    // The map is a parameter, so this function is its own boundary — parse.ts
+    // filtering upstream does not bind a caller who builds a map another way.
+    it.each([NaN, Infinity, -Infinity])("resolves a non-finite synergy of %p to null", (synergy) => {
+      expect(buildSuggestionPayload({ ...base, owned: true }, {}, { "sol ring": synergy }).lift)
+        .toBeNull();
+    });
+
+    it("resolves lift through the DFC front-face fallback", () => {
+      const dfc = {
+        ...base,
+        oracleId: "dfc1", name: "Valki, God of Lies // Tibalt, Cosmic Impostor", reason: "edhrec",
+      } as const;
+      expect(
+        buildSuggestionPayload({ ...dfc, owned: true }, {}, { "valki, god of lies": 0.5 }).lift,
+      ).toBe(0.5);
+    });
   });
 });

@@ -77,6 +77,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   const degraded = unreachable;
   const topCards = data?.topCards ?? null;
   const inclusionByName = data?.inclusionByName ?? {};
+  const synergyByName = data?.synergyByName ?? {};
 
   // Build a map for name lookups
   const byId = new Map(available.map((c) => [c.oracleId, c]));
@@ -99,6 +100,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
         imageUri: c.imageUri,
       },
       inclusionByName,
+      synergyByName,
     );
   });
 
@@ -160,6 +162,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
           imageUri: c.imageUri,
         },
         inclusionByName,
+        synergyByName,
       ),
     );
   }
