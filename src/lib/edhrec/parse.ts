@@ -22,18 +22,21 @@ export function parseEdhrecPayload(payload: unknown): EdhrecData {
     for (const card of cardviews) {
       if (typeof card?.name !== "string") continue;
       seen.add(card.name);
+      // Every numeric read below tests finiteness, not just `typeof`: NaN and
+      // Infinity are both `"number"`, and either one reaching a tile renders as
+      // a bar of nonsense rather than the honest omission a missing key gives.
       // Prefer explicit inclusion (already a %), else derive from num_decks / potential_decks.
       const key = card.name.toLowerCase();
-      if (typeof card.inclusion === "number") {
+      if (Number.isFinite(card.inclusion)) {
         inclusionByName[key] = Math.round(card.inclusion * 10) / 10;
       } else if (
-        typeof card.num_decks === "number" &&
-        typeof card.potential_decks === "number" &&
+        Number.isFinite(card.num_decks) &&
+        Number.isFinite(card.potential_decks) &&
         card.potential_decks > 0
       ) {
         inclusionByName[key] = Math.round((card.num_decks / card.potential_decks) * 1000) / 10;
       }
-      if (typeof card.synergy === "number") synergyByName[key] = card.synergy;
+      if (Number.isFinite(card.synergy)) synergyByName[key] = card.synergy;
     }
   }
   return { topCards: [...seen], inclusionByName, synergyByName };

@@ -94,3 +94,35 @@ describe("parseEdhrecPayload — synergy", () => {
     expect(parseEdhrecPayload({}).synergyByName).toEqual({});
   });
 });
+
+describe("parseEdhrecPayload — non-finite numbers", () => {
+  // NaN and Infinity are both `typeof "number"`. Either reaching a tile draws a
+  // bar of nonsense, which is worse than the honest omission a missing key gives.
+  const withCardviews = (cardviews: unknown[]) => ({
+    container: { json_dict: { cardlists: [{ cardviews }] } },
+  });
+
+  it.each([NaN, Infinity, -Infinity])("omits synergy of %p", (synergy) => {
+    const { synergyByName } = parseEdhrecPayload(withCardviews([{ name: "Sol Ring", synergy }]));
+    expect(synergyByName).not.toHaveProperty("sol ring");
+  });
+
+  it.each([NaN, Infinity])("omits explicit inclusion of %p", (inclusion) => {
+    const { inclusionByName } = parseEdhrecPayload(withCardviews([{ name: "Sol Ring", inclusion }]));
+    expect(inclusionByName).not.toHaveProperty("sol ring");
+  });
+
+  it("omits derived inclusion when num_decks is non-finite", () => {
+    const { inclusionByName } = parseEdhrecPayload(
+      withCardviews([{ name: "Sol Ring", num_decks: NaN, potential_decks: 100 }]),
+    );
+    expect(inclusionByName).not.toHaveProperty("sol ring");
+  });
+
+  it("omits derived inclusion when potential_decks is Infinity", () => {
+    const { inclusionByName } = parseEdhrecPayload(
+      withCardviews([{ name: "Sol Ring", num_decks: 10, potential_decks: Infinity }]),
+    );
+    expect(inclusionByName).not.toHaveProperty("sol ring");
+  });
+});
