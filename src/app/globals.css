@@ -252,7 +252,7 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
   /* Both account-menu surfaces appear at final position, fully opaque. */
   .anim-menu-in,
   .anim-backdrop-in,
-  /* Results appear in place and opaque; the rise is the only thing dropped. */
+  /* Results appear in place and opaque: the rise and the fade both go. */
   .anim-quickadd-in,
   .anim-sheet-up {
     animation: none;

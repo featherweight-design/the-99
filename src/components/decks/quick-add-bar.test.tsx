@@ -4,7 +4,7 @@
 // old SearchPane got wrong: a filter that hides results without saying so, and
 // an in-deck row that looks actionable.
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 
 const searchCards = vi.fn();
@@ -192,7 +192,9 @@ describe("QuickAddBar — the owned filter", () => {
   // the empty state's claim that nothing by that name is owned.
   it("does not report an empty pile when the search itself failed", async () => {
     searchCards.mockRejectedValue(new Error("boom"));
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    // Restored, or a later test's unexpected error would be swallowed here.
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    onTestFinished(() => errorSpy.mockRestore());
     mount();
     fireEvent.change(field(), { target: { value: "stu" } });
 

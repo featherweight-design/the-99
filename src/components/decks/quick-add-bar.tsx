@@ -28,14 +28,16 @@ interface QuickAddBarProps {
   commanderIdentity: string[];
   /** The committed server list, deliberately — see builder-shell.tsx. */
   deckOracleIds: string[];
-  commanderShortName?: string;
+  /** Required: the empty state interpolates it, and "in ’s colours" is worse
+   *  than a type error at the one call site that supplies it. */
+  commanderShortName: string;
 }
 
 export function QuickAddBar({
   deckId,
   commanderIdentity,
   deckOracleIds,
-  commanderShortName = "",
+  commanderShortName,
 }: QuickAddBarProps) {
   const [query, setQuery] = useState("");
   const [ownedOnly, setOwnedOnly] = useState(true);
