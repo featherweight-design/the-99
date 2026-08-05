@@ -1284,370 +1284,30 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 
 ---
 
-## Component: Add Panel
+## Component: Add Panel · Suggestion Card · Search (retired)
 
-### Panel container (desktop)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | — | 340px–346px |
-| flex | none | none |
-| border-left | — | 1px solid #2A241D |
-| background | — | #181410 |
-| display | flex | flex |
-| flex-direction | column | column |
-
-### Panel as bottom sheet (mobile)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| position | absolute | — |
-| left | 0 | — |
-| right | 0 | — |
-| bottom | 0 | — |
-| height | 640px | — |
-| background | #181410 | — |
-| border-top | 1px solid #3A3229 | — |
-| border-radius | 22px 22px 0 0 | — |
-| box-shadow | 0 -20px 50px rgba(0,0,0,0.5) | — |
-
-### Bottom sheet — dim overlay
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| position | absolute | — |
-| inset | 0 | — |
-| background | rgba(8,6,4,0.55) | — |
-
-### Bottom sheet — grab handle
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 40px | — |
-| height | 4px | — |
-| border-radius | 999px | — |
-| background | #3A3229 | — |
-| display | flex (centered) | — |
-| padding | 10px 0 4px | — |
-
-### Panel — tab bar
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| padding | 8px 18px 0 | 14px 16px 0 |
-| gap | 8px | 6px |
-
-### Panel — tab item (active)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| flex | 1 | 1 |
-| text-align | center | center |
-| font-family | 'IBM Plex Sans', sans-serif | 'IBM Plex Sans', sans-serif |
-| font-weight | 600 | 600 |
-| font-size | 13px | 13px |
-| color | #EDE6D8 | #EDE6D8 |
-| padding | 9px 0 | 9px 0 |
-| border-bottom | 2px solid #C9A24B | 2px solid #C9A24B |
-
-### Panel — tab item (idle)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-weight | 500 | 500 |
-| color | #8E8269 | #8E8269 |
-| border-bottom | 2px solid transparent | 2px solid transparent |
-
-### Panel — Suggestions sub-caption
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| padding | 14px 18px 10px | 14px 16px |
-| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
-| font-size | 10.5px | 10.5px |
-| color | #8E8269 | #8E8269 |
-| line-height | 1.5 | 1.5 |
-| border-bottom | — | 1px solid #2A241D |
-
-### Panel — cards list area
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| flex | 1 | 1 |
-| overflow | hidden | hidden |
-| padding | 6px 16px 14px | 12px 14px |
-| display | flex | flex |
-| flex-direction | column | column |
-| gap | 8px | 9px |
+> **Superseded by the #158 Add panel overhaul (shipped 2026-08-05).** The three
+> sections that stood here described the 340px desktop suggestions column, the
+> cards inside it, and the search field scoped to that panel. All three were
+> deleted from the build. Suggestions now live in the full-width Consider view,
+> whose shelves are ordered by what the deck lacks, and search moved to a sticky
+> quick-add bar. The replacement tables are in
+> `design/design_handoff_the99_add_panel/` — the design canvas (`.dc.html`) is the
+> authority where it and that handoff's README disagree.
 
 ---
 
-## Component: Suggestion Card
+## Component: Degraded Suggestions Banner (retired)
 
-### Card container
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| border-radius | 9px–10px | 10px |
-| background | #1E1A15 | #1E1A15 |
-| border | 1px solid #2A241D | 1px solid #2A241D |
-| padding | 10px–11px 12px–13px | 11px 12px |
-
-### Suggestion card — top row
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| gap | 8px–9px | 8px |
-
-### Suggestion card — ownership dot
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 8px | 8px |
-| height | 8px | 8px |
-| border-radius | 999px | 999px |
-| flex | none | none |
-| (owned) background | #6FA368 | #6FA368 |
-| (owned) border-style | solid | solid |
-| (owned) border-color | #6FA368 | #6FA368 |
-| (unowned) background | transparent | transparent |
-| (unowned) border-style | dashed | dashed |
-| (unowned) border-color | #6E6353 | #6E6353 |
-
-### Suggestion card — card name
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 13px–13.5px | 13.5px |
-| color | #EDE6D8 | #EDE6D8 |
-| font-weight | 500 | 500 |
-| flex | 1 | 1 |
-| min-width | 0 | 0 |
-| white-space | nowrap | nowrap |
-| overflow | hidden | hidden |
-| text-overflow | ellipsis | ellipsis |
-
-### Suggestion card — "+ Add" button
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 12px | 12px |
-| font-weight | 600 | 600 |
-| color | #C9A24B | #C9A24B |
-| flex | none | none |
-| cursor | pointer | pointer |
-
-### Suggestion card — "✓ In deck" state
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| color | #6FA368 | #6FA368 |
-
-### Suggestion card — reason chip (synergy)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
-| font-size | 10px | 10px |
-| color | #C9A24B | #C9A24B |
-| background | rgba(201,162,75,0.14) | rgba(201,162,75,0.14) |
-| border-radius | 5px | 5px |
-| padding | 2px 7px | 2px 7px |
-
-### Suggestion card — reason chip (role-fill)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| color | #A89B84 | #A89B84 |
-| background | #2A241D | #2A241D |
-
-### Suggestion card — own label
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
-| font-size | 10px | 10px |
-| color | #8E8269 | #8E8269 |
-
----
-
-## Component: Search (within Add Panel)
-
-### Search input container
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| gap | 9px | 9px |
-| background | #14110E | #14110E |
-| border | 1px solid #C9A24B | 1px solid #C9A24B |
-| border-radius | 8px | 8px |
-| padding | 11px 13px | 11px 13px |
-| margin-bottom | — | — |
-
-### Search input — icon
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| color | #8E8269 | #8E8269 |
-| font-size | 14px | 14px |
-
-### Search input — query text
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 15px | 14.5px |
-| color | #EDE6D8 | #EDE6D8 |
-
-### Search input — cursor
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 1.5px | 1.5px |
-| height | 16px | 16px |
-| background | #C9A24B | #C9A24B |
-
-### Search meta row
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| justify-content | space-between | space-between |
-| margin-top | 10px | 11px |
-
-### Search meta — results count label
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
-| font-size | 10.5px | 10.5px |
-| color | #8E8269 | #8E8269 |
-
-### Search meta — "Owned only" toggle label
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| gap | 7px | 7px |
-| font-size | 11.5px | 11.5px |
-| color | #A89B84 | #A89B84 |
-
-### Search meta — toggle track (off state shown)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 30px | 30px |
-| height | 17px | 17px |
-| border-radius | 999px | 999px |
-| background | #2A241D | #2A241D |
-| position | relative | relative |
-| display | inline-block | inline-block |
-
-### Search meta — toggle knob (off state)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| position | absolute | absolute |
-| top | 2px | 2px |
-| left | 2px | 2px |
-| width | 13px | 13px |
-| height | 13px | 13px |
-| border-radius | 999px | 999px |
-| background | #8E8269 | #8E8269 |
-
-### Search result row
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| gap | 10px | 11px |
-| background | #1E1A15 | #1E1A15 |
-| border | 1px solid #2A241D | 1px solid #2A241D |
-| border-radius | 9px | 9px |
-| padding | 11px 13px | 11px 13px |
-
-### Search result row — name
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 13.5px | 13.5px |
-| color | #EDE6D8 | #EDE6D8 |
-| white-space | nowrap | nowrap |
-| overflow | hidden | hidden |
-| text-overflow | ellipsis | ellipsis |
-
-### Search result row — own label sub-line
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'IBM Plex Mono', monospace | 'IBM Plex Mono', monospace |
-| font-size | 9.5px | 9.5px |
-| color | #8E8269 | #8E8269 |
-| margin-top | 1px | 1px |
-
-### Search result row — "+ Add" / "✓ In deck"
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 12.5px | 12.5px |
-| font-weight | 600 | 600 |
-| flex | none | none |
-| cursor | pointer | pointer |
-| color (+ Add) | #C9A24B | #C9A24B |
-| color (✓ In deck) | #6FA368 | #6FA368 |
-
-### Search singleton footer note
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | — | 'IBM Plex Mono', monospace |
-| font-size | — | 10px |
-| color | — | #6E6353 |
-| text-align | — | center |
-| padding | — | 6px 0 |
-| line-height | — | 1.5 |
-
----
-
-## Component: Degraded Suggestions Banner
-
-### Banner container
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| margin | 14px 16px 6px | 14px 16px 4px |
-| background | #211C15 | #211C15 |
-| border | 1px solid #3A3229 | 1px solid #3A3229 |
-| border-left | 3px solid #E0913C | 3px solid #E0913C |
-| border-radius | 10px | 10px |
-| padding | 12px 14px | 13px 15px |
-
-### Banner — header row
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| gap | 9px | 10px |
-
-### Banner — warning icon
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 22px | 24px |
-| height | 22px | 24px |
-| border-radius | 999px | 999px |
-| border | 1.5px solid #E0913C | 1.5px solid #E0913C |
-| color | #E0913C | #E0913C |
-| font-size | 12px | 13px |
-| flex | none | none |
-
-### Banner — "Synergy data offline" heading
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 12.5px | 13px |
-| color | #EDE6D8 | #EDE6D8 |
-| font-weight | 600 | 600 |
-
-### Banner — Retry link (mobile)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| margin-left | auto | — |
-| font-size | 12px | — |
-| color | #C9A24B | — |
-
-### Banner — Retry button (desktop)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| margin-left | — | auto |
-| font-family | — | 'IBM Plex Sans', sans-serif |
-| font-weight | — | 600 |
-| font-size | — | 12px |
-| color | — | #EDE6D8 |
-| background | — | transparent |
-| border | — | 1px solid #3A3229 |
-| border-radius | — | 7px |
-| padding | — | 6px 12px |
-
-### Banner — body text
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 11.5px | 12px |
-| color | #C6B79A | #C6B79A |
-| line-height | 1.5 | 1.55 |
-| margin-top | 7px | 9px |
+> **Superseded by the #158 Add panel overhaul (shipped 2026-08-05).** The banner
+> spec that stood here, its "Synergy data offline" heading and its separate mobile
+> and desktop retry affordances all belonged to the Add Panel. The decks build has
+> no banner component of its own any more; `builder-shell.tsx:217` carries a
+> comment where it used to be mounted. (`DegradedBanner` still resolves under
+> `src/components/commanders/`, which is a different surface and untouched here.) The degraded message now renders inside the Consider view
+> (`consider-panel.tsx:191`) from `addPanelCopy.degraded`, and the shelves stay
+> ordered by what the deck lacks — they lose the EDHREC percentages, not their
+> order. The drawn replacement is in `design/design_handoff_the99_add_panel/`.
 
 ---
 
@@ -2161,48 +1821,14 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 | color | — | #8E8269 |
 | margin-top | — | 20px |
 
-> **v2 copy delta (heading / body / CTA).** Surfaces v2 §Decks replaces the v1
-> strings with, verbatim:
-> heading *"A king with no army."*;
-> body *"Ninety-nine slots, zero filled. Suggestions are primed on the right —
-> {Commander} eats everything anyway."*;
-> CTA *"Open suggestions"*.
-> `{Commander}` is the live commander name shortened to the first comma
-> ("Korvold", not "Korvold, Fae-Cursed King"), matching the mock's own register.
->
-> Two amendments, both flagged for ratification:
-> 1. **Mobile body copy.** "primed on the right" describes the desktop Add
->    panel; on mobile the panel is a bottom sheet. Mobile renders
->    *"…Suggestions are one tap away — {Commander} eats everything anyway."*
->    The mock gives no mobile string ("Mobile forms follow the same deltas").
-> 2. **The desktop role hint stays.** *"Try filling your ramp, draw, removal,
->    and wipe slots first."* is the only line telling a new builder what to do
->    next; the richness caption is flavour and replaces the body copy only.
-
-### "Open suggestions" CTA button (mobile empty)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'IBM Plex Sans', sans-serif | — (suggestions visible directly) |
-| font-weight | 600 | — |
-| font-size | 15px | — |
-| color | #14110E | — |
-| background | #C9A24B | — |
-| border | none | — |
-| border-radius | 8px | — |
-| padding | 13px 26px | — |
-| margin-top | 24px | — |
-
-### "+ Add cards" sticky footer button (mobile mid-build)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'IBM Plex Sans', sans-serif | — |
-| font-weight | 600 | — |
-| font-size | 15px | — |
-| color | #14110E | — |
-| background | #C9A24B | — |
-| border | none | — |
-| border-radius | 8px | — |
-| padding | 13px 0 (full-width) | — |
+> **Superseded by the #158 Add panel overhaul (shipped 2026-08-05).** The v2 copy
+> delta that stood here, its two ratification amendments, and the `Open
+> suggestions` / `+ Add cards` button tables that followed all described a build
+> with a 340px suggestions column on desktop and a bottom sheet on mobile.
+> Neither exists. The empty-builder strings and the sticky quick-add bar that
+> replaced the CTA are drawn in `design/design_handoff_the99_add_panel/`, whose
+> copy strings file is the lock. The heading, body, hint and numeral tables above
+> still hold.
 
 ---
 
@@ -2363,25 +1989,25 @@ reads `Complete` (99 cards, all owned). Implemented in
 | Create · picker | Arriving at /decks/new standalone | CreatePicker: search input + commander list + sticky selected summary | `legalCommanders[]` each `{name, ids, art, guild, pool}` |
 | Create · picker · none selected | Page load, no general chosen | PickerRow idle, selected sidebar empty / "Create deck →" disabled | `selected: null` |
 | Create · picker · one selected | User taps a commander row | PickerRow selected state; Selected sidebar populated | `selected: Commander` |
-| Builder · empty | Deck just created (0 cards) | EmptyBuilderMark + Add Panel (Suggestions tab) + Spine (0/99, Export disabled) | `deck.size === 0`, `commander`, `suggestions[]` |
-| Builder · mid-build | Deck has ≥1 card, <99 | Full builder: Spine, RoleStrip, Decklist (by type default), Add Panel | `deck.cards[]` with `{name, role, owned}`, `roleCounts`, `suggestions[]` |
+| Builder · empty | Deck just created (0 cards) | EmptyBuilderMark + sticky quick-add bar + Spine (0/99, Export disabled) | `deck.size === 0`, `commander` |
+| Builder · mid-build | Deck has ≥1 card, <99 | Full builder: Spine, RoleStrip, Decklist (by type default), sticky quick-add bar | `deck.cards[]` with `{name, role, owned, quantity}`, `roleCounts` |
 | Builder · mid-build · filter All | "All" pill active over decklist | Full decklist shown | `filter: 'all'` |
 | Builder · mid-build · filter Shopping | "Shopping" pill active | Decklist filtered to unowned cards only | `filter: 'shopping'` |
 | Builder · mid-build · group By type | "By type" pill active (default) | Decklist grouped by card type (Creatures / Instants / Sorceries / Artifacts / Enchantments / Lands) | `grouping: 'type'` |
 | Builder · mid-build · group By role | "By role" pill active | Decklist grouped by role (Ramp / Card draw / Removal / Board wipes / Payoffs / Lands) | `grouping: 'role'` |
 | Builder · completion reveal | Deck reads `Complete` (99 built, all owned) **and** `the99:celebrated:<deckId>` is absent | CompletionReveal band above the Spine: kaiju, crab, brass horizon, crown crumb, two CTAs | `deck.built`, `deck.ownedCount`, `deck.commander.name`; `onDismiss`, `onExport` |
 | Builder · completion already seen | Same deck, `the99:celebrated:<deckId> === "1"` — including after dropping to 98/99 and returning to 99/99 | No band; the builder renders normally | same |
-| Builder · search tab active | User taps Search tab in Add Panel | Search input + results list | `searchQ: string`, `search.results[]` |
+| Builder · quick-add open | User focuses the sticky quick-add bar | Bar expands to a results list beneath the input | `searchQ: string`, `search.results[]` |
 | Builder · search · min 2 chars | Query length ≥ 2 | Results list populated | `searchQ.length >= 2` |
-| Builder · search · owned-only off | Toggle in off state | All results (owned + unowned) shown | `ownedOnly: false` |
-| Builder · search · owned-only on | Toggle tapped | Only owned results shown | `ownedOnly: true` |
+| Builder · search · owned-only off | Toggle turned off by the user | All results (owned + unowned) shown | `ownedOnly: false` |
+| Builder · search · owned-only on | Default since #158 | Only owned results shown | `ownedOnly: true` |
 | Search result — "+ Add" | `!inDeck` | Add button #C9A24B | `inDeck: false` |
 | Search result — "✓ In deck" | `inDeck === true` | In-deck label #6FA368 | `inDeck: true` |
-| Suggestion — "+ Add" | `!inDeck` | Add button #C9A24B | `inDeck: false` |
-| Suggestion — "✓ In deck" | `inDeck === true` | In-deck label #6FA368 | `inDeck: true` |
+| Consider · shelves | User opens the Consider view | Five shelves ordered by what the deck lacks, each a grid of suggestion tiles | `suggestions[]`, `roleCounts` |
+| Consider · tile in deck | `inDeck.has(oracleId)` | In-deck label #6FA368 in place of the Add button | in-deck membership as a `Set<string>` |
 | Suggestion — synergy reason | `reasonType === 'edhrec'` | Brass chip rgba(201,162,75,0.14) | `reasonLabel: "EDHREC · N% of decks"`, `reasonType: 'edhrec'` |
 | Suggestion — role-fill reason | `reasonType === 'role'` | Neutral chip #2A241D | `reasonLabel: "Fills <role> · rec N"`, `reasonType: 'role'` |
-| Builder · suggestions degraded | EDHREC offline / error | DegradedBanner (amber left-border) + Suggestions ranked by role only | `suggestionsMode: 'degraded'` |
+| Builder · suggestions degraded | EDHREC offline / error | Degraded notice inside the Consider view (amber left-border); shelves keep their gap ordering and lose the EDHREC percentages | `degraded: true` |
 | Role counter — below rec (neutral) | `have < rec` (non-advisory) | Figure #C6B79A, bar #C9A24B | `have < rec` |
 | Role counter — met rec (green) | `have >= rec` | Figure #6FA368, bar #6FA368 | `have >= rec` |
 | Role counter — Lands advisory | Always (advisory role) | Bar #C9A24B regardless of count; label "rec ~37" | `advisory: true` |
