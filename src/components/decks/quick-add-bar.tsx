@@ -172,6 +172,9 @@ export function QuickAddBar({
               <button
                 type="button"
                 tabIndex={-1}
+                // Focus never leaves the field, and a pointer press on a
+                // <button> would take it without this.
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setQuery("")}
                 aria-label={addPanelCopy.quickAdd.clear}
                 className="flex-none w-[20px] h-[20px] rounded-full text-[10px] cursor-pointer"
@@ -353,10 +356,21 @@ function QuickAddRow({
       role="option"
       aria-selected={active}
       aria-disabled={applied || undefined}
-      aria-label={addPanelCopy.quickAdd.rowAria(result.name, result.typeLine, result.owned)}
+      // The label has to carry everything the row draws, or a screen reader
+      // hears less than the screen shows: the owned figure and the in-deck
+      // state both change whether the row is worth acting on. Composed from the
+      // shipped strings rather than a new one.
+      aria-label={[
+        addPanelCopy.quickAdd.rowAria(result.name, result.typeLine, result.owned),
+        result.owned ? addPanelCopy.quickAdd.rowOwned(result.ownedQty) : null,
+        applied ? addPanelCopy.quickAdd.rowInDeck : null,
+      ]
+        .filter(Boolean)
+        .join(", ")}
       onMouseEnter={onActivate}
       onClick={applied ? undefined : handleAdd}
-      className="flex flex-col rounded-[9px] cursor-pointer"
+      // An in-deck row is not actionable, so it must not offer a pointer.
+      className={`flex flex-col rounded-[9px] ${applied ? "cursor-default" : "cursor-pointer"}`}
       style={{
         background: "#1E1A15",
         border: `1px solid ${active ? "#C9A24B" : "#2A241D"}`,
@@ -423,17 +437,16 @@ function QuickAddRow({
             {addPanelCopy.quickAdd.rowInDeck}
           </span>
         ) : (
-          <button
-            type="button"
-            tabIndex={-1}
-            disabled={isPending}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAdd();
-            }}
-            aria-label={addPanelCopy.tile.addAria(result.name)}
-            className="flex-none font-sans text-[12.5px] font-semibold cursor-pointer disabled:opacity-50"
+          // Drawn as a control, but not one: a real <button> inside a
+          // role="option" gives a screen reader a second interactive thing
+          // inside a listbox option, and the option itself already adds on
+          // click and on Enter. So the affordance the handoff draws stays and
+          // the duplicate semantics go.
+          <span
+            aria-hidden
+            className="flex-none font-sans text-[12.5px] font-semibold flex items-center justify-center"
             style={{
+              opacity: isPending ? 0.5 : undefined,
               color: "#C9A24B",
               background: "transparent",
               border: "1px solid #3A3229",
@@ -443,7 +456,7 @@ function QuickAddRow({
             }}
           >
             {active ? addPanelCopy.quickAdd.rowAddActive : addPanelCopy.quickAdd.rowAdd}
-          </button>
+          </span>
         )}
       </div>
 
