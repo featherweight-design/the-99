@@ -25,7 +25,7 @@ const result = {
   oracleId: "sol-ring",
   name: "Sol Ring",
   typeLine: "Artifact",
-  owned: true,
+  owned: true, ownedQty: 1,
   cardTypeGroup: "Artifacts",
   role: "ramp",
   imageUri: null,
@@ -126,7 +126,7 @@ describe("SearchResultRow", () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
     const forest = {
-      oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", owned: true,
+      oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest", owned: true, ownedQty: 1,
       cardTypeGroup: "Lands", role: "land", imageUri: null,
     } satisfies SearchResult;
 
