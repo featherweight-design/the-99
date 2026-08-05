@@ -65,9 +65,9 @@ describe("useOptimisticDeckCards", () => {
     expect(await apply([solRing, forest], [{ remove: "sol-ring" }])).toBe("Forest:1");
   });
 
-  // The server deletes the whole entry rather than decrementing, so a stack of
-  // basics goes in one click and the prediction must not leave a remainder.
-  it("drops a stack of basics whole", async () => {
-    expect(await apply([{ ...forest, quantity: 9 }], [{ remove: "forest" }])).toBe("empty");
+  // `removeCardFromDeck` decrements while more than one copy remains, so a
+  // prediction that dropped the stack would read 90 cards until revalidation.
+  it("decrements a stack rather than dropping it", async () => {
+    expect(await apply([{ ...forest, quantity: 9 }], [{ remove: "forest" }])).toBe("Forest:8");
   });
 });

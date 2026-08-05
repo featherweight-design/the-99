@@ -34,9 +34,15 @@ export function useOptimisticDeckCards(serverCards: DeckDetailCard[]) {
     serverCards,
     (current, edit: DeckEdit) => {
       if (edit.kind === "remove") {
-        // The server drops the whole entry rather than decrementing, including
-        // for a stack of basics, so the prediction does the same.
-        return current.filter((c) => c.oracleId !== edit.oracleId);
+        // One click removes one copy: the server decrements while more than one
+        // remains and only deletes the row on the last. Predicting the whole
+        // stack would drop a deck from 99 to 90 and snap back on revalidation.
+        const at = current.findIndex((c) => c.oracleId === edit.oracleId);
+        if (at === -1) return current;
+        if (current[at].quantity <= 1) return current.filter((_, i) => i !== at);
+        const next = [...current];
+        next[at] = { ...next[at], quantity: next[at].quantity - 1 };
+        return next;
       }
       const { card } = edit;
       const at = current.findIndex((c) => c.oracleId === card.oracleId);

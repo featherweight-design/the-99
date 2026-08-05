@@ -27,8 +27,9 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
   const label = isMeta ? metaLabel! : card.name;
   const nameClass =
     "flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
-  // The server drops the row from the decklist on success, so "removed" is
-  // never a committed prop — the override holds until that re-render lands.
+  // The server drops the last copy's row from the decklist on success, so
+  // "removed" is never a committed prop — the override holds until that
+  // re-render lands.
   const { applied, isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
 
@@ -42,7 +43,9 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
     );
   }
 
-  if (applied) return null;
+  // Only the last copy takes the row with it. A stack of basics decrements, so
+  // hiding on every click would blank a row the deck still holds eight of.
+  if (applied && card.quantity <= 1) return null;
 
   return (
     // Wrapper keeps the row and any error message as a single grid item.
