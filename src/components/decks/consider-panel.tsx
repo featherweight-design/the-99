@@ -7,6 +7,8 @@
 // showing them as shelves and not one flat list.
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { GhostButton } from "../ui/button";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -54,6 +56,25 @@ function sortWithin(suggestions: DeckSuggestion[], sort: SortKey): DeckSuggestio
   // A card with no EDHREC figure sorts below every card that has one, rather
   // than tying with the least-played card at 0%.
   return sorted.sort((a, b) => (b.inclusionPct ?? -1) - (a.inclusionPct ?? -1));
+}
+
+/**
+ * Three diamonds standing in for a fan of cards. Decorative and hidden from
+ * assistive tech: the heading below already says the deck is out of ideas, and
+ * a screen reader has nothing to gain from three rotated squares.
+ */
+function CardFan() {
+  return (
+    <div className="flex gap-[8px] mb-[20px]" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-[11px] h-[11px] rotate-45 border border-[color:var(--border-strong)]"
+          style={{ background: "#3A3229" }}
+        />
+      ))}
+    </div>
+  );
 }
 
 function ShelfSection({
@@ -139,6 +160,7 @@ interface ConsiderPanelProps {
 export function ConsiderPanel({
   deckId, suggestions, deckCards, deckOracleIds, commanderShortName, degraded,
 }: ConsiderPanelProps) {
+  const router = useRouter();
   const [sort, setSort] = useState<SortKey>("gaps");
   const shelves = useMemo(
     () => buildShelves(suggestions, deckCards).map((shelf) => ({
@@ -156,35 +178,61 @@ export function ConsiderPanel({
     >
       {degraded && (
         <div
-          className="mb-[16px] pl-[12px] py-[8px]"
-          style={{ borderLeft: "3px solid var(--warning)" }}
+          className="flex items-start gap-[11px] mb-[16px] rounded-[9px] px-[15px] py-[11px] bg-[color:var(--surface-sunken)] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--warning)]"
         >
-          <p className="text-[13px] font-semibold" style={{ color: "var(--fg)" }}>
-            <span aria-hidden>⚠ </span>{addPanelCopy.degraded.heading}
-          </p>
-          <p className="text-[12.5px] mt-[3px]" style={{ color: "var(--fg-body)" }}>
-            {addPanelCopy.degraded.body(commanderShortName)}
+          <span
+            aria-hidden
+            className="text-[13px] leading-[1.3] text-[color:var(--warning)]"
+          >
+            ⚠
+          </span>
+          <p className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+            <span className="font-semibold text-[color:var(--fg)]">
+              {addPanelCopy.degraded.heading}
+            </span>{" "}
+            {addPanelCopy.degraded.body(commanderShortName)}{" "}
+            {/* Inline at the end of the body, not a block button: the outage is a
+                sentence, and the way out of it belongs in that sentence. */}
+            <button
+              type="button"
+              onClick={() => router.refresh()}
+              className="p-0 text-[12.5px] underline border-none bg-transparent cursor-pointer text-brass hover:text-brass-hover"
+            >
+              {addPanelCopy.degraded.retry}
+            </button>
           </p>
         </div>
       )}
 
       {shelves.length === 0 ? (
-        <div className="py-[40px] text-center">
-          <h3 className="text-[16px] font-semibold" style={{ color: "var(--fg)" }}>
+        <div
+          className="flex flex-col items-center justify-center text-center px-[30px] py-[28px]"
+          style={{
+            background:
+              "radial-gradient(320px 180px at 50% 70%, rgba(201,162,75,0.06), transparent 70%)",
+          }}
+        >
+          <CardFan />
+          <h3
+            className="font-display font-semibold text-[18px] mb-[10px]"
+            style={{ color: "var(--fg)" }}
+          >
             {addPanelCopy.considerEmpty.heading}
           </h3>
           <p
-            className="mt-[8px] mx-auto max-w-[420px] text-[13px] leading-[1.5]"
+            className="mx-auto max-w-[420px] text-[13.5px] leading-[1.6]"
             style={{ color: "var(--fg-body)" }}
           >
             {addPanelCopy.considerEmpty.body(commanderShortName)}
           </p>
-          <a
+          {/* Secondary, per the §404 CTA contract: running out of suggestions is
+              a compliment, not a task the deck is waiting on. */}
+          <GhostButton
             href="/collection"
-            className="inline-block mt-[16px] rounded-[8px] px-[16px] py-[9px] text-[13px] font-semibold bg-brass text-bg hover:bg-brass-hover"
+            className="mt-[22px] rounded-[8px] px-[20px] py-[11px] text-[14px]"
           >
             {addPanelCopy.considerEmpty.cta}
-          </a>
+          </GhostButton>
         </div>
       ) : (
         <>
@@ -207,12 +255,17 @@ export function ConsiderPanel({
                 <option value="cheapest">{addPanelCopy.consider.sortCheapest}</option>
               </select>
             </label>
-            <p
-              className="font-mono text-[10px] md:text-[10.5px] md:order-1"
-              style={{ color: "var(--fg-faint)" }}
-            >
-              {addPanelCopy.consider.provenance(suggestions.filter((s) => s.owned).length)}
-            </p>
+            {/* The provenance line names EDHREC as a source. With EDHREC down it
+                would be claiming a pedigree these shelves do not have, so the
+                banner speaks for the state instead and only Sort remains. */}
+            {!degraded && (
+              <p
+                className="font-mono text-[10px] md:text-[10.5px] md:order-1"
+                style={{ color: "var(--fg-faint)" }}
+              >
+                {addPanelCopy.consider.provenance(suggestions.filter((s) => s.owned).length)}
+              </p>
+            )}
           </div>
 
           {shelves.map((shelf, i) => (

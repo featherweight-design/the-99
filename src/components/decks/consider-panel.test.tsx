@@ -12,6 +12,11 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
 
+// The degraded banner's Try again re-fetches the page rather than owning a
+// retry of its own, so the panel needs a router even in the happy path.
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
 const { ConsiderPanel, SHELF_CAP } = await import("./consider-panel");
 const { CardDetailProvider } = await import("./card-detail-provider");
 
@@ -243,5 +248,19 @@ describe("ConsiderPanel — panel states", () => {
   it("says why the percentages are missing when EDHREC is down", () => {
     mount({ degraded: true });
     expect(screen.getByText(/EDHREC isn’t answering right now/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  // The provenance line names EDHREC as a source. With EDHREC down it would be
+  // claiming a pedigree these shelves do not have.
+  it("drops the provenance line while degraded, keeping only Sort", () => {
+    const { unmount } = mount();
+    expect(screen.getByText(/you already own/i)).toBeInTheDocument();
+    unmount();
+
+    mount({ degraded: true });
+    expect(screen.queryByText(/you already own/i)).toBeNull();
+    expect(screen.getByRole("combobox", { name: /sort suggestions/i })).toBeInTheDocument();
   });
 });
