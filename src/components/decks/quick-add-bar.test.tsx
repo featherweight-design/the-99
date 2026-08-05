@@ -86,6 +86,23 @@ describe("QuickAddBar — combobox contract", () => {
     expect(field()).toHaveAttribute("aria-activedescendant", options[0].id);
   });
 
+  // The rows stay on screen through the next debounce so the list does not
+  // blank on every keystroke, which is why Enter has to check they still answer
+  // the query in the field.
+  it("refuses to add a row the user has already typed past", async () => {
+    mount();
+    await search();
+
+    fireEvent.change(field(), { target: { value: "stux" } });
+    fireEvent.keyDown(field(), { key: "Enter" });
+    expect(addCardToDeck).not.toHaveBeenCalled();
+
+    // Once the new results land, Enter works again.
+    await waitFor(() => expect(searchCards).toHaveBeenLastCalledWith("stux", ["U"], true));
+    fireEvent.keyDown(field(), { key: "Enter" });
+    await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", rhystic.oracleId));
+  });
+
   it("adds the active row on Enter", async () => {
     mount();
     await search();
@@ -106,6 +123,17 @@ describe("QuickAddBar — the two-stage Escape", () => {
     fireEvent.keyDown(field(), { key: "Escape" });
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(field()).toHaveValue("stu");
+  });
+
+  // Widening the search is a request to see results, so it must not re-search
+  // into a list Escape left closed.
+  it("reopens the list when the owned filter is toggled after a dismissal", async () => {
+    mount();
+    await search();
+    fireEvent.keyDown(field(), { key: "Escape" });
+
+    fireEvent.click(toggle());
+    expect(await screen.findByRole("listbox")).toBeInTheDocument();
   });
 
   it("clears the query on a second Escape", async () => {

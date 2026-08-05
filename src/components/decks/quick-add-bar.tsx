@@ -10,7 +10,7 @@
 // Replaces search-pane.tsx and search-result-row.tsx, which PR 6 deletes once
 // nothing mounts them.
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { searchCards } from "../../app/decks/[id]/search-action";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { addCardToDeck } from "../../app/decks/actions";
@@ -39,7 +39,11 @@ export function QuickAddBar({
 }: QuickAddBarProps) {
   const [query, setQuery] = useState("");
   const [ownedOnly, setOwnedOnly] = useState(true);
-  const [rows, setRows] = useState<SearchResult[] | null>(null);
+  // Rows carry the request that produced them. They stay on screen through the
+  // next debounce — a list that blanks on every keystroke is worse than one that
+  // lags by 150ms — but `stale` below stops Enter acting on them, so the bar can
+  // show the previous matches without ever adding one the user has typed past.
+  const [rows, setRows] = useState<{ for: string; items: SearchResult[] } | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   // Escape dismisses before it clears, so the list can be closed without losing
   // a query the user is still editing.
@@ -49,6 +53,9 @@ export function QuickAddBar({
 
   const trimmed = query.trim();
   const queryActive = trimmed.length >= 2 && trimmed.length <= 100;
+  // The filter is part of the request, so flipping it makes the rows on screen
+  // as stale as retyping does.
+  const requestKey = `${ownedOnly ? "owned" : "all"} ${trimmed}`;
 
   useEffect(() => {
     if (timerRef.current !== null) clearTimeout(timerRef.current);
@@ -63,7 +70,7 @@ export function QuickAddBar({
       searchCards(trimmed, commanderIdentity, ownedOnly)
         .then((found) => {
           if (cancelled) return;
-          setRows(found);
+          setRows({ for: requestKey, items: found });
           setActiveIndex(0);
         })
         .catch((err) => {
@@ -81,16 +88,19 @@ export function QuickAddBar({
       cancelled = true;
       if (timerRef.current !== null) clearTimeout(timerRef.current);
     };
-  }, [trimmed, queryActive, ownedOnly, commanderIdentity]);
+  }, [trimmed, queryActive, ownedOnly, commanderIdentity, requestKey]);
 
   const inDeck = useCallback(
     (r: SearchResult) => deckOracleIds.includes(r.oracleId) && !isBasicLand(r.typeLine),
     [deckOracleIds],
   );
 
-  const results = rows ?? [];
+  const results = rows?.items ?? [];
+  const stale = rows !== null && rows.for !== requestKey;
   const open = !dismissed && queryActive && rows !== null && results.length > 0;
-  const noResults = !dismissed && queryActive && rows !== null && results.length === 0;
+  // "Nothing in the pile" is only honest about the query that produced it, so a
+  // stale empty list holds its tongue until the current one lands.
+  const noResults = !dismissed && queryActive && !stale && rows !== null && results.length === 0;
   const identity = identityLabel(commanderIdentity);
   const unownedShown = results.filter((r) => !r.owned).length;
 
@@ -113,6 +123,9 @@ export function QuickAddBar({
     } else if (e.key === "Enter") {
       if (!open) return;
       e.preventDefault();
+      // Typing past the rows on screen and hitting Enter must not add whatever
+      // the previous query matched.
+      if (stale) return;
       const active = results[activeIndex];
       if (active && !inDeck(active)) addRef.current?.(active);
     } else if (e.key === "Escape") {
@@ -139,7 +152,9 @@ export function QuickAddBar({
           className="text-[16px] md:text-[14px]"
           role="combobox"
           aria-expanded={open}
-          aria-controls={listId}
+          // Only while the listbox is mounted: a reference to an element that is
+          // not in the DOM is one an assistive tech cannot follow.
+          aria-controls={open ? listId : undefined}
           aria-activedescendant={open ? optionId(activeIndex) : undefined}
           aria-autocomplete="list"
           aria-label={addPanelCopy.quickAdd.fieldAria}
@@ -176,7 +191,12 @@ export function QuickAddBar({
             type="checkbox"
             className="sr-only peer"
             checked={ownedOnly}
-            onChange={(e) => setOwnedOnly(e.target.checked)}
+            onChange={(e) => {
+              setOwnedOnly(e.target.checked);
+              // Widening the search is a request to see results, so it undoes an
+              // earlier Escape rather than re-searching into a closed list.
+              setDismissed(false);
+            }}
             aria-label={addPanelCopy.quickAdd.ownedToggleAria}
           />
           <span
@@ -320,8 +340,10 @@ function QuickAddRow({
     );
   }, [run, deckId, result, addOptimisticCard]);
 
-  // The bar's Enter handler adds through whichever row is active.
-  useEffect(() => {
+  // The bar's Enter handler adds through whichever row is active. Layout rather
+  // than passive: a passive effect runs after paint, leaving a window in which
+  // the row is on screen and Enter still reaches the previous row's handler.
+  useLayoutEffect(() => {
     if (registerAdd) registerAdd(() => handleAdd());
   }, [registerAdd, handleAdd]);
 
