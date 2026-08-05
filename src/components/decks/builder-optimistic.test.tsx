@@ -10,12 +10,15 @@ import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 
-const { addCardToDeck } = vi.hoisted(() => ({ addCardToDeck: vi.fn() }));
+const { addCardToDeck, removeCardFromDeck } = vi.hoisted(() => ({
+  addCardToDeck: vi.fn(),
+  removeCardFromDeck: vi.fn(),
+}));
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
   addCardToDeck,
-  removeCardFromDeck: vi.fn(),
+  removeCardFromDeck,
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
 }));
@@ -112,7 +115,46 @@ async function addSolRing() {
 describe("optimistic deck list", () => {
   beforeEach(() => {
     addCardToDeck.mockReset();
+    removeCardFromDeck.mockReset();
     localStorage.clear();
+  });
+
+  // The prediction unmounts the row it came from, so the row's own inline
+  // message is written to nothing and a failed removal would otherwise look
+  // exactly like a successful one.
+  it("explains a failed removal after the row is already gone", async () => {
+    removeCardFromDeck.mockRejectedValue(new Error("boom"));
+
+    renderBuilder();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Remove Forest" }));
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Forest");
+    expect(screen.getByRole("alert")).toHaveTextContent("couldn't remove that card");
+    // And the card comes back: the override expires with the transition.
+    expect(screen.getByRole("button", { name: "Remove Forest" })).toBeInTheDocument();
+  });
+
+  // A decremented stack keeps its row, so the row explains itself and the shell
+  // must stay quiet — otherwise one failure is announced in two places.
+  it("says it once when the row survives to say it", async () => {
+    removeCardFromDeck.mockRejectedValue(new Error("boom"));
+
+    render(
+      <BuilderShell
+        deck={{ ...makeDeck(), cards: [{ ...makeDeck().cards[0], quantity: 9 }] }}
+        suggestions={[suggestion]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Remove Forest" }));
+    });
+
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
   });
 
   it("draws the card in the decklist before the server answers", async () => {

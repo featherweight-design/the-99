@@ -9,6 +9,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
+import { useRemoveOptimisticCard, useReportRemoveFailure } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
 interface DecklistRowProps {
@@ -26,15 +27,36 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
   const label = isMeta ? metaLabel! : card.name;
   const nameClass =
     "flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
-  // The server drops the row from the decklist on success, so "removed" is
-  // never a committed prop — the override holds until that re-render lands.
+  // The server drops the last copy's row from the decklist on success, so
+  // "removed" is never a committed prop — the override holds until that
+  // re-render lands.
   const { applied, isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
+  const removeOptimisticCard = useRemoveOptimisticCard();
+  const reportRemoveFailure = useReportRemoveFailure();
 
   function handleRemove() {
-    run(() => removeCardFromDeck(deckId, card.oracleId));
+    // Dispatched into the deck-wide list as well as this row's own state, or
+    // the row vanishes while the header, the tab counts, the role strip and the
+    // group heading all keep claiming it for the length of the round-trip.
+    run(
+      async () => {
+        try {
+          await removeCardFromDeck(deckId, card.oracleId);
+        } catch (cause) {
+          // Only when this was the last copy, because only then has the
+          // prediction unmounted the row and left `run`'s message with nothing
+          // to draw on. A decremented stack still has its own line to say it.
+          if (card.quantity <= 1) reportRemoveFailure(card.name);
+          throw cause;
+        }
+      },
+      () => removeOptimisticCard(card.oracleId),
+    );
   }
 
-  if (applied) return null;
+  // Only the last copy takes the row with it. A stack of basics decrements, so
+  // hiding on every click would blank a row the deck still holds eight of.
+  if (applied && card.quantity <= 1) return null;
 
   return (
     // Wrapper keeps the row and any error message as a single grid item.

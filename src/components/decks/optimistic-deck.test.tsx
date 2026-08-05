@@ -18,15 +18,20 @@ const forest: DeckDetailCard = {
   cardTypeGroup: "Lands", role: "land", owned: true, quantity: 1,
 };
 
-function Harness({ server, add }: { server: DeckDetailCard[]; add: DeckDetailCard[] }) {
-  const { cards, addOptimisticCard } = useOptimisticDeckCards(server);
+type Edit = { add: DeckDetailCard } | { remove: string };
+
+function Harness({ server, edits }: { server: DeckDetailCard[]; edits: Edit[] }) {
+  const { cards, addOptimisticCard, removeOptimisticCard } = useOptimisticDeckCards(server);
   return (
     <button
       onClick={() => {
         // Dispatched inside a transition and never resolved, so the overrides
         // stay applied for the assertion.
         startTransition(async () => {
-          for (const c of add) addOptimisticCard(c);
+          for (const edit of edits) {
+            if ("add" in edit) addOptimisticCard(edit.add);
+            else removeOptimisticCard(edit.remove);
+          }
           await new Promise(() => {});
         });
       }}
@@ -36,8 +41,8 @@ function Harness({ server, add }: { server: DeckDetailCard[]; add: DeckDetailCar
   );
 }
 
-async function apply(server: DeckDetailCard[], add: DeckDetailCard[]) {
-  render(<Harness server={server} add={add} />);
+async function apply(server: DeckDetailCard[], edits: Edit[]) {
+  render(<Harness server={server} edits={edits} />);
   const button = screen.getByRole("button");
   await act(async () => { button.click(); });
   return button.textContent;
@@ -45,14 +50,24 @@ async function apply(server: DeckDetailCard[], add: DeckDetailCard[]) {
 
 describe("useOptimisticDeckCards", () => {
   it("appends a card the deck does not hold", async () => {
-    expect(await apply([], [solRing])).toBe("Sol Ring:1");
+    expect(await apply([], [{ add: solRing }])).toBe("Sol Ring:1");
   });
 
   it("leaves a non-basic alone when it is already in the deck", async () => {
-    expect(await apply([solRing], [solRing])).toBe("Sol Ring:1");
+    expect(await apply([solRing], [{ add: solRing }])).toBe("Sol Ring:1");
   });
 
   it("increments a basic land, which may run copies", async () => {
-    expect(await apply([forest], [forest])).toBe("Forest:2");
+    expect(await apply([forest], [{ add: forest }])).toBe("Forest:2");
+  });
+
+  it("drops a removed card from the deck-wide list", async () => {
+    expect(await apply([solRing, forest], [{ remove: "sol-ring" }])).toBe("Forest:1");
+  });
+
+  // `removeCardFromDeck` decrements while more than one copy remains, so a
+  // prediction that dropped the stack would read 90 cards until revalidation.
+  it("decrements a stack rather than dropping it", async () => {
+    expect(await apply([{ ...forest, quantity: 9 }], [{ remove: "forest" }])).toBe("Forest:8");
   });
 });

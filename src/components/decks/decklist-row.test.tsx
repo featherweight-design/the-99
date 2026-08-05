@@ -21,6 +21,7 @@ const card = {
   oracleId: "sol-ring",
   name: "Sol Ring",
   owned: true,
+  quantity: 1,
 } as DeckDetailCard;
 
 function clickRemove() {
@@ -50,6 +51,22 @@ describe("DecklistRow", () => {
     await clickRemove();
 
     expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
+
+    await act(async () => {
+      pending.resolve();
+    });
+  });
+
+  // Removal takes one copy, so a stack keeps its row; hiding it would blank a
+  // line the deck still holds eight of.
+  it("keeps the row when more than one copy remains", async () => {
+    const pending = deferred<void>();
+    removeCardFromDeck.mockReturnValue(pending.promise);
+
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 9 }} />);
+    await clickRemove();
+
+    expect(screen.getByText("Sol Ring")).toBeInTheDocument();
 
     await act(async () => {
       pending.resolve();

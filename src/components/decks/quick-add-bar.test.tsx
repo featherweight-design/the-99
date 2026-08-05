@@ -220,6 +220,19 @@ describe("QuickAddBar — the owned filter", () => {
     await waitFor(() => expect(status).toHaveTextContent("0 matches"));
   });
 
+  // The deck header names the identity as a guild, so the bar has to as well.
+  // It used to say "BG-legal" a few pixels under a body reading "in Akawalli's
+  // colours", which is one constraint wearing two names.
+  it("names the identity the way the rest of the deck does", async () => {
+    searchCards.mockResolvedValue([]);
+    mount({ commanderIdentity: ["B", "G"] });
+    fireEvent.change(field(), { target: { value: "zzz" } });
+
+    const status = await screen.findByRole("status");
+    await waitFor(() => expect(status).toHaveTextContent("Golgari only"));
+    expect(status).not.toHaveTextContent("BG-legal");
+  });
+
   it("offers the escape only while the filter is what stands in the way", async () => {
     searchCards.mockResolvedValue([]);
     mount();

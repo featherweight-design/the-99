@@ -15,7 +15,7 @@ import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { identityLabel } from "../../lib/decks/indeck";
+import { colorLabel } from "../../lib/decks/format";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { SearchField } from "../ui/text-field";
 import { MutationError } from "./mutation-error";
@@ -110,7 +110,9 @@ export function QuickAddBar({
   // Results for the query in the field have not landed yet: either none at all,
   // or the ones on screen answer an older query.
   const searching = queryActive && (rows === null || stale);
-  const identity = identityLabel(commanderIdentity);
+  // The same formatter the deck header uses. `BG-legal` and `Golgari` were two
+  // names for one constraint, thirty pixels apart on the no-results state.
+  const identity = colorLabel(commanderIdentity);
   const unownedShown = results.filter((r) => !r.owned).length;
 
   function move(delta: number) {

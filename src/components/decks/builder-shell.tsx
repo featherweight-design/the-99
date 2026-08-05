@@ -25,6 +25,8 @@ import { QuickAddBar } from "./quick-add-bar";
 import { ExportDialog } from "./export-dialog";
 import { CardDetailProvider } from "./card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
+import { MutationError } from "./mutation-error";
+import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { deckCounts } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 
@@ -61,7 +63,7 @@ export function BuilderShell({
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
   // click. `deck.cards` remains the base React reverts to.
-  const { cards, addOptimisticCard } = useOptimisticDeckCards(deck.cards);
+  const { cards, addOptimisticCard, removeOptimisticCard } = useOptimisticDeckCards(deck.cards);
   const counts = deckCounts(cards);
   const { built, toBuyCount } = counts;
 
@@ -119,6 +121,28 @@ export function BuilderShell({
     [addOptimisticCard, cards],
   );
 
+  // A failed removal outlives the row that asked for it, so its reason is held
+  // here. Cleared when the server answers again: any successful edit replaces
+  // deck.cards, which settles the question the refusal was answering.
+  const [removeFailure, setRemoveFailure] = useState<string | null>(null);
+  const [lastServerCards, setLastServerCards] = useState(deck.cards);
+  if (lastServerCards !== deck.cards) {
+    setLastServerCards(deck.cards);
+    setRemoveFailure(null);
+  }
+  const reportRemoveFailure = useCallback((cardName: string) => {
+    setRemoveFailure(`${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}`);
+  }, []);
+
+  // Not memoised: `removeOptimisticCard` is rebuilt every render and
+  // `announceAdd` follows the card list, so a useMemo here would recompute on
+  // essentially every pass while reading as though it prevented one.
+  const deckEdits = {
+    add: announceAdd,
+    remove: removeOptimisticCard,
+    reportRemoveFailure,
+  };
+
   // A shelf link is a two-step move: switch to Consider, then scroll to the
   // heading. The scroll cannot happen in the click handler, because the shelf
   // is not in the DOM until the view has changed and rendered.
@@ -156,7 +180,7 @@ export function BuilderShell({
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     <CardDetailProvider>
-      <AddOptimisticCardProvider value={announceAdd}>
+      <AddOptimisticCardProvider value={deckEdits}>
         {/* One column at both widths now that the rail is gone. Desktop still
             makes the viewport the frame so the quick-add bar can sit against the
             bottom edge rather than at the end of a long page scroll. */}
@@ -176,6 +200,12 @@ export function BuilderShell({
                 onDismiss={markCelebrated}
                 onExport={openExport}
               />
+            )}
+
+            {removeFailure && (
+              <div className="px-[14px] md:px-[20px] pt-[10px]">
+                <MutationError message={removeFailure} />
+              </div>
             )}
 
             {/* Builder Spine */}
