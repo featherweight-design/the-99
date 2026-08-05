@@ -9,6 +9,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
+import { useRemoveOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
 interface DecklistRowProps {
@@ -29,9 +30,16 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
   // The server drops the row from the decklist on success, so "removed" is
   // never a committed prop — the override holds until that re-render lands.
   const { applied, isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
+  const removeOptimisticCard = useRemoveOptimisticCard();
 
   function handleRemove() {
-    run(() => removeCardFromDeck(deckId, card.oracleId));
+    // Dispatched into the deck-wide list as well as this row's own state, or
+    // the row vanishes while the header, the tab counts, the role strip and the
+    // group heading all keep claiming it for the length of the round-trip.
+    run(
+      () => removeCardFromDeck(deckId, card.oracleId),
+      () => removeOptimisticCard(card.oracleId),
+    );
   }
 
   if (applied) return null;

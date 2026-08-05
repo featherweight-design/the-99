@@ -61,7 +61,7 @@ export function BuilderShell({
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
   // click. `deck.cards` remains the base React reverts to.
-  const { cards, addOptimisticCard } = useOptimisticDeckCards(deck.cards);
+  const { cards, addOptimisticCard, removeOptimisticCard } = useOptimisticDeckCards(deck.cards);
   const counts = deckCounts(cards);
   const { built, toBuyCount } = counts;
 
@@ -119,6 +119,13 @@ export function BuilderShell({
     [addOptimisticCard, cards],
   );
 
+  // One object, memoised, so every add and remove control below does not
+  // re-render on each pass of the shell.
+  const deckEdits = useMemo(
+    () => ({ add: announceAdd, remove: removeOptimisticCard }),
+    [announceAdd, removeOptimisticCard],
+  );
+
   // A shelf link is a two-step move: switch to Consider, then scroll to the
   // heading. The scroll cannot happen in the click handler, because the shelf
   // is not in the DOM until the view has changed and rendered.
@@ -156,7 +163,7 @@ export function BuilderShell({
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     <CardDetailProvider>
-      <AddOptimisticCardProvider value={announceAdd}>
+      <AddOptimisticCardProvider value={deckEdits}>
         {/* One column at both widths now that the rail is gone. Desktop still
             makes the viewport the frame so the quick-add bar can sit against the
             bottom edge rather than at the end of a long page scroll. */}

@@ -79,7 +79,10 @@ export const RECOMMENDED_MIX: Record<
   },
 };
 
-export const RECOMMENDED_MIX_SOURCE_LINE = "EDHREC averages — a guide, not a gate.";
+// The canvas draws only "a guide, not a gate"; the source attribution is an
+// addition, so it joins on the middot the design already uses for metadata
+// rather than on a dash.
+export const RECOMMENDED_MIX_SOURCE_LINE = "EDHREC averages · a guide, not a gate";
 // A worked example teaching how to read a cell, so every number in it is
 // hypothetical. It used to end "you're at 8, fine for a slower build", which is
 // a second-person claim about the reader's deck made by a string that never

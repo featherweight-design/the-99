@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDeckOracleSet, isInDeck, identityLabel } from "./indeck";
+import { buildDeckOracleSet, isInDeck } from "./indeck";
 
 describe("buildDeckOracleSet", () => {
   it("builds a Set from deck cards", () => {
@@ -40,20 +40,3 @@ describe("isInDeck", () => {
   });
 });
 
-describe("identityLabel", () => {
-  it("returns Colorless for an empty identity", () => {
-    expect(identityLabel([])).toBe("Colorless");
-  });
-
-  it("returns W-legal for mono-white", () => {
-    expect(identityLabel(["W"])).toBe("W-legal");
-  });
-
-  it("returns WUB-legal for three colors", () => {
-    expect(identityLabel(["W", "U", "B"])).toBe("WUB-legal");
-  });
-
-  it("returns WUBRG-legal for five colors", () => {
-    expect(identityLabel(["W", "U", "B", "R", "G"])).toBe("WUBRG-legal");
-  });
-});

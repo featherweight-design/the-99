@@ -28,7 +28,9 @@ export function DecklistGroup({ deckId, label, cards, siblings, note }: Decklist
         className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-[#2A241D]"
       >
         {/* Left cluster: label + count */}
-        <div className="flex items-baseline md:gap-[10px]">
+        {/* The mobile gap was absent, not zero by intent: "Lands 1" rendered as
+            "Lands1". 6px matches the tab's own label/count pairing. */}
+        <div className="flex items-baseline gap-[6px] md:gap-[10px]">
           {/* Group label: mobile IBM Plex Sans 12.5px 600 | desktop Cinzel (font-display) 15px 600 */}
           <span
             className="font-sans md:font-display font-semibold text-[12.5px] md:text-[15px]"
