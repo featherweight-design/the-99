@@ -80,8 +80,13 @@ export const RECOMMENDED_MIX: Record<
 };
 
 export const RECOMMENDED_MIX_SOURCE_LINE = "EDHREC averages — a guide, not a gate.";
+// A worked example teaching how to read a cell, so every number in it is
+// hypothetical. It used to end "you're at 8, fine for a slower build", which is
+// a second-person claim about the reader's deck made by a string that never
+// looks at one — on an empty deck it announced 8 ramp sources directly beneath
+// a RAMP cell reading 0.
 export const RECOMMENDED_MIX_WORKED_EXAMPLE =
-  "Ramp · rec 10 — decks that cast a 4-mana commander on curve average ~10 sources; you're at 8, fine for a slower build.";
+  "Ramp · rec 10 — decks that cast a 4-mana commander on curve average ~10 sources. A deck sitting at 8 is fine for a slower build.";
 
 export function roleCellState(args: {
   have: number;

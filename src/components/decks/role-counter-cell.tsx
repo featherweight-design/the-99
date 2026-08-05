@@ -4,6 +4,7 @@
 
 import { useId, useState } from "react";
 import { roleCellState } from "../../lib/decks/mix";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 interface RoleCounterCellProps {
   role: string;
@@ -12,14 +13,18 @@ interface RoleCounterCellProps {
   target: number;
   advisory: boolean;
   rationale: string;
+  /** Absent on a cell that is not short: there is nothing to send the user to. */
+  onSeeShelf?: () => void;
 }
 
 export function RoleCounterCell({
+  role,
   label,
   have,
   target,
   advisory,
   rationale,
+  onSeeShelf,
 }: RoleCounterCellProps) {
   const [open, setOpen] = useState(false);
   const rationaleId = useId();
@@ -78,6 +83,30 @@ export function RoleCounterCell({
           {advisory ? `rec ~${target}` : `rec ${target}`}
         </p>
       </button>
+
+      {/* The handoff says the under-target cell "becomes a link". The cell is
+          already a button owning the rationale disclosure — the only route to
+          rationale at phone width — and an anchor cannot nest inside one, so
+          the link draws beneath it instead, which is what the strip annotation
+          now describes. Flagged to Design for ratification. */}
+      {onSeeShelf && (
+        <a
+          href={`#shelf-${role}`}
+          // A plain click is handled by the shell, because the Consider panel
+          // is not mounted yet and the browser would set the hash against a
+          // heading that does not exist. A modified click is left alone: it
+          // opens a fresh document, where the hash resolves on load.
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            onSeeShelf();
+          }}
+          aria-label={addPanelCopy.strip.shelfLinkAria(label.toLowerCase())}
+          className="font-mono text-[9px] md:text-[10px] mt-[4px] text-center md:text-left text-brass hover:text-brass-hover"
+        >
+          {addPanelCopy.strip.shelfLink} →
+        </a>
+      )}
 
       {/* Rationale text — toggled by button; hidden via aria-hidden + display none */}
       <p

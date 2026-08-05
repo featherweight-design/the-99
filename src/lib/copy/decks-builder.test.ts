@@ -62,8 +62,15 @@ describe("addPanelCopy counts at n = 1", () => {
   });
 
   it("keeps the handoff's existing match-count pattern", () => {
-    expect(addPanelCopy.quickAdd.resultCount(1)).toBe("1 match");
-    expect(addPanelCopy.quickAdd.resultCount(2)).toBe("2 matches");
+    expect(addPanelCopy.quickAdd.resultCountWithIdentity(1, "Jund")).toBe("1 match · Jund only");
+    expect(addPanelCopy.quickAdd.resultCountWithIdentity(2, "Jund")).toBe("2 matches · Jund only");
+  });
+
+  it("names the role cell an add moved, and drops it when there is none", () => {
+    expect(addPanelCopy.announce.added("Sol Ring", 12, "Ramp", 4, 10)).toBe(
+      "Sol Ring added · 12 of 99 · Ramp 4 of 10",
+    );
+    expect(addPanelCopy.announce.addedNoRole("Sol Ring", 12)).toBe("Sol Ring added · 12 of 99");
   });
 });
 

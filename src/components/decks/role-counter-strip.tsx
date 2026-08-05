@@ -9,14 +9,21 @@ import {
   type MixRole,
 } from "../../lib/decks/mix";
 import { RoleCounterCell } from "./role-counter-cell";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 interface RoleCounterStripProps {
   cards: DeckDetailCard[];
+  /**
+   * Switches the builder to Consider and scrolls to that role's shelf. The
+   * anchor alone lands on nothing: the Consider panel is unmounted while the
+   * deck tab is up, so the `#shelf-*` heading does not exist at click time.
+   */
+  onSeeShelf?: (role: MixRole) => void;
 }
 
 const ROLE_ORDER: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
-export function RoleCounterStrip({ cards }: RoleCounterStripProps) {
+export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
   const counts = computeRoleCounts(cards);
 
   return (
@@ -67,7 +74,7 @@ export function RoleCounterStrip({ cards }: RoleCounterStripProps) {
           className="hidden md:inline font-mono text-[10.5px] ml-auto"
           style={{ color: "#6E6353" }}
         >
-          Click a cell for rationale
+          {addPanelCopy.strip.hint}
         </span>
       </div>
 
@@ -82,6 +89,11 @@ export function RoleCounterStrip({ cards }: RoleCounterStripProps) {
             target={RECOMMENDED_MIX[role].target}
             advisory={RECOMMENDED_MIX[role].advisory}
             rationale={RECOMMENDED_MIX[role].rationale}
+            onSeeShelf={
+              onSeeShelf && counts[role] < RECOMMENDED_MIX[role].target
+                ? () => onSeeShelf(role)
+                : undefined
+            }
           />
         ))}
       </div>

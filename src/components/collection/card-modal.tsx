@@ -158,7 +158,7 @@ export function CardModal({
     }
   }, [expanded, onClose]);
 
-  // Focus trap + Escape + focus-return — shared hook (3 consumers: CardModal, AddPanel sheet, Export dialog).
+  // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   useDialogA11y(dialogRef, onEscape);
 
   function toggleExpanded() {

@@ -7,8 +7,8 @@
 // component renders correctly in isolation either way — what breaks is that the
 // only affordance is gone, which is invisible to a props-level check.
 //
-// When the shell rewiring lands, the assertion changes to the Consider tab and
-// the quick-add bar. It should not be deleted.
+// The shell rewiring has since landed, so the two entrances the empty deck must
+// keep are the Consider tab and the quick-add bar.
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
@@ -55,9 +55,10 @@ describe("empty builder", () => {
       />,
     );
 
-  it("offers a control that opens the add surface", () => {
+  it("keeps both entrances: the Consider tab and the quick-add bar", () => {
     renderEmpty();
-    expect(screen.getByRole("button", { name: /add cards/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /cards to consider/i })).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
   });
 
   it("no longer offers the retired Open suggestions CTA", () => {

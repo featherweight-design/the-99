@@ -41,7 +41,9 @@ export const addPanelCopy = {
     consider: "Consider",
     deckAria: (n: number) => `Your deck, ${plural(n, "card", "cards")}`,
     considerAria: (n: number) => `Cards to consider, ${plural(n, "suggestion", "suggestions")}`,
-    panelAria: "Cards to consider",
+    // No `panelAria`: each tabpanel is named by its tab through
+    // aria-labelledby, which wins over aria-label, so a panel-side name would
+    // never reach a screen reader.
   },
 
   // ── Consider toolbar ──────────────────────────────────────────────────
@@ -61,6 +63,22 @@ export const addPanelCopy = {
     showAllAria: (role: string, n: number) =>
       `Show all ${n} ${role} ${n === 1 ? "suggestion" : "suggestions"}`,
     collapse: "Show fewer",
+  },
+
+  // ── Coverage strip → shelf link ───────────────────────────────────────
+  // Only drawn under a cell that is short, so the label does not have to say
+  // which role it belongs to; the accessible name does, because a screen
+  // reader meets five of these in a row.
+  strip: {
+    // Named for where it lands. "picks" would have been a third noun for one
+    // thing beside the tab's "Consider" and, worse, "Top picks for X" is
+    // already a specific shelf this link does NOT go to.
+    shelfLink: "consider",
+    shelfLinkAria: (role: string) => `See ${role} cards to consider`,
+    // The strip's desktop annotation. It used to name only the rationale
+    // disclosure, which was the whole of the cell before this pass added the
+    // shelf link — so it described half of what a cell now does.
+    hint: "Click a cell for rationale · a cell under target links its shelf below",
   },
 
   // ── Shelf headers ─────────────────────────────────────────────────────
@@ -123,11 +141,9 @@ export const addPanelCopy = {
     placeholder: "Add a card by name…",
     fieldAria: "Add a card to this deck by name",
     identityNote: (identity: string) => `${identity} only`,
-    enterHint: "↵ adds the top match",
     keyboardHint: "↑↓ to move · ↵ to add · Esc to dismiss",
 
     resultsAria: "Card search results",
-    resultCount: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
     resultCountWithIdentity: (n: number, identity: string) =>
       `${n === 1 ? "1 match" : `${n} matches`} · ${identity} only`,
 
@@ -168,11 +184,10 @@ export const addPanelCopy = {
   // 1. `cta: "Open suggestions"` is DELETED. Its only job was opening the
   //    bottom sheet. In the finished shape the Consider tab sits 40px above the
   //    mark with its count on it and the quick-add bar is focusable at the
-  //    bottom of the same screen — two live entrances, no button. Both of those
-  //    arrive with the shell rewiring, so until then BuilderShell still renders
-  //    the sheet and keeps its "+ Add cards" footer visible on an empty deck;
-  //    deleting this string without that would strand a mobile empty deck with
-  //    no way to add a first card.
+  //    bottom of the same screen — two live entrances, no button. Both landed
+  //    with the shell rewiring, which is what made deleting the string safe:
+  //    without them a mobile empty deck would have had no way to add a first
+  //    card. builder-empty-entrance.test.tsx pins both entrances.
   // 2. `captionFor` / `captionForMobile` COLLAPSE INTO ONE. The split existed
   //    only because the two widths pointed at different constructs ("on the
   //    right" vs "one tap away"); they now point at the same two. This also
@@ -192,14 +207,15 @@ export const addPanelCopy = {
     roleHint: "Try filling your ramp, draw, removal, and wipe slots first.",
   },
 
-  // ── Live region (the builder’s existing one — not a new region) ───────
+  // ── Live region ───────────────────────────────────────────────────────
+  // Announces an add, which is otherwise silent: the three numbers it moves —
+  // the tile's button, the tab count, a role cell — are all ordinary text
+  // elsewhere in the tree. There is no `results` member: the quick-add bar's
+  // visible match count is already a `role="status"`, so a second region
+  // saying the same thing would double-announce every keystroke.
   announce: {
     added: (name: string, built: number, role: string, have: number, target: number) =>
       `${name} added · ${built} of 99 · ${role} ${have} of ${target}`,
     addedNoRole: (name: string, built: number) => `${name} added · ${built} of 99`,
-    results: (n: number, query: string) =>
-      n === 0
-        ? `No matches for ${query}`
-        : `${n === 1 ? "1 match" : `${n} matches`} for ${query}`,
   },
 } as const;

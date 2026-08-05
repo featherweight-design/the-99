@@ -23,6 +23,7 @@ const row = (over: Partial<SearchResult> & { name: string }): SearchResult => ({
   cardTypeGroup: "Enchantments",
   role: "draw",
   imageUri: null,
+  manaCost: null,
   ...over,
 });
 
@@ -101,8 +102,13 @@ describe("QuickAddBar — combobox contract", () => {
     fireEvent.keyDown(field(), { key: "Enter" });
     expect(addCardToDeck).not.toHaveBeenCalled();
 
-    // Once the new results land, Enter works again.
-    expect(await screen.findByText(stuxor.name)).toBeInTheDocument();
+    // Once the new results land, Enter works again. Matched by option label
+    // rather than by text: the row splits the name around the brass-highlighted
+    // run of the query, so no single node holds the whole string. A predicate
+    // rather than a RegExp, because a card name is free to contain `(` or `[`.
+    expect(
+      await screen.findByRole("option", { name: (name) => name.includes(stuxor.name) }),
+    ).toBeInTheDocument();
     fireEvent.keyDown(field(), { key: "Enter" });
     await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", stuxor.oracleId));
   });
@@ -238,6 +244,28 @@ describe("QuickAddBar — result rows", () => {
 
     expect(screen.getByText("×5 owned")).toBeInTheDocument();
     expect(screen.getByText("not owned")).toBeInTheDocument();
+  });
+
+  // The phone row has no room for four columns, so type and ownership fold into
+  // one meta line rather than the type line being dropped — which is what the
+  // row did before, losing the only field that separates two same-named cards.
+  it("keeps the type line at phone width by folding it into the meta line", async () => {
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study", ownedQty: 5 })]);
+    mount();
+    await search();
+
+    expect(screen.getByText("Enchantment · ×5 owned")).toBeInTheDocument();
+  });
+
+  it("brasses the run of the name the query matched, wherever it falls", async () => {
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study" })]);
+    mount();
+    await search("stu");
+
+    // "stu" is mid-name here, so a prefix-only highlight would find nothing.
+    const hit = screen.getByText("Stu");
+    expect(hit).toHaveStyle({ color: "#C9A24B" });
+    expect(hit.parentElement).toHaveTextContent("Rhystic Study");
   });
 
   // Enter reaches the row through registerAdd rather than the click handler, so

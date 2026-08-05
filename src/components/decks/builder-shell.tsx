@@ -1,29 +1,38 @@
 // Builder Shell — top-level client composition for /decks/[id].
-// Owns: Add-panel tab state, group toggle, All|Shopping filter, mobile Add sheet, export open.
-// Task 8 (decklist body), Task 9 (Add panel), Task 10 (export dialog) — leave named slots.
+// Owns: deck|consider view, group toggle, All|Shopping filter, Consider sort, export open.
+// Discovery is a peer view of the decklist rather than a rail or a sheet, so the
+// coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { shouldCelebrate } from "../../lib/decks/celebration";
 import { CompletionReveal } from "./completion-reveal";
 import { useCelebrated } from "./use-celebrated";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
-import { PrimaryButton } from "@/components/ui/button";
 import { BuilderSpine } from "./builder-spine";
 import { RoleCounterStrip } from "./role-counter-strip";
-import { DegradedBanner } from "./degraded-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crab } from "../character/crab";
-import { addPanelCopy, decksBuilderCopy, shortCommanderName } from "../../lib/copy/decks-builder";
+import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
 import { Decklist } from "./decklist";
-import { AddPanel } from "./add-panel";
+import { BuilderTabs, type BuilderView } from "./builder-tabs";
+import { ConsiderPanel } from "./consider-panel";
+import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
+import { QuickAddBar } from "./quick-add-bar";
 import { ExportDialog } from "./export-dialog";
 import { CardDetailProvider } from "./card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { deckCounts } from "../../lib/decks/grouping";
+import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
+
+// Shared by both shelf-link paths — the one that is already on Consider and
+// the one that has to switch views first — so they land identically.
+function scrollToShelf(role: MixRole) {
+  document.getElementById(`shelf-${role}`)?.scrollIntoView({ block: "start" });
+}
 
 interface BuilderShellProps {
   deck: DeckDetail;
@@ -43,7 +52,8 @@ export function BuilderShell({
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
   const [grouping, setGrouping] = useState<"type" | "role">("type");
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [view, setView] = useState<BuilderView>("deck");
+  const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
 
   const [celebrated, markCelebrated] = useCelebrated(deck.id);
@@ -64,8 +74,9 @@ export function BuilderShell({
     alreadyCelebrated: celebrated,
   });
 
-  // Deliberately the SERVER list, not the optimistic one. AddPanel feeds this to
-  // each row's `inDeck`, which use-deck-mutation treats as committed truth — and
+  // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and
+  // QuickAddBar feed this to each row's `inDeck`, which use-deck-mutation
+  // treats as committed truth — and
   // it clears the row's error whenever that value changes, on the reasoning that
   // the server has since settled the question. Wire the optimistic list in here
   // and a failed add flips the value twice (add, then revert), the second flip
@@ -75,6 +86,62 @@ export function BuilderShell({
 
   const isEmpty = built === 0;
   const commanderShortName = shortCommanderName(deck.commander.name);
+
+  // An add changes three numbers at once — the tile's button, the tab count and
+  // a role cell — and a screen reader sees none of them, because all three are
+  // ordinary text elsewhere in the tree. The live region is the only place the
+  // add is narrated, so every add path goes through this wrapper rather than
+  // calling addOptimisticCard directly.
+  const [announcement, setAnnouncement] = useState("");
+  // Composed from the pre-add list plus this card. `useOptimistic` state is not
+  // readable synchronously here, and reading it a render later would announce
+  // the previous add.
+  const announceAdd = useCallback(
+    (card: Parameters<typeof addOptimisticCard>[0]) => {
+      addOptimisticCard(card);
+      const before = cards;
+      const nextBuilt = deckCounts(before).built + card.quantity;
+      const mix = RECOMMENDED_MIX[card.role as MixRole] as
+        | (typeof RECOMMENDED_MIX)[MixRole]
+        | undefined;
+      setAnnouncement(
+        mix
+          ? addPanelCopy.announce.added(
+              card.name,
+              nextBuilt,
+              mix.label,
+              computeRoleCounts(before)[card.role as MixRole] + card.quantity,
+              mix.target,
+            )
+          : addPanelCopy.announce.addedNoRole(card.name, nextBuilt),
+      );
+    },
+    [addOptimisticCard, cards],
+  );
+
+  // A shelf link is a two-step move: switch to Consider, then scroll to the
+  // heading. The scroll cannot happen in the click handler, because the shelf
+  // is not in the DOM until the view has changed and rendered.
+  // A ref rather than state: the target is consumed by the effect that acts on
+  // it, and holding it in state would mean a second render whose only job is to
+  // clear it — which the react-compiler rule rightly rejects.
+  const pendingShelf = useRef<MixRole | null>(null);
+  const seeShelf = useCallback(
+    (role: MixRole) => {
+      if (view === "consider") {
+        scrollToShelf(role);
+        return;
+      }
+      pendingShelf.current = role;
+      setView("consider");
+    },
+    [view],
+  );
+  useEffect(() => {
+    if (view !== "consider" || !pendingShelf.current) return;
+    scrollToShelf(pendingShelf.current);
+    pendingShelf.current = null;
+  }, [view]);
 
   // Every route into the export dialog dismisses the reveal, not just the one
   // inside it — the user has acted on the moment, so leaving the band standing
@@ -89,16 +156,18 @@ export function BuilderShell({
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     <CardDetailProvider>
-      <AddOptimisticCardProvider value={addOptimisticCard}>
-        {/* On desktop the viewport is the frame and each column scrolls inside it,
-            rather than the page growing to the taller of the two. The columns are
-            lists of unrelated length, so a page-level scroll leaves whichever one
-            ran out first sitting above dead space. Mobile stays a single flow. */}
+      <AddOptimisticCardProvider value={announceAdd}>
+        {/* One column at both widths now that the rail is gone. Desktop still
+            makes the viewport the frame so the quick-add bar can sit against the
+            bottom edge rather than at the end of a long page scroll. */}
         <div
-          className="flex flex-col md:flex-row min-h-screen md:h-screen md:min-h-0 md:overflow-hidden"
+          className="flex flex-col min-h-screen md:h-screen md:min-h-0 md:overflow-hidden"
           style={{ background: "#100D0A" }}
         >
-          {/* ── Left / main column ── */}
+          <span className="sr-only" aria-live="polite" aria-atomic="true">
+            {announcement}
+          </span>
+
           <div className="flex-1 flex flex-col min-w-0 md:min-h-0 md:overflow-y-auto">
             {/* The 99/99 kaiju reveal — one-shot, above the builder body */}
             {showReveal && (
@@ -113,15 +182,48 @@ export function BuilderShell({
             <BuilderSpine deck={deck} counts={counts} onExport={openExport} />
 
             {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
-            <RoleCounterStrip cards={cards} />
+            <RoleCounterStrip cards={cards} onSeeShelf={seeShelf} />
 
-            {/* Degraded suggestions banner */}
-            {degraded && <DegradedBanner deckId={deck.id} />}
-
+            {/* No degraded banner here. The old one ("Synergy data offline")
+                fired alongside Consider's own ("EDHREC isn't answering right
+                now."), so an outage was announced twice, in two voices, and the
+                copy above the tabs was on screen while reading the decklist,
+                which EDHREC has nothing to do with. The claim belongs on the
+                shelf that makes it. */}
             {/* Guided first-run banner (only when firstRun === true) */}
             {firstRun && <GuidedBanner commanderName={deck.commander.name} />}
 
-            {/* ── Decklist body — Task 8 placeholder ── */}
+            {/* The decklist and Consider as peer tabs. The desktop toolbar rides
+                this row; at phone width Consider draws its own toolbar row. */}
+            <BuilderTabs
+              view={view}
+              onViewChange={setView}
+              deckCount={built}
+              considerCount={suggestions.length}
+            >
+              {view === "consider" && suggestions.length > 0 && (
+                <ConsiderToolbar
+                  sort={sort}
+                  onSortChange={setSort}
+                  ownedCount={suggestions.filter((s) => s.owned).length}
+                  degraded={degraded}
+                />
+              )}
+            </BuilderTabs>
+
+            {view === "consider" ? (
+              <ConsiderPanel
+                deckId={deck.id}
+                suggestions={suggestions}
+                deckCards={cards}
+                deckOracleIds={deckOracleIds}
+                commanderShortName={commanderShortName}
+                degraded={degraded}
+                sort={sort}
+                onSortChange={setSort}
+              />
+            ) : (
+            <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (
               /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
               <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,rgba(201,162,75,0.07),transparent_70%)]">
@@ -241,57 +343,29 @@ export function BuilderShell({
                 onGroupingChange={setGrouping}
               />
             )}
+            </div>
+            )}
 
-            {/* §"+ Add cards" sticky footer button (mobile). Shown when the deck
-                is empty too, now that the empty state's own CTA is gone: the
-                sheet is still the only mobile entrance until PR 6 replaces it
-                with the Consider tab and the quick-add bar, and without this
-                an empty deck would have no way to add a first card. */}
+            {/* Quick add is chrome, not a mode: pinned under both views at both
+                widths, and it takes the slot the mobile "+ Add cards" footer
+                used to hold. `mt-auto` keeps it at the foot of a short column
+                rather than floating under a two-line empty state. */}
+            {/* `bottom-[80px]` at phone width, not `bottom-0`: the shell's
+                tab bar is `fixed` and 80px tall, and the `pb-[80px]` main
+                carries to reserve it does nothing to a sticky element, which
+                pins to the scrollport edge and so sat underneath it. */}
             <div
-              className="md:hidden sticky bottom-0 px-[16px] py-[10px]"
-              style={{ background: "#100D0A", borderTop: "1px solid #2A241D" }}
+              className="sticky bottom-[80px] md:bottom-0 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]"
+              style={{ background: "var(--bg)", borderTop: "1px solid var(--border)" }}
             >
-              <PrimaryButton
-                onClick={() => setSheetOpen(true)}
-                className="w-full text-[15px] py-[13px]"
-              >
-                + Add cards
-              </PrimaryButton>
+              <QuickAddBar
+                deckId={deck.id}
+                commanderIdentity={commanderIdentity}
+                deckOracleIds={deckOracleIds}
+                commanderShortName={commanderShortName}
+              />
             </div>
           </div>
-
-          {/* ── Right column — Add panel (Task 9) ── */}
-          {/* Desktop: always visible right column */}
-          <aside
-            className="hidden md:flex flex-col flex-none min-h-0"
-            style={{
-              width: 340,
-              background: "#181410",
-              borderLeft: "1px solid #2A241D",
-            }}
-          >
-            <AddPanel
-              deckId={deck.id}
-              commanderIdentity={commanderIdentity}
-              suggestions={suggestions}
-              degraded={degraded}
-              deckOracleIds={deckOracleIds}
-              variant="column"
-            />
-          </aside>
-
-          {/* Mobile bottom sheet (mid-build and empty) — AddPanel variant="sheet" */}
-          {sheetOpen && (
-            <AddPanel
-              deckId={deck.id}
-              commanderIdentity={commanderIdentity}
-              suggestions={suggestions}
-              degraded={degraded}
-              deckOracleIds={deckOracleIds}
-              variant="sheet"
-              onCloseSheet={() => setSheetOpen(false)}
-            />
-          )}
 
           {/* Export dialog — Task 10 */}
           {exportOpen && (

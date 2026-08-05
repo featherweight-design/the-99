@@ -23,11 +23,14 @@ function parseManaCost(cost: string): string[] {
   return [...cost.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
 }
 
-function CostPips({ cost }: { cost: string }) {
+export function CostPips({ cost, className }: { cost: string; className?: string }) {
   const symbols = parseManaCost(cost);
   if (symbols.length === 0) return null;
   return (
-    <span aria-hidden className="absolute left-[6px] bottom-[6px] flex gap-[3px]">
+    <span
+      aria-hidden
+      className={className ?? "absolute left-[6px] bottom-[6px] flex gap-[3px]"}
+    >
       {symbols.map((sym, i) => {
         // "U/B" and "G/P" carry their colours in the halves, so a pip draws
         // them rather than printing them: three characters in a 14px circle
@@ -211,7 +214,11 @@ export function SuggestionTile({
           oracleId={suggestion.oracleId}
           name={suggestion.name}
           siblings={siblings}
-          className="block w-full text-left text-[13px] md:text-[12.5px] font-semibold leading-[1.25] p-0"
+          // Always two lines tall, clamped or not: a shelf is a grid, and a
+          // one-line name beside a wrapped one pushed its type line, bar and
+          // Add button half a line up out of alignment with its row-mates.
+          // 2.5em is the clamp height exactly — two lines at leading 1.25.
+          className="block w-full text-left text-[13px] md:text-[12.5px] font-semibold leading-[1.25] min-h-[2.5em] p-0"
           style={{
             color: applied ? "var(--fg-muted)" : "var(--fg)",
             background: "transparent",

@@ -17,6 +17,10 @@ export type SearchResult = {
   cardTypeGroup: DeckDetailCard["cardTypeGroup"];
   role: DeckDetailCard["role"];
   imageUri: string | null;
+  // Scryfall's cost string ("{2}{U}"), carried whole rather than as a mana
+  // value: CostPips draws hybrid and Phyrexian symbols from their halves, and
+  // a number cannot be taken back apart into them.
+  manaCost: string | null;
   // Copies owned across every printing and finish, which is what the row draws
   // as "×N owned". A card is one row per (set, collector number, finish) in
   // `collection_items`, so this is a SUM rather than a count — four nonfoil and
@@ -55,7 +59,7 @@ export async function searchCards(
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       ownedQty: ownedQtySql,
       oracleText: cards.oracleText, keywords: cards.keywords,
-      imageUri: cards.imageUri,
+      imageUri: cards.imageUri, manaCost: cards.manaCost,
     })
     .from(cards)
     .leftJoin(ownedTotals, eq(ownedTotals.oracleId, cards.oracleId))
