@@ -78,11 +78,12 @@ function CardFan() {
 }
 
 function ShelfSection({
-  shelf, deckId, deckOracleIds, commanderShortName, first,
+  shelf, deckId, inDeckIds, commanderShortName, first,
 }: {
   shelf: Shelf;
   deckId: string;
-  deckOracleIds: string[];
+  /** A set rather than the array: every tile asks, and a deck runs to 99. */
+  inDeckIds: Set<string>;
   commanderShortName: string;
   /** The 16px mobile gap sits between shelves, so the first one does not take it. */
   first: boolean;
@@ -137,7 +138,7 @@ function ShelfSection({
             key={s.oracleId}
             suggestion={s}
             deckId={deckId}
-            inDeck={deckOracleIds.includes(s.oracleId)}
+            inDeck={inDeckIds.has(s.oracleId)}
             siblings={siblings}
             commanderShortName={commanderShortName}
           />
@@ -162,6 +163,7 @@ export function ConsiderPanel({
 }: ConsiderPanelProps) {
   const router = useRouter();
   const [sort, setSort] = useState<SortKey>("gaps");
+  const inDeckIds = useMemo(() => new Set(deckOracleIds), [deckOracleIds]);
   const shelves = useMemo(
     () => buildShelves(suggestions, deckCards).map((shelf) => ({
       ...shelf,
@@ -274,7 +276,7 @@ export function ConsiderPanel({
               first={i === 0}
               shelf={shelf}
               deckId={deckId}
-              deckOracleIds={deckOracleIds}
+              inDeckIds={inDeckIds}
               commanderShortName={commanderShortName}
             />
           ))}
