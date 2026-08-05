@@ -88,8 +88,7 @@ export function RoleCounterCell({
           already a button owning the rationale disclosure — the only route to
           rationale at phone width — and an anchor cannot nest inside one, so
           the link draws beneath it instead, which is what the strip annotation
-          ("A cell under target links its shelf below") describes. Flagged to
-          Design for ratification. */}
+          now describes. Flagged to Design for ratification. */}
       {onSeeShelf && (
         <a
           href={`#shelf-${role}`}

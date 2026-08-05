@@ -4,7 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { shouldCelebrate } from "../../lib/decks/celebration";
@@ -16,7 +16,7 @@ import { RoleCounterStrip } from "./role-counter-strip";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crab } from "../character/crab";
-import { addPanelCopy, decksBuilderCopy, shortCommanderName } from "../../lib/copy/decks-builder";
+import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { ConsiderPanel } from "./consider-panel";
@@ -90,13 +90,10 @@ export function BuilderShell({
   // Composed from the pre-add list plus this card. `useOptimistic` state is not
   // readable synchronously here, and reading it a render later would announce
   // the previous add.
-  const cardsRef = useRef(cards);
-  cardsRef.current = cards;
-
   const announceAdd = useCallback(
     (card: Parameters<typeof addOptimisticCard>[0]) => {
       addOptimisticCard(card);
-      const before = cardsRef.current;
+      const before = cards;
       const nextBuilt = deckCounts(before).built + card.quantity;
       const mix = RECOMMENDED_MIX[card.role as MixRole] as
         | (typeof RECOMMENDED_MIX)[MixRole]
@@ -113,7 +110,7 @@ export function BuilderShell({
           : addPanelCopy.announce.addedNoRole(card.name, nextBuilt),
       );
     },
-    [addOptimisticCard],
+    [addOptimisticCard, cards],
   );
 
   // Every route into the export dialog dismisses the reveal, not just the one

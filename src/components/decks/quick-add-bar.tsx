@@ -298,6 +298,7 @@ export function QuickAddBar({
                 key={r.oracleId}
                 id={optionId(i)}
                 result={r}
+                query={trimmed}
                 deckId={deckId}
                 inDeck={inDeck(r)}
                 active={i === activeIndex}
@@ -313,11 +314,17 @@ export function QuickAddBar({
       )}
 
       {noResults && (
-        <div>
-          <p className="text-[14px] font-semibold m-0" style={{ color: "#EDE6D8" }}>
+        // Centred, and the same shape as the app's other empty states: this is
+        // a dead end rather than a row of the list, so it is not left-aligned
+        // against results that are not there.
+        <div className="flex flex-col items-center text-center py-[26px] px-[30px]">
+          <p className="font-display font-bold text-[17px] m-0" style={{ color: "#EDE6D8" }}>
             {addPanelCopy.quickAddEmpty.heading}
           </p>
-          <p className="text-[12.5px] leading-[1.55] mt-[6px]" style={{ color: "#A89B84" }}>
+          <p
+            className="text-[13.5px] leading-[1.55] mt-[8px] max-w-[420px]"
+            style={{ color: "#A89B84" }}
+          >
             {ownedOnly
               ? addPanelCopy.quickAddEmpty.body(trimmed, commanderShortName)
               : addPanelCopy.quickAddEmpty.bodyAllCards(trimmed, identity)}
@@ -328,7 +335,7 @@ export function QuickAddBar({
             <button
               type="button"
               onClick={() => setOwnedOnly(false)}
-              className="mt-[10px] text-[12.5px] font-semibold cursor-pointer"
+              className="mt-[12px] text-[12.5px] font-semibold underline cursor-pointer"
               style={{ color: "#C9A24B", background: "transparent", border: "none", padding: 0 }}
             >
               {addPanelCopy.quickAddEmpty.dropFilter}
@@ -342,9 +349,27 @@ export function QuickAddBar({
   );
 }
 
+// The matched run in brass, so a list of eight near-identical names says which
+// part of each one the query actually caught. Case-insensitive and literal:
+// the query is a user string, so it is located with indexOf rather than
+// compiled into a RegExp, where a stray `(` would throw on every keystroke.
+function HighlightedName({ name, query, dim }: { name: string; query: string; dim: boolean }) {
+  const at = query ? name.toLowerCase().indexOf(query.trim().toLowerCase()) : -1;
+  if (at < 0 || dim) return <>{name}</>;
+  const end = at + query.trim().length;
+  return (
+    <>
+      {name.slice(0, at)}
+      <span style={{ color: "#C9A24B" }}>{name.slice(at, end)}</span>
+      {name.slice(end)}
+    </>
+  );
+}
+
 interface QuickAddRowProps {
   id: string;
   result: SearchResult;
+  query: string;
   deckId: string;
   inDeck: boolean;
   active: boolean;
@@ -355,6 +380,7 @@ interface QuickAddRowProps {
 function QuickAddRow({
   id,
   result,
+  query,
   deckId,
   inDeck,
   active,
@@ -411,23 +437,20 @@ function QuickAddRow({
       onMouseEnter={onActivate}
       onClick={handleAdd}
       // An in-deck row is not actionable, so it must not offer a pointer.
-      className={`flex flex-col rounded-[9px] ${applied ? "cursor-default" : "cursor-pointer"}`}
+      className={`flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] ${applied ? "cursor-default" : "cursor-pointer"}`}
       style={{
         background: "#1E1A15",
         border: `1px solid ${active ? "#C9A24B" : "#2A241D"}`,
         padding: "8px 12px",
-        minHeight: 56,
       }}
     >
       <div className="flex items-center gap-[12px]">
-        {/* 30×42, a deliberate divergence from Archidekt: a crop settles which
-            "Study" this is faster than the type line does. */}
+        {/* A crop settles which "Study" this is faster than the type line does —
+            a deliberate divergence from Archidekt, which ships no thumbnail. */}
         <span
           aria-hidden
-          className="flex-none rounded-[5px] overflow-hidden"
+          className="flex-none rounded-[5px] overflow-hidden w-[32px] h-[45px] md:w-[30px] md:h-[42px]"
           style={{
-            width: 30,
-            height: 42,
             background: "#241F19",
             opacity: applied ? 0.5 : 1,
             filter: applied ? "grayscale(0.6)" : undefined,
@@ -435,13 +458,7 @@ function QuickAddRow({
         >
           {result.imageUri && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={result.imageUri}
-              alt=""
-              width={30}
-              height={42}
-              className="w-full h-full object-cover"
-            />
+            <img src={result.imageUri} alt="" className="w-full h-full object-cover" />
           )}
         </span>
 
@@ -449,7 +466,7 @@ function QuickAddRow({
           className="flex-1 min-w-0 text-[14px] font-semibold truncate"
           style={{ color: applied ? "#A89B84" : "#EDE6D8" }}
         >
-          {result.name}
+          <HighlightedName name={result.name} query={query} dim={applied} />
         </span>
 
         <span
@@ -477,6 +494,17 @@ function QuickAddRow({
           >
             {addPanelCopy.quickAdd.rowInDeck}
           </span>
+        ) : active ? (
+          // The active row states the key that acts on it, so it is a caption
+          // rather than a control: boxing it draws a second button beside the
+          // one the keyboard is already pointed at.
+          <span
+            aria-hidden
+            className="flex-none font-mono text-[11px] text-right"
+            style={{ opacity: isPending ? 0.5 : undefined, color: "#C9A24B", minWidth: 56 }}
+          >
+            {addPanelCopy.quickAdd.rowAddActive}
+          </span>
         ) : (
           // Drawn as a control, but not one: a real <button> inside a
           // role="option" gives a screen reader a second interactive thing
@@ -496,7 +524,7 @@ function QuickAddRow({
               minHeight: 44,
             }}
           >
-            {active ? addPanelCopy.quickAdd.rowAddActive : addPanelCopy.quickAdd.rowAdd}
+            {addPanelCopy.quickAdd.rowAdd}
           </span>
         )}
       </div>

@@ -9,6 +9,7 @@ import {
   type MixRole,
 } from "../../lib/decks/mix";
 import { RoleCounterCell } from "./role-counter-cell";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 interface RoleCounterStripProps {
   cards: DeckDetailCard[];
@@ -69,7 +70,7 @@ export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
           className="hidden md:inline font-mono text-[10.5px] ml-auto"
           style={{ color: "#6E6353" }}
         >
-          Click a cell for rationale
+          {addPanelCopy.strip.hint}
         </span>
       </div>
 

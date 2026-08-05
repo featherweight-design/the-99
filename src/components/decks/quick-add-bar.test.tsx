@@ -101,8 +101,10 @@ describe("QuickAddBar — combobox contract", () => {
     fireEvent.keyDown(field(), { key: "Enter" });
     expect(addCardToDeck).not.toHaveBeenCalled();
 
-    // Once the new results land, Enter works again.
-    expect(await screen.findByText(stuxor.name)).toBeInTheDocument();
+    // Once the new results land, Enter works again. Matched by option label
+    // rather than by text: the row splits the name around the brass-highlighted
+    // run of the query, so no single node holds the whole string.
+    expect(await screen.findByRole("option", { name: new RegExp(stuxor.name) })).toBeInTheDocument();
     fireEvent.keyDown(field(), { key: "Enter" });
     await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", stuxor.oracleId));
   });
@@ -238,6 +240,17 @@ describe("QuickAddBar — result rows", () => {
 
     expect(screen.getByText("×5 owned")).toBeInTheDocument();
     expect(screen.getByText("not owned")).toBeInTheDocument();
+  });
+
+  it("brasses the run of the name the query matched, wherever it falls", async () => {
+    searchCards.mockResolvedValue([row({ name: "Rhystic Study" })]);
+    mount();
+    await search("stu");
+
+    // "stu" is mid-name here, so a prefix-only highlight would find nothing.
+    const hit = screen.getByText("Stu");
+    expect(hit).toHaveStyle({ color: "#C9A24B" });
+    expect(hit.parentElement).toHaveTextContent("Rhystic Study");
   });
 
   // Enter reaches the row through registerAdd rather than the click handler, so

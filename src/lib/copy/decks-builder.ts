@@ -73,6 +73,10 @@ export const addPanelCopy = {
     // already a specific shelf this link does NOT go to.
     shelfLink: "consider",
     shelfLinkAria: (role: string) => `See ${role} cards to consider`,
+    // The strip's desktop annotation. It used to name only the rationale
+    // disclosure, which was the whole of the cell before this pass added the
+    // shelf link — so it described half of what a cell now does.
+    hint: "Click a cell for rationale · a cell under target links its shelf below",
   },
 
   // ── Shelf headers ─────────────────────────────────────────────────────
