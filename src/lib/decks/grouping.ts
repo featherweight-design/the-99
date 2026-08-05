@@ -62,7 +62,10 @@ const ROLE_GROUP_LABELS: Record<"ramp" | "draw" | "removal" | "wipes" | "land" |
   removal: "Removal",
   wipes: "Wipes",
   land: "Land",
-  other: "Other",
+  // The role bucket, not the card-type group. CARD_TYPE_GROUP_ORDER's "Other"
+  // above is a different taxonomy of the same name and stays as it is. The
+  // `role` value on the payload is still "other".
+  other: "Threats & synergy",
 };
 
 /**
