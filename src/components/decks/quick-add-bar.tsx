@@ -7,8 +7,7 @@
 // trap, a scroll lock and `useDialogA11y` — all three exist to manage focus
 // somewhere else, and there is nowhere else.
 //
-// Replaces search-pane.tsx and search-result-row.tsx, which PR 6 deletes once
-// nothing mounts them.
+// Replaced search-pane.tsx and search-result-row.tsx, both now deleted.
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { searchCards } from "../../app/decks/[id]/search-action";

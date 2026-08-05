@@ -14,6 +14,7 @@ import { shelfRoleOf, type DeckSuggestion } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { SuggestionTile } from "./suggestion-tile";
+import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 
 // Two desktop rows, six phone rows. Named once so the cap, the `Show all N`
 // count and the tests cannot drift apart.
@@ -21,8 +22,6 @@ export const SHELF_CAP = 12;
 
 type ShelfRole = MixRole | "other";
 const SHELF_ROLES: ShelfRole[] = ["ramp", "draw", "removal", "wipes", "land", "other"];
-
-type SortKey = "gaps" | "edhrec" | "cheapest";
 
 type Shelf = {
   role: ShelfRole;
@@ -156,13 +155,16 @@ interface ConsiderPanelProps {
   deckOracleIds: string[];
   commanderShortName: string;
   degraded: boolean;
+  /** Owned by the shell: the desktop toolbar rides the tab row, outside this panel. */
+  sort: SortKey;
+  onSortChange: (sort: SortKey) => void;
 }
 
 export function ConsiderPanel({
   deckId, suggestions, deckCards, deckOracleIds, commanderShortName, degraded,
+  sort, onSortChange,
 }: ConsiderPanelProps) {
   const router = useRouter();
-  const [sort, setSort] = useState<SortKey>("gaps");
   const inDeckIds = useMemo(() => new Set(deckOracleIds), [deckOracleIds]);
   const shelves = useMemo(
     () => buildShelves(suggestions, deckCards).map((shelf) => ({
@@ -174,7 +176,9 @@ export function ConsiderPanel({
 
   return (
     <section
+      id="panel-consider"
       role="tabpanel"
+      aria-labelledby="tab-consider"
       aria-label={addPanelCopy.tabs.panelAria}
       className="px-[16px] pt-[12px] md:px-[30px] md:pt-[16px]"
     >
@@ -238,36 +242,15 @@ export function ConsiderPanel({
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between md:justify-end gap-[12px] mb-[14px]">
-            <label className="contents">
-              <span className="sr-only">{addPanelCopy.consider.sortLabel}</span>
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as SortKey)}
-                aria-label={addPanelCopy.consider.sortAria}
-                className="rounded-[8px] px-[11px] py-[7px] md:px-[12px] text-[12px] md:text-[12.5px] font-medium cursor-pointer md:order-2"
-                style={{
-                  background: "var(--elevated)",
-                  border: "1px solid var(--border-strong)",
-                  color: "var(--fg)",
-                }}
-              >
-                <option value="gaps">{addPanelCopy.consider.sortGaps}</option>
-                <option value="edhrec">{addPanelCopy.consider.sortEdhrec}</option>
-                <option value="cheapest">{addPanelCopy.consider.sortCheapest}</option>
-              </select>
-            </label>
-            {/* The provenance line names EDHREC as a source. With EDHREC down it
-                would be claiming a pedigree these shelves do not have, so the
-                banner speaks for the state instead and only Sort remains. */}
-            {!degraded && (
-              <p
-                className="font-mono text-[10px] md:text-[10.5px] md:order-1"
-                style={{ color: "var(--fg-faint)" }}
-              >
-                {addPanelCopy.consider.provenance(suggestions.filter((s) => s.owned).length)}
-              </p>
-            )}
+          {/* Phone only: at desktop width the same toolbar is mounted on the tab
+              row by the shell, per §1. */}
+          <div className="flex md:hidden items-center justify-between gap-[12px] mb-[14px]">
+            <ConsiderToolbar
+              sort={sort}
+              onSortChange={onSortChange}
+              ownedCount={suggestions.filter((s) => s.owned).length}
+              degraded={degraded}
+            />
           </div>
 
           {shelves.map((shelf, i) => (

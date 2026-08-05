@@ -1,7 +1,9 @@
-// Every deck surface that names a card must open the detail modal (#127, #91). One file
-// because the assertion is the same on all four; only the component under it changes.
+// Every deck surface that names a card must open the detail modal (#127, #91),
+// with one stated exception now that quick add is a combobox — see below. One
+// file because the assertion is the same across surfaces; only the component
+// under it changes.
 
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -10,13 +12,16 @@ import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { CardDetailProvider, cardDetailCopy } from "./card-detail-provider";
 import { BuilderSpine } from "./builder-spine";
 import { Decklist } from "./decklist";
-import { SearchResultRow } from "./search-result-row";
-import { SuggestionCard } from "./suggestion-card";
+import { SuggestionTile } from "./suggestion-tile";
+import { QuickAddBar } from "./quick-add-bar";
 
 vi.mock("../../app/decks/actions", () => ({
   addCardToDeck: vi.fn(),
   removeCardFromDeck: vi.fn(),
 }));
+
+const { searchCards } = vi.hoisted(() => ({ searchCards: vi.fn() }));
+vi.mock("../../app/decks/[id]/search-action", () => ({ searchCards }));
 
 const deckCard = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
   oracleId: "o-signet",
@@ -79,7 +84,7 @@ describe("deck card-detail triggers", () => {
     expect(screen.getAllByRole("button", { name: cardDetailCopy.triggerAria("Forest") })).toHaveLength(1);
   });
 
-  it("opens details from a suggestion", async () => {
+  it("opens details from a suggestion tile", async () => {
     const suggestion: DeckSuggestion = {
       oracleId: "o-sol", name: "Sol Ring", reason: "edhrec", reasonType: "edhrec",
       reasonLabel: "98% of decks", owned: false, inDeck: false,
@@ -88,25 +93,48 @@ describe("deck card-detail triggers", () => {
       imageUri: null, inclusionPct: null, lift: null,
     };
     const { fetchCard } = renderInProvider(
-      <SuggestionCard suggestion={suggestion} deckId="d1" inDeck={false} />,
+      <SuggestionTile
+        suggestion={suggestion}
+        deckId="d1"
+        inDeck={false}
+        siblings={["o-sol"]}
+        commanderShortName="Muldrotha"
+      />,
     );
-    await clickTrigger("Sol Ring");
+    // The tile names the card twice, art and label, and both are triggers.
+    const triggers = screen.getAllByRole("button", {
+      name: cardDetailCopy.triggerAria("Sol Ring"),
+    });
+    await act(async () => {
+      fireEvent.click(triggers[0]);
+    });
     expect(fetchCard).toHaveBeenCalledWith("o-sol");
   });
 
-  it("opens details from a search result", async () => {
-    const { fetchCard } = renderInProvider(
-      <SearchResultRow
-        result={{
-          oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", owned: true, ownedQty: 1,
-          cardTypeGroup: "Artifacts", role: "ramp", imageUri: null,
-        }}
+  // The one deliberate exception to #127. A quick-add row is a listbox option
+  // under a combobox whose contract is that DOM focus never leaves the input,
+  // and a nested trigger inside an option breaks that. Retrieval by name is the
+  // row's whole job; the Consider tile and the decklist carry detail.
+  it("leaves a quick-add result without a detail trigger, by design", async () => {
+    searchCards.mockResolvedValue([
+      {
+        oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", owned: true, ownedQty: 1,
+        cardTypeGroup: "Artifacts", role: "ramp", imageUri: null,
+      },
+    ]);
+    renderInProvider(
+      <QuickAddBar
         deckId="d1"
-        inDeck={false}
+        commanderIdentity={["U"]}
+        deckOracleIds={[]}
+        commanderShortName="Muldrotha"
       />,
     );
-    await clickTrigger("Sol Ring");
-    expect(fetchCard).toHaveBeenCalledWith("o-sol");
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "sol" } });
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBeGreaterThan(0));
+    expect(
+      screen.queryByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
+    ).toBeNull();
   });
 
   it("opens details from the commander thumb", async () => {

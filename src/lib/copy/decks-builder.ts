@@ -63,6 +63,15 @@ export const addPanelCopy = {
     collapse: "Show fewer",
   },
 
+  // ── Coverage strip → shelf link ───────────────────────────────────────
+  // Only drawn under a cell that is short, so the label does not have to say
+  // which role it belongs to; the accessible name does, because a screen
+  // reader meets five of these in a row.
+  strip: {
+    shelfLink: "see picks",
+    shelfLinkAria: (role: string) => `See ${role} suggestions`,
+  },
+
   // ── Shelf headers ─────────────────────────────────────────────────────
   // The header quotes the same numbers as the coverage cell above it.
   shelf: {

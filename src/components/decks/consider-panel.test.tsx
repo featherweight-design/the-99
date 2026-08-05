@@ -4,8 +4,10 @@
 // never said what the deck was short of, a card claiming "0% of decks" when the
 // truth was that we had no figure, and a role printed on every row that the
 // heading above already said.
+import { useState } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { SortKey } from "./consider-toolbar";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 
@@ -41,18 +43,29 @@ const suggestion = (over: Partial<DeckSuggestion> & { name: string }): DeckSugge
 const deckCard = (role: DeckDetailCard["role"], quantity = 1) =>
   ({ role, quantity }) as DeckDetailCard;
 
-function mount(props: Partial<React.ComponentProps<typeof ConsiderPanel>> = {}) {
-  return render(
-    <CardDetailProvider fetchCard={async () => null}>
-      <ConsiderPanel
+// Sort lives in the shell now, so the harness supplies the state the shell
+// would: without it, changing the control would leave the shelves as they were.
+function Harness(props: Partial<React.ComponentProps<typeof ConsiderPanel>>) {
+  const [sort, setSort] = useState<SortKey>("gaps");
+  return (
+    <ConsiderPanel
       deckId="deck-1"
       suggestions={[suggestion({ name: "Sol Ring" })]}
       deckCards={[]}
       deckOracleIds={[]}
       commanderShortName="Korvold"
       degraded={false}
-        {...props}
-      />
+      sort={sort}
+      onSortChange={setSort}
+      {...props}
+    />
+  );
+}
+
+function mount(props: Partial<React.ComponentProps<typeof ConsiderPanel>> = {}) {
+  return render(
+    <CardDetailProvider fetchCard={async () => null}>
+      <Harness {...props} />
     </CardDetailProvider>,
   );
 }

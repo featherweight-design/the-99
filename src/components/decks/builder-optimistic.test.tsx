@@ -20,6 +20,10 @@ vi.mock("../../app/decks/actions", () => ({
   renameDeck: vi.fn(),
 }));
 
+// Consider's degraded banner refreshes the route rather than owning a retry, so
+// mounting the shell now needs a router even on the happy path.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 const { BuilderShell } = await import("./builder-shell");
 
 function deferred<T>() {
@@ -89,8 +93,20 @@ function renderBuilder() {
   );
 }
 
-function addSolRing() {
-  fireEvent.click(screen.getByRole("button", { name: "Add Sol Ring to deck" }));
+// Suggestions live behind the Consider tab now, so each step is flushed on its
+// own: batched inside a single act(), the add would be looked up in the DOM the
+// tab click had not yet redrawn.
+const showTab = async (name: RegExp) => {
+  await act(async () => {
+    fireEvent.click(screen.getByRole("tab", { name }));
+  });
+};
+
+async function addSolRing() {
+  await showTab(/cards to consider/i);
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Add Sol Ring to deck" }));
+  });
 }
 
 describe("optimistic deck list", () => {
@@ -107,7 +123,8 @@ describe("optimistic deck list", () => {
     // The card is only in the suggestions rail to begin with.
     expect(screen.queryByText("Artifacts")).not.toBeInTheDocument();
 
-    await act(async () => { addSolRing(); });
+    await addSolRing();
+    await showTab(/your deck/i);
 
     // A decklist group heading for its type is the proof the row was inserted
     // into the list rather than the button merely flipping to "In deck".
@@ -123,7 +140,8 @@ describe("optimistic deck list", () => {
     renderBuilder();
     expect(screen.getByRole("button", { name: /All 1/ })).toBeInTheDocument();
 
-    await act(async () => { addSolRing(); });
+    await addSolRing();
+    await showTab(/your deck/i);
 
     // Sol Ring is unowned, so it moves both counts — one card built, one to buy.
     expect(screen.getByRole("button", { name: /All 2/ })).toBeInTheDocument();
@@ -142,7 +160,8 @@ describe("optimistic deck list", () => {
     // for the round-trip.
     expect(screen.getByText("1 owned · 0 to buy")).toBeInTheDocument();
 
-    await act(async () => { addSolRing(); });
+    await addSolRing();
+    await showTab(/your deck/i);
 
     expect(screen.getByText("1 owned · 1 to buy")).toBeInTheDocument();
 
@@ -154,19 +173,25 @@ describe("optimistic deck list", () => {
     addCardToDeck.mockReturnValue(pending.promise);
 
     renderBuilder();
-    await act(async () => { addSolRing(); });
-    expect(screen.getByText("Artifacts")).toBeInTheDocument();
+    await addSolRing();
 
+    // Resolved from Consider, where the click was made and where the user
+    // still is: the refusal is owned by the tile, so it is only reachable
+    // while that tile is mounted. (Switching tabs mid-flight loses the
+    // message — the revert is still visible in the counts. Tracked separately.)
     await act(async () => {
       pending.resolve({ ok: false, message: "Deck is full." });
     });
+
+    // The refusal has to be said out loud — a prediction that silently
+    // un-happens is worse than no prediction at all.
+    expect(screen.getByRole("alert")).toHaveTextContent("Deck is full.");
+
+    await showTab(/your deck/i);
 
     // React drops the override when the transition ends; nothing explicitly
     // reverts it, which is the property worth pinning.
     expect(screen.queryByText("Artifacts")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /All 1/ })).toBeInTheDocument();
-    // The refusal has to survive the revert — a prediction that silently
-    // un-happens is worse than no prediction at all.
-    expect(screen.getByRole("alert")).toHaveTextContent("Deck is full.");
   });
 });

@@ -12,11 +12,13 @@ import { RoleCounterCell } from "./role-counter-cell";
 
 interface RoleCounterStripProps {
   cards: DeckDetailCard[];
+  /** Switches the builder to Consider; the anchor alone lands on a hidden panel. */
+  onSeeShelf?: () => void;
 }
 
 const ROLE_ORDER: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
-export function RoleCounterStrip({ cards }: RoleCounterStripProps) {
+export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
   const counts = computeRoleCounts(cards);
 
   return (
@@ -82,6 +84,9 @@ export function RoleCounterStrip({ cards }: RoleCounterStripProps) {
             target={RECOMMENDED_MIX[role].target}
             advisory={RECOMMENDED_MIX[role].advisory}
             rationale={RECOMMENDED_MIX[role].rationale}
+            onSeeShelf={
+              onSeeShelf && counts[role] < RECOMMENDED_MIX[role].target ? onSeeShelf : undefined
+            }
           />
         ))}
       </div>
