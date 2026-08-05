@@ -93,14 +93,18 @@ describe("QuickAddBar — combobox contract", () => {
     mount();
     await search();
 
+    // A distinct row for the new query, so the wait below is for the rows
+    // actually landing rather than merely for the request going out.
+    const stuxor = row({ name: "Stuxor, the Late Answer" });
+    searchCards.mockResolvedValue([stuxor]);
     fireEvent.change(field(), { target: { value: "stux" } });
     fireEvent.keyDown(field(), { key: "Enter" });
     expect(addCardToDeck).not.toHaveBeenCalled();
 
     // Once the new results land, Enter works again.
-    await waitFor(() => expect(searchCards).toHaveBeenLastCalledWith("stux", ["U"], true));
+    expect(await screen.findByText(stuxor.name)).toBeInTheDocument();
     fireEvent.keyDown(field(), { key: "Enter" });
-    await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", rhystic.oracleId));
+    await waitFor(() => expect(addCardToDeck).toHaveBeenCalledWith("deck-1", stuxor.oracleId));
   });
 
   it("adds the active row on Enter", async () => {
