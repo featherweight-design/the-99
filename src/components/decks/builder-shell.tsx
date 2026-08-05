@@ -4,7 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { shouldCelebrate } from "../../lib/decks/celebration";
@@ -13,7 +13,6 @@ import { useCelebrated } from "./use-celebrated";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { RoleCounterStrip } from "./role-counter-strip";
-import { DegradedBanner } from "./degraded-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crab } from "../character/crab";
@@ -27,6 +26,7 @@ import { ExportDialog } from "./export-dialog";
 import { CardDetailProvider } from "./card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { deckCounts } from "../../lib/decks/grouping";
+import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 
 interface BuilderShellProps {
   deck: DeckDetail;
@@ -81,6 +81,41 @@ export function BuilderShell({
   const isEmpty = built === 0;
   const commanderShortName = shortCommanderName(deck.commander.name);
 
+  // An add changes three numbers at once — the tile's button, the tab count and
+  // a role cell — and a screen reader sees none of them, because all three are
+  // ordinary text elsewhere in the tree. The live region is the only place the
+  // add is narrated, so every add path goes through this wrapper rather than
+  // calling addOptimisticCard directly.
+  const [announcement, setAnnouncement] = useState("");
+  // Composed from the pre-add list plus this card. `useOptimistic` state is not
+  // readable synchronously here, and reading it a render later would announce
+  // the previous add.
+  const cardsRef = useRef(cards);
+  cardsRef.current = cards;
+
+  const announceAdd = useCallback(
+    (card: Parameters<typeof addOptimisticCard>[0]) => {
+      addOptimisticCard(card);
+      const before = cardsRef.current;
+      const nextBuilt = deckCounts(before).built + card.quantity;
+      const mix = RECOMMENDED_MIX[card.role as MixRole] as
+        | (typeof RECOMMENDED_MIX)[MixRole]
+        | undefined;
+      setAnnouncement(
+        mix
+          ? addPanelCopy.announce.added(
+              card.name,
+              nextBuilt,
+              mix.label,
+              computeRoleCounts(before)[card.role as MixRole] + card.quantity,
+              mix.target,
+            )
+          : addPanelCopy.announce.addedNoRole(card.name, nextBuilt),
+      );
+    },
+    [addOptimisticCard],
+  );
+
   // Every route into the export dialog dismisses the reveal, not just the one
   // inside it — the user has acted on the moment, so leaving the band standing
   // behind the dialog is noise. Only while the band is actually up, though:
@@ -94,7 +129,7 @@ export function BuilderShell({
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     <CardDetailProvider>
-      <AddOptimisticCardProvider value={addOptimisticCard}>
+      <AddOptimisticCardProvider value={announceAdd}>
         {/* One column at both widths now that the rail is gone. Desktop still
             makes the viewport the frame so the quick-add bar can sit against the
             bottom edge rather than at the end of a long page scroll. */}
@@ -102,6 +137,10 @@ export function BuilderShell({
           className="flex flex-col min-h-screen md:h-screen md:min-h-0 md:overflow-hidden"
           style={{ background: "#100D0A" }}
         >
+          <span className="sr-only" aria-live="polite" aria-atomic="true">
+            {announcement}
+          </span>
+
           <div className="flex-1 flex flex-col min-w-0 md:min-h-0 md:overflow-y-auto">
             {/* The 99/99 kaiju reveal — one-shot, above the builder body */}
             {showReveal && (
@@ -118,9 +157,12 @@ export function BuilderShell({
             {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
             <RoleCounterStrip cards={cards} onSeeShelf={() => setView("consider")} />
 
-            {/* Degraded suggestions banner */}
-            {degraded && <DegradedBanner deckId={deck.id} />}
-
+            {/* No degraded banner here. The old one ("Synergy data offline")
+                fired alongside Consider's own ("EDHREC isn't answering right
+                now."), so an outage was announced twice, in two voices, and the
+                copy above the tabs was on screen while reading the decklist,
+                which EDHREC has nothing to do with. The claim belongs on the
+                shelf that makes it. */}
             {/* Guided first-run banner (only when firstRun === true) */}
             {firstRun && <GuidedBanner commanderName={deck.commander.name} />}
 

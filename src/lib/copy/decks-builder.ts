@@ -135,11 +135,9 @@ export const addPanelCopy = {
     placeholder: "Add a card by name…",
     fieldAria: "Add a card to this deck by name",
     identityNote: (identity: string) => `${identity} only`,
-    enterHint: "↵ adds the top match",
     keyboardHint: "↑↓ to move · ↵ to add · Esc to dismiss",
 
     resultsAria: "Card search results",
-    resultCount: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
     resultCountWithIdentity: (n: number, identity: string) =>
       `${n === 1 ? "1 match" : `${n} matches`} · ${identity} only`,
 
@@ -203,14 +201,15 @@ export const addPanelCopy = {
     roleHint: "Try filling your ramp, draw, removal, and wipe slots first.",
   },
 
-  // ── Live region (the builder’s existing one — not a new region) ───────
+  // ── Live region ───────────────────────────────────────────────────────
+  // Announces an add, which is otherwise silent: the three numbers it moves —
+  // the tile's button, the tab count, a role cell — are all ordinary text
+  // elsewhere in the tree. There is no `results` member: the quick-add bar's
+  // visible match count is already a `role="status"`, so a second region
+  // saying the same thing would double-announce every keystroke.
   announce: {
     added: (name: string, built: number, role: string, have: number, target: number) =>
       `${name} added · ${built} of 99 · ${role} ${have} of ${target}`,
     addedNoRole: (name: string, built: number) => `${name} added · ${built} of 99`,
-    results: (n: number, query: string) =>
-      n === 0
-        ? `No matches for ${query}`
-        : `${n === 1 ? "1 match" : `${n} matches`} for ${query}`,
   },
 } as const;

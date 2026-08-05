@@ -158,7 +158,12 @@ export function QuickAddBar({
     <div className="flex flex-col">
       <div className="flex items-center gap-[14px] flex-wrap">
         <SearchField
-          containerClassName="flex-1 min-w-[220px] max-w-[520px] h-[38px] bg-[#181410] border-[color:var(--brass)] py-0"
+          // 44px at phone width is the handoff's tap-target floor. The fill and
+          // the idle border come from FIELD_CHROME and are deliberately not
+          // overridden: pinning the border to brass here made the field look
+          // focused at rest, so SearchField's focus-within brass had nothing
+          // left to say.
+          containerClassName="flex-1 min-w-[220px] max-w-[520px] h-[44px] md:h-[38px] py-0"
           // 16px on mobile so Safari does not zoom the page on focus.
           className="text-[16px] md:text-[14px]"
           role="combobox"
