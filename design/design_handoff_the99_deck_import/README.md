@@ -325,7 +325,7 @@ Hexes live only in `globals.css`; everything below is `var(--*)`. **No new token
 
 - **New route:** `src/app/decks/import/page.tsx` + `src/components/decks/import-entry.tsx` (mode chip
   row, three inputs, the seven failure blocks, the two waiting phases). `previewPaste` /
-  `previewUpload` in `app/collection/actions.ts` are the shape to copy for the paste and file modes,
+  `previewUpload` in `src/app/collection/actions.ts` are the shape to copy for the paste and file modes,
   minus the preview return — **there is no review gate here.**
 - **URL fetch** is the only new server surface: fetch → `parse.ts` → `match.ts`. The seven failures
   map to *(a)* client-side URL shape, *(b)* 403, *(c)* 404, *(d)* 5xx/429/timeout, *(e)* client-side

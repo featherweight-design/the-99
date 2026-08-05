@@ -371,8 +371,9 @@ merely handling.
 
 ## Before epic-run starts
 
-This plan is not sufficient on its own. epic-run's preconditions also require a briefing at
-`docs/superpowers/plans/2026-08-04-deck-import-briefing.md` answering the three premise questions —
+This plan is not sufficient on its own. epic-run's preconditions also require a briefing, **which
+does not exist yet and is the next document to write** — `2026-08-04-deck-import-briefing.md`,
+alongside this file. It answers the three premise questions —
 launch gating; off-happy-path homes (specifically: where does a deck with unresolved rows *live* in
 the IA, and does anything surface it outside the deck page?); and the numbered journey walk script
 that drives Gate 5.
