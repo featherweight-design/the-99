@@ -101,6 +101,9 @@ export function QuickAddBar({
   // "Nothing in the pile" is only honest about the query that produced it, so a
   // stale empty list holds its tongue until the current one lands.
   const noResults = !dismissed && queryActive && !stale && rows !== null && results.length === 0;
+  // Results for the query in the field have not landed yet: either none at all,
+  // or the ones on screen answer an older query.
+  const searching = queryActive && (rows === null || stale);
   const identity = identityLabel(commanderIdentity);
   const unownedShown = results.filter((r) => !r.owned).length;
 
@@ -130,7 +133,10 @@ export function QuickAddBar({
       if (active && !inDeck(active)) addRef.current?.(active);
     } else if (e.key === "Escape") {
       e.preventDefault();
-      if (open || noResults) setDismissed(true);
+      // A search still in flight is something to dismiss. Without it the first
+      // Escape means two different things depending on whether the debounce has
+      // fired — list gone for a slow typist, query gone for a fast one.
+      if (!dismissed && (open || noResults || searching)) setDismissed(true);
       else setQuery("");
     }
   }
@@ -240,7 +246,10 @@ export function QuickAddBar({
           className="font-mono text-[10.5px] ml-auto"
           style={{ color: "#6A6152" }}
         >
-          {open
+          {/* noResults is a landed search too, and "0 matches" is the one thing
+              a screen reader most needs to hear — falling back to the identity
+              note there would announce nothing had changed. */}
+          {open || noResults
             ? ownedOnly
               ? addPanelCopy.quickAdd.resultCountWithIdentity(results.length, identity)
               : unownedShown > 0

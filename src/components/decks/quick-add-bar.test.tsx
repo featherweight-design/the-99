@@ -140,6 +140,22 @@ describe("QuickAddBar — the two-stage Escape", () => {
     expect(await screen.findByRole("listbox")).toBeInTheDocument();
   });
 
+  // Otherwise the same keystroke means "hide the list" or "clear what I typed"
+  // depending only on whether the debounce has fired yet.
+  it("dismisses rather than clearing while the search is still in flight", async () => {
+    let land: (r: SearchResult[]) => void = () => {};
+    searchCards.mockReturnValue(new Promise<SearchResult[]>((res) => { land = res; }));
+    mount();
+    fireEvent.change(field(), { target: { value: "stu" } });
+
+    fireEvent.keyDown(field(), { key: "Escape" });
+    expect(field()).toHaveValue("stu");
+
+    land([rhystic]);
+    await waitFor(() => expect(searchCards).toHaveBeenCalled());
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
   it("clears the query on a second Escape", async () => {
     mount();
     await search();
@@ -183,6 +199,17 @@ describe("QuickAddBar — the owned filter", () => {
     await waitFor(() => expect(searchCards).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByText(/nothing in the pile/i)).toBeNull());
     expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  // A search that landed empty is a result, so the status line has to say so
+  // rather than falling back to the standing identity note.
+  it("announces a zero count when the search lands empty", async () => {
+    searchCards.mockResolvedValue([]);
+    mount();
+    fireEvent.change(field(), { target: { value: "zzz" } });
+
+    const status = await screen.findByRole("status");
+    await waitFor(() => expect(status).toHaveTextContent("0 matches"));
   });
 
   it("offers the escape only while the filter is what stands in the way", async () => {
