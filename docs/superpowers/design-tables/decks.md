@@ -1297,70 +1297,16 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 
 ---
 
-## Component: Degraded Suggestions Banner
+## Component: Degraded Suggestions Banner (retired)
 
-### Banner container
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| margin | 14px 16px 6px | 14px 16px 4px |
-| background | #211C15 | #211C15 |
-| border | 1px solid #3A3229 | 1px solid #3A3229 |
-| border-left | 3px solid #E0913C | 3px solid #E0913C |
-| border-radius | 10px | 10px |
-| padding | 12px 14px | 13px 15px |
-
-### Banner — header row
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex | flex |
-| align-items | center | center |
-| gap | 9px | 10px |
-
-### Banner — warning icon
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| width | 22px | 24px |
-| height | 22px | 24px |
-| border-radius | 999px | 999px |
-| border | 1.5px solid #E0913C | 1.5px solid #E0913C |
-| color | #E0913C | #E0913C |
-| font-size | 12px | 13px |
-| flex | none | none |
-
-### Banner — "Synergy data offline" heading
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 12.5px | 13px |
-| color | #EDE6D8 | #EDE6D8 |
-| font-weight | 600 | 600 |
-
-### Banner — Retry link (mobile)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| margin-left | auto | — |
-| font-size | 12px | — |
-| color | #C9A24B | — |
-
-### Banner — Retry button (desktop)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| margin-left | — | auto |
-| font-family | — | 'IBM Plex Sans', sans-serif |
-| font-weight | — | 600 |
-| font-size | — | 12px |
-| color | — | #EDE6D8 |
-| background | — | transparent |
-| border | — | 1px solid #3A3229 |
-| border-radius | — | 7px |
-| padding | — | 6px 12px |
-
-### Banner — body text
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 11.5px | 12px |
-| color | #C6B79A | #C6B79A |
-| line-height | 1.5 | 1.55 |
-| margin-top | 7px | 9px |
+> **Superseded by the #158 Add panel overhaul (shipped 2026-08-05).** The banner
+> spec that stood here, its "Synergy data offline" heading and its separate mobile
+> and desktop retry affordances all belonged to the Add Panel. No `DegradedBanner`
+> component exists; `builder-shell.tsx:217` says so in a comment where it used to
+> be mounted. The degraded message now renders inside the Consider view
+> (`consider-panel.tsx:191`) from `addPanelCopy.degraded`, and the shelves stay
+> ordered by what the deck lacks — they lose the EDHREC percentages, not their
+> order. The drawn replacement is in `design/design_handoff_the99_add_panel/`.
 
 ---
 
@@ -2060,7 +2006,7 @@ reads `Complete` (99 cards, all owned). Implemented in
 | Consider · tile in deck | `inDeck.has(oracleId)` | In-deck label #6FA368 in place of the Add button | in-deck membership as a `Set<string>` |
 | Suggestion — synergy reason | `reasonType === 'edhrec'` | Brass chip rgba(201,162,75,0.14) | `reasonLabel: "EDHREC · N% of decks"`, `reasonType: 'edhrec'` |
 | Suggestion — role-fill reason | `reasonType === 'role'` | Neutral chip #2A241D | `reasonLabel: "Fills <role> · rec N"`, `reasonType: 'role'` |
-| Builder · suggestions degraded | EDHREC offline / error | DegradedBanner (amber left-border) + Suggestions ranked by role only | `suggestionsMode: 'degraded'` |
+| Builder · suggestions degraded | EDHREC offline / error | Degraded notice inside the Consider view (amber left-border); shelves keep their gap ordering and lose the EDHREC percentages | `degraded: true` |
 | Role counter — below rec (neutral) | `have < rec` (non-advisory) | Figure #C6B79A, bar #C9A24B | `have < rec` |
 | Role counter — met rec (green) | `have >= rec` | Figure #6FA368, bar #6FA368 | `have >= rec` |
 | Role counter — Lands advisory | Always (advisory role) | Bar #C9A24B regardless of count; label "rec ~37" | `advisory: true` |
