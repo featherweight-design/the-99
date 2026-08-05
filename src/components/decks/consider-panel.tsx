@@ -57,12 +57,14 @@ function sortWithin(suggestions: DeckSuggestion[], sort: SortKey): DeckSuggestio
 }
 
 function ShelfSection({
-  shelf, deckId, deckOracleIds, commanderShortName,
+  shelf, deckId, deckOracleIds, commanderShortName, first,
 }: {
   shelf: Shelf;
   deckId: string;
   deckOracleIds: string[];
   commanderShortName: string;
+  /** The 16px mobile gap sits between shelves, so the first one does not take it. */
+  first: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const headingId = `shelf-${shelf.role}`;
@@ -74,7 +76,10 @@ function ShelfSection({
   const siblings = useMemo(() => shelf.suggestions.map((s) => s.oracleId), [shelf.suggestions]);
 
   return (
-    <section aria-labelledby={headingId} className="mt-[16px] md:mt-0 md:mb-[20px]">
+    <section
+      aria-labelledby={headingId}
+      className={`md:mt-0 md:mb-[20px] ${first ? "" : "mt-[16px]"}`}
+    >
       <div className="flex items-baseline gap-[8px] md:gap-[10px] mb-[9px] md:mb-[11px]">
         <h3
           id={headingId}
@@ -210,9 +215,10 @@ export function ConsiderPanel({
             </p>
           </div>
 
-          {shelves.map((shelf) => (
+          {shelves.map((shelf, i) => (
             <ShelfSection
               key={shelf.role}
+              first={i === 0}
               shelf={shelf}
               deckId={deckId}
               deckOracleIds={deckOracleIds}

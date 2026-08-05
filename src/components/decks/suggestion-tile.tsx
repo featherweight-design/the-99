@@ -131,29 +131,27 @@ export function SuggestionTile({
     // The tile keeps its slot once added: pulling it out reflows the grid under
     // the pointer, so the next click lands on a card the user never chose.
     <li
-      className="group flex flex-col gap-[8px] rounded-[10px] p-[9px] pb-[10px] transition-colors"
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        opacity: noArt ? 0.55 : 1,
-      }}
+      className="group flex flex-col gap-[8px] rounded-[10px] p-[9px] pb-[10px] transition-colors border bg-[color:var(--surface)] border-[color:var(--border)] hover:bg-[color:var(--elevated-hover)] hover:border-[color:var(--border-strong)]"
+      style={{ opacity: noArt ? 0.55 : 1 }}
     >
       <CardDetailTrigger
         oracleId={suggestion.oracleId}
         name={suggestion.name}
         siblings={siblings}
-        className="relative block w-full overflow-hidden rounded-[7px] p-0"
+        className={`relative block w-full overflow-hidden rounded-[7px] p-0 border-none transition-shadow ${
+          // The shadows are classes rather than an inline style so the hover
+          // variant can win: an inline boxShadow outranks group-hover:.
+          applied || noArt
+            ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"
+            : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(201,162,75,0.35)]"
+        }`}
         style={{
           aspectRatio: "63 / 88",
-          border: "none",
           background: noArt
             ? "linear-gradient(158deg, #3A3229 0%, #241F19 62%, #161311 100%)"
             : `center / cover no-repeat url(${suggestion.imageUri})`,
           filter: applied ? "grayscale(.6)" : undefined,
           opacity: applied ? 0.5 : undefined,
-          boxShadow: applied || noArt
-            ? "inset 0 0 0 1px rgba(0,0,0,.3)"
-            : "inset 0 -26px 30px -22px rgba(0,0,0,.65), inset 0 0 0 1px rgba(0,0,0,.3)",
         }}
       >
         {noArt ? (
