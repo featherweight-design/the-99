@@ -76,6 +76,10 @@ export function QuickAddBar({
           setActiveIndex(0);
         })
         .catch((err) => {
+          // Outside the `cancelled` guard on purpose. Nothing here aborts the
+          // request, so a rejection means searchCards genuinely threw, and the
+          // user typing another character is no reason to stop saying so — a
+          // guarded log would hide a wholly broken action behind fast typing.
           console.error(err);
           // Back to "no search has happened", never to "no results". An empty
           // list renders "Nothing in the pile by that name", which is a claim
