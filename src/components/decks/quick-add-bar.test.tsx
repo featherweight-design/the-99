@@ -140,6 +140,19 @@ describe("QuickAddBar — the owned filter", () => {
     expect(await screen.findByText(/filter off — 1 result you don’t own/i)).toBeInTheDocument();
   });
 
+  // A failed request knows nothing about the collection, so it must not borrow
+  // the empty state's claim that nothing by that name is owned.
+  it("does not report an empty pile when the search itself failed", async () => {
+    searchCards.mockRejectedValue(new Error("boom"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mount();
+    fireEvent.change(field(), { target: { value: "stu" } });
+
+    await waitFor(() => expect(searchCards).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText(/nothing in the pile/i)).toBeNull());
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
   it("offers the escape only while the filter is what stands in the way", async () => {
     searchCards.mockResolvedValue([]);
     mount();

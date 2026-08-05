@@ -68,7 +68,12 @@ export function QuickAddBar({
         })
         .catch((err) => {
           console.error(err);
-          if (!cancelled) setRows([]);
+          // Back to "no search has happened", never to "no results". An empty
+          // list renders "Nothing in the pile by that name", which is a claim
+          // about the collection that a failed request has not earned. The
+          // handoff draws no failure state for this bar, so rather than invent
+          // one the list simply does not open — tracked for Design.
+          if (!cancelled) setRows(null);
         });
     }, 150);
 
@@ -118,8 +123,12 @@ export function QuickAddBar({
   }
 
   // The row owns the mutation hook, so Enter reaches it through a ref rather
-  // than the bar duplicating the add path.
+  // than the bar duplicating the add path. Stable, or the active row's
+  // registration effect would re-run on every keystroke.
   const addRef = useRef<((r: SearchResult) => void) | null>(null);
+  const registerAdd = useCallback((fn: (r: SearchResult) => void) => {
+    addRef.current = fn;
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -235,7 +244,7 @@ export function QuickAddBar({
                 inDeck={inDeck(r)}
                 active={i === activeIndex}
                 onActivate={() => setActiveIndex(i)}
-                registerAdd={i === activeIndex ? (fn) => (addRef.current = fn) : undefined}
+                registerAdd={i === activeIndex ? registerAdd : undefined}
               />
             ))}
           </ul>
