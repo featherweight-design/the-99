@@ -46,8 +46,19 @@ describe("role counter strip — shelf links", () => {
     const onSeeShelf = vi.fn();
     render(<RoleCounterStrip cards={[]} onSeeShelf={onSeeShelf} />);
     fireEvent.click(linkFor(RECOMMENDED_MIX.ramp.label.toLowerCase())!);
-    // Without this the href lands on a panel the deck tab has unmounted.
-    expect(onSeeShelf).toHaveBeenCalled();
+    // Named, so one callback shared by five cells can still scroll to the right
+    // shelf. Without this the href lands on a panel the deck tab has unmounted.
+    expect(onSeeShelf).toHaveBeenCalledWith("ramp");
+  });
+
+  // The anchor's own navigation would set the hash against a heading that is
+  // not in the document yet, leaving the user on the deck tab with a changed
+  // URL and no scroll.
+  it("suppresses the anchor's own navigation", () => {
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+    linkFor(RECOMMENDED_MIX.ramp.label.toLowerCase())!.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
   });
 
   it("draws no links at all when the strip is given nowhere to send the user", () => {

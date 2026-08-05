@@ -4,7 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { shouldCelebrate } from "../../lib/decks/celebration";
@@ -27,6 +27,12 @@ import { CardDetailProvider } from "./card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { deckCounts } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
+
+// Shared by both shelf-link paths — the one that is already on Consider and
+// the one that has to switch views first — so they land identically.
+function scrollToShelf(role: MixRole) {
+  document.getElementById(`shelf-${role}`)?.scrollIntoView({ block: "start" });
+}
 
 interface BuilderShellProps {
   deck: DeckDetail;
@@ -113,6 +119,30 @@ export function BuilderShell({
     [addOptimisticCard, cards],
   );
 
+  // A shelf link is a two-step move: switch to Consider, then scroll to the
+  // heading. The scroll cannot happen in the click handler, because the shelf
+  // is not in the DOM until the view has changed and rendered.
+  // A ref rather than state: the target is consumed by the effect that acts on
+  // it, and holding it in state would mean a second render whose only job is to
+  // clear it — which the react-compiler rule rightly rejects.
+  const pendingShelf = useRef<MixRole | null>(null);
+  const seeShelf = useCallback(
+    (role: MixRole) => {
+      if (view === "consider") {
+        scrollToShelf(role);
+        return;
+      }
+      pendingShelf.current = role;
+      setView("consider");
+    },
+    [view],
+  );
+  useEffect(() => {
+    if (view !== "consider" || !pendingShelf.current) return;
+    scrollToShelf(pendingShelf.current);
+    pendingShelf.current = null;
+  }, [view]);
+
   // Every route into the export dialog dismisses the reveal, not just the one
   // inside it — the user has acted on the moment, so leaving the band standing
   // behind the dialog is noise. Only while the band is actually up, though:
@@ -152,7 +182,7 @@ export function BuilderShell({
             <BuilderSpine deck={deck} counts={counts} onExport={openExport} />
 
             {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
-            <RoleCounterStrip cards={cards} onSeeShelf={() => setView("consider")} />
+            <RoleCounterStrip cards={cards} onSeeShelf={seeShelf} />
 
             {/* No degraded banner here. The old one ("Synergy data offline")
                 fired alongside Consider's own ("EDHREC isn't answering right

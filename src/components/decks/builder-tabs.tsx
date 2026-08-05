@@ -36,8 +36,15 @@ function Tab({
       role="tab"
       id={id}
       aria-selected={selected}
-      aria-controls={panelId}
+      // Only the selected tab names a panel. The other panel is unmounted while
+      // this one is up, so a standing aria-controls would point every inactive
+      // tab at an element that is not in the document.
+      aria-controls={selected ? panelId : undefined}
       aria-label={accessibleName}
+      // Roving tabindex: the tablist is one tab stop and the arrows move within
+      // it, which is the ARIA tabs contract. Dropping the inactive tab from the
+      // tab order without the arrows would leave it unreachable by keyboard.
+      tabIndex={selected ? 0 : -1}
       onClick={onSelect}
       // The idle border is transparent rather than absent so selecting a tab
       // does not shift the bar by 2px.
@@ -74,7 +81,28 @@ export function BuilderTabs({
       className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px]"
       style={{ borderBottom: "1px solid var(--border)" }}
     >
-      <div className="flex items-baseline gap-[16px] md:gap-[22px]" role="tablist">
+      <div
+        className="flex items-baseline gap-[16px] md:gap-[22px]"
+        role="tablist"
+        // Selection follows focus, which is the pattern's default for two
+        // panels that are both cheap to render.
+        onKeyDown={(e) => {
+          const next =
+            e.key === "ArrowRight" || e.key === "ArrowDown"
+              ? "consider"
+              : e.key === "ArrowLeft" || e.key === "ArrowUp"
+                ? "deck"
+                : e.key === "Home"
+                  ? "deck"
+                  : e.key === "End"
+                    ? "consider"
+                    : null;
+          if (!next) return;
+          e.preventDefault();
+          onViewChange(next);
+          document.getElementById(`tab-${next}`)?.focus();
+        }}
+      >
         <Tab
           id="tab-deck"
           panelId="panel-deck"

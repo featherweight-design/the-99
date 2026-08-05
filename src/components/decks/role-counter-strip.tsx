@@ -13,8 +13,12 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 interface RoleCounterStripProps {
   cards: DeckDetailCard[];
-  /** Switches the builder to Consider; the anchor alone lands on a hidden panel. */
-  onSeeShelf?: () => void;
+  /**
+   * Switches the builder to Consider and scrolls to that role's shelf. The
+   * anchor alone lands on nothing: the Consider panel is unmounted while the
+   * deck tab is up, so the `#shelf-*` heading does not exist at click time.
+   */
+  onSeeShelf?: (role: MixRole) => void;
 }
 
 const ROLE_ORDER: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
@@ -86,7 +90,9 @@ export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
             advisory={RECOMMENDED_MIX[role].advisory}
             rationale={RECOMMENDED_MIX[role].rationale}
             onSeeShelf={
-              onSeeShelf && counts[role] < RECOMMENDED_MIX[role].target ? onSeeShelf : undefined
+              onSeeShelf && counts[role] < RECOMMENDED_MIX[role].target
+                ? () => onSeeShelf(role)
+                : undefined
             }
           />
         ))}

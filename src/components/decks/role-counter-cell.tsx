@@ -92,7 +92,15 @@ export function RoleCounterCell({
       {onSeeShelf && (
         <a
           href={`#shelf-${role}`}
-          onClick={onSeeShelf}
+          // The href is the honest destination and survives a middle-click, but
+          // the default navigation is suppressed: the Consider panel is not
+          // mounted yet, so the browser would set the hash against a heading
+          // that does not exist and scroll nowhere. The shell switches views
+          // and scrolls once the shelf is on screen.
+          onClick={(e) => {
+            e.preventDefault();
+            onSeeShelf();
+          }}
           aria-label={addPanelCopy.strip.shelfLinkAria(label.toLowerCase())}
           className="font-mono text-[9px] md:text-[10px] mt-[4px] text-center md:text-left text-brass hover:text-brass-hover"
         >
