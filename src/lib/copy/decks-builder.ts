@@ -68,8 +68,11 @@ export const addPanelCopy = {
   // which role it belongs to; the accessible name does, because a screen
   // reader meets five of these in a row.
   strip: {
-    shelfLink: "see picks",
-    shelfLinkAria: (role: string) => `See ${role} suggestions`,
+    // Named for where it lands. "picks" would have been a third noun for one
+    // thing beside the tab's "Consider" and, worse, "Top picks for X" is
+    // already a specific shelf this link does NOT go to.
+    shelfLink: "consider",
+    shelfLinkAria: (role: string) => `See ${role} cards to consider`,
   },
 
   // ── Shelf headers ─────────────────────────────────────────────────────
@@ -177,11 +180,10 @@ export const addPanelCopy = {
   // 1. `cta: "Open suggestions"` is DELETED. Its only job was opening the
   //    bottom sheet. In the finished shape the Consider tab sits 40px above the
   //    mark with its count on it and the quick-add bar is focusable at the
-  //    bottom of the same screen — two live entrances, no button. Both of those
-  //    arrive with the shell rewiring, so until then BuilderShell still renders
-  //    the sheet and keeps its "+ Add cards" footer visible on an empty deck;
-  //    deleting this string without that would strand a mobile empty deck with
-  //    no way to add a first card.
+  //    bottom of the same screen — two live entrances, no button. Both landed
+  //    with the shell rewiring, which is what made deleting the string safe:
+  //    without them a mobile empty deck would have had no way to add a first
+  //    card. builder-empty-entrance.test.tsx pins both entrances.
   // 2. `captionFor` / `captionForMobile` COLLAPSE INTO ONE. The split existed
   //    only because the two widths pointed at different constructs ("on the
   //    right" vs "one tap away"); they now point at the same two. This also

@@ -68,8 +68,9 @@ export function BuilderShell({
     alreadyCelebrated: celebrated,
   });
 
-  // Deliberately the SERVER list, not the optimistic one. AddPanel feeds this to
-  // each row's `inDeck`, which use-deck-mutation treats as committed truth — and
+  // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and
+  // QuickAddBar feed this to each row's `inDeck`, which use-deck-mutation
+  // treats as committed truth — and
   // it clears the row's error whenever that value changes, on the reasoning that
   // the server has since settled the question. Wire the optimistic list in here
   // and a failed add flips the value twice (add, then revert), the second flip
