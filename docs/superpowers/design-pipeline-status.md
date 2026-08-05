@@ -36,6 +36,7 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
 | **#158** Design: deck builder Add panel overhaul | `design/design_handoff_the99_add_panel/` | 🟢 Green (R2) | Plan at `docs/superpowers/plans/2026-08-04-add-panel-overhaul-plan.md` — six PRs, payload first. R1 came back Yellow on three items; two closed audit-side (the EDHREC lift figure is a parse line off a payload we already cache, and the decks design table was in the repo, just not Design's tree) and R2 drew the one genuine gap — the empty *deck* state, whose `Open suggestions` CTA pointed at the retired sheet. R2 also found a shipped string the audit missed: the empty-builder caption says suggestions are "primed on the right", true only of the 340px column this pass deletes. One open product call — the owned-only default flips `false` → `true`; every state is drawn with both positions, so it is a one-line revert either way |
+| **#42** Design: Import existing decks (Moxfield) | `design/design_handoff_the99_deck_import/` | 🟢 Green (R2, post-audit) | Plan at `docs/superpowers/plans/2026-08-04-deck-import-plan.md`. Nineteen states at both breakpoints, rebased onto #158's add panel. The R2 audit ratified all three #158-opened calls (row-scoped combobox in an inline expander rather than the global bar; owned-only overridden off because matching runs against Scryfall, not the collection; unresolved rows outside both counts with the banner carrying the caveat) and closed every blocker without a redraw. Two audit corrections landed in R2: Design's "the parser can't tell failures 9 and 10 apart" was inverted — `parsePasteList` (`src/lib/manabox/paste.ts:38-40`) falls through to `quantity = 1` for any non-blank line, so gibberish yields rows that fail at *match*, not zero rows, and state 9's copy was rewritten from a parse failure to a match failure (`unparseable` → `noneMatched`). The completion-reveal collision was ruled 2026-08-04: suppress `shouldCelebrate()` on import-arrival, let it fire on the player's first own add. **Partially gated on build order — the plan's PRs 1–6 (schema, import pipeline, Moxfield fetch, entry surface, commander picker, counts + unresolved group) can start now; PRs 7–9 wait on #158's PR 6, because `quick-add-bar.tsx` does not exist yet and the arrival chrome sits inside the shell #158 rewrites** |
 
 ---
 
@@ -54,7 +55,8 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-| 1 | **#42** Design: Import existing decks (Moxfield) | `docs/superpowers/specs/2026-08-02-deck-import-design.md` | Handoff prompt goes to Claude Design next — 19 named states across entry, entry failures, commander selection, deck arrival and row resolution, mobile + desktop — then a READINESS audit | The only brief in the queue now that #158 has its handoff and has moved to 🟢. The larger and more complete of the two, and ready to go to Design. Workshopped 2026-08-02: no review gate (the deck exists as soon as it can), unmatched lines persist as unresolved rows that block the Complete pill, and the entry point accepts a Moxfield URL alongside paste and file, which is what adds the third-party failure family Design has to draw |
+
+_Currently empty — #42's R2 handoff landed and its audit came back Green, so it sits in 🟢 above._
 
 ---
 
