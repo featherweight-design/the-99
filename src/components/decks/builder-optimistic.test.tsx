@@ -35,6 +35,7 @@ const suggestion: DeckSuggestion = {
   reasonType: "edhrec",
   imageUri: null,
   inclusionPct: null,
+  lift: null,
   reasonLabel: "EDHREC staple",
   owned: false,
   inDeck: false,

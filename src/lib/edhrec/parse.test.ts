@@ -49,3 +49,48 @@ describe("parseEdhrecPayload", () => {
     expect(inclusionByName["Sol Ring"]).toBeUndefined();
   });
 });
+
+describe("parseEdhrecPayload — synergy", () => {
+  // The committed muldrotha.json fixture is trimmed to `{ name }`, so `synergy`
+  // cannot be proven present from the repo. These inline payloads carry it
+  // rather than editing the fixture to assert a shape we have not observed
+  // upstream — that would be fabricating evidence of the API's contract.
+  const withCardviews = (cardviews: unknown[]) => ({
+    container: { json_dict: { cardlists: [{ cardviews }] } },
+  });
+
+  it("collects synergy keyed lowercase when the payload carries it", () => {
+    const { synergyByName } = parseEdhrecPayload(
+      withCardviews([{ name: "Sol Ring", synergy: 0.23 }]),
+    );
+    expect(synergyByName["sol ring"]).toBe(0.23);
+  });
+
+  it("omits the key entirely when synergy is absent — never defaults to 0", () => {
+    // 0 would render a real bar for no data. Absence is the drawn state.
+    const { synergyByName } = parseEdhrecPayload(
+      withCardviews([{ name: "Spore Frog", num_decks: 10, potential_decks: 100 }]),
+    );
+    expect(synergyByName).not.toHaveProperty("spore frog");
+  });
+
+  it("ignores a non-numeric synergy", () => {
+    const { synergyByName } = parseEdhrecPayload(
+      withCardviews([{ name: "Sol Ring", synergy: "0.23" }]),
+    );
+    expect(synergyByName).not.toHaveProperty("sol ring");
+  });
+
+  it("carries negative synergy through the parse layer unchanged", () => {
+    // Sign is a suggest.ts concern (only positive lift surfaces); parse reports
+    // what upstream said.
+    const { synergyByName } = parseEdhrecPayload(
+      withCardviews([{ name: "Bad Card", synergy: -0.4 }]),
+    );
+    expect(synergyByName["bad card"]).toBe(-0.4);
+  });
+
+  it("returns an empty synergy map for a payload with no cardlists", () => {
+    expect(parseEdhrecPayload({}).synergyByName).toEqual({});
+  });
+});

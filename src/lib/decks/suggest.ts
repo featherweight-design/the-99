@@ -24,6 +24,11 @@ export type DeckSuggestion = {
   // size a bar without parsing a sentence. Null is the drawn "no EDHREC figure"
   // state and must render as absence, never as 0%.
   inclusionPct: number | null;
+  // EDHREC synergy: how much more this commander's decks run the card than
+  // decks generally. Surfaced only where positive (decision 6) — zero and
+  // negative resolve to null, because "runs it less than average" is not a
+  // reason to add a card.
+  lift: number | null;
 };
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };
@@ -44,10 +49,12 @@ export function buildSuggestionPayload(
     imageUri: string | null;
   },
   inclusionByName: Record<string, number>,
+  synergyByName: Record<string, number> = {},
 ): DeckSuggestion {
   let reasonType: ReasonType;
   let reasonLabel: string;
   let inclusionPct: number | null = null;
+  let lift: number | null = null;
 
   if (s.reason === "edhrec") {
     reasonType = "edhrec";
@@ -56,6 +63,8 @@ export function buildSuggestionPayload(
     const lower = s.name.toLowerCase();
     const inclusion = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
     inclusionPct = inclusion ?? null;
+    const synergy = synergyByName[lower] ?? synergyByName[lower.split(" // ")[0]];
+    lift = typeof synergy === "number" && synergy > 0 ? synergy : null;
     reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
   } else {
     reasonType = "role";
@@ -76,6 +85,7 @@ export function buildSuggestionPayload(
     role: s.role,
     imageUri: s.imageUri,
     inclusionPct,
+    lift,
   };
 }
 
