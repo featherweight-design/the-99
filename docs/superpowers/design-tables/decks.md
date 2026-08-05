@@ -1301,9 +1301,10 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 
 > **Superseded by the #158 Add panel overhaul (shipped 2026-08-05).** The banner
 > spec that stood here, its "Synergy data offline" heading and its separate mobile
-> and desktop retry affordances all belonged to the Add Panel. No `DegradedBanner`
-> component exists; `builder-shell.tsx:217` says so in a comment where it used to
-> be mounted. The degraded message now renders inside the Consider view
+> and desktop retry affordances all belonged to the Add Panel. The decks build has
+> no banner component of its own any more; `builder-shell.tsx:217` carries a
+> comment where it used to be mounted. (`DegradedBanner` still resolves under
+> `src/components/commanders/`, which is a different surface and untouched here.) The degraded message now renders inside the Consider view
 > (`consider-panel.tsx:191`) from `addPanelCopy.degraded`, and the shelves stay
 > ordered by what the deck lacks — they lose the EDHREC percentages, not their
 > order. The drawn replacement is in `design/design_handoff_the99_add_panel/`.
