@@ -175,8 +175,10 @@ export function SuggestionTile({
                 {addPanelCopy.tile.detailHint}
               </span>
             )}
-            {/* Every Consider suggestion is owned, and an added tile drops the
-                dot rather than claiming two states at once. */}
+            {/* Most suggestions are owned, but getDeckSuggestions appends a few
+                unowned EDHREC staples, which today read as an absent dot. The
+                handoff has no unowned tile variant; #176 asks Design for one.
+                An added tile drops the dot rather than claiming two states. */}
             {suggestion.owned && !applied && (
               <span
                 aria-hidden

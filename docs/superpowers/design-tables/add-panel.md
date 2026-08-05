@@ -106,7 +106,7 @@ them / the brand sheet names them.
 | Sort accessible name | `Sort suggestions` | copy.consider.sortAria |
 | Sort label (bare) | `Sort` | copy.consider.sortLabel |
 | Sort persistence | Plain component state; **resets on navigation** (like the decklist grouping toggle) | README §Gap report 6; READINESS §Non-blocking |
-| Owned/unowned filter in Consider | **None.** `suggestDeck()` iterates `ownedPool`, so every suggestion is already owned | README §Decision 5; Canvas F:613 |
+| Owned/unowned filter in Consider | **None** as drawn. ⚠️ The stated reason is false: `getDeckSuggestions()` appends up to 5 unowned EDHREC staples, and has since #25. The absence of a filter still holds; the premise behind it does not — see #176 | README §Decision 5; Canvas F:613; `src/app/decks/actions.ts:113-178` |
 | Virtualisation | None — 99 tiles need no windowing | README §Notes for engineering |
 | Live region | The builder's **existing** live region; not a new one per surface | README §Accessibility contract |
 
@@ -212,7 +212,7 @@ them / the brand sheet names them.
 | Colour | `--success` | README §Component notes |
 | Halo | `box-shadow: 0 0 0 2px rgba(10,8,6,.7)` — so it clears any art | README §Component notes |
 | Position | Top-right of the art, `right:6px; top:6px` | README §Component notes; Canvas B:299 |
-| Non-owned variant on a tile | Not applicable in Consider (every suggestion is owned). The focus-visible sample draws a `#8E8269` dot; unexplained | Canvas B:329 — **see Open questions** |
+| Non-owned variant on a tile | ⚠️ **Undrawn, and reachable.** The table called it not-applicable on the owned-only premise, which is false (see line 109). Up to 5 unowned staples can appear, and today they signal it only by the *absence* of the dot. The focus-visible sample draws a `#8E8269` dot; unexplained | Canvas B:329 — **see Open questions**; #176 |
 | Colour-only signal | Prohibited — ownership is a dot **and** a word (in the search row) | README §Accessibility contract |
 
 ### 4d. Tile — name and type line
@@ -503,7 +503,7 @@ them / the brand sheet names them.
 
 | Property | Specified value | Source |
 |---|---|---|
-| Scope | **Search only.** Consider has no owned/unowned axis | README §Decision 5; Canvas F:613 |
+| Scope | **Search only.** Consider is drawn with no owned/unowned axis, though it can contain unowned cards — see line 109 and #176 | README §Decision 5; Canvas F:613 |
 | Position (the call) | **Position A** — inline in the quick-add bar, always visible | README §Decision 5; Canvas F:593 |
 | Position B (drawn, rejected) | In the results header beside the count — buys tighter resting chrome, loses the control exactly when it is needed | README §Decision 5; Canvas F:600–606 |
 | Default | **On** (`true`) — flips the shipped `useState(false)` | README §Decision 5; Canvas F:610 |
