@@ -60,6 +60,32 @@ function mount(props: Partial<React.ComponentProps<typeof ConsiderPanel>> = {}) 
 beforeEach(() => vi.clearAllMocks());
 
 describe("ConsiderPanel — shelves", () => {
+  // A shelf's coverage figure counts the slot the card was picked against, so
+  // shelving a multi-role card by what it *is* would put it under a heading
+  // whose n-of-m never moved for it.
+  it("shelves a role pick by the slot it fills, not the card's own role", () => {
+    mount({
+      suggestions: [
+        suggestion({ name: "Sol Ring", reasonType: "role", reason: "ramp", role: "removal" }),
+      ],
+      deckCards: [],
+    });
+
+    const heading = screen.getByRole("heading", { level: 3 });
+    expect(heading).toHaveTextContent("Ramp");
+  });
+
+  // An EDHREC pick was chosen for no slot at all, so the card's own role is
+  // the only thing that can place it.
+  it("shelves an EDHREC pick by the card's own role", () => {
+    mount({
+      suggestions: [suggestion({ name: "Sol Ring", reasonType: "edhrec", role: "removal" })],
+      deckCards: [],
+    });
+
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("Removal");
+  });
+
   // The whole reason for shelves rather than one list: the first thing on
   // screen is what the deck most lacks.
   it("orders shelves by how far under target the deck is", () => {
@@ -166,13 +192,18 @@ describe("ConsiderPanel — evidence", () => {
     expect(screen.queryByText("0%")).toBeNull();
   });
 
-  it("names the role the card fills when the pick was not EDHREC's", () => {
+  // reason and role diverge on a multi-role card: this one is classified as
+  // removal but was picked to close the ramp gap, and the sentence is about
+  // why it is here rather than what it is.
+  it("names the slot the card was picked for, not the card's own role", () => {
     mount({
       suggestions: [
-        suggestion({ name: "Sol Ring", reasonType: "role", inclusionPct: null, role: "removal" }),
+        suggestion({
+          name: "Sol Ring", reasonType: "role", reason: "ramp", inclusionPct: null, role: "removal",
+        }),
       ],
     });
-    expect(screen.getByText("fills a removal slot")).toBeInTheDocument();
+    expect(screen.getByText("fills a ramp slot")).toBeInTheDocument();
   });
 
   // Synergy arrives as a fraction; the tile states it in points, and only when

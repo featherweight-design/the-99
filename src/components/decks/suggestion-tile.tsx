@@ -10,13 +10,14 @@ import { addCardToDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { shelfRoleOf } from "../../lib/decks/suggest";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
 // "{2}{U}{B}" → ["2", "U", "B"]. Hybrid and Phyrexian symbols come back whole
-// ("U/B", "G/P") and fall through to the generic pip, which is why the cost is
+// ("U/B", "G/P") and CostPips draws their colours, which is why the cost is
 // carried as Scryfall's string rather than reconstructed from the mana value.
 function parseManaCost(cost: string): string[] {
   return [...cost.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
@@ -28,18 +29,27 @@ function CostPips({ cost }: { cost: string }) {
   return (
     <span aria-hidden className="absolute left-[6px] bottom-[6px] flex gap-[3px]">
       {symbols.map((sym, i) => {
-        const wubrg = /^[WUBRG]$/.test(sym);
+        // "U/B" and "G/P" carry their colours in the halves, so a pip draws
+        // them rather than printing them: three characters in a 14px circle
+        // clamp to noise. Two colours split the pip, one fills it, and only a
+        // symbol with no colour at all (numerals, X, C) keeps its numeral.
+        const colours = sym.split("/").filter((p) => /^[WUBRG]$/.test(p));
+        const background = colours.length >= 2
+          ? `linear-gradient(135deg, ${WUBRG_HEX[colours[0]]} 50%, ${WUBRG_HEX[colours[1]]} 50%)`
+          : colours.length === 1
+            ? WUBRG_HEX[colours[0]]
+            : "var(--fg-faint)";
         return (
           <span
             key={i}
             className="inline-flex items-center justify-center rounded-full w-[14px] h-[14px] font-mono text-[9px] font-semibold"
             style={{
-              background: wubrg ? WUBRG_HEX[sym] : "var(--fg-faint)",
+              background,
               color: "var(--bg)",
               boxShadow: "inset 0 0 0 1px rgba(0,0,0,.45)",
             }}
           >
-            {wubrg ? "" : sym}
+            {colours.length > 0 ? "" : sym}
           </span>
         );
       })}
@@ -55,8 +65,10 @@ function Evidence({
 }: { suggestion: DeckSuggestion; inDeck: boolean; commanderShortName: string }) {
   const { inclusionPct, lift } = suggestion;
   if (inclusionPct == null) {
+    // The slot the card was picked for, never the card's own role — the two
+    // diverge on a multi-role card, and the sentence is about why it is here.
     const text = suggestion.reasonType === "role"
-      ? addPanelCopy.tile.fillsRole(addPanelCopy.shelf.labels[suggestion.role === "other" ? "other" : suggestion.role].toLowerCase())
+      ? addPanelCopy.tile.fillsRole(addPanelCopy.shelf.labels[shelfRoleOf(suggestion)].toLowerCase())
       : addPanelCopy.tile.noInclusion;
     return <p className="font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>{text}</p>;
   }

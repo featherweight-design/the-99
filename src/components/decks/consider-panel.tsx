@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GhostButton } from "../ui/button";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import type { DeckSuggestion } from "../../lib/decks/suggest";
+import { shelfRoleOf, type DeckSuggestion } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { SuggestionTile } from "./suggestion-tile";
@@ -35,7 +35,7 @@ function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]
   const counts = computeRoleCounts(deckCards);
   const shelves = SHELF_ROLES.map((role): Shelf => ({
     role,
-    suggestions: suggestions.filter((s) => s.role === role),
+    suggestions: suggestions.filter((s) => shelfRoleOf(s) === role),
     coverage: role === "other"
       ? null
       : { have: counts[role], target: RECOMMENDED_MIX[role].target },

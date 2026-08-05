@@ -41,6 +41,15 @@ export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" 
 const MAX = 99;
 export const LAND_TARGET = 37;
 
+// The slot a suggestion was picked to fill, which is not what the card is:
+// suggestDeck offers a card against the first role it can close a gap on, so a
+// card classified as removal can arrive to close the ramp gap, and it is the
+// ramp figure it was counted against. EDHREC picks were chosen for no slot at
+// all, so they fall back to the card's own role.
+export function shelfRoleOf(s: DeckSuggestion): DeckDetailCard["role"] {
+  return s.reasonType === "role" && s.reason !== "edhrec" ? s.reason : s.role;
+}
+
 export function humanRole(reason: Suggestion["reason"]): string {
   return reason === "land" ? "lands" : reason;
 }
