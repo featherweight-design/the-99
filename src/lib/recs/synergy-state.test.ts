@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { synergyStateFrom } from "./synergy-state";
 
-const data = { topCards: ["Sol Ring"], inclusionByName: { "Sol Ring": 90 }, synergyByName: {} };
+// Mirrors what parseEdhrecPayload actually emits: topCards keeps the card's
+// own casing, while the name-keyed maps are lowercased.
+const data = { topCards: ["Sol Ring"], inclusionByName: { "sol ring": 90 }, synergyByName: {} };
 
 describe("synergyStateFrom", () => {
   it("real data → ok", () => {
