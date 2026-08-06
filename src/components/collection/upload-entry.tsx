@@ -6,6 +6,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { previewUpload, previewPaste, type UploadPreview } from "../../app/collection/actions";
 import { parsePasteList } from "../../lib/manabox/paste";
+import { PASTE_MAX_BYTES } from "../../lib/upload-limits";
 import { GhostButton, PrimaryButton } from "../ui/button";
 
 type Mode = "dropzone" | "paste";
@@ -196,7 +197,7 @@ export function UploadEntry({
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
             aria-label="Paste your card list"
-            maxLength={100_000}
+            maxLength={PASTE_MAX_BYTES}
             placeholder={"3 Sol Ring\n1 Cultivate\nRhystic Study"}
             className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[13px] resize-none"
             style={{
