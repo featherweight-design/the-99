@@ -215,7 +215,10 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
     })),
     legendaryCandidates,
     declaredCommander,
-    lineCount: rows.length,
+    // Matched plus unmatched, never rows.length: matchRows also drops tokens, emblems
+    // and art series, which are neither imported nor shown as unresolved. Counting
+    // them would tell the player about lines they will never see anywhere.
+    lineCount: matched.length + unmatched.length,
     notes,
   };
 }

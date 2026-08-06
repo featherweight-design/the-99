@@ -220,6 +220,24 @@ describe("lineCount", () => {
     expect(build("1 Sol Ring\nSIDEBOARD:\n1 Llanowar Elves\n").lineCount).toBe(1);
   });
 
+  it("excludes tokens and emblems, which are neither imported nor shown as unresolved", () => {
+    // matchRows drops skipped printings entirely, so counting them would tell the
+    // player about lines that appear nowhere in the result. Only reachable on the
+    // rows path — a pasted line carries no scryfallId to match a skipped printing by.
+    // A skipped printing is absent from the oracle catalog by definition — were it
+    // present, its own scryfall_id would match it before the skip check is reached.
+    const tokenId = "22222222-2222-2222-2222-222222222222";
+    const result = buildDeckImport({
+      rows: [
+        { ...ROW, name: "Sol Ring", scryfallId: SOL_RING.scryfallId, line: 1 },
+        { ...ROW, name: "Treasure Token", scryfallId: tokenId, line: 2 },
+      ],
+      catalog: [SOL_RING],
+      indexes: { skippedScryfallIds: [tokenId] },
+    });
+    expect(result.lineCount).toBe(1);
+  });
+
   it("is zero when the list holds nothing but section headers", () => {
     expect(build("SIDEBOARD:\nMAYBEBOARD:\n").lineCount).toBe(0);
   });
