@@ -72,8 +72,8 @@ on a player mid-import.
 
 **Option 1 for this epic, option 2 opened in parallel.** PRs 4–9 are the copy and IA half of
 the feature and are where nearly all its value and risk sit; none of them depend on URL mode
-existing. Ship paste and file, keep `parseMoxfieldDeckUrl` (it is pure, client-safe and
-already useful for validating a pasted URL), and let URL mode land later behind a real
-answer rather than a workaround.
+existing. Ship paste and file, keep `parseMoxfieldDeckUrl` in PR 3's scope (it would be pure
+and client-safe, so it earns its place validating a pasted URL even with no fetch behind
+it), and let URL mode land later behind a real answer rather than a workaround.
 
 **This is a product call, not an eng one, and it is recorded here unresolved.**
