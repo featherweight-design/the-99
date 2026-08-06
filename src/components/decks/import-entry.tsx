@@ -126,6 +126,10 @@ export function ImportEntry() {
     // so that is two decks. The ref flips synchronously and closes the gap.
     if (pending || inFlight.current) return;
     inFlight.current = true;
+    // The picker lets the player edit the name, and a failure on the second pass
+    // drops them back here. Without this the field would revert to what they
+    // typed before the picker and quietly discard the edit.
+    setDeckName(name);
     setFailure(null);
     startTransition(async () => {
       let committed = false;

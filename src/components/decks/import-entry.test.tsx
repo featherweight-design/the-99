@@ -282,12 +282,17 @@ describe("state 11 — commander picker", () => {
 
     await screen.findByText("Which one's the commander?");
     fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
+    fireEvent.change(screen.getByLabelText("Deck name"), {
+      target: { value: "Atraxa, borrowed" },
+    });
     importDeck.mockResolvedValue({ ok: false, reason: "noneMatched", lineCount: 12, notes: [] });
     fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
 
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("We couldn't find any of these cards");
     expect(screen.queryByText("Which one's the commander?")).toBeNull();
+    // The name edited in the picker survives the trip back, or the player retypes it.
+    expect(nameBox()).toHaveProperty("value", "Atraxa, borrowed");
     expect(push).not.toHaveBeenCalled();
   });
 
