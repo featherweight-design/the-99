@@ -83,8 +83,16 @@ export function ResolutionExpander({
   const resolveOptimisticRow = useResolveOptimisticRow();
   const deleteOptimisticRow = useDeleteOptimisticRow();
 
+  // One line, one answer. Resolve and delete hold separate `useDeckMutation`
+  // latches, so each stops itself repeating but neither sees the other — and
+  // the two answers contradict: whichever DELETE reaches the row first claims
+  // it, and the loser comes back "unresolved row not found" as an error on a
+  // row that is already gone.
+  const answeredRef = useRef(false);
+
   function resolve(result: SearchResult) {
-    if (resolveApplied) return;
+    if (resolveApplied || answeredRef.current) return;
+    answeredRef.current = true;
     // The parent is told from inside the optimistic callback rather than before
     // `run`. `run` latches on a ref, so a second activation in the same tick is
     // dropped — and a notification outside that latch would collapse the row and
@@ -116,6 +124,8 @@ export function ResolutionExpander({
   }
 
   function remove() {
+    if (answeredRef.current) return;
+    answeredRef.current = true;
     runDelete(
       () => deleteUnresolvedRow(deckId, row.id),
       () => {

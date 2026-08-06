@@ -309,6 +309,23 @@ describe("a second activation in the same tick", () => {
     expect(s.onDeleted).toHaveBeenCalledTimes(1);
   });
 
+  // The two mutations hold separate latches, so neither used to see the other.
+  // Both answer the same line, and only one of them can: whichever DELETE
+  // reaches the row first claims it, and the loser returns "unresolved row not
+  // found" — an error drawn on a row that has already gone.
+  it("will not delete a line it has just resolved", async () => {
+    const s = spies();
+    searchCards.mockResolvedValue([rhystic]);
+    render(<ResolutionExpander id="x" deckId="deck-1" row={line()} {...s} />);
+    await waitFor(() => expect(screen.getAllByRole("option").length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getAllByRole("option")[0]);
+    fireEvent.click(screen.getByRole("button", { name: copy.delete }));
+
+    await waitFor(() => expect(resolveUnresolvedRow).toHaveBeenCalledTimes(1));
+    expect(deleteUnresolvedRow).not.toHaveBeenCalled();
+    expect(s.onDeleted).not.toHaveBeenCalled();
+  });
 });
 
 describe("resolving a line to the deck's own commander", () => {

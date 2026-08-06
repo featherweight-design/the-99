@@ -230,10 +230,15 @@ export async function resolveUnresolvedRow(
     if (!row) throw new Error("unresolved row not found");
 
     const [card] = await tx
-      .select({ typeLine: cards.typeLine })
+      .select({ typeLine: cards.typeLine, commanderLegal: cards.commanderLegal })
       .from(cards)
       .where(eq(cards.oracleId, oracleId));
     if (!card) throw new Error("card not found");
+    // The search behind the picker already filters to commander-legal cards, so
+    // this only ever refuses a crafted request — the same reason importDeck
+    // re-validates the commander the picker sent back. Colour identity stays
+    // deliberately unchecked; the doc comment above says why.
+    if (!card.commanderLegal) throw new Error("card is not commander legal");
 
     // The commander must not also sit in the 99 — the same rule importDeck
     // enforces when it filters the parsed rows. The line is still answered, so

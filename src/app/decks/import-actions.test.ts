@@ -96,12 +96,18 @@ function seed({
   deckOwned = true,
   rowBelongs = true,
   typeLine = "Creature — Human Wizard",
-}: { deckOwned?: boolean; rowBelongs?: boolean; typeLine?: string } = {}) {
+  commanderLegal = true,
+}: {
+  deckOwned?: boolean;
+  rowBelongs?: boolean;
+  typeLine?: string;
+  commanderLegal?: boolean;
+} = {}) {
   // An unowned deck / foreign row is modelled as the ownership-scoped query
   // returning nothing, which is exactly what Postgres does for them.
   if (deckOwned) stub.state.decks.push({ id: DECK, commanderOracleId: COMMANDER });
   if (rowBelongs) stub.state.unresolved.push({ id: ROW, quantity: 3 });
-  stub.state.cards.push({ typeLine });
+  stub.state.cards.push({ typeLine, commanderLegal });
 }
 
 beforeEach(() => {
@@ -182,6 +188,17 @@ describe("resolveUnresolvedRow", () => {
     await expect(resolveUnresolvedRow(DECK, ROW, ORACLE)).rejects.toThrow("deck not found");
     expect(stub.state.inserts).toEqual([]);
     expect(stub.state.deletedFrom).toEqual([]);
+  });
+
+  // The picker's search filters to commander-legal cards, so only a crafted
+  // request reaches this — which is the same reason importDeck re-validates the
+  // commander the picker sent back.
+  it("refuses a card that is not commander legal", async () => {
+    seed({ commanderLegal: false });
+    await expect(resolveUnresolvedRow(DECK, ROW, ORACLE)).rejects.toThrow(
+      "card is not commander legal",
+    );
+    expect(stub.state.inserts).toEqual([]);
   });
 
   it("rejects an oracle id no card carries", async () => {
