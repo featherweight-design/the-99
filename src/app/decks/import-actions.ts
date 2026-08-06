@@ -57,15 +57,19 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   const { catalog, indexes } = await loadMatchInputs(rows, { detailed: true });
   const result = buildDeckImport({ text: input.text, catalog, indexes });
 
+  // Order matters, and the guard is on `cards` alone. Every line that fails to match
+  // becomes an unresolved row, so "nothing matched" is an empty `cards` beside a full
+  // `unresolved` — never two empty arrays. Checking after the commander gate would
+  // report state 9 as an empty commander picker instead.
+  if (result.cards.length === 0) {
+    return { ok: false, reason: "noneMatched", lineCount: rows.length };
+  }
+
   const commanderOracleId = input.commanderOracleId ?? result.declaredCommander?.oracleId;
   if (!commanderOracleId) {
     // decks.commander_oracle_id is notNull, so a commander-less deck is a schema
     // impossibility as well as a product one. Nothing is written either way.
     return { ok: false, reason: "commanderNeeded", candidates: result.legendaryCandidates };
-  }
-
-  if (result.cards.length === 0 && result.unresolved.length === 0) {
-    return { ok: false, reason: "noneMatched", lineCount: rows.length };
   }
 
   // Server actions are reachable via crafted requests — re-validate the commander
