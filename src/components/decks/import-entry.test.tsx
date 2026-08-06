@@ -60,7 +60,7 @@ describe("state 1 — entry", () => {
     render(<ImportEntry />);
     fillPaste();
     submit();
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1"));
     expect(importDeck).toHaveBeenCalledWith({
       text: "1 Sol Ring\n1 Cultivate",
       source: "paste",
@@ -77,7 +77,7 @@ describe("state 1 — entry", () => {
     });
     fireEvent.change(nameBox(), { target: { value: "Borrowed deck" } });
     submit();
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1"));
     expect(screen.queryByText("Which one's the commander?")).toBeNull();
     // No commanderOracleId is sent: the server action reads the declaration itself.
     expect(importDeck.mock.calls[0][0].commanderOracleId).toBeUndefined();
@@ -96,7 +96,7 @@ describe("state 1 — entry", () => {
       button.click();
       button.click();
     });
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1"));
     expect(importDeck).toHaveBeenCalledTimes(1);
   });
 });
@@ -263,7 +263,7 @@ describe("state 11 — commander picker", () => {
     fireEvent.change(nameField, { target: { value: "Atraxa, borrowed" } });
     fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1"));
     expect(importDeck).toHaveBeenLastCalledWith({
       text: "1 Sol Ring\n1 Cultivate",
       source: "paste",

@@ -58,6 +58,7 @@ function renderBuilder(deck: DeckDetail) {
       degraded={false}
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
+      arrivedFromImport={false}
     />,
   );
 }

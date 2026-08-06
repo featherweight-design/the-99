@@ -94,6 +94,7 @@ function renderBuilder() {
       degraded={false}
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
+      arrivedFromImport={false}
     />,
   );
 }
@@ -150,6 +151,7 @@ describe("optimistic deck list", () => {
         degraded={false}
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
       />,
     );
     await act(async () => {

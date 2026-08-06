@@ -26,7 +26,8 @@ export function UnresolvedGroup({ rows }: UnresolvedGroupProps) {
   const ordered = rows.slice().sort((a, b) => a.sourceLine - b.sourceLine);
 
   return (
-    <section className="mb-[16px] md:mb-[20px]" aria-labelledby="unresolved-h">
+    // The id is the unresolved banner's scroll target.
+    <section id="unresolved-group" className="mb-[16px] md:mb-[20px]" aria-labelledby="unresolved-h">
       <DecklistGroupHeader
         label={copy.groupLabel}
         count={unresolvedCardCount(ordered)}

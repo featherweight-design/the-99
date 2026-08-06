@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { importDeck, type ImportCommanderCandidate } from "../../app/decks/import-actions";
 import { deckImportCopy as copy } from "../../lib/copy/deck-import";
 import { parsePasteList } from "../../lib/manabox/paste";
+import { IMPORTED_PARAM } from "../../lib/decks/arrival";
 import {
   DECK_IMPORT_FILE_MAX_BYTES,
   PASTE_MAX_BYTES,
@@ -145,7 +146,10 @@ export function ImportEntry() {
         });
         if (result.ok) {
           committed = true;
-          router.push(`/decks/${result.deckId}`);
+          // The param is the whole provenance signal for the arrival chrome.
+          // It belongs on the navigation rather than in a column: the deck was
+          // not "imported" forever, it was imported on this one trip.
+          router.push(`/decks/${result.deckId}?${IMPORTED_PARAM}=1`);
           return;
         }
         if (result.reason === "noRows") {
