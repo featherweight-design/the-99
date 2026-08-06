@@ -1,0 +1,424 @@
+"use client";
+
+// Deck import entry surface — states 1, 3, 8, 9 and 10 of the deck-import
+// handoff. The Moxfield link mode (states 2 and 4–7) is deliberately absent:
+// the fetch spike (#191) found every Moxfield host answers 403 behind bot
+// protection, so a link chip would open a door onto a state no runtime can
+// reach. MODES below is the seam — a third entry is purely additive.
+
+import { useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { importDeck } from "../../app/decks/import-actions";
+import { deckImportCopy as copy } from "../../lib/copy/deck-import";
+import { parsePasteList } from "../../lib/manabox/paste";
+import {
+  DECK_IMPORT_FILE_MAX_BYTES,
+  PASTE_MAX_BYTES,
+  isDeckImportTooLargeMessage,
+  type DeckImportSource,
+} from "../../lib/upload-limits";
+import { GhostButton, PrimaryButton } from "../ui/button";
+import { TextField } from "../ui/text-field";
+
+type ImportMode = Extract<DeckImportSource, "paste" | "file">;
+
+const MODES: { id: ImportMode; label: string; shortLabel: string }[] = [
+  { id: "paste", label: copy.entry.modePaste, shortLabel: copy.entry.modePasteShort },
+  { id: "file", label: copy.entry.modeFile, shortLabel: copy.entry.modeFileShort },
+];
+
+type FailureKind = "fileRejected" | "noneMatched" | "empty" | "unexpected" | "commanderNeeded";
+
+type Failure =
+  | { kind: "fileRejected"; ext: string; size: string }
+  | { kind: "noneMatched"; lineCount: number }
+  | { kind: "empty" }
+  | { kind: "unexpected"; detail: string | null }
+  | { kind: "commanderNeeded" };
+
+const ACCEPTED_EXTENSIONS = [".csv", ".txt"];
+
+function fileExtension(name: string): string {
+  const dot = name.lastIndexOf(".");
+  // A trailing dot leaves nothing after it, so `decklist.` has no extension to
+  // name — returning "." would put "That one is a . at 40 KB" in the banner.
+  if (dot === -1 || dot === name.length - 1) return "";
+  return name.slice(dot).toLowerCase();
+}
+
+function formatBytes(bytes: number): string {
+  // Rounded up, never to nearest. This size only ever appears beside the cap it
+  // broke, and a file one byte over 2 MB rendered as "2.0 MB" reads as inside a
+  // 2 MB limit — the banner would then contradict itself.
+  if (bytes >= 1024 * 1024) return `${(Math.ceil((bytes / (1024 * 1024)) * 10) / 10).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.ceil(bytes / 1024)} KB`;
+  return `${bytes} byte${bytes === 1 ? "" : "s"}`;
+}
+
+export function ImportEntry() {
+  const router = useRouter();
+  const [mode, setMode] = useState<ImportMode>("paste");
+  const [pasteText, setPasteText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [deckName, setDeckName] = useState("");
+  const [failure, setFailure] = useState<Failure | null>(null);
+  const [pending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const pasteCount = useMemo(
+    () =>
+      pasteText.trim()
+        ? parsePasteList(pasteText).rows.reduce((n, r) => n + r.quantity, 0)
+        : 0,
+    [pasteText],
+  );
+
+  function selectMode(next: ImportMode) {
+    setMode(next);
+    setFailure(null);
+  }
+
+  function acceptFile(candidate: File) {
+    const ext = fileExtension(candidate.name);
+    if (!ACCEPTED_EXTENSIONS.includes(ext) || candidate.size > DECK_IMPORT_FILE_MAX_BYTES) {
+      setFile(null);
+      // A file with no dot has no extension to name, and falling back to the
+      // whole filename makes the copy read "That one is a shopping-list at 40 KB".
+      setFailure({
+        kind: "fileRejected",
+        ext: ext || copy.failures.fileRejected.noExtension,
+        size: formatBytes(candidate.size),
+      });
+      return;
+    }
+    setFailure(null);
+    setFile(candidate);
+  }
+
+  function submit() {
+    if (pending) return;
+    setFailure(null);
+    startTransition(async () => {
+      try {
+        const text = mode === "paste" ? pasteText : ((await file?.text()) ?? "");
+        const result = await importDeck({ text, source: mode, name: deckName.trim() });
+        if (result.ok) {
+          router.push(`/decks/${result.deckId}`);
+          return;
+        }
+        if (result.reason === "noRows") {
+          setFailure({ kind: "empty" });
+          return;
+        }
+        if (result.reason === "noneMatched") {
+          setFailure({ kind: "noneMatched", lineCount: result.lineCount });
+          return;
+        }
+        // Seam for PR 5: `commanderNeeded` carries the legendary candidates the
+        // picker renders. Until it lands the player still needs an answer —
+        // returning to an unchanged form makes the submit button look broken for
+        // every list that doesn't name its commander, which is most of them.
+        if (result.reason === "commanderNeeded") {
+          setFailure({ kind: "commanderNeeded" });
+          return;
+        }
+      } catch (e) {
+        // importDeck throws on the size cap and on an illegal commander. Unhandled,
+        // a throw inside a transition reaches the error boundary and takes the
+        // player's list with it; the banner keeps the list on the page.
+        //
+        // The size cap is the player's to fix, so its message is surfaced rather
+        // than blamed on us. It is also the client's only byte-accurate signal:
+        // the textarea's maxLength counts characters while the server counts
+        // UTF-8 bytes, so a multi-byte list can clear the client guard and still
+        // be refused. Only that message is shown — every other throw is an
+        // internal invariant ("card is not a legal commander") that would read as
+        // gibberish, so those fall back to the generic body.
+        const message = e instanceof Error ? e.message : "";
+        setFailure({
+          kind: "unexpected",
+          detail: isDeckImportTooLargeMessage(message) ? message : null,
+        });
+      }
+    });
+  }
+
+  const canSubmit =
+    deckName.trim().length > 0 && (mode === "paste" ? pasteText.trim().length > 0 : file !== null);
+
+  if (pending) return <ParsingBlock />;
+
+  return (
+    <div className="p-[16px_18px_24px] md:max-w-[760px] md:p-[44px_48px]">
+      <h2 className="font-display font-bold text-[20px] md:text-[28px] m-0 text-[color:var(--fg)]">
+        {copy.entry.heading}
+      </h2>
+      <p className="mt-[3px] md:mt-[4px] font-mono text-[10px] text-[color:var(--fg-faint)] md:font-sans md:text-[14px] md:text-[color:var(--fg-muted)]">
+        <span className="md:hidden">{copy.entry.subMobileNoLink}</span>
+        <span className="hidden md:inline">{copy.entry.sub}</span>
+      </p>
+
+      <div
+        role="group"
+        aria-label={copy.entry.heading}
+        className="flex gap-[8px] md:gap-[9px] mt-[16px] mb-[16px] md:mb-[22px]"
+      >
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            // The visible label swaps to the short form below md, which would
+            // otherwise hand a screen reader a different name at each breakpoint.
+            aria-label={m.label}
+            aria-pressed={mode === m.id}
+            onClick={() => selectMode(m.id)}
+            className={[
+              "rounded-full font-sans cursor-pointer min-h-[44px]",
+              "text-[12.5px] md:text-[13px] px-[14px] md:px-[16px] py-[8px] md:py-[9px]",
+              mode === m.id
+                ? "font-semibold bg-[color:var(--brass)] text-[color:var(--bg)] border border-solid border-[color:var(--brass)]"
+                : "bg-[color:var(--elevated)] text-[color:var(--fg-body)] border border-solid border-[color:var(--border-strong)] md:hover:border-[color:var(--brass)] md:hover:text-[color:var(--brass-hover)]",
+            ].join(" ")}
+          >
+            <span className="md:hidden">{m.shortLabel}</span>
+            <span className="hidden md:inline">{m.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {mode === "paste" ? (
+        <div>
+          <label
+            htmlFor="import-paste"
+            className="block text-[13px] font-semibold mb-[8px] text-[color:var(--fg)]"
+          >
+            {copy.entry.pasteLabel}
+          </label>
+          <textarea
+            id="import-paste"
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            maxLength={PASTE_MAX_BYTES}
+            placeholder={copy.entry.pastePlaceholder}
+            aria-describedby={failure ? "import-failure" : undefined}
+            className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[16px] md:text-[13px] resize-none bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)] caret-[color:var(--brass)] placeholder:text-[color:var(--fg-faint)]"
+          />
+        </div>
+      ) : (
+        <div>
+          <label
+            htmlFor="import-file"
+            className="block text-[13px] font-semibold mb-[8px] text-[color:var(--fg)]"
+          >
+            {copy.entry.fileLabel}
+          </label>
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const dropped = e.dataTransfer.files[0];
+              if (dropped) acceptFile(dropped);
+            }}
+            className={[
+              "text-center rounded-[12px] p-[30px_18px] md:p-[40px] bg-[color:var(--surface-sunken)]",
+              dragOver
+                ? "[border:1.5px_dashed_var(--brass)]"
+                : "[border:1.5px_dashed_var(--border-dashed)] md:hover:[border:1.5px_dashed_var(--brass)]",
+            ].join(" ")}
+          >
+            <input
+              id="import-file"
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.txt,text/csv,text/plain"
+              className="sr-only"
+              aria-describedby={failure ? "import-failure" : undefined}
+              onChange={(e) => {
+                const chosen = e.target.files?.[0];
+                e.target.value = "";
+                if (chosen) acceptFile(chosen);
+              }}
+            />
+            <PrimaryButton
+              onClick={() => fileInputRef.current?.click()}
+              className="text-[15px] md:text-[14px] px-[22px] py-[13px] min-h-[44px]"
+            >
+              {copy.entry.submitFile}
+            </PrimaryButton>
+            <p className="mt-[14px] font-mono text-[10px] md:text-[11px] tracking-[0.04em] text-[color:var(--fg-faint)]">
+              {file ? file.name : copy.entry.fileHint}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {failure && (
+        <FailureBanner
+          failure={failure}
+          onAction={() => {
+            setFailure(null);
+            if (failure.kind === "fileRejected") fileInputRef.current?.click();
+            // Both actions offer a fresh start, so both clear whichever input
+            // this mode is actually using — clearing only one leaves the other
+            // holding the list the player was just told did not work.
+            if (failure.kind === "noneMatched" || failure.kind === "empty") {
+              setPasteText("");
+              setFile(null);
+            }
+          }}
+        />
+      )}
+
+      <label
+        htmlFor="import-deck-name"
+        className="block text-[13px] font-semibold mt-[16px] mb-[8px] text-[color:var(--fg)]"
+      >
+        {copy.commander.nameLabel}
+      </label>
+      <TextField
+        id="import-deck-name"
+        value={deckName}
+        onChange={(e) => setDeckName(e.target.value)}
+        maxLength={120}
+        className="block w-full rounded-[8px] p-[12px_14px] text-[16px] md:text-[14.5px]"
+      />
+
+      <PrimaryButton
+        onClick={submit}
+        disabled={!canSubmit}
+        className="w-full md:w-auto mt-[16px] text-[15px] md:text-[14px] py-[13px] md:py-0 md:px-[24px] md:h-[44px] min-h-[44px] md:whitespace-nowrap disabled:opacity-50"
+      >
+        {mode === "paste" ? copy.entry.submitPasteCount(pasteCount) : copy.entry.submit}
+      </PrimaryButton>
+
+      <p className="mt-[16px] text-[12.5px] leading-[1.55] text-[color:var(--fg-faint)] md:hidden">
+        {copy.entry.footnoteMobile}
+      </p>
+      <div className="hidden md:grid md:grid-cols-2 md:gap-[24px] md:mt-[26px] md:pt-[20px] md:border-t md:border-[color:var(--border)]">
+        <div>
+          <p className="font-mono text-[10px] tracking-[0.16em] uppercase mb-[7px] text-[color:var(--fg-faint)]">
+            {copy.entry.aboutWhatComesHeading}
+          </p>
+          <p className="text-[13px] leading-[1.6] text-[color:var(--fg-body)]">
+            {copy.entry.aboutWhatComes}
+          </p>
+        </div>
+        <div>
+          <p className="font-mono text-[10px] tracking-[0.16em] uppercase mb-[7px] text-[color:var(--fg-faint)]">
+            {copy.entry.aboutFailureHeading}
+          </p>
+          <p className="text-[13px] leading-[1.6] text-[color:var(--fg-body)]">
+            {copy.entry.aboutFailure}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ParsingBlock() {
+  // The handoff draws a determinate bar and a `done / total` figure, but
+  // `importDeck` is one server-action round trip returning only a terminal
+  // result — there is no progress channel and no `total` until it answers.
+  // A faked bar would report a number nothing measured, so the indeterminate
+  // dots stand in until a streaming API exists. Escalated to Design.
+  return (
+    <div className="p-[16px_18px_24px] md:max-w-[760px] md:p-[34px_48px] text-center md:text-left">
+      <div className="mt-[28px] md:mt-0 mb-[18px] md:mb-[12px] flex gap-[6px] justify-center md:justify-start">
+        {[0, 0.2, 0.4].map((delay) => (
+          <span
+            key={delay}
+            aria-hidden
+            className="anim-dots rounded-full w-[7px] h-[7px] md:w-[8px] md:h-[8px] bg-[color:var(--brass)]"
+            style={{ animationDelay: `${delay}s` }}
+          />
+        ))}
+      </div>
+      <h2 className="font-display font-bold text-[17px] md:text-[19px] m-0 text-[color:var(--fg)]">
+        {copy.parsing.heading}
+      </h2>
+      <div role="status" aria-live="polite" className="sr-only">
+        {copy.parsing.live}
+      </div>
+    </div>
+  );
+}
+
+const FAILURE_ACTION: Record<FailureKind, string> = {
+  fileRejected: copy.failures.fileRejected.action,
+  noneMatched: copy.failures.noneMatched.action,
+  empty: copy.failures.empty.action,
+  unexpected: copy.failures.unexpected.action,
+  commanderNeeded: copy.failures.commanderNeeded.action,
+};
+
+function failureText(failure: Failure): { heading: string; bodyMobile: string; body: string } {
+  switch (failure.kind) {
+    case "fileRejected":
+      return {
+        heading: copy.failures.fileRejected.heading,
+        bodyMobile: copy.failures.fileRejected.bodyMobile(failure.ext, failure.size),
+        body: copy.failures.fileRejected.body(failure.ext, failure.size),
+      };
+    case "noneMatched":
+      return {
+        heading: copy.failures.noneMatched.heading,
+        bodyMobile: copy.failures.noneMatched.bodyMobile(failure.lineCount),
+        body: copy.failures.noneMatched.body(failure.lineCount),
+      };
+    case "empty":
+      return {
+        heading: copy.failures.empty.heading,
+        bodyMobile: copy.failures.empty.bodyMobile,
+        body: copy.failures.empty.body,
+      };
+    case "commanderNeeded":
+      return {
+        heading: copy.failures.commanderNeeded.heading,
+        bodyMobile: copy.failures.commanderNeeded.bodyMobile,
+        body: copy.failures.commanderNeeded.body,
+      };
+    case "unexpected":
+      return {
+        heading: copy.failures.unexpected.heading,
+        bodyMobile: copy.failures.unexpected.bodyMobile(failure.detail),
+        body: copy.failures.unexpected.body(failure.detail),
+      };
+  }
+}
+
+function FailureBanner({ failure, onAction }: { failure: Failure; onAction: () => void }) {
+  const { heading, bodyMobile, body } = failureText(failure);
+  return (
+    <div
+      id="import-failure"
+      role="alert"
+      className="flex items-start gap-[10px] md:gap-[12px] rounded-lg md:rounded-[10px] p-[12px_14px] md:p-[16px_18px] mt-[12px] md:mt-[14px] bg-[color:var(--elevated-hover)] border border-solid border-[color:var(--border-strong)] [border-left:3px_solid_var(--warning)]"
+    >
+      <span aria-hidden className="text-[15px] md:text-[17px] leading-[1.3] md:leading-[1.2] text-[color:var(--warning)]">
+        ⚠
+      </span>
+      <div>
+        <p className="text-[14px] md:text-[15px] font-semibold leading-[1.4] text-[color:var(--fg)]">
+          {heading}
+        </p>
+        <p className="mt-[5px] md:mt-[6px] text-[12.5px] md:text-[14px] leading-[1.55] md:leading-[1.6] text-[color:var(--fg-body)]">
+          <span className="md:hidden">{bodyMobile}</span>
+          <span className="hidden md:inline">{body}</span>
+        </p>
+        <GhostButton
+          onClick={onAction}
+          className="w-full md:w-auto mt-[14px] text-[14px] md:text-[13px] py-[12px] md:py-[10px] md:px-[20px] min-h-[44px]"
+        >
+          {FAILURE_ACTION[failure.kind]}
+        </GhostButton>
+      </div>
+    </div>
+  );
+}

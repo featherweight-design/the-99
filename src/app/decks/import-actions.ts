@@ -10,9 +10,8 @@ import { validateDeckName } from "../../lib/decks/deck-name";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
-  DECK_IMPORT_FILE_MAX_LABEL,
-  PASTE_MAX_LABEL,
   deckImportMaxBytes,
+  deckImportTooLargeMessage,
   type DeckImportSource,
 } from "../../lib/upload-limits";
 
@@ -66,11 +65,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   const name = validateDeckName(input.name);
   const maxBytes = deckImportMaxBytes(input.source);
   if (Buffer.byteLength(input.text, "utf8") > maxBytes) {
-    throw new Error(
-      input.source === "paste"
-        ? `Paste too large (max ${PASTE_MAX_LABEL})`
-        : `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`,
-    );
+    throw new Error(deckImportTooLargeMessage(input.source));
   }
 
   // No rows are passed: the printing indexes are keyed by Scryfall id, and a pasted or

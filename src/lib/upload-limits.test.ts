@@ -4,7 +4,10 @@ import {
   COLLECTION_FILE_MAX_LABEL,
   DECK_IMPORT_FILE_MAX_BYTES,
   DECK_IMPORT_FILE_MAX_LABEL,
+  DECK_IMPORT_SOURCES,
   deckImportMaxBytes,
+  deckImportTooLargeMessage,
+  isDeckImportTooLargeMessage,
   PASTE_MAX_BYTES,
   PASTE_MAX_LABEL,
 } from "./upload-limits";
@@ -47,6 +50,15 @@ describe("upload limits", () => {
     // own arithmetic rather than the MB caps' — asserting the number alone would let the
     // label drift to "98 KB" unchallenged.
     expect(PASTE_MAX_BYTES).toBe(Number(PASTE_MAX_LABEL.replace(" KB", "")) * 1000);
+  });
+
+  it("recognises its own too-large message from every source", () => {
+    // The client shows a thrown message only when this returns true, so a source
+    // the guard forgets would silently degrade to the generic "our end" banner.
+    for (const source of DECK_IMPORT_SOURCES) {
+      expect(isDeckImportTooLargeMessage(deckImportTooLargeMessage(source))).toBe(true);
+    }
+    expect(isDeckImportTooLargeMessage("card is not a legal commander")).toBe(false);
   });
 
   it("shares one paste cap across both flows", () => {
