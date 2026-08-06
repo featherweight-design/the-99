@@ -141,7 +141,7 @@ describe("buildDeckImport — locked decision: re-importing the same list create
     const second = build(text);
     expect(second).toEqual(first);
     expect(Object.keys(first).sort()).toEqual([
-      "cards", "declaredCommander", "legendaryCandidates", "notes", "unresolved",
+      "cards", "declaredCommander", "legendaryCandidates", "lineCount", "notes", "unresolved",
     ]);
   });
 });
@@ -209,5 +209,18 @@ describe("buildDeckImport — legendary candidates", () => {
 
   it("is empty when no legendary creature was imported", () => {
     expect(build("1 Sol Ring\n1 Forest").legendaryCandidates).toEqual([]);
+  });
+});
+
+describe("lineCount", () => {
+  it("counts real card lines only, so section headers cannot inflate state 9's total", () => {
+    // parsePasteList turns any non-blank line into a row, so the raw parse counts
+    // "SIDEBOARD:" as a card. Reporting that count would overstate the problem to
+    // the player, and a header-only list would read as state 9 instead of state 10.
+    expect(build("1 Sol Ring\nSIDEBOARD:\n1 Llanowar Elves\n").lineCount).toBe(1);
+  });
+
+  it("is zero when the list holds nothing but section headers", () => {
+    expect(build("SIDEBOARD:\nMAYBEBOARD:\n").lineCount).toBe(0);
   });
 });

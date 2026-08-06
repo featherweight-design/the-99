@@ -6,15 +6,18 @@
 // them on 5 MB would also make the deck-import handoff's own illustration of the
 // file-too-large state — a 4.1 MB .xlsx — pass the check.
 
+// Every cap is a byte count paired with the label describing it, because a check and
+// its message drifting apart is the exact failure this module exists to prevent.
+
 export const COLLECTION_FILE_MAX_BYTES = 5 * 1024 * 1024;
+export const COLLECTION_FILE_MAX_LABEL = "5 MB";
 
 export const DECK_IMPORT_FILE_MAX_BYTES = 2 * 1024 * 1024;
-
-/** The figure the deck-import copy renders. Kept beside the check it describes. */
 export const DECK_IMPORT_FILE_MAX_LABEL = "2 MB";
 
 /** Genuinely shared: a paste is a paste in either flow. */
 export const PASTE_MAX_BYTES = 100_000;
+export const PASTE_MAX_LABEL = "100 KB";
 
 /** Where a decklist came from, which is the only thing that decides its cap. */
 export type DeckImportSource = "paste" | "file" | "url";

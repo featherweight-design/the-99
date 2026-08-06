@@ -35,6 +35,13 @@ export type DeckImport = {
    * step for a fact we already have is friction.
    */
   declaredCommander: { oracleId: string; name: string; sourceLine: number } | null;
+  /**
+   * Real card lines, after sections and annotations are stripped. The caller cannot
+   * recover this by parsing the raw text: `parsePasteList` turns any non-blank line
+   * into a row, so a `SIDEBOARD:` header counts as a card there. This is the count
+   * that decides state 10 (nothing parsed) and the one state 9's copy renders.
+   */
+  lineCount: number;
   notes: ImportNote[];
 };
 
@@ -208,6 +215,7 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
     })),
     legendaryCandidates,
     declaredCommander,
+    lineCount: rows.length,
     notes,
   };
 }

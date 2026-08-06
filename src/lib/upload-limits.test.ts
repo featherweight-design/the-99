@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   COLLECTION_FILE_MAX_BYTES,
+  COLLECTION_FILE_MAX_LABEL,
   DECK_IMPORT_FILE_MAX_BYTES,
   DECK_IMPORT_FILE_MAX_LABEL,
   deckImportMaxBytes,
   PASTE_MAX_BYTES,
+  PASTE_MAX_LABEL,
 } from "./upload-limits";
 
 describe("upload limits", () => {
@@ -27,6 +29,16 @@ describe("upload limits", () => {
     expect(DECK_IMPORT_FILE_MAX_LABEL).toBe("2 MB");
     expect(DECK_IMPORT_FILE_MAX_BYTES).toBe(
       Number(DECK_IMPORT_FILE_MAX_LABEL.replace(" MB", "")) * 1024 * 1024,
+    );
+  });
+
+  it("pairs every cap with the label its message renders", () => {
+    // Copilot caught the collection messages still hardcoding "5 MB" / "100 KB" while
+    // the checks read constants — the drift this module exists to prevent.
+    expect(COLLECTION_FILE_MAX_LABEL).toBe("5 MB");
+    expect(PASTE_MAX_LABEL).toBe("100 KB");
+    expect(COLLECTION_FILE_MAX_BYTES).toBe(
+      Number(COLLECTION_FILE_MAX_LABEL.replace(" MB", "")) * 1024 * 1024,
     );
   });
 

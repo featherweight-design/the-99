@@ -12,6 +12,7 @@ import { parsePasteList } from "../../lib/manabox/paste";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   DECK_IMPORT_FILE_MAX_LABEL,
+  PASTE_MAX_LABEL,
   deckImportMaxBytes,
   type DeckImportSource,
 } from "../../lib/upload-limits";
@@ -60,7 +61,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   if (Buffer.byteLength(input.text, "utf8") > maxBytes) {
     throw new Error(
       input.source === "paste"
-        ? "Paste too large (max 100 KB)"
+        ? `Paste too large (max ${PASTE_MAX_LABEL})`
         : `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`,
     );
   }
@@ -68,17 +69,22 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   // Parsed once here only to learn which Scryfall ids to index; buildDeckImport
   // re-parses the raw text because section markers are invisible in a row list.
   const { rows } = parsePasteList(input.text);
-  if (rows.length === 0) return { ok: false, reason: "noRows" };
 
   const { catalog, indexes } = await loadMatchInputs(rows, { detailed: true });
   const result = buildDeckImport({ text: input.text, catalog, indexes });
+
+  // Both counts come from the import's own cleaned line count, never from `rows`.
+  // parsePasteList turns any non-blank line into a row, so a `SIDEBOARD:` header
+  // counts as a card there — a list of nothing but section headers would read as
+  // state 9, and state 9's copy would render a total that includes the headers.
+  if (result.lineCount === 0) return { ok: false, reason: "noRows" };
 
   // Order matters, and the guard is on `cards` alone. Every line that fails to match
   // becomes an unresolved row, so "nothing matched" is an empty `cards` beside a full
   // `unresolved` — never two empty arrays. Checking after the commander gate would
   // report state 9 as an empty commander picker instead.
   if (result.cards.length === 0) {
-    return { ok: false, reason: "noneMatched", lineCount: rows.length };
+    return { ok: false, reason: "noneMatched", lineCount: result.lineCount };
   }
 
   const commanderOracleId = input.commanderOracleId ?? result.declaredCommander?.oracleId;
