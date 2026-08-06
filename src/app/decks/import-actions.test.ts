@@ -48,7 +48,9 @@ const stub = vi.hoisted(() => {
         const record = () => {
           state.deletedFrom.push(nameOf(table));
           state.wheres.push({ table: nameOf(table), condition });
-          return state.unresolved.splice(0, state.unresolved.length).map((r) => ({ id: r.id }));
+          // Whole rows, not just ids: resolve now takes the quantity it inserts
+          // from the delete's RETURNING rather than from a prior read.
+          return state.unresolved.splice(0, state.unresolved.length);
         };
         return {
           then: (resolve: (v: unknown) => unknown) => Promise.resolve(record()).then(resolve),
@@ -158,7 +160,21 @@ describe("resolveUnresolvedRow", () => {
     seed({ rowBelongs: false });
     await expect(resolveUnresolvedRow(DECK, ROW, ORACLE)).rejects.toThrow("unresolved row not found");
     expect(stub.state.inserts).toEqual([]);
-    expect(stub.state.deletedFrom).toEqual([]);
+  });
+
+  // The line is claimed by the DELETE, not by a read that a second call could
+  // make before the first one finished. Two clicks landing together used to
+  // both see the row, and the basic-land branch adds the line's quantity — so
+  // the second one added three more Islands to a deck that had gained them once.
+  it("gives the same line to only one of two concurrent resolves", async () => {
+    seed({ typeLine: "Basic Land — Island" });
+    await Promise.allSettled([
+      resolveUnresolvedRow(DECK, ROW, ORACLE),
+      resolveUnresolvedRow(DECK, ROW, ORACLE),
+    ]);
+    expect(stub.state.inserts).toEqual([
+      { values: { deckId: DECK, oracleId: ORACLE, quantity: 3 }, mode: "update" },
+    ]);
   });
 
   it("rejects a deck that belongs to another user", async () => {
@@ -172,7 +188,9 @@ describe("resolveUnresolvedRow", () => {
     seed();
     stub.state.cards.length = 0;
     await expect(resolveUnresolvedRow(DECK, ROW, ORACLE)).rejects.toThrow("card not found");
-    expect(stub.state.deletedFrom).toEqual([]);
+    // The delete is issued before this point now, so the line only survives
+    // because the transaction rolls back — which the fake does not model.
+    expect(stub.state.inserts).toEqual([]);
   });
 });
 

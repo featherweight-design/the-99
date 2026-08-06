@@ -101,14 +101,18 @@ export function UnresolvedGroup({
   // plus the edit itself: the optimistic state is not readable synchronously
   // here, and reading it a render later would narrate the previous action.
   function announceResolved(row: DeckUnresolvedRow, result: SearchResult) {
-    // The commander is already in the deck, so answering a line with it adds
-    // nothing to the 99 — the server skips the insert and the count must agree.
+    // What the deck actually gains, which is nothing at all twice over: the
+    // commander is already in the deck and the server refuses to put it in the
+    // 99 as well, and a non-basic already in the list is a singleton the server
+    // leaves alone. Basics are the one thing that stacks.
     const added =
       result.oracleId === commanderOracleId
         ? 0
         : isBasicLand(result.typeLine)
           ? row.quantity
-          : 1;
+          : cards.some((c) => c.oracleId === result.oracleId)
+            ? 0
+            : 1;
     const built = deckCounts(cards).built + added;
     const remaining = rows.length - 1;
     const mix = RECOMMENDED_MIX[result.role as MixRole] as

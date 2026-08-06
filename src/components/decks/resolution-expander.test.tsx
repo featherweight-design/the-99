@@ -327,6 +327,23 @@ describe("resolving a line to the deck's own commander", () => {
   });
 });
 
+describe("resolving a line to a non-basic the deck already holds", () => {
+  // Singleton: the server's insert hits onConflictDoNothing and the optimistic
+  // reducer no-ops to match, so the deck gains nothing and the sentence that
+  // narrates the gain must not claim one.
+  it("does not count a copy the deck never gains", async () => {
+    searchCards.mockResolvedValue([result({ name: "Sol Ring", oracleId: "sol-ring" })]);
+    render(<Harness />);
+
+    await open();
+    fireEvent.click(screen.getAllByRole("option")[0]);
+
+    await waitFor(() =>
+      expect(screen.getByText(copy.resolvedMobile("Sol Ring", "1"))).toBeInTheDocument(),
+    );
+  });
+});
+
 describe("the last line in the group", () => {
   // The row that held focus is gone, so without this focus lands on <body> and
   // a keyboard user restarts from the top of the document.

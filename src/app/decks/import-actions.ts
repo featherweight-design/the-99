@@ -219,10 +219,14 @@ export async function resolveUnresolvedRow(
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
     if (!deck) throw new Error("deck not found");
 
+    // Deleted first, and the delete is what decides whether the rest runs. Read
+    // first and two resolves of the same line could both see it before either
+    // delete landed — harmless for the singleton insert, but the basic-land
+    // branch adds `quantity` and would have added it twice.
     const [row] = await tx
-      .select({ id: deckUnresolvedRows.id, quantity: deckUnresolvedRows.quantity })
-      .from(deckUnresolvedRows)
-      .where(and(eq(deckUnresolvedRows.id, rowId), eq(deckUnresolvedRows.deckId, deckId)));
+      .delete(deckUnresolvedRows)
+      .where(and(eq(deckUnresolvedRows.id, rowId), eq(deckUnresolvedRows.deckId, deckId)))
+      .returning({ quantity: deckUnresolvedRows.quantity });
     if (!row) throw new Error("unresolved row not found");
 
     const [card] = await tx
@@ -249,8 +253,6 @@ export async function resolveUnresolvedRow(
         await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
       }
     }
-
-    await tx.delete(deckUnresolvedRows).where(eq(deckUnresolvedRows.id, rowId));
   });
 
   revalidatePath(`/decks/${deckId}`);
