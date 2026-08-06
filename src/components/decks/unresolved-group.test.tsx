@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -84,6 +84,20 @@ describe("UnresolvedGroup", () => {
       "aria-expanded",
       "false",
     );
+  });
+
+
+  // The Shopping filter empties the group outright, so it can go without any row
+  // collapsing. The phone hides its quick-add bar for as long as this reads
+  // true, and it used to stay true forever — the bar never came back.
+  it("reports itself collapsed when the filter takes it away mid-expansion", () => {
+    const onExpanded = vi.fn();
+    const { rerender } = render(<UnresolvedGroup deckId="d1" rows={[row()]} onExpandedChange={onExpanded} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.rowAria("Lightning Bolt", 1) }));
+    expect(onExpanded).toHaveBeenLastCalledWith(true);
+
+    rerender(<div />);
+    expect(onExpanded).toHaveBeenLastCalledWith(false);
   });
 
   it("renders nothing at zero rows", () => {

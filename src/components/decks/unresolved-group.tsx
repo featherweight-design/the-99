@@ -66,6 +66,21 @@ export function UnresolvedGroup({
     if (note) noteRef.current?.focus();
   }, [note]);
 
+  // The group can go without any row collapsing — the Shopping filter empties
+  // it outright — and the phone hides its quick-add bar for as long as this
+  // reads true. Without the unmount edge it stayed true forever and the bar
+  // never came back.
+  // Held in a ref so the cleanup runs on unmount only. Keyed on the prop
+  // itself, an inline callback would re-run it every render and slam the
+  // expansion shut as fast as a row could open it.
+  const expandedChangeRef = useRef(onExpandedChange);
+  useEffect(() => {
+    expandedChangeRef.current = onExpandedChange;
+  });
+  useEffect(() => {
+    return () => expandedChangeRef.current?.(false);
+  }, []);
+
   // Not `rows.length === 0` alone: the final resolution empties the list, and
   // unmounting here would take the live region down with it — the one action
   // most worth announcing would be the only silent one.
@@ -137,7 +152,9 @@ export function UnresolvedGroup({
     <section
       id="unresolved-group"
       className="mb-[16px] md:mb-[20px]"
-      aria-labelledby="unresolved-h"
+      // The header goes with the last row, so the id it carries goes too, and
+      // a name pointing at nothing is worse than no name at all.
+      aria-labelledby={ordered.length > 0 ? "unresolved-h" : undefined}
     >
       {/* Everything but the note goes when the last line does — the group has
           nothing left to head, and a "· 0" count over no rows is a heading for
