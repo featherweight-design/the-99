@@ -43,8 +43,9 @@ value), and the import route is gated by the **absence of a link**, not a flag.
   family that `/collection/replace` and the Issue Inspector already own — the same family as an
   unresolved row, one step earlier.
 - **`chip-row.tsx` path corrected** to `src/components/collection/chip-row.tsx`.
-- **Sequencing recorded:** states 13+ mount inside #158's PRs 4–6, so #42 cannot start building until
-  PR 6 merges.
+- **Sequencing recorded:** states 13+ mount inside #158's PRs 4–6, so at the time of the audit #42
+  could not start building until PR 6 merged. **Historical — that condition was satisfied on
+  2026-08-05**; see the Build order paragraph at the top of this file.
 
 ## Still open
 
