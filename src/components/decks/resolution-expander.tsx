@@ -83,10 +83,14 @@ export function ResolutionExpander({
 
   function resolve(result: SearchResult) {
     if (resolveApplied) return;
-    onResolved(result);
+    // The parent is told from inside the optimistic callback rather than before
+    // `run`. `run` latches on a ref, so a second activation in the same tick is
+    // dropped — and a notification outside that latch would collapse the row and
+    // narrate a card the server was never sent.
     runResolve(
       () => resolveUnresolvedRow(deckId, row.id, result.oracleId),
-      () =>
+      () => {
+        onResolved(result);
         resolveOptimisticRow(row.id, {
           oracleId: result.oracleId,
           name: result.name,
@@ -97,15 +101,18 @@ export function ResolutionExpander({
           // Mirrors the server: a "3 Rhystic Study" line resolves to one copy,
           // and only a basic land carries the line's own quantity over.
           quantity: isBasicLand(result.typeLine) ? row.quantity : 1,
-        }),
+        });
+      },
     );
   }
 
   function remove() {
-    onDeleted();
     runDelete(
       () => deleteUnresolvedRow(deckId, row.id),
-      () => deleteOptimisticRow(row.id),
+      () => {
+        onDeleted();
+        deleteOptimisticRow(row.id);
+      },
     );
   }
 

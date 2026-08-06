@@ -28,9 +28,12 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed }: Ca
 
   const trimmed = query.trim();
   const queryActive = trimmed.length >= 2 && trimmed.length <= 100;
-  // The filter is part of the request, so flipping it makes the rows on screen
-  // as stale as retyping does.
-  const requestKey = `${ownedOnly ? "owned" : "all"} ${trimmed}`;
+  // Every input the request is made from, so flipping any of them makes the rows
+  // on screen as stale as retyping does. Identity belongs here as much as the
+  // owned toggle: the two comboboxes pass different identities, and a key that
+  // ignored it would let Enter act on rows from the other one's filter.
+  const identityKey = colorIdentity === null ? "any" : colorIdentity.join(",");
+  const requestKey = `${ownedOnly ? "owned" : "all"} ${identityKey} ${trimmed}`;
 
   useEffect(() => {
     if (timerRef.current !== null) clearTimeout(timerRef.current);

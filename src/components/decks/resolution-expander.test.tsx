@@ -20,6 +20,7 @@ vi.mock("../../app/decks/import-actions", () => ({
   deleteUnresolvedRow,
 }));
 
+const { ResolutionExpander } = await import("./resolution-expander");
 const { AddOptimisticCardProvider, useOptimisticDeckCards } = await import("./optimistic-deck");
 const { Decklist } = await import("./decklist");
 const { CardDetailProvider } = await import("./card-detail-provider");
@@ -280,4 +281,30 @@ describe("resolving and deleting a line", () => {
     await waitFor(() => expect(regions()[0]).toHaveTextContent(/Rhystic Study/));
     expect(regions()).toHaveLength(1);
   });
+});
+
+/**
+ * A dropped second activation must not reach the parent either. `run` latches on
+ * a ref, so the mutation is already safe; what these pin is that the collapse
+ * and the narration ride the same latch rather than firing beside it.
+ */
+describe("a second activation in the same tick", () => {
+  const spies = () => ({ onCollapse: vi.fn(), onResolved: vi.fn(), onDeleted: vi.fn() });
+
+  // Delete only. The resolve path takes the same fix, but its options unmount on
+  // the first click, so a second one cannot be delivered and a test here would
+  // pass against the bug as readily as against the fix.
+
+  it("neither deletes twice nor tells the group twice", async () => {
+    const s = spies();
+    render(<ResolutionExpander id="x" deckId="deck-1" row={line()} {...s} />);
+
+    const button = screen.getByRole("button", { name: copy.delete });
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    await waitFor(() => expect(deleteUnresolvedRow).toHaveBeenCalledTimes(1));
+    expect(s.onDeleted).toHaveBeenCalledTimes(1);
+  });
+
 });
