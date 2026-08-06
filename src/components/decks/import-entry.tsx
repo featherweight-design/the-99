@@ -47,8 +47,11 @@ function fileExtension(name: string): string {
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  // Rounded up, never to nearest. This size only ever appears beside the cap it
+  // broke, and a file one byte over 2 MB rendered as "2.0 MB" reads as inside a
+  // 2 MB limit — the banner would then contradict itself.
+  if (bytes >= 1024 * 1024) return `${(Math.ceil((bytes / (1024 * 1024)) * 10) / 10).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.ceil(bytes / 1024)} KB`;
   return `${bytes} byte${bytes === 1 ? "" : "s"}`;
 }
 

@@ -19,8 +19,13 @@ export const DECK_IMPORT_FILE_MAX_LABEL = "2 MB";
 export const PASTE_MAX_BYTES = 100_000;
 export const PASTE_MAX_LABEL = "100 KB";
 
-/** Where a decklist came from, which is the only thing that decides its cap. */
-export type DeckImportSource = "paste" | "file" | "url";
+/**
+ * Where a decklist came from, which is the only thing that decides its cap. The
+ * array is the source of truth so a fourth arrival route cannot be added without
+ * `isDeckImportTooLargeMessage` learning about it.
+ */
+export const DECK_IMPORT_SOURCES = ["paste", "file", "url"] as const;
+export type DeckImportSource = (typeof DECK_IMPORT_SOURCES)[number];
 
 /**
  * The cap for a decklist, chosen by how it arrived. A paste is typed by hand and
@@ -46,8 +51,5 @@ export function deckImportTooLargeMessage(source: DeckImportSource): string {
 
 /** True for a message this module authored, and therefore safe to show a player. */
 export function isDeckImportTooLargeMessage(message: string): boolean {
-  return (
-    message === deckImportTooLargeMessage("paste") ||
-    message === deckImportTooLargeMessage("file")
-  );
+  return DECK_IMPORT_SOURCES.some((source) => message === deckImportTooLargeMessage(source));
 }

@@ -121,6 +121,8 @@ describe("state 8 — file rejected", () => {
     expect(alert.textContent).toContain("We can't open that file");
     expect(alert.textContent).toContain("2 MB");
     expect(alert.textContent).toContain(".csv");
+    // One byte over, so the size must not read as the cap it broke.
+    expect(alert.textContent).toContain("2.1 MB");
     expect(importDeck).not.toHaveBeenCalled();
   });
 
