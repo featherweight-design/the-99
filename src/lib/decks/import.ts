@@ -22,7 +22,14 @@ export type ImportCatalogCard = DetailedCatalogCard;
 export type ImportNote =
   | { kind: "sectionSkipped"; section: "sideboard" | "maybeboard"; lineCount: number }
   | { kind: "quantityClamped"; name: string; requested: number; sourceLine: number }
-  | { kind: "parseError"; sourceLine: number; reason: string };
+  | { kind: "parseError"; sourceLine: number; reason: string }
+  /**
+   * A Partner or Background list names two commanders; `decks.commander_oracle_id` holds
+   * one. The extra is dropped rather than imported into the 99, because a commander sitting
+   * in the 99 changes the deck's colour identity and its legality. Dropping it silently
+   * would change the deck without saying so, which is what this note exists to prevent.
+   */
+  | { kind: "extraCommanderDeclared"; name: string; sourceLine: number };
 
 export type DeckImport = {
   cards: { oracleId: string; quantity: number }[];
@@ -170,6 +177,17 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
     // A commander that also appears in the 99 is an export artifact, not intent.
     // Deduped silently: there is nothing here for the player to act on.
     if (declaredCommander?.oracleId === oracleId) continue;
+
+    // A second, different card marked as commander — a Partner or Background pair. Noted
+    // rather than dropped quietly, and kept out of the 99 rather than imported into it.
+    if (commanderLines.has(row.line)) {
+      notes.push({
+        kind: "extraCommanderDeclared",
+        name: card?.name ?? row.name,
+        sourceLine: row.line,
+      });
+      continue;
+    }
 
     const existing = quantities.get(oracleId);
     if (existing) existing.quantity += row.quantity;

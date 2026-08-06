@@ -40,6 +40,13 @@ describe("upload limits", () => {
     expect(COLLECTION_FILE_MAX_BYTES).toBe(
       Number(COLLECTION_FILE_MAX_LABEL.replace(" MB", "")) * 1024 * 1024,
     );
+    expect(DECK_IMPORT_FILE_MAX_BYTES).toBe(
+      Number(DECK_IMPORT_FILE_MAX_LABEL.replace(" MB", "")) * 1024 * 1024,
+    );
+    // The paste cap is the one label that is decimal KB rather than KiB, so it needs its
+    // own arithmetic rather than the MB caps' — asserting the number alone would let the
+    // label drift to "98 KB" unchallenged.
+    expect(PASTE_MAX_BYTES).toBe(Number(PASTE_MAX_LABEL.replace(" KB", "")) * 1000);
   });
 
   it("shares one paste cap across both flows", () => {

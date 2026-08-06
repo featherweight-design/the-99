@@ -128,6 +128,18 @@ describe("buildDeckImport — locked decision: a commander also in the 99 is ded
     expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 
+  it("notes a Partner pair's second commander rather than importing it into the 99", () => {
+    // decks.commander_oracle_id holds one commander. Importing the partner as a 99 card
+    // would change the deck's colour identity and its legality without saying so.
+    const result = build("1 Tymna the Weaver *CMDR*\n1 Atraxa, Praetors' Voice *CMDR*\n1 Sol Ring");
+    expect(result.declaredCommander?.oracleId).toBe(TYMNA.oracleId);
+    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(result.notes).toEqual([
+      { kind: "extraCommanderDeclared", name: ATRAXA.name, sourceLine: 2 },
+    ]);
+    expect(result.legendaryCandidates).toEqual([]);
+  });
+
   it("declares nothing when the source annotates no commander", () => {
     expect(build("1 Sol Ring").declaredCommander).toBeNull();
   });
