@@ -47,10 +47,11 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
 }
 
 describe("UnresolvedGroup", () => {
-  it("names the group and counts the cards on its lines", () => {
+  it("counts its lines, not the copies on them, so it agrees with the banner", () => {
     render(<UnresolvedGroup rows={[row({ id: "a", quantity: 4 }), row({ id: "b" })]} />);
     const group = screen.getByRole("region");
-    expect(group).toHaveAccessibleName(`${copy.groupLabel} · 5`);
+    expect(group).toHaveAccessibleName(`${copy.groupLabel} · 2`);
+    expect(group).not.toHaveAccessibleName(`${copy.groupLabel} · 5`);
   });
 
   it("orders rows by their line in the import, not alphabetically", () => {

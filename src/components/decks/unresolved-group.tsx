@@ -8,7 +8,7 @@
 // genuinely shared, and it is shared as a component.
 
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { unresolvedCardCount, type DeckUnresolvedRow } from "../../lib/decks/grouping";
+import type { DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { UnresolvedRow } from "./unresolved-row";
 
@@ -30,7 +30,11 @@ export function UnresolvedGroup({ rows }: UnresolvedGroupProps) {
     <section id="unresolved-group" className="mb-[16px] md:mb-[20px]" aria-labelledby="unresolved-h">
       <DecklistGroupHeader
         label={copy.groupLabel}
-        count={unresolvedCardCount(ordered)}
+        // Lines, not copies. The banner above counts lines, and this group's own
+        // footnote below says "All N lines" — a copy count here made one screen
+        // show two different numbers for the same thing. The card nuance is what
+        // `groupNote` and the footnote are for.
+        count={ordered.length}
         countColor="#E0913C"
         note={copy.groupNote}
         headingId="unresolved-h"
