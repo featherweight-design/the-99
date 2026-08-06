@@ -192,23 +192,6 @@ export const deckImportCopy = {
       action: "Back to your list",
       retry: false,
     },
-    /**
-     * Eng-authored and interim. PR 5 replaces this entirely with the commander
-     * picker the handoff draws (states 11–12); until then a list that names no
-     * commander would return to an unchanged form and the submit button would
-     * look broken. The advice is accurate: the pipeline reads a `Commander`
-     * section header, so putting the commander under one does resolve it.
-     * Delete when the picker lands.
-     */
-    commanderNeeded: {
-      heading: "Which card leads this deck?",
-      bodyMobile:
-        "Your list doesn't say. Put the commander under a Commander heading at the top and bring it over again.",
-      body:
-        "Your list doesn't say which card is the commander, and a Commander deck needs one. Put it at the top under a Commander heading and bring the list over again.",
-      action: "Back to your list",
-      retry: false,
-    },
   },
 
   // ---- Commander -----------------------------------------------------------

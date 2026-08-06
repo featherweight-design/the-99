@@ -52,6 +52,11 @@ export async function loadMatchInputs(
             typeLine: cards.typeLine,
             oracleText: cards.oracleText,
             commanderLegal: cards.commanderLegal,
+            // The commander picker's rows are built from the pipeline's own output,
+            // so identity and art travel with the catalog rather than being fetched
+            // again per candidate. Detailed-only, for the same reason as oracle_text.
+            colorIdentity: cards.colorIdentity,
+            imageUri: cards.imageUri,
           }
         : columns,
     )

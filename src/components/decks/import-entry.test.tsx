@@ -2,7 +2,7 @@
 // 3 (parsing), 8 (file too large), 9 (nothing matched), 10 (nothing parsed).
 // The link mode's states are not tested because they are not built: every
 // Moxfield host answers 403 behind bot protection (#191).
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DECK_IMPORT_FILE_MAX_BYTES } from "../../lib/upload-limits";
 
@@ -68,22 +68,36 @@ describe("state 1 — entry", () => {
     });
   });
 
-  it("says what to do when the list names no commander", async () => {
-    // Interim until PR 5's picker. Without it the submit button looks broken for
-    // every list that does not declare a commander, which is most of them.
-    importDeck.mockResolvedValue({
-      ok: false,
-      reason: "commanderNeeded",
-      candidates: [],
-      lineCount: 2,
-      notes: [],
+  it("skips the picker when the source declares its own commander", async () => {
+    // §Commander: a declared commander is used and nothing is said. A confirmation
+    // step for a fact we already have is friction, so the import lands directly.
+    render(<ImportEntry />);
+    fireEvent.change(pasteBox(), {
+      target: { value: "1 Atraxa, Praetors' Voice *CMDR*\n1 Sol Ring" },
     });
+    fireEvent.change(nameBox(), { target: { value: "Borrowed deck" } });
+    submit();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
+    expect(screen.queryByText("Which one's the commander?")).toBeNull();
+    // No commanderOracleId is sent: the server action reads the declaration itself.
+    expect(importDeck.mock.calls[0][0].commanderOracleId).toBeUndefined();
+  });
+
+  it("writes one deck when the button is clicked twice in the same tick", async () => {
+    // `pending` only turns true on the re-render after `startTransition`, so both
+    // clicks read it as false. `importDeck` does not dedupe, so an unguarded second
+    // click is a second deck.
     render(<ImportEntry />);
     fillPaste();
-    submit();
-    const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("Which card leads this deck?");
-    expect(push).not.toHaveBeenCalled();
+    const button = screen.getByRole("button", { name: /^Import \d+ cards$/ });
+    // Both clicks inside one `act` batch: `fireEvent` flushes a render between
+    // calls, which hands the second click a `pending` of true and tests nothing.
+    await act(async () => {
+      button.click();
+      button.click();
+    });
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
+    expect(importDeck).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -178,5 +192,157 @@ describe("state 10 — nothing parsed", () => {
     expect(screen.getByRole("button", { name: "Back to your list" })).toBeTruthy();
     expect((pasteBox() as HTMLTextAreaElement).value).toContain("Sol Ring");
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// States 11–12 — commander selection
+// ---------------------------------------------------------------------------
+
+const candidate = (name: string, sourceLine: number, over = {}) => ({
+  oracleId: `oracle-${sourceLine}`,
+  name,
+  sourceLine,
+  colorIdentity: ["G"],
+  imageUri: null,
+  owned: true,
+  ...over,
+});
+
+function needsCommander(candidates: ReturnType<typeof candidate>[], lineCount: number) {
+  importDeck.mockResolvedValueOnce({
+    ok: false,
+    reason: "commanderNeeded",
+    candidates,
+    lineCount,
+    notes: [],
+  });
+}
+
+describe("state 11 — commander picker", () => {
+  it("lists exactly the legendary creatures the import brought, each with its line", async () => {
+    needsCommander(
+      [
+        candidate("Atraxa, Praetors' Voice", 4),
+        candidate("Tymna the Weaver", 17, { owned: false }),
+        candidate("Kenrith, the Returned King", 42),
+      ],
+      99,
+    );
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+
+    await screen.findByText("Which one's the commander?");
+    expect(screen.getByText("3 legendary creatures in this import")).toBeTruthy();
+    const rows = screen.getAllByRole("button", { pressed: false });
+    expect(rows.map((r) => r.querySelector("p")?.textContent)).toEqual([
+      "Atraxa, Praetors' Voice",
+      "Tymna the Weaver",
+      "Kenrith, the Returned King",
+    ]);
+    // The line number is what separates two similar legends.
+    expect(screen.getByText("Green · line 4 · you own it")).toBeTruthy();
+    expect(screen.getByText("Green · line 17 · not in your collection")).toBeTruthy();
+    expect(screen.getByText("Green · line 42 · you own it")).toBeTruthy();
+    // Nothing was written on the first pass.
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("re-sends the same list with the picked commander and the edited name", async () => {
+    needsCommander([candidate("Atraxa, Praetors' Voice", 4)], 99);
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+
+    await screen.findByText("Which one's the commander?");
+    fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
+    // Pre-filled from the entry surface, and editable.
+    const nameField = screen.getByLabelText("Deck name") as HTMLInputElement;
+    expect(nameField.value).toBe("Borrowed deck");
+    fireEvent.change(nameField, { target: { value: "Atraxa, borrowed" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
+    expect(importDeck).toHaveBeenLastCalledWith({
+      text: "1 Sol Ring\n1 Cultivate",
+      source: "paste",
+      name: "Atraxa, borrowed",
+      commanderOracleId: "oracle-4",
+    });
+  });
+
+  it("drops the picker when the second pass fails, so the banner is reachable", async () => {
+    // The picker outranks the banner in the render, so a failure that left the
+    // step standing would set a message nobody could ever see.
+    needsCommander([candidate("Atraxa, Praetors' Voice", 4)], 99);
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+
+    await screen.findByText("Which one's the commander?");
+    fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
+    fireEvent.change(screen.getByLabelText("Deck name"), {
+      target: { value: "Atraxa, borrowed" },
+    });
+    importDeck.mockResolvedValue({ ok: false, reason: "noneMatched", lineCount: 12, notes: [] });
+    fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("We couldn't find any of these cards");
+    expect(screen.queryByText("Which one's the commander?")).toBeNull();
+    // The name edited in the picker survives the trip back, or the player retypes it.
+    expect(nameBox()).toHaveProperty("value", "Atraxa, borrowed");
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("holds the submit until a commander is picked", async () => {
+    needsCommander([candidate("Atraxa, Praetors' Voice", 4)], 99);
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+
+    await screen.findByText("Which one's the commander?");
+    for (const button of screen.getAllByRole("button", { name: "Make the deck →" })) {
+      expect(button).toHaveProperty("disabled", true);
+    }
+  });
+});
+
+describe("state 12 — no legendary creature", () => {
+  it("reads as a dead end and creates nothing", async () => {
+    needsCommander([], 99);
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+
+    const dead = await screen.findByRole("alert");
+    expect(dead.textContent).toContain("There's no commander in here");
+    expect(dead.textContent).toContain("none of these 99 lines is one");
+    expect(dead.textContent).toContain("Nothing was created");
+    // No picker, and above all no deck.
+    expect(screen.queryByText("Which one's the commander?")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Make the deck →" })).toBeNull();
+    expect(push).not.toHaveBeenCalled();
+    expect(importDeck).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers the way back to the list, and the way out to /decks/new", async () => {
+    // Twice: the way back re-submits, and that pass is the same dead end.
+    needsCommander([], 99);
+    needsCommander([], 99);
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+
+    await screen.findByRole("button", { name: "Back to the list" });
+    fireEvent.click(screen.getByRole("button", { name: "Back to the list" }));
+    // The list is still in the box, exactly as the reassurance line says.
+    expect((pasteBox() as HTMLTextAreaElement).value).toContain("Sol Ring");
+
+    submit();
+    await screen.findByRole("button", { name: "Start from a commander instead →" });
+    fireEvent.click(screen.getByRole("button", { name: "Start from a commander instead →" }));
+    expect(push).toHaveBeenCalledWith("/decks/new");
   });
 });

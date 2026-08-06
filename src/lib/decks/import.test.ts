@@ -13,13 +13,24 @@ const card = (over: Partial<ImportCatalogCard> & { name: string }): ImportCatalo
   typeLine: "Artifact",
   oracleText: null,
   commanderLegal: true,
+  colorIdentity: [],
+  imageUri: null,
   ...over,
 });
 
 const SOL_RING = card({ name: "Sol Ring" });
 const FOREST = card({ name: "Forest", typeLine: "Basic Land — Forest" });
-const ATRAXA = card({ name: "Atraxa, Praetors' Voice", typeLine: "Legendary Creature — Phyrexian Angel Horror" });
-const TYMNA = card({ name: "Tymna the Weaver", typeLine: "Legendary Creature — Human Cleric" });
+const ATRAXA = card({
+  name: "Atraxa, Praetors' Voice",
+  typeLine: "Legendary Creature — Phyrexian Angel Horror",
+  colorIdentity: ["W", "U", "B", "G"],
+  imageUri: "https://cards.example/atraxa.jpg",
+});
+const TYMNA = card({
+  name: "Tymna the Weaver",
+  typeLine: "Legendary Creature — Human Cleric",
+  colorIdentity: ["W", "B"],
+});
 const DELVER = card({
   name: "Delver of Secrets // Insectile Aberration",
   typeLine: "Creature — Human Insect",
@@ -224,9 +235,33 @@ describe("buildDeckImport — legendary candidates", () => {
   it("lists every legendary creature in the list with its source line", () => {
     const result = build("1 Sol Ring\n1 Atraxa, Praetors' Voice\n1 Tymna the Weaver");
     expect(result.legendaryCandidates).toEqual([
-      { oracleId: ATRAXA.oracleId, name: ATRAXA.name, sourceLine: 2 },
-      { oracleId: TYMNA.oracleId, name: TYMNA.name, sourceLine: 3 },
+      {
+        oracleId: ATRAXA.oracleId,
+        name: ATRAXA.name,
+        sourceLine: 2,
+        colorIdentity: ["W", "U", "B", "G"],
+        imageUri: "https://cards.example/atraxa.jpg",
+      },
+      {
+        oracleId: TYMNA.oracleId,
+        name: TYMNA.name,
+        sourceLine: 3,
+        colorIdentity: ["W", "B"],
+        imageUri: null,
+      },
     ]);
+  });
+
+  it("carries the identity and art the picker's row renders, not just the id", () => {
+    // The picker reuses create-picker's row verbatim: pips, an identity label and
+    // card art. Without these on the candidate the row would need a second lookup.
+    const [atraxa] = build("1 Atraxa, Praetors' Voice").legendaryCandidates;
+    expect(atraxa.colorIdentity).toEqual(["W", "U", "B", "G"]);
+    expect(atraxa.imageUri).toBe("https://cards.example/atraxa.jpg");
+  });
+
+  it("leaves imageUri null rather than inventing one when the card has no art", () => {
+    expect(build("1 Tymna the Weaver").legendaryCandidates[0].imageUri).toBeNull();
   });
 
   it("excludes the declared commander, which needs no picking", () => {
