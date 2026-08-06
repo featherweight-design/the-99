@@ -22,6 +22,7 @@ const copy = deckImportCopy.unresolved;
 interface UnresolvedRowProps {
   deckId: string;
   row: DeckUnresolvedRow;
+  commanderOracleId?: string;
   expanded: boolean;
   onToggle: () => void;
   onCollapse: () => void;
@@ -32,6 +33,7 @@ interface UnresolvedRowProps {
 export function UnresolvedRow({
   deckId,
   row,
+  commanderOracleId,
   expanded,
   onToggle,
   onCollapse,
@@ -125,6 +127,7 @@ export function UnresolvedRow({
           id={panelId}
           deckId={deckId}
           row={row}
+          commanderOracleId={commanderOracleId}
           onCollapse={collapse}
           onResolved={(result) => onResolved(row, result)}
           onDeleted={() => onDeleted(row)}

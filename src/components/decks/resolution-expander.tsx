@@ -31,6 +31,7 @@ interface ResolutionExpanderProps {
   id: string;
   deckId: string;
   row: DeckUnresolvedRow;
+  commanderOracleId?: string;
   /** Collapses the expander and returns focus to the row. */
   onCollapse: () => void;
   onResolved: (result: SearchResult) => void;
@@ -41,6 +42,7 @@ export function ResolutionExpander({
   id,
   deckId,
   row,
+  commanderOracleId,
   onCollapse,
   onResolved,
   onDeleted,
@@ -91,6 +93,13 @@ export function ResolutionExpander({
       () => resolveUnresolvedRow(deckId, row.id, result.oracleId),
       () => {
         onResolved(result);
+        // Mirrors the server, which answers the line but refuses to put the
+        // commander in the 99 as well. Predicting a card the server will not
+        // write shows a `built` it never reaches.
+        if (result.oracleId === commanderOracleId) {
+          deleteOptimisticRow(row.id);
+          return;
+        }
         resolveOptimisticRow(row.id, {
           oracleId: result.oracleId,
           name: result.name,

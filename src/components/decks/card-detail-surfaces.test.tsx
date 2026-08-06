@@ -53,6 +53,7 @@ describe("deck card-detail triggers", () => {
     const { fetchCard } = renderInProvider(
       <Decklist
         deckId="d1"
+        commanderOracleId="cmdr"
         unresolvedRows={[]}
         cards={[deckCard()]}
         built={1}
@@ -72,6 +73,7 @@ describe("deck card-detail triggers", () => {
     renderInProvider(
       <Decklist
         deckId="d1"
+        commanderOracleId="cmdr"
         unresolvedRows={[]}
         cards={[deckCard({ oracleId: "o-forest", name: "Forest", typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", role: "land", quantity: 3 })]}
         built={3}
@@ -173,6 +175,7 @@ describe("deck card-detail triggers", () => {
     const { fetchCard } = renderInProvider(
       <Decklist
         deckId="d1"
+        commanderOracleId="cmdr"
         unresolvedRows={[]}
         cards={[
           deckCard({ oracleId: "o-sol", name: "Sol Ring" }),

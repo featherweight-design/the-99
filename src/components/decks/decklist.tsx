@@ -14,6 +14,8 @@ interface DecklistProps {
   deckId: string;
   cards: DeckDetailCard[];
   unresolvedRows: DeckUnresolvedRow[];
+  /** Resolving a line to the commander must not also put it in the 99. */
+  commanderOracleId: string;
   built: number;
   toBuyCount: number;
   filter: "all" | "shopping";
@@ -28,6 +30,7 @@ export function Decklist({
   deckId,
   cards,
   unresolvedRows,
+  commanderOracleId,
   built,
   toBuyCount,
   filter,
@@ -89,6 +92,7 @@ export function Decklist({
           deckId={deckId}
           rows={visibleUnresolved}
           cards={cards}
+          commanderOracleId={commanderOracleId}
           onExpandedChange={onUnresolvedExpandedChange}
         />
       </div>

@@ -32,6 +32,7 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
     <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
       <Decklist
         deckId="d1"
+        commanderOracleId="cmdr"
         cards={[card()]}
         unresolvedRows={[row()]}
         built={1}

@@ -10,7 +10,7 @@
 // It owns which row is expanded — one at a time — and the single polite live
 // region that resolve and delete share.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import {
@@ -20,7 +20,11 @@ import {
   type DeckDetailCard,
   type DeckUnresolvedRow,
 } from "../../lib/decks/grouping";
-import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
+import {
+  computeRoleCounts,
+  RECOMMENDED_MIX,
+  type MixRole,
+} from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { UnresolvedRow } from "./unresolved-row";
@@ -33,6 +37,8 @@ interface UnresolvedGroupProps {
   rows: DeckUnresolvedRow[];
   /** The deck's cards, for the figures the live note quotes. */
   cards?: DeckDetailCard[];
+  /** Resolving a line to the commander answers it without adding to the 99. */
+  commanderOracleId?: string;
   onExpandedChange?: (expanded: boolean) => void;
 }
 
@@ -40,18 +46,36 @@ export function UnresolvedGroup({
   deckId,
   rows,
   cards = [],
+  commanderOracleId,
   onExpandedChange,
 }: UnresolvedGroupProps) {
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
-  const [note, setNote] = useState<{ kind: "resolve" | "delete"; text: string } | null>(null);
+  const [note, setNote] = useState<{
+    kind: "resolve" | "delete";
+    text: string;
+  } | null>(null);
   const isDesktop = useIsDesktop();
+  const noteRef = useRef<HTMLParagraphElement>(null);
 
-  if (rows.length === 0) return null;
+  // Resolving or deleting unmounts the row that held focus, and the last one
+  // unmounts every row there is, so focus would land on <body> and a keyboard
+  // user would restart from the top of the document. The note is the one thing
+  // that outlives the action, so it takes focus and becomes the place to
+  // continue from.
+  useEffect(() => {
+    if (note) noteRef.current?.focus();
+  }, [note]);
+
+  // Not `rows.length === 0` alone: the final resolution empties the list, and
+  // unmounting here would take the live region down with it — the one action
+  // most worth announcing would be the only silent one.
+  if (rows.length === 0 && note === null) return null;
 
   // Import order, not alphabetical: the player is looking for the line they can
   // see in the list they pasted.
   const ordered = rows.slice().sort((a, b) => a.sourceLine - b.sourceLine);
-  const expanded = expandedRowId !== null && ordered.some((r) => r.id === expandedRowId);
+  const expanded =
+    expandedRowId !== null && ordered.some((r) => r.id === expandedRowId);
 
   function setExpanded(id: string | null) {
     setExpandedRowId(id);
@@ -62,12 +86,18 @@ export function UnresolvedGroup({
   // plus the edit itself: the optimistic state is not readable synchronously
   // here, and reading it a render later would narrate the previous action.
   function announceResolved(row: DeckUnresolvedRow, result: SearchResult) {
-    const added = isBasicLand(result.typeLine) ? row.quantity : 1;
+    // The commander is already in the deck, so answering a line with it adds
+    // nothing to the 99 — the server skips the insert and the count must agree.
+    const added =
+      result.oracleId === commanderOracleId
+        ? 0
+        : isBasicLand(result.typeLine)
+          ? row.quantity
+          : 1;
     const built = deckCounts(cards).built + added;
     const remaining = rows.length - 1;
     const mix = RECOMMENDED_MIX[result.role as MixRole] as
-      | (typeof RECOMMENDED_MIX)[MixRole]
-      | undefined;
+      (typeof RECOMMENDED_MIX)[MixRole] | undefined;
     const role = mix
       ? resolveCopy.roleClause(
           mix.label,
@@ -79,7 +109,12 @@ export function UnresolvedGroup({
     const text = isDesktop
       ? result.owned
         ? resolveCopy.resolved(result.name, String(built), remaining, role)
-        : resolveCopy.resolvedUnowned(result.name, String(built), remaining, role)
+        : resolveCopy.resolvedUnowned(
+            result.name,
+            String(built),
+            remaining,
+            role,
+          )
       : result.owned
         ? resolveCopy.resolvedMobile(result.name, String(built))
         : resolveCopy.resolvedUnownedMobile(result.name);
@@ -99,57 +134,79 @@ export function UnresolvedGroup({
 
   return (
     // The id is the unresolved banner's scroll target.
-    <section id="unresolved-group" className="mb-[16px] md:mb-[20px]" aria-labelledby="unresolved-h">
-      <DecklistGroupHeader
-        label={copy.groupLabel}
-        // Lines, not copies. The banner above counts lines, and this group's own
-        // footnote below says "All N lines" — a copy count here made one screen
-        // show two different numbers for the same thing. The card nuance is what
-        // `groupNote` and the footnote are for.
-        count={ordered.length}
-        countColor="#E0913C"
-        note={copy.groupNote}
-        headingId="unresolved-h"
-      />
-
-      {/* The expander is full width, so the desktop group drops to one column
-          while a row is open rather than boxing it into half the width. */}
-      <div
-        className={`flex flex-col gap-[3px] md:gap-y-[4px] md:gap-x-[20px] ${expanded ? "" : "md:grid"}`}
-        style={{ gridTemplateColumns: "1fr 1fr" }}
-      >
-        {ordered.map((row) => (
-          <UnresolvedRow
-            key={row.id}
-            deckId={deckId}
-            row={row}
-            expanded={row.id === expandedRowId}
-            onToggle={() => setExpanded(row.id)}
-            onCollapse={() => setExpanded(null)}
-            onResolved={(r, result) => {
-              announceResolved(r, result);
-              setExpanded(null);
-            }}
-            onDeleted={(r) => {
-              announceDeleted(r);
-              setExpanded(null);
-            }}
+    <section
+      id="unresolved-group"
+      className="mb-[16px] md:mb-[20px]"
+      aria-labelledby="unresolved-h"
+    >
+      {/* Everything but the note goes when the last line does — the group has
+          nothing left to head, and a "· 0" count over no rows is a heading for
+          an absence. */}
+      {ordered.length > 0 && (
+        <>
+          <DecklistGroupHeader
+            label={copy.groupLabel}
+            // Lines, not copies. The banner above counts lines, and this group's own
+            // footnote below says "All N lines" — a copy count here made one screen
+            // show two different numbers for the same thing. The card nuance is what
+            // `groupNote` and the footnote are for.
+            count={ordered.length}
+            countColor="#E0913C"
+            note={copy.groupNote}
+            headingId="unresolved-h"
           />
-        ))}
-      </div>
+
+          {/* The expander is full width, so the desktop group drops to one column
+          while a row is open rather than boxing it into half the width. */}
+          <div
+            className={`flex flex-col gap-[3px] md:gap-y-[4px] md:gap-x-[20px] ${expanded ? "" : "md:grid"}`}
+            style={{ gridTemplateColumns: "1fr 1fr" }}
+          >
+            {ordered.map((row) => (
+              <UnresolvedRow
+                key={row.id}
+                deckId={deckId}
+                row={row}
+                commanderOracleId={commanderOracleId}
+                expanded={row.id === expandedRowId}
+                onToggle={() => setExpanded(row.id)}
+                onCollapse={() => setExpanded(null)}
+                onResolved={(r, result) => {
+                  announceResolved(r, result);
+                  setExpanded(null);
+                }}
+                onDeleted={(r) => {
+                  announceDeleted(r);
+                  setExpanded(null);
+                }}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {/* One region, shared by resolve and delete. It replaces its own text, it
           never stacks, and it is not a toast. Mounted from the first render
           rather than with the first note: a live region that arrives carrying
           its message is not reliably announced. */}
       <p
+        ref={noteRef}
         aria-live="polite"
+        tabIndex={-1}
         className={
           note
             ? "flex items-center gap-[9px] md:gap-[11px] rounded-[8px] md:rounded-[9px] px-[12px] py-[10px] md:px-[14px] md:py-[12px] mt-[16px] text-[12.5px] md:text-[13.5px]"
             : "sr-only"
         }
-        style={note ? { background: "#1A160F", border: "1px solid #2A241D", color: "#C6B79A" } : undefined}
+        style={
+          note
+            ? {
+                background: "#1A160F",
+                border: "1px solid #2A241D",
+                color: "#C6B79A",
+              }
+            : undefined
+        }
       >
         {note && (
           <span
@@ -167,15 +224,19 @@ export function UnresolvedGroup({
         <span className="flex-1">{note?.text ?? ""}</span>
       </p>
 
-      <p
-        className="text-[12px] leading-[1.55] mt-[10px] md:text-[12.5px] md:leading-[1.6] md:mt-[12px]"
-        style={{ color: "#8E8269" }}
-      >
-        <span className="md:hidden">
-          {copy.footnoteMobile} {copy.footnoteMobileResolve}
-        </span>
-        <span className="hidden md:inline">{copy.footnote(ordered.length)}</span>
-      </p>
+      {ordered.length > 0 && (
+        <p
+          className="text-[12px] leading-[1.55] mt-[10px] md:text-[12.5px] md:leading-[1.6] md:mt-[12px]"
+          style={{ color: "#8E8269" }}
+        >
+          <span className="md:hidden">
+            {copy.footnoteMobile} {copy.footnoteMobileResolve}
+          </span>
+          <span className="hidden md:inline">
+            {copy.footnote(ordered.length)}
+          </span>
+        </p>
+      )}
     </section>
   );
 }

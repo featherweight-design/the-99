@@ -42,6 +42,7 @@ const result = (over: Partial<SearchResult> & { name: string }): SearchResult =>
 
 const rhystic = result({ name: "Rhystic Study" });
 const mystic = result({ name: "Mystic Remora", owned: false, ownedQty: 0 });
+const commander = result({ name: "Muldrotha", oracleId: "cmdr" });
 
 const solRing: DeckDetailCard = {
   oracleId: "sol-ring",
@@ -90,6 +91,7 @@ function Harness({
         <p>{`built ${counts.built} total ${counts.total}`}</p>
         <Decklist
           deckId="deck-1"
+          commanderOracleId="cmdr"
           cards={deck.cards}
           unresolvedRows={deck.unresolvedRows}
           built={counts.built}
@@ -307,4 +309,35 @@ describe("a second activation in the same tick", () => {
     expect(s.onDeleted).toHaveBeenCalledTimes(1);
   });
 
+});
+
+describe("resolving a line to the deck's own commander", () => {
+  // The server answers the line but refuses to put the commander in the 99 as
+  // well. An optimistic add here would show a `built` the server never reaches.
+  it("clears the line without adding to the 99", async () => {
+    searchCards.mockResolvedValue([commander]);
+    render(<Harness />);
+    expect(screen.getByText("built 1 total 2")).toBeInTheDocument();
+
+    await open();
+    fireEvent.click(screen.getAllByRole("option")[0]);
+
+    await waitFor(() => expect(screen.getByText("built 1 total 1")).toBeInTheDocument());
+    expect(resolveUnresolvedRow).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("the last line in the group", () => {
+  // The row that held focus is gone, so without this focus lands on <body> and
+  // a keyboard user restarts from the top of the document.
+  it("hands focus to the note it leaves behind", async () => {
+    render(<Harness />);
+    fireEvent.click(rowButton("Rystic Studie"));
+    fireEvent.click(screen.getByRole("button", { name: copy.delete }));
+
+    await waitFor(() => {
+      const note = document.querySelector('[aria-live="polite"]');
+      expect(document.activeElement).toBe(note);
+    });
+  });
 });
