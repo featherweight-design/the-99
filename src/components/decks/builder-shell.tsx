@@ -259,7 +259,13 @@ export function BuilderShell({
                 banner instead, whose warning would be contradicted by a line
                 reading "nothing needs your attention". */}
             {arrivedFromImport && unresolvedRows.length === 0 && (
-              <ArrivalStrip deckId={deck.id} importedCount={counts.total} />
+              /* `cards.length`, not `counts.total`: the strip's sentence says
+                 "lines", and a Moxfield export writes basics as one line
+                 ("35 Forest"), so the quantity sum would claim a 99-card deck
+                 arrived on 99 lines when it arrived on nearer 65. Same
+                 cards-vs-lines rule `unresolvedCardCount` documents — prose
+                 that says lines counts lines. */
+              <ArrivalStrip deckId={deck.id} importedLineCount={cards.length} />
             )}
 
             {/* Above the coverage strip and the tabs, because what it says is

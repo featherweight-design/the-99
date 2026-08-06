@@ -122,7 +122,7 @@ describe("Arrival strip (state 13)", () => {
     expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
   });
 
-  it("counts the deck's total, so a thousand-card deck reads with a separator", async () => {
+  it("separates the thousands, so a very long import does not read as a raw digit run", async () => {
     const cards = makeCards(1200);
     await act(async () => {
       renderBuilder(
@@ -131,6 +131,22 @@ describe("Arrival strip (state 13)", () => {
       );
     });
     expect(screen.getByText(copy.arrival.clean("1,200"))).toBeInTheDocument();
+  });
+
+  // A Moxfield export writes basics as one line ("35 Forest"), so the quantity
+  // sum and the line count diverge on almost every real deck. The sentence says
+  // "lines", so it must count lines.
+  it("counts lines, not copies, when a line carries many of a card", async () => {
+    const cards = makeCards(65);
+    cards[0] = { ...cards[0], typeLine: "Basic Land — Forest", quantity: 35 };
+    await act(async () => {
+      renderBuilder(
+        makeDeck({ id: "deck-basics", cards, built: 99, ownedCount: 99, total: 99 }),
+        true,
+      );
+    });
+    expect(screen.getByText(copy.arrival.clean("65"))).toBeInTheDocument();
+    expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
   });
 
   it("dismisses, and the dismissal is keyed to the deck id", async () => {

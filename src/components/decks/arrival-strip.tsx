@@ -14,17 +14,18 @@ const copy = deckImportCopy.arrival;
 
 interface ArrivalStripProps {
   deckId: string;
-  /** Cards that came over — the deck's total, which on a clean import is all of it. */
-  importedCount: number;
+  /** Lines that came over, not cards — the sentence below says "lines", and a
+   *  single line can carry many copies. */
+  importedLineCount: number;
 }
 
-export function ArrivalStrip({ deckId, importedCount }: ArrivalStripProps) {
+export function ArrivalStrip({ deckId, importedLineCount }: ArrivalStripProps) {
   const [dismissed, dismiss] = useLocalFlag(arrivalDismissKey(deckId));
   if (dismissed) return null;
 
   // The locale is pinned for the same reason src/lib/copy/commanders.ts pins
   // it: an unpinned toLocaleString renders "1.418" under a European locale.
-  const n = importedCount.toLocaleString("en-US");
+  const n = importedLineCount.toLocaleString("en-US");
 
   return (
     <div
