@@ -13,20 +13,20 @@ player resolves each one through a card search or deletes it.
 Nine PRs, in order. Each has numbered tasks naming the file and what changes. Tests are written
 first; every task that touches logic names the assertion before the implementation.
 
-### Build order — hard dependency
+### Build order — the dependency is retired
 
-**PRs 1–6 can start now. PRs 7–9 cannot begin until #158's PR 6 merges.** `quick-add-bar.tsx` does
-not exist yet, and the arrival chrome sits inside the shell #158 rewrites. As of 2026-08-04, #158
-PRs 1–3 are merged (#169–#171).
+**All nine PRs can run in sequence with no external wait, as of 2026-08-05.**
 
-The line falls between PR 6 and PR 7 rather than at the first deck-page PR, because
-`decklist-group.tsx`, `decklist.tsx` and `optimistic-deck.tsx` are **not** deleted or rewritten by
-#158 — the unresolved group and the counts can land against today's builder and survive the
-overhaul. Only the banner's placement (above #158's coverage strip and tab pair), the arrival strip,
-and the row-scoped combobox need the new shell.
+This section previously read "PRs 7–9 cannot begin until #158's PR 6 merges," because
+`quick-add-bar.tsx` did not exist and the arrival chrome sits inside the shell #158 rewrites.
+**#158 is now fully merged** — all six PRs (#169, #170, #171, #173, #175, #180) plus its close-out
+doc PR (#186) — so `quick-add-bar.tsx` exists and PR 8 has a construct to take its combobox from.
 
-**Merge-conflict watch:** both epics edit `src/components/decks/builder-shell.tsx` — PR 7 here, PR 6
-there. #158 goes first; rebase, don't merge.
+The merge-conflict watch on `src/components/decks/builder-shell.tsx` is likewise moot: #158 went
+first, as planned, so PR 7 here builds on the current shell rather than racing it.
+
+Launch gating is **not** a build-order constraint but is easy to confuse with one: `/decks/import`
+ships unlinked in PR 4 and only becomes reachable from `/decks` in PR 6. See the briefing.
 
 ### Five facts established while writing these tasks
 
@@ -238,7 +238,7 @@ First UI PR. Gates 2, 3 and 4 apply.
 
 ## PR 6 — Counts, and the unresolved group
 
-Everything that can land against today's builder. Not blocked on #158.
+Everything that can land against the builder as it stands. Also ships the deck-card badge.
 
 1. **`src/lib/decks/grouping.ts`** — `deckCounts(cards, unresolvedCount = 0)` returns
    `total: built + unresolvedCount` alongside the existing three.
@@ -274,10 +274,22 @@ Everything that can land against today's builder. Not blocked on #158.
 11. Wire `total` and `unresolvedCount` through **both** the server list and `useOptimisticDeckCards`
     (`optimistic-deck.tsx:24`). Sending it through only one is exactly the disagreement
     `deckCounts`'s comment warns about.
+12. **`src/components/decks/deck-card.tsx` — the unresolved-row badge** (ruled 2026-08-05). A count
+    marker below the counts line on `/decks`, so a deck that imported short carries a signal
+    *outside* the builder. `listDecksWithStats` (`read.ts`) must return `unresolvedCount` for it.
+    **No new `statusPill` value** — the badge is additive and the status vocabulary is unchanged,
+    because threading a new status through both the server list and the optimistic client list
+    multiplies the surfaces that can disagree mid-mutation. It clears when the last row is resolved
+    or deleted. Test: a deck with unresolved rows renders the badge; one without renders nothing.
+13. **The `Import a deck` entry point on `/decks`** — this is the PR that makes the vertical live.
+    `/decks/import` shipped unlinked in PR 4 by design; PR 6 is the first point at which the flow is
+    coherent end-to-end (route + commander picker + a builder that can render an unresolved row).
+    Placement alongside `NewDeckButton` (`src/app/decks/page.tsx:105-113`), which has separate
+    mobile and desktop mounts — both need it. See the briefing's launch-gating section.
 
 ---
 
-## PR 7 — Arrival chrome: states 13–14 · **blocked on #158 PR 6**
+## PR 7 — Arrival chrome: states 13–14
 
 1. **Arrival strip (state 13)** — full-width band below the spine: `--surface-rail`, `1px --border`
    bottom, `✓` in `--success`, dismiss ✕ in `--fg-faint`. **Dismissal persists per deck and the strip
@@ -302,7 +314,7 @@ Everything that can land against today's builder. Not blocked on #158.
 
 ---
 
-## PR 8 — Resolution: states 15–19 · **blocked on #158 PR 6**
+## PR 8 — Resolution: states 15–19
 
 1. **A row-scoped instance of `quick-add-bar`'s combobox inside the row's inline expander** — not a
    `variant` on the mounted bar, and not a dialog. Props the bar does not have: `seed` (the failed
@@ -371,12 +383,11 @@ merely handling.
 
 ## Before epic-run starts
 
-This plan is not sufficient on its own. epic-run's preconditions also require a briefing, **which
-does not exist yet and is the next document to write** — `2026-08-04-deck-import-briefing.md`,
-alongside this file. It answers the three premise questions —
-launch gating; off-happy-path homes (specifically: where does a deck with unresolved rows *live* in
-the IA, and does anything surface it outside the deck page?); and the numbered journey walk script
-that drives Gate 5.
+This plan is not sufficient on its own. epic-run's preconditions also require a briefing, which now
+exists at `docs/superpowers/plans/2026-08-05-deck-import-briefing.md`. It answers the three premise
+questions — launch gating (unlinked until PR 6); off-happy-path homes (a deck with unresolved rows
+lives on `/decks` with a count badge on its `DeckCard`); and the three numbered journey walk scripts
+that drive Gate 5. **All of epic-run's preconditions are met as of 2026-08-05.**
 
 ## Out of scope
 
