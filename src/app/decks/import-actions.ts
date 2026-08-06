@@ -10,13 +10,24 @@ import { validateDeckName } from "../../lib/decks/deck-name";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { isCommanderCandidate } from "../../lib/recs/score";
-import { PASTE_MAX_BYTES } from "../../lib/upload-limits";
+import {
+  DECK_IMPORT_FILE_MAX_LABEL,
+  deckImportMaxBytes,
+  type DeckImportSource,
+} from "../../lib/upload-limits";
 
 const INSERT_BATCH = 500;
 
 export type ImportDeckInput = {
   /** The decklist exactly as the player gave it — paste, file text, or fetched deck. */
   text: string;
+  /**
+   * Which entry point produced `text`, and therefore which cap applies. A paste is
+   * typed by hand and stays small; a file or a fetched deck can carry far more and
+   * gets the 2 MB deck-import cap. Without this the file cap would be enforced
+   * nowhere and a valid 200 KB export would be rejected as an oversized paste.
+   */
+  source: DeckImportSource;
   name: string;
   /** Set only once the player has picked one; a declared commander needs no pick. */
   commanderOracleId?: string;
@@ -45,8 +56,13 @@ export type ImportDeckResult =
 export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResult> {
   const userId = await requireUserId();
   const name = validateDeckName(input.name);
-  if (Buffer.byteLength(input.text, "utf8") > PASTE_MAX_BYTES) {
-    throw new Error("Decklist too large (max 100 KB)");
+  const maxBytes = deckImportMaxBytes(input.source);
+  if (Buffer.byteLength(input.text, "utf8") > maxBytes) {
+    throw new Error(
+      input.source === "paste"
+        ? "Paste too large (max 100 KB)"
+        : `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`,
+    );
   }
 
   // Parsed once here only to learn which Scryfall ids to index; buildDeckImport

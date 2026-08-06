@@ -15,3 +15,15 @@ export const DECK_IMPORT_FILE_MAX_LABEL = "2 MB";
 
 /** Genuinely shared: a paste is a paste in either flow. */
 export const PASTE_MAX_BYTES = 100_000;
+
+/** Where a decklist came from, which is the only thing that decides its cap. */
+export type DeckImportSource = "paste" | "file" | "url";
+
+/**
+ * The cap for a decklist, chosen by how it arrived. A paste is typed by hand and
+ * stays small; a file or a fetched deck can carry far more. Pure and exported so
+ * the choice is testable — it lives in a server action otherwise, where it is not.
+ */
+export function deckImportMaxBytes(source: DeckImportSource): number {
+  return source === "paste" ? PASTE_MAX_BYTES : DECK_IMPORT_FILE_MAX_BYTES;
+}
