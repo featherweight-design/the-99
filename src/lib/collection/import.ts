@@ -4,7 +4,7 @@ import {
   cards, collectionItems, commanderScores, csvUploads, printings, skippedPrintings,
 } from "../../db/schema";
 import type { CollectionRow } from "../manabox/parse";
-import type { CatalogCard, MatchIndexes } from "./match";
+import type { CatalogCard, DetailedCatalogCard, MatchIndexes } from "./match";
 import { toCollectionItemValues, type PendingItem } from "./pending";
 
 const INSERT_BATCH = 500;
@@ -31,9 +31,21 @@ async function chunkedLookup<T>(
  */
 export async function loadMatchInputs(
   rows: CollectionRow[],
+): Promise<{ catalog: CatalogCard[]; indexes: MatchIndexes }>;
+export async function loadMatchInputs(
+  rows: CollectionRow[],
+  opts: { detailed: true },
+): Promise<{ catalog: DetailedCatalogCard[]; indexes: MatchIndexes }>;
+export async function loadMatchInputs(
+  rows: CollectionRow[],
+  opts: { detailed?: boolean } = {},
 ): Promise<{ catalog: CatalogCard[]; indexes: MatchIndexes }> {
+  // Deck import needs the type line to tell a basic land and a legendary creature
+  // apart; the collection flow does not, and oracle_text over the whole catalog is
+  // large enough that reading it unconditionally would be a real regression there.
+  const columns = { oracleId: cards.oracleId, scryfallId: cards.scryfallId, name: cards.name };
   const catalog = await db
-    .select({ oracleId: cards.oracleId, scryfallId: cards.scryfallId, name: cards.name })
+    .select(opts.detailed ? { ...columns, typeLine: cards.typeLine, oracleText: cards.oracleText } : columns)
     .from(cards);
 
   const ids = [...new Set(rows.map((r) => r.scryfallId).filter((id): id is string => !!id && UUID_RE.test(id)))];

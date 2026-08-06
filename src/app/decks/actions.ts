@@ -11,6 +11,7 @@ import { getEdhrecData } from "../../lib/edhrec/client";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
+import { validateDeckName } from "../../lib/decks/deck-name";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { validateCardForDeck } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
@@ -33,15 +34,6 @@ async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise
     .orderBy(cards.oracleId);
   const identity = new Set(commander.colorIdentity);
   return owned.filter((c) => c.oracleId !== commander.oracleId && c.colorIdentity.every((x) => identity.has(x)));
-}
-
-// Deck names feed export headers and download filenames — reject control characters.
-function validateDeckName(name: string): string {
-  const trimmed = name.trim();
-  if (trimmed.length === 0 || trimmed.length > 120 || /[\u0000-\u001F]/.test(trimmed)) {
-    throw new Error("deck name must be 1–120 characters without control characters");
-  }
-  return trimmed;
 }
 
 export async function createDeck(commanderOracleId: string, name: string): Promise<void> {
