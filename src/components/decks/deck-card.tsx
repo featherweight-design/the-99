@@ -5,6 +5,7 @@ import type { DeckListItem } from "../../lib/decks/read";
 import { colorLabel } from "../../lib/decks/format";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { GhostButton } from "@/components/ui/button";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 
 /** Progress bar fill color by built bucket. §Deck card — progress bar fill */
 function progressFillColor(built: number): string {
@@ -183,6 +184,20 @@ export function DeckCard({ deck }: DeckCardProps) {
             }}
           />
         </div>
+
+        {/* §Deck with unresolved rows on /decks — an additive count marker, not
+            a new status. The status vocabulary is unchanged: threading a fifth
+            pill value through the server list and the optimistic client list
+            would multiply the surfaces that can disagree mid-mutation. Clears
+            itself when the last line is resolved or deleted. */}
+        {deck.unresolvedCount > 0 && (
+          <p
+            className="font-mono text-[10px] md:text-[10.5px] mt-[6px] md:mt-[7px] m-0"
+            style={{ color: "#E0913C" }}
+          >
+            {deckImportCopy.unresolved.deckCardBadge(deck.unresolvedCount)}
+          </p>
+        )}
       </div>
 
       {/* ── Desktop-only action buttons ── */}

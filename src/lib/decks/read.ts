@@ -4,7 +4,13 @@ import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "..
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
-import { deckCounts, type CardTypeGroup, type DeckDetailCard } from "./grouping";
+import {
+  deckCounts,
+  unresolvedCardCount,
+  type CardTypeGroup,
+  type DeckDetailCard,
+  type DeckUnresolvedRow,
+} from "./grouping";
 import { statusPill, type StatusPill } from "./status";
 
 // ---------------------------------------------------------------------------
@@ -62,12 +68,7 @@ export function primaryRole(input: { typeLine: string; oracleText: string | null
 // DB query types and functions (untested — same policy as recommend.ts)
 // ---------------------------------------------------------------------------
 
-export type DeckUnresolvedRow = {
-  id: string;
-  rawName: string;
-  quantity: number;
-  sourceLine: number;
-};
+export type { DeckUnresolvedRow };
 
 export type DeckDetail = {
   id: string;
@@ -92,6 +93,8 @@ export type DeckDetail = {
   built: number;
   ownedCount: number;
   toBuyCount: number;
+  /** built plus the cards on unresolved lines — the size of the deck the player asked for. */
+  total: number;
 };
 
 export async function getDeckDetail(deckId: string, userId: string): Promise<DeckDetail | null> {
@@ -175,7 +178,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     commander,
     cards: detailCards,
     unresolvedRows,
-    ...deckCounts(detailCards),
+    ...deckCounts(detailCards, unresolvedCardCount(unresolvedRows)),
   };
 }
 
@@ -189,6 +192,8 @@ export type DeckListItem = {
   built: number;
   ownedCount: number;
   toBuyCount: number;
+  /** Cards on lines the import could not name. Drives the deck card's badge. */
+  unresolvedCount: number;
   statusPill: StatusPill;
 };
 
@@ -206,6 +211,17 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
     0
   )::int`;
 
+  // A subquery rather than a second left join: joining both child tables and
+  // grouping would multiply their rows against each other and inflate `built`.
+  const unresolvedCountSql = sql<number>`coalesce(
+    (
+      select sum(dur.quantity)
+      from ${deckUnresolvedRows} dur
+      where dur.deck_id = ${decks.id}
+    ),
+    0
+  )::int`;
+
   const rows = await db
     .select({
       id: decks.id,
@@ -216,6 +232,7 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
       commanderImageUri: cards.imageUri,
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
+      unresolvedCount: unresolvedCountSql,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
@@ -225,7 +242,11 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
     .orderBy(desc(decks.createdAt));
 
   return rows.map((row) => {
-    const pill = statusPill({ built: row.built, ownedCount: row.ownedCount });
+    const pill = statusPill({
+      built: row.built,
+      ownedCount: row.ownedCount,
+      unresolvedCount: row.unresolvedCount,
+    });
     return {
       id: row.id,
       name: row.name,
@@ -236,6 +257,7 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
       built: row.built,
       ownedCount: row.ownedCount,
       toBuyCount: row.built - row.ownedCount,
+      unresolvedCount: row.unresolvedCount,
       statusPill: pill,
     };
   });

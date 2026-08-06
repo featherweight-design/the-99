@@ -50,6 +50,10 @@ export const deckImportCopy = {
     // the cap's own label so the sentence cannot outlive the number it describes.
     fileHint: `A .csv or .txt, under ${DECK_IMPORT_FILE_MAX_LABEL}`,
 
+    // The link into this surface from /decks. It sits beside "New Deck", so it
+    // names the other way in rather than repeating the verb.
+    decksLink: "Import a deck",
+
     submit: "Import deck →",
     submitFile: "Choose file",
     // Mirrors upload-entry.tsx's "Preview N cards" affordance.
@@ -265,6 +269,11 @@ export const deckImportCopy = {
     // The handoff wrote this against its own two-line example and hardcoded
     // "Both lines", which reads false at every other count. Parameterised here;
     // the wording is otherwise Design's. Ratification owed.
+    // The marker on a deck's card in /decks, so a deck that imported short
+    // carries the signal outside the builder too. It counts cards, matching the
+    // group header beside it in the builder rather than the banner's lines.
+    deckCardBadge: (n: number) =>
+      n === 1 ? "1 card we couldn't name" : `${n} cards we couldn't name`,
     footnote: (n: number) =>
       n === 1
         ? "That line is still in the deck's total of 99 — it's a card the deck wants. It just isn't a card we can name yet, so it doesn't count as built or owned, and it stays out of the shopping list."

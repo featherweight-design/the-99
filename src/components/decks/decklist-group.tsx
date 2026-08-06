@@ -4,6 +4,7 @@
 
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { shouldShowMetaRow } from "../../lib/decks/grouping";
+import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 
 interface DecklistGroupProps {
@@ -21,43 +22,7 @@ export function DecklistGroup({ deckId, label, cards, siblings, note }: Decklist
 
   return (
     <div className="mb-[16px] md:mb-[20px]">
-      {/* Group header row
-          Mobile:  flex, items-baseline, justify-between, mb-6px — no border
-          Desktop: flex, items-baseline, gap-10px, mb-8px, border-b 1px #2A241D, pb-7px */}
-      <div
-        className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-[#2A241D]"
-      >
-        {/* Left cluster: label + count */}
-        {/* The mobile gap was absent, not zero by intent: "Lands 1" rendered as
-            "Lands1". 6px matches the tab's own label/count pairing. */}
-        <div className="flex items-baseline gap-[6px] md:gap-[10px]">
-          {/* Group label: mobile IBM Plex Sans 12.5px 600 | desktop Cinzel (font-display) 15px 600 */}
-          <span
-            className="font-sans md:font-display font-semibold text-[12.5px] md:text-[15px]"
-            style={{ color: "#EDE6D8" }}
-          >
-            {label}
-          </span>
-
-          {/* Group count */}
-          <span
-            className="font-mono text-[10px] md:text-[11px]"
-            style={{ color: "#8E8269" }}
-          >
-            {count}
-          </span>
-        </div>
-
-        {/* Group note — desktop right-aligned, margin-left auto */}
-        {note && (
-          <span
-            className="hidden md:block font-mono text-[10.5px]"
-            style={{ color: "#6E6353", marginLeft: "auto" }}
-          >
-            {note}
-          </span>
-        )}
-      </div>
+      <DecklistGroupHeader label={label} count={count} note={note} />
 
       {/* Card rows grid: mobile flex column gap-3px | desktop 2-col grid gap-4px-20px */}
       <div

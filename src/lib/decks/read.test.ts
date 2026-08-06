@@ -4,8 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { cardTypeGroup, primaryRole, colorIdentityMask, poolCountFromMaskTally } from "./read";
-import { deckCounts, groupByCardType, groupByRole, shouldShowMetaRow } from "./grouping";
-import type { DeckDetailCard } from "./grouping";
+import { deckCounts, groupByCardType, groupByRole, shouldShowMetaRow, unresolvedCardCount } from "./grouping";
+import type { DeckDetailCard, DeckUnresolvedRow } from "./grouping";
 
 // ---------------------------------------------------------------------------
 // colorIdentityMask
@@ -237,10 +237,39 @@ describe("deckCounts", () => {
       card({ oracleId: "a", owned: true, quantity: 2 }),
       card({ oracleId: "b", owned: false, quantity: 3 }),
     ]);
-    expect(counts).toEqual({ built: 5, ownedCount: 2, toBuyCount: 3 });
+    expect(counts).toEqual({ built: 5, ownedCount: 2, toBuyCount: 3, total: 5 });
   });
 
   it("is zeroed for an empty deck", () => {
-    expect(deckCounts([])).toEqual({ built: 0, ownedCount: 0, toBuyCount: 0 });
+    expect(deckCounts([])).toEqual({ built: 0, ownedCount: 0, toBuyCount: 0, total: 0 });
+  });
+
+  it("puts unresolved rows in total and in nothing else", () => {
+    const cards = [
+      card({ oracleId: "a", owned: true, quantity: 2 }),
+      card({ oracleId: "b", owned: false, quantity: 3 }),
+    ];
+    const withRows = deckCounts(cards, 4);
+    expect(withRows.total).toBe(9);
+    const { built, ownedCount, toBuyCount } = deckCounts(cards);
+    expect(withRows).toMatchObject({ built, ownedCount, toBuyCount });
+  });
+
+  it("reports a deck of nothing but unresolved rows as built 0 with a non-zero total", () => {
+    expect(deckCounts([], 3)).toEqual({ built: 0, ownedCount: 0, toBuyCount: 0, total: 3 });
+  });
+});
+
+describe("unresolvedCardCount", () => {
+  const row = (quantity: number): DeckUnresolvedRow => ({
+    id: `r-${quantity}`, rawName: "Lighting Bolt", quantity, sourceLine: 1,
+  });
+
+  it("counts copies, not lines", () => {
+    expect(unresolvedCardCount([row(4), row(1)])).toBe(5);
+  });
+
+  it("is zero with no rows", () => {
+    expect(unresolvedCardCount([])).toBe(0);
   });
 });

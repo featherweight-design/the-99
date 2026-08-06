@@ -34,20 +34,50 @@ export function isBasicLand(typeLine: string): boolean {
 }
 
 /**
- * The deck's three headline counts, derived from the card list alone.
+ * A line the import could not put a card to. Typed here rather than beside the
+ * query in read.ts, which imports the Drizzle client — client components render
+ * these rows and must not pull the db into the browser bundle.
+ */
+export type DeckUnresolvedRow = {
+  id: string;
+  rawName: string;
+  quantity: number;
+  sourceLine: number;
+};
+
+/**
+ * Unresolved rows are counted in cards rather than lines, because the figure
+ * they feed is `total`, which sits beside `built` — and `built` sums
+ * quantities. The prose surfaces count lines instead and say "lines"; they are
+ * describing the import, not the ledger.
+ */
+export function unresolvedCardCount(rows: DeckUnresolvedRow[]): number {
+  return rows.reduce((sum, r) => sum + r.quantity, 0);
+}
+
+/**
+ * The deck's headline counts, derived from the card list plus the number of
+ * cards sitting on lines the import could not identify.
  *
  * The only definition, because the builder now renders these from an optimistic
  * client-side card list as well as from the server's. Two implementations would
  * let the counter strip and the decklist disagree mid-mutation.
+ *
+ * `total` is the only figure unresolved rows move: they are cards the deck
+ * wants but cannot name, so nothing about them is built, owned, or buyable.
  */
-export function deckCounts(cards: DeckDetailCard[]): {
+export function deckCounts(
+  cards: DeckDetailCard[],
+  unresolvedCount = 0,
+): {
   built: number;
   ownedCount: number;
   toBuyCount: number;
+  total: number;
 } {
   const built = cards.reduce((sum, c) => sum + c.quantity, 0);
   const ownedCount = cards.reduce((sum, c) => sum + (c.owned ? c.quantity : 0), 0);
-  return { built, ownedCount, toBuyCount: built - ownedCount };
+  return { built, ownedCount, toBuyCount: built - ownedCount, total: built + unresolvedCount };
 }
 
 const CARD_TYPE_GROUP_ORDER: CardTypeGroup[] = [

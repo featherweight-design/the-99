@@ -1,0 +1,102 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
+import { deckImportCopy } from "../../lib/copy/deck-import";
+import { CardDetailProvider } from "./card-detail-provider";
+import { Decklist } from "./decklist";
+import { UnresolvedGroup } from "./unresolved-group";
+
+const copy = deckImportCopy.unresolved;
+
+const row = (over: Partial<DeckUnresolvedRow> = {}): DeckUnresolvedRow => ({
+  id: "r1",
+  rawName: "Lighting Bolt",
+  quantity: 1,
+  sourceLine: 41,
+  ...over,
+});
+
+const card = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
+  oracleId: "sol-ring",
+  name: "Sol Ring",
+  typeLine: "Artifact",
+  cardTypeGroup: "Artifacts",
+  role: "ramp",
+  owned: false,
+  quantity: 1,
+  ...over,
+});
+
+function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = {}) {
+  return render(
+    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+      <Decklist
+        deckId="d1"
+        cards={[card()]}
+        unresolvedRows={[row()]}
+        built={1}
+        toBuyCount={1}
+        filter="all"
+        grouping="type"
+        onFilterChange={vi.fn()}
+        onGroupingChange={vi.fn()}
+        {...props}
+      />
+    </CardDetailProvider>,
+  );
+}
+
+describe("UnresolvedGroup", () => {
+  it("names the group and counts the cards on its lines", () => {
+    render(<UnresolvedGroup rows={[row({ id: "a", quantity: 4 }), row({ id: "b" })]} />);
+    const group = screen.getByRole("region");
+    expect(group).toHaveAccessibleName(`${copy.groupLabel} · 5`);
+  });
+
+  it("orders rows by their line in the import, not alphabetically", () => {
+    render(
+      <UnresolvedGroup
+        rows={[
+          row({ id: "a", rawName: "Zephyr", sourceLine: 12 }),
+          row({ id: "b", rawName: "Anvil", sourceLine: 40 }),
+        ]}
+      />,
+    );
+    const names = screen.getAllByText(/Zephyr|Anvil/).map((el) => el.textContent);
+    expect(names).toEqual(["Zephyr", "Anvil"]);
+  });
+
+  it("gives each row its source line and the unmatched tag", () => {
+    render(<UnresolvedGroup rows={[row()]} />);
+    expect(screen.getByText("line 41 of the import")).toBeInTheDocument();
+    expect(screen.getByText(copy.rowTag)).toBeInTheDocument();
+  });
+
+  it("renders nothing at zero rows", () => {
+    const { container } = render(<UnresolvedGroup rows={[]} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("the unresolved group inside the decklist", () => {
+  it("pins the group last, after every card group", () => {
+    const { container } = renderDecklist();
+    const text = container.textContent ?? "";
+    expect(text.indexOf(copy.groupLabel)).toBeGreaterThan(text.indexOf("Artifacts"));
+  });
+
+  // Unresolved rows are outside toBuyCount by definition, so a shopping view
+  // listing them would show something the player cannot go and buy.
+  it("hides the group entirely under the Shopping filter", () => {
+    renderDecklist({ filter: "shopping" });
+    expect(screen.queryByText(copy.groupLabel)).not.toBeInTheDocument();
+  });
+
+  // Otherwise a deck whose every line failed reads "No cards in this deck"
+  // directly above the lines it is denying.
+  it("does not claim the deck is empty when only unresolved rows remain", () => {
+    renderDecklist({ cards: [], built: 0, toBuyCount: 0 });
+    expect(screen.queryByText("No cards in this deck.")).not.toBeInTheDocument();
+    expect(screen.getByText(copy.groupLabel)).toBeInTheDocument();
+  });
+});

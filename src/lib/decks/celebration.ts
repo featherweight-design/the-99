@@ -5,11 +5,17 @@ import type { StatusPill } from "./status";
  *  kaiju stays a rare win rather than permanent furniture.
  *
  *  Deliberately pure: the localStorage read stays at the component boundary so
- *  this decision is node-testable and has no DOM dependency. */
+ *  this decision is node-testable and has no DOM dependency.
+ *
+ *  `arrivedFromImport` suppresses it (ruling of 2026-08-04): a clean 99-line
+ *  import would otherwise spend the one-shot moment on a deck the player never
+ *  built. The reveal waits for the first card they add themselves. */
 export function shouldCelebrate(args: {
   status: StatusPill;
   alreadyCelebrated: boolean;
+  arrivedFromImport: boolean;
 }): boolean {
+  if (args.arrivedFromImport) return false;
   return args.status === "Complete" && !args.alreadyCelebrated;
 }
 

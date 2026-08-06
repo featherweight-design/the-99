@@ -44,6 +44,8 @@ function makeDeck(overrides: Partial<DeckDetail> = {}): DeckDetail {
     built: 99,
     ownedCount: 99,
     toBuyCount: 0,
+    total: 99,
+    unresolvedRows: [],
     ...overrides,
   } as DeckDetail;
 }

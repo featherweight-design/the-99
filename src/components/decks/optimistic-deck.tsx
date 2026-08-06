@@ -1,7 +1,12 @@
 "use client";
 
 import { createContext, useContext, useOptimistic } from "react";
-import { isBasicLand, type DeckDetailCard } from "../../lib/decks/grouping";
+import {
+  isBasicLand,
+  unresolvedCardCount,
+  type DeckDetailCard,
+  type DeckUnresolvedRow,
+} from "../../lib/decks/grouping";
 
 /**
  * Deck-wide optimistic card list.
@@ -38,7 +43,18 @@ const DeckEditContext = createContext<{
   reportRemoveFailure: ReportRemoveFailure;
 } | null>(null);
 
-export function useOptimisticDeckCards(serverCards: DeckDetailCard[]) {
+/**
+ * Unresolved rows come through here rather than straight off the server props
+ * so the builder has one card list and one unresolved count, from one place.
+ * `total` is derived from both, and a count sourced separately from the list it
+ * describes is exactly the mid-mutation disagreement deckCounts exists to
+ * prevent. They carry no optimistic edits yet — resolve and delete arrive with
+ * the row expander — but the seam they will land on is this one.
+ */
+export function useOptimisticDeckCards(
+  serverCards: DeckDetailCard[],
+  serverUnresolvedRows: DeckUnresolvedRow[] = [],
+) {
   const [cards, applyEdit] = useOptimistic(
     serverCards,
     (current, edit: DeckEdit) => {
@@ -68,7 +84,13 @@ export function useOptimisticDeckCards(serverCards: DeckDetailCard[]) {
   const addOptimisticCard: AddOptimisticCard = (card) => applyEdit({ kind: "add", card });
   const removeOptimisticCard: RemoveOptimisticCard = (oracleId) =>
     applyEdit({ kind: "remove", oracleId });
-  return { cards, addOptimisticCard, removeOptimisticCard };
+  return {
+    cards,
+    unresolvedRows: serverUnresolvedRows,
+    unresolvedCount: unresolvedCardCount(serverUnresolvedRows),
+    addOptimisticCard,
+    removeOptimisticCard,
+  };
 }
 
 export function AddOptimisticCardProvider({

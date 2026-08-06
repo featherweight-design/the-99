@@ -3,23 +3,23 @@ import { celebrationKey, shouldCelebrate } from "./celebration";
 
 describe("shouldCelebrate", () => {
   it("fires when a deck first reads Complete", () => {
-    expect(shouldCelebrate({ status: "Complete", alreadyCelebrated: false })).toBe(true);
+    expect(shouldCelebrate({ status: "Complete", alreadyCelebrated: false, arrivedFromImport: false })).toBe(true);
   });
 
   it("does not fire again once celebrated", () => {
-    expect(shouldCelebrate({ status: "Complete", alreadyCelebrated: true })).toBe(false);
+    expect(shouldCelebrate({ status: "Complete", alreadyCelebrated: true, arrivedFromImport: false })).toBe(false);
   });
 
   it("does not fire for a playable-but-incomplete deck", () => {
-    expect(shouldCelebrate({ status: "Playable", alreadyCelebrated: false })).toBe(false);
+    expect(shouldCelebrate({ status: "Playable", alreadyCelebrated: false, arrivedFromImport: false })).toBe(false);
   });
 
   it("does not fire while building", () => {
-    expect(shouldCelebrate({ status: "Building", alreadyCelebrated: false })).toBe(false);
+    expect(shouldCelebrate({ status: "Building", alreadyCelebrated: false, arrivedFromImport: false })).toBe(false);
   });
 
   it("does not fire for a draft", () => {
-    expect(shouldCelebrate({ status: "Draft", alreadyCelebrated: false })).toBe(false);
+    expect(shouldCelebrate({ status: "Draft", alreadyCelebrated: false, arrivedFromImport: false })).toBe(false);
   });
 
   // The reverse/repeat lifecycle: 99/99 → celebrate → remove a card → re-add.
@@ -28,8 +28,17 @@ describe("shouldCelebrate", () => {
   it("stays silent when a celebrated deck drops out of Complete and returns", () => {
     const sequence = ["Complete", "Building", "Complete"] as const;
     for (const status of sequence) {
-      expect(shouldCelebrate({ status, alreadyCelebrated: true })).toBe(false);
+      expect(shouldCelebrate({ status, alreadyCelebrated: true, arrivedFromImport: false })).toBe(false);
     }
+  });
+  // The ruling of 2026-08-04, and this test is its whole record: a clean
+  // 99-line import lands on Complete without the player having built anything,
+  // and the one-shot kaiju must not be spent on a deck they did not assemble.
+  // It fires the first time they add a card themselves.
+  it("does not fire on arrival from an import, even at a Complete 99/99", () => {
+    expect(
+      shouldCelebrate({ status: "Complete", alreadyCelebrated: false, arrivedFromImport: true }),
+    ).toBe(false);
   });
 });
 
