@@ -128,6 +128,7 @@ export function ImportEntry() {
     inFlight.current = true;
     setFailure(null);
     startTransition(async () => {
+      let committed = false;
       try {
         const text = mode === "paste" ? pasteText : ((await file?.text()) ?? "");
         const result = await importDeck({
@@ -139,6 +140,7 @@ export function ImportEntry() {
           ...(commanderOracleId ? { commanderOracleId } : {}),
         });
         if (result.ok) {
+          committed = true;
           router.push(`/decks/${result.deckId}`);
           return;
         }
@@ -174,10 +176,13 @@ export function ImportEntry() {
           detail: isDeckImportTooLargeMessage(message) ? message : null,
         });
       } finally {
-        // Released on every outcome, success included. The success path navigates
-        // away and takes this surface with it, and latching the flag shut would
-        // leave a dead submit button behind on any route that did not commit.
-        inFlight.current = false;
+        // Released on every outcome except a deck that was actually written.
+        // `router.push` is asynchronous, so releasing there too would hand the
+        // surface back to the player for as long as the route takes to fetch —
+        // and a click in that window is a second deck. The commander step is
+        // why this cannot simply latch shut on the way in: that path writes
+        // nothing and must be able to submit a second time.
+        if (!committed) inFlight.current = false;
       }
     });
   }

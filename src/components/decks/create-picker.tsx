@@ -13,7 +13,7 @@
 // so those are the only things the mode switches on — everything below the row
 // is shared markup.
 
-import { useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
@@ -93,10 +93,15 @@ function createRow(c: OwnedLegalCommander): PickerRow {
 
 export function CreatePicker(props: CreatePickerProps) {
   const isImport = props.mode === "import";
-  const rows: PickerRow[] =
-    props.mode === "import"
-      ? props.candidates.map(importRow)
-      : props.legalCommanders.map(createRow);
+  // Memoised because create mode maps the player's whole legal-commander pool,
+  // and every keystroke in the search or the name field re-renders this component.
+  const rows: PickerRow[] = useMemo(
+    () =>
+      props.mode === "import"
+        ? props.candidates.map(importRow)
+        : props.legalCommanders.map(createRow),
+    [props],
+  );
 
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -107,10 +112,11 @@ export function CreatePicker(props: CreatePickerProps) {
 
   // Client-side substring filter over loaded list. The import picker has no search:
   // it lists the handful of legends one decklist contained.
-  const filtered =
-    isImport || query.trim().length === 0
-      ? rows
-      : rows.filter((c) => c.name.toLowerCase().includes(query.trim().toLowerCase()));
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (isImport || needle.length === 0) return rows;
+    return rows.filter((c) => c.name.toLowerCase().includes(needle));
+  }, [isImport, rows, query]);
 
   const selected = rows.find((r) => r.oracleId === selectedId) ?? null;
 
