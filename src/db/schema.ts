@@ -138,6 +138,23 @@ export const deckCards = pgTable("deck_cards", {
   quantity: integer("quantity").notNull().default(1),
 }, (t) => [primaryKey({ columns: [t.deckId, t.oracleId] })]);
 
+/**
+ * Lines an import could not match to a card, kept alongside the deck they came from.
+ *
+ * There is deliberately NO foreign key to cards — the whole point of a row here is that no
+ * oracle_id was found. There is also no unique key on (deck_id, raw_name): the same
+ * unmatched name can legitimately appear on two source lines, and source_line is what the
+ * resolution UI shows the player to locate it in their original list.
+ */
+export const deckUnresolvedRows = pgTable("deck_unresolved_rows", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  rawName: text("raw_name").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  sourceLine: integer("source_line").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("deck_unresolved_rows_deck_idx").on(t.deckId)]);
+
 export const edhrecCache = pgTable("edhrec_cache", {
   commanderOracleId: uuid("commander_oracle_id").primaryKey().references(() => cards.oracleId),
   payload: jsonb("payload").notNull(),
