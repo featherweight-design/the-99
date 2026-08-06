@@ -264,8 +264,11 @@ export const deckImportCopy = {
       quantity > 1
         ? `Unmatched line: “${raw}”, quantity ${quantity}. Choose the card this was meant to be.`
         : `Unmatched line: “${raw}”. Choose the card this was meant to be.`,
-    footnoteMobile:
-      "These count toward the 99 but not toward what's built. Tap one to put a card to it.",
+    footnoteMobile: "These count toward the 99 but not toward what's built.",
+    // The second half of Design's mobile footnote, held back until the rows are
+    // actually tappable. Promising a gesture the surface does not yet offer is
+    // worse than saying less.
+    footnoteMobileResolve: "Tap one to put a card to it.",
     // The handoff wrote this against its own two-line example and hardcoded
     // "Both lines", which reads false at every other count. Parameterised here;
     // the wording is otherwise Design's. Ratification owed.

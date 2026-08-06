@@ -72,6 +72,15 @@ describe("UnresolvedGroup", () => {
     expect(screen.getByText(copy.rowTag)).toBeInTheDocument();
   });
 
+  it("promises no gesture the rows do not yet offer", () => {
+    // The rows are presentational until resolution ships, so the mobile
+    // footnote must not tell the player to tap one.
+    render(<UnresolvedGroup rows={[row()]} />);
+    expect(screen.getByText(copy.footnoteMobile)).toBeInTheDocument();
+    expect(screen.queryByText(/tap one/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
   it("renders nothing at zero rows", () => {
     const { container } = render(<UnresolvedGroup rows={[]} />);
     expect(container).toBeEmptyDOMElement();
