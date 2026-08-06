@@ -13,7 +13,7 @@
 // so those are the only things the mode switches on — everything below the row
 // is shared markup.
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
@@ -103,6 +103,7 @@ export function CreatePicker(props: CreatePickerProps) {
   const [deckName, setDeckName] = useState(props.mode === "import" ? props.initialName : "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const inFlight = useRef(false);
 
   // Client-side substring filter over loaded list. The import picker has no search:
   // it lists the handful of legends one decklist contained.
@@ -117,16 +118,22 @@ export function CreatePicker(props: CreatePickerProps) {
     selected !== null && deckName.trim().length > 0 && deckName.trim().length <= 120;
 
   function handleCreate() {
-    if (!selected) return;
+    // `isPending` only turns true on the re-render that follows `startTransition`,
+    // so two clicks in one tick both read false and both reach the server. Neither
+    // `createDeck` nor `importDeck` dedupes, so that is two decks. The ref flips
+    // synchronously; import mode is guarded again by its own owner.
+    if (!selected || inFlight.current) return;
     const trimmed = deckName.trim();
     if (trimmed.length === 0 || trimmed.length > 120) {
       setError("Name must be 1–120 characters.");
       return;
     }
     setError(null);
+    inFlight.current = true;
     if (props.mode === "import") {
       // The import owns its own submission: it still holds the list, and a second
-      // pass through `importDeck` is what actually writes the deck.
+      // pass through `importDeck` is what actually writes the deck. That owner
+      // unmounts this picker while it runs, so the flag is never released here.
       props.onSubmit(selected.oracleId, trimmed);
       return;
     }
@@ -135,6 +142,9 @@ export function CreatePicker(props: CreatePickerProps) {
         await createDeck(selected.oracleId, trimmed);
       } catch {
         setError("Failed to create deck. Try again.");
+        // Released only on failure: success navigates away, and reopening the
+        // door mid-navigation is what this guard exists to prevent.
+        inFlight.current = false;
       }
     });
   }

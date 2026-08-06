@@ -75,6 +75,7 @@ export function ImportEntry() {
   const [commanderStep, setCommanderStep] = useState<CommanderStep | null>(null);
   const [pending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inFlight = useRef(false);
 
   const pasteCount = useMemo(
     () =>
@@ -119,7 +120,12 @@ export function ImportEntry() {
   }
 
   function submit(commanderOracleId?: string, name = deckName) {
-    if (pending) return;
+    // `pending` alone cannot hold this door. It only turns true on the re-render
+    // that follows `startTransition`, so two clicks in one tick both read false
+    // and both reach the server — and `importDeck` deliberately does not dedupe,
+    // so that is two decks. The ref flips synchronously and closes the gap.
+    if (pending || inFlight.current) return;
+    inFlight.current = true;
     setFailure(null);
     startTransition(async () => {
       try {
@@ -167,6 +173,11 @@ export function ImportEntry() {
           kind: "unexpected",
           detail: isDeckImportTooLargeMessage(message) ? message : null,
         });
+      } finally {
+        // Released on every outcome, success included. The success path navigates
+        // away and takes this surface with it, and latching the flag shut would
+        // leave a dead submit button behind on any route that did not commit.
+        inFlight.current = false;
       }
     });
   }

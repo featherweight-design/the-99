@@ -82,6 +82,19 @@ describe("state 1 — entry", () => {
     // No commanderOracleId is sent: the server action reads the declaration itself.
     expect(importDeck.mock.calls[0][0].commanderOracleId).toBeUndefined();
   });
+
+  it("writes one deck when the button is clicked twice in the same tick", async () => {
+    // `pending` only turns true on the re-render after `startTransition`, so both
+    // clicks read it as false. `importDeck` does not dedupe, so an unguarded second
+    // click is a second deck.
+    render(<ImportEntry />);
+    fillPaste();
+    const button = screen.getByRole("button", { name: /^Import \d+ cards$/ });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
+    expect(importDeck).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("state 3 — parsing", () => {
