@@ -19,6 +19,6 @@ export function statusPill(args: {
 }): StatusPill {
   if (args.built === 0) return "Draft";
   if (args.built < 99) return "Building";
-  if (args.unresolvedCount) return "Playable";
+  if ((args.unresolvedCount ?? 0) > 0) return "Playable";
   return args.ownedCount === args.built ? "Complete" : "Playable";
 }

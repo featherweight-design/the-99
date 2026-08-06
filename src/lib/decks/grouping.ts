@@ -48,8 +48,8 @@ export type DeckUnresolvedRow = {
 /**
  * Unresolved rows are counted in cards rather than lines, because the figure
  * they feed is `total`, which sits beside `built` — and `built` sums
- * quantities. The prose surfaces count lines instead and say "lines" — they are
- * describing the import, not the ledger.
+ * quantities. The prose surfaces report line counts instead, and say "lines" —
+ * they are describing the import, not the ledger.
  */
 export function unresolvedCardCount(rows: DeckUnresolvedRow[]): number {
   return rows.reduce((sum, r) => sum + r.quantity, 0);
