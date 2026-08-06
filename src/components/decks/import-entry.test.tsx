@@ -50,7 +50,9 @@ describe("state 1 — entry", () => {
 
   it("holds the submit until there is a list and a name", () => {
     render(<ImportEntry />);
-    const button = screen.getByRole("button", { name: "Import 0 cards" });
+    // Before a paste there is no figure to name, so the button carries the
+    // generic label rather than promising to import nothing.
+    const button = screen.getByRole("button", { name: "Import deck →" });
     expect(button).toHaveProperty("disabled", true);
     fillPaste();
     expect(screen.getByRole("button", { name: "Import 2 cards" })).toHaveProperty("disabled", false);

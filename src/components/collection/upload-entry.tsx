@@ -225,7 +225,13 @@ export function UploadEntry({
                 disabled={pending || !pasteText.trim()}
                 className="text-[13px] px-[16px] py-[10px] disabled:opacity-50"
               >
-                {pending ? "Previewing…" : `Preview ${pasteCount > 0 ? `${pasteCount} cards` : "list"}`}
+                {pending
+                  ? "Previewing…"
+                  : pasteCount === 0
+                    ? "Preview list"
+                    : pasteCount === 1
+                      ? "Preview 1 card"
+                      : `Preview ${pasteCount} cards`}
               </PrimaryButton>
             </div>
           </div>
