@@ -198,6 +198,22 @@ still unresolved. Reload mid-expansion — expect the expander closed and nothin
 present, the way out visible, and a resubmit to succeed without a reload. Reload on a failure —
 expect a clean entry surface, not a stuck one.
 
+## Gate 7 — copy review fires hard on this epic
+
+Design has already written the strings: `design/design_handoff_the99_deck_import/` ships a
+`deck-import · copy strings.ts` that lands close to verbatim in `src/lib/copy/deck-import.ts`
+(PR 4). Verbatim-from-a-handoff is not a reason to skip the gate — it is the reason to run it,
+because nothing else in the pipeline reads those strings before a player does.
+
+Gate 7 fires on **PR 4 and every PR after it** — 4, 5, 6, 7, 8, 9 all add or edit
+customer-facing strings. Run `copy-review`, which binds to
+`~/.claude/skills/copy-review/projects/the-99.md` for voice, inventory and frozen areas.
+
+**The 99 has no `react/jsx-no-literals` lint rule**, so nothing fails the build on a new
+inline string. Concert Crawl's mechanical backstop does not exist here: the
+"new user-visible string inline in a `.tsx`" trigger must be checked by reading the diff by
+hand, every time.
+
 ## Hard pause points — stop and ask
 
 1. **PR 3's Moxfield spike discovers an auth requirement, a rate limit, or no usable endpoint.**
