@@ -255,6 +255,25 @@ describe("state 11 — commander picker", () => {
     });
   });
 
+  it("drops the picker when the second pass fails, so the banner is reachable", async () => {
+    // The picker outranks the banner in the render, so a failure that left the
+    // step standing would set a message nobody could ever see.
+    needsCommander([candidate("Atraxa, Praetors' Voice", 4)], 99);
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+
+    await screen.findByText("Which one's the commander?");
+    fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
+    importDeck.mockResolvedValue({ ok: false, reason: "noneMatched", lineCount: 12, notes: [] });
+    fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("We couldn't find any of these cards");
+    expect(screen.queryByText("Which one's the commander?")).toBeNull();
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it("holds the submit until a commander is picked", async () => {
     needsCommander([candidate("Atraxa, Praetors' Voice", 4)], 99);
     render(<ImportEntry />);

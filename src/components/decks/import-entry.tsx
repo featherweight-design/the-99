@@ -95,7 +95,7 @@ export function ImportEntry() {
       setFile(null);
       // A file with no dot has no extension to name, and falling back to the
       // whole filename makes the copy read "That one is a shopping-list at 40 KB".
-      setFailure({
+      fail({
         kind: "fileRejected",
         ext: ext || copy.failures.fileRejected.noExtension,
         size: formatBytes(candidate.size),
@@ -104,6 +104,18 @@ export function ImportEntry() {
     }
     setFailure(null);
     setFile(candidate);
+  }
+
+  /**
+   * Every failure leaves the commander step behind it. The picker outranks the
+   * banner in the render below, so a failure on the second pass — an empty list,
+   * nothing matched, a throw — would otherwise set a banner nobody ever sees and
+   * strand the player on a picker that had just refused them. Routed through one
+   * function so a branch added later cannot forget.
+   */
+  function fail(next: Failure) {
+    setCommanderStep(null);
+    setFailure(next);
   }
 
   function submit(commanderOracleId?: string, name = deckName) {
@@ -125,11 +137,11 @@ export function ImportEntry() {
           return;
         }
         if (result.reason === "noRows") {
-          setFailure({ kind: "empty" });
+          fail({ kind: "empty" });
           return;
         }
         if (result.reason === "noneMatched") {
-          setFailure({ kind: "noneMatched", lineCount: result.lineCount });
+          fail({ kind: "noneMatched", lineCount: result.lineCount });
           return;
         }
         // States 11–12. Nothing was written; the list is still in `pasteText` /
@@ -151,10 +163,7 @@ export function ImportEntry() {
         // internal invariant ("card is not a legal commander") that would read as
         // gibberish, so those fall back to the generic body.
         const message = e instanceof Error ? e.message : "";
-        // A throw on the second pass drops the picker as well as the banner: the
-        // list is still on the entry surface, and that is where the copy says it is.
-        setCommanderStep(null);
-        setFailure({
+        fail({
           kind: "unexpected",
           detail: isDeckImportTooLargeMessage(message) ? message : null,
         });
