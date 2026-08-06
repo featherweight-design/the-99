@@ -2,7 +2,7 @@
 // 3 (parsing), 8 (file too large), 9 (nothing matched), 10 (nothing parsed).
 // The link mode's states are not tested because they are not built: every
 // Moxfield host answers 403 behind bot protection (#191).
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DECK_IMPORT_FILE_MAX_BYTES } from "../../lib/upload-limits";
 
@@ -90,8 +90,12 @@ describe("state 1 — entry", () => {
     render(<ImportEntry />);
     fillPaste();
     const button = screen.getByRole("button", { name: /^Import \d+ cards$/ });
-    fireEvent.click(button);
-    fireEvent.click(button);
+    // Both clicks inside one `act` batch: `fireEvent` flushes a render between
+    // calls, which hands the second click a `pending` of true and tests nothing.
+    await act(async () => {
+      button.click();
+      button.click();
+    });
     await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1"));
     expect(importDeck).toHaveBeenCalledTimes(1);
   });
