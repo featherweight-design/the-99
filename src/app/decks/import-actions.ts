@@ -8,7 +8,6 @@ import { requireUserId } from "../../lib/auth";
 import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
-import { parsePasteList } from "../../lib/manabox/paste";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   DECK_IMPORT_FILE_MAX_LABEL,
@@ -74,11 +73,11 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     );
   }
 
-  // Parsed once here only to learn which Scryfall ids to index; buildDeckImport
-  // re-parses the raw text because section markers are invisible in a row list.
-  const { rows } = parsePasteList(input.text);
-
-  const { catalog, indexes } = await loadMatchInputs(rows, { detailed: true });
+  // No rows are passed: the printing indexes are keyed by Scryfall id, and a pasted or
+  // uploaded decklist never carries one — `parsePasteList` sets `scryfallId: null` on every
+  // row it produces. Parsing here to build that id list would re-read up to 2 MB to learn
+  // nothing, and `loadMatchInputs` returns the same empty indexes for an empty row list.
+  const { catalog, indexes } = await loadMatchInputs([], { detailed: true });
   const result = buildDeckImport({ text: input.text, catalog, indexes });
 
   // Both counts come from the import's own cleaned line count, never from `rows`.
