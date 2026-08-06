@@ -56,8 +56,12 @@ export const deckImportCopy = {
 
     submit: "Import deck →",
     submitFile: "Choose file",
-    // Mirrors upload-entry.tsx's "Preview N cards" affordance.
-    submitPasteCount: (n: number) => `Import ${n} cards`,
+    // Mirrors upload-entry.tsx's "Preview N cards" affordance, down to naming no
+    // figure at all before there is one to name — an empty paste read
+    // "Import 0 cards", which is a promise to import nothing rather than a
+    // prompt to paste something.
+    submitPasteCount: (n: number) =>
+      n === 0 ? "Import deck →" : n === 1 ? "Import 1 card" : `Import ${n} cards`,
 
     footnoteMobile: "We'll leave the sideboard behind — Commander doesn't have one.",
     aboutWhatComesHeading: "What comes over",
@@ -206,9 +210,15 @@ export const deckImportCopy = {
     subMobile: "The list doesn't say, so you tell us.",
     sub:
       "This list doesn't say. Pick the one you're building around — it sets the colours, anchors the recommendations, and gives the deck its face.",
+    // A list with exactly one unmarked legendary still opens the picker — only a
+    // list with none is the dead end — so the singular is reachable, not
+    // theoretical.
     introMobile: (n: number) =>
-      `${n} legendary creatures came over. Pick the one you're building around — it sets the colours and anchors everything we suggest.`,
-    count: (n: number) => `${n} legendary creatures in this import`,
+      `${n === 1 ? "1 legendary creature" : `${n} legendary creatures`} came over. Pick the one you're building around — it sets the colours and anchors everything we suggest.`,
+    count: (n: number) =>
+      n === 1
+        ? "1 legendary creature in this import"
+        : `${n} legendary creatures in this import`,
     rowMetaMobile: (identity: string, line: number) => `${identity} · line ${line}`,
     rowMetaOwned: (identity: string, line: number) => `${identity} · line ${line} · you own it`,
     rowMetaUnowned: (identity: string, line: number) =>

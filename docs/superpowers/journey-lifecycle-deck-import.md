@@ -125,6 +125,59 @@ prop in `src/app/decks/[id]/page.tsx`.
 
 ---
 
+## Addendum — the resolution journey (PR 8), run at PR 9
+
+The gate above was written at PR 7, before the `Couldn't identify` rows could be
+*answered*. PR 8 added a second journey with its own lifecycle, and two of this
+run's most substantive bugs were found in it — both invisible on a single
+forward pass, which is the whole argument for this gate.
+
+**Forward.** Expand a row → search (unfiltered, owned-only overridden off) →
+pick → the line goes and the card joins the 99. `resolution-expander.test.tsx`
+and `unresolved-group.test.tsx` drive the real components; `import-actions.test.ts`
+drives the real Drizzle builders against a fake that records the emitted SQL.
+
+**Reverse.** `Delete this line` drops the row and the deck's total shrinks
+100 → 99 — the intent, not a side effect. Collapse (`Esc`, or `Leave it for now`
+on the phone) returns focus to the row that opened the expander and resets the
+per-row owned-only override, so the next row opens in the drawn default rather
+than inheriting the previous row's hidden state.
+
+**Repeat — where both bugs were.** Resolving unmounts the row, so there is no
+redo of one line. The dangerous case is *cross-action*, and it failed twice:
+
+1. **Client.** Resolve and delete each held their own `useDeckMutation` latch, so
+   each stopped itself repeating but neither saw the other. Both could answer one
+   line; whichever `DELETE` landed first claimed it and the loser drew
+   `unresolved row not found` as an error on a row that was already gone. Closed
+   with one shared `answeredRef` (`resolution-expander.tsx:91`).
+2. **Server.** `resolveUnresolvedRow` read the row and deleted it at the end of
+   the transaction, so two concurrent resolves could both see it — harmless for
+   the singleton insert, but the basic-land branch adds the line's `quantity` and
+   would have added it twice. Closed by claiming the row with
+   `DELETE ... RETURNING quantity` (`import-actions.ts:226`). `deleteUnresolvedRow`
+   already had this shape; resolve was the outlier.
+
+Both have regression tests and both tests were mutation-tested.
+
+**Resume.** A reload mid-resolution loses the expander, which is correct —
+nothing was committed, and the unresolved rows come back from the server intact.
+Two sessions answering the same line: the second's transaction throws
+`unresolved row not found`, surfacing as the mutation's error state rather than a
+silent divergence.
+
+**Mutation feedback — the one row that needs Hugh's device.** Every mutation here
+goes through `useDeckMutation` + `useOptimisticDeckCards`, and the override clears
+on the **server value changing**, not on mutation success — the ordering that
+stops the override dropping before the new HTML lands and flashing the old state.
+That is the "I'm going!" bug's fix applied preventatively, asserted by checking
+the optimistic count before the server prop moves. **What was not measured is the
+real gap between click and paint on a throttled connection.** A fast local machine
+hides that class entirely, and no throttled run was possible in this environment.
+It is the single line in this document most worth thirty seconds of Hugh's time.
+
+---
+
 ## Verdict
 
 Forward, reverse and repeat hold at the level this environment can test.
