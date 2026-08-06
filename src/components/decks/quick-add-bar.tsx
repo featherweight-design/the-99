@@ -9,8 +9,7 @@
 //
 // Replaced search-pane.tsx and search-result-row.tsx, both now deleted.
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { searchCards } from "../../app/decks/[id]/search-action";
+import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -18,9 +17,10 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { colorLabel } from "../../lib/decks/format";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { SearchField } from "../ui/text-field";
+import { CardSearchRowBody } from "./card-search-row";
 import { MutationError } from "./mutation-error";
-import { CostPips } from "./suggestion-tile";
 import { useAddOptimisticCard } from "./optimistic-deck";
+import { useCardSearch } from "./use-card-search";
 import { useDeckMutation } from "./use-deck-mutation";
 
 interface QuickAddBarProps {
@@ -41,84 +41,23 @@ export function QuickAddBar({
 }: QuickAddBarProps) {
   const [query, setQuery] = useState("");
   const [ownedOnly, setOwnedOnly] = useState(true);
-  // Rows carry the request that produced them. They stay on screen through the
-  // next debounce — a list that blanks on every keystroke is worse than one that
-  // lags by 150ms — but `stale` below stops Enter acting on them, so the bar can
-  // show the previous matches without ever adding one the user has typed past.
-  const [rows, setRows] = useState<{ for: string; items: SearchResult[] } | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
   // Escape dismisses before it clears, so the list can be closed without losing
   // a query the user is still editing.
   const [dismissed, setDismissed] = useState(false);
   const listId = useId();
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const trimmed = query.trim();
-  const queryActive = trimmed.length >= 2 && trimmed.length <= 100;
-  // The filter is part of the request, so flipping it makes the rows on screen
-  // as stale as retyping does.
-  const requestKey = `${ownedOnly ? "owned" : "all"} ${trimmed}`;
-
-  useEffect(() => {
-    if (timerRef.current !== null) clearTimeout(timerRef.current);
-    if (!queryActive) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setRows(null);
-      return;
-    }
-
-    let cancelled = false;
-    timerRef.current = setTimeout(() => {
-      searchCards(trimmed, commanderIdentity, ownedOnly)
-        .then((found) => {
-          if (cancelled) return;
-          setRows({ for: requestKey, items: found });
-          setActiveIndex(0);
-        })
-        .catch((err) => {
-          // Outside the `cancelled` guard on purpose. Nothing here aborts the
-          // request, so a rejection means searchCards genuinely threw, and the
-          // user typing another character is no reason to stop saying so — a
-          // guarded log would hide a wholly broken action behind fast typing.
-          console.error(err);
-          // Back to "no search has happened", never to "no results". An empty
-          // list renders "Nothing in the pile by that name", which is a claim
-          // about the collection that a failed request has not earned. The
-          // handoff draws no failure state for this bar, so rather than invent
-          // one the list simply does not open — tracked for Design.
-          if (!cancelled) setRows(null);
-        });
-    }, 150);
-
-    return () => {
-      cancelled = true;
-      if (timerRef.current !== null) clearTimeout(timerRef.current);
-    };
-  }, [trimmed, queryActive, ownedOnly, commanderIdentity, requestKey]);
+  const { trimmed, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move } =
+    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed });
 
   const inDeck = useCallback(
     (r: SearchResult) => deckOracleIds.includes(r.oracleId) && !isBasicLand(r.typeLine),
     [deckOracleIds],
   );
 
-  const results = rows?.items ?? [];
-  const stale = rows !== null && rows.for !== requestKey;
-  const open = !dismissed && queryActive && rows !== null && results.length > 0;
-  // "Nothing in the pile" is only honest about the query that produced it, so a
-  // stale empty list holds its tongue until the current one lands.
-  const noResults = !dismissed && queryActive && !stale && rows !== null && results.length === 0;
-  // Results for the query in the field have not landed yet: either none at all,
-  // or the ones on screen answer an older query.
-  const searching = queryActive && (rows === null || stale);
   // The same formatter the deck header uses. `BG-legal` and `Golgari` were two
   // names for one constraint, thirty pixels apart on the no-results state.
   const identity = colorLabel(commanderIdentity);
   const unownedShown = results.filter((r) => !r.owned).length;
-
-  function move(delta: number) {
-    if (!open) return;
-    setActiveIndex((i) => (i + delta + results.length) % results.length);
-  }
 
   function optionId(i: number) {
     return `${listId}-opt-${i}`;
@@ -352,23 +291,6 @@ export function QuickAddBar({
   );
 }
 
-// The matched run in brass, so a list of eight near-identical names says which
-// part of each one the query actually caught. Case-insensitive and literal:
-// the query is a user string, so it is located with indexOf rather than
-// compiled into a RegExp, where a stray `(` would throw on every keystroke.
-function HighlightedName({ name, query, dim }: { name: string; query: string; dim: boolean }) {
-  const at = query ? name.toLowerCase().indexOf(query.trim().toLowerCase()) : -1;
-  if (at < 0 || dim) return <>{name}</>;
-  const end = at + query.trim().length;
-  return (
-    <>
-      {name.slice(0, at)}
-      <span style={{ color: "#C9A24B" }}>{name.slice(at, end)}</span>
-      {name.slice(end)}
-    </>
-  );
-}
-
 interface QuickAddRowProps {
   id: string;
   result: SearchResult;
@@ -449,106 +371,57 @@ function QuickAddRow({
         border: `1px solid ${active ? "#C9A24B" : "#2A241D"}`,
       }}
     >
-      <div className="flex items-center gap-[10px] md:gap-[12px]">
-        {/* A crop settles which "Study" this is faster than the type line does —
-            a deliberate divergence from Archidekt, which ships no thumbnail. */}
-        <span
-          aria-hidden
-          className="flex-none rounded-[5px] overflow-hidden w-[32px] h-[45px] md:w-[30px] md:h-[42px]"
-          style={{
-            background: "#241F19",
-            opacity: applied ? 0.5 : 1,
-            filter: applied ? "grayscale(0.6)" : undefined,
-          }}
-        >
-          {result.imageUri && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={result.imageUri} alt="" className="w-full h-full object-cover" />
-          )}
-        </span>
-
-        {/* The two widths are different compositions, not one scaled. Desktop
-            lays name, type, pips and ownership out as columns; the phone row
-            has no room for four, so type and ownership fold into a single mono
-            meta line under the name. Both are drawn — hiding the type line at
-            phone width was the shortcut, and it dropped the one field that
-            separates two cards with the same name. */}
-        <span className="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col">
-          <span
-            className="text-[14px] font-semibold truncate"
-            style={{ color: applied ? "#A89B84" : "#EDE6D8" }}
-          >
-            <HighlightedName name={result.name} query={query} dim={applied} />
-          </span>
-          <span className="md:hidden font-mono text-[10px] truncate" style={{ color: "#8E8269" }}>
-            {result.typeLine} · {ownership}
-          </span>
-        </span>
-
-        <span
-          className="hidden md:block flex-1 min-w-0 font-mono text-[11px] truncate"
-          style={{ color: applied ? "#6A6152" : "#8E8269" }}
-        >
-          {result.typeLine}
-        </span>
-
-        {/* A fixed slot whether or not the card has a cost, so the ownership
-            column stays on one vertical line down the list. */}
-        <span aria-hidden className="hidden md:flex flex-none w-[34px] justify-start">
-          {result.manaCost && <CostPips cost={result.manaCost} className="flex gap-[3px]" />}
-        </span>
-
-        {/* Ownership as a word and a figure. Never colour alone. */}
-        <span
-          className="hidden md:block flex-none w-[80px] font-mono text-[11px] text-right"
-          style={{ color: result.owned ? "#8E8269" : "#E0913C" }}
-        >
-          {ownership}
-        </span>
-
-        {applied ? (
-          // Label as well as greyscale, and aria-disabled on the option above.
-          <span
-            className="flex-none font-sans text-[12.5px] font-semibold text-right md:w-[56px]"
-            style={{ color: "#6FA368" }}
-          >
-            {addPanelCopy.quickAdd.rowInDeck}
-          </span>
-        ) : active ? (
-          // The active row states the key that acts on it, so it is a caption
-          // rather than a control: boxing it draws a second button beside the
-          // one the keyboard is already pointed at.
-          <span
-            aria-hidden
-            className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[56px]"
-            style={{ opacity: isPending ? 0.5 : undefined, color: "#C9A24B" }}
-          >
-            {/* The phone row's meta line has already used the width the words
-                would need, so it keeps the glyph alone. */}
-            <span className="md:hidden">↵</span>
-            <span className="hidden md:inline">{addPanelCopy.quickAdd.rowAddActive}</span>
-          </span>
-        ) : (
-          // Drawn as a control, but not one: a real <button> inside a
-          // role="option" gives a screen reader a second interactive thing
-          // inside a listbox option, and the option itself already adds on
-          // click and on Enter. So the affordance the handoff draws stays and
-          // the duplicate semantics go.
-          <span
-            aria-hidden
-            className="flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px]"
-            style={{
-              opacity: isPending ? 0.5 : undefined,
-              color: "#C9A24B",
-              background: "transparent",
-              border: "1px solid #3A3229",
-              borderRadius: 7,
-            }}
-          >
-            {addPanelCopy.quickAdd.rowAdd}
-          </span>
-        )}
-      </div>
+      <CardSearchRowBody
+        result={result}
+        query={query}
+        ownership={ownership}
+        dim={applied}
+        nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
+        trailing={
+          applied ? (
+            // Label as well as greyscale, and aria-disabled on the option above.
+            <span
+              className="flex-none font-sans text-[12.5px] font-semibold text-right md:w-[56px]"
+              style={{ color: "#6FA368" }}
+            >
+              {addPanelCopy.quickAdd.rowInDeck}
+            </span>
+          ) : active ? (
+            // The active row states the key that acts on it, so it is a caption
+            // rather than a control: boxing it draws a second button beside the
+            // one the keyboard is already pointed at.
+            <span
+              aria-hidden
+              className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[56px]"
+              style={{ opacity: isPending ? 0.5 : undefined, color: "#C9A24B" }}
+            >
+              {/* The phone row's meta line has already used the width the words
+                  would need, so it keeps the glyph alone. */}
+              <span className="md:hidden">↵</span>
+              <span className="hidden md:inline">{addPanelCopy.quickAdd.rowAddActive}</span>
+            </span>
+          ) : (
+            // Drawn as a control, but not one: a real <button> inside a
+            // role="option" gives a screen reader a second interactive thing
+            // inside a listbox option, and the option itself already adds on
+            // click and on Enter. So the affordance the handoff draws stays and
+            // the duplicate semantics go.
+            <span
+              aria-hidden
+              className="flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px]"
+              style={{
+                opacity: isPending ? 0.5 : undefined,
+                color: "#C9A24B",
+                background: "transparent",
+                border: "1px solid #3A3229",
+                borderRadius: 7,
+              }}
+            >
+              {addPanelCopy.quickAdd.rowAdd}
+            </span>
+          )
+        }
+      />
 
       {error && <MutationError message={error} />}
     </li>

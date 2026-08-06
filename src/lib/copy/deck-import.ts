@@ -244,10 +244,17 @@ export const deckImportCopy = {
   // ---- Unresolved rows -----------------------------------------------------
   unresolved: {
     // Banner under the spine. Disappears at zero.
+    //
+    // The handoff's mobile line read "it's not in any count below", which the
+    // footnote a screen down flatly contradicts — "These count toward the 99 but
+    // not toward what's built" — and it dropped the Complete consequence the
+    // desktop line carries. Both are the same compression: "any count" is the
+    // desktop string's "the mix or either tab" with the qualifier lost. Restored
+    // from desktop rather than invented. Design asked to ratify.
     bannerMobile: (n: number) =>
       n === 1
-        ? "1 line came over that we couldn't put a card to. It's at the bottom, and it's not in any count below."
-        : `${n} lines came over that we couldn't put a card to. They're at the bottom, and they're not in any count below.`,
+        ? "1 line came over that we couldn't put a card to. It's at the bottom, it's not in the mix or either tab below, and it'll keep the deck off Complete until you sort it out."
+        : `${n} lines came over that we couldn't put a card to. They're at the bottom, they're not in the mix or either tab below, and they'll keep the deck off Complete until you sort them out.`,
     banner: (n: number) =>
       n === 1
         ? "1 line came over that we couldn't put a card to. It's sitting at the bottom of the list, it isn't counted in the mix or in either tab below, and it'll keep the deck off Complete until you sort it out."
@@ -320,9 +327,18 @@ export const deckImportCopy = {
 
     // One polite live region, shared by resolve and delete. It replaces its own
     // text; it never stacks, and it never becomes a floating toast.
+    // The handoff wrote one `resolved` string ending "and you own it", which is
+    // false for half the cards this surface can return: owned-only is deliberately
+    // OFF here (see `filterCaption`), so an unowned card is a valid answer and
+    // resolving to one puts it on the shopping list rather than into what's built.
+    // Split on Design's own `rowMetaOwned` / `rowMetaUnowned` precedent, which
+    // draws exactly this distinction a few states earlier. Ratification owed.
     resolvedMobile: (name: string, built: string) => `That's ${name}. ${built} built now.`,
+    resolvedUnownedMobile: (name: string) => `That's ${name}. It's on the shopping list.`,
     resolved: (name: string, built: string, remaining: number, role?: string) =>
       `That line was ${name} — it's in with the rest now, and you own it. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
+    resolvedUnowned: (name: string, built: string, remaining: number, role?: string) =>
+      `That line was ${name} — it's in with the rest now, but you don't own it yet, so it's on the shopping list. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
     // roleClause('Removal', 7, 10) → 'Removal is 7 of 10'. Passed into `resolved`
     // only when the resolved card lands in a tracked role — until this moment an
     // unresolved row had no oracle ID and so counted toward no role at all.

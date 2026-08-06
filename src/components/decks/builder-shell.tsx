@@ -31,6 +31,7 @@ import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { deckCounts, unresolvedCardCount } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
+import { useIsDesktop } from "../ui/use-is-desktop";
 
 // Shared by both shelf-link paths — the one that is already on Consider and
 // the one that has to switch views first — so they land identically.
@@ -69,14 +70,23 @@ export function BuilderShell({
   const [view, setView] = useState<BuilderView>("deck");
   const [sort, setSort] = useState<SortKey>("gaps");
   const [exportOpen, setExportOpen] = useState(false);
+  const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
+  const isDesktop = useIsDesktop();
 
   const [celebrated, markCelebrated] = useCelebrated(deck.id);
 
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
   // click. `deck.cards` remains the base React reverts to.
-  const { cards, unresolvedRows, unresolvedCount, addOptimisticCard, removeOptimisticCard } =
-    useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
+  const {
+    cards,
+    unresolvedRows,
+    unresolvedCount,
+    addOptimisticCard,
+    removeOptimisticCard,
+    resolveOptimisticRow,
+    deleteOptimisticRow,
+  } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
   const { built, toBuyCount } = counts;
 
@@ -161,6 +171,8 @@ export function BuilderShell({
     add: announceAdd,
     remove: removeOptimisticCard,
     reportRemoveFailure,
+    resolveRow: resolveOptimisticRow,
+    deleteRow: deleteOptimisticRow,
   };
 
   // A shelf link is a two-step move: switch to Consider, then scroll to the
@@ -433,12 +445,14 @@ export function BuilderShell({
                 deckId={deck.id}
                 cards={cards}
                 unresolvedRows={unresolvedRows}
+                commanderOracleId={deck.commander.oracleId}
                 built={built}
                 toBuyCount={toBuyCount}
                 filter={filter}
                 grouping={grouping}
                 onFilterChange={setFilter}
                 onGroupingChange={setGrouping}
+                onUnresolvedExpandedChange={setUnresolvedExpanded}
               />
             )}
             </div>
@@ -452,17 +466,23 @@ export function BuilderShell({
                 tab bar is `fixed` and 80px tall, and the `pb-[80px]` main
                 carries to reserve it does nothing to a sticky element, which
                 pins to the scrollport edge and so sat underneath it. */}
-            <div
-              className="sticky bottom-[80px] md:bottom-0 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]"
-              style={{ background: "var(--bg)", borderTop: "1px solid var(--border)" }}
-            >
-              <QuickAddBar
-                deckId={deck.id}
-                commanderIdentity={commanderIdentity}
-                deckOracleIds={deckOracleIds}
-                commanderShortName={commanderShortName}
-              />
-            </div>
+            {/* The phone drops the bar entirely while a resolution expander is
+                open: two comboboxes on one narrow screen means the keyboard
+                covers one of them and `↵` is ambiguous. Desktop has room for
+                both, so it keeps the bar. */}
+            {(isDesktop || !unresolvedExpanded) && (
+              <div
+                className="sticky bottom-[80px] md:bottom-0 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]"
+                style={{ background: "var(--bg)", borderTop: "1px solid var(--border)" }}
+              >
+                <QuickAddBar
+                  deckId={deck.id}
+                  commanderIdentity={commanderIdentity}
+                  deckOracleIds={deckOracleIds}
+                  commanderShortName={commanderShortName}
+                />
+              </div>
+            )}
           </div>
 
           {/* Export dialog — Task 10 */}

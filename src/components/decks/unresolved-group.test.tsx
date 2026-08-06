@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -32,6 +32,7 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
     <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
       <Decklist
         deckId="d1"
+        commanderOracleId="cmdr"
         cards={[card()]}
         unresolvedRows={[row()]}
         built={1}
@@ -47,15 +48,17 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
 }
 
 describe("UnresolvedGroup", () => {
-  it("names the group and counts the cards on its lines", () => {
-    render(<UnresolvedGroup rows={[row({ id: "a", quantity: 4 }), row({ id: "b" })]} />);
+  it("counts its lines, not the copies on them, so it agrees with the banner", () => {
+    render(<UnresolvedGroup deckId="d1" rows={[row({ id: "a", quantity: 4 }), row({ id: "b" })]} />);
     const group = screen.getByRole("region");
-    expect(group).toHaveAccessibleName(`${copy.groupLabel} · 5`);
+    expect(group).toHaveAccessibleName(`${copy.groupLabel} · 2`);
+    expect(group).not.toHaveAccessibleName(`${copy.groupLabel} · 5`);
   });
 
   it("orders rows by their line in the import, not alphabetically", () => {
     render(
       <UnresolvedGroup
+        deckId="d1"
         rows={[
           row({ id: "a", rawName: "Zephyr", sourceLine: 12 }),
           row({ id: "b", rawName: "Anvil", sourceLine: 40 }),
@@ -67,22 +70,38 @@ describe("UnresolvedGroup", () => {
   });
 
   it("gives each row its source line and the unmatched tag", () => {
-    render(<UnresolvedGroup rows={[row()]} />);
+    render(<UnresolvedGroup deckId="d1" rows={[row()]} />);
     expect(screen.getByText("line 41 of the import")).toBeInTheDocument();
     expect(screen.getByText(copy.rowTag)).toBeInTheDocument();
   });
 
-  it("promises no gesture the rows do not yet offer", () => {
-    // The rows are presentational until resolution ships, so the mobile
-    // footnote must not tell the player to tap one.
-    render(<UnresolvedGroup rows={[row()]} />);
-    expect(screen.getByText(copy.footnoteMobile)).toBeInTheDocument();
-    expect(screen.queryByText(/tap one/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  it("offers each row as a disclosure and tells the phone so", () => {
+    render(<UnresolvedGroup deckId="d1" rows={[row()]} />);
+    expect(
+      screen.getByText(`${copy.footnoteMobile} ${copy.footnoteMobileResolve}`),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: copy.rowAria("Lightning Bolt", 1) })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+
+  // The Shopping filter empties the group outright, so it can go without any row
+  // collapsing. The phone hides its quick-add bar for as long as this reads
+  // true, and it used to stay true forever — the bar never came back.
+  it("reports itself collapsed when the filter takes it away mid-expansion", () => {
+    const onExpanded = vi.fn();
+    const { rerender } = render(<UnresolvedGroup deckId="d1" rows={[row()]} onExpandedChange={onExpanded} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.rowAria("Lightning Bolt", 1) }));
+    expect(onExpanded).toHaveBeenLastCalledWith(true);
+
+    rerender(<div />);
+    expect(onExpanded).toHaveBeenLastCalledWith(false);
   });
 
   it("renders nothing at zero rows", () => {
-    const { container } = render(<UnresolvedGroup rows={[]} />);
+    const { container } = render(<UnresolvedGroup deckId="d1" rows={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
 });

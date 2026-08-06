@@ -236,6 +236,22 @@ describe("Unresolved banner (state 14)", () => {
     expect(desktopSentence(copy.unresolved.banner(2))).toBeInTheDocument();
   });
 
+  // The handoff's mobile line said the rows were "not in any count below" while
+  // the group's mobile footnote said they "count toward the 99". Both shipped
+  // verbatim, and a phone shows them on the same journey.
+  it.each([1, 2])("does not tell mobile the rows are in no count at all (%i)", (n) => {
+    expect(copy.unresolved.bannerMobile(n)).not.toContain("any count");
+    expect(copy.unresolved.footnoteMobile).toContain("count toward the 99");
+  });
+
+  // Desktop warns that unresolved rows hold the deck off Complete; mobile is
+  // where a player is most likely to stop, so it cannot be the viewport that
+  // omits the consequence.
+  it.each([1, 2])("keeps the Complete consequence on mobile too (%i)", (n) => {
+    expect(copy.unresolved.bannerMobile(n)).toContain("off Complete");
+    expect(copy.unresolved.banner(n)).toContain("off Complete");
+  });
+
   it("does not depend on arrival — it is still there on a later visit", async () => {
     await act(async () => {
       renderBuilder(shortDeck(), false);

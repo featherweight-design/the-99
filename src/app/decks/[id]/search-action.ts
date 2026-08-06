@@ -28,8 +28,15 @@ export type SearchResult = {
   ownedQty: number;
 };
 
+/**
+ * `colorIdentity: null` drops the identity constraint entirely, which an empty
+ * array cannot express — `[]` is a colorless commander and filters to colorless
+ * cards. Unresolved-row resolution passes null: matching ran against the whole
+ * Scryfall catalogue, so an off-color card is still a valid answer to "what was
+ * this line?", and it passes `ownedOnly: false` for the same reason.
+ */
 export async function searchCards(
-  query: string, colorIdentity: string[], ownedOnly: boolean,
+  query: string, colorIdentity: string[] | null, ownedOnly: boolean,
 ): Promise<SearchResult[]> {
   const userId = await requireUserId();
   const q = query.trim();
@@ -65,9 +72,11 @@ export async function searchCards(
     .leftJoin(ownedTotals, eq(ownedTotals.oracleId, cards.oracleId))
     .where(and(
       ilike(cards.name, `%${escaped}%`),
-      colorIdentity.length === 0
-        ? sql`cardinality(${cards.colorIdentity}) = 0`
-        : arrayContained(cards.colorIdentity, colorIdentity),
+      colorIdentity === null
+        ? undefined
+        : colorIdentity.length === 0
+          ? sql`cardinality(${cards.colorIdentity}) = 0`
+          : arrayContained(cards.colorIdentity, colorIdentity),
       eq(cards.commanderLegal, true),
       ownedOnly ? sql`${ownedQtySql} > 0` : undefined,
     ))
