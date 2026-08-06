@@ -45,9 +45,18 @@ export function UnresolvedRow({ row }: UnresolvedRowProps) {
       {/* Desktop draws no multiplier: the resolution expander shows the line as
           it came, quantity included, and the column is tight. */}
       {row.quantity > 1 && (
-        <span className="md:hidden flex-none font-mono text-[10px]" style={{ color: "#8E8269" }}>
-          ×{row.quantity}
-        </span>
+        <>
+          <span
+            aria-hidden
+            className="md:hidden flex-none font-mono text-[10px]"
+            style={{ color: "#8E8269" }}
+          >
+            ×{row.quantity}
+          </span>
+          {/* Announced at every width — the visual multiplier is mobile-only, but
+              a desktop screen reader would otherwise never hear the copy count. */}
+          <span className="sr-only">{row.quantity} copies</span>
+        </>
       )}
 
       <span

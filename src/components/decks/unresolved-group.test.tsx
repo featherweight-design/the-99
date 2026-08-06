@@ -10,7 +10,7 @@ const copy = deckImportCopy.unresolved;
 
 const row = (over: Partial<DeckUnresolvedRow> = {}): DeckUnresolvedRow => ({
   id: "r1",
-  rawName: "Lighting Bolt",
+  rawName: "Lightning Bolt",
   quantity: 1,
   sourceLine: 41,
   ...over,

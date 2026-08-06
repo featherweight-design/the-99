@@ -262,7 +262,7 @@ describe("deckCounts", () => {
 
 describe("unresolvedCardCount", () => {
   const row = (quantity: number): DeckUnresolvedRow => ({
-    id: `r-${quantity}`, rawName: "Lighting Bolt", quantity, sourceLine: 1,
+    id: `r-${quantity}`, rawName: "Lightning Bolt", quantity, sourceLine: 1,
   });
 
   it("counts copies, not lines", () => {

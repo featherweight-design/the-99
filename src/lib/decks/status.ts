@@ -8,9 +8,9 @@ export type StatusPill = "Draft" | "Building" | "Playable" | "Complete";
 
 /**
  * `unresolvedCount` blocks `Complete` and nothing else. A deck short of 99
- * already reads `Building` on the arithmetic alone, so the guard only bites on
- * the deck that reaches 99 matched cards while still carrying lines we cannot
- * name — which is not a finished deck.
+ * already reads `Draft` or `Building` on the arithmetic alone, so the guard only
+ * bites on the deck that reaches 99 matched cards while still carrying lines we
+ * cannot name — which is not a finished deck.
  */
 export function statusPill(args: {
   built: number;
