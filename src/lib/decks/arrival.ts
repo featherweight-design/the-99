@@ -1,5 +1,6 @@
-/** The query param `import-entry` appends to the URL when it pushes the player
- *  at their new deck — `?imported=1`.
+/** Name of the query param — `?imported=1` — that the import entry surface
+ *  (src/components/decks/import-entry.tsx) appends when it pushes the player at
+ *  their new deck.
  *
  *  Arrival is provenance, not deck state: it is true of one navigation,
  *  not of the deck, so it lives in the URL rather than in a column. A column

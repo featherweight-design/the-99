@@ -69,9 +69,15 @@ export function useLocalFlag(key: string): [boolean, () => void] {
   );
 
   const set = useCallback(() => {
+    // Added before the write, not after: if setItem throws, the UI has already
+    // settled and the dismiss button has done its job.
     setThisSession.add(key);
     try {
       localStorage.setItem(key, "1");
+      // Read back rather than trusting the write — a quota-evicting store can
+      // accept setItem and drop the value. Only a confirmed read retires the
+      // fallback entry, so the set holds exactly the keys storage lost.
+      if (localStorage.getItem(key) === "1") setThisSession.delete(key);
     } catch {
       // Persistence is best-effort; the session set already settled the UI.
     }
