@@ -327,9 +327,18 @@ export const deckImportCopy = {
 
     // One polite live region, shared by resolve and delete. It replaces its own
     // text; it never stacks, and it never becomes a floating toast.
+    // The handoff wrote one `resolved` string ending "and you own it", which is
+    // false for half the cards this surface can return: owned-only is deliberately
+    // OFF here (see `filterCaption`), so an unowned card is a valid answer and
+    // resolving to one puts it on the shopping list rather than into what's built.
+    // Split on Design's own `rowMetaOwned` / `rowMetaUnowned` precedent, which
+    // draws exactly this distinction a few states earlier. Ratification owed.
     resolvedMobile: (name: string, built: string) => `That's ${name}. ${built} built now.`,
+    resolvedUnownedMobile: (name: string) => `That's ${name}. It's on the shopping list.`,
     resolved: (name: string, built: string, remaining: number, role?: string) =>
       `That line was ${name} — it's in with the rest now, and you own it. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
+    resolvedUnowned: (name: string, built: string, remaining: number, role?: string) =>
+      `That line was ${name} — it's in with the rest now, but you don't own it yet, so it's on the shopping list. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
     // roleClause('Removal', 7, 10) → 'Removal is 7 of 10'. Passed into `resolved`
     // only when the resolved card lands in a tracked role — until this moment an
     // unresolved row had no oracle ID and so counted toward no role at all.

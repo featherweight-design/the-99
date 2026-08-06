@@ -37,10 +37,16 @@ type DeckEdit =
  */
 type ReportRemoveFailure = (cardName: string) => void;
 
+/** Putting a card to an unresolved line: the line goes, the card joins the 99. */
+type ResolveOptimisticRow = (rowId: string, card: DeckDetailCard) => void;
+type DeleteOptimisticRow = (rowId: string) => void;
+
 const DeckEditContext = createContext<{
   add: AddOptimisticCard;
   remove: RemoveOptimisticCard;
   reportRemoveFailure: ReportRemoveFailure;
+  resolveRow: ResolveOptimisticRow;
+  deleteRow: DeleteOptimisticRow;
 } | null>(null);
 
 /**
@@ -48,8 +54,7 @@ const DeckEditContext = createContext<{
  * so the builder has one card list and one unresolved count, from one place.
  * `total` is derived from both, and a count sourced separately from the list it
  * describes is exactly the mid-mutation disagreement deckCounts exists to
- * prevent. They carry no optimistic edits yet — resolve and delete arrive with
- * the row expander — but the seam they will land on is this one.
+ * prevent.
  */
 export function useOptimisticDeckCards(
   serverCards: DeckDetailCard[],
@@ -81,15 +86,30 @@ export function useOptimisticDeckCards(
       return next;
     },
   );
+  // Resolve and delete both end with the line gone, so one edit covers both; a
+  // resolve adds its card through the card reducer above in the same dispatch.
+  const [unresolvedRows, dropRow] = useOptimistic(
+    serverUnresolvedRows,
+    (current, rowId: string) => current.filter((r) => r.id !== rowId),
+  );
+
   const addOptimisticCard: AddOptimisticCard = (card) => applyEdit({ kind: "add", card });
   const removeOptimisticCard: RemoveOptimisticCard = (oracleId) =>
     applyEdit({ kind: "remove", oracleId });
+  const resolveOptimisticRow: ResolveOptimisticRow = (rowId, card) => {
+    dropRow(rowId);
+    applyEdit({ kind: "add", card });
+  };
+  const deleteOptimisticRow: DeleteOptimisticRow = (rowId) => dropRow(rowId);
+
   return {
     cards,
-    unresolvedRows: serverUnresolvedRows,
-    unresolvedCount: unresolvedCardCount(serverUnresolvedRows),
+    unresolvedRows,
+    unresolvedCount: unresolvedCardCount(unresolvedRows),
     addOptimisticCard,
     removeOptimisticCard,
+    resolveOptimisticRow,
+    deleteOptimisticRow,
   };
 }
 
@@ -101,6 +121,8 @@ export function AddOptimisticCardProvider({
     add: AddOptimisticCard;
     remove: RemoveOptimisticCard;
     reportRemoveFailure: ReportRemoveFailure;
+    resolveRow: ResolveOptimisticRow;
+    deleteRow: DeleteOptimisticRow;
   };
   children: React.ReactNode;
 }) {
@@ -118,6 +140,14 @@ export function useAddOptimisticCard(): AddOptimisticCard {
 
 export function useRemoveOptimisticCard(): RemoveOptimisticCard {
   return useContext(DeckEditContext)?.remove ?? noop;
+}
+
+export function useResolveOptimisticRow(): ResolveOptimisticRow {
+  return useContext(DeckEditContext)?.resolveRow ?? noop;
+}
+
+export function useDeleteOptimisticRow(): DeleteOptimisticRow {
+  return useContext(DeckEditContext)?.deleteRow ?? noop;
 }
 
 /**

@@ -20,6 +20,8 @@ interface DecklistProps {
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
   onGroupingChange: (g: "type" | "role") => void;
+  /** The phone unmounts the quick-add bar while a resolution expander is open. */
+  onUnresolvedExpandedChange?: (expanded: boolean) => void;
 }
 
 export function Decklist({
@@ -32,6 +34,7 @@ export function Decklist({
   grouping,
   onFilterChange,
   onGroupingChange,
+  onUnresolvedExpandedChange,
 }: DecklistProps) {
   // Apply shopping filter: unowned cards only
   const visibleCards = filter === "shopping" ? cards.filter((c) => !c.owned) : cards;
@@ -82,7 +85,12 @@ export function Decklist({
         ))}
 
         {/* Pinned last, after every type or role group. */}
-        <UnresolvedGroup rows={visibleUnresolved} />
+        <UnresolvedGroup
+          deckId={deckId}
+          rows={visibleUnresolved}
+          cards={cards}
+          onExpandedChange={onUnresolvedExpandedChange}
+        />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
@@ -8,6 +8,7 @@ import { requireUserId } from "../../lib/auth";
 import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { buildDeckImport, type DeckImport, type ImportNote } from "../../lib/decks/import";
+import { isBasicLand } from "../../lib/decks/grouping";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   deckImportMaxBytes,
@@ -192,4 +193,91 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
 
   revalidatePath("/decks");
   return { ok: true, deckId, unresolvedCount: result.unresolved.length, notes: result.notes };
+}
+
+/**
+ * Puts a card to an unresolved line: the card joins the 99 and the line goes.
+ *
+ * Deliberately no `validateCardForDeck`. The line is already in the deck and
+ * already counted toward the 99, so resolving it grows nothing and can't hit the
+ * cap; and the resolution search runs without a colour-identity filter on
+ * purpose (matching ran against all of Scryfall, not the player's colours), so
+ * rejecting an off-colour answer here would refuse the very rows that search
+ * exists to offer.
+ */
+export async function resolveUnresolvedRow(
+  deckId: string,
+  rowId: string,
+  oracleId: string,
+): Promise<void> {
+  const userId = await requireUserId();
+
+  await db.transaction(async (tx) => {
+    const [deck] = await tx
+      .select({ id: decks.id, commanderOracleId: decks.commanderOracleId })
+      .from(decks)
+      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+    if (!deck) throw new Error("deck not found");
+
+    const [row] = await tx
+      .select({ id: deckUnresolvedRows.id, quantity: deckUnresolvedRows.quantity })
+      .from(deckUnresolvedRows)
+      .where(and(eq(deckUnresolvedRows.id, rowId), eq(deckUnresolvedRows.deckId, deckId)));
+    if (!row) throw new Error("unresolved row not found");
+
+    const [card] = await tx
+      .select({ typeLine: cards.typeLine })
+      .from(cards)
+      .where(eq(cards.oracleId, oracleId));
+    if (!card) throw new Error("card not found");
+
+    // The commander must not also sit in the 99 — the same rule importDeck
+    // enforces when it filters the parsed rows. The line is still answered, so
+    // it goes either way.
+    if (oracleId !== deck.commanderOracleId) {
+      if (isBasicLand(card.typeLine)) {
+        await tx
+          .insert(deckCards)
+          .values({ deckId, oracleId, quantity: row.quantity })
+          .onConflictDoUpdate({
+            target: [deckCards.deckId, deckCards.oracleId],
+            set: { quantity: sql`${deckCards.quantity} + ${row.quantity}` },
+          });
+      } else {
+        // Singleton: a "3 Rhystic Study" line resolves to one copy, exactly as
+        // the importer would have brought it over had the name matched.
+        await tx.insert(deckCards).values({ deckId, oracleId }).onConflictDoNothing();
+      }
+    }
+
+    await tx.delete(deckUnresolvedRows).where(eq(deckUnresolvedRows.id, rowId));
+  });
+
+  revalidatePath(`/decks/${deckId}`);
+  revalidatePath("/decks");
+}
+
+/**
+ * Drops a line the player says was never a card. The deck's total shrinks with
+ * it — 100 becomes 99 — which is the point, not a side effect.
+ */
+export async function deleteUnresolvedRow(deckId: string, rowId: string): Promise<void> {
+  const userId = await requireUserId();
+
+  await db.transaction(async (tx) => {
+    const [deck] = await tx
+      .select({ id: decks.id })
+      .from(decks)
+      .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
+    if (!deck) throw new Error("deck not found");
+
+    const deleted = await tx
+      .delete(deckUnresolvedRows)
+      .where(and(eq(deckUnresolvedRows.id, rowId), eq(deckUnresolvedRows.deckId, deckId)))
+      .returning({ id: deckUnresolvedRows.id });
+    if (deleted.length === 0) throw new Error("unresolved row not found");
+  });
+
+  revalidatePath(`/decks/${deckId}`);
+  revalidatePath("/decks");
 }
