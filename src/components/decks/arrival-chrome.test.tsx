@@ -4,7 +4,7 @@
 // /decks is behind Clerk), so this is the only place the dismissal keying and
 // the two-step jump are verified.
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import { arrivalDismissKey } from "../../lib/decks/arrival";
 import { celebrationKey } from "../../lib/decks/celebration";
@@ -275,10 +275,19 @@ describe("The banner's jump to the unresolved group", () => {
     localStorage.clear();
   });
 
+  // jsdom implements no layout, so it ships no scrollIntoView to spy on — the
+  // stub below gives vi.spyOn something to replace. Restored after every test:
+  // a bare prototype assignment outlives the file and makes test order matter.
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => {};
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   function spyOnScroll() {
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
-    return scrollIntoView;
+    return vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
   }
 
   function clickJump(index = 0) {
