@@ -1,5 +1,7 @@
-/** The query param `import-entry` appends when it pushes the player at their
- *  new deck. Arrival is provenance, not deck state: it is true of one navigation,
+/** The query param `import-entry` appends to the URL when it pushes the player
+ *  at their new deck — `?imported=1`.
+ *
+ *  Arrival is provenance, not deck state: it is true of one navigation,
  *  not of the deck, so it lives in the URL rather than in a column. A column
  *  would make "just imported" permanent, and the strip is meant to be gone on
  *  the next visit whether or not it was dismissed. */

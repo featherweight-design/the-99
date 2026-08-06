@@ -259,13 +259,17 @@ export function BuilderShell({
                 banner instead, whose warning would be contradicted by a line
                 reading "nothing needs your attention". */}
             {arrivedFromImport && unresolvedRows.length === 0 && (
-              /* `cards.length`, not `counts.total`: the strip's sentence says
+              /* A length, not `counts.total`: the strip's sentence says
                  "lines", and a Moxfield export writes basics as one line
                  ("35 Forest"), so the quantity sum would claim a 99-card deck
                  arrived on 99 lines when it arrived on nearer 65. Same
                  cards-vs-lines rule `unresolvedCardCount` documents — prose
-                 that says lines counts lines. */
-              <ArrivalStrip deckId={deck.id} importedLineCount={cards.length} />
+                 that says lines counts lines.
+
+                 And the SERVER list, not the optimistic one: the sentence is a
+                 claim about what the import brought over, which an add the
+                 player makes while the strip is still up must not revise. */
+              <ArrivalStrip deckId={deck.id} importedLineCount={deck.cards.length} />
             )}
 
             {/* Above the coverage strip and the tabs, because what it says is

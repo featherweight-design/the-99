@@ -17,16 +17,18 @@ const copy = deckImportCopy.unresolved;
 // design bolds that word so the consequence is legible without reading the
 // whole line. Split on the copy rather than duplicating it here, so the two
 // cannot drift.
+const COMPLETE = "Complete";
+
 function boldComplete(sentence: string) {
-  const at = sentence.indexOf("Complete");
+  const at = sentence.indexOf(COMPLETE);
   if (at === -1) return sentence;
   return (
     <>
       {sentence.slice(0, at)}
       <strong className="font-semibold" style={{ color: "var(--fg)" }}>
-        Complete
+        {COMPLETE}
       </strong>
-      {sentence.slice(at + "Complete".length)}
+      {sentence.slice(at + COMPLETE.length)}
     </>
   );
 }
