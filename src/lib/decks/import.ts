@@ -175,7 +175,15 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
     if (existing) existing.quantity += row.quantity;
     else quantities.set(oracleId, { quantity: row.quantity, firstLine: row.line });
 
-    if (card && isCommanderCandidate(card) && !legendaryCandidates.some((c) => c.oracleId === oracleId)) {
+    // commanderLegal as well as the type check: the picker's whole output is submitted
+    // straight back, and the server action rejects an illegal commander by throwing.
+    // Offering a banned legendary here would turn a pick into an unexplained error.
+    if (
+      card &&
+      card.commanderLegal &&
+      isCommanderCandidate(card) &&
+      !legendaryCandidates.some((c) => c.oracleId === oracleId)
+    ) {
       legendaryCandidates.push({ oracleId, name: card.name, sourceLine: row.line });
     }
   }

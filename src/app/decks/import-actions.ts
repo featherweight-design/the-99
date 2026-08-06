@@ -34,6 +34,11 @@ export type ImportDeckInput = {
   commanderOracleId?: string;
 };
 
+/**
+ * Every variant carries `notes`, failures included. A `parseError` note is often the only
+ * thing that explains *why* nothing parsed, and dropping it on the failure paths would
+ * leave state 10 with no account of itself — the one place the explanation matters most.
+ */
 export type ImportDeckResult =
   | { ok: true; deckId: string; unresolvedCount: number; notes: ImportNote[] }
   /** States 11–12: the source named no commander, so the picker runs before any write. */
@@ -41,11 +46,14 @@ export type ImportDeckResult =
       ok: false;
       reason: "commanderNeeded";
       candidates: { oracleId: string; name: string; sourceLine: number }[];
+      /** State 12's copy renders the total it found no commander among. */
+      lineCount: number;
+      notes: ImportNote[];
     }
   /** State 10: nothing parsed at all. */
-  | { ok: false; reason: "noRows" }
+  | { ok: false; reason: "noRows"; notes: ImportNote[] }
   /** State 9: lines parsed, none of them matched a card. */
-  | { ok: false; reason: "noneMatched"; lineCount: number };
+  | { ok: false; reason: "noneMatched"; lineCount: number; notes: ImportNote[] };
 
 /**
  * Parses a decklist and creates the deck it describes, unresolved lines included.
@@ -77,21 +85,31 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   // parsePasteList turns any non-blank line into a row, so a `SIDEBOARD:` header
   // counts as a card there — a list of nothing but section headers would read as
   // state 9, and state 9's copy would render a total that includes the headers.
-  if (result.lineCount === 0) return { ok: false, reason: "noRows" };
+  if (result.lineCount === 0) return { ok: false, reason: "noRows", notes: result.notes };
 
   // Order matters, and the guard is on `cards` alone. Every line that fails to match
   // becomes an unresolved row, so "nothing matched" is an empty `cards` beside a full
   // `unresolved` — never two empty arrays. Checking after the commander gate would
   // report state 9 as an empty commander picker instead.
-  if (result.cards.length === 0) {
-    return { ok: false, reason: "noneMatched", lineCount: result.lineCount };
+  //
+  // A declared commander is excluded from `cards`, so a list naming only its commander
+  // has an empty `cards` and has still matched something. Reporting that as "we couldn't
+  // find any of these cards" would contradict the deck we are about to build.
+  if (result.cards.length === 0 && !result.declaredCommander) {
+    return { ok: false, reason: "noneMatched", lineCount: result.lineCount, notes: result.notes };
   }
 
   const commanderOracleId = input.commanderOracleId ?? result.declaredCommander?.oracleId;
   if (!commanderOracleId) {
     // decks.commander_oracle_id is notNull, so a commander-less deck is a schema
     // impossibility as well as a product one. Nothing is written either way.
-    return { ok: false, reason: "commanderNeeded", candidates: result.legendaryCandidates };
+    return {
+      ok: false,
+      reason: "commanderNeeded",
+      candidates: result.legendaryCandidates,
+      lineCount: result.lineCount,
+      notes: result.notes,
+    };
   }
 
   // Server actions are reachable via crafted requests — re-validate the commander

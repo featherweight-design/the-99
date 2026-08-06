@@ -12,6 +12,7 @@ const card = (over: Partial<ImportCatalogCard> & { name: string }): ImportCatalo
   scryfallId: `scry-${over.name.toLowerCase().replace(/[^a-z]+/g, "-")}`,
   typeLine: "Artifact",
   oracleText: null,
+  commanderLegal: true,
   ...over,
 });
 
@@ -205,6 +206,17 @@ describe("buildDeckImport — legendary candidates", () => {
   it("excludes the declared commander, which needs no picking", () => {
     const result = build("1 Atraxa, Praetors' Voice *CMDR*\n1 Tymna the Weaver");
     expect(result.legendaryCandidates.map((c) => c.name)).toEqual([TYMNA.name]);
+  });
+
+  it("omits a banned legendary, which the server action would reject by throwing", () => {
+    const banned = card({
+      name: "Golos, Tireless Pilgrim",
+      typeLine: "Legendary Creature — Scarecrow",
+      commanderLegal: false,
+    });
+    const result = build("1 Golos, Tireless Pilgrim\n1 Tymna the Weaver", [...CATALOG, banned]);
+    expect(result.legendaryCandidates.map((c) => c.name)).toEqual([TYMNA.name]);
+    expect(result.cards).toContainEqual({ oracleId: banned.oracleId, quantity: 1 });
   });
 
   it("is empty when no legendary creature was imported", () => {

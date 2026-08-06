@@ -6,7 +6,11 @@ export type CatalogCard = { oracleId: string; scryfallId: string; name: string }
  * matched — basic-land and commander-candidate checks both read the type line.
  * Loaded only on request: oracle_text across the whole catalog is megabytes.
  */
-export type DetailedCatalogCard = CatalogCard & { typeLine: string; oracleText: string | null };
+export type DetailedCatalogCard = CatalogCard & {
+  typeLine: string;
+  oracleText: string | null;
+  commanderLegal: boolean;
+};
 /** One row of `printings` — every printing in existence, keyed by its printing-level id. */
 export type PrintingIdentity = { scryfallId: string; oracleId: string };
 

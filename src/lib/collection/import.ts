@@ -45,7 +45,16 @@ export async function loadMatchInputs(
   // large enough that reading it unconditionally would be a real regression there.
   const columns = { oracleId: cards.oracleId, scryfallId: cards.scryfallId, name: cards.name };
   const catalog = await db
-    .select(opts.detailed ? { ...columns, typeLine: cards.typeLine, oracleText: cards.oracleText } : columns)
+    .select(
+      opts.detailed
+        ? {
+            ...columns,
+            typeLine: cards.typeLine,
+            oracleText: cards.oracleText,
+            commanderLegal: cards.commanderLegal,
+          }
+        : columns,
+    )
     .from(cards);
 
   const ids = [...new Set(rows.map((r) => r.scryfallId).filter((id): id is string => !!id && UUID_RE.test(id)))];
