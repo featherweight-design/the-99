@@ -26,12 +26,13 @@ const MODES: { id: ImportMode; label: string; shortLabel: string }[] = [
   { id: "file", label: copy.entry.modeFile, shortLabel: copy.entry.modeFileShort },
 ];
 
-type FailureKind = "fileRejected" | "noneMatched" | "empty";
+type FailureKind = "fileRejected" | "noneMatched" | "empty" | "unexpected";
 
 type Failure =
   | { kind: "fileRejected"; ext: string; size: string }
   | { kind: "noneMatched"; lineCount: number }
-  | { kind: "empty" };
+  | { kind: "empty" }
+  | { kind: "unexpected" };
 
 const ACCEPTED_EXTENSIONS = [".csv", ".txt"];
 
@@ -85,23 +86,30 @@ export function ImportEntry() {
     if (pending) return;
     setFailure(null);
     startTransition(async () => {
-      const text = mode === "paste" ? pasteText : ((await file?.text()) ?? "");
-      const result = await importDeck({ text, source: mode, name: deckName.trim() });
-      if (result.ok) {
-        router.push(`/decks/${result.deckId}`);
-        return;
+      try {
+        const text = mode === "paste" ? pasteText : ((await file?.text()) ?? "");
+        const result = await importDeck({ text, source: mode, name: deckName.trim() });
+        if (result.ok) {
+          router.push(`/decks/${result.deckId}`);
+          return;
+        }
+        if (result.reason === "noRows") {
+          setFailure({ kind: "empty" });
+          return;
+        }
+        if (result.reason === "noneMatched") {
+          setFailure({ kind: "noneMatched", lineCount: result.lineCount });
+          return;
+        }
+        // Seam for PR 5: `commanderNeeded` carries the legendary candidates the
+        // picker renders. Until it lands, the entry surface stays as it was
+        // rather than showing a failure this result is not.
+      } catch {
+        // importDeck throws on the size cap and on an illegal commander. Unhandled,
+        // a throw inside a transition reaches the error boundary and takes the
+        // player's list with it; the banner keeps the list on the page.
+        setFailure({ kind: "unexpected" });
       }
-      if (result.reason === "noRows") {
-        setFailure({ kind: "empty" });
-        return;
-      }
-      if (result.reason === "noneMatched") {
-        setFailure({ kind: "noneMatched", lineCount: result.lineCount });
-        return;
-      }
-      // Seam for PR 5: `commanderNeeded` carries the legendary candidates the
-      // picker renders. Until it lands, the entry surface stays as it was
-      // rather than showing a failure this result is not.
     });
   }
 
@@ -312,6 +320,7 @@ const FAILURE_ACTION: Record<FailureKind, string> = {
   fileRejected: copy.failures.fileRejected.action,
   noneMatched: copy.failures.noneMatched.action,
   empty: copy.failures.empty.action,
+  unexpected: copy.failures.unexpected.action,
 };
 
 function failureText(failure: Failure): { heading: string; bodyMobile: string; body: string } {
@@ -333,6 +342,12 @@ function failureText(failure: Failure): { heading: string; bodyMobile: string; b
         heading: copy.failures.empty.heading,
         bodyMobile: copy.failures.empty.bodyMobile,
         body: copy.failures.empty.body,
+      };
+    case "unexpected":
+      return {
+        heading: copy.failures.unexpected.heading,
+        bodyMobile: copy.failures.unexpected.bodyMobile,
+        body: copy.failures.unexpected.body,
       };
   }
 }

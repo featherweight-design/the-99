@@ -157,4 +157,18 @@ describe("state 10 — nothing parsed", () => {
     expect(screen.getByRole("button", { name: "Try a different deck" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
   });
+
+  it("keeps the list on the page when the server action throws", async () => {
+    // A throw inside the transition otherwise reaches the error boundary and
+    // takes the pasted list with it.
+    importDeck.mockRejectedValueOnce(new Error("Decklist too large (max 2 MB)"));
+    render(<ImportEntry />);
+    fillPaste();
+    submit();
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("That didn't go through");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect((pasteBox() as HTMLTextAreaElement).value).toContain("Sol Ring");
+    expect(push).not.toHaveBeenCalled();
+  });
 });

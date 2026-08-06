@@ -156,6 +156,20 @@ export const deckImportCopy = {
       action: 'Try a different deck',
       retry: false,
     },
+    /**
+     * Eng-authored, not from the handoff. `importDeck` throws on the size cap and
+     * on an illegal commander, and a throw inside a transition surfaces as an error
+     * boundary rather than something the player can act on. The handoff draws seven
+     * failures and none of them is "the server refused", so this stands in until
+     * Design rules on it — same standing as `entry.subMobileNoLink`.
+     */
+    unexpected: {
+      heading: "That didn't go through",
+      bodyMobile: 'Something went wrong on our end. Your list is still here.',
+      body: "Something went wrong on our end and the deck wasn't made. Your list is still here — try it again.",
+      action: 'Try again',
+      retry: false,
+    },
   },
 
   // ---- Commander -----------------------------------------------------------
@@ -277,8 +291,11 @@ export const deckImportCopy = {
       `${role} is ${have} of ${target}`,
     deletedMobile: (raw: string, total: string) =>
       `Dropped ${raw}. The deck wants ${total} now.`,
-    deleted: (raw: string, total: string) =>
-      `Dropped ${raw}. The deck wants ${total} cards now instead of ${Number(total) + 1}.`,
+    // `priorTotal` is passed in rather than derived: this module's contract is that
+    // callers hand over pre-formatted, thousands-separated strings, and `Number("1,234")`
+    // is NaN. The handoff computed it inline, which works only until a deck has 1,000 lines.
+    deleted: (raw: string, total: string, priorTotal: string) =>
+      `Dropped ${raw}. The deck wants ${total} cards now instead of ${priorTotal}.`,
     undo: 'Undo',
   },
 
