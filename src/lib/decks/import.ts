@@ -34,8 +34,21 @@ export type ImportNote =
 export type DeckImport = {
   cards: { oracleId: string; quantity: number }[];
   unresolved: { rawName: string; quantity: number; sourceLine: number }[];
-  /** Carries sourceLine because the commander picker's rows show `line N`. */
-  legendaryCandidates: { oracleId: string; name: string; sourceLine: number }[];
+  /**
+   * Carries sourceLine because the commander picker's rows show `line N` — two
+   * similar legends are otherwise indistinguishable. `colorIdentity` and `imageUri`
+   * are here for the same reason: the picker reuses create-picker's row verbatim,
+   * so it needs the pips, the identity label and the art. Ownership is *not* here —
+   * this module is pure, and owning a card is a fact about a user, resolved by the
+   * server action.
+   */
+  legendaryCandidates: {
+    oracleId: string;
+    name: string;
+    sourceLine: number;
+    colorIdentity: string[];
+    imageUri: string | null;
+  }[];
   /**
    * Set when the source names its own commander (`*CMDR*`, or a `Commander`
    * section). When it is set the picker is skipped entirely — a confirmation
@@ -216,7 +229,13 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
       isCommanderCandidate(card) &&
       !legendaryCandidates.some((c) => c.oracleId === oracleId)
     ) {
-      legendaryCandidates.push({ oracleId, name: card.name, sourceLine: row.line });
+      legendaryCandidates.push({
+        oracleId,
+        name: card.name,
+        sourceLine: row.line,
+        colorIdentity: card.colorIdentity,
+        imageUri: card.imageUri,
+      });
     }
   }
 

@@ -1,13 +1,13 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "../../db";
-import { cards, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
+import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
-import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
+import { buildDeckImport, type DeckImport, type ImportNote } from "../../lib/decks/import";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   deckImportMaxBytes,
@@ -33,6 +33,22 @@ export type ImportDeckInput = {
 };
 
 /**
+ * One row of the commander picker (state 11). Everything but `owned` comes straight
+ * from the pure pipeline; `owned` is resolved here because it is a fact about a user
+ * and the pipeline touches no database. It follows `listOwnedLegalCommanders`' notion
+ * of ownership — a row in `collection_items` for this user — so "you own it" means the
+ * same thing here as it does on /decks/new.
+ */
+export type ImportCommanderCandidate = {
+  oracleId: string;
+  name: string;
+  sourceLine: number;
+  colorIdentity: string[];
+  imageUri: string | null;
+  owned: boolean;
+};
+
+/**
  * Every variant carries `notes`, failures included. A `parseError` note is often the only
  * thing that explains *why* nothing parsed, and dropping it on the failure paths would
  * leave state 10 with no account of itself — the one place the explanation matters most.
@@ -43,7 +59,7 @@ export type ImportDeckResult =
   | {
       ok: false;
       reason: "commanderNeeded";
-      candidates: { oracleId: string; name: string; sourceLine: number }[];
+      candidates: ImportCommanderCandidate[];
       /** State 12's copy renders the total it found no commander among. */
       lineCount: number;
       notes: ImportNote[];
@@ -52,6 +68,32 @@ export type ImportDeckResult =
   | { ok: false; reason: "noRows"; notes: ImportNote[] }
   /** State 9: lines parsed, none of them matched a card. */
   | { ok: false; reason: "noneMatched"; lineCount: number; notes: ImportNote[] };
+
+/**
+ * Marks each candidate as owned or not. A file-scope helper rather than an export:
+ * "use server" turns every export into a callable endpoint, and this takes a userId.
+ *
+ * One query over the candidates only — a decklist rarely holds more than a handful
+ * of legendary creatures, so this never approaches the id-chunking territory the
+ * collection loaders need.
+ */
+async function withOwnership(
+  userId: string,
+  candidates: DeckImport["legendaryCandidates"],
+): Promise<ImportCommanderCandidate[]> {
+  if (candidates.length === 0) return [];
+  const ownedRows = await db
+    .selectDistinct({ oracleId: collectionItems.oracleId })
+    .from(collectionItems)
+    .where(
+      and(
+        eq(collectionItems.userId, userId),
+        inArray(collectionItems.oracleId, candidates.map((c) => c.oracleId)),
+      ),
+    );
+  const owned = new Set(ownedRows.map((r) => r.oracleId));
+  return candidates.map((c) => ({ ...c, owned: owned.has(c.oracleId) }));
+}
 
 /**
  * Parses a decklist and creates the deck it describes, unresolved lines included.
@@ -100,7 +142,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     return {
       ok: false,
       reason: "commanderNeeded",
-      candidates: result.legendaryCandidates,
+      candidates: await withOwnership(userId, result.legendaryCandidates),
       lineCount: result.lineCount,
       notes: result.notes,
     };

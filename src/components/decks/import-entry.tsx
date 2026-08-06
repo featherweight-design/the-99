@@ -8,7 +8,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { importDeck } from "../../app/decks/import-actions";
+import { importDeck, type ImportCommanderCandidate } from "../../app/decks/import-actions";
 import { deckImportCopy as copy } from "../../lib/copy/deck-import";
 import { parsePasteList } from "../../lib/manabox/paste";
 import {
@@ -19,6 +19,8 @@ import {
 } from "../../lib/upload-limits";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { TextField } from "../ui/text-field";
+import { CreatePicker } from "./create-picker";
+import { ImportNoCommander } from "./import-no-commander";
 
 type ImportMode = Extract<DeckImportSource, "paste" | "file">;
 
@@ -27,14 +29,21 @@ const MODES: { id: ImportMode; label: string; shortLabel: string }[] = [
   { id: "file", label: copy.entry.modeFile, shortLabel: copy.entry.modeFileShort },
 ];
 
-type FailureKind = "fileRejected" | "noneMatched" | "empty" | "unexpected" | "commanderNeeded";
+type FailureKind = "fileRejected" | "noneMatched" | "empty" | "unexpected";
 
 type Failure =
   | { kind: "fileRejected"; ext: string; size: string }
   | { kind: "noneMatched"; lineCount: number }
   | { kind: "empty" }
-  | { kind: "unexpected"; detail: string | null }
-  | { kind: "commanderNeeded" };
+  | { kind: "unexpected"; detail: string | null };
+
+/**
+ * States 11–12. The source named no commander, so nothing has been written and
+ * the surface hands the decision to the player: the picker when the list holds
+ * legendary creatures, the dead end when it does not. A *declared* commander
+ * never gets here — `importDeck` uses it and says nothing.
+ */
+type CommanderStep = { candidates: ImportCommanderCandidate[]; lineCount: number };
 
 const ACCEPTED_EXTENSIONS = [".csv", ".txt"];
 
@@ -63,6 +72,7 @@ export function ImportEntry() {
   const [dragOver, setDragOver] = useState(false);
   const [deckName, setDeckName] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
+  const [commanderStep, setCommanderStep] = useState<CommanderStep | null>(null);
   const [pending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,13 +106,20 @@ export function ImportEntry() {
     setFile(candidate);
   }
 
-  function submit() {
+  function submit(commanderOracleId?: string, name = deckName) {
     if (pending) return;
     setFailure(null);
     startTransition(async () => {
       try {
         const text = mode === "paste" ? pasteText : ((await file?.text()) ?? "");
-        const result = await importDeck({ text, source: mode, name: deckName.trim() });
+        const result = await importDeck({
+          text,
+          source: mode,
+          name: name.trim(),
+          // Omitted rather than passed as undefined so the first pass sends the
+          // exact payload it always has.
+          ...(commanderOracleId ? { commanderOracleId } : {}),
+        });
         if (result.ok) {
           router.push(`/decks/${result.deckId}`);
           return;
@@ -115,12 +132,10 @@ export function ImportEntry() {
           setFailure({ kind: "noneMatched", lineCount: result.lineCount });
           return;
         }
-        // Seam for PR 5: `commanderNeeded` carries the legendary candidates the
-        // picker renders. Until it lands the player still needs an answer —
-        // returning to an unchanged form makes the submit button look broken for
-        // every list that doesn't name its commander, which is most of them.
+        // States 11–12. Nothing was written; the list is still in `pasteText` /
+        // `file`, so the second pass re-sends it with the commander the player picked.
         if (result.reason === "commanderNeeded") {
-          setFailure({ kind: "commanderNeeded" });
+          setCommanderStep({ candidates: result.candidates, lineCount: result.lineCount });
           return;
         }
       } catch (e) {
@@ -136,6 +151,9 @@ export function ImportEntry() {
         // internal invariant ("card is not a legal commander") that would read as
         // gibberish, so those fall back to the generic body.
         const message = e instanceof Error ? e.message : "";
+        // A throw on the second pass drops the picker as well as the banner: the
+        // list is still on the entry surface, and that is where the copy says it is.
+        setCommanderStep(null);
         setFailure({
           kind: "unexpected",
           detail: isDeckImportTooLargeMessage(message) ? message : null,
@@ -148,6 +166,30 @@ export function ImportEntry() {
     deckName.trim().length > 0 && (mode === "paste" ? pasteText.trim().length > 0 : file !== null);
 
   if (pending) return <ParsingBlock />;
+
+  // State 12 first: an import with no legendary creature cannot become a Commander
+  // deck at all, so it is a dead end rather than an empty picker.
+  if (commanderStep && commanderStep.candidates.length === 0) {
+    return (
+      <ImportNoCommander
+        lineCount={commanderStep.lineCount}
+        onBack={() => setCommanderStep(null)}
+        onStartFromCommander={() => router.push("/decks/new")}
+      />
+    );
+  }
+
+  // State 11.
+  if (commanderStep) {
+    return (
+      <CreatePicker
+        mode="import"
+        candidates={commanderStep.candidates}
+        initialName={deckName}
+        onSubmit={(oracleId, name) => submit(oracleId, name)}
+      />
+    );
+  }
 
   return (
     <div className="p-[16px_18px_24px] md:max-w-[760px] md:p-[44px_48px]">
@@ -290,7 +332,9 @@ export function ImportEntry() {
       />
 
       <PrimaryButton
-        onClick={submit}
+        // Wrapped: a bare `submit` would receive the click event as its first
+        // argument and post it as a commander id.
+        onClick={() => submit()}
         disabled={!canSubmit}
         className="w-full md:w-auto mt-[16px] text-[15px] md:text-[14px] py-[13px] md:py-0 md:px-[24px] md:h-[44px] min-h-[44px] md:whitespace-nowrap disabled:opacity-50"
       >
@@ -355,7 +399,6 @@ const FAILURE_ACTION: Record<FailureKind, string> = {
   noneMatched: copy.failures.noneMatched.action,
   empty: copy.failures.empty.action,
   unexpected: copy.failures.unexpected.action,
-  commanderNeeded: copy.failures.commanderNeeded.action,
 };
 
 function failureText(failure: Failure): { heading: string; bodyMobile: string; body: string } {
@@ -377,12 +420,6 @@ function failureText(failure: Failure): { heading: string; bodyMobile: string; b
         heading: copy.failures.empty.heading,
         bodyMobile: copy.failures.empty.bodyMobile,
         body: copy.failures.empty.body,
-      };
-    case "commanderNeeded":
-      return {
-        heading: copy.failures.commanderNeeded.heading,
-        bodyMobile: copy.failures.commanderNeeded.bodyMobile,
-        body: copy.failures.commanderNeeded.body,
       };
     case "unexpected":
       return {
