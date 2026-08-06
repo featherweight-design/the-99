@@ -183,6 +183,17 @@ describe("the resolution expander as a disclosure", () => {
     expect(screen.getByText(copy.noResultsBody)).toBeInTheDocument();
     expect(screen.queryByRole("listbox")).toBeNull();
   });
+
+  // The keyboard hint lives in the results row, which the dead end replaces, so
+  // an unguarded aria-describedby would point a screen reader at nothing.
+  it("stops describing the field once the hint it named has gone", async () => {
+    searchCards.mockResolvedValue([]);
+    render(<Harness />);
+    fireEvent.click(rowButton("Rystic Studie"));
+
+    await waitFor(() => expect(screen.getByText(copy.noResultsHeading)).toBeInTheDocument());
+    expect(field()).not.toHaveAttribute("aria-describedby");
+  });
 });
 
 describe("resolving and deleting a line", () => {

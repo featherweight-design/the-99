@@ -215,7 +215,10 @@ export function ResolutionExpander({
             aria-expanded={open}
             aria-controls={open ? listId : undefined}
             aria-activedescendant={open ? optionId(activeIndex) : undefined}
-            aria-describedby={hintId}
+            // The hint node goes with the results row, so on no-results this would
+            // name an element that is not there. Same guard as `aria-controls`
+            // above, and as every other conditional target in the decks tree.
+            aria-describedby={noResults ? undefined : hintId}
             aria-autocomplete="list"
             aria-label={copy.searchAria(row.rawName)}
             autoComplete="off"
