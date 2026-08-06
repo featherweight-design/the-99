@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, decks } from "../../db/schema";
+import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
@@ -62,6 +62,13 @@ export function primaryRole(input: { typeLine: string; oracleText: string | null
 // DB query types and functions (untested — same policy as recommend.ts)
 // ---------------------------------------------------------------------------
 
+export type DeckUnresolvedRow = {
+  id: string;
+  rawName: string;
+  quantity: number;
+  sourceLine: number;
+};
+
 export type DeckDetail = {
   id: string;
   name: string;
@@ -76,6 +83,12 @@ export type DeckDetail = {
     imageUri: string | null;
   };
   cards: DeckDetailCard[];
+  /**
+   * Lines the import could not match, sorted by their position in the player's
+   * source. Returned here rather than fetched separately so every consumer sees
+   * them without a second query — and so a surface cannot forget to ask.
+   */
+  unresolvedRows: DeckUnresolvedRow[];
   built: number;
   ownedCount: number;
   toBuyCount: number;
@@ -143,12 +156,25 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     quantity: row.quantity,
   }));
 
+  // Fourth: the lines the import could not identify, in the source's own order.
+  const unresolvedRows = await db
+    .select({
+      id: deckUnresolvedRows.id,
+      rawName: deckUnresolvedRows.rawName,
+      quantity: deckUnresolvedRows.quantity,
+      sourceLine: deckUnresolvedRows.sourceLine,
+    })
+    .from(deckUnresolvedRows)
+    .where(eq(deckUnresolvedRows.deckId, deckId))
+    .orderBy(asc(deckUnresolvedRows.sourceLine));
+
   return {
     id: deck.id,
     name: deck.name,
     createdAt: deck.createdAt,
     commander,
     cards: detailCards,
+    unresolvedRows,
     ...deckCounts(detailCards),
   };
 }

@@ -1,6 +1,16 @@
 import type { CollectionRow } from "../manabox/parse";
 
 export type CatalogCard = { oracleId: string; scryfallId: string; name: string };
+/**
+ * The catalog plus the two columns a consumer needs to reason about what it
+ * matched — basic-land and commander-candidate checks both read the type line.
+ * Loaded only on request: oracle_text across the whole catalog is megabytes.
+ */
+export type DetailedCatalogCard = CatalogCard & {
+  typeLine: string;
+  oracleText: string | null;
+  commanderLegal: boolean;
+};
 /** One row of `printings` — every printing in existence, keyed by its printing-level id. */
 export type PrintingIdentity = { scryfallId: string; oracleId: string };
 

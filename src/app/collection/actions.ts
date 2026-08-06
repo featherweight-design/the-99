@@ -13,6 +13,12 @@ import { loadMatchInputs, replaceCollection } from "../../lib/collection/import"
 import { aggregatePendingItems, totalQuantity, type PendingItem } from "../../lib/collection/pending";
 import { recommendCommanders } from "../../lib/recs/recommend";
 import { collectionGeneration, persistScores } from "../../lib/recs/store";
+import {
+  COLLECTION_FILE_MAX_BYTES,
+  COLLECTION_FILE_MAX_LABEL,
+  PASTE_MAX_BYTES,
+  PASTE_MAX_LABEL,
+} from "../../lib/upload-limits";
 
 export type UploadPreview = {
   uploadId: string;
@@ -97,7 +103,7 @@ export async function previewUpload(formData: FormData): Promise<UploadPreview> 
   const userId = await requireUserId();
   const file = formData.get("file");
   if (!(file instanceof File)) throw new Error("No CSV file provided");
-  if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5 MB)");
+  if (file.size > COLLECTION_FILE_MAX_BYTES) throw new Error(`File too large (max ${COLLECTION_FILE_MAX_LABEL})`);
   const { rows, errors } = parseCollectionCsv(await file.text());
   return buildPreview({ userId, filename: file.name, rows, errors });
 }
@@ -106,7 +112,7 @@ export async function previewPaste(text: string): Promise<UploadPreview> {
   const userId = await requireUserId();
   // Byte-accurate cap — text.length counts UTF-16 code units, which lets
   // multi-byte input exceed the intended size guard.
-  if (Buffer.byteLength(text, "utf8") > 100_000) throw new Error("Paste too large (max 100 KB)");
+  if (Buffer.byteLength(text, "utf8") > PASTE_MAX_BYTES) throw new Error(`Paste too large (max ${PASTE_MAX_LABEL})`);
   const { rows, errors } = parsePasteList(text);
   return buildPreview({ userId, filename: "paste.txt", rows, errors });
 }
