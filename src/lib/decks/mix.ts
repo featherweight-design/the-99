@@ -62,16 +62,18 @@ export const RECOMMENDED_MIX: Record<
     label: "Removal",
     target: 8,
     advisory: false,
-    rationale: "Targeted interaction — ~8 pieces handles most single-permanent threats.",
+    rationale: "Targeted interaction: ~8 pieces handle most single-permanent threats.",
   },
   wipes: {
     label: "Wipes",
     target: 3,
     advisory: false,
-    rationale: "Mass removal resets the board — 3 is enough to draw one on average.",
+    rationale: "Mass removal resets the board. 3 is enough to draw one on average.",
   },
   land: {
-    label: "Lands",
+    // Singular, unlike the cardTypeGroup "Lands", because strip.shelfLinkAria
+    // builds a noun phrase from this label: "See land cards to consider".
+    label: "Land",
     target: 37,
     advisory: true,
     rationale:
@@ -89,7 +91,7 @@ export const RECOMMENDED_MIX_SOURCE_LINE = "EDHREC averages · a guide, not a ga
 // looks at one — on an empty deck it announced 8 ramp sources directly beneath
 // a RAMP cell reading 0.
 export const RECOMMENDED_MIX_WORKED_EXAMPLE =
-  "Ramp · rec 10 — decks that cast a 4-mana commander on curve average ~10 sources. A deck sitting at 8 is fine for a slower build.";
+  "Ramp · rec 10. Decks that cast a 4-mana commander on curve average ~10 sources. A deck sitting at 8 is fine for a slower build.";
 
 export function roleCellState(args: {
   have: number;
