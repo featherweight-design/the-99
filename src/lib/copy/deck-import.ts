@@ -22,6 +22,14 @@ export const deckImportCopy = {
     headingMobile: 'Bring a deck over',
     heading: 'Bring a deck over',
     subMobile: "Paste it, drop a file, or hand us a link.",
+    /**
+     * The handoff's `subMobile` names three doors; the link door does not exist
+     * yet (Moxfield answers 403 behind bot protection — spike #191). Offering it
+     * in the one line of orienting copy a phone gets would advertise a mode the
+     * surface cannot open. Rendered instead of `subMobile` until the link mode
+     * ships, then deleted. Design asked to ratify the wording.
+     */
+    subMobileNoLink: 'Paste it or drop a file.',
     sub: "You built it somewhere else. Point us at it and we'll set it up here.",
 
     modeUrl: 'Moxfield link',

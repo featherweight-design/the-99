@@ -116,7 +116,7 @@ export function ImportEntry() {
         {copy.entry.heading}
       </h2>
       <p className="mt-[3px] md:mt-[4px] font-mono text-[10px] text-[color:var(--fg-faint)] md:font-sans md:text-[14px] md:text-[color:var(--fg-muted)]">
-        <span className="md:hidden">{copy.entry.subMobile}</span>
+        <span className="md:hidden">{copy.entry.subMobileNoLink}</span>
         <span className="hidden md:inline">{copy.entry.sub}</span>
       </p>
 
@@ -187,7 +187,7 @@ export function ImportEntry() {
               "text-center rounded-[12px] p-[30px_18px] md:p-[40px] bg-[color:var(--surface-sunken)]",
               dragOver
                 ? "[border:1.5px_dashed_var(--brass)]"
-                : "[border:1.5px_dashed_var(--border-dashed)] hover:[border:1.5px_dashed_var(--brass)]",
+                : "[border:1.5px_dashed_var(--border-dashed)] md:hover:[border:1.5px_dashed_var(--brass)]",
             ].join(" ")}
           >
             <input
