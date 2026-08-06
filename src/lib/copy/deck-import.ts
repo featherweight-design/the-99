@@ -137,11 +137,12 @@ export const deckImportCopy = {
       action: "Choose another file",
       retry: false,
     },
-    // R2 correction: every line parses (parsePasteList falls through to
-    // quantity 1 for any non-blank line), so this is a MATCH failure, not a
-    // parse failure. Rule: rows parsed, zero matched → here. Zero rows after
-    // parse → `empty` below. The copy must not tell the player their paste is
-    // malformed, because it isn't.
+    // R2 correction: this is a MATCH failure, not a parse failure. Almost every
+    // line parses — `parsePasteList` falls through to quantity 1 for anything it
+    // cannot read as a quantity — though a bad quantity or a bare number does
+    // become a parse error. Rule: rows parsed, zero matched → here. Zero rows
+    // after parse → `empty` below. The copy must not tell the player their paste
+    // is malformed, because that is not what this state means.
     noneMatched: {
       heading: "We couldn't find any of these cards",
       bodyMobile: (lines: number) =>
@@ -172,9 +173,10 @@ export const deckImportCopy = {
       /**
        * `detail` is the thrown message when the server refused for a reason the
        * player can act on — the size cap most of all, which is theirs to fix and
-       * not "our end". Blaming ourselves for their 2 MB paste tells them to retry
-       * something that cannot succeed. Same pattern as `UploadEntry`, which
-       * surfaces `e.message` rather than a fixed string.
+       * not "our end". Blaming ourselves for a list they can see is over the cap
+       * tells them to retry something that cannot succeed. Only the cap message
+       * is passed through — `isDeckImportTooLargeMessage` gates it — because every
+       * other throw is an internal invariant no reader should meet.
        */
       bodyMobile: (detail: string | null) =>
         detail
@@ -187,6 +189,23 @@ export const deckImportCopy = {
       // Not "Try again": the button dismisses the banner and hands the list back
       // for editing, and on the size cap an immediate retry cannot succeed. The
       // CTA names what it does. Ratification owed.
+      action: "Back to your list",
+      retry: false,
+    },
+    /**
+     * Eng-authored and interim. PR 5 replaces this entirely with the commander
+     * picker the handoff draws (states 11–12); until then a list that names no
+     * commander would return to an unchanged form and the submit button would
+     * look broken. The advice is accurate: the pipeline reads a `Commander`
+     * section header, so putting the commander under one does resolve it.
+     * Delete when the picker lands.
+     */
+    commanderNeeded: {
+      heading: "Which card leads this deck?",
+      bodyMobile:
+        "Your list doesn't say. Put the commander under a Commander heading at the top and bring it over again.",
+      body:
+        "Your list doesn't say which card is the commander, and a Commander deck needs one. Put it at the top under a Commander heading and bring the list over again.",
       action: "Back to your list",
       retry: false,
     },

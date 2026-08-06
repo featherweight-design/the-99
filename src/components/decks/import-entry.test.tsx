@@ -68,7 +68,9 @@ describe("state 1 — entry", () => {
     });
   });
 
-  it("shows no failure when the commander picker is needed", async () => {
+  it("says what to do when the list names no commander", async () => {
+    // Interim until PR 5's picker. Without it the submit button looks broken for
+    // every list that does not declare a commander, which is most of them.
     importDeck.mockResolvedValue({
       ok: false,
       reason: "commanderNeeded",
@@ -79,8 +81,9 @@ describe("state 1 — entry", () => {
     render(<ImportEntry />);
     fillPaste();
     submit();
-    await waitFor(() => expect(importDeck).toHaveBeenCalled());
-    expect(screen.queryByRole("alert")).toBeNull();
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Which card leads this deck?");
+    expect(push).not.toHaveBeenCalled();
   });
 });
 

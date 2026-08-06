@@ -30,3 +30,24 @@ export type DeckImportSource = "paste" | "file" | "url";
 export function deckImportMaxBytes(source: DeckImportSource): number {
   return source === "paste" ? PASTE_MAX_BYTES : DECK_IMPORT_FILE_MAX_BYTES;
 }
+
+/**
+ * The message thrown when a decklist is over its cap. It lives here rather than at
+ * the throw site because the client shows a thrown message to the player only when
+ * it recognises it as one of these — every other throw is an internal invariant
+ * ("card is not a legal commander") that should never reach a reader. Sharing the
+ * string is what makes that recognition safe instead of a copy of it going stale.
+ */
+export function deckImportTooLargeMessage(source: DeckImportSource): string {
+  return source === "paste"
+    ? `Paste too large (max ${PASTE_MAX_LABEL})`
+    : `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`;
+}
+
+/** True for a message this module authored, and therefore safe to show a player. */
+export function isDeckImportTooLargeMessage(message: string): boolean {
+  return (
+    message === deckImportTooLargeMessage("paste") ||
+    message === deckImportTooLargeMessage("file")
+  );
+}

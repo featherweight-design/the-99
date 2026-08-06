@@ -14,6 +14,7 @@ import { parsePasteList } from "../../lib/manabox/paste";
 import {
   DECK_IMPORT_FILE_MAX_BYTES,
   PASTE_MAX_BYTES,
+  isDeckImportTooLargeMessage,
   type DeckImportSource,
 } from "../../lib/upload-limits";
 import { GhostButton, PrimaryButton } from "../ui/button";
@@ -26,13 +27,14 @@ const MODES: { id: ImportMode; label: string; shortLabel: string }[] = [
   { id: "file", label: copy.entry.modeFile, shortLabel: copy.entry.modeFileShort },
 ];
 
-type FailureKind = "fileRejected" | "noneMatched" | "empty" | "unexpected";
+type FailureKind = "fileRejected" | "noneMatched" | "empty" | "unexpected" | "commanderNeeded";
 
 type Failure =
   | { kind: "fileRejected"; ext: string; size: string }
   | { kind: "noneMatched"; lineCount: number }
   | { kind: "empty" }
-  | { kind: "unexpected"; detail: string | null };
+  | { kind: "unexpected"; detail: string | null }
+  | { kind: "commanderNeeded" };
 
 const ACCEPTED_EXTENSIONS = [".csv", ".txt"];
 
@@ -111,19 +113,30 @@ export function ImportEntry() {
           return;
         }
         // Seam for PR 5: `commanderNeeded` carries the legendary candidates the
-        // picker renders. Until it lands, the entry surface stays as it was
-        // rather than showing a failure this result is not.
+        // picker renders. Until it lands the player still needs an answer —
+        // returning to an unchanged form makes the submit button look broken for
+        // every list that doesn't name its commander, which is most of them.
+        if (result.reason === "commanderNeeded") {
+          setFailure({ kind: "commanderNeeded" });
+          return;
+        }
       } catch (e) {
         // importDeck throws on the size cap and on an illegal commander. Unhandled,
         // a throw inside a transition reaches the error boundary and takes the
         // player's list with it; the banner keeps the list on the page.
         //
-        // The size cap is the player's to fix, so the thrown message is surfaced
-        // rather than blamed on us. It is also the client's only byte-accurate
-        // signal: the textarea's maxLength counts characters while the server
-        // counts UTF-8 bytes, so a multi-byte list can clear the client guard and
-        // still be refused. The server owns the limit; this reports its verdict.
-        setFailure({ kind: "unexpected", detail: e instanceof Error ? e.message : null });
+        // The size cap is the player's to fix, so its message is surfaced rather
+        // than blamed on us. It is also the client's only byte-accurate signal:
+        // the textarea's maxLength counts characters while the server counts
+        // UTF-8 bytes, so a multi-byte list can clear the client guard and still
+        // be refused. Only that message is shown — every other throw is an
+        // internal invariant ("card is not a legal commander") that would read as
+        // gibberish, so those fall back to the generic body.
+        const message = e instanceof Error ? e.message : "";
+        setFailure({
+          kind: "unexpected",
+          detail: isDeckImportTooLargeMessage(message) ? message : null,
+        });
       }
     });
   }
@@ -339,6 +352,7 @@ const FAILURE_ACTION: Record<FailureKind, string> = {
   noneMatched: copy.failures.noneMatched.action,
   empty: copy.failures.empty.action,
   unexpected: copy.failures.unexpected.action,
+  commanderNeeded: copy.failures.commanderNeeded.action,
 };
 
 function failureText(failure: Failure): { heading: string; bodyMobile: string; body: string } {
@@ -360,6 +374,12 @@ function failureText(failure: Failure): { heading: string; bodyMobile: string; b
         heading: copy.failures.empty.heading,
         bodyMobile: copy.failures.empty.bodyMobile,
         body: copy.failures.empty.body,
+      };
+    case "commanderNeeded":
+      return {
+        heading: copy.failures.commanderNeeded.heading,
+        bodyMobile: copy.failures.commanderNeeded.bodyMobile,
+        body: copy.failures.commanderNeeded.body,
       };
     case "unexpected":
       return {
