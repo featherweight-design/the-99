@@ -7,6 +7,7 @@ import { CardFan } from "../../components/marks";
 import { Crab } from "../../components/character/crab";
 import { DeckCard } from "../../components/decks/deck-card";
 import { NewDeckButton } from "../../components/decks/new-deck-button";
+import { ImportDeckButton } from "../../components/decks/import-deck-button";
 import { PrimaryButton } from "../../components/ui/button";
 import {
   EmptyState,
@@ -63,6 +64,12 @@ export default async function DecksPage({
         >
           Browse commanders
         </PrimaryButton>
+
+        {/* A player whose first deck already exists somewhere else has no other
+            way in: the header's import link only renders over a populated grid. */}
+        <div className="mt-[14px]">
+          <ImportDeckButton />
+        </div>
       </EmptyState>
     );
   }
@@ -102,15 +109,17 @@ export default async function DecksPage({
             #35 removed the decorative mobile avatar that used to sit beside it:
             it duplicated the shell header's real account trigger a few pixels
             away, in the pre-#35 34×34/r10 styling. */}
-        <div className="hidden md:block">
+        <div className="hidden md:flex md:items-center md:gap-[10px]">
+          <ImportDeckButton />
           <NewDeckButton />
         </div>
       </div>
 
       {/* Mobile "New Deck" button — full-width, above the grid */}
       {/* §New Deck button mobile: full-width, 11px 0 padding, shown only on mobile */}
-      <div className="md:hidden px-[14px] mb-[11px]">
+      <div className="md:hidden px-[14px] mb-[11px] flex flex-col gap-[8px]">
         <NewDeckButton />
+        <ImportDeckButton />
       </div>
 
       {/*

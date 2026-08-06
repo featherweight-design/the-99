@@ -53,6 +53,7 @@ describe("deck card-detail triggers", () => {
     const { fetchCard } = renderInProvider(
       <Decklist
         deckId="d1"
+        unresolvedRows={[]}
         cards={[deckCard()]}
         built={1}
         toBuyCount={0}
@@ -71,6 +72,7 @@ describe("deck card-detail triggers", () => {
     renderInProvider(
       <Decklist
         deckId="d1"
+        unresolvedRows={[]}
         cards={[deckCard({ oracleId: "o-forest", name: "Forest", typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", role: "land", quantity: 3 })]}
         built={3}
         toBuyCount={0}
@@ -171,6 +173,7 @@ describe("deck card-detail triggers", () => {
     const { fetchCard } = renderInProvider(
       <Decklist
         deckId="d1"
+        unresolvedRows={[]}
         cards={[
           deckCard({ oracleId: "o-sol", name: "Sol Ring" }),
           deckCard({ oracleId: "o-bear", name: "Grizzly Bears", cardTypeGroup: "Creatures", role: "other" }),

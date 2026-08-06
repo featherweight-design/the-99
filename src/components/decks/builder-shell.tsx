@@ -27,7 +27,7 @@ import { CardDetailProvider } from "./card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
-import { deckCounts } from "../../lib/decks/grouping";
+import { deckCounts, unresolvedCardCount } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 
 // Shared by both shelf-link paths — the one that is already on Consider and
@@ -63,8 +63,9 @@ export function BuilderShell({
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
   // click. `deck.cards` remains the base React reverts to.
-  const { cards, addOptimisticCard, removeOptimisticCard } = useOptimisticDeckCards(deck.cards);
-  const counts = deckCounts(cards);
+  const { cards, unresolvedRows, unresolvedCount, addOptimisticCard, removeOptimisticCard } =
+    useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
+  const counts = deckCounts(cards, unresolvedCount);
   const { built, toBuyCount } = counts;
 
   // The one deliberate exception. Keyed off the SERVER counts because the
@@ -72,8 +73,15 @@ export function BuilderShell({
   // 99th card that the server then rejects would spend the moment on a deck
   // that never reached 99, and there is no way to give it back.
   const showReveal = shouldCelebrate({
-    status: statusPill({ built: deck.built, ownedCount: deck.ownedCount }),
+    status: statusPill({
+      built: deck.built,
+      ownedCount: deck.ownedCount,
+      unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
+    }),
     alreadyCelebrated: celebrated,
+    // PR 7 wires the real flag through the arrival chrome, which is where the
+    // deck learns it was just imported.
+    arrivedFromImport: false,
   });
 
   // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and
@@ -86,7 +94,9 @@ export function BuilderShell({
   // optimistic "✓ In deck", so nothing is lost by keeping this one committed.
   const deckOracleIds = useMemo(() => deck.cards.map((c) => c.oracleId), [deck.cards]);
 
-  const isEmpty = built === 0;
+  // Unresolved rows keep the builder out of the empty state: a deck whose every
+  // line failed to match has nothing built, but it has plenty to show and act on.
+  const isEmpty = built === 0 && unresolvedRows.length === 0;
   const commanderShortName = shortCommanderName(deck.commander.name);
 
   // An add changes three numbers at once — the tile's button, the tab count and
@@ -365,6 +375,7 @@ export function BuilderShell({
               <Decklist
                 deckId={deck.id}
                 cards={cards}
+                unresolvedRows={unresolvedRows}
                 built={built}
                 toBuyCount={toBuyCount}
                 filter={filter}

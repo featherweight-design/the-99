@@ -41,6 +41,8 @@ const emptyDeck = {
   built: 0,
   ownedCount: 0,
   toBuyCount: 0,
+  total: 0,
+  unresolvedRows: [],
 } as unknown as DeckDetail;
 
 describe("empty builder", () => {

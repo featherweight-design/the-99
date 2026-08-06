@@ -6,8 +6,19 @@
 
 export type StatusPill = "Draft" | "Building" | "Playable" | "Complete";
 
-export function statusPill(args: { built: number; ownedCount: number }): StatusPill {
+/**
+ * `unresolvedCount` blocks `Complete` and nothing else. A deck short of 99
+ * already reads `Draft` or `Building` on the arithmetic alone, so the guard only
+ * bites on the deck that reaches 99 matched cards while still carrying lines we
+ * cannot name — which is not a finished deck.
+ */
+export function statusPill(args: {
+  built: number;
+  ownedCount: number;
+  unresolvedCount?: number;
+}): StatusPill {
   if (args.built === 0) return "Draft";
   if (args.built < 99) return "Building";
+  if ((args.unresolvedCount ?? 0) > 0) return "Playable";
   return args.ownedCount === args.built ? "Complete" : "Playable";
 }

@@ -76,4 +76,16 @@ describe("role counter strip — shelf links", () => {
     render(<RoleCounterStrip cards={[]} />);
     expect(screen.queryAllByRole("link")).toHaveLength(0);
   });
+
+  // The strip's contract with unresolved rows is that it has none: no sixth
+  // cell, no asterisk on a figure, no adjusted denominator. Asserted here so
+  // PR 7's rewiring cannot quietly introduce a column that can never be filled
+  // — an unresolved line has no oracle ID and so belongs to no role at all.
+  it("gains no cell and no asterisk from unresolved rows", () => {
+    const { container } = render(<RoleCounterStrip cards={rampAtTarget} onSeeShelf={vi.fn()} />);
+    const cells = screen.getAllByRole("button");
+    expect(cells).toHaveLength(Object.keys(RECOMMENDED_MIX).length);
+    expect(container.textContent).not.toMatch(/unresolved/i);
+    expect(container.textContent).not.toContain("*");
+  });
 });
