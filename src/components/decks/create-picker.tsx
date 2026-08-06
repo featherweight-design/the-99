@@ -93,14 +93,17 @@ function createRow(c: OwnedLegalCommander): PickerRow {
 
 export function CreatePicker(props: CreatePickerProps) {
   const isImport = props.mode === "import";
+  // Pulled out of `props` so the memo below can depend on the array itself. A
+  // dependency on `props` would be a fresh object on every parent render — which
+  // in import mode is every keystroke in the owner — and memoise nothing.
+  const candidates = props.mode === "import" ? props.candidates : null;
+  const legalCommanders = props.mode === "import" ? null : props.legalCommanders;
+
   // Memoised because create mode maps the player's whole legal-commander pool,
   // and every keystroke in the search or the name field re-renders this component.
   const rows: PickerRow[] = useMemo(
-    () =>
-      props.mode === "import"
-        ? props.candidates.map(importRow)
-        : props.legalCommanders.map(createRow),
-    [props],
+    () => (candidates ? candidates.map(importRow) : (legalCommanders ?? []).map(createRow)),
+    [candidates, legalCommanders],
   );
 
   const [query, setQuery] = useState("");
