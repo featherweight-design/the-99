@@ -13,6 +13,8 @@ import { useCelebrated } from "./use-celebrated";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { RoleCounterStrip } from "./role-counter-strip";
+import { ArrivalStrip } from "./arrival-strip";
+import { UnresolvedBanner } from "./unresolved-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crab } from "../character/crab";
@@ -36,12 +38,21 @@ function scrollToShelf(role: MixRole) {
   document.getElementById(`shelf-${role}`)?.scrollIntoView({ block: "start" });
 }
 
+// The unresolved group renders only in the deck view under the All filter, so
+// both paths into it — already there, or having just been sent there — land on
+// the same call.
+function scrollToUnresolved() {
+  document.getElementById("unresolved-group")?.scrollIntoView({ block: "start" });
+}
+
 interface BuilderShellProps {
   deck: DeckDetail;
   suggestions: DeckSuggestion[];
   degraded: boolean;
   firstRun: boolean;
   commanderIdentity: string[];
+  /** True only on the navigation the import itself made — see src/lib/decks/arrival.ts. */
+  arrivedFromImport: boolean;
 }
 
 export function BuilderShell({
@@ -50,6 +61,7 @@ export function BuilderShell({
   degraded,
   firstRun,
   commanderIdentity,
+  arrivedFromImport,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -79,9 +91,7 @@ export function BuilderShell({
       unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
     }),
     alreadyCelebrated: celebrated,
-    // PR 7 wires the real flag through the arrival chrome, which is where the
-    // deck learns it was just imported.
-    arrivedFromImport: false,
+    arrivedFromImport,
   });
 
   // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and
@@ -177,6 +187,27 @@ export function BuilderShell({
     pendingShelf.current = null;
   }, [view]);
 
+  // The banner's `Take a look →`, and the same two-step move as seeShelf above
+  // for the same reason — the group is not in the DOM until the view and the
+  // filter have both changed and rendered. It has two switches to make rather
+  // than one: Consider does not draw the group, and Shopping hides it, because
+  // an unresolved line is not something the player can go and buy.
+  const pendingUnresolved = useRef(false);
+  const seeUnresolved = useCallback(() => {
+    if (view === "deck" && filter === "all") {
+      scrollToUnresolved();
+      return;
+    }
+    pendingUnresolved.current = true;
+    setView("deck");
+    setFilter("all");
+  }, [view, filter]);
+  useEffect(() => {
+    if (view !== "deck" || filter !== "all" || !pendingUnresolved.current) return;
+    scrollToUnresolved();
+    pendingUnresolved.current = false;
+  }, [view, filter]);
+
   // Every route into the export dialog dismisses the reveal, not just the one
   // inside it — the user has acted on the moment, so leaving the band standing
   // behind the dialog is noise. Only while the band is actually up, though:
@@ -218,8 +249,24 @@ export function BuilderShell({
               </div>
             )}
 
-            {/* Builder Spine */}
+            {/* Builder Spine — unchanged by an import. No extra figure, no
+                second bar, no "97 + 2": the deck's number is what's built, and
+                the exception lives in the prose below it. */}
             <BuilderSpine deck={deck} counts={counts} onExport={openExport} />
+
+            {/* Arrival chrome. Mutually exclusive by construction: a clean
+                import gets the strip, an import that came up short gets the
+                banner instead, whose warning would be contradicted by a line
+                reading "nothing needs your attention". */}
+            {arrivedFromImport && unresolvedRows.length === 0 && (
+              <ArrivalStrip deckId={deck.id} importedCount={counts.total} />
+            )}
+
+            {/* Above the coverage strip and the tabs, because what it says is
+                that both of them are short by this many lines. Not gated on
+                arrival: the lines stay unresolved across visits, and so does
+                the explanation of why the counts do not add up. */}
+            <UnresolvedBanner count={unresolvedRows.length} onTakeALook={seeUnresolved} />
 
             {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
             <RoleCounterStrip cards={cards} onSeeShelf={seeShelf} />

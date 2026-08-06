@@ -54,6 +54,7 @@ describe("empty builder", () => {
         degraded={false}
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
       />,
     );
 
