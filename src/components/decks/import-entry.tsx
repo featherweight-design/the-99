@@ -75,7 +75,13 @@ export function ImportEntry() {
     const ext = fileExtension(candidate.name);
     if (!ACCEPTED_EXTENSIONS.includes(ext) || candidate.size > DECK_IMPORT_FILE_MAX_BYTES) {
       setFile(null);
-      setFailure({ kind: "fileRejected", ext: ext || candidate.name, size: formatBytes(candidate.size) });
+      // A file with no dot has no extension to name, and falling back to the
+      // whole filename makes the copy read "That one is a shopping-list at 40 KB".
+      setFailure({
+        kind: "fileRejected",
+        ext: ext || copy.failures.fileRejected.noExtension,
+        size: formatBytes(candidate.size),
+      });
       return;
     }
     setFailure(null);

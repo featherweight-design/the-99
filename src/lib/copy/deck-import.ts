@@ -14,13 +14,13 @@
 //   - §Locked decisions     → sideboard/maybeboard, dedupe and re-import are silent;
 //                             quantity > 1 on a non-basic is the only parse note
 
-import { DECK_IMPORT_FILE_MAX_LABEL } from '../upload-limits';
+import { DECK_IMPORT_FILE_MAX_LABEL } from "../upload-limits";
 
 export const deckImportCopy = {
   // ---- Entry surface -------------------------------------------------------
   entry: {
-    headingMobile: 'Bring a deck over',
-    heading: 'Bring a deck over',
+    headingMobile: "Bring a deck over",
+    heading: "Bring a deck over",
     subMobile: "Paste it, drop a file, or hand us a link.",
     /**
      * The handoff's `subMobile` names three doors; the link door does not exist
@@ -29,34 +29,34 @@ export const deckImportCopy = {
      * surface cannot open. Rendered instead of `subMobile` until the link mode
      * ships, then deleted. Design asked to ratify the wording.
      */
-    subMobileNoLink: 'Paste it or drop a file.',
+    subMobileNoLink: "Paste it or drop a file.",
     sub: "You built it somewhere else. Point us at it and we'll set it up here.",
 
-    modeUrl: 'Moxfield link',
-    modePaste: 'Paste a list',
-    modePasteShort: 'Paste',
-    modeFile: 'Upload a file',
-    modeFileShort: 'File',
+    modeUrl: "Moxfield link",
+    modePaste: "Paste a list",
+    modePasteShort: "Paste",
+    modeFile: "Upload a file",
+    modeFileShort: "File",
 
-    urlLabel: 'Moxfield deck link',
-    urlPlaceholder: 'moxfield.com/decks/…',
-    urlHintMobile: 'Public or unlisted decks only',
+    urlLabel: "Moxfield deck link",
+    urlPlaceholder: "moxfield.com/decks/…",
+    urlHintMobile: "Public or unlisted decks only",
     urlHint: "Public or unlisted decks only · we don't need your Moxfield account",
 
-    pasteLabel: 'Your list',
-    pastePlaceholder: '1 Sol Ring\n1 Cultivate\n1 Rhystic Study',
-    fileLabel: 'Deck file',
+    pasteLabel: "Your list",
+    pastePlaceholder: "1 Sol Ring\n1 Cultivate\n1 Rhystic Study",
+    fileLabel: "Deck file",
     // The size reads "2 MB" exactly as the handoff wrote it; it is spliced from
     // the cap's own label so the sentence cannot outlive the number it describes.
     fileHint: `A .csv or .txt, under ${DECK_IMPORT_FILE_MAX_LABEL}`,
 
-    submit: 'Import deck →',
-    submitFile: 'Choose file',
+    submit: "Import deck →",
+    submitFile: "Choose file",
     // Mirrors upload-entry.tsx's "Preview N cards" affordance.
     submitPasteCount: (n: number) => `Import ${n} cards`,
 
     footnoteMobile: "We'll leave the sideboard behind — Commander doesn't have one.",
-    aboutWhatComesHeading: 'What comes over',
+    aboutWhatComesHeading: "What comes over",
     aboutWhatComes:
       "The commander and the 99. Sideboard and maybeboard stay behind — Commander doesn't have either.",
     aboutFailureHeading: "If a line won't match",
@@ -69,18 +69,18 @@ export const deckImportCopy = {
   // The fetch gets a Cancel and no percentage; the parse gets a percentage and
   // no Cancel.
   fetching: {
-    heading: 'Asking Moxfield for it',
-    body: 'Their servers, their pace. Usually a second or two.',
-    cancel: 'Cancel',
-    live: 'Fetching the deck from Moxfield.',
+    heading: "Asking Moxfield for it",
+    body: "Their servers, their pace. Usually a second or two.",
+    cancel: "Cancel",
+    live: "Fetching the deck from Moxfield.",
   },
   parsing: {
-    heading: 'Reading the list',
+    heading: "Reading the list",
     body: (total: string) => `Putting a card to each of the ${total} lines.`,
     bodyWithCommander: (total: string, commander: string) =>
       `Putting a card to each of the ${total} lines. Found the commander: ${commander}.`,
     progress: (done: string, total: string) => `${done} / ${total}`,
-    live: 'Reading the list.',
+    live: "Reading the list.",
   },
 
   // ---- Entry failures ------------------------------------------------------
@@ -91,36 +91,36 @@ export const deckImportCopy = {
     notMoxfield: {
       heading: "That's not a Moxfield deck link",
       bodyMobile:
-        'We only read Moxfield links right now. If your list lives somewhere else, paste it in instead.',
+        "We only read Moxfield links right now. If your list lives somewhere else, paste it in instead.",
       body:
-        'We only read Moxfield deck links right now — they look like moxfield.com/decks/AbC123. If your list lives somewhere else, paste it in instead and we’ll read it the same way.',
-      action: 'Paste the list instead',
+        "We only read Moxfield deck links right now — they look like moxfield.com/decks/AbC123. If your list lives somewhere else, paste it in instead and we’ll read it the same way.",
+      action: "Paste the list instead",
       retry: false,
     },
     private: {
-      heading: 'That deck is set to private',
+      heading: "That deck is set to private",
       bodyMobile:
         "Moxfield won't hand it over. Make it public or unlisted there, then come back.",
       body:
-        'Moxfield won’t hand it over unless the deck is public or unlisted. Flip it over there and come back — or paste the list straight in and skip the round trip.',
-      action: 'Paste the list instead',
+        "Moxfield won’t hand it over unless the deck is public or unlisted. Flip it over there and come back — or paste the list straight in and skip the round trip.",
+      action: "Paste the list instead",
       retry: false,
     },
     notFound: {
       heading: "There's no deck at that link",
-      bodyMobile: 'Moxfield says nothing is there. It may be deleted, or a character may be off.',
+      bodyMobile: "Moxfield says nothing is there. It may be deleted, or a character may be off.",
       body:
-        'Moxfield says there’s nothing there. Either the deck was deleted, or a character in the link is off — they’re case-sensitive, which catches people out.',
-      action: 'Edit the link',
+        "Moxfield says there’s nothing there. Either the deck was deleted, or a character in the link is off — they’re case-sensitive, which catches people out.",
+      action: "Edit the link",
       retry: false,
     },
     unreachable: {
       heading: "Moxfield isn't answering",
-      bodyMobile: 'Could be them, could be us knocking too often. Give it a minute.',
+      bodyMobile: "Could be them, could be us knocking too often. Give it a minute.",
       body:
-        'Could be them, could be us knocking too often. Give it a minute and try again — nothing is lost, the link is still here.',
-      retryAction: 'Try again',
-      action: 'Paste the list instead',
+        "Could be them, could be us knocking too often. Give it a minute and try again — nothing is lost, the link is still here.",
+      retryAction: "Try again",
+      action: "Paste the list instead",
       retry: true,
     },
     fileRejected: {
@@ -130,7 +130,11 @@ export const deckImportCopy = {
         `We need a .csv or .txt under ${DECK_IMPORT_FILE_MAX_LABEL}. That one is a ${ext} at ${size}.`,
       body: (ext: string, size: string) =>
         `We need a .csv or a .txt under ${DECK_IMPORT_FILE_MAX_LABEL}. That one is a ${ext} at ${size}. Export it as CSV from wherever it came from and we’ll take it.`,
-      action: 'Choose another file',
+      // Eng-authored. The handoff interpolates an extension and assumes there is
+      // always one; a file with no dot needs a phrase that still reads as a noun
+      // in "That one is a ___ at 40 KB". Ratification owed.
+      noExtension: "file with no extension",
+      action: "Choose another file",
       retry: false,
     },
     // R2 correction: every line parses (parsePasteList falls through to
@@ -144,16 +148,16 @@ export const deckImportCopy = {
         `All ${lines} lines read fine — none of them matched a card we know.`,
       body: (lines: number) =>
         `All ${lines} lines read fine, and not one of them matched a card we know. Check you copied the decklist itself and not the page around it.`,
-      action: 'Clear and start over',
+      action: "Clear and start over",
       retry: false,
     },
     // A success that produced nothing, so the copy does not apologise.
     empty: {
-      heading: 'That deck is empty',
+      heading: "That deck is empty",
       bodyMobile: "It read fine — there just aren't any cards in it yet.",
       body:
-        'It read fine — there just aren’t any cards in it yet. Nothing to bring over. Add some in Moxfield and we’ll be here.',
-      action: 'Try a different deck',
+        "It read fine — there just aren’t any cards in it yet. Nothing to bring over. Add some in Moxfield and we’ll be here.",
+      action: "Try a different deck",
       retry: false,
     },
     /**
@@ -175,12 +179,15 @@ export const deckImportCopy = {
       bodyMobile: (detail: string | null) =>
         detail
           ? `${detail}. Your list is still here.`
-          : 'Something went wrong on our end. Your list is still here.',
+          : "Something went wrong on our end. Your list is still here.",
       body: (detail: string | null) =>
         detail
           ? `${detail}. Your list is still here — trim it and try again.`
           : "Something went wrong on our end and the deck wasn't made. Your list is still here — try it again.",
-      action: 'Try again',
+      // Not "Try again": the button dismisses the banner and hands the list back
+      // for editing, and on the size cap an immediate retry cannot succeed. The
+      // CTA names what it does. Ratification owed.
+      action: "Back to your list",
       retry: false,
     },
   },
@@ -200,10 +207,10 @@ export const deckImportCopy = {
     rowMetaOwned: (identity: string, line: number) => `${identity} · line ${line} · you own it`,
     rowMetaUnowned: (identity: string, line: number) =>
       `${identity} · line ${line} · not in your collection`,
-    selectedLabel: 'Selected',
-    nameLabel: 'Deck name',
-    nameLabelFromSource: 'Deck name — from Moxfield',
-    submit: 'Make the deck →',
+    selectedLabel: "Selected",
+    nameLabel: "Deck name",
+    nameLabelFromSource: "Deck name — from Moxfield",
+    submit: "Make the deck →",
     footnote:
       "Only legendary creatures from this import are listed. If the one you want isn't here, it didn't come over — make the deck and add it from the builder.",
 
@@ -213,9 +220,9 @@ export const deckImportCopy = {
       `Every Commander deck needs a legendary creature to lead it, and none of these ${total} lines is one. If yours is in there under a name we couldn't read, that's the line to fix.`,
     noneBodyDesktop: (total: string) =>
       `Every Commander deck needs a legendary creature to lead it, and none of these ${total} lines is one. If yours is in there under a name we couldn't read, that's the line to fix before you bring it over.`,
-    noneCta: 'Start from a commander instead →',
-    noneBack: 'Back to the list',
-    noneReassurance: 'Nothing was created · your list is still in the box',
+    noneCta: "Start from a commander instead →",
+    noneBack: "Back to the list",
+    noneReassurance: "Nothing was created · your list is still in the box",
   },
 
   // ---- Arrival on /decks/[id] ---------------------------------------------
@@ -225,7 +232,7 @@ export const deckImportCopy = {
     cleanMobile: (n: string) => `All ${n} came over · from Moxfield, just now`,
     clean: (n: string) =>
       `All ${n} lines came over clean. Imported from Moxfield a moment ago — nothing needs your attention.`,
-    dismiss: 'Dismiss',
+    dismiss: "Dismiss",
   },
 
   // ---- Unresolved rows -----------------------------------------------------
@@ -239,12 +246,12 @@ export const deckImportCopy = {
       n === 1
         ? "1 line came over that we couldn't put a card to. It's sitting at the bottom of the list, it isn't counted in the mix or in either tab below, and it'll keep the deck off Complete until you sort it out."
         : `${n} lines came over that we couldn't put a card to. They're sitting at the bottom of the list, they aren't counted in the mix or in either tab below, and they'll keep the deck off Complete until you sort them out.`,
-    bannerAction: 'Take a look →',
+    bannerAction: "Take a look →",
 
     groupLabel: "Couldn't identify",
     groupNote: "counted in the 99, not in what's built",
-    rowTag: 'unmatched',
-    rowFix: 'Fix',
+    rowTag: "unmatched",
+    rowFix: "Fix",
     // Screen-reader name for the row button. The raw string is quoted so a
     // reader does not run it into the surrounding sentence.
     rowAria: (raw: string, quantity: number) =>
@@ -264,33 +271,33 @@ export const deckImportCopy = {
 
   // ---- Resolution ----------------------------------------------------------
   resolve: {
-    headingMobile: 'What was this meant to be?',
+    headingMobile: "What was this meant to be?",
     promptMobile: (raw: string) => `The list said ${raw}. Pick the card you meant.`,
-    prompt: 'what was this meant to be?',
-    collapse: 'Collapse',
+    prompt: "what was this meant to be?",
+    collapse: "Collapse",
     searchAria: (raw: string) => `Search for the card that “${raw}” was meant to be`,
     // TWO filters are deliberately off in this scope — colour identity, and the
     // owned-only filter that quick-add-bar defaults ON (#158). See README §A/§B.
     // The count and the caption are separate strings now: the count sits beside
     // the scoped owned toggle, the caption sits under both.
-    resultsCount: (n: number) => `${n} result${n === 1 ? '' : 's'}`,
+    resultsCount: (n: number) => `${n} result${n === 1 ? "" : "s"}`,
     filterCaptionMobile: "every card, owned or not — you're naming a line, not shopping",
     filterCaption:
       "every card, owned or not, in every colour — you're naming a line that's already in the deck, not shopping for a new one",
-    ownedToggleLabel: 'Owned only',
-    keyboardHint: '↑↓ to move · ↵ to use the top match · Esc to collapse',
+    ownedToggleLabel: "Owned only",
+    keyboardHint: "↑↓ to move · ↵ to use the top match · Esc to collapse",
     // Right slot of the active row. The bar says '↵ add'; here it never adds.
-    activeRowHint: '↵ use this',
-    use: 'Use this card',
-    useShort: 'Use this',
-    rawLabel: 'The line as it came',
+    activeRowHint: "↵ use this",
+    use: "Use this card",
+    useShort: "Use this",
+    rawLabel: "The line as it came",
     rawLine: (quantity: number, raw: string) => `${quantity} ${raw}`,
     rawLineNumber: (n: number) => `line ${n} of the import`,
-    delete: 'Delete this line',
-    deleteNote: 'Deleting drops it from the deck’s total too — 100 becomes 99.',
-    dismiss: 'Leave it for now',
+    delete: "Delete this line",
+    deleteNote: "Deleting drops it from the deck’s total too — 100 becomes 99.",
+    dismiss: "Leave it for now",
 
-    noResultsHeading: 'Nothing by that name',
+    noResultsHeading: "Nothing by that name",
     noResultsBody:
       "Try a shorter piece of it — we match on any part of a card's name. If it isn't a real card, the line can go.",
     // NOTE: no 'turn off the owned filter' escape here, unlike quick-add-bar's
@@ -301,7 +308,7 @@ export const deckImportCopy = {
     // text; it never stacks, and it never becomes a floating toast.
     resolvedMobile: (name: string, built: string) => `That's ${name}. ${built} built now.`,
     resolved: (name: string, built: string, remaining: number, role?: string) =>
-      `That line was ${name} — it's in with the rest now, and you own it. ${built} built, ${remaining} line${remaining === 1 ? '' : 's'} left.${role ? ` ${role}.` : ''}`,
+      `That line was ${name} — it's in with the rest now, and you own it. ${built} built, ${remaining} line${remaining === 1 ? "" : "s"} left.${role ? ` ${role}.` : ""}`,
     // roleClause('Removal', 7, 10) → 'Removal is 7 of 10'. Passed into `resolved`
     // only when the resolved card lands in a tracked role — until this moment an
     // unresolved row had no oracle ID and so counted toward no role at all.
@@ -314,7 +321,7 @@ export const deckImportCopy = {
     // is NaN. The handoff computed it inline, which works only until a deck has 1,000 lines.
     deleted: (raw: string, total: string, priorTotal: string) =>
       `Dropped ${raw}. The deck wants ${total} cards now instead of ${priorTotal}.`,
-    undo: 'Undo',
+    undo: "Undo",
   },
 
   // ---- Parse notes ---------------------------------------------------------
@@ -324,7 +331,7 @@ export const deckImportCopy = {
   notes: {
     quantityClamped: (n: number) =>
       n === 1
-        ? 'One line asked for more than one copy of a card that only takes one. We brought over a single copy.'
+        ? "One line asked for more than one copy of a card that only takes one. We brought over a single copy."
         : `${n} lines asked for more than one copy of a card that only takes one. We brought over a single copy of each.`,
   },
 } as const;

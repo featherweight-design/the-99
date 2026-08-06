@@ -170,7 +170,7 @@ describe("state 10 — nothing parsed", () => {
     // The cap is the player's to fix, so the banner names it rather than blaming
     // our end and inviting a retry that cannot succeed.
     expect(alert.textContent).toContain("Decklist too large (max 2 MB)");
-    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Back to your list" })).toBeTruthy();
     expect((pasteBox() as HTMLTextAreaElement).value).toContain("Sol Ring");
     expect(push).not.toHaveBeenCalled();
   });
