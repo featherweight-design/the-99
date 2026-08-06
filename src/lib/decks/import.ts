@@ -77,6 +77,20 @@ const SECTION_MARKERS: { re: RegExp; section: "sideboard" | "maybeboard" | null 
 const ANNOTATION_RE = /\s+\*([A-Za-z]+)\*$/;
 const SET_CODE_RE = /\s+\([A-Za-z0-9]{2,6}\)(\s+[A-Za-z0-9★†★-]+)?$/;
 
+/**
+ * Reduces a candidate header to the bare word the markers match.
+ *
+ * Exporters decorate headers with a trailing colon, a count, or both — `Commander (1)`,
+ * `Sideboard (14):`, `Deck (99)`. An undetected `Sideboard (14)` is the expensive one: its
+ * fourteen lines stop being a skipped section and become fourteen cards in the deck.
+ *
+ * Safe against real card lines because every marker regex is anchored end to end — a card
+ * named "Sideboard Shenanigans" still fails to match once the count is gone.
+ */
+function normalizeHeader(trimmed: string): string {
+  return trimmed.replace(/:$/, "").replace(/\s*\(\d+\)$/, "").trim();
+}
+
 type PreparedLine = {
   /** The line with markers, set codes and annotations removed; "" if excluded. */
   text: string;
@@ -104,7 +118,7 @@ function prepareLines(text: string): { lines: PreparedLine[]; notes: ImportNote[
     }
 
     // A marker only counts on a line of its own — "1 Sideboard Shenanigans" is a card.
-    const marker = SECTION_MARKERS.find((m) => m.re.test(trimmed.replace(/:$/, "")));
+    const marker = SECTION_MARKERS.find((m) => m.re.test(normalizeHeader(trimmed)));
     if (marker) {
       excludedSection = marker.section;
       lines.push({ text: "", isCommander: false });
@@ -255,7 +269,7 @@ function commanderSectionLines(text: string): number[] {
   const out: number[] = [];
   let inSection = false;
   for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim().replace(/:$/, "");
+    const trimmed = normalizeHeader(lines[i].trim());
     if (trimmed === "") continue;
     if (SECTION_MARKERS.some((m) => m.re.test(trimmed))) {
       inSection = /^commander$/i.test(trimmed);

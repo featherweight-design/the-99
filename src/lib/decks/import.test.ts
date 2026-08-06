@@ -86,6 +86,20 @@ describe("buildDeckImport — locked decision: sideboard and maybeboard are not 
     expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 
+  it("reads a header that carries its own count, as real exports write them", () => {
+    // "Sideboard (14)" undetected is the expensive miss: fourteen skipped lines
+    // become fourteen cards in the deck.
+    const result = build("Deck (99)\n1 Sol Ring\n\nSideboard (2):\n1 Forest\n1 Tymna the Weaver");
+    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(result.notes).toEqual([{ kind: "sectionSkipped", section: "sideboard", lineCount: 2 }]);
+  });
+
+  it("reads a Commander header that carries its own count", () => {
+    const result = build("Commander (1)\n1 Atraxa, Praetors' Voice\n\nDeck (1)\n1 Sol Ring");
+    expect(result.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
+    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+  });
+
   it("does not treat a card whose name starts with a marker word as a section header", () => {
     const sideboardish = card({ name: "Sideboard Shenanigans" });
     const result = build("1 Sideboard Shenanigans", [...CATALOG, sideboardish]);
