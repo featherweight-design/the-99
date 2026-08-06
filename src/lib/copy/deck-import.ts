@@ -165,8 +165,21 @@ export const deckImportCopy = {
      */
     unexpected: {
       heading: "That didn't go through",
-      bodyMobile: 'Something went wrong on our end. Your list is still here.',
-      body: "Something went wrong on our end and the deck wasn't made. Your list is still here — try it again.",
+      /**
+       * `detail` is the thrown message when the server refused for a reason the
+       * player can act on — the size cap most of all, which is theirs to fix and
+       * not "our end". Blaming ourselves for their 2 MB paste tells them to retry
+       * something that cannot succeed. Same pattern as `UploadEntry`, which
+       * surfaces `e.message` rather than a fixed string.
+       */
+      bodyMobile: (detail: string | null) =>
+        detail
+          ? `${detail}. Your list is still here.`
+          : 'Something went wrong on our end. Your list is still here.',
+      body: (detail: string | null) =>
+        detail
+          ? `${detail}. Your list is still here — trim it and try again.`
+          : "Something went wrong on our end and the deck wasn't made. Your list is still here — try it again.",
       action: 'Try again',
       retry: false,
     },
@@ -240,8 +253,13 @@ export const deckImportCopy = {
         : `Unmatched line: “${raw}”. Choose the card this was meant to be.`,
     footnoteMobile:
       "These count toward the 99 but not toward what's built. Tap one to put a card to it.",
-    footnote:
-      "Both lines are still in the deck's total of 99 — they're cards the deck wants. They just aren't cards we can name yet, so they don't count as built or owned, and they stay out of the shopping list.",
+    // The handoff wrote this against its own two-line example and hardcoded
+    // "Both lines", which reads false at every other count. Parameterised here;
+    // the wording is otherwise Design's. Ratification owed.
+    footnote: (n: number) =>
+      n === 1
+        ? "That line is still in the deck's total of 99 — it's a card the deck wants. It just isn't a card we can name yet, so it doesn't count as built or owned, and it stays out of the shopping list."
+        : `All ${n} lines are still in the deck's total of 99 — they're cards the deck wants. They just aren't cards we can name yet, so they don't count as built or owned, and they stay out of the shopping list.`,
   },
 
   // ---- Resolution ----------------------------------------------------------

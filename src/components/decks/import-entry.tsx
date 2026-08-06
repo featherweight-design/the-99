@@ -32,7 +32,7 @@ type Failure =
   | { kind: "fileRejected"; ext: string; size: string }
   | { kind: "noneMatched"; lineCount: number }
   | { kind: "empty" }
-  | { kind: "unexpected" };
+  | { kind: "unexpected"; detail: string | null };
 
 const ACCEPTED_EXTENSIONS = [".csv", ".txt"];
 
@@ -104,11 +104,17 @@ export function ImportEntry() {
         // Seam for PR 5: `commanderNeeded` carries the legendary candidates the
         // picker renders. Until it lands, the entry surface stays as it was
         // rather than showing a failure this result is not.
-      } catch {
+      } catch (e) {
         // importDeck throws on the size cap and on an illegal commander. Unhandled,
         // a throw inside a transition reaches the error boundary and takes the
         // player's list with it; the banner keeps the list on the page.
-        setFailure({ kind: "unexpected" });
+        //
+        // The size cap is the player's to fix, so the thrown message is surfaced
+        // rather than blamed on us. It is also the client's only byte-accurate
+        // signal: the textarea's maxLength counts characters while the server
+        // counts UTF-8 bytes, so a multi-byte list can clear the client guard and
+        // still be refused. The server owns the limit; this reports its verdict.
+        setFailure({ kind: "unexpected", detail: e instanceof Error ? e.message : null });
       }
     });
   }
@@ -137,6 +143,9 @@ export function ImportEntry() {
           <button
             key={m.id}
             type="button"
+            // The visible label swaps to the short form below md, which would
+            // otherwise hand a screen reader a different name at each breakpoint.
+            aria-label={m.label}
             aria-pressed={mode === m.id}
             onClick={() => selectMode(m.id)}
             className={[
@@ -346,8 +355,8 @@ function failureText(failure: Failure): { heading: string; bodyMobile: string; b
     case "unexpected":
       return {
         heading: copy.failures.unexpected.heading,
-        bodyMobile: copy.failures.unexpected.bodyMobile,
-        body: copy.failures.unexpected.body,
+        bodyMobile: copy.failures.unexpected.bodyMobile(failure.detail),
+        body: copy.failures.unexpected.body(failure.detail),
       };
   }
 }

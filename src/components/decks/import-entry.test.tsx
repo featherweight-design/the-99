@@ -167,6 +167,9 @@ describe("state 10 — nothing parsed", () => {
     submit();
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("That didn't go through");
+    // The cap is the player's to fix, so the banner names it rather than blaming
+    // our end and inviting a retry that cannot succeed.
+    expect(alert.textContent).toContain("Decklist too large (max 2 MB)");
     expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
     expect((pasteBox() as HTMLTextAreaElement).value).toContain("Sol Ring");
     expect(push).not.toHaveBeenCalled();
