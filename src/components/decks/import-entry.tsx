@@ -38,13 +38,16 @@ const ACCEPTED_EXTENSIONS = [".csv", ".txt"];
 
 function fileExtension(name: string): string {
   const dot = name.lastIndexOf(".");
-  return dot === -1 ? "" : name.slice(dot).toLowerCase();
+  // A trailing dot leaves nothing after it, so `decklist.` has no extension to
+  // name — returning "." would put "That one is a . at 40 KB" in the banner.
+  if (dot === -1 || dot === name.length - 1) return "";
+  return name.slice(dot).toLowerCase();
 }
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${bytes} bytes`;
+  return `${bytes} byte${bytes === 1 ? "" : "s"}`;
 }
 
 export function ImportEntry() {
