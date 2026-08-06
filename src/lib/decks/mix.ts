@@ -62,7 +62,7 @@ export const RECOMMENDED_MIX: Record<
     label: "Removal",
     target: 8,
     advisory: false,
-    rationale: "Targeted interaction: ~8 pieces handles most single-permanent threats.",
+    rationale: "Targeted interaction: ~8 pieces handle most single-permanent threats.",
   },
   wipes: {
     label: "Wipes",
@@ -71,9 +71,8 @@ export const RECOMMENDED_MIX: Record<
     rationale: "Mass removal resets the board. 3 is enough to draw one on average.",
   },
   land: {
-    // Singular, unlike the cardTypeGroup "Lands": two aria templates build a
-    // noun phrase from this label — strip.shelfLinkAria ("See land cards to
-    // consider") and tile.fillsRole ("fills a land slot").
+    // Singular, unlike the cardTypeGroup "Lands", because strip.shelfLinkAria
+    // builds a noun phrase from this label: "See land cards to consider".
     label: "Land",
     target: 37,
     advisory: true,
