@@ -50,7 +50,7 @@ Every request is `unreachable`.
 **No attempt was made to work around the bot protection.** Rotating user agents, solving the
 challenge, routing through a scraping proxy or driving a headless browser would each be
 circumventing an access control the site owner put there on purpose. That is not a decision
-an autonomous run should make on a Saturday night, and it would also be the most fragile code
+an autonomous run should make unattended, and it would also be the most fragile code
 in the repo — silently breaking whenever Cloudflare's rules change, with the failure landing
 on a player mid-import.
 
