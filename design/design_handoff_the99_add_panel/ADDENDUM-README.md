@@ -43,7 +43,7 @@ Layer 1  shell tab bar  fixed, 80px, phone only. owns the true bottom edge on ev
 ```
 phone    padding-bottom: dock + 80px + 12px
 md:      padding-bottom: dock + 12px
-centred  min-height: 100% − reserve
+centred  min-height: 100% - reserve
 ```
 
 No new token. `80px` is the shipped tab-bar height already hard-coded in `builder-shell.tsx`
@@ -58,10 +58,10 @@ conditional; the reserve is.
 Three fixes were available. Moving the caption above the tabs breaks the empty screen's reading
 order. Hiding the bar costs an entrance. Padding costs nothing and generalises.
 
-The empty section stops being `flex-1` against the scrollport and becomes `min-height: 100% −
-reserve`. Where that leaves the composition tight, the illustration pays: crab `72 → 64px`, card
-fan `96 → 88px`. The caption is the only line on that screen telling a first-time builder what to
-do next, and the role hint is the only one telling them what to fill first — neither is droppable.
+The empty section stops being `flex-1` against the scrollport and becomes
+`min-height: 100% - reserve`. Where that leaves the composition tight, the illustration pays: crab
+`72 → 64px`, card fan `96 → 88px`. The caption is the only line on that screen telling a first-time
+builder what to do next, and the role hint is the only one telling them what to fill first — neither is droppable.
 
 ### 3. #177 → **the Create button becomes the route's dock**
 Padding `/decks/new` would make the button reachable at the end of a scroll through the whole
@@ -238,7 +238,7 @@ dependency, no new motion.**
   optimistic add — the same call the tile makes. No new action, no new state on the server.
 - **One undo row at a time**, held on the decklist (not the row, which unmounts). A second removal
   settles the first.
-- **`builder-shell.tsx`**: the empty `<section>` takes `min-height: calc(100% − reserve)` instead
+- **`builder-shell.tsx`**: the empty `<section>` takes `min-height: calc(100% - reserve)` instead
   of `flex-1`; the scroll region takes the reserve as `padding-bottom`. The `bottom-[80px]`
   comment stays — it is the other half of the same rule.
 - **`create-picker.tsx`**: the mobile sticky footer already exists as a slot; `Create deck →` moves
