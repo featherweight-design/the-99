@@ -1,6 +1,6 @@
 # READINESS — Add panel addendum (#183 #177 #179 #185 #184 #176), R3
 
-**Verdict at R3 as written: 🟡 Yellow — one product ruling on #176. Nothing else is open.**
+**Verdict as R3 was written: 🟡 Yellow — one product ruling on #176, since answered. Nothing else was open.**
 
 **Ruling recorded 2026-08-06 (Hugh, Product): A.** Unowned EDHREC staples keep reaching Consider,
 marked — `buy` tag on the tile, a secondary Add, and a trailing shelf under the existing
@@ -10,8 +10,8 @@ Design to ratify the verdict flip at R4 rather than have it authored here.
 
 R2 answers the audit. All three items landed: the three strings #184 orphans are now stated as
 `REPLACES` entries 7–9, the two copy calls are made, and the undo row's lifetime is defined across a
-tab switch. **The build is unblocked on everything except #176**, which is Product's to rule and which
-no other section depends on.
+tab switch. At the time of writing, **the build was unblocked on everything except #176**, which was
+Product's to rule and which no other section depended on. It has since been ruled A.
 
 ### What changed in R2
 
@@ -55,7 +55,7 @@ mean anything.
 
 ---
 
-## Blocking — needs a ruling *(ruled A on 2026-08-06; kept below as the record of the question)*
+## Was blocking — ruled A on 2026-08-06 *(kept below as the record of the question)*
 
 ### 1. #176 — do unowned EDHREC staples keep reaching Consider? — *ruled: A*
 `getDeckSuggestions()` has appended up to five unowned staples since #25. The R2 handoff said
@@ -69,11 +69,11 @@ every suggestion is owned; that was wrong, and it was Design's error, not the bu
 - **B — drop the append** at `actions.ts:149-163`. The premise becomes true again, the locked
   provenance string is already correct, and none of section 7 ships. One deletion, no design.
 
-**Nothing else in this addendum moves either way.** If B is ruled, sections 1–6 and the copy calls
-are unaffected and the verdict flips Green on the spot.
+**Nothing else in this addendum moved either way.** Sections 1–6 and the copy calls were unaffected
+by the answer, and the verdict flips Green now that it is in.
 
-*Needs: Product's ruling. Cheap either way; A is roughly one branch in `suggestion-tile.tsx`, one
-filter in `consider-panel.tsx`, one string.*
+*Ruled A. Cheap either way; A is roughly one branch in `suggestion-tile.tsx`, one filter in
+`consider-panel.tsx`, one string.*
 
 ---
 

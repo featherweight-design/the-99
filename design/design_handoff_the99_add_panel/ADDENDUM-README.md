@@ -61,7 +61,8 @@ order. Hiding the bar costs an entrance. Padding costs nothing and generalises.
 The empty section stops being `flex-1` against the scrollport and becomes
 `min-height: 100% - reserve`. Where that leaves the composition tight, the illustration pays: crab
 `72 → 64px`, card fan `96 → 88px`. The caption is the only line on that screen telling a first-time
-builder what to do next, and the role hint is the only one telling them what to fill first — neither is droppable.
+builder what to do next, and the role hint is the only one telling them what to fill first —
+neither is droppable.
 
 ### 3. #177 → **the Create button becomes the route's dock**
 Padding `/decks/new` would make the button reachable at the end of a scroll through the whole
@@ -120,7 +121,7 @@ Rationale gets better, not worse: five separate expansions each pushing the stri
 one panel that answers the whole strip at once, which is how a player reads it anyway. The desktop
 worked-example callout is unchanged.
 
-### 7. #176 → **keep them, mark them `buy`, shelve them last** (Product to ratify)
+### 7. #176 → **keep them, mark them `buy`, shelve them last** (ruled A, 2026-08-06)
 R1 decision 5 said *"`suggestDeck()` iterates `ownedPool` only, so every suggestion is already
 owned."* True of `suggestDeck()`, false of `getDeckSuggestions()`, which has appended up to five
 unowned EDHREC staples since #25. **The error is Design's, and three things inherited it:** the
@@ -128,10 +129,10 @@ tile has no unowned variant (those five signal themselves only by the absence of
 dot), the provenance line claims ownership of cards the shelves do not own, and decision 5's
 reasoning for keeping the owned axis out of Consider assumed that axis had one value.
 
-Design's call is **A — keep, marked**: the deck already carries a buy list, #42 ships the
-import that fills it, and #132 is the backlog ticket for exactly this direction. **B — drop the
-append** at `actions.ts:149-163` makes the premise true again and none of the drawing ships. It is
-a product call either way and it sits in READINESS.
+Design recommended **A — keep, marked**: the deck already carries a buy list, #42 ships the
+import that fills it, and #132 is the backlog ticket for exactly this direction. The alternative,
+**B — drop the append** at `actions.ts:149-163`, makes the premise true again and none of the
+drawing ships. It was a product call, and **Product ruled A on 2026-08-06**.
 
 Under A:
 - **Tile:** the ownership dot's slot takes the decklist row's shipped `buy` tag (same hex, same
