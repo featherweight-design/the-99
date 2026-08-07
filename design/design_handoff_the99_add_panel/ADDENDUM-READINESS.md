@@ -66,7 +66,7 @@ every suggestion is owned; that was wrong, and it was Design's error, not the bu
   gains a second clause — `59 owned · 5 you don't own` — used only when the append actually put
   something on the shelves. Rationale: the deck already carries a buy list, #42 ships the import that
   fills it, and #132 is the backlog ticket for exactly this direction.
-- **B — drop the append** at `actions.ts:149-163`. The premise becomes true again, the locked
+- **B — drop the append** at `actions.ts:105-170`. The premise becomes true again, the locked
   provenance string is already correct, and none of section 7 ships. One deletion, no design.
 
 **Nothing else in this addendum moved either way.** Sections 1–6 and the copy calls were unaffected

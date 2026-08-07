@@ -6,7 +6,7 @@ addendum to the shipped Add-panel handoff, not a replacement — `The 99 - Decks
 them, prefixed `ADDENDUM-`.
 
 File: `The 99 - Decks · Add Panel Addendum.dc.html` (canvas — pan/zoom). Every state leads with
-the phone, desktop beside it. Read `design/design_handoff_the99_richness/README.md` for the locked voice
+the phone where there is a phone form, desktop beside it. Read `design/design_handoff_the99_richness/README.md` for the locked voice
 before auditing the copy.
 
 **The one-line summary:** *one dock, one bar, and content pays rent* — plus one row's full
@@ -25,7 +25,7 @@ lifecycle, one control per coverage cell, and a tile for the suggestions we do n
 | 7 | #176 unowned tile beside the owned tile; the trailing shelf in context | (tile 2-up identical) | ✓ |
 | 8 | The **nine** copy calls, before/after, with the two figure labels drawn | — | ✓ |
 
-Plus the token + a11y contract card.
+Plus the token-usage + a11y contract card. Every value on it is a `var(--*)` that already exists.
 
 ---
 
@@ -131,7 +131,7 @@ reasoning for keeping the owned axis out of Consider assumed that axis had one v
 
 Design recommended **A — keep, marked**: the deck already carries a buy list, #42 ships the
 import that fills it, and #132 is the backlog ticket for exactly this direction. The alternative,
-**B — drop the append** at `actions.ts:149-163`, makes the premise true again and none of the
+**B — drop the append** at `actions.ts:105-170`, makes the premise true again and none of the
 drawing ships. It was a product call, and **Product ruled A on 2026-08-06**.
 
 Under A:
