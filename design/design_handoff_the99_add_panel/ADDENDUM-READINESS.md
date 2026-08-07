@@ -1,6 +1,12 @@
 # READINESS — Add panel addendum (#183 #177 #179 #185 #184 #176), R3
 
-**Verdict: 🟡 Yellow — one product ruling on #176. Nothing else is open.**
+**Verdict at R3 as written: 🟡 Yellow — one product ruling on #176. Nothing else is open.**
+
+**Ruling recorded 2026-08-06 (Hugh, Product): A.** Unowned EDHREC staples keep reaching Consider,
+marked — `buy` tag on the tile, a secondary Add, and a trailing shelf under the existing
+`Top picks for {commander}` label, with `provenanceWithUnowned` used only when the append actually
+put something on the shelves. That was the only open item, so **the addendum is unblocked in full**.
+Design to ratify the verdict flip at R4 rather than have it authored here.
 
 R2 answers the audit. All three items landed: the three strings #184 orphans are now stated as
 `REPLACES` entries 7–9, the two copy calls are made, and the undo row's lifetime is defined across a
@@ -49,9 +55,9 @@ mean anything.
 
 ---
 
-## Blocking — needs a ruling
+## Blocking — needs a ruling *(ruled A on 2026-08-06; kept below as the record of the question)*
 
-### 1. #176 — do unowned EDHREC staples keep reaching Consider? — *with Product*
+### 1. #176 — do unowned EDHREC staples keep reaching Consider? — *ruled: A*
 `getDeckSuggestions()` has appended up to five unowned staples since #25. The R2 handoff said
 every suggestion is owned; that was wrong, and it was Design's error, not the build's.
 
@@ -122,6 +128,7 @@ filter in `consider-panel.tsx`, one string.*
 
 ## What would make this green
 
-Item 1 ruled. Either answer is one PR, and there is no redraw waiting behind either. Items 1 and 2
+Item 1 ruled — and it now is, A. Either answer was one PR, and there is no redraw waiting behind
+either. Items 1 and 2
 of the audit are text-only and already in; the build can start on #183, #177, #179, #185 and #184
 today.

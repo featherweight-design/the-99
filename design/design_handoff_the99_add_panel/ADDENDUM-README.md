@@ -6,7 +6,7 @@ addendum to the shipped Add-panel handoff, not a replacement — `The 99 - Decks
 them, prefixed `ADDENDUM-`.
 
 File: `The 99 - Decks · Add Panel Addendum.dc.html` (canvas — pan/zoom). Every state leads with
-the phone, desktop beside it. Read `design_handoff_the99_richness/README.md` for the locked voice
+the phone, desktop beside it. Read `design/design_handoff_the99_richness/README.md` for the locked voice
 before auditing the copy.
 
 **The one-line summary:** *one dock, one bar, and content pays rent* — plus one row's full
