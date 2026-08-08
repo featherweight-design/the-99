@@ -129,16 +129,16 @@ function ShelfSection({
           {label}
         </h3>
         {shelf.key === "unowned" ? (
-          // Two colours, so two elements: the clause that says these are not
-          // yours is the point of the shelf, and the count is ordinary meta.
-          <>
-            <p className={META} style={{ color: "var(--warning)" }}>
-              {addPanelCopy.unowned.shelfCoverage}
-            </p>
-            <p className={META} style={{ color: "var(--fg-faint)" }}>
+          // Two colours, so two spans — but one paragraph, like every other
+          // shelf. As two paragraphs the separator led a block of its own and a
+          // screen reader read "dot, 1 to consider" as its own sentence; inside
+          // the line it is punctuation between two clauses.
+          <p className={META}>
+            <span style={{ color: "var(--warning)" }}>{addPanelCopy.unowned.shelfCoverage}</span>{" "}
+            <span style={{ color: "var(--fg-faint)" }}>
               {`· ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
-            </p>
-          </>
+            </span>
+          </p>
         ) : (
           <p className={META} style={{ color: "var(--fg-faint)" }}>
             {shelf.coverage
