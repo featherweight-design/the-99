@@ -224,7 +224,7 @@ export const addPanelCopy = {
 
   // ── Undo (#185) ───────────────────────────────────────────────────────
   // The removed row is replaced in place by this one. No toast, no timer —
-  // see decision 3 in the addendum README.
+  // see decision 5 in design/design_handoff_the99_add_panel/ADDENDUM-README.md.
   undo: {
     removed: (name: string) => `${name} removed`,
     action: "Undo",
