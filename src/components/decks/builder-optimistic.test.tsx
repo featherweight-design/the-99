@@ -155,7 +155,10 @@ describe("optimistic deck list", () => {
       />,
     );
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Remove Forest" }));
+      // A stack says which of the two outcomes the ✕ has (#179).
+      fireEvent.click(
+        screen.getByRole("button", { name: "Remove one copy of Forest, 9 in deck" }),
+      );
     });
 
     expect(screen.getAllByRole("alert")).toHaveLength(1);

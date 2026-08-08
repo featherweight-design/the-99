@@ -29,7 +29,7 @@ import { CardDetailProvider } from "./card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
-import { deckCounts, unresolvedCardCount } from "../../lib/decks/grouping";
+import { deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
@@ -114,9 +114,18 @@ export function BuilderShell({
   // optimistic "✓ In deck", so nothing is lost by keeping this one committed.
   const deckOracleIds = useMemo(() => deck.cards.map((c) => c.oracleId), [deck.cards]);
 
+  // The spent slot the undo row is drawn from. Decklist state rather than row
+  // state, because the removal unmounts the row: held here it survives a tab
+  // switch to Consider and back, and any re-sort. Cleared by exactly three
+  // things — Undo accepted, the next removal, or leaving the builder route
+  // (this component unmounting). Never by a timer.
+  const [spentSlot, setSpentSlot] = useState<DeckDetailCard | null>(null);
+
   // Unresolved rows keep the builder out of the empty state: a deck whose every
   // line failed to match has nothing built, but it has plenty to show and act on.
-  const isEmpty = built === 0 && unresolvedRows.length === 0;
+  // A spent slot does the same — emptying the deck by removing its last card
+  // must not swap the undo row out for "a king with no army".
+  const isEmpty = built === 0 && unresolvedRows.length === 0 && !spentSlot;
   const commanderShortName = shortCommanderName(deck.commander.name);
 
   // An add changes three numbers at once — the tile's button, the tab count and
@@ -151,6 +160,39 @@ export function BuilderShell({
     [addOptimisticCard, cards],
   );
 
+  // Split in two on purpose. `useDeckMutation` dispatches its optimistic update
+  // inside an async transition, and React holds every *ordinary* state update
+  // made in one until the action settles — only the `useOptimistic` override
+  // paints early. The slot and the announcement would therefore appear only
+  // after the server answered, which is the whole window the undo row exists
+  // for. So the row calls `markSpent` straight from the click, outside `run`,
+  // and leaves only the optimistic dispatch inside it.
+  const markSpent = useCallback(
+    (card: DeckDetailCard) => {
+      // One undo row at a time: this removal settles whatever the last one left.
+      setSpentSlot(card.quantity <= 1 ? card : null);
+      // A removal is announced only when it leaves an undo row behind. A stack
+      // that decrements keeps its row, and its own count is the receipt.
+      if (card.quantity > 1) return;
+      setAnnouncement(
+        addPanelCopy.undo.announceRemoved(card.name, deckCounts(cards).built - 1),
+      );
+    },
+    [cards],
+  );
+  const removeCard = useCallback(
+    (card: DeckDetailCard) => removeOptimisticCard(card.oracleId),
+    [removeOptimisticCard],
+  );
+
+  const announceUndo = useCallback(
+    (card: DeckDetailCard) => {
+      setAnnouncement(
+        addPanelCopy.undo.announceUndone(card.name, deckCounts(cards).built + card.quantity),
+      );
+    },
+    [cards],
+  );
   // A failed removal outlives the row that asked for it, so its reason is held
   // here. Cleared when the server answers again: any successful edit replaces
   // deck.cards, which settles the question the refusal was answering.
@@ -159,9 +201,21 @@ export function BuilderShell({
   if (lastServerCards !== deck.cards) {
     setLastServerCards(deck.cards);
     setRemoveFailure(null);
+    // The slot settles on the card being genuinely back in the deck, not on the
+    // undo's promise resolving. Settling on success would drop the receipt
+    // before the new HTML landed, flashing the pre-undo list back for a frame;
+    // it would also unmount the row, and a refused undo has to say so from
+    // where the row is. A revalidation that still lacks the card — the removal
+    // itself — leaves the slot standing.
+    if (spentSlot && deck.cards.some((c) => c.oracleId === spentSlot.oracleId)) {
+      setSpentSlot(null);
+    }
   }
   const reportRemoveFailure = useCallback((cardName: string) => {
     setRemoveFailure(`${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}`);
+    // The card never left, so there is nothing to undo. Leaving the slot would
+    // offer to put back a card the deck still holds.
+    setSpentSlot(null);
   }, []);
 
   // Not memoised: `removeOptimisticCard` is rebuilt every render and
@@ -169,7 +223,9 @@ export function BuilderShell({
   // essentially every pass while reading as though it prevented one.
   const deckEdits = {
     add: announceAdd,
-    remove: removeOptimisticCard,
+    remove: removeCard,
+    markSpent,
+    announceUndo,
     reportRemoveFailure,
     resolveRow: resolveOptimisticRow,
     deleteRow: deleteOptimisticRow,
@@ -448,6 +504,7 @@ export function BuilderShell({
                 commanderOracleId={deck.commander.oracleId}
                 built={built}
                 toBuyCount={toBuyCount}
+                spentSlot={spentSlot}
                 filter={filter}
                 grouping={grouping}
                 onFilterChange={setFilter}

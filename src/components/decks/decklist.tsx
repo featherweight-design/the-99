@@ -18,6 +18,8 @@ interface DecklistProps {
   commanderOracleId: string;
   built: number;
   toBuyCount: number;
+  /** The card whose slot is spent, drawn in place as an undo row (#185). */
+  spentSlot?: DeckDetailCard | null;
   filter: "all" | "shopping";
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
@@ -33,6 +35,7 @@ export function Decklist({
   commanderOracleId,
   built,
   toBuyCount,
+  spentSlot = null,
   filter,
   grouping,
   onFilterChange,
@@ -47,13 +50,28 @@ export function Decklist({
   // something they cannot go and buy.
   const visibleUnresolved = filter === "shopping" ? [] : unresolvedRows;
 
+  // The spent card is out of the deck's counts already, so it is grouped
+  // alongside the live ones only to be marked — which is what puts the undo row
+  // where the card's own row was rather than at the end of the list. Any other
+  // path that puts the card back — quick-add, a suggestion tile — returns it to
+  // `cards` optimistically, and the slot steps aside for the live row.
+  const spentCard =
+    spentSlot &&
+    !cards.some((c) => c.oracleId === spentSlot.oracleId) &&
+    (filter === "all" || !spentSlot.owned)
+      ? spentSlot
+      : null;
+  const listedCards = spentCard ? [...visibleCards, spentCard] : visibleCards;
+
   // Group the visible cards
   const groups =
-    grouping === "type" ? groupByCardType(visibleCards) : groupByRole(visibleCards);
+    grouping === "type" ? groupByCardType(listedCards) : groupByRole(listedCards);
 
   // Flattened in render order, so Prev/Next walks the list the way the eye does — across
   // group boundaries rather than restarting inside each one.
-  const orderedIds = groups.flatMap(([, groupCards]) => groupCards.map((c) => c.oracleId));
+  const orderedIds = groups
+    .flatMap(([, groupCards]) => groupCards.map((c) => c.oracleId))
+    .filter((id) => id !== spentCard?.oracleId);
 
   return (
     <div className="flex flex-col">
@@ -83,6 +101,7 @@ export function Decklist({
             deckId={deckId}
             label={label}
             cards={groupCards}
+            spentOracleId={spentCard?.oracleId}
             siblings={orderedIds}
           />
         ))}

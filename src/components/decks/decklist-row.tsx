@@ -1,16 +1,28 @@
 "use client";
 
 // Decklist Row — single card row with ownership dot, name, buy tag, remove button.
-// §Decklist Row (design table).
+// §Decklist Row (design table), §3 #179 and §4 #185 (add-panel addendum table).
 
-import { removeCardFromDeck } from "../../app/decks/actions";
+import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
-import { useRemoveOptimisticCard, useReportRemoveFailure } from "./optimistic-deck";
+import {
+  useAnnounceUndo,
+  useMarkSlotSpent,
+  useRemoveOptimisticCard,
+  useReportRemoveFailure,
+} from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
+
+// Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
+// box making up the vertical padding, desktop 34px with real padding.
+const ROW_SHELL =
+  "flex items-center gap-[9px] md:gap-[10px] pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]" +
+  " min-h-[44px] md:min-h-[34px] rounded-[6px] md:rounded-[7px]";
 
 interface DecklistRowProps {
   deckId: string;
@@ -21,20 +33,41 @@ interface DecklistRowProps {
   metaLabel?: string;
   /** The decklist in display order, so the modal's Prev/Next page through it. */
   siblings?: string[];
+  /**
+   * The decklist says this card's slot is spent, so the row draws its undo
+   * receipt instead. Decklist state rather than row state: the row unmounts
+   * with the card, and a receipt that lived here would not survive a tab
+   * switch to Consider and back.
+   */
+  spent?: boolean;
 }
 
-export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings }: DecklistRowProps) {
+export function DecklistRow({
+  deckId,
+  card,
+  isMeta = false,
+  metaLabel,
+  siblings,
+  spent = false,
+}: DecklistRowProps) {
   const label = isMeta ? metaLabel! : card.name;
   const nameClass =
     "flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
-  // The server drops the last copy's row from the decklist on success, so
-  // "removed" is never a committed prop — the override holds until that
-  // re-render lands.
-  const { applied, isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
+  const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
+  const markSlotSpent = useMarkSlotSpent();
   const reportRemoveFailure = useReportRemoveFailure();
+  // A last-copy failure is the shell's to report: the row survives it now (the
+  // spent slot keeps it mounted), so drawing its own message too would say the
+  // same thing twice. A decremented stack, and a row with no shell above it,
+  // still speak for themselves.
+  const shellReportsFailure = reportRemoveFailure !== null && card.quantity <= 1;
 
   function handleRemove() {
+    // Outside `run`: the slot and its announcement are ordinary state, which
+    // React holds for the length of an async transition. Inside, they would
+    // land only once the server answered — after the window they exist for.
+    markSlotSpent(card);
     // Dispatched into the deck-wide list as well as this row's own state, or
     // the row vanishes while the header, the tab counts, the role strip and the
     // group heading all keep claiming it for the length of the round-trip.
@@ -46,26 +79,27 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
           // Only when this was the last copy, because only then has the
           // prediction unmounted the row and left `run`'s message with nothing
           // to draw on. A decremented stack still has its own line to say it.
-          if (card.quantity <= 1) reportRemoveFailure(card.name);
+          if (shellReportsFailure) reportRemoveFailure(card.name);
           throw cause;
         }
       },
-      () => removeOptimisticCard(card.oracleId),
+      () => removeOptimisticCard(card),
     );
   }
 
-  // Only the last copy takes the row with it. A stack of basics decrements, so
-  // hiding on every click would blank a row the deck still holds eight of.
-  if (applied && card.quantity <= 1) return null;
+  // The decklist's spent slot is the sole trigger for the receipt, and the
+  // decklist's optimistic removal is what makes the row disappear. Reading this
+  // row's own mutation state as well would key the receipt to something that
+  // outlives what it describes — that state never returns to false, so once a
+  // card had been removed and put back, React reusing the row under the same
+  // key would draw the receipt over a card that is in the deck.
+  if (spent) return <UndoRow deckId={deckId} card={card} />;
 
   return (
     // Wrapper keeps the row and any error message as a single grid item.
     <div>
       {/* Row container */}
-      <div
-        className="flex items-center gap-[9px] md:gap-[10px] px-[8px] py-[6px] md:px-[9px] md:py-[7px] rounded-[6px] md:rounded-[7px]"
-        style={{ background: "#1A160F" }}
-      >
+      <div className={`group ${ROW_SHELL} bg-[#1A160F] md:hover:bg-[#211C15]`}>
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
         {!isMeta && (
           <OwnershipDot
@@ -105,17 +139,81 @@ export function DecklistRow({ deckId, card, isMeta = false, metaLabel, siblings 
           </span>
         )}
 
-        {/* Remove ✕ button — desktop only, not shown for meta rows */}
+        {/* Remove ✕ — at both widths now, never on a meta row. The glyph stays
+            13px at both: the phone target is the padding around it. */}
         {!isMeta && (
           <button
             type="button"
             onClick={handleRemove}
             disabled={isPending}
-            className="hidden md:block flex-none text-[13px] leading-none cursor-pointer disabled:opacity-50 disabled:cursor-default"
-            style={{ color: "#4A4033", background: "transparent", border: "none" }}
-            aria-label={`Remove ${card.name}`}
+            className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto
+              rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[#4A4033]
+              active:bg-[#2A241D] active:text-[#C6B79A] md:active:bg-transparent
+              md:group-hover:text-[#C6B79A] cursor-pointer disabled:opacity-50 disabled:cursor-default"
+            aria-label={
+              card.quantity > 1
+                ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)
+                : addPanelCopy.row.removeAria(card.name)
+            }
           >
-            ✕
+            {addPanelCopy.row.remove}
+          </button>
+        )}
+      </div>
+      {error && !shellReportsFailure && <MutationError message={error} />}
+    </div>
+  );
+}
+
+/**
+ * The receipt a spent slot leaves behind. No toast and no timer: #185 exists
+ * because the optimistic path makes the row vanish faster than a mis-click is
+ * noticed, and a five-second toast that also vanishes fixes half of that.
+ *
+ * Undo is a re-add rather than a rollback — the same `addCardToDeck` the
+ * suggestion tile calls. No new server action and no new server state.
+ *
+ * The one mutation in the builder with no optimistic prediction, deliberately.
+ * An optimistic re-add puts the card straight back into the deck-wide list,
+ * which is the decklist's signal to stop drawing the spent slot — so this row
+ * would unmount mid-flight and a refused undo would have nowhere to say so.
+ * The disabled control carries the wait instead, and the slot settles when the
+ * server list actually comes back with the card in it.
+ */
+function UndoRow({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
+  const { isPending, error, run } = useDeckMutation(false, addPanelCopy.undo.failed);
+  const announceUndo = useAnnounceUndo();
+
+  function handleUndo() {
+    // Announced from the click for the same reason the removal is: see
+    // `handleRemove` above.
+    announceUndo(card);
+    run(() => addCardToDeck(deckId, card.oracleId));
+  }
+
+  return (
+    <div>
+      <div className={`${ROW_SHELL} bg-surface-sunken border border-dashed border-border-strong`}>
+        {/* No dot on a spent slot — the spacer keeps the name aligned with the
+            live rows above and below it. */}
+        <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />
+        <span className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis font-mono text-[11.5px] md:text-[12px] text-fg-locked">
+          {addPanelCopy.undo.removed(card.name)}
+        </span>
+        {/* Absent once the undo has been refused: the message below tells the
+            player where to go instead. */}
+        {!error && (
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={isPending}
+            className="flex-none flex items-center h-[44px] px-[12px] md:h-auto md:px-0
+              bg-transparent border-0 md:border-b md:border-brass-shadow
+              text-[13px] md:text-[12.5px] font-semibold md:leading-[1.4]
+              text-brass md:hover:text-brass-hover cursor-pointer disabled:opacity-50 disabled:cursor-default"
+            aria-label={addPanelCopy.undo.actionAria(card.name)}
+          >
+            {addPanelCopy.undo.action}
           </button>
         )}
       </div>

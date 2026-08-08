@@ -212,6 +212,33 @@ export const addPanelCopy = {
     roleHint: "Try filling your ramp, draw, removal, and wipe slots first.",
   },
 
+  // ── Decklist row — remove, at both widths (#179) ──────────────────────
+  row: {
+    remove: "✕",
+    removeAria: (name: string) => `Remove ${name}`,
+    // A stack of basics decrements rather than unmounting, so the phone label
+    // says which of the two is about to happen.
+    removeCopyAria: (name: string, quantity: number) =>
+      `Remove one copy of ${name}, ${quantity} in deck`,
+  },
+
+  // ── Undo (#185) ───────────────────────────────────────────────────────
+  // The removed row is replaced in place by this one. No toast, no timer —
+  // see decision 5 in design/design_handoff_the99_add_panel/ADDENDUM-README.md.
+  undo: {
+    removed: (name: string) => `${name} removed`,
+    action: "Undo",
+    actionAria: (name: string) => `Undo removing ${name}`,
+    // Read on the builder's existing live region, after the removal itself.
+    announceRemoved: (name: string, built: number) =>
+      `${name} removed · ${built} of 99 · undo available`,
+    announceUndone: (name: string, built: number) =>
+      `${name} back in the deck · ${built} of 99`,
+    // The undo row is the only thing standing between a mis-tap and a lost
+    // card, so a failed undo says so where the row is, not in a banner.
+    failed: "Couldn’t put that back. Try adding it again.",
+  },
+
   // ── Live region ───────────────────────────────────────────────────────
   // Announces an add, which is otherwise silent: the three numbers it moves —
   // the tile's button, the tab count, a role cell — are all ordinary text

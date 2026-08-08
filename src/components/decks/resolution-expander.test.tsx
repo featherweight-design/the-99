@@ -82,7 +82,9 @@ function Harness({
       <AddOptimisticCardProvider
         value={{
           add: deck.addOptimisticCard,
-          remove: deck.removeOptimisticCard,
+          remove: (card) => deck.removeOptimisticCard(card.oracleId),
+          markSpent: vi.fn(),
+          announceUndo: vi.fn(),
           reportRemoveFailure: vi.fn(),
           resolveRow: deck.resolveOptimisticRow,
           deleteRow: deck.deleteOptimisticRow,
