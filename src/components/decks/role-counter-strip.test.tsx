@@ -105,7 +105,7 @@ describe("role counter strip — a met cell is a figure", () => {
     expect(screen.getAllByRole("figure")).toHaveLength(ROLES.length);
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByRole("button")).toHaveAccessibleName(
-      addPanelCopy.strip.rationaleToggleAria,
+      addPanelCopy.strip.rationaleToggle,
     );
   });
 
@@ -129,7 +129,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   it("starts closed with the trigger and no panel", () => {
     render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
     const trigger = screen.getByRole("button", {
-      name: addPanelCopy.strip.rationaleToggleAria,
+      name: addPanelCopy.strip.rationaleToggle,
     });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText(addPanelCopy.strip.rationaleClose)).toBeNull();
@@ -138,7 +138,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   it("opens one panel carrying every role's rationale", () => {
     render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
     fireEvent.click(
-      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggleAria }),
+      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }),
     );
     const panel = screen.getByRole("region", { name: addPanelCopy.strip.rationaleToggle });
     for (const body of Object.values(addPanelCopy.strip.rationaleBodies)) {
@@ -154,31 +154,31 @@ describe("role counter strip — one disclosure for the whole strip", () => {
     expect(panel).toHaveTextContent(`${RECOMMENDED_MIX.land.label} ~${RECOMMENDED_MIX.land.target}`);
   });
 
-  // The authored aria reads "Show why each role has the target it has", which is
-  // false once the panel is showing. The open header takes its drawn title as its
-  // name instead, and aria-expanded says which state it is in.
-  it("never says Show while the panel is already showing", () => {
+  // WCAG 2.5.3: the accessible name has to contain the words on screen, so the
+  // authored sentence describes rather than names. It also does not follow the
+  // control open — "Show why each role has the target it has" is false once the
+  // panel below is already showing the answer.
+  it("names the control by its drawn text, and only offers to Show while closed", () => {
     render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
-    fireEvent.click(
-      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggleAria }),
-    );
-    expect(
-      screen.queryByRole("button", { name: addPanelCopy.strip.rationaleToggleAria }),
-    ).toBeNull();
-    expect(
-      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }),
-    ).toHaveAttribute("aria-expanded", "true");
+    const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
+    expect(trigger).toHaveAccessibleDescription(addPanelCopy.strip.rationaleToggleAria);
+
+    fireEvent.click(trigger);
+
+    const open = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
+    expect(open).toHaveAttribute("aria-expanded", "true");
+    expect(open).not.toHaveAccessibleDescription(addPanelCopy.strip.rationaleToggleAria);
   });
 
   it("closes again from Hide", () => {
     render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
     const trigger = screen.getByRole("button", {
-      name: addPanelCopy.strip.rationaleToggleAria,
+      name: addPanelCopy.strip.rationaleToggle,
     });
     fireEvent.click(trigger);
     fireEvent.click(screen.getByRole("button", { name: addPanelCopy.strip.rationaleClose }));
     expect(
-      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggleAria }),
+      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }),
     ).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("region", { name: addPanelCopy.strip.rationaleToggle })).toBeNull();
   });

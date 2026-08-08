@@ -20,6 +20,8 @@ const LINES: { key: keyof typeof addPanelCopy.strip.rationaleBodies; roles: MixR
   { key: "land", roles: ["land"] },
 ];
 
+const DESCRIPTION_ID = "strip-rationale-description";
+
 const heading = (roles: MixRole[]) =>
   roles
     .map((role) => {
@@ -35,11 +37,18 @@ export function StripRationale() {
     /* §Rationale disclosure trigger — own row, mt 12px */
     return (
       <div className="flex items-center gap-[14px] mt-[12px]">
+        {/* The authored sentence describes rather than names. As an `aria-label`
+            it replaced the drawn text, so the accessible name held none of the
+            words on screen — WCAG 2.5.3, and a voice-control user asking for
+            "Why these numbers" would not have reached it. */}
+        <span id={DESCRIPTION_ID} className="sr-only">
+          {addPanelCopy.strip.rationaleToggleAria}
+        </span>
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-expanded={false}
-          aria-label={addPanelCopy.strip.rationaleToggleAria}
+          aria-describedby={DESCRIPTION_ID}
           className="font-mono text-[11px] text-brass border-b border-brass-shadow pb-[1px] cursor-pointer"
         >
           {addPanelCopy.strip.rationaleToggle}
@@ -59,10 +68,9 @@ export function StripRationale() {
           trigger, so `aria-expanded` stays observable while the panel is open;
           `Hide` is the drawn close beside it.
 
-          No `aria-label` here. The authored one reads "Show why each role has
-          the target it has", which is a lie once the panel is showing, and the
-          design table authors it for the trigger only. The drawn title is an
-          honest name in both states, and `aria-expanded` carries the rest. */}
+          The authored sentence does not follow it open: it reads "Show why each
+          role has the target it has", which is a lie once the panel is showing,
+          and the panel below is the answer it was offering. */}
       <div className="flex items-baseline justify-between gap-[10px]">
         <button
           type="button"
