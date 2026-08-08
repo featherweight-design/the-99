@@ -117,8 +117,10 @@ function Evidence({
       {lift != null && suggestion.owned && (
         <p className="font-mono text-[9.5px]" style={{ color: "var(--brass-shadow)" }}>
           {/* EDHREC hands synergy back as a fraction; the tile states it in points.
-              An unowned tile goes without: synergy is an argument for playing a
-              card you already have, and this one is an argument for buying it. */}
+              The canvas draws this line on the owned tile and not on the unowned
+              one, and design table §8-6 says it is unclear whether that turns on
+              ownership or on the data being thinner for a card you do not have.
+              Shipped as drawn, keyed on ownership, and flagged there. */}
           {addPanelCopy.tile.lift(String(Math.round(lift * 100)))}
         </p>
       )}
