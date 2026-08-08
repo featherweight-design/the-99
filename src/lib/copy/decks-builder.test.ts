@@ -104,21 +104,24 @@ describe("addPanelCopy punctuation", () => {
       // unsampled: `ownedFilterOffNote` writes its singular and plural forms
       // separately, and a dash could return to either alone. Call each member
       // once per fill so every count branch renders its literal frame.
-      const fills: unknown[] = ["x", 0, 1, 2];
-      return fills.flatMap((fill) => {
+      const arity = value.length;
+      const counts = [0, 1, 2];
+      // A uniform numeric fill throws on any member whose leading argument is a
+      // name it lower-cases, so those members used to sample their string call
+      // alone and their count branches went unvisited. The mixed shape — a name
+      // first, counts after — is the call the app actually makes.
+      const argLists: unknown[][] = [
+        Array.from({ length: arity }, () => "x"),
+        ...counts.map((n) => Array.from({ length: arity }, () => n)),
+        ...counts.map((n) => Array.from({ length: arity }, (_, i) => (i === 0 ? "x" : n))),
+      ];
+      return argLists.flatMap((args) => {
         try {
-          return [
-            String(
-              (value as (...a: unknown[]) => string)(
-                ...Array.from({ length: value.length }, () => fill),
-              ),
-            ),
-          ];
+          return [String((value as (...a: unknown[]) => string)(...args))];
         } catch {
-          // A fill of the wrong shape for this member — a number where
-          // `cellLinkAria` wants a role name to lower-case. It samples nothing
-          // rather than failing the invariant on a call the app never makes;
-          // the string fill still renders every literal frame in the member.
+          // A fill of the wrong shape for this member. It samples nothing rather
+          // than failing the invariant on a call the app never makes; the other
+          // shapes still render every literal frame in the member.
           return [];
         }
       });

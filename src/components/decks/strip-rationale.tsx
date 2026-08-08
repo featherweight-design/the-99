@@ -9,7 +9,7 @@
 // so the panel can never quote a target the cell above it disagrees with.
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 
@@ -19,8 +19,6 @@ const LINES: { key: keyof typeof addPanelCopy.strip.rationaleBodies; roles: MixR
   { key: "removalWipes", roles: ["removal", "wipes"] },
   { key: "land", roles: ["land"] },
 ];
-
-const DESCRIPTION_ID = "strip-rationale-description";
 
 const heading = (roles: MixRole[]) =>
   roles
@@ -32,6 +30,11 @@ const heading = (roles: MixRole[]) =>
 
 export function StripRationale() {
   const [open, setOpen] = useState(false);
+  // Per instance, not per module: two strips on one page would otherwise share
+  // an id, and `aria-describedby` resolves to whichever element the document
+  // reached first rather than to this trigger's own sentence.
+  const panelId = useId();
+  const descriptionId = `${panelId}-description`;
 
   if (!open) {
     /* §Rationale disclosure trigger — own row, mt 12px */
@@ -41,14 +44,14 @@ export function StripRationale() {
             it replaced the drawn text, so the accessible name held none of the
             words on screen — WCAG 2.5.3, and a voice-control user asking for
             "Why these numbers" would not have reached it. */}
-        <span id={DESCRIPTION_ID} className="sr-only">
+        <span id={descriptionId} className="sr-only">
           {addPanelCopy.strip.rationaleToggleAria}
         </span>
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-expanded={false}
-          aria-describedby={DESCRIPTION_ID}
+          aria-describedby={descriptionId}
           className="font-mono text-[11px] text-brass border-b border-brass-shadow pb-[1px] cursor-pointer"
         >
           {addPanelCopy.strip.rationaleToggle}
@@ -76,7 +79,7 @@ export function StripRationale() {
           type="button"
           onClick={() => setOpen(false)}
           aria-expanded
-          aria-controls="strip-rationale"
+          aria-controls={panelId}
           className="font-mono text-[11px] text-brass cursor-pointer"
         >
           {addPanelCopy.strip.rationaleToggle}
@@ -92,7 +95,7 @@ export function StripRationale() {
 
       {/* §Rationale panel — lines */}
       <div
-        id="strip-rationale"
+        id={panelId}
         role="region"
         aria-label={addPanelCopy.strip.rationaleToggle}
         className="flex flex-col gap-[7px] mt-[9px]"
