@@ -18,12 +18,18 @@ const PLATE: Record<BuyTagVariant, React.CSSProperties> = {
 
 const PLACEMENT: Record<BuyTagVariant, string> = {
   row: "flex-none text-[9px] md:text-[9.5px]",
-  tile: "absolute right-[6px] top-[6px] text-[9px]",
+  // Above the art and deaf to the pointer: the tag overlaps the card-detail
+  // button it sits beside, and a corner of the art must stay clickable.
+  tile: "absolute z-10 right-[6px] top-[6px] text-[9px] pointer-events-none",
 };
 
+// A labelled tag takes `role="img"`: an `aria-label` on a bare span lands on the
+// generic role, where it is discarded and the sentence never reaches anyone. The
+// row passes no label because the word sits in the row's own reading order.
 export function BuyTag({ variant, label }: { variant: BuyTagVariant; label?: string }) {
   return (
     <span
+      role={label ? "img" : undefined}
       aria-label={label}
       className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]}`}
       style={{ color: "var(--warning)", ...PLATE[variant] }}

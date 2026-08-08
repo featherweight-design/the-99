@@ -167,63 +167,72 @@ export function SuggestionTile({
       className="group flex flex-col gap-[8px] rounded-[10px] p-[9px] pb-[10px] transition-colors border bg-[color:var(--surface)] border-[color:var(--border)] hover:bg-[color:var(--elevated-hover)] hover:border-[color:var(--border-strong)]"
       style={{ opacity: noArt ? 0.55 : 1 }}
     >
-      <CardDetailTrigger
-        oracleId={suggestion.oracleId}
-        name={suggestion.name}
-        siblings={siblings}
-        className={`relative block w-full overflow-hidden rounded-[7px] p-0 border-none transition-shadow ${
-          // The shadows are classes rather than an inline style so the hover
-          // variant can win: an inline boxShadow outranks group-hover:.
-          applied || noArt
-            ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"
-            : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(201,162,75,0.35)]"
-        }`}
-        style={{
-          aspectRatio: "63 / 88",
-          background: noArt
-            ? "linear-gradient(158deg, #3A3229 0%, #241F19 62%, #161311 100%)"
-            : `center / cover no-repeat url(${suggestion.imageUri})`,
-          filter: applied ? "grayscale(.6)" : undefined,
-          opacity: applied ? 0.5 : undefined,
-        }}
-      >
-        {noArt ? (
+      {/* One slot, two marks: the dot is aria-hidden decoration, the tag is the
+          only thing that says unowned out loud. An added tile keeps neither
+          rather than claiming two states at once.
+
+          They sit beside the art rather than inside it. `CardDetailTrigger` is a
+          button carrying its own `aria-label`, which replaces everything below
+          it in the accessible name — a tag nested there was silent, leaving the
+          shelf heading as the sole carrier of unownedness. Out here the mark
+          also survives a card with no art, which renders a placeholder instead
+          of the art branch the marks used to live in. */}
+      <div className="relative">
+        {!applied && (suggestion.owned ? (
           <span
-            className="absolute inset-0 flex items-center justify-center text-center font-mono text-[9px] leading-[1.4]"
-            style={{ color: "var(--fg-locked)" }}
-          >
-            {addPanelCopy.tile.noArt}
-          </span>
+            aria-hidden
+            className="absolute z-10 right-[6px] top-[6px] w-[8px] h-[8px] rounded-full pointer-events-none"
+            style={{ background: "var(--success)", boxShadow: "0 0 0 2px rgba(10,8,6,.7)" }}
+          />
         ) : (
-          <>
-            {!applied && (
-              <span
-                aria-hidden
-                className="absolute inset-x-0 bottom-0 hidden pt-[14px] pr-[6px] pb-[5px] text-right font-mono text-[9px] group-hover:block"
-                style={{
-                  background: "linear-gradient(180deg, transparent, rgba(10,8,6,.85))",
-                  color: "var(--brass)",
-                }}
-              >
-                {addPanelCopy.tile.detailHint}
-              </span>
-            )}
-            {/* One slot, two marks: the dot is aria-hidden decoration, the tag
-                is the only thing that says unowned out loud. An added tile
-                keeps neither rather than claiming two states at once. */}
-            {!applied && (suggestion.owned ? (
-              <span
-                aria-hidden
-                className="absolute right-[6px] top-[6px] w-[8px] h-[8px] rounded-full"
-                style={{ background: "var(--success)", boxShadow: "0 0 0 2px rgba(10,8,6,.7)" }}
-              />
-            ) : (
-              <BuyTag variant="tile" label={addPanelCopy.unowned.tagAria(suggestion.name)} />
-            ))}
-            {suggestion.manaCost && <CostPips cost={suggestion.manaCost} />}
-          </>
-        )}
-      </CardDetailTrigger>
+          <BuyTag variant="tile" label={addPanelCopy.unowned.tagAria(suggestion.name)} />
+        ))}
+        <CardDetailTrigger
+          oracleId={suggestion.oracleId}
+          name={suggestion.name}
+          siblings={siblings}
+          className={`relative block w-full overflow-hidden rounded-[7px] p-0 border-none transition-shadow ${
+            // The shadows are classes rather than an inline style so the hover
+            // variant can win: an inline boxShadow outranks group-hover:.
+            applied || noArt
+              ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"
+              : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(201,162,75,0.35)]"
+          }`}
+          style={{
+            aspectRatio: "63 / 88",
+            background: noArt
+              ? "linear-gradient(158deg, #3A3229 0%, #241F19 62%, #161311 100%)"
+              : `center / cover no-repeat url(${suggestion.imageUri})`,
+            filter: applied ? "grayscale(.6)" : undefined,
+            opacity: applied ? 0.5 : undefined,
+          }}
+        >
+          {noArt ? (
+            <span
+              className="absolute inset-0 flex items-center justify-center text-center font-mono text-[9px] leading-[1.4]"
+              style={{ color: "var(--fg-locked)" }}
+            >
+              {addPanelCopy.tile.noArt}
+            </span>
+          ) : (
+            <>
+              {!applied && (
+                <span
+                  aria-hidden
+                  className="absolute inset-x-0 bottom-0 hidden pt-[14px] pr-[6px] pb-[5px] text-right font-mono text-[9px] group-hover:block"
+                  style={{
+                    background: "linear-gradient(180deg, transparent, rgba(10,8,6,.85))",
+                    color: "var(--brass)",
+                  }}
+                >
+                  {addPanelCopy.tile.detailHint}
+                </span>
+              )}
+              {suggestion.manaCost && <CostPips cost={suggestion.manaCost} />}
+            </>
+          )}
+        </CardDetailTrigger>
+      </div>
 
       <div className="flex flex-col gap-[2px] min-w-0">
         <CardDetailTrigger

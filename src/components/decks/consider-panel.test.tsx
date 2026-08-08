@@ -304,10 +304,35 @@ describe("ConsiderPanel — tiles", () => {
 describe("ConsiderPanel — unowned staples", () => {
   const unowned = (name: string) => suggestion({ name, owned: false });
 
+  // Queried by role rather than by label: `getByLabelText` matches the
+  // attribute, so it passed while the tag was a bare span whose role discards
+  // an `aria-label` outright.
   it("marks an unowned tile with a buy tag that says so in words", () => {
     mount({ suggestions: [unowned("Smothering Tithe")] });
-    const tag = screen.getByLabelText("Smothering Tithe is not in your collection");
+    const tag = screen.getByRole("img", {
+      name: "Smothering Tithe is not in your collection",
+    });
     expect(tag).toHaveTextContent("buy");
+  });
+
+  // The art is a button carrying its own aria-label, which replaces every
+  // descendant in the accessible name. Nested there the tag was silent and the
+  // shelf heading was the only thing left saying the card is unowned.
+  it("keeps the tag out of the card-detail button, so its sentence survives", () => {
+    mount({ suggestions: [unowned("Smothering Tithe")] });
+    const tag = screen.getByRole("img", {
+      name: "Smothering Tithe is not in your collection",
+    });
+    expect(tag.closest("button")).toBeNull();
+  });
+
+  // A card with no art renders a placeholder instead of the art branch, which
+  // is where the tag used to live.
+  it("still marks an unowned tile that has no art", () => {
+    mount({ suggestions: [suggestion({ name: "Mana Drain", owned: false, imageUri: null })] });
+    expect(
+      screen.getByRole("img", { name: "Mana Drain is not in your collection" }),
+    ).toHaveTextContent("buy");
   });
 
   // Adding a card you do not own is a real action, just not the deck's
@@ -322,8 +347,9 @@ describe("ConsiderPanel — unowned staples", () => {
       .toContain("bg-brass");
   });
 
-  // Synergy argues for playing a card you have; an unowned tile is arguing
-  // for buying one, so the handoff draws the lift line on the owned tile only.
+  // The canvas draws the lift line on the owned tile and not on the unowned
+  // one. Design table §8-6 leaves open whether that keys off ownership or off
+  // thinner data, so this asserts what shipped rather than a reason for it.
   it("keeps the lift line off an unowned tile", () => {
     mount({
       suggestions: [suggestion({ name: "Mana Drain", owned: false, lift: 0.31 })],
