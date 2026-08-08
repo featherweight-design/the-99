@@ -23,6 +23,7 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | 🟡 | Awaiting Design addendum — audit verdict was 🟠 Orange (small Design round-trip needed before flipping Green) |
 | 📐 | Brief locked, awaiting Claude Design handoff production (mocks, components) |
 | 🎨 | Design in flight (workshop / handoff iteration / audit) |
+| 🔨 | Implementation in flight — design is done and the build has started, but not every planned PR has merged |
 | 🚦 | Paused (mid-workshop; awaiting Hugh input or external dependency) |
 | 🕰️ | Backlog — labelled `type: design`, design cycle not started (no workshop, no brief). Ranked; the top of this list is what Design picks up next |
 | ✅ | Fully implemented + shipped |
@@ -35,8 +36,19 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-| **#42** Design: Import existing decks (Moxfield) | `design/design_handoff_the99_deck_import/` | 🟢 Green (R2, post-audit) | Plan at `docs/superpowers/plans/2026-08-04-deck-import-plan.md`. Nineteen states at both breakpoints, rebased onto #158's add panel. The R2 audit ratified all three #158-opened calls (row-scoped combobox in an inline expander rather than the global bar; owned-only overridden off because matching runs against Scryfall, not the collection; unresolved rows outside both counts with the banner carrying the caveat) and closed every blocker without a redraw. Two audit corrections landed in R2: Design's "the parser can't tell failures 9 and 10 apart" was inverted — `parsePasteList` (`src/lib/manabox/paste.ts:38-40`) falls through to `quantity = 1` for any non-blank line, so gibberish yields rows that fail at *match*, not zero rows, and state 9's copy was rewritten from a parse failure to a match failure (`unparseable` → `noneMatched`). The completion-reveal collision was ruled 2026-08-04: suppress `shouldCelebrate()` on import-arrival, let it fire on the player's first own add. **Ungated as of 2026-08-05 — #158 is fully merged (#169–#171, #173, #175, #180, close-out #186), so `quick-add-bar.tsx` exists and all nine PRs can run in sequence.** Briefing at `docs/superpowers/plans/2026-08-05-deck-import-briefing.md`; epic-run's preconditions are met. Two further product calls ruled 2026-08-05: a deck with unresolved rows carries a count **badge on its `DeckCard`** so the state has a home outside the builder (no new `statusPill` value), and `/decks/import` is gated by the **absence of a link** — it ships unlinked in PR 4 and becomes reachable from `/decks` in PR 6, rather than behind a flag |
-| **#183** + **#177** + **#179** + **#185** + **#184** + **#176** Design: Add panel addendum | `design/design_handoff_the99_add_panel/ADDENDUM-README.md` | 🟢 Green (R3, post-ruling) | The six follow-ups the #158 run left open, drawn as one addendum against the locked R2 handoff and merged as PR #199. **Verdict was 🟡 Yellow on one product question (#176), ruled A by Hugh on 2026-08-06** — unowned EDHREC staples keep reaching Consider, marked with the shipped `buy` tag and gathered into a trailing shelf — so the addendum is unblocked in full and Design ratifies the verdict flip at R4. Its spine is decision 1, a bottom-of-viewport ownership rule (shell tab bar owns the true edge; one route dock per route sits above it; content reserves the stack) which answers #183 and #177 together, as the two tickets predicted it would. Plan at `docs/superpowers/plans/2026-08-08-add-panel-addendum-plan.md`, briefing at `docs/superpowers/plans/2026-08-08-add-panel-addendum-briefing.md`; six PRs, epic-run's preconditions met. The plan carries **five corrections** to the addendum's code claims, each verified directly against `main` — most consequentially that `/decks/new`'s Create button is *already* in the sticky footer and is occluded by a z-index collision rather than misplaced, and that the addendum's instruction to delete `RECOMMENDED_MIX.land`'s singular label is wrong (three live consumers). Three non-blocking items go back to Design at **R4**: that singular-label correction, whether the `Owned only` axis in Consider should be re-read now that ruling A gives it two values, and whether the undo row's deliberately long life reads as clutter in a 99-row list |
+
+_Currently empty — #42 shipped in full (✅ below), and the Add panel addendum moved to 🔨 below once its build started._
+
+---
+
+## 🔨 Implementation in flight
+
+Design is complete and the build has started, but not every planned PR has merged. An item leaves 🟢 the moment its
+first implementation PR lands and reaches ✅ only when the last one does.
+
+| # / vertical | Handoff | Progress | Notes |
+|---|---|---|---|
+| **#183** + **#177** + **#179** + **#185** + **#184** + **#176** Design: Add panel addendum | `design/design_handoff_the99_add_panel/ADDENDUM-README.md` | 1 of 6 PRs merged (#201) | The six follow-ups the #158 run left open, drawn as one addendum against the locked R2 handoff and merged as PR #199. **Verdict was 🟡 Yellow on one product question (#176), ruled A by Hugh on 2026-08-06** — unowned EDHREC staples keep reaching Consider, marked with the shipped `buy` tag and gathered into a trailing shelf — so the addendum is unblocked in full and Design ratifies the verdict flip at R4. Its spine is decision 1, a bottom-of-viewport ownership rule (shell tab bar owns the true edge; one route dock per route sits above it; content reserves the stack) which answers #183 and #177 together, as the two tickets predicted it would. Plan at `docs/superpowers/plans/2026-08-08-add-panel-addendum-plan.md`, briefing at `docs/superpowers/plans/2026-08-08-add-panel-addendum-briefing.md`; six PRs, epic-run's preconditions met. The plan carries **five corrections** to the addendum's code claims, each verified directly against `main` — most consequentially that `/decks/new`'s Create button is *already* in the sticky footer and is occluded by a z-index collision rather than misplaced, and that the addendum's instruction to delete `RECOMMENDED_MIX.land`'s singular label is wrong (three live consumers). Three non-blocking items go back to Design at **R4**: that singular-label correction, whether the `Owned only` axis in Consider should be re-read now that ruling A gives it two values, and whether the undo row's deliberately long life reads as clutter in a 99-row list |
 
 ---
 
@@ -55,8 +67,7 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-
-_Currently empty — #42's R2 handoff landed and its audit came back Green, so it sits in 🟢 above._
+| 1 | **#43** Design: Cross-check recommendations against cards committed to decks | `docs/superpowers/specs/2026-08-08-card-availability-design.md` | Handoff to `design/design_handoff_the99_availability/` — four surfaces (commanders list, commander detail, Add panel tiles, decklist rows) at both breakpoints, four card states, and the `Everything I own` / `What's free` toggle. READINESS audit before any eng ticket | Only item; workshopped 2026-08-08 |
 
 ---
 
@@ -77,7 +88,7 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-One ranked queue. Ranks 1–7 are v1 polish follow-ups against already-shipped surfaces; ranks 8–12 are post-v1 features ordered by the roadmap tracker (#44). Rank 8 sorts ahead of the other post-v1 work because both of its eng dependencies have already shipped. Five former ranks left this queue on 2026-08-08 — #183, #177, #179, #185 and #184 were answered together by the Add panel addendum and sit in 🟢 above with #176. The per-surface brand + richness refresh tickets and #35 shipped ahead of everything here.
+One ranked queue. Ranks 1–7 are v1 polish follow-ups against already-shipped surfaces; ranks 8–11 are post-v1 features ordered by the roadmap tracker (#44). Rank 8 sorts ahead of the other post-v1 work because both of its eng dependencies have already shipped. Five former ranks left this queue on 2026-08-08 — #183, #177, #179, #185 and #184 were answered together by the Add panel addendum and sit in 🔨 above with #176. The per-surface brand + richness refresh tickets and #35 shipped ahead of everything here.
 
 This list previously ran as two — a "Backlog" and a "Ready for design" — but the legend gave them the same definition (`type: design`, not yet workshopped), so nothing could be sorted between them by rule. The split was really a priority band, which the Rank column now carries.
 
@@ -92,9 +103,8 @@ This list previously ran as two — a "Backlog" and a "Ready for design" — but
 | 7 | **#62** Design: Issue Inspector handoff reconciliation | Two copies of the #36 handoff exist; the mocks are byte-identical, and the nested README documents a footer (`View only · fix in export & re-upload`) present in neither mock nor `src/`. Needs a call on canonical location + whether that footer ships |
 | 8 | **#130** + **#131** + **#132** Design: recommendations you can interrogate and act on — pre-populate a deck from recommendations · make Role Coverage explanatory and inspectable · suggest and add unowned cards | Post-v1. **One design cycle, not three** — Hugh flagged them as groupable when he filed them, and they share a premise: a recommendation the user cannot interrogate or act on is decoration. #131 is the seam; it needs #132's unowned cards to have anything to recommend beyond the collection, and it is where #130's "why was this picked" reasoning would surface. Split apart, each brief answers a third of one question. Both eng dependencies have now shipped — #127 landed the card-detail modal wiring #131's inspection gap needs, and #129 fixed the "Owned only" toggle under #132 — so nothing blocks this but a workshop. Open for #132: whether #44 already scopes it |
 | 9 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
-| 10 | **#43** Design: Cross-check recommendations against committed cards | Post-v1; touches #7 recs + #8 builder; value scales with deck count, so it sorts behind #42 (now 📐 above) |
-| 11 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — needs accumulated play data |
-| 12 | **#151** Design: per-deck printing override for a card's art | Post-v1. **Split out of #42** at the 2026-08-02 workshop — #42 had inherited it from #105 on the reasoning that a deck-level override needs a deck to attach to, but it is unrelated to import (import is getting a deck in; this is how a deck looks once it is there) and #42's brief was already large. Last because it is polish: `card_art_preferences` is keyed `(user_id, oracle_id)` and `deck_cards` has no printing column, so it needs new storage and a new read path for no functional gain |
+| 10 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — needs accumulated play data |
+| 11 | **#151** Design: per-deck printing override for a card's art | Post-v1. **Split out of #42** at the 2026-08-02 workshop — #42 had inherited it from #105 on the reasoning that a deck-level override needs a deck to attach to, but it is unrelated to import (import is getting a deck in; this is how a deck looks once it is there) and #42's brief was already large. Last because it is polish: `card_art_preferences` is keyed `(user_id, oracle_id)` and `deck_cards` has no printing column, so it needs new storage and a new read path for no functional gain |
 
 ### Rank 8 (#130 + #131 + #132) — open questions carried into the workshop
 
@@ -122,3 +132,4 @@ The first six shipped against the pre-richness baseline; **#51** then applied br
 | **#35** Branded user menu (eng **#13**) | `design/design_handoff_the99_user_menu/` | 2026-08-03 (PRs #156, #164) |
 | **#158** Deck builder Add panel overhaul | `design/design_handoff_the99_add_panel/` | 2026-08-05 (PRs #170, #171, #174, #175, #180, #181) — six planned PRs plus a reserved polish PR. The 340px suggestions column is gone; Consider is a full view with shelves ordered by what the deck lacks, and a sticky quick-add bar carries search. The owned-only default flipped `false` → `true` as ruled pre-build. Twelve interpretive calls await ratification as **#182**; three new design gaps the run surfaced are **#183** (mobile caption clipped behind the sticky bar), **#184** (Consider's `consider →` links) and **#185** (no undo on removal) |
 | **#52** Commanders · list windowing | `design/design_handoff_the99_commanders_windowing/` | 2026-08-03 (PR #165) — the *design* is fully shipped; eng ticket **#52** stays open for the server-side half (EDHREC fanout still runs for every candidate before first render) |
+| **#42** Import existing decks (Moxfield) | `design/design_handoff_the99_deck_import/` | 2026-08-06 (PRs #189, #190, #192–#197) — nine planned PRs; PR 3 became spike **#191** after Moxfield URL fetch proved blocked by Cloudflare bot protection, so paste and file import shipped without it |
