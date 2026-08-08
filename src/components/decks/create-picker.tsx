@@ -13,7 +13,7 @@
 // so those are the only things the mode switches on — everything below the row
 // is shared markup.
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { CSSProperties } from "react";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
@@ -120,14 +120,16 @@ export function CreatePicker(props: CreatePickerProps) {
   // line pushes it taller — so the reserve is measured rather than hard-coded.
   const footerRef = useRef<HTMLDivElement>(null);
   const [footerHeight, setFooterHeight] = useState(0);
-  useEffect(() => {
+  // Layout rather than passive: a passive effect runs after paint, so the
+  // measurement below would still leave one frame in which the dock covers the
+  // last row.
+  useLayoutEffect(() => {
     const el = footerRef.current;
     if (!el) return;
     // Border box, not `contentRect`: the footer's own padding and top border
     // are part of what covers the row beneath it.
-    // Measured once here as well: the observer's first callback lands after the
-    // first paint, and until it does the column would reserve the breathing
-    // room alone and let the dock cover the last row.
+    // Measured here as well as observed — the observer's first callback is
+    // asynchronous, so on its own it leaves the reserve at nothing on mount.
     setFooterHeight(el.getBoundingClientRect().height);
     const observer = new ResizeObserver(() =>
       setFooterHeight(el.getBoundingClientRect().height),
