@@ -125,6 +125,10 @@ export function CreatePicker(props: CreatePickerProps) {
     if (!el) return;
     // Border box, not `contentRect`: the footer's own padding and top border
     // are part of what covers the row beneath it.
+    // Measured once here as well: the observer's first callback lands after the
+    // first paint, and until it does the column would reserve the breathing
+    // room alone and let the dock cover the last row.
+    setFooterHeight(el.getBoundingClientRect().height);
     const observer = new ResizeObserver(() =>
       setFooterHeight(el.getBoundingClientRect().height),
     );
@@ -280,6 +284,44 @@ export function CreatePicker(props: CreatePickerProps) {
             />
           )}
 
+          {/* The name field lives in the scrolling flow on a phone (CV:263).
+              The dock carries the summary and the button only, so everything
+              else it used to hold comes back up here. Rendered whether or not
+              a commander is picked — a field that appears on selection would
+              reflow the list under the thumb that just tapped it.
+
+              Above the list, not below it: the list is every legal commander
+              the player owns and it scrolls, so a required field after it is
+              one the Create button can be blocked on and never found. This is
+              also the only order in which the canvas's fold marker below the
+              field — "list continues under the dock" — can be true.
+
+              Gated on the pool, not on the filter: a search that matches
+              nothing is still a screen you can name a deck on, but a player who
+              owns no commanders has nothing to name. */}
+          <div className={rows.length === 0 ? "hidden" : "md:hidden mb-[16px]"}>
+            {isImport && (
+              <label
+                htmlFor="picker-deck-name-mobile"
+                className="block font-mono"
+                style={{ fontSize: 10, color: "#8E8269", marginBottom: 9 }}
+              >
+                {copy.nameLabelFromSource}
+              </label>
+            )}
+            <TextField
+              id="picker-deck-name-mobile"
+              value={deckName}
+              onChange={(e) => setDeckName(e.target.value)}
+              maxLength={120}
+              placeholder="Deck name…"
+              disabled={isPending}
+              aria-label={isImport ? undefined : "Deck name"}
+              // 16px on mobile: anything smaller makes iOS Safari zoom the field.
+              className="block w-full p-[11px_13px] text-[16px]"
+            />
+          </div>
+
           {/* §Commander picker rows */}
           {rows.length === 0 ? (
             <p
@@ -378,37 +420,6 @@ export function CreatePicker(props: CreatePickerProps) {
               })}
             </ul>
           )}
-
-          {/* The name field lives in the scrolling flow on a phone (CV:263).
-              The dock carries the summary and the button only, so everything
-              else it used to hold comes back up here. Rendered whether or not
-              a commander is picked — a field that appears on selection would
-              reflow the list under the thumb that just tapped it. */}
-          {/* Gated on the pool, not on the filter: a search that matches
-              nothing is still a screen you can name a deck on, but a player who
-              owns no commanders has nothing to name. */}
-          <div className={rows.length === 0 ? "hidden" : "md:hidden mt-[16px]"}>
-            {isImport && (
-              <label
-                htmlFor="picker-deck-name-mobile"
-                className="block font-mono"
-                style={{ fontSize: 10, color: "#8E8269", marginBottom: 9 }}
-              >
-                {copy.nameLabelFromSource}
-              </label>
-            )}
-            <TextField
-              id="picker-deck-name-mobile"
-              value={deckName}
-              onChange={(e) => setDeckName(e.target.value)}
-              maxLength={120}
-              placeholder="Deck name…"
-              disabled={isPending}
-              aria-label={isImport ? undefined : "Deck name"}
-              // 16px on mobile: anything smaller makes iOS Safari zoom the field.
-              className="block w-full p-[11px_13px] text-[16px]"
-            />
-          </div>
 
           {/* §Commander picker — footnote (desktop only) */}
           {isImport && (
