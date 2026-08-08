@@ -87,7 +87,7 @@ export const addPanelCopy = {
     coverage: (have: number, target: number) => `you have ${have} of ${target}`,
     count: (n: number) => `${n} to consider`,
     // The "Threats & synergy" shelf has no target — decision 7.
-    noTarget: "no target — this is the deck’s plan",
+    noTarget: "no target · this is the deck’s plan",
     labels: {
       ramp: "Ramp",
       draw: "Draw",
@@ -118,6 +118,11 @@ export const addPanelCopy = {
     inclusion: (pct: string) => `${pct}%`,
     inclusionAria: (pct: string, commanderShortName: string) =>
       `in ${pct}% of ${commanderShortName} decks on EDHREC`,
+    // Both figures name their baseline on screen. Without the label a bare
+    // `10%` reads as a share of something on this page rather than an EDHREC
+    // inclusion rate.
+    evidenceLabel: "edhrec",
+    lift: (pts: string) => `+${pts} pts vs. all decks`,
   },
 
   // ── Consider, empty (expressive moment — zero suggestions is a win) ────
@@ -132,7 +137,7 @@ export const addPanelCopy = {
   degraded: {
     heading: "EDHREC isn’t answering right now.",
     body: (commanderShortName: string) =>
-      `These are ranked by what your deck is short of, not by what other ${commanderShortName} decks run — so the shelves are honest and the percentages are missing.`,
+      `These are ranked by what your deck is short of, not by what other ${commanderShortName} decks run. The shelves are honest and the percentages are missing.`,
     retry: "Try again",
   },
 
@@ -159,8 +164,8 @@ export const addPanelCopy = {
     ownedToggleAria: "Show only cards you own",
     ownedFilterOffNote: (n: number) =>
       n === 1
-        ? "filter off — 1 result you don’t own"
-        : `filter off — ${n} results you don’t own`,
+        ? "filter off · 1 result you don’t own"
+        : `filter off · ${n} results you don’t own`,
 
     clear: "Clear search",
   },
@@ -203,7 +208,7 @@ export const addPanelCopy = {
   builderEmpty: {
     heading: "A king with no army.",
     caption: (commander: string) =>
-      `Ninety-nine slots, zero filled. Type a name below, or take the ninety-nine we’ve already picked out — ${commander} eats everything anyway.`,
+      `Ninety-nine slots, zero filled. Type a name below, or take the ones we’ve already picked out. ${commander} eats everything anyway.`,
     roleHint: "Try filling your ramp, draw, removal, and wipe slots first.",
   },
 

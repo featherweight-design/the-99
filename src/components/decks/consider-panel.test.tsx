@@ -128,7 +128,7 @@ describe("ConsiderPanel — shelves", () => {
 
     const headings = screen.getAllByRole("heading", { level: 3 });
     expect(headings.map((h) => h.textContent)).toEqual(["Ramp", "Threats & synergy"]);
-    expect(screen.getByText(/no target — this is the deck’s plan/)).toBeInTheDocument();
+    expect(screen.getByText(/no target · this is the deck’s plan/)).toBeInTheDocument();
   });
 
   it("quotes the same figures the coverage strip does", () => {
@@ -225,11 +225,25 @@ describe("ConsiderPanel — evidence", () => {
     const { unmount } = mount({
       suggestions: [suggestion({ name: "Sol Ring", lift: 0.31 })],
     });
-    expect(screen.getByText("+31 pts vs. average")).toBeInTheDocument();
+    expect(screen.getByText("+31 pts vs. all decks")).toBeInTheDocument();
     unmount();
 
     mount({ suggestions: [suggestion({ name: "Sol Ring", lift: null })] });
-    expect(screen.queryByText(/pts vs\. average/)).toBeNull();
+    expect(screen.queryByText(/pts vs\./)).toBeNull();
+  });
+
+  // The bar is aria-hidden and the percentage carries its own aria, so the
+  // label is decoration for the eye only — it must render beside a figure and
+  // stay absent from the honest-omission branch that draws no bar at all.
+  it("labels the inclusion bar's source, and only where there is a bar", () => {
+    const { unmount } = mount({
+      suggestions: [suggestion({ name: "Sol Ring", inclusionPct: 82 })],
+    });
+    expect(screen.getByText("edhrec")).toBeInTheDocument();
+    unmount();
+
+    mount({ suggestions: [suggestion({ name: "Sol Ring", inclusionPct: null })] });
+    expect(screen.queryByText("edhrec")).toBeNull();
   });
 });
 

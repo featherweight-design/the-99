@@ -14,7 +14,7 @@ describe("shortCommanderName", () => {
 describe("addPanelCopy.builderEmpty", () => {
   it("reproduces the handoff's single builder-empty caption verbatim", () => {
     expect(addPanelCopy.builderEmpty.caption("Korvold")).toBe(
-      "Ninety-nine slots, zero filled. Type a name below, or take the ninety-nine we’ve already picked out — Korvold eats everything anyway.",
+      "Ninety-nine slots, zero filled. Type a name below, or take the ones we’ve already picked out. Korvold eats everything anyway.",
     );
   });
 
@@ -79,5 +79,47 @@ describe("decksBuilderCopy", () => {
     expect(decksBuilderCopy.completion.caption("Korvold")).toBe(
       "Korvold is fed — 99 of 99, all owned. Try not to let it get to your head at the table.",
     );
+  });
+});
+
+describe("addPanelCopy.tile evidence labels", () => {
+  it("names the baseline the lift is measured against", () => {
+    expect(addPanelCopy.tile.lift("31")).toBe("+31 pts vs. all decks");
+  });
+
+  it("labels the inclusion bar's source", () => {
+    expect(addPanelCopy.tile.evidenceLabel).toBe("edhrec");
+  });
+});
+
+// The addendum's whole copy pass was removing em dashes from this surface, so
+// the invariant is worth pinning rather than re-auditing by eye. Scoped to
+// addPanelCopy: decksBuilderCopy's untouched strings keep theirs.
+describe("addPanelCopy punctuation", () => {
+  const sample = (value: unknown): string[] => {
+    if (typeof value === "string") return [value];
+    if (typeof value === "function") {
+      // Every function member takes strings or numbers and interpolates them.
+      // Several branch on a count, so one call would leave the other branch
+      // unsampled: `ownedFilterOffNote` writes its singular and plural forms
+      // separately, and a dash could return to either alone. Call each member
+      // once per fill so every count branch renders its literal frame.
+      const fills: unknown[] = ["x", 0, 1, 2];
+      return fills.map((fill) =>
+        String(
+          (value as (...a: unknown[]) => string)(
+            ...Array.from({ length: value.length }, () => fill),
+          ),
+        ),
+      );
+    }
+    if (value && typeof value === "object") return Object.values(value).flatMap(sample);
+    return [];
+  };
+
+  it("contains no em dash in any string", () => {
+    for (const string of sample(addPanelCopy)) {
+      expect(string).not.toContain("—");
+    }
   });
 });

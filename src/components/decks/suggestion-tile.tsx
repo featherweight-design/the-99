@@ -82,6 +82,15 @@ function Evidence({
   return (
     <div className="flex flex-col gap-[3px]">
       <div className="flex items-center gap-[6px]">
+        {/* #4A4033 is only bound to --border-dashed, a border token; the repo
+            spends it raw wherever it is a foreground (decklist-row.tsx:115). */}
+        <span
+          aria-hidden
+          className="font-mono text-[9px]"
+          style={{ color: inDeck ? "#4A4033" : "var(--fg-locked)" }}
+        >
+          {addPanelCopy.tile.evidenceLabel}
+        </span>
         <span
           aria-hidden
           className="flex-1 h-[4px] rounded-full overflow-hidden"
@@ -106,7 +115,7 @@ function Evidence({
       {lift != null && (
         <p className="font-mono text-[9.5px]" style={{ color: "var(--brass-shadow)" }}>
           {/* EDHREC hands synergy back as a fraction; the tile states it in points. */}
-          {`+${Math.round(lift * 100)} pts vs. average`}
+          {addPanelCopy.tile.lift(String(Math.round(lift * 100)))}
         </p>
       )}
     </div>
