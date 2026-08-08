@@ -13,6 +13,17 @@ afterEach(cleanup);
 // this is the same stub the production build uses to typecheck without a database.
 process.env.DATABASE_URL ??= "postgres://stub:stub@localhost/stub";
 
+// jsdom ships no ResizeObserver either. jsdom lays nothing out, so a real one
+// would never fire anyway — components that measure an element keep whatever
+// fallback they render before the first observation.
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
 // jsdom ships no matchMedia, so any component reaching useIsDesktop() throws
 // before it renders. Phone is the default because it is the hook's own SSR
 // snapshot; tests that need the other breakpoint redefine this themselves.

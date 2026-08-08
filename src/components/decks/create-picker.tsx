@@ -13,7 +13,8 @@
 // so those are the only things the mode switches on — everything below the row
 // is shared markup.
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import type { CSSProperties } from "react";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
@@ -112,6 +113,24 @@ export function CreatePicker(props: CreatePickerProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inFlight = useRef(false);
+
+  // The phone footer is `fixed`, so it reserves no space of its own and the
+  // last commander row would sit under it. Its height is not a constant — it
+  // grows by a summary, a label and a name field once a commander is picked —
+  // so the reserve is measured rather than hard-coded.
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [footerHeight, setFooterHeight] = useState(0);
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el) return;
+    // Border box, not `contentRect`: the footer's own padding and top border
+    // are part of what covers the row beneath it.
+    const observer = new ResizeObserver(() =>
+      setFooterHeight(el.getBoundingClientRect().height),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Client-side substring filter over loaded list. The import picker has no search:
   // it lists the handful of legends one decklist contained.
@@ -219,10 +238,14 @@ export function CreatePicker(props: CreatePickerProps) {
         {/* ── Left: search + picker list ── */}
         <div
           className={
-            isImport
+            (isImport
               ? "flex-1 min-w-0 p-[16px_18px_12px] md:p-[24px_40px]"
-              : "flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]"
+              : "flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]") +
+            " pb-[var(--picker-reserve)] md:pb-[24px]"
           }
+          // The shell's `main` already reserves the 80px tab bar, so the
+          // picker owes only the footer stacked on top of it.
+          style={{ "--picker-reserve": `${footerHeight + 12}px` } as CSSProperties}
         >
           {isImport ? (
             /* §Commander picker — intro (mobile) / count (desktop) */
@@ -475,9 +498,12 @@ export function CreatePicker(props: CreatePickerProps) {
           </PrimaryButton>
         </div>
 
-        {/* Mobile sticky footer */}
+        {/* Mobile sticky footer. `bottom-[80px]` clears the shell tab bar,
+            which owns the true bottom edge at a higher z-index — at
+            `bottom-0` the tab bar draws straight over the Create button. */}
         <div
-          className="md:hidden fixed bottom-0 left-0 right-0 z-20"
+          ref={footerRef}
+          className="md:hidden fixed bottom-[80px] left-0 right-0 z-20"
           style={{
             padding: "14px 16px 20px",
             borderTop: "1px solid #2A241D",
