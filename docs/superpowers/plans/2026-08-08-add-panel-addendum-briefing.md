@@ -4,9 +4,9 @@ Feature-specific facts for `epic-run`. Run mechanics live in the skill; repo con
 `AGENTS.md`. Neither is restated here.
 
 This is the second run against the same surface. The first (#158, briefed at
-`2026-08-04-add-panel-briefing.md`) shipped seven PRs and closed on 2026-08-05. **Read that
-briefing too** — its "Hard pause points" and its owned-pool premise still bind, and this file
-records only what changed.
+`docs/superpowers/plans/2026-08-04-add-panel-briefing.md`) shipped seven PRs and closed on
+2026-08-05. **Read that briefing too** — its "Hard pause points" and its owned-pool premise still
+bind, and this file records only what changed.
 
 ## Source of truth (read in this order)
 
