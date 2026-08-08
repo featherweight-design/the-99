@@ -36,77 +36,81 @@ export function StripRationale() {
   const panelId = useId();
   const descriptionId = `${panelId}-description`;
 
-  if (!open) {
-    /* §Rationale disclosure trigger — own row, mt 12px */
-    return (
-      <div className="flex items-center gap-[14px] mt-[12px]">
+  /*
+    One tree for both states, rather than an early return per state.
+
+    The two states are drawn differently — a bare row when closed, a header
+    inside the panel box when open — but they were also two different subtrees,
+    so React unmounted the trigger on every toggle and the keyboard user's focus
+    fell to `document.body` the instant they opened the thing. Same element, same
+    position, classes doing the drawing.
+
+    §Rationale panel, open: bg --surface-sunken, border 1px --border,
+    border-left 3px --brass, br 9px, p 11px 13px, mt 10px, internal gap 7px.
+    §Rationale disclosure trigger, closed: own row, mt 12px.
+  */
+  return (
+    <div
+      className={
+        open
+          ? "mt-[10px] rounded-[9px] px-[13px] py-[11px] bg-surface-sunken border border-border border-l-[3px] border-l-brass"
+          : "mt-[12px]"
+      }
+    >
+      <div className="flex items-baseline justify-between gap-[10px]">
         {/* The authored sentence describes rather than names. As an `aria-label`
             it replaced the drawn text, so the accessible name held none of the
             words on screen — WCAG 2.5.3, and a voice-control user asking for
-            "Why these numbers" would not have reached it. */}
+            "Why these numbers" would not have reached it.
+
+            It does not follow the panel open: it reads "Show why each role has
+            the target it has", which is a lie once the panel is showing, and
+            the panel below is the answer it was offering. */}
         <span id={descriptionId} className="sr-only">
           {addPanelCopy.strip.rationaleToggleAria}
         </span>
         <button
           type="button"
-          onClick={() => setOpen(true)}
-          aria-expanded={false}
-          aria-describedby={descriptionId}
-          className="font-mono text-[11px] text-brass border-b border-brass-shadow pb-[1px] cursor-pointer"
+          onClick={() => setOpen((wasOpen) => !wasOpen)}
+          aria-expanded={open}
+          aria-describedby={open ? undefined : descriptionId}
+          aria-controls={open ? panelId : undefined}
+          className={
+            open
+              ? "font-mono text-[11px] text-brass cursor-pointer"
+              : "font-mono text-[11px] text-brass border-b border-brass-shadow pb-[1px] cursor-pointer"
+          }
         >
           {addPanelCopy.strip.rationaleToggle}
         </button>
-      </div>
-    );
-  }
-
-  /*
-    §Rationale panel
-    bg --surface-sunken, border 1px --border, border-left 3px --brass,
-    br 9px, p 11px 13px, mt 10px, internal gap 7px
-  */
-  return (
-    <div className="mt-[10px] rounded-[9px] px-[13px] py-[11px] bg-surface-sunken border border-border border-l-[3px] border-l-brass">
-      {/* §Rationale panel — header. The title is the same control as the closed
-          trigger, so `aria-expanded` stays observable while the panel is open;
-          `Hide` is the drawn close beside it.
-
-          The authored sentence does not follow it open: it reads "Show why each
-          role has the target it has", which is a lie once the panel is showing,
-          and the panel below is the answer it was offering. */}
-      <div className="flex items-baseline justify-between gap-[10px]">
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          aria-expanded
-          aria-controls={panelId}
-          className="font-mono text-[11px] text-brass cursor-pointer"
-        >
-          {addPanelCopy.strip.rationaleToggle}
-        </button>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer"
-        >
-          {addPanelCopy.strip.rationaleClose}
-        </button>
+        {/* §Rationale panel — the drawn close, beside the title. */}
+        {open && (
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer"
+          >
+            {addPanelCopy.strip.rationaleClose}
+          </button>
+        )}
       </div>
 
       {/* §Rationale panel — lines */}
-      <div
-        id={panelId}
-        role="region"
-        aria-label={addPanelCopy.strip.rationaleToggle}
-        className="flex flex-col gap-[7px] mt-[9px]"
-      >
-        {LINES.map((line) => (
-          <p key={line.key} className="text-[12px] leading-[1.55] text-fg-body">
-            <b className="font-semibold text-fg">{heading(line.roles)}</b>{" "}
-            {addPanelCopy.strip.rationaleBodies[line.key]}
-          </p>
-        ))}
-      </div>
+      {open && (
+        <div
+          id={panelId}
+          role="region"
+          aria-label={addPanelCopy.strip.rationaleToggle}
+          className="flex flex-col gap-[7px] mt-[9px]"
+        >
+          {LINES.map((line) => (
+            <p key={line.key} className="text-[12px] leading-[1.55] text-fg-body">
+              <b className="font-semibold text-fg">{heading(line.roles)}</b>{" "}
+              {addPanelCopy.strip.rationaleBodies[line.key]}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

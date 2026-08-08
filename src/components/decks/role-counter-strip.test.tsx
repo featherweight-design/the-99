@@ -170,6 +170,24 @@ describe("role counter strip — one disclosure for the whole strip", () => {
     expect(open).not.toHaveAccessibleDescription(addPanelCopy.strip.rationaleToggleAria);
   });
 
+  // The two states were two subtrees, so React unmounted the trigger on every
+  // toggle and a keyboard user's focus dropped to `document.body` at the moment
+  // they opened the panel — right before the content they asked for arrived.
+  // Same node in both states is what keeps the caret where they left it.
+  it("keeps focus on the trigger across a toggle", () => {
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
+    trigger.focus();
+
+    fireEvent.click(trigger);
+    expect(document.activeElement).toBe(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(trigger);
+    expect(document.activeElement).toBe(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("closes again from Hide", () => {
     render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
     const trigger = screen.getByRole("button", {
