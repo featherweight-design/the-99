@@ -11,14 +11,29 @@ interface DecklistGroupProps {
   deckId: string;
   label: string;
   cards: DeckDetailCard[];
+  /** The card in this group whose slot is spent, if any (#185). */
+  spentOracleId?: string;
   /** The whole decklist in display order, for the detail modal's Prev/Next. */
   siblings?: string[];
   /** Optional note shown right-aligned on desktop (e.g. "37 recommended"). */
   note?: string;
 }
 
-export function DecklistGroup({ deckId, label, cards, siblings, note }: DecklistGroupProps) {
-  const count = cards.reduce((sum, c) => sum + c.quantity, 0);
+export function DecklistGroup({
+  deckId,
+  label,
+  cards,
+  spentOracleId,
+  siblings,
+  note,
+}: DecklistGroupProps) {
+  // The count does not wait for the undo: a spent slot is a receipt, not a
+  // pending state, and a group that held its figure would be lying about its
+  // own size.
+  const count = cards.reduce(
+    (sum, c) => sum + (c.oracleId === spentOracleId ? 0 : c.quantity),
+    0,
+  );
 
   return (
     <div className="mb-[16px] md:mb-[20px]">
@@ -31,7 +46,13 @@ export function DecklistGroup({ deckId, label, cards, siblings, note }: Decklist
       >
         {cards.flatMap((card) => {
           const rows = [
-            <DecklistRow key={card.oracleId} deckId={deckId} card={card} siblings={siblings} />,
+            <DecklistRow
+              key={card.oracleId}
+              deckId={deckId}
+              card={card}
+              spent={card.oracleId === spentOracleId}
+              siblings={siblings}
+            />,
           ];
           // Basic lands with quantity > 1: render a "+N more" meta row
           if (shouldShowMetaRow(card)) {

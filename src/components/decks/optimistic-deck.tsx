@@ -23,7 +23,21 @@ import {
  * intervening frame, and on failure React drops it with no explicit revert.
  */
 type AddOptimisticCard = (card: DeckDetailCard) => void;
-type RemoveOptimisticCard = (oracleId: string) => void;
+/** The whole card, not an id: the shell announces the removal and holds the
+ *  spent slot the undo row is drawn from, and both need the name. */
+type RemoveOptimisticCard = (card: DeckDetailCard) => void;
+/**
+ * The two halves of a removal that must not run in the same place. `remove` is
+ * the optimistic dispatch and belongs inside the mutation's transition;
+ * `markSpent` is ordinary state, which React would hold for the length of that
+ * async transition, so the row calls it straight from the click instead.
+ */
+type MarkSlotSpent = (card: DeckDetailCard) => void;
+/** Undo's optimistic re-add, split from its announcement for the same reason. */
+type UndoRemovedCard = (card: DeckDetailCard) => void;
+type AnnounceUndo = (card: DeckDetailCard) => void;
+/** Drops the spent slot once the re-add has been accepted. */
+type SettleUndo = () => void;
 
 type DeckEdit =
   | { kind: "add"; card: DeckDetailCard }
@@ -41,13 +55,19 @@ type ReportRemoveFailure = (cardName: string) => void;
 type ResolveOptimisticRow = (rowId: string, card: DeckDetailCard) => void;
 type DeleteOptimisticRow = (rowId: string) => void;
 
-const DeckEditContext = createContext<{
+type DeckEdits = {
   add: AddOptimisticCard;
   remove: RemoveOptimisticCard;
+  markSpent: MarkSlotSpent;
+  undoRemove: UndoRemovedCard;
+  announceUndo: AnnounceUndo;
+  settleUndo: SettleUndo;
   reportRemoveFailure: ReportRemoveFailure;
   resolveRow: ResolveOptimisticRow;
   deleteRow: DeleteOptimisticRow;
-} | null>(null);
+};
+
+const DeckEditContext = createContext<DeckEdits | null>(null);
 
 /**
  * Unresolved rows come through here rather than straight off the server props
@@ -94,8 +114,7 @@ export function useOptimisticDeckCards(
   );
 
   const addOptimisticCard: AddOptimisticCard = (card) => applyEdit({ kind: "add", card });
-  const removeOptimisticCard: RemoveOptimisticCard = (oracleId) =>
-    applyEdit({ kind: "remove", oracleId });
+  const removeOptimisticCard = (oracleId: string) => applyEdit({ kind: "remove", oracleId });
   const resolveOptimisticRow: ResolveOptimisticRow = (rowId, card) => {
     dropRow(rowId);
     applyEdit({ kind: "add", card });
@@ -117,13 +136,7 @@ export function AddOptimisticCardProvider({
   value,
   children,
 }: {
-  value: {
-    add: AddOptimisticCard;
-    remove: RemoveOptimisticCard;
-    reportRemoveFailure: ReportRemoveFailure;
-    resolveRow: ResolveOptimisticRow;
-    deleteRow: DeleteOptimisticRow;
-  };
+  value: DeckEdits;
   children: React.ReactNode;
 }) {
   return <DeckEditContext.Provider value={value}>{children}</DeckEditContext.Provider>;
@@ -142,6 +155,22 @@ export function useRemoveOptimisticCard(): RemoveOptimisticCard {
   return useContext(DeckEditContext)?.remove ?? noop;
 }
 
+export function useMarkSlotSpent(): MarkSlotSpent {
+  return useContext(DeckEditContext)?.markSpent ?? noop;
+}
+
+export function useUndoRemovedCard(): UndoRemovedCard {
+  return useContext(DeckEditContext)?.undoRemove ?? noop;
+}
+
+export function useAnnounceUndo(): AnnounceUndo {
+  return useContext(DeckEditContext)?.announceUndo ?? noop;
+}
+
+export function useSettleUndo(): SettleUndo {
+  return useContext(DeckEditContext)?.settleUndo ?? noop;
+}
+
 export function useResolveOptimisticRow(): ResolveOptimisticRow {
   return useContext(DeckEditContext)?.resolveRow ?? noop;
 }
@@ -151,11 +180,12 @@ export function useDeleteOptimisticRow(): DeleteOptimisticRow {
 }
 
 /**
- * Outside a provider nothing removes the row, so its own inline message is
- * still the right surface and this stays a no-op.
+ * Null outside a provider, and the row reads that as "no one else will say it".
+ * A no-op would be indistinguishable from a shell that took the message, and
+ * the row would then swallow a failure nothing else was going to report.
  */
-export function useReportRemoveFailure(): ReportRemoveFailure {
-  return useContext(DeckEditContext)?.reportRemoveFailure ?? noop;
+export function useReportRemoveFailure(): ReportRemoveFailure | null {
+  return useContext(DeckEditContext)?.reportRemoveFailure ?? null;
 }
 
 function noop() {}
