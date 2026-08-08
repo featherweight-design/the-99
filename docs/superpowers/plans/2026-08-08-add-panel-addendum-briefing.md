@@ -39,8 +39,10 @@ dormant-until-configured. The infra table in the final report reads "none" — s
 rather than omitting the section.
 
 Baselines to compare against, taken on `main` at `e14463e`: **lint 118 warnings / 0 errors**,
-**917 tests across 82 files**. This repo has no CI checks, no `apps/e2e`, no `releases.ts` and no
-`progress.md` — the pre-push gate in `AGENTS.md` is the only gate that runs, and it runs locally.
+**917 tests across 82 files**. `.github/workflows/ci.yml` runs typecheck, lint, test and a
+stub-DB build on every PR, so CI is a real gate here — but it is the same four commands as the
+pre-push gate in `AGENTS.md`, which means a clean local push is a green CI run and CI catches
+nothing new. This repo has no `apps/e2e`, no `releases.ts` and no `progress.md`.
 
 | Claim | Where | State |
 |---|---|---|
@@ -223,7 +225,7 @@ entered.
 ## Done means
 
 1. All six PRs merged at the full Copilot bar and deployed, and the journeys walked on the deployed
-   URL — not merely local-green.
+   URL — not merely CI-green.
 2. Journeys A–D walked forward, reverse, repeat and resume, recorded in
    `docs/superpowers/journey-lifecycle-add-panel-addendum.md` with what was forced and what came
    back. Journey A's repeat pass and Journey C's keyboard step are the two that must not be skipped.
