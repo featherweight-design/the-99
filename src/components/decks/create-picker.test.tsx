@@ -25,8 +25,8 @@ const commanders = [
 
 describe("CreatePicker — phone bottom stack", () => {
   it("pins the footer above the tab bar, not on the bottom edge", () => {
-    const { container } = render(<CreatePicker legalCommanders={commanders} />);
-    const footer = container.querySelector("div.fixed");
+    render(<CreatePicker legalCommanders={commanders} />);
+    const footer = screen.getByTestId("create-picker-dock");
 
     expect(footer).toHaveClass("bottom-[80px]");
     expect(footer).not.toHaveClass("bottom-0");
@@ -47,7 +47,7 @@ describe("CreatePicker — phone bottom stack", () => {
 
   it("carries only the summary and the button, so its height cannot move under a thumb", () => {
     const { container } = render(<CreatePicker legalCommanders={commanders} />);
-    const footer = container.querySelector("div.fixed") as HTMLElement;
+    const footer = screen.getByTestId("create-picker-dock");
 
     expect(footer).toHaveTextContent(addPanelCopy.createPicker.dockSummaryEmpty);
     // The name field is the thing that used to live here. It belongs to the

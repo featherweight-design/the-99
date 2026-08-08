@@ -548,6 +548,7 @@ export function CreatePicker(props: CreatePickerProps) {
             here or the dock's height moves under a thumb. */}
         <div
           ref={footerRef}
+          data-testid="create-picker-dock"
           className="md:hidden fixed bottom-[80px] left-0 right-0 z-20"
           style={{
             padding: "10px 16px 12px",
