@@ -115,7 +115,7 @@ describe("addPanelCopy punctuation", () => {
         ...counts.map((n) => Array.from({ length: arity }, () => n)),
         ...counts.map((n) => Array.from({ length: arity }, (_, i) => (i === 0 ? "x" : n))),
       ];
-      return argLists.flatMap((args) => {
+      const rendered = argLists.flatMap((args) => {
         try {
           return [String((value as (...a: unknown[]) => string)(...args))];
         } catch {
@@ -125,6 +125,16 @@ describe("addPanelCopy punctuation", () => {
           return [];
         }
       });
+      // Tolerating a shape that throws is the point; tolerating a member that
+      // throws on every shape is how this whole invariant quietly stops testing
+      // anything. A member the sampler cannot call at all is a sampler that
+      // needs a new shape, not a string that passed.
+      if (rendered.length === 0) {
+        throw new Error(
+          `addPanelCopy.${(value as { name?: string }).name || "(anonymous)"} rendered under no argument shape, so its strings went unsampled. Add the shape it takes.`,
+        );
+      }
+      return rendered;
     }
     if (value && typeof value === "object") return Object.values(value).flatMap(sample);
     return [];
