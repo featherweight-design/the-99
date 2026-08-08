@@ -294,10 +294,10 @@ li.tile  span.tag[aria-label="Smothering Tithe is not in your collection"]
 
 ## Gap report
 
-1. **#176 needs a product ruling before any of section 7 ships.** A (keep, marked) is drawn and
-   recommended; B (drop the append) is one deletion and no design. Everything else in this
-   addendum is independent of it.
-2. **The `Owned only` axis in Consider comes back if A is ruled.** Decision 5 kept the toggle out
+1. **#176 was the one product ruling, and it came back A** (keep, marked) on 2026-08-06, so all of
+   section 7 ships. B (drop the append) would have been one deletion and no design. Everything else
+   in this addendum was independent of it either way.
+2. **The `Owned only` axis in Consider comes back under A.** Decision 5 kept the toggle out
    of Consider because the axis had one value. Under A it has two — with five unowned cards in one
    labelled shelf, a filter is still the wrong control, but that reasoning has changed and should
    be re-read rather than inherited.
