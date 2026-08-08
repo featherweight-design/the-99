@@ -65,6 +65,23 @@ function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]
     : shelves;
 }
 
+/**
+ * The roles that actually have a shelf on Consider, which is not every short
+ * role: a shelf is built from owned suggestions only and dropped when it would
+ * be empty, so a deck short of wipes with nothing owned to offer has no
+ * `#shelf-wipes` to scroll to. The coverage strip gates its cells on this, or
+ * a short cell becomes a control whose only effect is to switch tabs.
+ */
+export function rolesWithShelves(suggestions: DeckSuggestion[]): ReadonlySet<MixRole> {
+  const roles = new Set<MixRole>();
+  for (const s of suggestions) {
+    if (!s.owned) continue;
+    const role = shelfRoleOf(s);
+    if (role !== "other") roles.add(role);
+  }
+  return roles;
+}
+
 function sortWithin(suggestions: DeckSuggestion[], sort: SortKey): DeckSuggestion[] {
   if (sort === "gaps") return suggestions;
   const sorted = [...suggestions];

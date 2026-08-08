@@ -12,21 +12,34 @@ import { RoleCounterCell } from "./role-counter-cell";
 import { StripRationale } from "./strip-rationale";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 
-interface RoleCounterStripProps {
+/**
+ * `onSeeShelf` switches the builder to Consider, scrolls to that role's shelf
+ * and moves focus onto its heading. A cell cannot be an anchor: the Consider
+ * panel is unmounted while the deck tab is up, so the `#shelf-*` heading does
+ * not exist at click time.
+ *
+ * `rolesWithShelves` names the roles Consider actually draws a shelf for, which
+ * is not every short role: a shelf is built from owned suggestions, so a role
+ * with none is missing from the panel and the scroll would find nothing.
+ *
+ * The two arrive together or not at all. Supplying the handler alone would
+ * disable every short cell rather than fail, and a strip that silently offers
+ * nothing is the exact defect this prop was added to close.
+ */
+type RoleCounterStripProps = {
   cards: DeckDetailCard[];
-  /**
-   * Switches the builder to Consider, scrolls to that role's shelf and moves
-   * focus onto its heading. A cell cannot be an anchor: the Consider panel is
-   * unmounted while the deck tab is up, so the `#shelf-*` heading does not
-   * exist at click time. Without it a short cell has nowhere to send anyone
-   * and falls back to a figure.
-   */
-  onSeeShelf?: (role: MixRole) => void;
-}
+} & (
+  | { onSeeShelf: (role: MixRole) => void; rolesWithShelves: ReadonlySet<MixRole> }
+  | { onSeeShelf?: never; rolesWithShelves?: never }
+);
 
 const ROLE_ORDER: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
-export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
+export function RoleCounterStrip({
+  cards,
+  onSeeShelf,
+  rolesWithShelves,
+}: RoleCounterStripProps) {
   const counts = computeRoleCounts(cards);
 
   return (
@@ -89,7 +102,9 @@ export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
             target={RECOMMENDED_MIX[role].target}
             advisory={RECOMMENDED_MIX[role].advisory}
             onSeeShelf={
-              onSeeShelf && counts[role] < RECOMMENDED_MIX[role].target
+              onSeeShelf &&
+              counts[role] < RECOMMENDED_MIX[role].target &&
+              rolesWithShelves?.has(role)
                 ? () => onSeeShelf(role)
                 : undefined
             }

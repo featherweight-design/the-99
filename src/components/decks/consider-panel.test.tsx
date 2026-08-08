@@ -19,7 +19,7 @@ vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
-const { ConsiderPanel, SHELF_CAP } = await import("./consider-panel");
+const { ConsiderPanel, SHELF_CAP, rolesWithShelves } = await import("./consider-panel");
 const { CardDetailProvider } = await import("./card-detail-provider");
 
 const suggestion = (over: Partial<DeckSuggestion> & { name: string }): DeckSuggestion => ({
@@ -436,5 +436,37 @@ describe("ConsiderPanel — panel states", () => {
     mount({ degraded: true });
     expect(screen.queryByText(/you already own/i)).toBeNull();
     expect(screen.getByRole("combobox", { name: /sort suggestions/i })).toBeInTheDocument();
+  });
+});
+
+// The set the coverage strip gates its cells on. It has to agree with
+// buildShelves exactly: a role it reports that the panel does not draw is a
+// cell that scrolls nowhere, and a role it omits is a shelf nobody can reach.
+describe("rolesWithShelves — which cells have somewhere to go", () => {
+  it("reports a role once it has an owned suggestion", () => {
+    const roles = rolesWithShelves([
+      suggestion({ name: "Sol Ring", role: "ramp" }),
+      suggestion({ name: "Rhystic Study", role: "draw" }),
+    ]);
+    expect([...roles].sort()).toEqual(["draw", "ramp"]);
+  });
+
+  it("omits a role whose only suggestions are unowned, because that shelf is dropped", () => {
+    const roles = rolesWithShelves([suggestion({ name: "Mana Drain", role: "draw", owned: false })]);
+    expect(roles.has("draw")).toBe(false);
+  });
+
+  it("omits the targetless role, which the strip has no cell for", () => {
+    const roles = rolesWithShelves([suggestion({ name: "Dockside", role: "other" })]);
+    expect(roles.size).toBe(0);
+  });
+
+  // shelfRoleOf, not `role`: a card offered to close the ramp gap shelves under
+  // ramp whatever the card itself is, and the strip has to follow it there.
+  it("follows the slot a suggestion was picked for, not the card's own role", () => {
+    const roles = rolesWithShelves([
+      suggestion({ name: "Cultivate", role: "removal", reason: "ramp", reasonType: "role" }),
+    ]);
+    expect([...roles]).toEqual(["ramp"]);
   });
 });

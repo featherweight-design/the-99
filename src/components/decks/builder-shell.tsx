@@ -21,7 +21,7 @@ import { Crab } from "../character/crab";
 import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
-import { ConsiderPanel } from "./consider-panel";
+import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { QuickAddBar } from "./quick-add-bar";
 import { ExportDialog } from "./export-dialog";
@@ -244,6 +244,8 @@ export function BuilderShell({
   // A ref rather than state: the target is consumed by the effect that acts on
   // it, and holding it in state would mean a second render whose only job is to
   // clear it — which the react-compiler rule rightly rejects.
+  const shelvedRoles = useMemo(() => rolesWithShelves(suggestions), [suggestions]);
+
   const pendingShelf = useRef<MixRole | null>(null);
   const seeShelf = useCallback(
     (role: MixRole) => {
@@ -354,7 +356,11 @@ export function BuilderShell({
             <UnresolvedBanner count={unresolvedRows.length} onTakeALook={seeUnresolved} />
 
             {/* Role Counter Strip — shown when deck has cards (mid-build) or always per design */}
-            <RoleCounterStrip cards={cards} onSeeShelf={seeShelf} />
+            <RoleCounterStrip
+              cards={cards}
+              onSeeShelf={seeShelf}
+              rolesWithShelves={shelvedRoles}
+            />
 
             {/* No degraded banner here. The old one ("Synergy data offline")
                 fired alongside Consider's own ("EDHREC isn't answering right

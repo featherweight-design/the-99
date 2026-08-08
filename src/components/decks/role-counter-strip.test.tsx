@@ -15,6 +15,9 @@ import { RoleCounterStrip } from "./role-counter-strip";
 
 const ROLES: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
+/** Consider drawing a shelf for every role — the case the rest of these assume. */
+const ALL_SHELVES = new Set(ROLES);
+
 const card = (role: DeckDetailCard["role"], i: number): DeckDetailCard => ({
   oracleId: `o-${role}-${i}`,
   name: `${role} ${i}`,
@@ -43,33 +46,33 @@ const cellFor = (role: MixRole, have: number) =>
 
 describe("role counter strip — a short cell is the control", () => {
   it("makes a cell under target a button whose name carries both figures", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(cellFor("ramp", 0)).toBeInTheDocument();
     expect(cellFor("ramp", 0)).toHaveTextContent(addPanelCopy.strip.cellLink);
   });
 
   it("names the role's shelf, so five cells in a row are told apart", () => {
     const onSeeShelf = vi.fn();
-    render(<RoleCounterStrip cards={[]} onSeeShelf={onSeeShelf} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={onSeeShelf} rolesWithShelves={ALL_SHELVES} />);
     fireEvent.click(cellFor("draw", 0)!);
     expect(onSeeShelf).toHaveBeenCalledWith("draw");
   });
 
   it("draws no anchor anywhere — the cell replaced the link, it did not join it", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(screen.queryAllByRole("link")).toHaveLength(0);
   });
 
   // Six targets, not ten: at most five cells plus the one strip disclosure.
   it("draws one control per short cell plus a single disclosure", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(screen.getAllByRole("button")).toHaveLength(ROLES.length + 1);
   });
 });
 
 describe("role counter strip — a met cell is a figure", () => {
   it("gives a met cell no button and no consider caption", () => {
-    render(<RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(cellFor("ramp", RECOMMENDED_MIX.ramp.target)).toBeNull();
     const met = screen.getByRole("figure", {
       name: addPanelCopy.strip.cellStaticAria(
@@ -85,7 +88,7 @@ describe("role counter strip — a met cell is a figure", () => {
   });
 
   it("leaves a met cell out of the tab order", () => {
-    render(<RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const met = screen.getByRole("figure", {
       name: addPanelCopy.strip.cellStaticAria(
         RECOMMENDED_MIX.ramp.label,
@@ -101,7 +104,7 @@ describe("role counter strip — a met cell is a figure", () => {
   // Forced state: every role met. Nothing in the strip is a control except the
   // disclosure, and no cell offers a shelf it cannot deliver.
   it("draws no cell controls at all when every role is met", () => {
-    render(<RoleCounterStrip cards={allAtTarget} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={allAtTarget} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(screen.getAllByRole("figure")).toHaveLength(ROLES.length);
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByRole("button")).toHaveAccessibleName(
@@ -111,7 +114,7 @@ describe("role counter strip — a met cell is a figure", () => {
 
   // Forced state: every role short. Five controls, one disclosure, six targets.
   it("draws a control on every cell when every role is short", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(screen.queryAllByRole("figure")).toHaveLength(0);
     for (const role of ROLES) expect(cellFor(role, 0)).toBeInTheDocument();
   });
@@ -123,11 +126,27 @@ describe("role counter strip — a met cell is a figure", () => {
     expect(screen.getAllByRole("figure")).toHaveLength(ROLES.length);
     expect(screen.getAllByRole("button")).toHaveLength(1);
   });
+
+  // Short is not sufficient: Consider builds a shelf from owned suggestions and
+  // drops it when empty, so a role with nothing owned to offer has no heading to
+  // scroll to and the click would only switch tabs.
+  it("leaves a short cell a figure when Consider draws no shelf for that role", () => {
+    render(
+      <RoleCounterStrip
+        cards={[]}
+        onSeeShelf={vi.fn()}
+        rolesWithShelves={new Set<MixRole>(["draw"])}
+      />,
+    );
+    expect(cellFor("draw", 0)).toBeInTheDocument();
+    expect(cellFor("ramp", 0)).toBeNull();
+    expect(screen.getAllByRole("figure")).toHaveLength(ROLES.length - 1);
+  });
 });
 
 describe("role counter strip — one disclosure for the whole strip", () => {
   it("starts closed with the trigger and no panel", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", {
       name: addPanelCopy.strip.rationaleToggle,
     });
@@ -136,7 +155,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   });
 
   it("opens one panel carrying every role's rationale", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     fireEvent.click(
       screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }),
     );
@@ -159,7 +178,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   // control open — "Show why each role has the target it has" is false once the
   // panel below is already showing the answer.
   it("names the control by its drawn text, and only offers to Show while closed", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
     expect(trigger).toHaveAccessibleDescription(addPanelCopy.strip.rationaleToggleAria);
 
@@ -175,7 +194,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   // they opened the panel — right before the content they asked for arrived.
   // Same node in both states is what keeps the caret where they left it.
   it("keeps focus on the trigger across a toggle", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
     trigger.focus();
 
@@ -191,7 +210,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   // Hide unmounts itself, so without a hand-off the caret lands on
   // `document.body` — the same defect as the toggle above, one control over.
   it("hands focus back to the trigger when Hide unmounts itself", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
     fireEvent.click(trigger);
 
@@ -205,7 +224,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   });
 
   it("closes again from Hide", () => {
-    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     const trigger = screen.getByRole("button", {
       name: addPanelCopy.strip.rationaleToggle,
     });
@@ -221,7 +240,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   // was replaced at the same key, so the superseded clause must be gone from
   // the module and from the rendered strip alike.
   it("ships exactly one live strip hint", () => {
-    const { container } = render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    const { container } = render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
     expect(addPanelCopy.strip.hint).toBe("A cell under target opens its shelf below");
     expect(container.textContent).toContain(addPanelCopy.strip.hint);
     expect(container.textContent).not.toContain("Click a cell for rationale");
@@ -235,7 +254,7 @@ describe("role counter strip — unresolved rows", () => {
   // has no oracle ID and so belongs to no role at all.
   it("gains no cell and no asterisk from unresolved rows", () => {
     const { container } = render(
-      <RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} />,
+      <RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />,
     );
     const cells = within(screen.getByLabelText("Recommended mix")).getAllByRole(
       "figure",
