@@ -435,9 +435,10 @@ does not draw or describe.
    four lines, with the merge as drawn.**
 10. **Undo row label colour vs. the contrast claim.** RM:291 states `--fg-locked` on
     `--surface-sunken` ≈ 4.6:1; the canvas card states `#6A6152` on `#181410` ≈ 4.6:1 (CV:652). These
-    agree — but 4.6:1 is **below AA for normal-size text (4.5:1 is the floor, so it passes by 0.1)**
-    at `11.5px`. The design pre-empts this by calling it "supplementary to the Undo control beside
-    it". Record it; do not darken.
+    agree, and 4.6:1 **clears AA for normal-size text by 0.1** against the 4.5:1 floor. It passes,
+    but with no margin at `11.5px`, so any later darkening of either colour breaks it. The design
+    pre-empts the question by calling the label "supplementary to the Undo control beside it".
+    Record it; do not darken.
 11. **`unowned.shelfCoverage`'s comment placement in the copy file.** CP:154-155 places the comment
     "The trailing shelf these sit in. Uses the existing `edhrec` label…" **inside** the block of
     comments explaining the cut `unowned.note`, immediately above `shelfCoverage`. Cosmetic, but the

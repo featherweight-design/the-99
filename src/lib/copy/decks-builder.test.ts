@@ -99,10 +99,19 @@ describe("addPanelCopy punctuation", () => {
   const sample = (value: unknown): string[] => {
     if (typeof value === "string") return [value];
     if (typeof value === "function") {
-      // Every function member takes strings or numbers and interpolates them,
-      // so one call with benign arguments renders the literal frame.
-      const args = Array.from({ length: value.length }, (_, i) => (i % 2 === 0 ? "x" : 1));
-      return [String((value as (...a: unknown[]) => string)(...args))];
+      // Every function member takes strings or numbers and interpolates them.
+      // Several branch on a count, so one call would leave the other branch
+      // unsampled: `ownedFilterOffNote` writes its singular and plural forms
+      // separately, and a dash could return to either alone. Call each member
+      // once per fill so every count branch renders its literal frame.
+      const fills: unknown[] = ["x", 0, 1, 2];
+      return fills.map((fill) =>
+        String(
+          (value as (...a: unknown[]) => string)(
+            ...Array.from({ length: value.length }, () => fill),
+          ),
+        ),
+      );
     }
     if (value && typeof value === "object") return Object.values(value).flatMap(sample);
     return [];
