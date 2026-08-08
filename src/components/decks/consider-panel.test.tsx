@@ -229,7 +229,21 @@ describe("ConsiderPanel — evidence", () => {
     unmount();
 
     mount({ suggestions: [suggestion({ name: "Sol Ring", lift: null })] });
-    expect(screen.queryByText(/pts vs\. average/)).toBeNull();
+    expect(screen.queryByText(/pts vs\./)).toBeNull();
+  });
+
+  // The bar is aria-hidden and the percentage carries its own aria, so the
+  // label is decoration for the eye only — it must render beside a figure and
+  // stay absent from the honest-omission branch that draws no bar at all.
+  it("labels the inclusion bar's source, and only where there is a bar", () => {
+    const { unmount } = mount({
+      suggestions: [suggestion({ name: "Sol Ring", inclusionPct: 82 })],
+    });
+    expect(screen.getByText("edhrec")).toBeInTheDocument();
+    unmount();
+
+    mount({ suggestions: [suggestion({ name: "Sol Ring", inclusionPct: null })] });
+    expect(screen.queryByText("edhrec")).toBeNull();
   });
 });
 
