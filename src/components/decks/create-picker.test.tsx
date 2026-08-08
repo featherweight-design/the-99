@@ -61,4 +61,9 @@ describe("CreatePicker — phone bottom stack", () => {
     );
     expect(footer.querySelector("#picker-deck-name-mobile")).toBeNull();
   });
+
+  it("drops the relocated name field when there is no commander to name a deck after", () => {
+    const { container } = render(<CreatePicker legalCommanders={[]} />);
+    expect(container.querySelector("#picker-deck-name-mobile")?.closest("div.hidden")).not.toBeNull();
+  });
 });

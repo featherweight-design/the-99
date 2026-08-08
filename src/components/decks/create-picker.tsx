@@ -384,7 +384,10 @@ export function CreatePicker(props: CreatePickerProps) {
               else it used to hold comes back up here. Rendered whether or not
               a commander is picked — a field that appears on selection would
               reflow the list under the thumb that just tapped it. */}
-          <div className="md:hidden mt-[16px]">
+          {/* Gated on the pool, not on the filter: a search that matches
+              nothing is still a screen you can name a deck on, but a player who
+              owns no commanders has nothing to name. */}
+          <div className={rows.length === 0 ? "hidden" : "md:hidden mt-[16px]"}>
             {isImport && (
               <label
                 htmlFor="picker-deck-name-mobile"
