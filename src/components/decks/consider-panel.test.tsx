@@ -128,7 +128,7 @@ describe("ConsiderPanel — shelves", () => {
 
     const headings = screen.getAllByRole("heading", { level: 3 });
     expect(headings.map((h) => h.textContent)).toEqual(["Ramp", "Threats & synergy"]);
-    expect(screen.getByText(/no target — this is the deck’s plan/)).toBeInTheDocument();
+    expect(screen.getByText(/no target · this is the deck’s plan/)).toBeInTheDocument();
   });
 
   it("quotes the same figures the coverage strip does", () => {
@@ -225,7 +225,7 @@ describe("ConsiderPanel — evidence", () => {
     const { unmount } = mount({
       suggestions: [suggestion({ name: "Sol Ring", lift: 0.31 })],
     });
-    expect(screen.getByText("+31 pts vs. average")).toBeInTheDocument();
+    expect(screen.getByText("+31 pts vs. all decks")).toBeInTheDocument();
     unmount();
 
     mount({ suggestions: [suggestion({ name: "Sol Ring", lift: null })] });

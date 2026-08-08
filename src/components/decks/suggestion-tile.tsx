@@ -82,6 +82,9 @@ function Evidence({
   return (
     <div className="flex flex-col gap-[3px]">
       <div className="flex items-center gap-[6px]">
+        <span aria-hidden className="font-mono text-[9px]" style={{ color: "var(--fg-locked)" }}>
+          {addPanelCopy.tile.evidenceLabel}
+        </span>
         <span
           aria-hidden
           className="flex-1 h-[4px] rounded-full overflow-hidden"
@@ -106,7 +109,7 @@ function Evidence({
       {lift != null && (
         <p className="font-mono text-[9.5px]" style={{ color: "var(--brass-shadow)" }}>
           {/* EDHREC hands synergy back as a fraction; the tile states it in points. */}
-          {`+${Math.round(lift * 100)} pts vs. average`}
+          {addPanelCopy.tile.lift(String(Math.round(lift * 100)))}
         </p>
       )}
     </div>

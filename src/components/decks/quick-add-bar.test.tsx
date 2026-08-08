@@ -191,7 +191,7 @@ describe("QuickAddBar — the owned filter", () => {
     fireEvent.click(toggle());
     await search();
 
-    expect(await screen.findByText(/filter off — 1 result you don’t own/i)).toBeInTheDocument();
+    expect(await screen.findByText(/filter off · 1 result you don’t own/i)).toBeInTheDocument();
   });
 
   // A failed request knows nothing about the collection, so it must not borrow
