@@ -188,6 +188,22 @@ describe("role counter strip — one disclosure for the whole strip", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
+  // Hide unmounts itself, so without a hand-off the caret lands on
+  // `document.body` — the same defect as the toggle above, one control over.
+  it("hands focus back to the trigger when Hide unmounts itself", () => {
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    const trigger = screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle });
+    fireEvent.click(trigger);
+
+    const hide = screen.getByRole("button", { name: addPanelCopy.strip.rationaleClose });
+    hide.focus();
+    fireEvent.click(hide);
+
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }),
+    );
+  });
+
   it("closes again from Hide", () => {
     render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
     const trigger = screen.getByRole("button", {

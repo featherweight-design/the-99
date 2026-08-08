@@ -9,7 +9,7 @@
 // so the panel can never quote a target the cell above it disagrees with.
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 
@@ -35,6 +35,7 @@ export function StripRationale() {
   // reached first rather than to this trigger's own sentence.
   const panelId = useId();
   const descriptionId = `${panelId}-description`;
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   /*
     One tree for both states, rather than an early return per state.
@@ -70,6 +71,7 @@ export function StripRationale() {
           {addPanelCopy.strip.rationaleToggleAria}
         </span>
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setOpen((wasOpen) => !wasOpen)}
           aria-expanded={open}
@@ -83,11 +85,18 @@ export function StripRationale() {
         >
           {addPanelCopy.strip.rationaleToggle}
         </button>
-        {/* §Rationale panel — the drawn close, beside the title. */}
+        {/* §Rationale panel — the drawn close, beside the title.
+
+            Hide unmounts itself, so focus has to be handed somewhere on the way
+            out or it lands on `document.body`. The trigger is where the user
+            came from and is the only control still on screen afterwards. */}
         {open && (
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              triggerRef.current?.focus();
+            }}
             className="font-mono text-[11px] text-fg-faint hover:text-fg-body cursor-pointer"
           >
             {addPanelCopy.strip.rationaleClose}
