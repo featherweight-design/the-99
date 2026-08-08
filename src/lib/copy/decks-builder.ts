@@ -52,6 +52,12 @@ export const addPanelCopy = {
     // Provenance for the collection; the EDHREC claim now sits on the shelf
     // that actually uses it.
     provenance: (n: number) => `${plural(n, "card", "cards")} you already own`,
+    // Used only once the unowned append has put something on the shelves, so
+    // the line above never over-claims. Deliberately not the app's `N to buy`
+    // (builder-spine.tsx, deck-card.tsx): there it counts cards in this deck
+    // you do not own, here it would count suggestions you have not added.
+    provenanceWithUnowned: (owned: number, unowned: number) =>
+      `${owned} owned · ${unowned} you don’t own`,
 
     sortLabel: "Sort",
     sortGaps: "Coverage gaps first",
@@ -123,6 +129,20 @@ export const addPanelCopy = {
     // inclusion rate.
     evidenceLabel: "edhrec",
     lift: (pts: string) => `+${pts} pts vs. all decks`,
+  },
+
+  // ── Unowned suggestions ───────────────────────────────────────────────
+  // getDeckSuggestions appends up to five unowned EDHREC staples, which used
+  // to say so only by the absence of an aria-hidden dot. There is no tile note
+  // to go with these: it would restate the tag and the shelf heading in a noun
+  // this app does not have. Ownership already has three independent carriers —
+  // the tag word, its aria, and the trailing shelf's own heading.
+  unowned: {
+    tag: "buy",
+    tagAria: (name: string) => `${name} is not in your collection`,
+    // The trailing shelf's coverage clause. The heading above it is the
+    // existing shelf.labels.edhrec, so no new role or taxonomy is introduced.
+    shelfCoverage: "not in your collection",
   },
 
   // ── Consider, empty (expressive moment — zero suggestions is a win) ────

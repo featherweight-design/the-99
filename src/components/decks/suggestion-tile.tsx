@@ -11,6 +11,8 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { shelfRoleOf } from "../../lib/decks/suggest";
+import { GhostButton } from "../ui/button";
+import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
@@ -112,9 +114,11 @@ function Evidence({
           {addPanelCopy.tile.inclusion(pct)}
         </span>
       </div>
-      {lift != null && (
+      {lift != null && suggestion.owned && (
         <p className="font-mono text-[9.5px]" style={{ color: "var(--brass-shadow)" }}>
-          {/* EDHREC hands synergy back as a fraction; the tile states it in points. */}
+          {/* EDHREC hands synergy back as a fraction; the tile states it in points.
+              An unowned tile goes without: synergy is an argument for playing a
+              card you already have, and this one is an argument for buying it. */}
           {addPanelCopy.tile.lift(String(Math.round(lift * 100)))}
         </p>
       )}
@@ -202,17 +206,18 @@ export function SuggestionTile({
                 {addPanelCopy.tile.detailHint}
               </span>
             )}
-            {/* Most suggestions are owned, but getDeckSuggestions appends a few
-                unowned EDHREC staples, which today read as an absent dot. The
-                handoff has no unowned tile variant; #176 asks Design for one.
-                An added tile drops the dot rather than claiming two states. */}
-            {suggestion.owned && !applied && (
+            {/* One slot, two marks: the dot is aria-hidden decoration, the tag
+                is the only thing that says unowned out loud. An added tile
+                keeps neither rather than claiming two states at once. */}
+            {!applied && (suggestion.owned ? (
               <span
                 aria-hidden
                 className="absolute right-[6px] top-[6px] w-[8px] h-[8px] rounded-full"
                 style={{ background: "var(--success)", boxShadow: "0 0 0 2px rgba(10,8,6,.7)" }}
               />
-            )}
+            ) : (
+              <BuyTag variant="tile" label={addPanelCopy.unowned.tagAria(suggestion.name)} />
+            ))}
             {suggestion.manaCost && <CostPips cost={suggestion.manaCost} />}
           </>
         )}
@@ -263,7 +268,7 @@ export function SuggestionTile({
         >
           {addPanelCopy.tile.inDeck}
         </span>
-      ) : (
+      ) : suggestion.owned ? (
         <button
           type="button"
           onClick={handleAdd}
@@ -273,6 +278,18 @@ export function SuggestionTile({
         >
           {addPanelCopy.tile.add}
         </button>
+      ) : (
+        // Adding a card you do not own is a real action, just not the deck's
+        // default one, so it takes the §404 secondary contract as written
+        // rather than a ghost button drawn on the tile.
+        <GhostButton
+          onClick={handleAdd}
+          disabled={isPending}
+          aria-label={addPanelCopy.tile.addAria(suggestion.name)}
+          className="w-full rounded-[8px] md:rounded-[7px] h-[44px] md:h-auto md:py-[6px] text-[14px] md:text-[12px] disabled:opacity-50"
+        >
+          {addPanelCopy.tile.add}
+        </GhostButton>
       )}
 
       {error && <MutationError message={error} />}

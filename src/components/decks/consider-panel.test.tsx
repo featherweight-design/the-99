@@ -299,6 +299,85 @@ describe("ConsiderPanel — tiles", () => {
   });
 });
 
+// getDeckSuggestions appends up to five unowned EDHREC staples. They used to
+// say so only by the absence of an aria-hidden dot.
+describe("ConsiderPanel — unowned staples", () => {
+  const unowned = (name: string) => suggestion({ name, owned: false });
+
+  it("marks an unowned tile with a buy tag that says so in words", () => {
+    mount({ suggestions: [unowned("Smothering Tithe")] });
+    const tag = screen.getByLabelText("Smothering Tithe is not in your collection");
+    expect(tag).toHaveTextContent("buy");
+  });
+
+  // Adding a card you do not own is a real action, just not the deck's
+  // default one, so Add drops out of brass.
+  it("offers the add as a secondary action, not the tile's primary one", () => {
+    mount({ suggestions: [unowned("Smothering Tithe"), suggestion({ name: "Sol Ring" })] });
+
+    const secondary = screen.getByRole("button", { name: "Add Smothering Tithe to deck" });
+    expect(secondary.className).not.toContain("bg-brass");
+    expect(secondary.className).toContain("border-strong");
+    expect(screen.getByRole("button", { name: "Add Sol Ring to deck" }).className)
+      .toContain("bg-brass");
+  });
+
+  // Synergy argues for playing a card you have; an unowned tile is arguing
+  // for buying one, so the handoff draws the lift line on the owned tile only.
+  it("keeps the lift line off an unowned tile", () => {
+    mount({
+      suggestions: [suggestion({ name: "Mana Drain", owned: false, lift: 0.31 })],
+    });
+    expect(screen.queryByText(/pts vs\./)).toBeNull();
+  });
+
+  // A shelf that says "you have 2 of 10" is about cards you can play tonight.
+  it("keeps the unowned five out of every coverage shelf", () => {
+    mount({
+      suggestions: [suggestion({ name: "Cultivate", role: "ramp" }), unowned("Mana Drain")],
+      deckCards: [deckCard("ramp", 4)],
+    });
+
+    const ramp = screen.getByRole("region", { name: "Ramp" });
+    expect(within(ramp).queryByText("Mana Drain")).toBeNull();
+    expect(within(ramp).getByText(/you have 4 of 10 · 1 to consider/)).toBeInTheDocument();
+  });
+
+  it("shelves them last, under the existing EDHREC heading", () => {
+    mount({
+      suggestions: [
+        unowned("Mana Drain"),
+        suggestion({ name: "Villain", role: "other" }),
+        suggestion({ name: "Cultivate", role: "ramp" }),
+      ],
+      deckCards: [deckCard("ramp", 4)],
+    });
+
+    const headings = screen.getAllByRole("heading", { level: 3 });
+    expect(headings.map((h) => h.textContent))
+      .toEqual(["Ramp", "Threats & synergy", "Top picks for Korvold"]);
+    expect(screen.getByText("not in your collection")).toBeInTheDocument();
+    expect(screen.getByText("· 1 to consider")).toBeInTheDocument();
+  });
+
+  it("draws no such shelf when the append produced nothing", () => {
+    mount({ suggestions: [suggestion({ name: "Sol Ring" })] });
+    expect(screen.queryByText(/top picks for/i)).toBeNull();
+    expect(screen.queryByText("not in your collection")).toBeNull();
+  });
+
+  it("states both sides of the provenance line, and only when there are two", () => {
+    const { unmount } = mount({
+      suggestions: [suggestion({ name: "Sol Ring" }), unowned("Mana Drain")],
+    });
+    expect(screen.getByText("1 owned · 1 you don’t own")).toBeInTheDocument();
+    unmount();
+
+    mount({ suggestions: [suggestion({ name: "Sol Ring" })] });
+    expect(screen.getByText("1 card you already own")).toBeInTheDocument();
+  });
+});
+
 describe("ConsiderPanel — panel states", () => {
   it("is a tabpanel, not an overlay", () => {
     mount();
