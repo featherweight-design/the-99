@@ -20,10 +20,10 @@ This is a blind spot, not an unfinished feature: nothing in `src/` mentions comm
 
 Design does not need to invent these, and eng should not re-solve them:
 
-- **The arithmetic is already possible.** `collection_items` stores `quantity` per printing+finish (`src/db/schema.ts:88-104`); `deck_cards` stores `quantity` per `(deck_id, oracle_id)` (`:135-139`). Owned-minus-claimed is a subtraction over data we already hold.
+- **The arithmetic is already possible.** `collection_items` stores `quantity` per printing+finish (`src/db/schema.ts:88-104`); `deck_cards` stores `quantity` per `(deck_id, oracle_id)` (`src/db/schema.ts:135-139`). Owned-minus-claimed is a subtraction over data we already hold.
 - **One surface already carries a real quantity.** The quick-add search path selects `ownedQty` (`src/app/decks/[id]/search-action.ts:28,61,67`) and renders it through `addPanelCopy.quickAdd.rowOwned` (`src/lib/copy/decks-builder.ts:158`, `×${qty} owned`). The row already tells the player how many they own — it has simply never subtracted anything, and a `free` count would sit naturally beside a string that already carries a quantity.
 - **Deck maturity is already computed and already shown.** `statusPill()` (`src/lib/decks/status.ts:15-24`) derives `Draft` (0 cards) · `Building` (1–98) · `Playable` (99, with gaps) · `Complete` (99, all owned), and it is on every deck card. This brief hangs the whole model on that existing pill rather than introducing a second status vocabulary.
-- **An ownership filter already exists in the builder.** `ownedOnly` defaults to `true` in the quick-add bar (`src/components/decks/quick-add-bar.tsx:43`) and filters on `ownedQty > 0` (`search-action.ts:81`). It is a filter about the *collection*, and must not be conflated with availability.
+- **An ownership filter already exists in the builder.** `ownedOnly` defaults to `true` in the quick-add bar (`src/components/decks/quick-add-bar.tsx:43`) and filters on `ownedQty > 0` (`src/app/decks/[id]/search-action.ts:81`). It is a filter about the *collection*, and must not be conflated with availability.
 - **A refusal pattern already exists** for mutations the server rejects (#140, live on `main`). It is deliberately **not** used here — see Constraints.
 
 ### `decks.status` is dead, and should be deleted
@@ -59,7 +59,7 @@ Every owned card resolves to exactly one of four states:
 
 | State | Condition | Intended reading |
 |---|---|---|
-| **Free** | `free > 0`, no claims | Silent. The common case; nothing is drawn. |
+| **Free** | `free > 0`, `soft = 0` | Silent. The common case; nothing is drawn. Hard claims are allowed here — a player with four Sol Rings and three sleeved still has one free, and sees nothing. |
 | **Wanted by a brew** | `free > 0`, `soft > 0` | Quiet — the card is spoken for by an unfinished deck, but a copy is still free. |
 | **In use** | `free = 0` | The marker. The next add double-books. Names the claiming deck when there is exactly one. |
 | **Over-committed** | `free < 0` | Loud. More finished decks want the card than the player owns — a real error in the physical world. |
