@@ -14,7 +14,7 @@ The consequences arrive with the player's second deck and get worse with every o
 2. **The builder silently double-books.** Adding a card whose only copy sits in another deck succeeds with no signal, so two decks both believe they contain it.
 3. **There is no way to ask "what can I still build with?"** — the question a player with a few decks most wants answered.
 
-This is a blind spot, not an unfinished feature: nothing in `src/` mentions committed, available, in-use or remaining, and there is no cross-deck query anywhere.
+This is a blind spot, not an unfinished feature. `src/` does use words like *committed* and *remaining*, but never in this sense — they mean optimistic-mutation state (`src/components/decks/use-deck-mutation.ts:14`), Postgres isolation (`src/lib/recs/store.ts:94`) and import lines left to resolve (`src/lib/copy/deck-import.ts:348-351`). No card-availability concept exists under any name, and there is no cross-deck query anywhere.
 
 ## What already exists
 
