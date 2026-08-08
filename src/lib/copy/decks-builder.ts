@@ -223,4 +223,13 @@ export const addPanelCopy = {
       `${name} added · ${built} of 99 · ${role} ${have} of ${target}`,
     addedNoRole: (name: string, built: number) => `${name} added · ${built} of 99`,
   },
+
+  // ── /decks/new — the Create button becomes the route's dock (#177) ─────
+  // No new string: `Create deck →` keeps its label and its aria. The summary
+  // line above it is new, because a docked button covers the selection it is
+  // about to act on.
+  createPicker: {
+    dockSummary: (commander: string, identity: string) => `${commander} · ${identity}`,
+    dockSummaryEmpty: "Pick a commander to start",
+  },
 } as const;

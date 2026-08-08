@@ -93,12 +93,23 @@ async function bottomStack(page) {
       if (s.position !== "fixed" && s.position !== "sticky") return false;
       if (s.visibility === "hidden" || s.display === "none") return false;
       const r = el.getBoundingClientRect();
-      // Drawn, sitting on the bottom edge, and short enough to be a bar rather
+      // Drawn, sitting in the bottom stack, and short enough to be a bar rather
       // than a column. Without the height ceiling the desktop sidebar — sticky
       // and full-height — reads as an occluder starting at y=0, and then every
       // element on the page scores as a hit.
-      return r.height > 0 && r.height < innerHeight * 0.5 && r.bottom > innerHeight - 4;
+      //
+      // The tolerance is 84px, not 4px: a route dock sits at `bottom: 80px`,
+      // on top of the tab bar rather than on the viewport edge, and at 4px the
+      // probe saw only the tab bar and passed rows the dock was covering.
+      return r.height > 0 && r.height < innerHeight * 0.5 && r.bottom > innerHeight - 84;
     });
+    // Tagged so each target can re-derive a ceiling that excludes the bars it
+    // lives inside. The Create button is *in* the dock; measured against it,
+    // the route's own primary action reads as occluded by itself.
+    for (const el of document.querySelectorAll("[data-probe-occluder]")) {
+      delete el.dataset.probeOccluder;
+    }
+    for (const el of pinned) el.dataset.probeOccluder = "1";
     return pinned.map((el) => ({
       tag: el.tagName.toLowerCase(),
       cls: el.className?.toString().slice(0, 60) ?? "",
@@ -146,9 +157,19 @@ async function probe(page, label, targets) {
       console.log(`  ?  ${name}: no box`);
       continue;
     }
-    const gap = Math.round(ceiling - (box.y + box.height));
+    const ownCeiling = await el.evaluate((node) => {
+      const tops = [...document.querySelectorAll("[data-probe-occluder]")]
+        .filter((bar) => !bar.contains(node))
+        .map((bar) => bar.getBoundingClientRect().top);
+      return tops.length ? Math.min(...tops) : innerHeight;
+    });
+    const gap = Math.round(ownCeiling - (box.y + box.height));
     const verdict = gap >= 0 ? "OK " : "HIT";
-    console.log(`  ${verdict} ${name}: bottom=${Math.round(box.y + box.height)}, gap=${gap}px`);
+    const against =
+      Math.round(ownCeiling) === ceiling ? "" : ` (measured to y=${Math.round(ownCeiling)} — it sits inside the lower bar)`;
+    console.log(
+      `  ${verdict} ${name}: bottom=${Math.round(box.y + box.height)}, gap=${gap}px${against}`,
+    );
   }
 }
 
@@ -187,7 +208,8 @@ for (const { label, width, height } of VIEWPORTS) {
   await page.goto(`${BASE}/decks/new`, { waitUntil: "networkidle" });
   await probe(page, "/decks/new", {
     "Create button": page.getByRole("button", { name: /create deck/i }),
-    "last commander row": page.locator('[role="radio"], [data-testid="commander-row"]').last(),
+    // The picker's rows are `aria-pressed` buttons, not radios.
+    "last commander row": page.locator("ul li button[aria-pressed]").last(),
   });
 
   await context.close();

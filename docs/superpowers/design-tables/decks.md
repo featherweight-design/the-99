@@ -814,6 +814,11 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 | margin-bottom | — | 16px |
 
 ### Mobile sticky footer (picker)
+
+> Superseded on phone by `add-panel-addendum.md` §2 (#177): the footer became the
+> route's dock — pinned above the tab bar, carrying a summary line and the button
+> alone, with the name field moved into the scrolling flow. Desktop is unchanged.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | padding | 14px 16px 20px | — |
