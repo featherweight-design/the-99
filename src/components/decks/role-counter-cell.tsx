@@ -90,9 +90,10 @@ export function RoleCounterCell({
             {addPanelCopy.strip.cellLink}
           </span>
         ) : (
-          /* A met cell loses its caption as well as its colour, so colour is
-             never the sole signal that the role is done. The two widths
-             disagree on the dash's tone; both are as drawn. */
+          /* Whenever the cell is not a control — met, or handed no handler at
+             all — the caption goes and a dash stands in its place, so the row
+             keeps its rhythm and nothing offers a shelf it cannot open. The two
+             widths disagree on the dash's tone; both are as drawn. */
           <span
             aria-hidden
             className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-border-strong md:text-border-dashed"
