@@ -27,8 +27,8 @@ out produces an empty append and a feature nobody can see.
 
 `scripts/probe-unowned.ts`, hand-run and committed — the same convention as `scripts/probe-bob.mjs`
 and `scripts/probe-bottom.mjs`, which stay out of `pnpm test` because they need a real database.
-It replays the route's exact query and filter for every deck in the database and prints the count
-at each stage that can zero out.
+It replays the route's exact query and filter for the first 20 decks — `.limit(20)`, which is the
+whole database here, since it holds 12 — and prints the count at each stage that can zero out.
 
 ```
 DATABASE_URL=... pnpm tsx scripts/probe-unowned.ts
@@ -41,7 +41,7 @@ Result, 12 decks, two commanders:
 | Akawalli, the Seething Tower | 253 topCards | 100 | 2472 | 0–3 | **5** |
 | Greta, Sweettooth Scourge | 247 topCards | 97 | 40 | 0 | **5** |
 
-**Reachable, ✅.** The append hits its cap of 5 on every deck in the database, and it does so at
+**Reachable, ✅.** The append hits its cap of 5 on all 12, and it does so at
 both ends of the collection-size range — a 2472-card collection and a 40-card one. That the large
 collection still yields five is the useful half of the result: owning a lot of Magic cards does not
 starve the branch, because EDHREC's staples for a commander are not what a given player happens to

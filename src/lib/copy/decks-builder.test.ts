@@ -82,7 +82,10 @@ describe("decksBuilderCopy", () => {
   });
 });
 
-describe("addPanelCopy.unowned", () => {
+// Named for the axis rather than for one key, because the provenance line lives
+// under `consider` and the tag under `unowned`, and they only mean anything
+// read together.
+describe("addPanelCopy — the unowned axis", () => {
   it("states the axis rather than borrowing the deck's `to buy` phrasing", () => {
     expect(addPanelCopy.consider.provenanceWithUnowned(59, 5)).toBe("59 owned · 5 you don’t own");
     expect(addPanelCopy.consider.provenanceWithUnowned(59, 5)).not.toContain("to buy");
