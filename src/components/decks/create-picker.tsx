@@ -13,7 +13,8 @@
 // so those are the only things the mode switches on — everything below the row
 // is shared markup.
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
+import type { CSSProperties } from "react";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
@@ -21,6 +22,7 @@ import type { ImportCommanderCandidate } from "../../app/decks/import-actions";
 import type { OwnedLegalCommander } from "../../lib/decks/read";
 import { colorLabel } from "../../lib/decks/format";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { PrimaryButton } from "@/components/ui/button";
 import { SearchField, TextField } from "@/components/ui/text-field";
 
@@ -113,6 +115,29 @@ export function CreatePicker(props: CreatePickerProps) {
   const [isPending, startTransition] = useTransition();
   const inFlight = useRef(false);
 
+  // The dock is `fixed`, so it reserves no space of its own and the last
+  // commander row would sit under it. Its height is not a constant — an error
+  // line pushes it taller — so the reserve is measured rather than hard-coded.
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [footerHeight, setFooterHeight] = useState(0);
+  // Layout rather than passive: a passive effect runs after paint, so the
+  // measurement below would still leave one frame in which the dock covers the
+  // last row.
+  useLayoutEffect(() => {
+    const el = footerRef.current;
+    if (!el) return;
+    // Border box, not `contentRect`: the footer's own padding and top border
+    // are part of what covers the row beneath it.
+    // Measured here as well as observed — the observer's first callback is
+    // asynchronous, so on its own it leaves the reserve at nothing on mount.
+    setFooterHeight(el.getBoundingClientRect().height);
+    const observer = new ResizeObserver(() =>
+      setFooterHeight(el.getBoundingClientRect().height),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // Client-side substring filter over loaded list. The import picker has no search:
   // it lists the handful of legends one decklist contained.
   const filtered = useMemo(() => {
@@ -158,13 +183,9 @@ export function CreatePicker(props: CreatePickerProps) {
     });
   }
 
-  const submitLabel = isImport
-    ? copy.submit
-    : isPending
-      ? "Creating…"
-      : selected
-        ? "Name & create →"
-        : "Create deck →";
+  // "Name & create →" used to point at a name field the dock itself carried.
+  // The field is in the flow now, so the label is just the action (CV:267).
+  const submitLabel = isImport ? copy.submit : isPending ? "Creating…" : "Create deck →";
 
   return (
     <section>
@@ -219,10 +240,14 @@ export function CreatePicker(props: CreatePickerProps) {
         {/* ── Left: search + picker list ── */}
         <div
           className={
-            isImport
+            (isImport
               ? "flex-1 min-w-0 p-[16px_18px_12px] md:p-[24px_40px]"
-              : "flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]"
+              : "flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]") +
+            " pb-[var(--picker-reserve)] md:pb-[24px]"
           }
+          // The shell's `main` already reserves the 80px tab bar, so the
+          // picker owes only the footer stacked on top of it.
+          style={{ "--picker-reserve": `${footerHeight + 12}px` } as CSSProperties}
         >
           {isImport ? (
             /* §Commander picker — intro (mobile) / count (desktop) */
@@ -259,6 +284,46 @@ export function CreatePicker(props: CreatePickerProps) {
                 </span>
               }
             />
+          )}
+
+          {/* The name field lives in the scrolling flow on a phone (CV:263).
+              The dock carries the summary and the button only, so everything
+              else it used to hold comes back up here. Rendered whether or not
+              a commander is picked — a field that appears on selection would
+              reflow the list under the thumb that just tapped it.
+
+              Above the list, not below it: the list is every legal commander
+              the player owns and it scrolls, so a required field after it is
+              one the Create button can be blocked on and never found. This is
+              also the only order in which the canvas's fold marker below the
+              field — "list continues under the dock" — can be true.
+
+              Gated on the pool, not on the filter: a search that matches
+              nothing is still a screen you can name a deck on, but a player who
+              owns no commanders has nothing to name. */}
+          {rows.length > 0 && (
+          <div className="md:hidden mb-[16px]">
+            {isImport && (
+              <label
+                htmlFor="picker-deck-name-mobile"
+                className="block font-mono"
+                style={{ fontSize: 10, color: "#8E8269", marginBottom: 9 }}
+              >
+                {copy.nameLabelFromSource}
+              </label>
+            )}
+            <TextField
+              id="picker-deck-name-mobile"
+              value={deckName}
+              onChange={(e) => setDeckName(e.target.value)}
+              maxLength={120}
+              placeholder="Deck name…"
+              disabled={isPending}
+              aria-label={isImport ? undefined : "Deck name"}
+              // 16px on mobile: anything smaller makes iOS Safari zoom the field.
+              className="block w-full p-[11px_13px] text-[16px]"
+            />
+          </div>
           )}
 
           {/* §Commander picker rows */}
@@ -475,91 +540,49 @@ export function CreatePicker(props: CreatePickerProps) {
           </PrimaryButton>
         </div>
 
-        {/* Mobile sticky footer */}
+        {/* The route's dock (#177, table §2 B1). `bottom-[80px]` clears the
+            shell tab bar, which owns the true bottom edge at a higher
+            z-index — at `bottom-0` the tab bar draws straight over the
+            button. Summary and button only: a pinned bar covers the row it
+            acts on, so the selection is restated, and nothing else may live
+            here or the dock's height moves under a thumb. */}
         <div
-          className="md:hidden fixed bottom-0 left-0 right-0 z-20"
+          ref={footerRef}
+          data-testid="create-picker-dock"
+          className="md:hidden fixed bottom-[80px] left-0 right-0 z-20"
           style={{
-            padding: "14px 16px 20px",
+            padding: "10px 16px 12px",
             borderTop: "1px solid #2A241D",
-            background: "#1A160F",
+            background: "#14110E",
           }}
         >
-          {selected ? (
-            <>
-              {/* Selected mini-summary */}
-              <div className="flex items-center gap-[10px] mb-[12px]">
-                <div
-                  className="shrink-0 rounded-[6px]"
-                  style={{
-                    width: 30,
-                    height: 42,
-                    background: selected.imageUri
-                      ? `url(${selected.imageUri}) center/cover`
-                      : commanderGradient(selected.colorIdentity),
-                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-                  }}
-                />
-                <div className="min-w-0">
-                  <p
-                    className="font-display font-semibold truncate"
-                    style={{ fontSize: 13, color: "#EDE6D8", margin: 0, lineHeight: 1.2 }}
-                  >
-                    {selected.name}
-                  </p>
-                  <p
-                    className="font-mono"
-                    style={{ fontSize: 10, color: "#A89B84", margin: 0 }}
-                  >
-                    {selected.metaMobile}
-                  </p>
-                </div>
-              </div>
-
-              {/* Name input */}
-              {isImport && (
-                <label
-                  htmlFor="picker-deck-name-mobile"
-                  className="block font-mono"
-                  style={{ fontSize: 10, color: "#8E8269", marginBottom: 9 }}
-                >
-                  {copy.nameLabelFromSource}
-                </label>
-              )}
-              <TextField
-                id="picker-deck-name-mobile"
-                value={deckName}
-                onChange={(e) => setDeckName(e.target.value)}
-                maxLength={120}
-                placeholder="Deck name…"
-                disabled={isPending}
-                aria-label={isImport ? undefined : "Deck name"}
-                // 16px on mobile: anything smaller makes iOS Safari zoom the field.
-                className="block w-full p-[11px_13px] text-[16px] mb-[10px]"
-              />
-            </>
-          ) : (
-            <p
-              className="font-mono text-[11px] text-center mb-[12px]"
-              style={{ color: "#8E8269" }}
-            >
-              Select a commander above
-            </p>
-          )}
+          {/* §Dock summary — one line, always drawn (B2/B-N1/B-N2) */}
+          <p
+            className="font-mono text-[10.5px] truncate mb-[7px]"
+            style={{ color: "#8E8269" }}
+          >
+            {selected
+              ? addPanelCopy.createPicker.dockSummary(
+                  selected.name,
+                  colorLabel(selected.colorIdentity),
+                )
+              : addPanelCopy.createPicker.dockSummaryEmpty}
+          </p>
 
           {error && (
             <p
-              className="font-mono text-[11px] mb-[10px]"
+              className="font-mono text-[11px] mb-[7px]"
               style={{ color: "#C6533F" }}
             >
               {error}
             </p>
           )}
 
-          {/* §Submit button: full-width */}
+          {/* §Submit button: full-width, 48px (B3) */}
           <PrimaryButton
             onClick={handleCreate}
             disabled={!canCreate || isPending}
-            className="w-full text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-0 min-h-[44px]"
+            className="w-full text-[15px] transition-opacity disabled:opacity-50 px-0 h-[48px] py-0"
           >
             {submitLabel}
           </PrimaryButton>
