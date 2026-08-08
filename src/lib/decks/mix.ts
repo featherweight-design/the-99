@@ -37,47 +37,42 @@ export function computeRoleCounts(
   return counts;
 }
 
+// No per-role `rationale` here since #184. The strip's one disclosure carries
+// four authored lines for five roles (Removal and Wipes share one), so a 1:1
+// map over this record could not have produced it; the lines live in
+// `addPanelCopy.strip.rationaleBodies` with the rest of the surface's copy.
 export const RECOMMENDED_MIX: Record<
   MixRole,
   {
     label: string;
     target: number;
     advisory: boolean;
-    rationale: string;
   }
 > = {
   ramp: {
     label: "Ramp",
     target: 10,
     advisory: false,
-    rationale: "Decks that cast a 4-mana commander on curve average ~10 ramp sources.",
   },
   draw: {
     label: "Draw",
     target: 10,
     advisory: false,
-    rationale: "Card advantage keeps you in the long game; ~10 sources is the EDHREC average.",
   },
   removal: {
     label: "Removal",
     target: 8,
     advisory: false,
-    rationale: "Targeted interaction: ~8 pieces handle most single-permanent threats.",
   },
   wipes: {
     label: "Wipes",
     target: 3,
     advisory: false,
-    rationale: "Mass removal resets the board. 3 is enough to draw one on average.",
   },
   land: {
-    // Singular, unlike the cardTypeGroup "Lands", because strip.shelfLinkAria
-    // builds a noun phrase from this label: "See land cards to consider".
     label: "Land",
     target: 37,
     advisory: true,
-    rationale:
-      "Advisory: most Commander decks run ~37 lands; scale up/down for MDFCs and mana rocks.",
   },
 };
 
@@ -93,14 +88,21 @@ export const RECOMMENDED_MIX_SOURCE_LINE = "EDHREC averages · a guide, not a ga
 export const RECOMMENDED_MIX_WORKED_EXAMPLE =
   "Ramp · rec 10. Decks that cast a 4-mana commander on curve average ~10 sources. A deck sitting at 8 is fine for a slower build.";
 
+// Colour and control now answer to the same number. An advisory role used to be
+// held back from the met colours on the grounds that ~37 lands is a range rather
+// than a finish line — but design table E-N1/E-N2 keys the cell's whole state on
+// `have >= target` and knows nothing of advisory, so a Land at 40 was drawing a
+// brass figure inside a cell that had already given up its caption and its
+// action. The `~` in `rec ~37` is where the range still speaks.
 export function roleCellState(args: {
   have: number;
   target: number;
-  advisory: boolean;
 }): { figureColor: string; barColor: string; pct: number } {
   const pct = Math.min(100, Math.round((args.have / args.target) * 100));
-  if (args.advisory) return { figureColor: "var(--fg-body)", barColor: "var(--brass)", pct };
   if (args.have >= args.target)
     return { figureColor: "var(--success)", barColor: "var(--success)", pct };
-  return { figureColor: "var(--fg-body)", barColor: "var(--brass)", pct };
+  // Design table E4/E5: a short cell's figure is brass and its bar brass-mid.
+  // It read as body text with a brass bar, which made the one number the strip
+  // exists to draw the eye to the quietest thing in the cell.
+  return { figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct };
 }

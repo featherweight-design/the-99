@@ -102,8 +102,12 @@ function ShelfSection({
       className={`md:mt-0 md:mb-[20px] ${first ? "" : "mt-[16px]"}`}
     >
       <div className="flex items-baseline gap-[8px] md:gap-[10px] mb-[9px] md:mb-[11px]">
+        {/* tabIndex -1: the coverage cell that sends the user here moves focus
+            onto this heading, not just the scroll position. Never in the tab
+            order — a programmatic focus target only. */}
         <h3
           id={headingId}
+          tabIndex={-1}
           className="font-mono uppercase text-[10.5px] md:text-[11px] tracking-[0.14em]"
           style={{ color: "var(--brass)" }}
         >

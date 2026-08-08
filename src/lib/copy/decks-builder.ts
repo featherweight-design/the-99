@@ -65,20 +65,42 @@ export const addPanelCopy = {
     collapse: "Show fewer",
   },
 
-  // ── Coverage strip → shelf link ───────────────────────────────────────
-  // Only drawn under a cell that is short, so the label does not have to say
-  // which role it belongs to; the accessible name does, because a screen
-  // reader meets five of these in a row.
+  // ── Coverage strip — the cell is the link (#184) ──────────────────────
+  // The separate anchor beneath the cell is gone: a short cell IS the control
+  // and this label is a caption inside it. Ten targets become six.
   strip: {
-    // Named for where it lands. "picks" would have been a third noun for one
-    // thing beside the tab's "Consider" and, worse, "Top picks for X" is
-    // already a specific shelf this link does NOT go to.
-    shelfLink: "consider",
-    shelfLinkAria: (role: string) => `See ${role} cards to consider`,
-    // The strip's desktop annotation. It used to name only the rationale
-    // disclosure, which was the whole of the cell before this pass added the
-    // shelf link — so it described half of what a cell now does.
-    hint: "Click a cell for rationale · a cell under target links its shelf below",
+    cellLink: "consider →",
+    // The whole cell is the control, so its accessible name carries the
+    // figures a sighted user reads off the cell face. Two sentences, no dash —
+    // the no-em-dash rule covers aria as much as visible copy.
+    cellLinkAria: (role: string, have: number, target: number) =>
+      `${role}, ${have} of ${target}. See ${role.toLowerCase()} cards to consider.`,
+    // A cell that is not short has no shelf to send anyone to, so it is a
+    // figure and not a control.
+    cellStaticAria: (role: string, have: number, target: number) =>
+      `${role}, ${have} of ${target}`,
+    // One disclosure for the strip instead of five per-cell buttons.
+    rationaleToggle: "Why these numbers?",
+    rationaleToggleAria: "Show why each role has the target it has",
+    rationaleClose: "Hide",
+    // The disclosure's four lines, verbatim from the canvas (CV:466-469).
+    // Four lines for five roles: Removal and Wipes share line 3 as drawn, so
+    // this is four authored groupings rather than a map over RECOMMENDED_MIX.
+    // Each body opens with the em dash that joins it to its bold heading; the
+    // heading itself is composed from RECOMMENDED_MIX so the panel can never
+    // quote a target the cell above it disagrees with. These are the one
+    // surface in the addendum that ships em dashes — the rationale copy is
+    // quoted, not rewritten, and must not be "fixed".
+    rationaleBodies: {
+      ramp: "— you want your commander out a turn early, every game.",
+      draw: "— a four-player table runs you out of cards before it runs you out of life.",
+      removalWipes: "— three opponents means three threats you did not plan for.",
+      land: "— advisory: a cheap curve wants fewer, a heavy one wants more.",
+    },
+    // The strip's desktop annotation. Both of its old clauses went false when
+    // the cell became the control: clicking a cell no longer opens rationale,
+    // and a cell does not link a shelf, it is the link.
+    hint: "A cell under target opens its shelf below",
   },
 
   // ── Shelf headers ─────────────────────────────────────────────────────

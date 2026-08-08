@@ -104,22 +104,80 @@ describe("addPanelCopy punctuation", () => {
       // unsampled: `ownedFilterOffNote` writes its singular and plural forms
       // separately, and a dash could return to either alone. Call each member
       // once per fill so every count branch renders its literal frame.
-      const fills: unknown[] = ["x", 0, 1, 2];
-      return fills.map((fill) =>
-        String(
-          (value as (...a: unknown[]) => string)(
-            ...Array.from({ length: value.length }, () => fill),
-          ),
-        ),
-      );
+      const arity = value.length;
+      const counts = [0, 1, 2];
+      // A uniform numeric fill throws on any member whose leading argument is a
+      // name it lower-cases, so those members used to sample their string call
+      // alone and their count branches went unvisited. The mixed shape — a name
+      // first, counts after — is the call the app actually makes.
+      const argLists: unknown[][] = [
+        Array.from({ length: arity }, () => "x"),
+        ...counts.map((n) => Array.from({ length: arity }, () => n)),
+        ...counts.map((n) => Array.from({ length: arity }, (_, i) => (i === 0 ? "x" : n))),
+      ];
+      const rendered = argLists.flatMap((args) => {
+        try {
+          return [String((value as (...a: unknown[]) => string)(...args))];
+        } catch {
+          // A fill of the wrong shape for this member. It samples nothing rather
+          // than failing the invariant on a call the app never makes; the other
+          // shapes still render every literal frame in the member.
+          return [];
+        }
+      });
+      // Tolerating a shape that throws is the point; tolerating a member that
+      // throws on every shape is how this whole invariant quietly stops testing
+      // anything. A member the sampler cannot call at all is a sampler that
+      // needs a new shape, not a string that passed.
+      if (rendered.length === 0) {
+        throw new Error(
+          `addPanelCopy.${(value as { name?: string }).name || "(anonymous)"} rendered under no argument shape, so its strings went unsampled. Add the shape it takes.`,
+        );
+      }
+      return rendered;
     }
     if (value && typeof value === "object") return Object.values(value).flatMap(sample);
     return [];
   };
 
   it("contains no em dash in any string", () => {
-    for (const string of sample(addPanelCopy)) {
+    // One documented exception: the rationale panel's four lines are quoted
+    // design copy, not written for this surface, and the handoff says in as
+    // many words that they ship as drawn and must not be "fixed". Everything
+    // else — aria-labels included — obeys the rule.
+    const { rationaleBodies, ...strip } = addPanelCopy.strip;
+    expect(Object.values(rationaleBodies).every((line) => line.includes("—"))).toBe(true);
+    for (const string of sample({ ...addPanelCopy, strip })) {
       expect(string).not.toContain("—");
     }
+  });
+});
+
+// The addendum's one genuine shipping hazard: `strip.hint` was replaced at the
+// same key, so a merge of the two objects would have left two live values and
+// the strip would have kept telling players to click a cell for rationale.
+describe("addPanelCopy.strip after #184", () => {
+  it("ships exactly one live hint, at the new value", () => {
+    expect(addPanelCopy.strip.hint).toBe("A cell under target opens its shelf below");
+    expect(JSON.stringify(addPanelCopy.strip)).not.toContain("Click a cell for rationale");
+  });
+
+  it("no longer carries the superseded shelf-link keys", () => {
+    expect(addPanelCopy.strip).not.toHaveProperty("shelfLink");
+    expect(addPanelCopy.strip).not.toHaveProperty("shelfLinkAria");
+  });
+
+  it("carries the arrow inside the caption, which is no longer a link", () => {
+    expect(addPanelCopy.strip.cellLink).toBe("consider →");
+  });
+
+  it("names both figures in a short cell's accessible name, in two sentences", () => {
+    expect(addPanelCopy.strip.cellLinkAria("Ramp", 4, 10)).toBe(
+      "Ramp, 4 of 10. See ramp cards to consider.",
+    );
+  });
+
+  it("names the figures without a call to action on a met cell", () => {
+    expect(addPanelCopy.strip.cellStaticAria("Wipes", 3, 3)).toBe("Wipes, 3 of 3");
   });
 });

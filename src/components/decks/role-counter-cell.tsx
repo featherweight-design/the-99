@@ -1,127 +1,130 @@
-// Role Counter Cell — §Role Counter Strip — each cell is a client button.
-// Touch AND keyboard accessible: button + aria-expanded + hidden rationale panel.
+// Role Counter Cell — §Role Counter Strip — the cell IS the control (#184).
+//
+// A cell under target is a button that opens that role's shelf; a cell that has
+// met its target is a figure with no action and no caption. The nested anchor
+// and the per-cell rationale disclosure are both gone: rationale moved up to
+// one strip-level panel, which is what freed the cell face to be the target.
+// 44px arrives for free from the cell height (62px phone / 72px desktop), so
+// the caption can stay at 9-10px where it reads as a hint.
 "use client";
 
-import { useId, useState } from "react";
 import { roleCellState } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 interface RoleCounterCellProps {
-  role: string;
   label: string;
   have: number;
   target: number;
   advisory: boolean;
-  rationale: string;
   /** Absent on a cell that is not short: there is nothing to send the user to. */
   onSeeShelf?: () => void;
 }
 
 export function RoleCounterCell({
-  role,
   label,
   have,
   target,
   advisory,
-  rationale,
   onSeeShelf,
 }: RoleCounterCellProps) {
-  const [open, setOpen] = useState(false);
-  const rationaleId = useId();
-  const { figureColor, barColor, pct } = roleCellState({ have, target, advisory });
+  const { figureColor, barColor, pct } = roleCellState({ have, target });
+
+  /*
+    §Role counter cell container
+    mobile:  bg --surface-sunken, border 1px --border, br 7px, p 7px 2px 6px,
+             text-center, min-height 62px
+    desktop: br 9px, p 11px 14px, 72px tall
+    Hover and pressed are drawn on the short cell only, because the met cell is
+    not a control — they arrive as classes rather than inline style so the
+    caption inside can follow the cell through group-hover / group-active.
+  */
+  const shell =
+    "group flex-1 min-w-0 min-h-[62px] md:min-h-[72px] rounded-[7px] md:rounded-[9px] " +
+    "pt-[7px] px-[2px] pb-[6px] md:px-[14px] md:py-[11px] text-center md:text-left " +
+    "bg-surface-sunken border border-border";
+  const interactive =
+    " cursor-pointer hover:bg-elevated-hover hover:border-border-strong " +
+    "active:bg-bg active:border-brass-shadow";
+
+  const face = (
+    <>
+      {/* §Role counter cell — label */}
+      <p
+        className="font-mono uppercase truncate overflow-hidden text-ellipsis text-[8.5px] md:text-[10px] tracking-[0.06em] md:tracking-[0.1em] text-fg-faint"
+      >
+        {label}
+      </p>
+
+      {/* §Role counter cell — current-count figure. The `/ target` denominator
+          is desktop only; the phone cell carries the target on its `rec N`
+          line instead, where there is room for it. */}
+      <p
+        className="font-mono font-semibold text-[13px] md:text-[16px] mt-[2px] md:mt-[3px]"
+        style={{ color: figureColor }}
+      >
+        {have}
+        <span className="hidden md:inline font-normal text-[11px] text-fg-faint">
+          {" "}
+          / {target}
+        </span>
+      </p>
+
+      {/* §Role counter cell — fill bar track (desktop only) */}
+      <div
+        className="hidden md:block rounded-full overflow-hidden mt-[8px] h-[5px] bg-elevated"
+      >
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${pct}%`, background: barColor }}
+        />
+      </div>
+
+      {/* §Role counter cell — caption row. Desktop sets `rec N` and the caption
+          on one baseline; the phone stacks them. */}
+      <div className="md:flex md:items-baseline md:justify-between md:gap-[8px] md:mt-[6px]">
+        <span className="block font-mono text-[8px] md:text-[9px] text-fg-locked md:text-fg-faint">
+          {advisory ? `rec ~${target}` : `rec ${target}`}
+        </span>
+        {onSeeShelf ? (
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-brass group-hover:text-brass-hover group-active:text-brass-mid">
+            {addPanelCopy.strip.cellLink}
+          </span>
+        ) : (
+          /* Whenever the cell is not a control — met, or handed no handler at
+             all — the caption goes and a dash stands in its place, so the row
+             keeps its rhythm and nothing offers a shelf it cannot open. The two
+             widths disagree on the dash's tone; both are as drawn. */
+          <span
+            aria-hidden
+            className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-border-strong md:text-border-dashed"
+          >
+            —
+          </span>
+        )}
+      </div>
+    </>
+  );
+
+  if (!onSeeShelf) {
+    return (
+      <div
+        role="figure"
+        aria-label={addPanelCopy.strip.cellStaticAria(label, have, target)}
+        className={shell}
+      >
+        {face}
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col flex-1 min-w-0">
-      {/*
-        §Role counter cell container
-        mobile:  bg #181410, border 1px #2A241D, br 7px, p 6px 5px, text-center
-        desktop: bg #181410, border 1px #2A241D, br 9px, p 11px 14px
-      */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls={rationaleId}
-        className="flex-1 min-w-0 rounded-[7px] md:rounded-[9px] px-[5px] py-[6px] md:px-[14px] md:py-[11px] text-center md:text-left"
-        style={{
-          background: "#181410",
-          border: "1px solid #2A241D",
-          cursor: "help",
-        }}
-      >
-        {/* §Role counter cell — label */}
-        <p
-          className="font-mono uppercase truncate overflow-hidden text-ellipsis text-[8.5px] md:text-[10px] tracking-[0.04em] md:tracking-[0.1em]"
-          style={{ color: "#8E8269" }}
-        >
-          {label}
-        </p>
-
-        {/* §Role counter cell — current-count figure */}
-        <p
-          className="font-mono font-semibold text-[13px] md:text-[16px] mt-[2px]"
-          style={{ color: figureColor }}
-        >
-          {have}
-        </p>
-
-        {/* §Role counter cell — fill bar track (desktop only) */}
-        <div
-          className="hidden md:block rounded-full overflow-hidden mt-[8px]"
-          style={{ height: 5, background: "#2A241D" }}
-        >
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${pct}%`, background: barColor }}
-          />
-        </div>
-
-        {/* §Role counter cell — "rec N" caption: mobile mt 0; desktop mt 6px */}
-        <p
-          className="font-mono text-[8px] md:text-[9px] text-[#6E6353] md:text-[#8E8269] mt-0 md:mt-[6px]"
-        >
-          {advisory ? `rec ~${target}` : `rec ${target}`}
-        </p>
-      </button>
-
-      {/* The handoff says the under-target cell "becomes a link". The cell is
-          already a button owning the rationale disclosure — the only route to
-          rationale at phone width — and an anchor cannot nest inside one, so
-          the link draws beneath it instead, which is what the strip annotation
-          now describes. Flagged to Design for ratification. */}
-      {onSeeShelf && (
-        <a
-          href={`#shelf-${role}`}
-          // A plain click is handled by the shell, because the Consider panel
-          // is not mounted yet and the browser would set the hash against a
-          // heading that does not exist. A modified click is left alone: it
-          // opens a fresh document, where the hash resolves on load.
-          onClick={(e) => {
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-            e.preventDefault();
-            onSeeShelf();
-          }}
-          aria-label={addPanelCopy.strip.shelfLinkAria(label.toLowerCase())}
-          className="font-mono text-[9px] md:text-[10px] mt-[4px] text-center md:text-left text-brass hover:text-brass-hover"
-        >
-          {addPanelCopy.strip.shelfLink} →
-        </a>
-      )}
-
-      {/* Rationale text — toggled by button; hidden via aria-hidden + display none */}
-      <p
-        id={rationaleId}
-        role="region"
-        aria-label={`${label} rationale`}
-        className="font-mono text-[10.5px] leading-[1.5] mt-[5px] px-[6px]"
-        style={{
-          color: "#C6B79A",
-          display: open ? "block" : "none",
-        }}
-        aria-hidden={!open}
-      >
-        {rationale}
-      </p>
-    </div>
+    <button
+      type="button"
+      onClick={onSeeShelf}
+      aria-label={addPanelCopy.strip.cellLinkAria(label, have, target)}
+      className={shell + interactive}
+    >
+      {face}
+    </button>
   );
 }
