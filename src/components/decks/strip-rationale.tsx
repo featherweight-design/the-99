@@ -57,14 +57,18 @@ export function StripRationale() {
     <div className="mt-[10px] rounded-[9px] px-[13px] py-[11px] bg-surface-sunken border border-border border-l-[3px] border-l-brass">
       {/* §Rationale panel — header. The title is the same control as the closed
           trigger, so `aria-expanded` stays observable while the panel is open;
-          `Hide` is the drawn close beside it. */}
+          `Hide` is the drawn close beside it.
+
+          No `aria-label` here. The authored one reads "Show why each role has
+          the target it has", which is a lie once the panel is showing, and the
+          design table authors it for the trigger only. The drawn title is an
+          honest name in both states, and `aria-expanded` carries the rest. */}
       <div className="flex items-baseline justify-between gap-[10px]">
         <button
           type="button"
           onClick={() => setOpen(false)}
           aria-expanded
           aria-controls="strip-rationale"
-          aria-label={addPanelCopy.strip.rationaleToggleAria}
           className="font-mono text-[11px] text-brass cursor-pointer"
         >
           {addPanelCopy.strip.rationaleToggle}

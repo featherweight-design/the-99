@@ -28,8 +28,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const { BuilderShell } = await import("./builder-shell");
 
-// jsdom has no layout, so scrollIntoView is not implemented on the prototype.
-Element.prototype.scrollIntoView = vi.fn();
+// jsdom implements no layout, so it ships no scrollIntoView. Patch only when it
+// is genuinely missing, as `filter-panel.test.tsx` and `arrival-chrome.test.tsx`
+// do — an unconditional assignment outlives this file and makes run order matter
+// for anything that spies on the same prototype method.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
 
 const deck = {
   id: "deck-1",

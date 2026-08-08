@@ -98,8 +98,9 @@ export function roleCellState(args: {
   // It read as body text with a brass bar, which made the one number the strip
   // exists to draw the eye to the quietest thing in the cell.
   const short = { figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct };
-  // An advisory target is a range, so it is never "met" — a Land cell at 40 is
-  // not finished, it is a judgement call.
+  // An advisory target is a range, so it never earns the met colours — a Land
+  // cell at 40 is not finished, it is a judgement call. Only colours are decided
+  // here; whether the cell is a control is the cell's own call.
   if (args.advisory) return short;
   if (args.have >= args.target)
     return { figureColor: "var(--success)", barColor: "var(--success)", pct };

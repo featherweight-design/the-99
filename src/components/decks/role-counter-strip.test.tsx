@@ -154,6 +154,22 @@ describe("role counter strip — one disclosure for the whole strip", () => {
     expect(panel).toHaveTextContent(`${RECOMMENDED_MIX.land.label} ~${RECOMMENDED_MIX.land.target}`);
   });
 
+  // The authored aria reads "Show why each role has the target it has", which is
+  // false once the panel is showing. The open header takes its drawn title as its
+  // name instead, and aria-expanded says which state it is in.
+  it("never says Show while the panel is already showing", () => {
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggleAria }),
+    );
+    expect(
+      screen.queryByRole("button", { name: addPanelCopy.strip.rationaleToggleAria }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggle }),
+    ).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("closes again from Hide", () => {
     render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
     const trigger = screen.getByRole("button", {
