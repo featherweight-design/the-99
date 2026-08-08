@@ -88,21 +88,21 @@ export const RECOMMENDED_MIX_SOURCE_LINE = "EDHREC averages · a guide, not a ga
 export const RECOMMENDED_MIX_WORKED_EXAMPLE =
   "Ramp · rec 10. Decks that cast a 4-mana commander on curve average ~10 sources. A deck sitting at 8 is fine for a slower build.";
 
+// Colour and control now answer to the same number. An advisory role used to be
+// held back from the met colours on the grounds that ~37 lands is a range rather
+// than a finish line — but design table E-N1/E-N2 keys the cell's whole state on
+// `have >= target` and knows nothing of advisory, so a Land at 40 was drawing a
+// brass figure inside a cell that had already given up its caption and its
+// action. The `~` in `rec ~37` is where the range still speaks.
 export function roleCellState(args: {
   have: number;
   target: number;
-  advisory: boolean;
 }): { figureColor: string; barColor: string; pct: number } {
   const pct = Math.min(100, Math.round((args.have / args.target) * 100));
+  if (args.have >= args.target)
+    return { figureColor: "var(--success)", barColor: "var(--success)", pct };
   // Design table E4/E5: a short cell's figure is brass and its bar brass-mid.
   // It read as body text with a brass bar, which made the one number the strip
   // exists to draw the eye to the quietest thing in the cell.
-  const short = { figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct };
-  // An advisory target is a range, so it never earns the met colours — a Land
-  // cell at 40 is not finished, it is a judgement call. Only colours are decided
-  // here; whether the cell is a control is the cell's own call.
-  if (args.advisory) return short;
-  if (args.have >= args.target)
-    return { figureColor: "var(--success)", barColor: "var(--success)", pct };
-  return short;
+  return { figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct };
 }

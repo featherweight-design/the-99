@@ -50,21 +50,22 @@ describe("computeRoleCounts", () => {
 describe("roleCellState", () => {
   // Design table E4/E5: the figure is the loudest thing in a short cell, not
   // the quietest. It read as body text until #184.
-  it("below-rec non-advisory is a brass figure over a brass-mid bar", () => {
-    expect(roleCellState({ have: 4, target: 10, advisory: false })).toEqual({
+  it("below-rec is a brass figure over a brass-mid bar", () => {
+    expect(roleCellState({ have: 4, target: 10 })).toEqual({
       figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct: 40,
     });
   });
-  it("met-rec non-advisory turns green", () => {
-    expect(roleCellState({ have: 10, target: 10, advisory: false })).toEqual({
+  it("met-rec turns green", () => {
+    expect(roleCellState({ have: 10, target: 10 })).toEqual({
       figureColor: "var(--success)", barColor: "var(--success)", pct: 100,
     });
   });
-  // An advisory target is a range, so it never turns green: a Land cell at 40
-  // is a judgement call rather than a box ticked.
-  it("advisory (lands) reads as short even when over-target", () => {
-    expect(roleCellState({ have: 40, target: 37, advisory: true })).toEqual({
-      figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct: 100,
+  // The advisory Land target no longer buys a colour of its own. Holding it in
+  // the short palette put a brass figure in a cell that had already dropped its
+  // caption and its action, because the control keys on the number alone.
+  it("colours an over-target advisory role exactly like any other met role", () => {
+    expect(roleCellState({ have: 40, target: 37 })).toEqual({
+      figureColor: "var(--success)", barColor: "var(--success)", pct: 100,
     });
   });
 });

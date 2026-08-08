@@ -27,7 +27,7 @@ export function RoleCounterCell({
   advisory,
   onSeeShelf,
 }: RoleCounterCellProps) {
-  const { figureColor, barColor, pct } = roleCellState({ have, target, advisory });
+  const { figureColor, barColor, pct } = roleCellState({ have, target });
 
   /*
     §Role counter cell container
