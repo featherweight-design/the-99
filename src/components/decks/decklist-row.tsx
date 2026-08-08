@@ -55,10 +55,7 @@ export function DecklistRow({
   const label = isMeta ? metaLabel! : card.name;
   const nameClass =
     "flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
-  // The server drops the last copy's row from the decklist on success, so
-  // "removed" is never a committed prop — the override holds until that
-  // re-render lands.
-  const { applied, isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
+  const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
   const reportRemoveFailure = useReportRemoveFailure();
@@ -92,11 +89,13 @@ export function DecklistRow({
     );
   }
 
-  // Only the last copy takes the row with it. A stack of basics decrements, so
-  // hiding on every click would blank a row the deck still holds eight of.
-  if (spent || (applied && card.quantity <= 1)) {
-    return <UndoRow deckId={deckId} card={card} />;
-  }
+  // The decklist's spent slot is the sole trigger for the receipt, and the
+  // decklist's optimistic removal is what makes the row disappear. Reading this
+  // row's own mutation state as well would key the receipt to something that
+  // outlives what it describes — that state never returns to false, so once a
+  // card had been removed and put back, React reusing the row under the same
+  // key would draw the receipt over a card that is in the deck.
+  if (spent) return <UndoRow deckId={deckId} card={card} />;
 
   return (
     // Wrapper keeps the row and any error message as a single grid item.

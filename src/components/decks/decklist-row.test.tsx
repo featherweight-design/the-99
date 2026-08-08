@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -26,13 +26,28 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 const { DecklistRow } = await import("./decklist-row");
 const { BuilderShell } = await import("./builder-shell");
 
+// Several tests hold a mutation mid-flight on purpose, since the optimistic
+// override only exists while its action is unsettled. That override outlives
+// the test unless the action is settled: React keeps it alive across the
+// unmount, and the next tree inherits a card list it never asked for. Settling
+// every outstanding one here is what keeps this file order-independent.
+const outstanding: Array<() => void> = [];
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((res) => {
     resolve = res;
   });
+  outstanding.push(() => resolve(undefined as T));
   return { promise, resolve };
 }
+
+afterEach(async () => {
+  const settle = outstanding.splice(0);
+  await act(async () => {
+    settle.forEach((resolve) => resolve());
+  });
+});
 
 const card = {
   oracleId: "sol-ring",
@@ -62,20 +77,6 @@ function renderRow(ui: React.ReactNode) {
 }
 
 describe("DecklistRow", () => {
-  it("hides the card before the removal resolves", async () => {
-    const pending = deferred<void>();
-    removeCardFromDeck.mockReturnValue(pending.promise);
-
-    renderRow(<DecklistRow deckId="d1" card={card} />);
-    await clickRemove();
-
-    expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
-
-    await act(async () => {
-      pending.resolve();
-    });
-  });
-
   // Removal takes one copy, so a stack keeps its row; hiding it would blank a
   // line the deck still holds eight of.
   it("keeps the row when more than one copy remains", async () => {
@@ -140,23 +141,6 @@ describe("DecklistRow remove control (#179)", () => {
 
 // #185 — the removed row is replaced in place rather than unmounting.
 describe("DecklistRow undo row (#185)", () => {
-  it("replaces the last copy's row with an undo row", async () => {
-    const pending = deferred<void>();
-    removeCardFromDeck.mockReturnValue(pending.promise);
-
-    renderRow(<DecklistRow deckId="d1" card={card} />);
-    await clickRemove();
-
-    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
-    ).toBeInTheDocument();
-
-    await act(async () => {
-      pending.resolve();
-    });
-  });
-
   it("puts the card back through the same add the tile makes", async () => {
     const pending = deferred<DeckMutationResult>();
     addCardToDeck.mockReturnValue(pending.promise);
@@ -210,7 +194,8 @@ const arcaneSignet: DeckDetailCard = {
   name: "Arcane Signet",
 };
 
-function makeDeck(): DeckDetail {
+function makeDeck(cards: DeckDetailCard[] = [solRing, arcaneSignet]): DeckDetail {
+  const built = cards.reduce((sum, c) => sum + c.quantity, 0);
   return {
     id: "deck-1",
     name: "Korvold",
@@ -224,26 +209,43 @@ function makeDeck(): DeckDetail {
       oracleText: null,
       imageUri: null,
     },
-    cards: [solRing, arcaneSignet],
-    built: 2,
-    ownedCount: 2,
+    cards,
+    built,
+    ownedCount: built,
     toBuyCount: 0,
-    total: 2,
+    total: built,
     unresolvedRows: [],
   } as DeckDetail;
 }
 
-function renderBuilder() {
-  return render(
+function shell(cards?: DeckDetailCard[]) {
+  return (
     <BuilderShell
-      deck={makeDeck()}
+      deck={makeDeck(cards)}
       suggestions={[]}
       degraded={false}
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={false}
-    />,
+    />
   );
+}
+
+function renderBuilder() {
+  const view = render(shell());
+  return {
+    ...view,
+    /**
+     * The server action's revalidation, which jsdom has no route to run. It is
+     * what ends an optimistic override, so a test that never calls it can only
+     * ever see a mutation mid-flight — and the states this file is about are
+     * the ones on the far side of that.
+     */
+    revalidate: (cards: DeckDetailCard[]) =>
+      act(async () => {
+        view.rerender(shell(cards));
+      }),
+  };
 }
 
 // The builder's own region, told apart from the card-detail modal's by
@@ -284,6 +286,21 @@ describe("undo row lifetime (#185)", () => {
     expect(container.querySelectorAll(BUILDER_REGION)).toHaveLength(1);
   });
 
+  it("puts the undo row where the removed card's row was", async () => {
+    removeCardFromDeck.mockReturnValue(deferred<void>().promise);
+
+    renderBuilder();
+    await removeFromBuilder("Sol Ring");
+
+    expect(
+      screen.queryByRole("button", { name: addPanelCopy.row.removeAria("Sol Ring") }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+    ).toBeInTheDocument();
+  });
+
   // The slot is a receipt, not a pending state: a deck that held its counts for
   // the life of the row would be lying about its own size.
   it("decrements the deck and the group the moment the row is spent", async () => {
@@ -320,6 +337,35 @@ describe("undo row lifetime (#185)", () => {
 
     expect(screen.getByText(addPanelCopy.undo.removed("Arcane Signet"))).toBeInTheDocument();
     expect(screen.queryByText(/king with no army/i)).not.toBeInTheDocument();
+  });
+
+  // Gate 5's repeat pass. The bug class it exists for is a receipt keyed to
+  // something that outlives the thing it describes, which forward-only use
+  // never reveals: the second removal looks identical to the first until you
+  // have undone one in between.
+  it("offers undo again when the same card is removed, undone, then removed once more", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    addCardToDeck.mockResolvedValue({ ok: true } as DeckMutationResult);
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+      );
+    });
+    await revalidate([solRing, arcaneSignet]);
+    expect(screen.queryByText(addPanelCopy.undo.removed("Sol Ring"))).not.toBeInTheDocument();
+
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+    ).toBeInTheDocument();
   });
 
   it("survives a tab switch to Consider and back", async () => {
