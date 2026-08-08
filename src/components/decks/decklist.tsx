@@ -52,8 +52,9 @@ export function Decklist({
 
   // The spent card is out of the deck's counts already, so it is grouped
   // alongside the live ones only to be marked — which is what puts the undo row
-  // where the card's own row was rather than at the end of the list. While an
-  // undo is in flight the card is back in `cards`, and the slot steps aside.
+  // where the card's own row was rather than at the end of the list. Any other
+  // path that puts the card back — quick-add, a suggestion tile — returns it to
+  // `cards` optimistically, and the slot steps aside for the live row.
   const spentCard =
     spentSlot &&
     !cards.some((c) => c.oracleId === spentSlot.oracleId) &&

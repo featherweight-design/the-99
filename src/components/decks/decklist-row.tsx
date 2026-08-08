@@ -15,8 +15,6 @@ import {
   useMarkSlotSpent,
   useRemoveOptimisticCard,
   useReportRemoveFailure,
-  useSettleUndo,
-  useUndoRemovedCard,
 } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
@@ -173,30 +171,24 @@ export function DecklistRow({
  * noticed, and a five-second toast that also vanishes fixes half of that.
  *
  * Undo is a re-add rather than a rollback — the same `addCardToDeck` the
- * suggestion tile calls, with this row's own optimistic add. No new server
- * action and no new server state.
+ * suggestion tile calls. No new server action and no new server state.
+ *
+ * The one mutation in the builder with no optimistic prediction, deliberately.
+ * An optimistic re-add puts the card straight back into the deck-wide list,
+ * which is the decklist's signal to stop drawing the spent slot — so this row
+ * would unmount mid-flight and a refused undo would have nowhere to say so.
+ * The disabled control carries the wait instead, and the slot settles when the
+ * server list actually comes back with the card in it.
  */
 function UndoRow({ deckId, card }: { deckId: string; card: DeckDetailCard }) {
   const { isPending, error, run } = useDeckMutation(false, addPanelCopy.undo.failed);
-  const undoRemovedCard = useUndoRemovedCard();
   const announceUndo = useAnnounceUndo();
-  const settleUndo = useSettleUndo();
 
   function handleUndo() {
     // Announced from the click for the same reason the removal is: see
     // `handleRemove` above.
     announceUndo(card);
-    run(
-      async () => {
-        const result = await addCardToDeck(deckId, card.oracleId);
-        // Only a successful re-add settles the slot. Dropping it on the click
-        // would unmount this row, and a refused undo would have nowhere left
-        // to say so.
-        if (!result || result.ok) settleUndo();
-        return result;
-      },
-      () => undoRemovedCard(card),
-    );
+    run(() => addCardToDeck(deckId, card.oracleId));
   }
 
   return (

@@ -33,11 +33,13 @@ type RemoveOptimisticCard = (card: DeckDetailCard) => void;
  * async transition, so the row calls it straight from the click instead.
  */
 type MarkSlotSpent = (card: DeckDetailCard) => void;
-/** Undo's optimistic re-add, split from its announcement for the same reason. */
-type UndoRemovedCard = (card: DeckDetailCard) => void;
+/**
+ * Undo's announcement. There is no matching optimistic re-add: predicting it
+ * would put the card back in the list below, which is the decklist's cue to
+ * stop drawing the spent slot, unmounting the undo row before a refusal could
+ * reach it. The slot settles on the server list instead.
+ */
 type AnnounceUndo = (card: DeckDetailCard) => void;
-/** Drops the spent slot once the re-add has been accepted. */
-type SettleUndo = () => void;
 
 type DeckEdit =
   | { kind: "add"; card: DeckDetailCard }
@@ -59,9 +61,7 @@ type DeckEdits = {
   add: AddOptimisticCard;
   remove: RemoveOptimisticCard;
   markSpent: MarkSlotSpent;
-  undoRemove: UndoRemovedCard;
   announceUndo: AnnounceUndo;
-  settleUndo: SettleUndo;
   reportRemoveFailure: ReportRemoveFailure;
   resolveRow: ResolveOptimisticRow;
   deleteRow: DeleteOptimisticRow;
@@ -159,16 +159,8 @@ export function useMarkSlotSpent(): MarkSlotSpent {
   return useContext(DeckEditContext)?.markSpent ?? noop;
 }
 
-export function useUndoRemovedCard(): UndoRemovedCard {
-  return useContext(DeckEditContext)?.undoRemove ?? noop;
-}
-
 export function useAnnounceUndo(): AnnounceUndo {
   return useContext(DeckEditContext)?.announceUndo ?? noop;
-}
-
-export function useSettleUndo(): SettleUndo {
-  return useContext(DeckEditContext)?.settleUndo ?? noop;
 }
 
 export function useResolveOptimisticRow(): ResolveOptimisticRow {

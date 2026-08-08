@@ -39,6 +39,19 @@ Fixed by deleting the row-level trigger. The decklist's optimistic removal alrea
 row out, and its spent slot already draws the receipt, so the row's own copy was both
 redundant and the longer-lived of the two.
 
+### Undo is the one mutation with no optimistic path
+
+Every other mutation in the builder predicts its own result. Undo cannot, and the reason is
+the same lifetime argument as above. An optimistic re-add returns the card to the deck-wide
+list, which is precisely the decklist's signal to stop drawing the spent slot — so the undo
+row unmounted mid-flight, and a refusal arrived at a component that no longer existed. The
+reverse pass passed anyway, because the test that covered it rendered the row without the
+providers, where the optimistic re-add is a no-op.
+
+The row now waits on the server, with its disabled control carrying the wait, and the slot
+settles when the server list comes back holding the card — not when the promise resolves.
+Settling on success would drop the receipt a frame before the new HTML landed.
+
 ## Harness note
 
 Holding a mutation mid-flight is how several of these tests observe an optimistic override,

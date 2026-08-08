@@ -193,8 +193,6 @@ export function BuilderShell({
     },
     [cards],
   );
-  const settleUndo = useCallback(() => setSpentSlot(null), []);
-
   // A failed removal outlives the row that asked for it, so its reason is held
   // here. Cleared when the server answers again: any successful edit replaces
   // deck.cards, which settles the question the refusal was answering.
@@ -203,6 +201,15 @@ export function BuilderShell({
   if (lastServerCards !== deck.cards) {
     setLastServerCards(deck.cards);
     setRemoveFailure(null);
+    // The slot settles on the card being genuinely back in the deck, not on the
+    // undo's promise resolving. Settling on success would drop the receipt
+    // before the new HTML landed, flashing the pre-undo list back for a frame;
+    // it would also unmount the row, and a refused undo has to say so from
+    // where the row is. A revalidation that still lacks the card — the removal
+    // itself — leaves the slot standing.
+    if (spentSlot && deck.cards.some((c) => c.oracleId === spentSlot.oracleId)) {
+      setSpentSlot(null);
+    }
   }
   const reportRemoveFailure = useCallback((cardName: string) => {
     setRemoveFailure(`${cardName}: ${DECK_REMOVE_FALLBACK_MESSAGE}`);
@@ -218,9 +225,7 @@ export function BuilderShell({
     add: announceAdd,
     remove: removeCard,
     markSpent,
-    undoRemove: addOptimisticCard,
     announceUndo,
-    settleUndo,
     reportRemoveFailure,
     resolveRow: resolveOptimisticRow,
     deleteRow: deleteOptimisticRow,

@@ -157,22 +157,6 @@ describe("DecklistRow undo row (#185)", () => {
       pending.resolve({ ok: true });
     });
   });
-
-  // The undo row is the only thing between a mis-tap and a lost card, so a
-  // refusal says so where the row is rather than in a banner.
-  it("states a refused undo in the row, and withdraws the control", async () => {
-    addCardToDeck.mockResolvedValue({ ok: false, message: addPanelCopy.undo.failed });
-
-    renderRow(<DecklistRow deckId="d1" card={card} spent />);
-    await act(async () => {
-      screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }).click();
-    });
-
-    expect(screen.getByRole("alert")).toHaveTextContent(addPanelCopy.undo.failed);
-    expect(
-      screen.queryByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
-    ).not.toBeInTheDocument();
-  });
 });
 
 // The undo row's lifetime is a property of the decklist, not of the row that
@@ -366,6 +350,34 @@ describe("undo row lifetime (#185)", () => {
     expect(
       screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
     ).toBeInTheDocument();
+  });
+
+  // The undo row is the only thing between a mis-tap and a lost card, so a
+  // refusal says so where the row is rather than in a banner. Through the
+  // builder rather than a lone row, because the mounted-long-enough-to-say-it
+  // part is decklist state: a row rendered without the providers cannot see an
+  // optimistic re-add taking the slot away before the message arrives.
+  it("states a refused undo in the row, and withdraws the control", async () => {
+    removeCardFromDeck.mockResolvedValue(undefined);
+    addCardToDeck.mockResolvedValue({ ok: false, message: addPanelCopy.undo.failed });
+
+    const { revalidate } = renderBuilder();
+    await removeFromBuilder("Sol Ring");
+    await revalidate([arcaneSignet]);
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+      );
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(addPanelCopy.undo.failed);
+    expect(
+      screen.queryByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
+    ).not.toBeInTheDocument();
+    // The receipt stays: the card is still out of the deck, and this is the
+    // only place that says which one.
+    expect(screen.getByText(addPanelCopy.undo.removed("Sol Ring"))).toBeInTheDocument();
   });
 
   it("survives a tab switch to Consider and back", async () => {
