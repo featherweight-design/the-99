@@ -82,6 +82,8 @@ function Evidence({
   return (
     <div className="flex flex-col gap-[3px]">
       <div className="flex items-center gap-[6px]">
+        {/* #4A4033 is only bound to --border-dashed, a border token; the repo
+            spends it raw wherever it is a foreground (decklist-row.tsx:115). */}
         <span
           aria-hidden
           className="font-mono text-[9px]"
