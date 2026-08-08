@@ -82,7 +82,11 @@ function Evidence({
   return (
     <div className="flex flex-col gap-[3px]">
       <div className="flex items-center gap-[6px]">
-        <span aria-hidden className="font-mono text-[9px]" style={{ color: "var(--fg-locked)" }}>
+        <span
+          aria-hidden
+          className="font-mono text-[9px]"
+          style={{ color: inDeck ? "#4A4033" : "var(--fg-locked)" }}
+        >
           {addPanelCopy.tile.evidenceLabel}
         </span>
         <span
