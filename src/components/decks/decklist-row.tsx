@@ -8,6 +8,7 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { OwnershipDot } from "../ui/ownership-dot";
+import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
 import {
@@ -130,14 +131,7 @@ export function DecklistRow({
         )}
 
         {/* Buy tag — unowned non-meta only */}
-        {!isMeta && !card.owned && (
-          <span
-            className="font-mono text-[9px] md:text-[9.5px] rounded-[4px] px-[5px] py-[1px] flex-none"
-            style={{ color: "#E0913C", background: "rgba(224,145,60,0.13)" }}
-          >
-            buy
-          </span>
-        )}
+        {!isMeta && !card.owned && <BuyTag variant="row" />}
 
         {/* Remove ✕ — at both widths now, never on a meta row. The glyph stays
             13px at both: the phone target is the padding around it. */}

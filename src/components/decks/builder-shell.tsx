@@ -378,6 +378,7 @@ export function BuilderShell({
                   sort={sort}
                   onSortChange={setSort}
                   ownedCount={suggestions.filter((s) => s.owned).length}
+                  unownedCount={suggestions.filter((s) => !s.owned).length}
                   degraded={degraded}
                 />
               )}

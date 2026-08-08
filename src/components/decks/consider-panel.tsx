@@ -20,11 +20,17 @@ import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 // count and the tests cannot drift apart.
 export const SHELF_CAP = 12;
 
+// The shelf heading's meta text, which the unowned shelf prints in two colours.
+const META = "font-mono text-[10px] md:text-[11px]";
+
 type ShelfRole = MixRole | "other";
 const SHELF_ROLES: ShelfRole[] = ["ramp", "draw", "removal", "wipes", "land", "other"];
 
+/** The card roles, plus the one shelf grouped by ownership instead of by role. */
+type ShelfKey = ShelfRole | "unowned";
+
 type Shelf = {
-  role: ShelfRole;
+  key: ShelfKey;
   suggestions: DeckSuggestion[];
   /** Null on the "Threats & synergy" shelf, which has no target to be short of. */
   coverage: { have: number; target: number } | null;
@@ -32,9 +38,12 @@ type Shelf = {
 
 function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]): Shelf[] {
   const counts = computeRoleCounts(deckCards);
+  // A coverage shelf says "you have 2 of 10", which is a claim about cards you
+  // can play tonight — so the unowned staples never mix into one.
+  const owned = suggestions.filter((s) => s.owned);
   const shelves = SHELF_ROLES.map((role): Shelf => ({
-    role,
-    suggestions: suggestions.filter((s) => shelfRoleOf(s) === role),
+    key: role,
+    suggestions: owned.filter((s) => shelfRoleOf(s) === role),
     coverage: role === "other"
       ? null
       : { have: counts[role], target: RECOMMENDED_MIX[role].target },
@@ -42,10 +51,18 @@ function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]
 
   // Most-short-of first; the targetless shelf sorts last because it cannot be
   // short of anything.
-  return shelves.sort((a, b) => {
+  shelves.sort((a, b) => {
     const gap = (s: Shelf) => (s.coverage ? s.coverage.target - s.coverage.have : -Infinity);
     return gap(b) - gap(a);
   });
+
+  // Appended rather than ranked: it belongs below the targetless shelf, and
+  // nothing sorts below -Infinity. getDeckSuggestions caps the append at five,
+  // so SHELF_CAP can never bite here and needs no exception.
+  const unowned = suggestions.filter((s) => !s.owned);
+  return unowned.length > 0
+    ? [...shelves, { key: "unowned" as const, suggestions: unowned, coverage: null }]
+    : shelves;
 }
 
 function sortWithin(suggestions: DeckSuggestion[], sort: SortKey): DeckSuggestion[] {
@@ -88,8 +105,10 @@ function ShelfSection({
   first: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const headingId = `shelf-${shelf.role}`;
-  const label = addPanelCopy.shelf.labels[shelf.role];
+  const headingId = `shelf-${shelf.key}`;
+  const label = shelf.key === "unowned"
+    ? addPanelCopy.shelf.labels.edhrec(commanderShortName)
+    : addPanelCopy.shelf.labels[shelf.key];
   const overflowing = shelf.suggestions.length > SHELF_CAP;
   const shown = expanded ? shelf.suggestions : shelf.suggestions.slice(0, SHELF_CAP);
   // The modal pages the whole shelf, not just the tiles currently drawn — a
@@ -113,11 +132,24 @@ function ShelfSection({
         >
           {label}
         </h3>
-        <p className="font-mono text-[10px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
-          {shelf.coverage
-            ? `${addPanelCopy.shelf.coverage(shelf.coverage.have, shelf.coverage.target)} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`
-            : `${addPanelCopy.shelf.noTarget} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
-        </p>
+        {shelf.key === "unowned" ? (
+          // Two colours, so two spans — but one paragraph, like every other
+          // shelf. As two paragraphs the separator led a block of its own and a
+          // screen reader read "dot, 1 to consider" as its own sentence; inside
+          // the line it is punctuation between two clauses.
+          <p className={META}>
+            <span style={{ color: "var(--warning)" }}>{addPanelCopy.unowned.shelfCoverage}</span>{" "}
+            <span style={{ color: "var(--fg-faint)" }}>
+              {`· ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
+            </span>
+          </p>
+        ) : (
+          <p className={META} style={{ color: "var(--fg-faint)" }}>
+            {shelf.coverage
+              ? `${addPanelCopy.shelf.coverage(shelf.coverage.have, shelf.coverage.target)} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`
+              : `${addPanelCopy.shelf.noTarget} · ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
+          </p>
+        )}
         {overflowing && (
           <button
             type="button"
@@ -259,13 +291,14 @@ export function ConsiderPanel({
               sort={sort}
               onSortChange={onSortChange}
               ownedCount={suggestions.filter((s) => s.owned).length}
+              unownedCount={suggestions.filter((s) => !s.owned).length}
               degraded={degraded}
             />
           </div>
 
           {shelves.map((shelf, i) => (
             <ShelfSection
-              key={shelf.role}
+              key={shelf.key}
               first={i === 0}
               shelf={shelf}
               deckId={deckId}

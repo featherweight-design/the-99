@@ -82,6 +82,31 @@ describe("decksBuilderCopy", () => {
   });
 });
 
+// Named for the axis rather than for one key, because the provenance line lives
+// under `consider` and the tag under `unowned`, and they only mean anything
+// read together.
+describe("addPanelCopy — the unowned axis", () => {
+  it("states the axis rather than borrowing the deck's `to buy` phrasing", () => {
+    expect(addPanelCopy.consider.provenanceWithUnowned(59, 5)).toBe("59 owned · 5 you don’t own");
+    expect(addPanelCopy.consider.provenanceWithUnowned(59, 5)).not.toContain("to buy");
+  });
+
+  it("says unowned in a word as well as a colour", () => {
+    expect(addPanelCopy.unowned.tag).toBe("buy");
+    expect(addPanelCopy.unowned.tagAria("Smothering Tithe")).toBe(
+      "Smothering Tithe is not in your collection",
+    );
+    expect(addPanelCopy.unowned.shelfCoverage).toBe("not in your collection");
+  });
+
+  // The tag, its aria and the shelf heading already carry ownership three
+  // times over; a fourth line on the tile would restate them in a noun this
+  // app does not have.
+  it("carries no tile note", () => {
+    expect(addPanelCopy.unowned).not.toHaveProperty("note");
+  });
+});
+
 describe("addPanelCopy.tile evidence labels", () => {
   it("names the baseline the lift is measured against", () => {
     expect(addPanelCopy.tile.lift("31")).toBe("+31 pts vs. all decks");

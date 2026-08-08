@@ -13,12 +13,14 @@ interface ConsiderToolbarProps {
   sort: SortKey;
   onSortChange: (sort: SortKey) => void;
   ownedCount: number;
+  /** The EDHREC staples getDeckSuggestions appends that the collection lacks. */
+  unownedCount: number;
   /** With EDHREC down the provenance line claims a pedigree the shelves lack. */
   degraded: boolean;
 }
 
 export function ConsiderToolbar({
-  sort, onSortChange, ownedCount, degraded,
+  sort, onSortChange, ownedCount, unownedCount, degraded,
 }: ConsiderToolbarProps) {
   return (
     <>
@@ -31,7 +33,10 @@ export function ConsiderToolbar({
           className="font-mono text-[10px] md:text-[10.5px] order-2 md:order-1"
           style={{ color: "var(--fg-faint)" }}
         >
-          {addPanelCopy.consider.provenance(ownedCount)}
+          {/* The two-sided form only once there is a second side to state. */}
+          {unownedCount > 0
+            ? addPanelCopy.consider.provenanceWithUnowned(ownedCount, unownedCount)
+            : addPanelCopy.consider.provenance(ownedCount)}
         </p>
       )}
       <label className="contents">
