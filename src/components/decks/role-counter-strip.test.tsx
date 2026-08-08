@@ -1,13 +1,19 @@
-// The strip's shelf link is conditional on being under target, which is the
-// whole point of it: a link under every cell would be noise, and a link under
-// none of them would leave the coverage numbers as a diagnosis with no
-// treatment. Both halves of that condition are asserted here.
-import { fireEvent, render, screen } from "@testing-library/react";
+// The strip's contract after #184: the cell IS the control.
+//
+// A cell under target is a button that opens its shelf; a cell that has met
+// its target is a figure with no action at all. The five per-cell rationale
+// disclosures and the five sub-44px `consider` anchors beneath them are gone,
+// replaced by one strip-level disclosure carrying every role's rationale — ten
+// targets become six. These tests replace the six anchor cases that stood here
+// before, which asserted a link that no longer exists.
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import { RECOMMENDED_MIX } from "../../lib/decks/mix";
+import { RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { RoleCounterStrip } from "./role-counter-strip";
+
+const ROLES: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
 const card = (role: DeckDetailCard["role"], i: number): DeckDetailCard => ({
   oracleId: `o-${role}-${i}`,
@@ -19,72 +25,175 @@ const card = (role: DeckDetailCard["role"], i: number): DeckDetailCard => ({
   quantity: 1,
 });
 
-// Enough ramp to sit ON target, so ramp is the control and every other role
-// is under target by construction.
-const rampAtTarget = Array.from({ length: RECOMMENDED_MIX.ramp.target }, (_, i) =>
-  card("ramp", i),
-);
+/** Enough of one role to sit ON target, leaving every other role short. */
+const atTarget = (role: MixRole) =>
+  Array.from({ length: RECOMMENDED_MIX[role].target }, (_, i) => card(role, i));
 
-const linkFor = (label: string) =>
-  screen.queryByRole("link", { name: addPanelCopy.strip.shelfLinkAria(label) });
+/** Every role at target — the forced state where no cell is a control. */
+const allAtTarget = ROLES.flatMap(atTarget);
 
-describe("role counter strip — shelf links", () => {
-  it("links a cell that is under target", () => {
+const cellFor = (role: MixRole, have: number) =>
+  screen.queryByRole("button", {
+    name: addPanelCopy.strip.cellLinkAria(
+      RECOMMENDED_MIX[role].label,
+      have,
+      RECOMMENDED_MIX[role].target,
+    ),
+  });
+
+describe("role counter strip — a short cell is the control", () => {
+  it("makes a cell under target a button whose name carries both figures", () => {
     render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
-    expect(linkFor(RECOMMENDED_MIX.ramp.label.toLowerCase())).toBeInTheDocument();
+    expect(cellFor("ramp", 0)).toBeInTheDocument();
+    expect(cellFor("ramp", 0)).toHaveTextContent(addPanelCopy.strip.cellLink);
   });
 
-  it("leaves a cell that has met its target unlinked", () => {
-    render(<RoleCounterStrip cards={rampAtTarget} onSeeShelf={vi.fn()} />);
-    expect(linkFor(RECOMMENDED_MIX.ramp.label.toLowerCase())).toBeNull();
-    // A sibling still short proves the strip is drawing links at all, rather
-    // than the assertion above passing because nothing rendered.
-    expect(linkFor(RECOMMENDED_MIX.draw.label.toLowerCase())).toBeInTheDocument();
-  });
-
-  it("switches the builder to Consider rather than relying on the anchor", () => {
+  it("names the role's shelf, so five cells in a row are told apart", () => {
     const onSeeShelf = vi.fn();
     render(<RoleCounterStrip cards={[]} onSeeShelf={onSeeShelf} />);
-    fireEvent.click(linkFor(RECOMMENDED_MIX.ramp.label.toLowerCase())!);
-    // Named, so one callback shared by five cells can still scroll to the right
-    // shelf. Without this the href lands on a panel the deck tab has unmounted.
-    expect(onSeeShelf).toHaveBeenCalledWith("ramp");
+    fireEvent.click(cellFor("draw", 0)!);
+    expect(onSeeShelf).toHaveBeenCalledWith("draw");
   });
 
-  // The anchor's own navigation would set the hash against a heading that is
-  // not in the document yet, leaving the user on the deck tab with a changed
-  // URL and no scroll.
-  it("suppresses the anchor's own navigation", () => {
+  it("draws no anchor anywhere — the cell replaced the link, it did not join it", () => {
     render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
-    const event = new MouseEvent("click", { bubbles: true, cancelable: true });
-    linkFor(RECOMMENDED_MIX.ramp.label.toLowerCase())!.dispatchEvent(event);
-    expect(event.defaultPrevented).toBe(true);
-  });
-
-  // A modified click opens a fresh document, where the hash resolves on load —
-  // so the reason for suppressing the plain click does not apply to it.
-  it("lets a cmd-click through to the browser", () => {
-    const onSeeShelf = vi.fn();
-    render(<RoleCounterStrip cards={[]} onSeeShelf={onSeeShelf} />);
-    const event = new MouseEvent("click", { bubbles: true, cancelable: true, metaKey: true });
-    linkFor(RECOMMENDED_MIX.ramp.label.toLowerCase())!.dispatchEvent(event);
-    expect(event.defaultPrevented).toBe(false);
-    expect(onSeeShelf).not.toHaveBeenCalled();
-  });
-
-  it("draws no links at all when the strip is given nowhere to send the user", () => {
-    render(<RoleCounterStrip cards={[]} />);
     expect(screen.queryAllByRole("link")).toHaveLength(0);
   });
 
+  // Six targets, not ten: at most five cells plus the one strip disclosure.
+  it("draws one control per short cell plus a single disclosure", () => {
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    expect(screen.getAllByRole("button")).toHaveLength(ROLES.length + 1);
+  });
+});
+
+describe("role counter strip — a met cell is a figure", () => {
+  it("gives a met cell no button and no consider caption", () => {
+    render(<RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} />);
+    expect(cellFor("ramp", RECOMMENDED_MIX.ramp.target)).toBeNull();
+    const met = screen.getByRole("figure", {
+      name: addPanelCopy.strip.cellStaticAria(
+        RECOMMENDED_MIX.ramp.label,
+        RECOMMENDED_MIX.ramp.target,
+        RECOMMENDED_MIX.ramp.target,
+      ),
+    });
+    expect(met).not.toHaveTextContent(addPanelCopy.strip.cellLink);
+    // A sibling still short proves the strip is drawing controls at all,
+    // rather than the assertion above passing because nothing rendered.
+    expect(cellFor("draw", 0)).toBeInTheDocument();
+  });
+
+  it("leaves a met cell out of the tab order", () => {
+    render(<RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} />);
+    const met = screen.getByRole("figure", {
+      name: addPanelCopy.strip.cellStaticAria(
+        RECOMMENDED_MIX.ramp.label,
+        RECOMMENDED_MIX.ramp.target,
+        RECOMMENDED_MIX.ramp.target,
+      ),
+    });
+    expect(met).not.toHaveAttribute("tabindex");
+    met.focus();
+    expect(met).not.toHaveFocus();
+  });
+
+  // Forced state: every role met. Nothing in the strip is a control except the
+  // disclosure, and no cell offers a shelf it cannot deliver.
+  it("draws no cell controls at all when every role is met", () => {
+    render(<RoleCounterStrip cards={allAtTarget} onSeeShelf={vi.fn()} />);
+    expect(screen.getAllByRole("figure")).toHaveLength(ROLES.length);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.getByRole("button")).toHaveAccessibleName(
+      addPanelCopy.strip.rationaleToggleAria,
+    );
+  });
+
+  // Forced state: every role short. Five controls, one disclosure, six targets.
+  it("draws a control on every cell when every role is short", () => {
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    expect(screen.queryAllByRole("figure")).toHaveLength(0);
+    for (const role of ROLES) expect(cellFor(role, 0)).toBeInTheDocument();
+  });
+
+  // Without a handler there is nowhere to send anyone, so a short cell has to
+  // fall back to the figure rather than render a button that does nothing.
+  it("falls back to a figure when the strip is given nowhere to send the user", () => {
+    render(<RoleCounterStrip cards={[]} />);
+    expect(screen.getAllByRole("figure")).toHaveLength(ROLES.length);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+});
+
+describe("role counter strip — one disclosure for the whole strip", () => {
+  it("starts closed with the trigger and no panel", () => {
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    const trigger = screen.getByRole("button", {
+      name: addPanelCopy.strip.rationaleToggleAria,
+    });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(addPanelCopy.strip.rationaleClose)).toBeNull();
+  });
+
+  it("opens one panel carrying every role's rationale", () => {
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggleAria }),
+    );
+    const panel = screen.getByRole("region", { name: addPanelCopy.strip.rationaleToggle });
+    for (const body of Object.values(addPanelCopy.strip.rationaleBodies)) {
+      expect(panel).toHaveTextContent(body);
+    }
+    // Four lines for five roles: Removal and Wipes share one, as drawn.
+    expect(panel.querySelectorAll("p")).toHaveLength(4);
+    // Headings quote RECOMMENDED_MIX, so the panel can never disagree with the
+    // cell above it about a target.
+    expect(panel).toHaveTextContent(
+      `${RECOMMENDED_MIX.removal.label} ${RECOMMENDED_MIX.removal.target} · ${RECOMMENDED_MIX.wipes.label} ${RECOMMENDED_MIX.wipes.target}`,
+    );
+    expect(panel).toHaveTextContent(`${RECOMMENDED_MIX.land.label} ~${RECOMMENDED_MIX.land.target}`);
+  });
+
+  it("closes again from Hide", () => {
+    render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    const trigger = screen.getByRole("button", {
+      name: addPanelCopy.strip.rationaleToggleAria,
+    });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: addPanelCopy.strip.rationaleClose }));
+    expect(
+      screen.getByRole("button", { name: addPanelCopy.strip.rationaleToggleAria }),
+    ).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("region", { name: addPanelCopy.strip.rationaleToggle })).toBeNull();
+  });
+
+  // The hazard the addendum called its one genuine shipping risk: `strip.hint`
+  // was replaced at the same key, so the superseded clause must be gone from
+  // the module and from the rendered strip alike.
+  it("ships exactly one live strip hint", () => {
+    const { container } = render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} />);
+    expect(addPanelCopy.strip.hint).toBe("A cell under target opens its shelf below");
+    expect(container.textContent).toContain(addPanelCopy.strip.hint);
+    expect(container.textContent).not.toContain("Click a cell for rationale");
+    expect(JSON.stringify(addPanelCopy.strip)).not.toContain("links its shelf below");
+  });
+});
+
+describe("role counter strip — unresolved rows", () => {
   // The strip's contract with unresolved rows is that it has none: no sixth
-  // cell, no asterisk on a figure, no adjusted denominator. Asserted here so
-  // PR 7's rewiring cannot quietly introduce a column that can never be filled
-  // — an unresolved line has no oracle ID and so belongs to no role at all.
+  // cell, no asterisk on a figure, no adjusted denominator. An unresolved line
+  // has no oracle ID and so belongs to no role at all.
   it("gains no cell and no asterisk from unresolved rows", () => {
-    const { container } = render(<RoleCounterStrip cards={rampAtTarget} onSeeShelf={vi.fn()} />);
-    const cells = screen.getAllByRole("button");
-    expect(cells).toHaveLength(Object.keys(RECOMMENDED_MIX).length);
+    const { container } = render(
+      <RoleCounterStrip cards={atTarget("ramp")} onSeeShelf={vi.fn()} />,
+    );
+    const cells = within(screen.getByLabelText("Recommended mix")).getAllByRole(
+      "figure",
+      { hidden: true },
+    ).length;
+    expect(cells + screen.getAllByRole("button").length - 1).toBe(
+      Object.keys(RECOMMENDED_MIX).length,
+    );
     expect(container.textContent).not.toMatch(/unresolved/i);
     expect(container.textContent).not.toContain("*");
   });

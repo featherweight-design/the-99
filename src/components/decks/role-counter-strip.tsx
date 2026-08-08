@@ -9,14 +9,17 @@ import {
   type MixRole,
 } from "../../lib/decks/mix";
 import { RoleCounterCell } from "./role-counter-cell";
+import { StripRationale } from "./strip-rationale";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 interface RoleCounterStripProps {
   cards: DeckDetailCard[];
   /**
-   * Switches the builder to Consider and scrolls to that role's shelf. The
-   * anchor alone lands on nothing: the Consider panel is unmounted while the
-   * deck tab is up, so the `#shelf-*` heading does not exist at click time.
+   * Switches the builder to Consider, scrolls to that role's shelf and moves
+   * focus onto its heading. A cell cannot be an anchor: the Consider panel is
+   * unmounted while the deck tab is up, so the `#shelf-*` heading does not
+   * exist at click time. Without it a short cell has nowhere to send anyone
+   * and falls back to a figure.
    */
   onSeeShelf?: (role: MixRole) => void;
 }
@@ -43,7 +46,7 @@ export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
         desktop: flex, baseline, gap 10px, mb 10px
       */}
       <div
-        className="flex items-baseline justify-between md:justify-start md:gap-[10px] mb-[6px] md:mb-[10px]"
+        className="flex items-baseline justify-between md:justify-start md:gap-[10px] mb-[8px] md:mb-[12px]"
       >
         {/* §Strip header — "Recommended mix" label */}
         {/* mobile: #8E8269 · desktop: #C6B79A (design table §Strip header — "Recommended mix" label) */}
@@ -69,11 +72,9 @@ export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
           {RECOMMENDED_MIX_SOURCE_LINE}
         </span>
 
-        {/* §Strip header — hover hint (desktop) */}
-        <span
-          className="hidden md:inline font-mono text-[10.5px] ml-auto"
-          style={{ color: "#6E6353" }}
-        >
+        {/* §Strip header — hint (desktop). It says what a cell does now, not
+            what clicking one used to open. */}
+        <span className="hidden md:inline font-mono text-[10.5px] ml-auto text-fg-locked">
           {addPanelCopy.strip.hint}
         </span>
       </div>
@@ -83,12 +84,10 @@ export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
         {ROLE_ORDER.map((role) => (
           <RoleCounterCell
             key={role}
-            role={role}
             label={RECOMMENDED_MIX[role].label}
             have={counts[role]}
             target={RECOMMENDED_MIX[role].target}
             advisory={RECOMMENDED_MIX[role].advisory}
-            rationale={RECOMMENDED_MIX[role].rationale}
             onSeeShelf={
               onSeeShelf && counts[role] < RECOMMENDED_MIX[role].target
                 ? () => onSeeShelf(role)
@@ -97,6 +96,9 @@ export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
           />
         ))}
       </div>
+
+      {/* One disclosure for the strip, where there were five per-cell buttons. */}
+      <StripRationale />
 
       {/*
         §Worked-example callout (desktop mid-build)

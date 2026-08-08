@@ -33,10 +33,17 @@ import { deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
-// Shared by both shelf-link paths — the one that is already on Consider and
-// the one that has to switch views first — so they land identically.
+// Shared by both shelf paths — the one that is already on Consider and the one
+// that has to switch views first — so they land identically.
+// Focus moves as well as the scroll: activating a coverage cell is a jump, and
+// a keyboard user whose focus stayed behind on the strip would have to tab the
+// whole way down to reach what they just asked for. The heading carries
+// tabIndex={-1} for exactly this.
 function scrollToShelf(role: MixRole) {
-  document.getElementById(`shelf-${role}`)?.scrollIntoView({ block: "start" });
+  const heading = document.getElementById(`shelf-${role}`);
+  if (!heading) return;
+  heading.scrollIntoView({ block: "start" });
+  heading.focus({ preventScroll: true });
 }
 
 // The unresolved group renders only in the deck view under the All filter, so

@@ -37,6 +37,11 @@ export function computeRoleCounts(
   return counts;
 }
 
+// `rationale` has no renderer since #184: the strip's one disclosure quotes the
+// canvas's four authored lines (five roles, four lines — Removal and Wipes
+// share one), which live in `addPanelCopy.strip.rationaleBodies`. These per-role
+// strings are kept rather than deleted because this pass was scoped to leave
+// this file's data alone; retiring them is a follow-up, not a silent edit.
 export const RECOMMENDED_MIX: Record<
   MixRole,
   {
@@ -71,8 +76,6 @@ export const RECOMMENDED_MIX: Record<
     rationale: "Mass removal resets the board. 3 is enough to draw one on average.",
   },
   land: {
-    // Singular, unlike the cardTypeGroup "Lands", because strip.shelfLinkAria
-    // builds a noun phrase from this label: "See land cards to consider".
     label: "Land",
     target: 37,
     advisory: true,
