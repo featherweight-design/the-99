@@ -16,7 +16,9 @@ interface RoleCounterCellProps {
   have: number;
   target: number;
   advisory: boolean;
-  /** Absent on a cell that is not short: there is nothing to send the user to. */
+  /** Absent when there is no shelf to send the user to, which is a cell that
+   *  has met its target or one that is short of a role Consider built no shelf
+   *  for. */
   onSeeShelf?: () => void;
 }
 
@@ -90,10 +92,11 @@ export function RoleCounterCell({
             {addPanelCopy.strip.cellLink}
           </span>
         ) : (
-          /* Whenever the cell is not a control — met, or handed no handler at
-             all — the caption goes and a dash stands in its place, so the row
-             keeps its rhythm and nothing offers a shelf it cannot open. The two
-             widths disagree on the dash's tone; both are as drawn. */
+          /* Whenever the cell is not a control — met, short with no shelf built
+             for it, or handed no handler at all — the caption goes and a dash
+             stands in its place, so the row keeps its rhythm and nothing offers
+             a shelf it cannot open. The two widths disagree on the dash's tone;
+             both are as drawn. */
           <span
             aria-hidden
             className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-border-strong md:text-border-dashed"

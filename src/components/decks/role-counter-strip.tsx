@@ -22,11 +22,22 @@ interface RoleCounterStripProps {
    * and falls back to a figure.
    */
   onSeeShelf?: (role: MixRole) => void;
+  /**
+   * The roles Consider actually draws a shelf for. Being short of a role is not
+   * enough: a shelf is built from owned suggestions, so a role with none is
+   * missing from the panel and the scroll finds nothing. Absent means no shelf
+   * exists for any role, which is the right reading when nobody supplies one.
+   */
+  rolesWithShelves?: ReadonlySet<MixRole>;
 }
 
 const ROLE_ORDER: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
-export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
+export function RoleCounterStrip({
+  cards,
+  onSeeShelf,
+  rolesWithShelves,
+}: RoleCounterStripProps) {
   const counts = computeRoleCounts(cards);
 
   return (
@@ -89,7 +100,9 @@ export function RoleCounterStrip({ cards, onSeeShelf }: RoleCounterStripProps) {
             target={RECOMMENDED_MIX[role].target}
             advisory={RECOMMENDED_MIX[role].advisory}
             onSeeShelf={
-              onSeeShelf && counts[role] < RECOMMENDED_MIX[role].target
+              onSeeShelf &&
+              counts[role] < RECOMMENDED_MIX[role].target &&
+              rolesWithShelves?.has(role)
                 ? () => onSeeShelf(role)
                 : undefined
             }

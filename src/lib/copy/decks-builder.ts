@@ -81,8 +81,9 @@ export const addPanelCopy = {
     // the no-em-dash rule covers aria as much as visible copy.
     cellLinkAria: (role: string, have: number, target: number) =>
       `${role}, ${have} of ${target}. See ${role.toLowerCase()} cards to consider.`,
-    // A cell that is not short has no shelf to send anyone to, so it is a
-    // figure and not a control.
+    // A cell with no shelf to send anyone to is a figure and not a control.
+    // Two cases reach it: the role has met its target, and the role is short
+    // but Consider drew it no shelf because nothing owned fills it.
     cellStaticAria: (role: string, have: number, target: number) =>
       `${role}, ${have} of ${target}`,
     // One disclosure for the strip instead of five per-cell buttons.
