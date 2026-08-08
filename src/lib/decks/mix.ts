@@ -37,50 +37,42 @@ export function computeRoleCounts(
   return counts;
 }
 
-// `rationale` has no renderer since #184: the strip's one disclosure quotes the
-// canvas's four authored lines (five roles, four lines — Removal and Wipes
-// share one), which live in `addPanelCopy.strip.rationaleBodies`. These per-role
-// strings are kept rather than deleted because this pass was scoped to leave
-// this file's data alone; retiring them is a follow-up, not a silent edit.
+// No per-role `rationale` here since #184. The strip's one disclosure carries
+// four authored lines for five roles (Removal and Wipes share one), so a 1:1
+// map over this record could not have produced it; the lines live in
+// `addPanelCopy.strip.rationaleBodies` with the rest of the surface's copy.
 export const RECOMMENDED_MIX: Record<
   MixRole,
   {
     label: string;
     target: number;
     advisory: boolean;
-    rationale: string;
   }
 > = {
   ramp: {
     label: "Ramp",
     target: 10,
     advisory: false,
-    rationale: "Decks that cast a 4-mana commander on curve average ~10 ramp sources.",
   },
   draw: {
     label: "Draw",
     target: 10,
     advisory: false,
-    rationale: "Card advantage keeps you in the long game; ~10 sources is the EDHREC average.",
   },
   removal: {
     label: "Removal",
     target: 8,
     advisory: false,
-    rationale: "Targeted interaction: ~8 pieces handle most single-permanent threats.",
   },
   wipes: {
     label: "Wipes",
     target: 3,
     advisory: false,
-    rationale: "Mass removal resets the board. 3 is enough to draw one on average.",
   },
   land: {
     label: "Land",
     target: 37,
     advisory: true,
-    rationale:
-      "Advisory: most Commander decks run ~37 lands; scale up/down for MDFCs and mana rocks.",
   },
 };
 
@@ -102,8 +94,14 @@ export function roleCellState(args: {
   advisory: boolean;
 }): { figureColor: string; barColor: string; pct: number } {
   const pct = Math.min(100, Math.round((args.have / args.target) * 100));
-  if (args.advisory) return { figureColor: "var(--fg-body)", barColor: "var(--brass)", pct };
+  // Design table E4/E5: a short cell's figure is brass and its bar brass-mid.
+  // It read as body text with a brass bar, which made the one number the strip
+  // exists to draw the eye to the quietest thing in the cell.
+  const short = { figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct };
+  // An advisory target is a range, so it is never "met" — a Land cell at 40 is
+  // not finished, it is a judgement call.
+  if (args.advisory) return short;
   if (args.have >= args.target)
     return { figureColor: "var(--success)", barColor: "var(--success)", pct };
-  return { figureColor: "var(--fg-body)", barColor: "var(--brass)", pct };
+  return short;
 }

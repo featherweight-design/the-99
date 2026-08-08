@@ -48,9 +48,11 @@ describe("computeRoleCounts", () => {
 });
 
 describe("roleCellState", () => {
-  it("below-rec non-advisory is neutral figure + brass bar", () => {
+  // Design table E4/E5: the figure is the loudest thing in a short cell, not
+  // the quietest. It read as body text until #184.
+  it("below-rec non-advisory is a brass figure over a brass-mid bar", () => {
     expect(roleCellState({ have: 4, target: 10, advisory: false })).toEqual({
-      figureColor: "var(--fg-body)", barColor: "var(--brass)", pct: 40,
+      figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct: 40,
     });
   });
   it("met-rec non-advisory turns green", () => {
@@ -58,9 +60,11 @@ describe("roleCellState", () => {
       figureColor: "var(--success)", barColor: "var(--success)", pct: 100,
     });
   });
-  it("advisory (lands) stays brass even when over-target", () => {
+  // An advisory target is a range, so it never turns green: a Land cell at 40
+  // is a judgement call rather than a box ticked.
+  it("advisory (lands) reads as short even when over-target", () => {
     expect(roleCellState({ have: 40, target: 37, advisory: true })).toEqual({
-      figureColor: "var(--fg-body)", barColor: "var(--brass)", pct: 100,
+      figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct: 100,
     });
   });
 });
