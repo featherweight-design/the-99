@@ -72,6 +72,6 @@ describe("CreatePicker — phone bottom stack", () => {
 
   it("drops the relocated name field when there is no commander to name a deck after", () => {
     const { container } = render(<CreatePicker legalCommanders={[]} />);
-    expect(container.querySelector("#picker-deck-name-mobile")?.closest("div.hidden")).not.toBeNull();
+    expect(container.querySelector("#picker-deck-name-mobile")).toBeNull();
   });
 });

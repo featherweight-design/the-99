@@ -301,7 +301,8 @@ export function CreatePicker(props: CreatePickerProps) {
               Gated on the pool, not on the filter: a search that matches
               nothing is still a screen you can name a deck on, but a player who
               owns no commanders has nothing to name. */}
-          <div className={rows.length === 0 ? "hidden" : "md:hidden mb-[16px]"}>
+          {rows.length > 0 && (
+          <div className="md:hidden mb-[16px]">
             {isImport && (
               <label
                 htmlFor="picker-deck-name-mobile"
@@ -323,6 +324,7 @@ export function CreatePicker(props: CreatePickerProps) {
               className="block w-full p-[11px_13px] text-[16px]"
             />
           </div>
+          )}
 
           {/* §Commander picker rows */}
           {rows.length === 0 ? (
