@@ -88,9 +88,16 @@ async function signIn(page) {
         // needs_first_factor, which the same email-code branch serves.
         if (attempt.status === "needs_client_trust" || attempt.status === "needs_first_factor") {
           const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === "email_code");
+          // Named here rather than left to Clerk: an undefined emailAddressId
+          // fails inside prepareFirstFactor with an error that says nothing
+          // about the account being unable to take a code.
+          if (!factor) {
+            const offered = (attempt.supportedFirstFactors ?? []).map((f) => f.strategy).join(", ");
+            return `${email} offers no email_code first factor (offered: ${offered || "none"}). The audit user must be a +clerk_test address.`;
+          }
           await signIn.prepareFirstFactor({
             strategy: "email_code",
-            emailAddressId: factor?.emailAddressId,
+            emailAddressId: factor.emailAddressId,
           });
           attempt = await signIn.attemptFirstFactor({ strategy: "email_code", code: "424242" });
         }
