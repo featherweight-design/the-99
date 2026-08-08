@@ -23,18 +23,25 @@ const PLACEMENT: Record<BuyTagVariant, string> = {
   tile: "absolute z-10 right-[6px] top-[6px] text-[9px] pointer-events-none",
 };
 
-// A labelled tag takes `role="img"`: an `aria-label` on a bare span lands on the
-// generic role, where it is discarded and the sentence never reaches anyone. The
-// row passes no label because the word sits in the row's own reading order.
+// A labelled tag swaps the word for the sentence rather than carrying an
+// `aria-label`: on a bare span the label lands on the generic role and is
+// discarded outright, and `role="img"` rescued it only by announcing a run of
+// text as an image. The row passes no label, because there the word already
+// sits in the row's own reading order.
 export function BuyTag({ variant, label }: { variant: BuyTagVariant; label?: string }) {
   return (
     <span
-      role={label ? "img" : undefined}
-      aria-label={label}
       className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]}`}
       style={{ color: "var(--warning)", ...PLATE[variant] }}
     >
-      {addPanelCopy.unowned.tag}
+      {label ? (
+        <>
+          <span aria-hidden="true">{addPanelCopy.unowned.tag}</span>
+          <span className="sr-only">{label}</span>
+        </>
+      ) : (
+        addPanelCopy.unowned.tag
+      )}
     </span>
   );
 }

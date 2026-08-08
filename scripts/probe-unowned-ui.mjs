@@ -70,16 +70,19 @@ async function openConsider(page, deckHref) {
 async function report(page, label) {
   console.log(`\n=== ${label}`);
 
-  const tags = page.getByRole("img", { name: /is not in your collection/ });
+  const tags = page.locator("span.sr-only", { hasText: /is not in your collection$/ });
   const tagCount = await tags.count();
-  console.log(`  buy tags reachable by role+name: ${tagCount}`);
+  console.log(`  buy tags carrying their sentence as text: ${tagCount}`);
   if (tagCount > 0) {
     const first = tags.first();
     console.log(`    text: ${JSON.stringify(await first.textContent())}`);
     // The defect this gate exists for: a tag inside the art button contributes
     // nothing to any accessible name, and reads as decoration.
     console.log(`    inside a button: ${await first.evaluate((n) => !!n.closest("button"))}`);
-    const box = await first.boundingBox();
+    const box = await first.evaluate((n) => {
+      const r = n.parentElement.getBoundingClientRect();
+      return { width: r.width, height: r.height };
+    });
     console.log(`    box: ${box ? `${Math.round(box.width)}x${Math.round(box.height)}` : "none"}`);
   }
 

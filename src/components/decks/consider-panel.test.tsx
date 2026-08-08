@@ -304,14 +304,13 @@ describe("ConsiderPanel — tiles", () => {
 describe("ConsiderPanel — unowned staples", () => {
   const unowned = (name: string) => suggestion({ name, owned: false });
 
-  // Queried by role rather than by label: `getByLabelText` matches the
-  // attribute, so it passed while the tag was a bare span whose role discards
-  // an `aria-label` outright.
+  // Queried by its rendered text rather than by label: `getByLabelText` matches
+  // the attribute, so it passed while the tag was a bare span whose role
+  // discards an `aria-label` outright. The sentence is now real text, swapped in
+  // for the word, so no role has to carry it.
   it("marks an unowned tile with a buy tag that says so in words", () => {
     mount({ suggestions: [unowned("Smothering Tithe")] });
-    const tag = screen.getByRole("img", {
-      name: "Smothering Tithe is not in your collection",
-    });
+    const tag = screen.getByText("Smothering Tithe is not in your collection").parentElement!;
     expect(tag).toHaveTextContent("buy");
   });
 
@@ -320,9 +319,7 @@ describe("ConsiderPanel — unowned staples", () => {
   // shelf heading was the only thing left saying the card is unowned.
   it("keeps the tag out of the card-detail button, so its sentence survives", () => {
     mount({ suggestions: [unowned("Smothering Tithe")] });
-    const tag = screen.getByRole("img", {
-      name: "Smothering Tithe is not in your collection",
-    });
+    const tag = screen.getByText("Smothering Tithe is not in your collection");
     expect(tag.closest("button")).toBeNull();
   });
 
@@ -331,7 +328,7 @@ describe("ConsiderPanel — unowned staples", () => {
   it("still marks an unowned tile that has no art", () => {
     mount({ suggestions: [suggestion({ name: "Mana Drain", owned: false, imageUri: null })] });
     expect(
-      screen.getByRole("img", { name: "Mana Drain is not in your collection" }),
+      screen.getByText("Mana Drain is not in your collection").parentElement,
     ).toHaveTextContent("buy");
   });
 
