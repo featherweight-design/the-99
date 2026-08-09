@@ -194,13 +194,18 @@ export function BuilderSpine({ deck, counts, onExport }: BuilderSpineProps) {
           />
         </div>
 
-        {/* §Spine — "54 owned · 8 to buy" caption (desktop only) */}
-        <p
-          className="hidden md:block font-mono text-[10px] mt-[5px]"
-          style={{ color: "#8E8269" }}
-        >
-          {ownedCount} owned · {toBuyCount} to buy
-        </p>
+        {/* §Spine — "54 owned · 8 to buy" caption (desktop only). It splits the
+            progress figure, so before the first card there is nothing to split:
+            `0 owned · 0 to buy` only restates the `0 / 99` directly above it.
+            Hidden at zero, and back as soon as the split means something. */}
+        {built > 0 && (
+          <p
+            className="hidden md:block font-mono text-[10px] mt-[5px]"
+            style={{ color: "#8E8269" }}
+          >
+            {ownedCount} owned · {toBuyCount} to buy
+          </p>
+        )}
       </div>
 
       {/* Export button */}

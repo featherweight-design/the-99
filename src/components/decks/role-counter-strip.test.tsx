@@ -236,15 +236,16 @@ describe("role counter strip — one disclosure for the whole strip", () => {
     expect(screen.queryByRole("region", { name: addPanelCopy.strip.rationaleToggle })).toBeNull();
   });
 
-  // The hazard the addendum called its one genuine shipping risk: `strip.hint`
-  // was replaced at the same key, so the superseded clause must be gone from
-  // the module and from the rendered strip alike.
-  it("ships exactly one live strip hint", () => {
+  // The header carries no hint at either width. Every version of it described
+  // the cells as a class, and a cell short of a role Consider built no shelf
+  // for is not in that class — it is deliberately inert. The affordance lives
+  // on the cell that has it, which prints `consider →` and nothing else does.
+  it("annotates the cells with no header hint", () => {
     const { container } = render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
-    expect(addPanelCopy.strip.hint).toBe("A cell under target opens its shelf below");
-    expect(container.textContent).toContain(addPanelCopy.strip.hint);
+    expect(addPanelCopy.strip).not.toHaveProperty("hint");
+    expect(JSON.stringify(addPanelCopy.strip)).not.toContain("shelf below");
     expect(container.textContent).not.toContain("Click a cell for rationale");
-    expect(JSON.stringify(addPanelCopy.strip)).not.toContain("links its shelf below");
+    expect(container.textContent).toContain(addPanelCopy.strip.cellLink);
   });
 });
 
