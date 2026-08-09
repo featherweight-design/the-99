@@ -76,9 +76,15 @@ describe("HeroCommander", () => {
     expect(screen.getByText("own 40 of top 100")).toBeInTheDocument();
   });
 
-  it("says nothing about decks anywhere on the hero", async () => {
+  // Over what a reader can actually reach — visible text and accessible names —
+  // rather than the raw markup, which a future href or data attribute carrying
+  // the substring would fail on while the wording stayed right.
+  it("says nothing about decks in any wording the reader reaches", async () => {
     await renderHero([item()]);
-    expect(document.body.innerHTML).not.toMatch(/deck/i);
+    expect(screen.queryAllByText(/deck/i)).toHaveLength(0);
+    for (const el of document.querySelectorAll("[aria-label]")) {
+      expect(el.getAttribute("aria-label")).not.toMatch(/deck/i);
+    }
   });
 
   it("explains an absent commander as a settled fact, with nothing to retry", async () => {
