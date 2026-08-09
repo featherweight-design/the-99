@@ -148,10 +148,14 @@ const overflows = (page) =>
       const parentBox = parent.el.getBoundingClientRect();
       // 1px of tolerance: sub-pixel layout rounds past an exact comparison and
       // reports half the page.
-      if (
-        !parent.reaches &&
-        (box.right > parentBox.right + 1 || box.left < parentBox.left - 1)
-      ) {
+      //
+      // A scroller only reaches to its *right*. `scrollLeft` bottoms out at 0 in
+      // the LTR direction this app is written for, so nothing past the left edge
+      // can ever be scrolled to, and a left leak is a defect inside a deliberate
+      // scroller exactly as it is anywhere else.
+      const leaksRight = box.right > parentBox.right + 1;
+      const leaksLeft = box.left < parentBox.left - 1;
+      if (leaksLeft || (leaksRight && !parent.reaches)) {
         hits.push({
           kind: "horizontal",
           tag: el.tagName.toLowerCase(),
