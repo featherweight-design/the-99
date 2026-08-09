@@ -115,12 +115,27 @@ async function signIn(page) {
 
 const overflows = (page) =>
   page.evaluate(() => {
+    // The nearest ancestor that decides whether this element's right edge is
+    // reachable at all.
+    //
+    // `hidden` clips: whatever sits past its edge is gone, and that is the
+    // defect this heuristic exists to find. `auto` and `scroll` are how a
+    // deliberate horizontal scroller is written, and content past *their* edge
+    // is the entire point of one. Treating the two alike is what made the
+    // collection filter toolbar report 11 hits at 390px on every run — a
+    // scroller the property table asks for, reported as a leak — and a
+    // heuristic that cries wolf is one nobody reads.
     const scrollParent = (node) => {
       for (let el = node.parentElement; el; el = el.parentElement) {
         const overflow = getComputedStyle(el).overflowX;
-        if (overflow === "auto" || overflow === "scroll" || overflow === "hidden") return el;
+        // Only a scroller that actually scrolls reaches its overflowing child.
+        // An `overflow-x-auto` whose content fits still clips anything past it.
+        if (overflow === "auto" || overflow === "scroll") {
+          return { el, reaches: el.scrollWidth > el.clientWidth + 1 };
+        }
+        if (overflow === "hidden") return { el, reaches: false };
       }
-      return document.documentElement;
+      return { el: document.documentElement, reaches: false };
     };
     const hits = [];
     for (const el of document.querySelectorAll("body *")) {
@@ -130,10 +145,13 @@ const overflows = (page) =>
       if (box.width === 0 || box.height === 0) continue;
 
       const parent = scrollParent(el);
-      const parentBox = parent.getBoundingClientRect();
+      const parentBox = parent.el.getBoundingClientRect();
       // 1px of tolerance: sub-pixel layout rounds past an exact comparison and
       // reports half the page.
-      if (box.right > parentBox.right + 1 || box.left < parentBox.left - 1) {
+      if (
+        !parent.reaches &&
+        (box.right > parentBox.right + 1 || box.left < parentBox.left - 1)
+      ) {
         hits.push({
           kind: "horizontal",
           tag: el.tagName.toLowerCase(),
