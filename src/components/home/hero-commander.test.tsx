@@ -64,9 +64,21 @@ describe("HeroCommander", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the completeness bar when EDHREC data is present", async () => {
+  // The bar measures a commander's top-cards list against the collection. It
+  // was labelled "Deck completeness" at every layer — the section heading, the
+  // aria name and the bare `40/100` — and a reader took the figure for a deck's
+  // card count, which is the one thing it is not.
+  it("names the bar and its figure for the commander's top cards, not a deck", async () => {
     await renderHero([item()]);
-    expect(screen.getByRole("progressbar", { name: "Deck completeness" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("progressbar", { name: "Top cards you own for Krenko, Mob Boss" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("own 40 of top 100")).toBeInTheDocument();
+  });
+
+  it("says nothing about decks anywhere on the hero", async () => {
+    await renderHero([item()]);
+    expect(document.body.innerHTML).not.toMatch(/deck/i);
   });
 
   it("explains an absent commander as a settled fact, with nothing to retry", async () => {
@@ -84,7 +96,7 @@ describe("HeroCommander", () => {
 
   it("falls back to a neutral note when synergy is ok but counts are missing", async () => {
     await renderHero([item({ edhrecOwnedCount: null, edhrecTotal: null })]);
-    expect(screen.getByText(/Deck completeness isn't available/i)).toBeInTheDocument();
+    expect(screen.getByText(/top-cards list isn't ready yet/i)).toBeInTheDocument();
   });
 
   it("renders the quiet placeholder when there are no candidates", async () => {

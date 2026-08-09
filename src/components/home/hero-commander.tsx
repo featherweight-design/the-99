@@ -31,16 +31,20 @@ function fillColor(pct: number): string {
 }
 
 /**
- * Completeness needs EDHREC's top-cards list, so the reason it is missing is the
- * reason EDHREC gave. "absent" is settled — the commander isn't indexed — while
- * "degraded" is an outage that fixes itself, and the two must not read alike.
- * "ok" is unreachable in practice (an ok row always has counts) but stays a
- * total map so a future state can't silently render nothing.
+ * The figure is missing because EDHREC's top-cards list is, so the reason it is
+ * missing is the reason EDHREC gave. "absent" is settled — the commander isn't
+ * indexed — while "degraded" is an outage that fixes itself, and the two must
+ * not read alike. "ok" is unreachable in practice (an ok row always has counts)
+ * but stays a total map so a future state can't silently render nothing.
+ *
+ * None of these say "deck". The bar measures how much of a *commander's*
+ * top-cards list the collection already covers, which is what the sibling
+ * surfaces call it ("own 40 of top 259" on the rec card).
  */
 const COMPLETENESS_FALLBACK: Record<SynergyState, string> = {
-  ok: "Deck completeness isn't available for this commander yet.",
-  absent: "EDHREC doesn't track this commander, so there's no completeness to show.",
-  degraded: "We couldn't reach EDHREC — completeness returns once it's back.",
+  ok: "This commander's top-cards list isn't ready yet.",
+  absent: "EDHREC doesn't track this commander, so there's no top-cards list to compare.",
+  degraded: "We couldn't reach EDHREC. The count returns once it's back.",
 };
 
 export function HeroCommanderSkeleton() {
@@ -174,22 +178,27 @@ export async function HeroCommander({ userId }: { userId: string }) {
         {/* Completeness row — §Hero card: Completeness row — flex, gap 10px, mt 18px, max-w 420px */}
         {pct != null ? (
           <div className="mt-[18px] flex max-w-[420px] items-center gap-[10px]">
-            {/* §Hero card: Owned count — mono 13px, color success/warning/danger */}
+            {/* §Hero card: Owned count — mono 13px, color success/warning/danger.
+                The bare `40/259` was the figure the "most complete deck" label
+                was misread against; it carries the unit the sibling rec card
+                already uses ("own 40 of top 259") so it cannot be read as a
+                deck's card count. */}
             <span
+              className="shrink-0"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 13,
                 color: fillColor(pct),
               }}
             >
-              {top.edhrecOwnedCount}/{top.edhrecTotal}
+              own {top.edhrecOwnedCount} of top {top.edhrecTotal}
             </span>
             {/* §Hero card: Progress bar track — flex 1, h 6px, bg elevated, br 3px, overflow hidden */}
             <div
               className="h-[6px] flex-1 overflow-hidden rounded-[3px]"
               style={{ background: "var(--elevated)" }}
               role="progressbar"
-              aria-label="Deck completeness"
+              aria-label={`Top cards you own for ${top.name}`}
               aria-valuenow={pct}
               aria-valuemin={0}
               aria-valuemax={100}

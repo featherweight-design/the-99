@@ -76,26 +76,11 @@ export function Dashboard({
       </div>
 
       {/* ── Hero Commander ──
-          §Section label: mono 10px/11px uppercase 0.16em tracking, fg-faint, mt 22px mb 10px/12px */}
-      <div
-        className="mt-[22px] mb-[10px] md:mb-[12px] text-[10px] md:text-[11px] uppercase"
-        style={{
-          fontFamily: "var(--font-mono)",
-          letterSpacing: "0.16em",
-          color: "var(--fg-faint)",
-        }}
-      >
-        Most complete deck
-      </div>
-      {/* Streamed — §READINESS item 4: HeroCommander is the expensive component.
-          Suspense boundary lets the rest of the page stream first. */}
-      <Suspense fallback={<HeroCommanderSkeleton />}>
-        <HeroCommander userId={userId} />
-      </Suspense>
-
-      {/* ── Recommended row label + "All commanders →" link ──
-          §"All N →" / "All decks →" links: 13px accent */}
-      <div className="mb-[12px] flex items-baseline justify-between">
+          §Section label: mono 10px/11px uppercase 0.16em tracking, fg-faint, mt 22px mb 10px/12px.
+          The label and the "All commanders →" link belong to the same thing and
+          now sit on one row above it: the hero is the top-ranked commander, not
+          a deck, and the ranked list it heads is reached through that link. */}
+      <div className="mt-[22px] mb-[10px] md:mb-[12px] flex items-baseline justify-between">
         <div
           className="text-[10px] md:text-[11px] uppercase"
           style={{
@@ -104,15 +89,17 @@ export function Dashboard({
             color: "var(--fg-faint)",
           }}
         >
-          Recommended
+          Recommended commander
         </div>
-        <Link
-          href="/commanders"
-          style={{ fontSize: 13, color: "var(--brass)" }}
-        >
+        <Link href="/commanders" style={{ fontSize: 13, color: "var(--brass)" }}>
           All commanders →
         </Link>
       </div>
+      {/* Streamed — §READINESS item 4: HeroCommander is the expensive component.
+          Suspense boundary lets the rest of the page stream first. */}
+      <Suspense fallback={<HeroCommanderSkeleton />}>
+        <HeroCommander userId={userId} />
+      </Suspense>
 
       {/* ── Two-column grid: recent decks (1.5fr) + collection stats (1fr) ──
           §Decks/stats section layout: grid, 1.5fr 1fr, gap 20px */}
