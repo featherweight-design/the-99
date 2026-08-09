@@ -242,6 +242,7 @@ describe("role counter strip — one disclosure for the whole strip", () => {
   // on the cell that has it, which prints `consider →` and nothing else does.
   it("annotates the cells with no header hint", () => {
     const { container } = render(<RoleCounterStrip cards={[]} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />);
+    expect(addPanelCopy.strip).not.toHaveProperty("hint");
     expect(JSON.stringify(addPanelCopy.strip)).not.toContain("shelf below");
     expect(container.textContent).not.toContain("Click a cell for rationale");
     expect(container.textContent).toContain(addPanelCopy.strip.cellLink);

@@ -195,9 +195,9 @@ export function BuilderSpine({ deck, counts, onExport }: BuilderSpineProps) {
         </div>
 
         {/* §Spine — "54 owned · 8 to buy" caption (desktop only). It splits the
-            progress figure, so it has nothing to split before the first card:
-            `0 owned · 0 to buy` under a bar already reading `0 / 99` teaches a
-            first-time builder the two axes by showing them both empty. */}
+            progress figure, so before the first card there is nothing to split:
+            `0 owned · 0 to buy` only restates the `0 / 99` directly above it.
+            Hidden at zero, and back as soon as the split means something. */}
         {built > 0 && (
           <p
             className="hidden md:block font-mono text-[10px] mt-[5px]"
