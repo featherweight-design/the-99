@@ -178,13 +178,15 @@ describe("addPanelCopy punctuation", () => {
   });
 });
 
-// The addendum's one genuine shipping hazard: `strip.hint` was replaced at the
-// same key, so a merge of the two objects would have left two live values and
-// the strip would have kept telling players to click a cell for rationale.
 describe("addPanelCopy.strip after #184", () => {
-  it("ships exactly one live hint, at the new value", () => {
-    expect(addPanelCopy.strip.hint).toBe("A cell under target opens its shelf below");
+  // The hint is gone entirely. Every version of it generalised over the cells
+  // ("a cell under target opens its shelf below"), and since #206 a role can be
+  // under target with no shelf to open, so the sentence was false for the exact
+  // cells it was pointing at.
+  it("carries no header hint to contradict an inert cell", () => {
+    expect(addPanelCopy.strip).not.toHaveProperty("hint");
     expect(JSON.stringify(addPanelCopy.strip)).not.toContain("Click a cell for rationale");
+    expect(JSON.stringify(addPanelCopy.strip)).not.toContain("shelf below");
   });
 
   it("no longer carries the superseded shelf-link keys", () => {

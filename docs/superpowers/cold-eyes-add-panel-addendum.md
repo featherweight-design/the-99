@@ -33,7 +33,7 @@ nothing else — no plan, no diffs, no PR bodies. Fifteen ranked findings came b
 | # | Finding | Verdict |
 |---|---|---|
 | 1 | Home's "MOST COMPLETE DECK" shows a commander and reads `3/259` while the deck list says `0/99` | **Real — out of scope, escalated** |
-| 2 | Two under-target cells show a bare `—` while the hint promises "A cell under target opens its shelf below" | **Real — half fixed here, half escalated.** The cell is now correctly not a control; the hint's over-promise is locked copy |
+| 2 | Two under-target cells show a bare `—` while the hint promises "A cell under target opens its shelf below" | **Real — now closed in full.** The cell stopped being a control in #207; the hint is deleted here (see below) |
 | 3 | "Owned only" is on while five unowned cards render | Not a defect — the #176 ruling, and the toolbar's split provenance line says so |
 | 4 | The onboarding card restates the header's count and commander | **Real — out of scope, escalated** |
 | 5 | The worked-example callout hardcodes "a deck sitting at 8" against a deck at 0 | **Real — escalated.** Already on the follow-up list |
@@ -62,3 +62,29 @@ shelf falls back to the same figure a met cell uses.
 
 This is finding 2's first half. Its second half — that the desktop hint now over-promises for
 those cells — is copy, and the addendum's copy file is locked. It goes to Design.
+
+## Postscript, 2026-08-08 — finding 2's second half, closed
+
+Hugh ruled that copy is `copy-review`'s to decide rather than Design's, which released the lock
+on `strip.hint`. A copy pass over the eleven escalated findings then resolved it by deletion
+rather than rewording: an openable cell prints `consider →` in brass and an inert one prints an
+aria-hidden dash, so the control already labels itself at both widths. The hint was a
+desktop-only generalisation over a set the cells no longer all belong to. Deleted, with design
+table rows E9 and S16 superseded.
+
+Four of the other escalated findings were **withdrawn on inspection**, which is worth recording
+because each looked solid from the reel alone:
+
+- **5** — `mix.ts:83-87` already documents this string as deliberately hypothetical; it was
+  de-personalised once before, and interpolating it would reintroduce the bug that comment
+  describes.
+- **8** — the Consider empty state is the only thing on screen besides three decorative
+  diamonds. Nothing restates anything.
+- **13** — half of it is real and fixed here (the spine caption is gated on `built > 0`); the
+  `/decks` half has its own empty state and never renders at zero.
+- The `#E0913C` token drift named alongside these is the repo-wide convention, in ~30 places
+  across 15 files, not drift in two.
+
+**1** and **4** are home-surface defects and are fixed in their own PR: the hero is labelled
+"Most complete deck" but renders a *commander's* EDHREC coverage, and the "Recommended" header
+below it has no content at all.

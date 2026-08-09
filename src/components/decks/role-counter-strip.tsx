@@ -10,7 +10,6 @@ import {
 } from "../../lib/decks/mix";
 import { RoleCounterCell } from "./role-counter-cell";
 import { StripRationale } from "./strip-rationale";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 /**
  * `onSeeShelf` switches the builder to Consider, scrolls to that role's shelf
@@ -83,12 +82,6 @@ export function RoleCounterStrip({
           style={{ color: "#8E8269" }}
         >
           {RECOMMENDED_MIX_SOURCE_LINE}
-        </span>
-
-        {/* §Strip header — hint (desktop). It says what a cell does now, not
-            what clicking one used to open. */}
-        <span className="hidden md:inline font-mono text-[10.5px] ml-auto text-fg-locked">
-          {addPanelCopy.strip.hint}
         </span>
       </div>
 

@@ -104,10 +104,6 @@ export const addPanelCopy = {
       removalWipes: "— three opponents means three threats you did not plan for.",
       land: "— advisory: a cheap curve wants fewer, a heavy one wants more.",
     },
-    // The strip's desktop annotation. Both of its old clauses went false when
-    // the cell became the control: clicking a cell no longer opens rationale,
-    // and a cell does not link a shelf, it is the link.
-    hint: "A cell under target opens its shelf below",
   },
 
   // ── Shelf headers ─────────────────────────────────────────────────────
