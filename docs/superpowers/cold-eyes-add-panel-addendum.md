@@ -41,7 +41,7 @@ nothing else — no plan, no diffs, no PR bodies. Fifteen ranked findings came b
 | 7 | Em-dashes in the rationale bodies | Rejected with the lock named — `decks-builder.ts:95-99` records these as quoted, not authored, and says they must not be "fixed" |
 | 8 | The empty state restates what is visible three times over | **Real — out of scope, escalated** |
 | 9 | "Golgari only" has no affordance | **Real — out of scope, escalated** |
-| 10 | `buy` needs a word of consequence | Escalated — a Design call, and the tag is locked |
+| 10 | `buy` needs a word of consequence | Escalated — a Design call. (The copy lock cited here was lifted the same day; the copy pass still left it, because what it wants is an affordance, not a better word) |
 | 11 | Tiles repeat "Fills ramp · rec 10" under a heading that said it | **Real — escalated.** `suggest.ts:95` composes it; the shelf heading above already carries both figures |
 | 12 | Card names truncate at 390px | Not a defect — a deliberate two-line clamp, documented at `suggestion-tile.tsx:242-246`, and the full name is one tap away |
 | 13 | `0 to buy` / `0 cards built` teach nothing | Escalated |
@@ -61,7 +61,9 @@ computed once in the shell, and the cell's `onSeeShelf` is gated on it. A short 
 shelf falls back to the same figure a met cell uses.
 
 This is finding 2's first half. Its second half — that the desktop hint now over-promises for
-those cells — is copy, and the addendum's copy file is locked. It goes to Design.
+those cells — is copy, and the addendum's copy file is locked. It goes to Design. *(Historical.
+The lock was lifted the same day and the hint was deleted rather than reworded; the postscript
+below is what actually happened.)*
 
 ## Postscript, 2026-08-08 — finding 2's second half, closed
 
