@@ -36,7 +36,8 @@
 ## File Structure
 
 **New:**
-- `src/lib/decks/availability.ts` — the aggregate query, the `Availability` type, the `MATURE_DECK_SIZE` constant, and the pure `availabilityState()` classifier.
+- `src/lib/decks/availability.ts` — **pure, and it must never import `db`**: the `Availability` type, the `MATURE_DECK_SIZE` constant, and the `availabilityState()` classifier. Client components value-import the classifier, and `src/lib/decks/status.ts:1-5` exists solely because of this rule: *"a `use client` component that value-imports from [a module that touches the db] pulls the db into the browser bundle and the page dies on hydration."* `decklist-row.tsx`, `card-search-row.tsx` and `suggestion-tile.tsx` are all `"use client"`.
+- `src/lib/decks/availability-query.ts` — `loadAvailability`, the only piece that touches Drizzle. Server-side callers only.
 - `src/lib/decks/availability.test.ts` — classifier unit tests.
 - `src/lib/copy/availability.ts` — the copy block, ported from the handoff's copy file.
 - `src/components/ui/availability-marker.tsx` — the marker at both densities.
@@ -65,19 +66,23 @@
 ## Task 1: The availability query and model
 
 **Files:**
-- Create: `src/lib/decks/availability.ts`
+- Create: `src/lib/decks/availability.ts` — **pure. No `db` import in this file.**
+- Create: `src/lib/decks/availability-query.ts` — the Drizzle query.
 - Create: `src/lib/decks/availability.test.ts`
 - Modify: `src/db/schema.ts:130` (drop dead `status` column)
 - Create: `drizzle/<generated>_drop_decks_status.sql`
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces:
+- Produces, from `availability.ts` (pure):
   - `MATURE_DECK_SIZE = 99`
   - `type Availability = { owned: number; hard: number; soft: number; free: number; hardDeckNames: string[] }`
   - `type AvailabilityState = "free" | "soft" | "hard" | "over"`
   - `availabilityState(a: Pick<Availability, "owned" | "free" | "soft">): AvailabilityState`
+- Produces, from `availability-query.ts` (server only):
   - `loadAvailability(userId: string): Promise<Map<string, Availability>>`
+
+**The split is not tidiness — it is a hydration crash.** See `src/lib/decks/status.ts:1-5`, which is split from `read.ts` for exactly this reason: the Drizzle client throws at module init without `DATABASE_URL`, so a `"use client"` component that value-imports from a db-touching module takes the whole page down. The marker in Task 3 value-imports `availabilityState`, and all three of its host components are client components.
 
 - [ ] **Step 1: Write the failing classifier test**
 
@@ -126,12 +131,9 @@ Expected: FAIL — `Failed to resolve import "./availability"`.
 
 - [ ] **Step 3: Write the module**
 
-Create `src/lib/decks/availability.ts`:
+Create `src/lib/decks/availability.ts` — **note there is no `db` import here, deliberately**:
 
 ```ts
-import { sql } from "drizzle-orm";
-import { db } from "../../db";
-
 /**
  * A deck at 99 cards is finished enough that its cards are physically sleeved,
  * so its claims are hard. Below 99 it is a brew and its claims are soft. This
@@ -166,6 +168,16 @@ export function availabilityState(
   if (a.soft > 0) return "soft";
   return "free";
 }
+```
+
+- [ ] **Step 3b: Write the query module**
+
+Create `src/lib/decks/availability-query.ts`:
+
+```ts
+import { sql } from "drizzle-orm";
+import { db } from "../../db";
+import { MATURE_DECK_SIZE, type Availability } from "./availability";
 
 type Row = {
   oracle_id: string;
@@ -185,6 +197,25 @@ type Row = {
  * Cards with no deck claim are absent from `claims` and fall through the left
  * join as hard = soft = 0, so free = owned. Cards the user does not own cannot
  * appear at all: the driver of the outer select is the collection.
+ *
+ * TWO THINGS THIS QUERY DELIBERATELY HANDLES, both verified against the schema:
+ *
+ * 1. THE COMMANDER IS NOT A deck_cards ROW. `decks.commander_oracle_id` is its
+ *    own column (schema.ts:129) and never appears in deck_cards. Without the
+ *    `commanders` CTE below, a single-copy legendary sleeved as another deck's
+ *    commander would read as free everywhere — the most visible card in a deck
+ *    being the one card the feature could not see.
+ *
+ * 2. BASIC LANDS ARE EXCLUDED ENTIRELY. A finished deck holds 30-odd Forests
+ *    and almost nobody's collection row matches, so every mature deck would
+ *    push its basics into `over` and fire the over-committed summary on a deck
+ *    with nothing wrong with it. Basics are fungible and proxy-free in every
+ *    playgroup; they are not what "a card lives in one deck" is about.
+ *
+ * Deck size for the maturity test stays sum(deck_cards.quantity), excluding the
+ * commander — that is exactly what `built` is (read.ts:233) and what statusPill
+ * thresholds on, so 99 here means the same 99 the player sees on the pill.
+ * Basics DO count toward that size; they are only excluded as claim subjects.
  */
 export async function loadAvailability(userId: string): Promise<Map<string, Availability>> {
   const rows = await db.execute<Row>(sql`
@@ -195,25 +226,41 @@ export async function loadAvailability(userId: string): Promise<Map<string, Avai
       where d.user_id = ${userId}
       group by dc.deck_id
     ),
+    -- Every claim on a card, one row per (deck, card): the deck's list, plus
+    -- the deck's commander, which lives in its own column and would otherwise
+    -- be invisible to this feature.
+    all_claims as (
+      select dc.deck_id, dc.oracle_id, dc.quantity
+      from deck_cards dc
+      join decks d on d.id = dc.deck_id
+      where d.user_id = ${userId}
+      union all
+      select d.id as deck_id, d.commander_oracle_id as oracle_id, 1 as quantity
+      from decks d
+      where d.user_id = ${userId}
+    ),
     claims as (
       select
-        dc.oracle_id,
-        sum(case when dt.cards >= ${MATURE_DECK_SIZE} then dc.quantity else 0 end)::int as hard,
-        sum(case when dt.cards <  ${MATURE_DECK_SIZE} then dc.quantity else 0 end)::int as soft,
+        ac.oracle_id,
+        sum(case when dt.cards >= ${MATURE_DECK_SIZE} then ac.quantity else 0 end)::int as hard,
+        sum(case when dt.cards <  ${MATURE_DECK_SIZE} then ac.quantity else 0 end)::int as soft,
         array_remove(
-          array_agg(case when dt.cards >= ${MATURE_DECK_SIZE} then d.name end),
+          array_agg(distinct case when dt.cards >= ${MATURE_DECK_SIZE} then d.name end),
           null
         ) as hard_deck_names
-      from deck_cards dc
-      join deck_totals dt on dt.deck_id = dc.deck_id
-      join decks d on d.id = dc.deck_id
-      group by dc.oracle_id
+      from all_claims ac
+      join deck_totals dt on dt.deck_id = ac.deck_id
+      join decks d on d.id = ac.deck_id
+      group by ac.oracle_id
     ),
     owned as (
-      select oracle_id, sum(quantity)::int as owned
-      from collection_items
-      where user_id = ${userId}
-      group by oracle_id
+      select ci.oracle_id, sum(ci.quantity)::int as owned
+      from collection_items ci
+      join cards c on c.oracle_id = ci.oracle_id
+      where ci.user_id = ${userId}
+        -- Basics are excluded from the whole model. See the header comment.
+        and c.type_line !~ '\\mBasic\\M'
+      group by ci.oracle_id
     )
     select
       o.oracle_id,
@@ -651,11 +698,22 @@ These surfaces are **pure annotation**. Nothing here changes what a control mean
 In `src/lib/decks/grouping.ts`, add to `DeckDetailCard`:
 
 ```ts
-  /** Null when the availability read failed — the marker then simply does not render. */
-  availability: Availability | null;
+  /**
+   * Optional, not `| null` required. Six existing sites build DeckDetailCard
+   * literals — quick-add-bar.tsx:329, resolution-expander.tsx:115 and
+   * suggestion-tile.tsx:151 (optimistic adds), plus fixtures in
+   * optimistic-deck.test.tsx:12, role-counter-strip.test.tsx:21 and
+   * card-detail-surfaces.test.tsx:26 — and DeckSuggestion (suggest.ts:20) has
+   * no availability to give. A required field breaks all six for no gain: an
+   * optimistically-added card genuinely has no availability yet, and "absent"
+   * and "read failed" both correctly render nothing.
+   */
+  availability?: Availability | null;
 ```
 
-In `src/app/decks/[id]/search-action.ts`, add the same field to `SearchResult`.
+In `src/app/decks/[id]/search-action.ts`, add the same optional field to `SearchResult`.
+
+**Do not add `loadAvailability` to `searchCards` naively.** That action runs on every keystroke (`use-card-search.ts`) to annotate at most ~20 rows, and `loadAvailability` aggregates the player's whole collection. Restrict the query to the oracle_ids actually being returned — add an optional `oracleIds?: string[]` parameter to `loadAvailability` that appends `and o.oracle_id = any(${oracleIds})` to the outer select. The decklist and commanders paths call it without the argument, as before.
 
 - [ ] **Step 2: Populate them**
 
@@ -673,28 +731,33 @@ availability: availability?.get(row.oracleId) ?? null,
 
 - [ ] **Step 3: Write the failing decklist-row test**
 
-Add to `src/components/decks/decklist-row.test.tsx` (follow the file's existing render helper and mocks):
+Add to `src/components/decks/decklist-row.test.tsx`. **Match the file's real helpers**: `renderRow` takes **JSX**, not a card object (`:73`), and the fixture is named `card`, not `baseCard` (`:52`). The repo has **no `@testing-library/user-event`** dependency — use `.click()` inside `act`, as `clickRemove` at `:59` does.
 
 ```tsx
+const avail = (owned: number, hard: number, names: string[] = []) => ({
+  owned, hard, soft: 0, free: owned - hard, hardDeckNames: names,
+});
+
 it("carries no marker when the card is free", () => {
-  renderRow({ ...baseCard, availability: { owned: 2, hard: 0, soft: 0, free: 2, hardDeckNames: [] } });
+  renderRow(<DecklistRow card={{ ...card, availability: avail(2, 0) }} {...rowProps} />);
   expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
 });
 
 it("carries the marker when nothing is free", () => {
-  renderRow({
-    ...baseCard,
-    availability: { owned: 1, hard: 1, soft: 0, free: 0, hardDeckNames: ["Atraxa"] },
-  });
+  renderRow(
+    <DecklistRow card={{ ...card, availability: avail(1, 1, ["Atraxa"]) }} {...rowProps} />,
+  );
   expect(screen.getByText("0 free — in Atraxa")).toBeInTheDocument();
 });
 
 // The quiet-failure half of the degraded ruling.
 it("renders exactly like the free state when the availability read failed", () => {
-  renderRow({ ...baseCard, availability: null });
+  renderRow(<DecklistRow card={{ ...card, availability: null }} {...rowProps} />);
   expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
 });
 ```
+
+Copy the surrounding `<DecklistRow …>` prop spread from an existing render call in the file rather than inventing `rowProps`.
 
 - [ ] **Step 4: Run it and watch it fail**
 
@@ -843,7 +906,8 @@ import { db } from "../../db";
 import { decks } from "../../db/schema";
 import { readEdhrecCache, type EdhrecFetchResult } from "../edhrec/client";
 import { parseEdhrecPayload } from "../edhrec/parse";
-import { loadAvailability, type Availability } from "../decks/availability";
+import { type Availability } from "../decks/availability";
+import { loadAvailability } from "../decks/availability-query";
 import { synergyStateFrom } from "./synergy-state";
 import {
   byScoreThenOracleId, loadCollectionPool, toListItem,
@@ -960,18 +1024,30 @@ export async function rankFree(
 - [ ] **Step 4: Run the tests and watch them pass**
 
 Run: `pnpm vitest run src/lib/recs/free-ranking.test.ts`
-Expected: PASS, 5 tests.
+Expected: PASS, 7 tests.
 
 - [ ] **Step 5: Wire it into the page**
 
 In `src/app/commanders/page.tsx`, read `searchParams.avail` and call `rankFree` **only** when it is `"free"`, so a player who never touches the toggle pays nothing. `rankFree` runs **after** `getRankedList`, both because it needs the canonical list for slugs and because that ordering is what guarantees the EDHREC cache is warm:
 
+**`CommandersPage` currently takes no props at all** (`page.tsx:15`: `export default async function CommandersPage()`). Add the `searchParams` prop — in Next 16 it is a Promise:
+
 ```tsx
-// getRankedList already runs on this page — reuse its result, do not call it twice.
-const ranked = await getRankedList(userId);
-const avail = (await searchParams).avail === "free" ? "free" : "all";
-const free = avail === "free" ? await rankFree(userId, ranked.items) : null;
+export default async function CommandersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [k: string]: string | string[] | undefined }>;
+}) {
 ```
+
+Then, after the existing `getRankedList` call (**reuse its result — it is `cache()`-wrapped, but do not call it twice for clarity's sake; bind the real property name, which is `items`**):
+
+```tsx
+const avail = (await searchParams).avail === "free" ? "free" : "all";
+const free = avail === "free" ? await rankFree(userId, list.items) : null;
+```
+
+Use whatever local name the existing `getRankedList(userId)` result is already bound to in this file rather than introducing a second one.
 
 Pass `freeItems={free?.items ?? null}` and `availOk={free?.ok ?? true}` to `CommandersView`.
 
@@ -1062,7 +1138,32 @@ Expected: PASS.
 
 - [ ] **Step 5: Add the toggle to `CommandersView`**
 
-Replace the single `rankBySlug` at `:90-95` with a mode-selected map, and add the `avail` state mirroring the existing `colors` pattern (`parseColors` at `:28`, `serializeParams` at `:33`):
+**First, fix `serializeParams` — the plan's earlier draft got this wrong and it is a silent data-loss bug.** The real signature is `serializeParams(colors: string[])` (`commanders-view.tsx:33`), and `:79-83` runs it in a `useEffect` on every `colors` change:
+
+```tsx
+useEffect(() => {
+  const qs = serializeParams(colors);
+  router.replace(`/commanders${qs}`, { scroll: false });
+}, [colors, router]);
+```
+
+As written, **the next colour toggle would drop `?avail=free` from the URL** and the server would re-render in `all` mode. Widen the function and the effect together:
+
+```tsx
+function serializeParams(colors: string[], avail: "all" | "free"): string {
+  const p = new URLSearchParams();
+  if (colors.length > 0) p.set("c", colors.join(""));
+  // Only the non-default is written, so a player who never touches the toggle
+  // keeps the URL they have today.
+  if (avail === "free") p.set("avail", "free");
+  const s = p.toString();
+  return s ? `?${s}` : "";
+}
+```
+
+and make the effect depend on `avail` too. **One important asymmetry:** the colours effect uses `router.replace` because filtering is client-side and needs no RSC refetch. Flipping `avail` **does** need the server — `rankFree` runs there — so that transition must be `router.push`, not `replace`. Do not fold them into one call.
+
+Then replace the single `rankBySlug` at `:90-95` with a mode-selected map, and add the `avail` state mirroring the existing `colors` pattern (`parseColors` at `:28`):
 
 ```tsx
 // Two rank maps, each built once over the full candidate set from that mode's
@@ -1084,13 +1185,33 @@ function setAvail(next: "all" | "free") {
   // The window is a property of the current result set, not of the session, and
   // a re-rank means different cards occupy the revealed range.
   setShown(REVEAL_STEP);
-  router.push(serializeParams({ colors, avail: next }));
+  // push, not replace: this transition needs the server, because rankFree runs
+  // there. The colours effect stays on replace.
+  router.push(`/commanders${serializeParams(colors, next)}`);
 }
 ```
 
 Announce on the page's existing live region using `availabilityCopy.ranking.announce(mode, n)` — one region per page, not one per surface.
 
 - [ ] **Step 7: Receipt line and delta in `rec-card.tsx`**
+
+**Where the two numbers come from — neither exists on the payload, and neither needs a new query.** `rankFree` returns `CommanderListItem[]`, which carries no in-use count and no "other score". Both are derived **on the client**, by joining the two arrays on `oracleId` (which `CommanderListItem` carries, `recommend.ts:20`):
+
+```tsx
+// The all-mode item for the same commander. Both arrays are already on the
+// client, so this is a join, not a fetch.
+const allByOracleId = useMemo(
+  () => new Map(results.map((r) => [r.oracleId, r])),
+  [results],
+);
+```
+
+- **`inUse`** is `allItem.colorPoolSize - freeItem.colorPoolSize`. `colorPoolSize` is the count of the player's cards that fit the commander's identity, and the only difference between the two runs is which cards were in the pool — so the difference *is* the number of fitting cards that are spoken for. This is exactly the receipt's *"34 of your cards fit · 12 already in use"*.
+- **`was`** is `allItem.score`; **`drop`** is `allItem.score - freeItem.score`.
+
+**A consequence to be aware of, and it is a real constraint rather than an oversight:** both numbers require the free ranking to have been computed, and Task 5 computes it *only* when `?avail=free`. So the receipt's second clause and the delta render **in `What's free` mode only**. In `Everything I own` the line shows just `receipt.fit`. The alternative — always computing both rankings — would make every visit to `/commanders` pay for a feature most players never open, contradicting Task 5's whole premise.
+
+**Flag this one to Design rather than assuming it.** The brief's surface list describes the receipt as *"a per-commander receipt line along the lines of 34 of your cards fit · 12 already in use"* on the commanders list, which could be read as applying in the default mode. Implement mode-scoped as above, and raise it for ratification; do not silently switch to always-computing-both.
 
 The receipt line **always renders**; only the second clause is conditional, so row height never changes between players. Use `receipt.fit` / `receipt.fitFree` for the first clause and append `receipt.inUse` with `' · '` when `inUse > 0`.
 
@@ -1167,7 +1288,9 @@ Expected: FAIL — `DegradedBanner` takes no props.
 
 - [ ] **Step 3: Generalise the banner**
 
-Add a `variant` prop defaulting to `"synergy"` so every existing call site is untouched. Keep the amber left border, the ring, the mobile/desktop split and the `retryRecs` form exactly as they are — **only the two strings change**. Source them from `availabilityCopy.degraded` (`heading`, `body`, `bodyWithSynergy`, `retry`).
+Add a `variant` prop defaulting to `"synergy"` so every existing call site is untouched. Keep the amber left border, the ring, the mobile/desktop split and the `retryRecs` form exactly as they are.
+
+**There are four shipped strings here, not two.** The mobile and desktop branches carry *different* body copy (`degraded-banner.tsx:37-38` vs `:88-90`), and the mobile button reads **"Retry"** while `availabilityCopy.degraded.retry` is **"Retry now"**. Sourcing the mobile button from the copy block would silently change shipped mobile text as a side effect of this ticket. Either keep the existing per-width strings for the `"synergy"` variant untouched and use the copy block only for the two new variants, or change the mobile button deliberately and say so in the PR — do not do it by accident.
 
 - [ ] **Step 4: Disable the free segment**
 
@@ -1196,19 +1319,33 @@ git commit -m "feat(availability): a failed deck read disables What's free, quie
 - Consumes: `loadAvailability`, `availabilityState` (Task 1); `availabilityCopy.detail` and `.deckSummary` (Task 2).
 - Produces: no new exports.
 
+> **Read this before starting — Task 8 has an unresolved data dependency that the other seven do not.**
+>
+> The disclosure needs to say *which* of a commander's matching cards are in use, and to split or filter a list by that. But the detail page does not have the identity to join on. `detail.tsx` renders `overlapOwned` (`:405,590,696`), which is an array of **EDHREC card names — strings**, and `colorPoolSize`, which is a **bare number**. Neither carries an `oracle_id`, and availability is keyed on `oracle_id`. Joining on name is not acceptable: names are not unique keys in this app and the whole feature is about counting specific printings' worth of a card.
+>
+> So Task 8 Step 3 requires a **prior step that does not exist yet**: `scoreOneCommander` must return the identity-fitting owned cards as `{oracleId, name}[]`, not just a count and a name list. That is a change to `src/lib/recs/recommend.ts:192+` and to `CommanderScore`. Scope it as **Step 0 below** and expect it to be the largest part of this task.
+>
+> `detail.tsx` is also a **server component** (no `"use client"` on line 1), so the `aria-expanded` disclosure must be a new small client child rather than state added in place.
+
+- [ ] **Step 0: Give the detail page something to join on**
+
+Extend `scoreOneCommander`'s return so the detail payload carries the fitting owned cards with their oracle_ids. Then call `loadAvailability(userId)` in `src/app/commanders/[slug]/page.tsx` and attach per-card availability before rendering. Only once this lands do the remaining steps have data.
+
 - [ ] **Step 1: Write the failing tests**
 
+Both test files need helpers that **do not exist yet**: `builder-spine.test.tsx` has not been created at all, and `detail.test.tsx` exposes a `commander(overrides)` fixture builder, not a `renderDetail`. Write the tests against the real fixtures in those files. The repo has **no `@testing-library/user-event`** — use `.click()` inside `act`, matching `decklist-row.test.tsx:59`.
+
 ```tsx
-// src/components/decks/builder-spine.test.tsx — follow the file's existing
-// render helper and mocks; add these cases.
+// src/components/decks/builder-spine.test.tsx (new file — model the setup on
+// an existing component test such as role-counter-strip.test.tsx).
 
 it("shows no summary line when nothing is over-committed", () => {
-  renderSpine({ overCommitted: 0 });
-  expect(screen.queryByText(/short/i)).toBeNull();
+  render(<BuilderSpine {...spineProps} overCommitted={0} />);
+  expect(screen.queryByText(/spoken for twice/i)).toBeNull();
 });
 
 it("states the shortfall without offering a dismiss or a retry", () => {
-  renderSpine({ overCommitted: 2 });
+  render(<BuilderSpine {...spineProps} overCommitted={2} />);
   expect(screen.getByText(/2 cards/)).toBeInTheDocument();
   // Not an error state: no dismiss, no retry, no icon.
   expect(screen.queryByRole("button", { name: /dismiss|retry/i })).toBeNull();
@@ -1216,10 +1353,11 @@ it("states the shortfall without offering a dismiss or a retry", () => {
 ```
 
 ```tsx
-// src/components/commanders/detail.test.tsx
+// src/components/commanders/detail.test.tsx — extend the existing
+// `commander(overrides)` fixture with the new in-use fields.
 
 it("reaches the in-use cards through a real button, not a div", () => {
-  renderDetail({ inUse: 12 });
+  render(<CommanderDetail commander={commander({ inUse: 12 })} rank={1} isBestFit />);
   const toggle = screen.getByRole("button", { name: /in use/i });
   expect(toggle).toHaveAttribute("aria-expanded", "false");
   expect(toggle).toHaveAttribute("aria-controls");
@@ -1228,14 +1366,16 @@ it("reaches the in-use cards through a real button, not a div", () => {
 // "Do not assert physical location" is a locked constraint, and the copy file
 // flags this sentence as the one most likely to drift.
 it("describes lists, never boxes or binders", async () => {
-  renderDetail({ inUse: 12 });
-  await userEvent.click(screen.getByRole("button", { name: /in use/i }));
+  render(<CommanderDetail commander={commander({ inUse: 12 })} rank={1} isBestFit />);
+  await act(async () => {
+    screen.getByRole("button", { name: /in use/i }).click();
+  });
   expect(screen.getByText(/you'd be taking them out of something/i)).toBeInTheDocument();
   expect(document.body.textContent).not.toMatch(/\b(box|binder|sleeve|shelf)\b/i);
 });
 
 it("shows no disclosure for a player with nothing in use", () => {
-  renderDetail({ inUse: 0 });
+  render(<CommanderDetail commander={commander({ inUse: 0 })} rank={1} isBestFit />);
   expect(screen.queryByRole("button", { name: /in use/i })).toBeNull();
 });
 ```
@@ -1279,6 +1419,17 @@ Per the handoff, these rows are superseded and must be updated in the same PR as
 - `docs/superpowers/design-tables/decks.md` — §Decklist Row (:1222)
 - `docs/superpowers/design-tables/add-panel.md` — §4c ownership dot (:207), §4e evidence row (:237), §4g tile states (:273)
 - `docs/superpowers/design-tables/commanders-windowing.md` — **currently says "No implementation exists."** That is stale: windowing shipped as #52 (`src/components/commanders/reveal-control.tsx`). Correct it, and add the window-reset-on-re-rank rule.
+
+## Copy strings shipped by Design that no task above renders
+
+Found by auditing `availability · copy strings.ts` against the eight tasks. Each is either a surface the plan does not build or a string whose home was never decided. **Before implementing, decide per string: render it, or delete it from the ported copy block.** Leaving unused exports in `src/lib/copy/` is how the vocabulary drifts, because the next person assumes they are live.
+
+- `ranking.freeNote` / `freeNoteLong` — annotated "shown only in the free state, under the control". Task 6 renders the control but not this note.
+- `ranking.subtitleAll` / `subtitleFree`, `ranking.allAria` / `freeAria` — the segmented control's accessible names and subtitles.
+- `receipt.wantedByBrew` — the soft-claim clause on the receipt line. Task 6 renders only `fit` / `fitFree` / `inUse` / `delta`.
+- `receipt.altScore` — the other mode's score, adjacent to the delta.
+- `detail.hint`, `detail.announceExpanded` / `announceCollapsed` — Task 8 announces a count but does not use these.
+- `marker.hard` — the bare form, with no deck named. `markerAria` and `label` in Task 3 always branch to `hardIn` or `hardMulti`, so this never fires. It is the right string for a surface with no room for a deck name; if none exists, delete it.
 
 ## Open, non-blocking — do not solve these here
 
