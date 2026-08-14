@@ -36,8 +36,7 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-
-_Currently empty — #42 shipped in full (✅ below), and the Add panel addendum moved to 🔨 below once its build started._
+| **#43** Design: Cross-check recommendations against cards committed to decks | `design/design_handoff_the99_availability/` | **🟢 Green at R3** (audited 2026-08-13) | One marker, four states (`free` renders nothing, deliberately), across four surfaces at both breakpoints, plus the `Score against` toggle — `Everything I own` / `What's free`, persisted in the URL as `?avail=`. R1 audited 🟡 Yellow on a provenance blocker: it was drawn against sibling handoffs rather than `src/`, and four of its claims were wrong — there is no light theme (one `:root`, no `color-scheme`), brass is AAA rather than sub-AA, `rowOwned` is at `decks-builder.ts:197` not `:158`, and `#1A160F` is `--surface-rail` while rows and tiles are `--surface #1E1A15`. All four are corrected and landed in R3's `README.md`. The R2 addendum then made the three rulings the audit asked for, each verified against `main`: the rank numeral **recomputes** under `What's free` from a second **global** rank map built before any colour filter, so `commanders-view.tsx:90-95`'s shipped `filtering never renumbers` invariant survives verbatim; flipping the toggle **resets the reveal window** to `REVEAL_STEP`, the same class of event as a filter change; and `rowAria` is **extended, not replaced** — the shipped 3-arg signature plus one optional trailing `availability` string, so a free card produces the byte-identical shipped name and no Consider row loses its `typeLine`. Gap §6 (failed availability read) is closed by reusing the shipped `DegradedBanner` on `/commanders` and disabling the `What's free` segment, while the builder surfaces fail genuinely quiet. **Two residuals for the plan to carry, neither blocking:** the main canvas's implementation-notes panel still says "get a light-theme pair there" and "brass is not AA as small text", both of which `README.md` now contradicts — the README wins; and the R3 contrast figures drift ~5% high (brass is ~7.0:1 on `--surface`, not the stated 7.5:1 — still AAA, but with less headroom than claimed). Gaps §7 and §9 were closed engineering-side during the audit. Open non-blocking: §2 deck-name length budget, §10 a commander can vanish on the flip, §11 two degraded reads co-occurring |
 
 ---
 
@@ -67,7 +66,8 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-| 1 | **#43** Design: Cross-check recommendations against cards committed to decks | `docs/superpowers/specs/2026-08-08-card-availability-design.md` | Handoff to `design/design_handoff_the99_availability/` — four surfaces (commanders list, commander detail, Add panel tiles, decklist rows) at both breakpoints, four card states, and the `Everything I own` / `What's free` toggle. READINESS audit before any eng ticket | Only item; workshopped 2026-08-08 |
+
+_Currently empty — #43's handoff was produced, audited 🟢 Green at R3 and moved to 🟢 above on 2026-08-13._
 
 ---
 
