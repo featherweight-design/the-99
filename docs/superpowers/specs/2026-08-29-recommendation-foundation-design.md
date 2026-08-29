@@ -392,20 +392,31 @@ A pure function in `src/lib/recs/engine.ts`, classifying from `typeLine` and `or
 ```ts
 export type CommanderEngine =
   | "etb"        // value on entering the battlefield
-  | "static"     // continuous effect; works the turn it lands
-  | "triggered"  // "Whenever…" / "At the beginning of…"
-  | "activated"  // has a cost but no {T} — usable immediately, repeatable
-  | "tap";       // requires {T} — must survive a turn cycle
+  | "triggered"  // "Whenever…" / "At the beginning of…" — free, works on landing
+  | "activated"  // a cost but no {T} — usable immediately, repeatable within a turn
+  | "tap"        // every route requires {T} — must survive a turn cycle
+  | "static";    // fallback: has rules text, no gated ability detected
 ```
 
-Precedence when a card matches several — **most restrictive wins**, because the axis measures *practical
-usability* and a card is gated by its most demanding requirement: `tap` > `activated` > `etb` > `triggered` >
-`static`. Gisa classifies `tap`; Yawgmoth, Thran Physician classifies `activated` (a cost, but no `{T}`, so
-usable the turn he lands and repeatable within a turn); Ayara, First of Locthwain and Braids, Arisen Nightmare
-classify `triggered`.
+Precedence when a card matches several — **least restrictive wins**: `etb` > `triggered` > `activated` > `tap`,
+with `static` as the fallback for a card that has rules text but matches none of the four.
 
-Returns `null` rather than guessing when nothing matches. Consumers must render an honest absence, in keeping
-with the parser's existing rule against defaulting missing data to a value that draws.
+An earlier draft had this backwards ("most restrictive wins"), and the fixture table caught it. Against the real
+oracle text, most-restrictive misclassifies two of the four commanders the section names. Ayara, First of
+Locthwain has both a `Whenever … enters` trigger **and** a `{T}, Sacrifice another black creature: Draw a card`
+ability; most-restrictive would call her `tap`, but her drain trigger works the turn she lands and never asks
+her to survive a turn cycle. Least-restrictive is the rule that actually matches the axis's question — *how soon
+does this commander deliver value* — because what you get is the cheapest route it offers, not the dearest.
+
+`tap` is therefore reached only when a commander offers **no** cheaper route, which is exactly Gisa's situation
+and exactly what #215 needs to see. Yawgmoth, Thran Physician classifies `activated` (his abilities have costs
+but no `{T}`, so he is usable the turn he lands and repeatable within a turn) — note this also requires `static`
+to be a fallback rather than a matched category, since his `Protection from Humans` is a static keyword that has
+nothing to do with how he delivers value. Braids, Arisen Nightmare classifies `triggered`.
+
+Returns `null` when the card has no rules text at all — a vanilla legendary body is genuinely unclassifiable on
+this axis, and guessing would be worse. Consumers render an honest absence, in keeping with the parser's
+existing rule against defaulting missing data to a value that draws.
 
 Classify against `frontFaceOracle(oracleText)` and `frontFaceTypeLine(typeLine)`, per the prerequisite above.
 
@@ -483,8 +494,9 @@ The foundation is unusually testable because four of five components are pure fu
   orphan-filtering test. The `check:manapool` canary is itself the live contract test.
 - **D.** A fixture table of hand-classified commanders including Gisa (`tap`), Yawgmoth (`activated`), Ayara and
   Braids (`triggered`), plus a DFC whose back face carries a `{T}` ability that must **not** classify the front
-  as `tap` (this is the test that would have caught the `frontFace` splitter bug), plus an unclassifiable card
-  asserting `null`.
+  as `tap` (this is the test that would have caught the `frontFace` splitter bug), plus a vanilla legendary
+  asserting `null`. Ayara is the load-bearing case: she carries both a trigger and a `{T}` ability, so she is
+  the fixture that pins the precedence direction and fails loudly if it is ever inverted back.
 - **E.** Basics, typed duals, an any-colour land, a fetchland asserting it contributes **nothing**, an MDFC land
   back face asserting it **does** contribute, and the real 34-Swamp case asserting `{B}` exactly.
 
@@ -573,6 +585,8 @@ convention: combining signals means owning and defending a weighting tuned again
 This spec was reviewed adversarially on 2026-08-29 and revised against the findings. Two were correctness
 defects that would have reached implementation: `printing_prices.scryfall_id` as a primary key against a feed
 with 1,087 duplicated ids, and a `frontFace()` reuse in §6/§7 that split oracle text on the type-line separator
-— the same #79 bug class the section claimed to avoid. The row estimate in §4 was 3× low, and the stock
+— the same #79 bug class the section claimed to avoid. A third surfaced while writing the plan's fixture table:
+§6's precedence ran "most restrictive wins," which misclassifies Ayara and Yawgmoth against their real oracle
+text; it is now least-restrictive with `static` demoted to a fallback. The row estimate in §4 was 3× low, and the stock
 reasoning in §5 was factually wrong about both `available_quantity` and the null-price rows. All figures quoted
 in §5 are re-measured and date-stamped.
