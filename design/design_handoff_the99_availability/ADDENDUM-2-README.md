@@ -108,6 +108,36 @@ Shape — **decision 2 reused wholesale**:
   three `aria-disabled` rows — the one place in this pass where the concept is visible to someone
   it doesn't apply to, and it costs a menu they chose to open.
 
+## 5. Deck detail soft roll-up → **one region, max two lines, fixed severity order**
+
+**Why deck-level at all:** twelve hollow glyphs scattered down a 62-row list is a pattern nobody
+perceives — the same argument that put the over-committed summary at the top in §3. One line makes
+twelve markers legible as a fact about the deck.
+
+**Stacked, not merged**, when both fire. The two lines describe different problems with different
+resolutions — one is a shopping decision, the other resolves itself the moment you sleeve
+something. Merging into "13 cards are contested" would average a real problem with a non-problem.
+
+**Red above muted, always** — fixed order, never sorted by count. A deck with 1 over-committed and
+40 soft still leads red. The severity ladder is the marker's own hollow → solid → doubled
+progression, read vertically.
+
+**The counts are disjoint and the copy proves it.** A card is either over-committed or softly
+claimed, never both, so `1` and `12` sum to 13 contested cards. When the soft line follows the red
+one it reads "12 **more** are in other brews too" — one word doing the arithmetic so the player
+doesn't have to (`softHeadingAfterOver`).
+
+**Pre-99 only, and it exits quietly.** Once the deck hits 99 and turns `Playable`, its own claims
+go hard: the soft line disappears and any genuine conflict has already promoted itself to the red
+line. No announcement needed — the player just finished a deck, which is the good outcome.
+
+Visually the soft line is a **note, and looks like one**: hollow glyph, `#C6B79A` heading, muted
+`#4A4033` left border, no tint. The red line keeps its `#211C15` / `#C6533F` treatment from §3.
+Neither is an error — no icon-in-a-circle, no dismiss, no retry.
+
+**Still not on the deck index.** Locked decision 2 holds: no roll-up, no badge, and the status pill
+keeps meaning card count and nothing else.
+
 ## 6. A deck never claims a card against itself (R3)
 
 **On a deck's own decklist, the marker scores against every deck except that one** — one rule,
@@ -140,36 +170,6 @@ commander forms are untouched.
 **No exclusion off-decklist.** `/collection` and the commander surfaces have no current deck, so
 they compute against everything, exactly as in #43. The marker is relative to where you stand, and
 only a decklist is somewhere to stand.
-
-## 5. Deck detail soft roll-up → **one region, max two lines, fixed severity order**
-
-**Why deck-level at all:** twelve hollow glyphs scattered down a 62-row list is a pattern nobody
-perceives — the same argument that put the over-committed summary at the top in §3. One line makes
-twelve markers legible as a fact about the deck.
-
-**Stacked, not merged**, when both fire. The two lines describe different problems with different
-resolutions — one is a shopping decision, the other resolves itself the moment you sleeve
-something. Merging into "13 cards are contested" would average a real problem with a non-problem.
-
-**Red above muted, always** — fixed order, never sorted by count. A deck with 1 over-committed and
-40 soft still leads red. The severity ladder is the marker's own hollow → solid → doubled
-progression, read vertically.
-
-**The counts are disjoint and the copy proves it.** A card is either over-committed or softly
-claimed, never both, so `1` and `12` sum to 13 contested cards. When the soft line follows the red
-one it reads "12 **more** are in other brews too" — one word doing the arithmetic so the player
-doesn't have to (`softHeadingAfterOver`).
-
-**Pre-99 only, and it exits quietly.** Once the deck hits 99 and turns `Playable`, its own claims
-go hard: the soft line disappears and any genuine conflict has already promoted itself to the red
-line. No announcement needed — the player just finished a deck, which is the good outcome.
-
-Visually the soft line is a **note, and looks like one**: hollow glyph, `#C6B79A` heading, muted
-`#4A4033` left border, no tint. The red line keeps its `#211C15` / `#C6533F` treatment from §3.
-Neither is an error — no icon-in-a-circle, no dismiss, no retry.
-
-**Still not on the deck index.** Locked decision 2 holds: no roll-up, no badge, and the status pill
-keeps meaning card count and nothing else.
 
 ---
 

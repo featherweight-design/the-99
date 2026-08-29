@@ -109,11 +109,12 @@ item 1 above seen from the other side. The plan carries the qualified form and w
 never to recompute `free` from `owned` and `hard`. **Qualify the callout as the default case**; the
 behaviour is already right.
 
-**7. `ADDENDUM-2-README.md` runs §6 before §5.** A sequencing slip, not a content problem, and
-**deliberately left alone**: the heading-to-content mapping is what every reference in the plan,
-this document and the pipeline status resolves against, so renumbering would break all of them to
-fix a table of contents nobody reads in order. **Reorder the two sections if it bothers you; do not
-renumber them.**
+**7. `ADDENDUM-2-README.md` ran §6 before §5 — fixed here, and nothing needs ratifying.** The two
+sections are now in numeric order. It is a **pure move**: both bodies are byte-identical and both
+heading numbers are unchanged, verified by diffing the sorted line multiset against the original.
+Renumbering was the tempting fix and the wrong one — the heading numbers are the anchors every
+reference in the plan, this document and the pipeline status resolves against, so renumbering would
+have broken all of them to fix an ordering nobody reads sequentially.
 
 ## Decisions taken 2026-08-27, outside the design cycle
 
