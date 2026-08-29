@@ -102,6 +102,19 @@ in the panel you are adding from. **Implemented with exclusion on both surfaces.
 an existing scoping explicit, not adding coupling. Ratify the extension, or say where the seam
 should fall instead.
 
+**6. The canvas's `free = owned − hard` callout contradicts §6.** State A's implementation callout
+says the formula is "inherited unchanged" from #43. Under self-exclusion it is the *off-decklist*
+case only — on a deck's own list `free` is `(owned − ownClaim) − (hard − ownHardClaim)`, which is
+item 1 above seen from the other side. The plan carries the qualified form and warns implementers
+never to recompute `free` from `owned` and `hard`. **Qualify the callout as the default case**; the
+behaviour is already right.
+
+**7. `ADDENDUM-2-README.md` runs §6 before §5.** A sequencing slip, not a content problem, and
+**deliberately left alone**: the heading-to-content mapping is what every reference in the plan,
+this document and the pipeline status resolves against, so renumbering would break all of them to
+fix a table of contents nobody reads in order. **Reorder the two sections if it bothers you; do not
+renumber them.**
+
 ## Decisions taken 2026-08-27, outside the design cycle
 
 **Gap §2 — deck-name length budget.** Design declined to set one twice, correctly: *"the name is

@@ -167,9 +167,21 @@ export type Availability = {
   owned: number;
   hard: number;
   soft: number;
-  /** owned − hard. Negative when finished decks want more copies than exist. */
+  /**
+   * Copies not spoken for, FROM THE VANTAGE THIS WAS LOADED WITH. Negative when
+   * finished decks want more copies than exist.
+   *
+   * Off-decklist (no `excludeDeckId`) this is `owned − hard`. On a deck's own
+   * decklist it is `(owned − ownClaim) − (hard − ownHardClaim)`, because
+   * Addendum 2 §6 excludes that deck from supply as well as claims. The query
+   * computes it either way; **never recompute it from `owned` and `hard`**,
+   * which is right only in the first case and silently wrong in the second.
+   */
   free: number;
-  /** Names of the mature decks holding a hard claim. Used only when length === 1. */
+  /**
+   * Names of the mature decks holding a hard claim, minus the excluded deck
+   * when one was passed. Used only when length === 1.
+   */
   hardDeckNames: string[];
 };
 
@@ -583,7 +595,10 @@ Create `src/components/ui/availability-marker.test.tsx`:
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { AvailabilityMarker, markerAria } from "./availability-marker";
+import { availabilityCopy } from "../../lib/copy/availability";
 
+// Off-decklist vantage — no excludeDeckId — so `free` really is `owned − hard`
+// here. Fixtures for a deck's own list must set `free` explicitly instead.
 const a = (owned: number, hard: number, soft: number, names: string[] = []) => ({
   owned, hard, soft, free: owned - hard, hardDeckNames: names,
 });
@@ -649,6 +664,23 @@ describe("markerAria", () => {
     expect(s).toBe("no free copies; this one is on your Atraxa list");
     expect(s).not.toMatch(/box|binder|sleeve|shelf/i);
   });
+
+  // `nameless` is /collection's contract: count-only in the label too.
+  it("never speaks a deck name when nameless", () => {
+    expect(markerAria(a(1, 1, 0, ["Atraxa"]), { nameless: true }))
+      .toBe("no free copies");
+  });
+
+  // The nameless form is SLICED from the copy file rather than re-typed, with a
+  // hard-coded fallback if the slice ever stops working. Both must agree, or
+  // the fallback would silently start rewording /collection. Pinning the
+  // invariant here beats mocking `availabilityCopy`, which is `as const` and so
+  // cannot be spied on without a cast. If Design adds a real nameless key,
+  // delete the helper and this test together.
+  it("derives exactly the phrase its fallback hard-codes", () => {
+    expect(availabilityCopy.marker.hardAria("Atraxa"))
+      .toMatch(/^no free copies;/);
+  });
 });
 ```
 
@@ -687,7 +719,27 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
   // written as "no free copies; this one is on your X list", and the first
   // clause is exactly the phrase the addendum's own rowAria example uses. Slice
   // rather than re-type, so the copy file stays authoritative.
-  const namelessHardAria = () => c.hardAria("x").split(";")[0];
+  //
+  // The slice is deliberately defensive: a copy edit that drops the semicolon
+  // would otherwise leak the "x" placeholder into a screen reader. Falling back
+  // to the addendum's own literal keeps collection count-only no matter what
+  // the copy file does — and the test below pins the failure mode, so a copy
+  // edit that silently switches us to the fallback is caught in CI rather than
+  // by a player. **Delete this whole helper the moment Design adds a real
+  // nameless key** (ratify item 2); it exists only because one is missing.
+  const NAMELESS_HARD_FALLBACK = "no free copies";
+  // A control character cannot occur in copy, so "the first clause still holds
+  // the sentinel" is an exact test for "the name did not land after the
+  // semicolon" — covering both a dropped semicolon and a reordered string that
+  // puts the name first. Do NOT sentinel with a space or a word: the phrase we
+  // are trying to keep contains both.
+  const NAME_SENTINEL = "\u0000";
+  const namelessHardAria = () => {
+    const [first, ...rest] = c.hardAria(NAME_SENTINEL).split(";");
+    return rest.length > 0 && !first.includes(NAME_SENTINEL)
+      ? first.trim()
+      : NAMELESS_HARD_FALLBACK;
+  };
 
   switch (availabilityState(a, { selfExcluded: opts?.selfExcluded })) {
     case "free":
