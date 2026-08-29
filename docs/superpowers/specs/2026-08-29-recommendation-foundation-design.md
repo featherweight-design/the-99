@@ -175,9 +175,10 @@ An index that stored only `edhrec_total = 0` would throw away exactly that disti
 already has. The third constraint is new but follows the same convention: an enum-shaped `text` column gets a
 check, because the union only narrows the TypeScript type.
 
-**Why the check constraints are stated here.** `AGENTS.md` routes schema through `pnpm db:generate`; Drizzle
-does not emit these from the TypeScript types, so they are hand-written into the generated migration — the same
-way `commander_scores`' pair were. Current migrations run 0000–0010, so these land at 0011.
+**How the check constraints are declared.** Drizzle's `check()` helper, imported in `schema.ts` and already used
+for `commander_scores`' pair and `collection_items_finish_check`; `pnpm db:generate` emits them (see
+`drizzle/0003_minor_multiple_man.sql`). No hand-editing of migrations. Current migrations run 0000–0010, so
+these land at 0011.
 
 **Expected size — corrected.** An earlier draft guessed "~100 support cards" per commander. The live Gisa
 payload carries **253 distinct card names across 13 cardlists**. The index stores the union of all 13, matching
@@ -213,15 +214,19 @@ the index always resolves names against a catalog that has already been refreshe
 released between the two runs would otherwise be unresolvable for a month. Environments mirror the catalog job:
 `commander-index-staging` / `commander-index-production`, each holding the database URL.
 
-**The 30-day TTL must be overridden.** `client.ts` sets `TTL_MS` to 30 days. A monthly index built through the
-unmodified client would re-read rows fetched 29 days ago and stamp them `computed_at = now`, making effective
-freshness up to 60 days while claiming 30. `resolveEdhrecData` therefore takes an optional max-age parameter,
-and the index job passes 0 to force a refetch. The live request path keeps the 30-day default unchanged.
+**The index needs its own fetch path — `fetchEdhrecUncached()` — for two independent reasons.**
 
-**The index must not write raw payloads to `edhrecCache`.** `client.ts:67-72` writes the full upstream payload
-on every successful fetch. That is right for the ~196 owned commanders; across ~3,000 it is ~94 KB × 3,000 ≈
-**300–400 MB of jsonb** for commanders nobody owns. The index job uses a fetch path that parses and discards
-rather than caching, and persists only derived rows. The cost is real and accepted: widening the parser later
+*It must not read the cache.* `client.ts` sets `TTL_MS` to 30 days. A monthly index built through
+`resolveEdhrecData` would re-read rows fetched 29 days ago and stamp them `computed_at = now`, making effective
+freshness up to 60 days while claiming 30.
+
+*It must not write the cache.* `client.ts:67-72` writes the full upstream payload on every successful fetch.
+That is right for the ~196 owned commanders; across ~3,000 it is ~94 KB × 3,000 ≈ **300–400 MB of jsonb** for
+commanders nobody owns.
+
+One function satisfies both: fetch, parse, return, touch no database. It shares the URL builder and request
+init with `resolveEdhrecData`, whose behaviour is unchanged, and returns the same `EdhrecFetchResult` so
+`synergyStateFrom()` applies to it verbatim. The cost is real and accepted: widening the parser later
 (§3) retroactively enriches *cached* payloads, so it will not retroactively enrich the index — a parser change
 that adds a field means re-running the index job. That is a monthly job we already run, and it is a better trade
 than a third of a gigabyte of payloads for commanders outside the collection.
@@ -237,8 +242,9 @@ this rule; it is subtle and already correct.
 
 One caveat the earlier draft got wrong: `resolveEdhrecData` returns **parsed stale cache** on a 4xx when a
 cached row exists (`client.ts:60-63`), so "4xx ⇒ absent" holds only for commanders with no cache entry. Since
-the index job does not consult `edhrecCache` at all, the caveat does not bite here — but the index must call
-`synergyStateFrom()` on the result rather than testing the HTTP status itself, which is what makes it immune.
+`fetchEdhrecUncached` does not consult `edhrecCache` at all, the caveat does not bite here — and the index
+derives its state by calling `synergyStateFrom()` on the result rather than testing the HTTP status itself,
+which is what keeps the two paths agreeing.
 
 ### Interaction with the live path
 
