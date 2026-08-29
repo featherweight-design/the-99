@@ -9,6 +9,16 @@
 // EVERY string below at once — never on one surface. "Deck tax" is banned
 // (collides with commander tax). Nothing here may assert where a physical card
 // is: we describe LISTS, never boxes, binders or sleeves.
+//
+// SELF-EXCLUSION (addendum 2 / R3). On a deck's own decklist the marker scores
+// against every deck EXCEPT that one — both severities, no special case. A deck
+// holding a card is not competition for itself, and "0 free — in Atraxa"
+// rendered inside Atraxa names the deck the player is already inside. The soft
+// copy already said "other brews" for this reason. Two consequences:
+//   • inside a finished deck the HARD state is unreachable — a second finished
+//     claim on one copy is over-commitment, so it presents as `overAlsoIn`.
+//   • /collection and the commander surfaces have no current deck, so no
+//     exclusion applies there; they compute against everything, as in #43.
 
 export const availabilityCopy = {
   // ── The marker itself ─────────────────────────────────────────────────
@@ -38,6 +48,14 @@ export const availabilityCopy = {
       `short ${shortBy} — ${deckCount} decks want it`,
     overAria: (shortBy: number, deckCount: number) =>
       `${deckCount} of your finished lists include this card and you own ${shortBy} too few`,
+
+    // On a deck's OWN list the current deck is excluded from the marker, so
+    // "N decks want it" would count the deck the player is standing in. Name the
+    // other claimant instead. Decklist-of-the-holder only.
+    overAlsoIn: (shortBy: number, otherDeck: string) =>
+      `short ${shortBy} — also in ${otherDeck}`,
+    overAlsoInAria: (otherDeck: string) =>
+      `your ${otherDeck} list also includes this card and you don’t own enough for both`,
 
     // Tile caption line (sits under the type line, not on the art).
     tileInUse: (deckName: string) => `in use — ${deckName}`,
@@ -163,5 +181,73 @@ export const availabilityCopy = {
     // Both reads down: ONE banner, two sentences, one Retry. Never two banners.
     bodyWithSynergy:
       'Synergy data and deck contents are both unavailable. Ranking continues on pool and role coverage, and What’s free is unavailable until they come back.',
+    // /collection has no ranking to mislead, so it fails QUIET — markers absent,
+    // Availability trigger disabled with this reason. No banner there.
+    collectionFilterDisabledAria:
+      'Filtering by availability is unavailable — we can’t read your decks right now',
+  },
+
+  // ── /collection (addendum 2) ──────────────────────────────────
+  // COUNT-ONLY on both views. Neither the fixed row grid nor the tile caption
+  // has room for a proper noun, so collection reuses marker.soft / marker.hard
+  // (never marker.hardIn or hardMulti) and the deck name appears in card detail
+  // only. Do not "restore" the deck name here without widening a shipped grid.
+  collection: {
+    // Filter menu. Nothing defaults on; zero-count options render aria-disabled
+    // rather than being removed — a menu that changes length between players is
+    // worse than one with dim rows.
+    filterLabel: 'Availability',
+    filterFree: 'Free',
+    filterSoft: 'Wanted by a brew',
+    filterHard: 'In use',
+    filterOver: 'Over-committed',
+    filterOptionAria: (label: string, n: number) =>
+      `${label}, ${n === 1 ? '1 card' : `${n} cards`}`,
+    filterEmptyOptionAria: (label: string) => `${label}, no cards`,
+    // Chips reuse the shipped chip row; glyph is the chip's leading dot.
+    chipRemoveAria: (label: string) => `Remove filter: ${label.toLowerCase()}`,
+    // Row label extends the shipped one — clause lands LAST, after set/rarity.
+    // A free card produces today's string with no fourth argument.
+    rowAria: (
+      name: string,
+      typeLine: string,
+      qty: number,
+      setAndRarity: string,
+      availability?: string | null,
+    ) =>
+      `${name}, ${typeLine}, ${qty === 1 ? '1 copy' : `${qty} copies`}, ${setAndRarity}` +
+      (availability ? `, ${availability}` : ''),
+    // Card detail carries the FULL clause — the one place on this surface with
+    // room for the deck name. Describes a list, never a location.
+    detailHeading: 'In your collection',
+    detailHardNote: 'You can still build with it — you’d be taking it out of something.',
+    detailSoftNote: 'A copy is free — the other is on a list you haven’t finished.',
+    detailOverNote:
+      'More finished lists want it than you own. Nothing’s broken — it’s a shopping decision.',
+  },
+
+  // ── Deck detail roll-up (addendum 2) ─────────────────────────────
+  // One region, max two lines, FIXED severity order (over-committed above soft,
+  // never sorted by count). The counts are disjoint — a card is either
+  // over-committed or softly claimed, never both — so when the soft line
+  // follows the red one it says "more", which is the arithmetic done for the
+  // player. Soft line is pre-99 only; at Playable/Complete the deck's own
+  // claims go hard and any real conflict has already promoted itself.
+  // Renders only when a count is above zero. A deck with neither has NO region.
+  deckRollup: {
+    // §3's over-committed line, unchanged — reproduced here as the ordering anchor.
+    overHeading: (n: number) =>
+      n === 1 ? '1 card here is spoken for twice' : `${n} cards here are spoken for twice`,
+
+    softHeading: (n: number) =>
+      n === 1 ? '1 card here is in another brew too' : `${n} cards here are in other brews too`,
+    // Used when the over-committed line is ALSO showing. "more" is load-bearing.
+    softHeadingAfterOver: (n: number) =>
+      n === 1 ? '1 more is in another brew too' : `${n} more are in other brews too`,
+    softBody:
+      'Nothing to sort out yet — none of those lists is finished either. Whichever you sleeve first gets them.',
+    softBodyShort: 'Nothing to sort out yet — none of those lists is finished either.',
+
+    regionAria: 'Card commitments',
   },
 } as const;

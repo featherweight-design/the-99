@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">Addendum 2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Card availability &middot; #43 &middot; collection + deck detail</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">Two more surfaces. Same diamond, one thing dropped.</h1>
+    <p style="max-width:1000px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">The four-state marker is inherited exactly &mdash; hollow, solid, doubled, and silence &mdash; with <b style="color:#EDE6D8;font-weight:600;">one deliberate reduction</b>: on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">/collection</span> the claiming deck&rsquo;s name is dropped and the marker runs count-only. Neither view has a cell that can hold a proper noun without the grid moving, and the grid is fixed.</p>
+    <p style="max-width:1000px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">Deck detail gains a <b style="color:#EDE6D8;font-weight:600;">soft-claim roll-up</b> for the pre-99 window, sitting under the over-committed line when both fire. Two lines maximum, ordered by severity, and both absent for a player whose collection covers their decks.</p>
+    <p style="max-width:1000px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> and <a href="ADDENDUM-README.md">ADDENDUM-README.md</a> first &mdash; the seven original calls and the R2 rulings both stand. Nothing in #43 is reopened here. The deck index stays untouched.</p>
+  </section>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:20px 24px;margin-bottom:20px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Row view</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Marker rides <b style="color:#EDE6D8;font-weight:600;">inline in the name cell</b> &mdash; the only cell with slack. Row height never changes.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Not the quantity column</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">38px / 52px of fixed-width numeral. <b style="color:#EDE6D8;font-weight:600;">A count cannot annotate a count.</b></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Tile view</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Chip <b style="color:#EDE6D8;font-weight:600;">top-left</b>, opposite the shipped brass qty badge. The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">set &middot; rarity</span> caption is untouched.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Deck name dropped</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Count-only on both views. The name lives in <b style="color:#EDE6D8;font-weight:600;">card detail</b>, which has the room and the intent.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Free only filter</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Yes &mdash; as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Availability &#9662;</span></b>, one more dropdown in the filter row, producing removable chips. Not a checkbox.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Soft roll-up</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Pre-99 only, above the decklist, <b style="color:#EDE6D8;font-weight:600;">below</b> the over-committed line when both fire.</div></div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;background:#181410;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Inherited unchanged from #43 &mdash; do not re-derive</div>
+    <div style="font-size:13px;color:#A89B84;line-height:1.7;">Four states and their arithmetic (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">free = owned &minus; hard</span>) &middot; hollow / solid / doubled fill as the severity axis &middot; the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Draft/Building/Playable/Complete</span> pill as the only severity source &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--avail-soft</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--avail-hard</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--avail-hard-fg</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--avail-over-fg</span>, no new tokens &middot; the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">owned &gt; 0</span> guard &middot; glyph <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span>, clause always text &middot; no motion &middot; never a treatment on the row &middot; never asserting where a card physically is. <b style="color:#EDE6D8;font-weight:600;">Free renders nothing, here as everywhere.</b></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2100px;">
+
+  <!-- ============ 1 · COLLECTION ROW VIEW ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Item 1a · <span style="color:#C9A24B;">/collection · row view — inside a fixed grid</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &middot; rows (default) &mdash; <span style="color:#C9A24B;">38px 40px 1fr auto</span>, unchanged</div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;height:720px;">
+          <div style="padding:13px 14px 10px;border-bottom:1px solid #2A241D;background:#14110E;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#EDE6D8;">Collection</div>
+              <div style="display:flex;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:2px;gap:2px;">
+                <div style="width:30px;height:26px;border-radius:6px;background:#C9A24B;color:#14110E;display:flex;align-items:center;justify-content:center;font-size:13px;">&#8803;</div>
+                <div style="width:30px;height:26px;border-radius:6px;color:#8E8269;display:flex;align-items:center;justify-content:center;font-size:13px;">&#9638;</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:8px 11px;margin-bottom:8px;">
+              <span style="color:#8E8269;font-size:13px;">&#9906;</span><span style="font-size:13.5px;color:#6A6152;">Search 1,418 cards&hellip;</span>
+            </div>
+            <div style="display:flex;gap:6px;overflow:hidden;">
+              <div style="flex:none;display:flex;gap:4px;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:6px 8px;">
+                <span style="width:15px;height:15px;border-radius:999px;background:#E8E4D6;opacity:0.4;"></span><span style="width:15px;height:15px;border-radius:999px;background:#4A7FB5;opacity:0.4;"></span><span style="width:15px;height:15px;border-radius:999px;background:#5B5566;opacity:0.4;"></span><span style="width:15px;height:15px;border-radius:999px;background:#C05A48;opacity:0.4;"></span><span style="width:15px;height:15px;border-radius:999px;background:#6B9E63;opacity:0.4;"></span>
+              </div>
+              <div style="flex:none;background:#2A241D;border:1px solid #C9A24B;border-radius:8px;padding:6px 11px;font-size:12.5px;color:#EDE6D8;">Availability &#9662;</div>
+              <div style="flex:none;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:6px 11px;font-size:12.5px;color:#C6B79A;">Type &#9662;</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:9px;flex-wrap:wrap;">
+              <div style="display:inline-flex;align-items:center;gap:6px;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:4px 10px;font-size:12px;color:#C6B79A;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>In use<span style="color:#8E8269;">&#10005;</span></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-left:auto;">Showing 61 of 1,418</span>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+
+            <div style="display:grid;grid-template-columns:38px 40px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:#C9A24B;">&times;1</span>
+              <div style="display:flex;gap:3px;"><span style="width:11px;height:11px;border-radius:999px;background:#E8E4D6;"></span></div>
+              <div style="min-width:0;display:flex;align-items:center;gap:7px;">
+                <span style="font-size:13.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Smothering Tithe</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#E8CE93;">0 free</span></span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">RVR</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:38px 40px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:#C9A24B;">&times;2</span>
+              <div style="display:flex;gap:3px;"><span style="width:11px;height:11px;border-radius:999px;background:#4A7FB5;"></span></div>
+              <div style="min-width:0;display:flex;align-items:center;gap:7px;">
+                <span style="font-size:13.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Talisman of Progress</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#C6B79A;">1 in a brew</span></span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">MH2</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:38px 40px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#1E1A15;border:1px solid #6B3226;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:#C9A24B;">&times;1</span>
+              <div style="display:flex;gap:3px;"><span style="width:11px;height:11px;border-radius:999px;background:#4A4033;"></span></div>
+              <div style="min-width:0;display:flex;align-items:center;gap:7px;">
+                <span style="font-size:13.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Arcane Signet</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:4px;"><span style="position:relative;width:11px;height:6px;display:block;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #1E1A15;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#E9917A;">short 1</span></span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">BRO</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:38px 40px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:#C9A24B;">&times;4</span>
+              <div style="display:flex;gap:3px;"><span style="width:11px;height:11px;border-radius:999px;background:#4A4033;"></span></div>
+              <div style="min-width:0;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">Sol Ring</span></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">C21</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:38px 40px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:#C9A24B;">&times;1</span>
+              <div style="display:flex;gap:3px;"><span style="width:11px;height:11px;border-radius:999px;background:#4A7FB5;"></span></div>
+              <div style="min-width:0;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">Mystic Remora</span></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">ICE</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:38px 40px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:#C9A24B;">&times;1</span>
+              <div style="display:flex;gap:3px;"><span style="width:11px;height:11px;border-radius:999px;background:#4A7FB5;"></span></div>
+              <div style="min-width:0;display:flex;align-items:center;gap:7px;">
+                <span style="font-size:13.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Cyclonic Rift</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#E8CE93;">0 free</span></span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">RTR</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:38px 40px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:#C9A24B;">&times;3</span>
+              <div style="display:flex;gap:3px;"><span style="width:11px;height:11px;border-radius:999px;background:#E8E4D6;"></span></div>
+              <div style="min-width:0;"><span style="font-size:13.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">Swords to Plowshares</span></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">STA</span>
+            </div>
+
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:8px;line-height:1.6;">Three of seven rows carry nothing. The name truncates before the chip does &mdash; the chip is <span style="color:#8E8269;">flex:none</span>, the name is the flexible half.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">The call: <span style="color:#C9A24B;">the name cell, inline, count-only</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The row-density rule doesn&rsquo;t transfer, and the reason is instructive.</b> On the decklist the marker appends to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&times;1 owned</span> &mdash; a <i>sentence</i> about ownership with room to grow. Here the quantity is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&times;1</span> in a 38px column: a fixed-width numeral, not a string. <b style="color:#EDE6D8;font-weight:600;">A count cannot annotate a count</b>, and widening the column would move a shipped grid for a state most rows never show.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">So it goes in the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1fr</span> cell, inline after the name</b> &mdash; the only cell in either grid with slack. Inline rather than a second line, so <b style="color:#EDE6D8;font-weight:600;">row height is constant</b> and the 1,418-row scroll keeps its rhythm. The name yields first: it already truncates, and a truncated name plus a legible marker beats a full name and a clipped one.</div>
+        <div style="height:1px;background:#2A241D;"></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The claiming deck&rsquo;s name is dropped here.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 free &mdash; in Atraxa</span> needs about 120px it cannot have on phone, and gap &sect;2 already flags that deck names have no length budget. Rather than invent a truncation rule on the widest list in the app, <b style="color:#EDE6D8;font-weight:600;">collection runs the count-only form</b> and the name appears in card detail &mdash; which has the room, and where opening a card is already the &ldquo;tell me more&rdquo; gesture.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">That is a reduction, not a new state: same glyph, same copy keys, one clause shorter. It also means <b style="color:#EDE6D8;font-weight:600;">collection never needs <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">hardMulti</span></b>, closing the drawn/undrawn gap from R1 &sect;3 on this surface at least.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Over-committed keeps its border tint</b> and nothing else. Still the only state that touches its container, still never a dim or a stripe &mdash; on an inventory list every row is equally real, and none of them is unavailable.</div>
+      </div>
+
+      <div style="width:1180px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &middot; rows &mdash; <span style="color:#C9A24B;">52px 54px 1fr 150px 92px 18px</span>, unchanged</div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;">
+          <div style="padding:16px 34px 12px;background:#14110E;border-bottom:1px solid #2A241D;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="flex:1;max-width:300px;display:flex;align-items:center;gap:8px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:8px 12px;"><span style="color:#8E8269;font-size:13px;">&#9906;</span><span style="font-size:13.5px;color:#6A6152;">Search 1,418 cards&hellip;</span></div>
+              <div style="display:flex;align-items:center;gap:7px;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:6px 10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#8E8269;">COLOR</span>
+                <span style="width:15px;height:15px;border-radius:999px;background:#E8E4D6;opacity:0.4;"></span><span style="width:15px;height:15px;border-radius:999px;background:#4A7FB5;opacity:0.4;"></span><span style="width:15px;height:15px;border-radius:999px;background:#5B5566;opacity:0.4;"></span><span style="width:15px;height:15px;border-radius:999px;background:#C05A48;opacity:0.4;"></span><span style="width:15px;height:15px;border-radius:999px;background:#6B9E63;opacity:0.4;"></span>
+              </div>
+              <div style="background:#2A241D;border:1px solid #C9A24B;border-radius:8px;padding:7px 12px;font-size:13px;color:#EDE6D8;">Availability &#9662;</div>
+              <div style="background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:7px 12px;font-size:13px;color:#C6B79A;">Type &#9662;</div>
+              <div style="background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:7px 12px;font-size:13px;color:#C6B79A;">Set &#9662;</div>
+              <div style="background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:7px 12px;font-size:13px;color:#C6B79A;">Sort &#9662;</div>
+              <div style="margin-left:auto;display:flex;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:2px;gap:2px;">
+                <div style="width:32px;height:28px;border-radius:6px;background:#C9A24B;color:#14110E;display:flex;align-items:center;justify-content:center;font-size:14px;">&#8803;</div>
+                <div style="width:32px;height:28px;border-radius:6px;color:#8E8269;display:flex;align-items:center;justify-content:center;font-size:14px;">&#9638;</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:11px;">
+              <div style="display:inline-flex;align-items:center;gap:6px;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:4px 11px;font-size:12.5px;color:#C6B79A;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>In use<span style="color:#8E8269;">&#10005;</span></div>
+              <div style="display:inline-flex;align-items:center;gap:6px;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:4px 11px;font-size:12.5px;color:#C6B79A;"><span style="position:relative;width:11px;height:6px;display:block;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #2A241D;"></span></span>Over-committed<span style="color:#8E8269;">&#10005;</span></div>
+              <span style="font-size:12.5px;color:#C9A24B;">Clear all</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">Showing 64 of 1,418</span>
+            </div>
+          </div>
+          <div style="padding:14px 34px 30px;display:flex;flex-direction:column;gap:7px;">
+
+            <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:16px;padding:12px 18px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:#C9A24B;">&times;1</span>
+              <div style="display:flex;gap:4px;"><span style="width:13px;height:13px;border-radius:999px;background:#E8E4D6;"></span></div>
+              <div style="min-width:0;display:flex;align-items:center;gap:9px;">
+                <span style="font-size:14.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Smothering Tithe</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#E8CE93;">0 free</span></span>
+              </div>
+              <span style="font-size:12.5px;color:#A89B84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Enchantment</span>
+              <div style="display:flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">RVR</span></div>
+              <span style="color:#4A4033;font-size:13px;">&#8250;</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:16px;padding:12px 18px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:#C9A24B;">&times;2</span>
+              <div style="display:flex;gap:4px;"><span style="width:13px;height:13px;border-radius:999px;background:#4A7FB5;"></span></div>
+              <div style="min-width:0;display:flex;align-items:center;gap:9px;">
+                <span style="font-size:14.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Talisman of Progress</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#C6B79A;">1 in a brew</span></span>
+              </div>
+              <span style="font-size:12.5px;color:#A89B84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Artifact</span>
+              <div style="display:flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:999px;background:#B7C4CE;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">MH2</span></div>
+              <span style="color:#4A4033;font-size:13px;">&#8250;</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:16px;padding:12px 18px;border-radius:8px;background:#1E1A15;border:1px solid #6B3226;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:#C9A24B;">&times;1</span>
+              <div style="display:flex;gap:4px;"><span style="width:13px;height:13px;border-radius:999px;background:#4A4033;"></span></div>
+              <div style="min-width:0;display:flex;align-items:center;gap:9px;">
+                <span style="font-size:14.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Arcane Signet</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:5px;"><span style="position:relative;width:11px;height:6px;display:block;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #1E1A15;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#E9917A;">short 1</span></span>
+              </div>
+              <span style="font-size:12.5px;color:#A89B84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Artifact</span>
+              <div style="display:flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:999px;background:#A89B84;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">BRO</span></div>
+              <span style="color:#4A4033;font-size:13px;">&#8250;</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:16px;padding:12px 18px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:#C9A24B;">&times;4</span>
+              <div style="display:flex;gap:4px;"><span style="width:13px;height:13px;border-radius:999px;background:#4A4033;"></span></div>
+              <div style="min-width:0;"><span style="font-size:14.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">Sol Ring</span></div>
+              <span style="font-size:12.5px;color:#A89B84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Artifact</span>
+              <div style="display:flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:999px;background:#A89B84;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">C21</span></div>
+              <span style="color:#4A4033;font-size:13px;">&#8250;</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:16px;padding:12px 18px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:#C9A24B;">&times;1</span>
+              <div style="display:flex;gap:4px;"><span style="width:13px;height:13px;border-radius:999px;background:#4A7FB5;"></span></div>
+              <div style="min-width:0;display:flex;align-items:center;gap:9px;">
+                <span style="font-size:14.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Cyclonic Rift</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#E8CE93;">0 free</span></span>
+              </div>
+              <span style="font-size:12.5px;color:#A89B84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Instant</span>
+              <div style="display:flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">RTR</span></div>
+              <span style="color:#4A4033;font-size:13px;">&#8250;</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:16px;padding:12px 18px;border-radius:8px;background:#1E1A15;border:1px solid #2A241D;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:#C9A24B;">&times;3</span>
+              <div style="display:flex;gap:4px;"><span style="width:13px;height:13px;border-radius:999px;background:#E8E4D6;"></span></div>
+              <div style="min-width:0;"><span style="font-size:14.5px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">Swords to Plowshares</span></div>
+              <span style="font-size:12.5px;color:#A89B84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Instant</span>
+              <div style="display:flex;align-items:center;gap:7px;"><span style="width:7px;height:7px;border-radius:999px;background:#B7C4CE;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">STA</span></div>
+              <span style="color:#4A4033;font-size:13px;">&#8250;</span>
+            </div>
+
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:8px;line-height:1.6;">Six columns, all six still doing their shipped job. The marker borrows slack from <span style="color:#8E8269;">1fr</span> and returns it the moment a card is free.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 1b · COLLECTION TILE VIEW ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Item 1b · <span style="color:#C9A24B;">/collection · tile view — no caption line to borrow</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &middot; tiles, 2-up &mdash; four states</div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;height:680px;">
+          <div style="padding:12px 14px;background:#14110E;border-bottom:1px solid #2A241D;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">Showing 1,418 of 1,418</span>
+            <div style="display:flex;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:2px;gap:2px;">
+              <div style="width:30px;height:26px;border-radius:6px;color:#8E8269;display:flex;align-items:center;justify-content:center;font-size:13px;">&#8803;</div>
+              <div style="width:30px;height:26px;border-radius:6px;background:#C9A24B;color:#14110E;display:flex;align-items:center;justify-content:center;font-size:13px;">&#9638;</div>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:max-content;gap:12px;align-content:start;">
+
+            <div style="border-radius:10px;overflow:hidden;background:#1E1A15;border:1px solid #2A241D;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(150deg,#2A2318,#1A160F);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,0.7);">
+                <div style="position:absolute;right:5px;top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:2px 6px;">&times;4</div>
+              </div>
+              <div style="padding:7px 8px 9px;"><div style="font-size:12.5px;font-weight:600;color:#EDE6D8;line-height:1.25;">Sol Ring</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;margin-top:3px;">C21 &middot; uncommon</div></div>
+            </div>
+
+            <div style="border-radius:10px;overflow:hidden;background:#1E1A15;border:1px solid #2A241D;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(150deg,#1B2436,#141A26);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,0.7);">
+                <div style="position:absolute;right:5px;top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:2px 6px;">&times;2</div>
+                <div style="position:absolute;left:5px;top:5px;display:inline-flex;align-items:center;gap:4px;background:rgba(11,9,7,0.86);border:1px solid #4A4033;border-radius:4px;padding:2px 5px;">
+                  <span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;"></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:#C6B79A;">1 in a brew</span>
+                </div>
+              </div>
+              <div style="padding:7px 8px 9px;"><div style="font-size:12.5px;font-weight:600;color:#EDE6D8;line-height:1.25;">Talisman of Progress</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;margin-top:3px;">MH2 &middot; uncommon</div></div>
+            </div>
+
+            <div style="border-radius:10px;overflow:hidden;background:#1E1A15;border:1px solid #2A241D;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(150deg,#33301F,#1E1A12);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,0.7);">
+                <div style="position:absolute;right:5px;top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:2px 6px;">&times;1</div>
+                <div style="position:absolute;left:5px;top:5px;display:inline-flex;align-items:center;gap:4px;background:rgba(11,9,7,0.9);border:1px solid #C9A24B;border-radius:4px;padding:2px 5px;">
+                  <span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:#E8CE93;">0 free</span>
+                </div>
+              </div>
+              <div style="padding:7px 8px 9px;"><div style="font-size:12.5px;font-weight:600;color:#EDE6D8;line-height:1.25;">Smothering Tithe</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;margin-top:3px;">RVR &middot; rare</div></div>
+            </div>
+
+            <div style="border-radius:10px;overflow:hidden;background:#1E1A15;border:1px solid #6B3226;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(150deg,#2E211B,#1C1411);box-shadow:inset 0 -26px 30px -22px rgba(0,0,0,0.7);">
+                <div style="position:absolute;right:5px;top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:2px 6px;">&times;1</div>
+                <div style="position:absolute;left:5px;top:5px;display:inline-flex;align-items:center;gap:4px;background:rgba(11,9,7,0.92);border:1px solid #C6533F;border-radius:4px;padding:2px 5px;">
+                  <span style="position:relative;width:11px;height:6px;display:block;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #0B0907;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:#E9917A;">short 1</span>
+                </div>
+              </div>
+              <div style="padding:7px 8px 9px;"><div style="font-size:12.5px;font-weight:600;color:#EDE6D8;line-height:1.25;">Arcane Signet</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8E8269;margin-top:3px;">BRO &middot; common</div></div>
+            </div>
+
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:8px;line-height:1.6;">Sol Ring is the free case: the brass quantity badge alone, exactly as it ships today.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">The call: <span style="color:#C9A24B;">top-left chip, and the caption stays</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The tile rule transfers; only its caption half doesn&rsquo;t.</b> On Consider the chip sits top-left because top-right is the ownership dot &mdash; here top-right is the brass quantity badge, so the same corner is free for the same reason. Nothing about the chip changes: same glyph, same scrim, same 8.5px label.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The caption line is already spoken for.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">C21 &middot; uncommon</span> is set and rarity &mdash; the two facts a player scans a collection grid for. Consider&rsquo;s tile could spare a line for <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">in use &mdash; Atraxa</span>; this one cannot, and displacing set/rarity to name a deck would trade an inventory fact for a deck fact on the inventory surface.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">So both views land in the same place</b> &mdash; count-only, no deck name &mdash; from two different constraints. That is worth more than either fix alone: <b style="color:#EDE6D8;font-weight:600;">one collection-wide reduction</b>, one sentence in the copy file, and a player flipping between the two views sees the same marker say the same thing.</div>
+        <div style="height:1px;background:#2A241D;"></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Card detail carries the full form.</b> Opening a card is where the extra clause belongs: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 free &mdash; in Atraxa</span>, with the deck&rsquo;s status pill beside it exactly as the commander-detail disclosure does it. Drawn below.</div>
+      </div>
+
+      <div style="width:500px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Card detail &mdash; <span style="color:#C9A24B;">where the deck name does fit</span></div>
+        <div style="background:#1A160F;border:1px solid #3A3229;border-radius:16px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,0.7);">
+          <div style="display:grid;grid-template-columns:190px 1fr;">
+            <div style="background:#14110E;padding:18px;"><div style="aspect-ratio:63/88;border-radius:10px;background:linear-gradient(150deg,#33301F,#1E1A12);box-shadow:inset 0 -30px 34px -26px rgba(0,0,0,0.7);"></div></div>
+            <div style="padding:20px 22px;">
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;line-height:1.15;">Smothering Tithe</div>
+              <div style="font-size:12.5px;color:#A89B84;margin-top:4px;">Enchantment</div>
+              <div style="margin-top:14px;background:#14110E;border:1px solid #2A241D;border-radius:10px;padding:12px 14px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">In your collection</div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">
+                  <span style="color:#C9A24B;font-size:13px;">&times;1</span><span style="color:#3A3229;">&middot;</span>
+                  <span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>
+                  <span style="color:#E8CE93;">0 free &mdash; in Atraxa</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#6FA368;border:1px solid #33502F;border-radius:4px;padding:2px 6px;">Complete</span>
+                </div>
+                <div style="font-size:12px;color:#A89B84;line-height:1.55;margin-top:9px;">You can still build with it &mdash; you&rsquo;d be taking it out of something.</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#2A241D;border:1px solid #2A241D;border-radius:10px;overflow:hidden;margin-top:14px;">
+                <div style="background:#1E1A15;padding:10px 13px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:#8E8269;text-transform:uppercase;">Set</div><div style="font-size:13px;color:#EDE6D8;margin-top:3px;">RVR</div></div>
+                <div style="background:#1E1A15;padding:10px 13px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:#8E8269;text-transform:uppercase;">Rarity</div><div style="font-size:13px;color:#C9A24B;margin-top:3px;">Rare</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:8px;line-height:1.6;">The full clause, the status pill as evidence, and the one sentence that describes a <b style="color:#8E8269;">list</b> rather than a location. Nothing new &mdash; it is the commander-detail disclosure at card scale.</div>
+      </div>
+
+      <div style="width:1180px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &middot; tiles, 5-up &mdash; the marker at gallery density</div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;">
+          <div style="padding:14px 34px;background:#14110E;border-bottom:1px solid #2A241D;display:flex;align-items:center;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">Showing 1,418 of 1,418</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">Availability filter clear &mdash; every card shown, 1,186 of them silent</span>
+          </div>
+          <div style="padding:20px 34px 30px;display:grid;grid-template-columns:repeat(5,1fr);gap:16px;">
+
+            <div style="border-radius:10px;overflow:hidden;background:#1E1A15;border:1px solid #2A241D;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(150deg,#2A2318,#1A160F);box-shadow:inset 0 -30px 34px -26px rgba(0,0,0,0.7);"><div style="position:absolute;right:6px;top:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:2px 7px;">&times;4</div></div>
+              <div style="padding:8px 10px 10px;"><div style="font-size:13px;font-weight:600;color:#EDE6D8;line-height:1.25;">Sol Ring</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">C21 &middot; uncommon</div></div>
+            </div>
+
+            <div style="border-radius:10px;overflow:hidden;background:#1E1A15;border:1px solid #2A241D;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(150deg,#1B2436,#141A26);box-shadow:inset 0 -30px 34px -26px rgba(0,0,0,0.7);"><div style="position:absolute;right:6px;top:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:2px 7px;">&times;2</div><div style="position:absolute;left:6px;top:6px;display:inline-flex;align-items:center;gap:4px;background:rgba(11,9,7,0.86);border:1px solid #4A4033;border-radius:4px;padding:2px 5px;"><span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:#C6B79A;">1 in a brew</span></div></div>
+              <div style="padding:8px 10px 10px;"><div style="font-size:13px;font-weight:600;color:#EDE6D8;line-height:1.25;">Talisman of Progress</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">MH2 &middot; uncommon</div></div>
+            </div>
+
+            <div style="border-radius:10px;overflow:hidden;background:#1E1A15;border:1px solid #2A241D;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(150deg,#33301F,#1E1A12);box-shadow:inset 0 -30px 34px -26px rgba(0,0,0,0.7);"><div style="position:absolute;right:6px;top:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:2px 7px;">&times;1</div><div style="position:absolute;left:6px;top:6px;display:inline-flex;align-items:center;gap:4px;background:rgba(11,9,7,0.9);border:1px solid #C9A24B;border-radius:4px;padding:2px 5px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:#E8CE93;">0 free</span></div></div>
+              <div style="padding:8px 10px 10px;"><div style="font-size:13px;font-weight:600;color:#EDE6D8;line-height:1.25;">Smothering Tithe</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">RVR &middot; rare</div></div>
+            </div>
+
+            <div style="border-radius:10px;overflow:hidden;background:#1E1A15;border:1px solid #6B3226;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(150deg,#2E211B,#1C1411);box-shadow:inset 0 -30px 34px -26px rgba(0,0,0,0.7);"><div style="position:absolute;right:6px;top:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:2px 7px;">&times;1</div><div style="position:absolute;left:6px;top:6px;display:inline-flex;align-items:center;gap:4px;background:rgba(11,9,7,0.92);border:1px solid #C6533F;border-radius:4px;padding:2px 5px;"><span style="position:relative;width:11px;height:6px;display:block;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #0B0907;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;color:#E9917A;">short 1</span></div></div>
+              <div style="padding:8px 10px 10px;"><div style="font-size:13px;font-weight:600;color:#EDE6D8;line-height:1.25;">Arcane Signet</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">BRO &middot; common</div></div>
+            </div>
+
+            <div style="border-radius:10px;overflow:hidden;background:#1E1A15;border:1px solid #2A241D;">
+              <div style="position:relative;aspect-ratio:63/88;background:linear-gradient(150deg,#20293A,#141A26);box-shadow:inset 0 -30px 34px -26px rgba(0,0,0,0.7);"><div style="position:absolute;right:6px;top:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:2px 7px;">&times;1</div></div>
+              <div style="padding:8px 10px 10px;"><div style="font-size:13px;font-weight:600;color:#EDE6D8;line-height:1.25;">Mystic Remora</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">ICE &middot; common</div></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2 · FILTER RULING ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Open call · <span style="color:#C9A24B;">yes to a filter on /collection — as Availability ▾, not a checkbox</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:660px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;overflow:hidden;">
+        <div style="padding:13px 20px;background:#181410;border-bottom:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">The dropdown, open</div>
+        <div style="padding:20px;display:flex;gap:20px;align-items:flex-start;">
+          <div style="width:250px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:10px;overflow:hidden;">
+            <div style="padding:11px 14px;border-bottom:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">Availability</div>
+            <div style="padding:6px;display:flex;flex-direction:column;gap:2px;">
+              <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:6px;min-height:40px;"><span style="width:15px;height:15px;border-radius:4px;border:1px solid #4A4033;flex:none;"></span><span style="font-size:13.5px;color:#C6B79A;">Free</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">1,186</span></div>
+              <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:6px;min-height:40px;"><span style="width:15px;height:15px;border-radius:4px;border:1px solid #4A4033;flex:none;"></span><span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;flex:none;"></span><span style="font-size:13.5px;color:#C6B79A;">Wanted by a brew</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">168</span></div>
+              <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:6px;background:#2A241D;min-height:40px;"><span style="width:15px;height:15px;border-radius:4px;background:#C9A24B;display:flex;align-items:center;justify-content:center;font-size:10px;color:#14110E;font-weight:700;flex:none;">&check;</span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;flex:none;"></span><span style="font-size:13.5px;color:#EDE6D8;">In use</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">61</span></div>
+              <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:6px;background:#2A241D;min-height:40px;"><span style="width:15px;height:15px;border-radius:4px;background:#C9A24B;display:flex;align-items:center;justify-content:center;font-size:10px;color:#14110E;font-weight:700;flex:none;">&check;</span><span style="position:relative;width:11px;height:6px;display:block;flex:none;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #2A241D;"></span></span><span style="font-size:13.5px;color:#EDE6D8;">Over-committed</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">3</span></div>
+            </div>
+          </div>
+          <div style="flex:1;font-size:12.5px;color:#A89B84;line-height:1.7;">
+            <b style="color:#EDE6D8;font-weight:600;">Four checkboxes, not two exclusive states.</b> Availability is a property with four values, so it filters like <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Type &#9662;</span> filters &mdash; pick any combination. &ldquo;Free only&rdquo; is one selection among four rather than a mode.<br><br>
+            <b style="color:#EDE6D8;font-weight:600;">Counts in the dropdown</b> because that is the answer to the inventory question before you even apply it: <i>1,186 free, 168 spoken for, 61 locked, 3 short</i>. A player who reads only this menu has learned the shape of their own collection.<br><br>
+            <b style="color:#EDE6D8;font-weight:600;">Nothing defaults on.</b> Arriving at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> shows all 1,418, as it does today.
+          </div>
+        </div>
+      </div>
+
+      <div style="width:480px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">Why this doesn&rsquo;t contradict <span style="color:#C9A24B;">&sect;5</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">&sect;5 ruled against a second control because of a collision, and the collision isn&rsquo;t here.</b> In the builder, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Owned only</span> and a hypothetical <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Free only</span> are two checkboxes about the same noun, four millimetres apart, differing on a word the player has known for minutes. <b style="color:#EDE6D8;font-weight:600;">On <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> there is no ownership control at all</b> &mdash; everything here is owned by definition. Nothing to collide with.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">And the question genuinely changes.</b> The builder asks &ldquo;what should go in this deck&rdquo;, where a filter that hides a card is a block wearing a filter&rsquo;s clothes. Collection asks &ldquo;what do I have&rdquo; &mdash; a question filters are the native answer to, on a surface that already ships four of them and a chip row for exactly this.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">It is a filter, not a mode</b> &mdash; which is what keeps it clear of the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Score against</span> toggle too. That ranks and never hides; this hides and never ranks. Different surfaces, different verbs, and neither one ever appears next to the other.</div>
+        <div style="height:1px;background:#2A241D;"></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">It joins the existing filter row</b> as one more dropdown beside <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Type</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sort</span> &mdash; fourth on desktop, where colour is an inline pip row, and fifth on phone, where colour is its own panel. <b style="color:#EDE6D8;font-weight:600;">And it reuses decision 2 wholesale.</b> Chips (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">In use &#10005;</span>) with the marker glyph as the chip&rsquo;s leading dot, the live <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Showing N of 1,418</span> count, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all</span>, and a 1:1 query param &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?avail=inuse,over</span>. No new control pattern enters the app.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Silence survives it.</b> A player with no commitments opens the menu to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1,418 / 0 / 0 / 0</span>. The three non-free rows render disabled &mdash; the one place in this pass where the concept is visible to someone it does not apply to, and it costs a menu they had to open.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3 · DECK DETAIL ROLL-UP ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Item 2 · <span style="color:#C9A24B;">deck detail — the soft-claim roll-up, and both lines at once</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &middot; soft only &mdash; <span style="color:#C9A24B;">the pre-99 window</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;height:560px;">
+          <div style="padding:12px 16px;border-bottom:1px solid #2A241D;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;border:1px solid #5A4A28;border-radius:4px;padding:2px 6px;">Building</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">61 / 99</span></div>
+          </div>
+          <div style="padding:10px 16px;background:#1E1A15;border-bottom:1px solid #2A241D;display:flex;gap:9px;align-items:flex-start;">
+            <span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;margin-top:4px;flex:none;"></span>
+            <div style="flex:1;">
+              <div style="font-size:12.5px;color:#C6B79A;font-weight:600;">12 cards here are in other brews too</div>
+              <div style="font-size:12px;color:#A89B84;line-height:1.55;margin-top:3px;">Nothing to sort out yet &mdash; none of those lists is finished either. Whichever you sleeve first gets them.</div>
+            </div>
+          </div>
+          <div style="padding:12px 16px 6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Artifacts &middot; 7</div>
+          <div style="flex:1;overflow:hidden;">
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Talisman of Progress</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">&times;2 owned<span style="color:#3A3229;">&middot;</span><span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;"></span><span style="color:#C6B79A;">1 in a brew</span></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;2&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Mind Stone</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">&times;2 owned<span style="color:#3A3229;">&middot;</span><span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;"></span><span style="color:#C6B79A;">1 in a brew</span></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;2&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Sol Ring</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">&times;4 owned</div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;1&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Smothering Tithe</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">&times;1 owned<span style="color:#3A3229;">&middot;</span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="color:#E8CE93;">0 free &mdash; in Atraxa</span></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;3&#125;&#123;W&#125;</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:8px;line-height:1.6;">Hollow glyph, muted text, no border tint. The soft line is a <b style="color:#8E8269;">note</b>, and it looks like one.</div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &middot; <span style="color:#E9917A;">both fire</span> &mdash; severity order, two lines, one region</div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;height:560px;">
+          <div style="padding:12px 16px;border-bottom:1px solid #2A241D;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;border:1px solid #5A4A28;border-radius:4px;padding:2px 6px;">Building</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">62 / 99</span></div>
+          </div>
+          <div style="border-bottom:1px solid #2A241D;">
+            <div style="padding:10px 16px;background:#211C15;display:flex;gap:9px;align-items:flex-start;border-left:3px solid #C6533F;">
+              <span style="position:relative;width:11px;height:6px;display:block;margin-top:4px;flex:none;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #211C15;"></span></span>
+              <div style="flex:1;">
+                <div style="font-size:12.5px;color:#E9917A;font-weight:600;">1 card here is spoken for twice</div>
+                <div style="font-size:12px;color:#A89B84;line-height:1.55;margin-top:3px;">Arcane Signet is on two finished lists and you own one. Nothing&rsquo;s broken here &mdash; it&rsquo;s a shopping decision.</div>
+              </div>
+            </div>
+            <div style="padding:10px 16px;background:#1E1A15;display:flex;gap:9px;align-items:flex-start;border-left:3px solid #4A4033;border-top:1px solid #2A241D;">
+              <span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;margin-top:4px;flex:none;"></span>
+              <div style="flex:1;">
+                <div style="font-size:12.5px;color:#C6B79A;font-weight:600;">12 more are in other brews too</div>
+                <div style="font-size:12px;color:#A89B84;line-height:1.55;margin-top:3px;">Nothing to sort out yet &mdash; none of those lists is finished either.</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:12px 16px 6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Artifacts &middot; 8</div>
+          <div style="flex:1;overflow:hidden;">
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;background:rgba(198,83,63,0.05);">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Arcane Signet</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">&times;1 owned<span style="color:#3A3229;">&middot;</span><span style="position:relative;width:11px;height:6px;display:block;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #14110E;"></span></span><span style="color:#E9917A;">short 1 &mdash; 2 decks want it</span></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;1&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Talisman of Progress</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">&times;2 owned<span style="color:#3A3229;">&middot;</span><span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;"></span><span style="color:#C6B79A;">1 in a brew</span></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;2&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Sol Ring</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">&times;4 owned</div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;1&#125;</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:8px;line-height:1.6;">Note the soft line&rsquo;s copy changes to <b style="color:#8E8269;">&ldquo;12 <i>more</i>&rdquo;</b> when it follows the red one &mdash; the counts don&rsquo;t overlap, and the word says so.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">The call: <span style="color:#C9A24B;">one region, max two lines, severity order</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Stacked, not merged.</b> The two lines describe different problems with different resolutions &mdash; one is a shopping decision, the other resolves itself the moment you sleeve something. Merging them into &ldquo;13 cards are contested&rdquo; would average a real problem with a non-problem.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Red above muted, always.</b> Fixed order, never sorted by count &mdash; a deck with 1 over-committed and 40 soft still leads red. The severity ladder is the same hollow &rarr; solid &rarr; doubled progression the marker uses, read vertically.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">The counts are disjoint, and the copy proves it.</b> A card is either over-committed or softly claimed, never both, so <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">12</span> sum to 13 contested cards. When the soft line follows the red one it reads <b style="color:#EDE6D8;font-weight:600;">&ldquo;12 <i>more</i>&rdquo;</b> &mdash; one word doing the arithmetic so the player doesn&rsquo;t have to.</div>
+        <div style="height:1px;background:#2A241D;"></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Why the soft line is deck-level at all.</b> Twelve hollow glyphs scattered down a 62-row list is a pattern nobody perceives &mdash; the same argument that put the over-committed summary at the top in &sect;3. One line makes twelve markers legible as a fact about the deck.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Pre-99 only, and it exits quietly.</b> Once the deck hits 99 and turns <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Playable</span>, its own claims go hard: the soft line disappears and any genuine conflict has already promoted itself to the red line. The disappearance needs no announcement &mdash; the player just finished a deck, which is the good outcome.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Still not on the deck index.</b> Locked decision 2 holds: no roll-up, no badge, and the status pill keeps meaning card count and nothing else.</div>
+      </div>
+
+      <div style="width:1180px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &middot; both lines, above the decklist &mdash; and the silent deck beside it</div>
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="flex:1;background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;">
+            <div style="padding:16px 30px;border-bottom:1px solid #2A241D;display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</div>
+              <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;border:1px solid #5A4A28;border-radius:4px;padding:3px 8px;">Building</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">62 / 99 built</span></div>
+            </div>
+            <div style="padding:14px 30px;border-bottom:1px solid #2A241D;display:flex;flex-direction:column;gap:8px;">
+              <div style="background:#211C15;border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:10px;padding:12px 16px;display:flex;gap:11px;align-items:center;">
+                <span style="position:relative;width:11px;height:6px;display:block;flex:none;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #211C15;"></span></span>
+                <div style="font-size:13px;color:#E9917A;font-weight:600;flex:none;">1 card here is spoken for twice</div>
+                <div style="font-size:13px;color:#A89B84;">Arcane Signet is on two finished lists and you own one. Nothing&rsquo;s broken here &mdash; it&rsquo;s a shopping decision.</div>
+              </div>
+              <div style="background:#1E1A15;border:1px solid #2A241D;border-left:3px solid #4A4033;border-radius:10px;padding:12px 16px;display:flex;gap:11px;align-items:center;">
+                <span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;flex:none;"></span>
+                <div style="font-size:13px;color:#C6B79A;font-weight:600;flex:none;">12 more are in other brews too</div>
+                <div style="font-size:13px;color:#A89B84;">Nothing to sort out yet &mdash; none of those lists is finished either. Whichever you sleeve first gets them.</div>
+              </div>
+            </div>
+            <div style="padding:14px 30px 8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Artifacts &middot; 8</div>
+            <div style="padding:0 30px 24px;">
+              <div style="padding:10px 0;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:12px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;width:16px;">1</div><div style="flex:1;"><div style="font-size:14.5px;font-weight:600;color:#EDE6D8;">Arcane Signet</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:3px;display:flex;align-items:center;gap:7px;">&times;1 owned<span style="color:#3A3229;">&middot;</span><span style="position:relative;width:11px;height:6px;display:block;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #100D0A;"></span></span><span style="color:#E9917A;">short 1 &mdash; 2 decks want it</span></div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">&#123;1&#125;</div></div>
+              <div style="padding:10px 0;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:12px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;width:16px;">1</div><div style="flex:1;"><div style="font-size:14.5px;font-weight:600;color:#EDE6D8;">Talisman of Progress</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:3px;display:flex;align-items:center;gap:7px;">&times;2 owned<span style="color:#3A3229;">&middot;</span><span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;"></span><span style="color:#C6B79A;">1 in a brew</span></div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">&#123;2&#125;</div></div>
+              <div style="padding:10px 0;display:flex;align-items:center;gap:12px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;width:16px;">1</div><div style="flex:1;"><div style="font-size:14.5px;font-weight:600;color:#EDE6D8;">Sol Ring</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:3px;">&times;4 owned</div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">&#123;1&#125;</div></div>
+            </div>
+          </div>
+
+          <div style="width:340px;flex:none;background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;">
+            <div style="padding:16px 22px;border-bottom:1px solid #2A241D;">
+              <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">Lathril, Blade of the Elves</div>
+              <div style="display:flex;align-items:center;gap:9px;margin-top:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;border:1px solid #5A4A28;border-radius:4px;padding:3px 8px;">Building</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">54 / 99 built</span></div>
+            </div>
+            <div style="padding:14px 22px 8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Creatures &middot; 22</div>
+            <div style="padding:0 22px 20px;">
+              <div style="padding:10px 0;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:11px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;width:14px;">1</div><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Elvish Mystic</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:3px;">&times;3 owned</div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">&#123;G&#125;</div></div>
+              <div style="padding:10px 0;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:11px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;width:14px;">1</div><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Wirewood Symbiote</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:3px;">&times;1 owned</div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">&#123;G&#125;</div></div>
+              <div style="padding:10px 0;display:flex;align-items:center;gap:11px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;width:14px;">1</div><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Marwyn, the Nurturer</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:3px;">&times;1 owned</div></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">&#123;2&#125;&#123;G&#125;</div></div>
+            </div>
+            <div style="padding:0 22px 20px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;line-height:1.6;">Same surface, same player, no roll-up region at all &mdash; not an empty one. This deck&rsquo;s cards are all free.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4 · SELF-EXCLUSION ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">R3 · <span style="color:#C9A24B;">a deck never claims a card against itself</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone &middot; <span style="color:#6FA368;">a finished deck&rsquo;s own list</span> &mdash; Atraxa, 99/99</div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;height:660px;">
+          <div style="padding:12px 16px;border-bottom:1px solid #2A241D;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Atraxa, Praetors&rsquo; Voice</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#6FA368;border:1px solid #33502F;border-radius:4px;padding:2px 6px;">Complete</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">99 / 99</span></div>
+          </div>
+          <div style="padding:10px 16px;background:#211C15;border-bottom:1px solid #2A241D;border-left:3px solid #C6533F;display:flex;gap:9px;align-items:flex-start;">
+            <span style="position:relative;width:11px;height:6px;display:block;margin-top:4px;flex:none;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #211C15;"></span></span>
+            <div style="flex:1;">
+              <div style="font-size:12.5px;color:#E9917A;font-weight:600;">1 card here is spoken for twice</div>
+              <div style="font-size:12px;color:#A89B84;line-height:1.55;margin-top:3px;">Arcane Signet is on two finished lists and you own one. Nothing&rsquo;s broken here &mdash; it&rsquo;s a shopping decision.</div>
+            </div>
+          </div>
+          <div style="padding:12px 16px 6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Artifacts &amp; enchantments &middot; 11</div>
+          <div style="flex:1;overflow:hidden;">
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Smothering Tithe</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">&times;1 owned</div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;3&#125;&#123;W&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Rhystic Study</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">&times;1 owned</div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;2&#125;&#123;U&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;background:rgba(198,83,63,0.05);">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Arcane Signet</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">&times;1 owned<span style="color:#3A3229;">&middot;</span><span style="position:relative;width:11px;height:6px;display:block;"><span style="position:absolute;left:0;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span><span style="position:absolute;left:5px;top:0;width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;border-left:1px solid #14110E;"></span></span><span style="color:#E9917A;">short 1 &mdash; also in Kykar</span></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;1&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Sol Ring</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">&times;4 owned</div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;1&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Mind Stone</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">&times;2 owned<span style="color:#3A3229;">&middot;</span><span style="width:6px;height:6px;border:1.5px solid #A89B84;transform:rotate(45deg);display:block;"></span><span style="color:#C6B79A;">1 in a brew</span></div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;2&#125;</div>
+            </div>
+            <div style="padding:11px 16px;border-bottom:1px solid #221D16;display:flex;align-items:center;gap:10px;min-height:56px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:16px;flex:none;">1</div>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:#EDE6D8;">Cyclonic Rift</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:3px;">&times;1 owned</div></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">&#123;6&#125;&#123;U&#125;</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:8px;line-height:1.6;">Four of six rows silent inside a <b style="color:#8E8269;">Complete</b> deck. Without the rule, every one of these would read <span style="color:#8E8269;">0 free &mdash; in Atraxa</span>.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#1A160F;border:1px solid #C9A24B;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">The ruling: <span style="color:#C9A24B;">the current deck is excluded, both severities</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">On a deck&rsquo;s own list, the marker scores against every deck except this one.</b> One rule, no special case for hard or soft &mdash; which is why the soft case already read correctly in the drawing you spotted: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 in a brew</span> inside Kykar was always <i>another</i> brew. R3 states it rather than implying it.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">Because a deck holding a card is not competition for itself.</b> The marker answers &ldquo;can I still build with this?&rdquo; &mdash; and inside a list, the card <i>is</i> built with. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 free &mdash; in Atraxa</span>, rendered inside Atraxa, is the app telling a player something they can see in the surrounding 98 rows. It would also invert &ldquo;silence is most of the app&rdquo; on the surface where a finished deck is the <i>success</i> state.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">No, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 free</span> does not earn its place as a cut warning.</b> A cut <i>releases</i> a card &mdash; it is the one action that makes a copy freer. Warning on it would be the only place in this system where the marker discourages a move, and locked rule 1 is that we never block; a marker that argues against an action is a soft block. If cut-time guidance is ever wanted, it belongs on the cut, not on all 99 rows in advance.</div>
+        <div style="height:1px;background:#2A241D;"></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">A consequence worth knowing: inside a finished deck, the hard state is unreachable.</b> If another finished list also claims your only copy, two hard claims on one card <i>is</i> over-commitment &mdash; so it presents as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">short 1</span>, never as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0 free</span>. A deck&rsquo;s own list therefore shows exactly three things: silence, a brew wanting a spare, or a genuine shortfall. <b style="color:#EDE6D8;font-weight:600;">The loud state survives self-exclusion</b> &mdash; which is the proof the rule drops noise and not signal.</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">One copy tweak.</b> On a deck&rsquo;s own list the over-committed clause names the other claimant &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">short 1 &mdash; also in Kykar</span> &mdash; because &ldquo;2 decks want it&rdquo; would count the deck you are standing in. Same key family, new variant <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">overAlsoIn</span>; the deck-index and collection forms are untouched.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;overflow:hidden;">
+        <div style="padding:13px 20px;background:#181410;border-bottom:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">Same card, three surfaces, one collection</div>
+        <div style="padding:8px 0;">
+          <div style="padding:12px 20px;border-bottom:1px solid #221D16;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Inside Atraxa &mdash; the holder</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">Smothering Tithe &middot; &times;1 owned</div>
+            <div style="font-size:12px;color:#A89B84;margin-top:5px;line-height:1.5;">Silent. Atraxa&rsquo;s own claim is excluded, nobody else claims it, so <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">free = 1</span>.</div>
+          </div>
+          <div style="padding:12px 20px;border-bottom:1px solid #221D16;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Inside Kykar &mdash; a different deck</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">Smothering Tithe &middot; &times;1 owned<span style="color:#3A3229;">&middot;</span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="color:#E8CE93;">0 free &mdash; in Atraxa</span></div>
+            <div style="font-size:12px;color:#A89B84;margin-top:5px;line-height:1.5;">Loud, and correctly so: Atraxa is somebody else from here.</div>
+          </div>
+          <div style="padding:12px 20px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">On /collection &mdash; no deck context</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">&times;1<span style="color:#3A3229;">&middot;</span>Smothering Tithe<span style="color:#3A3229;">&middot;</span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="color:#E8CE93;">0 free</span></div>
+            <div style="font-size:12px;color:#A89B84;margin-top:5px;line-height:1.5;">Count-only, and no exclusion applies &mdash; there is no current deck to exclude. The inventory view is the honest total.</div>
+          </div>
+        </div>
+        <div style="padding:14px 20px;background:#181410;border-top:1px solid #2A241D;font-size:12px;color:#8E8269;line-height:1.6;"><b style="color:#C6B79A;font-weight:600;">The marker is relative to where you stand</b>, and only on a decklist is there anywhere to stand. Collection and commander surfaces have no current deck, so they compute against everything &mdash; unchanged from #43.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CONTRACT ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Contract · <span style="color:#C9A24B;">what this addendum adds, and what it doesn&rsquo;t</span></div>
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:520px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin-bottom:12px;">Accessibility</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.7;">
+          <b style="color:#EDE6D8;font-weight:600;">Collection rows extend the shipped row label</b>, they don&rsquo;t replace it &mdash; the same rule as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">rowAria</span> in R2. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&ldquo;Smothering Tithe, Enchantment, 1 copy, Ravnica Remastered, rare, no free copies&rdquo;</span> &mdash; the clause lands last, and a free card produces today&rsquo;s string exactly.<br><br>
+          <b style="color:#EDE6D8;font-weight:600;">Count-only in the label too.</b> Collection never speaks the deck name, matching what it shows. Card detail speaks the full clause with the status pill.<br><br>
+          <b style="color:#EDE6D8;font-weight:600;">The filter is a group of checkboxes</b> in a labelled menu &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-labelledby</span> the <i>Availability</i> heading, each option carrying its count in its accessible name (&ldquo;In use, 61 cards&rdquo;). Chips are buttons: &ldquo;Remove filter: in use&rdquo;. Zero-count options are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-disabled</span>, not removed &mdash; a menu that changes length between players is worse than one with dim rows.<br><br>
+          <b style="color:#EDE6D8;font-weight:600;">The roll-up region is a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;section&gt;</span></b> labelled &ldquo;Card commitments&rdquo;, holding one or two static lines. Not a live region, not an alert &mdash; it is there on arrival, and nothing about it interrupts.<br><br>
+          <b style="color:#EDE6D8;font-weight:600;">Contrast</b> against <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface #1E1A15</span>, unchanged from R2: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#E8CE93</span> 11.8:1 &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#E9917A</span> 7.6:1 &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#C6B79A</span> 9.2:1 &middot; brass 7.5:1 &mdash; all AAA for normal text. Filter-menu rows are 40px; the 44px minimum applies to the trigger and the chips&rsquo; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10005;</span>, which are the phone targets.
+        </div>
+      </div>
+      <div style="width:520px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:22px 24px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin-bottom:12px;">Scope &amp; cost</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.7;">
+          <b style="color:#EDE6D8;font-weight:600;">No new tokens.</b> Every value is one of the four from #43 or an existing brand token. No new hues, no new dependency, no motion &mdash; the marker still never animates.<br><br>
+          <b style="color:#EDE6D8;font-weight:600;">No grid changes.</b> Both collection grids ship as-is: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">38px 40px 1fr auto</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">52px 54px 1fr 150px 92px 18px</span>. The marker borrows slack from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1fr</span>; nothing is added, widened or reordered.<br><br>
+          <b style="color:#EDE6D8;font-weight:600;">One new query param</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?avail=inuse,over</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span>, comma-separated like the existing multi-value filters. Distinct from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/commanders</span>&rsquo;s single-value <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?avail=free</span>; same name, because it is the same concept on both, and no page reads the other&rsquo;s.<br><br>
+          <b style="color:#EDE6D8;font-weight:600;">The collection query is the expensive part.</b> Availability for 1,418 unique cards is the same cross-deck aggregate as #43, joined once for the whole page rather than per row. If it fails, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/collection</span> <b style="color:#EDE6D8;font-weight:600;">fails quiet</b> &mdash; markers absent, and the <i>Availability</i> trigger disabled with the R2 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">segmentDisabledAria</span> reason. No banner: this surface has no ranking to mislead, so silence tells no lie here.<br><br>
+          <b style="color:#EDE6D8;font-weight:600;">Copy</b> is appended to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">availability.ts</span> as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">collection</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deckRollup</span> blocks &mdash; no key renamed, no string edited. <i>Free</i> and <i>in use</i> remain the two nouns.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

@@ -10,9 +10,10 @@
 
 **Sources:**
 - Spec: `docs/superpowers/specs/2026-08-08-card-availability-design.md`
-- Design handoff: `design/design_handoff_the99_availability/README.md` (R3) and `ADDENDUM-README.md` (R2 rulings)
-- Copy: `design/design_handoff_the99_availability/availability · copy strings.ts`
-- Verdict: 🟢 Green at R3, audited 2026-08-13
+- Design handoff: `design/design_handoff_the99_availability/README.md` (R3), `ADDENDUM-README.md` (R2 rulings) and `ADDENDUM-2-README.md` (R3 — `/collection` and the deck-detail roll-up)
+- Copy: `design/design_handoff_the99_availability/availability · copy strings.ts` — including the `collection` and `deckRollup` blocks added by Addendum 2
+- Verdicts: `READINESS.md` and `ADDENDUM-READINESS.md` (🟢 Green, audited 2026-08-13) · `ADDENDUM-2-READINESS.md` (🟢 Green, audited 2026-08-27)
+- **Addendum 2 is not optional scope.** It extends the marker to `/collection` (Tasks 9–10) and the deck-detail roll-up (Task 8), and its §6 self-exclusion rule changes the classifier that every earlier task depends on. Read it before Task 1.
 
 ## Global Constraints
 
@@ -26,7 +27,12 @@
 - **Brass is AAA for normal text** (~7.0:1 on `--surface`). `--avail-hard-fg` exists for a *size* reason — the 8.5px tile chip — not because brass fails. **The glyph itself stays `--brass`.**
 - **Zero net motion.** The marker never animates, not on appear, not on add.
 - **The marker is never a tap target.** A 6px glyph that responds to taps in a grid of 44px Add buttons is a mis-tap generator.
-- **The four states apply only when `owned > 0`.** A card you do not own is not "in use".
+- **The four states apply only when `owned > 0`.** A card you do not own is not "in use". This guard reads *true* owned, never a self-excluded figure.
+- **A deck never claims a card against itself** (Addendum 2 §6). On a deck's own decklist the marker excludes that deck from **supply as well as claims**, so `free === 0` there means "exactly enough for everyone, including this deck" — silence. Off-decklist there is no exclusion: *"the marker is relative to where you stand, and only a decklist is somewhere to stand."*
+- **`/collection` is count-only** (Addendum 2 §3), in the accessible name as well as the label. It renders `marker.hard` (`0 free`) and **never** `hardIn` or `hardMulti`.
+- **No roll-up and no badge on the deck index** (locked decision 2). The deck index status pill keeps meaning card count and nothing else.
+- **No grid changes on either collection view.** The row marker lives inside the existing `1fr` name cell; the tile chip goes **top-left** because top-right is the brass quantity badge.
+- **The deck-name half is the only part allowed to truncate.** The marker renders as a `flex-none` prefix plus a `truncate min-w-0` name, full name in `title` and always in the accessible name. No character budget, no breakpoint hook.
 - **Mature deck threshold is 99 cards.** Constant, one definition, `MATURE_DECK_SIZE`.
 - **Design-doc precedence:** where the canvas `The 99 - Card Availability.dc.html` and `README.md` disagree, **`README.md` wins**. The canvas's implementation-notes panel still says "get a light-theme pair there" and "brass is not AA as small text"; both are corrected in the README and **must not be implemented**.
 - **Contrast figures in R3 drift ~5% high.** Verified values on `--surface #1E1A15`: `#E8CE93` 11.1:1 · `#E9917A` 7.1:1 · `--fg-body` 8.5:1 · `--brass` 7.0:1. All AAA; brass has less headroom than the document claims.
@@ -46,6 +52,8 @@
 - `src/lib/recs/free-ranking.test.ts`
 - `src/lib/commanders/rank-maps.ts` — the two global rank maps.
 - `src/lib/commanders/rank-maps.test.ts`
+- `src/lib/collection/availability-filter.ts` — the pure half of the `Availability ▾` panel: option building with counts, `parseAvailParam`, `serializeAvail`, and the predicate `filterCards` calls. Deliberately mirrors `type-filter.ts` / `set-filter.ts` so the four panels never disagree about what a count means.
+- `src/lib/collection/availability-filter.test.ts`
 - `drizzle/` — one generated migration dropping `decks.status`.
 
 **Modified:**
@@ -60,6 +68,14 @@
 - `src/components/commanders/degraded-banner.tsx` — generalise from synergy-only to a variant prop.
 - `src/components/decks/builder-spine.tsx` — the over-committed summary on the deck header.
 - `src/components/commanders/detail.tsx` — the in-use disclosure.
+- `src/lib/collection/browse.ts` — `BrowseCard` gains `availability`; `BrowseFilters` gains `avail`; `filterCards` gains the availability clause. The availability map is joined **once for the page** in `loadBrowseCards`, not per row.
+- `src/app/collection/page.tsx` — pass the availability map through, and read `?avail=`.
+- `src/components/collection/browser.tsx` — the fourth filter's state, options, announcement and `serializeParams` round-trip. `/collection` **fails quiet** if the join errors: the panel renders disabled with `degraded.collectionFilterDisabledAria` and there is **no banner**.
+- `src/components/collection/filter-bar.tsx` — mount `Availability ▾` (fourth on desktop, fifth on phone) via the shared `FilterPanel`.
+- `src/components/collection/rows-view.tsx` — the count-only marker inside the existing `1fr` name cell.
+- `src/components/collection/grid-view.tsx` — the count-only chip, **top-left**.
+- `src/components/collection/card-modal.tsx` — the full clause with the deck name, plus `detailHeading` and the state note.
+- `src/components/collection/chip-row.tsx` — availability chips reuse the shipped row; no new chip component.
 
 ---
 
@@ -78,9 +94,13 @@
   - `MATURE_DECK_SIZE = 99`
   - `type Availability = { owned: number; hard: number; soft: number; free: number; hardDeckNames: string[] }`
   - `type AvailabilityState = "free" | "soft" | "hard" | "over"`
-  - `availabilityState(a: Pick<Availability, "owned" | "free" | "soft">): AvailabilityState`
+  - `availabilityState(a, opts?: { selfExcluded?: boolean }): AvailabilityState`
 - Produces, from `availability-query.ts` (server only):
-  - `loadAvailability(userId: string): Promise<Map<string, Availability>>`
+  - `loadAvailability(userId: string, opts?: { oracleIds?: string[]; excludeDeckId?: string }): Promise<Map<string, Availability>>`
+
+**The options object replaces the bare `oracleIds?` positional** that an earlier revision of
+this plan specified. Nothing has been implemented yet, so there is no call site to migrate;
+two independent optional narrowings do not belong in positional slots.
 
 **The split is not tidiness — it is a hydration crash.** See `src/lib/decks/status.ts:1-5`, which is split from `read.ts` for exactly this reason: the Drizzle client throws at module init without `DATABASE_URL`, so a `"use client"` component that value-imports from a db-touching module takes the whole page down. The marker in Task 3 value-imports `availabilityState`, and all three of its host components are client components.
 
@@ -158,17 +178,48 @@ export type AvailabilityState = "free" | "soft" | "hard" | "over";
 /**
  * Total order, most severe first — the four states are a partition, so the
  * first match wins and every card lands in exactly one.
+ *
+ * `selfExcluded` is the deck's-own-decklist vantage (Addendum 2 §6). There,
+ * `free` is computed against a supply that already has the current deck's
+ * copies removed, so `free === 0` means "exactly enough for everyone,
+ * including this deck" — which is silence, not a claim. Addendum 2 states the
+ * consequence directly: **inside a finished deck the hard state is
+ * unreachable**; a genuine conflict has `free < 0` and presents as `over`.
+ *
+ * The `owned <= 0` guard is tested against TRUE owned, never the excluded
+ * supply, and it stays first. It exists to keep the marker off cards the
+ * player does not own — reachable on the Add panel, where a finished deck can
+ * list a card that is in nobody's collection. Reordering it under `over` would
+ * put "short 2" on a card the player simply never bought.
  */
 export function availabilityState(
   a: Pick<Availability, "owned" | "free" | "soft">,
+  opts?: { selfExcluded?: boolean },
 ): AvailabilityState {
   if (a.owned <= 0) return "free";
   if (a.free < 0) return "over";
-  if (a.free === 0) return "hard";
+  if (a.free === 0) return opts?.selfExcluded ? "free" : "hard";
   if (a.soft > 0) return "soft";
   return "free";
 }
 ```
+
+**Worked against drawn state 9** (Addendum 2, Atraxa 99/99 `Complete`, viewing its own
+list). `ownClaim` is the current deck's own quantity; `owned` stays true owned;
+`free = (owned − ownClaim) − (hard − ownHardClaim)`.
+
+| Card | owned | ownClaim | hard | free | State | Renders |
+|---|---|---|---|---|---|---|
+| Smothering Tithe | 1 | 1 | 1 | 0 | free | *silent* |
+| Rhystic Study | 1 | 1 | 1 | 0 | free | *silent* |
+| Arcane Signet | 1 | 1 | 2 | −1 | over | `short 1 — also in Kykar` |
+| Sol Ring | 4 | 1 | 1 | 3 | free | *silent* |
+| Mind Stone | 2 | 1 | 1 | 1 (soft 1) | soft | `1 in a brew` |
+| Cyclonic Rift | 1 | 1 | 1 | 0 | free | *silent* |
+
+Six of six match the canvas. **Do not implement claims-exclusion alone** — excluding the
+deck's claims while leaving its copies in the supply gives Arcane Signet `free === 0` and
+renders `0 free — in Kykar`, which contradicts the drawing.
 
 - [ ] **Step 3b: Write the query module**
 
@@ -184,6 +235,7 @@ type Row = {
   owned: number;
   hard: number;
   soft: number;
+  free: number;
   hard_deck_names: string[] | null;
 };
 
@@ -217,7 +269,14 @@ type Row = {
  * thresholds on, so 99 here means the same 99 the player sees on the pill.
  * Basics DO count toward that size; they are only excluded as claim subjects.
  */
-export async function loadAvailability(userId: string): Promise<Map<string, Availability>> {
+export async function loadAvailability(
+  userId: string,
+  opts?: { oracleIds?: string[]; excludeDeckId?: string },
+): Promise<Map<string, Availability>> {
+  // Both narrowings are null-guarded in SQL rather than by string-building the
+  // query, so there is one query plan and one place to read.
+  const only = opts?.oracleIds ?? null;
+  const skip = opts?.excludeDeckId ?? null;
   const rows = await db.execute<Row>(sql`
     with deck_totals as (
       select dc.deck_id, sum(dc.quantity)::int as cards
@@ -239,19 +298,47 @@ export async function loadAvailability(userId: string): Promise<Map<string, Avai
       from decks d
       where d.user_id = ${userId}
     ),
+    -- The CURRENT deck's own claim, and only it. Null excludeDeckId makes this
+    -- empty, so every figure below collapses to the un-excluded model.
+    own_claims as (
+      select ac.oracle_id, sum(ac.quantity)::int as own_claim
+      from all_claims ac
+      where ${skip}::uuid is not null and ac.deck_id = ${skip}::uuid
+      group by ac.oracle_id
+    ),
+    -- One row per (oracle, claiming deck). `select distinct` is what makes the
+    -- name list right: a deck whose commander is also on its own list appears
+    -- twice in all_claims, and two decks that share a name are still two rows
+    -- because deck_id is in the key. Quantities are NOT summed here.
+    claim_decks as (
+      select distinct ac.oracle_id, ac.deck_id, d.name, coalesce(dt.cards, 0) as cards
+      from all_claims ac
+      -- LEFT: a deck whose only card is its commander has no deck_cards rows
+      -- and therefore no deck_totals row. An inner join would drop that claim
+      -- entirely. No rows means no cards means brewing, hence coalesce to 0.
+      left join deck_totals dt on dt.deck_id = ac.deck_id
+      join decks d on d.id = ac.deck_id
+    ),
     claims as (
       select
         ac.oracle_id,
-        sum(case when dt.cards >= ${MATURE_DECK_SIZE} then ac.quantity else 0 end)::int as hard,
-        sum(case when dt.cards <  ${MATURE_DECK_SIZE} then ac.quantity else 0 end)::int as soft,
-        array_remove(
-          array_agg(distinct case when dt.cards >= ${MATURE_DECK_SIZE} then d.name end),
-          null
-        ) as hard_deck_names
+        sum(case when coalesce(dt.cards, 0) >= ${MATURE_DECK_SIZE} then ac.quantity else 0 end)::int as hard,
+        sum(case when coalesce(dt.cards, 0) <  ${MATURE_DECK_SIZE} then ac.quantity else 0 end)::int as soft
       from all_claims ac
-      join deck_totals dt on dt.deck_id = ac.deck_id
-      join decks d on d.id = ac.deck_id
+      left join deck_totals dt on dt.deck_id = ac.deck_id
+      -- Self-exclusion (Addendum 2 §6): the current deck never claims against
+      -- itself, so hard/soft come back already net of its own claim.
+      where ${skip}::uuid is null or ac.deck_id <> ${skip}::uuid
       group by ac.oracle_id
+    ),
+    claim_names as (
+      select
+        cd.oracle_id,
+        array_agg(cd.name order by cd.name) as hard_deck_names
+      from claim_decks cd
+      where cd.cards >= ${MATURE_DECK_SIZE}
+        and (${skip}::uuid is null or cd.deck_id <> ${skip}::uuid)
+      group by cd.oracle_id
     ),
     owned as (
       select ci.oracle_id, sum(ci.quantity)::int as owned
@@ -264,12 +351,19 @@ export async function loadAvailability(userId: string): Promise<Map<string, Avai
     )
     select
       o.oracle_id,
+      -- TRUE owned, never reduced: this is the `owned <= 0` guard's input.
       o.owned,
       coalesce(c.hard, 0) as hard,
       coalesce(c.soft, 0) as soft,
-      c.hard_deck_names
+      -- (owned − ownClaim) − (hard − ownHardClaim). The right-hand subtraction
+      -- already happened in `claims`; this applies the supply half.
+      (o.owned - coalesce(oc.own_claim, 0) - coalesce(c.hard, 0))::int as free,
+      n.hard_deck_names
     from owned o
     left join claims c on c.oracle_id = o.oracle_id
+    left join claim_names n on n.oracle_id = o.oracle_id
+    left join own_claims oc on oc.oracle_id = o.oracle_id
+    where ${only}::text[] is null or o.oracle_id = any(${only}::text[])
   `);
 
   const out = new Map<string, Availability>();
@@ -278,7 +372,10 @@ export async function loadAvailability(userId: string): Promise<Map<string, Avai
       owned: r.owned,
       hard: r.hard,
       soft: r.soft,
-      free: r.owned - r.hard,
+      // Straight from the query. Do NOT recompute as `r.owned - r.hard` here:
+      // that is right only when excludeDeckId is unset, and silently wrong on
+      // a deck's own decklist, where supply is self-excluded too.
+      free: r.free,
       hardDeckNames: r.hard_deck_names ?? [],
     });
   }
@@ -349,6 +446,10 @@ In `src/app/globals.css`, in the `/* Feedback */` group beside `--danger`:
   /* The shipped danger red lifted for text. --danger itself is glyph-and-border
      only and must never be used as text. */
   --avail-over-fg: #E9917A;
+  /* The over-committed row/tile border tint. Both canvases already draw this
+     exact value; it gets a name here so Task 9 does not paste a hex literal
+     into two components. Border only — never text, never a background. */
+  --avail-over-border: #6B3226;
 ```
 
 - [ ] **Step 2: Port the copy block**
@@ -470,7 +571,7 @@ git commit -m "feat(availability): tokens, copy block, and an extended rowAria (
 
 **Interfaces:**
 - Consumes: `Availability`, `availabilityState` (Task 1); `availabilityCopy` (Task 2).
-- Produces: `<AvailabilityMarker availability={a} density="row" | "chip" />`, and `markerAria(a): string | null`.
+- Produces: `<AvailabilityMarker availability={a} density="row" | "chip" {...MarkerOpts} />`, the `MarkerOpts` type (`{ selfExcluded?: boolean; nameless?: boolean }`, both added by Addendum 2), and `markerAria(a, opts?: MarkerOpts): string | null`.
 
 The marker is **a diamond, a count, and a word**. Hollow diamond when an unfinished brew wants the card, solid brass when nothing is free. The glyph is two rotated `<span>`s — no new dependency, no SVG. It is `aria-hidden`; the text beside it carries the meaning, which is also why the greyscale test passes.
 
@@ -499,9 +600,23 @@ describe("AvailabilityMarker", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  // The prefix and the deck name are two sibling spans, so that the name can
+  // truncate on its own. getByText's default matcher only ever sees one text
+  // node, so it can never match the composed string — read the container.
+  const composed = (c: HTMLElement) => c.textContent?.replace(/\s+/g, " ").trim();
+
   it("names the claiming deck when there is exactly one", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />,
+    );
+    expect(composed(container)).toBe("0 free — in Atraxa");
+  });
+
+  it("puts the deck name in its own truncating span, with a title", () => {
     render(<AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />);
-    expect(screen.getByText("0 free — in Atraxa")).toBeInTheDocument();
+    const name = screen.getByTitle("Atraxa");
+    expect(name).toHaveTextContent("Atraxa");
+    expect(name).toHaveClass("truncate");
   });
 
   it("counts the decks instead of naming them when there are several", () => {
@@ -563,35 +678,84 @@ import {
 } from "../../lib/decks/availability";
 
 /** Prose for the accessible name, or null when the card is free. */
-export function markerAria(a: Availability): string | null {
-  switch (availabilityState(a)) {
+export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
+  const c = availabilityCopy.marker;
+
+  // Addendum 2 Accessibility: "Count-only in the label too — collection never
+  // speaks the deck name." The copy file has no nameless hard-aria key, so take
+  // the clause before the semicolon of the one that exists; `hardAria` is
+  // written as "no free copies; this one is on your X list", and the first
+  // clause is exactly the phrase the addendum's own rowAria example uses. Slice
+  // rather than re-type, so the copy file stays authoritative.
+  const namelessHardAria = () => c.hardAria("x").split(";")[0];
+
+  switch (availabilityState(a, { selfExcluded: opts?.selfExcluded })) {
     case "free":
       return null;
     case "soft":
-      return availabilityCopy.marker.softAria(a.soft);
+      return c.softAria(a.soft);
     case "hard":
+      if (opts?.nameless) return namelessHardAria();
       return a.hardDeckNames.length === 1
-        ? availabilityCopy.marker.hardAria(a.hardDeckNames[0])
-        : availabilityCopy.marker.hardMultiAria(a.hardDeckNames.length);
+        ? c.hardAria(a.hardDeckNames[0])
+        : c.hardMultiAria(a.hardDeckNames.length);
     case "over":
-      return availabilityCopy.marker.overAria(-a.free, a.hardDeckNames.length);
+      // Self-excluded and exactly one other claimant: name it, don't count it.
+      if (!opts?.nameless && opts?.selfExcluded && a.hardDeckNames.length === 1) {
+        return c.overAlsoInAria(a.hardDeckNames[0]);
+      }
+      return c.overAria(-a.free, a.hardDeckNames.length);
   }
 }
 
-function label(a: Availability): string | null {
-  switch (availabilityState(a)) {
+export type MarkerOpts = {
+  /** Deck's-own-decklist vantage. Addendum 2 §6. */
+  selfExcluded?: boolean;
+  /** `/collection` — count-only, no deck name ever. Addendum 2 §3. */
+  nameless?: boolean;
+};
+
+/**
+ * The label splits into a fixed prefix and an optional deck name, because the
+ * name is the only part allowed to truncate (decision B, 2026-08-27). A single
+ * string with one `truncate` clips `0 free — in Kyk…` down to `0 free — i…` at
+ * narrow widths, eating the clause that carries the meaning.
+ *
+ * The prefix is derived by slicing the name off the copy function's own output
+ * rather than re-typing it here, so the copy file stays the single source of
+ * the wording. Every name-bearing form in the copy file ends with the name,
+ * which is what makes the slice exact.
+ */
+function label(a: Availability, opts?: MarkerOpts): { prefix: string; name?: string } | null {
+  const c = availabilityCopy.marker;
+  const withName = (full: string, name: string) => ({
+    prefix: full.slice(0, full.length - name.length),
+    name,
+  });
+
+  switch (availabilityState(a, { selfExcluded: opts?.selfExcluded })) {
     case "free":
       return null;
     case "soft":
-      return availabilityCopy.marker.soft(a.soft);
+      return { prefix: c.soft(a.soft) };
     case "hard":
+      // Addendum 2 §3: collection never renders hardIn or hardMulti.
+      if (opts?.nameless) return { prefix: c.hard };
       return a.hardDeckNames.length === 1
-        ? availabilityCopy.marker.hardIn(a.hardDeckNames[0])
-        : availabilityCopy.marker.hardMulti(a.hardDeckNames.length);
+        ? withName(c.hardIn(a.hardDeckNames[0]), a.hardDeckNames[0])
+        : { prefix: c.hardMulti(a.hardDeckNames.length) };
     case "over":
+      // Collection is count-only here too — the canvas draws a bare `short 1`.
+      if (opts?.nameless) return { prefix: c.over(-a.free) };
+      // Self-excluded: hardDeckNames already omits the current deck, so a lone
+      // remaining entry is the OTHER claimant. "2 decks want it" would count
+      // the deck the player is standing in.
+      if (opts?.selfExcluded && a.hardDeckNames.length === 1) {
+        return withName(c.overAlsoIn(-a.free, a.hardDeckNames[0]), a.hardDeckNames[0]);
+      }
       return a.hardDeckNames.length > 1
-        ? availabilityCopy.marker.overWithDemand(-a.free, a.hardDeckNames.length)
-        : availabilityCopy.marker.over(-a.free);
+        ? { prefix: c.overWithDemand(-a.free, a.hardDeckNames.length) }
+        : { prefix: c.over(-a.free) };
   }
 }
 
@@ -619,14 +783,15 @@ function Diamond({ filled, color }: { filled: boolean; color: string }) {
 export function AvailabilityMarker({
   availability,
   density = "row",
+  ...opts
 }: {
   availability: Availability;
   density?: "row" | "chip";
-}) {
-  const state = availabilityState(availability);
+} & MarkerOpts) {
+  const state = availabilityState(availability, { selfExcluded: opts.selfExcluded });
   if (state === "free") return null;
 
-  const text = label(availability)!;
+  const text = label(availability, opts)!;
   const filled = state !== "soft";
   const glyphColor = state === "over" ? "var(--danger)" : "var(--avail-hard)";
   const textColor =
@@ -654,13 +819,33 @@ export function AvailabilityMarker({
       }
     >
       <Diamond filled={filled} color={glyphColor} />
-      <span className="truncate" style={{ color: textColor }}>
-        {text}
+      {/*
+        The prefix never truncates; the deck name is the flexible half. This is
+        the same split Addendum 2 §1 specifies for the collection name cell —
+        "the chip is flex: none; the name is the flexible half" — applied to the
+        marker's own two parts. `title` carries the untruncated name so a
+        clipped `Kykar Spellsl…` is still recoverable on hover.
+      */}
+      <span className="flex-none whitespace-nowrap" style={{ color: textColor }}>
+        {text.prefix}
       </span>
+      {text.name && (
+        <span
+          className="truncate min-w-0"
+          title={text.name}
+          style={{ color: textColor, marginLeft: -5 }}
+        >
+          {text.name}
+        </span>
+      )}
     </span>
   );
 }
 ```
+
+The `marginLeft: -5` cancels the container's `gap-[5px]` between the two halves of what is
+one sentence — the gap is there to separate the glyph from the text, not to split
+`0 free — in` from `Atraxa`.
 
 - [ ] **Step 4: Run the tests and watch them pass**
 
@@ -679,7 +864,8 @@ git commit -m "feat(availability): the marker — a diamond, a count, and a word
 ## Task 4: The builder surfaces — decklist row, search row, Consider tile
 
 **Files:**
-- Modify: `src/app/decks/[id]/search-action.ts:52-75`
+- Modify: `src/app/decks/[id]/search-action.ts:38-75` (signature gains `deckId`)
+- Modify: `src/components/decks/use-card-search.ts` (thread `deckId` through)
 - Modify: `src/lib/decks/grouping.ts:10-18` (`DeckDetailCard`)
 - Modify: `src/lib/decks/read.ts:131-140` (`getDeckDetail`)
 - Modify: `src/components/decks/card-search-row.tsx`
@@ -713,21 +899,42 @@ In `src/lib/decks/grouping.ts`, add to `DeckDetailCard`:
 
 In `src/app/decks/[id]/search-action.ts`, add the same optional field to `SearchResult`.
 
-**Do not add `loadAvailability` to `searchCards` naively.** That action runs on every keystroke (`use-card-search.ts`) to annotate at most ~20 rows, and `loadAvailability` aggregates the player's whole collection. Restrict the query to the oracle_ids actually being returned — add an optional `oracleIds?: string[]` parameter to `loadAvailability` that appends `and o.oracle_id = any(${oracleIds})` to the outer select. The decklist and commanders paths call it without the argument, as before.
+**Do not add `loadAvailability` to `searchCards` naively.** That action runs on every keystroke (`use-card-search.ts`) to annotate at most ~20 rows, and `loadAvailability` aggregates the player's whole collection. Restrict the query to the oracle_ids actually being returned — pass `{ oracleIds }` to `loadAvailability`, which appends `and o.oracle_id = any(${oracleIds})` to the outer select. The commanders path calls it with no options, as before.
+
+**The decklist path passes `{ excludeDeckId: deck.id }`** — Addendum 2 §6, self-exclusion. In
+`getDeckDetail` this is the deck being rendered. Three things change inside the query when it
+is set, and all three are required together:
+
+1. `owned` stays TRUE owned — it is the `owned <= 0` guard's input and must not shrink.
+2. `free` becomes `(owned − ownClaim) − (hard − ownHardClaim)`, where `ownClaim` is the
+   current deck's `quantity` for that oracle (its commander column included) and
+   `ownHardClaim` is that same figure when the current deck is mature, else 0. `soft`
+   likewise drops the current deck's own soft claim.
+3. `hardDeckNames` **excludes the current deck's name**, so a single remaining entry is the
+   *other* claimant and drives `marker.overAlsoIn` rather than `marker.overWithDemand`.
+
+Callers on `/collection` and the commander surfaces pass no `excludeDeckId`. Addendum 2:
+*"the marker is relative to where you stand, and only a decklist is somewhere to stand."*
 
 - [ ] **Step 2: Populate them**
 
-In both `getDeckDetail` (`read.ts`) and `searchCards` (`search-action.ts`), call `loadAvailability(userId)` alongside the existing query and attach per-oracle. Wrap it so a failure is quiet:
+In both `getDeckDetail` (`read.ts`) and `searchCards` (`search-action.ts`), call `loadAvailability` alongside the existing query and attach per-oracle. **Both pass `excludeDeckId`** — see the ruling below. Wrap it so a failure is quiet:
 
 ```ts
 // Pure annotation on this surface: a failed read must be indistinguishable
 // from a player with no commitments, never a banner over a working list.
-const availability = await loadAvailability(userId).catch(() => null);
+const availability = await loadAvailability(userId, {
+  excludeDeckId: deckId,
+}).catch(() => null);
 // …then, per row:
 availability: availability?.get(row.oracleId) ?? null,
 ```
 
-**Subtlety worth stating:** on the decklist, the row's *own* deck is one of the claimants. A card in a finished deck will read `0 free — in <this deck>`, which is correct and intended — the player is looking at where the card went.
+Every marker rendered by this task therefore also passes `selfExcluded: true`, which is what routes the single-other-claimant `over` case to `marker.overAlsoIn` (`short 1 — also in Kykar`) instead of counting the deck the player is standing in.
+
+**`searchCards` has no `deckId` today** (`search-action.ts:38-40` takes `query, colorIdentity, ownedOnly`), so add it as a fourth parameter and thread it from `use-card-search.ts`. The route already scopes the action — the file lives under `src/app/decks/[id]/` — so this makes an existing fact explicit rather than introducing a new coupling.
+
+**Why search self-excludes too, and this is a ruling rather than an inheritance.** Addendum 2 §6 is written about "a deck's own decklist", and most search results are cards the deck has no claim on, where exclusion is a no-op. But a card already on the list *does* come back from search, one panel away from its own row. Without exclusion it reads `0 free — in <this deck>` in the add panel and renders silent in the decklist behind it — the same card, the same deck, two answers. §6's stated reason is that inside a list the card *is* built with, and that is no less true in the panel you are adding from. **Flagged to Design for ratification, not redrawn.**
 
 - [ ] **Step 3: Write the failing decklist-row test**
 
@@ -747,7 +954,10 @@ it("carries the marker when nothing is free", () => {
   renderRow(
     <DecklistRow card={{ ...card, availability: avail(1, 1, ["Atraxa"]) }} {...rowProps} />,
   );
-  expect(screen.getByText("0 free — in Atraxa")).toBeInTheDocument();
+  // Two spans, so match the prefix by regex and the name by its title —
+  // getByText cannot see the composed string. See Task 3, Step 4.
+  expect(screen.getByText(/0 free — in/)).toBeInTheDocument();
+  expect(screen.getByTitle("Atraxa")).toBeInTheDocument();
 });
 
 // The quiet-failure half of the degraded ruling.
@@ -768,9 +978,11 @@ Expected: FAIL — the marker text is not found.
 
 The marker **rides the existing quantity string** rather than claiming a column — it joins `×${qty} owned` with `' · '`. It is never a tap target and never sits inside the row's button.
 
-- `decklist-row.tsx`: after `OwnershipDot`/name, render `{card.availability && <AvailabilityMarker availability={card.availability} density="row" />}`.
-- `card-search-row.tsx`: same, in `CardSearchRowBody` beside the `{ownership}` figure, joined with `' · '`. Pass `markerAria(availability)` as the 4th argument to `addPanelCopy.quickAdd.rowAria`.
-- `suggestion-tile.tsx`: `density="chip"` on the art scrim, plus the caption line under the type line via `availabilityCopy.marker.tileInUse(deckName)` / `tileOver(deckCount)`.
+All three pass `selfExcluded` — every payload on this task's surfaces was loaded with `excludeDeckId` set (Step 2), and the flag is what tells `markerAria` to reach for `overAlsoIn`.
+
+- `decklist-row.tsx`: after `OwnershipDot`/name, render `{card.availability && <AvailabilityMarker availability={card.availability} density="row" selfExcluded />}`.
+- `card-search-row.tsx`: same, in `CardSearchRowBody` beside the `{ownership}` figure, joined with `' · '`. Pass `markerAria(availability, { selfExcluded: true })` as the 4th argument to `addPanelCopy.quickAdd.rowAria`.
+- `suggestion-tile.tsx`: `density="chip" selfExcluded` on the art scrim, plus the caption line under the type line via `availabilityCopy.marker.tileInUse(deckName)` / `tileOver(deckCount)`.
 
 - [ ] **Step 6: Run tests and gate**
 
@@ -1206,12 +1418,32 @@ const allByOracleId = useMemo(
 );
 ```
 
-- **`inUse`** is `allItem.colorPoolSize - freeItem.colorPoolSize`. `colorPoolSize` is the count of the player's cards that fit the commander's identity, and the only difference between the two runs is which cards were in the pool — so the difference *is* the number of fitting cards that are spoken for. This is exactly the receipt's *"34 of your cards fit · 12 already in use"*.
-- **`was`** is `allItem.score`; **`drop`** is `allItem.score - freeItem.score`.
+- **`inUse` is computed directly from the availability map, NOT from the two-run difference.**
+  An earlier revision of this plan derived it as `allItem.colorPoolSize - freeItem.colorPoolSize`,
+  which is arithmetically correct but forces the whole free ranking to exist before the clause
+  can render — and that is what made the clause look like it had to be `What's free`-only.
+  It does not. Count the commander's fitting owned cards whose availability is `hard` or `over`:
 
-**A consequence to be aware of, and it is a real constraint rather than an oversight:** both numbers require the free ranking to have been computed, and Task 5 computes it *only* when `?avail=free`. So the receipt's second clause and the delta render **in `What's free` mode only**. In `Everything I own` the line shows just `receipt.fit`. The alternative — always computing both rankings — would make every visit to `/commanders` pay for a feature most players never open, contradicting Task 5's whole premise.
+  ```ts
+  const inUse = pool.filter((c) => {
+    const a = availability.get(c.oracleId);
+    if (!a) return false;
+    const s = availabilityState(a);
+    return s === "hard" || s === "over";
+  }).length;
+  ```
 
-**Flag this one to Design rather than assuming it.** The brief's surface list describes the receipt as *"a per-commander receipt line along the lines of 34 of your cards fit · 12 already in use"* on the commanders list, which could be read as applying in the default mode. Implement mode-scoped as above, and raise it for ratification; do not silently switch to always-computing-both.
+  One `loadAvailability(userId)` call for the page, shared across all 24 commanders, no
+  second scoring pass and no EDHREC fanout. `rankFree` is not on this path.
+- **`was`** is `allItem.score`; **`drop`** is `allItem.score - freeItem.score`. These two *do*
+  require the free ranking, so **the delta stays `What's free`-only** — it is a statement about
+  a re-rank and has nothing to say before one has happened.
+
+**The receipt's second clause renders in both modes, and Design drew it that way.** Canvas
+state A of `The 99 - Card Availability.dc.html` is labelled *"Everything I own (default)"* and
+its rows read `34 of your cards fit · 12 already in use`. There is no open question here; the
+earlier "flag this to Design" note in this plan was answering a cost objection that the
+derivation above removes.
 
 The receipt line **always renders**; only the second clause is conditional, so row height never changes between players. Use `receipt.fit` / `receipt.fitFree` for the first clause and append `receipt.inUse` with `' · '` when `inUse > 0`.
 
@@ -1307,7 +1539,7 @@ git commit -m "feat(availability): a failed deck read disables What's free, quie
 
 ---
 
-## Task 8: Commander detail disclosure and the deck over-committed summary
+## Task 8: Commander detail disclosure and the deck-detail roll-up
 
 **Files:**
 - Modify: `src/components/commanders/detail.tsx` (rendered by `src/app/commanders/[slug]/page.tsx:46`, which gets its data from `scoreOneCommander`)
@@ -1316,8 +1548,8 @@ git commit -m "feat(availability): a failed deck read disables What's free, quie
 - Test: `src/components/commanders/detail.test.tsx`, `src/components/decks/builder-spine.test.tsx`
 
 **Interfaces:**
-- Consumes: `loadAvailability`, `availabilityState` (Task 1); `availabilityCopy.detail` and `.deckSummary` (Task 2).
-- Produces: no new exports.
+- Consumes: `loadAvailability`, `availabilityState` (Task 1); `availabilityCopy.detail`, `.deckSummary` and `.deckRollup` (Task 2).
+- Produces: no new exports. `BuilderSpine` gains two props: `overCommitted: number`, `softClaimed: number`.
 
 > **Read this before starting — Task 8 has an unresolved data dependency that the other seven do not.**
 >
@@ -1393,9 +1625,78 @@ On the commander detail page, the "cards you own that fit" list gains a count of
 
 The disclosure is the only interactive thing this pass adds: **44px tap target on phone.**
 
-- [ ] **Step 4: The deck over-committed summary**
+- [ ] **Step 4: The deck roll-up — one region, up to two lines, fixed severity order**
 
-Renders **only when count > 0**. It is not an error: no dismiss, no retry, no icon. Copy: `availabilityCopy.deckSummary`, which is straight-with-a-shrug — *"Nothing's broken here — it's a shopping decision."* A deck with no over-commitment has no summary line at all.
+Addendum 2 §5. This supersedes the single over-committed line an earlier revision of this plan
+specified; that line is now the first of two, and its copy is unchanged.
+
+The region is a `<section aria-label={availabilityCopy.deckRollup.regionAria}>` — "Card
+commitments". **Not a live region, not an alert**: it is present on arrival and nothing
+interrupts. A deck with neither count above zero renders **no region at all**, not an empty one.
+
+**Order is fixed, never sorted by count.** Over-committed always above soft, even at 1 over and
+40 soft. The severity ladder is the marker's own hollow → solid → doubled progression read
+vertically.
+
+```tsx
+// src/components/decks/builder-spine.tsx
+const rollup = availabilityCopy.deckRollup;
+
+{(overCommitted > 0 || softClaimed > 0) && (
+  <section aria-label={rollup.regionAria} className="flex flex-col gap-[8px]">
+    {overCommitted > 0 && (
+      <p style={{ background: "var(--surface-rail)", borderLeft: "2px solid #C6533F" }}>
+        {rollup.overHeading(overCommitted)}
+      </p>
+    )}
+    {softClaimed > 0 && (
+      <p style={{ color: "#C6B79A", borderLeft: "2px solid #4A4033" }}>
+        {/* "more" is load-bearing: the counts are disjoint, so it does the
+            arithmetic for the player instead of making them add 1 and 12. */}
+        {overCommitted > 0
+          ? rollup.softHeadingAfterOver(softClaimed)
+          : rollup.softHeading(softClaimed)}
+        {" "}
+        {overCommitted > 0 ? rollup.softBodyShort : rollup.softBody}
+      </p>
+    )}
+  </section>
+)}
+```
+
+**`softClaimed` is pre-99 only.** Compute it as the number of this deck's cards in the `soft`
+state *from this deck's own vantage* — so it consumes the same `loadAvailability(userId,
+{ excludeDeckId: deck.id })` map Task 4 already loads for the decklist rows, with no second
+query. Once the deck reaches 99 it turns `Playable`, its own claims go hard, and the soft count
+falls to zero on its own. **Do not add a size check** — the arithmetic already exits, and a
+manual `if (built < 99)` would be a second maturity threshold competing with `statusPill()`.
+
+Neither line is an error: no dismiss, no retry, no icon-in-a-circle. `availabilityCopy` is
+straight-with-a-shrug throughout — *"Nothing's broken here — it's a shopping decision."*
+
+Add to Step 1's `builder-spine.test.tsx`:
+
+```tsx
+it("renders no region at all for a deck with nothing contested", () => {
+  render(<BuilderSpine {...spineProps} overCommitted={0} softClaimed={0} />);
+  expect(screen.queryByRole("region", { name: /card commitments/i })).toBeNull();
+});
+
+it("leads with the red line even when the soft count is far larger", () => {
+  render(<BuilderSpine {...spineProps} overCommitted={1} softClaimed={40} />);
+  const region = screen.getByRole("region", { name: /card commitments/i });
+  const text = region.textContent ?? "";
+  expect(text.indexOf("spoken for twice")).toBeLessThan(text.indexOf("in other brews"));
+});
+
+// The disjointness proof: "more" only appears when there is something to be more than.
+it("says 'more' only when the over-committed line is also showing", () => {
+  const { rerender } = render(<BuilderSpine {...spineProps} overCommitted={1} softClaimed={12} />);
+  expect(screen.getByText(/12 more are in other brews too/)).toBeInTheDocument();
+  rerender(<BuilderSpine {...spineProps} overCommitted={0} softClaimed={12} />);
+  expect(screen.getByText(/12 cards here are in other brews too/)).toBeInTheDocument();
+});
+```
 
 - [ ] **Step 5: Verify at both widths**
 
@@ -1411,6 +1712,1171 @@ git commit -m "feat(availability): commander detail disclosure and the over-comm
 
 ---
 
+## Task 9: The marker on `/collection` — rows, tiles, card detail
+
+**Files:**
+- Modify: `src/lib/collection/browse.ts:20-58` (`BrowseCard`)
+- Modify: `src/app/collection/page.tsx:44-51`
+- Modify: `src/components/collection/rows-view.tsx:30-75`
+- Modify: `src/components/collection/grid-view.tsx:26-53`
+- Modify: `src/components/collection/card-modal.tsx:350-365`
+- Test: `src/components/collection/rows-view.test.tsx` (create)
+- Test: `src/components/collection/grid-view.test.tsx` (create)
+
+**Interfaces:**
+- Consumes: `Availability`, `availabilityState`, `MATURE_DECK_SIZE` (Task 1, `src/lib/decks/availability.ts`); `loadAvailability` (Task 1, `src/lib/decks/availability-query.ts`); `AvailabilityMarker`, `markerAria`, `MarkerOpts` (Task 3, `src/components/ui/availability-marker.tsx`); `availabilityCopy.collection.*` (Task 2, `src/lib/copy/availability.ts`).
+- Produces: `BrowseCard.availability?: Availability | null`, and the `AvailabilityDetail` block inside `card-modal.tsx`.
+
+Addendum 2 §1–§3. `/collection` is the **count-only** vantage: rows and tiles pass `nameless`, so a committed card reads `0 free` rather than `0 free — in Atraxa`. The deck name appears in exactly one place on this surface, the card-detail modal. Nothing here ever passes `selfExcluded` — Addendum 2 §6, *"the marker is relative to where you stand, and only a decklist is somewhere to stand"*, and `/collection` is not a decklist.
+
+The aggregate is **joined once for the page, not per row** (Addendum 2, Implementation notes). `loadAvailability` runs in the page's existing `Promise.all` and is attached to the cards before they cross into the client browser. A `Map` cannot cross the RSC boundary as a prop, so it is flattened onto each card server-side.
+
+Both grid templates ship **unchanged** — `[grid-template-columns:38px_40px_1fr_auto]` and `md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]`. The marker lives inside the existing `1fr` name cell, and the row height does not move: the marker is `flex: none` and the name is the half that gives way.
+
+- [ ] **Step 1: Widen `BrowseCard`**
+
+In `src/lib/collection/browse.ts`, add to the `BrowseCard` type, alongside `quantity`:
+
+```ts
+  /**
+   * Optional, not `| null` required — same call as DeckDetailCard in Task 4.
+   * `loadBrowseCards` does not set it (the aggregate is joined in the page, not
+   * in this query), and the browse fixtures across browse.test.ts, no-results
+   * and card-modal build BrowseCard literals that have no availability to give.
+   * "Absent" and "read failed" both correctly render nothing.
+   */
+  availability?: Availability | null;
+```
+
+and at the top of the file:
+
+```ts
+import type { Availability } from "../decks/availability";
+```
+
+`availability.ts` is the pure module and imports no db — safe for a file the client bundles.
+
+- [ ] **Step 2: Thread the aggregate through the page**
+
+In `src/app/collection/page.tsx`, extend the existing `Promise.all` and attach per oracle:
+
+```ts
+  const [stats, cards, lastUpdated, ownedSets, availability] = await Promise.all([
+    getCollectionStats(userId),
+    loadBrowseCards(userId),
+    getCollectionLastUpdated(userId),
+    // Set names + release dates for the Set ▾ panel (#86).
+    loadOwnedSetMeta(userId),
+    // One aggregate for the whole page — never per row (Addendum 2).
+    // Quiet failure: /collection shows no banner, the markers simply do not
+    // appear and the Availability ▾ trigger disables (Task 10).
+    loadAvailability(userId).catch(() => null),
+  ]);
+
+  // Flattened onto the cards here: a Map cannot cross the server/client
+  // boundary as a prop, and every consumer below wants one card's entry.
+  const cardsWithAvailability = cards.map((c) => ({
+    ...c,
+    availability: availability?.get(c.oracleId) ?? null,
+  }));
+```
+
+with the import:
+
+```ts
+import { loadAvailability } from "../../lib/decks/availability-query";
+```
+
+and pass it down, adding the degraded flag Task 10 consumes:
+
+```tsx
+      <CollectionBrowser
+        cards={cardsWithAvailability}
+        ownedSets={ownedSets}
+        availabilityOk={availability !== null}
+      />
+```
+
+Add `availabilityOk: boolean` to `CollectionBrowser`'s props in `src/components/collection/browser.tsx` and leave it unused this task — Task 10 wires it to the filter trigger.
+
+- [ ] **Step 3: Write the failing rows test**
+
+Create `src/components/collection/rows-view.test.tsx`:
+
+```tsx
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import type { Availability } from "../../lib/decks/availability";
+import type { BrowseCard } from "../../lib/collection/browse";
+import { RowsView } from "./rows-view";
+
+const card: BrowseCard = {
+  oracleId: "o1",
+  name: "Smothering Tithe",
+  typeLine: "Enchantment",
+  manaCost: "{3}{W}",
+  oracleText: "",
+  keywords: [],
+  rarity: "rare",
+  colorIdentity: ["W"],
+  imageUri: null,
+  quantity: 1,
+  printings: [],
+  setCodes: ["RVR"],
+  primarySetCode: "RVR",
+  preferredPrinting: null,
+};
+
+const avail = (
+  owned: number,
+  hard: number,
+  soft = 0,
+  hardDeckNames: string[] = [],
+): Availability => ({ owned, hard, soft, free: owned - hard, hardDeckNames });
+
+function renderRows(c: BrowseCard) {
+  return render(
+    <RowsView cards={[c]} totalCards={1} onShowMore={() => {}} onOpen={() => {}} />,
+  );
+}
+
+describe("RowsView availability marker", () => {
+  // The single most important assertion in the feature: three of five rows in
+  // any real collection are free, and a free row must be untouched.
+  it("renders nothing at all for a free card", () => {
+    renderRows({ ...card, quantity: 2, availability: avail(2, 0) });
+    expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
+  });
+
+  it("renders nothing when the availability read failed", () => {
+    renderRows({ ...card, quantity: 2, availability: null });
+    expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
+  });
+
+  it("is count-only — the deck name never reaches a collection row", () => {
+    renderRows({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
+    expect(screen.getByText("0 free")).toBeInTheDocument();
+    expect(screen.queryByText(/Atraxa/)).toBeNull();
+  });
+
+  it("gives a free row exactly today's accessible name, with no clause", () => {
+    renderRows({ ...card, availability: avail(1, 0) });
+    expect(
+      screen.getByRole("button", {
+        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("appends the availability clause last on a committed row", () => {
+    renderRows({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
+    expect(
+      screen.getByRole("button", {
+        name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare, no free copies",
+      }),
+    ).toBeInTheDocument();
+  });
+});
+```
+
+`markerAria(a, { nameless: true })` returns `"no free copies"` for the hard state (Task 3, Step 4) — that is the string the last assertion pins.
+
+- [ ] **Step 4: Run it and watch it fail**
+
+Run: `pnpm vitest run src/components/collection/rows-view.test.tsx`
+Expected: FAIL — no accessible name on the row button at all (the button has no `aria-label` today), and `"0 free"` is not in the document.
+
+- [ ] **Step 5: Render the row marker and the row label**
+
+In `src/components/collection/rows-view.tsx`, import:
+
+```ts
+import { availabilityState } from "../../lib/decks/availability";
+import { availabilityCopy } from "../../lib/copy/availability";
+import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
+```
+
+Replace the name-cell block with a flex pair. The name keeps `truncate min-w-0`; the marker is `shrink-0`, so the name is the half that gives way and the row height never moves:
+
+```tsx
+          {/* Name column — §Row: Name Column Container: min-width 0 */}
+          <span className="min-w-0">
+            {/* Name + availability marker share the line; Addendum 2 §1 puts the
+                marker inline after the name, inside the existing 1fr cell, so
+                neither grid template changes. */}
+            <span className="flex items-center gap-[7px] md:gap-[9px] min-w-0">
+              {/* §Row: Card Name — 14/15px 600, #EDE6D8 (--fg), ellipsis */}
+              <span className="truncate min-w-0 text-[14px] md:text-[15px] font-semibold" style={{ color: "var(--fg)" }}>
+                {c.name}
+              </span>
+              {c.availability && (
+                // `nameless` — /collection is the count-only vantage. No
+                // `selfExcluded`: there is no deck to stand in here.
+                <span className="shrink-0">
+                  <AvailabilityMarker availability={c.availability} density="row" nameless />
+                </span>
+              )}
+            </span>
+            {/* Mobile type line — §Row: Type Line (mobile): 11.5px, #8E8269 (--fg-faint), truncate */}
+            <span className="block md:hidden truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
+              {c.typeLine}
+            </span>
+          </span>
+```
+
+Then give the button its accessible name and the over-committed tint. Compute both above the JSX, inside the `cards.map` callback:
+
+```tsx
+      {cards.map((c) => {
+        const state = c.availability ? availabilityState(c.availability) : "free";
+        // Addendum 2 §1: over-committed "keeps its border tint and nothing
+        // else". The tint is `--avail-over-border`, added in Task 2 Step 1 —
+        // the same #6B3226 the R1 canvas already draws, so it is not a new hue.
+        const border =
+          state === "over"
+            ? "[border:1px_solid_var(--avail-over-border)] hover:[border:1px_solid_var(--avail-over-border)]"
+            : "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--border-strong)]";
+        const setAndRarity = `${c.primarySetCode}, ${c.rarity}`;
+        return (
+          <button
+            key={c.oracleId}
+            type="button"
+            onClick={() => onOpen(c.oracleId)}
+            aria-label={availabilityCopy.collection.rowAria(
+              c.name,
+              c.typeLine,
+              c.quantity,
+              setAndRarity,
+              // Clause lands LAST, and only when there is one — a free card
+              // produces today's exact string, unchanged.
+              (c.availability ? markerAria(c.availability, { nameless: true }) : null) ?? undefined,
+            )}
+            className={`grid items-center text-left rounded-lg gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] ${border} [grid-template-columns:38px_40px_1fr_auto] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]`}
+          >
+```
+
+Close the callback with `);` + `})` instead of the current `))`.
+
+- [ ] **Step 6: Run the rows test and watch it pass**
+
+Run: `pnpm vitest run src/components/collection/rows-view.test.tsx`
+Expected: PASS, all five.
+
+- [ ] **Step 7: Write the failing tile test**
+
+Create `src/components/collection/grid-view.test.tsx` with the same `card`/`avail` fixtures as Step 3 (copy them; the two files are read side by side and a shared fixture module for six lines is not worth the indirection):
+
+```tsx
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import type { Availability } from "../../lib/decks/availability";
+import type { BrowseCard } from "../../lib/collection/browse";
+import { GridView } from "./grid-view";
+
+const card: BrowseCard = {
+  oracleId: "o1",
+  name: "Smothering Tithe",
+  typeLine: "Enchantment",
+  manaCost: "{3}{W}",
+  oracleText: "",
+  keywords: [],
+  rarity: "rare",
+  colorIdentity: ["W"],
+  imageUri: null,
+  quantity: 1,
+  printings: [],
+  setCodes: ["RVR"],
+  primarySetCode: "RVR",
+  preferredPrinting: null,
+};
+
+const avail = (
+  owned: number,
+  hard: number,
+  soft = 0,
+  hardDeckNames: string[] = [],
+): Availability => ({ owned, hard, soft, free: owned - hard, hardDeckNames });
+
+function renderTiles(c: BrowseCard) {
+  return render(
+    <GridView cards={[c]} totalCards={1} onShowMore={() => {}} onOpen={() => {}} />,
+  );
+}
+
+describe("GridView availability chip", () => {
+  it("renders nothing at all for a free card", () => {
+    renderTiles({ ...card, quantity: 2, availability: avail(2, 0) });
+    expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
+  });
+
+  it("renders nothing when the availability read failed", () => {
+    renderTiles({ ...card, quantity: 2, availability: null });
+    expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
+  });
+
+  it("carries a count-only chip on a committed tile", () => {
+    renderTiles({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
+    expect(screen.getByText("0 free")).toBeInTheDocument();
+    expect(screen.queryByText(/Atraxa/)).toBeNull();
+  });
+
+  it("leaves the set · rarity caption untouched", () => {
+    renderTiles({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
+    expect(screen.getByText("RVR · rare")).toBeInTheDocument();
+  });
+});
+```
+
+- [ ] **Step 8: Run it and watch it fail**
+
+Run: `pnpm vitest run src/components/collection/grid-view.test.tsx`
+Expected: FAIL on the two positive cases — `"0 free"` is not rendered. (The two "renders nothing" cases pass vacuously; they are the regression guard for Step 9, not the driver.)
+
+- [ ] **Step 9: Render the tile chip**
+
+In `src/components/collection/grid-view.tsx`, import `availabilityState` and `AvailabilityMarker` as in Step 5, then add the chip inside the `relative` art region — **top-left**, because top-right is the shipped brass quantity badge:
+
+```tsx
+            {/* Availability chip — Addendum 2 §2, top-left on the art. The
+                quantity badge owns top-right. Count-only, same as the row. */}
+            {c.availability && (
+              <span className="absolute left-[5px] top-[5px] md:left-[6px] md:top-[6px]">
+                <AvailabilityMarker availability={c.availability} density="chip" nameless />
+              </span>
+            )}
+```
+
+and apply the same over-committed tint to the tile, wrapping the `cards.map` body exactly as Step 5 did:
+
+```tsx
+        const border =
+          state === "over"
+            ? "[border:1px_solid_var(--avail-over-border)] hover:[border:1px_solid_var(--avail-over-border)]"
+            : "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--brass)]";
+```
+
+The caption `{c.primarySetCode} · {c.rarity}` is **not** touched.
+
+- [ ] **Step 10: Run the tile test and watch it pass**
+
+Run: `pnpm vitest run src/components/collection/grid-view.test.tsx`
+Expected: PASS, all four.
+
+- [ ] **Step 11: The card-detail clause — the one place the deck name appears**
+
+In `src/components/collection/card-modal.tsx`, add a block component below `OracleText`'s definition:
+
+```tsx
+function AvailabilityDetail({ card }: { card: BrowseCard }) {
+  if (!card.availability) return null;
+  const state = availabilityState(card.availability);
+  if (state === "free") return null;
+  const c = availabilityCopy.collection;
+  const note =
+    state === "hard" ? c.detailHardNote : state === "soft" ? c.detailSoftNote : c.detailOverNote;
+  return (
+    // Mirrors the oracle-text block's chrome so the two read as one column.
+    <div
+      className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
+      style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
+    >
+      <div
+        className="font-mono text-[10px] tracking-[0.1em] uppercase"
+        style={{ color: "var(--fg-faint)" }}
+      >
+        {c.detailHeading}
+      </div>
+      <div className="mt-[8px] flex items-center gap-[8px] text-[13px]" style={{ color: "var(--fg-body)" }}>
+        <span className="font-mono" style={{ color: "var(--brass)" }}>×{card.quantity}</span>
+        <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
+        {/* No `nameless` here — this is the ONE place on /collection that names
+            the claiming deck ("0 free — in Atraxa"). Still no `selfExcluded`. */}
+        <AvailabilityMarker availability={card.availability} density="row" />
+      </div>
+      <p className="m-0 mt-[8px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>
+        {note}
+      </p>
+    </div>
+  );
+}
+```
+
+Render it directly after the oracle-text block, before the mobile meta grid:
+
+```tsx
+            <AvailabilityDetail card={card} />
+```
+
+**The claiming deck's status pill is not rendered, and it must not be faked.** Addendum 2 §3 draws `×1 · ◆ 0 free — in Atraxa [Complete]`. `Availability.hardDeckNames` is `string[]` — names only — and `statusPill()` needs that deck's `built` / `ownedCount` / `unresolvedCount`, none of which the aggregate carries. Deriving "Complete" from `hard > 0` would be a guess that reads as fact. Shipping the clause without the pill is honest and complete on its own. **Unblocking it is a Task 1 change**: widen `hardDeckNames` to `{ name: string; pill: StatusPill }[]`, which ripples through `markerAria` and every marker caller — out of scope here, and flagged to the design/eng thread rather than improvised.
+
+- [ ] **Step 12: Run the gate**
+
+Run: `pnpm vitest run src/components/collection src/lib/collection && pnpm typecheck && pnpm lint`
+Expected: PASS. The `browse.test.ts` fixtures compile unchanged because `availability` is optional.
+
+- [ ] **Step 13: Verify in the browser at both widths**
+
+Run `pnpm dev`, sign in, open `/collection` with at least one card in a 99-card deck. At 390px and 1300px confirm: most rows carry nothing; a committed row reads `0 free` with no deck name; the row height is identical to a free row above it; a long card name truncates while the marker stays whole; the tile chip sits top-left and the brass `×N` badge top-right; an over-committed row and tile carry the border tint and nothing else; opening that card shows `In your collection`, `×N · 0 free — in <deck>`, and the note.
+
+- [ ] **Step 14: Commit**
+
+```
+git add src/lib/collection/browse.ts src/app/collection/page.tsx src/components/collection/browser.tsx src/components/collection/rows-view.tsx src/components/collection/grid-view.tsx src/components/collection/card-modal.tsx src/components/collection/rows-view.test.tsx src/components/collection/grid-view.test.tsx
+git commit -m "feat(collection): availability marker on rows, tiles and card detail (#43)"
+```
+
+---
+
+## Task 10: The `Availability ▾` filter on `/collection`
+
+**Files:**
+- Create: `src/lib/collection/availability-filter.ts`
+- Create: `src/lib/collection/availability-filter.test.ts`
+- Create: `src/components/collection/availability-glyph.tsx`
+- Create: `src/components/collection/chip-row.test.tsx`
+- Modify: `src/lib/collection/browse.ts:60-71` (`BrowseFilters`), `:319-340` (`filterCards`)
+- Modify: `src/lib/copy/collection.ts` (add the `availability` FilterPanelCopy block)
+- Modify: `src/components/ui/filter-panel.tsx:35-56, 88-130, 460-500, 786-795`
+- Modify: `src/components/collection/filter-bar.tsx`
+- Modify: `src/components/collection/browser.tsx`
+- Modify: `src/components/collection/chip-row.tsx`
+- Test: `src/components/ui/filter-panel.test.tsx` (extend)
+
+**Interfaces:**
+- Consumes: `Availability`, `availabilityState`, `AvailabilityState` (Task 1); `availabilityCopy.collection.*` and `availabilityCopy.degraded.collectionFilterDisabledAria` (Task 2); `BrowseCard.availability` and `availabilityOk` (Task 9); `FilterPanel`, `FilterPanelOption` (shipped).
+- Produces: `BrowseFilters.availability?: AvailabilityState[]`, `buildAvailabilityOptions`, `parseAvailabilityParam`, `serializeAvailability`, `AvailabilityGlyph`, and the `?avail=` URL param.
+
+Addendum 2 §4. A fifth `FilterPanel`, wired exactly as `Type ▾` is: multi-select, no search, counts on. Four options — `Free` / `Wanted by a brew` / `In use` / `Over-committed` — whose counts partition the collection and therefore sum to its total. **Nothing defaults on.** A zero-count option stays in the list `aria-disabled`, never removed, same as `Type ▾`.
+
+Two counting rules differ from `Set ▾` / `Type ▾` deliberately. Counts here are **distinct cards, not summed quantities**: availability is classified once per `oracle_id`, and the addendum's own arithmetic is per-card — *"availability for 1,418 **unique** cards"*, *"a 1,418-**row** scroll"*, and `1,186 + 168 + 61 + 3 = 1,418`. Summed quantities would not partition to that number. And the options AND with the other filters while ORing internally, the `types`/`setCodes` shape.
+
+**Do not change the shipped result-count copy.** The addendum draws `Showing 61 of 1,418`, but `chip-row.tsx:48-50` renders `Showing <resultCount> of <totalQuantity>` whenever any filter is active — `totalQuantity` being the sum of quantities, the `2,933` in the shipped design copy, not the `1,418` unique total. The numerator already agrees (`resultCount` is `sorted.length`, one per card, so `In use` really does show `61`); only the denominator differs, and it differs because the addendum's fixture collection happens to be drawn with the unique figure in that slot. Addendum 2 changes no result-count copy and says so — *"no grid changes on either collection view"*, chips *"reuse the shipped chip row"*. Leave `chip-row.tsx`'s two count variants exactly as they are. **Design to ratify, not to redraw.**
+
+- [ ] **Step 1: Write the failing filter-model test**
+
+Create `src/lib/collection/availability-filter.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import type { BrowseCard } from "./browse";
+import { filterCards } from "./browse";
+import {
+  buildAvailabilityOptions,
+  parseAvailabilityParam,
+  serializeAvailability,
+} from "./availability-filter";
+
+const base: BrowseCard = {
+  oracleId: "o", name: "Card", typeLine: "Artifact", manaCost: "{1}", oracleText: "",
+  keywords: [], rarity: "common", colorIdentity: [], imageUri: null, quantity: 1,
+  printings: [], setCodes: ["ABC"], primarySetCode: "ABC", preferredPrinting: null,
+};
+
+const card = (
+  oracleId: string,
+  owned: number,
+  hard: number,
+  soft: number,
+): BrowseCard => ({
+  ...base,
+  oracleId,
+  quantity: owned,
+  availability: { owned, hard, soft, free: owned - hard, hardDeckNames: [] },
+});
+
+const cards: BrowseCard[] = [
+  card("free1", 2, 0, 0),
+  card("free2", 1, 0, 0),
+  card("soft1", 2, 0, 1),
+  card("hard1", 1, 1, 0),
+  card("over1", 1, 2, 0),
+  { ...base, oracleId: "unread", availability: null },
+];
+
+const empty = { search: "", colors: [], types: [], setCodes: [] };
+
+describe("buildAvailabilityOptions", () => {
+  it("counts distinct cards and partitions the collection", () => {
+    const options = buildAvailabilityOptions(cards, empty);
+    expect(options.map((o) => [o.code, o.count])).toEqual([
+      ["free", 3],   // free1, free2 and the unread card
+      ["soft", 1],
+      ["hard", 1],
+      ["over", 1],
+    ]);
+    expect(options.reduce((n, o) => n + o.count, 0)).toBe(cards.length);
+  });
+
+  it("labels the options in the design's words", () => {
+    expect(buildAvailabilityOptions(cards, empty).map((o) => o.label)).toEqual([
+      "Free", "Wanted by a brew", "In use", "Over-committed",
+    ]);
+  });
+
+  it("disables a zero-count option rather than dropping it", () => {
+    const options = buildAvailabilityOptions([card("free1", 1, 0, 0)], empty);
+    expect(options).toHaveLength(4);
+    expect(options.filter((o) => o.disabled).map((o) => o.code)).toEqual(["soft", "hard", "over"]);
+  });
+
+  it("counts under the other active filters", () => {
+    const options = buildAvailabilityOptions(cards, { ...empty, types: ["Artifact"] });
+    expect(options.find((o) => o.code === "hard")?.count).toBe(1);
+    expect(buildAvailabilityOptions(cards, { ...empty, types: ["Creature"] })
+      .every((o) => o.count === 0)).toBe(true);
+  });
+});
+
+describe("filterCards with availability", () => {
+  it("ORs the selected states internally", () => {
+    const kept = filterCards(cards, { ...empty, availability: ["hard", "over"] });
+    expect(kept.map((c) => c.oracleId)).toEqual(["hard1", "over1"]);
+  });
+
+  it("treats an unread card as free", () => {
+    expect(filterCards(cards, { ...empty, availability: ["free"] }).map((c) => c.oracleId))
+      .toEqual(["free1", "free2", "unread"]);
+  });
+
+  it("ANDs with every other filter", () => {
+    expect(
+      filterCards(cards, { ...empty, availability: ["free"], setCodes: ["ZZZ"] }),
+    ).toEqual([]);
+  });
+
+  it("is a no-op when nothing is selected", () => {
+    expect(filterCards(cards, empty)).toHaveLength(cards.length);
+    expect(filterCards(cards, { ...empty, availability: [] })).toHaveLength(cards.length);
+  });
+});
+
+describe("the ?avail= param", () => {
+  it("round-trips through the design's tokens", () => {
+    expect(serializeAvailability(["hard", "over"])).toBe("inuse,over");
+    expect(parseAvailabilityParam("inuse,over")).toEqual(["hard", "over"]);
+    expect(serializeAvailability(["free", "soft"])).toBe("free,brew");
+    expect(parseAvailabilityParam("free,brew")).toEqual(["free", "soft"]);
+  });
+
+  it("drops unknown, duplicate and empty tokens", () => {
+    expect(parseAvailabilityParam("inuse,INUSE,nonsense,")).toEqual(["hard"]);
+    expect(parseAvailabilityParam(null)).toEqual([]);
+  });
+});
+```
+
+- [ ] **Step 2: Run it and watch it fail**
+
+Run: `pnpm vitest run src/lib/collection/availability-filter.test.ts`
+Expected: FAIL — `./availability-filter` does not resolve.
+
+- [ ] **Step 3: Write the filter model**
+
+Create `src/lib/collection/availability-filter.ts`:
+
+```ts
+// Availability-filter options — the pure half of the Availability ▾ panel (#43).
+//
+// Mirrors type-filter.ts, with two deliberate differences, both from
+// Addendum 2 §4:
+//
+// 1. A count is the number of DISTINCT cards, not the sum of quantities.
+//    Availability is classified once per oracle_id, so a per-card count is the
+//    only one that partitions — the four numbers must add up to the collection
+//    total, and summed quantities would not.
+// 2. The vocabulary is the four states, always all four, so a state with no
+//    matches is listed disabled rather than removed.
+
+import { availabilityState, type AvailabilityState } from "../decks/availability";
+import { availabilityCopy } from "../copy/availability";
+import { filterCards, type BrowseCard, type BrowseFilters } from "./browse";
+
+/** Menu order, top to bottom, per the addendum canvas. */
+export const AVAILABILITY_STATES: AvailabilityState[] = ["free", "soft", "hard", "over"];
+
+const LABEL: Record<AvailabilityState, string> = {
+  free: availabilityCopy.collection.filterFree,
+  soft: availabilityCopy.collection.filterSoft,
+  hard: availabilityCopy.collection.filterHard,
+  over: availabilityCopy.collection.filterOver,
+};
+
+/**
+ * URL tokens. `inuse` and `over` are fixed by the addendum's worked example
+ * (`?avail=inuse,over`); `free` and `brew` are chosen to match — short, lower
+ * case, and readable next to them. The internal codes stay AvailabilityState
+ * values, so the translation happens only at the URL boundary.
+ */
+const PARAM_TOKEN: Record<AvailabilityState, string> = {
+  free: "free", soft: "brew", hard: "inuse", over: "over",
+};
+const STATE_BY_TOKEN = new Map<string, AvailabilityState>(
+  AVAILABILITY_STATES.map((s) => [PARAM_TOKEN[s], s]),
+);
+
+export type AvailabilityOption = {
+  code: AvailabilityState;
+  label: string;
+  count: number;
+  disabled: boolean;
+};
+
+export function availabilityLabel(state: AvailabilityState): string {
+  return LABEL[state];
+}
+
+/**
+ * A card with no availability entry reads as free — an unclaimed card and a
+ * failed read are the same silence everywhere else in this feature, and the
+ * four counts must still partition.
+ */
+export function cardAvailabilityState(card: BrowseCard): AvailabilityState {
+  return card.availability ? availabilityState(card.availability) : "free";
+}
+
+/**
+ * The four states with the number of cards in each under the OTHER active
+ * filters — not the free-text search box, and not this panel's own selection,
+ * the same convention set-filter.ts and type-filter.ts follow.
+ */
+export function buildAvailabilityOptions(
+  cards: BrowseCard[],
+  filters: BrowseFilters,
+): AvailabilityOption[] {
+  const surviving = filterCards(cards, {
+    search: "",
+    colors: filters.colors,
+    types: filters.types,
+    setCodes: filters.setCodes,
+  });
+
+  const counts = new Map<AvailabilityState, number>(AVAILABILITY_STATES.map((s) => [s, 0]));
+  for (const c of surviving) {
+    const state = cardAvailabilityState(c);
+    counts.set(state, (counts.get(state) ?? 0) + 1);
+  }
+
+  return AVAILABILITY_STATES.map((code) => {
+    const count = counts.get(code) ?? 0;
+    return { code, label: LABEL[code], count, disabled: count === 0 };
+  });
+}
+
+/** `?avail=inuse,over` → `["hard","over"]`, in menu order, unknowns dropped. */
+export function parseAvailabilityParam(param: string | null): AvailabilityState[] {
+  if (!param) return [];
+  const picked = new Set<AvailabilityState>();
+  for (const raw of param.split(",")) {
+    const state = STATE_BY_TOKEN.get(raw.trim().toLowerCase());
+    if (state) picked.add(state);
+  }
+  return AVAILABILITY_STATES.filter((s) => picked.has(s));
+}
+
+/** `["hard","over"]` → `inuse,over`. Round-trips through parseAvailabilityParam. */
+export function serializeAvailability(states: AvailabilityState[]): string {
+  return states.map((s) => PARAM_TOKEN[s]).join(",");
+}
+```
+
+- [ ] **Step 4: Extend `BrowseFilters` and `filterCards`**
+
+In `src/lib/collection/browse.ts`, add to `BrowseFilters`:
+
+```ts
+  /**
+   * Multi-select (#43): a card matches when its state is ANY selected state.
+   * ORs internally, ANDs with every other filter — the `setCodes` shape.
+   *
+   * Optional, unlike its three siblings: fourteen files build BrowseFilters
+   * literals and a required field would break every one of them for no gain.
+   * Absent and empty both mean "no availability filter".
+   */
+  availability?: AvailabilityState[];
+```
+
+with `import type { AvailabilityState } from "../decks/availability";`, and inside `filterCards`, after the set-code check:
+
+```ts
+    if (f.availability && f.availability.length > 0) {
+      // No entry reads as free — an unclaimed card and a failed read are the
+      // same silence everywhere else in this feature.
+      const state = c.availability ? availabilityState(c.availability) : "free";
+      if (!f.availability.includes(state)) return false;
+    }
+```
+
+importing `availabilityState` as a value. `filterCards` is imported by `availability-filter.ts`, which imports `filterCards` back — the cycle is type-and-function only and Vite resolves it, but keep `cardAvailabilityState` out of `browse.ts` to avoid deepening it.
+
+- [ ] **Step 5: Run the model test and watch it pass**
+
+Run: `pnpm vitest run src/lib/collection/availability-filter.test.ts src/lib/collection/browse.test.ts`
+Expected: PASS.
+
+- [ ] **Step 6: Add the panel's copy block**
+
+In `src/lib/copy/collection.ts`, add an `availability` block to `collectionFilterCopy`, sourced from the availability copy module rather than re-authored:
+
+```ts
+  // Availability ▾ (#43) — the Type ▾ shape (no search, no footer total).
+  // Every user-visible string comes from availabilityCopy.collection; the keys
+  // FilterPanelCopy needs and the addendum does not author (the search and
+  // group strings) are inert here, exactly as they are in the `type` block.
+  availability: {
+    triggerLabel: availabilityCopy.collection.filterLabel,
+    triggerOne: (name: string) => `${availabilityCopy.collection.filterLabel}: ${name}`,
+    triggerAriaCollapsed: "Filter by availability, collapsed",
+    triggerAriaWithSelection: (n: number) => `Filter by availability, ${n} selected, collapsed`,
+
+    panelAriaLabel: "Filter by availability",
+    sheetTitle: availabilityCopy.collection.filterLabel,
+    searchPlaceholder: "",
+    searchAriaLabel: "",
+    clearSearch: "Clear search",
+
+    groupDefault: "All",
+    groupSelected: (n: number) => `Selected · ${n}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+
+    // FilterPanel hands the count pre-formatted; the addendum's string wants a
+    // number for its "1 card"/"N cards" pluralisation, so it is read back out.
+    // The ", selected" tail is this panel family's convention, not the
+    // addendum's — every shipped block appends it.
+    optionAria: (name: string, count: string, selected: boolean) =>
+      availabilityCopy.collection.filterOptionAria(name, Number(count.replaceAll(",", ""))) +
+      (selected ? ", selected" : ""),
+    optionAriaUnavailable: (name: string) =>
+      availabilityCopy.collection.filterEmptyOptionAria(name),
+
+    footerTotal: (total: string) => `${total} cards`,
+    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    clear: "Clear",
+    done: "Done",
+    closeLabel: "Close",
+
+    emptyTitle: "Nothing to show",
+    emptyBody: (query: string) => ({
+      before: "No availability matches ",
+      query: `“${query}”`,
+      after: ".",
+    }),
+
+    announceMatches: (n: number, query: string) =>
+      n === 0 ? `No options match ${query}` : `${n} ${n === 1 ? "option matches" : "options match"} ${query}`,
+    announceAdded: (name: string, n: number, shown: string, total: string) =>
+      `${name} added. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
+    announceRemoved: (name: string, n: number, shown: string, total: string) =>
+      n === 0
+        ? `${name} removed. No availability filter, ${total} cards shown.`
+        : `${name} removed. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
+    announceCleared: (total: string) => `Availability filter cleared. ${total} cards shown.`,
+  },
+```
+
+with `import { availabilityCopy } from "./availability";` at the top.
+
+- [ ] **Step 7: The glyph, shared by the menu rows and the chips**
+
+Create `src/components/collection/availability-glyph.tsx`:
+
+```tsx
+// The bare availability diamond, with no copy beside it (#43).
+//
+// AvailabilityMarker's own Diamond is module-private and always ships with a
+// label; the filter menu rows and the filter chips need the mark alone, and
+// the over-committed mark is DOUBLED there per the addendum canvas.
+// Hues are the marker's, unchanged — the addendum adds no new hues.
+
+import type { AvailabilityState } from "../../lib/decks/availability";
+
+const HUE: Record<Exclude<AvailabilityState, "free">, string> = {
+  soft: "#C6B79A",  // --fg-body
+  hard: "#C9A24B",  // --brass
+  over: "#C6533F",
+};
+
+export function AvailabilityGlyph({ state }: { state: AvailabilityState }) {
+  if (state === "free") return null;
+  const color = HUE[state];
+  return (
+    <span aria-hidden className="relative inline-block shrink-0" style={{ width: state === "over" ? 11 : 6, height: 6 }}>
+      <span
+        className="absolute left-0 top-0 block"
+        style={{ width: 6, height: 6, background: color, transform: "rotate(45deg)" }}
+      />
+      {state === "over" && (
+        <span
+          className="absolute top-0 block"
+          style={{ left: 5, width: 6, height: 6, background: color, transform: "rotate(45deg)" }}
+        />
+      )}
+    </span>
+  );
+}
+```
+
+- [ ] **Step 8: Two additive props on `FilterPanel`**
+
+`FilterPanel` has no slot for a per-row glyph and no accessible reason for a disabled trigger. Both are additive and no shipped caller changes.
+
+In `src/components/ui/filter-panel.tsx`, add to `FilterPanelOption`:
+
+```ts
+  /**
+   * Rendered between the checkbox and the label. Only Availability ▾ uses it —
+   * its rows are distinguished by a mark, not by a color swatch in the label.
+   */
+  leadingGlyph?: ReactNode;
+```
+
+render it in `renderRow`, immediately after the checkbox span:
+
+```tsx
+        {option.leadingGlyph}
+```
+
+add the prop:
+
+```ts
+  /**
+   * Accessible reason the trigger is disabled. Without it a disabled trigger
+   * still announces "Filter by availability, collapsed", which says nothing
+   * about why it will not open.
+   */
+  disabledAriaLabel?: string,
+```
+
+and fold it into the computed name:
+
+```ts
+  const triggerAria = disabled && disabledAriaLabel
+    ? disabledAriaLabel
+    : open
+      ? `${copy.panelAriaLabel}${triggerAriaDetail}, expanded`
+      : selected.length === 0
+        ? copy.triggerAriaCollapsed
+        : selected.length === 1
+          ? `${copy.panelAriaLabel}, ${oneName}, collapsed`
+          : copy.triggerAriaWithSelection(selected.length);
+```
+
+Add to `src/components/ui/filter-panel.test.tsx`:
+
+```tsx
+  it("announces why a disabled trigger will not open", () => {
+    render(
+      <FilterPanel
+        copy={collectionFilterCopy.type}
+        options={OPTIONS}
+        selected={[]}
+        disabled
+        disabledAriaLabel="Availability unavailable right now"
+        onToggle={() => {}}
+        onClear={() => {}}
+        onAnnounce={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: "Availability unavailable right now" });
+    expect(trigger).toBeDisabled();
+  });
+```
+
+Run: `pnpm vitest run src/components/ui/filter-panel.test.tsx`
+Expected: PASS (FAIL first if you add the test before the props — do it in that order).
+
+- [ ] **Step 9: Mount the panel — fourth on desktop, fifth on phone**
+
+In `src/components/collection/filter-bar.tsx`, add props:
+
+```ts
+  /** The four availability states with counts under the other active filters. */
+  availabilityOptions: AvailabilityOption[];
+  /** False when the availability aggregate could not be read (Task 7 / Task 9). */
+  availabilityOk: boolean;
+```
+
+and mount the panel **after `Sort ▾`** — the single DOM position that lands fourth on desktop (Type, Set, Sort, Availability; colour is the inline pip row there) and fifth on phone (Color, Type, Set, Sort, Availability), which is what the R3 correction asks for:
+
+```tsx
+        {/* Availability ▾ (#43) — the Type ▾ shape: fixed four-item vocabulary,
+            no search, no footer total. Rows carry the marker's glyph so the
+            menu and the list agree about what each state looks like. */}
+        <FilterPanel
+          copy={collectionFilterCopy.availability}
+          options={availabilityOptions.map((o) => ({
+            ...o,
+            leadingGlyph: <AvailabilityGlyph state={o.code} />,
+          }))}
+          selected={filters.availability ?? []}
+          searchable={false}
+          widthPx={280}
+          footerStatus={false}
+          disabled={!availabilityOk}
+          disabledAriaLabel={availabilityCopy.degraded.collectionFilterDisabledAria}
+          onToggle={(code) => {
+            const state = code as AvailabilityState;
+            const current = filters.availability ?? [];
+            onFiltersChange({
+              ...filters,
+              availability: current.includes(state)
+                ? current.filter((s) => s !== state)
+                : [...current, state],
+            });
+          }}
+          onClear={() => onFiltersChange({ ...filters, availability: [] }, "clear-availability")}
+          onAnnounce={onAnnounce}
+        />
+```
+
+Extend the intent union at `filter-bar.tsx:38`:
+
+```ts
+export type FilterChangeIntent = "clear-sets" | "clear-types" | "clear-colors" | "clear-availability";
+```
+
+Imports: `AvailabilityGlyph` from `./availability-glyph`, `type AvailabilityOption` from `../../lib/collection/availability-filter`, `type AvailabilityState` from `../../lib/decks/availability`, `availabilityCopy` from `../../lib/copy/availability`.
+
+**No banner.** Addendum 2, Implementation notes: `/collection` fails quiet — the markers are absent (Task 9) and the trigger is disabled with a reason. The banner belongs to Task 7's surfaces, not this one.
+
+- [ ] **Step 9b: Repair the two shipped `FilterBar` render helpers**
+
+`availabilityOptions` and `availabilityOk` are **required** props, so every existing `<FilterBar>` render stops compiling the moment Step 9 lands. Despite its name, `src/components/ui/filter-panel.test.tsx` renders `FilterBar` — it imports it at `:5` — through two fixed-prop helpers, `renderBar(setCodes)` at `:536` and `renderBar(types)` at `:649`. Add to the prop list inside **both**:
+
+```tsx
+        availabilityOptions={[]}
+        availabilityOk
+```
+
+An empty option list is the honest fixture: those two suites are about the Set and Type panels and have no availability data to give. There are **no other call sites to repair** — `<CollectionBrowser>` is constructed only at `src/app/collection/page.tsx:124`, which Task 9 Step 2 already updates, and it has no test file of its own.
+
+Run: `pnpm vitest run src/components/ui/filter-panel.test.tsx`
+Expected: PASS — both suites unchanged in behaviour, now compiling.
+
+- [ ] **Step 10: Wire state, counts and the URL param**
+
+In `src/components/collection/browser.tsx`:
+
+Seed the filter from the URL, in the existing `useState<BrowseFilters>` initialiser:
+
+```ts
+    availability: parseAvailabilityParam(search.get("avail")),
+```
+
+Serialise it in `serializeParams`, beside `t=` and `s=`:
+
+```ts
+  // Comma-joined, same shape as t= and s=.
+  if (filters.availability && filters.availability.length > 0) {
+    p.set("avail", serializeAvailability(filters.availability));
+  }
+```
+
+Build the options — availability counts move with colors, types and sets, not with their own selection or the search box, the rule the other three follow:
+
+```ts
+  const availabilityOptions = useMemo(
+    () =>
+      buildAvailabilityOptions(cards, {
+        search: "",
+        colors: filterColors,
+        types: filterTypes,
+        setCodes: filterSetCodes,
+      }),
+    [cards, filterColors, filterTypes, filterSetCodes],
+  );
+```
+
+Add the fourth announcement to `updateFilters`'s chain:
+
+```ts
+        availabilityChangeAnnouncement(filters, f, cards, availabilityOptions, totalQuantity, intent);
+```
+
+`updateFilters` now closes over `availabilityOptions`, so add it to that `useCallback`'s dependency array at `browser.tsx:265` — the three sibling option lists are already there, and omitting the fourth would announce stale labels after a filter change.
+
+written next to the three shipped ones in the same file:
+
+```ts
+const availCopy = collectionFilterCopy.availability;
+
+/**
+ * The live-region string for a change to the availability selection. Same
+ * shape as its three siblings; the `?? []` pair exists only because
+ * `BrowseFilters.availability` is optional and theirs are required.
+ */
+export function availabilityChangeAnnouncement(
+  prev: BrowseFilters,
+  next: BrowseFilters,
+  cards: BrowseCard[],
+  options: { code: string; label: string }[],
+  totalQuantity: number,
+  intent?: FilterChangeIntent,
+): string | null {
+  return selectionAnnouncement(
+    prev.availability ?? [], next.availability ?? [], availCopy,
+    intent === "clear-availability",
+    next, cards, options, totalQuantity,
+  );
+}
+```
+
+That is `selectionAnnouncement`'s real parameter order as declared at `browser.tsx:86-95` — `(before, after, copy, cleared, next, cards, options, totalQuantity)`. `AvailabilityOption["code"]` is an `AvailabilityState`, which is assignable to the `{ code: string }` the helper wants, so no cast is needed.
+
+Add `availability: []` to the three clear-all literals (`onClearAll` ×2, `onKeepSearch`), and pass the new props through to `FilterBar`:
+
+```tsx
+        availabilityOptions={availabilityOptions}
+        availabilityOk={availabilityOk}
+```
+
+**Do not add `filters.availability` to those deps.** It is this panel's own selection, and counting under it would make every option read as a subset of itself — the same omission `setOptions`, `typeOptions` and `colorOptions` already make. Destructure only the three fields listed; the shipped memos above show the pattern.
+
+- [ ] **Step 11: Write the failing chip test**
+
+Create `src/components/collection/chip-row.test.tsx`:
+
+```tsx
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import type { BrowseFilters } from "../../lib/collection/browse";
+import { ChipRow } from "./chip-row";
+
+const filters: BrowseFilters = {
+  search: "", colors: [], types: [], setCodes: [], availability: ["hard", "over"],
+};
+
+function renderRow(onRemoveAvailability = vi.fn()) {
+  render(
+    <ChipRow
+      filters={filters}
+      sort="name"
+      resultCount={64}
+      uniqueCount={1418}
+      totalQuantity={2933}
+      onClearAll={() => {}}
+      onRemoveColor={() => {}}
+      onRemoveType={() => {}}
+      setLabels={{}}
+      onRemoveSet={() => {}}
+      onClearSearch={() => {}}
+      onRemoveAvailability={onRemoveAvailability}
+    />,
+  );
+  return onRemoveAvailability;
+}
+
+describe("ChipRow availability chips", () => {
+  it("renders one removable chip per selected state, in the design's words", () => {
+    renderRow();
+    expect(screen.getByText("In use")).toBeInTheDocument();
+    expect(screen.getByText("Over-committed")).toBeInTheDocument();
+  });
+
+  it("uses the addendum's remove label", () => {
+    renderRow();
+    expect(screen.getByRole("button", { name: "Remove filter: in use" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove filter: over-committed" })).toBeInTheDocument();
+  });
+
+  it("removes just that state", () => {
+    const onRemove = renderRow();
+    screen.getByRole("button", { name: "Remove filter: in use" }).click();
+    expect(onRemove).toHaveBeenCalledWith("hard");
+  });
+
+  it("counts an availability selection as an active filter", () => {
+    renderRow();
+    expect(screen.getByText("Showing 64 of 2,933")).toBeInTheDocument();
+  });
+});
+```
+
+Run: `pnpm vitest run src/components/collection/chip-row.test.tsx`
+Expected: FAIL — `onRemoveAvailability` is not a prop and no chips render.
+
+- [ ] **Step 12: Render the chips**
+
+In `src/components/collection/chip-row.tsx`, add the prop `onRemoveAvailability: (state: AvailabilityState) => void`, extend `anyActive`:
+
+```ts
+    (filters.availability?.length ?? 0) > 0;
+```
+
+add the chips after the set chips:
+
+```tsx
+      {/* Availability chips — the marker's glyph as the leading dot, so the
+          chip, the menu row and the list all read the same mark. */}
+      {(filters.availability ?? []).map((state) => (
+        <Chip
+          key={state}
+          label={availabilityLabel(state)}
+          leadingGlyph={<AvailabilityGlyph state={state} />}
+          removeAria={availabilityCopy.collection.chipRemoveAria(availabilityLabel(state))}
+          onRemove={() => onRemoveAvailability(state)}
+        />
+      ))}
+```
+
+and widen `Chip` — `leadingDot` stays for the WUBRG chips, which are a coloured circle, not a glyph:
+
+```tsx
+function Chip({
+  label,
+  leadingDot,
+  leadingGlyph,
+  removeAria,
+  onRemove,
+}: {
+  label: string;
+  leadingDot?: string;
+  leadingGlyph?: ReactNode;
+  /** Overrides the default "Remove X filter" — the addendum authors its own. */
+  removeAria?: string;
+  onRemove: () => void;
+}) {
+```
+
+with `{leadingGlyph}` beside the existing `{leadingDot && …}` and:
+
+```tsx
+        aria-label={removeAria ?? `Remove ${label} filter`}
+```
+
+Wire the callback in `browser.tsx`:
+
+```tsx
+          onRemoveAvailability={(state) =>
+            updateFilters({
+              ...filters,
+              availability: (filters.availability ?? []).filter((s) => s !== state),
+            })
+          }
+```
+
+- [ ] **Step 13: Run the chip test and watch it pass**
+
+Run: `pnpm vitest run src/components/collection/chip-row.test.tsx`
+Expected: PASS, all four.
+
+- [ ] **Step 14: Run the gate**
+
+Run: `pnpm vitest run src/lib/collection src/components/collection src/components/ui && pnpm typecheck && pnpm lint`
+Expected: PASS. Then the stub build: `DATABASE_URL="postgres://stub:stub@localhost/stub" pnpm build`.
+
+- [ ] **Step 15: Verify in the browser at both widths**
+
+Run `pnpm dev`, sign in, open `/collection`. At 1300px confirm `Availability ▾` is the **fourth** dropdown (Type, Set, Sort, Availability) and at 390px the **fifth** (Color, Type, Set, Sort, Availability). Confirm: nothing is selected on load; the four counts sum to the collection's unique total shown in the chip row; a state you own none of is greyed and does not toggle by click or by ↓/Enter; picking `In use` + `Over-committed` puts `?avail=inuse,over` in the URL and two chips in the row; reloading that URL restores both; each chip's ✕ removes only its own state; `Clear all` clears them with everything else. Then break the read (temporarily `throw` inside `loadAvailability`) and confirm the trigger is disabled, no markers appear, and **no banner** does.
+
+- [ ] **Step 16: Commit**
+
+```
+git add src/lib/collection/availability-filter.ts src/lib/collection/availability-filter.test.ts src/lib/collection/browse.ts src/lib/copy/collection.ts src/components/collection/availability-glyph.tsx src/components/collection/chip-row.tsx src/components/collection/chip-row.test.tsx src/components/collection/filter-bar.tsx src/components/collection/browser.tsx src/components/ui/filter-panel.tsx src/components/ui/filter-panel.test.tsx
+git commit -m "feat(collection): Availability filter with counts, chips and ?avail= (#43)"
+```
+
+---
+
 ## Design tables to update
 
 Per the handoff, these rows are superseded and must be updated in the same PR as the code that changes them:
@@ -1422,19 +2888,29 @@ Per the handoff, these rows are superseded and must be updated in the same PR as
 
 ## Copy strings shipped by Design that no task above renders
 
-Found by auditing `availability · copy strings.ts` against the eight tasks. Each is either a surface the plan does not build or a string whose home was never decided. **Before implementing, decide per string: render it, or delete it from the ported copy block.** Leaving unused exports in `src/lib/copy/` is how the vocabulary drifts, because the next person assumes they are live.
+Found by auditing `availability · copy strings.ts` against all ten tasks. Each is either a surface the plan does not build or a string whose home was never decided. **Before implementing, decide per string: render it, or delete it from the ported copy block.** Leaving unused exports in `src/lib/copy/` is how the vocabulary drifts, because the next person assumes they are live.
 
 - `ranking.freeNote` / `freeNoteLong` — annotated "shown only in the free state, under the control". Task 6 renders the control but not this note.
 - `ranking.subtitleAll` / `subtitleFree`, `ranking.allAria` / `freeAria` — the segmented control's accessible names and subtitles.
 - `receipt.wantedByBrew` — the soft-claim clause on the receipt line. Task 6 renders only `fit` / `fitFree` / `inUse` / `delta`.
 - `receipt.altScore` — the other mode's score, adjacent to the delta.
 - `detail.hint`, `detail.announceExpanded` / `announceCollapsed` — Task 8 announces a count but does not use these.
-- `marker.hard` — the bare form, with no deck named. `markerAria` and `label` in Task 3 always branch to `hardIn` or `hardMulti`, so this never fires. It is the right string for a surface with no room for a deck name; if none exists, delete it.
+- ~~`marker.hard`~~ — **resolved by Addendum 2.** The bare form is exactly what `/collection` renders: Task 9 passes `nameless`, and §3 states *"collection uses `marker.hard` (`0 free`) and never `hardIn` or `hardMulti`."* Keep it.
+- `collection.detailSoftNote` and `collection.detailOverNote` are written but only the hard note is drawn (gap A2 §3). Task 9 Step 11 renders all three off the same rule; the risk is low, and inventing two more surfaces to avoid the assumption would be worse.
 
 ## Open, non-blocking — do not solve these here
 
-- **Gap §2 — deck names have no length budget.** `0 free — in Atraxa` fits; a 38-character deck name does not. Truncation point and whether the name drops entirely below some width are an unmade product call. The `truncate` in Task 3 is a holding position, not the answer.
 - **Gap §10 — a commander can vanish on the flip.** Rank 3 under `Everything I own` can be rank 60 under `What's free`, outside the first batch. Accepted: the toggle is telling the truth and `25 shown · 189 more below` says there is more.
 - **Gap §11 — two degraded reads co-occurring** is drawn as copy (`bodyWithSynergy`), specified but not visually designed.
 - **The soft threshold cliff is inherited, not introduced.** A 98-card list is soft, a 99-card list of pure theory is hard. The first support ticket about this feature will be about the 98th card.
-- **The collection page is out of scope** and is where a player would look first. The follow-up ticket should inherit this marker unchanged rather than re-solving it.
+- **Gap A2 §1 — no over-committed aggregate on `/collection`.** A player with three over-committed cards across 1,418 rows finds them via the filter or not at all. Deliberate: the collection page is an inventory, not a to-do list, and the deck with the problem shows it.
+- **Gap A2 §4 — `?avail=` means two different things**: single-value ranking mode on `/commanders`, multi-value filter on `/collection`. Same concept, no shared reader, so it is safe today. It will bite during a future "share this view" feature.
+- **The claiming deck's status pill is absent from the card-detail clause.** Addendum 2 §3 draws `×1 · ◆ 0 free — in Atraxa [Complete]`, but `Availability.hardDeckNames` carries names only and `statusPill()` needs that deck's `built` / `ownedCount` / `unresolvedCount`. Task 9 Step 11 ships the clause without the pill rather than deriving "Complete" from `hard > 0`, which would read as fact while being a guess. Unblocking it means widening `hardDeckNames` to `{ name, pill }[]` in Task 1, which ripples through every marker caller. **Design to ratify the omission, or to fund the widening.**
+- **`Showing N of 1,418` uses a different denominator in the drawing than in the shipped page.** Numerator agrees; denominator is `totalQuantity` in `chip-row.tsx`, not the unique total. Task 10 leaves the shipped copy alone and explains why. **Design to ratify, not to redraw.**
+- **Self-exclusion is extended to the add panel, which §6 does not explicitly cover.** §6 rules on "a deck's own decklist"; Task 4 Step 2 applies it to `searchCards` as well, because a card already on the list comes back from search and would otherwise read `0 free — in <this deck>` one panel away from its own silent row. **Design to ratify the extension, or to place the seam elsewhere.**
+- **Gap A2 §6 — the 98th-card cliff applies to the roll-up too.** The soft line can vanish and the red line appear on a single add; that transition isn't drawn. Do not add a size check to compensate — the arithmetic already exits (Task 8 Step 4).
+
+**Closed since the first revision of this plan, do not re-raise:**
+
+- **Gap §2 (deck-name length budget)** — resolved 2026-08-27. The name is the only part allowed to truncate: `flex-none` prefix plus `truncate min-w-0` name, full name in `title` and in the accessible name. Implemented in Task 3.
+- **The collection page is no longer out of scope.** Addendum 2 designs it in full — Tasks 9 and 10.
