@@ -151,8 +151,6 @@ Expected: PASS, 6 tests.
 `fitsIdentity` is needed by #218 later (spec §9) and is currently module-private. Replace `src/lib/recs/score.ts` lines 47-63 with:
 
 ```ts
-import { frontFaceOracle, frontFaceTypeLine } from "./faces";
-
 export function isCommanderCandidate(card: Pick<PoolCard, "typeLine" | "oracleText">): boolean {
   const typeLine = frontFaceTypeLine(card.typeLine);
   // Only the front face can make a card eligible to be a commander. Testing the
@@ -167,7 +165,7 @@ export function fitsIdentity(card: PoolCard, identity: Set<string>): boolean {
 }
 ```
 
-Add the `import` to the top of the file alongside the existing `import { classifyRoles, ROLE_TARGETS } from "./roles";`, and delete the now-unused `const frontFace` and the comment block above it. Leave line 102's `lower.split(" // ")[0]` alone — Task 6 revisits it.
+The block above is the body only — deliberately without the import, since an import cannot live at line 47. Add `import { frontFaceOracle, frontFaceTypeLine } from "./faces";` to the top of the file alongside the existing `import { classifyRoles, ROLE_TARGETS } from "./roles";`, and delete the now-unused `const frontFace` and the comment block above it. Leave line 102's `lower.split(" // ")[0]` alone — Task 6 revisits it.
 
 - [ ] **Step 6: Run the full suite to prove no behaviour changed**
 
@@ -186,6 +184,8 @@ git commit -m "refactor(recs): name the two front-face separators apart"
 ## Task 2: Component A — widen the EDHREC parser
 
 `edhrecCache.payload` stores the **raw** upstream payload and `parseEdhrecPayload` is applied at read time (`client.ts:45`, `:61`, `:73`, `:77`). Widening the parser therefore retroactively enriches every commander already cached, with zero refetch.
+
+**A note that outlives this task (spec §10).** That zero-refetch property applies to `edhrecCache` only. `commander_support` stores *parsed* values, so once Task 7 has run, any later change to the fields listed under **Interfaces** below — a rename, a changed derivation, a new field the support table persists — makes every existing support row stale, and the stale rows do not announce themselves. Such a change is not complete until the index has been rebuilt: dispatch `Commander index` against `staging`, verify, then `production`. Budget the ~3 hours before starting the change, not after.
 
 **Files:**
 - Modify: `src/lib/edhrec/parse.ts`
@@ -269,7 +269,7 @@ describe("parseEdhrecPayload — widened fields", () => {
     const d = parseEdhrecPayload(gisa);
     expect(d.deckCount).toBe(4332);
     expect(d.rank).toBe(648);
-    expect(d.saltScore).toBeCloseTo(0.1913, 4);
+    expect(d.saltScore).toBeCloseTo(0.191, 3);   // live value 0.19125683…
   });
 
   it("returns nulls, not zeros, when metadata is absent", () => {
@@ -411,7 +411,7 @@ export function parseEdhrecPayload(payload: unknown): EdhrecData {
 - [ ] **Step 5: Run the tests**
 
 Run: `pnpm vitest run src/lib/edhrec/parse.test.ts`
-Expected: PASS — the new describe block plus all 20 pre-existing tests.
+Expected: PASS — the new describe block plus all 13 pre-existing tests in the file.
 
 - [ ] **Step 6: Verify no consumer broke**
 
@@ -438,6 +438,23 @@ The axis that makes #215 work. From the spec's §6: overlap ranks Ghoulcaller Gi
 **Interfaces:**
 - Consumes: `frontFaceOracle` from `src/lib/recs/faces.ts` (Task 1).
 - Produces: `type CommanderEngine = "etb" | "triggered" | "activated" | "tap" | "static"` and `classifyEngine(card: { oracleText: string | null }): CommanderEngine | null`. Task 5 constrains `commander_support.engine` to exactly these five strings; Task 6 calls it.
+
+**Two deliberate deviations from spec §6, so the implementer does not have to guess:**
+
+1. **Oracle text only; `typeLine` is not read.** §6 describes classifying against
+   both. Every distinction the five values draw is stated in oracle text —
+   "enters", "Whenever", "{T}:", a cost-and-colon — and none of them is visible in
+   a type line. Passing `typeLine` in would add a parameter no branch reads. If a
+   future value needs it (a Saga's chapter cadence, say), widen the signature then.
+2. **The accuracy bar is "no confident wrong answer", not a hit rate.** The
+   classifier returns `null` rather than guessing whenever oracle text is absent
+   or matches no pattern, and `commander_support.engine` is nullable for exactly
+   that reason — a commander with no engine simply does not render the axis. Do
+   not add a fallback that assigns `static` to anything unmatched: a wrong axis is
+   worse than a missing one, which is the project-wide "missing data is omitted,
+   never defaulted" constraint applied here. Judge the classifier against the
+   fixtures in Step 1, all real Scryfall text. If a real card classifies wrongly,
+   add it as a fixture and fix the rule rather than tuning a threshold.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -582,7 +599,7 @@ export function classifyEngine(card: { oracleText: string | null }): CommanderEn
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/lib/recs/engine.test.ts`
-Expected: PASS, 11 assertions.
+Expected: PASS, 9 tests.
 
 If the Gisa case fails as `activated`: her cost is `{B}, {T}, Sacrifice another creature`, so the `{T}` sits in the cost half before the colon — confirm `line.split(":")[0]` is being tested, not the whole line.
 
@@ -795,12 +812,16 @@ Two tables. The header carries one row per commander; the child table carries th
 
 - [ ] **Step 1: Add the tables**
 
-Append to `src/db/schema.ts`, after the `commanderScores` block. Note the imports at the top of the file already include `check`, `index`, `jsonb`, `primaryKey`, `real`, `uuid` and `sql` — nothing new is needed except the two type imports.
+Two type imports go at the **top** of `src/db/schema.ts`, with the existing imports:
 
 ```ts
 import type { EdhrecTag } from "../lib/edhrec/parse";
 import type { CommanderEngine } from "../lib/recs/engine";
+```
 
+Nothing else is needed — `check`, `index`, `jsonb`, `primaryKey`, `real`, `uuid` and `sql` are already imported. The rest of this step appends to the **end** of the file, after the `commanderScores` block:
+
+```ts
 /**
  * Precomputed EDHREC support data for every commander-legal legendary, not just
  * the ones a user owns. #213/#214/#215 all need to score against the whole
@@ -1131,6 +1152,21 @@ describe("toSupportRows", () => {
     });
     expect(cards.map((c) => c.oracleId)).toEqual(["sol"]);
   });
+
+  it("emits one row when a list names both faces of the same card", () => {
+    // Both keys resolve to "bala". Two rows would share the composite primary
+    // key and fail the insert for the whole commander, not just this row.
+    const idx = buildNameIndex([{ oracleId: "bala", name: "Bala Ged Recovery // Bala Ged Sanctuary" }]);
+    const { cards } = toSupportRows({
+      commander: GISA,
+      result: {
+        data: data({ topCards: ["Bala Ged Recovery", "Bala Ged Recovery // Bala Ged Sanctuary"] }),
+        unreachable: false,
+      },
+      nameIndex: idx,
+    });
+    expect(cards).toHaveLength(1);
+  });
 });
 ```
 
@@ -1233,6 +1269,7 @@ export function toSupportRows(args: {
   if (state !== "ok") return { header, cards: [], unresolved: 0 };
 
   const cards: SupportCard[] = [];
+  const emitted = new Set<string>();
   let unresolved = 0;
   for (const name of d!.topCards) {
     const key = name.toLowerCase();
@@ -1242,6 +1279,11 @@ export function toSupportRows(args: {
     // silently shrinking the denominator and inflating every user's completeness.
     if (oracleId === undefined) { unresolved++; continue; }
     if (oracleId === commander.oracleId) continue;
+    // buildNameIndex maps both "Front // Back" and "Front" to one oracle id, so
+    // a list carrying both forms would otherwise emit two rows sharing the
+    // composite primary key and fail the whole insert for that commander.
+    if (emitted.has(oracleId)) continue;
+    emitted.add(oracleId);
     cards.push({
       commanderOracleId: commander.oracleId,
       oracleId,
@@ -1256,7 +1298,7 @@ export function toSupportRows(args: {
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `pnpm vitest run src/lib/edhrec/index-build.test.ts`
-Expected: PASS, 10 tests.
+Expected: PASS, 11 tests.
 
 - [ ] **Step 6: Prove the live path did not change**
 
@@ -1302,8 +1344,19 @@ invent a different shape.
 Create `src/lib/edhrec/seed-index.test.ts`. Every test injects fakes, so the
 suite touches neither Postgres nor the network.
 
+The `vi.hoisted` + `vi.mock("../../db")` pair at the top is the convention in
+`src/lib/recs/store.test.ts:5-6` and four sibling test files, and it is required
+here for the same reason: `seed-index.ts` imports the db client at module scope
+for its default loaders, and that client throws at import time without
+`DATABASE_URL`. Injecting fakes into `buildCommanderIndex` does not help — the
+module has already failed to load by then.
+
 ```ts
 import { describe, expect, it, vi } from "vitest";
+
+const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
+vi.mock("../../db", () => ({ db: stub.db }));
+
 import { buildCommanderIndex } from "./seed-index";
 
 const commander = (name: string, oracleId: string) => ({
@@ -1442,7 +1495,7 @@ Expected: FAIL — `Failed to resolve import "./seed-index"`.
 Create `src/lib/edhrec/seed-index.ts`:
 
 ```ts
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderSupport, commanderSupportCards } from "../../db/schema";
 import { isCommanderCandidate } from "../recs/score";
@@ -1484,10 +1537,17 @@ async function loadCommandersFromDb(): Promise<IndexCommander[]> {
       oracleId: cards.oracleId, name: cards.name,
       typeLine: cards.typeLine, oracleText: cards.oracleText,
     })
-    .from(cards);
-  // Filtered in TypeScript rather than SQL so the definition of "can be a
-  // commander" has exactly one home — score.ts, where it is unit-tested and
-  // where the front-face rule that kept Westvale Abbey out already lives.
+    .from(cards)
+    // Both halves of the filter, in the same order the live path applies them:
+    // legality in SQL (recommend.ts:120, :127), then the front-face type test in
+    // TypeScript (recommend.ts:147). Dropping the legality half would index
+    // banned cards and Un-set legends, diverge from what the app actually
+    // recommends, and spend thousands of EDHREC fetches on commanders no user
+    // can play.
+    .where(eq(cards.commanderLegal, true));
+  // The type test stays in TypeScript so the definition of "can be a commander"
+  // has exactly one home — score.ts, where it is unit-tested and where the
+  // front-face rule that kept Westvale Abbey out already lives.
   return rows.filter(isCommanderCandidate);
 }
 
@@ -1542,6 +1602,11 @@ export async function buildCommanderIndex(
 
   const [commanders, nameRows] = await Promise.all([load(), loadNames()]);
   const nameIndex = buildNameIndex(nameRows);
+  // Spec §4/§10: state the candidate count before spending ~3,000 serial
+  // fetches. The number is the run's own sanity check — a catalog regression
+  // that halves it is visible in the first line of the log rather than in a
+  // support table that quietly lost a thousand commanders.
+  console.log(`commander-index: ${commanders.length} commander-legal candidates`);
   const already = opts.loadAlreadyComputed ? await opts.loadAlreadyComputed() : new Set<string>();
 
   const r: BuildIndexResult = {
@@ -1566,6 +1631,15 @@ export async function buildCommanderIndex(
       r.cardRows += cardRows.length;
       r.unresolved += unresolved;
       if (header.synergyState === "absent") r.absent++;
+      // Spec §4: per-commander, not just the run total. A single commander
+      // contributing hundreds of unresolved names means a name-format mismatch
+      // for that page; the same count spread across the whole run is the normal
+      // tail of tokens and un-set cards. The aggregate cannot tell them apart.
+      if (unresolved > 0) {
+        console.warn(
+          `commander-index: ${commander.name} — ${unresolved} EDHREC names unresolved`,
+        );
+      }
     } catch (err) {
       r.failed++;
       console.error(`commander-index: ${commander.name} failed`, err);
@@ -1687,7 +1761,11 @@ jobs:
     # a timeout mid-run leaves a partially rebuilt index, which the resume input
     # exists to recover.
     timeout-minutes: 180
-    environment: commander-index-${{ github.event.inputs.target || 'production' }}
+    # Reuses the catalog-* environments rather than adding a commander-index-*
+    # pair: this writes to the same database with the same secret, and a second
+    # environment holding an identical value is a second thing to keep in sync
+    # for no benefit.
+    environment: catalog-${{ github.event.inputs.target || 'production' }}
     defaults:
       run:
         shell: bash
@@ -1708,7 +1786,7 @@ jobs:
           {
             echo "## Commander index"
             echo ""
-            echo "- Target: \`commander-index-${{ github.event.inputs.target || 'production' }}\`"
+            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           pnpm --silent db:build:index | tee -a "$GITHUB_STEP_SUMMARY"
@@ -1725,12 +1803,27 @@ In `AGENTS.md`, under `## Workflow`, after the `pnpm check:scryfall` bullet:
   Needs the `COMMANDER_INDEX_ENABLED` repository variable set to `'true'` to fire on schedule.
 ```
 
-- [ ] **Step 9: Validate the workflow parses**
+- [ ] **Step 9: Note the operator step in the PR description**
+
+Nothing here creates the repository variable, so the workflow ships inert until
+someone sets it. Add to the PR description, under a **Deploy steps** heading:
+
+```
+Set repository variable COMMANDER_INDEX_ENABLED=true
+  (Settings → Secrets and variables → Actions → Variables)
+```
+
+No new environment is needed — the workflow reuses `catalog-staging` /
+`catalog-production`, which already exist for the catalog refresh. Before
+enabling the schedule, run the first index by hand via `workflow_dispatch`
+against `staging` and read the step summary.
+
+- [ ] **Step 10: Validate the workflow parses**
 
 Run: `python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/commander-index.yml'))" && echo OK`
 Expected: `OK`. A malformed workflow is otherwise only discovered on push.
 
-- [ ] **Step 10: Full gate and commit**
+- [ ] **Step 11: Full gate and commit**
 
 ```bash
 pnpm typecheck && pnpm lint && pnpm test
@@ -2009,7 +2102,10 @@ export type ManapoolFeed = {
   collapsedDuplicates: number;
 };
 
-const EMPTY: ManapoolFeed = { asOf: new Date(0), rows: [], collapsedDuplicates: 0 };
+// A function, not a shared constant: a module-level object would hand every
+// unrecognised payload the same `rows` array and the same Date instance, so one
+// mutating caller would poison every other.
+const empty = (): ManapoolFeed => ({ asOf: new Date(0), rows: [], collapsedDuplicates: 0 });
 
 // Number.isFinite, not typeof: a JSON null is typeof "object" but a JSON NaN
 // would pass a typeof check while being unusable as an integer column value.
@@ -2048,9 +2144,9 @@ function preferred(a: PriceRow, b: PriceRow): PriceRow {
  * contract canary (`pnpm check:manapool`) is what turns that zero into an alarm.
  */
 export function parseManapoolPayload(raw: unknown): ManapoolFeed {
-  if (typeof raw !== "object" || raw === null) return EMPTY;
+  if (typeof raw !== "object" || raw === null) return empty();
   const payload = raw as { meta?: { as_of?: unknown }; data?: unknown };
-  if (!Array.isArray(payload.data)) return EMPTY;
+  if (!Array.isArray(payload.data)) return empty();
 
   const asOfRaw = payload.meta?.as_of;
   const asOf = typeof asOfRaw === "string" ? new Date(asOfRaw) : new Date(0);
@@ -2110,6 +2206,14 @@ const TIMEOUT_MS = 5 * 60 * 1000;
  *
  * Returns the raw payload; `parseManapoolPayload` owns every shape assumption,
  * so a field rename upstream is one file's problem rather than two.
+ *
+ * Deliberately buffers the whole body rather than streaming, unlike
+ * `seed-printings.ts`. That feed is ~2 GB and has no choice; this one was
+ * ~51 MB on 2026-08-29, and `res.json()` keeps the parser a pure function of a
+ * plain object — which is what makes the fixture-driven tests in `parse.test.ts`
+ * possible at all. `price-refresh.yml` sets `NODE_OPTIONS=--max-old-space-size=4096`
+ * to cover the parsed-object expansion. If the feed passes ~250 MB, revisit:
+ * stream it and give the parser a row iterator instead.
  */
 export async function fetchManapoolSingles(): Promise<unknown> {
   const res = await fetch(MANAPOOL_SINGLES_URL, {
@@ -2328,10 +2432,17 @@ export async function seedPrices(): Promise<SeedPricesResult> {
 
 - [ ] **Step 2: Test the orphan filter**
 
-Create `src/lib/manapool/seed-prices.test.ts`:
+Create `src/lib/manapool/seed-prices.test.ts`. Same db stub as
+`seed-index.test.ts` and `src/lib/recs/store.test.ts:5-6`: `seed-prices.ts`
+imports the db client at module scope, and that client throws at import time
+without `DATABASE_URL`, before any test body runs.
 
 ```ts
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+
+const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
+vi.mock("../../db", () => ({ db: stub.db }));
+
 import { filterKnownPrintings } from "./seed-prices";
 
 const row = (scryfallId: string) => ({
@@ -2375,7 +2486,7 @@ seedPrices()
   .then((r) => {
     console.log(
       `Priced ${r.upserted} printings as of ${r.asOf.toISOString()}; ` +
-      `collapsed ${r.collapsedDuplicates} duplicate ids, skipped ${r.skippedOrphan} orphan.`,
+      `collapsed ${r.collapsedDuplicates} surplus duplicate rows, skipped ${r.skippedOrphan} orphan.`,
     );
     process.exit(0);
   })
@@ -2423,6 +2534,20 @@ async function main() {
   const feed = parseManapoolPayload(raw);
   if (feed.rows.length === 0) problems.push("parser produced zero rows");
 
+  // The dedup rule assumes the duplicate scryfall_ids are product-form variants
+  // (foil/etched/condition) of one printing. On 2026-08-29 that was 2,879 surplus
+  // rows out of 102,587 entries — 2.8%. A jump outside this band means the
+  // duplicates are something else, and collapsing them by max(price) would be
+  // silently wrong rather than loudly broken.
+  const total = feed.rows.length + feed.collapsedDuplicates;
+  const surplusRatio = total === 0 ? 0 : feed.collapsedDuplicates / total;
+  if (surplusRatio < 0.005 || surplusRatio > 0.1) {
+    problems.push(
+      `scryfall_id duplication is ${(surplusRatio * 100).toFixed(2)}% of entries, ` +
+      `outside the observed 0.5%-10% band (2.8% on 2026-08-29)`,
+    );
+  }
+
   if (problems.length > 0) {
     console.error("ManaPool contract check FAILED:");
     for (const p of problems) console.error(`  - ${p}`);
@@ -2430,7 +2555,7 @@ async function main() {
   }
   console.log(
     `ManaPool contract OK — ${feed.rows.length} rows as of ${feed.asOf.toISOString()} ` +
-    `(${feed.collapsedDuplicates} duplicate ids collapsed).`,
+    `(${feed.collapsedDuplicates} surplus duplicate rows collapsed).`,
   );
 }
 
@@ -2449,7 +2574,7 @@ In `package.json`, alongside the existing seed and check scripts:
 - [ ] **Step 6: Run the canary against the live feed**
 
 Run: `pnpm check:manapool`
-Expected: `ManaPool contract OK — ~99,700 rows as of <today> (~1,087 duplicate ids collapsed).`
+Expected: `ManaPool contract OK — ~99,700 rows as of <today> (~2,879 duplicate rows collapsed).`
 
 This is the one live check in the task. If it fails, the feed moved since
 2026-08-29 and the parser needs updating before anything else proceeds.
@@ -2497,6 +2622,9 @@ jobs:
         shell: bash
     env:
       DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      # The feed buffers whole (see fetchManapoolSingles) — ~51MB of JSON text
+      # expands well past Node's 2GB default headroom once parsed into objects.
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -2538,7 +2666,20 @@ If the workflow's `name:` or job name says "Scryfall" specifically, widen it to
 cover both — e.g. `name: Upstream contract checks` — and update the `AGENTS.md`
 reference to match.
 
-- [ ] **Step 9: Document both workflows**
+- [ ] **Step 9: Note the operator step in the PR description**
+
+As with the commander index, nothing here creates the repository variable. Add
+to the PR description, under **Deploy steps**:
+
+```
+Set repository variable PRICE_REFRESH_ENABLED=true
+  (Settings → Secrets and variables → Actions → Variables)
+```
+
+Run the first refresh by hand via `workflow_dispatch` against `staging` and read
+the step summary before enabling the schedule.
+
+- [ ] **Step 10: Document both workflows**
 
 In `AGENTS.md`, under `## Workflow`, extend the `pnpm check:scryfall` bullet
 area:
@@ -2552,7 +2693,7 @@ area:
   runs it every Monday; it needs the `PRICE_REFRESH_ENABLED` repository variable set to `'true'`.
 ```
 
-- [ ] **Step 10: Validate the workflows parse**
+- [ ] **Step 11: Validate the workflows parse**
 
 ```bash
 python3 - <<'PY'
@@ -2563,7 +2704,7 @@ PY
 ```
 Expected: `OK` twice.
 
-- [ ] **Step 11: Gate and commit**
+- [ ] **Step 12: Gate and commit**
 
 ```bash
 pnpm typecheck && pnpm lint && pnpm test
@@ -2573,7 +2714,7 @@ git add src/lib/manapool/seed-prices.ts src/lib/manapool/seed-prices.test.ts scr
 git commit -m "feat(manapool): ingest prices weekly and guard the feed contract"
 ```
 
-- [ ] **Step 12: Final push — still no PR**
+- [ ] **Step 13: Final push — still no PR**
 
 ```bash
 pnpm typecheck && pnpm lint && pnpm test
