@@ -456,12 +456,12 @@ git commit -m "feat(availability): compute per-card free/in-use counts across de
 - Consumes: nothing.
 - Produces: `availabilityCopy` (the full block), and `addPanelCopy.quickAdd.rowAria(name, typeLine, owned, availability?)`.
 
-- [ ] **Step 1: Add the four tokens**
+- [ ] **Step 1: Add the five tokens**
 
 In `src/app/globals.css`, in the `/* Feedback */` group beside `--danger`:
 
 ```css
-  /* Card availability (#43). Two aliases and two literals — no new hues.
+  /* Card availability (#43). Two aliases and three literals — no new hues.
      There is no light theme in this stylesheet (one :root, no color-scheme),
      so these are single-value like every other token. */
   --avail-soft: var(--fg-muted);

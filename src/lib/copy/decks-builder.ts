@@ -25,8 +25,9 @@ export const decksBuilderCopy = {
 
 // Add panel overhaul (#158) — transcribed from
 // design/design_handoff_the99_add_panel/add-panel · copy strings.ts.
-// Functions for interpolated strings, no JSX, no number formatting: callers
-// pass pre-formatted strings. Voice is Kitchen Table — utility copy stays
+// Functions for interpolated strings, no JSX. Counts arrive as raw numbers and
+// are branched on for singular/plural below; they are simply never
+// locale-formatted. Voice is Kitchen Table — utility copy stays
 // straight, and the two expressive moments are marked below.
 // The handoff's own `resultCount` sets the singular/plural pattern for this
 // block; the count strings below follow it. Applied by eng where the handoff
@@ -196,8 +197,19 @@ export const addPanelCopy = {
     rowInDeck: "✓ In deck",
     rowOwned: (qty: number) => `×${qty} owned`,
     rowNotOwned: "not owned",
-    rowAria: (name: string, typeLine: string, owned: boolean) =>
-      `${name}, ${typeLine}, ${owned ? "owned" : "not owned"}`,
+    // `availability` is one of the availabilityCopy.marker.*Aria strings, or
+    // null. It is prose, not the visual label: the eye reads "0 free — in
+    // Atraxa", the ear hears "no free copies; this one is on your Atraxa list"
+    // — the same reason the diamond glyph is aria-hidden. A free card passes
+    // nothing and produces the exact shipped string.
+    rowAria: (
+      name: string,
+      typeLine: string,
+      owned: boolean,
+      availability?: string | null,
+    ) =>
+      `${name}, ${typeLine}, ${owned ? "owned" : "not owned"}` +
+      (availability ? `, ${availability}` : ""),
 
     ownedToggle: "Owned only",
     ownedToggleAria: "Show only cards you own",
