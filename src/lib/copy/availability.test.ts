@@ -27,8 +27,50 @@ describe("availabilityCopy", () => {
     expect(availabilityCopy.marker.soft(2)).toBe("2 in a brew");
   });
 
-  it("banned vocabulary does not appear anywhere", () => {
-    expect(JSON.stringify(availabilityCopy)).not.toMatch(/deck tax/i);
+  // "Deck tax" is banned vocabulary (it collides with commander tax), and most
+  // of this module is functions — so JSON.stringify would silently skip nearly
+  // all of it and pass on an empty check. Render every member instead, the same
+  // way decks-builder.test.ts samples addPanelCopy for em dashes.
+  const sample = (value: unknown, path: string): string[] => {
+    if (typeof value === "string") return [value];
+    if (typeof value === "object" && value !== null) {
+      return Object.entries(value).flatMap(([k, v]) => sample(v, `${path}.${k}`));
+    }
+    if (typeof value !== "function") return [];
+
+    // Members take names, counts, or a ranking mode. Try each shape: one call
+    // would leave a singular/plural branch unrendered, and it is the branch
+    // text, not the number, that could carry a banned phrase.
+    const arity = value.length;
+    const fills: unknown[][] = [
+      ...[0, 1, 2].map((n) => Array.from({ length: arity }, () => n)),
+      Array.from({ length: arity }, () => "x"),
+      Array.from({ length: arity }, (_, i) => (i === 0 ? "x" : 2)),
+      Array.from({ length: arity }, (_, i) => (i === 0 ? "free" : 2)),
+    ];
+    const rendered = fills.flatMap((args) => {
+      try {
+        return [String((value as (...a: unknown[]) => string)(...args))];
+      } catch {
+        return [];
+      }
+    });
+    // A member no fill can call is a sampler that needs a new shape, not a
+    // string that passed. Without this the check rots back into testing nothing.
+    if (rendered.length === 0) {
+      throw new Error(`${path} rendered under no argument shape, so it went unsampled.`);
+    }
+    return rendered;
+  };
+
+  it("banned vocabulary does not appear anywhere, functions included", () => {
+    const strings = sample(availabilityCopy, "availabilityCopy");
+    // Guards the guard: if a refactor ever empties the walk, this fails loudly
+    // rather than passing vacuously the way JSON.stringify did.
+    expect(strings.length).toBeGreaterThan(100);
+    for (const s of strings) {
+      expect(s, s).not.toMatch(/deck tax/i);
+    }
   });
 
   // One deck can be the whole demand: "any number" cards (Relentless Rats,
