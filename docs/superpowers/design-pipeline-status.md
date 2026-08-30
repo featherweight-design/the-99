@@ -113,24 +113,29 @@ This list previously ran as two — a "Backlog" and a "Ready for design" — but
 | 9 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
 | 10 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — needs accumulated play data |
 | 11 | **#151** Design: per-deck printing override for a card's art | Post-v1. **Split out of #42** at the 2026-08-02 workshop — #42 had inherited it from #105 on the reasoning that a deck-level override needs a deck to attach to, but it is unrelated to import (import is getting a deck in; this is how a deck looks once it is there) and #42's brief was already large. Last because it is polish: `card_art_preferences` is keyed `(user_id, oracle_id)` and `deck_cards` has no printing column, so it needs new storage and a new read path for no functional gain |
+| 12 | **#220** Design: commander discovery — one ranked list, two sorts | Post-v1. **One design cycle covering #213 and #214** — both recommend a commander the user does not currently play, over the same candidate universe, off the same index, ending in the same "start the deck" action. They differ only in the sort: #213 ranks on overlap with the collection (fit), #214 on distance from the archetypes already played (novelty). Split apart, Design invents two list surfaces for one job. Blocked on rank 1 for its ending — both features terminate in "start the deck", which is precisely what #130 rules on. The engineering foundation is specced and planned on `feat/rec-foundation` but not built, so there is no live data to draw against |
+| 13 | **#221** Design: audit a built deck's commander and offer alternatives | Post-v1. Covers **#215**. Genuinely new surface with no precedent in the app. Three axes reported side by side and never blended — overlap, theme fit, practical castability — plus two qualifying notes that are not scores ("requires manabase work", "you'd drop N cards"). The hard part is that overlap and theme both rank the *current* commander top of her own deck, so the surface has to make a high score legible as not-an-argument-to-keep-her. Depends on the same unbuilt foundation as rank 12 |
+| 14 | **#222** Design: which of my decks does this card fit | Post-v1. Covers **#218**. Output is an **addendum to `design/design_handoff_the99_collection/`**, not a new handoff — the surface is a panel inside the existing card detail modal, following the Add panel addendum precedent. Two axes reported separately: synergy against the deck's commander, and whether the deck has a role gap this card fills. **Unblocked** — unlike ranks 12 and 13 it needs no precomputed index, no parser widening and no price ingest, so it could be pulled forward if Design wants a small one |
 
 ---
 
-## ❓ Unplaced — ships UI but is not a `type: design` ticket
+## 🧭 Recommendation intake (2026-08-29) — resolved 2026-08-30
 
-The legend above says every `type: design` ticket sits in exactly one state, and that a ticket fitting none of them is a gap in the legend rather than a ticket to file under the closest match. Five tickets from the 2026-08-29 recommendation-engine intake are exactly that case: they are labelled `type: feature`, so the ranked design backlog does not cover them, but four of the five ship user-facing surfaces and are therefore gated on a design handoff by `AGENTS.md`. They are recorded here rather than stretched into 🕰️.
+The 2026-08-29 intake filed five `type: feature` tickets, four of which ship UI and were therefore gated on a handoff that no ranked design row covered. They sat in an ❓ Unplaced table rather than being stretched into 🕰️, because the legend says every state is exhaustive and a ticket fitting none is a gap in the legend.
 
-| Ticket | Ships UI? | Design status |
+**Hugh's call (2026-08-30): companion `type: design` tickets, entering the ranked backlog at the bottom.** The alternative — widening the legend to admit `type: feature` rows — was declined because it makes 🕰️ mean two different things at once. Three tickets cover the four features:
+
+| Feature ticket | Design ticket | Rank |
 |---|---|---|
-| **#213** Recommend commanders I don't own but already have the 99 for | Yes | No handoff, no design cycle started |
-| **#214** Recommend a deck I haven't tried — novelty engine | Yes | No handoff, no design cycle started |
-| **#215** Audit a built deck's commander and suggest a better one | Yes | No handoff, no design cycle started |
-| **#218** Show which of my decks a collection card would fit | Yes | No handoff, no design cycle started |
-| **#216** Redundancy scoring · **#217** 99-level card swaps | Deferred | Explicitly future work; not scoped |
+| **#213** Recommend commanders I don't own but have the 99 for | **#220** | 12 |
+| **#214** Recommend a deck I haven't tried — novelty engine | **#220** (same cycle) | 12 |
+| **#215** Audit a built deck's commander and suggest a better one | **#221** | 13 |
+| **#218** Show which of my decks a collection card would fit | **#222** | 14 |
+| **#216** Redundancy scoring · **#217** 99-level card swaps | none — deferred | — |
 
-**What resolves this:** either these get `type: design` companion tickets and enter the ranked backlog, or the legend gains a state for "feature ticket whose UI half still needs a handoff." That is a call for Hugh, not one to make by absorbing them into an existing row.
+#216 and #217 ship no UI and are explicitly future work, so they need no design row.
 
-**Not blocked meanwhile.** The shared foundation these four sit on — the EDHREC parser widening, the commander support index, the ManaPool price ingest, the commander engine classifier and the land-production check — is entirely backend/data. Per `AGENTS.md`, backend work proceeds without a handoff, so the foundation can be built while the design question above is open. Spec and plan are on `feat/rec-foundation`.
+**Not blocked meanwhile.** The shared foundation these sit on — the EDHREC parser widening, the commander support index, the ManaPool price ingest, the commander engine classifier and the land-production check — is entirely backend/data. Per `AGENTS.md`, backend work proceeds without a handoff, so the foundation can be built while ranks 12–14 run their design cycles. Spec and plan are on `feat/rec-foundation`.
 
 ---
 
