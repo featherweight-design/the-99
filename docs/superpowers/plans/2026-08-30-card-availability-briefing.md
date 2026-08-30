@@ -58,7 +58,9 @@ the `docs/superpowers/design-pipeline-status.md` tracker row.
 | `searchCards` has no `deckId` | `src/app/decks/[id]/search-action.ts:38-40` | `searchCards(query, colorIdentity, ownedOnly)`. Sole call site is `src/components/decks/use-card-search.ts:48`. Task 4 adds the parameter |
 | The cold-eyes sweep exists here | `scripts/audit-sweep.mjs` | **Present and adapted to this repo** — its own manifest, driving a local dev server on `PROBE_BASE` (default `localhost:3002`), phone + desktop, full-page screenshot plus an overflow report per route × viewport |
 | Sweep credentials are placed | `.env` | `E2E_AUDIT_USER_EMAIL` and `CLERK_SECRET_KEY` both present. `E2E_AUDIT_ADMIN_*` is absent and irrelevant — The 99 has no admin role. `PROBE_BASE` is absent and defaults correctly |
-| All six #43 surfaces are already in the sweep manifest | `scripts/audit-sweep.mjs:42-48` | `/`, `/collection`, `/commanders`, `/decks`, `/decks/new`, `/decks/import`, plus a `deck` entry resolved at run time from the account's first deck. **No manifest additions are needed** — which is unusual; confirm rather than assume when the cold-eyes pass runs |
+| The sweep manifest holds **9 entries**, and #43 needs more | `scripts/audit-sweep.mjs:41-66` | Six static routes (`/`, `/collection`, `/commanders`, `/decks`, `/decks/new`, `/decks/import`), a `builder-deck` entry resolved at run time from the account's first deck, and two `act` entries that click into a state (`builder-consider`, `builder-rationale-open`). **Additions are required — see below**; the file's own convention is that a surface-adding PR extends the manifest in the same PR |
+| `/commanders/[slug]` is a real route and is **absent** from the manifest | `src/app/commanders/[slug]/` | Commander detail — where Task 8's in-use disclosure lives. No cold-eyes pass has ever looked at it |
+| `/collection`'s view, modal and filter states are **client state, not URLs** | `src/app/collection/page.tsx:124` → `CollectionBrowser` | The page hands everything to one client component, so tile view, the card-detail modal and the `Availability ▾` panel are reachable only via `act` entries, never a path |
 
 **Re-verify at kickoff.** Every row was read directly on 2026-08-30. Nothing has touched `src/`
 since `b897886` (#210), so if that is still `main`'s tip minus the two docs commits, the table holds.
@@ -321,19 +323,30 @@ only the denominator differs, and the shipped variant stays. Ratify item 4.
 7. **Mid-run cold-eyes review triggered after Task 8**, not later. That is the point at which the
    builder and commanders verticals are both whole and `/collection` is still unbuilt — so the
    triage list can be fed forward into Tasks 9 and 10 instead of becoming cleanup PRs. Capture via
-   `node --env-file=.env scripts/audit-sweep.mjs` against a local dev server; the manifest already
-   covers all six routes.
-8. **Task 10 doubles as the reserved polish slot.** Ten PRs is already long; rather than an
+   `node --env-file=.env scripts/audit-sweep.mjs` against a local dev server.
+8. **The sweep manifest is extended as the surfaces land**, per `audit-sweep.mjs`'s own convention —
+   each addition in the same PR as the surface, not batched at the end. A state absent from the
+   manifest is a state no cold-eyes pass will ever see, and four of these are behind controls rather
+   than URLs, so they are exactly the ones a route list silently misses:
+
+   | Entry | Kind | Lands with |
+   |---|---|---|
+   | `commander-detail` → `/commanders/[slug]` | new path, slug resolved at run time like `builder-deck` | Task 8 |
+   | `commanders-free` → `/commanders?avail=free` | new path | Task 6 |
+   | `collection-grid` | `act` — switch to tile view | Task 9 |
+   | `collection-detail` | `act` — open a card's modal | Task 9 |
+   | `collection-avail-filter` | `act` — open `Availability ▾` | Task 10 |
+9. **Task 10 doubles as the reserved polish slot.** Ten PRs is already long; rather than an
    eleventh, Task 10's PR carries the cold-eyes triage items that are not blockers. If the triage
    list is large enough to swamp it, open an eleventh PR rather than skipping the polish.
-9. `free` renders nothing, asserted in `availability-marker.test.tsx`; no string in
+10. `free` renders nothing, asserted in `availability-marker.test.tsx`; no string in
    `availabilityCopy` labels the free state; `MATURE_DECK_SIZE` has exactly one definition.
-10. Lint no worse than 113 warnings / 0 errors; the full suite green and larger than 1117 tests.
-11. `docs/superpowers/design-pipeline-status.md` updated — the seven `ADDENDUM-2-READINESS.md`
+11. Lint no worse than 113 warnings / 0 errors; the full suite green and larger than 1117 tests.
+12. `docs/superpowers/design-pipeline-status.md` updated — the seven `ADDENDUM-2-READINESS.md`
     ratify items need a **tracker row**, not just a `type: design` label. `design-status` parses
     that file and never queries GitHub labels.
-12. #43 closed by an explicit `Closes #43` line.
-13. Follow-ups surfaced as a **ranked list at close-out** for Hugh to approve — including the
+13. #43 closed by an explicit `Closes #43` line.
+14. Follow-ups surfaced as a **ranked list at close-out** for Hugh to approve — including the
     over-commitment navigation gap. **Do not file issues unilaterally.**
-14. Final report via the `feature-run-report` skill. Not free-form. Its infrastructure table reads
+15. Final report via the `feature-run-report` skill. Not free-form. Its infrastructure table reads
     "none"; its migration row reads the one `decks.status` drop.
