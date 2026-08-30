@@ -105,9 +105,10 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  /* Wired through @theme so the marker can reach these as Tailwind classes.
-     The repo's no-restricted-syntax lint rule forbids delivering colour by
-     inline style, so a token with no utility behind it is unusable. */
+  /* Wired through @theme so the marker can reach these as Tailwind classes
+     (`text-avail-hard`, `border-avail-over-border`). A :root token with no
+     --color-* alias is only reachable by inline style, which the repo's
+     no-restricted-syntax rule steers away from on interactive elements. */
   --color-avail-soft: var(--avail-soft);
   --color-avail-hard: var(--avail-hard);
   --color-avail-hard-fg: var(--avail-hard-fg);

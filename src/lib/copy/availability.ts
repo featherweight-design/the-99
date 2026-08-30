@@ -215,7 +215,10 @@ export const availabilityCopy = {
     // Chips reuse the shipped chip row; glyph is the chip's leading dot.
     chipRemoveAria: (label: string) => `Remove filter: ${label.toLowerCase()}`,
     // Row label extends the shipped one — clause lands LAST, after set/rarity.
-    // A free card produces today's string with no fourth argument.
+    // A free card passes no `availability` and produces today's string
+    // byte-for-byte. Note this signature takes it fifth, after `setAndRarity`;
+    // the quick-add rowAria in decks-builder.ts takes it fourth. The clause
+    // lands last in both, which is the part that has to match.
     rowAria: (
       name: string,
       typeLine: string,
