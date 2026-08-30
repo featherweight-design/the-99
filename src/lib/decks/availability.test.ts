@@ -31,3 +31,56 @@ describe("availabilityState", () => {
     expect(availabilityState({ owned: 0, free: 0, soft: 0 })).toBe("free");
   });
 });
+
+// Addendum 2 §6: a deck never claims a card against itself. The query hands
+// back a `free` computed against a supply that already has this deck's copies
+// removed, so the same numbers mean something different here.
+describe("availabilityState, on a deck's own decklist (selfExcluded)", () => {
+  const self = { selfExcluded: true } as const;
+
+  // The whole point of the flag. Off-decklist these numbers are "hard".
+  it("is free at free === 0, where the un-excluded vantage says hard", () => {
+    expect(availabilityState({ owned: 1, free: 0, soft: 0 })).toBe("hard");
+    expect(availabilityState({ owned: 1, free: 0, soft: 0 }, self)).toBe("free");
+  });
+
+  // free === 0 is silence even with brews waiting: there is a copy for each of
+  // them, so nothing is owed.
+  it("is free at free === 0 regardless of soft claims", () => {
+    expect(availabilityState({ owned: 2, free: 0, soft: 3 }, self)).toBe("free");
+  });
+
+  // The hard branch is unreachable in this vantage. A real conflict goes
+  // negative instead, so `over` must still fire.
+  it("still reports over when another deck wants a copy that does not exist", () => {
+    expect(availabilityState({ owned: 1, free: -1, soft: 0 }, self)).toBe("over");
+  });
+
+  // The flag must not swallow the states that are not about self-exclusion.
+  it("leaves soft and free untouched", () => {
+    expect(availabilityState({ owned: 2, free: 1, soft: 1 }, self)).toBe("soft");
+    expect(availabilityState({ owned: 4, free: 3, soft: 0 }, self)).toBe("free");
+  });
+
+  // The guard reads TRUE owned, which the query never reduces, so it outranks
+  // the flag exactly as it does everywhere else.
+  it("keeps the unowned guard ahead of the flag", () => {
+    expect(availabilityState({ owned: 0, free: -2, soft: 0 }, self)).toBe("free");
+  });
+
+  // Addendum 2's drawn state 9, verbatim: Atraxa at 99/99 viewing its own list.
+  // Five of six rows are silent, which is the rule the whole feature rests on.
+  it("reproduces the six rows of Addendum 2's worked example", () => {
+    const rows = [
+      { name: "Smothering Tithe", owned: 1, free: 0, soft: 0, expected: "free" },
+      { name: "Rhystic Study", owned: 1, free: 0, soft: 0, expected: "free" },
+      { name: "Arcane Signet", owned: 1, free: -1, soft: 0, expected: "over" },
+      { name: "Sol Ring", owned: 4, free: 3, soft: 0, expected: "free" },
+      { name: "Mind Stone", owned: 2, free: 1, soft: 1, expected: "soft" },
+      { name: "Cyclonic Rift", owned: 1, free: 0, soft: 0, expected: "free" },
+    ] as const;
+    for (const r of rows) {
+      expect(availabilityState(r, self), r.name).toBe(r.expected);
+    }
+  });
+});

@@ -194,9 +194,17 @@ export type AvailabilityState = "free" | "soft" | "hard" | "over";
  * `selfExcluded` is the deck's-own-decklist vantage (Addendum 2 §6). There,
  * `free` is computed against a supply that already has the current deck's
  * copies removed, so `free === 0` means "exactly enough for everyone,
- * including this deck" — which is silence, not a claim. Addendum 2 states the
- * consequence directly: **inside a finished deck the hard state is
- * unreachable**; a genuine conflict has `free < 0` and presents as `over`.
+ * including this deck" — which is silence, not a claim. A genuine conflict has
+ * `free < 0` and presents as `over`.
+ *
+ * The hard state is therefore unreachable in this vantage — for ANY deck, not
+ * only a finished one. Deck maturity is not an input here: it is already spent
+ * upstream, deciding whether each claim counted as hard or soft. Addendum 2
+ * words the consequence as "inside a finished deck", because that is the case
+ * it draws, but the caller controls the vantage and nothing checks maturity at
+ * this layer. Pass `selfExcluded` only when `free` came from a query given the
+ * matching `excludeDeckId`; passing it against an unexcluded figure silently
+ * converts every genuine hard claim into silence.
  *
  * The `owned <= 0` guard is tested against TRUE owned, never the excluded
  * supply, and it stays first. It exists to keep the marker off cards the
