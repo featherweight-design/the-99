@@ -25,8 +25,9 @@ export const decksBuilderCopy = {
 
 // Add panel overhaul (#158) — transcribed from
 // design/design_handoff_the99_add_panel/add-panel · copy strings.ts.
-// Functions for interpolated strings, no JSX, no number formatting: callers
-// pass pre-formatted strings. Voice is Kitchen Table — utility copy stays
+// Functions for interpolated strings, no JSX. Counts arrive as raw numbers and
+// are branched on for singular/plural below; they are simply never
+// locale-formatted. Voice is Kitchen Table — utility copy stays
 // straight, and the two expressive moments are marked below.
 // The handoff's own `resultCount` sets the singular/plural pattern for this
 // block; the count strings below follow it. Applied by eng where the handoff

@@ -1,8 +1,11 @@
 // src/lib/copy/availability.ts — card availability block (#43).
 // Shape follows src/lib/copy/decks-builder.ts: flat const object, functions for
-// interpolated strings, no JSX, no number formatting (callers pass
-// pre-formatted strings). Voice: Kitchen Table — utility copy stays straight;
-// the two expressive moments are marked.
+// interpolated strings, no JSX. Counts are taken as raw numbers and both
+// interpolated and branched on for singular/plural here; what this module does
+// NOT do is locale-format them, unlike issue-inspector.ts's toLocaleString
+// calls. Every count it renders is a deck or card tally in the low hundreds, so
+// there is no separator to get wrong. Voice: Kitchen Table — utility copy stays
+// straight; the two expressive moments are marked.
 //
 // VOCABULARY IS LOAD-BEARING. "free" and "in use" are the two nouns. If the
 // product ever prefers "available", it is a swap of `free` → `available` in
