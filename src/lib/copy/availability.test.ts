@@ -31,6 +31,55 @@ describe("availabilityCopy", () => {
     expect(JSON.stringify(availabilityCopy)).not.toMatch(/deck tax/i);
   });
 
+  // One deck can be the whole demand: "any number" cards (Relentless Rats,
+  // Nazgûl) let a single list claim nine copies of something you own four of.
+  // Every count string that can reach 1 has to survive it.
+  it("reads correctly when exactly one deck is the whole demand", () => {
+    expect(availabilityCopy.marker.tileOver(1)).toBe("1 deck wants it");
+    expect(availabilityCopy.marker.overWithDemand(5, 1)).toBe(
+      "short 5 — 1 deck wants it",
+    );
+    expect(availabilityCopy.marker.overAria(5, 1)).toBe(
+      "1 of your finished lists includes this card and you own 5 too few",
+    );
+    expect(availabilityCopy.deckSummary.ariaLabel(1)).toBe(
+      "1 card in this deck is over-committed",
+    );
+  });
+
+  it("agrees its verbs with the count on the receipt and the disclosure", () => {
+    expect(availabilityCopy.receipt.fit(1)).toBe("1 of your cards fits");
+    expect(availabilityCopy.receipt.fitFree(1)).toBe("1 of your cards is free");
+    expect(availabilityCopy.detail.disclosureAria(1)).toBe(
+      "Show which 1 card is in use",
+    );
+    expect(availabilityCopy.ranking.announce("free", 1)).toBe(
+      "Re-ranked by what’s free · 1 commander",
+    );
+  });
+
+  // No count string may render a bare plural noun against a count of 1.
+  it("never says a plural noun for a single thing", () => {
+    const singulars = [
+      availabilityCopy.marker.tileOver(1),
+      availabilityCopy.marker.hardMulti(1),
+      availabilityCopy.marker.overWithDemand(1, 1),
+      availabilityCopy.receipt.fit(1),
+      availabilityCopy.receipt.fitFree(1),
+      availabilityCopy.detail.disclosureAria(1),
+      availabilityCopy.detail.expandedFor(1),
+      availabilityCopy.detail.announceExpanded(1),
+      availabilityCopy.detail.announceCollapsed(1),
+      availabilityCopy.deckSummary.ariaLabel(1),
+      availabilityCopy.deckSummary.body("Nazgûl", 1, 1),
+      availabilityCopy.ranking.announce("all", 1),
+      availabilityCopy.deckRollup.softHeading(1),
+    ];
+    for (const s of singulars) {
+      expect(s, s).not.toMatch(/\b1 (cards|decks|copies|lists|commanders)\b/);
+    }
+  });
+
   // The over-committed line renders in two places. If they ever stop being the
   // same function, one surface will quietly say something the other does not.
   it("uses one over-committed heading in both of its homes", () => {

@@ -47,7 +47,7 @@
   --warning: #E0913C;
   --danger: #C6533F;
 
-  /* Card availability (#43). Two aliases and two literals — no new hues.
+  /* Card availability (#43). Two aliases and three literals — no new hues.
      There is no light theme in this stylesheet (one :root, no color-scheme),
      so these are single-value like every other token. */
   --avail-soft: var(--fg-muted);

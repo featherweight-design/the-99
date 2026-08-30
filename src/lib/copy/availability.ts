@@ -44,18 +44,27 @@ export const availabilityCopy = {
     // hard: free = 0. Names the claiming deck ONLY when there is exactly one.
     hard: "0 free",
     hardIn: (deckName: string) => `0 free — in ${deckName}`,
-    hardMulti: (deckCount: number) => `0 free — across ${deckCount} decks`,
+    hardMulti: (deckCount: number) =>
+      deckCount === 1 ? "0 free — in 1 deck" : `0 free — across ${deckCount} decks`,
     hardAria: (deckName: string) =>
       `no free copies; this one is on your ${deckName} list`,
     hardMultiAria: (deckCount: number) =>
-      `no free copies; they are on ${deckCount} of your finished lists`,
+      deckCount === 1
+        ? "no free copies; they are on 1 of your finished lists"
+        : `no free copies; they are on ${deckCount} of your finished lists`,
 
     // over: free < 0. Never names decks — it is a count problem, not a location.
+    // One deck CAN be the whole demand: "any number" cards (Relentless Rats,
+    // Nazgûl) let a single list claim nine copies of something you own four of.
     over: (shortBy: number) => `short ${shortBy}`,
     overWithDemand: (shortBy: number, deckCount: number) =>
-      `short ${shortBy} — ${deckCount} decks want it`,
+      deckCount === 1
+        ? `short ${shortBy} — 1 deck wants it`
+        : `short ${shortBy} — ${deckCount} decks want it`,
     overAria: (shortBy: number, deckCount: number) =>
-      `${deckCount} of your finished lists include this card and you own ${shortBy} too few`,
+      deckCount === 1
+        ? `1 of your finished lists includes this card and you own ${shortBy} too few`
+        : `${deckCount} of your finished lists include this card and you own ${shortBy} too few`,
 
     // On a deck's OWN list the current deck is excluded from the marker, so
     // "N decks want it" would count the deck the player is standing in. Name the
@@ -67,7 +76,8 @@ export const availabilityCopy = {
 
     // Tile caption line (sits under the type line, not on the art).
     tileInUse: (deckName: string) => `in use — ${deckName}`,
-    tileOver: (deckCount: number) => `${deckCount} decks want it`,
+    tileOver: (deckCount: number) =>
+      deckCount === 1 ? "1 deck wants it" : `${deckCount} decks want it`,
   },
 
   // ── Surface 1 · commanders list ───────────────────────────────────────
@@ -88,17 +98,21 @@ export const availabilityCopy = {
     subtitleFree: "ranked by what’s free",
     // Announced on the list’s existing live region when the toggle flips.
     announce: (mode: "all" | "free", n: number) =>
-      mode === "free"
-        ? `Re-ranked by what’s free · ${n} commanders`
-        : `Re-ranked by everything you own · ${n} commanders`,
+      `${
+        mode === "free"
+          ? "Re-ranked by what’s free"
+          : "Re-ranked by everything you own"
+      } · ${n === 1 ? "1 commander" : `${n} commanders`}`,
   },
 
   // ── The receipt line (surfaces 1 and 2) ───────────────────────────────
   // OPEN ITEM 7: the line ALWAYS renders; only the second clause is
   // conditional. Row height never changes between players.
   receipt: {
-    fit: (n: number) => `${n} of your cards fit`,
-    fitFree: (n: number) => `${n} of your cards are free`,
+    fit: (n: number) =>
+      n === 1 ? "1 of your cards fits" : `${n} of your cards fit`,
+    fitFree: (n: number) =>
+      n === 1 ? "1 of your cards is free" : `${n} of your cards are free`,
     // Appended when inUse > 0. Callers join with ' · '.
     inUse: (n: number) => `${n} already in use`,
     inUseShort: (n: number) => `${n} in use`,
@@ -114,7 +128,8 @@ export const availabilityCopy = {
 
   // ── Surface 2 · commander detail disclosure ───────────────────────────
   detail: {
-    disclosureAria: (n: number) => `Show which ${n} cards are in use`,
+    disclosureAria: (n: number) =>
+      n === 1 ? "Show which 1 card is in use" : `Show which ${n} cards are in use`,
     disclosureCollapseAria: "Show all matching cards again",
     hint: "Tap to see which — and where they went.",
     // Expressive-adjacent, but this is the sentence that must not overclaim.
@@ -122,14 +137,20 @@ export const availabilityCopy = {
     expanded:
       "These twelve are sleeved into decks you’ve finished. You can still build with them — you’d be taking them out of something.",
     expandedFor: (n: number) =>
-      `These ${n} are sleeved into decks you’ve finished. You can still build with them — you’d be taking them out of something.`,
+      n === 1
+        ? "This one is sleeved into a deck you’ve finished. You can still build with it — you’d be taking it out of something."
+        : `These ${n} are sleeved into decks you’ve finished. You can still build with them — you’d be taking them out of something.`,
     sectionInUse: (n: number) => `In use — ${n}`,
     sectionFree: (n: number) => `Free to build with — ${n}`,
     filteredHeading: (n: number) => `Showing the ${n} in use`,
     showAll: (n: number) => `show all ${n}`,
     listHeading: "Cards you own that fit",
-    announceExpanded: (n: number) => `Showing the ${n} cards already in use`,
-    announceCollapsed: (n: number) => `Showing all ${n} matching cards`,
+    announceExpanded: (n: number) =>
+      n === 1
+        ? "Showing the 1 card already in use"
+        : `Showing the ${n} cards already in use`,
+    announceCollapsed: (n: number) =>
+      n === 1 ? "Showing the 1 matching card" : `Showing all ${n} matching cards`,
   },
 
   // ── Surface 4 · decklist over-committed summary ───────────────────────
@@ -139,10 +160,13 @@ export const availabilityCopy = {
   deckSummary: {
     heading: spokenForTwice,
     body: (cardName: string, deckCount: number, ownedQty: number) =>
-      `${cardName} is on ${deckCount} finished lists and you own ${ownedQty === 1 ? "one" : ownedQty}. Nothing’s broken here — it’s a shopping decision.`,
+      `${cardName} is on ${deckCount === 1 ? "1 finished list" : `${deckCount} finished lists`} and you own ${ownedQty === 1 ? "one" : ownedQty}. Nothing’s broken here — it’s a shopping decision.`,
     bodyMany: (n: number) =>
       `${n} of these are on more finished lists than you have copies. Nothing’s broken here — it’s a shopping decision.`,
-    ariaLabel: (n: number) => `${n} cards in this deck are over-committed`,
+    ariaLabel: (n: number) =>
+      n === 1
+        ? "1 card in this deck is over-committed"
+        : `${n} cards in this deck are over-committed`,
   },
 
   // The quick-add row's accessible name lives on the shipped signature in
