@@ -287,8 +287,13 @@ export async function loadAvailability(
 ): Promise<Map<string, Availability>> {
   // Both narrowings are null-guarded in SQL rather than by string-building the
   // query, so there is one query plan and one place to read.
-  const only = opts?.oracleIds ?? null;
-  const skip = opts?.excludeDeckId ?? null;
+  //
+  // sql.param is load-bearing for the array. A bare `${jsArray}` in a drizzle
+  // template expands to a parenthesised param LIST — `($1, $2)::uuid[]` — which
+  // is a syntax error, not an array. sql.param forces the whole array into one
+  // placeholder so the driver serialises it as a Postgres array literal.
+  const only = sql.param(opts?.oracleIds ?? null);
+  const skip = sql.param(opts?.excludeDeckId ?? null);
   const rows = await db.execute<Row>(sql`
     with deck_totals as (
       select dc.deck_id, sum(dc.quantity)::int as cards
@@ -318,7 +323,9 @@ export async function loadAvailability(
       where ${skip}::uuid is not null and ac.deck_id = ${skip}::uuid
       group by ac.oracle_id
     ),
-    -- One row per (oracle, claiming deck). `select distinct` is what makes the
+    -- A backtick anywhere in these SQL comments would terminate the enclosing
+    -- template literal, so they are deliberately plain prose.
+    -- One row per (oracle, claiming deck). select distinct is what makes the
     -- name list right: a deck whose commander is also on its own list appears
     -- twice in all_claims, and two decks that share a name are still two rows
     -- because deck_id is in the key. Quantities are NOT summed here.
@@ -363,19 +370,20 @@ export async function loadAvailability(
     )
     select
       o.oracle_id,
-      -- TRUE owned, never reduced: this is the `owned <= 0` guard's input.
+      -- TRUE owned, never reduced: this is the owned <= 0 guard's input.
       o.owned,
       coalesce(c.hard, 0) as hard,
       coalesce(c.soft, 0) as soft,
       -- (owned − ownClaim) − (hard − ownHardClaim). The right-hand subtraction
-      -- already happened in `claims`; this applies the supply half.
+      -- already happened in the claims CTE; this applies the supply half.
       (o.owned - coalesce(oc.own_claim, 0) - coalesce(c.hard, 0))::int as free,
       n.hard_deck_names
     from owned o
     left join claims c on c.oracle_id = o.oracle_id
     left join claim_names n on n.oracle_id = o.oracle_id
     left join own_claims oc on oc.oracle_id = o.oracle_id
-    where ${only}::text[] is null or o.oracle_id = any(${only}::text[])
+    -- oracle_id is a uuid column (schema.ts), so the cast is uuid[], not text[].
+    where ${only}::uuid[] is null or o.oracle_id = any(${only}::uuid[])
   `);
 
   const out = new Map<string, Availability>();
