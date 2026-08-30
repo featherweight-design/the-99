@@ -5,8 +5,9 @@ Feature-specific facts for `epic-run`. Run mechanics live in the skill; repo con
 
 This is the first run against this feature. Unlike the two add-panel runs, #43 has a **separate eng
 spec** as well as an execution plan, and a design handoff that went to **three rounds plus two
-addenda**. The plan is 2,968 lines and is the authority on sequencing; this file exists to answer
-the questions the plan does not: what is reachable when, where a user lands, and what gets walked.
+addenda**. The plan runs to nearly 3,000 lines and is the authority on sequencing; this file exists
+to answer the questions the plan does not: what is reachable when, where a user lands, and what
+gets walked.
 
 ## Source of truth (read in this order)
 
