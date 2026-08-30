@@ -196,8 +196,19 @@ export const addPanelCopy = {
     rowInDeck: "✓ In deck",
     rowOwned: (qty: number) => `×${qty} owned`,
     rowNotOwned: "not owned",
-    rowAria: (name: string, typeLine: string, owned: boolean) =>
-      `${name}, ${typeLine}, ${owned ? "owned" : "not owned"}`,
+    // `availability` is one of the availabilityCopy.marker.*Aria strings, or
+    // null. It is prose, not the visual label: the eye reads "0 free — in
+    // Atraxa", the ear hears "no free copies; this one is on your Atraxa list"
+    // — the same reason the diamond glyph is aria-hidden. A free card passes
+    // nothing and produces the exact shipped string.
+    rowAria: (
+      name: string,
+      typeLine: string,
+      owned: boolean,
+      availability?: string | null,
+    ) =>
+      `${name}, ${typeLine}, ${owned ? "owned" : "not owned"}` +
+      (availability ? `, ${availability}` : ""),
 
     ownedToggle: "Owned only",
     ownedToggleAria: "Show only cards you own",

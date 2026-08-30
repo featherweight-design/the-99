@@ -47,6 +47,23 @@
   --warning: #E0913C;
   --danger: #C6533F;
 
+  /* Card availability (#43). Two aliases and two literals — no new hues.
+     There is no light theme in this stylesheet (one :root, no color-scheme),
+     so these are single-value like every other token. */
+  --avail-soft: var(--fg-muted);
+  --avail-hard: var(--brass);
+  /* NOT because brass fails — brass is AAA for normal text (~7.0:1 on
+     --surface). This exists for a size reason: the tile chip label is 8.5px
+     mono on a scrim over card art, below the 14px large-text threshold. The
+     glyph itself stays --brass. */
+  --avail-hard-fg: #E8CE93;
+  /* The shipped danger red lifted for text. --danger itself is glyph-and-border
+     only and must never be used as text. */
+  --avail-over-fg: #E9917A;
+  /* The over-committed row/tile border tint. Border only — never text, never a
+     background. Named here so two components do not paste the hex literal. */
+  --avail-over-border: #6B3226;
+
   /* WUBRG identity swatches */
   --w: #F4E9C4;
   --u: #3A6AA5;
@@ -88,6 +105,14 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  /* Wired through @theme so the marker can reach these as Tailwind classes.
+     The repo's no-restricted-syntax lint rule forbids delivering colour by
+     inline style, so a token with no utility behind it is unusable. */
+  --color-avail-soft: var(--avail-soft);
+  --color-avail-hard: var(--avail-hard);
+  --color-avail-hard-fg: var(--avail-hard-fg);
+  --color-avail-over-fg: var(--avail-over-fg);
+  --color-avail-over-border: var(--avail-over-border);
   --color-w: var(--w);
   --color-u: var(--u);
   --color-b: var(--b);

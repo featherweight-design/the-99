@@ -208,3 +208,35 @@ describe("addPanelCopy.strip after #184", () => {
     expect(addPanelCopy.strip.cellStaticAria("Wipes", 3, 3)).toBe("Wipes, 3 of 3");
   });
 });
+
+describe("quickAdd.rowAria", () => {
+  it("is byte-identical to the shipped 3-arg output when nothing is passed", () => {
+    expect(
+      addPanelCopy.quickAdd.rowAria("Swords to Plowshares", "Instant", true),
+    ).toBe("Swords to Plowshares, Instant, owned");
+  });
+
+  it("ignores a null availability, so the free state stays silent", () => {
+    expect(
+      addPanelCopy.quickAdd.rowAria(
+        "Swords to Plowshares",
+        "Instant",
+        true,
+        null,
+      ),
+    ).toBe("Swords to Plowshares, Instant, owned");
+  });
+
+  it("appends the clause without displacing the type line", () => {
+    expect(
+      addPanelCopy.quickAdd.rowAria(
+        "Cyclonic Rift",
+        "Instant",
+        true,
+        "no free copies; this one is on your Atraxa list",
+      ),
+    ).toBe(
+      "Cyclonic Rift, Instant, owned, no free copies; this one is on your Atraxa list",
+    );
+  });
+});
