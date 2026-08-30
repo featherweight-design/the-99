@@ -194,9 +194,17 @@ export type AvailabilityState = "free" | "soft" | "hard" | "over";
  * `selfExcluded` is the deck's-own-decklist vantage (Addendum 2 §6). There,
  * `free` is computed against a supply that already has the current deck's
  * copies removed, so `free === 0` means "exactly enough for everyone,
- * including this deck" — which is silence, not a claim. Addendum 2 states the
- * consequence directly: **inside a finished deck the hard state is
- * unreachable**; a genuine conflict has `free < 0` and presents as `over`.
+ * including this deck" — which is silence, not a claim. A genuine conflict has
+ * `free < 0` and presents as `over`.
+ *
+ * The hard state is therefore unreachable in this vantage — for ANY deck, not
+ * only a finished one. Deck maturity is not an input here: it is already spent
+ * upstream, deciding whether each claim counted as hard or soft. Addendum 2
+ * words the consequence as "inside a finished deck", because that is the case
+ * it draws, but the caller controls the vantage and nothing checks maturity at
+ * this layer. Pass `selfExcluded` only when `free` came from a query given the
+ * matching `excludeDeckId`; passing it against an unexcluded figure silently
+ * converts every genuine hard claim into silence.
  *
  * The `owned <= 0` guard is tested against TRUE owned, never the excluded
  * supply, and it stays first. It exists to keep the marker off cards the
@@ -287,8 +295,13 @@ export async function loadAvailability(
 ): Promise<Map<string, Availability>> {
   // Both narrowings are null-guarded in SQL rather than by string-building the
   // query, so there is one query plan and one place to read.
-  const only = opts?.oracleIds ?? null;
-  const skip = opts?.excludeDeckId ?? null;
+  //
+  // sql.param is load-bearing for the array. A bare `${jsArray}` in a drizzle
+  // template expands to a parenthesised param LIST — `($1, $2)::uuid[]` — which
+  // is a syntax error, not an array. sql.param forces the whole array into one
+  // placeholder so the driver serialises it as a Postgres array literal.
+  const only = sql.param(opts?.oracleIds ?? null);
+  const skip = sql.param(opts?.excludeDeckId ?? null);
   const rows = await db.execute<Row>(sql`
     with deck_totals as (
       select dc.deck_id, sum(dc.quantity)::int as cards
@@ -318,7 +331,9 @@ export async function loadAvailability(
       where ${skip}::uuid is not null and ac.deck_id = ${skip}::uuid
       group by ac.oracle_id
     ),
-    -- One row per (oracle, claiming deck). `select distinct` is what makes the
+    -- A backtick anywhere in these SQL comments would terminate the enclosing
+    -- template literal, so they are deliberately plain prose.
+    -- One row per (oracle, claiming deck). select distinct is what makes the
     -- name list right: a deck whose commander is also on its own list appears
     -- twice in all_claims, and two decks that share a name are still two rows
     -- because deck_id is in the key. Quantities are NOT summed here.
@@ -363,19 +378,20 @@ export async function loadAvailability(
     )
     select
       o.oracle_id,
-      -- TRUE owned, never reduced: this is the `owned <= 0` guard's input.
+      -- TRUE owned, never reduced: this is the owned <= 0 guard's input.
       o.owned,
       coalesce(c.hard, 0) as hard,
       coalesce(c.soft, 0) as soft,
       -- (owned − ownClaim) − (hard − ownHardClaim). The right-hand subtraction
-      -- already happened in `claims`; this applies the supply half.
+      -- already happened in the claims CTE; this applies the supply half.
       (o.owned - coalesce(oc.own_claim, 0) - coalesce(c.hard, 0))::int as free,
       n.hard_deck_names
     from owned o
     left join claims c on c.oracle_id = o.oracle_id
     left join claim_names n on n.oracle_id = o.oracle_id
     left join own_claims oc on oc.oracle_id = o.oracle_id
-    where ${only}::text[] is null or o.oracle_id = any(${only}::text[])
+    -- oracle_id is a uuid column (schema.ts), so the cast is uuid[], not text[].
+    where ${only}::uuid[] is null or o.oracle_id = any(${only}::uuid[])
   `);
 
   const out = new Map<string, Availability>();

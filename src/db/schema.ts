@@ -127,7 +127,6 @@ export const decks = pgTable("decks", {
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
   commanderOracleId: uuid("commander_oracle_id").notNull().references(() => cards.oracleId),
-  status: text("status", { enum: ["brewing", "built"] }).notNull().default("brewing"),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
