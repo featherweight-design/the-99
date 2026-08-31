@@ -847,7 +847,8 @@ git commit -m "feat(availability): annotate decklist rows, search rows and Consi
 **Files:**
 - Create: `src/lib/recs/free-ranking.ts`
 - Create: `src/lib/recs/free-ranking.test.ts`
-- Modify: `src/app/commanders/page.tsx:46-52`
+- Create: `src/lib/recs/free-ranking-wiring.test.ts`
+- ~~Modify: `src/app/commanders/page.tsx:46-52`~~ — moved to Task 6 by the Step 5 amendment below (2026-08-31). Task 5 modifies no page.
 
 **Interfaces:**
 - Consumes: `loadAvailability` (Task 1); `loadCollectionPool`, `scoreCommander`, `byScoreThenOracleId`, `toListItem`, `type CommanderListItem`, `type RankedCommander` (existing, `src/lib/recs/`); `readEdhrecCache` (existing, `src/lib/edhrec/client.ts`); `parseEdhrecPayload` (existing, `src/lib/edhrec/parse.ts`).
@@ -1078,7 +1079,13 @@ export async function rankFree(
 Run: `pnpm vitest run src/lib/recs/free-ranking.test.ts`
 Expected: PASS, 7 tests.
 
-- [ ] **Step 5: Wire it into the page**
+- [ ] **Step 5: Wire it into the page — MOVED TO TASK 6 (amended 2026-08-31, mid-run)**
+
+`freeItems` and `availOk` have no consumer until Task 6 widens `CommandersView`'s props, so
+wiring them here would either fail typecheck or add two props the component accepts and
+ignores. The page edit below is unchanged in substance; it just lands in Task 6's commit
+alongside the component that reads it. Task 5 therefore ships `free-ranking.ts` and its
+tests, and modifies no page.
 
 In `src/app/commanders/page.tsx`, read `searchParams.avail` and call `rankFree` **only** when it is `"free"`, so a player who never touches the toggle pays nothing. `rankFree` runs **after** `getRankedList`, both because it needs the canonical list for slugs and because that ordering is what guarantees the EDHREC cache is warm:
 
@@ -1110,7 +1117,7 @@ Pass `freeItems={free?.items ?? null}` and `availOk={free?.ok ?? true}` to `Comm
 Run: `pnpm typecheck && pnpm lint && pnpm test`
 
 ```bash
-git add src/lib/recs/free-ranking.ts src/lib/recs/free-ranking.test.ts src/app/commanders/page.tsx
+git add src/lib/recs/free-ranking.ts src/lib/recs/free-ranking.test.ts src/lib/recs/free-ranking-wiring.test.ts
 git commit -m "feat(availability): rank commanders against what's free (#43)"
 ```
 
@@ -1124,8 +1131,11 @@ git commit -m "feat(availability): rank commanders against what's free (#43)"
 - Modify: `src/components/commanders/commanders-view.tsx:28-45,78-115,300-310,452`
 - Modify: `src/components/commanders/rec-card.tsx`
 
+**Files (amended 2026-08-31):** also `src/app/commanders/page.tsx` — Task 5 Step 5 moved
+here, because `freeItems` and `availOk` have no consumer until this task's props exist.
+
 **Interfaces:**
-- Consumes: `freeItems`, `availOk` (Task 5); `availabilityCopy.ranking` and `.receipt` (Task 2).
+- Consumes: `rankFree` (Task 5); `availabilityCopy.ranking` and `.receipt` (Task 2).
 - Produces: `rankMap(items): Map<string, number>`.
 
 **The three rulings this task implements, and why they are not negotiable:**
