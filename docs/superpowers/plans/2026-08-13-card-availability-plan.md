@@ -847,7 +847,8 @@ git commit -m "feat(availability): annotate decklist rows, search rows and Consi
 **Files:**
 - Create: `src/lib/recs/free-ranking.ts`
 - Create: `src/lib/recs/free-ranking.test.ts`
-- Modify: `src/app/commanders/page.tsx:46-52`
+- Create: `src/lib/recs/free-ranking-wiring.test.ts`
+- ~~Modify: `src/app/commanders/page.tsx:46-52`~~ — moved to Task 6 by the Step 5 amendment below (2026-08-31). Task 5 modifies no page.
 
 **Interfaces:**
 - Consumes: `loadAvailability` (Task 1); `loadCollectionPool`, `scoreCommander`, `byScoreThenOracleId`, `toListItem`, `type CommanderListItem`, `type RankedCommander` (existing, `src/lib/recs/`); `readEdhrecCache` (existing, `src/lib/edhrec/client.ts`); `parseEdhrecPayload` (existing, `src/lib/edhrec/parse.ts`).
@@ -1116,7 +1117,7 @@ Pass `freeItems={free?.items ?? null}` and `availOk={free?.ok ?? true}` to `Comm
 Run: `pnpm typecheck && pnpm lint && pnpm test`
 
 ```bash
-git add src/lib/recs/free-ranking.ts src/lib/recs/free-ranking.test.ts src/app/commanders/page.tsx
+git add src/lib/recs/free-ranking.ts src/lib/recs/free-ranking.test.ts src/lib/recs/free-ranking-wiring.test.ts
 git commit -m "feat(availability): rank commanders against what's free (#43)"
 ```
 
