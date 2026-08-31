@@ -605,13 +605,13 @@ The marker is **a diamond, a count, and a word**. Hollow diamond when an unfinis
 
 > **Amended 2026-08-30, in the PR that shipped this task.** The draft code that
 > stood here contradicted `docs/superpowers/design-tables/card-availability.md`
-> in nine places, and the design table wins. Rather than leave a second,
+> in ten places, and the design table wins. Rather than leave a second,
 > divergent copy of a 300-line component in a plan doc, this section now names
 > the shipped file and records every deviation. **Task 4 must read
 > `src/components/ui/availability-marker.tsx`, never re-paste from here.**
 
 **Shipped:**
-- `src/components/ui/availability-marker.tsx` — 26 tests in `availability-marker.test.tsx`.
+- `src/components/ui/availability-marker.tsx` — 29 tests in `availability-marker.test.tsx`.
 
 **Public API as built** (this is what Task 4 consumes):
 
