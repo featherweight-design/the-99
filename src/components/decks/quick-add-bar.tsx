@@ -65,9 +65,15 @@ export function QuickAddBar({
   // Distinct from `inDeck`, which drives the "In deck" label and the add guard:
   // this one answers "did the excluded query drop a claim of ours on this
   // card", which is the only thing `selfExcluded` is allowed to mean.
+  //
+  // So it deliberately does NOT reuse `inDeck`, whose basic-land carve-out
+  // exists to keep a second Forest addable. A Forest already on the list is
+  // still a `deck_cards` row and the read still dropped it, and inheriting that
+  // carve-out drew a false `0 free` on the last Forest a player owns.
   const selfClaims = useCallback(
-    (r: SearchResult) => inDeck(r) || r.oracleId === commanderOracleId,
-    [inDeck, commanderOracleId],
+    (r: SearchResult) =>
+      deckOracleIds.includes(r.oracleId) || r.oracleId === commanderOracleId,
+    [deckOracleIds, commanderOracleId],
   );
 
   // The same formatter the deck header uses. `BG-legal` and `Golgari` were two

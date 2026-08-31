@@ -16,6 +16,8 @@ interface DecklistProps {
   unresolvedRows: DeckUnresolvedRow[];
   /** Resolving a line to the commander must not also put it in the 99. */
   commanderOracleId: string;
+  /** The committed claim set — see UnresolvedGroup. */
+  deckOracleIds: string[];
   built: number;
   toBuyCount: number;
   /** The card whose slot is spent, drawn in place as an undo row (#185). */
@@ -33,6 +35,7 @@ export function Decklist({
   cards,
   unresolvedRows,
   commanderOracleId,
+  deckOracleIds,
   built,
   toBuyCount,
   spentSlot = null,
@@ -111,6 +114,7 @@ export function Decklist({
           deckId={deckId}
           rows={visibleUnresolved}
           cards={cards}
+          deckOracleIds={deckOracleIds}
           commanderOracleId={commanderOracleId}
           onExpandedChange={onUnresolvedExpandedChange}
         />

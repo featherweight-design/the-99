@@ -33,6 +33,7 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
       <Decklist
         deckId="d1"
         commanderOracleId="cmdr"
+        deckOracleIds={[]}
         cards={[card()]}
         unresolvedRows={[row()]}
         built={1}
@@ -49,7 +50,7 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
 
 describe("UnresolvedGroup", () => {
   it("counts its lines, not the copies on them, so it agrees with the banner", () => {
-    render(<UnresolvedGroup deckId="d1" rows={[row({ id: "a", quantity: 4 }), row({ id: "b" })]} />);
+    render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[row({ id: "a", quantity: 4 }), row({ id: "b" })]} />);
     const group = screen.getByRole("region");
     expect(group).toHaveAccessibleName(`${copy.groupLabel} · 2`);
     expect(group).not.toHaveAccessibleName(`${copy.groupLabel} · 5`);
@@ -59,6 +60,7 @@ describe("UnresolvedGroup", () => {
     render(
       <UnresolvedGroup
         deckId="d1"
+        deckOracleIds={[]}
         rows={[
           row({ id: "a", rawName: "Zephyr", sourceLine: 12 }),
           row({ id: "b", rawName: "Anvil", sourceLine: 40 }),
@@ -70,13 +72,13 @@ describe("UnresolvedGroup", () => {
   });
 
   it("gives each row its source line and the unmatched tag", () => {
-    render(<UnresolvedGroup deckId="d1" rows={[row()]} />);
+    render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[row()]} />);
     expect(screen.getByText("line 41 of the import")).toBeInTheDocument();
     expect(screen.getByText(copy.rowTag)).toBeInTheDocument();
   });
 
   it("offers each row as a disclosure and tells the phone so", () => {
-    render(<UnresolvedGroup deckId="d1" rows={[row()]} />);
+    render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[row()]} />);
     expect(
       screen.getByText(`${copy.footnoteMobile} ${copy.footnoteMobileResolve}`),
     ).toBeInTheDocument();
@@ -92,7 +94,7 @@ describe("UnresolvedGroup", () => {
   // true, and it used to stay true forever — the bar never came back.
   it("reports itself collapsed when the filter takes it away mid-expansion", () => {
     const onExpanded = vi.fn();
-    const { rerender } = render(<UnresolvedGroup deckId="d1" rows={[row()]} onExpandedChange={onExpanded} />);
+    const { rerender } = render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[row()]} onExpandedChange={onExpanded} />);
     fireEvent.click(screen.getByRole("button", { name: copy.rowAria("Lightning Bolt", 1) }));
     expect(onExpanded).toHaveBeenLastCalledWith(true);
 
@@ -101,7 +103,7 @@ describe("UnresolvedGroup", () => {
   });
 
   it("renders nothing at zero rows", () => {
-    const { container } = render(<UnresolvedGroup deckId="d1" rows={[]} />);
+    const { container } = render(<UnresolvedGroup deckId="d1" deckOracleIds={[]} rows={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
 });

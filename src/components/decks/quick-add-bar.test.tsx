@@ -345,6 +345,22 @@ describe("QuickAddBar — availability marker", () => {
     expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
   });
 
+  // `inDeck` carves basic lands out so a second Forest stays addable. That
+  // carve-out is about the add guard and has nothing to do with what the
+  // availability read excluded: a Forest on the list is a `deck_cards` row like
+  // any other, and the query dropped it.
+  it("stays silent on a basic land this deck already runs", async () => {
+    const forest = row({
+      name: "Forest Study",
+      oracleId: "basic-forest",
+      typeLine: "Basic Land — Forest",
+    });
+    searchCards.mockResolvedValue([{ ...forest, availability: claimed([]) }]);
+    mount({ deckOracleIds: [forest.oracleId] });
+    await search();
+    expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
+  });
+
   // The commander lives in `decks.commander_oracle_id`, not in `deck_cards`
   // (availability-query.ts:25), so it is absent from `deckOracleIds` while the
   // query still dropped its claim. Keyed on membership alone, a single-copy

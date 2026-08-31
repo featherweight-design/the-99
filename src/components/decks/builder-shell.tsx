@@ -517,6 +517,7 @@ export function BuilderShell({
                 cards={cards}
                 unresolvedRows={unresolvedRows}
                 commanderOracleId={deck.commander.oracleId}
+                deckOracleIds={deckOracleIds}
                 built={built}
                 toBuyCount={toBuyCount}
                 spentSlot={spentSlot}

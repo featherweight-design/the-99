@@ -54,6 +54,7 @@ describe("deck card-detail triggers", () => {
       <Decklist
         deckId="d1"
         commanderOracleId="cmdr"
+        deckOracleIds={[]}
         unresolvedRows={[]}
         cards={[deckCard()]}
         built={1}
@@ -74,6 +75,7 @@ describe("deck card-detail triggers", () => {
       <Decklist
         deckId="d1"
         commanderOracleId="cmdr"
+        deckOracleIds={[]}
         unresolvedRows={[]}
         cards={[deckCard({ oracleId: "o-forest", name: "Forest", typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", role: "land", quantity: 3 })]}
         built={3}
@@ -178,6 +180,7 @@ describe("deck card-detail triggers", () => {
       <Decklist
         deckId="d1"
         commanderOracleId="cmdr"
+        deckOracleIds={[]}
         unresolvedRows={[]}
         cards={[
           deckCard({ oracleId: "o-sol", name: "Sol Ring" }),

@@ -10,7 +10,7 @@
 // It owns which row is expanded — one at a time — and the single polite live
 // region that resolve and delete share.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import {
@@ -37,6 +37,13 @@ interface UnresolvedGroupProps {
   rows: DeckUnresolvedRow[];
   /** The deck's cards, for the figures the live note quotes. */
   cards?: DeckDetailCard[];
+  /**
+   * The COMMITTED claim set, for the resolution row's self-exclusion —
+   * deliberately not derived from `cards`, which is the optimistic list. The
+   * question `selfExcluded` answers is whether the server's availability read
+   * dropped a claim of ours, and a card added seconds ago is not yet in it.
+   */
+  deckOracleIds: string[];
   /** Resolving a line to the commander answers it without adding to the 99. */
   commanderOracleId?: string;
   onExpandedChange?: (expanded: boolean) => void;
@@ -46,14 +53,10 @@ export function UnresolvedGroup({
   deckId,
   rows,
   cards = [],
+  deckOracleIds,
   commanderOracleId,
   onExpandedChange,
 }: UnresolvedGroupProps) {
-  // Derived from the list the group already quotes its figures from, rather
-  // than drilled: two sources for "what is on this deck" would eventually
-  // disagree, and the resolution row's self-exclusion turns on this exact
-  // question.
-  const deckOracleIds = useMemo(() => cards.map((c) => c.oracleId), [cards]);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [note, setNote] = useState<{
     kind: "resolve" | "delete";

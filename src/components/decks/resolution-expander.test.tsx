@@ -94,6 +94,7 @@ function Harness({
         <Decklist
           deckId="deck-1"
           commanderOracleId="cmdr"
+        deckOracleIds={[]}
           cards={deck.cards}
           unresolvedRows={deck.unresolvedRows}
           built={counts.built}
