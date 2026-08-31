@@ -93,11 +93,17 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
       if (!opts?.nameless && opts?.selfExcluded && a.hardDeckNames.length === 1) {
         return c.overAlsoInAria(a.hardDeckNames[0]);
       }
-      // Same degraded shape as the hard branch above. The shortfall is still
-      // true with no names; the count is not, and `overAria(n, 0)` would say
-      // "0 of your finished lists include this card". The label already drops
-      // to a bare `short N` here, so the aria does too.
-      if (a.hardDeckNames.length === 0) return countlessOverAria(-a.free);
+      // Two ways to lose the count, and the same answer to both — which is why
+      // this guard is shaped exactly like the hard branch's. `nameless` is
+      // /collection's contract and every chip's, where the label draws a bare
+      // `short N`; announcing "3 of your finished lists" there reads out a
+      // number the surface deliberately does not draw. And with no names at all
+      // (a degraded read) the shortfall is still true where the count is not,
+      // since `overAria(n, 0)` would say "0 of your finished lists include this
+      // card". Both drop to the count-free shortfall the label already shows.
+      if (opts?.nameless || a.hardDeckNames.length === 0) {
+        return countlessOverAria(-a.free);
+      }
       return c.overAria(-a.free, a.hardDeckNames.length);
   }
 }

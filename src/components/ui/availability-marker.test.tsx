@@ -332,6 +332,35 @@ describe("markerAria", () => {
     );
   });
 
+  it("drops the deck count from the over aria when nameless", () => {
+    expect(markerAria(a(4, 9, 0, ["Rats", "Nazgûl"]), { nameless: true })).toBe(
+      "you own 5 too few",
+    );
+  });
+
+  // The class the two tests above are instances of. `nameless` means the label
+  // shows no deck name AND no deck count, so an accessible name that supplies
+  // either reads out something the surface deliberately does not draw. Walking
+  // every state is what caught the `over` branch ignoring the flag while `hard`
+  // honoured it — a per-branch test would have kept passing on `hard` alone.
+  it("never adds a name or a count the nameless label does not show", () => {
+    const names = ["Atraxa", "Kykar", "Rats"];
+    const cases = [a(4, 2, 3, names), a(2, 2, 0, names), a(4, 9, 0, names)];
+
+    for (const av of cases) {
+      const { container, unmount } = render(
+        <AvailabilityMarker availability={av} density="row" nameless />,
+      );
+      const aria = markerAria(av, { nameless: true })!;
+      for (const n of names) expect(aria).not.toContain(n);
+      // The label is the ceiling: any deck count in the aria has to be drawn.
+      if (!/\d+ deck/.test(container.textContent ?? "")) {
+        expect(aria).not.toMatch(/\d+ of your finished lists/);
+      }
+      unmount();
+    }
+  });
+
   // The nameless form is SLICED from the copy file rather than re-typed, with a
   // hard-coded fallback if the slice ever stops working. Both must agree, or
   // the fallback would silently start rewording /collection. Pinning the
