@@ -126,8 +126,8 @@ export function CardSearchRowBody({
         >
           {/* The shipped meta is the half that yields. `truncate` already
               resolves this item's automatic minimum size to zero via its
-              overflow, but the marker is `min-w-0` too, so the intent is
-              spelled out rather than left to which item the browser picks. */}
+              overflow; spelling `min-w-0` out keeps the choice here rather than
+              leaving it to which item the browser picks. */}
           <span className="truncate min-w-0">
             {result.typeLine} · {ownership}
           </span>
