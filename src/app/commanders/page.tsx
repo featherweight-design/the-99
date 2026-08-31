@@ -1,6 +1,14 @@
 import { requireUserId } from "../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
 import { getRankedList } from "../../lib/recs/ranked-list";
+import { rankFree } from "../../lib/recs/free-ranking";
+import { loadCollectionPool } from "../../lib/recs/recommend";
+import { loadAvailability } from "../../lib/decks/availability-query";
+import {
+  receiptCountsByCommander,
+  type ReceiptCounts,
+} from "../../lib/commanders/in-use";
+import type { CommanderListItem } from "../../lib/recs/recommend";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
@@ -12,8 +20,14 @@ import {
   EmptyStateTitle,
 } from "../../components/ui/empty-state";
 
-export default async function CommandersPage() {
+export default async function CommandersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const userId = await requireUserId();
+  const avail =
+    (await searchParams).avail === "free" ? ("free" as const) : ("all" as const);
   const stats = await getCollectionStats(userId);
 
   if (stats.uniqueCards === 0) {
@@ -174,6 +188,32 @@ export default async function CommandersPage() {
   // guided-flow condition: decks.length === 0 after collection upload).
   const firstRun = decks.length === 0;
 
+  // The receipt's second clause renders in BOTH ranking modes, so this read is
+  // unconditional — gating it on `?avail=free` would strip the clause from the
+  // default view, which is the one most players never leave. One rollup for the
+  // whole page, shared across every commander; `rankFree` is not on this path.
+  const { collection } = await loadCollectionPool(userId);
+  let receiptCounts = new Map<string, ReceiptCounts>();
+  let availOk = true;
+  try {
+    const availability = await loadAvailability(userId, {
+      oracleIds: collection.map((c) => c.oracleId),
+    });
+    receiptCounts = receiptCountsByCommander(items, collection, availability);
+  } catch {
+    // Fail soft: the list, the scores and the ranking are all unaffected. Only
+    // the clause and `What's free` are lost, and the toggle says so itself.
+    availOk = false;
+  }
+
+  // Only `?avail=free` pays for the second scoring run.
+  let freeItems: CommanderListItem[] | null = null;
+  if (avail === "free" && availOk) {
+    const free = await rankFree(userId, items);
+    if (free.ok) freeItems = free.items;
+    else availOk = false;
+  }
+
   return (
     <section className="flex flex-col min-h-screen">
       {/* Page header (mobile + desktop) */}
@@ -185,6 +225,10 @@ export default async function CommandersPage() {
         uniqueCardsRead={uniqueCardsRead}
         candidateCount={candidateCount}
         firstRun={firstRun}
+        avail={avail}
+        freeItems={freeItems}
+        availOk={availOk}
+        receiptCounts={receiptCounts}
       />
     </section>
   );

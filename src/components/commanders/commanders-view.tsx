@@ -7,12 +7,16 @@ import {
   useLayoutEffect,
   useCallback,
   useRef,
+  useTransition,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { filterByColors } from "../../lib/commanders/filter";
+import { rankMap } from "../../lib/commanders/rank-maps";
+import type { ReceiptCounts } from "../../lib/commanders/in-use";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { WUBRG_HEX } from "../../lib/collection/browse";
-import { RecCard } from "./rec-card";
+import { RecCard, type ScoreDelta } from "./rec-card";
 import { GuidedBanner } from "./guided-banner";
 import { DegradedBanner } from "./degraded-banner";
 import { FilteredEmpty } from "./filtered-empty";
@@ -25,14 +29,26 @@ import {
 
 // ── URL helpers (mirrors collection/browser.tsx pattern) ─────────────────────
 
+export type AvailMode = "all" | "free";
+
+// A commander whose whole pool is free. Shared rather than allocated per row,
+// and the fallback for the degraded read, where the page has no counts at all:
+// zero claims renders the receipt's first clause alone, which stays true.
+const NO_CLAIMS: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };
+
 function parseColors(param: string | null): string[] {
   if (!param) return [];
   return [...new Set(param.toUpperCase().split("").filter((c) => "WUBRG".includes(c)))];
 }
 
-function serializeParams(colors: string[]): string {
+function serializeParams(colors: string[], avail: AvailMode): string {
   const p = new URLSearchParams();
   if (colors.length > 0) p.set("c", colors.join(""));
+  // Only the non-default is written, so a player who never touches the toggle
+  // keeps the URL they have today. Writing it at all is the point: this function
+  // runs on every colour change, and a narrower version would silently drop
+  // `?avail=free` on the next pip click and re-rank the page behind them.
+  if (avail === "free") p.set("avail", "free");
   const s = p.toString();
   return s ? `?${s}` : "";
 }
@@ -46,6 +62,81 @@ const PIP_BG: Record<string, string> = {
   R: "#C05A48",
   G: "#6B9E63",
 };
+
+/**
+ * `Score against` (§7). A radiogroup, not a tablist: it switches the data the
+ * page is ranked on, not which panel is showing — the handoff says so in as many
+ * words, and a tablist would promise a panel swap that never happens.
+ *
+ * The label is never shortened to "Availability". It is doing anti-collision
+ * work against the builder's `Owned only`, which filters a collection and asks
+ * a different question entirely.
+ */
+function ScoreAgainst({
+  value,
+  onChange,
+  disabled,
+  labelId,
+  size,
+}: {
+  value: AvailMode;
+  onChange: (next: AvailMode) => void;
+  disabled: boolean;
+  labelId: string;
+  size: "mobile" | "desktop";
+}) {
+  const { ranking, degraded: degradedCopy } = availabilityCopy;
+  const height = size === "mobile" ? 38 : 30;
+  const fontSize = size === "mobile" ? 13 : 12.5;
+  const segments = [
+    { mode: "all" as const, label: ranking.all, aria: ranking.allAria },
+    { mode: "free" as const, label: ranking.free, aria: ranking.freeAria },
+  ];
+
+  return (
+    <div
+      role="radiogroup"
+      aria-labelledby={labelId}
+      className="flex gap-[3px] rounded-lg p-[3px]"
+      style={{ background: "#181410", border: "1px solid #3A3229" }}
+    >
+      {segments.map((s) => {
+        const active = s.mode === value;
+        // Only `What's free` can be unavailable: `Everything I own` needs no
+        // deck read, so it stays reachable through the whole outage.
+        const off = disabled && s.mode === "free";
+        return (
+          <button
+            key={s.mode}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-disabled={off || undefined}
+            aria-label={off ? degradedCopy.segmentDisabledAria : s.aria}
+            onClick={() => !off && onChange(s.mode)}
+            className={[
+              "flex items-center justify-center rounded-md",
+              size === "mobile" ? "flex-1 px-[10px]" : "px-[13px]",
+              off ? "cursor-not-allowed" : "cursor-pointer",
+            ].join(" ")}
+            style={{
+              height,
+              fontSize,
+              border: 0,
+              whiteSpace: "nowrap",
+              background: active ? "#C9A24B" : "transparent",
+              color: active ? "#14110E" : off ? "#6A6152" : "#C6B79A",
+              fontWeight: active ? 600 : 500,
+              textDecoration: off ? "line-through" : undefined,
+            }}
+          >
+            {s.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 const COLOR_LABELS: Record<string, string> = {
   W: "White",
@@ -63,6 +154,18 @@ export type CommandersViewProps = {
   uniqueCardsRead: number;
   candidateCount: number;
   firstRun: boolean;
+  /**
+   * Which ranking the server rendered, parsed from `?avail=`. The URL is the
+   * single source of truth: `rankFree` runs on the server, so a client-only
+   * mode would show one ranking's numerals over the other's rows.
+   */
+  avail: AvailMode;
+  /** The same commanders re-scored against the free pool. Null in `all` mode. */
+  freeItems: CommanderListItem[] | null;
+  /** False when the availability read failed — `What's free` is unavailable. */
+  availOk: boolean;
+  /** Receipt clause counts by oracleId, for both modes. */
+  receiptCounts: Map<string, ReceiptCounts>;
 };
 
 export function CommandersView({
@@ -71,6 +174,10 @@ export function CommandersView({
   uniqueCardsRead,
   candidateCount,
   firstRun,
+  avail,
+  freeItems,
+  availOk,
+  receiptCounts,
 }: CommandersViewProps) {
   const router = useRouter();
   const search = useSearchParams();
@@ -79,19 +186,50 @@ export function CommandersView({
     parseColors(search.get("c")),
   );
 
-  // Mirror color filter to URL via shallow replace (no RSC refetch).
+  // Mirror color filter to URL via shallow replace (no RSC refetch). `avail` is
+  // carried through rather than recomputed — see serializeParams.
   useEffect(() => {
-    const qs = serializeParams(colors);
+    const qs = serializeParams(colors, avail);
     router.replace(`/commanders${qs}`, { scroll: false });
-  }, [colors, router]);
+  }, [colors, avail, router]);
 
-  const filtered = useMemo(() => filterByColors(results, colors), [results, colors]);
+  // Which list is on screen. Falling back to `results` when the free ranking is
+  // missing keeps the page rendering something true rather than nothing.
+  const active = avail === "free" && freeItems ? freeItems : results;
 
-  // Global rank in the fixed Fit ordering — filtering hides cards but must not
-  // renumber the ones still shown.
-  const rankBySlug = useMemo(
-    () => new Map(results.map((r, i) => [r.slug, i + 1])),
+  const filtered = useMemo(() => filterByColors(active, colors), [active, colors]);
+
+  // Two rank maps, each built once over the FULL candidate set in that mode's
+  // ordering. Both are pre-filter, so filtering still never renumbers: a hidden
+  // rank leaves a gap rather than closing it. The numeral does move when the
+  // toggle moves, and that is the point — the score itself changed.
+  const rankAll = useMemo(() => rankMap(results), [results]);
+  const rankFreeBySlug = useMemo(
+    () => (freeItems ? rankMap(freeItems) : null),
+    [freeItems],
+  );
+  const rankBySlug =
+    avail === "free" && rankFreeBySlug ? rankFreeBySlug : rankAll;
+
+  // The all-mode score for each commander, joined on oracleId. Both arrays are
+  // already on the client, so the delta is a join and not a fetch.
+  const allByOracleId = useMemo(
+    () => new Map(results.map((r) => [r.oracleId, r])),
     [results],
+  );
+
+  // §9.2: free mode only, and only where the score actually moved. It compares a
+  // commander to its OWN other score, never to another row, so it is correct at
+  // rank 3 and at rank 200 whether or not either is revealed.
+  const deltaFor = useCallback(
+    (r: CommanderListItem): ScoreDelta | null => {
+      if (avail !== "free") return null;
+      const was = allByOracleId.get(r.oracleId)?.score;
+      if (was === undefined) return null;
+      const drop = Math.round(was) - Math.round(r.score);
+      return drop > 0 ? { drop, was: Math.round(was) } : null;
+    },
+    [avail, allByOracleId],
   );
 
   // ── Windowing (#52) ────────────────────────────────────────────────────────
@@ -110,6 +248,38 @@ export function CommandersView({
     setColors((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
     setShown(REVEAL_STEP);
   }, []);
+
+  // ── Score against (§7) ─────────────────────────────────────────────────────
+  // The flip needs the server, because rankFree runs there. A server round trip
+  // with no local feedback reads as a dead control, so the pressed segment moves
+  // immediately and the list dims until the new ranking lands.
+  const [pending, startTransition] = useTransition();
+  // The override records what it was applied AGAINST, so it expires when the
+  // server value moves rather than needing to be cleared. Clearing it on the
+  // click instead would drop it before the new HTML lands and flash the old
+  // segment back.
+  const [optimisticAvail, setOptimisticAvail] = useState<{
+    from: AvailMode;
+    to: AvailMode;
+  } | null>(null);
+  const pressedAvail =
+    optimisticAvail && optimisticAvail.from === avail ? optimisticAvail.to : avail;
+
+  const setAvail = useCallback(
+    (next: AvailMode) => {
+      if (next === avail) return;
+      setOptimisticAvail({ from: avail, to: next });
+      // The window belongs to the current result set, not the session, and a
+      // re-rank means different commanders occupy the revealed range.
+      setShown(REVEAL_STEP);
+      startTransition(() => {
+        router.push(`/commanders${serializeParams(colors, next)}`, {
+          scroll: false,
+        });
+      });
+    },
+    [avail, colors, router],
+  );
 
   const windowed = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
   const remaining = Math.max(0, filtered.length - shown);
@@ -150,16 +320,25 @@ export function CommandersView({
     itemRefs.current[before]?.focus({ preventScroll: true });
   }, [shown, filtered.length]);
 
+  // The re-rank announcement (§7.7), on the page's one live region. A plain
+  // effect on purpose: the reveal handler above is a layout effect and clears
+  // the region when the window narrows, which a flip always does. Running after
+  // it is what stops the clear from swallowing this.
+  const prevAvail = useRef(avail);
+  useEffect(() => {
+    if (prevAvail.current === avail) return;
+    prevAvail.current = avail;
+    setAnnouncement(availabilityCopy.ranking.announce(avail, active.length));
+  }, [avail, active.length]);
+
   return (
     <div>
       {/* Present before the first reveal — a live region inserted at announce
-          time is frequently not read. A list too short to window can never
-          announce, so it renders the pre-windowing surface untouched. */}
-      {wasWindowed && (
-        <span className="sr-only" aria-live="polite" aria-atomic="true">
-          {announcement}
-        </span>
-      )}
+          time is frequently not read. Unconditional since #43: the ranking
+          toggle exists on every list, including one too short to ever window. */}
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </span>
 
       {/* ── Global degraded banner (above everything) ── */}
       {degraded && (
@@ -236,6 +415,29 @@ export function CommandersView({
             })}
           </div>
 
+          {/* Score against (desktop, §7) — the third control in this row. */}
+          <div className="flex items-center gap-[8px]">
+            <span
+              id="score-against-desktop"
+              className="font-mono"
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "#8E8269",
+              }}
+            >
+              {availabilityCopy.ranking.label}
+            </span>
+            <ScoreAgainst
+              value={pressedAvail}
+              onChange={setAvail}
+              disabled={!availOk}
+              labelId="score-against-desktop"
+              size="desktop"
+            />
+          </div>
+
           {/* Active filter chips (desktop, §Active-filter chip desktop) */}
           {colors.map((c) => (
             <span
@@ -305,9 +507,19 @@ export function CommandersView({
             className="font-mono"
             style={{ fontSize: 11, color: "#8E8269" }}
           >
-            Showing {filtered.length} of {results.length}
+            Showing {filtered.length} of {active.length}
           </span>
         </div>
+
+        {/* Note (§7.6) — free state only, under the control. */}
+        {avail === "free" && (
+          <p
+            className="font-mono m-0 mt-[8px]"
+            style={{ fontSize: 11, color: "#8E8269" }}
+          >
+            {availabilityCopy.ranking.freeNoteLong}
+          </p>
+        )}
       </div>
 
       {/* ── Mobile filter strip ── */}
@@ -356,8 +568,41 @@ export function CommandersView({
             className="font-mono"
             style={{ fontSize: 10.5, color: "#8E8269", marginLeft: "auto" }}
           >
-            {filtered.length}/{results.length}
+            {filtered.length}/{active.length}
           </span>
+        </div>
+
+        {/* Score against (mobile, §7) — its own block under the colour row. */}
+        <div className="mt-[10px]">
+          <p
+            id="score-against-mobile"
+            className="font-mono m-0 mb-[6px]"
+            style={{
+              fontSize: 9,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "#8E8269",
+            }}
+          >
+            {availabilityCopy.ranking.label}
+          </p>
+          <ScoreAgainst
+            value={pressedAvail}
+            onChange={setAvail}
+            disabled={!availOk}
+            labelId="score-against-mobile"
+            size="mobile"
+          />
+          {/* Note (§7.6). The phone buys the short form — the long one's second
+              sentence costs a third line at 390px. */}
+          {avail === "free" && (
+            <p
+              className="font-mono m-0 mt-[7px]"
+              style={{ fontSize: 10.5, color: "#8E8269", lineHeight: 1.5 }}
+            >
+              {availabilityCopy.ranking.freeNote}
+            </p>
+          )}
         </div>
 
         {/* Window count (§Header window count, mobile) — its own row under the
@@ -431,7 +676,13 @@ export function CommandersView({
           />
         ) : (
           <>
-            <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
+            {/* The flip is a server round trip. Without this the list sits
+                unchanged after the click and the control reads as dead. */}
+            <ul
+              aria-busy={pending || undefined}
+              className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0 transition-opacity"
+              style={{ opacity: pending ? 0.55 : 1 }}
+            >
               {windowed.map((r, i) => (
                 <li
                   key={r.slug}
@@ -449,7 +700,13 @@ export function CommandersView({
                       : undefined
                   }
                 >
-                  <RecCard commander={r} rank={rankBySlug.get(r.slug) ?? 0} />
+                  <RecCard
+                    commander={r}
+                    rank={rankBySlug.get(r.slug) ?? 0}
+                    avail={avail}
+                    counts={receiptCounts.get(r.oracleId) ?? NO_CLAIMS}
+                    delta={deltaFor(r)}
+                  />
                 </li>
               ))}
               {remaining > 0 && (

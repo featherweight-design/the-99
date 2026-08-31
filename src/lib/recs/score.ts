@@ -62,15 +62,32 @@ function fitsIdentity(card: PoolCard, identity: Set<string>): boolean {
   return card.colorIdentity.every((c) => identity.has(c));
 }
 
+/**
+ * The owned cards that could go in this commander's 99: colour-identity legal,
+ * and never the commander itself.
+ *
+ * Exported because `colorPoolSize` is the only thing that survives this list
+ * inside `scoreCommander`, and the receipt line needs a second count over the
+ * SAME cards — `34 of your cards fit · 12 already in use` is a claim about one
+ * pool, twice. Two call sites filtering by hand would drift apart silently, and
+ * the reader has no way to tell which of the two numbers is wrong.
+ */
+export function commanderPool(
+  commander: Pick<PoolCard, "oracleId" | "colorIdentity">,
+  collection: PoolCard[],
+): PoolCard[] {
+  const identity = new Set(commander.colorIdentity);
+  return collection.filter(
+    (c) => c.oracleId !== commander.oracleId && fitsIdentity(c, identity),
+  );
+}
+
 export function scoreCommander(args: {
   commander: PoolCard;
   collection: PoolCard[];
   edhrecTopCards: string[] | null;
 }): CommanderScore {
-  const identity = new Set(args.commander.colorIdentity);
-  const pool = args.collection.filter(
-    (c) => c.oracleId !== args.commander.oracleId && fitsIdentity(c, identity),
-  );
+  const pool = commanderPool(args.commander, args.collection);
 
   const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
   const roleCards: Record<"ramp" | "draw" | "removal" | "wipes", string[]> = {
