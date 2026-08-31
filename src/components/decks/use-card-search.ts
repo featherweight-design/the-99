@@ -33,9 +33,11 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed, deck
   // Every input the request is made from, so flipping any of them makes the rows
   // on screen as stale as retyping does. Identity belongs here as much as the
   // owned toggle: the two comboboxes pass different identities, and a key that
-  // ignored it would let Enter act on rows from the other one's filter.
+  // ignored it would let Enter act on rows from the other one's filter. deckId is
+  // the availability vantage, and a route-param change reconciles rather than
+  // remounts, so rows read against the old deck must not pass as current.
   const identityKey = colorIdentity === null ? "any" : colorIdentity.join(",");
-  const requestKey = `${ownedOnly ? "owned" : "all"} ${identityKey} ${trimmed}`;
+  const requestKey = `${ownedOnly ? "owned" : "all"} ${identityKey} ${deckId} ${trimmed}`;
 
   useEffect(() => {
     if (timerRef.current !== null) clearTimeout(timerRef.current);
@@ -69,8 +71,6 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed, deck
       cancelled = true;
       if (timerRef.current !== null) clearTimeout(timerRef.current);
     };
-    // deckId is absent from requestKey deliberately: it is fixed for the life of
-    // the component, so it can never make rows on screen stale.
   }, [trimmed, queryActive, ownedOnly, colorIdentity, requestKey, deckId]);
 
   const results = rows?.items ?? [];
