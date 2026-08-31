@@ -9,11 +9,10 @@
 // pure function of its pool, so the second score is the same function over a
 // smaller array: zero extra network calls.
 
-import { readEdhrecCache, type EdhrecFetchResult } from "../edhrec/client";
+import { readEdhrecCache } from "../edhrec/client";
 import { parseEdhrecPayload } from "../edhrec/parse";
 import { type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
-import { synergyStateFrom } from "./synergy-state";
 import {
   byScoreThenOracleId,
   loadCollectionPool,
@@ -71,11 +70,13 @@ export function carryCanonicalSlugs<T extends { oracleId: string }>(
  * read failed — the caller must then disable the toggle rather than serve
  * scores identical to the other mode.
  *
- * `canonical` is the "everything I own" list, and it is the only source of both
- * membership and slugs. Membership, so that flipping the toggle can only ever
- * reorder the list the player is already looking at. Slugs, because a commander
- * absent from it has no canonical slug and any invented one would 404 — the
- * persisted list can be a generation behind the collection.
+ * `canonical` is the "everything I own" list, and it is the source of everything
+ * about a row except its score. Membership, so that flipping the toggle can only
+ * ever reorder the list the player is already looking at. Slugs, because a
+ * commander absent from it has no canonical slug and any invented one would 404.
+ * `synergyState`, because only canonical can tell an EDHREC outage apart from a
+ * commander EDHREC does not index. The score is the one thing this function is
+ * entitled to compute, because the score is the only thing the pool changes.
  */
 export async function rankFree(
   userId: string,
@@ -87,7 +88,7 @@ export async function rankFree(
   // outage.
   if (canonical.length === 0) return { items: [], ok: true };
 
-  const known = new Set(canonical.map((c) => c.oracleId));
+  const byOracleId = new Map(canonical.map((c) => [c.oracleId, c]));
 
   const { collection } = await loadCollectionPool(userId);
 
@@ -117,27 +118,37 @@ export async function rankFree(
   // Candidacy is a property of the collection, not of the pool: a commander you
   // own but have sleeved is still a commander you could unsleeve. Only the pool
   // it is SCORED against shrinks.
-  const candidates = collection.filter((c) => known.has(c.oracleId));
+  //
+  // Each candidate is paired with its canonical entry rather than filtered
+  // against a set of ids, because the entry is needed again below and a lookup
+  // that has already succeeded should not be repeated behind a `!`.
+  const candidates = collection.flatMap((c) => {
+    const canon = byOracleId.get(c.oracleId);
+    return canon ? [{ card: c, canon }] : [];
+  });
   const pool = freePool(collection, availability);
 
-  const cache = await readEdhrecCache(candidates.map((c) => c.oracleId));
-  const scored = candidates.map((commander) => {
-    const cached = cache.get(commander.oracleId);
+  const cache = await readEdhrecCache(candidates.map((c) => c.card.oracleId));
+  const scored = candidates.map(({ card: commander, canon }) => {
     // The row holds unparsed JSON, so it has to go through parseEdhrecPayload
-    // before it has topCards. `unreachable` is false even on a miss: a miss here
-    // is an absence, not an outage — the canonical list already resolved this
-    // same candidate set, so anything reachable is already cached.
-    const result: EdhrecFetchResult = {
-      data: cached ? parseEdhrecPayload(cached.payload) : null,
-      unreachable: false,
-    };
+    // before it has topCards. An unexpected shape degrades to an empty list,
+    // which scoreCommander reads as a null fitSynergy.
+    const cached = cache.get(commander.oracleId);
+    const topCards = cached ? parseEdhrecPayload(cached.payload).topCards : null;
     return {
       ...scoreCommander({
         commander,
         collection: pool,
-        edhrecTopCards: result.data?.topCards ?? null,
+        edhrecTopCards: topCards,
       }),
-      synergyState: synergyStateFrom(result),
+      // CARRIED from canonical, never recomputed — the same rule as slugs, and
+      // for a sharper reason. Both modes read the same cache, so a miss here is
+      // a miss there too; but only canonical knows WHY it missed. Recomputing it
+      // from a bare cache read cannot distinguish an outage from a commander
+      // EDHREC does not index, so a list built during an outage would relabel
+      // every `degraded` as `absent` on flipping to free — taking the Retry
+      // button away at exactly the moment it is the useful control.
+      synergyState: canon.synergyState,
     };
   });
   scored.sort(byScoreThenOracleId);
