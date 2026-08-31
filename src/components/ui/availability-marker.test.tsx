@@ -15,6 +15,8 @@ const a = (owned: number, hard: number, soft: number, names: string[] = []) => (
 
 const root = (c: HTMLElement) => c.firstElementChild as HTMLElement;
 
+const deckName = () => document.querySelector("[data-deck-name]") as HTMLElement;
+
 describe("AvailabilityMarker", () => {
   // The single most important behaviour in this feature.
   it("renders nothing at all in the free state", () => {
@@ -49,19 +51,31 @@ describe("AvailabilityMarker", () => {
   // jsdom collapses nothing, so only the class can be asserted here.
   it("preserves the space the prefix ends with", () => {
     render(<AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />);
-    const prefix = screen.getByTitle("Atraxa").previousElementSibling!;
+    const prefix = deckName().previousElementSibling!;
     expect(prefix.textContent).toBe("0 free — in ");
     expect(prefix.className).toContain("whitespace-pre");
     expect(prefix.className).not.toContain("whitespace-nowrap");
   });
 
-  it("puts the deck name in its own truncating span, with a title", () => {
+  it("puts the deck name in its own truncating span", () => {
     render(
       <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />,
     );
-    const name = screen.getByTitle("Atraxa");
+    const name = deckName();
     expect(name).toHaveTextContent("Atraxa");
     expect(name).toHaveClass("truncate");
+  });
+
+  // Design table row 3.6: no title-on-marker. A clipped name stays clipped for
+  // the eye; `markerAria` is what carries the full name to a screen reader.
+  it("hangs no title anywhere on the marker", () => {
+    const { container } = render(
+      <AvailabilityMarker
+        availability={a(1, 1, 0, ["Kykar Spellslinging Wind-Shaper"])}
+        density="row"
+      />,
+    );
+    expect(container.querySelectorAll("[title]")).toHaveLength(0);
   });
 
   it("counts the decks instead of naming them when there are several", () => {
@@ -264,7 +278,7 @@ describe("AvailabilityMarker row density", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />,
     );
-    expect(screen.getByTitle("Atraxa").className).toContain(
+    expect(deckName().className).toContain(
       "text-[color:var(--avail-hard-fg)]",
     );
     expect(container.innerHTML).not.toContain("text-[color:var(--avail-hard)]");

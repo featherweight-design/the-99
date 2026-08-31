@@ -32,7 +32,7 @@
 - **`/collection` is count-only** (Addendum 2 §3), in the accessible name as well as the label. It renders `marker.hard` (`0 free`) and **never** `hardIn` or `hardMulti`.
 - **No roll-up and no badge on the deck index** (locked decision 2). The deck index status pill keeps meaning card count and nothing else.
 - **No grid changes on either collection view.** The row marker lives inside the existing `1fr` name cell; the tile chip goes **top-left** because top-right is the brass quantity badge.
-- **The deck-name half is the only part allowed to truncate.** The marker renders as a `flex-none` prefix plus a `truncate min-w-0` name, full name in `title` and always in the accessible name. No character budget, no breakpoint hook.
+- **The deck-name half is the only part allowed to truncate.** The marker renders as a `flex-none` prefix plus a `truncate min-w-0` name, full name always in the accessible name and **never** in a `title` (table row 3.6). No character budget, no breakpoint hook.
 - **Mature deck threshold is 99 cards.** Constant, one definition, `MATURE_DECK_SIZE`.
 - **Design-doc precedence:** where the canvas `The 99 - Card Availability.dc.html` and `README.md` disagree, **`README.md` wins**. The canvas's implementation-notes panel still says "get a light-theme pair there" and "brass is not AA as small text"; both are corrected in the README and **must not be implemented**.
 - **Contrast figures in R3 drift ~5% high.** Verified values on `--surface #1E1A15`: `#E8CE93` 11.1:1 · `#E9917A` 7.1:1 · `--fg-body` 8.5:1 · `--brass` 7.0:1. All AAA; brass has less headroom than the document claims.
@@ -668,12 +668,21 @@ markerAria(a, opts?: MarkerOpts): string | null
    and rendered `0 free — inAtraxa`. jsdom cannot see this and the draft's
    `composed()` helper normalised it away; only the Gate 2 browser pass caught
    it. There is a regression test pinning the literal `"0 free — in "`.
+10. **No `title` on the deck name, reversing decision B (2026-08-27).** Table row
+    3.6 says "no title-on-marker", and the earlier reading — that it forbids an
+    explanatory tooltip but not a `title` recovering a clipped name — does not
+    survive reading the component. The marker root sets no `aria-label`;
+    `markerAria` is exported so Task 4 can compose the full deck name into the
+    **row's** accessible name. A screen reader therefore already has the name,
+    and the `title` only ever served a sighted mouse user, on an element row 3.6
+    says has no hover and is never a tap target. The name span carries
+    `data-deck-name` for tests to query, and a test asserts the marker renders no
+    `title` anywhere.
 
 **Carried to Design as ratify items** (see the PR body): the copy file has no
 nameless `hardAria` key and no countless `overAria` key, both of which are
-currently sliced out of the keys that do exist; and table row 3.6's
-"no title-on-marker" is kept as forbidding an *explanatory* tooltip, not the
-`title` that recovers a clipped deck name (decision B, 2026-08-27).
+currently sliced out of the keys that do exist. The row-3.6 `title` question is
+**closed engineering-side** by deviation 10 above and needs no Design call.
 
 ---
 
@@ -770,10 +779,10 @@ it("carries the marker when nothing is free", () => {
   renderRow(
     <DecklistRow card={{ ...card, availability: avail(1, 1, ["Atraxa"]) }} {...rowProps} />,
   );
-  // Two spans, so match the prefix by regex and the name by its title —
+  // Two spans, so match the prefix by regex and the name by its data attribute —
   // getByText cannot see the composed string. See Task 3, Step 4.
   expect(screen.getByText(/0 free — in/)).toBeInTheDocument();
-  expect(screen.getByTitle("Atraxa")).toBeInTheDocument();
+  expect(document.querySelector("[data-deck-name]")).toHaveTextContent("Atraxa");
 });
 
 // The quiet-failure half of the degraded ruling.
@@ -2728,5 +2737,5 @@ Found by auditing `availability · copy strings.ts` against all ten tasks. Each 
 
 **Closed since the first revision of this plan, do not re-raise:**
 
-- **Gap §2 (deck-name length budget)** — resolved 2026-08-27. The name is the only part allowed to truncate: `flex-none` prefix plus `truncate min-w-0` name, full name in `title` and in the accessible name. Implemented in Task 3.
+- **Gap §2 (deck-name length budget)** — resolved 2026-08-27. The name is the only part allowed to truncate: `flex-none` prefix plus `truncate min-w-0` name, full name in the accessible name and not in a `title` (Task 3 deviation 10). Implemented in Task 3.
 - **The collection page is no longer out of scope.** Addendum 2 designs it in full — Tasks 9 and 10.

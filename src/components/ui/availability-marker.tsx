@@ -43,7 +43,8 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
   // the copy file does — and the test pins the failure mode, so a copy edit
   // that silently switches us to the fallback is caught in CI rather than by a
   // player. **Delete this whole helper the moment Design adds a real nameless
-  // key** (ratify item 2); it exists only because one is missing.
+  // key — a count-only `hardAria` for /collection**; it exists only because
+  // that key is missing.
   const NAMELESS_HARD_FALLBACK = "no free copies";
   // A control character cannot occur in copy, so "the first clause still holds
   // the sentinel" is an exact test for "the name did not land after the
@@ -65,7 +66,8 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
   // "${deckCount} of your finished lists include this card and you own
   // ${shortBy} too few". Everything after "and" is true without a deck count,
   // and is the only true thing left when no names arrived. **Delete this the
-  // moment Design adds a real countless over key** (ratify item 7).
+  // moment Design adds a real countless over key — an `overAria` that states
+  // the shortfall without a deck count**.
   const countlessOverAria = (shortBy: number) => {
     const [, ...rest] = c.overAria(shortBy, COUNT_SENTINEL).split(" and ");
     const tail = rest.join(" and ");
@@ -282,8 +284,13 @@ export function AvailabilityMarker({
         The prefix never truncates; the deck name is the flexible half. This is
         the same split Addendum 2 §1 specifies for the collection name cell —
         "the chip is flex: none; the name is the flexible half" — applied to the
-        marker's own two parts. `title` carries the untruncated name so a
-        clipped `Kykar Spellsl…` is still recoverable on hover.
+        marker's own two parts.
+
+        No `title` on the name, per design table row 3.6: the marker has no
+        hover, no focus ring and is never a tap target. A clipped
+        `Kykar Spellsl…` stays clipped for the eye, which is the drawn
+        behaviour — the full name is not lost, because `markerAria` carries it
+        into the row's accessible name.
       */}
       {/*
         `whitespace-pre`, not `whitespace-nowrap`: a flex item trims its own
@@ -304,7 +311,7 @@ export function AvailabilityMarker({
         // -ml cancels the container's gap between the two halves of what is one
         // sentence: the gap separates the glyph from the text, not `0 free — in`
         // from `Atraxa`.
-        <span className={twMerge("truncate min-w-0 -ml-[6px]", colour)} title={text.name}>
+        <span className={twMerge("truncate min-w-0 -ml-[6px]", colour)} data-deck-name="">
           {text.name}
         </span>
       )}
