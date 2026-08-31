@@ -39,17 +39,16 @@ function results(n: number, colorIdentity: string[] = ["R"]): CommanderListItem[
   }));
 }
 
-function view(
-  list: CommanderListItem[],
-  over: {
-    avail?: AvailMode;
-    freeItems?: CommanderListItem[] | null;
-    availOk?: boolean;
-    degraded?: boolean;
-  } = {},
-) {
+type Over = {
+  avail?: AvailMode;
+  freeItems?: CommanderListItem[] | null;
+  availOk?: boolean;
+  degraded?: boolean;
+};
+
+function el(list: CommanderListItem[], over: Over = {}) {
   const { avail = "all", freeItems = null, availOk = true, degraded = false } = over;
-  return render(
+  return (
     <CommandersView
       results={list}
       degraded={degraded}
@@ -60,8 +59,19 @@ function view(
       freeItems={freeItems}
       availOk={availOk}
       receiptCounts={new Map()}
-    />,
+    />
   );
+}
+
+// `again` re-renders the SAME instance, so a test can move a prop the way the
+// server does rather than mounting twice and missing the transition.
+function view(list: CommanderListItem[], over: Over = {}) {
+  const r = render(el(list, over));
+  return {
+    ...r,
+    again: (next: CommanderListItem[], nextOver: Over = {}) =>
+      r.rerender(el(next, nextOver)),
+  };
 }
 
 const control = () => screen.queryByRole("button", { name: /^Show \d+ more commanders/ });
@@ -256,22 +266,10 @@ describe("CommandersView ranking toggle", () => {
   // Only the arriving server render announces. On mount there is no re-rank to
   // report, and a page that announces itself the moment it loads is noise.
   it("announces the re-rank, and says nothing on first paint", () => {
-    const { container, rerender } = view(results(3));
+    const { container, again } = view(results(3));
     const live = container.querySelector('[aria-live="polite"]')!;
     expect(live).toHaveTextContent("");
-    rerender(
-      <CommandersView
-        results={results(3)}
-        degraded={false}
-        uniqueCardsRead={1418}
-        candidateCount={3}
-        firstRun={false}
-        avail="free"
-        freeItems={results(2)}
-        availOk
-        receiptCounts={new Map()}
-      />,
-    );
+    again(results(3), { avail: "free", freeItems: results(2) });
     expect(live).toHaveTextContent("Re-ranked by what’s free · 2 commanders");
   });
 
@@ -311,9 +309,9 @@ describe("CommandersView ranking toggle", () => {
   });
 
   it("explains the exclusion only while the free ranking is on", () => {
-    view(results(3));
+    const { again } = view(results(3));
     expect(screen.queryByText(/don.t count toward these scores/)).toBeNull();
-    view(results(3), { avail: "free", freeItems: results(3) });
+    again(results(3), { avail: "free", freeItems: results(3) });
     expect(screen.getAllByText(/don.t count toward these scores/).length).toBeGreaterThan(0);
   });
 });
