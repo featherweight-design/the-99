@@ -274,6 +274,21 @@ describe("CommandersView ranking toggle", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("is one tab stop, and the arrows move within it", () => {
+    view(results(3));
+    const all = segments(ALL)[0];
+    expect(all).toHaveAttribute("tabindex", "0");
+    expect(segments(FREE)[0]).toHaveAttribute("tabindex", "-1");
+    fireEvent.keyDown(all, { key: "ArrowRight" });
+    expect(push).toHaveBeenCalledWith("/commanders?avail=free", { scroll: false });
+  });
+
+  it("leaves the arrows inert while the free ranking is unavailable", () => {
+    view(results(3), { availOk: false });
+    fireEvent.keyDown(segments(ALL)[0], { key: "ArrowRight" });
+    expect(push).not.toHaveBeenCalled();
+  });
+
   it("explains the exclusion only while the free ranking is on", () => {
     view(results(3));
     expect(screen.queryByText(/don.t count toward these scores/)).toBeNull();

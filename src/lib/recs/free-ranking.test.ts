@@ -1,6 +1,16 @@
-import { describe, it, expect } from "vitest";
-import { carryCanonicalSlugs, freePool } from "./free-ranking";
+import { describe, it, expect, vi } from "vitest";
+import { carryCanonicalSlugs, freePool, rankFree } from "./free-ranking";
+import type { CommanderListItem } from "./recommend";
 import type { PoolCard } from "./score";
+
+const loadCollectionPool = vi.hoisted(() => vi.fn());
+const loadAvailability = vi.hoisted(() => vi.fn());
+vi.mock("./recommend", async (orig) => ({
+  ...(await orig<typeof import("./recommend")>()),
+  loadCollectionPool,
+}));
+vi.mock("../decks/availability-query", () => ({ loadAvailability }));
+vi.mock("../edhrec/client", () => ({ readEdhrecCache: async () => new Map() }));
 
 const card = (oracleId: string): PoolCard => ({
   oracleId,
@@ -71,5 +81,40 @@ describe("carryCanonicalSlugs", () => {
   it("drops a commander the canonical list has never seen, rather than inventing a slug", () => {
     const scored = [{ oracleId: "id-1" }, { oracleId: "id-unknown" }];
     expect(carryCanonicalSlugs(scored, canonical)).toEqual([{ oracleId: "id-1", slug: "kykar" }]);
+  });
+});
+
+describe("rankFree with preloaded reads", () => {
+  const item = (oracleId: string): CommanderListItem => ({
+    oracleId,
+    slug: oracleId,
+    name: oracleId,
+    colorIdentity: [],
+    colorPoolSize: 1,
+    roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
+    edhrecOwnedCount: 0,
+    edhrecTotal: 0,
+    receipts: "",
+    fitPool: 0,
+    fitRoles: 0,
+    fitSynergy: null,
+    synergyState: "absent",
+    score: 10,
+    imageUri: null,
+  });
+
+  // The point of the parameter: `/commanders` has already made both reads for
+  // the receipt clause, so the free path must not pay for them a second time.
+  it("makes no reads of its own", async () => {
+    const commander = { ...card("a"), typeLine: "Legendary Creature" };
+    const out = await rankFree("user", [item("a")], {
+      collection: [commander, card("b")],
+      availability: new Map([["b", avail(1, 1)]]),
+    });
+
+    expect(out.ok).toBe(true);
+    expect(out.items.map((i) => i.oracleId)).toEqual(["a"]);
+    expect(loadCollectionPool).not.toHaveBeenCalled();
+    expect(loadAvailability).not.toHaveBeenCalled();
   });
 });

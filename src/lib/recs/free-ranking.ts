@@ -89,10 +89,20 @@ export function carryCanonicalSlugs<T extends { oracleId: string }>(
  * `synergyState`, because only canonical can tell an EDHREC outage apart from a
  * commander EDHREC does not index. The score is the one thing this function is
  * entitled to compute, because the score is the only thing the pool changes.
+ *
+ * `preloaded` lets a caller that has already made these two reads hand them over
+ * instead of paying for them twice. It must be the SAME pair: an availability
+ * map read against a different collection would score rows this function then
+ * treats as free by default, because a card with no row is kept. `/commanders`
+ * loads both for the receipt clause, which renders in either mode.
  */
 export async function rankFree(
   userId: string,
   canonical: CommanderListItem[],
+  preloaded?: {
+    collection: PoolCard[];
+    availability: Map<string, Availability>;
+  },
 ): Promise<{ items: CommanderListItem[]; ok: boolean }> {
   // Slugs come only from the canonical list, so an empty one can only ever
   // produce an empty ranking. `ok` is still true: nothing failed, there is just
@@ -100,7 +110,8 @@ export async function rankFree(
   // outage.
   if (canonical.length === 0) return { items: [], ok: true };
 
-  const { collection } = await loadCollectionPool(userId);
+  const collection =
+    preloaded?.collection ?? (await loadCollectionPool(userId)).collection;
 
   // Membership comes from `canonical` and from nothing else, because the toggle
   // re-ranks a list — it must never add or drop a row. Canonical has already
@@ -147,12 +158,16 @@ export async function rankFree(
   // same answer. It does not make the rollup itself cheaper — every CTE in that
   // query is keyed on the user, not on this list.
   let availability: Map<string, Availability>;
-  try {
-    availability = await loadAvailability(userId, {
-      oracleIds: collection.map((c) => c.oracleId),
-    });
-  } catch {
-    return { items: [], ok: false };
+  if (preloaded) {
+    availability = preloaded.availability;
+  } else {
+    try {
+      availability = await loadAvailability(userId, {
+        oracleIds: collection.map((c) => c.oracleId),
+      });
+    } catch {
+      return { items: [], ok: false };
+    }
   }
 
   const pool = freePool(collection, availability);

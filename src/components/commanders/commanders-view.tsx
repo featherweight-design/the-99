@@ -93,6 +93,18 @@ function ScoreAgainst({
     { mode: "free" as const, label: ranking.free, aria: ranking.freeAria },
   ];
 
+  // A radiogroup is one tab stop, and the arrows move within it — the pattern
+  // every screen-reader user expects the moment the role is announced. Selection
+  // follows focus, which is the shipped behaviour for a group this small and
+  // matches what a click already does.
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const step = (from: number, dir: 1 | -1) => {
+    const next = (from + dir + segments.length) % segments.length;
+    if (disabled && segments[next].mode === "free") return;
+    refs.current[next]?.focus();
+    onChange(segments[next].mode);
+  };
+
   return (
     <div
       role="radiogroup"
@@ -100,7 +112,7 @@ function ScoreAgainst({
       className="flex gap-[3px] rounded-lg p-[3px]"
       style={{ background: "#181410", border: "1px solid #3A3229" }}
     >
-      {segments.map((s) => {
+      {segments.map((s, i) => {
         const active = s.mode === value;
         // Only `What's free` can be unavailable: `Everything I own` needs no
         // deck read, so it stays reachable through the whole outage.
@@ -108,12 +120,28 @@ function ScoreAgainst({
         return (
           <button
             key={s.mode}
+            ref={(n) => {
+              refs.current[i] = n;
+            }}
             type="button"
             role="radio"
             aria-checked={active}
             aria-disabled={off || undefined}
             aria-label={off ? degradedCopy.segmentDisabledAria : s.aria}
+            // Roving: the checked segment is the group's single tab stop.
+            tabIndex={active ? 0 : -1}
             onClick={() => !off && onChange(s.mode)}
+            onKeyDown={(e) => {
+              const dir =
+                e.key === "ArrowRight" || e.key === "ArrowDown"
+                  ? 1
+                  : e.key === "ArrowLeft" || e.key === "ArrowUp"
+                    ? -1
+                    : 0;
+              if (dir === 0) return;
+              e.preventDefault();
+              step(i, dir);
+            }}
             className={[
               "flex items-center justify-center rounded-md",
               size === "mobile" ? "flex-1 px-[10px]" : "px-[13px]",
