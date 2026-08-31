@@ -102,20 +102,6 @@ export async function rankFree(
 
   const { collection } = await loadCollectionPool(userId);
 
-  // Scoped to the pool, and the pool has to be loaded first for that reason.
-  // `collection` is already the commander-legal subset, and `freePool` reads the
-  // map for nothing else, so narrowing here returns strictly fewer rows for the
-  // same answer. It does not make the rollup itself cheaper — every CTE in that
-  // query is keyed on the user, not on this list.
-  let availability: Map<string, Availability>;
-  try {
-    availability = await loadAvailability(userId, {
-      oracleIds: collection.map((c) => c.oracleId),
-    });
-  } catch {
-    return { items: [], ok: false };
-  }
-
   // Membership comes from `canonical` and from nothing else, because the toggle
   // re-ranks a list — it must never add or drop a row. Canonical has already
   // applied both of the filters this function used to re-apply: commander
@@ -150,7 +136,24 @@ export async function rankFree(
   // same failure as an unreadable availability rollup, and let the caller
   // disable the toggle. A disabled control is honest; a vanishing commander is
   // not.
+  //
+  // Checked BEFORE the availability read, which is the expensive one: the
+  // answer is already fully determined by two reads that have both returned.
   if (candidates.length !== canonical.length) return { items: [], ok: false };
+
+  // Scoped to the pool, and the pool has to be loaded first for that reason.
+  // `collection` is already the commander-legal subset, and `freePool` reads the
+  // map for nothing else, so narrowing here returns strictly fewer rows for the
+  // same answer. It does not make the rollup itself cheaper — every CTE in that
+  // query is keyed on the user, not on this list.
+  let availability: Map<string, Availability>;
+  try {
+    availability = await loadAvailability(userId, {
+      oracleIds: collection.map((c) => c.oracleId),
+    });
+  } catch {
+    return { items: [], ok: false };
+  }
 
   const pool = freePool(collection, availability);
 

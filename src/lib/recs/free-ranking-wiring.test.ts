@@ -117,6 +117,9 @@ describe("rankFree — wiring", () => {
   it("reports ok: false rather than dropping a canonical commander the pool lacks", async () => {
     const result = await rankFree("user-1", [item("korvold"), item("ghost")]);
     expect(result).toEqual({ items: [], ok: false });
+    // Two reads that have already returned settle this, so the availability
+    // rollup — the expensive one — is never issued.
+    expect(loadAvailability).not.toHaveBeenCalled();
   });
 
   // The round-5 defect: recomputing synergyState from a bare cache read cannot
