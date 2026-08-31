@@ -126,8 +126,14 @@ describe("rankFree — wiring", () => {
 
   it("scopes the availability read to the pool it is used against", async () => {
     await rankFree("user-1", [item("korvold")]);
-    expect(loadAvailability).toHaveBeenCalledWith("user-1", {
-      oracleIds: ["korvold", "atraxa", "sol-ring"],
-    });
+    // Sorted before comparing: the pool's order comes from the collection query's
+    // `orderBy(cards.oracleId)` and is not part of this contract. Which ids are
+    // passed is the property under test; the sequence is incidental.
+    const [userArg, opts] = loadAvailability.mock.calls[0] as unknown as [
+      string,
+      { oracleIds: string[] },
+    ];
+    expect(userArg).toBe("user-1");
+    expect([...opts.oracleIds].sort()).toEqual(["atraxa", "korvold", "sol-ring"]);
   });
 });
