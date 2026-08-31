@@ -611,7 +611,7 @@ The marker is **a diamond, a count, and a word**. Hollow diamond when an unfinis
 > `src/components/ui/availability-marker.tsx`, never re-paste from here.**
 
 **Shipped:**
-- `src/components/ui/availability-marker.tsx` — 29 tests in `availability-marker.test.tsx`.
+- `src/components/ui/availability-marker.tsx` — 33 tests in `availability-marker.test.tsx`.
 
 **Public API as built** (this is what Task 4 consumes):
 
@@ -621,7 +621,9 @@ The marker is **a diamond, a count, and a word**. Hollow diamond when an unfinis
   density="row" | "chip"      // default "row"
   seam="var(--bg)"             // default; the background behind the marker, over
                                // glyph only. Pass the surface the marker actually
-                               // sits on — a decklist row is var(--surface).
+                               // sits on, read off that surface's own code. A
+                               // decklist row is var(--surface-rail) (#1A160F,
+                               // decklist-row.tsx:103), NOT var(--surface).
   className={...}
   selfExcluded?                // MarkerOpts
   nameless?                    // MarkerOpts
@@ -629,6 +631,15 @@ The marker is **a diamond, a count, and a word**. Hollow diamond when an unfinis
 
 markerAria(a, opts?: MarkerOpts): string | null
 ```
+
+**The seam and hover, for Task 4.** A decklist row changes background on hover
+(`#1A160F` → `#211C15`, `decklist-row.tsx:103`), and a `seam` string fixed at
+render cannot follow it: the seam would read as a hairline against the hovered
+row. Both colours are in design table line 124's observed list, so neither is
+wrong; what is wrong is picking one and calling it done. The fix, if Task 4
+wants it, is a CSS variable the row sets and the row's `md:hover:` overrides,
+passed as `seam="var(--row-bg)"` — the prop takes any CSS colour value, so this
+needs no component change. Decide it in Task 4 rather than inheriting it.
 
 **Deviations from the draft, and why:**
 

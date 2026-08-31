@@ -328,6 +328,64 @@ describe("AvailabilityMarker sparse claimants", () => {
   });
 });
 
+// Addendum 2 §6 — the deck's-own-decklist vantage. `free` here comes from a
+// query given the matching excludeDeckId, so the helper above cannot build
+// these: it derives free as owned − hard, which is the off-decklist form.
+describe("selfExcluded, on a deck's own decklist", () => {
+  const own = (free: number, soft: number, names: string[]) => ({
+    owned: 1,
+    hard: names.length,
+    soft,
+    free,
+    hardDeckNames: names,
+  });
+
+  // The ruling that makes the whole vantage worth having: free === 0 means
+  // "exactly enough for everyone, including this deck", so a deck never claims
+  // a card against itself. Off-decklist the same figures would draw `0 free`.
+  it("stays silent where the off-decklist marker would claim", () => {
+    const { container } = render(
+      <AvailabilityMarker availability={own(0, 0, ["Atraxa"])} density="row" selfExcluded />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(markerAria(own(0, 0, ["Atraxa"]), { selfExcluded: true })).toBeNull();
+  });
+
+  it("names the one other claimant instead of counting decks", () => {
+    const av = own(-1, 0, ["Atraxa"]);
+    const { container } = render(
+      <AvailabilityMarker availability={av} density="row" selfExcluded />,
+    );
+    expect(container.textContent).toBe("short 1 — also in Atraxa");
+    expect(markerAria(av, { selfExcluded: true })).toBe(
+      "your Atraxa list also includes this card and you don’t own enough for both",
+    );
+  });
+
+  // Two other claimants is a count again — naming one would be a lie about the
+  // other, and "also in" has no plural form in the copy file.
+  it("falls back to the count when more than one other deck claims it", () => {
+    const av = own(-2, 0, ["Atraxa", "Kykar"]);
+    const { container } = render(
+      <AvailabilityMarker availability={av} density="row" selfExcluded />,
+    );
+    expect(container.textContent).toBe("short 2 — 2 decks want it");
+    expect(markerAria(av, { selfExcluded: true })).toBe(
+      "2 of your finished lists include this card and you own 2 too few",
+    );
+  });
+
+  // A chip is count-only, so the proper noun cannot appear even here.
+  it("drops the name under nameless, label and aria alike", () => {
+    const av = own(-1, 0, ["Atraxa"]);
+    const { container } = render(
+      <AvailabilityMarker availability={av} density="row" selfExcluded nameless />,
+    );
+    expect(container.textContent).toBe("short 1");
+    expect(markerAria(av, { selfExcluded: true, nameless: true })).toBe("you own 1 too few");
+  });
+});
+
 describe("markerAria", () => {
   it("is null in the free state, so no accessible name changes", () => {
     expect(markerAria(a(4, 0, 0))).toBeNull();
