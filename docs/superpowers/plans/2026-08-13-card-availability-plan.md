@@ -634,8 +634,12 @@ markerAria(a, opts?: MarkerOpts): string | null
 
 1. **Styling is Tailwind classes, not inline `style`.** House style is
    `ownership-dot.tsx`: `twMerge` plus arbitrary values
-   (`bg-[color:var(--x)]`, `[border:1px_solid_var(--y)]`). Tests assert on
-   `className`, not on `element.style`.
+   (`bg-[color:var(--x)]`, `[border:1px_solid_var(--y)]`), and the tests assert
+   on `className` to match. **One exception, the seam**: it is a runtime prop
+   (deviation 3), so no build-time class can carry it and
+   `style={{ borderLeft: \`1px solid ${seam}\` }}` is the only way to deliver it.
+   Its two tests read `element.style.borderLeft` accordingly. Nothing else in
+   the file sets an inline style.
 2. **The `over` glyph is two diamonds, not one.** Design table row 2.4 and the
    canvas at `The 99 - Card Availability.dc.html:123`: a `position:relative`
    11×6 wrapper holding two 6×6 rotated squares, the second at `left:5px` with
