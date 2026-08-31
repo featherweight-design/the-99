@@ -394,9 +394,16 @@ export function CommandersView({
       </span>
 
       {/* ── Global degraded banner (above everything) ── */}
-      {degraded && (
+      {/* One banner, never two: both reads being down folds into a single
+          `both` variant with one Retry, because `retryRecs` re-runs the whole
+          page and the player is making one decision, not two. */}
+      {(degraded || !availOk) && (
         <div className="px-[14px] pt-[12px] sm:px-0 sm:pt-0">
-          <DegradedBanner />
+          <DegradedBanner
+            variant={
+              degraded && !availOk ? "both" : availOk ? "synergy" : "availability"
+            }
+          />
         </div>
       )}
 
