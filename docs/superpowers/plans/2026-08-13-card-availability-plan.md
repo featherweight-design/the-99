@@ -32,7 +32,7 @@
 - **`/collection` is count-only** (Addendum 2 §3), in the accessible name as well as the label. It renders `marker.hard` (`0 free`) and **never** `hardIn` or `hardMulti`.
 - **No roll-up and no badge on the deck index** (locked decision 2). The deck index status pill keeps meaning card count and nothing else.
 - **No grid changes on either collection view.** The row marker lives inside the existing `1fr` name cell; the tile chip goes **top-left** because top-right is the brass quantity badge.
-- **The deck-name half is the only part allowed to truncate.** The marker renders as a `flex-none` prefix plus a `truncate min-w-0` name, full name in `title` and always in the accessible name. No character budget, no breakpoint hook.
+- **The deck-name half is the only part allowed to truncate.** The marker renders as a `flex-none` prefix plus a `truncate min-w-0` name, full name always in the accessible name and **never** in a `title` (table row 3.6). No character budget, no breakpoint hook.
 - **Mature deck threshold is 99 cards.** Constant, one definition, `MATURE_DECK_SIZE`.
 - **Design-doc precedence:** where the canvas `The 99 - Card Availability.dc.html` and `README.md` disagree, **`README.md` wins**. The canvas's implementation-notes panel still says "get a light-theme pair there" and "brass is not AA as small text"; both are corrected in the README and **must not be implemented**.
 - **Contrast figures in R3 drift ~5% high.** Verified values on `--surface #1E1A15`: `#E8CE93` 11.1:1 · `#E9917A` 7.1:1 · `--fg-body` 8.5:1 · `--brass` 7.0:1. All AAA; brass has less headroom than the document claims.
@@ -599,333 +599,105 @@ git commit -m "feat(availability): tokens, copy block, and an extended rowAria (
 
 **Interfaces:**
 - Consumes: `Availability`, `availabilityState` (Task 1); `availabilityCopy` (Task 2).
-- Produces: `<AvailabilityMarker availability={a} density="row" | "chip" {...MarkerOpts} />`, the `MarkerOpts` type (`{ selfExcluded?: boolean; nameless?: boolean }`, both added by Addendum 2), and `markerAria(a, opts?: MarkerOpts): string | null`.
+- Produces: `<AvailabilityMarker availability={a} density="row" | "chip" seam={...} {...MarkerOpts} />`, the `MarkerOpts` type (`{ selfExcluded?: boolean; nameless?: boolean }`, both added by Addendum 2), and `markerAria(a, opts?: MarkerOpts): string | null`.
 
 The marker is **a diamond, a count, and a word**. Hollow diamond when an unfinished brew wants the card, solid brass when nothing is free. The glyph is two rotated `<span>`s — no new dependency, no SVG. It is `aria-hidden`; the text beside it carries the meaning, which is also why the greyscale test passes.
 
-- [ ] **Step 1: Write the failing test**
+> **Amended 2026-08-30, in the PR that shipped this task.** The draft code that
+> stood here contradicted `docs/superpowers/design-tables/card-availability.md`
+> in ten places, and the design table wins. Rather than leave a second,
+> divergent copy of a 300-line component in a plan doc, this section now names
+> the shipped file and records every deviation. **Task 4 must read
+> `src/components/ui/availability-marker.tsx`, never re-paste from here.**
 
-Create `src/components/ui/availability-marker.test.tsx`:
+**Shipped:**
+- `src/components/ui/availability-marker.tsx` — 33 tests in `availability-marker.test.tsx`.
 
-```tsx
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { AvailabilityMarker, markerAria } from "./availability-marker";
-import { availabilityCopy } from "../../lib/copy/availability";
-
-// Off-decklist vantage — no excludeDeckId — so `free` really is `owned − hard`
-// here. Fixtures for a deck's own list must set `free` explicitly instead.
-const a = (owned: number, hard: number, soft: number, names: string[] = []) => ({
-  owned, hard, soft, free: owned - hard, hardDeckNames: names,
-});
-
-describe("AvailabilityMarker", () => {
-  // The single most important behaviour in this feature.
-  it("renders nothing at all in the free state", () => {
-    const { container } = render(<AvailabilityMarker availability={a(4, 0, 0)} density="row" />);
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it("renders nothing for a card the player does not own", () => {
-    const { container } = render(<AvailabilityMarker availability={a(0, 0, 0)} density="row" />);
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  // The prefix and the deck name are two sibling spans, so that the name can
-  // truncate on its own. getByText's default matcher only ever sees one text
-  // node, so it can never match the composed string — read the container.
-  const composed = (c: HTMLElement) => c.textContent?.replace(/\s+/g, " ").trim();
-
-  it("names the claiming deck when there is exactly one", () => {
-    const { container } = render(
-      <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />,
-    );
-    expect(composed(container)).toBe("0 free — in Atraxa");
-  });
-
-  it("puts the deck name in its own truncating span, with a title", () => {
-    render(<AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />);
-    const name = screen.getByTitle("Atraxa");
-    expect(name).toHaveTextContent("Atraxa");
-    expect(name).toHaveClass("truncate");
-  });
-
-  it("counts the decks instead of naming them when there are several", () => {
-    render(<AvailabilityMarker availability={a(2, 2, 0, ["Atraxa", "Kykar"])} density="row" />);
-    expect(screen.getByText("0 free — across 2 decks")).toBeInTheDocument();
-  });
-
-  it("says how short the player is when over-committed", () => {
-    render(<AvailabilityMarker availability={a(1, 3, 0, ["A", "B", "C"])} density="row" />);
-    expect(screen.getByText(/short 2/)).toBeInTheDocument();
-  });
-
-  // Glyph plus number plus word: the text alone must distinguish the states,
-  // so the marker survives greyscale.
-  it("hides the glyph from assistive tech", () => {
-    const { container } = render(
-      <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />,
-    );
-    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
-  });
-});
-
-describe("markerAria", () => {
-  it("is null in the free state, so no accessible name changes", () => {
-    expect(markerAria(a(4, 0, 0))).toBeNull();
-  });
-
-  it("describes lists, never physical locations", () => {
-    const s = markerAria(a(1, 1, 0, ["Atraxa"]))!;
-    expect(s).toBe("no free copies; this one is on your Atraxa list");
-    expect(s).not.toMatch(/box|binder|sleeve|shelf/i);
-  });
-
-  // `nameless` is /collection's contract: count-only in the label too.
-  it("never speaks a deck name when nameless", () => {
-    expect(markerAria(a(1, 1, 0, ["Atraxa"]), { nameless: true }))
-      .toBe("no free copies");
-  });
-
-  // The nameless form is SLICED from the copy file rather than re-typed, with a
-  // hard-coded fallback if the slice ever stops working. Both must agree, or
-  // the fallback would silently start rewording /collection. Pinning the
-  // invariant here beats mocking `availabilityCopy`, which is `as const` and so
-  // cannot be spied on without a cast. If Design adds a real nameless key,
-  // delete the helper and this test together.
-  it("derives exactly the phrase its fallback hard-codes", () => {
-    expect(availabilityCopy.marker.hardAria("Atraxa"))
-      .toMatch(/^no free copies;/);
-  });
-});
-```
-
-- [ ] **Step 2: Run it and watch it fail**
-
-Run: `pnpm vitest run src/components/ui/availability-marker.test.tsx`
-Expected: FAIL — module not found.
-
-- [ ] **Step 3: Implement the component**
-
-Create `src/components/ui/availability-marker.tsx`:
+**Public API as built** (this is what Task 4 consumes):
 
 ```tsx
-// Availability marker (#43) — a diamond, a count, and a word.
-// §Marker (design handoff README, decisions 1 and 2).
-//
-// Two densities: "row" for decklist rows and search rows, "chip" for the
-// 8.5px caption chip on a Consider tile's art scrim.
-//
-// The free state renders null. That is the feature, not an optimisation:
-// a player whose collection covers their decks sees nothing new anywhere.
+<AvailabilityMarker
+  availability={a}
+  density="row" | "chip"      // default "row"
+  seam="var(--bg)"             // default; the background behind the marker, over
+                               // glyph only. Pass the surface the marker actually
+                               // sits on, read off that surface's own code. A
+                               // decklist row is var(--surface-rail) (#1A160F,
+                               // decklist-row.tsx:103), NOT var(--surface).
+  className={...}
+  selfExcluded?                // MarkerOpts
+  nameless?                    // MarkerOpts
+/>
 
-import { availabilityCopy } from "../../lib/copy/availability";
-import {
-  availabilityState,
-  type Availability,
-} from "../../lib/decks/availability";
-
-/** Prose for the accessible name, or null when the card is free. */
-export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
-  const c = availabilityCopy.marker;
-
-  // Addendum 2 Accessibility: "Count-only in the label too — collection never
-  // speaks the deck name." The copy file has no nameless hard-aria key, so take
-  // the clause before the semicolon of the one that exists; `hardAria` is
-  // written as "no free copies; this one is on your X list", and the first
-  // clause is exactly the phrase the addendum's own rowAria example uses. Slice
-  // rather than re-type, so the copy file stays authoritative.
-  //
-  // The slice is deliberately defensive: a copy edit that drops the semicolon
-  // would otherwise leak the "x" placeholder into a screen reader. Falling back
-  // to the addendum's own literal keeps collection count-only no matter what
-  // the copy file does — and the test below pins the failure mode, so a copy
-  // edit that silently switches us to the fallback is caught in CI rather than
-  // by a player. **Delete this whole helper the moment Design adds a real
-  // nameless key** (ratify item 2); it exists only because one is missing.
-  const NAMELESS_HARD_FALLBACK = "no free copies";
-  // A control character cannot occur in copy, so "the first clause still holds
-  // the sentinel" is an exact test for "the name did not land after the
-  // semicolon" — covering both a dropped semicolon and a reordered string that
-  // puts the name first. Do NOT sentinel with a space or a word: the phrase we
-  // are trying to keep contains both.
-  const NAME_SENTINEL = "\u0000";
-  const namelessHardAria = () => {
-    const [first, ...rest] = c.hardAria(NAME_SENTINEL).split(";");
-    return rest.length > 0 && !first.includes(NAME_SENTINEL)
-      ? first.trim()
-      : NAMELESS_HARD_FALLBACK;
-  };
-
-  switch (availabilityState(a, { selfExcluded: opts?.selfExcluded })) {
-    case "free":
-      return null;
-    case "soft":
-      return c.softAria(a.soft);
-    case "hard":
-      if (opts?.nameless) return namelessHardAria();
-      return a.hardDeckNames.length === 1
-        ? c.hardAria(a.hardDeckNames[0])
-        : c.hardMultiAria(a.hardDeckNames.length);
-    case "over":
-      // Self-excluded and exactly one other claimant: name it, don't count it.
-      if (!opts?.nameless && opts?.selfExcluded && a.hardDeckNames.length === 1) {
-        return c.overAlsoInAria(a.hardDeckNames[0]);
-      }
-      return c.overAria(-a.free, a.hardDeckNames.length);
-  }
-}
-
-export type MarkerOpts = {
-  /** Deck's-own-decklist vantage. Addendum 2 §6. */
-  selfExcluded?: boolean;
-  /** `/collection` — count-only, no deck name ever. Addendum 2 §3. */
-  nameless?: boolean;
-};
-
-/**
- * The label splits into a fixed prefix and an optional deck name, because the
- * name is the only part allowed to truncate (decision B, 2026-08-27). A single
- * string with one `truncate` clips `0 free — in Kyk…` down to `0 free — i…` at
- * narrow widths, eating the clause that carries the meaning.
- *
- * The prefix is derived by slicing the name off the copy function's own output
- * rather than re-typing it here, so the copy file stays the single source of
- * the wording. Every name-bearing form in the copy file ends with the name,
- * which is what makes the slice exact.
- */
-function label(a: Availability, opts?: MarkerOpts): { prefix: string; name?: string } | null {
-  const c = availabilityCopy.marker;
-  const withName = (full: string, name: string) => ({
-    prefix: full.slice(0, full.length - name.length),
-    name,
-  });
-
-  switch (availabilityState(a, { selfExcluded: opts?.selfExcluded })) {
-    case "free":
-      return null;
-    case "soft":
-      return { prefix: c.soft(a.soft) };
-    case "hard":
-      // Addendum 2 §3: collection never renders hardIn or hardMulti.
-      if (opts?.nameless) return { prefix: c.hard };
-      return a.hardDeckNames.length === 1
-        ? withName(c.hardIn(a.hardDeckNames[0]), a.hardDeckNames[0])
-        : { prefix: c.hardMulti(a.hardDeckNames.length) };
-    case "over":
-      // Collection is count-only here too — the canvas draws a bare `short 1`.
-      if (opts?.nameless) return { prefix: c.over(-a.free) };
-      // Self-excluded: hardDeckNames already omits the current deck, so a lone
-      // remaining entry is the OTHER claimant. "2 decks want it" would count
-      // the deck the player is standing in.
-      if (opts?.selfExcluded && a.hardDeckNames.length === 1) {
-        return withName(c.overAlsoIn(-a.free, a.hardDeckNames[0]), a.hardDeckNames[0]);
-      }
-      return a.hardDeckNames.length > 1
-        ? { prefix: c.overWithDemand(-a.free, a.hardDeckNames.length) }
-        : { prefix: c.over(-a.free) };
-  }
-}
-
-/**
- * Two rotated spans rather than an SVG or an icon dependency: the shape is a
- * square on its corner, and the app already draws its ownership dot this way.
- * Hollow reads as "someone wants it", solid as "it is gone".
- */
-function Diamond({ filled, color }: { filled: boolean; color: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="inline-block flex-none rotate-45"
-      style={{
-        width: 6,
-        height: 6,
-        background: filled ? color : "transparent",
-        border: `1px solid ${color}`,
-        // No transition, no animation: zero net motion is a locked constraint.
-      }}
-    />
-  );
-}
-
-export function AvailabilityMarker({
-  availability,
-  density = "row",
-  ...opts
-}: {
-  availability: Availability;
-  density?: "row" | "chip";
-} & MarkerOpts) {
-  const state = availabilityState(availability, { selfExcluded: opts.selfExcluded });
-  if (state === "free") return null;
-
-  const text = label(availability, opts)!;
-  const filled = state !== "soft";
-  const glyphColor = state === "over" ? "var(--danger)" : "var(--avail-hard)";
-  const textColor =
-    state === "soft"
-      ? "var(--avail-soft)"
-      : state === "over"
-        ? "var(--avail-over-fg)"
-        : density === "chip"
-          ? "var(--avail-hard-fg)"
-          : "var(--avail-hard)";
-
-  return (
-    <span
-      className="inline-flex items-center gap-[5px] min-w-0"
-      style={
-        density === "chip"
-          ? {
-              fontSize: 8.5,
-              fontFamily: "'IBM Plex Mono', monospace",
-              background: "rgba(11,9,7,0.9)",
-              borderRadius: 4,
-              padding: "2px 5px",
-            }
-          : { fontSize: 11.5 }
-      }
-    >
-      <Diamond filled={filled} color={glyphColor} />
-      {/*
-        The prefix never truncates; the deck name is the flexible half. This is
-        the same split Addendum 2 §1 specifies for the collection name cell —
-        "the chip is flex: none; the name is the flexible half" — applied to the
-        marker's own two parts. `title` carries the untruncated name so a
-        clipped `Kykar Spellsl…` is still recoverable on hover.
-      */}
-      <span className="flex-none whitespace-nowrap" style={{ color: textColor }}>
-        {text.prefix}
-      </span>
-      {text.name && (
-        <span
-          className="truncate min-w-0"
-          title={text.name}
-          style={{ color: textColor, marginLeft: -5 }}
-        >
-          {text.name}
-        </span>
-      )}
-    </span>
-  );
-}
+markerAria(a, opts?: MarkerOpts): string | null
 ```
 
-The `marginLeft: -5` cancels the container's `gap-[5px]` between the two halves of what is
-one sentence — the gap is there to separate the glyph from the text, not to split
-`0 free — in` from `Atraxa`.
+**The seam and hover, for Task 4.** A decklist row changes background on hover
+(`#1A160F` → `#211C15`, `decklist-row.tsx:103`), and a `seam` string fixed at
+render cannot follow it: the seam would read as a hairline against the hovered
+row. Both colours are in design table line 124's observed list, so neither is
+wrong; what is wrong is picking one and calling it done. The fix, if Task 4
+wants it, is a CSS variable the row sets and the row's `md:hover:` overrides,
+passed as `seam="var(--row-bg)"` — the prop takes any CSS colour value, so this
+needs no component change. Decide it in Task 4 rather than inheriting it.
 
-- [ ] **Step 4: Run the tests and watch them pass**
+**Deviations from the draft, and why:**
 
-Run: `pnpm vitest run src/components/ui/availability-marker.test.tsx`
-Expected: PASS, 8 tests.
+1. **Styling is Tailwind classes, not inline `style`.** House style is
+   `ownership-dot.tsx`: `twMerge` plus arbitrary values
+   (`bg-[color:var(--x)]`, `[border:1px_solid_var(--y)]`), and the tests assert
+   on `className` to match. **One exception, the seam**: it is a runtime prop
+   (deviation 3), so no build-time class can carry it and
+   `style={{ borderLeft: \`1px solid ${seam}\` }}` is the only way to deliver it.
+   Its two tests read `element.style.borderLeft` accordingly. Nothing else in
+   the file sets an inline style.
+2. **The `over` glyph is two diamonds, not one.** Design table row 2.4 and the
+   canvas at `The 99 - Card Availability.dc.html:123`: a `position:relative`
+   11×6 wrapper holding two 6×6 rotated squares, the second at `left:5px` with
+   `border-left: 1px solid <seam>`. The draft drew a single diamond for all
+   three states.
+3. **The seam colour is a `seam` prop, defaulting to `var(--bg)`.** Design table
+   line 124 — *"build it as a prop, not a constant"* — because the seam only
+   reads as a seam while it matches whatever sits behind the marker, and the
+   handoff observes six different backgrounds. Chip density overrides it to the
+   scrim `#0B0907`, since the chip supplies its own background.
+4. **Soft's label is a step brighter than its glyph.** Table rows 2.2/3.3: glyph
+   outline `--fg-muted` (`#A89B84`), label `--fg-body` (`#C6B79A`). The draft
+   painted both `var(--avail-soft)`.
+5. **Row density sets no font size and no font family.** Table row 3.1 — row
+   density *"takes no column and no row height"* — so it inherits the meta line
+   it sits on. The draft's `fontSize: 11.5` would have changed the line height of
+   every consuming surface.
+6. **Chip density forces `nameless`.** A 63×88 tile has no room for a proper
+   noun, and every chip in every canvas is count-only. Making the density imply
+   it defends against a future tile surface forgetting the flag.
+7. **Empty `hardDeckNames` degrades to the base form in both `hard` and
+   `over`.** A degraded read (Task 7) can return counts with no names; the draft
+   rendered `0 free — across 0 decks` and *"0 of your finished lists include this
+   card"*. Both now fall back to `c.hard` / a sliced countless over aria.
+8. **`overWithDemand` fires at one deck, not two.** An "any number" card
+   (Relentless Rats, Nazgûl) can have a single deck as the whole demand, so the
+   draft's `length > 1` made the copy file's singular branch dead code.
+9. **The prefix span is `whitespace-pre`, not `whitespace-nowrap`.** A flex item
+   trims its own trailing whitespace, so `0 free — in ` lost its trailing space
+   and rendered `0 free — inAtraxa`. jsdom cannot see this and the draft's
+   `composed()` helper normalised it away; only the Gate 2 browser pass caught
+   it. There is a regression test pinning the literal `"0 free — in "`.
+10. **No `title` on the deck name, reversing decision B (2026-08-27).** Table row
+    3.6 says "no title-on-marker", and the earlier reading — that it forbids an
+    explanatory tooltip but not a `title` recovering a clipped name — does not
+    survive reading the component. The marker root sets no `aria-label`;
+    `markerAria` is exported so Task 4 can compose the full deck name into the
+    **row's** accessible name. A screen reader therefore already has the name,
+    and the `title` only ever served a sighted mouse user, on an element row 3.6
+    says has no hover and is never a tap target. The name span carries
+    `data-deck-name` for tests to query, and a test asserts the marker renders no
+    `title` anywhere.
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add src/components/ui/availability-marker.tsx src/components/ui/availability-marker.test.tsx
-git commit -m "feat(availability): the marker — a diamond, a count, and a word (#43)"
-```
+**Carried to Design as ratify items** (see the PR body): the copy file has no
+nameless `hardAria` key and no countless `overAria` key, both of which are
+currently sliced out of the keys that do exist. The row-3.6 `title` question is
+**closed engineering-side** by deviation 10 above and needs no Design call.
 
 ---
 
@@ -1022,10 +794,10 @@ it("carries the marker when nothing is free", () => {
   renderRow(
     <DecklistRow card={{ ...card, availability: avail(1, 1, ["Atraxa"]) }} {...rowProps} />,
   );
-  // Two spans, so match the prefix by regex and the name by its title —
+  // Two spans, so match the prefix by regex and the name by its data attribute —
   // getByText cannot see the composed string. See Task 3, Step 4.
   expect(screen.getByText(/0 free — in/)).toBeInTheDocument();
-  expect(screen.getByTitle("Atraxa")).toBeInTheDocument();
+  expect(document.querySelector("[data-deck-name]")).toHaveTextContent("Atraxa");
 });
 
 // The quiet-failure half of the degraded ruling.
@@ -2980,5 +2752,5 @@ Found by auditing `availability · copy strings.ts` against all ten tasks. Each 
 
 **Closed since the first revision of this plan, do not re-raise:**
 
-- **Gap §2 (deck-name length budget)** — resolved 2026-08-27. The name is the only part allowed to truncate: `flex-none` prefix plus `truncate min-w-0` name, full name in `title` and in the accessible name. Implemented in Task 3.
+- **Gap §2 (deck-name length budget)** — resolved 2026-08-27. The name is the only part allowed to truncate: `flex-none` prefix plus `truncate min-w-0` name, full name in the accessible name and not in a `title` (Task 3 deviation 10). Implemented in Task 3.
 - **The collection page is no longer out of scope.** Addendum 2 designs it in full — Tasks 9 and 10.
