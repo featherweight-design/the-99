@@ -1253,11 +1253,19 @@ Breakpoint: 640px (`sm:` in Tailwind). Everything below ≤639 px is "mobile"; �
 |----------|--------|---------|
 | font-size | 12.5px | 13.5px |
 | color | #EDE6D8 | #EDE6D8 |
-| flex | 1 | 1 |
+| flex | 1 1 auto | 1 1 auto |
 | min-width | 0 | 0 |
 | white-space | nowrap | nowrap |
 | overflow | hidden | hidden |
 | text-overflow | ellipsis | ellipsis |
+
+`flex: 1 1 auto` rather than the `1 1 0` this table carried before the availability marker
+joined the row. With a basis of zero the name gets only the space the marker has not
+already claimed as intrinsic width, so an over-committed 390px row draws the marker in
+full with a single character of card name beside it. Basing the name on its own text, and
+giving the marker `flex-shrink: 4`, makes the marker yield first and the name yield last —
+Design's ruling that the name is the most useful half, expressed as an order of yielding
+rather than as a fixed minimum that cannot itself yield.
 
 ### Row — "+N more" meta row name
 | Property | Mobile | Desktop |

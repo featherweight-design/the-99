@@ -54,14 +54,15 @@ export function DecklistRow({
   spent = false,
 }: DecklistRowProps) {
   const label = isMeta ? metaLabel! : card.name;
-  // The floor is what stops the marker eating the row. `flex-1` is basis-0, so
-  // the name only ever gets space the marker did not already claim as its own
-  // intrinsic width — and the marker's prefix is `flex-none`. Without a floor a
-  // 390px row renders `A ◆◆ short 1 — also in Atraxa Superfriends`: the marker
-  // wins every pixel and the card it describes is gone. The deck name inside the
-  // marker truncates instead, which is the half Design nominated to yield.
+  // `flex-auto`, not `flex-1`, and the difference is the whole bug. `flex-1` is
+  // basis-0: the name gets only what the marker has not already claimed as its
+  // own intrinsic width, so a 390px over-committed row renders
+  // `A ◆◆ short 1 — also in Atraxa Superfriends` and the card it describes is
+  // gone. `flex-auto` bases the name on its own text, so a row too narrow for
+  // both shrinks the two halves in proportion instead of starving one. Where
+  // there is room to spare the two are identical — grow still takes the slack.
   const nameClass =
-    "flex-1 min-w-[14ch] whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
+    "flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
@@ -167,7 +168,14 @@ export function DecklistRow({
             // meta line to inherit — it would otherwise render in the page's
             // sans base and grow a 34px row. The caller supplies both, a step
             // below the card name so the marker stays the quieter half.
-            className="font-mono text-[11px] md:text-[11.5px]"
+            //
+            // `shrink-[4]` is the priority, not a width: when the row cannot
+            // hold both, the marker gives up its space before the card name
+            // gives up any — down to its own floor, which is the fixed prefix
+            // plus six characters of deck name. That is Design's ruling that
+            // the name is the most useful half, expressed as an order of
+            // yielding rather than as a fixed minimum that cannot itself yield.
+            className="shrink-[4] font-mono text-[11px] md:text-[11.5px]"
           />
         )}
 

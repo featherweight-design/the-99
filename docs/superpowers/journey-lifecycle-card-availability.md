@@ -79,9 +79,16 @@ diffs and `src/`. Findings triaged as follows.
    row rendered `A ◆◆ short 1 — also in Atraxa Superfriends`. The marker's prefix is
    `flex-none` and the card name is `flex-1`, which is `basis: 0` — so the name only ever got
    space the marker had not already claimed, and the marker claimed all of it. The row named
-   no card at all, on the one state the design makes loudest. Fixed with a `min-w-[14ch]`
-   floor on the name; the deck name inside the marker truncates instead, which is the half
-   Design nominated to yield (ADDENDUM-2-READINESS, decisions of 2026-08-27).
+   no card at all, on the one state the design makes loudest. Fixed by basing the name on its
+   own text (`flex: 1 1 auto`) and giving the marker `flex-shrink: 4`, so the marker yields
+   down to its own floor before the name yields anything. That is the half Design nominated
+   to yield (ADDENDUM-2-READINESS, decisions of 2026-08-27), stated as an order of yielding.
+
+   A fixed `min-w-[14ch]` floor was the first fix and is the one to avoid: a floor cannot
+   itself yield, so it bought the name back at 375px and 390px by pushing the remove ✕ off
+   the right edge at 320px. Measured widths for the card name on an over-committed row,
+   after the change: 82px at 320, 87px at 375, 88px at 390, with nothing overflowing at any
+   of the three.
 2. **The marker's deck name truncated to nothing, leaving a dangling preposition.** On the
    phone search row the meta line read `◆◆ short 1 — also in` with no object and no ellipsis.
    `truncate min-w-0` lets the half shrink to zero width, at which point there is not even an
@@ -104,8 +111,10 @@ merged handoff. Carried to the close-out report for Hugh rather than edited here
 
 ## Known limit
 
-At **320px** the over-committed row overflows and pushes the remove ✕ off the right edge:
-the card-name floor plus the marker's own minimum exceed the row. 375px and 390px are both
-clean. The honest fix is dropping the deck-name clause entirely below some width — the
-count-only form Addendum 2 §3 already ships for `/collection` — which needs a breakpoint rule
-Design has twice declined to set. Recorded rather than invented.
+On an over-committed row the card name is always abbreviated at phone width — `Abstruse
+Archaic` draws as roughly thirteen characters at all of 320, 375 and 390. The row is
+genuinely too narrow to hold a full card name and a full `short 1 — also in <deck>` at once,
+and nothing overflows, so this is the row spending its width rather than a defect. If Design
+later wants the whole name on this state, the lever is the count-only marker form that
+Addendum 2 §3 already ships for `/collection` — which needs a breakpoint rule Design has
+twice declined to set. Recorded rather than invented.
