@@ -27,6 +27,13 @@ import { scoreCommander, type PoolCard } from "./score";
  * card sleeved into a finished deck is physically unavailable; soft claims do
  * not, because a brew is a list, not a stack of sleeves. That asymmetry is the
  * whole point of the two severities.
+ *
+ * BASIC LANDS ARE ALWAYS FREE HERE, and that is inherited rather than decided.
+ * `loadAvailability` excludes basics from the model entirely, so they have no
+ * row, and a card with no row is kept. The reason is in that query's header: a
+ * finished deck holds thirty-odd Forests that almost nobody's collection row
+ * matches, so counting them would push every mature deck into `over`. Scoring
+ * treats basics as unlimited, which is how players treat them.
  */
 export function freePool(
   collection: PoolCard[],
