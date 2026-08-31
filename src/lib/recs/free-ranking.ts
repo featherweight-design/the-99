@@ -63,12 +63,15 @@ export function carryCanonicalSlugs<T extends { oracleId: string }>(
 /**
  * Ranks the same candidate set against the free pool.
  *
- * Reads the EDHREC cache but never the network. The "everything I own" list has
- * already been computed by getRankedList before this runs, so the cache is warm
- * by construction; a candidate missing from it scores with a null fitSynergy
- * rather than triggering a second fanout. `ok: false` means the availability
- * read failed — the caller must then disable the toggle rather than serve
- * scores identical to the other mode.
+ * Reads the EDHREC cache but never the network. The cache is usually warm, since
+ * the canonical ranking filled it — but not guaranteed to be: `getRankedList`
+ * can serve persisted scores without touching EDHREC at all, and those rows
+ * expire on their own schedule. A miss is therefore an ordinary outcome, and it
+ * scores with a null fitSynergy rather than triggering a second fanout. Never
+ * add a fetch here to close that gap: this path exists to be free.
+ *
+ * `ok: false` means the availability read failed. The caller must then disable
+ * the toggle rather than serve scores identical to the other mode.
  *
  * `canonical` is the "everything I own" list, and it is the source of everything
  * about a row except its score. Membership, so that flipping the toggle can only
@@ -87,8 +90,6 @@ export async function rankFree(
   // nothing to rank, and the toggle should stay live rather than read as an
   // outage.
   if (canonical.length === 0) return { items: [], ok: true };
-
-  const byOracleId = new Map(canonical.map((c) => [c.oracleId, c]));
 
   const { collection } = await loadCollectionPool(userId);
 
@@ -119,12 +120,16 @@ export async function rankFree(
   // own but have sleeved is still a commander you could unsleeve. Only the pool
   // it is SCORED against shrinks.
   //
-  // Each candidate is paired with its canonical entry rather than filtered
-  // against a set of ids, because the entry is needed again below and a lookup
-  // that has already succeeded should not be repeated behind a `!`.
-  const candidates = collection.flatMap((c) => {
-    const canon = byOracleId.get(c.oracleId);
-    return canon ? [{ card: c, canon }] : [];
+  // So `canonical` is the list being ITERATED, not a set the collection is
+  // tested against. The two produce the same intersection today; the difference
+  // is which list is in charge, and this one reads the way the rule above is
+  // stated. Each entry is paired with its pool card here because both halves are
+  // needed below, and a lookup that has already succeeded should not be repeated
+  // behind a `!`.
+  const poolByOracleId = new Map(collection.map((c) => [c.oracleId, c]));
+  const candidates = canonical.flatMap((canon) => {
+    const card = poolByOracleId.get(canon.oracleId);
+    return card ? [{ card, canon }] : [];
   });
   const pool = freePool(collection, availability);
 
