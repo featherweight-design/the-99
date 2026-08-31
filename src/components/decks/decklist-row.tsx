@@ -114,7 +114,7 @@ export function DecklistRow({
           a real border would add 2px to one row's height and shunt the list. */}
       <div
         className={`group ${ROW_SHELL} bg-[#1A160F] md:hover:bg-[#211C15]
-          [--row-bg:#1A160F] md:hover:[--row-bg:#211C15]
+          [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]
           ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
       >
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
@@ -152,6 +152,10 @@ export function DecklistRow({
             availability={card.availability}
             seam="var(--row-bg)"
             selfExcluded
+            // Nothing above this row carries an aria-label to hoist the prose
+            // into — the name is its own button — so the marker speaks for
+            // itself. Design 17.5 is written for this surface specifically.
+            spoken
             // The component sets no size or family of its own (design 3.4: the
             // label inherits the meta line's mono size), and this row has no
             // meta line to inherit — it would otherwise render in the page's

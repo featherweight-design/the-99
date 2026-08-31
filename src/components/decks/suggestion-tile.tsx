@@ -212,6 +212,9 @@ export function SuggestionTile({
             availability={suggestion.availability}
             density="chip"
             selfExcluded={selfClaimed}
+            // The tile's own labels belong to the two detail triggers; neither
+            // wraps the chip, so it carries §17's prose itself.
+            spoken
             className="z-10 pointer-events-none"
           />
         )}
@@ -302,8 +305,16 @@ export function SuggestionTile({
         {/* The chip is count-only (density="chip" forces nameless), so the
             caption is where the deck gets named. Design 6.3 / 6.4. */}
         {tileCaption && (
+          // The caption takes its colour from the state, not from the state it
+          // is usually in: the chip is nameless at this density, so this line
+          // is the only thing that separates an over-committed card from one
+          // merely in use. Painting both brass makes them the same card.
           <p
-            className="truncate font-mono text-[10px] md:text-[9.5px] text-[color:var(--avail-hard-fg)]"
+            className={`truncate font-mono text-[8.5px] font-semibold ${
+              availState === "over"
+                ? "text-[color:var(--avail-over-fg)]"
+                : "text-[color:var(--avail-hard-fg)]"
+            }`}
           >
             {tileCaption}
           </p>

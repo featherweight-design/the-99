@@ -10,7 +10,7 @@
 // It owns which row is expanded — one at a time — and the single polite live
 // region that resolve and delete share.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import {
@@ -49,6 +49,11 @@ export function UnresolvedGroup({
   commanderOracleId,
   onExpandedChange,
 }: UnresolvedGroupProps) {
+  // Derived from the list the group already quotes its figures from, rather
+  // than drilled: two sources for "what is on this deck" would eventually
+  // disagree, and the resolution row's self-exclusion turns on this exact
+  // question.
+  const deckOracleIds = useMemo(() => cards.map((c) => c.oracleId), [cards]);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [note, setNote] = useState<{
     kind: "resolve" | "delete";
@@ -188,6 +193,7 @@ export function UnresolvedGroup({
                 key={row.id}
                 deckId={deckId}
                 row={row}
+                deckOracleIds={deckOracleIds}
                 commanderOracleId={commanderOracleId}
                 expanded={row.id === expandedRowId}
                 onToggle={() => setExpanded(row.id)}

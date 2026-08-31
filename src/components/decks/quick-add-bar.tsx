@@ -407,7 +407,7 @@ function QuickAddRow({
         ownership={ownership}
         dim={applied}
         selfExcluded={selfClaimed}
-        seam="#1E1A15"
+        seam="var(--surface)"
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
         trailing={
           applied ? (

@@ -200,6 +200,30 @@ describe("DecklistRow availability marker (#43)", () => {
     expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
   });
 
+  // §17.5. This row has no aria-label of its own to hoist the prose into — the
+  // name is its own button — so a marker that did not speak would be announced
+  // as the drawn shorthand, which is written for the eye.
+  it("speaks the sentence rather than the shorthand", () => {
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
+    );
+
+    expect(
+      screen.getByText(
+        "your Atraxa list also includes this card and you don\u2019t own enough for both",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the drawn label from assistive tech, so it is not read twice", () => {
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
+    );
+
+    expect(screen.getByText(/short 1 — also in/)).toHaveAttribute("aria-hidden", "true");
+    expect(document.querySelector("[data-deck-name]")).toHaveAttribute("aria-hidden", "true");
+  });
+
   // Nothing on this surface is ever gated on availability.
   it("still offers the remove control on an over-committed row", () => {
     renderRow(
