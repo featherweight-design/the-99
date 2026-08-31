@@ -282,20 +282,28 @@ export function CommandersView({
   // with no local feedback reads as a dead control, so the pressed segment moves
   // immediately and the list dims until the new ranking lands.
   const [pending, startTransition] = useTransition();
-  // The override records what it was applied AGAINST, so it expires when the
-  // server value moves rather than needing to be cleared. Clearing it on the
-  // click instead would drop it before the new HTML lands and flash the old
-  // segment back.
+  // The override covers the round trip and nothing more, so it is scoped to the
+  // transition rather than cleared. Two failure shapes ride on that. Clearing it
+  // on the click would drop it before the new HTML lands and flash the old
+  // segment back; expiring it only when `avail` moves would strand it forever on
+  // the one navigation that does not move `avail` — a flip to free that the
+  // server answers with a degraded `all`, leaving a struck-out segment drawn as
+  // checked. Once the transition commits, whatever the server said is the truth.
   const [optimisticAvail, setOptimisticAvail] = useState<{
     from: AvailMode;
     to: AvailMode;
   } | null>(null);
   const pressedAvail =
-    optimisticAvail && optimisticAvail.from === avail ? optimisticAvail.to : avail;
+    pending && optimisticAvail && optimisticAvail.from === avail
+      ? optimisticAvail.to
+      : avail;
 
   const setAvail = useCallback(
     (next: AvailMode) => {
-      if (next === avail) return;
+      // Against what is DRAWN, not what the server last sent: mid-flight the two
+      // differ, and guarding on the server value makes the unpressed segment a
+      // dead control for the length of the trip.
+      if (next === pressedAvail) return;
       setOptimisticAvail({ from: avail, to: next });
       // The window belongs to the current result set, not the session, and a
       // re-rank means different commanders occupy the revealed range.
@@ -306,7 +314,7 @@ export function CommandersView({
         });
       });
     },
-    [avail, colors, router],
+    [avail, pressedAvail, colors, router],
   );
 
   const windowed = useMemo(() => filtered.slice(0, shown), [filtered, shown]);

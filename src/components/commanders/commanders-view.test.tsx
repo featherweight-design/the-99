@@ -274,6 +274,17 @@ describe("CommandersView ranking toggle", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  // The one navigation that does not move `avail`: a flip to free the server
+  // answers with a degraded `all`. An override keyed on `avail` alone would
+  // strand here, drawing the struck-out segment as checked.
+  it("drops the optimistic press when the flip comes back degraded", () => {
+    view(results(3));
+    fireEvent.click(segments(FREE)[0]);
+    expect(push).toHaveBeenCalled();
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "false");
+  });
+
   it("is one tab stop, and the arrows move within it", () => {
     view(results(3));
     const all = segments(ALL)[0];
