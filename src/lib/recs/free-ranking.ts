@@ -88,16 +88,24 @@ export async function rankFree(
   // outage.
   if (canonical.length === 0) return { items: [], ok: true };
 
+  const known = new Set(canonical.map((c) => c.oracleId));
+
+  const { collection } = await loadCollectionPool(userId);
+
+  // Scoped to the pool, and the pool has to be loaded first for that reason.
+  // `collection` is already the commander-legal subset, and `freePool` reads the
+  // map for nothing else, so narrowing here returns strictly fewer rows for the
+  // same answer. It does not make the rollup itself cheaper — every CTE in that
+  // query is keyed on the user, not on this list.
   let availability: Map<string, Availability>;
   try {
-    availability = await loadAvailability(userId);
+    availability = await loadAvailability(userId, {
+      oracleIds: collection.map((c) => c.oracleId),
+    });
   } catch {
     return { items: [], ok: false };
   }
 
-  const known = new Set(canonical.map((c) => c.oracleId));
-
-  const { collection } = await loadCollectionPool(userId);
   const built = new Set(
     (
       await db
