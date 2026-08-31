@@ -82,6 +82,12 @@ export async function rankFree(
   userId: string,
   canonical: CommanderListItem[],
 ): Promise<{ items: CommanderListItem[]; ok: boolean }> {
+  // Slugs come only from the canonical list, so an empty one can only ever
+  // produce an empty ranking. `ok` is still true: nothing failed, there is just
+  // nothing to rank, and the toggle should stay live rather than read as an
+  // outage.
+  if (canonical.length === 0) return { items: [], ok: true };
+
   let availability: Map<string, Availability>;
   try {
     availability = await loadAvailability(userId);
