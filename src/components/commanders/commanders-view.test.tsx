@@ -228,6 +228,16 @@ describe("CommandersView ranking toggle", () => {
     expect(push).toHaveBeenCalledWith("/commanders?c=R&avail=free", { scroll: false });
   });
 
+  // The mirror effect writes the mode it is CARRYING. Driven by the server prop
+  // instead, a pip clicked while the flip was still in the air would replace to
+  // a bare `?c=W` and both drop the mode and race the push fetching it.
+  it("keeps the mode when a colour lands after the flip", () => {
+    view(results(3), { avail: "free", freeItems: results(3) });
+    replace.mockClear();
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Red" })[0]);
+    expect(replace).toHaveBeenCalledWith("/commanders?c=R&avail=free", { scroll: false });
+  });
+
   it("ranks against the free list once the server sends one", () => {
     const all = results(3);
     const free = [all[2], all[0], all[1]];

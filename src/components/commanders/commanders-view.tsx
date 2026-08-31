@@ -214,12 +214,22 @@ export function CommandersView({
     parseColors(search.get("c")),
   );
 
-  // Mirror color filter to URL via shallow replace (no RSC refetch). `avail` is
-  // carried through rather than recomputed — see serializeParams.
+  // Mirror color filter to URL via shallow replace (no RSC refetch). The mode is
+  // CARRIED here and never drives this effect, which is why it comes off a ref:
+  //
+  //   - Off the prop, a pip clicked while a flip is still in the air would write
+  //     the mode the server last sent, and a shallow replace to `?c=W` would
+  //     both drop `?avail=free` and race the push that was fetching it.
+  //   - As a dependency, the flip itself would fire a replace alongside its own
+  //     push — two navigations for one click.
+  //
+  // The ref reads what is DRAWN, so the pip lands on the same destination the
+  // transition was already heading for, with the filter added.
+  const availRef = useRef(avail);
   useEffect(() => {
-    const qs = serializeParams(colors, avail);
+    const qs = serializeParams(colors, availRef.current);
     router.replace(`/commanders${qs}`, { scroll: false });
-  }, [colors, avail, router]);
+  }, [colors, router]);
 
   // Which list is on screen. Falling back to `results` when the free ranking is
   // missing keeps the page rendering something true rather than nothing.
@@ -297,6 +307,13 @@ export function CommandersView({
     pending && optimisticAvail && optimisticAvail.from === avail
       ? optimisticAvail.to
       : avail;
+
+  // Declared after `pressedAvail` and therefore after the effect that reads it,
+  // so a pip click in the same commit sees the value the last commit drew. The
+  // two never change together: a flip moves the mode, a pip moves the colours.
+  useEffect(() => {
+    availRef.current = pressedAvail;
+  }, [pressedAvail]);
 
   const setAvail = useCallback(
     (next: AvailMode) => {
