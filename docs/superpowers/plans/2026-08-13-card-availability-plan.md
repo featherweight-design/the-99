@@ -1363,7 +1363,7 @@ git commit -m "feat(availability): Score against toggle, two rank maps, and the 
 
 **The rule, plainly: a banner is owed wherever the failure changes what a control means. Nowhere else.** On `/commanders` a silent fallback would leave `What's free` selectable and produce scores identical to `Everything I own` — the player would read "nothing you own is committed" from a network error. So the free segment is **disabled and struck**, selection reverts to `Everything I own`, and `?avail=free` is honoured again after a successful retry. On the builder surfaces (Task 4) the failure stays genuinely quiet, because nothing there changes meaning.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/components/commanders/degraded-banner.test.tsx`:
 
@@ -1393,22 +1393,24 @@ describe("DegradedBanner", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run src/components/commanders/degraded-banner.test.tsx`
 Expected: FAIL — `DegradedBanner` takes no props.
 
-- [ ] **Step 3: Generalise the banner**
+- [x] **Step 3: Generalise the banner**
 
 Add a `variant` prop defaulting to `"synergy"` so every existing call site is untouched. Keep the amber left border, the ring, the mobile/desktop split and the `retryRecs` form exactly as they are.
 
 **There are four shipped strings here, not two.** The mobile and desktop branches carry *different* body copy (`degraded-banner.tsx:37-38` vs `:88-90`), and the mobile button reads **"Retry"** while `availabilityCopy.degraded.retry` is **"Retry now"**. Sourcing the mobile button from the copy block would silently change shipped mobile text as a side effect of this ticket. Either keep the existing per-width strings for the `"synergy"` variant untouched and use the copy block only for the two new variants, or change the mobile button deliberately and say so in the PR — do not do it by accident.
 
-- [ ] **Step 4: Disable the free segment**
+- [x] **Step 4: Disable the free segment**
 
 In `CommandersView`, when `availOk === false`: render the `What's free` segment `disabled` with a line-through, set `aria-label` from `availabilityCopy.degraded.segmentDisabledAria`, and force the active mode back to `all`.
 
-- [ ] **Step 5: Run tests, gate, commit**
+**Landed in Task 6, not here.** Task 6 widened `CommandersView`'s props and had to answer what the segment does on a failed read in the same change — a toggle that accepts `availOk` and ignores it is the thing Task 5's amendment already ruled against. It went further than this step describes: `page.tsx` also computes a `renderedAvail`, so an inbound `?avail=free` on a failed read renders as `all` rather than drawing the struck segment as checked.
+
+- [x] **Step 5: Run tests, gate, commit**
 
 Run: `pnpm vitest run src/components/commanders && pnpm typecheck && pnpm lint`
 
