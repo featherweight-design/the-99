@@ -619,7 +619,9 @@ The marker is **a diamond, a count, and a word**. Hollow diamond when an unfinis
 <AvailabilityMarker
   availability={a}
   density="row" | "chip"      // default "row"
-  seam="var(--surface)"        // background behind the marker; over glyph only
+  seam="var(--bg)"             // default; the background behind the marker, over
+                               // glyph only. Pass the surface the marker actually
+                               // sits on — a decklist row is var(--surface).
   className={...}
   selfExcluded?                // MarkerOpts
   nameless?                    // MarkerOpts
