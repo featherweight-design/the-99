@@ -7,6 +7,7 @@
 import { CostPips } from "./suggestion-tile";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { AvailabilityMarker } from "../ui/availability-marker";
+import { availabilityState } from "../../lib/decks/availability";
 
 // The matched run in brass, so a list of eight near-identical names says which
 // part of each one the query actually caught. Case-insensitive and literal:
@@ -65,15 +66,18 @@ export function CardSearchRowBody({
   selfExcluded = false,
   seam,
 }: CardSearchRowBodyProps) {
+  // The state, not the element: the rollup returns figures for every owned card,
+  // free ones included, and the marker declines to draw those. Gating the joiner
+  // on a truthy element that renders null leaves a separator with nothing after
+  // it on the commonest row there is.
+  //
   // Both widths draw the same marker; only the slot it rides in differs, so it
   // is built once here rather than twice below.
-  const marker = result.availability ? (
-    <AvailabilityMarker
-      availability={result.availability}
-      seam={seam}
-      selfExcluded={selfExcluded}
-    />
-  ) : null;
+  const a = result.availability;
+  const marker =
+    a && availabilityState(a, { selfExcluded }) !== "free" ? (
+      <AvailabilityMarker availability={a} seam={seam} selfExcluded={selfExcluded} />
+    ) : null;
   // Design 3.2: the separator between the shipped meta and the marker is the
   // border colour, not the text colour — it must not read as another word.
   const joiner = (

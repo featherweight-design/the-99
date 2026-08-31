@@ -60,6 +60,14 @@ The expander's `role="option"` names carry the self-exclusion split correctly:
 - this deck's own claim dropped by the query → `…2 of your finished lists include
   this card and you own 1 too few`
 
+## What the probe missed
+
+The probe collected marker *text*, so it read the search row's free state as
+"nothing" when the row was in fact drawing a bare ` · ` separator with no marker
+after it. Copilot caught it by reading the code. The lesson is that a text-matching
+probe cannot see punctuation the marker leaves behind: the free state's assertion
+has to be about the whole cell, not about the absence of a match.
+
 ## Not exercised locally
 
 Nothing. All four states plus silence were reached on all four mount sites.

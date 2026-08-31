@@ -378,6 +378,20 @@ describe("QuickAddBar — availability marker", () => {
     expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
   });
 
+  // The rollup returns a row for every owned card, unclaimed ones included
+  // (availability-query.ts:20), so a free card arrives with figures attached and
+  // the marker declines to draw them. The separator must decline with it.
+  it("draws no separator on a free card, whose marker draws nothing", async () => {
+    searchCards.mockResolvedValue([
+      { ...rhystic, availability: { owned: 2, hard: 0, soft: 0, free: 2, hardDeckNames: [] } },
+    ]);
+    mount();
+    await search();
+    for (const el of screen.getByRole("option").querySelectorAll("*")) {
+      expect(el.textContent?.trimEnd().endsWith("·")).toBe(false);
+    }
+  });
+
   // The commander lives in `decks.commander_oracle_id`, not in `deck_cards`
   // (availability-query.ts:25), so it is absent from `deckOracleIds` while the
   // query still dropped its claim. Keyed on membership alone, a single-copy
