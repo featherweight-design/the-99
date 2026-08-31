@@ -94,6 +94,7 @@ function Harness({
         <Decklist
           deckId="deck-1"
           commanderOracleId="cmdr"
+        deckOracleIds={[]}
           cards={deck.cards}
           unresolvedRows={deck.unresolvedRows}
           built={counts.built}
@@ -132,7 +133,7 @@ describe("the resolution expander as a disclosure", () => {
     expect(input).toHaveValue("Rystic Studie");
     expect(input.selectionStart).toBe(0);
     expect(input.selectionEnd).toBe("Rystic Studie".length);
-    await waitFor(() => expect(searchCards).toHaveBeenCalledWith("Rystic Studie", null, false));
+    await waitFor(() => expect(searchCards).toHaveBeenCalledWith("Rystic Studie", null, false, "deck-1"));
   });
 
   it("keeps one row open at a time", async () => {
@@ -169,7 +170,7 @@ describe("the resolution expander as a disclosure", () => {
 
     fireEvent.click(toggle);
     expect(toggle).toBeChecked();
-    await waitFor(() => expect(searchCards).toHaveBeenCalledWith("Rystic Studie", null, true));
+    await waitFor(() => expect(searchCards).toHaveBeenCalledWith("Rystic Studie", null, true, "deck-1"));
 
     fireEvent.keyDown(field(), { key: "Escape" });
     fireEvent.click(rowButton("Rystic Studie"));
@@ -312,7 +313,7 @@ describe("a second activation in the same tick", () => {
 
   it("neither deletes twice nor tells the group twice", async () => {
     const s = spies();
-    render(<ResolutionExpander id="x" deckId="deck-1" row={line()} {...s} />);
+    render(<ResolutionExpander id="x" deckId="deck-1" row={line()} deckOracleIds={[]} {...s} />);
 
     const button = screen.getByRole("button", { name: copy.delete });
     fireEvent.click(button);
@@ -329,7 +330,7 @@ describe("a second activation in the same tick", () => {
   it("will not delete a line it has just resolved", async () => {
     const s = spies();
     searchCards.mockResolvedValue([rhystic]);
-    render(<ResolutionExpander id="x" deckId="deck-1" row={line()} {...s} />);
+    render(<ResolutionExpander id="x" deckId="deck-1" row={line()} deckOracleIds={[]} {...s} />);
     await waitFor(() => expect(screen.getAllByRole("option").length).toBeGreaterThan(0));
 
     fireEvent.click(screen.getAllByRole("option")[0]);
@@ -386,5 +387,64 @@ describe("the last line in the group", () => {
       const note = document.querySelector('[aria-live="polite"]');
       expect(document.activeElement).toBe(note);
     });
+  });
+});
+
+// #43. `useCardSearch` hands this row's search a `deckId`, so every figure comes
+// back with this deck's own claim already subtracted. The flag that says so may
+// only be set per card, where this deck actually held a claim the query dropped
+// — set blanket it silences every genuine hard claim by another finished deck,
+// which is the whole headline case (design 5.6).
+describe("the resolution row's availability marker", () => {
+  const spies = () => ({ onCollapse: vi.fn(), onResolved: vi.fn(), onDeleted: vi.fn() });
+  const claimed = (names: string[]) => ({
+    owned: 1,
+    hard: names.length,
+    soft: 0,
+    free: 0,
+    hardDeckNames: names,
+  });
+
+  const mount = (r: SearchResult, deckOracleIds: string[] = [], commanderOracleId?: string) => {
+    searchCards.mockResolvedValue([r]);
+    render(
+      <ResolutionExpander
+        id="x"
+        deckId="deck-1"
+        row={line()}
+        deckOracleIds={deckOracleIds}
+        commanderOracleId={commanderOracleId}
+        {...spies()}
+      />,
+    );
+    return waitFor(() => expect(screen.getAllByRole("option").length).toBeGreaterThan(0));
+  };
+
+  it("claims a card another finished deck already holds", async () => {
+    await mount(result({ name: "Rhystic Study", availability: claimed(["Atraxa"]) }));
+
+    // Both widths are drawn, so the marker is in the DOM twice.
+    expect(screen.getAllByText(/0 free — in/)).toHaveLength(2);
+  });
+
+  it("stays silent on a duplicate line for a card this deck already runs", async () => {
+    await mount(
+      result({ name: "Rhystic Study", availability: claimed([]) }),
+      ["rhystic study"],
+    );
+
+    expect(screen.queryByText(/0 free/)).toBeNull();
+  });
+
+  // The commander is no `deck_cards` row, so it is absent from `deckOracleIds`
+  // while the excluded read drops its claim all the same.
+  it("stays silent on this deck's own commander", async () => {
+    await mount(
+      result({ name: "Muldrotha", oracleId: "cmdr", availability: claimed([]) }),
+      [],
+      "cmdr",
+    );
+
+    expect(screen.queryByText(/0 free/)).toBeNull();
   });
 });

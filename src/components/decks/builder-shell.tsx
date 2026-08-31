@@ -396,6 +396,7 @@ export function BuilderShell({
                 suggestions={suggestions}
                 deckCards={cards}
                 deckOracleIds={deckOracleIds}
+                commanderOracleId={deck.commander.oracleId}
                 commanderShortName={commanderShortName}
                 degraded={degraded}
                 sort={sort}
@@ -516,6 +517,7 @@ export function BuilderShell({
                 cards={cards}
                 unresolvedRows={unresolvedRows}
                 commanderOracleId={deck.commander.oracleId}
+                deckOracleIds={deckOracleIds}
                 built={built}
                 toBuyCount={toBuyCount}
                 spentSlot={spentSlot}
@@ -551,6 +553,7 @@ export function BuilderShell({
                   commanderIdentity={commanderIdentity}
                   deckOracleIds={deckOracleIds}
                   commanderShortName={commanderShortName}
+                  commanderOracleId={deck.commander.oracleId}
                 />
               </div>
             )}

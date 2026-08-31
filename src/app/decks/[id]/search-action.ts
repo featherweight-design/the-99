@@ -4,6 +4,8 @@ import { and, arrayContained, eq, ilike, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { cards, collectionItems } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
+import type { Availability } from "../../../lib/decks/availability";
+import { loadAvailability } from "../../../lib/decks/availability-query";
 import type { DeckDetailCard } from "../../../lib/decks/grouping";
 import { cardTypeGroup, primaryRole } from "../../../lib/decks/read";
 
@@ -26,6 +28,8 @@ export type SearchResult = {
   // `collection_items`, so this is a SUM rather than a count — four nonfoil and
   // one foil Sol Ring is "×5 owned", not "×2".
   ownedQty: number;
+  /** Absent or null renders no marker — see DeckDetailCard.availability. */
+  availability?: Availability | null;
 };
 
 /**
@@ -34,9 +38,13 @@ export type SearchResult = {
  * cards. Unresolved-row resolution passes null: matching ran against the whole
  * Scryfall catalogue, so an off-color card is still a valid answer to "what was
  * this line?", and it passes `ownedOnly: false` for the same reason.
+ *
+ * `deckId` is the vantage for availability, not a filter: the deck being built
+ * must not count its own claims against itself. Optional so a caller with no
+ * deck context still gets results, just with no markers.
  */
 export async function searchCards(
-  query: string, colorIdentity: string[] | null, ownedOnly: boolean,
+  query: string, colorIdentity: string[] | null, ownedOnly: boolean, deckId?: string,
 ): Promise<SearchResult[]> {
   const userId = await requireUserId();
   const q = query.trim();
@@ -81,6 +89,25 @@ export async function searchCards(
       ownedOnly ? sql`${ownedQtySql} > 0` : undefined,
     ))
     .limit(20);
+  // Scoped to the owned rows among the 20 we are about to return. This action
+  // fires per keystroke, and the unscoped aggregate walks the player's whole
+  // collection.
+  //
+  // Owned-only because `loadAvailability` is driven by the collection: a card
+  // the player does not own cannot come back from it at all, so passing its
+  // oracle id widens the array parameter and buys nothing. With `ownedOnly`
+  // false — the resolution expander — a whole page of results can be unowned,
+  // and then there is no query worth making.
+  //
+  // Availability is decoration: a failure here must leave the search working, so
+  // the read is swallowed and every row falls back to no marker.
+  const ownedIds = rows.filter((r) => r.ownedQty > 0).map((r) => r.oracleId);
+  const availability =
+    deckId && ownedIds.length > 0
+      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
+          () => null,
+        )
+      : null;
   // Substring (not prefix) match is intentional: "gravetide" must find
   // "Muldrotha, the Gravetide". A scan over the ~35k-row cards table is cheap.
   return rows.map(({ oracleText, keywords, ...row }) => ({
@@ -88,5 +115,6 @@ export async function searchCards(
     owned: row.ownedQty > 0,
     cardTypeGroup: cardTypeGroup(row.typeLine),
     role: primaryRole({ typeLine: row.typeLine, oracleText, keywords }),
+    availability: availability?.get(row.oracleId) ?? null,
   }));
 }

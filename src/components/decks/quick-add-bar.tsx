@@ -17,6 +17,7 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { colorLabel } from "../../lib/decks/format";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { SearchField } from "../ui/text-field";
+import { markerAria } from "../ui/availability-marker";
 import { CardSearchRowBody } from "./card-search-row";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
@@ -31,6 +32,13 @@ interface QuickAddBarProps {
   /** Required: the empty state interpolates it, and "in ’s colours" is worse
    *  than a type error at the one call site that supplies it. */
   commanderShortName: string;
+  /**
+   * The commander is not a `deck_cards` row (availability-query.ts:25), so it
+   * is absent from `deckOracleIds` while the availability query still counted
+   * its claim. Searching your own commander would otherwise read as another
+   * deck's hard claim on it.
+   */
+  commanderOracleId: string;
 }
 
 export function QuickAddBar({
@@ -38,6 +46,7 @@ export function QuickAddBar({
   commanderIdentity,
   deckOracleIds,
   commanderShortName,
+  commanderOracleId,
 }: QuickAddBarProps) {
   const [query, setQuery] = useState("");
   const [ownedOnly, setOwnedOnly] = useState(true);
@@ -47,11 +56,29 @@ export function QuickAddBar({
   const listId = useId();
 
   const { trimmed, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move } =
-    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed });
+    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed, deckId });
 
+  // The commander counts, though it is no `deck_cards` row: `addCardToDeck`
+  // refuses it (`validateCardForDeck` returns `is-commander`), so a row left
+  // actionable here is a button that fails every time it is pressed.
   const inDeck = useCallback(
-    (r: SearchResult) => deckOracleIds.includes(r.oracleId) && !isBasicLand(r.typeLine),
-    [deckOracleIds],
+    (r: SearchResult) =>
+      r.oracleId === commanderOracleId ||
+      (deckOracleIds.includes(r.oracleId) && !isBasicLand(r.typeLine)),
+    [deckOracleIds, commanderOracleId],
+  );
+  // Distinct from `inDeck`, which drives the "In deck" label and the add guard:
+  // this one answers "did the excluded query drop a claim of ours on this
+  // card", which is the only thing `selfExcluded` is allowed to mean.
+  //
+  // So it deliberately does NOT reuse `inDeck`, whose basic-land carve-out
+  // exists to keep a second Forest addable. A Forest already on the list is
+  // still a `deck_cards` row and the read still dropped it, and inheriting that
+  // carve-out drew a false `0 free` on the last Forest a player owns.
+  const selfClaims = useCallback(
+    (r: SearchResult) =>
+      deckOracleIds.includes(r.oracleId) || r.oracleId === commanderOracleId,
+    [deckOracleIds, commanderOracleId],
   );
 
   // The same formatter the deck header uses. `BG-legal` and `Golgari` were two
@@ -243,6 +270,7 @@ export function QuickAddBar({
                 query={trimmed}
                 deckId={deckId}
                 inDeck={inDeck(r)}
+                selfClaimed={selfClaims(r)}
                 active={i === activeIndex}
                 onActivate={() => setActiveIndex(i)}
                 registerAdd={i === activeIndex ? registerAdd : undefined}
@@ -297,6 +325,8 @@ interface QuickAddRowProps {
   query: string;
   deckId: string;
   inDeck: boolean;
+  /** This deck holds a claim the availability read excluded. See QuickAddBar. */
+  selfClaimed: boolean;
   active: boolean;
   onActivate: () => void;
   registerAdd?: (fn: (r: SearchResult) => void) => void;
@@ -308,6 +338,7 @@ function QuickAddRow({
   query,
   deckId,
   inDeck,
+  selfClaimed,
   active,
   onActivate,
   registerAdd,
@@ -356,7 +387,17 @@ function QuickAddRow({
       // state both change whether the row is worth acting on. Composed from the
       // shipped strings rather than a new one.
       aria-label={[
-        addPanelCopy.quickAdd.rowAria(result.name, result.typeLine, result.owned),
+        addPanelCopy.quickAdd.rowAria(
+          result.name,
+          result.typeLine,
+          result.owned,
+          // `selfClaimed`, not `applied`: `applied` also covers a row the player
+          // has just added in this session, whose availability figures were read
+          // before the add and are not self-excluded for it.
+          result.availability
+            ? markerAria(result.availability, { selfExcluded: selfClaimed })
+            : null,
+        ),
         result.owned ? addPanelCopy.quickAdd.rowOwned(result.ownedQty) : null,
         applied ? addPanelCopy.quickAdd.rowInDeck : null,
       ]
@@ -376,6 +417,8 @@ function QuickAddRow({
         query={query}
         ownership={ownership}
         dim={applied}
+        selfExcluded={selfClaimed}
+        seam="var(--surface)"
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
         trailing={
           applied ? (

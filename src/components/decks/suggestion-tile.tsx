@@ -7,10 +7,13 @@
 
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { availabilityState } from "../../lib/decks/availability";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { shelfRoleOf } from "../../lib/decks/suggest";
+import { AvailabilityMarker } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "./card-detail-provider";
@@ -133,17 +136,39 @@ interface SuggestionTileProps {
   deckId: string;
   /** The server's decklist, never the optimistic one — see builder-shell.tsx:67. */
   inDeck: boolean;
+  /**
+   * This deck holds a claim the availability read excluded — `inDeck`, plus the
+   * commander, which is not a `deck_cards` row. See ConsiderPanel.
+   */
+  selfClaimed: boolean;
   /** The shelf's ordered ids, so the modal's Prev/Next pages this role group. */
   siblings: string[];
   commanderShortName: string;
 }
 
 export function SuggestionTile({
-  suggestion, deckId, inDeck, siblings, commanderShortName,
+  suggestion, deckId, inDeck, selfClaimed, siblings, commanderShortName,
 }: SuggestionTileProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
   const noArt = suggestion.imageUri === null;
+
+  // `selfClaimed`, not `applied`: these figures came back from a query that
+  // excluded this deck's stored claim, which an add made seconds ago is not yet
+  // part of.
+  const availState = suggestion.availability
+    ? availabilityState(suggestion.availability, { selfExcluded: selfClaimed })
+    : "free";
+  // Only the two states the design draws a caption for, and only when there is
+  // a name or a count to put in it. A hard claim held by several decks has no
+  // shipped string — `tileInUse` takes one name — so it draws the chip alone.
+  const names = suggestion.availability?.hardDeckNames ?? [];
+  const tileCaption =
+    availState === "hard" && names.length === 1
+      ? availabilityCopy.marker.tileInUse(names[0])
+      : availState === "over" && names.length >= 1
+        ? availabilityCopy.marker.tileOver(names.length)
+        : null;
 
   function handleAdd() {
     run(
@@ -178,6 +203,21 @@ export function SuggestionTile({
           also survives a card with no art, which renders a placeholder instead
           of the art branch the marks used to live in. */}
       <div className="relative">
+        {/* pointer-events-none because the chip sits over the detail trigger and
+            is never a tap target itself (design 3.6). Not suppressed on an
+            applied tile: "already sleeved elsewhere" is exactly what a player
+            needs to know about a card they have just added. */}
+        {suggestion.availability && (
+          <AvailabilityMarker
+            availability={suggestion.availability}
+            density="chip"
+            selfExcluded={selfClaimed}
+            // The tile's own labels belong to the two detail triggers; neither
+            // wraps the chip, so it carries §17's prose itself.
+            spoken
+            className="z-10 pointer-events-none"
+          />
+        )}
         {!applied && (suggestion.owned ? (
           <span
             aria-hidden
@@ -262,6 +302,23 @@ export function SuggestionTile({
         >
           {suggestion.typeLine}
         </p>
+        {/* The chip is count-only (density="chip" forces nameless), so the
+            caption is where the deck gets named. Design 6.3 / 6.4. */}
+        {tileCaption && (
+          // The caption takes its colour from the state, not from the state it
+          // is usually in: the chip is nameless at this density, so this line
+          // is the only thing that separates an over-committed card from one
+          // merely in use. Painting both brass makes them the same card.
+          <p
+            className={`truncate font-mono text-[8.5px] font-semibold ${
+              availState === "over"
+                ? "text-[color:var(--avail-over-fg)]"
+                : "text-[color:var(--avail-hard-fg)]"
+            }`}
+          >
+            {tileCaption}
+          </p>
+        )}
       </div>
 
       <Evidence

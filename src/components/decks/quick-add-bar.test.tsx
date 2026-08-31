@@ -38,6 +38,7 @@ function mount(props: Partial<React.ComponentProps<typeof QuickAddBar>> = {}) {
       commanderIdentity={["U"]}
       deckOracleIds={[]}
       commanderShortName="Korvold"
+      commanderOracleId="cmd-korvold"
       {...props}
     />,
   );
@@ -179,7 +180,7 @@ describe("QuickAddBar — the owned filter", () => {
 
     fireEvent.change(field(), { target: { value: "stu" } });
     await waitFor(() => expect(searchCards).toHaveBeenCalled());
-    expect(searchCards).toHaveBeenLastCalledWith("stu", ["U"], true);
+    expect(searchCards).toHaveBeenLastCalledWith("stu", ["U"], true, "deck-1");
   });
 
   // The note belongs to the filter being OFF: it counts the unowned rows now on
@@ -313,5 +314,93 @@ describe("QuickAddBar — result rows", () => {
     fireEvent.keyDown(field(), { key: "Enter" });
     fireEvent.click(option);
     expect(addCardToDeck).not.toHaveBeenCalled();
+  });
+
+  // The server refuses the commander outright, so an actionable row here offers
+  // an add that can only ever come back as a refusal.
+  it("makes this deck's own commander non-actionable, though it is no deck_cards row", async () => {
+    const korvold = row({ name: "Korvold Study", oracleId: "cmd-korvold" });
+    searchCards.mockResolvedValue([korvold]);
+    mount({ deckOracleIds: [] });
+    await search();
+
+    const option = screen.getByRole("option");
+    expect(option).toHaveAttribute("aria-disabled", "true");
+    expect(option).toHaveTextContent("✓ In deck");
+
+    fireEvent.keyDown(field(), { key: "Enter" });
+    fireEvent.click(option);
+    expect(addCardToDeck).not.toHaveBeenCalled();
+  });
+});
+
+// A search row's availability figures come from a query given this deck's id,
+// but `selfExcluded` is a per-CARD question, not a per-surface one: it may only
+// be set where this deck actually held a claim the query dropped. Set blanket,
+// `free === 0` resolves to silence and every genuine hard claim by another
+// finished deck disappears — which is the whole headline case (design 5.6).
+describe("QuickAddBar — availability marker", () => {
+  const claimed = (hardDeckNames: string[]) => ({
+    owned: 1,
+    hard: hardDeckNames.length,
+    soft: 0,
+    free: 0,
+    hardDeckNames,
+  });
+
+  it("claims an off-list card another finished deck already holds", async () => {
+    searchCards.mockResolvedValue([{ ...rhystic, availability: claimed(["Atraxa"]) }]);
+    mount();
+    await search();
+    expect(screen.getByRole("option")).toHaveTextContent("0 free — in Atraxa");
+  });
+
+  it("stays silent on a card this deck is already running", async () => {
+    searchCards.mockResolvedValue([{ ...rhystic, availability: claimed([]) }]);
+    mount({ deckOracleIds: [rhystic.oracleId] });
+    await search();
+    expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
+  });
+
+  // `inDeck` carves basic lands out so a second Forest stays addable. That
+  // carve-out is about the add guard and has nothing to do with what the
+  // availability read excluded: a Forest on the list is a `deck_cards` row like
+  // any other, and the query dropped it.
+  it("stays silent on a basic land this deck already runs", async () => {
+    const forest = row({
+      name: "Forest Study",
+      oracleId: "basic-forest",
+      typeLine: "Basic Land — Forest",
+    });
+    searchCards.mockResolvedValue([{ ...forest, availability: claimed([]) }]);
+    mount({ deckOracleIds: [forest.oracleId] });
+    await search();
+    expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
+  });
+
+  // The rollup returns a row for every owned card, unclaimed ones included
+  // (availability-query.ts:20), so a free card arrives with figures attached and
+  // the marker declines to draw them. The separator must decline with it.
+  it("draws no separator on a free card, whose marker draws nothing", async () => {
+    searchCards.mockResolvedValue([
+      { ...rhystic, availability: { owned: 2, hard: 0, soft: 0, free: 2, hardDeckNames: [] } },
+    ]);
+    mount();
+    await search();
+    for (const el of screen.getByRole("option").querySelectorAll("*")) {
+      expect(el.textContent?.trimEnd().endsWith("·")).toBe(false);
+    }
+  });
+
+  // The commander lives in `decks.commander_oracle_id`, not in `deck_cards`
+  // (availability-query.ts:25), so it is absent from `deckOracleIds` while the
+  // query still dropped its claim. Keyed on membership alone, a single-copy
+  // commander searched from its own deck reads as somebody else's claim.
+  it("stays silent on this deck's own commander, which is no deck_cards row", async () => {
+    const korvold = row({ name: "Korvold Study", oracleId: "cmd-korvold" });
+    searchCards.mockResolvedValue([{ ...korvold, availability: claimed([]) }]);
+    mount({ deckOracleIds: [] });
+    await search();
+    expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
   });
 });

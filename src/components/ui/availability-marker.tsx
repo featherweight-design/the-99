@@ -20,7 +20,8 @@ import {
 } from "../../lib/decks/availability";
 
 export type MarkerOpts = {
-  /** Deck's-own-decklist vantage. Addendum 2 §6. */
+  /** This deck's own claim — a decklist row, or the commander — was excluded
+   *  from the figures. Addendum 2 §6. */
   selfExcluded?: boolean;
   /** `/collection` — count-only, no deck name ever. Addendum 2 §3. */
   nameless?: boolean;
@@ -237,6 +238,7 @@ export function AvailabilityMarker({
   availability,
   density = "row",
   seam = "var(--bg)",
+  spoken = false,
   className,
   ...opts
 }: {
@@ -248,6 +250,19 @@ export function AvailabilityMarker({
    * so there is no correct constant; the default is the base canvas.
    */
   seam?: string;
+  /**
+   * Speak §17's prose here rather than letting the drawn label be read
+   * literally, for surfaces with no row-level `aria-label` to hoist
+   * `markerAria` into: the decklist row and the Consider tile. The two
+   * comboboxes leave it off — their `role="option"` carries a label that
+   * already replaces everything beneath it, and a second copy would be read
+   * twice.
+   *
+   * Swapping the word for the sentence rather than hanging an `aria-label` on
+   * the span is the same move `BuyTag` makes, for the reason recorded there: a
+   * label on a generic role is discarded outright.
+   */
+  spoken?: boolean;
   className?: string;
 } & MarkerOpts) {
   const state = availabilityState(availability, {
@@ -259,11 +274,13 @@ export function AvailabilityMarker({
   // canvases draw is count-only. Density decides it rather than the caller, so
   // that no second tile surface can ship having forgotten the flag.
   const chip = density === "chip";
-  const text = label(state, availability, {
-    ...opts,
-    nameless: opts.nameless || chip,
-  })!;
+  const effective = { ...opts, nameless: opts.nameless || chip };
+  const text = label(state, availability, effective)!;
   const colour = LABEL_COLOUR[state];
+  // Built from the same effective opts as the label, so the sentence never
+  // names a deck the drawn form withheld — a nameless chip stays count-only in
+  // both halves (Addendum 2 §3).
+  const prose = spoken ? markerAria(availability, effective) : null;
 
   return (
     <span
@@ -299,6 +316,7 @@ export function AvailabilityMarker({
         `0 free — inAtraxa`. jsdom cannot see this; only the browser can.
       */}
       <span
+        aria-hidden={spoken || undefined}
         className={twMerge(
           "flex-none whitespace-pre",
           colour,
@@ -311,10 +329,15 @@ export function AvailabilityMarker({
         // -ml cancels the container's gap between the two halves of what is one
         // sentence: the gap separates the glyph from the text, not `0 free — in`
         // from `Atraxa`.
-        <span className={twMerge("truncate min-w-0 -ml-[6px]", colour)} data-deck-name="">
+        <span
+          aria-hidden={spoken || undefined}
+          className={twMerge("truncate min-w-0 -ml-[6px]", colour)}
+          data-deck-name=""
+        >
           {text.name}
         </span>
       )}
+      {prose && <span className="sr-only">{prose}</span>}
     </span>
   );
 }

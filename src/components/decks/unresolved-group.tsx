@@ -37,6 +37,13 @@ interface UnresolvedGroupProps {
   rows: DeckUnresolvedRow[];
   /** The deck's cards, for the figures the live note quotes. */
   cards?: DeckDetailCard[];
+  /**
+   * The COMMITTED claim set, for the resolution row's self-exclusion —
+   * deliberately not derived from `cards`, which is the optimistic list. The
+   * question `selfExcluded` answers is whether the server's availability read
+   * dropped a claim of ours, and a card added seconds ago is not yet in it.
+   */
+  deckOracleIds: string[];
   /** Resolving a line to the commander answers it without adding to the 99. */
   commanderOracleId?: string;
   onExpandedChange?: (expanded: boolean) => void;
@@ -46,6 +53,7 @@ export function UnresolvedGroup({
   deckId,
   rows,
   cards = [],
+  deckOracleIds,
   commanderOracleId,
   onExpandedChange,
 }: UnresolvedGroupProps) {
@@ -188,6 +196,7 @@ export function UnresolvedGroup({
                 key={row.id}
                 deckId={deckId}
                 row={row}
+                deckOracleIds={deckOracleIds}
                 commanderOracleId={commanderOracleId}
                 expanded={row.id === expandedRowId}
                 onToggle={() => setExpanded(row.id)}

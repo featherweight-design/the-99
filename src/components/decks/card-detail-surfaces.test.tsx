@@ -54,6 +54,7 @@ describe("deck card-detail triggers", () => {
       <Decklist
         deckId="d1"
         commanderOracleId="cmdr"
+        deckOracleIds={[]}
         unresolvedRows={[]}
         cards={[deckCard()]}
         built={1}
@@ -74,6 +75,7 @@ describe("deck card-detail triggers", () => {
       <Decklist
         deckId="d1"
         commanderOracleId="cmdr"
+        deckOracleIds={[]}
         unresolvedRows={[]}
         cards={[deckCard({ oracleId: "o-forest", name: "Forest", typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", role: "land", quantity: 3 })]}
         built={3}
@@ -103,6 +105,7 @@ describe("deck card-detail triggers", () => {
         inDeck={false}
         siblings={["o-sol"]}
         commanderShortName="Muldrotha"
+        selfClaimed={false}
       />,
     );
     // The tile names the card twice, art and label, and both are triggers.
@@ -132,6 +135,7 @@ describe("deck card-detail triggers", () => {
         commanderIdentity={["U"]}
         deckOracleIds={[]}
         commanderShortName="Muldrotha"
+        commanderOracleId="cmd-muldrotha"
       />,
     );
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "sol" } });
@@ -176,6 +180,7 @@ describe("deck card-detail triggers", () => {
       <Decklist
         deckId="d1"
         commanderOracleId="cmdr"
+        deckOracleIds={[]}
         unresolvedRows={[]}
         cards={[
           deckCard({ oracleId: "o-sol", name: "Sol Ring" }),

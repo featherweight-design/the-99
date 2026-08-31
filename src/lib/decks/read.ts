@@ -4,6 +4,7 @@ import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "..
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
+import { loadAvailability } from "./availability-query";
 import {
   deckCounts,
   unresolvedCardCount,
@@ -149,6 +150,25 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     .where(eq(deckCards.deckId, deckId))
     .orderBy(asc(cards.name));
 
+  // This deck's own vantage: its claims must not count against its own rows, or
+  // every card in a finished deck would read as spoken for by itself.
+  //
+  // Swallowed because the decklist is the deck — it has to render whether or not
+  // the availability rollup succeeded. A null map leaves every row markerless,
+  // which is the same rendering as a card with nothing competing for it.
+  // Narrowed to this deck's owned rows, the only cards that will ever be looked
+  // up in the map. Unscoped, this aggregated the player's whole collection on
+  // every deck-page load; unowned rows are excluded for the same reason the
+  // search action excludes them, which is that the rollup is driven by the
+  // collection and cannot return them.
+  const ownedIds = cardRows.filter((r) => r.owned).map((r) => r.oracleId);
+  const availability =
+    ownedIds.length > 0
+      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
+          () => null,
+        )
+      : null;
+
   const detailCards: DeckDetailCard[] = cardRows.map((row) => ({
     oracleId: row.oracleId,
     name: row.name,
@@ -157,6 +177,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     role: primaryRole({ typeLine: row.typeLine, oracleText: row.oracleText, keywords: row.keywords }),
     owned: row.owned,
     quantity: row.quantity,
+    availability: availability?.get(row.oracleId) ?? null,
   }));
 
   // Fourth: the lines the import could not identify, in the source's own order.

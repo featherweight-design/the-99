@@ -8,7 +8,7 @@
 // two differences that matter — Enter resolves this line instead of adding a
 // card, and the search runs unfiltered.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { deleteUnresolvedRow, resolveUnresolvedRow } from "../../app/decks/import-actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -19,6 +19,7 @@ import {
   DECK_REMOVE_FALLBACK_MESSAGE,
 } from "../../lib/decks/mutation-result";
 import { SearchField } from "../ui/text-field";
+import { markerAria } from "../ui/availability-marker";
 import { CardSearchRowBody } from "./card-search-row";
 import { MutationError } from "./mutation-error";
 import { useDeleteOptimisticRow, useResolveOptimisticRow } from "./optimistic-deck";
@@ -31,6 +32,8 @@ interface ResolutionExpanderProps {
   id: string;
   deckId: string;
   row: DeckUnresolvedRow;
+  /** This deck's stored claims, which the availability read excluded. */
+  deckOracleIds: string[];
   commanderOracleId?: string;
   /** Collapses the expander and returns focus to the row. */
   onCollapse: () => void;
@@ -42,6 +45,7 @@ export function ResolutionExpander({
   id,
   deckId,
   row,
+  deckOracleIds,
   commanderOracleId,
   onCollapse,
   onResolved,
@@ -61,7 +65,22 @@ export function ResolutionExpander({
   const fieldRef = useRef<HTMLInputElement>(null);
 
   const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move } =
-    useCardSearch({ query, colorIdentity: null, ownedOnly, dismissed });
+    useCardSearch({ query, colorIdentity: null, ownedOnly, dismissed, deckId });
+
+  // `useCardSearch` passes `deckId`, so every figure comes back with this
+  // deck's own claim already subtracted. `selfExcluded` may therefore be set
+  // wherever this deck held a claim the query dropped — and only there, or a
+  // genuine hard claim by another finished deck resolves to silence.
+  //
+  // A resolution row can absolutely land on a card this deck already holds: a
+  // duplicate import line, a basic, or the commander, which is no `deck_cards`
+  // row and so is absent from `deckOracleIds`. The same predicate the quick-add
+  // bar builds, for the same reason.
+  const selfClaims = useCallback(
+    (r: SearchResult) =>
+      deckOracleIds.includes(r.oracleId) || r.oracleId === commanderOracleId,
+    [deckOracleIds, commanderOracleId],
+  );
 
   // Seeded and selected, so the first keystroke replaces the raw line rather
   // than appending to it.
@@ -316,6 +335,7 @@ export function ResolutionExpander({
                   query={trimmed}
                   active={i === activeIndex}
                   pending={resolvePending}
+                  selfClaimed={selfClaims(r)}
                   onActivate={() => setActiveIndex(i)}
                   onUse={() => resolve(r)}
                 />
@@ -421,11 +441,15 @@ interface ResultRowProps {
   query: string;
   active: boolean;
   pending: boolean;
+  /** This deck already claims this card, so the excluded read dropped it. */
+  selfClaimed: boolean;
   onActivate: () => void;
   onUse: () => void;
 }
 
-function ResultRow({ id, result, query, active, pending, onActivate, onUse }: ResultRowProps) {
+function ResultRow({
+  id, result, query, active, pending, selfClaimed, onActivate, onUse,
+}: ResultRowProps) {
   // The bar's own ownership phrasing — the design table calls this row the
   // bar's row verbatim, so it says the same words about the same field.
   const ownership = result.owned
@@ -438,7 +462,14 @@ function ResultRow({ id, result, query, active, pending, onActivate, onUse }: Re
       role="option"
       aria-selected={active}
       aria-label={[
-        addPanelCopy.quickAdd.rowAria(result.name, result.typeLine, result.owned),
+        addPanelCopy.quickAdd.rowAria(
+          result.name,
+          result.typeLine,
+          result.owned,
+          result.availability
+            ? markerAria(result.availability, { selfExcluded: selfClaimed })
+            : null,
+        ),
         result.owned ? addPanelCopy.quickAdd.rowOwned(result.ownedQty) : null,
       ]
         .filter(Boolean)
@@ -453,6 +484,8 @@ function ResultRow({ id, result, query, active, pending, onActivate, onUse }: Re
         query={query}
         ownership={ownership}
         dim={false}
+        selfExcluded={selfClaimed}
+        seam="var(--surface)"
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[230px] flex flex-col"
         trailing={
           active ? (

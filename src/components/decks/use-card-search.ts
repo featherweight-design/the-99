@@ -16,9 +16,11 @@ interface CardSearchInput {
   ownedOnly: boolean;
   /** Escape closes the list without clearing a query still being edited. */
   dismissed: boolean;
+  /** The deck being built — the vantage each row's availability is read from. */
+  deckId: string;
 }
 
-export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed }: CardSearchInput) {
+export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed, deckId }: CardSearchInput) {
   // Rows carry the request that produced them. They stay on screen through the
   // next debounce — a list that blanks on every keystroke is worse than one that
   // lags by 150ms — but `stale` below stops Enter acting on them.
@@ -31,9 +33,11 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed }: Ca
   // Every input the request is made from, so flipping any of them makes the rows
   // on screen as stale as retyping does. Identity belongs here as much as the
   // owned toggle: the two comboboxes pass different identities, and a key that
-  // ignored it would let Enter act on rows from the other one's filter.
+  // ignored it would let Enter act on rows from the other one's filter. deckId is
+  // the availability vantage, and a route-param change reconciles rather than
+  // remounts, so rows read against the old deck must not pass as current.
   const identityKey = colorIdentity === null ? "any" : colorIdentity.join(",");
-  const requestKey = `${ownedOnly ? "owned" : "all"} ${identityKey} ${trimmed}`;
+  const requestKey = `${ownedOnly ? "owned" : "all"} ${identityKey} ${deckId} ${trimmed}`;
 
   useEffect(() => {
     if (timerRef.current !== null) clearTimeout(timerRef.current);
@@ -45,7 +49,7 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed }: Ca
 
     let cancelled = false;
     timerRef.current = setTimeout(() => {
-      searchCards(trimmed, colorIdentity, ownedOnly)
+      searchCards(trimmed, colorIdentity, ownedOnly, deckId)
         .then((found) => {
           if (cancelled) return;
           setRows({ for: requestKey, items: found });
@@ -67,7 +71,7 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed }: Ca
       cancelled = true;
       if (timerRef.current !== null) clearTimeout(timerRef.current);
     };
-  }, [trimmed, queryActive, ownedOnly, colorIdentity, requestKey]);
+  }, [trimmed, queryActive, ownedOnly, colorIdentity, requestKey, deckId]);
 
   const results = rows?.items ?? [];
   const stale = rows !== null && rows.for !== requestKey;
