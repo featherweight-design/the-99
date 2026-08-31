@@ -30,16 +30,28 @@ export function DegradedBanner({
   variant?: DegradedVariant;
 }) {
   const { degraded } = availabilityCopy;
+  // Every per-variant choice below keys off `variant` and never off whether
+  // some other string came back non-empty. Copy is data: an editor emptying one
+  // key should blank that line, not silently switch a button's label.
+  const synergy = variant === "synergy";
   // The heading is the deck-read failure in both new variants, because that is
   // the one the player can see a control change for: `What's free` goes struck
   // and unselectable, while EDHREC being unreachable changes no affordance.
-  const heading = variant === "synergy" ? "Synergy data unavailable" : degraded.heading;
-  const body =
-    variant === "both"
+  const heading = synergy ? "Synergy data unavailable" : degraded.heading;
+  const mobileBody = synergy
+    ? "EDHREC is unreachable. Scores shown are based on pool and role coverage only."
+    : variant === "both"
       ? degraded.bodyWithSynergy
-      : variant === "availability"
-        ? degraded.body
-        : null;
+      : degraded.body;
+  const desktopBody = synergy
+    ? "EDHREC is unreachable. Fit scores reflect pool and role coverage only — synergy receipts are hidden until the connection is restored."
+    : variant === "both"
+      ? degraded.bodyWithSynergy
+      : degraded.body;
+  // `Retry` on mobile is a SHIPPED string that differs from the copy block's
+  // `Retry now`. It stays with the synergy variant rather than becoming the
+  // house label, so this ticket changes no existing pixel.
+  const mobileRetry = synergy ? "Retry" : degraded.retry;
 
   return (
     <>
@@ -68,8 +80,7 @@ export function DegradedBanner({
             className="m-0"
             style={{ fontSize: 11.5, color: "#A89B84", lineHeight: 1.5, marginTop: 2 }}
           >
-            {body ??
-              "EDHREC is unreachable. Scores shown are based on pool and role coverage only."}{" "}
+            {mobileBody}{" "}
             <form action={retryRecs} className="inline">
               <button
                 type="submit"
@@ -77,7 +88,7 @@ export function DegradedBanner({
                 className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
                 style={{ color: "#C9A24B", fontSize: 11.5 }}
               >
-                {body ? degraded.retry : "Retry"}
+                {mobileRetry}
               </button>
             </form>
           </div>
@@ -119,8 +130,7 @@ export function DegradedBanner({
             className="m-0"
             style={{ fontSize: 13, color: "#C6B79A", lineHeight: 1.55, marginTop: 3 }}
           >
-            {body ??
-              "EDHREC is unreachable. Fit scores reflect pool and role coverage only — synergy receipts are hidden until the connection is restored."}
+            {desktopBody}
           </p>
         </div>
 
@@ -131,7 +141,9 @@ export function DegradedBanner({
             // brand focus-visible outline treatment inherited from globals.css
             className="flex-none text-[13px] p-[10px_18px]"
           >
-            Retry now
+            {/* The one label the block and the shipped desktop banner already
+                agree on, so every variant can read it from the block. */}
+            {degraded.retry}
           </GhostButton>
         </form>
       </div>
