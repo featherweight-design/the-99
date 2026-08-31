@@ -106,9 +106,17 @@ describe("rankFree — wiring", () => {
 
   it("ignores a collection card the canonical list does not name", async () => {
     const result = await rankFree("user-1", [item("korvold")]);
-    // sol-ring is in the collection and is not a commander candidate; membership
+    // sol-ring is in the collection and canonical does not name it. Membership
     // comes from canonical alone, so it cannot appear however it is classified.
     expect(result.items.map((i) => i.oracleId)).toEqual(["korvold"]);
+  });
+
+  // The other half of the same guarantee: canonical cannot lose a row either.
+  // Canonical may be served from scores persisted against an earlier collection
+  // generation, so it can name a card the fresh pool read no longer holds.
+  it("reports ok: false rather than dropping a canonical commander the pool lacks", async () => {
+    const result = await rankFree("user-1", [item("korvold"), item("ghost")]);
+    expect(result).toEqual({ items: [], ok: false });
   });
 
   // The round-5 defect: recomputing synergyState from a bare cache read cannot

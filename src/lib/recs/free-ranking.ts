@@ -77,8 +77,10 @@ export function carryCanonicalSlugs<T extends { oracleId: string }>(
  * scores with a null fitSynergy rather than triggering a second fanout. Never
  * add a fetch here to close that gap: this path exists to be free.
  *
- * `ok: false` means the availability read failed. The caller must then disable
- * the toggle rather than serve scores identical to the other mode.
+ * `ok: false` means no trustworthy second ranking could be produced — either the
+ * availability read failed, or canonical named a commander the collection no
+ * longer holds. The caller must then disable the toggle rather than serve
+ * scores identical to the other mode, or a list one row short.
  *
  * `canonical` is the "everything I own" list, and it is the source of everything
  * about a row except its score. Membership, so that flipping the toggle can only
@@ -138,6 +140,18 @@ export async function rankFree(
     const card = poolByOracleId.get(canon.oracleId);
     return card ? [{ card, canon }] : [];
   });
+
+  // Iterating canonical guarantees this function never ADDS a row; failing
+  // closed here is what stops it dropping one. A commander canonical names but
+  // the collection no longer holds has no free score to compute, and the two
+  // lists can genuinely diverge: canonical may be served from scores persisted
+  // against an earlier collection generation, while the pool above is read
+  // fresh. Rather than serve a list that is quietly one row shorter, report the
+  // same failure as an unreadable availability rollup, and let the caller
+  // disable the toggle. A disabled control is honest; a vanishing commander is
+  // not.
+  if (candidates.length !== canonical.length) return { items: [], ok: false };
+
   const pool = freePool(collection, availability);
 
   const cache = await readEdhrecCache(candidates.map((c) => c.card.oracleId));
