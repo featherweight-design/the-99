@@ -43,10 +43,12 @@ interface CardSearchRowBodyProps {
   nameClassName: string;
   trailing: React.ReactNode;
   /**
-   * The row's card is already on this deck's list, so the figures behind the
-   * marker were read from a vantage that excluded this deck's own claim.
-   * Off-list rows must NOT set it: `free === 0` there is a genuine hard claim by
-   * some other finished deck, and self-exclusion would silence it (design 5.6).
+   * This deck already claims the row's card, so the figures behind the marker
+   * were read from a vantage that excluded that claim. Both kinds of claim
+   * count: a `deck_cards` row, and the commander, which is none but is still
+   * dropped by the read (availability-query.ts:25).
+   * Unclaimed rows must NOT set it: `free === 0` there is a genuine hard claim
+   * by some other finished deck, and self-exclusion would silence it (5.6).
    */
   selfExcluded?: boolean;
   /** The colour behind the marker, for the over glyph's seam. */

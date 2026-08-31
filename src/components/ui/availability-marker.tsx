@@ -20,7 +20,8 @@ import {
 } from "../../lib/decks/availability";
 
 export type MarkerOpts = {
-  /** Deck's-own-decklist vantage. Addendum 2 §6. */
+  /** This deck's own claim — a decklist row, or the commander — was excluded
+   *  from the figures. Addendum 2 §6. */
   selfExcluded?: boolean;
   /** `/collection` — count-only, no deck name ever. Addendum 2 §3. */
   nameless?: boolean;
