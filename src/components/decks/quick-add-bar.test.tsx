@@ -315,6 +315,23 @@ describe("QuickAddBar — result rows", () => {
     fireEvent.click(option);
     expect(addCardToDeck).not.toHaveBeenCalled();
   });
+
+  // The server refuses the commander outright, so an actionable row here offers
+  // an add that can only ever come back as a refusal.
+  it("makes this deck's own commander non-actionable, though it is no deck_cards row", async () => {
+    const korvold = row({ name: "Korvold Study", oracleId: "cmd-korvold" });
+    searchCards.mockResolvedValue([korvold]);
+    mount({ deckOracleIds: [] });
+    await search();
+
+    const option = screen.getByRole("option");
+    expect(option).toHaveAttribute("aria-disabled", "true");
+    expect(option).toHaveTextContent("✓ In deck");
+
+    fireEvent.keyDown(field(), { key: "Enter" });
+    fireEvent.click(option);
+    expect(addCardToDeck).not.toHaveBeenCalled();
+  });
 });
 
 // A search row's availability figures come from a query given this deck's id,

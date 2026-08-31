@@ -58,9 +58,14 @@ export function QuickAddBar({
   const { trimmed, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move } =
     useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed, deckId });
 
+  // The commander counts, though it is no `deck_cards` row: `addCardToDeck`
+  // refuses it (`validateCardForDeck` returns `is-commander`), so a row left
+  // actionable here is a button that fails every time it is pressed.
   const inDeck = useCallback(
-    (r: SearchResult) => deckOracleIds.includes(r.oracleId) && !isBasicLand(r.typeLine),
-    [deckOracleIds],
+    (r: SearchResult) =>
+      r.oracleId === commanderOracleId ||
+      (deckOracleIds.includes(r.oracleId) && !isBasicLand(r.typeLine)),
+    [deckOracleIds, commanderOracleId],
   );
   // Distinct from `inDeck`, which drives the "In deck" label and the add guard:
   // this one answers "did the excluded query drop a claim of ours on this
