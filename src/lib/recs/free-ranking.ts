@@ -4,10 +4,10 @@
 // This score is NOT persisted. `commander_scores` is keyed on collection
 // generation, and availability changes on every deck mutation, so storing it
 // there would need a whole second invalidation axis for a score most players
-// never ask for. It is computed on demand, only for `?avail=free`, out of the
-// EDHREC cache the canonical ranking has already warmed. `scoreCommander` is a
-// pure function of its pool, so the second score is the same function over a
-// smaller array: zero extra network calls.
+// never ask for. It is computed on demand, only for `?avail=free`, out of
+// whatever the EDHREC cache already holds. `scoreCommander` is a pure function
+// of its pool, so the second score is the same function over a smaller array:
+// zero extra network calls.
 
 import { readEdhrecCache } from "../edhrec/client";
 import { parseEdhrecPayload } from "../edhrec/parse";
