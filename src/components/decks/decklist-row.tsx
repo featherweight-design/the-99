@@ -54,8 +54,14 @@ export function DecklistRow({
   spent = false,
 }: DecklistRowProps) {
   const label = isMeta ? metaLabel! : card.name;
+  // The floor is what stops the marker eating the row. `flex-1` is basis-0, so
+  // the name only ever gets space the marker did not already claim as its own
+  // intrinsic width — and the marker's prefix is `flex-none`. Without a floor a
+  // 390px row renders `A ◆◆ short 1 — also in Atraxa Superfriends`: the marker
+  // wins every pixel and the card it describes is gone. The deck name inside the
+  // marker truncates instead, which is the half Design nominated to yield.
   const nameClass =
-    "flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
+    "flex-1 min-w-[14ch] whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();

@@ -308,6 +308,12 @@ export function AvailabilityMarker({
         `Kykar Spellsl…` stays clipped for the eye, which is the drawn
         behaviour — the full name is not lost, because `markerAria` carries it
         into the row's accessible name.
+
+        The floor is what keeps "truncates" from meaning "vanishes". At `min-w-0`
+        a narrow host shrinks this half to zero and the prefix is left pointing
+        at nothing: `◆◆ short 1 — also in`, a preposition with no object and not
+        even an ellipsis to admit it. Six characters is the smallest width that
+        still reads as an abbreviated name.
       */}
       {/*
         `whitespace-pre`, not `whitespace-nowrap`: a flex item trims its own
@@ -331,7 +337,7 @@ export function AvailabilityMarker({
         // from `Atraxa`.
         <span
           aria-hidden={spoken || undefined}
-          className={twMerge("truncate min-w-0 -ml-[6px]", colour)}
+          className={twMerge("truncate min-w-[6ch] -ml-[6px]", colour)}
           data-deck-name=""
         >
           {text.name}
