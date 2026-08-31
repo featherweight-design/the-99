@@ -124,7 +124,11 @@ export function CardSearchRowBody({
           className="md:hidden flex items-center min-w-0 font-mono text-[10px]"
           style={{ color: "#8E8269" }}
         >
-          <span className="truncate">
+          {/* The shipped meta is the half that yields. `truncate` already
+              resolves this item's automatic minimum size to zero via its
+              overflow, but the marker is `min-w-0` too, so the intent is
+              spelled out rather than left to which item the browser picks. */}
+          <span className="truncate min-w-0">
             {result.typeLine} · {ownership}
           </span>
           {marker && joiner}
