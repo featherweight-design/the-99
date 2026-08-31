@@ -89,17 +89,25 @@ export async function searchCards(
       ownedOnly ? sql`${ownedQtySql} > 0` : undefined,
     ))
     .limit(20);
-  // Scoped to the 20 rows we are about to return. This action fires per
-  // keystroke, and the unscoped aggregate walks the player's whole collection.
+  // Scoped to the owned rows among the 20 we are about to return. This action
+  // fires per keystroke, and the unscoped aggregate walks the player's whole
+  // collection.
+  //
+  // Owned-only because `loadAvailability` is driven by the collection: a card
+  // the player does not own cannot come back from it at all, so passing its
+  // oracle id widens the array parameter and buys nothing. With `ownedOnly`
+  // false — the resolution expander — a whole page of results can be unowned,
+  // and then there is no query worth making.
   //
   // Availability is decoration: a failure here must leave the search working, so
   // the read is swallowed and every row falls back to no marker.
-  const availability = deckId
-    ? await loadAvailability(userId, {
-        excludeDeckId: deckId,
-        oracleIds: rows.map((r) => r.oracleId),
-      }).catch(() => null)
-    : null;
+  const ownedIds = rows.filter((r) => r.ownedQty > 0).map((r) => r.oracleId);
+  const availability =
+    deckId && ownedIds.length > 0
+      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
+          () => null,
+        )
+      : null;
   // Substring (not prefix) match is intentional: "gravetide" must find
   // "Muldrotha, the Gravetide". A scan over the ~35k-row cards table is cheap.
   return rows.map(({ oracleText, keywords, ...row }) => ({

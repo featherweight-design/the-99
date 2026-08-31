@@ -178,10 +178,16 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   // Consider is a panel of recommendations, and a failed rollup must cost it its
   // chips, not its tiles. `degraded` is EDHREC's flag and stays untouched — the
   // availability model has no degraded surface at all (design 5.7).
-  const availability = await loadAvailability(userId, {
-    excludeDeckId: deckId,
-    oracleIds: combined.map((s) => s.oracleId),
-  }).catch(() => null);
+  // Owned tiles only. Consider carries unowned staples since #176, and
+  // `loadAvailability` is driven by the collection — an unowned oracle id can
+  // never come back from it, so including it only widens the array parameter.
+  const ownedIds = combined.filter((s) => s.owned).map((s) => s.oracleId);
+  const availability =
+    ownedIds.length > 0
+      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
+          () => null,
+        )
+      : null;
   const suggestions = combined.map((s) => ({
     ...s,
     availability: availability?.get(s.oracleId) ?? null,
