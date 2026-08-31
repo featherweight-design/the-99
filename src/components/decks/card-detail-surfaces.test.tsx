@@ -103,6 +103,7 @@ describe("deck card-detail triggers", () => {
         inDeck={false}
         siblings={["o-sol"]}
         commanderShortName="Muldrotha"
+        selfClaimed={false}
       />,
     );
     // The tile names the card twice, art and label, and both are triggers.
@@ -132,6 +133,7 @@ describe("deck card-detail triggers", () => {
         commanderIdentity={["U"]}
         deckOracleIds={[]}
         commanderShortName="Muldrotha"
+        commanderOracleId="cmd-muldrotha"
       />,
     );
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "sol" } });

@@ -111,12 +111,14 @@ function CardFan() {
 }
 
 function ShelfSection({
-  shelf, deckId, inDeckIds, commanderShortName, first,
+  shelf, deckId, inDeckIds, selfClaimedIds, commanderShortName, first,
 }: {
   shelf: Shelf;
   deckId: string;
   /** A set rather than the array: every tile asks, and a deck runs to 99. */
   inDeckIds: Set<string>;
+  /** `inDeckIds` plus the commander. See ConsiderPanel. */
+  selfClaimedIds: Set<string>;
   commanderShortName: string;
   /** The 16px mobile gap sits between shelves, so the first one does not take it. */
   first: boolean;
@@ -191,6 +193,7 @@ function ShelfSection({
             suggestion={s}
             deckId={deckId}
             inDeck={inDeckIds.has(s.oracleId)}
+            selfClaimed={selfClaimedIds.has(s.oracleId)}
             siblings={siblings}
             commanderShortName={commanderShortName}
           />
@@ -211,6 +214,12 @@ interface ConsiderPanelProps {
    */
   deckCards: DeckDetailCard[];
   deckOracleIds: string[];
+  /**
+   * The commander is not a `deck_cards` row (availability-query.ts:25), so it
+   * is absent from `deckOracleIds` while the availability query still counted
+   * its claim. Without it, a suggested commander reads as another deck's claim.
+   */
+  commanderOracleId: string;
   commanderShortName: string;
   degraded: boolean;
   /** Owned by the shell: the desktop toolbar rides the tab row, outside this panel. */
@@ -219,11 +228,18 @@ interface ConsiderPanelProps {
 }
 
 export function ConsiderPanel({
-  deckId, suggestions, deckCards, deckOracleIds, commanderShortName, degraded,
+  deckId, suggestions, deckCards, deckOracleIds, commanderOracleId, commanderShortName, degraded,
   sort, onSortChange,
 }: ConsiderPanelProps) {
   const router = useRouter();
   const inDeckIds = useMemo(() => new Set(deckOracleIds), [deckOracleIds]);
+  // Distinct from `inDeckIds`, which drives each tile's "In deck" state: this
+  // answers "did the excluded query drop a claim of ours", which is the only
+  // thing `selfExcluded` is allowed to mean.
+  const selfClaimedIds = useMemo(
+    () => new Set([...deckOracleIds, commanderOracleId]),
+    [deckOracleIds, commanderOracleId],
+  );
   const shelves = useMemo(
     () => buildShelves(suggestions, deckCards).map((shelf) => ({
       ...shelf,
@@ -320,6 +336,7 @@ export function ConsiderPanel({
               shelf={shelf}
               deckId={deckId}
               inDeckIds={inDeckIds}
+              selfClaimedIds={selfClaimedIds}
               commanderShortName={commanderShortName}
             />
           ))}

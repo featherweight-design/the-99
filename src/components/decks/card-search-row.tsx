@@ -74,7 +74,11 @@ export function CardSearchRowBody({
   ) : null;
   // Design 3.2: the separator between the shipped meta and the marker is the
   // border colour, not the text colour — it must not read as another word.
-  const joiner = <span aria-hidden style={{ color: "#3A3229" }}>{" · "}</span>;
+  const joiner = (
+    <span aria-hidden className="flex-none whitespace-pre text-[color:var(--border-strong)]">
+      {" · "}
+    </span>
+  );
 
   return (
     <div className="flex items-center gap-[10px] md:gap-[12px]">

@@ -152,9 +152,12 @@ export function DecklistRow({
             availability={card.availability}
             seam="var(--row-bg)"
             selfExcluded
-            // Shrinkable, not flex-none: the deck name is the half allowed to
-            // clip, and a rigid marker would push the card name instead.
-            className="text-[11px] md:text-[11.5px]"
+            // The component sets no size or family of its own (design 3.4: the
+            // label inherits the meta line's mono size), and this row has no
+            // meta line to inherit — it would otherwise render in the page's
+            // sans base and grow a 34px row. The caller supplies both, a step
+            // below the card name so the marker stays the quieter half.
+            className="font-mono text-[11px] md:text-[11.5px]"
           />
         )}
 

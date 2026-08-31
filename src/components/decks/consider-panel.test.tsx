@@ -54,6 +54,7 @@ function Harness(props: Partial<React.ComponentProps<typeof ConsiderPanel>>) {
       deckCards={[]}
       deckOracleIds={[]}
       commanderShortName="Korvold"
+      commanderOracleId="cmd-korvold"
       degraded={false}
       sort={sort}
       onSortChange={setSort}

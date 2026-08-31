@@ -38,6 +38,7 @@ function mount(props: Partial<React.ComponentProps<typeof QuickAddBar>> = {}) {
       commanderIdentity={["U"]}
       deckOracleIds={[]}
       commanderShortName="Korvold"
+      commanderOracleId="cmd-korvold"
       {...props}
     />,
   );
@@ -313,5 +314,46 @@ describe("QuickAddBar — result rows", () => {
     fireEvent.keyDown(field(), { key: "Enter" });
     fireEvent.click(option);
     expect(addCardToDeck).not.toHaveBeenCalled();
+  });
+});
+
+// A search row's availability figures come from a query given this deck's id,
+// but `selfExcluded` is a per-CARD question, not a per-surface one: it may only
+// be set where this deck actually held a claim the query dropped. Set blanket,
+// `free === 0` resolves to silence and every genuine hard claim by another
+// finished deck disappears — which is the whole headline case (design 5.6).
+describe("QuickAddBar — availability marker", () => {
+  const claimed = (hardDeckNames: string[]) => ({
+    owned: 1,
+    hard: hardDeckNames.length,
+    soft: 0,
+    free: 0,
+    hardDeckNames,
+  });
+
+  it("claims an off-list card another finished deck already holds", async () => {
+    searchCards.mockResolvedValue([{ ...rhystic, availability: claimed(["Atraxa"]) }]);
+    mount();
+    await search();
+    expect(screen.getByRole("option")).toHaveTextContent("0 free — in Atraxa");
+  });
+
+  it("stays silent on a card this deck is already running", async () => {
+    searchCards.mockResolvedValue([{ ...rhystic, availability: claimed([]) }]);
+    mount({ deckOracleIds: [rhystic.oracleId] });
+    await search();
+    expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
+  });
+
+  // The commander lives in `decks.commander_oracle_id`, not in `deck_cards`
+  // (availability-query.ts:25), so it is absent from `deckOracleIds` while the
+  // query still dropped its claim. Keyed on membership alone, a single-copy
+  // commander searched from its own deck reads as somebody else's claim.
+  it("stays silent on this deck's own commander, which is no deck_cards row", async () => {
+    const korvold = row({ name: "Korvold Study", oracleId: "cmd-korvold" });
+    searchCards.mockResolvedValue([{ ...korvold, availability: claimed([]) }]);
+    mount({ deckOracleIds: [] });
+    await search();
+    expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
   });
 });

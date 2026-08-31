@@ -136,22 +136,28 @@ interface SuggestionTileProps {
   deckId: string;
   /** The server's decklist, never the optimistic one — see builder-shell.tsx:67. */
   inDeck: boolean;
+  /**
+   * This deck holds a claim the availability read excluded — `inDeck`, plus the
+   * commander, which is not a `deck_cards` row. See ConsiderPanel.
+   */
+  selfClaimed: boolean;
   /** The shelf's ordered ids, so the modal's Prev/Next pages this role group. */
   siblings: string[];
   commanderShortName: string;
 }
 
 export function SuggestionTile({
-  suggestion, deckId, inDeck, siblings, commanderShortName,
+  suggestion, deckId, inDeck, selfClaimed, siblings, commanderShortName,
 }: SuggestionTileProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
   const noArt = suggestion.imageUri === null;
 
-  // `inDeck`, not `applied`: these figures came back from a query that excluded
-  // this deck's stored claim, which an add made seconds ago is not yet part of.
+  // `selfClaimed`, not `applied`: these figures came back from a query that
+  // excluded this deck's stored claim, which an add made seconds ago is not yet
+  // part of.
   const availState = suggestion.availability
-    ? availabilityState(suggestion.availability, { selfExcluded: inDeck })
+    ? availabilityState(suggestion.availability, { selfExcluded: selfClaimed })
     : "free";
   // Only the two states the design draws a caption for, and only when there is
   // a name or a count to put in it. A hard claim held by several decks has no
@@ -205,7 +211,7 @@ export function SuggestionTile({
           <AvailabilityMarker
             availability={suggestion.availability}
             density="chip"
-            selfExcluded={inDeck}
+            selfExcluded={selfClaimed}
             className="z-10 pointer-events-none"
           />
         )}
