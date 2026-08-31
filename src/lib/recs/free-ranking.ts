@@ -9,9 +9,6 @@
 // pure function of its pool, so the second score is the same function over a
 // smaller array: zero extra network calls.
 
-import { eq } from "drizzle-orm";
-import { db } from "../../db";
-import { decks } from "../../db/schema";
 import { readEdhrecCache, type EdhrecFetchResult } from "../edhrec/client";
 import { parseEdhrecPayload } from "../edhrec/parse";
 import { type Availability } from "../decks/availability";
@@ -24,7 +21,7 @@ import {
   type CommanderListItem,
   type RankedCommander,
 } from "./recommend";
-import { isCommanderCandidate, scoreCommander, type PoolCard } from "./score";
+import { scoreCommander, type PoolCard } from "./score";
 
 /**
  * The pool a player could build from right now. Hard claims subtract because a
@@ -74,9 +71,11 @@ export function carryCanonicalSlugs<T extends { oracleId: string }>(
  * read failed — the caller must then disable the toggle rather than serve
  * scores identical to the other mode.
  *
- * `canonical` is the "everything I own" list, and the ONLY source of slugs. A
- * candidate absent from it (possible when the persisted list is a generation
- * behind the collection) is dropped rather than given a slug that would 404.
+ * `canonical` is the "everything I own" list, and it is the only source of both
+ * membership and slugs. Membership, so that flipping the toggle can only ever
+ * reorder the list the player is already looking at. Slugs, because a commander
+ * absent from it has no canonical slug and any invented one would 404 — the
+ * persisted list can be a generation behind the collection.
  */
 export async function rankFree(
   userId: string,
@@ -106,21 +105,19 @@ export async function rankFree(
     return { items: [], ok: false };
   }
 
-  const built = new Set(
-    (
-      await db
-        .select({ oracleId: decks.commanderOracleId })
-        .from(decks)
-        .where(eq(decks.userId, userId))
-    ).map((d) => d.oracleId),
-  );
-
+  // Membership comes from `canonical` and from nothing else, because the toggle
+  // re-ranks a list — it must never add or drop a row. Canonical has already
+  // applied both of the filters this function used to re-apply: commander
+  // candidacy, and "you have already built this one". Re-applying them looks
+  // like a belt-and-braces no-op and is not one. It is a second, later reading
+  // of the decks table, so a canonical list a generation behind the decks would
+  // come back SHORTER here than in the other mode, and the player would watch a
+  // commander vanish on flipping a control that promises only to rescore.
+  //
   // Candidacy is a property of the collection, not of the pool: a commander you
   // own but have sleeved is still a commander you could unsleeve. Only the pool
   // it is SCORED against shrinks.
-  const candidates = collection.filter(
-    (c) => isCommanderCandidate(c) && !built.has(c.oracleId) && known.has(c.oracleId),
-  );
+  const candidates = collection.filter((c) => known.has(c.oracleId));
   const pool = freePool(collection, availability);
 
   const cache = await readEdhrecCache(candidates.map((c) => c.oracleId));
