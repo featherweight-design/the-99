@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, decks } from "../../db/schema";
@@ -102,8 +103,14 @@ export function finalizeRecommendations(
 /**
  * The scoring pool for one user. Extracted so the detail page can score a
  * single commander without re-running the whole fanout.
+ *
+ * Request-scoped, the same way `getRankedList` and `getCollectionStats` are.
+ * `/commanders` needs the pool for the receipt clause on every load, and on the
+ * recompute path `recommendCommanders` needs it too, so without this a cold load
+ * paid for the same query twice. It is a pure read of one user's collection with
+ * no writer inside a request, so a cached one cannot go stale mid-render.
  */
-export async function loadCollectionPool(
+export const loadCollectionPool = cache(async function loadCollectionPool(
   userId: string,
 ): Promise<{ collection: PoolCard[]; uniqueCardsRead: number }> {
   const owned = await db
@@ -125,7 +132,7 @@ export async function loadCollectionPool(
   // search pools — banned/not-legal cards must not inflate pool size, role
   // counts, or EDHREC overlap.
   return { collection: owned.filter((c) => c.commanderLegal), uniqueCardsRead: owned.length };
-}
+});
 
 export async function recommendCommanders(
   userId: string,

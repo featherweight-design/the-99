@@ -1128,6 +1128,7 @@ git commit -m "feat(availability): rank commanders against what's free (#43)"
 **Files:**
 - Create: `src/lib/commanders/rank-maps.ts`
 - Create: `src/lib/commanders/rank-maps.test.ts`
+- Create: `src/lib/commanders/in-use.ts` + `in-use.test.ts` (added 2026-08-31 by Gate 1, gap 1)
 - Modify: `src/components/commanders/commanders-view.tsx:28-45,78-115,300-310,452`
 - Modify: `src/components/commanders/rec-card.tsx`
 
@@ -1272,19 +1273,48 @@ const allByOracleId = useMemo(
   An earlier revision of this plan derived it as `allItem.colorPoolSize - freeItem.colorPoolSize`,
   which is arithmetically correct but forces the whole free ranking to exist before the clause
   can render — and that is what made the clause look like it had to be `What's free`-only.
-  It does not. Count the commander's fitting owned cards whose availability is `hard` or `over`:
+  It does not. Count the commander's fitting owned cards whose availability is `hard` or `over`.
+
+  **Amended 2026-08-31 by Gate 1 (`docs/superpowers/state-coverage-card-availability.md`,
+  gap 1): this is SERVER work, and the draft below it was unreachable.** The draft counted
+  `pool.filter(...)` where the clause renders, and neither binding exists there. `RecCard`'s
+  whole prop surface is `{ commander, rank }`, and `CommanderListItem` carries
+  **`colorPoolSize`, a number** — not the fitting-card list. That list is a local inside
+  `scoreCommander` (`score.ts:69-72`) and is discarded the moment its length is taken. There
+  is no `availability` map on the client either. Every type checks and the state is still
+  unreachable: the #1169 shape exactly.
+
+  So a new `src/lib/commanders/in-use.ts` does the count server-side, once per commander,
+  reusing the same colour-identity predicate `scoreCommander` uses so the two numbers
+  describe the same pool. The page passes the result down keyed by oracle id.
+
+  **Amended again 2026-08-31 by Gate 4: a single `number` could not carry the soft clause.**
+  Design table row 8.5 and the canvas's Muldrotha row specify a second, gentler clause —
+  `33 of your cards fit · ◇ 4 wanted by a brew` — which this plan never mentioned. The
+  return widened to a two-field record so both severities survive the trip to the client,
+  and the function is named for what it now produces. The counts are disjoint by
+  construction (`availabilityState` returns one state per card), and `RecCard` renders
+  exactly ONE clause, hard outranking soft, mirroring the deck roll-up's fixed severity
+  order. §8's own prose says "the second clause", singular, and no canvas row draws both.
+  **For Design to ratify:** a pool holding both therefore says nothing about its soft claims.
 
   ```ts
-  const inUse = pool.filter((c) => {
-    const a = availability.get(c.oracleId);
-    if (!a) return false;
-    const s = availabilityState(a);
-    return s === "hard" || s === "over";
-  }).length;
+  // src/lib/commanders/in-use.ts — shape, not the final file
+  export type ReceiptCounts = { inUse: number; wantedByBrew: number };
+  export function receiptCountsByCommander(
+    commanders: { oracleId: string; colorIdentity: string[] }[],
+    collection: PoolCard[],
+    availability: Map<string, Availability>,
+  ): Map<string, ReceiptCounts>;
   ```
 
   One `loadAvailability(userId)` call for the page, shared across all 24 commanders, no
   second scoring pass and no EDHREC fanout. `rankFree` is not on this path.
+
+- **That `loadAvailability(userId)` runs on EVERY `/commanders` load, not only for
+  `?avail=free`** (Gate 1, gap 2). The clause renders in both modes, so gating the read on
+  the toggle would silently strip the second clause from the default view — the majority
+  state. `rankFree` keeps its own scoped call; the page's call is what feeds `inUse`.
 - **`was`** is `allItem.score`; **`drop`** is `allItem.score - freeItem.score`. These two *do*
   require the free ranking, so **the delta stays `What's free`-only** — it is a statement about
   a re-rank and has nothing to say before one has happened.

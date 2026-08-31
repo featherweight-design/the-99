@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CommanderListItem } from "../../lib/recs/recommend";
-import { CommandersView } from "./commanders-view";
+import { CommandersView, type AvailMode } from "./commanders-view";
 import { REVEAL_STEP } from "./reveal-control";
 
 // The reveal control is unreachable on real data by design — the beta reference
@@ -9,10 +9,11 @@ import { REVEAL_STEP } from "./reveal-control";
 // the primary evidence that the windowing works at all.
 
 const replace = vi.fn();
+const push = vi.fn();
 const params = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace }),
+  useRouter: () => ({ replace, push }),
   useSearchParams: () => params,
 }));
 
@@ -38,16 +39,39 @@ function results(n: number, colorIdentity: string[] = ["R"]): CommanderListItem[
   }));
 }
 
-function view(list: CommanderListItem[]) {
-  return render(
+type Over = {
+  avail?: AvailMode;
+  freeItems?: CommanderListItem[] | null;
+  availOk?: boolean;
+  degraded?: boolean;
+};
+
+function el(list: CommanderListItem[], over: Over = {}) {
+  const { avail = "all", freeItems = null, availOk = true, degraded = false } = over;
+  return (
     <CommandersView
       results={list}
-      degraded={false}
+      degraded={degraded}
       uniqueCardsRead={1418}
       candidateCount={list.length}
       firstRun={false}
-    />,
+      avail={avail}
+      freeItems={freeItems}
+      availOk={availOk}
+      receiptCounts={new Map()}
+    />
   );
+}
+
+// `again` re-renders the SAME instance, so a test can move a prop the way the
+// server does rather than mounting twice and missing the transition.
+function view(list: CommanderListItem[], over: Over = {}) {
+  const r = render(el(list, over));
+  return {
+    ...r,
+    again: (next: CommanderListItem[], nextOver: Over = {}) =>
+      r.rerender(el(next, nextOver)),
+  };
 }
 
 const control = () => screen.queryByRole("button", { name: /^Show \d+ more commanders/ });
@@ -66,6 +90,7 @@ const windowCounts = () =>
 
 beforeEach(() => {
   replace.mockClear();
+  push.mockClear();
 });
 
 describe("CommandersView windowing", () => {
@@ -115,9 +140,12 @@ describe("CommandersView windowing", () => {
     expect(screen.queryByText(/End of ranking/)).toBeNull();
   });
 
-  it("leaves the short-list surface untouched — no live region, no row focus targets", () => {
+  // The live region is no longer windowing's alone — the ranking toggle
+  // announces through it, and that control exists on every list length. It
+  // stays mounted and empty rather than being gated on a windowed list.
+  it("leaves the short-list surface untouched — empty live region, no row focus targets", () => {
     const { container } = view(results(24));
-    expect(container.querySelector('[aria-live="polite"]')).toBeNull();
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent("");
     expect(container.querySelector("li[tabindex]")).toBeNull();
   });
 
@@ -184,6 +212,107 @@ describe("CommandersView windowing under the colour filter", () => {
     const [first] = cards();
     // Three blue generals were filtered out, so the first red row keeps rank 4.
     expect(within(first).getAllByText("4").length).toBeGreaterThan(0);
+  });
+});
+
+describe("CommandersView ranking toggle", () => {
+  // The control switches the data, not a panel, so it is a radiogroup rather
+  // than the tablist its shape suggests.
+  // The segments are labelled by their aria strings, not their visible text.
+  const segments = (name: RegExp) => screen.getAllByRole("radio", { name });
+  const ALL = /everything you own/;
+  const FREE = /not already in a finished deck|What.s free is unavailable/;
+
+  it("marks the shipped ranking as the checked segment", () => {
+    view(results(3));
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "false");
+  });
+
+  // A colour filter is client-side; a re-rank is not, because rankFree runs on
+  // the server. The flip must push, and must carry the colours already applied.
+  it("pushes the free ranking, keeping the colour filter in the URL", () => {
+    view(results(3));
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Red" })[0]);
+    fireEvent.click(segments(FREE)[0]);
+    expect(push).toHaveBeenCalledWith("/commanders?c=R&avail=free", { scroll: false });
+  });
+
+  // The mirror effect writes the mode it is CARRYING. Driven by the server prop
+  // instead, a pip clicked while the flip was still in the air would replace to
+  // a bare `?c=W` and both drop the mode and race the push fetching it.
+  it("keeps the mode when a colour lands after the flip", () => {
+    view(results(3), { avail: "free", freeItems: results(3) });
+    replace.mockClear();
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Red" })[0]);
+    expect(replace).toHaveBeenCalledWith("/commanders?c=R&avail=free", { scroll: false });
+  });
+
+  it("ranks against the free list once the server sends one", () => {
+    const all = results(3);
+    const free = [all[2], all[0], all[1]];
+    view(all, { avail: "free", freeItems: free });
+    expect(cards()[0]).toHaveTextContent("General 2");
+  });
+
+  // Unlike the colour filter, this changes the score itself, so frozen numerals
+  // would read 3, 1, 2 down a page whose own order contradicts them.
+  it("renumbers on a re-rank, where the colour filter would not", () => {
+    const all = results(3);
+    view(all, { avail: "free", freeItems: [all[2], all[0], all[1]] });
+    expect(within(cards()[0]).getAllByText("1").length).toBeGreaterThan(0);
+  });
+
+  // Only the arriving server render announces. On mount there is no re-rank to
+  // report, and a page that announces itself the moment it loads is noise.
+  it("announces the re-rank, and says nothing on first paint", () => {
+    const { container, again } = view(results(3));
+    const live = container.querySelector('[aria-live="polite"]')!;
+    expect(live).toHaveTextContent("");
+    again(results(3), { avail: "free", freeItems: results(2) });
+    expect(live).toHaveTextContent("Re-ranked by what’s free · 2 commanders");
+  });
+
+  it("strikes the free segment out when we cannot read the decks", () => {
+    view(results(3), { availOk: false });
+    for (const s of segments(FREE)) {
+      expect(s).toHaveAttribute("aria-disabled", "true");
+    }
+    fireEvent.click(segments(FREE)[0]);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  // The one navigation that does not move `avail`: a flip to free the server
+  // answers with a degraded `all`. An override keyed on `avail` alone would
+  // strand here, drawing the struck-out segment as checked.
+  it("drops the optimistic press when the flip comes back degraded", () => {
+    view(results(3));
+    fireEvent.click(segments(FREE)[0]);
+    expect(push).toHaveBeenCalled();
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("is one tab stop, and the arrows move within it", () => {
+    view(results(3));
+    const all = segments(ALL)[0];
+    expect(all).toHaveAttribute("tabindex", "0");
+    expect(segments(FREE)[0]).toHaveAttribute("tabindex", "-1");
+    fireEvent.keyDown(all, { key: "ArrowRight" });
+    expect(push).toHaveBeenCalledWith("/commanders?avail=free", { scroll: false });
+  });
+
+  it("leaves the arrows inert while the free ranking is unavailable", () => {
+    view(results(3), { availOk: false });
+    fireEvent.keyDown(segments(ALL)[0], { key: "ArrowRight" });
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("explains the exclusion only while the free ranking is on", () => {
+    const { again } = view(results(3));
+    expect(screen.queryByText(/don.t count toward these scores/)).toBeNull();
+    again(results(3), { avail: "free", freeItems: results(3) });
+    expect(screen.getAllByText(/don.t count toward these scores/).length).toBeGreaterThan(0);
   });
 });
 

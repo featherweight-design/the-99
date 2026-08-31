@@ -11,14 +11,103 @@ import { fitSegments } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
 import { FitBar } from "./fit-bar";
 import { RoleChips } from "./role-chips";
+import { availabilityCopy } from "../../lib/copy/availability";
+import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import type { CommanderListItem } from "../../lib/recs/recommend";
+
+/**
+ * The receipt line (§8). It ALWAYS renders, in both ranking modes; only the
+ * second clause is a suffix, so row height never changes between two players
+ * looking at the same commander. The canvas draws Lathril with the whole line
+ * absent, but the README and the copy module both rule the line unconditional
+ * and the README wins by this epic's stated precedence.
+ *
+ * The second clause is not derived from the two rankings. Counting it off the
+ * availability map instead is what lets it render under `Everything I own`,
+ * where no free ranking exists — and Design drew it that way (canvas state A,
+ * "Everything I own (default)", already reads `34 of your cards fit · 12
+ * already in use`).
+ *
+ * ONE clause, chosen by severity: §8 calls it "the second clause", singular, and
+ * no canvas row draws both. Hard outranks soft for the same reason it does in
+ * the deck roll-up — a card sleeved into a finished deck is the harder fact. A
+ * pool holding both therefore says nothing about its soft claims; that is
+ * flagged to Design rather than improvised into a third clause.
+ */
+function ReceiptLine({
+  fits,
+  counts,
+  avail,
+  fontSize,
+}: {
+  fits: number;
+  counts: ReceiptCounts;
+  avail: "all" | "free";
+  fontSize: number;
+}) {
+  const { receipt } = availabilityCopy;
+  // Glyph follows the clause: solid brass for a finished deck's claim, hollow
+  // for a brew's, exactly as the marker draws them elsewhere. Decorative in both
+  // cases — the words beside it already say the whole fact.
+  const clause =
+    counts.inUse > 0
+      ? {
+          text: receipt.inUse(counts.inUse),
+          color: "#E8CE93",
+          glyph: { background: "#C9A24B" },
+        }
+      : counts.wantedByBrew > 0
+        ? {
+            text: receipt.wantedByBrew(counts.wantedByBrew),
+            color: "#C6B79A",
+            glyph: { border: "1.5px solid #A89B84" },
+          }
+        : null;
+
+  return (
+    <p
+      className="m-0 font-mono flex items-center gap-[6px] flex-wrap"
+      style={{ fontSize, color: "#8E8269" }}
+    >
+      {avail === "free" ? receipt.fitFree(fits) : receipt.fit(fits)}
+      {clause && (
+        <>
+          <span style={{ color: "#3A3229" }}>·</span>
+          <span
+            aria-hidden="true"
+            className="block shrink-0"
+            style={{
+              width: 6,
+              height: 6,
+              transform: "rotate(45deg)",
+              ...clause.glyph,
+            }}
+          />
+          <span style={{ color: clause.color }}>{clause.text}</span>
+        </>
+      )}
+    </p>
+  );
+}
+
+export type ScoreDelta = { drop: number; was: number };
 
 type RecCardProps = {
   commander: CommanderListItem;
   rank: number;
+  avail: "all" | "free";
+  /** The receipt's second clause, by severity. Counted server-side. */
+  counts: ReceiptCounts;
+  /**
+   * How far this commander's score fell against the free pool, and what it was.
+   * Null under `Everything I own`, and null where the score did not move: the
+   * delta is a statement about a re-rank and has nothing to say before one has
+   * happened, or when one changed nothing.
+   */
+  delta: ScoreDelta | null;
 };
 
-export function RecCard({ commander: c, rank }: RecCardProps) {
+export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardProps) {
   const gradient = commanderGradient(c.colorIdentity);
   const fit = fitSegments(c);
   const scoreDisplay = Math.round(fit.pct);
@@ -115,6 +204,19 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
             >
               FIT
             </span>
+            {delta && (
+              <span
+                className="font-mono"
+                style={{ fontSize: 10, color: "#C6B79A", marginTop: 2 }}
+              >
+                <span aria-hidden="true">
+                  {availabilityCopy.receipt.delta(delta.drop)}
+                </span>
+                <span className="sr-only">
+                  {availabilityCopy.receipt.deltaAria(delta.drop, delta.was)}
+                </span>
+              </span>
+            )}
           </div>
         </div>
 
@@ -134,6 +236,16 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
             of top {c.edhrecTotal}
           </p>
         )}
+
+        {/* Receipt line (mobile). Outside the synergy conditional above: it is
+            a claim about the player's own collection, which every commander
+            has, including the ones EDHREC does not index. */}
+        <ReceiptLine
+          fits={c.colorPoolSize}
+          counts={counts}
+          avail={avail}
+          fontSize={10.5}
+        />
 
         {/* Per-commander degraded note (mobile) */}
         {perCmdDegraded && (
@@ -306,6 +418,14 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
             </div>
           )}
 
+          {/* Receipt line (desktop) */}
+          <ReceiptLine
+            fits={c.colorPoolSize}
+            counts={counts}
+            avail={avail}
+            fontSize={12.5}
+          />
+
           {/* Receipts preview (desktop) */}
           {receipts && (
             <p
@@ -400,6 +520,19 @@ export function RecCard({ commander: c, rank }: RecCardProps) {
               Fit
             </span>
           </div>
+
+          {/* Score delta (§9). Desktop buys the longer form: the bare arrow
+              says how far without saying from where. */}
+          {delta && (
+            <p className="m-0 font-mono" style={{ fontSize: 12, color: "#C6B79A" }}>
+              <span aria-hidden="true">
+                {availabilityCopy.receipt.deltaFrom(delta.drop, delta.was)}
+              </span>
+              <span className="sr-only">
+                {availabilityCopy.receipt.deltaAria(delta.drop, delta.was)}
+              </span>
+            </p>
+          )}
 
           {/* Fit bar with legend */}
           <FitBar fit={fit} legend />
