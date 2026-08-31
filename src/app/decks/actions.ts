@@ -8,6 +8,7 @@ import { cards, collectionItems, deckCards, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { getEdhrecData } from "../../lib/edhrec/client";
+import { loadAvailability } from "../../lib/decks/availability-query";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
@@ -170,7 +171,21 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   }
 
   // Combine and truncate to 99
-  const suggestions = [...ownedSuggestions, ...unownedSuggestions].slice(0, 99);
+  const combined = [...ownedSuggestions, ...unownedSuggestions].slice(0, 99);
+
+  // Scoped to the tiles actually returned, and read from this deck's vantage so
+  // a card the deck already claims does not count against itself. Swallowed:
+  // Consider is a panel of recommendations, and a failed rollup must cost it its
+  // chips, not its tiles. `degraded` is EDHREC's flag and stays untouched — the
+  // availability model has no degraded surface at all (design 5.7).
+  const availability = await loadAvailability(userId, {
+    excludeDeckId: deckId,
+    oracleIds: combined.map((s) => s.oracleId),
+  }).catch(() => null);
+  const suggestions = combined.map((s) => ({
+    ...s,
+    availability: availability?.get(s.oracleId) ?? null,
+  }));
 
   return { suggestions, degraded };
 }

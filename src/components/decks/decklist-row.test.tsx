@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import type { Availability } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import type { DeckDetail } from "../../lib/decks/read";
@@ -156,6 +157,59 @@ describe("DecklistRow undo row (#185)", () => {
     await act(async () => {
       pending.resolve({ ok: true });
     });
+  });
+});
+
+// #43 — the marker rides the row it annotates and never gates it.
+describe("DecklistRow availability marker (#43)", () => {
+  // A deck's own decklist is a self-excluded vantage, so `free` is already net
+  // of this deck's own claim. It is never `owned - hard` here — the SQL says so
+  // and the row is only ever handed the answer.
+  const avail = (free: number, names: string[] = []): Availability => ({
+    owned: 1,
+    hard: names.length,
+    soft: 0,
+    free,
+    hardDeckNames: names,
+  });
+
+  it("carries no marker when the card is free", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: avail(2) }} />);
+
+    expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
+  });
+
+  // Self-exclusion makes the hard state unreachable on a deck's own list
+  // (design table row 4.9), so a genuine conflict arrives as over-committed and
+  // names the OTHER claimant.
+  it("carries the marker when another finished list wants the same copy", () => {
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
+    );
+
+    // Two spans, so match the prefix by regex and the name by its data
+    // attribute — getByText cannot see the composed string.
+    expect(screen.getByText(/short 1 — also in/)).toBeInTheDocument();
+    expect(document.querySelector("[data-deck-name]")).toHaveTextContent("Atraxa");
+  });
+
+  // The quiet-failure half of the degraded ruling.
+  it("renders exactly like the free state when the availability read failed", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, availability: null }} />);
+
+    expect(screen.queryByText(/free|in a brew|short/)).toBeNull();
+  });
+
+  // Nothing on this surface is ever gated on availability.
+  it("still offers the remove control on an over-committed row", () => {
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
+    );
+
+    const remove = screen.getByRole("button", {
+      name: addPanelCopy.row.removeAria("Sol Ring"),
+    });
+    expect(remove).not.toBeDisabled();
   });
 });
 

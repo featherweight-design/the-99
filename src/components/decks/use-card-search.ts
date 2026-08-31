@@ -16,9 +16,11 @@ interface CardSearchInput {
   ownedOnly: boolean;
   /** Escape closes the list without clearing a query still being edited. */
   dismissed: boolean;
+  /** The deck being built — the vantage each row's availability is read from. */
+  deckId: string;
 }
 
-export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed }: CardSearchInput) {
+export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed, deckId }: CardSearchInput) {
   // Rows carry the request that produced them. They stay on screen through the
   // next debounce — a list that blanks on every keystroke is worse than one that
   // lags by 150ms — but `stale` below stops Enter acting on them.
@@ -45,7 +47,7 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed }: Ca
 
     let cancelled = false;
     timerRef.current = setTimeout(() => {
-      searchCards(trimmed, colorIdentity, ownedOnly)
+      searchCards(trimmed, colorIdentity, ownedOnly, deckId)
         .then((found) => {
           if (cancelled) return;
           setRows({ for: requestKey, items: found });
@@ -67,7 +69,9 @@ export function useCardSearch({ query, colorIdentity, ownedOnly, dismissed }: Ca
       cancelled = true;
       if (timerRef.current !== null) clearTimeout(timerRef.current);
     };
-  }, [trimmed, queryActive, ownedOnly, colorIdentity, requestKey]);
+    // deckId is absent from requestKey deliberately: it is fixed for the life of
+    // the component, so it can never make rows on screen stale.
+  }, [trimmed, queryActive, ownedOnly, colorIdentity, requestKey, deckId]);
 
   const results = rows?.items ?? [];
   const stale = rows !== null && rows.for !== requestKey;

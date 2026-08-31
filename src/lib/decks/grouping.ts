@@ -2,6 +2,7 @@
 // Must stay free of db/server imports — client components import these as values.
 
 import { addPanelCopy } from "../copy/decks-builder";
+import type { Availability } from "./availability";
 
 export type CardTypeGroup =
   | "Creatures" | "Instants" | "Sorceries"
@@ -15,6 +16,13 @@ export type DeckDetailCard = {
   role: "ramp" | "draw" | "removal" | "wipes" | "land" | "other";
   owned: boolean;
   quantity: number;
+  /**
+   * Optional because six sites build this literal (optimistic reducers, tests,
+   * fixtures) and none of them can reach the database. Absent and null both mean
+   * "no marker": a failed availability read degrades to the free rendering
+   * rather than to an error surface.
+   */
+  availability?: Availability | null;
 };
 
 /**

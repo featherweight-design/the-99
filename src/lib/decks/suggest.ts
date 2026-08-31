@@ -1,3 +1,4 @@
+import type { Availability } from "./availability";
 import type { DeckDetailCard } from "./grouping";
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
 import type { PoolCard } from "../recs/score";
@@ -35,6 +36,8 @@ export type DeckSuggestion = {
   // negative resolve to null, because "runs it less than average" is not a
   // reason to add a card.
   lift: number | null;
+  /** Absent or null renders no chip — see DeckDetailCard.availability. */
+  availability?: Availability | null;
 };
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };

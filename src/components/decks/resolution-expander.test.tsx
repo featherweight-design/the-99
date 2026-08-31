@@ -132,7 +132,7 @@ describe("the resolution expander as a disclosure", () => {
     expect(input).toHaveValue("Rystic Studie");
     expect(input.selectionStart).toBe(0);
     expect(input.selectionEnd).toBe("Rystic Studie".length);
-    await waitFor(() => expect(searchCards).toHaveBeenCalledWith("Rystic Studie", null, false));
+    await waitFor(() => expect(searchCards).toHaveBeenCalledWith("Rystic Studie", null, false, "deck-1"));
   });
 
   it("keeps one row open at a time", async () => {
@@ -169,7 +169,7 @@ describe("the resolution expander as a disclosure", () => {
 
     fireEvent.click(toggle);
     expect(toggle).toBeChecked();
-    await waitFor(() => expect(searchCards).toHaveBeenCalledWith("Rystic Studie", null, true));
+    await waitFor(() => expect(searchCards).toHaveBeenCalledWith("Rystic Studie", null, true, "deck-1"));
 
     fireEvent.keyDown(field(), { key: "Escape" });
     fireEvent.click(rowButton("Rystic Studie"));

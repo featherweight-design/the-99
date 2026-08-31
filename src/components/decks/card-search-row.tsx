@@ -6,6 +6,7 @@
 
 import { CostPips } from "./suggestion-tile";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
+import { AvailabilityMarker } from "../ui/availability-marker";
 
 // The matched run in brass, so a list of eight near-identical names says which
 // part of each one the query actually caught. Case-insensitive and literal:
@@ -41,6 +42,15 @@ interface CardSearchRowBodyProps {
   dim: boolean;
   nameClassName: string;
   trailing: React.ReactNode;
+  /**
+   * The row's card is already on this deck's list, so the figures behind the
+   * marker were read from a vantage that excluded this deck's own claim.
+   * Off-list rows must NOT set it: `free === 0` there is a genuine hard claim by
+   * some other finished deck, and self-exclusion would silence it (design 5.6).
+   */
+  selfExcluded?: boolean;
+  /** The colour behind the marker, for the over glyph's seam. */
+  seam?: string;
 }
 
 export function CardSearchRowBody({
@@ -50,7 +60,22 @@ export function CardSearchRowBody({
   dim,
   nameClassName,
   trailing,
+  selfExcluded = false,
+  seam,
 }: CardSearchRowBodyProps) {
+  // Both widths draw the same marker; only the slot it rides in differs, so it
+  // is built once here rather than twice below.
+  const marker = result.availability ? (
+    <AvailabilityMarker
+      availability={result.availability}
+      seam={seam}
+      selfExcluded={selfExcluded}
+    />
+  ) : null;
+  // Design 3.2: the separator between the shipped meta and the marker is the
+  // border colour, not the text colour — it must not read as another word.
+  const joiner = <span aria-hidden style={{ color: "#3A3229" }}>{" · "}</span>;
+
   return (
     <div className="flex items-center gap-[10px] md:gap-[12px]">
       {/* A crop settles which "Study" this is faster than the type line does —
@@ -83,8 +108,17 @@ export function CardSearchRowBody({
         >
           <HighlightedName name={result.name} query={query} dim={dim} />
         </span>
-        <span className="md:hidden font-mono text-[10px] truncate" style={{ color: "#8E8269" }}>
-          {result.typeLine} · {ownership}
+        {/* The marker joins the existing meta line rather than taking a line of
+            its own — design 3.1: no column, no extra row height. */}
+        <span
+          className="md:hidden flex items-center min-w-0 font-mono text-[10px]"
+          style={{ color: "#8E8269" }}
+        >
+          <span className="truncate">
+            {result.typeLine} · {ownership}
+          </span>
+          {marker && joiner}
+          {marker}
         </span>
       </span>
 
@@ -101,12 +135,18 @@ export function CardSearchRowBody({
         {result.manaCost && <CostPips cost={result.manaCost} className="flex gap-[3px]" />}
       </span>
 
-      {/* Ownership as a word and a figure. Never colour alone. */}
+      {/* Ownership as a word and a figure. Never colour alone.
+          `min-w-` rather than `w-`: the marker shares this cell (design 3.1
+          forbids a new column) and `0 free — in Atraxa` does not fit 80px. The
+          flex-1 type-line cell above absorbs the difference, so the ownership
+          figures still line up down a list where nothing is marked. */}
       <span
-        className="hidden md:block flex-none w-[80px] font-mono text-[11px] text-right"
+        className="hidden md:flex flex-none min-w-[80px] items-center justify-end gap-0 font-mono text-[11px] text-right"
         style={{ color: result.owned ? "#8E8269" : "#E0913C" }}
       >
         {ownership}
+        {marker && joiner}
+        {marker}
       </span>
 
       {trailing}

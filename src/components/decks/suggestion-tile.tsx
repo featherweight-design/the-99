@@ -7,10 +7,13 @@
 
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { availabilityState } from "../../lib/decks/availability";
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { shelfRoleOf } from "../../lib/decks/suggest";
+import { AvailabilityMarker } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "./card-detail-provider";
@@ -145,6 +148,22 @@ export function SuggestionTile({
   const addOptimisticCard = useAddOptimisticCard();
   const noArt = suggestion.imageUri === null;
 
+  // `inDeck`, not `applied`: these figures came back from a query that excluded
+  // this deck's stored claim, which an add made seconds ago is not yet part of.
+  const availState = suggestion.availability
+    ? availabilityState(suggestion.availability, { selfExcluded: inDeck })
+    : "free";
+  // Only the two states the design draws a caption for, and only when there is
+  // a name or a count to put in it. A hard claim held by several decks has no
+  // shipped string — `tileInUse` takes one name — so it draws the chip alone.
+  const names = suggestion.availability?.hardDeckNames ?? [];
+  const tileCaption =
+    availState === "hard" && names.length === 1
+      ? availabilityCopy.marker.tileInUse(names[0])
+      : availState === "over" && names.length >= 1
+        ? availabilityCopy.marker.tileOver(names.length)
+        : null;
+
   function handleAdd() {
     run(
       () => addCardToDeck(deckId, suggestion.oracleId),
@@ -178,6 +197,18 @@ export function SuggestionTile({
           also survives a card with no art, which renders a placeholder instead
           of the art branch the marks used to live in. */}
       <div className="relative">
+        {/* pointer-events-none because the chip sits over the detail trigger and
+            is never a tap target itself (design 3.6). Not suppressed on an
+            applied tile: "already sleeved elsewhere" is exactly what a player
+            needs to know about a card they have just added. */}
+        {suggestion.availability && (
+          <AvailabilityMarker
+            availability={suggestion.availability}
+            density="chip"
+            selfExcluded={inDeck}
+            className="z-10 pointer-events-none"
+          />
+        )}
         {!applied && (suggestion.owned ? (
           <span
             aria-hidden
@@ -262,6 +293,15 @@ export function SuggestionTile({
         >
           {suggestion.typeLine}
         </p>
+        {/* The chip is count-only (density="chip" forces nameless), so the
+            caption is where the deck gets named. Design 6.3 / 6.4. */}
+        {tileCaption && (
+          <p
+            className="truncate font-mono text-[10px] md:text-[9.5px] text-[color:var(--avail-hard-fg)]"
+          >
+            {tileCaption}
+          </p>
+        )}
       </div>
 
       <Evidence

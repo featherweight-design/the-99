@@ -17,6 +17,7 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { colorLabel } from "../../lib/decks/format";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { SearchField } from "../ui/text-field";
+import { markerAria } from "../ui/availability-marker";
 import { CardSearchRowBody } from "./card-search-row";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
@@ -47,7 +48,7 @@ export function QuickAddBar({
   const listId = useId();
 
   const { trimmed, results, stale, open, noResults, searching, activeIndex, setActiveIndex, move } =
-    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed });
+    useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, dismissed, deckId });
 
   const inDeck = useCallback(
     (r: SearchResult) => deckOracleIds.includes(r.oracleId) && !isBasicLand(r.typeLine),
@@ -356,7 +357,15 @@ function QuickAddRow({
       // state both change whether the row is worth acting on. Composed from the
       // shipped strings rather than a new one.
       aria-label={[
-        addPanelCopy.quickAdd.rowAria(result.name, result.typeLine, result.owned),
+        addPanelCopy.quickAdd.rowAria(
+          result.name,
+          result.typeLine,
+          result.owned,
+          // `inDeck`, not `applied`: `applied` also covers a row the player has
+          // just added in this session, whose availability figures were read
+          // before the add and are not self-excluded for it.
+          result.availability ? markerAria(result.availability, { selfExcluded: inDeck }) : null,
+        ),
         result.owned ? addPanelCopy.quickAdd.rowOwned(result.ownedQty) : null,
         applied ? addPanelCopy.quickAdd.rowInDeck : null,
       ]
@@ -376,6 +385,8 @@ function QuickAddRow({
         query={query}
         ownership={ownership}
         dim={applied}
+        selfExcluded={inDeck}
+        seam="#1E1A15"
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[210px] flex flex-col"
         trailing={
           applied ? (

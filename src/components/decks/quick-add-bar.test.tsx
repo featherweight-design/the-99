@@ -179,7 +179,7 @@ describe("QuickAddBar — the owned filter", () => {
 
     fireEvent.change(field(), { target: { value: "stu" } });
     await waitFor(() => expect(searchCards).toHaveBeenCalled());
-    expect(searchCards).toHaveBeenLastCalledWith("stu", ["U"], true);
+    expect(searchCards).toHaveBeenLastCalledWith("stu", ["U"], true, "deck-1");
   });
 
   // The note belongs to the filter being OFF: it counts the unowned rows now on

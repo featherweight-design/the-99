@@ -5,8 +5,10 @@
 
 import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "./card-detail-provider";
@@ -63,6 +65,12 @@ export function DecklistRow({
   // same thing twice. A decremented stack, and a row with no shell above it,
   // still speak for themselves.
   const shellReportsFailure = reportRemoveFailure !== null && card.quantity <= 1;
+  // `selfExcluded` unconditionally: every card on this list is claimed by this
+  // deck, and the figures came from a query given this deck's id. Addendum 2 §6.
+  // A missing read (null) is the free rendering — see DeckDetailCard.
+  const availState = card.availability
+    ? availabilityState(card.availability, { selfExcluded: true })
+    : "free";
 
   function handleRemove() {
     // Outside `run`: the slot and its announcement are ordinary state, which
@@ -100,7 +108,15 @@ export function DecklistRow({
     // Wrapper keeps the row and any error message as a single grid item.
     <div>
       {/* Row container */}
-      <div className={`group ${ROW_SHELL} bg-[#1A160F] md:hover:bg-[#211C15]`}>
+      {/* --row-bg exists so the over glyph's seam tracks the hover swap; a fixed
+          seam string reads as a hairline through the glyph on hover.
+          The over tint (design 4.5/4.10) is an inset ring rather than a border:
+          a real border would add 2px to one row's height and shunt the list. */}
+      <div
+        className={`group ${ROW_SHELL} bg-[#1A160F] md:hover:bg-[#211C15]
+          [--row-bg:#1A160F] md:hover:[--row-bg:#211C15]
+          ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
+      >
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
         {!isMeta && (
           <OwnershipDot
@@ -128,6 +144,18 @@ export function DecklistRow({
           >
             {label}
           </CardDetailTrigger>
+        )}
+
+        {/* Availability marker — never on a meta row: "+3 more" names no card. */}
+        {!isMeta && card.availability && (
+          <AvailabilityMarker
+            availability={card.availability}
+            seam="var(--row-bg)"
+            selfExcluded
+            // Shrinkable, not flex-none: the deck name is the half allowed to
+            // clip, and a rigid marker would push the card name instead.
+            className="text-[11px] md:text-[11.5px]"
+          />
         )}
 
         {/* Buy tag — unowned non-meta only */}

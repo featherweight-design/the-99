@@ -19,6 +19,7 @@ import {
   DECK_REMOVE_FALLBACK_MESSAGE,
 } from "../../lib/decks/mutation-result";
 import { SearchField } from "../ui/text-field";
+import { markerAria } from "../ui/availability-marker";
 import { CardSearchRowBody } from "./card-search-row";
 import { MutationError } from "./mutation-error";
 import { useDeleteOptimisticRow, useResolveOptimisticRow } from "./optimistic-deck";
@@ -61,7 +62,7 @@ export function ResolutionExpander({
   const fieldRef = useRef<HTMLInputElement>(null);
 
   const { trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move } =
-    useCardSearch({ query, colorIdentity: null, ownedOnly, dismissed });
+    useCardSearch({ query, colorIdentity: null, ownedOnly, dismissed, deckId });
 
   // Seeded and selected, so the first keystroke replaces the raw line rather
   // than appending to it.
@@ -438,7 +439,14 @@ function ResultRow({ id, result, query, active, pending, onActivate, onUse }: Re
       role="option"
       aria-selected={active}
       aria-label={[
-        addPanelCopy.quickAdd.rowAria(result.name, result.typeLine, result.owned),
+        addPanelCopy.quickAdd.rowAria(
+          result.name,
+          result.typeLine,
+          result.owned,
+          // No `selfExcluded`: this row answers "what was this import line?", so
+          // its card is by definition not yet on the deck's list.
+          result.availability ? markerAria(result.availability) : null,
+        ),
         result.owned ? addPanelCopy.quickAdd.rowOwned(result.ownedQty) : null,
       ]
         .filter(Boolean)
@@ -453,6 +461,7 @@ function ResultRow({ id, result, query, active, pending, onActivate, onUse }: Re
         query={query}
         ownership={ownership}
         dim={false}
+        seam="#1E1A15"
         nameClassName="flex-1 min-w-0 md:flex-none md:w-[230px] flex flex-col"
         trailing={
           active ? (
