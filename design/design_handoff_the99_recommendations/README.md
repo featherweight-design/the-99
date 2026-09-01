@@ -203,10 +203,12 @@ Hexes live only in `globals.css`. **No new token, no new hex, no new motion clas
 - **`suggestDeck` is not modified.** #130 commits what it already returns.
 - **CORRECTION (addendum) — the unowned top-up is NOT free.** R1 recorded it as existing
   `getDeckSuggestions` behaviour bounded per role by `ROLE_TARGETS`. It is not: PR #206's top-up
-  is a flat `slice(0, 5)` (`src/app/decks/actions.ts:106`, `:153`) with **no role
-  classification at all**. Ruling 2 — "unowned staples top each role up to its target and no
-  further" — therefore needs **new engine code**: classify the unowned candidates by role, and
-  bound each role by its own remaining gap. The seven-card Shopping tab drawn in state 11 is not
+  is a flat `slice(0, 5)` of EDHREC's ranking (`src/app/decks/actions.ts:106`, `:153`) — **the
+  selection is not bounded per role at all**. Each row does carry a `role`
+  (`primaryRole(c)`, `:150`), so classification exists; what does not exist is any use of it in
+  choosing the five. Ruling 2 — "unowned staples top each role up to its target and no further" —
+  therefore needs **new engine code**: bound each role by its own remaining gap against
+  `ROLE_TARGETS` instead of taking the overall top five. The seven-card Shopping tab drawn in state 11 is not
   reachable from what ships today. **No drawing changes**; the estimate does.
 - **Basics never enter Shopping** (§8 derived 6). One `auto` tag per stack, not per copy; the
   `+N more` meta row takes no marker, exactly as it takes no `✕` today.

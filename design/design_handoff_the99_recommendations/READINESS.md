@@ -40,9 +40,10 @@ after.
 
 ### 🔌 Data contract
 - [🟡] **Ruling 2 needs new engine code.** `getDeckSuggestions` appends a flat `slice(0, 5)` of
-  unowned EDHREC staples (`src/app/decks/actions.ts:106`, `:153`) with no role classification.
-  "Top each role up to its target and no further" therefore requires classifying the unowned
-  candidates and bounding each by its own remaining gap. State 11's seven-card Shopping tab is
+  EDHREC's ranking (`src/app/decks/actions.ts:106`, `:153`), unbounded by role. Each row *is*
+  classified (`primaryRole(c)`, `:150`) — the role just never enters the selection. "Top each
+  role up to its target and no further" therefore requires bounding each role by its own
+  remaining gap against `ROLE_TARGETS`. State 11's seven-card Shopping tab is
   not reachable from what ships today. R1 recorded this as free and was wrong; R2 accepted the
   correction and propagated it.
 - [🟡] **The three `REPLACES` entries target hardcoded JSX in `detail.tsx`**, not a copy module.
@@ -105,9 +106,10 @@ after.
 
 ## Eng-side clarifications — the plan PR owns these
 
-1. **Ruling 2's per-role bound is new code.** Classify the unowned EDHREC candidates by role and
-   bound each by that role's remaining gap. Size the task accordingly; do not assume the shipped
-   top-up gets you there.
+1. **Ruling 2's per-role bound is new code.** The candidates already carry a role; the selection
+   ignores it. Bound each role by its own remaining gap against `ROLE_TARGETS` instead of taking
+   EDHREC's overall top five. Size the task accordingly; do not assume the shipped top-up gets
+   you there.
 2. **Lift the `detail.tsx` strings into a copy module** before the three `REPLACES` entries can
    apply.
 3. **The keep gesture.** Design's answer is tag-as-button (`auto` → `keep ✓` → gone). If an
@@ -155,8 +157,9 @@ for this handoff can be written now; execution waits.
 ## Appendix — Design's self-assessment, verbatim
 
 Preserved from R1 as Design wrote it. Where it conflicts with the audit above, the audit is
-current: item 6's "`role-counter-cell.tsx` untouched" was true at R1 and is not true after the
-addendum.
+current on two points: item 6's "`role-counter-cell.tsx` untouched" was true at R1 and is not
+true after the addendum, and item 7's "no role classification" overstates the gap — the unowned
+rows are classified, they are just not selected per role.
 
 > **Self-assessed: 🟡 Yellow — one hard block, and it is not a design question.**
 >

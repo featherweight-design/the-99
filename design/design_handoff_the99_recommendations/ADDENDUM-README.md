@@ -123,10 +123,11 @@ Two keys were **added** for A2 (`shopping.rowFigure`, `shopping.rowNoFigure`) an
 Both are recorded in `README.md` and `READINESS.md` as well, because they change an estimate.
 
 1. **The unowned top-up is not bounded per role.** `getDeckSuggestions` appends a flat
-   `slice(0, 5)` of unowned EDHREC staples (`src/app/decks/actions.ts:106`, `:153`) with **no
-   role classification**. Ruling 2's "top each role up to its target and no further" therefore
-   needs **new engine code** — classify the unowned candidates, bound each by its own remaining
-   gap — and the seven-card Shopping tab in state 11 is **not reachable from what ships**.
+   `slice(0, 5)` of EDHREC's ranking (`src/app/decks/actions.ts:106`, `:153`) — **the selection
+   is not bounded per role**. Each row is classified (`primaryRole(c)`, `:150`); the role is
+   simply not consulted when picking the five. Ruling 2's "top each role up to its target and no
+   further" therefore needs **new engine code** — bound each role by its own remaining gap —
+   and the seven-card Shopping tab in state 11 is **not reachable from what ships**.
    Nothing drawn changes. R1 recorded this as free and was wrong.
 2. **The three `REPLACES` entries target hardcoded JSX in `detail.tsx`**, not
    `decks-builder.ts` / `commanders.ts`. There is no copy module for this surface yet; eng lifts
