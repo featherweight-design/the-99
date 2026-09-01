@@ -19,15 +19,18 @@ find-and-replace, because the tokens are not actually the source of truth.
 
 ### The tokenization debt
 
-`globals.css` defines ~40 semantic tokens, but components largely ignore them
+`globals.css` defines 38 semantic tokens, but components largely ignore them
 and paste brand hexes inline:
 
-- **672 hardcoded hex literals across 67 `.tsx` files**
-- **36 more in `.ts` files** (notably `src/lib/decks/celebration.ts`)
-- Literals inside `globals.css` itself — `.guided-banner` hardcodes `#1E1A15`,
-  `#2A241D`, `#C9A24B` and a two-hex gradient outside the token block
+- **800 hardcoded hex literals in `.tsx` files** (excluding tests; 810 across
+  67 files including them)
+- **49 more in non-test `.ts` files**, concentrated in
+  `src/lib/shell/clerk-appearance.ts`, `src/lib/collection/gradients.ts`, and
+  `src/lib/collection/browse.ts`
+- Literals inside `globals.css` itself — `.guided-banner` hardcodes six values
+  plus a two-stop gradient outside the token block
 
-`src/components/commanders/rec-card.tsx` alone carries 53, in both Tailwind
+`src/components/commanders/rec-card.tsx` alone carries 61, in both Tailwind
 arbitrary values (`group-hover:border-[#3A3229]`) and inline styles
 (`style={{ background: "#1E1A15" }}`).
 
@@ -61,14 +64,44 @@ Every theme is a **chrome skeleton** plus a **flavor layer**.
 
 The chrome skeleton is the near-neutral scaffolding — backgrounds, surfaces,
 borders, and text ramps. It carries the theme's temperature (Kamigawa's chrome
-is blue-black, Amonkhet's is brown-black) but almost no chroma. It is ~30 of
-the ~40 tokens and covers ~90% of pixels on screen.
+is blue-black, Amonkhet's is brown-black) but almost no chroma. It is 16 of the
+38 tokens and covers ~90% of pixels on screen.
 
-The flavor layer is ~6 tokens — the accent and its hover/strong/shadow
-variants, plus the focus ring — and is the only part permitted real chroma.
+The flavor layer is the 6-token accent family — today's `--brass`,
+`--brass-hover`, `--brass-strong`, `--brass-shadow`, `--brass-dim`,
+`--brass-mid` — and is the only part permitted real chroma.
+
+Those names are theme-specific and must be renamed to `--accent*` as part of
+the sweep. A Kamigawa theme that sets `--brass: #FF4D9A` works but lies, and
+the next person to read the stylesheet pays for it.
 
 This is what makes "10% flavor" a rule rather than an aspiration: the flavor
 tokens are enumerable, so their painted area is boundable.
+
+### The remaining 16 tokens
+
+The two tiers do not cover everything in `:root`. The rest:
+
+- **Semantic** (3): `--success`, `--warning`, `--danger` — per theme, see below.
+- **WUBRG pips** (5): `--w`, `--u`, `--b`, `--r`, `--g` — per theme, see below.
+- **Availability** (5): `--avail-soft`, `--avail-hard`, `--avail-hard-fg`,
+  `--avail-over-fg`, `--avail-over-border`. Two of these are *aliases* —
+  `--avail-soft: var(--fg-muted)` and `--avail-hard: var(--brass)` — so they
+  re-resolve per theme for free and **must not** be flattened to literals in
+  the theme blocks. The other three are literals and need per-theme values.
+- **Character** (3): `--kaiju-body`, `--celebrate-top`, `--celebrate-bottom`.
+  These are deleted in Phase 0 along with the character layer.
+
+Anything in `:root` that is neither chrome nor flavor is enumerated here on
+purpose. An unaccounted token is a theme that looks correct everywhere except
+one screen.
+
+### Focus ring
+
+`@layer base` sets `:focus-visible { outline: 2px solid var(--brass) }`. It
+follows the accent rename to `var(--accent)` and needs no other change — but
+the rule is load-bearing (the surrounding comment explains that unlayered rules
+would beat it) and must not be moved out of the layer while editing.
 
 ### Chroma budgets
 
@@ -183,16 +216,47 @@ Varying only display confines the swap to headings — 8 families total, and the
 prior art supports it: VS Code keeps fonts outside the theme contract entirely,
 and Obsidian's theme-bundled fonts are routinely overridden by plugins.
 
+### The `@theme inline` indirection
+
+`globals.css` currently has, inside `@theme inline`:
+
+```css
+--font-display: var(--font-cinzel);
+```
+
+`inline` means Tailwind substitutes the value directly, so the `font-display`
+utility compiles to `font-family: var(--font-cinzel)` — Cinzel, permanently.
+**Redefining `--font-display` in a `[data-theme]` block does nothing**, because
+no compiled rule ever reads it.
+
+The fix is one level of indirection:
+
+```css
+@theme inline { --font-display: var(--font-display-face); }
+
+:root                    { --font-display-face: var(--font-cinzel); }
+[data-theme="kamigawa"]  { --font-display-face: var(--font-chakra-petch); }
+```
+
+Now the utility compiles to `var(--font-display-face)`, which resolves through
+the cascade at the point of use.
+
+Colour tokens are unaffected — they already indirect through `var(--bg)` and
+friends, which is exactly why this trap is easy to miss.
+
 ### Loading
 
 `next/font/google` requires module-scope calls, so all six display faces are
-declared in `src/app/layout.tsx`. That does **not** mean six downloads: a
-`@font-face` is only fetched when a CSS rule uses the family, and only the
-active theme's variable class is applied to `<html>`.
+declared in `src/app/layout.tsx`. That does not mean six downloads, but the
+reason is the browser's, not Next's: Next emits all six `@font-face` blocks
+unconditionally, and the browser only fetches a family when it first renders an
+element matched by a rule using it. Since only the active theme's
+`--font-display-face` is ever resolved, only that family is fetched.
 
-All six display faces therefore set `preload: false`. Plex Sans and Plex Mono
-keep `preload: true` — they are used unconditionally. Without this, Next emits
-six `<link rel="preload">` tags and fetches every family on every page.
+All six display faces set `preload: false`. Plex Sans and Plex Mono keep
+`preload: true` — they are used unconditionally. Without this, Next injects a
+`<link rel="preload">` per family and eagerly fetches all six on every page,
+defeating the lazy behaviour above.
 
 ## Persistence
 
@@ -218,10 +282,17 @@ the next SSR). An unrecognised value falls through to the `:root` default.
 
 Retire now, leave the slot.
 
-`src/components/character/` (`crab.tsx`, `kaiju.tsx`, `loader-dots.tsx`)
-surfaces in ~15 files: loading-screen, first-run, no-results, filtered-empty,
-completion-reveal, builder-shell, resolution-expander, not-found, decks page,
-guided-banner, and `src/lib/decks/celebration.ts`.
+`src/components/character/` (`crab.tsx`, `kaiju.tsx`, `loader-dots.tsx`) is
+imported by exactly 10 non-test files:
+
+`app/decks/page.tsx`, `app/not-found.tsx`, `collection/no-results.tsx`,
+`collection/review-screen.tsx`, `commanders/filtered-empty.tsx`,
+`commanders/guided-banner.tsx`, `decks/builder-shell.tsx`,
+`decks/completion-reveal.tsx`, `home/first-run.tsx`,
+`shell/loading-screen.tsx`
+
+plus two test files. Phase 0 also deletes `--kaiju-body`, `--celebrate-top`
+and `--celebrate-bottom` from `:root`.
 
 Each of those becomes a themeable empty/loading component that ships **no
 illustration** — copy, spacing and a token-driven mark only. The character
@@ -248,8 +319,11 @@ A Vitest suite parses `globals.css`, extracts every theme block, and asserts:
    ≥ 0.10 ΔE (OKLab) from the accent, and each pip is ≥ 0.10 from every other
    pip.
 6. **No stray literals** — a lint rule fails the build on hex literals in
-   `src/**/*.{ts,tsx}` outside an allowlist (the theme blocks themselves, and
-   any Scryfall-sourced colour data).
+   `src/**/*.{ts,tsx}` outside an allowlist. The allowlist covers
+   `src/lib/shell/clerk-appearance.ts` (Clerk's appearance API takes literal
+   colours), `src/lib/collection/gradients.ts`, and any Scryfall-sourced colour
+   data. Both allowlisted lib files should still be driven from tokens where
+   the API permits; the entry exists so the rule can ship, not to excuse them.
 
 Rules 5 and 6 are the ones that keep the system honest over time. Rule 6 in
 particular is what prevents the 672-hex debt from re-accumulating.
@@ -260,16 +334,23 @@ The suite is table-driven over the theme list, so a seventh theme is one row.
 
 | # | Phase | Output |
 |---|---|---|
-| 0 | Retire the character layer | ~15 surfaces render illustration-free; components remain in git |
-| 1 | Token contract + test harness | Full token key list; Vitest suite green against the single existing theme |
-| 2 | Tokenization sweep | Every remaining literal resolves through tokens (708 before Phase 0 removes the character-layer share); `.guided-banner` moved into the token block; lint rule enabled |
+| 0 | Retire the character layer | 10 surfaces render illustration-free; the 3 character tokens are deleted; components remain in git |
+| 1 | Token contract + test harness | Full token key list; accent family renamed `--brass*` → `--accent*`; Vitest suite green against the single existing theme |
+| 2 | Tokenization sweep | Every remaining literal resolves through tokens (~849 before Phase 0 removes the character-layer share); `.guided-banner` moved into the token block; lint rule enabled |
 | 3 | Six theme blocks | Five new `[data-theme]` blocks, per-theme pips and semantics, all tests green |
-| 4 | Font layer | Six display faces wired with `preload: false`; `--font-display` resolves per theme |
+| 4 | Font layer | `--font-display-face` indirection added; six display faces wired with `preload: false` |
 | 5 | Picker + persistence | Theme picker UI, cookie write, SSR read in root layout |
 
 Phase 2 is the largest and the least interesting; it is also the one that
 cannot be skipped or parallelised ahead of Phase 1, because the sweep needs the
 token contract to sweep *toward*.
+
+**Phase 1 will not go green unchanged.** Today's `--fg-locked` (`#6A6152`) on
+`--surface` (`#1E1A15`) computes to **2.77:1**, under the 3:1 floor in test 4.
+This is a real accessibility finding in the shipped app, not an artifact of the
+new rules. Phase 1 lightens `--fg-locked` until it clears 3:1 and applies the
+same floor to the five other themes — the alternative, lowering the floor to
+accommodate one existing value, would bake the defect into all six.
 
 ## Risks
 
