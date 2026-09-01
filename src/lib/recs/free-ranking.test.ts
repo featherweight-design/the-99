@@ -23,6 +23,9 @@ const card = (oracleId: string): PoolCard => ({
   manaCost: null,
 });
 
+// The free ranking scores the collection pool, which is read from off every
+// decklist, so `free` really is `owned − hard` here. Fixtures for a deck's own
+// list must set `free` explicitly instead.
 const avail = (owned: number, hard: number) => ({
   owned,
   hard,

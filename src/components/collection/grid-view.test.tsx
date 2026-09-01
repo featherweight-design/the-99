@@ -25,6 +25,8 @@ const card: BrowseCard = {
   preferredPrinting: null,
 };
 
+// `/collection` reads from off every decklist, so `free` really is `owned − hard`
+// here. Fixtures for a deck's own list must set `free` explicitly instead.
 const avail = (
   owned: number,
   hard: number,

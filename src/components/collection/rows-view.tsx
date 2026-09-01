@@ -56,7 +56,7 @@ export function RowsView({
           // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 8px, bg #1E1A15 (--surface), border 1px #2A241D (--border)
           // Background and border are utilities, not inline style: inline values
           // outrank the hover: variants and neither hover state ever lands.
-          className={`grid items-center text-left rounded-lg gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] ${border} [grid-template-columns:38px_40px_1fr_auto] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]`}
+          className={`grid items-center text-left rounded-lg gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} [grid-template-columns:38px_40px_1fr_auto] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]`}
         >
           {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, #C9A24B (--brass), font-weight 500 */}
           <span className="font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--brass)" }}>
@@ -109,12 +109,14 @@ export function RowsView({
                 //
                 // Seam per row 13.4 — the over glyph's hairline has to be the
                 // colour actually behind it, and that is the row surface, not
-                // the page canvas the marker defaults to.
+                // the page canvas the marker defaults to. --row-bg rather than a
+                // fixed colour so it tracks the hover swap, as the decklist row
+                // already does; pinned, it paints a hairline on hover.
                 <AvailabilityMarker
                   availability={c.availability}
                   density="row"
                   nameless
-                  seam="var(--surface)"
+                  seam="var(--row-bg)"
                   className="shrink-0 font-mono text-[8.5px] font-semibold tracking-[0.02em]"
                 />
               )}
