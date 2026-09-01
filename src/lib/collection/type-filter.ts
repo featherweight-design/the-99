@@ -37,6 +37,7 @@ export function buildTypeOptions(cards: BrowseCard[], filters: BrowseFilters): T
     colors: filters.colors,
     types: [],
     setCodes: filters.setCodes,
+    availability: filters.availability,
   });
 
   return AVAILABLE_TYPES.map((label) => {

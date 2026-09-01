@@ -69,6 +69,12 @@ function openPanel() {
 }
 
 describe("FilterPanel", () => {
+  it("announces why a disabled trigger will not open", () => {
+    renderPanel({ disabled: true, disabledAriaLabel: "Availability unavailable right now" });
+    const trigger = screen.getByRole("button", { name: "Availability unavailable right now" });
+    expect(trigger).toBeDisabled();
+  });
+
   it("mounts only the desktop popover above the breakpoint", () => {
     setViewport(true);
     renderPanel();
@@ -544,6 +550,8 @@ describe("FilterPanel Clear announcement", () => {
         view="grid"
         setOptions={OPTIONS.map((o) => ({ ...o, releasedAt: null }))}
         typeOptions={[]}
+        availabilityOptions={[]}
+        availabilityOk
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -657,6 +665,8 @@ describe("Type ▾ in the filter bar", () => {
         view="grid"
         setOptions={[]}
         typeOptions={TYPE_OPTIONS}
+        availabilityOptions={[]}
+        availabilityOk
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -747,6 +757,8 @@ describe("FilterBar sort and color controls", () => {
         view="grid"
         setOptions={[]}
         typeOptions={[]}
+        availabilityOptions={[]}
+        availabilityOk
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={onFiltersChange}
@@ -814,6 +826,8 @@ describe("FilterBar sort and color controls", () => {
         view="rows"
         setOptions={[]}
         typeOptions={[]}
+        availabilityOptions={[]}
+        availabilityOk
         announcement=""
         onAnnounce={() => {}}
         onFiltersChange={() => {}}

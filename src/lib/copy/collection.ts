@@ -1,8 +1,23 @@
 // Collection copy — set filter panel block, ported verbatim from
 // design/design_handoff_the99_collection_filter/collection-filter · copy strings.ts
 // Shape follows src/lib/copy/shell.ts: flat const object, functions for
-// interpolated strings, no JSX, no formatting of numbers (callers pass
-// pre-formatted, thousands-separated strings).
+// interpolated strings, no JSX. Callers hand over pre-formatted,
+// thousands-separated strings, with one exception: an option's aria label
+// takes the raw count, because it pluralises on it and a formatted number
+// cannot be read back out under every locale.
+
+import { availabilityCopy } from "./availability";
+
+/**
+ * An option row's count, as a screen reader says it. These are accessible
+ * names, so "1 cards" is read aloud — the same reason addPanelCopy's tab names
+ * pluralise, and the form the availability block was drawn with.
+ *
+ * The locale is pinned, as commanders.ts's firstRun line is: these strings are
+ * verbatim, and an unpinned toLocaleString renders "1.240" or "1 240" under a
+ * European locale.
+ */
+const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString("en-US")} cards`);
 
 export const collectionFilterCopy = {
   set: {
@@ -25,8 +40,8 @@ export const collectionFilterCopy = {
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
     // Option
-    optionAria: (setName: string, count: string, selected: boolean) =>
-      `${setName}, ${count} cards${selected ? ", selected" : ""}`,
+    optionAria: (setName: string, count: number, selected: boolean) =>
+      `${setName}, ${cards(count)}${selected ? ", selected" : ""}`,
     optionAriaUnavailable: (setName: string) => `${setName}, no cards match your other filters`,
 
     // Footer
@@ -78,8 +93,8 @@ export const collectionFilterCopy = {
     groupSelected: (n: number) => `Selected · ${n}`,
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
-    optionAria: (typeName: string, count: string, selected: boolean) =>
-      `${typeName}, ${count} cards${selected ? ", selected" : ""}`,
+    optionAria: (typeName: string, count: number, selected: boolean) =>
+      `${typeName}, ${cards(count)}${selected ? ", selected" : ""}`,
     optionAriaUnavailable: (typeName: string) =>
       `${typeName}, no cards match your other filters`,
 
@@ -107,6 +122,59 @@ export const collectionFilterCopy = {
     announceCleared: (total: string) => `Type filter cleared. ${total} cards shown.`,
   },
 
+  // Availability ▾ (#43) — the Type ▾ shape (no search, no footer total).
+  // Every user-visible string comes from availabilityCopy.collection; the keys
+  // FilterPanelCopy needs and the addendum does not author (the search and
+  // group strings) are inert here, exactly as they are in the `type` block.
+  availability: {
+    triggerLabel: availabilityCopy.collection.filterLabel,
+    triggerOne: (name: string) => `${availabilityCopy.collection.filterLabel}: ${name}`,
+    triggerAriaCollapsed: "Filter by availability, collapsed",
+    triggerAriaWithSelection: (n: number) => `Filter by availability, ${n} selected, collapsed`,
+
+    panelAriaLabel: "Filter by availability",
+    sheetTitle: availabilityCopy.collection.filterLabel,
+    searchPlaceholder: "Search availability",
+    searchAriaLabel: "Search availability states",
+    clearSearch: "Clear search",
+
+    groupDefault: "All",
+    groupSelected: (n: number) => `Selected · ${n}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+
+    // The ", selected" tail is this panel family's convention, not the
+    // addendum's — every shipped block appends it.
+    optionAria: (name: string, count: number, selected: boolean) =>
+      availabilityCopy.collection.filterOptionAria(name, count) + (selected ? ", selected" : ""),
+    optionAriaUnavailable: (name: string) =>
+      availabilityCopy.collection.filterEmptyOptionAria(name),
+
+    footerTotal: (total: string) => `${total} cards`,
+    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    clear: "Clear",
+    done: "Done",
+    closeLabel: "Close",
+
+    emptyTitle: "Nothing to show",
+    emptyBody: (query: string) => ({
+      before: "No availability matches ",
+      query: `“${query}”`,
+      after: ".",
+    }),
+
+    announceMatches: (n: number, query: string) =>
+      n === 0
+        ? `No options match ${query}`
+        : `${n} ${n === 1 ? "option matches" : "options match"} ${query}`,
+    announceAdded: (name: string, n: number, shown: string, total: string) =>
+      `${name} added. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
+    announceRemoved: (name: string, n: number, shown: string, total: string) =>
+      n === 0
+        ? `${name} removed. No availability filter, ${total} cards shown.`
+        : `${name} removed. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
+    announceCleared: (total: string) => `Availability filter cleared. ${total} cards shown.`,
+  },
+
   // Color ▾ (#116) — mobile only. Desktop keeps the inline pip row, so nothing
   // here is reachable above 768px.
   color: {
@@ -125,8 +193,8 @@ export const collectionFilterCopy = {
     groupSelected: (n: number) => `Selected · ${n}`,
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
-    optionAria: (colorName: string, count: string, selected: boolean) =>
-      `${colorName}, ${count} cards${selected ? ", selected" : ""}`,
+    optionAria: (colorName: string, count: number, selected: boolean) =>
+      `${colorName}, ${cards(count)}${selected ? ", selected" : ""}`,
     optionAriaUnavailable: (colorName: string) =>
       `${colorName}, no cards match your other filters`,
 
@@ -175,7 +243,7 @@ export const collectionFilterCopy = {
     // The hint carries the direction ("A–Z"), so the name reads as the whole
     // order — and the chosen row says how to reverse it, since re-picking is
     // the only way and nothing else on screen says so.
-    optionAria: (order: string, _count: string, selected: boolean) =>
+    optionAria: (order: string, _count: number, selected: boolean) =>
       selected ? `${order}, current order, choose again to reverse` : order,
     optionAriaUnavailable: (order: string) => order,
 
@@ -216,7 +284,7 @@ export type FilterPanelCopy = {
   groupSelected: (n: number) => string;
   groupMatches: (n: number) => string;
 
-  optionAria: (name: string, count: string, selected: boolean) => string;
+  optionAria: (name: string, count: number, selected: boolean) => string;
   optionAriaUnavailable: (name: string) => string;
 
   footerTotal: (total: string) => string;

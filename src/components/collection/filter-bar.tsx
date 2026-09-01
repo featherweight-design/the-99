@@ -14,7 +14,14 @@ import {
 import type { ColorOption } from "../../lib/collection/color-filter";
 import type { SetOption } from "../../lib/collection/set-filter";
 import type { TypeOption } from "../../lib/collection/type-filter";
+import {
+  toggleAvailability,
+  type AvailabilityOption,
+} from "../../lib/collection/availability-filter";
+import type { AvailabilityState } from "../../lib/decks/availability";
 import { collectionFilterCopy } from "../../lib/copy/collection";
+import { availabilityCopy } from "../../lib/copy/availability";
+import { AvailabilityGlyph } from "../ui/availability-marker";
 import { ColorPip } from "./color-pip";
 import { SearchField } from "../ui/text-field";
 import { FilterPanel } from "../ui/filter-panel";
@@ -35,7 +42,11 @@ export type ViewMode = "rows" | "grid";
  * end at an empty selection but announce DIFFERENT strings, and the end state
  * cannot tell them apart — the caller says which it was.
  */
-export type FilterChangeIntent = "clear-sets" | "clear-types" | "clear-colors";
+export type FilterChangeIntent =
+  | "clear-sets"
+  | "clear-types"
+  | "clear-colors"
+  | "clear-availability";
 
 export function FilterBar({
   filters,
@@ -45,6 +56,8 @@ export function FilterBar({
   view,
   setOptions,
   typeOptions,
+  availabilityOptions,
+  availabilityOk,
   announcement,
   onAnnounce,
   onFiltersChange,
@@ -61,6 +74,10 @@ export function FilterBar({
   setOptions: SetOption[];
   /** The whole type vocabulary, in the design's fixed order, with counts. */
   typeOptions: TypeOption[];
+  /** The four availability states with counts under the other active filters. */
+  availabilityOptions: AvailabilityOption[];
+  /** False when the availability aggregate could not be read (Task 7 / Task 9). */
+  availabilityOk: boolean;
   /** The bar's single live region content — the panel writes here too. */
   announcement: string;
   onAnnounce: (message: string) => void;
@@ -199,6 +216,40 @@ export function FilterBar({
             onAnnounce(`Sorted by ${sortOrderLabel(next.sort, next.direction)}.`);
           }}
           onClear={() => {}}
+          onAnnounce={onAnnounce}
+        />
+
+        {/* Availability ▾ (#43) — the Type ▾ shape: fixed four-item vocabulary,
+            no search, no footer total. Rows carry the marker's glyph so the
+            menu and the list agree about what each state looks like. */}
+        <FilterPanel
+          copy={collectionFilterCopy.availability}
+          options={availabilityOptions.map((o) => ({
+            ...o,
+            // Free is the absence of a glyph, which is why the shipped
+            // component refuses the state rather than returning null for it.
+            // The seam only reads as a seam against the row it sits on.
+            leadingGlyph:
+              o.code === "free" ? null : (
+                <AvailabilityGlyph state={o.code} seam="var(--surface-rail)" />
+              ),
+          }))}
+          selected={filters.availability ?? []}
+          searchable={false}
+          widthPx={280}
+          footerStatus={false}
+          disabled={!availabilityOk}
+          disabledAriaLabel={availabilityCopy.degraded.collectionFilterDisabledAria}
+          onToggle={(code) =>
+            onFiltersChange({
+              ...filters,
+              availability: toggleAvailability(
+                filters.availability ?? [],
+                code as AvailabilityState,
+              ),
+            })
+          }
+          onClear={() => onFiltersChange({ ...filters, availability: [] }, "clear-availability")}
           onAnnounce={onAnnounce}
         />
 

@@ -30,6 +30,12 @@ import {
   parseTypesParam,
   serializeTypes,
 } from "../../lib/collection/type-filter";
+import {
+  buildAvailabilityOptions,
+  initialAvailability,
+  serializeAvailability,
+} from "../../lib/collection/availability-filter";
+import type { AvailabilityState } from "../../lib/decks/availability";
 import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
 import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
 import { ChipRow } from "./chip-row";
@@ -59,6 +65,10 @@ function serializeParams(
   if (filters.types.length > 0) p.set("t", serializeTypes(filters.types));
   // Comma-joined; a single bare code still parses, so pre-#86 links survive.
   if (filters.setCodes.length > 0) p.set("s", serializeSetCodes(filters.setCodes));
+  // Comma-joined, same shape as t= and s=.
+  if (filters.availability && filters.availability.length > 0) {
+    p.set("avail", serializeAvailability(filters.availability));
+  }
   if (sort !== "name") p.set("sort", sort);
   // Only when it is NOT the key's natural direction, so the common case keeps a
   // clean URL and a pre-#119 link still lands on the order it always did.
@@ -72,6 +82,7 @@ function serializeParams(
 const setCopy = collectionFilterCopy.set;
 const typeCopy = collectionFilterCopy.type;
 const colorCopy = collectionFilterCopy.color;
+const availCopy = collectionFilterCopy.availability;
 
 /** Sum of quantities, i.e. the "2,933 cards" figure the announcements quote. */
 function quantityOf(list: BrowseCard[]): number {
@@ -159,13 +170,40 @@ export function typeChangeAnnouncement(
   );
 }
 
+/**
+ * The live-region string for a change to the availability selection. Same
+ * shape as its three siblings; the `?? []` pair exists only because
+ * `BrowseFilters.availability` is optional and theirs are required.
+ */
+export function availabilityChangeAnnouncement(
+  prev: BrowseFilters,
+  next: BrowseFilters,
+  cards: BrowseCard[],
+  options: { code: string; label: string }[],
+  totalQuantity: number,
+  intent?: FilterChangeIntent,
+): string | null {
+  return selectionAnnouncement(
+    prev.availability ?? [], next.availability ?? [], availCopy,
+    intent === "clear-availability",
+    next, cards, options, totalQuantity,
+  );
+}
+
 export function CollectionBrowser({
   cards,
   ownedSets,
+  availabilityOk,
 }: {
   cards: BrowseCard[];
   /** `sets` catalog rows for the sets this user owns — names + release dates. */
   ownedSets: OwnedSetMeta[];
+  /**
+   * False when the page's availability read failed. `/collection` fails quiet:
+   * the markers are simply absent and the filter trigger is disabled with a
+   * reason. No banner (Addendum 2, implementation notes).
+   */
+  availabilityOk: boolean;
 }) {
   const router = useRouter();
   const search = useSearchParams();
@@ -176,6 +214,7 @@ export function CollectionBrowser({
     colors: parseColors(search.get("c")),
     types: parseTypesParam(search.get("t")),
     setCodes: parseSetCodesParam(search.get("s")),
+    availability: initialAvailability(availabilityOk, search.get("avail")),
   }));
   // Guard query params — shared URLs can carry unknown values; fall back to defaults.
   const [sort, setSort] = useState<SortKey>(() => {
@@ -198,18 +237,29 @@ export function CollectionBrowser({
 
   // Options are rebuilt when the OTHER filters move (counts are filter-aware)
   // but not when the set selection or the search box changes — see set-filter.ts.
-  // Depends on the two fields buildSetOptions actually reads, not on `filters` —
+  // Depends on the fields buildSetOptions actually reads, not on `filters` —
   // that object is rebuilt on every keystroke, which would recount the lot. The
   // spreads preserve `colors`' array identity, so it is a sound dep as-is.
-  const { colors: filterColors, types: filterTypes, setCodes: filterSetCodes } = filters;
+  const {
+    colors: filterColors,
+    types: filterTypes,
+    setCodes: filterSetCodes,
+    availability: filterAvailability,
+  } = filters;
   const setOptions = useMemo(
     () =>
       buildSetOptions(
         cards,
-        { search: "", colors: filterColors, types: filterTypes, setCodes: [] },
+        {
+          search: "",
+          colors: filterColors,
+          types: filterTypes,
+          setCodes: [],
+          availability: filterAvailability,
+        },
         ownedSets,
       ),
-    [cards, filterColors, filterTypes, ownedSets],
+    [cards, filterColors, filterTypes, filterAvailability, ownedSets],
   );
 
   // Same rule the other way round: type counts move with the colors and the
@@ -221,8 +271,9 @@ export function CollectionBrowser({
         colors: filterColors,
         types: [],
         setCodes: filterSetCodes,
+        availability: filterAvailability,
       }),
-    [cards, filterColors, filterSetCodes],
+    [cards, filterColors, filterSetCodes, filterAvailability],
   );
 
   // Same rule again: color counts move with the types and sets, not with the
@@ -234,8 +285,23 @@ export function CollectionBrowser({
         colors: [],
         types: filterTypes,
         setCodes: filterSetCodes,
+        availability: filterAvailability,
       }),
-    [cards, filterTypes, filterSetCodes],
+    [cards, filterTypes, filterSetCodes, filterAvailability],
+  );
+
+  // Same rule a fourth time: availability counts move with the colors, types
+  // and sets, never with this panel's own selection — counting under it would
+  // make every option read as a subset of itself.
+  const availabilityOptions = useMemo(
+    () =>
+      buildAvailabilityOptions(cards, {
+        search: "",
+        colors: filterColors,
+        types: filterTypes,
+        setCodes: filterSetCodes,
+      }),
+    [cards, filterColors, filterTypes, filterSetCodes],
   );
 
   // Chips read set NAMES, not codes — the locked "names over codes" decision.
@@ -257,12 +323,15 @@ export function CollectionBrowser({
       const message =
         setChangeAnnouncement(filters, f, cards, setOptions, totalQuantity, intent) ??
         typeChangeAnnouncement(filters, f, cards, typeOptions, totalQuantity, intent) ??
-        colorChangeAnnouncement(filters, f, cards, colorOptions, totalQuantity, intent);
+        colorChangeAnnouncement(filters, f, cards, colorOptions, totalQuantity, intent) ??
+        availabilityChangeAnnouncement(
+          filters, f, cards, availabilityOptions, totalQuantity, intent,
+        );
       if (message) setAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
     },
-    [filters, cards, setOptions, typeOptions, colorOptions, totalQuantity],
+    [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity],
   );
   const updateSort = useCallback((s: SortKey, direction: SortDirection) => {
     setSort(s);
@@ -308,6 +377,8 @@ export function CollectionBrowser({
         view={effectiveView}
         setOptions={setOptions}
         typeOptions={typeOptions}
+        availabilityOptions={availabilityOptions}
+        availabilityOk={availabilityOk}
         announcement={announcement}
         onAnnounce={setAnnouncement}
         onFiltersChange={updateFilters}
@@ -324,7 +395,10 @@ export function CollectionBrowser({
           uniqueCount={cards.length}
           totalQuantity={totalQuantity}
           onClearAll={() => {
-            updateFilters({ search: "", colors: [], types: [], setCodes: [] }, "clear-sets");
+            updateFilters(
+              { search: "", colors: [], types: [], setCodes: [], availability: [] },
+              "clear-sets",
+            );
             updateSort("name", DEFAULT_SORT_DIRECTION.name);
           }}
           onRemoveColor={(c) => updateFilters({ ...filters, colors: filters.colors.filter((x) => x !== c) })}
@@ -336,6 +410,12 @@ export function CollectionBrowser({
             updateFilters({ ...filters, setCodes: filters.setCodes.filter((c) => c !== code) })
           }
           onClearSearch={() => updateFilters({ ...filters, search: "" })}
+          onRemoveAvailability={(state) =>
+            updateFilters({
+              ...filters,
+              availability: (filters.availability ?? []).filter((s) => s !== state),
+            })
+          }
         />
       </div>
 
@@ -345,10 +425,21 @@ export function CollectionBrowser({
           colors={filters.colors}
           totalCount={totalQuantity}
           onClearAll={() => {
-            updateFilters({ search: "", colors: [], types: [], setCodes: [] }, "clear-sets");
+            updateFilters(
+              { search: "", colors: [], types: [], setCodes: [], availability: [] },
+              "clear-sets",
+            );
             updateSort("name", DEFAULT_SORT_DIRECTION.name);
           }}
-          onKeepSearch={() => updateFilters({ search: filters.search, colors: [], types: [], setCodes: [] })}
+          onKeepSearch={() =>
+            updateFilters({
+              search: filters.search,
+              colors: [],
+              types: [],
+              setCodes: [],
+              availability: [],
+            })
+          }
         />
       ) : effectiveView === "rows" ? (
         <RowsView cards={windowed} totalCards={sorted.length} onShowMore={() => setShown((s) => s + PAGE_SIZE)} onOpen={onOpen} />

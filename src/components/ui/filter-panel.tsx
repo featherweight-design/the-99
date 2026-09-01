@@ -25,7 +25,7 @@
 // components: a nested component is a new type on every render, so React would
 // remount the search input and it would lose focus on the first keystroke.
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { rankSetOptions } from "../../lib/collection/set-filter";
 import type { FilterPanelCopy } from "../../lib/copy/collection";
 import { PrimaryButton } from "./button";
@@ -53,6 +53,11 @@ export type FilterPanelOption = {
    * it would be noise.
    */
   hint?: string;
+  /**
+   * Rendered between the checkbox and the label. Only Availability ▾ uses it —
+   * its rows are distinguished by a mark, not by a color swatch in the label.
+   */
+  leadingGlyph?: ReactNode;
 };
 
 /** Desktop popover width, when the caller does not ask for a narrower one. */
@@ -90,6 +95,7 @@ export function FilterPanel({
   onClear,
   searchable = false,
   disabled = false,
+  disabledAriaLabel,
   widthPx = POPOVER_WIDTH,
   footerStatus = true,
   selectionMode = "multi",
@@ -127,6 +133,12 @@ export function FilterPanel({
   footerStatus?: boolean;
   /** Empty collection — the whole bar is disabled there. */
   disabled?: boolean;
+  /**
+   * Accessible reason the trigger is disabled. Without it a disabled trigger
+   * still announces "Filter by availability, collapsed", which says nothing
+   * about why it will not open.
+   */
+  disabledAriaLabel?: string;
   /** Writes to the filter bar's single live region. */
   onAnnounce?: (message: string) => void;
 }) {
@@ -386,7 +398,7 @@ export function FilterPanel({
     const name = option.hint ? `${option.label} (${option.hint})` : option.label;
     return option.disabled
       ? copy.optionAriaUnavailable(name)
-      : copy.optionAria(name, option.count.toLocaleString(), isSelected);
+      : copy.optionAria(name, option.count, isSelected);
   }
 
   function buildGroups(
@@ -477,6 +489,7 @@ export function FilterPanel({
         >
           {isSelected ? (selectionMode === "single" ? "●" : "✓") : ""}
         </span>
+        {option.leadingGlyph}
         {/* Wraps to two lines in the sheet; ellipsis in the 340px popover. The
             accessible name above always carries the full name either way. */}
         <span
@@ -774,13 +787,16 @@ export function FilterPanel({
       : selected.length === 1
         ? `, ${oneName}`
         : `, ${selected.length} selected`;
-  const triggerAria = open
-    ? `${copy.panelAriaLabel}${triggerAriaDetail}, expanded`
-    : selected.length === 0
-      ? copy.triggerAriaCollapsed
-      : selected.length === 1
-        ? `${copy.panelAriaLabel}, ${oneName}, collapsed`
-        : copy.triggerAriaWithSelection(selected.length);
+  const triggerAria =
+    disabled && disabledAriaLabel
+      ? disabledAriaLabel
+      : open
+        ? `${copy.panelAriaLabel}${triggerAriaDetail}, expanded`
+        : selected.length === 0
+          ? copy.triggerAriaCollapsed
+          : selected.length === 1
+            ? `${copy.panelAriaLabel}, ${oneName}, collapsed`
+            : copy.triggerAriaWithSelection(selected.length);
 
   return (
     <div className="relative">
