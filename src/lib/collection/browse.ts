@@ -2,6 +2,7 @@ import { cache } from "react";
 import { and, eq, sql } from "drizzle-orm";
 // Type-only, so the set-filter → browse dependency stays one-way at runtime.
 import type { OwnedSetMeta } from "./set-filter";
+import type { Availability } from "../decks/availability";
 
 /** Rarity ordering for the "rarity" sort key. */
 const RARITY_ORDER: Record<string, number> = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
@@ -46,6 +47,14 @@ export type BrowseCard = {
   /** The primary printing's image — first non-null across printings in display order. */
   imageUri: string | null;
   quantity: number;
+  /**
+   * Optional, not `| null` required — same call as DeckDetailCard in Task 4.
+   * `loadBrowseCards` does not set it (the aggregate is joined in the page, not
+   * in this query), and the browse fixtures across browse.test.ts, no-results
+   * and card-modal build BrowseCard literals that have no availability to give.
+   * "Absent" and "read failed" both correctly render nothing.
+   */
+  availability?: Availability | null;
   printings: BrowsePrinting[];
   setCodes: string[];
   primarySetCode: string;

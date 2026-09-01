@@ -10,6 +10,9 @@ import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse"
 import { cssUrl, printingCaption, resolvedPrinting, WUBRG_HEX } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
+import { availabilityState } from "../../lib/decks/availability";
+import { availabilityCopy } from "../../lib/copy/availability";
+import { AvailabilityMarker } from "../ui/availability-marker";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import { ManaCost } from "./mana-pips";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
@@ -82,6 +85,58 @@ function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
   }
 
   return <>{paragraphs.map(renderParagraph)}</>;
+}
+
+/**
+ * The one place on `/collection` that names the deck holding a card. Rows and
+ * tiles are count-only; here there is room for the full clause.
+ *
+ * The claiming deck's status pill is deliberately absent. Addendum 2 §3 draws
+ * `×1 · ◆ 0 free — in Atraxa [Complete]`, but `hardDeckNames` carries names and
+ * nothing else, and `statusPill()` needs that deck's built/owned/unresolved
+ * counts. Deriving "Complete" from `hard > 0` would be a guess that reads as
+ * fact, so the clause ships without it.
+ */
+function AvailabilityDetail({ card }: { card: BrowseCard }) {
+  if (!card.availability) return null;
+  const state = availabilityState(card.availability);
+  if (state === "free") return null;
+  const c = availabilityCopy.collection;
+  const note =
+    state === "hard" ? c.detailHardNote : state === "soft" ? c.detailSoftNote : c.detailOverNote;
+  return (
+    // Mirrors the oracle-text block's chrome so the two read as one column.
+    <div
+      className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px]"
+      style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
+    >
+      <div
+        className="font-mono text-[10px] tracking-[0.1em] uppercase"
+        style={{ color: "var(--fg-faint)" }}
+      >
+        {c.detailHeading}
+      </div>
+      <div
+        className="mt-[8px] flex items-center gap-[8px] text-[13px]"
+        style={{ color: "var(--fg-body)" }}
+      >
+        <span className="font-mono" style={{ color: "var(--brass)" }}>×{card.quantity}</span>
+        <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
+        {/* No `nameless` here — this is the ONE place on /collection that names
+            the claiming deck ("0 free — in Atraxa"). Still no `selfExcluded`. */}
+        {/* Row density supplies no type of its own, and this line is not a mono
+            meta line either, so the canvas's 12px mono is set here. */}
+        <AvailabilityMarker
+          availability={card.availability}
+          density="row"
+          className="font-mono text-[12px]"
+        />
+      </div>
+      <p className="m-0 mt-[8px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>
+        {note}
+      </p>
+    </div>
+  );
 }
 
 const RARITY_LABEL: Record<BrowseCard["rarity"], string> = {
@@ -361,6 +416,8 @@ export function CardModal({
                 <OracleText text={card.oracleText} keywords={card.keywords} />
               </div>
             )}
+
+            <AvailabilityDetail card={card} />
 
             {/* MOBILE meta grid — §Mobile: Meta 2×2 Grid. At 2+ printings the Set cell is
                 promoted out of the grid into a full-width row below Rarity and Identity, so
