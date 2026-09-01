@@ -101,12 +101,16 @@ export async function collectionGeneration(userId: string): Promise<number | nul
  * rows after the upload wiped the table, and loadScores' fast path would serve them
  * indefinitely — nothing marks them stale.
  *
- * The generation is `max(csvUploads.confirmedAt)`, so it only moves on a confirmed
- * import. That holds today because confirmUpload is the sole writer of
- * `collectionItems` and drops `commanderScores` in the same transaction. A second
- * writer — a manual add, an edit, a sync — would change a collection without moving
- * the generation, and every cached score would stay served as current. Any such
- * writer has to invalidate `commanderScores` itself.
+ * The generation is `max(csvUploads.confirmedAt)`, so it only moves on a *confirmed*
+ * import — and `replaceCollection`, the sole writer of `collectionItems`, takes
+ * `confirmUploadId` as optional. `pnpm db:seed:collection` writes without it, so a
+ * collection can change while the generation stands still. What keeps that safe is
+ * not the generation but the unconditional `delete(commanderScores)` in the same
+ * transaction: there is nothing stale left to serve.
+ *
+ * So the invariant to preserve is that one, not this function's. A future writer
+ * that changes a collection without dropping `commanderScores` leaves every cached
+ * score served as current, whether or not it moves the generation.
  */
 export async function persistScores(
   userId: string,
