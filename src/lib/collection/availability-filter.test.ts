@@ -163,23 +163,35 @@ describe("the panel's option aria", () => {
   // raw number rather than a formatted one: recovering a number from a locale
   // string is not possible under every locale, and a label that announces
   // "NaN cards" is worse than one carrying no thousands separator.
-  it("pluralises on the count and marks the selection", () => {
+  it("pluralises on the count", () => {
     const aria = collectionFilterCopy.availability.optionAria;
-    expect(aria("Free", 1240, false)).toBe("Free, 1240 cards");
-    expect(aria("Free", 1, true)).toBe("Free, 1 card, selected");
+    expect(aria("Free", 1240)).toBe("Free, 1240 cards");
+    expect(aria("Free", 1)).toBe("Free, 1 card");
   });
 
   // The sibling panels take the same raw count. A one-card set is an ordinary
   // state, and these are accessible names, so a reader would say "1 cards".
   it("pluralises the sibling panels' labels too", () => {
-    expect(collectionFilterCopy.set.optionAria("Modern Horizons 3", 1, false)).toBe(
+    expect(collectionFilterCopy.set.optionAria("Modern Horizons 3", 1)).toBe(
       "Modern Horizons 3, 1 card",
     );
-    expect(collectionFilterCopy.type.optionAria("Artifact", 1240, false)).toBe(
-      "Artifact, 1,240 cards",
-    );
-    expect(collectionFilterCopy.color.optionAria("White", 1, true)).toBe(
-      "White, 1 card, selected",
+    expect(collectionFilterCopy.type.optionAria("Artifact", 1240)).toBe("Artifact, 1,240 cards");
+    expect(collectionFilterCopy.color.optionAria("White", 1)).toBe("White, 1 card");
+  });
+
+  // The row already carries aria-selected inside an aria-multiselectable
+  // listbox, so a ", selected" tail was the same fact twice in one breath. The
+  // arity is the assertion that matters: a two-parameter member cannot start
+  // varying on the selection again without this failing. Sort keeps its third,
+  // because "choose again to reverse" is not something the role announces.
+  it("leaves the selected state to the role on every multi-select panel", () => {
+    for (const panel of ["set", "type", "availability", "color"] as const) {
+      const member = collectionFilterCopy[panel].optionAria;
+      expect(member.length, panel).toBe(2);
+      expect(member("Anything", 2), panel).not.toMatch(/selected/);
+    }
+    expect(collectionFilterCopy.sort.optionAria("Name", 0, true)).toBe(
+      "Name, current order, choose again to reverse",
     );
   });
 });

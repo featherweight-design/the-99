@@ -183,12 +183,21 @@ function Chip({
       )}
       {leadingGlyph}
       {label}
-      {/* Dismiss "✕" — §Filter Chip Dismiss, color #8E8269 (--fg-faint) */}
+      {/* Dismiss "✕" — §Filter Chip Dismiss, color #8E8269 (--fg-faint).
+          The glyph draws about 10×19px, so the hit area is grown to 44px with a
+          centred pseudo-element rather than with padding: padding would inflate
+          the chip itself, and the chip's size is drawn. The overlay is wider
+          than the chip is tall, which is safe because it can only reach its own
+          chip's label — the next chip's ✕ is a full chip width away. */}
       <button
         type="button"
         onClick={onRemove}
         aria-label={removeAria ?? `Remove ${label} filter`}
-        className="cursor-pointer"
+        className={[
+          "relative cursor-pointer",
+          "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-[44px]",
+          "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+        ].join(" ")}
         style={{ color: "var(--fg-faint)" }}
       >
         ✕
