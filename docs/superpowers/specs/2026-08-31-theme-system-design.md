@@ -327,7 +327,7 @@ A Vitest suite parses `globals.css`, extracts every theme block, and asserts:
    the API permits; the entry exists so the rule can ship, not to excuse them.
 
 Rules 5 and 6 are the ones that keep the system honest over time. Rule 6 in
-particular is what prevents the 672-hex debt from re-accumulating.
+particular is what prevents the ~849-hex debt from re-accumulating.
 
 The suite is table-driven over the theme list, so a seventh theme is one row.
 
