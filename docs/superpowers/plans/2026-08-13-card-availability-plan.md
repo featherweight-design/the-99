@@ -1423,31 +1423,49 @@ git commit -m "feat(availability): a failed deck read disables What's free, quie
 
 ## Task 8: Commander detail disclosure and the deck-detail roll-up
 
-**Files:**
-- Modify: `src/components/commanders/detail.tsx` (rendered by `src/app/commanders/[slug]/page.tsx:46`, which gets its data from `scoreOneCommander`)
-- Modify: `src/app/commanders/[slug]/page.tsx` — attach availability to the detail payload
+**Files (as shipped, after the Gate 1 amendment below):**
 - Modify: `src/components/decks/builder-spine.tsx` (`BuilderSpine`, the deck header — there is no `deck-header.tsx`)
-- Test: `src/components/commanders/detail.test.tsx`, `src/components/decks/builder-spine.test.tsx`
+- Modify: `src/components/decks/builder-shell.tsx` — derive the two counts and pass them down
+- Test: `src/components/decks/builder-spine.test.tsx`
+
+**Deferred with the disclosure:** `src/components/commanders/detail.tsx`, `src/app/commanders/[slug]/page.tsx`, `src/components/commanders/detail.test.tsx`.
 
 **Interfaces:**
 - Consumes: `loadAvailability`, `availabilityState` (Task 1); `availabilityCopy.detail`, `.deckSummary` and `.deckRollup` (Task 2).
 - Produces: no new exports. `BuilderSpine` gains two props: `overCommitted: number`, `softClaimed: number`.
 
-> **Read this before starting — Task 8 has an unresolved data dependency that the other seven do not.**
+> **Amended 2026-09-01, after Gate 1. Steps 0–3 and 5 are DEFERRED; this task ships Step 4 alone.**
 >
-> The disclosure needs to say *which* of a commander's matching cards are in use, and to split or filter a list by that. But the detail page does not have the identity to join on. `detail.tsx` renders `overlapOwned` (`:405,590,696`), which is an array of **EDHREC card names — strings**, and `colorPoolSize`, which is a **bare number**. Neither carries an `oracle_id`, and availability is keyed on `oracle_id`. Joining on name is not acceptable: names are not unique keys in this app and the whole feature is about counting specific printings' worth of a card.
+> Full finding in `docs/superpowers/state-coverage-card-availability-task8.md`. In short: the
+> handoff designs the disclosure as an annotation on the commander detail page's
+> "cards you own that fit" list, and **that list does not exist**. `detail.tsx`'s Pool section
+> is a heading, a count and a sentence; its only card lists are the four role panels and the
+> EDHREC overlap chips, which are a different set. Two further blockers sit behind it: the
+> drawn rows lead with `×N owned`, which `PoolCard` does not carry, and design table row 11.4
+> rides the *claiming deck's* status pill along, which `Availability.hardDeckNames`
+> (`string[]`) cannot supply and which `statusPill()` cannot be fed from here. Escalated to
+> Hugh rather than improvised.
 >
-> So Task 8 Step 3 requires a **prior step that does not exist yet**: `scoreOneCommander` must return the identity-fitting owned cards as `{oracleId, name}[]`, not just a count and a name list. That is a change to `src/lib/recs/recommend.ts:192+` and to `CommanderScore`. Scope it as **Step 0 below** and expect it to be the largest part of this task.
+> **The Step 0 below is also obsolete.** It predates Task 6, which exported `commanderPool()`
+> from `src/lib/recs/score.ts`, added `receiptCountsByCommander()` in
+> `src/lib/commanders/in-use.ts` to join a pool against an availability map by `oracle_id`,
+> and made `loadCollectionPool` request-scoped with React `cache()`. The detail page can now
+> do that join itself at no extra query cost, so neither `CommanderScore` nor
+> `scoreOneCommander` needs widening. Step 0 is a few lines, not the bulk of the task.
 >
-> `detail.tsx` is also a **server component** (no `"use client"` on line 1), so the `aria-expanded` disclosure must be a new small client child rather than state added in place.
+> `detail.tsx` is also a **server component** (no `"use client"` on line 1), so whenever the
+> disclosure is unblocked its `aria-expanded` toggle must be a new small client child rather
+> than state added in place.
 
-- [ ] **Step 0: Give the detail page something to join on**
+- [ ] ~~**Step 0: Give the detail page something to join on**~~ — DEFERRED, and obsolete as written; see above.
 
-Extend `scoreOneCommander`'s return so the detail payload carries the fitting owned cards with their oracle_ids. Then call `loadAvailability(userId)` in `src/app/commanders/[slug]/page.tsx` and attach per-card availability before rendering. Only once this lands do the remaining steps have data.
+~~Extend `scoreOneCommander`'s return so the detail payload carries the fitting owned cards with their oracle_ids. Then call `loadAvailability(userId)` in `src/app/commanders/[slug]/page.tsx` and attach per-card availability before rendering.~~
 
 - [ ] **Step 1: Write the failing tests**
 
-Both test files need helpers that **do not exist yet**: `builder-spine.test.tsx` has not been created at all, and `detail.test.tsx` exposes a `commander(overrides)` fixture builder, not a `renderDetail`. Write the tests against the real fixtures in those files. The repo has **no `@testing-library/user-event`** — use `.click()` inside `act`, matching `decklist-row.test.tsx:59`.
+`builder-spine.test.tsx` has not been created at all. Model its setup on an existing component test. The repo has **no `@testing-library/user-event`** — use `.click()` inside `act`, matching `decklist-row.test.tsx:59`.
+
+The `detail.test.tsx` cases below are **deferred with the disclosure**; they are kept as the spec for whenever it is unblocked.
 
 ```tsx
 // src/components/decks/builder-spine.test.tsx (new file — model the setup on
@@ -1496,10 +1514,10 @@ it("shows no disclosure for a player with nothing in use", () => {
 
 - [ ] **Step 2: Run them and watch them fail**
 
-Run: `pnpm vitest run src/components/commanders/detail.test.tsx src/components/decks/builder-spine.test.tsx`
-Expected: FAIL — no disclosure button, no summary line.
+Run: `pnpm vitest run src/components/decks/builder-spine.test.tsx`
+Expected: FAIL — no summary line.
 
-- [ ] **Step 3: The disclosure**
+- [ ] ~~**Step 3: The disclosure**~~ — DEFERRED at Gate 1; see the amendment above.
 
 On the commander detail page, the "cards you own that fit" list gains a count of how many are in use, and a **real button** with `aria-expanded` / `aria-controls` to reach them. Copy: `availabilityCopy.detail`. The expanded sentence describes **lists** — *"sleeved into decks you've finished… you'd be taking them out of something"* — and must never say box, shelf or binder. Flagged in the copy file as the sentence most likely to drift.
 
@@ -1520,38 +1538,41 @@ interrupts. A deck with neither count above zero renders **no region at all**, n
 40 soft. The severity ladder is the marker's own hollow → solid → doubled progression read
 vertically.
 
-```tsx
-// src/components/decks/builder-spine.tsx
-const rollup = availabilityCopy.deckRollup;
+**Each line carries a heading AND a body** — the sketch an earlier revision of this plan
+carried had headings only, which the canvas contradicts (A2CV:496–509 phone, A2CV:552–562
+desktop) and which design table row 12.9 names outright. The red line's body is
+`deckSummary.body(cardName, deckCount, ownedQty)` when exactly one card is over-committed,
+and `deckSummary.bodyMany(n)` otherwise.
 
-{(overCommitted > 0 || softClaimed > 0) && (
-  <section aria-label={rollup.regionAria} className="flex flex-col gap-[8px]">
-    {overCommitted > 0 && (
-      <p style={{ background: "var(--surface-rail)", borderLeft: "2px solid #C6533F" }}>
-        {rollup.overHeading(overCommitted)}
-      </p>
-    )}
-    {softClaimed > 0 && (
-      <p style={{ color: "#C6B79A", borderLeft: "2px solid #4A4033" }}>
-        {/* "more" is load-bearing: the counts are disjoint, so it does the
-            arithmetic for the player instead of making them add 1 and 12. */}
-        {overCommitted > 0
-          ? rollup.softHeadingAfterOver(softClaimed)
-          : rollup.softHeading(softClaimed)}
-        {" "}
-        {overCommitted > 0 ? rollup.softBodyShort : rollup.softBody}
-      </p>
-    )}
-  </section>
-)}
-```
+The soft line's body is `softBody` on desktop always, and on phone only while no red line
+sits above it; a phone stacking both lines uses `softBodyShort`. Rows 12.7/12.8 read as a
+straight width split, but that generalises from the single mock where both lines fire. The
+soft-only phone mock (A2CV:454) runs the long body, and so does the desktop both-lines mock
+(A2CV:558). The short form is therefore a phone-under-pressure form rather than a phone
+form, and the trailing "Whichever you sleeve first gets them" is what a crowded phone drops.
+Design to ratify, since the table reads more absolutely than the drawings do.
+
+Structure per the canvas: a marker glyph, then a column of heading over body. Phone lines
+are full-bleed bands (`10px 16px`, red `#211C15`, soft `#1E1A15`, each with a `3px` left
+accent, the soft one separated by `1px solid #2A241D`). Desktop lines are rounded cards
+(`12px 16px`, `border-radius: 10px`, `1px` border plus the same `3px` left accent) in a
+`14px 30px` band with `8px` between them. Both bands close with
+`border-bottom: 1px solid #2A241D`.
 
 **`softClaimed` is pre-99 only.** Compute it as the number of this deck's cards in the `soft`
 state *from this deck's own vantage* — so it consumes the same `loadAvailability(userId,
 { excludeDeckId: deck.id })` map Task 4 already loads for the decklist rows, with no second
-query. Once the deck reaches 99 it turns `Playable`, its own claims go hard, and the soft count
-falls to zero on its own. **Do not add a size check** — the arithmetic already exits, and a
-manual `if (built < 99)` would be a second maturity threshold competing with `statusPill()`.
+query.
+
+**Corrected during Task 8's build.** The plan originally argued that the count falls to zero on
+its own once the deck turns `Playable`, and that a size check was therefore forbidden. That is
+wrong: `soft` counts claims by OTHER unfinished decks, already net of this deck, so this deck
+reaching 99 leaves every one of those claims standing. The window has to be closed
+deliberately, and `builder-shell.tsx` zeroes `softClaimed` once `statusPill` leaves
+Draft/Building. Reading the threshold off `statusPill` rather than a hand-rolled
+`if (built < 99)` keeps the surviving half of the original reasoning: one maturity threshold on
+this page, not two. The shortfall line is unaffected, because finishing a deck does not buy the
+missing copy.
 
 Neither line is an error: no dismiss, no retry, no icon-in-a-circle. `availabilityCopy` is
 straight-with-a-shrug throughout — *"Nothing's broken here — it's a shopping decision."*
@@ -1582,7 +1603,7 @@ it("says 'more' only when the over-committed line is also showing", () => {
 
 - [ ] **Step 5: Verify at both widths**
 
-Confirm the desktop split and the phone filter, that a player with no commitments sees neither the disclosure nor the summary, and that nothing animates.
+Confirm the desktop rounded cards and the phone full-bleed bands, that a deck with no commitments renders no region at all rather than an empty one, and that nothing animates. (The disclosure half of this step is deferred with Step 3.)
 
 - [ ] **Step 6: Gate and commit**
 
@@ -2790,7 +2811,7 @@ Found by auditing `availability · copy strings.ts` against all ten tasks. Each 
 - **The claiming deck's status pill is absent from the card-detail clause.** Addendum 2 §3 draws `×1 · ◆ 0 free — in Atraxa [Complete]`, but `Availability.hardDeckNames` carries names only and `statusPill()` needs that deck's `built` / `ownedCount` / `unresolvedCount`. Task 9 Step 11 ships the clause without the pill rather than deriving "Complete" from `hard > 0`, which would read as fact while being a guess. Unblocking it means widening `hardDeckNames` to `{ name, pill }[]` in Task 1, which ripples through every marker caller. **Design to ratify the omission, or to fund the widening.**
 - **`Showing N of 1,418` uses a different denominator in the drawing than in the shipped page.** Numerator agrees; denominator is `totalQuantity` in `chip-row.tsx`, not the unique total. Task 10 leaves the shipped copy alone and explains why. **Design to ratify, not to redraw.**
 - **Self-exclusion is extended to the add panel, which §6 does not explicitly cover.** §6 rules on "a deck's own decklist"; Task 4 Step 2 applies it to `searchCards` as well, because a card already on the list comes back from search and would otherwise read `0 free — in <this deck>` one panel away from its own silent row. **Design to ratify the extension, or to place the seam elsewhere.**
-- **Gap A2 §6 — the 98th-card cliff applies to the roll-up too.** The soft line can vanish and the red line appear on a single add; that transition isn't drawn. Do not add a size check to compensate — the arithmetic already exits (Task 8 Step 4).
+- **Gap A2 §6 — the 98th-card cliff applies to the roll-up too.** The soft line can vanish and the red line appear on a single add; that transition isn't drawn. The soft line's own exit is a deliberate `statusPill` check rather than the arithmetic this bullet originally assumed (see Task 8 Step 4).
 
 **Closed since the first revision of this plan, do not re-raise:**
 

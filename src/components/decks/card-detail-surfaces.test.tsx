@@ -161,6 +161,8 @@ describe("deck card-detail triggers", () => {
         deck={deck}
         counts={{ built: 0, ownedCount: 0, toBuyCount: 0 }}
         onExport={vi.fn()}
+        overCommitted={0}
+        softClaimed={0}
       />,
     );
 
