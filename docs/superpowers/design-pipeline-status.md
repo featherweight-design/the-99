@@ -8,8 +8,15 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 
 | Layer | Handoff | Landed |
 |---|---|---|
-| Brand system — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens | `design/design_handoff_the99_brand/` | refreshed 2026-07-24 (PR #54) |
+| Brand system — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens | `design/design_handoff_the99_brand/` | refreshed 2026-07-24 (PR #54) · **two decisions under amendment**, see 📐 rank 1 |
 | Voice — Kitchen Table (locked, verbatim in the richness README) | `design/design_handoff_the99_richness/README.md` | locked 2026-07-20 |
+
+**The brand layer is mid-amendment as of 2026-09-01.** The six-theme visual
+system (📐 rank 1) turns "one palette, Cinzel display" into "six palettes, one
+display face each." Until that handoff lands and is audited, the brand README
+remains authoritative — but anything drawn against it now should expect colour
+and display-face decisions to become per-theme. The rest of the layer (logomark,
+WUBRG-as-tags-only, type scale, spacing) is unaffected.
 
 The READINESS exemption is narrow: it covers only a handoff that ships no surfaces and names no states. The richness pass ships per-surface mocks, so it was audited like a feature and sits in ✅ Shipped below rather than here.
 
@@ -66,8 +73,7 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-
-_Currently empty — #43's handoff was produced, audited 🟢 Green at R3 and moved to 🟢 above on 2026-08-13._
+| 1 | **Six-theme visual system** (ticket not yet filed — arose from a 2026-08-31 workshop on the palette) | `docs/superpowers/design-briefs/2026-09-01-six-theme-visual-system.md` | Handoff to `design/design_handoff_the99_themes/`, then readiness audit, then eng phases 3–5 of `docs/superpowers/specs/2026-08-31-theme-system-design.md` | **This is a system layer, not a feature**, which is why it outranks anything else that lands here — it amends the brand layer every other handoff was drawn against. Replaces the single Palette A with six user-selectable themes (colour + display face per theme, each evoking an MTG world), and retires the crab/kaiju character layer, leaving ten empty/loading states needing an illustration-free treatment. Two of the brand handoff's locked decisions are explicitly amended: "Palette: A · Table Candlelight" and "Cinzel (display/headings/wordmark)" each become one option of six. Everything else in the brand system holds — logomark, WUBRG-as-tags-only, type scale, spacing. Eng phases 0–2 (retire the character layer, stand up the token contract, sweep ~849 hardcoded hex literals into tokens) are non-visual and can run in parallel with design; only phase 0 has a design dependency, since the ten stripped surfaces render copy-only until this handoff lands. The brief states the chroma budget and contrast floors as numbers because they are CI-enforced, and §9 leaves five calls to Design — user-facing theme names, where the picker lives, how a theme previews, the empty-state treatment (the biggest of the five), and whether Innistrad's near-achromatic accent needs a chroma floor |
 
 ---
 
