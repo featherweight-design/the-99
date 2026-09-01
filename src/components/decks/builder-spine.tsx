@@ -100,15 +100,25 @@ function RollupBands({
               <AvailabilityGlyph state="over" seam={RED_BAND} />
             </span>
             <div className="flex-1">
-              <div className="text-[12.5px] font-semibold" style={{ color: OVER_FG }}>
+              {/* Row 17.10. The drawn heading trades on the page around it —
+                  "here" means this deck — which a screen reader arriving at the
+                  region cold does not have. Same swap the marker makes. */}
+              <div
+                aria-hidden="true"
+                className="text-[12.5px] font-semibold"
+                style={{ color: OVER_FG }}
+              >
                 {rollup.overHeading(overCommitted)}
               </div>
-              <div
-                className="text-[12px] mt-[3px]"
-                style={{ color: BODY_FG, lineHeight: 1.55 }}
-              >
-                {overBody}
-              </div>
+              <span className="sr-only">{deckSummary.ariaLabel(overCommitted)}</span>
+              {overBody && (
+                <div
+                  className="text-[12px] mt-[3px]"
+                  style={{ color: BODY_FG, lineHeight: 1.55 }}
+                >
+                  {overBody}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -151,12 +161,19 @@ function RollupBands({
             }}
           >
             <AvailabilityGlyph state="over" seam={RED_BAND} />
-            <div className="text-[13px] font-semibold flex-none" style={{ color: OVER_FG }}>
+            <div
+              aria-hidden="true"
+              className="text-[13px] font-semibold flex-none"
+              style={{ color: OVER_FG }}
+            >
               {rollup.overHeading(overCommitted)}
             </div>
-            <div className="text-[13px]" style={{ color: BODY_FG }}>
-              {overBody}
-            </div>
+            <span className="sr-only">{deckSummary.ariaLabel(overCommitted)}</span>
+            {overBody && (
+              <div className="text-[13px]" style={{ color: BODY_FG }}>
+                {overBody}
+              </div>
+            )}
           </div>
         )}
         {softClaimed > 0 && (

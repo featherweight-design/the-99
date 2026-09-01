@@ -104,6 +104,27 @@ describe("BuilderSpine commitments roll-up", () => {
     expect(screen.getAllByText(availabilityCopy.deckSummary.bodyMany(3))).toHaveLength(2);
   });
 
+  // Row 17.10. The drawn heading says "here", which means nothing to a reader
+  // who arrived at the region without the page around it.
+  it("spells out which deck it means for a screen reader", () => {
+    mount({ overCommitted: 2, softClaimed: 0 });
+    expect(screen.getAllByText(availabilityCopy.deckSummary.ariaLabel(2))).toHaveLength(2);
+    for (const drawn of screen.getAllByText(availabilityCopy.deckRollup.overHeading(2))) {
+      expect(drawn).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
+  // The heading-alone case must not leave the body's element behind: on desktop
+  // it is a flex child inside an 11px gap, so an empty one draws as trailing
+  // space the mock does not have.
+  it("leaves no empty element behind when the heading carries the line alone", () => {
+    mount({ overCommitted: 1, softClaimed: 0 });
+    const empties = [...(region()?.querySelectorAll("div") ?? [])].filter(
+      (n) => n.children.length === 0 && (n.textContent ?? "") === "",
+    );
+    expect(empties).toHaveLength(0);
+  });
+
   // Rows 12.7/12.8 read as a straight width split, but that generalises from the
   // one mock where both lines fire. The soft-only phone mock (A2CV:454) runs the
   // long body and so does the desktop both-lines mock (A2CV:558): the short form
