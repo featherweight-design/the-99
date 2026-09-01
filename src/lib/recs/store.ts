@@ -105,8 +105,9 @@ export async function collectionGeneration(userId: string): Promise<number | nul
  * import — and `replaceCollection`, the sole writer of `collectionItems`, takes
  * `confirmUploadId` as optional. `pnpm db:seed:collection` writes without it, so a
  * collection can change while the generation stands still. What keeps that safe is
- * not the generation but the unconditional `delete(commanderScores)` in the same
- * transaction: there is nothing stale left to serve.
+ * not the generation but the unconditional `delete(commanderScores)` that
+ * `replaceCollection` itself runs, in its own transaction alongside the rewrite:
+ * there is nothing stale left to serve.
  *
  * So the invariant to preserve is that one, not this function's. A future writer
  * that changes a collection without dropping `commanderScores` leaves every cached
