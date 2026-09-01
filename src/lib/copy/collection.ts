@@ -131,10 +131,14 @@ export const collectionFilterCopy = {
 
     // FilterPanel hands the count pre-formatted; the addendum's string wants a
     // number for its "1 card"/"N cards" pluralisation, so it is read back out.
+    // Digits only, because the panel formats with toLocaleString and the
+    // separator is whatever the runtime locale uses: a comma, a period, or a
+    // non-breaking space. Counts are non-negative integers, so nothing else in
+    // the string carries meaning.
     // The ", selected" tail is this panel family's convention, not the
     // addendum's — every shipped block appends it.
     optionAria: (name: string, count: string, selected: boolean) =>
-      availabilityCopy.collection.filterOptionAria(name, Number(count.replaceAll(",", ""))) +
+      availabilityCopy.collection.filterOptionAria(name, Number(count.replace(/\D/g, ""))) +
       (selected ? ", selected" : ""),
     optionAriaUnavailable: (name: string) =>
       availabilityCopy.collection.filterEmptyOptionAria(name),

@@ -44,6 +44,7 @@ duplicate local glyph with the shipped `AvailabilityGlyph`.
 | 2 | `degraded.collectionFilterDisabledAria` on the trigger | rendered verbatim ✅ |
 | 3 | **No banner** | no `role="status"`/`role="alert"` mentioning availability ✅ |
 | 4 | The list still renders | `2,472 results`, markers simply absent ✅ |
+| 5 | A pre-existing `?avail=` (design ambiguity 4, unspecified) | ignored: `?avail=` is a request, not a promise, the same ruling `/commanders` already carries. Honouring it would draw an empty collection, because a failed read makes every card read as free, behind a disabled control with nothing on screen able to clear it. The stale param stays in the URL until the next filter change, so a reload after recovery still lands on the requested state. |
 
 ## Gaps recorded, not fixed
 

@@ -32,7 +32,7 @@ import {
 } from "../../lib/collection/type-filter";
 import {
   buildAvailabilityOptions,
-  parseAvailabilityParam,
+  initialAvailability,
   serializeAvailability,
 } from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
@@ -214,7 +214,7 @@ export function CollectionBrowser({
     colors: parseColors(search.get("c")),
     types: parseTypesParam(search.get("t")),
     setCodes: parseSetCodesParam(search.get("s")),
-    availability: parseAvailabilityParam(search.get("avail")),
+    availability: initialAvailability(availabilityOk, search.get("avail")),
   }));
   // Guard query params — shared URLs can carry unknown values; fall back to defaults.
   const [sort, setSort] = useState<SortKey>(() => {

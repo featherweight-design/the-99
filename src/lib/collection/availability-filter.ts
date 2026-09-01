@@ -99,6 +99,16 @@ export function parseAvailabilityParam(param: string | null): AvailabilityState[
   return AVAILABILITY_STATES.filter((s) => picked.has(s));
 }
 
+/**
+ * The selection a page load starts with. `?avail=` is a request, not a promise
+ * — the /commanders ruling, applied here. On a failed read every card falls
+ * through filterCards as free, so honouring `?avail=inuse` would draw an empty
+ * collection behind a disabled control, with nothing on screen able to clear it.
+ */
+export function initialAvailability(ok: boolean, param: string | null): AvailabilityState[] {
+  return ok ? parseAvailabilityParam(param) : [];
+}
+
 /** `["hard","over"]` → `inuse,over`. Round-trips through parseAvailabilityParam. */
 export function serializeAvailability(states: AvailabilityState[]): string {
   return states.map((s) => PARAM_TOKEN[s]).join(",");

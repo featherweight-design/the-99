@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { BrowseCard, BrowseFilters } from "./browse";
 import { filterCards } from "./browse";
 import { buildTypeOptions } from "./type-filter";
+import { collectionFilterCopy } from "../copy/collection";
 import {
   buildAvailabilityOptions,
+  initialAvailability,
   parseAvailabilityParam,
   serializeAvailability,
 } from "./availability-filter";
@@ -125,5 +127,25 @@ describe("the ?avail= param", () => {
   it("drops unknown, duplicate and empty tokens", () => {
     expect(parseAvailabilityParam("inuse,INUSE,nonsense,")).toEqual(["hard"]);
     expect(parseAvailabilityParam(null)).toEqual([]);
+  });
+
+  // A failed read makes every card read as free, so an honoured `?avail=inuse`
+  // would draw an empty collection behind a control that cannot clear it.
+  it("is ignored when the availability read failed", () => {
+    expect(initialAvailability(true, "inuse,over")).toEqual(["hard", "over"]);
+    expect(initialAvailability(false, "inuse,over")).toEqual([]);
+  });
+});
+
+describe("the panel's option aria", () => {
+  // FilterPanel formats the count with toLocaleString before handing it over,
+  // so the separator is whatever the runtime locale uses. Reading the number
+  // back out has to survive all of them or the label announces "NaN cards".
+  it("reads the count back out whatever the locale separator is", () => {
+    const aria = collectionFilterCopy.availability.optionAria;
+    expect(aria("Free", "1,240", false)).toBe("Free, 1240 cards");
+    expect(aria("Free", "1.240", false)).toBe("Free, 1240 cards");
+    expect(aria("Free", "1\u00A0240", false)).toBe("Free, 1240 cards");
+    expect(aria("Free", "1", true)).toBe("Free, 1 card, selected");
   });
 });
