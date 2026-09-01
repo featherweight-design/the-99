@@ -129,14 +129,23 @@ The three character tokens (`--kaiju-body`, `--celebrate-top`,
 **The ten empty/loading states**, in at least two themes (pick the two most
 different — Amonkhet and Kamigawa) so the treatment is proven to be
 theme-driven rather than tuned to one palette:
-- loading (was: animated dots + creature)
-- first run
-- no results
-- filtered empty
-- not found (404)
-- deck completion / celebration
-- builder empty
-- collection review empty
+All ten, one per surface in §3:
+
+- loading (was: animated dots + creature) — `shell/loading-screen.tsx`
+- first run — `home/first-run.tsx`
+- no results — `collection/no-results.tsx`
+- filtered empty — `commanders/filtered-empty.tsx`
+- not found (404) — `app/not-found.tsx`
+- deck completion / celebration — `decks/completion-reveal.tsx`
+- builder empty — `decks/builder-shell.tsx`
+- collection review empty — `collection/review-screen.tsx`
+- decks index empty — `app/decks/page.tsx`
+- guided banner — `commanders/guided-banner.tsx`
+
+The last two are not empty states and need a different call: the decks index
+uses the creature as a decorative empty-list illustration, and the guided
+banner embeds it inline alongside directive copy. Say explicitly whether each
+loses its mark entirely or gets a token-driven replacement.
 
 ---
 
