@@ -25,7 +25,7 @@ a second finished deck competing for a single copy.
 | 7 | Select two states | URL `?avail=free,brew`; trigger `Availability 2 ▾`, aria `…, 2 selected, collapsed`; two chips; `1,240 results` ✅ | same ✅ |
 | 8 | **Resume** — reload on the selected URL | URL unchanged, both chips restored, count still `1,240` ✅ | same ✅ |
 | 9 | **Reverse** — one chip ✕ | `?avail=brew`, one chip left, `617 results` ✅ | same ✅ |
-| 10 | **Repeat** — re-select the removed state | `?avail=brew,free`, both chips back ✅ | same ✅ |
+| 10 | **Repeat** — re-select the removed state | `?avail=free,brew`, both chips back ✅ | same ✅ |
 | 11 | `Clear all` | URL back to `/collection`, no chips, `2,472 results`, trigger back to its collapsed label ✅ | same ✅ |
 
 Rows 5 and 5b are a re-read. The first pass recorded whatever colour it found and had no
@@ -33,6 +33,11 @@ spec to compare against, so it passed a soft glyph that was filled `#C6B79A` ins
 hollow `#A89B84`, and never looked for the seam at all. Gate 4's verify agent caught both
 against the property table; the readings above are from after the fix, which replaced a
 duplicate local glyph with the shipped `AvailabilityGlyph`.
+
+Row 10 is likewise a re-read. The first pass recorded `?avail=brew,free`, because the
+selection was held in click order while parsing always returned menu order, so a reload
+reshuffled the URL. Review caught it; the selection is now normalised to menu order at the
+toggle, and the round trip is an identity.
 
 ## Degraded pass (`AVAIL_FORCE=throw`)
 
@@ -44,7 +49,7 @@ duplicate local glyph with the shipped `AvailabilityGlyph`.
 | 2 | `degraded.collectionFilterDisabledAria` on the trigger | rendered verbatim ✅ |
 | 3 | **No banner** | no `role="status"`/`role="alert"` mentioning availability ✅ |
 | 4 | The list still renders | `2,472 results`, markers simply absent ✅ |
-| 5 | A pre-existing `?avail=` (design ambiguity 4, unspecified) | ignored: `?avail=` is a request, not a promise, the same ruling `/commanders` already carries. Honouring it would draw an empty collection, because a failed read makes every card read as free, behind a disabled control with nothing on screen able to clear it. The stale param stays in the URL until the next filter change, so a reload after recovery still lands on the requested state. |
+| 5 | A pre-existing `?avail=` (design ambiguity 4, unspecified) | ignored, **and dropped from the URL on mount**: the browser's sync effect rebuilds the query string from filter state on every render, so the param cannot outlive a selection the page refused. `?avail=` is a request, not a promise, the same ruling `/commanders` already carries. Honouring it would draw an empty collection, because a failed read makes every card read as free, behind a disabled control with nothing on screen able to clear it. Dropping it keeps the invariant every other param in this component already holds: the URL describes what is on screen. |
 
 ## Gaps recorded, not fixed
 

@@ -8,6 +8,7 @@ import {
   initialAvailability,
   parseAvailabilityParam,
   serializeAvailability,
+  toggleAvailability,
 } from "./availability-filter";
 
 const base: BrowseCard = {
@@ -127,6 +128,16 @@ describe("the ?avail= param", () => {
   it("drops unknown, duplicate and empty tokens", () => {
     expect(parseAvailabilityParam("inuse,INUSE,nonsense,")).toEqual(["hard"]);
     expect(parseAvailabilityParam(null)).toEqual([]);
+  });
+
+  // Held in click order, the round trip is not an identity: parse always
+  // returns menu order, so a reload reshuffles the URL and the chips with it.
+  it("serializes in menu order whatever order the states were picked in", () => {
+    expect(serializeAvailability(["over", "hard"])).toBe("inuse,over");
+    expect(toggleAvailability(["over"], "hard")).toEqual(["hard", "over"]);
+    expect(toggleAvailability(["hard", "over"], "hard")).toEqual(["over"]);
+    const picked = toggleAvailability(toggleAvailability([], "over"), "free");
+    expect(parseAvailabilityParam(serializeAvailability(picked))).toEqual(picked);
   });
 
   // A failed read makes every card read as free, so an honoured `?avail=inuse`

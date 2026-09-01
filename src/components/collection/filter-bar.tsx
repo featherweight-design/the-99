@@ -14,7 +14,10 @@ import {
 import type { ColorOption } from "../../lib/collection/color-filter";
 import type { SetOption } from "../../lib/collection/set-filter";
 import type { TypeOption } from "../../lib/collection/type-filter";
-import type { AvailabilityOption } from "../../lib/collection/availability-filter";
+import {
+  toggleAvailability,
+  type AvailabilityOption,
+} from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -237,16 +240,15 @@ export function FilterBar({
           footerStatus={false}
           disabled={!availabilityOk}
           disabledAriaLabel={availabilityCopy.degraded.collectionFilterDisabledAria}
-          onToggle={(code) => {
-            const state = code as AvailabilityState;
-            const current = filters.availability ?? [];
+          onToggle={(code) =>
             onFiltersChange({
               ...filters,
-              availability: current.includes(state)
-                ? current.filter((s) => s !== state)
-                : [...current, state],
-            });
-          }}
+              availability: toggleAvailability(
+                filters.availability ?? [],
+                code as AvailabilityState,
+              ),
+            })
+          }
           onClear={() => onFiltersChange({ ...filters, availability: [] }, "clear-availability")}
           onAnnounce={onAnnounce}
         />

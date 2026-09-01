@@ -109,7 +109,29 @@ export function initialAvailability(ok: boolean, param: string | null): Availabi
   return ok ? parseAvailabilityParam(param) : [];
 }
 
-/** `["hard","over"]` → `inuse,over`. Round-trips through parseAvailabilityParam. */
+/**
+ * Add or drop a state, keeping the selection in menu order. Unlike Set and
+ * Type, whose chips deliberately read in selection order, this vocabulary is
+ * fixed and four long, and the menu draws it in one order everywhere — so
+ * ticking Over then In use has to leave the chips and the URL reading the same
+ * way round as reopening the menu would.
+ */
+export function toggleAvailability(
+  current: AvailabilityState[],
+  state: AvailabilityState,
+): AvailabilityState[] {
+  const next = new Set(current);
+  if (!next.delete(state)) next.add(state);
+  return AVAILABILITY_STATES.filter((s) => next.has(s));
+}
+
+/**
+ * `["hard","over"]` → `inuse,over`. Menu order, so the round trip through
+ * parseAvailabilityParam is an identity and a reload cannot reshuffle the URL.
+ */
 export function serializeAvailability(states: AvailabilityState[]): string {
-  return states.map((s) => PARAM_TOKEN[s]).join(",");
+  const picked = new Set(states);
+  return AVAILABILITY_STATES.filter((s) => picked.has(s))
+    .map((s) => PARAM_TOKEN[s])
+    .join(",");
 }

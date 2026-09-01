@@ -76,7 +76,7 @@ Reachable as of Task 10. Walked with `scripts/probe-collection-filter.mjs` at 39
    empties the chip row, restores `2,472 results`, and puts the trigger back to its
    collapsed label. No hollow state: the pre-action surface is the post-clear surface.
 3. **Repeat.** Re-selecting the state that was just removed puts it back
-   (`?avail=brew,free`) with both chips. Nothing about the selection is keyed to a
+   (`?avail=free,brew`) with both chips. Nothing about the selection is keyed to a
    dismissal or a one-time flag, so there is no `eventId`-versus-`userEventId` failure
    shape available here — the whole selection lives in the URL.
 4. **Resume.** Reloading on `?avail=free,brew` restores both chips and the same count from
