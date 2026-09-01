@@ -1,10 +1,19 @@
 // Collection copy — set filter panel block, ported verbatim from
 // design/design_handoff_the99_collection_filter/collection-filter · copy strings.ts
 // Shape follows src/lib/copy/shell.ts: flat const object, functions for
-// interpolated strings, no JSX, no formatting of numbers (callers pass
-// pre-formatted, thousands-separated strings).
+// interpolated strings, no JSX. Callers hand over pre-formatted,
+// thousands-separated strings, with one exception: an option's aria label
+// takes the raw count, because it pluralises on it and a formatted number
+// cannot be read back out under every locale.
 
 import { availabilityCopy } from "./availability";
+
+/**
+ * An option row's count, as a screen reader says it. These are accessible
+ * names, so "1 cards" is read aloud — the same reason addPanelCopy's tab names
+ * pluralise, and the form the availability block was drawn with.
+ */
+const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString()} cards`);
 
 export const collectionFilterCopy = {
   set: {
@@ -28,7 +37,7 @@ export const collectionFilterCopy = {
 
     // Option
     optionAria: (setName: string, count: number, selected: boolean) =>
-      `${setName}, ${count.toLocaleString()} cards${selected ? ", selected" : ""}`,
+      `${setName}, ${cards(count)}${selected ? ", selected" : ""}`,
     optionAriaUnavailable: (setName: string) => `${setName}, no cards match your other filters`,
 
     // Footer
@@ -81,7 +90,7 @@ export const collectionFilterCopy = {
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
     optionAria: (typeName: string, count: number, selected: boolean) =>
-      `${typeName}, ${count.toLocaleString()} cards${selected ? ", selected" : ""}`,
+      `${typeName}, ${cards(count)}${selected ? ", selected" : ""}`,
     optionAriaUnavailable: (typeName: string) =>
       `${typeName}, no cards match your other filters`,
 
@@ -181,7 +190,7 @@ export const collectionFilterCopy = {
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
     optionAria: (colorName: string, count: number, selected: boolean) =>
-      `${colorName}, ${count.toLocaleString()} cards${selected ? ", selected" : ""}`,
+      `${colorName}, ${cards(count)}${selected ? ", selected" : ""}`,
     optionAriaUnavailable: (colorName: string) =>
       `${colorName}, no cards match your other filters`,
 

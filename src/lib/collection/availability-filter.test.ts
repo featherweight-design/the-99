@@ -158,4 +158,18 @@ describe("the panel's option aria", () => {
     expect(aria("Free", 1240, false)).toBe("Free, 1240 cards");
     expect(aria("Free", 1, true)).toBe("Free, 1 card, selected");
   });
+
+  // The sibling panels take the same raw count. A one-card set is an ordinary
+  // state, and these are accessible names, so a reader would say "1 cards".
+  it("pluralises the sibling panels' labels too", () => {
+    expect(collectionFilterCopy.set.optionAria("Modern Horizons 3", 1, false)).toBe(
+      "Modern Horizons 3, 1 card",
+    );
+    expect(collectionFilterCopy.type.optionAria("Artifact", 1240, false)).toBe(
+      "Artifact, 1,240 cards",
+    );
+    expect(collectionFilterCopy.color.optionAria("White", 1, true)).toBe(
+      "White, 1 card, selected",
+    );
+  });
 });
