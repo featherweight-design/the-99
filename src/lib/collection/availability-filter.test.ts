@@ -28,19 +28,29 @@ const base: BrowseCard = {
   preferredPrinting: null,
 };
 
-const card = (oracleId: string, owned: number, hard: number, soft: number): BrowseCard => ({
+// `free` is given, never derived: the query computes it from a vantage the
+// fixture cannot see, and `owned − hard` is right only off a deck's own
+// decklist. Deriving it here would encode the one shape the contract on
+// Availability.free warns against.
+const card = (
+  oracleId: string,
+  owned: number,
+  hard: number,
+  soft: number,
+  free: number,
+): BrowseCard => ({
   ...base,
   oracleId,
   quantity: owned,
-  availability: { owned, hard, soft, free: owned - hard, hardDeckNames: [] },
+  availability: { owned, hard, soft, free, hardDeckNames: [] },
 });
 
 const cards: BrowseCard[] = [
-  card("free1", 2, 0, 0),
-  card("free2", 1, 0, 0),
-  card("soft1", 2, 0, 1),
-  card("hard1", 1, 1, 0),
-  card("over1", 1, 2, 0),
+  card("free1", 2, 0, 0, 2),
+  card("free2", 1, 0, 0, 1),
+  card("soft1", 2, 0, 1, 2),
+  card("hard1", 1, 1, 0, 0),
+  card("over1", 1, 2, 0, -1),
   { ...base, oracleId: "unread", availability: null },
 ];
 
@@ -68,7 +78,7 @@ describe("buildAvailabilityOptions", () => {
   });
 
   it("disables a zero-count option rather than dropping it", () => {
-    const options = buildAvailabilityOptions([card("free1", 1, 0, 0)], empty);
+    const options = buildAvailabilityOptions([card("free1", 1, 0, 0, 1)], empty);
     expect(options).toHaveLength(4);
     expect(options.filter((o) => o.disabled).map((o) => o.code)).toEqual(["soft", "hard", "over"]);
   });
