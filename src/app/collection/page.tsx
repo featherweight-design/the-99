@@ -10,6 +10,7 @@ import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/sum
 import { formatLastUpdated, loadBrowseCards, loadOwnedSetMeta } from "../../lib/collection/browse";
 import { CardFan } from "../../components/marks";
 import { CollectionBrowser } from "../../components/collection/browser";
+import { loadAvailability } from "../../lib/decks/availability-query";
 import {
   EmptyState,
   EmptyStateBody,
@@ -42,13 +43,24 @@ function ReplaceIcon() {
 
 export default async function CollectionPage() {
   const userId = await requireUserId();
-  const [stats, cards, lastUpdated, ownedSets] = await Promise.all([
+  const [stats, cards, lastUpdated, ownedSets, availability] = await Promise.all([
     getCollectionStats(userId),
     loadBrowseCards(userId),
     getCollectionLastUpdated(userId),
     // Set names + release dates for the Set ▾ panel (#86).
     loadOwnedSetMeta(userId),
+    // One aggregate for the whole page — never per row (Addendum 2).
+    // Quiet failure: /collection shows no banner, the markers simply do not
+    // appear and the Availability ▾ trigger disables (Task 10).
+    loadAvailability(userId).catch(() => null),
   ]);
+
+  // Flattened onto the cards here: a Map cannot cross the server/client
+  // boundary as a prop, and every consumer below wants one card's entry.
+  const cardsWithAvailability = cards.map((c) => ({
+    ...c,
+    availability: availability?.get(c.oracleId) ?? null,
+  }));
 
   // Empty collection — shell's state, kept intact.
   if (stats.uniqueCards === 0) {
@@ -121,7 +133,7 @@ export default async function CollectionPage() {
         </div>
       </div>
 
-      <CollectionBrowser cards={cards} ownedSets={ownedSets} />
+      <CollectionBrowser cards={cardsWithAvailability} ownedSets={ownedSets} />
     </section>
   );
 }

@@ -6,6 +6,8 @@
 import type { BrowseCard } from "../../lib/collection/browse";
 import { cssUrl } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
+import { availabilityState } from "../../lib/decks/availability";
+import { AvailabilityMarker } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 
 export function GridView({
@@ -22,7 +24,15 @@ export function GridView({
   return (
     // §Grid Container: grid, 1fr 1fr mobile / repeat(5,1fr) desktop, gap 12/20px (desktop +4 per Surfaces v2 browse loosening; mobile stays v1), padding 4px 14px 14px mobile / 20px 34px 34px desktop
     <div className="grid grid-cols-2 md:grid-cols-5 gap-[12px] md:gap-[20px] px-[14px] md:px-[34px] pt-[4px] md:pt-[20px] pb-[14px] md:pb-[34px]">
-      {cards.map((c) => (
+      {cards.map((c) => {
+        const state = c.availability ? availabilityState(c.availability) : "free";
+        // Addendum 2 §2, matching the row: over-committed keeps its border tint
+        // and nothing else.
+        const border =
+          state === "over"
+            ? "[border:1px_solid_var(--avail-over-border)] hover:[border:1px_solid_var(--avail-over-border)]"
+            : "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--brass)]";
+        return (
         <button
           key={c.oracleId}
           type="button"
@@ -30,7 +40,7 @@ export function GridView({
           // §Grid Tile Container: radius 9/10px, overflow hidden, bg #1E1A15 (--surface), border 1px #2A241D (--border)
           // Background and border are utilities, not inline style: an inline
           // border outranks the hover: variant and the brass hover never lands.
-          className="text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border)] hover:[border:1px_solid_var(--brass)]"
+          className={`text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border}`}
         >
           {/* Art region — §Grid Tile: Art Region */}
           <div
@@ -50,6 +60,14 @@ export function GridView({
             >
               ×{c.quantity}
             </span>
+
+            {/* Availability chip — Addendum 2 §2, top-left on the art. The
+                quantity badge owns top-right. Count-only, same as the row. */}
+            {c.availability && (
+              <span className="absolute left-[5px] top-[5px] md:left-[6px] md:top-[6px]">
+                <AvailabilityMarker availability={c.availability} density="chip" nameless />
+              </span>
+            )}
           </div>
 
           {/* Caption — §Grid Tile: Caption Area */}
@@ -65,7 +83,8 @@ export function GridView({
             </div>
           </div>
         </button>
-      ))}
+        );
+      })}
 
       {cards.length < totalCards && (
         <GhostButton
