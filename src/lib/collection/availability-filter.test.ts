@@ -149,14 +149,13 @@ describe("the ?avail= param", () => {
 });
 
 describe("the panel's option aria", () => {
-  // FilterPanel formats the count with toLocaleString before handing it over,
-  // so the separator is whatever the runtime locale uses. Reading the number
-  // back out has to survive all of them or the label announces "NaN cards".
-  it("reads the count back out whatever the locale separator is", () => {
+  // The addendum's string pluralises on the count, so the panel hands over the
+  // raw number rather than a formatted one: recovering a number from a locale
+  // string is not possible under every locale, and a label that announces
+  // "NaN cards" is worse than one carrying no thousands separator.
+  it("pluralises on the count and marks the selection", () => {
     const aria = collectionFilterCopy.availability.optionAria;
-    expect(aria("Free", "1,240", false)).toBe("Free, 1240 cards");
-    expect(aria("Free", "1.240", false)).toBe("Free, 1240 cards");
-    expect(aria("Free", "1\u00A0240", false)).toBe("Free, 1240 cards");
-    expect(aria("Free", "1", true)).toBe("Free, 1 card, selected");
+    expect(aria("Free", 1240, false)).toBe("Free, 1240 cards");
+    expect(aria("Free", 1, true)).toBe("Free, 1 card, selected");
   });
 });

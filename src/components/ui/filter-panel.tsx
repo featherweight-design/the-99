@@ -398,7 +398,7 @@ export function FilterPanel({
     const name = option.hint ? `${option.label} (${option.hint})` : option.label;
     return option.disabled
       ? copy.optionAriaUnavailable(name)
-      : copy.optionAria(name, option.count.toLocaleString(), isSelected);
+      : copy.optionAria(name, option.count, isSelected);
   }
 
   function buildGroups(

@@ -27,8 +27,8 @@ export const collectionFilterCopy = {
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
     // Option
-    optionAria: (setName: string, count: string, selected: boolean) =>
-      `${setName}, ${count} cards${selected ? ", selected" : ""}`,
+    optionAria: (setName: string, count: number, selected: boolean) =>
+      `${setName}, ${count.toLocaleString()} cards${selected ? ", selected" : ""}`,
     optionAriaUnavailable: (setName: string) => `${setName}, no cards match your other filters`,
 
     // Footer
@@ -80,8 +80,8 @@ export const collectionFilterCopy = {
     groupSelected: (n: number) => `Selected · ${n}`,
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
-    optionAria: (typeName: string, count: string, selected: boolean) =>
-      `${typeName}, ${count} cards${selected ? ", selected" : ""}`,
+    optionAria: (typeName: string, count: number, selected: boolean) =>
+      `${typeName}, ${count.toLocaleString()} cards${selected ? ", selected" : ""}`,
     optionAriaUnavailable: (typeName: string) =>
       `${typeName}, no cards match your other filters`,
 
@@ -129,17 +129,10 @@ export const collectionFilterCopy = {
     groupSelected: (n: number) => `Selected · ${n}`,
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
-    // FilterPanel hands the count pre-formatted; the addendum's string wants a
-    // number for its "1 card"/"N cards" pluralisation, so it is read back out.
-    // Digits only, because the panel formats with toLocaleString and the
-    // separator is whatever the runtime locale uses: a comma, a period, or a
-    // non-breaking space. Counts are non-negative integers, so nothing else in
-    // the string carries meaning.
     // The ", selected" tail is this panel family's convention, not the
     // addendum's — every shipped block appends it.
-    optionAria: (name: string, count: string, selected: boolean) =>
-      availabilityCopy.collection.filterOptionAria(name, Number(count.replace(/\D/g, ""))) +
-      (selected ? ", selected" : ""),
+    optionAria: (name: string, count: number, selected: boolean) =>
+      availabilityCopy.collection.filterOptionAria(name, count) + (selected ? ", selected" : ""),
     optionAriaUnavailable: (name: string) =>
       availabilityCopy.collection.filterEmptyOptionAria(name),
 
@@ -187,8 +180,8 @@ export const collectionFilterCopy = {
     groupSelected: (n: number) => `Selected · ${n}`,
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
-    optionAria: (colorName: string, count: string, selected: boolean) =>
-      `${colorName}, ${count} cards${selected ? ", selected" : ""}`,
+    optionAria: (colorName: string, count: number, selected: boolean) =>
+      `${colorName}, ${count.toLocaleString()} cards${selected ? ", selected" : ""}`,
     optionAriaUnavailable: (colorName: string) =>
       `${colorName}, no cards match your other filters`,
 
@@ -237,7 +230,7 @@ export const collectionFilterCopy = {
     // The hint carries the direction ("A–Z"), so the name reads as the whole
     // order — and the chosen row says how to reverse it, since re-picking is
     // the only way and nothing else on screen says so.
-    optionAria: (order: string, _count: string, selected: boolean) =>
+    optionAria: (order: string, _count: number, selected: boolean) =>
       selected ? `${order}, current order, choose again to reverse` : order,
     optionAriaUnavailable: (order: string) => order,
 
@@ -278,7 +271,7 @@ export type FilterPanelCopy = {
   groupSelected: (n: number) => string;
   groupMatches: (n: number) => string;
 
-  optionAria: (name: string, count: string, selected: boolean) => string;
+  optionAria: (name: string, count: number, selected: boolean) => string;
   optionAriaUnavailable: (name: string) => string;
 
   footerTotal: (total: string) => string;
