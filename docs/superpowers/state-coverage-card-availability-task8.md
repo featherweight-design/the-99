@@ -15,7 +15,7 @@ alone, with the disclosure held for a product call.
 | 12.12 | Soft only | same | same | `availabilityState(a, { selfExcluded: true }) === "soft"` | ✅ |
 | 12.13 | Over only | same | same | `… === "over"` | ✅ |
 | 12.14 | Both | same | same | disjoint by the partition in `availabilityState` | ✅ |
-| 12.15 | At 99 | same | same | soft falls to zero on its own; no size check | ✅ |
+| 12.15 | At 99 | same | same | window closed deliberately: `softClaimed` is zeroed once `statusPill` leaves Draft/Building | ✅ |
 
 `src/lib/decks/read.ts:153–181` already calls `loadAvailability(userId, { excludeDeckId })`
 and hangs the result on every card, so both counts are derivable in the client with **no

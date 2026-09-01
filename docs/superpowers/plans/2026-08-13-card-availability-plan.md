@@ -1562,9 +1562,17 @@ accent, the soft one separated by `1px solid #2A241D`). Desktop lines are rounde
 **`softClaimed` is pre-99 only.** Compute it as the number of this deck's cards in the `soft`
 state *from this deck's own vantage* — so it consumes the same `loadAvailability(userId,
 { excludeDeckId: deck.id })` map Task 4 already loads for the decklist rows, with no second
-query. Once the deck reaches 99 it turns `Playable`, its own claims go hard, and the soft count
-falls to zero on its own. **Do not add a size check** — the arithmetic already exits, and a
-manual `if (built < 99)` would be a second maturity threshold competing with `statusPill()`.
+query.
+
+**Corrected during Task 8's build.** The plan originally argued that the count falls to zero on
+its own once the deck turns `Playable`, and that a size check was therefore forbidden. That is
+wrong: `soft` counts claims by OTHER unfinished decks, already net of this deck, so this deck
+reaching 99 leaves every one of those claims standing. The window has to be closed
+deliberately, and `builder-shell.tsx` zeroes `softClaimed` once `statusPill` leaves
+Draft/Building. Reading the threshold off `statusPill` rather than a hand-rolled
+`if (built < 99)` keeps the surviving half of the original reasoning: one maturity threshold on
+this page, not two. The shortfall line is unaffected, because finishing a deck does not buy the
+missing copy.
 
 Neither line is an error: no dismiss, no retry, no icon-in-a-circle. `availabilityCopy` is
 straight-with-a-shrug throughout — *"Nothing's broken here — it's a shopping decision."*
@@ -2803,7 +2811,7 @@ Found by auditing `availability · copy strings.ts` against all ten tasks. Each 
 - **The claiming deck's status pill is absent from the card-detail clause.** Addendum 2 §3 draws `×1 · ◆ 0 free — in Atraxa [Complete]`, but `Availability.hardDeckNames` carries names only and `statusPill()` needs that deck's `built` / `ownedCount` / `unresolvedCount`. Task 9 Step 11 ships the clause without the pill rather than deriving "Complete" from `hard > 0`, which would read as fact while being a guess. Unblocking it means widening `hardDeckNames` to `{ name, pill }[]` in Task 1, which ripples through every marker caller. **Design to ratify the omission, or to fund the widening.**
 - **`Showing N of 1,418` uses a different denominator in the drawing than in the shipped page.** Numerator agrees; denominator is `totalQuantity` in `chip-row.tsx`, not the unique total. Task 10 leaves the shipped copy alone and explains why. **Design to ratify, not to redraw.**
 - **Self-exclusion is extended to the add panel, which §6 does not explicitly cover.** §6 rules on "a deck's own decklist"; Task 4 Step 2 applies it to `searchCards` as well, because a card already on the list comes back from search and would otherwise read `0 free — in <this deck>` one panel away from its own silent row. **Design to ratify the extension, or to place the seam elsewhere.**
-- **Gap A2 §6 — the 98th-card cliff applies to the roll-up too.** The soft line can vanish and the red line appear on a single add; that transition isn't drawn. Do not add a size check to compensate — the arithmetic already exits (Task 8 Step 4).
+- **Gap A2 §6 — the 98th-card cliff applies to the roll-up too.** The soft line can vanish and the red line appear on a single add; that transition isn't drawn. The soft line's own exit is a deliberate `statusPill` check rather than the arithmetic this bullet originally assumed (see Task 8 Step 4).
 
 **Closed since the first revision of this plan, do not re-raise:**
 
