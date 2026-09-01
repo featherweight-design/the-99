@@ -2,7 +2,7 @@ import { cache } from "react";
 import { and, eq, sql } from "drizzle-orm";
 // Type-only, so the set-filter → browse dependency stays one-way at runtime.
 import type { OwnedSetMeta } from "./set-filter";
-import type { Availability } from "../decks/availability";
+import { availabilityState, type Availability, type AvailabilityState } from "../decks/availability";
 
 /** Rarity ordering for the "rarity" sort key. */
 const RARITY_ORDER: Record<string, number> = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
@@ -77,6 +77,15 @@ export type BrowseFilters = {
   types: string[];
   /** Multi-select (#86): a card matches when ANY selected code is one of its setCodes. */
   setCodes: string[];
+  /**
+   * Multi-select (#43): a card matches when its state is ANY selected state.
+   * ORs internally, ANDs with every other filter — the `setCodes` shape.
+   *
+   * Optional, unlike its three siblings: fourteen files build BrowseFilters
+   * literals and a required field would break every one of them for no gain.
+   * Absent and empty both mean "no availability filter".
+   */
+  availability?: AvailabilityState[];
 };
 
 export type SortKey = "name" | "quantity" | "set" | "rarity" | "color";
@@ -344,6 +353,12 @@ export function filterCards(list: BrowseCard[], f: BrowseFilters): BrowseCard[] 
       setCodes.size > 0 &&
       !c.setCodes.some((s) => setCodes.has(s.toLowerCase()))
     ) return false;
+    if (f.availability && f.availability.length > 0) {
+      // No entry reads as free — an unclaimed card and a failed read are the
+      // same silence everywhere else in this feature.
+      const state = c.availability ? availabilityState(c.availability) : "free";
+      if (!f.availability.includes(state)) return false;
+    }
     return true;
   });
 }

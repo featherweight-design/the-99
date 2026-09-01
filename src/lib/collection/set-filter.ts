@@ -62,6 +62,7 @@ export function buildSetOptions(
     colors: filters.colors,
     types: filters.types,
     setCodes: [],
+    availability: filters.availability,
   });
   const counts = new Map<string, number>();
   for (const c of surviving) {

@@ -61,11 +61,37 @@ timing the click-to-first-visible-change gap: **71 ms**, with the deck counts an
 `✓ In deck` state among the first things to move. An optimistic path exists and Recurring
 Defect Class 12 does not apply to this surface.
 
-## Journeys B, C, D
+## Journey D — filtering the collection by availability
+
+Reachable as of Task 10. Walked with `scripts/probe-collection-filter.mjs` at 390×844 and
+1300×900, against a dev server running the `AVAIL_FORCE=1` seam stub. Full readings in
+`gate2-forced-states-card-availability-task10.md`.
+
+1. **Forward.** Open `Availability ▾`, tick `Free` and `Wanted by a brew`. The URL becomes
+   `?avail=free,brew`, two chips appear, the trigger counts the selection, and the result
+   line falls from `2,472` to `1,240`. The four menu counts sum to the unique total, so the
+   partition holds on the real collection and not only in the unit tests.
+2. **Reverse.** One chip ✕ leaves `?avail=brew` and `617 results` — it removed exactly the
+   state it names and nothing else. `Clear all` returns the URL to a bare `/collection`,
+   empties the chip row, restores `2,472 results`, and puts the trigger back to its
+   collapsed label. No hollow state: the pre-action surface is the post-clear surface.
+3. **Repeat.** Re-selecting the state that was just removed puts it back
+   (`?avail=brew,free`) with both chips. Nothing about the selection is keyed to a
+   dismissal or a one-time flag, so there is no `eventId`-versus-`userEventId` failure
+   shape available here — the whole selection lives in the URL.
+4. **Resume.** Reloading on `?avail=free,brew` restores both chips and the same count from
+   the URL alone. A second tab opened on that URL lands on the same state for the same
+   reason. Nothing is held in component state that the URL does not already carry.
+
+**Mutation feedback.** Not applicable: no mutation is reachable from this journey. Every
+control rewrites client state and a query string, so there is no server round trip to feel
+slow and no optimistic path to need.
+
+## Journeys B, C
 
 Not walked. B needs Task 8 (commander detail disclosure and the deck roll-up), C needs
-Tasks 5–7 (the second score), D needs Tasks 9–10 (`/collection`). Each is walked when the
-task that makes it reachable lands, not retroactively at the end of the epic.
+Tasks 5–7 (the second score). Each is walked when the task that makes it reachable lands,
+not retroactively at the end of the epic.
 
 ## Cold-eyes review
 

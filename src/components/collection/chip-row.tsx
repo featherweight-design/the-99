@@ -2,8 +2,13 @@
 // Filter chips per property table §Filter Chip Row.
 // The row + chip pills are wrapped in table-exact px/hex values below.
 
+import type { ReactNode } from "react";
 import type { BrowseFilters, SortKey } from "../../lib/collection/browse";
 import { WUBRG_HEX } from "../../lib/collection/browse";
+import { availabilityLabel } from "../../lib/collection/availability-filter";
+import type { AvailabilityState } from "../../lib/decks/availability";
+import { availabilityCopy } from "../../lib/copy/availability";
+import { AvailabilityGlyph } from "../ui/availability-marker";
 
 const SORT_LABEL: Record<SortKey, string> = {
   name: "Sort: Name", quantity: "Sort: Quantity", set: "Sort: Set",
@@ -22,6 +27,7 @@ export function ChipRow({
   setLabels,
   onRemoveSet,
   onClearSearch,
+  onRemoveAvailability,
 }: {
   filters: BrowseFilters;
   sort: SortKey;
@@ -35,12 +41,14 @@ export function ChipRow({
   setLabels: Record<string, string>;
   onRemoveSet: (code: string) => void;
   onClearSearch: () => void;
+  onRemoveAvailability: (state: AvailabilityState) => void;
 }) {
   const anyActive =
     filters.search.trim() !== "" ||
     filters.colors.length > 0 ||
     filters.types.length > 0 ||
-    filters.setCodes.length > 0;
+    filters.setCodes.length > 0 ||
+    (filters.availability?.length ?? 0) > 0;
 
   // Result count copy per §Result Count Label / §Copy (result count variants).
   // uniqueCount = distinct cards in the whole collection; totalQuantity = sum of
@@ -81,6 +89,21 @@ export function ChipRow({
           name; falls back to the code when the `sets` catalog has no row. */}
       {filters.setCodes.map((code) => (
         <Chip key={code} label={setLabels[code] ?? code} onRemove={() => onRemoveSet(code)} />
+      ))}
+      {/* One chip per selected availability state, carrying the same glyph the
+          list markers use. */}
+      {(filters.availability ?? []).map((state) => (
+        <Chip
+          key={state}
+          label={availabilityLabel(state)}
+          leadingGlyph={
+            state === "free" ? null : (
+              <AvailabilityGlyph state={state} seam="var(--elevated)" />
+            )
+          }
+          removeAria={availabilityCopy.collection.chipRemoveAria(availabilityLabel(state))}
+          onRemove={() => onRemoveAvailability(state)}
+        />
       ))}
 
       {/* Sort chip — non-removable, shows current sort */}
@@ -129,10 +152,14 @@ export function ChipRow({
 function Chip({
   label,
   leadingDot,
+  leadingGlyph,
+  removeAria,
   onRemove,
 }: {
   label: string;
   leadingDot?: string;
+  leadingGlyph?: ReactNode;
+  removeAria?: string;
   onRemove: () => void;
 }) {
   return (
@@ -154,12 +181,13 @@ function Chip({
           style={{ width: 9, height: 9, background: leadingDot }}
         />
       )}
+      {leadingGlyph}
       {label}
       {/* Dismiss "✕" — §Filter Chip Dismiss, color #8E8269 (--fg-faint) */}
       <button
         type="button"
         onClick={onRemove}
-        aria-label={`Remove ${label} filter`}
+        aria-label={removeAria ?? `Remove ${label} filter`}
         className="cursor-pointer"
         style={{ color: "var(--fg-faint)" }}
       >

@@ -4,6 +4,8 @@
 // interpolated strings, no JSX, no formatting of numbers (callers pass
 // pre-formatted, thousands-separated strings).
 
+import { availabilityCopy } from "./availability";
+
 export const collectionFilterCopy = {
   set: {
     // Trigger
@@ -105,6 +107,62 @@ export const collectionFilterCopy = {
         ? `${typeName} removed. No type filter, ${total} cards shown.`
         : `${typeName} removed. ${types} ${types === 1 ? "type" : "types"}, ${shown} of ${total} cards shown.`,
     announceCleared: (total: string) => `Type filter cleared. ${total} cards shown.`,
+  },
+
+  // Availability ▾ (#43) — the Type ▾ shape (no search, no footer total).
+  // Every user-visible string comes from availabilityCopy.collection; the keys
+  // FilterPanelCopy needs and the addendum does not author (the search and
+  // group strings) are inert here, exactly as they are in the `type` block.
+  availability: {
+    triggerLabel: availabilityCopy.collection.filterLabel,
+    triggerOne: (name: string) => `${availabilityCopy.collection.filterLabel}: ${name}`,
+    triggerAriaCollapsed: "Filter by availability, collapsed",
+    triggerAriaWithSelection: (n: number) => `Filter by availability, ${n} selected, collapsed`,
+
+    panelAriaLabel: "Filter by availability",
+    sheetTitle: availabilityCopy.collection.filterLabel,
+    searchPlaceholder: "Search availability",
+    searchAriaLabel: "Search availability states",
+    clearSearch: "Clear search",
+
+    groupDefault: "All",
+    groupSelected: (n: number) => `Selected · ${n}`,
+    groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
+
+    // FilterPanel hands the count pre-formatted; the addendum's string wants a
+    // number for its "1 card"/"N cards" pluralisation, so it is read back out.
+    // The ", selected" tail is this panel family's convention, not the
+    // addendum's — every shipped block appends it.
+    optionAria: (name: string, count: string, selected: boolean) =>
+      availabilityCopy.collection.filterOptionAria(name, Number(count.replaceAll(",", ""))) +
+      (selected ? ", selected" : ""),
+    optionAriaUnavailable: (name: string) =>
+      availabilityCopy.collection.filterEmptyOptionAria(name),
+
+    footerTotal: (total: string) => `${total} cards`,
+    footerSelected: (n: number, total: string) => `${n} of ${total} selected`,
+    clear: "Clear",
+    done: "Done",
+    closeLabel: "Close",
+
+    emptyTitle: "Nothing to show",
+    emptyBody: (query: string) => ({
+      before: "No availability matches ",
+      query: `“${query}”`,
+      after: ".",
+    }),
+
+    announceMatches: (n: number, query: string) =>
+      n === 0
+        ? `No options match ${query}`
+        : `${n} ${n === 1 ? "option matches" : "options match"} ${query}`,
+    announceAdded: (name: string, n: number, shown: string, total: string) =>
+      `${name} added. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
+    announceRemoved: (name: string, n: number, shown: string, total: string) =>
+      n === 0
+        ? `${name} removed. No availability filter, ${total} cards shown.`
+        : `${name} removed. ${n} ${n === 1 ? "filter" : "filters"}, ${shown} of ${total} cards shown.`,
+    announceCleared: (total: string) => `Availability filter cleared. ${total} cards shown.`,
   },
 
   // Color ▾ (#116) — mobile only. Desktop keeps the inline pip row, so nothing

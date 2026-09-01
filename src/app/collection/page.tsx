@@ -133,7 +133,11 @@ export default async function CollectionPage() {
         </div>
       </div>
 
-      <CollectionBrowser cards={cardsWithAvailability} ownedSets={ownedSets} />
+      <CollectionBrowser
+        cards={cardsWithAvailability}
+        ownedSets={ownedSets}
+        availabilityOk={availability !== null}
+      />
     </section>
   );
 }
