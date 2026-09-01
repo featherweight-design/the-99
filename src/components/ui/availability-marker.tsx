@@ -196,7 +196,13 @@ function OverGlyph({ seam }: { seam: string }) {
   );
 }
 
-function Glyph({ state, seam }: { state: AvailabilityState; seam: string }) {
+/**
+ * Exported for the deck-detail commitments roll-up, which draws the same two
+ * glyphs at deck scale. It is the marker's own hollow → solid → doubled ladder
+ * read vertically, so a second hand-rolled pair of diamonds there would be the
+ * same shape maintained twice.
+ */
+export function AvailabilityGlyph({ state, seam }: { state: AvailabilityState; seam: string }) {
   if (state === "over") return <OverGlyph seam={seam} />;
   return (
     <span
@@ -296,7 +302,7 @@ export function AvailabilityMarker({
         className,
       )}
     >
-      <Glyph state={state} seam={chip ? CHIP_SCRIM : seam} />
+      <AvailabilityGlyph state={state} seam={chip ? CHIP_SCRIM : seam} />
       {/*
         The prefix never truncates; the deck name is the flexible half. This is
         the same split Addendum 2 §1 specifies for the collection name cell —

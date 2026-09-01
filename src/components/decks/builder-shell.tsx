@@ -7,6 +7,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
+import { availabilityState } from "../../lib/decks/availability";
 import { shouldCelebrate } from "../../lib/decks/celebration";
 import { CompletionReveal } from "./completion-reveal";
 import { useCelebrated } from "./use-celebrated";
@@ -101,12 +102,14 @@ export function BuilderShell({
   // reveal is a one-shot that burns a persisted flag — firing it on a predicted
   // 99th card that the server then rejects would spend the moment on a deck
   // that never reached 99, and there is no way to give it back.
+  const serverStatus = statusPill({
+    built: deck.built,
+    ownedCount: deck.ownedCount,
+    unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
+  });
+
   const showReveal = shouldCelebrate({
-    status: statusPill({
-      built: deck.built,
-      ownedCount: deck.ownedCount,
-      unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
-    }),
+    status: serverStatus,
     alreadyCelebrated: celebrated,
     arrivedFromImport,
   });
@@ -120,6 +123,49 @@ export function BuilderShell({
   // wiping the refusal before the user can read it. Rows still show their own
   // optimistic "✓ In deck", so nothing is lost by keeping this one committed.
   const deckOracleIds = useMemo(() => deck.cards.map((c) => c.oracleId), [deck.cards]);
+
+  // The commitments roll-up (#43). Read off the availability `read.ts` already
+  // hung on every card, so this costs no query — and off the SERVER list rather
+  // than the optimistic one, because a just-added card has no availability yet
+  // and the region is meant to be present on arrival rather than to twitch as
+  // the player builds.
+  //
+  // `selfExcluded` is mandatory here: the map came from a query given this
+  // deck's own `excludeDeckId`, and reading it without the flag would turn every
+  // one of this deck's own claims into a conflict with itself.
+  const commitments = useMemo(() => {
+    let overCommitted = 0;
+    let softClaimed = 0;
+    let lone: { name: string; deckCount: number; ownedQty: number } | null = null;
+    for (const card of deck.cards) {
+      const a = card.availability;
+      if (!a) continue;
+      const state = availabilityState(a, { selfExcluded: true });
+      if (state === "over") {
+        overCommitted++;
+        // Only when a claiming deck is actually named. Row 12.9's sentence
+        // counts finished lists out loud, and with an empty name array it would
+        // say "on 0 finished lists" — the same hole `markerAria` guards at
+        // availability-marker.ts:107.
+        lone =
+          a.hardDeckNames.length > 0
+            ? { name: card.name, deckCount: a.hardDeckNames.length, ownedQty: a.owned }
+            : null;
+      } else if (state === "soft") {
+        softClaimed++;
+      }
+    }
+    return {
+      overCommitted,
+      // Row 12.15, the pre-99 window. This does NOT fall out of the arithmetic:
+      // `soft` counts claims by OTHER unfinished decks, so a deck of this
+      // player's own reaching 99 leaves those claims standing. Read through
+      // `statusPill` rather than a hand-rolled `built < 99`, so there is one
+      // maturity threshold on this page and not two.
+      softClaimed: serverStatus === "Draft" || serverStatus === "Building" ? softClaimed : 0,
+      overCommittedCard: overCommitted === 1 ? lone : null,
+    };
+  }, [deck.cards, serverStatus]);
 
   // The spent slot the undo row is drawn from. Decklist state rather than row
   // state, because the removal unmounts the row: held here it survives a tab
@@ -329,7 +375,7 @@ export function BuilderShell({
             {/* Builder Spine — unchanged by an import. No extra figure, no
                 second bar, no "97 + 2": the deck's number is what's built, and
                 the exception lives in the prose below it. */}
-            <BuilderSpine deck={deck} counts={counts} onExport={openExport} />
+            <BuilderSpine deck={deck} counts={counts} onExport={openExport} {...commitments} />
 
             {/* Arrival chrome. Mutually exclusive by construction: a clean
                 import gets the strip, an import that came up short gets the

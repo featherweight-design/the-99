@@ -8,6 +8,8 @@ import type { DeckDetail } from "../../lib/decks/read";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { colorLabel } from "../../lib/decks/format";
 import { PrimaryButton } from "@/components/ui/button";
+import { AvailabilityGlyph } from "@/components/ui/availability-marker";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { CardDetailTrigger } from "./card-detail-provider";
 
 interface BuilderSpineProps {
@@ -20,6 +22,164 @@ interface BuilderSpineProps {
    */
   counts: { built: number; ownedCount: number; toBuyCount: number };
   onExport: () => void;
+  /** Cards in this deck the player is short of. Design table §12. */
+  overCommitted: number;
+  /**
+   * Cards in this deck that some unfinished list also wants. Disjoint from
+   * `overCommitted` — the states are a partition — which is what lets the soft
+   * line say "N more" and have the two figures sum.
+   */
+  softClaimed: number;
+  /**
+   * The over-committed card, when there is exactly one. Design row 12.9 names
+   * it in the body, and that sentence is only truthful in the singular; past
+   * one the copy has its own plural form rather than a lead name and a "+2".
+   */
+  overCommittedCard?: { name: string; deckCount: number; ownedQty: number } | null;
+}
+
+// The seam in the doubled glyph is the colour of whatever sits behind it, and
+// both widths put the red line on the same band.
+const RED_BAND = "#211C15";
+const OVER_FG = "#E9917A";
+const SOFT_FG = "#C6B79A";
+const BODY_FG = "#A89B84";
+
+/**
+ * The two widths are separate trees rather than one responsive one, because the
+ * difference is not only skin: the phone stacks heading over body inside a
+ * full-bleed band, the desktop sets them side by side inside a rounded card,
+ * and the soft line's body is a different string on each (rows 12.7/12.8).
+ */
+function RollupBands({
+  overCommitted,
+  softClaimed,
+  overCommittedCard,
+}: Pick<BuilderSpineProps, "overCommitted" | "softClaimed" | "overCommittedCard">) {
+  const rollup = availabilityCopy.deckRollup;
+  const { deckSummary } = availabilityCopy;
+
+  // `bodyMany` reads "N of these are…", which is why the singular gets the named
+  // sentence instead of it. A single card whose claimants came back unnamed
+  // therefore has no body it can truthfully use, and the heading carries the
+  // line alone rather than the plural agreeing with 1.
+  const overBody =
+    overCommitted === 1
+      ? overCommittedCard &&
+        deckSummary.body(
+          overCommittedCard.name,
+          overCommittedCard.deckCount,
+          overCommittedCard.ownedQty,
+        )
+      : deckSummary.bodyMany(overCommitted);
+
+  // "more" is load-bearing: the counts are disjoint, so the word does the
+  // arithmetic for the player instead of making them add 1 and 12.
+  const softHeading =
+    overCommitted > 0
+      ? rollup.softHeadingAfterOver(softClaimed)
+      : rollup.softHeading(softClaimed);
+
+  // The short body is a phone-under-pressure form, not a phone form. Table rows
+  // 12.7/12.8 read as a straight width split, but that generalises from the
+  // one mock where both lines fire: the soft-only phone mock (A2CV:454) runs the
+  // LONG body, and the desktop both-lines mock (A2CV:558) runs it too. Only the
+  // phone stacking two lines drops the trailing clause.
+  const softPhoneBody = overCommitted > 0 ? rollup.softBodyShort : rollup.softBody;
+
+  return (
+    <section aria-label={rollup.regionAria} style={{ borderBottom: "1px solid #2A241D" }}>
+      {/* Phone — full-bleed bands, heading over body */}
+      <div className="md:hidden">
+        {overCommitted > 0 && (
+          <div
+            className="flex items-start gap-[9px] px-[16px] py-[10px]"
+            style={{ background: RED_BAND, borderLeft: "3px solid #C6533F" }}
+          >
+            <span className="mt-[4px] flex-none">
+              <AvailabilityGlyph state="over" seam={RED_BAND} />
+            </span>
+            <div className="flex-1">
+              <div className="text-[12.5px] font-semibold" style={{ color: OVER_FG }}>
+                {rollup.overHeading(overCommitted)}
+              </div>
+              <div
+                className="text-[12px] mt-[3px]"
+                style={{ color: BODY_FG, lineHeight: 1.55 }}
+              >
+                {overBody}
+              </div>
+            </div>
+          </div>
+        )}
+        {softClaimed > 0 && (
+          <div
+            className="flex items-start gap-[9px] px-[16px] py-[10px]"
+            style={{
+              background: "#1E1A15",
+              borderLeft: "3px solid #4A4033",
+              borderTop: overCommitted > 0 ? "1px solid #2A241D" : undefined,
+            }}
+          >
+            <span className="mt-[4px] flex-none">
+              <AvailabilityGlyph state="soft" seam={RED_BAND} />
+            </span>
+            <div className="flex-1">
+              <div className="text-[12.5px] font-semibold" style={{ color: SOFT_FG }}>
+                {softHeading}
+              </div>
+              <div
+                className="text-[12px] mt-[3px]"
+                style={{ color: BODY_FG, lineHeight: 1.55 }}
+              >
+                {softPhoneBody}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop — rounded cards, heading beside body */}
+      <div className="hidden md:flex flex-col gap-[8px] px-[30px] py-[14px]">
+        {overCommitted > 0 && (
+          <div
+            className="flex items-center gap-[11px] rounded-[10px] px-[16px] py-[12px]"
+            style={{
+              background: RED_BAND,
+              border: "1px solid #3A3229",
+              borderLeft: "3px solid #C6533F",
+            }}
+          >
+            <AvailabilityGlyph state="over" seam={RED_BAND} />
+            <div className="text-[13px] font-semibold flex-none" style={{ color: OVER_FG }}>
+              {rollup.overHeading(overCommitted)}
+            </div>
+            <div className="text-[13px]" style={{ color: BODY_FG }}>
+              {overBody}
+            </div>
+          </div>
+        )}
+        {softClaimed > 0 && (
+          <div
+            className="flex items-center gap-[11px] rounded-[10px] px-[16px] py-[12px]"
+            style={{
+              background: "#1E1A15",
+              border: "1px solid #2A241D",
+              borderLeft: "3px solid #4A4033",
+            }}
+          >
+            <AvailabilityGlyph state="soft" seam={RED_BAND} />
+            <div className="text-[13px] font-semibold flex-none" style={{ color: SOFT_FG }}>
+              {softHeading}
+            </div>
+            <div className="text-[13px]" style={{ color: BODY_FG }}>
+              {rollup.softBody}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 // WUBRG pip hex colors (design table §Global Tokens)
@@ -31,7 +191,14 @@ const PIP_HEX: Record<string, string> = {
   G: "#6B9E63",
 };
 
-export function BuilderSpine({ deck, counts, onExport }: BuilderSpineProps) {
+export function BuilderSpine({
+  deck,
+  counts,
+  onExport,
+  overCommitted,
+  softClaimed,
+  overCommittedCard,
+}: BuilderSpineProps) {
   const [renaming, setRenaming] = useState(false);
 
   const { commander } = deck;
@@ -45,12 +212,13 @@ export function BuilderSpine({ deck, counts, onExport }: BuilderSpineProps) {
   // Meta caption: color identity label
   const identityLabel = colorLabel(commander.colorIdentity);
 
+  /*
+    §Spine container
+    mobile:  p 40px 16px 12px, border-bottom 1px #2A241D, flex col, items-center
+    desktop: p 20px 30px,      border-bottom 1px #2A241D, flex row, items-center, gap 18px
+  */
   return (
-    /*
-      §Spine container
-      mobile:  p 40px 16px 12px, border-bottom 1px #2A241D, flex col, items-center
-      desktop: p 20px 30px,      border-bottom 1px #2A241D, flex row, items-center, gap 18px
-    */
+    <>
     <header
       className="flex flex-col items-center md:flex-row md:items-center md:gap-[18px] px-[16px] pt-[40px] pb-[12px] md:px-[30px] md:py-[20px]"
       style={{ borderBottom: "1px solid #2A241D" }}
@@ -269,5 +437,17 @@ export function BuilderSpine({ deck, counts, onExport }: BuilderSpineProps) {
         )}
       </div>
     </header>
+
+    {/* Below the spine and above the decklist, per the canvas: it is a claim
+        about the whole deck, and every group heading under it is a claim about
+        one type. A deck with neither count renders NO region, not an empty one. */}
+    {(overCommitted > 0 || softClaimed > 0) && (
+      <RollupBands
+        overCommitted={overCommitted}
+        softClaimed={softClaimed}
+        overCommittedCard={overCommittedCard}
+      />
+    )}
+    </>
   );
 }
