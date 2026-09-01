@@ -100,6 +100,13 @@ export async function collectionGeneration(userId: string): Promise<number | nul
  * compute that started before a confirmUpload would otherwise commit old-collection
  * rows after the upload wiped the table, and loadScores' fast path would serve them
  * indefinitely — nothing marks them stale.
+ *
+ * The generation is `max(csvUploads.confirmedAt)`, so it only moves on a confirmed
+ * import. That holds today because confirmUpload is the sole writer of
+ * `collectionItems` and drops `commanderScores` in the same transaction. A second
+ * writer — a manual add, an edit, a sync — would change a collection without moving
+ * the generation, and every cached score would stay served as current. Any such
+ * writer has to invalidate `commanderScores` itself.
  */
 export async function persistScores(
   userId: string,

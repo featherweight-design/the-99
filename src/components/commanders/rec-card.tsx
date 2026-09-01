@@ -181,13 +181,6 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
                 {c.name}
               </span>
             </div>
-            {/* Pool line */}
-            <p
-              className="m-0 mt-[2px]"
-              style={{ fontSize: 11, color: "#A89B84" }}
-            >
-              {c.colorPoolSize} card{c.colorPoolSize === 1 ? "" : "s"} in pool
-            </p>
           </div>
 
           {/* Fit score pinned top-right */}
@@ -371,14 +364,6 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
           >
             {c.name}
           </h3>
-
-          {/* Pool line */}
-          <p
-            className="m-0"
-            style={{ fontSize: 12.5, color: "#A89B84", marginTop: 2 }}
-          >
-            {c.colorPoolSize} card{c.colorPoolSize === 1 ? "" : "s"} in identity pool
-          </p>
 
           {/* Role chips */}
           <RoleChips roleCounts={c.roleCounts} />

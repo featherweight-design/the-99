@@ -352,14 +352,14 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...rhystic, availability: claimed(["Atraxa"]) }]);
     mount();
     await search();
-    expect(screen.getByRole("option")).toHaveTextContent("0 free — in Atraxa");
+    expect(screen.getByRole("option")).toHaveTextContent("none free — in Atraxa");
   });
 
   it("stays silent on a card this deck is already running", async () => {
     searchCards.mockResolvedValue([{ ...rhystic, availability: claimed([]) }]);
     mount({ deckOracleIds: [rhystic.oracleId] });
     await search();
-    expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
+    expect(screen.getByRole("option")).not.toHaveTextContent("none free");
   });
 
   // `inDeck` carves basic lands out so a second Forest stays addable. That
@@ -375,7 +375,7 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...forest, availability: claimed([]) }]);
     mount({ deckOracleIds: [forest.oracleId] });
     await search();
-    expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
+    expect(screen.getByRole("option")).not.toHaveTextContent("none free");
   });
 
   // The rollup returns a row for every owned card, unclaimed ones included
@@ -401,6 +401,6 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...korvold, availability: claimed([]) }]);
     mount({ deckOracleIds: [] });
     await search();
-    expect(screen.getByRole("option")).not.toHaveTextContent("0 free");
+    expect(screen.getByRole("option")).not.toHaveTextContent("none free");
   });
 });

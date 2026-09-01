@@ -198,7 +198,7 @@ export const addPanelCopy = {
     rowOwned: (qty: number) => `×${qty} owned`,
     rowNotOwned: "not owned",
     // `availability` is one of the availabilityCopy.marker.*Aria strings, or
-    // null. It is prose, not the visual label: the eye reads "0 free — in
+    // null. It is prose, not the visual label: the eye reads "none free — in
     // Atraxa", the ear hears "no free copies; this one is on your Atraxa list"
     // — the same reason the diamond glyph is aria-hidden. A free card passes
     // nothing and produces the exact shipped string.

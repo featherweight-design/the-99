@@ -10,16 +10,33 @@ describe("availabilityCopy", () => {
   });
 
   it("names the claiming deck only in the singular form", () => {
-    expect(availabilityCopy.marker.hardIn("Atraxa")).toBe("0 free — in Atraxa");
+    expect(availabilityCopy.marker.hardIn("Atraxa")).toBe("none free — in Atraxa");
     expect(availabilityCopy.marker.hardMulti(3)).toBe(
-      "0 free — across 3 decks",
+      "none free — across 3 decks",
     );
   });
 
-  // Over-commitment is a count problem, not a location problem.
+  // Over-commitment is a count problem, not a location problem. The clause now
+  // reads "also in N decks", so the old " in " proxy would fail on wording that
+  // is still counting rather than naming — assert the absent proper noun.
   it("never names a deck in the over state", () => {
     expect(availabilityCopy.marker.over(2)).not.toMatch(/in |across /);
-    expect(availabilityCopy.marker.overWithDemand(2, 3)).not.toMatch(/ in /);
+    expect(availabilityCopy.marker.overWithDemand(2, 3)).toBe(
+      "short 2 — also in 3 decks",
+    );
+    expect(availabilityCopy.marker.overWithDemand(2, 3)).not.toMatch(
+      /in (?!\d)/,
+    );
+  });
+
+  // One grammar for the over clause across the row and the tile, so a player
+  // who learns it on one surface reads it on the other.
+  it("says 'also in' wherever the over clause counts other claimants", () => {
+    expect(availabilityCopy.marker.tileOver(1)).toBe("also in 1 deck");
+    expect(availabilityCopy.marker.tileOver(2)).toBe("also in 2 decks");
+    expect(availabilityCopy.marker.overAlsoIn(1, "Atraxa")).toBe(
+      "short 1 — also in Atraxa",
+    );
   });
 
   it("singularises the soft marker", () => {
@@ -77,9 +94,9 @@ describe("availabilityCopy", () => {
   // Nazgûl) let a single list claim nine copies of something you own four of.
   // Every count string that can reach 1 has to survive it.
   it("reads correctly when exactly one deck is the whole demand", () => {
-    expect(availabilityCopy.marker.tileOver(1)).toBe("1 deck wants it");
+    expect(availabilityCopy.marker.tileOver(1)).toBe("also in 1 deck");
     expect(availabilityCopy.marker.overWithDemand(5, 1)).toBe(
-      "short 5 — 1 deck wants it",
+      "short 5 — also in 1 deck",
     );
     expect(availabilityCopy.marker.overAria(5, 1)).toBe(
       "1 of your finished lists includes this card and you own 5 too few",

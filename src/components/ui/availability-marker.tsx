@@ -114,7 +114,7 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
 /**
  * The label splits into a fixed prefix and an optional deck name, because the
  * name is the only part allowed to truncate (decision B, 2026-08-27). A single
- * string with one `truncate` clips `0 free — in Kyk…` down to `0 free — i…` at
+ * string with one `truncate` clips `none free — in Kyk…` down to `none free — i…` at
  * narrow widths, eating the clause that carries the meaning.
  *
  * The prefix is derived by slicing the name off the copy function's own output
@@ -140,7 +140,7 @@ function label(
       return { prefix: c.soft(a.soft) };
     case "hard":
       // Addendum 2 §3: collection never renders hardIn or hardMulti. A hard
-      // state with no names lands here too — `0 free — across 0 decks` is the
+      // state with no names lands here too — `none free — across 0 decks` is the
       // alternative, and `marker.hard` is the base form the copy file ships.
       if (opts.nameless || a.hardDeckNames.length === 0) return { prefix: c.hard };
       return a.hardDeckNames.length === 1
@@ -150,7 +150,7 @@ function label(
       // Collection is count-only here too — the canvas draws a bare `short 1`.
       if (opts.nameless) return { prefix: c.over(-a.free) };
       // Self-excluded: hardDeckNames already omits the current deck, so a lone
-      // remaining entry is the OTHER claimant. "2 decks want it" would count
+      // remaining entry is the OTHER claimant. "also in 2 decks" would count
       // the deck the player is standing in.
       if (opts.selfExcluded && a.hardDeckNames.length === 1) {
         return withName(c.overAlsoIn(-a.free, a.hardDeckNames[0]), a.hardDeckNames[0]);
@@ -335,8 +335,8 @@ export function AvailabilityMarker({
       {/*
         `whitespace-pre`, not `whitespace-nowrap`: a flex item trims its own
         trailing whitespace, and the negative margin below then closes the gap
-        that was standing in for it — so `0 free — in ` and `Atraxa` render as
-        `0 free — inAtraxa`. jsdom cannot see this; only the browser can.
+        that was standing in for it — so `none free — in ` and `Atraxa` render as
+        `none free — inAtraxa`. jsdom cannot see this; only the browser can.
       */}
       <span
         aria-hidden={spoken || undefined}
@@ -350,7 +350,7 @@ export function AvailabilityMarker({
       </span>
       {text.name && (
         // -ml cancels the container's gap between the two halves of what is one
-        // sentence: the gap separates the glyph from the text, not `0 free — in`
+        // sentence: the gap separates the glyph from the text, not `none free — in`
         // from `Atraxa`.
         <span
           aria-hidden={spoken || undefined}

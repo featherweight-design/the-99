@@ -54,7 +54,7 @@ describe("RowsView availability marker", () => {
 
   it("is count-only — the deck name never reaches a collection row", () => {
     renderRows({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
-    expect(screen.getByText("0 free")).toBeInTheDocument();
+    expect(screen.getByText("none free")).toBeInTheDocument();
     expect(screen.queryByText(/Atraxa/)).toBeNull();
   });
 

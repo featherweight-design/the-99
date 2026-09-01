@@ -42,17 +42,17 @@ describe("AvailabilityMarker", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />,
     );
-    expect(composed(container)).toBe("0 free — in Atraxa");
+    expect(composed(container)).toBe("none free — in Atraxa");
   });
 
   // The space before the deck name lives at the end of the prefix, and a flex
   // item trims its own trailing whitespace. `whitespace-pre` is what keeps
-  // `0 free — in Atraxa` from rendering as `0 free — inAtraxa` in a browser.
+  // `none free — in Atraxa` from rendering as `none free — inAtraxa` in a browser.
   // jsdom collapses nothing, so only the class can be asserted here.
   it("preserves the space the prefix ends with", () => {
     render(<AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />);
     const prefix = deckName().previousElementSibling!;
-    expect(prefix.textContent).toBe("0 free — in ");
+    expect(prefix.textContent).toBe("none free — in ");
     expect(prefix.className).toContain("whitespace-pre");
     expect(prefix.className).not.toContain("whitespace-nowrap");
   });
@@ -85,7 +85,7 @@ describe("AvailabilityMarker", () => {
         density="row"
       />,
     );
-    expect(screen.getByText("0 free — across 2 decks")).toBeInTheDocument();
+    expect(screen.getByText("none free — across 2 decks")).toBeInTheDocument();
   });
 
   it("says how short the player is when over-committed", () => {
@@ -249,7 +249,7 @@ describe("AvailabilityMarker chip density", () => {
         density="chip"
       />,
     );
-    expect(container.textContent).toBe("0 free");
+    expect(container.textContent).toBe("none free");
     expect(screen.queryByTitle("Atraxa")).toBeNull();
   });
 });
@@ -302,7 +302,7 @@ describe("AvailabilityMarker sparse claimants", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 1, 0)} density="row" />,
     );
-    expect(container.textContent).toBe("0 free");
+    expect(container.textContent).toBe("none free");
     expect(markerAria(a(1, 1, 0))).toBe("no free copies");
   });
 
@@ -317,11 +317,11 @@ describe("AvailabilityMarker sparse claimants", () => {
     expect(markerAria(a(4, 9, 0))).toBe("you own 5 too few");
   });
 
-  it("still says who wants it when a single deck is the whole demand", () => {
+  it("still counts the claimant when a single deck is the whole demand", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(4, 9, 0, ["Rats"])} density="row" />,
     );
-    expect(container.textContent).toBe("short 5 — 1 deck wants it");
+    expect(container.textContent).toBe("short 5 — also in 1 deck");
     expect(markerAria(a(4, 9, 0, ["Rats"]))).toBe(
       "1 of your finished lists includes this card and you own 5 too few",
     );
@@ -342,7 +342,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
 
   // The ruling that makes the whole vantage worth having: free === 0 means
   // "exactly enough for everyone, including this deck", so a deck never claims
-  // a card against itself. Off-decklist the same figures would draw `0 free`.
+  // a card against itself. Off-decklist the same figures would draw `none free`.
   it("stays silent where the off-decklist marker would claim", () => {
     const { container } = render(
       <AvailabilityMarker availability={own(0, 0, ["Atraxa"])} density="row" selfExcluded />,
@@ -369,7 +369,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
     const { container } = render(
       <AvailabilityMarker availability={av} density="row" selfExcluded />,
     );
-    expect(container.textContent).toBe("short 2 — 2 decks want it");
+    expect(container.textContent).toBe("short 2 — also in 2 decks");
     expect(markerAria(av, { selfExcluded: true })).toBe(
       "2 of your finished lists include this card and you own 2 too few",
     );
