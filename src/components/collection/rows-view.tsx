@@ -88,15 +88,35 @@ export function RowsView({
                 neither grid template changes. */}
             <span className="flex items-center gap-[7px] md:gap-[9px] min-w-0">
               {/* §Row: Card Name — 14/15px 600, #EDE6D8 (--fg), ellipsis */}
-              <span className="truncate min-w-0 text-[14px] md:text-[15px] font-semibold" style={{ color: "var(--fg)" }}>
+              {/* Row 13.2 wants the full name in the title as well as the
+                  accessible name. It matters more now than it did: the marker
+                  shares this cell, so the name truncates sooner. */}
+              <span
+                title={c.name}
+                className="truncate min-w-0 text-[14px] md:text-[15px] font-semibold"
+                style={{ color: "var(--fg)" }}
+              >
                 {c.name}
               </span>
               {c.availability && (
                 // `nameless` — /collection is the count-only vantage. No
                 // `selfExcluded`: there is no deck to stand in here.
-                <span className="shrink-0">
-                  <AvailabilityMarker availability={c.availability} density="row" nameless />
-                </span>
+                //
+                // Row density deliberately sets no family or size, because on a
+                // decklist it rides a mono meta line (row 3.4). This cell is not
+                // that: it is the sans name cell, so row 13.3's own typography
+                // has to be supplied here or the label paints as body-size sans.
+                //
+                // Seam per row 13.4 — the over glyph's hairline has to be the
+                // colour actually behind it, and that is the row surface, not
+                // the page canvas the marker defaults to.
+                <AvailabilityMarker
+                  availability={c.availability}
+                  density="row"
+                  nameless
+                  seam="var(--surface)"
+                  className="shrink-0 font-mono text-[8.5px] font-semibold tracking-[0.02em]"
+                />
               )}
             </span>
             {/* Mobile type line — §Row: Type Line (mobile): 11.5px, #8E8269 (--fg-faint), truncate */}

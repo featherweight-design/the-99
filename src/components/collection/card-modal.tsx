@@ -124,7 +124,13 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
         <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
         {/* No `nameless` here — this is the ONE place on /collection that names
             the claiming deck ("0 free — in Atraxa"). Still no `selfExcluded`. */}
-        <AvailabilityMarker availability={card.availability} density="row" />
+        {/* Row density supplies no type of its own, and this line is not a mono
+            meta line either, so the canvas's 12px mono is set here. */}
+        <AvailabilityMarker
+          availability={card.availability}
+          density="row"
+          className="font-mono text-[12px]"
+        />
       </div>
       <p className="m-0 mt-[8px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>
         {note}

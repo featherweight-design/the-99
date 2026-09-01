@@ -62,11 +62,14 @@ export function GridView({
             </span>
 
             {/* Availability chip — Addendum 2 §2, top-left on the art. The
-                quantity badge owns top-right. Count-only, same as the row. */}
+                quantity badge owns top-right. Chip density positions itself
+                (row 2.1) and forces count-only, so no wrapper: a second
+                positioned element here would offset the chip by its own inset.
+
+                `spoken` because this tile, unlike the row, has no aria-label to
+                hoist the prose into — the same call `suggestion-tile` makes. */}
             {c.availability && (
-              <span className="absolute left-[5px] top-[5px] md:left-[6px] md:top-[6px]">
-                <AvailabilityMarker availability={c.availability} density="chip" nameless />
-              </span>
+              <AvailabilityMarker availability={c.availability} density="chip" spoken />
             )}
           </div>
 
