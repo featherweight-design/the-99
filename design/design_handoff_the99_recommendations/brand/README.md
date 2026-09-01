@@ -143,8 +143,9 @@ CSS/markup and should be rebuilt as SVG/components in the target codebase.
 
 ## Files
 - `The 99 — Brand Sheet.dc.html` — the locked reference sheet (this handoff's source of truth).
-- `The 99 Brand Discovery.dc.html` — the fuller discovery board (tone, palette options, type
-  specimens, logomark concepts) for additional context on how decisions were reached.
+- `design/design_handoff_the99_brand/The 99 Brand Discovery.dc.html` — the fuller discovery board
+  (tone, palette options, type specimens, logomark concepts) for additional context on how
+  decisions were reached. **Not vendored here** — read it in the brand handoff.
 
 Both are single self-contained HTML files; open directly in a browser. They are authored as
 Design Components but render standalone.

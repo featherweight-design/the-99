@@ -6,7 +6,7 @@ explanatory and inspectable). Source of truth:
 
 File: `The 99 - Recommendations.dc.html` (canvas — pan/zoom). Every state leads with the surface
 it belongs to; phone and desktop sit side by side. Read
-`design_handoff_the99_richness/README.md` for the locked voice before auditing the copy, and
+`design/design_handoff_the99_richness/README.md` for the locked voice before auditing the copy, and
 `DENSITY-long-role.md` for the §11 max-render deliverable.
 
 **The one-line summary:** *the chip carries a number, and the button carries a deck.*
