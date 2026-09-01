@@ -86,9 +86,10 @@ The two tiers do not cover everything in `:root`. The rest:
 - **WUBRG pips** (5): `--w`, `--u`, `--b`, `--r`, `--g` — per theme, see below.
 - **Availability** (5): `--avail-soft`, `--avail-hard`, `--avail-hard-fg`,
   `--avail-over-fg`, `--avail-over-border`. Two of these are *aliases* —
-  `--avail-soft: var(--fg-muted)` and `--avail-hard: var(--brass)` — so they
-  re-resolve per theme for free and **must not** be flattened to literals in
-  the theme blocks. The other three are literals and need per-theme values.
+  `--avail-soft: var(--fg-muted)` and `--avail-hard: var(--brass)` on `main`,
+  becoming `var(--accent)` after the Phase 1 rename — so they re-resolve per
+  theme for free and **must not** be flattened to literals in the theme
+  blocks. The other three are literals and need per-theme values.
 - **Character** (3): `--kaiju-body`, `--celebrate-top`, `--celebrate-bottom`.
   These are deleted in Phase 0 along with the character layer.
 
