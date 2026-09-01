@@ -229,7 +229,7 @@ export default async function CommandersPage({
   return (
     <section className="flex flex-col min-h-screen">
       {/* Page header (mobile + desktop) */}
-      <PageHeader uniqueCardsRead={uniqueCardsRead} />
+      <PageHeader uniqueCardsRead={uniqueCardsRead} avail={renderedAvail} />
 
       <CommandersView
         results={items}

@@ -24,6 +24,8 @@ const card: BrowseCard = {
   preferredPrinting: null,
 };
 
+// `/collection` reads from off every decklist, so `free` really is `owned − hard`
+// here. Fixtures for a deck's own list must set `free` explicitly instead.
 const avail = (
   owned: number,
   hard: number,
@@ -72,5 +74,21 @@ describe("RowsView availability marker", () => {
         name: "Smothering Tithe, Enchantment, 1 copy, RVR, rare, no free copies",
       }),
     ).toBeInTheDocument();
+  });
+
+  // The over glyph's seam is whatever sits behind it, and this row swaps its
+  // background on hover. Pinned to a colour the seam paints a visible hairline
+  // through the glyph the moment the pointer lands, so it reads through a
+  // variable the row redefines on hover — the decklist row's arrangement.
+  it("points the over glyph's seam at the row background the hover redefines", () => {
+    const { container } = renderRows({ ...card, quantity: 1, availability: avail(1, 3) });
+    const row = screen.getByRole("button");
+    expect(row.className).toContain("[--row-bg:var(--surface)]");
+    expect(row.className).toContain("hover:[--row-bg:var(--surface-raised)]");
+    const seamed = [...container.querySelectorAll("span")].filter(
+      (s) => (s as HTMLElement).style.borderLeft !== "",
+    );
+    expect(seamed).toHaveLength(1);
+    expect((seamed[0] as HTMLElement).style.borderLeft).toBe("1px solid var(--row-bg)");
   });
 });

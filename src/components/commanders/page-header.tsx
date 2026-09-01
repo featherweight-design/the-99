@@ -6,12 +6,28 @@
 // Desktop: padding 28px 34px 0, no border-bottom.
 // Title: Cinzel 700, 22px mobile / 30px desktop, #EDE6D8.
 // Subtitle: IBM Plex Mono, 11px mobile / 12px desktop, #8E8269, margin-top 2/4px.
+// Row 7.5 appends the ranking clause to the shipped `N cards scanned` line. The
+// canvas draws a commander count there instead ("24 generals · ranked by fit");
+// changing that leading noun is a separate question from the availability ask.
+
+import { availabilityCopy } from "../../lib/copy/availability";
 
 type PageHeaderProps = {
   uniqueCardsRead: number;
+  /** Omitted where nothing is ranked, which drops the clause entirely. */
+  avail?: "all" | "free";
 };
 
-export function PageHeader({ uniqueCardsRead }: PageHeaderProps) {
+export function PageHeader({ uniqueCardsRead, avail }: PageHeaderProps) {
+  const scanned = `${uniqueCardsRead.toLocaleString("en-US")} cards scanned`;
+  const subtitle = avail
+    ? `${scanned} · ${
+        avail === "free"
+          ? availabilityCopy.ranking.subtitleFree
+          : availabilityCopy.ranking.subtitleAll
+      }`
+    : scanned;
+
   return (
     <>
       {/* ── Mobile header ── */}
@@ -39,7 +55,7 @@ export function PageHeader({ uniqueCardsRead }: PageHeaderProps) {
               marginTop: 2,
             }}
           >
-            {uniqueCardsRead.toLocaleString("en-US")} cards scanned
+            {subtitle}
           </p>
         </div>
 
@@ -67,7 +83,7 @@ export function PageHeader({ uniqueCardsRead }: PageHeaderProps) {
               marginTop: 4,
             }}
           >
-            {uniqueCardsRead.toLocaleString("en-US")} cards scanned
+            {subtitle}
           </p>
         </div>
       </div>
