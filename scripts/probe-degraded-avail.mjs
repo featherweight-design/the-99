@@ -20,21 +20,18 @@
 //
 // That seam stays UNCOMMITTED: a test hook on a production path costs more than
 // a two-line edit for the length of one run. Set PROBE_BASE if dev is not on 3000.
-import { readFileSync } from "node:fs";
+import { config } from "dotenv";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 
-// Parsed here rather than sourced. `--env-file`, `set -a; . ./.env` and
+// Loaded here rather than sourced. `--env-file`, `set -a; . ./.env` and
 // `export $(grep …)` all choke on this file's special characters, and each one
 // fails by leaving the vars UNSET, which reads as "creds not configured".
 //
-// It OVERWRITES rather than filling gaps. An inherited shell can carry another
-// project's `E2E_AUDIT_USER_EMAIL`, and the failure then looks like a Clerk
-// problem ("Couldn't find your account") rather than the wrong account.
-for (const line of readFileSync(new URL("../.env", import.meta.url), "utf8").split("\n")) {
-  const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);
-  if (m) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
-}
+// `override` is load-bearing. An inherited shell can carry another project's
+// `E2E_AUDIT_USER_EMAIL`, and the failure then looks like a Clerk problem
+// ("Couldn't find your account") rather than the wrong account.
+config({ path: new URL("../.env", import.meta.url), override: true, quiet: true });
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;

@@ -48,10 +48,12 @@ export function DegradedBanner({
     : variant === "both"
       ? degraded.bodyWithSynergy
       : degraded.body;
-  // `Retry` on mobile is a SHIPPED string that differs from the copy block's
-  // `Retry now`. It stays with the synergy variant rather than becoming the
-  // house label, so this ticket changes no existing pixel.
+  // Both retry labels are SHIPPED strings on the synergy variant, and mobile's
+  // `Retry` differs from the copy block's `Retry now`. Both stay literal there
+  // even where the block happens to agree, so a later copy edit cannot move a
+  // pixel this ticket did not touch.
   const mobileRetry = synergy ? "Retry" : degraded.retry;
+  const desktopRetry = synergy ? "Retry now" : degraded.retry;
 
   return (
     <>
@@ -141,9 +143,7 @@ export function DegradedBanner({
             // brand focus-visible outline treatment inherited from globals.css
             className="flex-none text-[13px] p-[10px_18px]"
           >
-            {/* The one label the block and the shipped desktop banner already
-                agree on, so every variant can read it from the block. */}
-            {degraded.retry}
+            {desktopRetry}
           </GhostButton>
         </form>
       </div>
