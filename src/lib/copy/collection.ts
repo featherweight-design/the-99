@@ -12,8 +12,12 @@ import { availabilityCopy } from "./availability";
  * An option row's count, as a screen reader says it. These are accessible
  * names, so "1 cards" is read aloud — the same reason addPanelCopy's tab names
  * pluralise, and the form the availability block was drawn with.
+ *
+ * The locale is pinned, as commanders.ts's firstRun line is: these strings are
+ * verbatim, and an unpinned toLocaleString renders "1.240" or "1 240" under a
+ * European locale.
  */
-const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString()} cards`);
+const cards = (n: number) => (n === 1 ? "1 card" : `${n.toLocaleString("en-US")} cards`);
 
 export const collectionFilterCopy = {
   set: {
