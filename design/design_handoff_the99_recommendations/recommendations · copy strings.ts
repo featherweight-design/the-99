@@ -52,6 +52,7 @@ export const recommendationsCopy = {
     degradedBody:
       'we couldn’t reach EDHREC, so the percentages are hidden for now.',
     degradedRetry: 'Try again',
+    degradedRetryAria: 'Try loading EDHREC figures again',
   },
 
   // ── Surface A · the build promise ─────────────────────────────────────
@@ -127,6 +128,13 @@ export const recommendationsCopy = {
     // Role group heading clause. The arithmetic the group closes, stated once.
     groupGap: (n: string, from: string, to: string) =>
       `${n} · closes ${from}→${to}`,
+    // The phone Shopping row carries the figure on a meta line under the name,
+    // out of the pill that used to give it context — so it is prefixed.
+    // Addendum A2. The All view's row keeps 44px and prints no figure.
+    rowFigure: (pct: string) => `edhrec ${pct}%`,
+    // Absence on its own line, with no column of figures beside it to give an
+    // em dash meaning: a sentence, exactly as suggestion-tile.tsx ships it.
+    rowNoFigure: 'no EDHREC figure',
     footer: (n: string, auto: string) => `${n} cards to buy · all ${auto} auto`,
     footerMixed: (n: string, auto: string) =>
       `${n} cards to buy · ${auto} auto`,
@@ -149,6 +157,12 @@ export const recommendationsCopy = {
 } as const;
 
 // ── REPLACES — edits inside files this block does not own ───────────────────
+//
+// CORRECTION (addendum): all three entries below target **hardcoded JSX in
+// detail.tsx**, not decks-builder.ts or commanders.ts. R1's engineering notes
+// implied a copy-module edit; there is no copy module for this surface yet.
+// Eng lifts the three strings out of the component first — into commanders.ts
+// or into this block — and that lift is part of the work, not free.
 //
 // 1. detail.tsx (both widths) — the Role Coverage sub-caption
 //    WAS:  'Your owned cards by role'

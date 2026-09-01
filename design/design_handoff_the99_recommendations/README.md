@@ -39,6 +39,22 @@ redraw when it does — but this is not ready-to-build until it merges.
 Plus: chip anatomy at both densities, auto-marker anatomy with all four row kinds, and the
 token / a11y / motion contract.
 
+**Addendum** — `The 99 - Recommendations Addendum.dc.html`, four frames the R1 audit found
+undrawn, where "same construct at the other width" was not true:
+
+| # | Frame | Phone | Desktop |
+|---|---|---|---|
+| A1 | Degraded EDHREC (the outage, with its retry placed) | ✓ | ✓ |
+| A2 | The Shopping row at 390px — figure, group header, footer, shrink order | ✓ | — (drawn in R1) |
+| A3 | In-flight at desktop — what the meter bar does with no number | — (drawn in R1) | ✓ |
+| A4 | A short role cell at phone (state 13) | ✓ | — (drawn in R1) |
+
+Three consistency fixes were made **in place** in the R1 canvas rather than restated: Card Draw
+is now 14 owned (so 12 chips + `+2 more` agrees with `DENSITY-long-role.md`), Shopping gained
+its Wipes group (five drawn rows → seven, matching the footer), and `aria-pressed` is off the
+auto tag. State 13's provenance line and state 15's body now read verbatim from the copy file,
+which was the production-final of the two.
+
 ---
 
 ## Decisions log
@@ -184,8 +200,14 @@ Hexes live only in `globals.css`. **No new token, no new hex, no new motion clas
 - **New flag on the deck-card row** recording "arrived from the fill, untouched". Naming is
   eng's (§5). It must be cleared by the keep control and by nothing else — **not** by the modal,
   **not** by a re-sort, **not** by a group change.
-- **`suggestDeck` is not modified.** #130 commits what it already returns; the unowned top-up is
-  the `getDeckSuggestions` behaviour that shipped in PR #206, bounded per role by `ROLE_TARGETS`.
+- **`suggestDeck` is not modified.** #130 commits what it already returns.
+- **CORRECTION (addendum) — the unowned top-up is NOT free.** R1 recorded it as existing
+  `getDeckSuggestions` behaviour bounded per role by `ROLE_TARGETS`. It is not: PR #206's top-up
+  is a flat `slice(0, 5)` (`src/app/decks/actions.ts:106`, `:153`) with **no role
+  classification at all**. Ruling 2 — "unowned staples top each role up to its target and no
+  further" — therefore needs **new engine code**: classify the unowned candidates by role, and
+  bound each role by its own remaining gap. The seven-card Shopping tab drawn in state 11 is not
+  reachable from what ships today. **No drawing changes**; the estimate does.
 - **Basics never enter Shopping** (§8 derived 6). One `auto` tag per stack, not per copy; the
   `+N more` meta row takes no marker, exactly as it takes no `✕` today.
 - **`role-counter-strip.tsx` / `role-counter-cell.tsx`: no change.** Decision 8.
@@ -197,8 +219,11 @@ Hexes live only in `globals.css`. **No new token, no new hex, no new motion clas
   list) and `card-detail-provider.tsx` (the trigger is never `disabled` while fetching, or
   focus-return has nothing to return to). Both still apply.
 - **Copy** lives in `src/lib/copy/` — see `recommendations · copy strings.ts`. It adds a
-  `recommendationsCopy` block and lists three `REPLACES` entries against `decks-builder.ts`
-  and `commanders.ts`.
+  `recommendationsCopy` block plus three `REPLACES` entries.
+- **CORRECTION (addendum) — the three `REPLACES` targets are hardcoded JSX**, in
+  `detail.tsx` itself, not in `decks-builder.ts` or `commanders.ts`. There is no copy module
+  for this surface yet. Eng lifts those strings out of the component before editing them; that
+  lift is part of the work.
 - **Mock data:** card names, types and colour identities are real; a Jeskai deck (Kykar, Wind's
   Fury), continuous with the add-panel handoff. **Inclusion percentages are plausible but
   fabricated** — do not read them as EDHREC figures. The arithmetic is not fabricated: 10 + 10 +
@@ -226,12 +251,15 @@ Hexes live only in `globals.css`. **No new token, no new hex, no new motion clas
 7. **The swept-empty branch needs a "was filled" bit** to pick its copy. If that is not cheap,
    the shipped first-run string ships in both places and reads slightly wrong in one of them —
    acceptable, but say so rather than discovering it.
-8. **No price data anywhere in the product**, so Shopping cannot total a cost. If pricing is on
+8. **Ruling 2 needs engine work** (see the correction above): role-aware bounding of the unowned
+   top-up does not exist. Sizing is eng's, but it is not a one-liner, and it gates state 11.
+9. **No price data anywhere in the product**, so Shopping cannot total a cost. If pricing is on
    any roadmap, this tab is where it lands and this handoff has left it room.
 
 ## Files
 - `The 99 - Recommendations.dc.html` — the canvas (this handoff's deliverable).
 - `README.md` — this file.
+- `The 99 - Recommendations Addendum.dc.html` + `ADDENDUM-README.md` — the R1-audit addendum.
 - `DENSITY-long-role.md` — the §11 max-render / density recommendation for state 6.
 - `recommendations · copy strings.ts` — the copy block, production-final.
 - `READINESS.md` — self-assessed readiness and what blocks a green.

@@ -2,6 +2,12 @@
 
 **Self-assessed: 🟡 Yellow — one hard block, and it is not a design question.**
 
+**R1's audit came back 🟠 Orange** — four undrawn frames, a copy-file disagreement, three
+consistency slips, two wrong engineering notes. All eight items are answered: four frames in
+`The 99 - Recommendations Addendum.dc.html`, three fixes in place in the R1 canvas, the copy
+file reconciled and corrected. Items 2 and 3 below were **not** part of that audit and stay
+open.
+
 The audit against §8 is what settles this; the note below is what Design believes it is handing
 over.
 
@@ -35,6 +41,15 @@ over.
 6. **State 14 may never render.** Design prefers the fill inside the create transaction. The
    in-flight frame is drawn so that a streaming implementation has a spec, not because one is
    recommended.
+
+## Corrected since R1 — read these before estimating
+
+7. **The unowned top-up is a flat `slice(0, 5)`**, not a per-role bound
+   (`src/app/decks/actions.ts:106`, `:153`), with no role classification. Ruling 2 needs new
+   engine code, and state 11's seven-card Shopping tab is not reachable without it. R1 recorded
+   this as free and was wrong. Nothing drawn changes.
+8. **The three `REPLACES` entries target hardcoded JSX in `detail.tsx`**, not a copy module.
+   The lift out of the component is part of the work.
 
 ## Not blocking
 
