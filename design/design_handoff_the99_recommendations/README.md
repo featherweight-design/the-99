@@ -210,7 +210,10 @@ Hexes live only in `globals.css`. **No new token, no new hex, no new motion clas
   reachable from what ships today. **No drawing changes**; the estimate does.
 - **Basics never enter Shopping** (§8 derived 6). One `auto` tag per stack, not per copy; the
   `+N more` meta row takes no marker, exactly as it takes no `✕` today.
-- **`role-counter-strip.tsx` / `role-counter-cell.tsx`: no change.** Decision 8.
+- **`role-counter-strip.tsx` / `role-counter-cell.tsx`:** the **strip** is untouched (decision 8
+  — no layout change, no rename, no new construct). The **cell** gains two state treatments from
+  the addendum: the in-flight rule in place of its track (A3) and the `--border-strong` hairline
+  on a short cell in a just-filled deck (A4). "No change" was true at R1 and is not now.
 - **`decklist-row.tsx`** gains one slot between `BuyTag` and the `✕`. The marker's
   `shrink` ordering (name yields last) carries over from the availability marker.
 - **The sweep is one server action**, one optimistic list update, one live-region message. Not

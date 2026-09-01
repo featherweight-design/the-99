@@ -156,6 +156,24 @@ export const recommendationsCopy = {
   },
 } as const;
 
+// ── NOT OURS — the status pill, named here so it is not re-declared ─────────
+//
+// The deck status pill (`Draft` / `Building` / `Playable` / `Complete`) is
+// shipped and computed from the deck's own counts. It gets NO key in this file:
+// a second live value in a second module is the defect the add-panel addendum
+// flagged when `strip.hint` was overwritten from two places. Recorded instead
+// as a mapping, so R2's "two values for one pill" is answered without a fork:
+//
+//   state 14 (in-flight, 0 rows committed) → `Draft`     — what the shipped
+//     computation already returns for a deck with no cards. Drawn dashed, which
+//     is a treatment, not a different string.
+//   state 8  (filled, 68 rows)             → `Building`  — likewise computed;
+//     68 of 99 is mid-build by the shipped thresholds.
+//
+// Both values come out of the existing ladder unchanged. If eng finds the
+// thresholds disagree with this mapping, the thresholds win and this comment is
+// what needs editing — not the pill.
+
 // ── REPLACES — edits inside files this block does not own ───────────────────
 //
 // CORRECTION (addendum): all three entries below target **hardcoded JSX in

@@ -132,7 +132,48 @@ Both are recorded in `README.md` and `READINESS.md` as well, because they change
    `decks-builder.ts` / `commanders.ts`. There is no copy module for this surface yet; eng lifts
    the strings out of the component first, and that lift is part of the work.
 
-## Files touched
+## R2 — two items closed
+
+### A3's bar: the drawing moved, not the prose
+R2 was right that a dashed 5px pill is R1's track geometry with a different border — still a
+vessel, and a vessel invites the question of how full it is. It does **not** escape the objection
+the paragraph raises, so the canvas changed rather than the argument.
+
+Mid-fill the cell now carries **no track at all**: a `1px dashed --border-strong` rule on a
+zero-height element, holding the track's 5px as margin so the cell does not change height between
+frames. **A rule is not a container**, so there is nothing for a fill to be measured against.
+All five cells redrawn.
+
+### The status pill, and A2's intro
+- **The pill gets no key.** `Draft` / `Building` / `Playable` / `Complete` is shipped and
+  computed from the deck's own counts; a second live value in a second module is precisely the
+  defect the add-panel addendum flagged when `strip.hint` was overwritten from two files. The
+  copy file records a **mapping** instead: **state 14 → `Draft`** (what the shipped computation
+  already returns for a deck with no rows; drawn dashed, which is a treatment, not a different
+  string) and **state 8 → `Building`** (68 of 99 is mid-build by the shipped thresholds). If the
+  thresholds disagree, the thresholds win and the comment is what gets edited.
+- **A2's intro is back to `shopping.intro` verbatim** — "Nothing here is a wildcard —" restored,
+  and the count is `7` rather than a spelled-out *Seven* the signature has no room for. A
+  divergence introduced in the round that was closing divergences; fair catch.
+
+### On the four notes
+Carried as stated, no argument. Two are worth a sentence so eng is not guessing:
+- **`README.md:213` is now wrong.** A3 and A4 both touch `role-counter-cell.tsx` — the in-flight
+  cell treatment and the short-cell hairline. Decision 8 still holds for the *strip* (no layout
+  change, no renaming, no new construct), but "no change" is not true of the cell file. Read it
+  as: **the strip's language and geometry are untouched; the cell gains two state treatments.**
+- **A2's shrink rule 1 needs the properties to exist.** The meta span must carry
+  `white-space: nowrap; overflow: hidden; text-overflow: ellipsis` for "the meta line ellipses
+  first" to be true; the mock draws strings short enough not to need it, which is how it slipped.
+- The retry's disabled state is the shipped `CardDetailTrigger` treatment — `opacity: 0.55`,
+  `aria-busy` — not a new value.
+- **Phone Card Draw draws 4 chips under `Show all 14`, and stays that way.** It is not a cap
+  change: the frame is a clipped 860px phone viewport, and two rows were cut so the Board Wipes
+  panel below it — which is where the absent-figure treatment lives at phone — landed above the
+  sticky bar. The cap is 6, per `DENSITY-long-role.md`; the frame shows 4 because the frame is
+  short. Worth a caption in the canvas if it trips anyone else.
+
+
 - **New:** `The 99 - Recommendations Addendum.dc.html`, `ADDENDUM-README.md`.
 - **Edited in place:** `The 99 - Recommendations.dc.html` (3 consistency fixes, 2 copy
   reconciliations), `recommendations · copy strings.ts` (3 keys added, corrected REPLACES
