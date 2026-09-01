@@ -5,9 +5,56 @@
 // Retry action: <form action={retryRecs}> secondary button.
 
 import { retryRecs } from "../../app/commanders/actions";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { GhostButton } from "../ui/button";
 
-export function DegradedBanner() {
+/**
+ * `synergy` is EDHREC down, `availability` the deck read, `both` the pair.
+ *
+ * There is never more than one banner. Two failures stack into `both` rather
+ * than rendering twice, because to the player they are one "try again" and
+ * `retryRecs` already re-runs the whole page.
+ */
+export type DegradedVariant = "synergy" | "availability" | "both";
+
+/**
+ * The synergy variant's four strings stay literal, and deliberately so. The two
+ * widths carry DIFFERENT body copy, and the mobile button reads `Retry` where
+ * the copy block's `retry` is `Retry now` — so sourcing them from the block
+ * would change shipped mobile text as a side effect of adding two variants.
+ * Only the new variants read from `availabilityCopy`.
+ */
+export function DegradedBanner({
+  variant = "synergy",
+}: {
+  variant?: DegradedVariant;
+}) {
+  const { degraded } = availabilityCopy;
+  // Every per-variant choice below keys off `variant` and never off whether
+  // some other string came back non-empty. Copy is data: an editor emptying one
+  // key should blank that line, not silently switch a button's label.
+  const synergy = variant === "synergy";
+  // The heading is the deck-read failure in both new variants, because that is
+  // the one the player can see a control change for: `What's free` goes struck
+  // and unselectable, while EDHREC being unreachable changes no affordance.
+  const heading = synergy ? "Synergy data unavailable" : degraded.heading;
+  const mobileBody = synergy
+    ? "EDHREC is unreachable. Scores shown are based on pool and role coverage only."
+    : variant === "both"
+      ? degraded.bodyWithSynergy
+      : degraded.body;
+  const desktopBody = synergy
+    ? "EDHREC is unreachable. Fit scores reflect pool and role coverage only — synergy receipts are hidden until the connection is restored."
+    : variant === "both"
+      ? degraded.bodyWithSynergy
+      : degraded.body;
+  // Both retry labels are SHIPPED strings on the synergy variant, and mobile's
+  // `Retry` differs from the copy block's `Retry now`. Both stay literal there
+  // even where the block happens to agree, so a later copy edit cannot move a
+  // pixel this ticket did not touch.
+  const mobileRetry = synergy ? "Retry" : degraded.retry;
+  const desktopRetry = synergy ? "Retry now" : degraded.retry;
+
   return (
     <>
       {/* ── Mobile ── */}
@@ -29,13 +76,13 @@ export function DegradedBanner() {
 
         <div className="flex-1 min-w-0">
           <p className="m-0" style={{ fontSize: 12.5, color: "#EDE6D8", fontWeight: 500 }}>
-            Synergy data unavailable
+            {heading}
           </p>
           <div
             className="m-0"
             style={{ fontSize: 11.5, color: "#A89B84", lineHeight: 1.5, marginTop: 2 }}
           >
-            EDHREC is unreachable. Scores shown are based on pool and role coverage only.{" "}
+            {mobileBody}{" "}
             <form action={retryRecs} className="inline">
               <button
                 type="submit"
@@ -43,7 +90,7 @@ export function DegradedBanner() {
                 className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
                 style={{ color: "#C9A24B", fontSize: 11.5 }}
               >
-                Retry
+                {mobileRetry}
               </button>
             </form>
           </div>
@@ -79,14 +126,13 @@ export function DegradedBanner() {
         {/* Text block */}
         <div className="flex-1 min-w-0">
           <p className="m-0" style={{ fontSize: 15, color: "#EDE6D8", fontWeight: 600 }}>
-            Synergy data unavailable
+            {heading}
           </p>
           <p
             className="m-0"
             style={{ fontSize: 13, color: "#C6B79A", lineHeight: 1.55, marginTop: 3 }}
           >
-            EDHREC is unreachable. Fit scores reflect pool and role coverage only — synergy
-            receipts are hidden until the connection is restored.
+            {desktopBody}
           </p>
         </div>
 
@@ -97,7 +143,7 @@ export function DegradedBanner() {
             // brand focus-visible outline treatment inherited from globals.css
             className="flex-none text-[13px] p-[10px_18px]"
           >
-            Retry now
+            {desktopRetry}
           </GhostButton>
         </form>
       </div>

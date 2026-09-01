@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { availabilityCopy } from "../../lib/copy/availability";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { CommandersView, type AvailMode } from "./commanders-view";
 import { REVEAL_STEP } from "./reveal-control";
@@ -306,6 +307,32 @@ describe("CommandersView ranking toggle", () => {
     view(results(3), { availOk: false });
     fireEvent.keyDown(segments(ALL)[0], { key: "ArrowRight" });
     expect(push).not.toHaveBeenCalled();
+  });
+
+  // The struck segment says a control is gone; the banner is the only thing
+  // that says why, and offers the way back.
+  it("banners the failed deck read", () => {
+    view(results(3), { availOk: false });
+    // Two, and exactly two: the banner always renders both width branches, so an
+    // exact count is what catches a second banner sneaking in.
+    expect(screen.getAllByText(availabilityCopy.degraded.heading)).toHaveLength(2);
+    expect(screen.queryByText("Synergy data unavailable")).toBeNull();
+  });
+
+  // Two failures are one "try again" to the player, and `retryRecs` re-runs the
+  // whole page — so stacking two banners would put two identical buttons on it.
+  it("folds two failures into one banner", () => {
+    view(results(3), { availOk: false, degraded: true });
+    expect(
+      screen.getAllByText(availabilityCopy.degraded.bodyWithSynergy),
+    ).toHaveLength(2);
+    expect(screen.queryByText("Synergy data unavailable")).toBeNull();
+  });
+
+  it("leaves the synergy banner alone when only EDHREC is down", () => {
+    view(results(3), { degraded: true });
+    expect(screen.getAllByText("Synergy data unavailable")).toHaveLength(2);
+    expect(screen.queryByText(availabilityCopy.degraded.heading)).toBeNull();
   });
 
   it("explains the exclusion only while the free ranking is on", () => {
