@@ -67,8 +67,11 @@ describe("BuilderSpine commitments roll-up", () => {
   it("leads with the red line even when the soft count is far larger", () => {
     mount({ overCommitted: 1, softClaimed: 40 });
     const text = region()?.textContent ?? "";
-    expect(text.indexOf("spoken for twice")).toBeGreaterThanOrEqual(0);
-    expect(text.indexOf("spoken for twice")).toBeLessThan(text.indexOf("in other brews"));
+    const red = text.indexOf(availabilityCopy.deckRollup.overHeading(1));
+    const muted = text.indexOf(availabilityCopy.deckRollup.softHeadingAfterOver(40));
+    expect(red).toBeGreaterThanOrEqual(0);
+    expect(muted).toBeGreaterThanOrEqual(0);
+    expect(red).toBeLessThan(muted);
   });
 
   // The disjointness proof: "more" only appears when there is something to be more than.
@@ -83,7 +86,9 @@ describe("BuilderSpine commitments roll-up", () => {
   it("counts on its own when nothing is over-committed", () => {
     mount({ overCommitted: 0, softClaimed: 12 });
     expect(screen.getAllByText(availabilityCopy.deckRollup.softHeading(12))).toHaveLength(2);
-    expect(screen.queryByText(/spoken for twice/)).toBeNull();
+    // A red band that leaked through at zero would announce itself as
+    // "0 cards…", so that is the exact string worth ruling out.
+    expect(screen.queryByText(availabilityCopy.deckSummary.ariaLabel(0))).toBeNull();
   });
 
   // Row 12.9. The named body is only truthful for a single card, so the plural

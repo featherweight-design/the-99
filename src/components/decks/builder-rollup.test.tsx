@@ -107,7 +107,9 @@ describe("BuilderShell — commitments roll-up derivation", () => {
     const availabilities: Avail[] = Array.from({ length: 99 }, (_, i) => (i === 0 ? OVER : SOFT));
     await mount(makeDeck(99, availabilities));
     expect(screen.getAllByText(availabilityCopy.deckRollup.overHeading(1))).toHaveLength(2);
-    expect(screen.queryByText(/in other brews/)).toBeNull();
+    // 98 of the 99 are soft-claimed, so a window that failed to close would say
+    // so in the "N more" form that sits under a red line.
+    expect(screen.queryByText(availabilityCopy.deckRollup.softHeadingAfterOver(98))).toBeNull();
   });
 
   // The named body counts finished lists out loud, so an empty name array would
@@ -115,7 +117,9 @@ describe("BuilderShell — commitments roll-up derivation", () => {
   it("drops the body rather than naming nobody", async () => {
     await mount(makeDeck(2, [{ ...OVER, hardDeckNames: [] }, undefined]));
     expect(screen.getAllByText(availabilityCopy.deckRollup.overHeading(1))).toHaveLength(2);
-    expect(screen.queryByText(/finished lists and you own/)).toBeNull();
+    // Ungated, the name array's length would be interpolated straight in, and
+    // the sentence would count zero finished lists out loud.
+    expect(screen.queryByText(availabilityCopy.deckSummary.body("Card 0", 0, 1))).toBeNull();
   });
 
   it("names the card when exactly one is over-committed", async () => {
