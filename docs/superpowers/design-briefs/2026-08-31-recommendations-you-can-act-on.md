@@ -107,7 +107,7 @@ The roster itself already exists: `suggestDeck` (`src/lib/decks/suggest.ts:120-1
 **Surface B**
 
 8. Freshly filled deck — 68 cards, all auto, before any interaction.
-9. Partly ruled deck — a mix of auto, kept and hand-added cards in one list.
+9. Partly pruned deck — still-auto, explicitly kept, and hand-added cards in one list.
 10. All auto cleared — the deck drops to the commander alone. This is the old empty state; confirm it still reads correctly when reached by *deletion* rather than by never having been filled.
 11. **Shopping populated by the fill** — the tab is about to have real contents for the first time. What does a to-buy card look like next to an owned one, and what does the tab's count read?
 12. Shopping empty because the user's collection covered every baseline. Both empty-tab directions, per the template.
