@@ -5,8 +5,11 @@ name: Catalog refresh
 # runner gives us hours instead of minutes.
 on:
   schedule:
-    # 09:00 UTC on the 1st of each month.
-    - cron: '0 9 1 * *'
+    # 09:00 UTC every Monday. Monthly was inherited from the Vercel cron this replaced, when
+    # the 300s maxDuration made an ingest expensive; a full run now takes ~1 minute. Weekly
+    # caps catalog staleness at 7 days, and a Monday lands within days of both a Friday set
+    # release and the prerelease weekend before it, when cards first become physically ownable.
+    - cron: '0 9 * * 1'
   release:
     types: [published]
   workflow_dispatch:
@@ -25,33 +28,62 @@ on:
         options: [all, sets, printings, oracle]
         default: all
 
-concurrency:
-  # Per target: the two environments hold different databases, so a manual staging refresh has
-  # no reason to queue behind — or delay — the scheduled production one. Never cancel in
-  # progress; a half-applied ingest leaves the representative pass unrun.
-  group: catalog-refresh-${{ github.event.inputs.target || 'production' }}
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
 jobs:
-  refresh:
+  # Resolves which databases this run refreshes. A scheduled or release run fans out over both
+  # environments; a manual dispatch refreshes only the one it names. This has to be a separate
+  # job because a matrix can only be built from a `needs` output — the alternative, an
+  # expression on `environment`, is what let staging go unrefreshed for five weeks.
+  plan:
     # Kill switch for the automatic triggers; a manual dispatch always runs. Set the
     # CATALOG_REFRESH_ENABLED repository variable to 'true' or scheduled refresh never fires.
     if: vars.CATALOG_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.pick.outputs.targets }}
+    steps:
+      - id: pick
+        shell: bash
+        env:
+          # Read through the environment rather than interpolating into the script body, so the
+          # input cannot inject shell. The `case` re-validates what the `choice` type already
+          # constrains, because `github.event.inputs` is unset — not defaulted — off dispatch.
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          case "$TARGET" in
+            staging|production) targets="[\"$TARGET\"]" ;;
+            '') targets='["staging","production"]' ;;
+            *) echo "Unrecognised target: $TARGET" >&2; exit 1 ;;
+          esac
+          echo "targets=$targets" >> "$GITHUB_OUTPUT"
+          echo "Refreshing: $targets"
+
+  refresh:
+    needs: plan
+    strategy:
+      matrix:
+        target: ${{ fromJSON(needs.plan.outputs.targets) }}
+      # The two environments are independent databases. A staging ingest that fails must not
+      # cancel the production one, which is the environment the app actually serves.
+      fail-fast: false
+    runs-on: ubuntu-latest
+    concurrency:
+      # Per target: the two environments hold different databases, so a manual staging refresh
+      # has no reason to queue behind — or delay — the scheduled production one. Never cancel
+      # in progress; a half-applied ingest leaves the representative pass unrun.
+      group: catalog-refresh-${{ matrix.target }}
+      cancel-in-progress: false
     # The printings bulk download timeout alone is 30 minutes, before any
     # parsing or upserting. A timeout here aborts mid-ingest and skips the representative
     # recompute, so leave generous headroom rather than trimming to the expected runtime.
     timeout-minutes: 180
     # GitHub environment names are `catalog-staging` / `catalog-production`: a bare
     # `production` environment cannot be created because Vercel already owns `Production`
-    # and the names are case-insensitively unique. Schedule and release carry no inputs, so
-    # they fall through to production — matching the Vercel cron this replaces. The `inputs`
-    # context only exists on workflow_dispatch, so read them through `github.event.inputs`,
-    # which resolves to null on the other triggers instead of failing to evaluate.
-    environment: catalog-${{ github.event.inputs.target || 'production' }}
+    # and the names are case-insensitively unique. Each holds its own CATALOG_DATABASE_URL,
+    # so this is what routes the ingest at one database rather than the other.
+    environment: catalog-${{ matrix.target }}
     defaults:
       run:
         # GitHub expands `shell: bash` to `bash -eo pipefail`. Without it the seed steps' exit
@@ -80,7 +112,7 @@ jobs:
           {
             echo "## Catalog refresh"
             echo ""
-            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
+            echo "- Target: \`catalog-${{ matrix.target }}\`"
             echo "- Job: \`$JOB\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"

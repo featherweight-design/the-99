@@ -7,7 +7,7 @@ Production stack: **Vercel** (Next.js hosting) + **Neon** (serverless Postgres) 
 - Vercel builds from `main` (`pnpm build` — Vercel detects pnpm from `pnpm-lock.yaml` and the `packageManager` field); every route is dynamic (server-rendered on demand), so builds need no live database — `DATABASE_URL` only has to exist.
 - Neon hosts the Postgres database; the app connects via `@neondatabase/serverless` using `DATABASE_URL`.
 - Clerk handles auth; keys are environment-scoped (test vs. production instance).
-- The card catalog is refreshed by **GitHub Actions**, not by Vercel — `.github/workflows/catalog-refresh.yml` runs 09:00 UTC on the 1st of each month, on every published release, and on manual dispatch. It replaced a Vercel cron: the Scryfall bulk files (201MB oracle, 620MB printings) have outgrown a serverless function's 300s ceiling, and a runner gives the ingest hours.
+- The card catalog is refreshed by **GitHub Actions**, not by Vercel — `.github/workflows/catalog-refresh.yml` runs 09:00 UTC every Monday, on every published release, and on manual dispatch. It replaced a Vercel cron: the Scryfall bulk files (201MB oracle, 620MB printings) have outgrown a serverless function's 300s ceiling, and a runner gives the ingest hours.
 
 ## Environment variables (Vercel → Project → Settings → Environment Variables)
 
@@ -26,7 +26,7 @@ Production stack: **Vercel** (Next.js hosting) + **Neon** (serverless Postgres) 
 | `CATALOG_DATABASE_URL` | Environment secret | `catalog-staging`, `catalog-production` | The Neon connection string for that branch. Same precedent as `MIGRATE_DATABASE_URL`: a separate, explicitly-scoped string rather than reusing the app's |
 | `CATALOG_REFRESH_ENABLED` | Repository variable | — | Must be `'true'` or the scheduled and release-triggered runs are skipped. Manual dispatch bypasses it |
 
-The environments are named `catalog-staging` / `catalog-production`, not `staging` / `production`: GitHub environment names are case-insensitively unique and Vercel's integration already owns `Production`. Schedule and release triggers carry no inputs and so target production, matching the cron they replaced.
+The environments are named `catalog-staging` / `catalog-production`, not `staging` / `production`: GitHub environment names are case-insensitively unique and Vercel's integration already owns `Production`. Schedule and release triggers carry no inputs and so fan out over **both** environments, one job each; only a manual dispatch refreshes a single environment. Both jobs must stay green — a failure in either leaves that catalog stale, which surfaces later as collection rows that silently fail to match.
 
 Manual runs: **Actions → Catalog refresh → Run workflow**, choosing `target` (staging/production) and `job` (`all`, `sets`, `printings`, `oracle`). Each run writes its row counts to the job summary.
 

@@ -1,8 +1,8 @@
 /**
  * Canary for Scryfall's bulk-data contract. Touches no database and needs no secrets.
  *
- * The catalog refresh runs monthly, so a breaking upstream change used to go unnoticed for up
- * to 30 days and then surface as a failed refresh (#103: `download_uri` became
+ * The catalog refresh runs weekly, so a breaking upstream change would otherwise go unnoticed
+ * for up to 7 days and then surface as a failed refresh (#103: `download_uri` became
  * `jsonl_download_uri` and the payload became gzipped JSONL). Running this daily turns that
  * into a same-day alert.
  */
