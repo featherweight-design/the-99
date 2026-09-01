@@ -313,9 +313,9 @@ describe("CommandersView ranking toggle", () => {
   // that says why, and offers the way back.
   it("banners the failed deck read", () => {
     view(results(3), { availOk: false });
-    expect(
-      screen.getAllByText(availabilityCopy.degraded.heading).length,
-    ).toBeGreaterThan(0);
+    // Two, and exactly two: the banner always renders both width branches, so an
+    // exact count is what catches a second banner sneaking in.
+    expect(screen.getAllByText(availabilityCopy.degraded.heading)).toHaveLength(2);
     expect(screen.queryByText("Synergy data unavailable")).toBeNull();
   });
 
@@ -324,14 +324,14 @@ describe("CommandersView ranking toggle", () => {
   it("folds two failures into one banner", () => {
     view(results(3), { availOk: false, degraded: true });
     expect(
-      screen.getAllByText(availabilityCopy.degraded.bodyWithSynergy).length,
-    ).toBeGreaterThan(0);
+      screen.getAllByText(availabilityCopy.degraded.bodyWithSynergy),
+    ).toHaveLength(2);
     expect(screen.queryByText("Synergy data unavailable")).toBeNull();
   });
 
   it("leaves the synergy banner alone when only EDHREC is down", () => {
     view(results(3), { degraded: true });
-    expect(screen.getAllByText("Synergy data unavailable").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Synergy data unavailable")).toHaveLength(2);
     expect(screen.queryByText(availabilityCopy.degraded.heading)).toBeNull();
   });
 

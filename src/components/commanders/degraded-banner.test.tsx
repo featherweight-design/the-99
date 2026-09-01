@@ -14,6 +14,18 @@ describe("DegradedBanner", () => {
   it("keeps the shipped synergy copy unchanged", () => {
     render(<DegradedBanner />);
     expect(screen.getAllByText("Synergy data unavailable")).toHaveLength(2);
+    // Both bodies pinned, not just the heading: they are the strings this ticket
+    // most easily breaks, since the temptation is to source them from the block.
+    expect(
+      screen.getByText(
+        "EDHREC is unreachable. Scores shown are based on pool and role coverage only.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "EDHREC is unreachable. Fit scores reflect pool and role coverage only — synergy receipts are hidden until the connection is restored.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "Retry now" })).toHaveLength(1);
   });
