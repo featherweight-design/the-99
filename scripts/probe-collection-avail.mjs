@@ -10,8 +10,8 @@
 // with real figures without a second finished deck competing for a single copy.
 // That stub is reverted before the PR opens.
 //
-// Run by hand: `node scripts/probe-collection-avail.mjs`. Not part of `pnpm
-// test`: it needs a browser and a signed-in session.
+// Run by hand, and not part of `pnpm test` — it needs a browser and a
+// signed-in session: `node --env-file=.env scripts/probe-collection-avail.mjs`
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 
@@ -19,9 +19,15 @@ const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 const SECRET = process.env.CLERK_SECRET_KEY;
-if (!EMAIL || !SECRET) {
-  throw new Error("Set E2E_AUDIT_USER_EMAIL and CLERK_SECRET_KEY.");
-}
+// Named one by one, because "sign-in failed" thirty seconds into a browser run
+// is a much worse way to learn that a variable is missing. A `+clerk_test`
+// fixture address takes the email-code path and has no password to supply.
+const missing = [
+  !EMAIL && "E2E_AUDIT_USER_EMAIL",
+  !SECRET && "CLERK_SECRET_KEY",
+  EMAIL && !EMAIL.includes("+clerk_test") && !PASSWORD && "E2E_AUDIT_USER_PASSWORD",
+].filter(Boolean);
+if (missing.length > 0) throw new Error(`Set ${missing.join(", ")}.`);
 
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },

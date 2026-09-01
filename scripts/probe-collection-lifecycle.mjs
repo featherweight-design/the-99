@@ -11,8 +11,8 @@
 //   resume   reload, and a second browser      → the same, from the server
 //
 // Every mutation is undone by the pass that follows it, so the deck ends where
-// it started. Run by hand: `PROBE_DECK=<id> node --env-file=.env
-// scripts/probe-collection-lifecycle.mjs`. Not part of `pnpm test`.
+// it started. Run by hand, and not part of `pnpm test`:
+// `PROBE_DECK=<id> node --env-file=.env scripts/probe-collection-lifecycle.mjs`
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 
@@ -21,7 +21,17 @@ let DECK = process.env.PROBE_DECK;
 const CARD = process.env.PROBE_CARD ?? "Sol Ring";
 const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
-if (!EMAIL || !DECK) throw new Error("Set PROBE_DECK and E2E_AUDIT_USER_EMAIL.");
+const SECRET = process.env.CLERK_SECRET_KEY;
+// Named one by one, because "sign-in failed" thirty seconds into a browser run
+// is a much worse way to learn that a variable is missing. A `+clerk_test`
+// fixture address takes the email-code path and has no password to supply.
+const missing = [
+  !DECK && "PROBE_DECK",
+  !EMAIL && "E2E_AUDIT_USER_EMAIL",
+  !SECRET && "CLERK_SECRET_KEY",
+  EMAIL && !EMAIL.includes("+clerk_test") && !PASSWORD && "E2E_AUDIT_USER_PASSWORD",
+].filter(Boolean);
+if (missing.length > 0) throw new Error(`Set ${missing.join(", ")}.`);
 
 async function signIn(page) {
   await setupClerkTestingToken({ page });
