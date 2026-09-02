@@ -21,7 +21,9 @@ const SECRET = process.env.CLERK_SECRET_KEY;
 // keeping a literal. Its sibling probes sign in by password, but the audit user
 // they name is not a member of this Clerk instance; a backend-issued sign-in
 // ticket needs no password and works for whichever account actually holds data.
-const EMAIL = process.env.PROBE_USER_EMAIL ?? "hugh@featherweight.design";
+// `||` rather than `??` so that an exported-but-empty PROBE_USER_EMAIL falls
+// back too, instead of asking Clerk for the empty string.
+const EMAIL = process.env.PROBE_USER_EMAIL || "hugh@featherweight.design";
 // The reel the run leaves behind. Playwright will not create a missing parent,
 // so on a fresh machine the first screenshot throws and the whole walk is lost.
 const SHOTS = process.env.PROBE_SHOT_DIR ?? "/tmp/theme-shots";
