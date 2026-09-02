@@ -121,8 +121,10 @@ export function CoverageRow({
         aria-hidden
         className="block shrink-0 rounded-full w-[7px] h-[7px] bg-success"
       />
-      {/* Name — ellipsed */}
-      <span className="flex-1 truncate text-[13.5px] text-fg text-left">
+      {/* Name — ellipsed. `min-w-0` is load-bearing beside `flex-1`: a flex item's
+          default min-width is its content, so without it the span refuses to
+          shrink and a long name overflows the row instead of ellipsing. */}
+      <span className="flex-1 min-w-0 truncate text-[13.5px] text-fg text-left">
         {card.name}
       </span>
       {/* Figure / absent dash / nothing */}

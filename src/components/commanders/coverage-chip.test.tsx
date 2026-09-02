@@ -96,6 +96,10 @@ describe("CoverageRow", () => {
     const nameSpan = screen.getByText(longName);
     // The truncate class applies overflow:hidden + text-overflow:ellipsis + white-space:nowrap.
     expect(nameSpan.className).toMatch(/truncate/);
+    // And min-w-0, without which truncate does nothing here: the span is a flex
+    // item, whose default min-width is its own content, so it would refuse to
+    // shrink and push the figure off the row rather than ellipsing.
+    expect(nameSpan.className).toMatch(/min-w-0/);
   });
 
   it("prints the figure right-aligned when showFigures is true", () => {
