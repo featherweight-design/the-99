@@ -25,7 +25,11 @@ export const collectionBrowseCopy = {
       if (colorLabel) return `Nothing matches in ${colorLabel}.`;
       return "Nothing matches those filters.";
     },
-    caption: "Nothing matches that search and that colour filter together. Drop one of them.",
+    // The heading names whichever of the two mocked dimensions is active; the
+    // caption cannot, because the same surface is reached by a type or set
+    // filter alone. Naming a search and a colour filter here would state as
+    // fact something that is often not true of the filters actually set.
+    caption: "Nothing in your collection clears every filter. Drop one of them.",
     cta: "Clear filters",
   },
 } as const;

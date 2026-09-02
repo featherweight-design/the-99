@@ -18,7 +18,7 @@ describe("commandersCopy.filteredEmpty", () => {
 
   it("agrees in number when exactly one candidate is filtered out", () => {
     expect(commandersCopy.filteredEmpty.caption("white-red", 1)).toBe(
-      "You own 1 legal commander, but none of them are white-red.",
+      "You own 1 legal commander, but it is not white-red.",
     );
   });
 

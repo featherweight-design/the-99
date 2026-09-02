@@ -8,8 +8,13 @@
 export const commandersCopy = {
   filteredEmpty: {
     heading: (guild: string) => `No generals in ${guild}.`,
+    // Number agreement runs the whole clause, not just the noun: at one
+    // candidate the pronoun and the verb have to move as well, or the line
+    // reads "You own 1 legal commander, but none of them are white-red."
     caption: (colorWords: string, total: number) =>
-      `You own ${total} legal commander${total === 1 ? "" : "s"}, but none of them are ${colorWords}.`,
+      total === 1
+        ? `You own 1 legal commander, but it is not ${colorWords}.`
+        : `You own ${total} legal commanders, but none of them are ${colorWords}.`,
     count: (total: number) => `Showing 0 of ${total}`,
     cta: "Clear color filter",
   },
