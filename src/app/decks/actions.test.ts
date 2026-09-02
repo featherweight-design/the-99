@@ -14,6 +14,8 @@ const stub = vi.hoisted(() => {
     insertCalls: [] as { table: string; values: unknown; returning: unknown[] | null }[],
     // Tracks whether the transaction was called and whether it should reject
     transactionError: null as Error | null,
+    // The card count already in the deck, returned by the in-transaction sum
+    deckBuiltTotal: 0,
     // Whether getEdhrecData should reject
     edhrecError: null as Error | null,
     // redirect target captured
@@ -98,6 +100,10 @@ const stub = vi.hoisted(() => {
 
   const tx = {
     insert: (table: unknown) => makeInsertBuilder(table),
+    execute: async () => {},
+    select: () => ({
+      from: () => ({ where: async () => [{ total: state.deckBuiltTotal }] }),
+    }),
   };
 
   const db = {
@@ -136,7 +142,7 @@ vi.mock("../../lib/edhrec/client", () => ({
   },
 }));
 
-import { createDeck } from "./actions";
+import { createDeck, restoreAutoCards } from "./actions";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -202,6 +208,7 @@ beforeEach(() => {
   stub.state.collectionItems.length = 0;
   stub.state.insertCalls.length = 0;
   stub.state.transactionError = null;
+  stub.state.deckBuiltTotal = 0;
   stub.state.edhrecError = null;
   stub.state.redirectTarget = null;
 });
@@ -314,5 +321,79 @@ describe("createDeck — filled baseline", () => {
     const decksInserts = stub.state.insertCalls.filter((c) => c.table === "decks");
     expect(decksInserts.length).toBe(0);
     expect(stub.state.redirectTarget).toBeNull();
+  });
+});
+
+describe("restoreAutoCards — the rows come from the client", () => {
+  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  const CARD_A = "11111111-1111-1111-1111-111111111111";
+  const CARD_B = "22222222-2222-2222-2222-222222222222";
+
+  /** requireDeck reads `decks` through the same select stub the pool uses, so a
+      single row is enough to make the deck resolve as owned. */
+  function ownDeck() {
+    stub.state.collectionItems.push({ id: DECK, userId: "user_1" });
+  }
+
+  function restoredRows() {
+    const call = stub.state.insertCalls.find((c) => c.table === "deck_cards");
+    return (call?.values ?? []) as Array<Record<string, unknown>>;
+  }
+
+  it("restores the swept rows as auto", async () => {
+    ownDeck();
+    await restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 4 }]);
+    expect(restoredRows()).toEqual([
+      { deckId: DECK, oracleId: CARD_A, quantity: 4, auto: true },
+    ]);
+  });
+
+  it("rejects an oracle id that is not a uuid", async () => {
+    ownDeck();
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId: "'; drop table deck_cards; --", quantity: 1 }]),
+    ).rejects.toThrow("invalid oracle id");
+    expect(restoredRows()).toEqual([]);
+  });
+
+  it.each([0, -1, 100, 1.5, Number.NaN])("rejects the quantity %s", async (quantity) => {
+    ownDeck();
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity }]),
+    ).rejects.toThrow("invalid quantity");
+    expect(restoredRows()).toEqual([]);
+  });
+
+  // Duplicate ids inside one VALUES list conflict with each other, which
+  // onConflictDoNothing does not cover — Postgres rejects the statement whole.
+  it("collapses a repeated oracle id to one row", async () => {
+    ownDeck();
+    await restoreAutoCards(DECK, [
+      { oracleId: CARD_A, quantity: 1 },
+      { oracleId: CARD_A, quantity: 2 },
+      { oracleId: CARD_B, quantity: 1 },
+    ]);
+    expect(restoredRows().map((r) => r.oracleId)).toEqual([CARD_A, CARD_B]);
+  });
+
+  it("refuses a restore that would push the deck past 99", async () => {
+    ownDeck();
+    stub.state.deckBuiltTotal = 97;
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 3 }]),
+    ).rejects.toThrow("deck full");
+    expect(restoredRows()).toEqual([]);
+  });
+
+  it("writes nothing when the receipt is empty", async () => {
+    ownDeck();
+    await restoreAutoCards(DECK, []);
+    expect(stub.state.insertCalls).toEqual([]);
+  });
+
+  it("refuses a deck the player does not own", async () => {
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 1 }]),
+    ).rejects.toThrow("deck not found");
   });
 });

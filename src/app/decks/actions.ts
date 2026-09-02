@@ -469,17 +469,46 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   return removed;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Re-inserts the swept rows with auto: true. Uses onConflictDoNothing so a
     double-undo is harmless. The quantity comes from the delete's returning
     clause rather than a fresh read, so a stacked basic comes back at the count
-    it was swept at even if the shelf changed in between. */
+    it was swept at even if the shelf changed in between.
+
+    The rows arrive from the client, and a server action answers any crafted
+    request that reaches it — so they are re-checked here rather than trusted.
+    A malformed oracle id would otherwise reach Postgres as a failed uuid cast,
+    and a forged quantity would write a deck past the 99 the add path enforces. */
 export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
-  if (rows.length > 0) {
-    await db.insert(deckCards)
-      .values(rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })))
-      .onConflictDoNothing();
+  if (rows.length === 0) {
+    revalidatePath(`/decks/${deckId}`);
+    return;
   }
+  // A duplicated oracle id would make the insert's own values conflict, which
+  // onConflictDoNothing does not cover — Postgres rejects the statement whole.
+  const byId = new Map<string, number>();
+  for (const r of rows) {
+    if (!UUID_RE.test(r.oracleId)) throw new Error("invalid oracle id");
+    if (!Number.isInteger(r.quantity) || r.quantity < 1 || r.quantity > 99) {
+      throw new Error("invalid quantity");
+    }
+    byId.set(r.oracleId, r.quantity);
+  }
+  const restored = [...byId.values()].reduce((n, q) => n + q, 0);
+
+  // Locking the deck row makes the cap check and the write atomic, the same way
+  // addCardToDeck does — an Undo racing a hand-add must not slip past 99.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    const [builtRow] = await tx.select({ total: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
+      .from(deckCards).where(eq(deckCards.deckId, deckId));
+    if ((builtRow?.total ?? 0) + restored > 99) throw new Error("deck full");
+    await tx.insert(deckCards)
+      .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
+      .onConflictDoNothing();
+  });
   revalidatePath(`/decks/${deckId}`);
 }
