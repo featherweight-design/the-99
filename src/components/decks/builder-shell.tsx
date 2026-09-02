@@ -102,6 +102,7 @@ export function BuilderShell({
     removeOptimisticCard,
     resolveOptimisticRow,
     deleteOptimisticRow,
+    keepOptimisticCard,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
   const { built } = counts;
@@ -375,6 +376,7 @@ export function BuilderShell({
     reportRemoveFailure,
     resolveRow: resolveOptimisticRow,
     deleteRow: deleteOptimisticRow,
+    keep: keepOptimisticCard,
   };
 
   // A shelf link is a two-step move: switch to Consider, then scroll to the

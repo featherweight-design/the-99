@@ -89,6 +89,7 @@ function Harness({
           reportRemoveFailure: vi.fn(),
           resolveRow: deck.resolveOptimisticRow,
           deleteRow: deck.deleteOptimisticRow,
+          keep: deck.keepOptimisticCard,
         }}
       >
         <p>{`built ${counts.built} total ${counts.total}`}</p>

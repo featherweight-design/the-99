@@ -18,10 +18,11 @@ const forest: DeckDetailCard = {
   cardTypeGroup: "Lands", role: "land", owned: true, quantity: 1, auto: false,
 };
 
-type Edit = { add: DeckDetailCard } | { remove: string };
+type Edit = { add: DeckDetailCard } | { remove: string } | { keep: string };
 
 function Harness({ server, edits }: { server: DeckDetailCard[]; edits: Edit[] }) {
-  const { cards, addOptimisticCard, removeOptimisticCard } = useOptimisticDeckCards(server);
+  const { cards, addOptimisticCard, removeOptimisticCard, keepOptimisticCard } =
+    useOptimisticDeckCards(server);
   return (
     <button
       onClick={() => {
@@ -30,13 +31,15 @@ function Harness({ server, edits }: { server: DeckDetailCard[]; edits: Edit[] })
         startTransition(async () => {
           for (const edit of edits) {
             if ("add" in edit) addOptimisticCard(edit.add);
+            else if ("keep" in edit) keepOptimisticCard(edit.keep);
             else removeOptimisticCard(edit.remove);
           }
           await new Promise(() => {});
         });
       }}
     >
-      {cards.map((c) => `${c.name}:${c.quantity}`).join("|") || "empty"}
+      {/* A trailing * marks a row the fill still owns, so the keep edit is visible. */}
+      {cards.map((c) => `${c.name}:${c.quantity}${c.auto ? "*" : ""}`).join("|") || "empty"}
     </button>
   );
 }
@@ -63,6 +66,17 @@ describe("useOptimisticDeckCards", () => {
 
   it("drops a removed card from the deck-wide list", async () => {
     expect(await apply([solRing, forest], [{ remove: "sol-ring" }])).toBe("Forest:1");
+  });
+
+  // "Clear auto" reads the optimistic list, so a keep that only landed on the
+  // server would leave the card sweepable — and counted as the fill's — for the
+  // whole revalidation window.
+  it("clears the fill's claim on a kept card", async () => {
+    expect(await apply([{ ...solRing, auto: true }], [{ keep: "sol-ring" }])).toBe("Sol Ring:1");
+  });
+
+  it("leaves the list alone when the kept card is not in it", async () => {
+    expect(await apply([{ ...solRing, auto: true }], [{ keep: "ghost" }])).toBe("Sol Ring:1*");
   });
 
   // `removeCardFromDeck` decrements while more than one copy remains, so a

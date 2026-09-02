@@ -72,6 +72,7 @@ function renderDecklist(
     reportRemoveFailure: vi.fn(),
     resolveRow: vi.fn(),
     deleteRow: vi.fn(),
+    keep: vi.fn(),
   };
 
   render(
@@ -241,7 +242,7 @@ describe("the phone Shopping row is 52px and prints the EDHREC figure on its met
         <AddOptimisticCardProvider value={{
           add: vi.fn(), remove: vi.fn(), markSpent: vi.fn(),
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
-          resolveRow: vi.fn(), deleteRow: vi.fn(),
+          resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
         }}>
           <DecklistRow deckId="d1" card={rampUnowned} shoppingFigure={42} />
         </AddOptimisticCardProvider>
@@ -257,7 +258,7 @@ describe("the phone Shopping row is 52px and prints the EDHREC figure on its met
         <AddOptimisticCardProvider value={{
           add: vi.fn(), remove: vi.fn(), markSpent: vi.fn(),
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
-          resolveRow: vi.fn(), deleteRow: vi.fn(),
+          resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
         }}>
           <DecklistRow deckId="d1" card={rampUnowned} shoppingFigure={42} />
         </AddOptimisticCardProvider>
@@ -277,7 +278,7 @@ describe("the phone All row stays 44px and prints no figure", () => {
         <AddOptimisticCardProvider value={{
           add: vi.fn(), remove: vi.fn(), markSpent: vi.fn(),
           announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
-          resolveRow: vi.fn(), deleteRow: vi.fn(),
+          resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
         }}>
           <DecklistRow deckId="d1" card={rampUnowned} />
         </AddOptimisticCardProvider>

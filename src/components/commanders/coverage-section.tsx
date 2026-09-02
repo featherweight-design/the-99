@@ -267,8 +267,14 @@ export function CoverageSection({
   const effectiveSynergyState =
     hasRetryData ? "ok" : synergyState;
 
-  // showFigures iff ok (or after successful retry)
-  const showFigures = effectiveSynergyState === "ok";
+  // "ok" means EDHREC answered with a card list, not that the list came with
+  // numbers: inclusion figures arrive in a separate map and can be absent from a
+  // payload that still names cards. The sub-caption promises figures and the
+  // chips would draw a dash apiece, so the flag has to read the figures.
+  const hasAnyFigure = Object.values(roleCards).some((cs) =>
+    cs.some((c) => Number.isFinite(c.inclusionPct)),
+  );
+  const showFigures = effectiveSynergyState === "ok" && hasAnyFigure;
 
   // Sub-caption: with figures when ok, without otherwise
   const subcaption = showFigures

@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { keepAutoCard } from "../../app/decks/actions";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { useKeepOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
 interface AutoTagProps {
@@ -23,9 +24,18 @@ interface AutoTagProps {
 export function AutoTag({ deckId, oracleId, name }: AutoTagProps) {
   const [active, setActive] = useState(false);
   const { isPending, run } = useDeckMutation(false, "");
+  const keepOptimisticCard = useKeepOptimisticCard();
 
   function handleKeep() {
-    run(() => keepAutoCard(deckId, oracleId));
+    // The prediction goes inside the transition, where the deck-wide list can
+    // drop the auto flag in the same pass the tag commits. Without it the
+    // provenance line, the auto counter and "Clear auto" all keep counting this
+    // card as the fill's until revalidation — and a sweep in that window would
+    // take the card the player has just kept.
+    run(
+      () => keepAutoCard(deckId, oracleId),
+      () => keepOptimisticCard(oracleId),
+    );
   }
 
   return (

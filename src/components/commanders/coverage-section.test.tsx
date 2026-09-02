@@ -77,6 +77,21 @@ describe("sub-caption", () => {
     ).toBeInTheDocument();
   });
 
+  // "ok" only means EDHREC named some cards. The figures arrive separately and
+  // can be missing from a payload that still has a card list, and the subcaption
+  // would then promise numbers over a column of dashes.
+  it("shows subcaptionNoFigures when ok brought cards but no figures", () => {
+    renderSection({
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3, null) },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 },
+      synergyState: "ok",
+    });
+    expect(
+      screen.getByText(recommendationsCopy.coverage.subcaptionNoFigures),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.coverage.subcaption)).toBeNull();
+  });
+
   it("shows subcaptionNoFigures when synergyState is absent", () => {
     renderSection({
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: [makeCard(1, null)] },
