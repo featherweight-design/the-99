@@ -10,6 +10,8 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { isBasicLand } from "../../lib/decks/grouping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "./card-detail-provider";
@@ -24,9 +26,15 @@ import { useDeckMutation } from "./use-deck-mutation";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
 // box making up the vertical padding, desktop 34px with real padding.
+// Exception: Shopping rows carry a meta line under the name (addendum A2), so
+// the phone shell grows to 52px to accommodate it.
 const ROW_SHELL =
   "flex items-center gap-[9px] md:gap-[10px] pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]" +
   " min-h-[44px] md:min-h-[34px] rounded-[6px] md:rounded-[7px]";
+
+const ROW_SHELL_SHOPPING =
+  "flex items-center gap-[9px] md:gap-[10px] pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]" +
+  " min-h-[52px] md:min-h-[34px] rounded-[6px] md:rounded-[7px]";
 
 interface DecklistRowProps {
   deckId: string;
@@ -44,6 +52,13 @@ interface DecklistRowProps {
    * switch to Consider and back.
    */
   spent?: boolean;
+  /**
+   * EDHREC inclusion % for the Shopping view's meta line (addendum A2).
+   * `undefined` — All view; no meta line is rendered (44px phone row).
+   * `null`      — Shopping view; card has no EDHREC figure → prints rowNoFigure.
+   * `number`    — Shopping view; prints rowFigure(pct). Never 0 as a stand-in for absent.
+   */
+  shoppingFigure?: number | null;
 }
 
 export function DecklistRow({
@@ -53,6 +68,7 @@ export function DecklistRow({
   metaLabel,
   siblings,
   spent = false,
+  shoppingFigure,
 }: DecklistRowProps) {
   const label = isMeta ? metaLabel! : card.name;
   // `flex-auto`, not `flex-1`, and the difference is the whole bug. `flex-1` is
@@ -64,6 +80,17 @@ export function DecklistRow({
   // there is room to spare the two are identical — grow still takes the slack.
   const nameClass =
     "flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
+
+  // Addendum A2: Shopping rows carry an EDHREC figure on a meta line below the
+  // name. shoppingFigure is only threaded for unowned deck cards shown in the
+  // Shopping filter. undefined = All view (no meta). null or number = Shopping view.
+  // The row grows to 52px on phone to hold the extra line.
+  // Basic lands are never in Shopping (the fill guarantees it), but guard anyway.
+  const hasShoppingMeta = !isMeta && !isBasicLand(card.typeLine) && shoppingFigure !== undefined;
+  const rowShell = hasShoppingMeta ? ROW_SHELL_SHOPPING : ROW_SHELL;
+  const figureText = Number.isFinite(shoppingFigure)
+    ? recommendationsCopy.shopping.rowFigure(String(shoppingFigure as number))
+    : recommendationsCopy.shopping.rowNoFigure;
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
@@ -121,7 +148,7 @@ export function DecklistRow({
           The over tint (design 4.5/4.10) is an inset ring rather than a border:
           a real border would add 2px to one row's height and shunt the list. */}
       <div
-        className={`group ${ROW_SHELL} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
+        className={`group ${rowShell} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]
           ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
       >
@@ -137,9 +164,34 @@ export function DecklistRow({
         {isMeta && <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />}
 
         {/* Card name — the click target for the detail modal (#127). A meta row names no card
-            of its own, so it stays inert text. */}
-        {isMeta ? (
-          <span className={nameClass} style={{ color: "var(--fg-faint)" }}>
+            of its own, so it stays inert text.
+            Shopping rows: wrap name + EDHREC meta in a flex column so the meta
+            sits under the name while the control strip stays on the right. */}
+        {hasShoppingMeta ? (
+          <div className="flex-auto min-w-0 flex flex-col justify-center">
+            <CardDetailTrigger
+              oracleId={card.oracleId}
+              name={card.name}
+              siblings={siblings}
+              className="flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]"
+              style={{ color: "#EDE6D8", background: "transparent", border: "none", padding: 0 }}
+            >
+              {label}
+            </CardDetailTrigger>
+            <span
+              className="font-mono text-[10px] md:text-[10.5px]"
+              style={{
+                color: "var(--fg-faint)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {figureText}
+            </span>
+          </div>
+        ) : isMeta ? (
+          <span className={nameClass} style={{ color: "#8E8269" }}>
             {label}
           </span>
         ) : (

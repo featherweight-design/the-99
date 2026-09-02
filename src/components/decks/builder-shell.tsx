@@ -66,6 +66,9 @@ interface BuilderShellProps {
   commanderIdentity: string[];
   /** True only on the navigation the import itself made — see src/lib/decks/arrival.ts. */
   arrivedFromImport: boolean;
+  /** EDHREC inclusion % for each unowned card in the deck, keyed by oracleId.
+      Cards with no EDHREC figure are absent from the map — never stored as 0. */
+  shoppingFigures?: Record<string, number>;
 }
 
 export function BuilderShell({
@@ -75,6 +78,7 @@ export function BuilderShell({
   firstRun,
   commanderIdentity,
   arrivedFromImport,
+  shoppingFigures = {},
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -711,6 +715,7 @@ export function BuilderShell({
                 sweepError={sweepError}
                 onClearAuto={handleClearAuto}
                 onRestoreAuto={handleRestoreAuto}
+                shoppingFigures={shoppingFigures}
               />
             )}
             </div>

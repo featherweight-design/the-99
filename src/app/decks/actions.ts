@@ -185,11 +185,11 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
   redirect(`/decks/${deckId}`);
 }
 
-export async function getDeckSuggestions(deckId: string): Promise<{ suggestions: DeckSuggestion[]; degraded: boolean }> {
+export async function getDeckSuggestions(deckId: string): Promise<{ suggestions: DeckSuggestion[]; degraded: boolean; shoppingFigures: Record<string, number> }> {
   const userId = await requireUserId();
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
-  if (!commander) return { suggestions: [], degraded: false };
+  if (!commander) return { suggestions: [], degraded: false, shoppingFigures: {} };
 
   const pool = await ownedColorLegalPool(userId, commander);
   const inDeckRows = await db.select({ oracleId: deckCards.oracleId }).from(deckCards)
@@ -284,7 +284,35 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
     availability: availability?.get(s.oracleId) ?? null,
   }));
 
-  return { suggestions, degraded };
+  // Build shoppingFigures: EDHREC inclusion % for each unowned card in the deck.
+  // Uses the same name lookup as buildFillPlan (actions.ts:117-120): lowercase,
+  // then fall back to the front face of a double-faced card name. Cards with no
+  // figure are omitted — absence and "0% of decks" are different states.
+  const unownedDeckRows = await db
+    .select({ oracleId: cards.oracleId, name: cards.name })
+    .from(deckCards)
+    .innerJoin(cards, eq(deckCards.oracleId, cards.oracleId))
+    .where(
+      and(
+        eq(deckCards.deckId, deckId),
+        sql<boolean>`not exists (
+          select 1 from ${collectionItems}
+          where ${collectionItems.oracleId} = ${cards.oracleId}
+          and ${collectionItems.userId} = ${userId}
+        )`,
+      ),
+    );
+
+  const shoppingFigures: Record<string, number> = {};
+  for (const row of unownedDeckRows) {
+    const lower = row.name.toLowerCase();
+    const raw = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
+    if (Number.isFinite(raw)) {
+      shoppingFigures[row.oracleId] = raw as number;
+    }
+  }
+
+  return { suggestions, degraded, shoppingFigures };
 }
 
 async function requireDeck(deckId: string, userId: string) {
