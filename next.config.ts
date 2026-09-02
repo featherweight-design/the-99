@@ -14,9 +14,10 @@ const nextConfig: NextConfig = {
     // which purges the client cache outright — so the window only ever covers
     // reads. Deck writes did not reach /collection or /commanders before this;
     // see claimSurfaces in src/lib/decks/revalidate.ts.
+    // `static` is left alone: its default is already 5 minutes, and the
+    // regression is entirely about dynamic pages.
     staleTimes: {
       dynamic: 30,
-      static: 300,
     },
   },
 };
