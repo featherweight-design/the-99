@@ -1,8 +1,9 @@
 "use client";
 
-// The 99/99 completion reveal — the app's ONE kaiju appearance
-// (design/design_handoff_the99_richness/README.md: the kaiju is reserved for
-// rare wins). Fires once per deck, the first time it reads Complete.
+// The 99/99 completion reveal — the app's ONE loud crown
+// (design/design_handoff_the99_themes/README.md decision 6: `--accent` at 2× is
+// reserved for this surface). Fires once per deck, the first time it reads
+// Complete.
 //
 // Two deliberate narrowings of the mock, both flagged for design review:
 //
@@ -17,13 +18,7 @@
 //    dismissible"; a timer racing a reader is worse than a button, and "Back to
 //    the deck" is already the mock's own dismiss affordance.
 //
-// The mobile composition is DERIVED, not mocked: kaiju.svg is a 480×380
-// landscape viewBox that does not fold into portrait, so it is anchored
-// bottom-right and bled off both edges to preserve the "larger than frame"
-// read rather than shrinking into a full-body figure.
-
-import { Crab } from "../character/crab";
-import { Kaiju } from "../character/kaiju";
+import { Crown } from "../ui/crown";
 import { PrimaryButton, GhostButton } from "@/components/ui/button";
 import { decksBuilderCopy } from "../../lib/copy/decks-builder";
 
@@ -45,40 +40,11 @@ export function CompletionReveal({
       aria-labelledby="completion-reveal-heading"
       // shrink-0: the band is a fixed-height child of the builder's flex
       // column, where the default flex-shrink would squash it.
-      className="relative shrink-0 overflow-hidden h-[420px] md:h-[380px] bg-[linear-gradient(180deg,var(--celebrate-top),var(--celebrate-bottom))]"
+      className="relative shrink-0 overflow-hidden h-[420px] md:h-[380px] bg-[color:var(--surface-sunken)]"
     >
-      {/* Kaiju — looming from the right, bleeding off frame at both breakpoints.
-          Two sizes rather than one scaled instance: the mobile anchor differs. */}
-      <div
-        className="absolute right-[-70px] bottom-[-8px] md:right-[-60px] md:bottom-[-12px] opacity-[0.94] [filter:drop-shadow(0_0_46px_rgba(0,0,0,0.6))]"
-        aria-hidden
-      >
-        <Kaiju size={300} className="block md:hidden" breathe />
-        <Kaiju size={440} className="hidden md:block" breathe />
-      </div>
-
-      {/* Brass horizon */}
-      <div
-        className="absolute left-0 right-0 h-px bottom-[44px] md:bottom-[52px] bg-[linear-gradient(90deg,transparent,rgba(201,162,75,0.4),transparent)]"
-        aria-hidden
-      />
-
-      {/* Crab — hard left on mobile so the kaiju's gaze still crosses the frame */}
-      <Crab size={64} bobSeconds={3} className="absolute left-[24px] bottom-[28px] md:hidden" />
-      <Crab
-        size={84}
-        bobSeconds={3}
-        className="absolute hidden md:block md:left-[46%] md:bottom-[32px]"
-      />
-
       {/* Text block */}
       <div className="anim-rise absolute top-[32px] left-[24px] right-[24px] md:top-[56px] md:left-[40px] md:right-auto md:max-w-[330px]">
-        {/* Crown motif — three brass diamonds */}
-        <div className="inline-flex items-center gap-[7px] mb-[12px]" aria-hidden>
-          <span className="block w-[9px] h-[9px] rotate-45 bg-[color:var(--brass)]" />
-          <span className="block w-[13px] h-[13px] rotate-45 bg-[color:var(--brass)]" />
-          <span className="block w-[9px] h-[9px] rotate-45 bg-[color:var(--brass)]" />
-        </div>
+        <Crown tone="loud" className="mb-[12px]" />
         <h2
           id="completion-reveal-heading"
           className="font-display font-extrabold m-0 text-[24px] md:text-[32px] text-[color:var(--fg)]"

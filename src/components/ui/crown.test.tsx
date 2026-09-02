@@ -36,4 +36,25 @@ describe("Crown", () => {
       "0.4s",
     ]);
   });
+
+  it("separates the three intensities by colour", () => {
+    const colorOf = (tone: "quiet" | "page" | "loud") => {
+      const { container } = render(<Crown tone={tone} />);
+      return (container.querySelector("span") as HTMLElement).style.background;
+    };
+    expect(colorOf("quiet")).toBe("var(--border-strong)");
+    expect(colorOf("page")).toBe("var(--brass-strong)");
+    expect(colorOf("loud")).toBe("var(--brass)");
+  });
+
+  it("doubles the geometry for the one loud crown", () => {
+    const { container } = render(<Crown tone="loud" />);
+    const diamonds = Array.from(container.querySelectorAll("span"));
+    expect(diamonds.map((d) => d.className)).toEqual([
+      expect.stringContaining("w-[18px]"),
+      expect.stringContaining("w-[26px]"),
+      expect.stringContaining("w-[18px]"),
+    ]);
+    expect(container.firstElementChild?.className).toContain("gap-[14px]");
+  });
 });

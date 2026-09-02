@@ -1,4 +1,3 @@
-import { Crab } from "../components/character/crab";
 import { shellCopy } from "../lib/copy/shell";
 import { GhostButton, PrimaryButton } from "../components/ui/button";
 
@@ -9,12 +8,13 @@ export default function NotFound() {
     >
       <span
         aria-hidden="true"
-        className="font-display leading-none text-[48px] md:text-[64px]"
+        className="font-display leading-none text-[48px] md:text-[64px] mb-[2px]"
         style={{ fontWeight: 900, color: "var(--elevated)", letterSpacing: "0.04em" }}
       >
         {shellCopy.notFound.numeral}
       </span>
-      <Crab size={96} className="mt-[-14px] mb-[18px]" />
+      {/* No crown here: decision 7 makes the numeral itself the mark, so a
+          second one would be one too many. */}
       <h1 className="font-display font-bold text-[21px] md:text-[24px] m-0" style={{ color: "var(--fg)" }}>
         {shellCopy.notFound.heading}
       </h1>

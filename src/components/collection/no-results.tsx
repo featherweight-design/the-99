@@ -1,10 +1,10 @@
 "use client";
 import { PrimaryButton, GhostButton } from "../ui/button";
-import { Crab } from "../character/crab";
+import { Crown } from "../ui/crown";
 import { collectionBrowseCopy, colorLabelFor } from "../../lib/copy/collection-browse";
 // No results state per property table §No Results State, as re-skinned by the
-// richness pass (Surfaces v2 §Collection). The v1 "?" card fan is gone: the
-// crab is the mark for this state now.
+// richness pass (Surfaces v2 §Collection). The v1 "?" card fan is gone, and
+// so is the crab: the quiet crown is the mark for this state now.
 
 export function NoResults({
   query,
@@ -26,12 +26,11 @@ export function NoResults({
     // §No Results Container: flex-1, column, centered, padding 36px mobile / 48px desktop.
     // Vignette per Surfaces v2 — brass at 7%, existing token, no new hex.
     <div className="flex-1 flex flex-col items-center justify-center text-center p-[36px] md:p-[48px] bg-[radial-gradient(440px_260px_at_50%_78%,rgba(201,162,75,0.07),transparent_70%)]">
-      <Crab size={72} className="md:hidden" />
-      <Crab size={96} className="hidden md:block" />
+      <Crown tone="quiet" className="mb-[18px]" />
 
       {/* Heading — §No Results Heading: Cinzel 700, 21/26px, #EDE6D8 (--fg) */}
       <h2
-        className="font-display font-bold text-[21px] md:text-[26px] mt-[18px] mb-0 mx-0"
+        className="font-display font-bold text-[21px] md:text-[26px] m-0"
         style={{ color: "var(--fg)" }}
       >
         {collectionBrowseCopy.noResults.heading(query, colorLabel)}

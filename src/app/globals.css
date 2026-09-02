@@ -36,12 +36,6 @@
   --brass-dim: #6E5B33;
   --brass-mid: #A9863E;
 
-  /* Character layer — richness pass. --kaiju-body is deliberately deeper than
-     --bg so the silhouette reads as a hole punched in the canvas. */
-  --kaiju-body: #0B0907;
-  --celebrate-top: #171310;
-  --celebrate-bottom: #110E0B;
-
   /* Feedback */
   --success: #6FA368;
   --warning: #E0913C;
@@ -99,9 +93,6 @@
   --color-brass-shadow: var(--brass-shadow);
   --color-brass-dim: var(--brass-dim);
   --color-brass-mid: var(--brass-mid);
-  --color-kaiju-body: var(--kaiju-body);
-  --color-celebrate-top: var(--celebrate-top);
-  --color-celebrate-bottom: var(--celebrate-bottom);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);

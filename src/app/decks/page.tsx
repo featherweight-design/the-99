@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { CardFan } from "../../components/marks";
-import { Crab } from "../../components/character/crab";
+import { Crown } from "../../components/ui/crown";
 import { DeckCard } from "../../components/decks/deck-card";
 import { NewDeckButton } from "../../components/decks/new-deck-button";
 import { ImportDeckButton } from "../../components/decks/import-deck-button";
@@ -36,10 +36,10 @@ export default async function DecksPage({
         {/* Card-fan mark: mobile variant → 100×110, decks-desktop → 120×130 (−15° front) */}
         <div className="mb-[22px] md:mb-[26px] flex items-end justify-center gap-[14px] md:gap-[18px]">
           <CardFan variant="mobile" className="md:hidden" />
-          <Crab size={64} className="md:hidden" />
           <CardFan variant="decks-desktop" className="hidden md:block" />
-          <Crab size={80} className="hidden md:block" />
         </div>
+
+        <Crown tone="page" className="mb-[18px]" />
 
         <EmptyStateTitle className="text-[24px] md:text-[28px]">
           No decks yet.

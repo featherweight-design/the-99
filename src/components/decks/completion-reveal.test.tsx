@@ -59,27 +59,32 @@ describe("CompletionReveal", () => {
     expect(band!.className).not.toContain("inset-0");
   });
 
-  it("renders the kaiju and crab as decorative marks only", () => {
+  it("carries the app's one loud crown and no illustration", () => {
     const { container } = render(
       <CompletionReveal commanderShortName="Korvold" onDismiss={vi.fn()} onExport={vi.fn()} />,
     );
-    const svgs = container.querySelectorAll("svg");
-    // Two kaiju (one per breakpoint) + two crabs (one per breakpoint).
-    expect(svgs).toHaveLength(4);
-    for (const svg of svgs) expect(svg).toHaveAttribute("aria-hidden");
+    expect(container.querySelector("svg")).toBeNull();
+    const diamonds = Array.from(container.querySelectorAll("[aria-hidden] > span"));
+    expect(diamonds).toHaveLength(3);
+    for (const d of diamonds) {
+      expect((d as HTMLElement).style.background).toBe("var(--brass)");
+    }
+    // Loud is the doubled geometry — 18/26/18 against the quiet 9/13/9.
+    expect(diamonds.map((d) => d.className)).toEqual([
+      expect.stringContaining("w-[18px]"),
+      expect.stringContaining("w-[26px]"),
+      expect.stringContaining("w-[18px]"),
+    ]);
   });
 
   // Reduced motion is handled entirely in globals.css, which zeroes the
-  // animation on .anim-bob/.anim-breathe/.anim-rise. What this asserts is that
-  // the reveal uses exactly those classes — nothing here sets opacity or a
-  // transform of its own, so with `animation: none` the frame still reads as a
-  // win: kaiju at rest and full opacity, crab static, text at opacity 1.
+  // animation on .anim-rise. What this asserts is that the reveal uses exactly
+  // that class — nothing here sets opacity or a transform of its own, so with
+  // `animation: none` the frame still reads as a win: text at opacity 1.
   it("uses only the shared motion classes, so the reduced-motion frame is complete", () => {
     const { container } = render(
       <CompletionReveal commanderShortName="Korvold" onDismiss={vi.fn()} onExport={vi.fn()} />,
     );
-    expect(container.querySelectorAll(".anim-breathe")).toHaveLength(2);
-    expect(container.querySelectorAll(".anim-bob")).toHaveLength(2);
     const rise = container.querySelector(".anim-rise");
     expect(rise).not.toBeNull();
     expect((rise as HTMLElement).style.opacity).toBe("");

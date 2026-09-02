@@ -1,6 +1,6 @@
 import { ReplaceFlow } from "../collection/replace-flow";
 import { shellCopy } from "../../lib/copy/shell";
-import { Crab } from "../character/crab";
+import { Crown } from "../ui/crown";
 
 /**
  * First-run home is the checklist itself (design decision #4).
@@ -14,22 +14,21 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
           Mobile:  Cinzel 700 23px primary, line-height 1.2
           Desktop: Cinzel 700 30px primary
           Content: "Welcome to the 99, {name}" (or "Welcome to the 99" when name null) */}
-      <div className="flex items-end gap-[16px] md:gap-[22px]">
-        <h1
-          className="text-[23px] md:text-[30px]"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            color: "var(--fg)",
-            lineHeight: 1.2,
-            margin: 0,
-          }}
-        >
-          {name ? `Welcome to the 99, ${name}` : "Welcome to the 99"}
-        </h1>
-        <Crab size={72} className="md:hidden" />
-        <Crab size={96} className="hidden md:block" />
-      </div>
+      {/* The crown is load-bearing here: this is the first brand moment a new
+          player sees, so it sits above the heading rather than beside it. */}
+      <Crown tone="page" className="mb-[14px]" />
+      <h1
+        className="text-[23px] md:text-[30px]"
+        style={{
+          fontFamily: "var(--font-display)",
+          fontWeight: 700,
+          color: "var(--fg)",
+          lineHeight: 1.2,
+          margin: 0,
+        }}
+      >
+        {name ? `Welcome to the 99, ${name}` : "Welcome to the 99"}
+      </h1>
 
       {/* §Page subhead:
           Mobile:  13px fg-body, margin 8px 0 20px, line-height 1.5

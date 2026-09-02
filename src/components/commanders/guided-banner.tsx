@@ -10,7 +10,6 @@
 // and shipping both would put two strings with identical content on one surface.
 
 import { commandersCopy } from "../../lib/copy/commanders";
-import { Crab } from "../character/crab";
 
 type GuidedBannerProps = {
   uniqueCardsRead: number;
@@ -66,9 +65,10 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
           Review your commanders
         </h2>
 
-        {/* Body — crab inline, sized down for the tighter ribbon */}
-        <div className="flex items-center gap-[10px]" style={{ marginTop: 3 }}>
-          <Crab size={52} className="flex-none" />
+        {/* Body. No mark of any kind: this is an inline directive banner, not
+            an empty state, and its mark is the 3px accent left border it
+            already carries. */}
+        <div style={{ marginTop: 3 }}>
           <p className="m-0" style={{ fontSize: 12.5, color: "#C6B79A", lineHeight: 1.5 }}>
             {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}{" "}
             {commandersCopy.firstRun.directive}
@@ -156,11 +156,6 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
             {commandersCopy.firstRun.directive}
           </p>
         </div>
-
-        {/* Crab — at the far end of the row so it never crowds the 52px XCIX
-            ring seal on the left. The content block is flex-1 min-w-0, so it
-            absorbs the width the crab takes. */}
-        <Crab size={88} className="flex-none" />
       </div>
     </>
   );

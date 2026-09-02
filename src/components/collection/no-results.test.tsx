@@ -59,11 +59,14 @@ describe("NoResults", () => {
     ).toHaveLength(1);
   });
 
-  it("hosts the crab and no longer renders the '?' card fan", () => {
+  it("carries a quiet crown and no illustration", () => {
     const { container } = renderNoResults("counterspell", ["R"]);
-    // One crab per breakpoint, each hidden at the other via a Tailwind variant.
-    const crabs = container.querySelectorAll("svg.anim-bob");
-    expect(crabs).toHaveLength(2);
+    expect(container.querySelector("svg")).toBeNull();
+    const diamonds = container.querySelectorAll("[aria-hidden] > span");
+    expect(diamonds).toHaveLength(3);
+    expect((diamonds[0] as HTMLElement).style.background).toBe(
+      "var(--border-strong)",
+    );
     expect(container.textContent).not.toContain("?");
   });
 
