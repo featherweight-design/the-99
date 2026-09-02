@@ -27,7 +27,7 @@ export default async function HomePage() {
             mobile: 11px / 0.4em; desktop: 13px / 0.44em
             margin-top: 14px mobile / 16px desktop */}
         <p
-          className="mt-[14px] md:mt-[16px] text-[11px] md:text-[13px] tracking-[0.4em] md:tracking-[0.44em] text-brass font-mono uppercase"
+          className="mt-[14px] md:mt-[16px] text-[11px] md:text-[13px] tracking-[0.4em] md:tracking-[0.44em] text-accent font-mono uppercase"
         >
           THE NINETY-NINE
         </p>
@@ -49,7 +49,7 @@ export default async function HomePage() {
         <SignInButton mode="modal">
           <button
             type="button"
-            className="mt-[34px] md:mt-[36px] w-full max-w-[260px] md:w-auto md:max-w-none rounded-[8px] py-[14px] px-0 md:px-[40px] font-semibold text-[15px] font-sans bg-brass hover:bg-brass-hover text-bg transition-colors cursor-pointer border-none"
+            className="mt-[34px] md:mt-[36px] w-full max-w-[260px] md:w-auto md:max-w-none rounded-[8px] py-[14px] px-0 md:px-[40px] font-semibold text-[15px] font-sans bg-accent hover:bg-accent-hover text-bg transition-colors cursor-pointer border-none"
           >
             Sign in
           </button>

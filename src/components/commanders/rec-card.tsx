@@ -46,7 +46,7 @@ function ReceiptLine({
   fontSize: number;
 }) {
   const { receipt } = availabilityCopy;
-  // Glyph follows the clause: solid brass for a finished deck's claim, hollow
+  // Glyph follows the clause: solid accent for a finished deck's claim, hollow
   // for a brew's, exactly as the marker draws them elsewhere. Decorative in both
   // cases — the words beside it already say the whole fact.
   const clause =

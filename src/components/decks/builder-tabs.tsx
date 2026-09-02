@@ -49,7 +49,7 @@ function Tab({
       // The idle border is transparent rather than absent so selecting a tab
       // does not shift the bar by 2px.
       className={`flex items-baseline gap-[6px] min-h-[44px] pb-[8px] md:pb-[10px] bg-transparent cursor-pointer border-0 border-b-2 border-solid ${
-        selected ? "border-b-[color:var(--brass)]" : "border-b-transparent"
+        selected ? "border-b-[color:var(--accent)]" : "border-b-transparent"
       }`}
     >
       <span
@@ -62,9 +62,9 @@ function Tab({
       <span
         aria-hidden
         className={`font-mono text-[11px] md:text-[12px] tabular-nums ${
-          // A zero count is never brass, even on the active tab: brass is the
+          // A zero count is never accent, even on the active tab: accent is the
           // colour of something worth walking over to.
-          selected && count > 0 ? "text-[color:var(--brass)]" : "text-[color:var(--fg-faint)]"
+          selected && count > 0 ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"
         }`}
       >
         {count}

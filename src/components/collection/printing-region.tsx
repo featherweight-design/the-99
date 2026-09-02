@@ -286,7 +286,7 @@ export function PrintingRegion({
             onClick={onReset}
             aria-label={copy.resetAria}
             className="shrink-0 cursor-pointer text-[13px]"
-            style={{ color: "var(--brass)" }}
+            style={{ color: "var(--accent)" }}
           >
             {copy.resetToDefault}
           </button>
@@ -314,7 +314,7 @@ export function PrintingRegion({
             }}
             aria-label={copy.dormantClearAria}
             className="shrink-0 cursor-pointer text-[12.5px]"
-            style={{ color: "var(--brass)" }}
+            style={{ color: "var(--accent)" }}
           >
             {copy.dormantClear}
           </button>
@@ -350,7 +350,7 @@ export function PrintingRegion({
             type="button"
             onClick={() => onQueryChange("")}
             className="mt-[10px] cursor-pointer text-[13px]"
-            style={{ color: "var(--brass)" }}
+            style={{ color: "var(--accent)" }}
           >
             {copy.clearSearch}
           </button>
@@ -414,7 +414,7 @@ function FinishChip({ label, active, onClick }: { label: string; active: boolean
       className="cursor-pointer inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] px-[11px] py-[5px]"
       style={{
         color: active ? "var(--bg)" : "var(--fg)",
-        background: active ? "var(--brass)" : "var(--elevated)",
+        background: active ? "var(--accent)" : "var(--elevated)",
         border: "1px solid var(--border-strong)",
       }}
     >
@@ -493,9 +493,9 @@ function PrintingTile({
           // Three signals, none of them color (decision 3) — the tile sits on card art, so
           // contrast under it is unpredictable. Outline, not border: it must not eat the frame.
           outline: picked
-            ? "2px solid var(--brass)"
+            ? "2px solid var(--accent)"
             : entry.dormant
-              ? "2px dashed var(--brass)"
+              ? "2px dashed var(--accent)"
               : shownNow
                 ? "1px dashed var(--fg-faint)"
                 : undefined,
@@ -525,16 +525,16 @@ function PrintingTile({
               height: picked ? 21 : 19,
               fontSize: 11,
               background: picked
-                ? "var(--brass)"
+                ? "var(--accent)"
                 : entry.dormant
                   ? "rgba(10,8,6,0.78)"
                   : "rgba(10,8,6,0.72)",
               border: picked
                 ? undefined
                 : entry.dormant
-                  ? "1px solid var(--brass)"
+                  ? "1px solid var(--accent)"
                   : "1px dashed var(--fg-faint)",
-              color: picked ? "var(--bg)" : entry.dormant ? "var(--brass)" : "var(--fg-body)",
+              color: picked ? "var(--bg)" : entry.dormant ? "var(--accent)" : "var(--fg-body)",
             }}
           >
             {shownNow ? "◇" : "✓"}
@@ -563,10 +563,10 @@ function PrintingTile({
       {(picked || shownNow || entry.dormant) && (
         <div
           className="mt-[3px] flex items-center gap-[5px] font-mono uppercase text-[9.5px] tracking-[0.14em]"
-          style={{ color: picked || entry.dormant ? "var(--brass)" : "var(--fg-muted)" }}
+          style={{ color: picked || entry.dormant ? "var(--accent)" : "var(--fg-muted)" }}
         >
           {(picked || entry.dormant) && (
-            <span aria-hidden className="rotate-45" style={{ width: 7, height: 7, background: "var(--brass)" }} />
+            <span aria-hidden className="rotate-45" style={{ width: 7, height: 7, background: "var(--accent)" }} />
           )}
           {picked ? copy.badgePicked : entry.dormant ? copy.dormantBadge : copy.badgeShownNow}
         </div>

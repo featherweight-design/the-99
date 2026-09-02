@@ -17,7 +17,7 @@ describe("PrimaryButton", () => {
     render(<PrimaryButton {...props}>Go</PrimaryButton>);
     const el = screen.getByRole("button", { name: "Go" });
     expect(el.className).toContain("px-4");
-    expect(el.className).toContain("bg-[color:var(--brass)]");
+    expect(el.className).toContain("bg-[color:var(--accent)]");
   });
 
   it("still honours a spread type so submit buttons keep working", () => {
@@ -39,7 +39,7 @@ describe("PrimaryButton", () => {
   it("pins the fill through hover when disabled", () => {
     render(<PrimaryButton disabled>Go</PrimaryButton>);
     expect(screen.getByRole("button", { name: "Go" }).className).toContain(
-      "disabled:hover:bg-[color:var(--brass)]",
+      "disabled:hover:bg-[color:var(--accent)]",
     );
   });
 
@@ -58,11 +58,11 @@ describe("PrimaryButton", () => {
     );
   });
 
-  it("carries the brass fill and hover in classes, not inline style", () => {
+  it("carries the accent fill and hover in classes, not inline style", () => {
     render(<PrimaryButton>Go</PrimaryButton>);
     const el = screen.getByRole("button", { name: "Go" });
-    expect(el.className).toContain("bg-[color:var(--brass)]");
-    expect(el.className).toContain("hover:bg-[color:var(--brass-hover)]");
+    expect(el.className).toContain("bg-[color:var(--accent)]");
+    expect(el.className).toContain("hover:bg-[color:var(--accent-hover)]");
     expect(el.getAttribute("style")).toBeNull();
   });
 
@@ -119,8 +119,8 @@ describe("GhostButton", () => {
     render(<GhostButton>Go</GhostButton>);
     const el = screen.getByRole("button", { name: "Go" });
     expect(el.className).toContain("var(--border-strong)");
-    expect(el.className).toContain("hover:[border-color:var(--brass)]");
-    expect(el.className).toContain("hover:[color:var(--brass-hover)]");
+    expect(el.className).toContain("hover:[border-color:var(--accent)]");
+    expect(el.className).toContain("hover:[color:var(--accent-hover)]");
     expect(el.getAttribute("style")).toBeNull();
   });
 

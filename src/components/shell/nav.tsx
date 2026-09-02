@@ -35,14 +35,14 @@ function isActive(pathname: string, href: string): boolean {
 
 /**
  * 6×6px rotated diamond for rail nav items (§Rail Nav item Active/Idle/Locked).
- * Active  → brass (#C9A24B, token: --brass)
- * Idle    → line  (#3A3229, token: --border-strong)
- * Locked  → line  (#3A3229, token: --border-strong)
+ * Active  → accent (--accent)
+ * Idle    → line   (--border-strong)
+ * Locked  → line   (--border-strong)
  */
 function RailDiamond({ active, locked }: { active: boolean; locked: boolean }) {
   const bg =
     !locked && active
-      ? "var(--brass)"        // §Rail Nav item Active: diamond color accent
+      ? "var(--accent)"        // §Rail Nav item Active: diamond color accent
       : "var(--border-strong)"; // §Rail Nav item Idle + Locked: diamond color line
   return (
     <span
@@ -55,7 +55,7 @@ function RailDiamond({ active, locked }: { active: boolean; locked: boolean }) {
 
 /**
  * 8×8px rotated diamond for tab bar items (§Tab item Active/Idle).
- * Active  → brass  (#C9A24B)
+ * Active  → accent (--accent)
  * Idle    → #4A4033 (raw hex, no token per design table)
  * Locked  → #4A4033
  */
@@ -64,7 +64,7 @@ function TabDiamond({ active }: { active: boolean }) {
     <span
       aria-hidden
       className="inline-block h-[8px] w-[8px] shrink-0 rotate-45"
-      style={{ background: active ? "var(--brass)" : "#4A4033" }}
+      style={{ background: active ? "var(--accent)" : "#4A4033" }}
     />
   );
 }
@@ -93,14 +93,14 @@ export function NavRail({ locked }: { locked: boolean }) {
         className="flex items-end gap-[7px] px-5 pt-[22px] pb-5"
         style={{ borderBottom: "1px solid var(--border)" }} // var(--border) = #2A241D = elevated
       >
-        {/* "THE" label: mono 10px, 0.42em tracking, brass, pb 5px */}
+        {/* "THE" label: mono 10px, 0.42em tracking, accent, pb 5px */}
         <span
           className="pb-[5px]"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.42em",
-            color: "var(--brass)",
+            color: "var(--accent)",
           }}
         >
           THE
@@ -261,7 +261,7 @@ export function TabBar({ locked }: { locked: boolean }) {
             <span
               style={{
                 fontSize: 10,
-                color: active ? "var(--brass)" : "var(--fg-faint)", // #C9A24B / #8E8269
+                color: active ? "var(--accent)" : "var(--fg-faint)",
                 fontWeight: active ? 600 : 500,
               }}
             >
@@ -287,14 +287,14 @@ export function MobileHeader() {
     >
       {/* Wordmark: gap 3px, items-end */}
       <div className="flex items-end gap-[3px]">
-        {/* "THE": mono 9px, 0.4em tracking, brass, pb 4px */}
+        {/* "THE": mono 9px, 0.4em tracking, accent, pb 4px */}
         <span
           className="pb-1"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 9,
             letterSpacing: "0.4em",
-            color: "var(--brass)",
+            color: "var(--accent)",
           }}
         >
           THE
@@ -303,7 +303,7 @@ export function MobileHeader() {
         <Crowned99 variant="mobile-header" />
       </div>
 
-      {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, brass border */}
+      {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
       <AccountMenu panel="sheet" />
     </header>
   );

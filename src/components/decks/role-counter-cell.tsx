@@ -46,7 +46,7 @@ export function RoleCounterCell({
     "bg-surface-sunken border border-border";
   const interactive =
     " cursor-pointer hover:bg-elevated-hover hover:border-border-strong " +
-    "active:bg-bg active:border-brass-shadow";
+    "active:bg-bg active:border-accent-shadow";
 
   const face = (
     <>
@@ -88,7 +88,7 @@ export function RoleCounterCell({
           {advisory ? `rec ~${target}` : `rec ${target}`}
         </span>
         {onSeeShelf ? (
-          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-brass group-hover:text-brass-hover group-active:text-brass-mid">
+          <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent group-hover:text-accent-hover group-active:text-accent-mid">
             {addPanelCopy.strip.cellLink}
           </span>
         ) : (

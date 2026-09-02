@@ -4,8 +4,8 @@ import { twMerge } from "tailwind-merge";
 //
 // These exist for one bug: every input in the app hand-rolled
 // `focus-visible:ring-2 focus-visible:ring-[#C9A24B]`, which has no offset and
-// so draws the brass indicator INSIDE the field's own border. globals.css
-// already ships `:focus-visible { outline: 2px solid var(--brass);
+// so draws the accent indicator INSIDE the field's own border. globals.css
+// already ships `:focus-visible { outline: 2px solid var(--accent);
 // outline-offset: 2px }` — outside, where it belongs. The primitives' job is to
 // stop re-implementing it.
 //
@@ -21,7 +21,7 @@ import { twMerge } from "tailwind-merge";
 const FIELD_CHROME =
   "rounded-lg bg-[color:var(--surface-sunken)] " +
   "border border-solid border-[color:var(--border-strong)] text-[color:var(--fg)] " +
-  "placeholder:text-[color:var(--fg-faint)] caret-[color:var(--brass)]";
+  "placeholder:text-[color:var(--fg-faint)] caret-[color:var(--accent)]";
 
 // Dropped at runtime as well as in the types, exactly as button.tsx does it:
 // the type ban is erased at the JS boundary, so an untyped caller could still
@@ -35,7 +35,7 @@ function dropStyle(rest: object) {
 type TextFieldProps = Omit<React.ComponentPropsWithRef<"input">, "style">;
 
 /**
- * A standalone labelled input. Focus is the global brass outline — do not add
+ * A standalone labelled input. Focus is the global accent outline — do not add
  * a ring utility, and do not pass an inline background/border (it would outrank
  * the chrome classes the same way it does on the buttons).
  */
@@ -80,7 +80,7 @@ export function SearchField({
       className={twMerge(
         FIELD_CHROME,
         "flex items-center gap-[10px] px-[12px] " +
-          "focus-within:border-[color:var(--brass)] " +
+          "focus-within:border-[color:var(--accent)] " +
           "focus-within:shadow-[0_0_0_3px_rgba(201,162,75,0.16)]",
         containerClassName,
       )}

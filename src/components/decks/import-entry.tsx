@@ -252,8 +252,8 @@ export function ImportEntry() {
               "rounded-full font-sans cursor-pointer min-h-[44px]",
               "text-[12.5px] md:text-[13px] px-[14px] md:px-[16px] py-[8px] md:py-[9px]",
               mode === m.id
-                ? "font-semibold bg-[color:var(--brass)] text-[color:var(--bg)] border border-solid border-[color:var(--brass)]"
-                : "bg-[color:var(--elevated)] text-[color:var(--fg-body)] border border-solid border-[color:var(--border-strong)] md:hover:border-[color:var(--brass)] md:hover:text-[color:var(--brass-hover)]",
+                ? "font-semibold bg-[color:var(--accent)] text-[color:var(--bg)] border border-solid border-[color:var(--accent)]"
+                : "bg-[color:var(--elevated)] text-[color:var(--fg-body)] border border-solid border-[color:var(--border-strong)] md:hover:border-[color:var(--accent)] md:hover:text-[color:var(--accent-hover)]",
             ].join(" ")}
           >
             <span className="md:hidden">{m.shortLabel}</span>
@@ -277,7 +277,7 @@ export function ImportEntry() {
             maxLength={PASTE_MAX_BYTES}
             placeholder={copy.entry.pastePlaceholder}
             aria-describedby={failure ? "import-failure" : undefined}
-            className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[16px] md:text-[13px] resize-none bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)] caret-[color:var(--brass)] placeholder:text-[color:var(--fg-faint)]"
+            className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[16px] md:text-[13px] resize-none bg-[color:var(--surface-sunken)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-body)] caret-[color:var(--accent)] placeholder:text-[color:var(--fg-faint)]"
           />
         </div>
       ) : (
@@ -303,8 +303,8 @@ export function ImportEntry() {
             className={[
               "text-center rounded-[12px] p-[30px_18px] md:p-[40px] bg-[color:var(--surface-sunken)]",
               dragOver
-                ? "[border:1.5px_dashed_var(--brass)]"
-                : "[border:1.5px_dashed_var(--border-dashed)] md:hover:[border:1.5px_dashed_var(--brass)]",
+                ? "[border:1.5px_dashed_var(--accent)]"
+                : "[border:1.5px_dashed_var(--border-dashed)] md:hover:[border:1.5px_dashed_var(--accent)]",
             ].join(" ")}
           >
             <input
@@ -412,7 +412,7 @@ function ParsingBlock() {
           <span
             key={delay}
             aria-hidden
-            className="anim-dots rounded-full w-[7px] h-[7px] md:w-[8px] md:h-[8px] bg-[color:var(--brass)]"
+            className="anim-dots rounded-full w-[7px] h-[7px] md:w-[8px] md:h-[8px] bg-[color:var(--accent)]"
             style={{ animationDelay: `${delay}s` }}
           />
         ))}

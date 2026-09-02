@@ -1,7 +1,7 @@
 // The crab — host of the character layer (richness handoff §The one big idea).
 // Geometry is a verbatim port of design/design_handoff_the99_richness/crab.svg;
-// only the hardcoded hexes are swapped for tokens (#C9A24B → --brass,
-// #1E1A15 → --surface).
+// only the hardcoded hexes are swapped for tokens (the brass strokes become
+// --accent, the panel fill becomes --surface).
 //
 // Takes a numeric `size` rather than a variant union, unlike the identity marks
 // in ../marks.tsx. Those compose px-sized diamonds and text, where a uniform
@@ -38,7 +38,7 @@ export function Crab({
       {/* Legs — three segments per side */}
       <g
         fill="none"
-        stroke="var(--brass)"
+        stroke="var(--accent)"
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -54,14 +54,14 @@ export function Crab({
       <path
         d="M80 24 C 114 24, 136 40, 134 60 C 132 80, 110 90, 80 90 C 50 90, 28 80, 26 60 C 24 40, 46 24, 80 24 Z"
         fill="var(--surface)"
-        stroke="var(--brass)"
+        stroke="var(--accent)"
         strokeWidth="3"
         strokeLinejoin="round"
       />
       {/* Pincers */}
       <g
         fill="var(--surface)"
-        stroke="var(--brass)"
+        stroke="var(--accent)"
         strokeWidth="3"
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -72,14 +72,14 @@ export function Crab({
         <path d="M101 101 L 111 88" fill="none" />
       </g>
       {/* Eyes on stalks, with deadpan half-lids */}
-      <ellipse cx="58" cy="18" rx="4.5" ry="6.5" fill="var(--surface)" stroke="var(--brass)" strokeWidth="3" />
-      <ellipse cx="102" cy="18" rx="4.5" ry="6.5" fill="var(--surface)" stroke="var(--brass)" strokeWidth="3" />
-      <circle cx="57" cy="20" r="2" fill="var(--brass)" />
-      <circle cx="101" cy="20" r="2" fill="var(--brass)" />
-      <path d="M52 14 L 63 13" stroke="var(--brass)" strokeWidth="3" strokeLinecap="round" fill="none" />
-      <path d="M97 13 L 108 14" stroke="var(--brass)" strokeWidth="3" strokeLinecap="round" fill="none" />
+      <ellipse cx="58" cy="18" rx="4.5" ry="6.5" fill="var(--surface)" stroke="var(--accent)" strokeWidth="3" />
+      <ellipse cx="102" cy="18" rx="4.5" ry="6.5" fill="var(--surface)" stroke="var(--accent)" strokeWidth="3" />
+      <circle cx="57" cy="20" r="2" fill="var(--accent)" />
+      <circle cx="101" cy="20" r="2" fill="var(--accent)" />
+      <path d="M52 14 L 63 13" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" fill="none" />
+      <path d="M97 13 L 108 14" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" fill="none" />
       {/* Flat mouth */}
-      <path d="M72 62 L 88 62" stroke="var(--brass)" strokeWidth="3" strokeLinecap="round" fill="none" />
+      <path d="M72 62 L 88 62" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" fill="none" />
     </svg>
   );
 }

@@ -9,7 +9,7 @@ import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { availabilityState } from "../../lib/decks/availability";
 
-// The matched run in brass, so a list of eight near-identical names says which
+// The matched run in accent, so a list of eight near-identical names says which
 // part of each one the query actually caught. Case-insensitive and literal:
 // the query is a user string, so it is located with indexOf rather than
 // compiled into a RegExp, where a stray `(` would throw on every keystroke.

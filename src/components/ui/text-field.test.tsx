@@ -27,10 +27,10 @@ describe("TextField", () => {
   });
 
   it("keeps the default border color when the caller overrides only at a breakpoint", () => {
-    render(<TextField aria-label="Name" className="md:border-[color:var(--brass)]" />);
+    render(<TextField aria-label="Name" className="md:border-[color:var(--accent)]" />);
     const el = screen.getByLabelText("Name");
     expect(el.className).toContain("border-[color:var(--border-strong)]");
-    expect(el.className).toContain("md:border-[color:var(--brass)]");
+    expect(el.className).toContain("md:border-[color:var(--accent)]");
   });
 });
 

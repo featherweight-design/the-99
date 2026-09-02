@@ -18,7 +18,7 @@ export default async function ReplacePage() {
     // Page header — §Page Title "Replace collection" desktop / mobile back-chevron header
     <section>
       <div className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]" style={{ borderBottom: "1px solid var(--border)" }}>
-        <a href="/collection" aria-label="Back to Collection" className="text-[20px]" style={{ color: "var(--brass)" }}>‹</a>
+        <a href="/collection" aria-label="Back to Collection" className="text-[20px]" style={{ color: "var(--accent)" }}>‹</a>
         <h1 className="font-display font-semibold text-[19px]" style={{ color: "var(--fg)" }}>Replace collection</h1>
       </div>
       <div className="hidden md:block md:p-[28px_34px_0]">

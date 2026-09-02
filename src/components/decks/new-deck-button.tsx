@@ -3,7 +3,7 @@ import { PrimaryButton } from "@/components/ui/button";
 /**
  * "New Deck" CTA — server component. `PrimaryButton` renders a next/link here
  * rather than a button, because it is given an `href`.
- * §New Deck button: IBM Plex Sans 600 14px #14110E on #C9A24B brass.
+ * §New Deck button: IBM Plex Sans 600 14px --bg on an --accent fill.
  * Mobile: full-width 11px 0 padding. Desktop: auto-width 11px 20px.
  */
 export function NewDeckButton() {

@@ -53,7 +53,7 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
         className="rounded-[12px] md:rounded-[14px] p-4 md:p-[26px_28px]"
         style={{
           background: "var(--surface)",
-          border: "1px solid var(--brass)",
+          border: "1px solid var(--accent)",
         }}
       >
         <div className="flex items-center gap-3">
@@ -63,7 +63,7 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
           <span
             className="flex h-[22px] w-[22px] md:h-[26px] md:w-[26px] items-center justify-center rounded-full text-[12px] md:text-[13px]"
             style={{
-              background: "var(--brass)",
+              background: "var(--accent)",
               color: "var(--bg)",
               fontFamily: "var(--font-mono)",
               fontWeight: 600,

@@ -47,14 +47,14 @@ export function StripRationale() {
     position, classes doing the drawing.
 
     §Rationale panel, open: bg --surface-sunken, border 1px --border,
-    border-left 3px --brass, br 9px, p 11px 13px, mt 10px, internal gap 7px.
+    border-left 3px --accent, br 9px, p 11px 13px, mt 10px, internal gap 7px.
     §Rationale disclosure trigger, closed: own row, mt 12px.
   */
   return (
     <div
       className={
         open
-          ? "mt-[10px] rounded-[9px] px-[13px] py-[11px] bg-surface-sunken border border-border border-l-[3px] border-l-brass"
+          ? "mt-[10px] rounded-[9px] px-[13px] py-[11px] bg-surface-sunken border border-border border-l-[3px] border-l-accent"
           : "mt-[12px]"
       }
     >
@@ -79,8 +79,8 @@ export function StripRationale() {
           aria-controls={open ? panelId : undefined}
           className={
             open
-              ? "font-mono text-[11px] text-brass cursor-pointer"
-              : "font-mono text-[11px] text-brass border-b border-brass-shadow pb-[1px] cursor-pointer"
+              ? "font-mono text-[11px] text-accent cursor-pointer"
+              : "font-mono text-[11px] text-accent border-b border-accent-shadow pb-[1px] cursor-pointer"
           }
         >
           {addPanelCopy.strip.rationaleToggle}

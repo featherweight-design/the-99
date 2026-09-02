@@ -1,6 +1,6 @@
-// Fit Bar — 3-segment brass ramp (§Fit Bar, §Fit Bar — Degraded).
-// Segments: Pool (#6E5B33 = --brass-dim), Roles (#A9863E = --brass-mid),
-// Synergy (#C9A24B = --brass). Degraded: 2 segments (Pool + Roles, no Synergy).
+// Fit Bar — 3-segment accent ramp (§Fit Bar, §Fit Bar — Degraded).
+// Segments: Pool (#6E5B33 = --accent-dim), Roles (#A9863E = --accent-mid),
+// Synergy (#C9A24B = --accent). Degraded: 2 segments (Pool + Roles, no Synergy).
 // Legend dots below bar (desktop only, when legend=true).
 
 import type { FitSegmentsResult } from "../../lib/recs/format";

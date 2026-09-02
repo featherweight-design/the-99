@@ -21,7 +21,7 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
   const label = guildLabel(colors);
 
   return (
-    // Vignette per Surfaces v2 — brass at 7%, existing token, no new hex.
+    // Vignette per Surfaces v2 — accent at 7%, existing token, no new hex.
     <div className="flex flex-1 flex-col items-center justify-center text-center p-[24px_30px] sm:p-[40px] bg-[radial-gradient(420px_240px_at_50%_76%,rgba(201,162,75,0.07),transparent_70%)]">
       <Crown tone="quiet" className="mb-[14px]" />
 
@@ -38,7 +38,7 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
                 height: 16,
                 background: WUBRG_HEX[c] ?? "#8E8269",
                 opacity: 0.5,
-                boxShadow: "0 0 0 2px var(--brass)",
+                boxShadow: "0 0 0 2px var(--accent)",
               }}
             />
           ))}

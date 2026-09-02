@@ -3,7 +3,7 @@ import { twMerge } from "tailwind-merge";
 
 // Shared CTA primitives per docs/superpowers/design-tables/appshell.md
 // §404: Primary CTA and §404: Secondary CTA — the canonical statement of the
-// brass and ghost contracts.
+// accent and ghost contracts.
 //
 // These own nine properties ONLY: fill, text color, border, font-family,
 // font-weight, border-radius, hover, the hover transition, and cursor. Padding
@@ -26,12 +26,12 @@ const BASE =
 // disabled button would otherwise still light up under the pointer and read as
 // interactive.
 const PRIMARY =
-  "bg-[color:var(--brass)] text-[color:var(--bg)] hover:bg-[color:var(--brass-hover)] " +
-  "disabled:hover:bg-[color:var(--brass)]";
+  "bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] " +
+  "disabled:hover:bg-[color:var(--accent)]";
 
 const GHOST =
   "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] " +
-  "hover:[border-color:var(--brass)] hover:[color:var(--brass-hover)] " +
+  "hover:[border-color:var(--accent)] hover:[color:var(--accent-hover)] " +
   "disabled:hover:[border-color:var(--border-strong)] disabled:hover:[color:var(--fg)]";
 
 type SharedProps = {

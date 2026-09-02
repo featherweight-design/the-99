@@ -25,7 +25,7 @@ export function GroupToggle({
     <div
       className="flex items-center gap-[7px] md:gap-[10px] px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-[#2A241D] md:border-b-0"
     >
-      {/* "All N" filter pill — active: brass bg dark text | idle: muted with border */}
+      {/* "All N" filter pill — active: accent bg dark text | idle: muted with border */}
       <button
         type="button"
         onClick={() => onFilterChange("all")}

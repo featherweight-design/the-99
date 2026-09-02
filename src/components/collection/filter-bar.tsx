@@ -274,7 +274,7 @@ export function FilterBar({
                 className={[
                   "flex items-center justify-center rounded-md text-[12px] md:text-[13px] w-[28px] h-[24px] md:w-[30px] md:h-[28px]",
                   active
-                    ? "bg-[var(--brass)] text-[var(--bg)]"
+                    ? "bg-[var(--accent)] text-[var(--bg)]"
                     : "bg-transparent text-[var(--fg-faint)]",
                 ].join(" ")}
               >

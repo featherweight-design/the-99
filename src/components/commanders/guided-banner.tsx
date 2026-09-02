@@ -1,6 +1,6 @@
 // Guided First-Run Banner (§Guided First-Run Banner).
 // Desktop: gradient card with XCIX ring seal, step label, 3-diamond progress crumb, heading, body.
-// Mobile: ribbon style (left brass border) with step label + crumb, heading, body.
+// Mobile: ribbon style (left accent border) with step label + crumb, heading, body.
 // Shown when firstRun===true, above the list.
 //
 // Richness pass (Surfaces v2 §Commanders): "a mark joins the XCIX crumb row,

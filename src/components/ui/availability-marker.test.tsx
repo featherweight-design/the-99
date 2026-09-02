@@ -163,13 +163,13 @@ describe("AvailabilityMarker", () => {
 });
 
 // Property table rows 2.5–2.7 and 3.3–3.4. The plan's draft painted every
-// glyph brass at 1px and drew one diamond in every state; the table is the
+// glyph accent at 1px and drew one diamond in every state; the table is the
 // authority and disagrees on both.
 describe("AvailabilityMarker glyph", () => {
   const glyphOf = (c: HTMLElement) =>
     c.querySelector('[aria-hidden="true"]') as HTMLElement;
 
-  it("draws the soft glyph as a hollow 1.5px outline, never brass", () => {
+  it("draws the soft glyph as a hollow 1.5px outline, never accent", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(2, 0, 1)} density="row" />,
     );
@@ -179,7 +179,7 @@ describe("AvailabilityMarker glyph", () => {
     expect(g.className).not.toContain("avail-hard");
   });
 
-  it("fills the hard glyph brass", () => {
+  it("fills the hard glyph accent", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />,
     );
@@ -251,7 +251,7 @@ describe("AvailabilityMarker chip density", () => {
       ).container,
     );
     expect(hard.className).toContain("bg-[rgba(11,9,7,0.90)]");
-    expect(hard.className).toContain("border-[color:var(--brass)]");
+    expect(hard.className).toContain("border-[color:var(--accent)]");
 
     const over = root(
       render(
@@ -327,8 +327,8 @@ describe("AvailabilityMarker row density", () => {
   });
 
   // Row 3.4 gives the row-density hard label #E8CE93 too. The plan reserved
-  // --avail-hard-fg for the chip and painted rows brass.
-  it("uses the lifted hard foreground, not raw brass", () => {
+  // --avail-hard-fg for the chip and painted rows accent.
+  it("uses the lifted hard foreground, not raw accent", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />,
     );

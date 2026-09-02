@@ -58,8 +58,8 @@ export function RowsView({
           // outrank the hover: variants and neither hover state ever lands.
           className={`grid items-center text-left rounded-lg gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} [grid-template-columns:38px_40px_1fr_auto] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]`}
         >
-          {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, #C9A24B (--brass), font-weight 500 */}
-          <span className="font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--brass)" }}>
+          {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, #C9A24B (--accent), font-weight 500 */}
+          <span className="font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--accent)" }}>
             ×{c.quantity}
           </span>
 

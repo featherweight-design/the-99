@@ -47,7 +47,7 @@ export function ArrivalStrip({ deckId, importedLineCount }: ArrivalStripProps) {
         type="button"
         onClick={dismiss}
         aria-label={copy.dismiss}
-        className="font-mono text-[10px] md:text-[11px] flex-none cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--brass)] transition-colors"
+        className="font-mono text-[10px] md:text-[11px] flex-none cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
       >
         <span className="md:hidden">✕</span>
         <span className="hidden md:inline">{copy.dismiss} ✕</span>

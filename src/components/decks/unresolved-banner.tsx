@@ -74,7 +74,7 @@ export function UnresolvedBanner({ count, onTakeALook }: UnresolvedBannerProps) 
           <button
             type="button"
             onClick={onTakeALook}
-            className="md:hidden mt-[7px] font-semibold text-[12.5px] bg-transparent border-0 p-0 cursor-pointer text-[color:var(--brass)] hover:text-[color:var(--brass-hover)] transition-colors"
+            className="md:hidden mt-[7px] font-semibold text-[12.5px] bg-transparent border-0 p-0 cursor-pointer text-[color:var(--accent)] hover:text-[color:var(--accent-hover)] transition-colors"
           >
             {copy.bannerAction}
           </button>

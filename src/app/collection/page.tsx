@@ -118,7 +118,7 @@ export default async function CollectionPage() {
           <a
             href="/collection/replace"
             className="md:hidden text-[13px]"
-            style={{ color: "var(--brass)" }}
+            style={{ color: "var(--accent)" }}
           >
             <ReplaceIcon />
             Replace

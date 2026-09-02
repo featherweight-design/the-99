@@ -334,15 +334,15 @@ describe("ConsiderPanel — unowned staples", () => {
   });
 
   // Adding a card you do not own is a real action, just not the deck's
-  // default one, so Add drops out of brass.
+  // default one, so Add drops out of accent.
   it("offers the add as a secondary action, not the tile's primary one", () => {
     mount({ suggestions: [unowned("Smothering Tithe"), suggestion({ name: "Sol Ring" })] });
 
     const secondary = screen.getByRole("button", { name: "Add Smothering Tithe to deck" });
-    expect(secondary.className).not.toContain("bg-brass");
+    expect(secondary.className).not.toContain("bg-accent");
     expect(secondary.className).toContain("border-strong");
     expect(screen.getByRole("button", { name: "Add Sol Ring to deck" }).className)
-      .toContain("bg-brass");
+      .toContain("bg-accent");
   });
 
   // The canvas draws the lift line on the owned tile and not on the unowned

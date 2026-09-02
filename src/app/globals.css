@@ -1,64 +1,53 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
- * Brand tokens — every hex called out in docs/superpowers/design-tables/appshell.md
+ * Brand tokens — the 35-key contract enforced by src/lib/theme/contract.test.ts.
  * Semantic names first; raw hexes live only here.
  * ------------------------------------------------------------------ */
 :root {
-  /* Backgrounds / surfaces */
-  --bg: #14110E;            /* base canvas */
-  --surface: #1E1A15;       /* card / panel */
-  --surface-raised: #221D16;/* account trigger row, deck-row hover */
-  --surface-rail: #1A160F;  /* rail + tab-bar background */
-  --surface-sunken: #181410;/* dropzone + textarea background */
-  --surface-inset: #1C1712; /* dropzone hover background */
-  --elevated: #2A241D;      /* active nav item, elevated inner */
-  --elevated-hover: #211C15;/* rail idle hover */
+  /* Theme: amonkhet — "Gilded Stone". The default, and the fallback for an
+     unrecognised data-theme: a complete theme rather than unstyled tokens. */
 
-  /* Borders / lines */
-  --border: #2A241D;        /* soft dividers */
-  --border-strong: #3A3229; /* card + rail borders */
-  --border-dashed: #4A4033; /* dropzone dashed border */
+  /* Chrome (16) */
+  --bg: #14110E;
+  --surface: #1E1A15;
+  --surface-raised: #211D18;
+  --surface-rail: #1A1611;
+  --surface-sunken: #18140F;
+  --surface-inset: #1B1712;
+  --elevated: #29241F;
+  --elevated-hover: #201C17;
+  --border: #2B241B;
+  --border-strong: #3A3229;
+  --border-dashed: #494037;
+  --fg: #EDE6D8;
+  --fg-body: #C0B8A6;
+  --fg-muted: #A59C89;
+  --fg-faint: #8B8270;
+  --fg-locked: #6E6654;
 
-  /* Text */
-  --fg: #EDE6D8;            /* primary text */
-  --fg-body: #C6B79A;       /* secondary body copy */
-  --fg-muted: #A89B84;      /* muted labels */
-  --fg-faint: #8E8269;      /* mono meta / faint captions */
-  --fg-locked: #6A6152;     /* locked / disabled */
+  /* Flavor (6) — the only family permitted real chroma. */
+  --accent: #CF8745;
+  --accent-hover: #DE9757;
+  --accent-strong: #AB6E37;
+  --accent-shadow: #6B482A;
+  --accent-dim: #6B482A;
+  --accent-mid: #AB6E37;
 
-  /* Brass accent */
-  --brass: #C9A24B;
-  --brass-hover: #D8B25E;
-  --brass-strong: #A9863E;
-  --brass-shadow: #6E5B33;
-  /* Fit-bar ramp aliases (brief §Brass ramp tokens) */
-  --brass-dim: #6E5B33;
-  --brass-mid: #A9863E;
-
-  /* Feedback */
+  /* Semantic (3) */
   --success: #6FA368;
-  --warning: #E0913C;
+  --warning: #DEAA29;
   --danger: #C6533F;
 
-  /* Card availability (#43). Two aliases and three literals — no new hues.
-     There is no light theme in this stylesheet (one :root, no color-scheme),
-     so these are single-value like every other token. */
+  /* Card availability (5). The first two are aliases and must stay aliases —
+     flattened to hexes they stop re-resolving per theme. */
   --avail-soft: var(--fg-muted);
-  --avail-hard: var(--brass);
-  /* NOT because brass fails — brass is AAA for normal text (~7.0:1 on
-     --surface). This exists for a size reason: the tile chip label is 8.5px
-     mono on a scrim over card art, below the 14px large-text threshold. The
-     glyph itself stays --brass. */
-  --avail-hard-fg: #E8CE93;
-  /* The shipped danger red lifted for text. --danger itself is glyph-and-border
-     only and must never be used as text. */
-  --avail-over-fg: #E9917A;
-  /* The over-committed row/tile border tint. Border only — never text, never a
-     background. Named here so two components do not paste the hex literal. */
-  --avail-over-border: #6B3226;
+  --avail-hard: var(--accent);
+  --avail-hard-fg: #D9975C;
+  --avail-over-fg: #C46857;
+  --avail-over-border: #752619;
 
-  /* WUBRG identity swatches */
+  /* WUBRG identity swatches (5) */
   --w: #F4E9C4;
   --u: #3A6AA5;
   --b: #1E1B1A;
@@ -87,12 +76,12 @@
   --color-fg-muted: var(--fg-muted);
   --color-fg-faint: var(--fg-faint);
   --color-fg-locked: var(--fg-locked);
-  --color-brass: var(--brass);
-  --color-brass-hover: var(--brass-hover);
-  --color-brass-strong: var(--brass-strong);
-  --color-brass-shadow: var(--brass-shadow);
-  --color-brass-dim: var(--brass-dim);
-  --color-brass-mid: var(--brass-mid);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-shadow: var(--accent-shadow);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-mid: var(--accent-mid);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
@@ -124,20 +113,23 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 
 /* ------------------------------------------------------------------
  * Guided Banner — responsive border/background split
- * mobile:  solid bg #1E1A15, border 1px #2A241D, brass left accent 3px
- * desktop: gradient bg, border 1px #3A3229, no brass left accent
+ * mobile:  solid surface, hairline border, accent left border 3px
+ * desktop: gradient bg, stronger hairline border, no accent left border
  * (design table §Banner container)
+ *
+ * The literals these replace were drawn against the old brass accent, so once
+ * the accent moved the left border no longer matched the thing it accents.
  * ------------------------------------------------------------------ */
 .guided-banner {
-  background: #1E1A15;
-  border: 1px solid #2A241D;
-  border-left: 3px solid #C9A24B;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
 }
 @media (min-width: 768px) {
   .guided-banner {
-    background: linear-gradient(120deg, #221D14, #1A160F 60%);
-    border: 1px solid #3A3229;
-    border-left: 1px solid #3A3229;
+    background: linear-gradient(120deg, var(--surface-raised), var(--surface-rail) 60%);
+    border: 1px solid var(--border-strong);
+    border-left: 1px solid var(--border-strong);
   }
 }
 
@@ -157,7 +149,7 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
  * overrides" above actually true. */
 @layer base {
   :focus-visible {
-    outline: 2px solid var(--brass);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 

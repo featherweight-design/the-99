@@ -91,7 +91,7 @@ export function Dashboard({
         >
           Recommended commander
         </div>
-        <Link href="/commanders" style={{ fontSize: 13, color: "var(--brass)" }}>
+        <Link href="/commanders" style={{ fontSize: 13, color: "var(--accent)" }}>
           All commanders →
         </Link>
       </div>

@@ -126,7 +126,7 @@ export function ChipRow({
           type="button"
           onClick={onClearAll}
           className="ml-[2px] text-[12px]"
-          style={{ color: "var(--brass)" }}
+          style={{ color: "var(--accent)" }}
         >
           Clear all
         </button>

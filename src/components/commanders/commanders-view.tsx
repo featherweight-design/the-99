@@ -368,7 +368,7 @@ export function CommandersView({
     setAnnouncement(
       `${n(shown)} shown, ${n(filtered.length - shown)} more below. Ranks ${n(before + 1)} to ${n(shown)} added.`,
     );
-    // preventScroll: revealing must not move the reader's place. The brass ring
+    // preventScroll: revealing must not move the reader's place. The accent ring
     // is the cue that keyboard position advanced, not a jump down the page.
     itemRefs.current[before]?.focus({ preventScroll: true });
   }, [shown, filtered.length]);
@@ -756,7 +756,7 @@ export function CommandersView({
                   }
                   className={
                     wasWindowed
-                      ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brass)]"
+                      ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
                       : undefined
                   }
                 >

@@ -61,7 +61,7 @@ describe("SuggestionTile availability caption", () => {
   });
 
   // The state the caption used to be indistinguishable from the one above.
-  it("paints the over-committed caption the over foreground, not brass", () => {
+  it("paints the over-committed caption the over foreground, not accent", () => {
     mount({
       owned: 1,
       hard: 2,

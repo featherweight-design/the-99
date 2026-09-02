@@ -21,8 +21,8 @@ type Tone = "quiet" | "page" | "loud";
 
 const TONES: Record<Tone, { small: string; large: string; gap: string; color: string }> = {
   quiet: { small: "w-[8px] h-[8px]", large: "w-[12px] h-[12px]", gap: "gap-[6px]", color: "var(--border-strong)" },
-  page: { small: "w-[8px] h-[8px]", large: "w-[12px] h-[12px]", gap: "gap-[6px]", color: "var(--brass-strong)" },
-  loud: { small: "w-[13px] h-[13px]", large: "w-[19px] h-[19px]", gap: "gap-[9px]", color: "var(--brass)" },
+  page: { small: "w-[8px] h-[8px]", large: "w-[12px] h-[12px]", gap: "gap-[6px]", color: "var(--accent-strong)" },
+  loud: { small: "w-[13px] h-[13px]", large: "w-[19px] h-[19px]", gap: "gap-[9px]", color: "var(--accent)" },
 };
 
 const DELAYS = [0, 0.2, 0.4];
