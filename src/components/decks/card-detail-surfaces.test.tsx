@@ -9,7 +9,7 @@ import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
-import { CardDetailProvider, cardDetailCopy } from "./card-detail-provider";
+import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 import { BuilderSpine } from "./builder-spine";
 import { Decklist } from "./decklist";
 import { SuggestionTile } from "./suggestion-tile";

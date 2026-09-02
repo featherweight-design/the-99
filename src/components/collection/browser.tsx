@@ -42,7 +42,7 @@ import { ChipRow } from "./chip-row";
 import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
 import { NoResults } from "./no-results";
-import { CardModal } from "./card-modal";
+import { CardModal } from "../cards/card-modal";
 
 const PAGE_SIZE = 200;
 

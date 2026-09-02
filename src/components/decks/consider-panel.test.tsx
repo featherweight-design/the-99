@@ -20,7 +20,7 @@ const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const { ConsiderPanel, SHELF_CAP, rolesWithShelves } = await import("./consider-panel");
-const { CardDetailProvider } = await import("./card-detail-provider");
+const { CardDetailProvider } = await import("../cards/card-detail-provider");
 
 const suggestion = (over: Partial<DeckSuggestion> & { name: string }): DeckSuggestion => ({
   oracleId: over.name.toLowerCase().replace(/\W+/g, "-"),

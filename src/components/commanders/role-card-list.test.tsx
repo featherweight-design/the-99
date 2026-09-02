@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { RoleCard } from "../../lib/recs/score";
 import { RoleCardList } from "./role-card-list";
-import { CardDetailProvider } from "../decks/card-detail-provider";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 
 vi.mock("../../app/card-detail-action", () => ({
   getCardDetail: vi.fn(async () => null),
