@@ -9,6 +9,7 @@ import { requireUserId } from "../../lib/auth";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
+import { claimSurfaces, deckSurfaces } from "../../lib/decks/revalidate";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
@@ -176,6 +177,10 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
       .returning({ id: decks.id });
     deckId = deck.id;
   }
+  // The redirect renders the new deck's own page, but /decks and the home
+  // dashboard both list decks and are held in the client cache for a window
+  // now — without this the deck you just made is missing when you navigate back.
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
   // Outside the try: redirect() signals by throwing, and a catch here would
   // read that throw as a failed fill.
   redirect(`/decks/${deckId}`);
@@ -341,8 +346,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
   // that exists, and without a fresh render the optimistic "✓ In deck" would
   // flash back to "+ Add" when the transition ends.
   if (existingRow && !isBasicLand(card.typeLine)) {
-    revalidatePath(`/decks/${deckId}`);
-    revalidatePath(`/decks`);
+    for (const path of deckSurfaces(deckId)) revalidatePath(path);
     return { ok: true };
   }
 
@@ -373,9 +377,9 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
     return null;
   });
   if (rejection) return { ok: false, message: deckAddRejectionMessage(rejection) };
-  // /decks shows derived stats (built / to-buy) — keep the index fresh too.
-  revalidatePath(`/decks/${deckId}`);
-  revalidatePath(`/decks`);
+  // /decks shows derived stats (built / to-buy) — keep the index fresh too, and
+  // the two surfaces that draw availability off deck rows with it.
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
   return { ok: true };
 }
 
@@ -390,15 +394,16 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
   if (decremented.length === 0) {
     await db.delete(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
   }
-  revalidatePath(`/decks/${deckId}`);
-  revalidatePath(`/decks`);
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
 }
 
 export async function deleteDeck(deckId: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   await db.delete(decks).where(eq(decks.id, deckId));
-  revalidatePath(`/decks`);
+  // Deleting a deck releases every claim it held, so the availability markers
+  // on /collection and /commanders are wrong until they are told.
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
   redirect("/decks");
 }
 
@@ -435,7 +440,7 @@ export async function fillDeck(deckId: string): Promise<void> {
     }
     await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
   });
-  revalidatePath(`/decks/${deckId}`);
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
 }
 
 /** Clears the fill's marker on one row. The card stays in the deck — the marker
@@ -453,8 +458,9 @@ export async function renameDeck(deckId: string, name: string): Promise<void> {
   await requireDeck(deckId, userId);
   const trimmed = validateDeckName(name);
   await db.update(decks).set({ name: trimmed }).where(eq(decks.id, deckId));
-  revalidatePath(`/decks/${deckId}`);
-  revalidatePath(`/decks`);
+  // No claim changes, so the availability surfaces are untouched — but the home
+  // dashboard names the three most recent decks and would keep the old one.
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
 }
 
 /** One removed row, carried so Undo can restore a stacked basic at the exact
@@ -477,7 +483,7 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   const removed = await db.delete(deckCards)
     .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
     .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
-  revalidatePath(`/decks/${deckId}`);
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
   return removed;
 }
 
@@ -558,7 +564,7 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     await tx.insert(deckCards)
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
       .onConflictDoNothing();
-    revalidatePath(`/decks/${deckId}`);
+    for (const path of claimSurfaces(deckId)) revalidatePath(path);
     return restored;
   });
 }

@@ -8,36 +8,13 @@ import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { FullCardTrigger } from "./full-card-trigger";
+import { OwnedChip } from "./role-card-list";
+import { CardDetailProvider } from "../decks/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
 import { CoverageSection } from "./coverage-section";
 import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { FILL_BASELINE_TOTAL } from "../../lib/decks/fill";
-
-// ─── Owned card chip ─────────────────────────────────────────────────────────
-
-function OwnedChip({ name }: { name: string }) {
-  return (
-    <span
-      className="inline-flex items-center font-mono rounded-full"
-      style={{
-        fontSize: "11.5px",
-        background: "var(--surface-raised)",
-        border: "1px solid color-mix(in srgb, var(--success) 40%, var(--bg))",
-        padding: "4px 10px",
-        color: "var(--fg-body)",
-        gap: 6,
-      }}
-    >
-      {/* Green dot */}
-      <span
-        className="block shrink-0 rounded-full"
-        style={{ width: 6, height: 6, background: "var(--success)" }}
-      />
-      {name}
-    </span>
-  );
-}
 
 // ─── Missing card chip (dashed border) ───────────────────────────────────────
 
@@ -388,7 +365,9 @@ export function CommanderDetail({
   const gradient = commanderGradient(c.colorIdentity);
 
   return (
-    <>
+    // One card-detail modal for the whole page, so the role chips below open the
+    // same modal the deck builder uses rather than a second implementation of it.
+    <CardDetailProvider>
       {/* ── Mobile: art header band ─────────────────────────────────── */}
       <div
         className="sm:hidden relative flex-none"
@@ -862,6 +841,6 @@ export function CommanderDetail({
           )}
         </div>
       </div>
-    </>
+    </CardDetailProvider>
   );
 }

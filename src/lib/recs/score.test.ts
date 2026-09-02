@@ -119,6 +119,16 @@ describe("scoreCommander", () => {
     expect(s.roleCards.ramp.map((c) => c.name)).toContain("Cultivate");
   });
 
+  // The chips on the commander detail page open card detail, which takes an
+  // oracle id and nothing else — a name-only role list cannot be clicked.
+  it("carries each role card's oracle id alongside its name", () => {
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const solRing = s.roleCards.ramp.find((c) => c.name === "Sol Ring");
+    expect(solRing?.oracleId).toBe(
+      collection.find((c) => c.name === "Sol Ring")!.oracleId,
+    );
+  });
+
   it("a wrath lands in roleCards.wipes not roleCards.removal", () => {
     const wrath = card({
       name: "Wrath of God",

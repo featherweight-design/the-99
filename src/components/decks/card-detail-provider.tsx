@@ -10,7 +10,7 @@ import {
   createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
-import { getCardDetail } from "../../app/decks/[id]/card-detail-action";
+import { getCardDetail } from "../../app/card-detail-action";
 import { CardModal } from "../collection/card-modal";
 
 export const cardDetailCopy = {
@@ -69,7 +69,18 @@ export function CardDetailTrigger({
       aria-busy={pending}
       title={title}
       className={className}
-      style={{ cursor: "pointer", opacity: pending ? 0.55 : undefined, ...style }}
+      // The chrome reset lives here rather than at each call site: every surface
+      // wraps its own already-styled content, so a UA's default button border,
+      // padding and background is never what any of them wants. Spread last, so
+      // a caller that does want one of them still wins.
+      style={{
+        cursor: "pointer",
+        background: "transparent",
+        border: "none",
+        padding: 0,
+        opacity: pending ? 0.55 : undefined,
+        ...style,
+      }}
     >
       {children}
     </button>

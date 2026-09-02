@@ -243,11 +243,11 @@ export function BuilderSpine({
         className={`block flex-none overflow-hidden rounded-[5px] md:rounded-[6px] md:h-[100px] md:w-[72px] ${
           built === 0 ? "h-[75px] w-[54px]" : "h-[67px] w-[48px]"
         }`}
+        // Spread rather than `background: undefined`, which would override the
+        // trigger's transparent default with the UA's grey button face.
         style={{
           boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-          background: commander.imageUri ? undefined : thumbGradient,
-          border: "none",
-          padding: 0,
+          ...(commander.imageUri ? {} : { background: thumbGradient }),
         }}
       >
         {commander.imageUri ? (
