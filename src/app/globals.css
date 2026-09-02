@@ -32,6 +32,11 @@
   --fg-body: #C0B8A6;
   --fg-muted: #A59C89;
   --fg-faint: #8B8270;
+  /* Every theme's --fg-locked clears the 3:1 floor on its own --surface with
+     almost nothing to spare (3.02–3.05:1 across all six). It is the tightest
+     pair in the system, so darkening any --surface breaks all six themes at
+     once rather than the one being edited. Re-measure this pair after any
+     surface change. */
   --fg-locked: #6E6654;
 
   /* Flavor (6) — the only family permitted real chroma. */
