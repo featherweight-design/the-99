@@ -685,14 +685,14 @@ export function BuilderShell({
                       className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
                       style={{ color: "var(--fg-body)" }}
                     >
-                      {recommendationsCopy.sweptEmpty.body(deck.commander.name)}
+                      {recommendationsCopy.sweptEmpty.body(commanderShortName)}
                     </p>
 
                     {/* §Swept-empty CTA — links into Consider */}
                     <button
                       type="button"
                       onClick={() => setView("consider")}
-                      className="font-mono text-[11px] mt-[20px] text-brass hover:text-brass-hover active:text-brass-mid"
+                      className="font-mono text-[11px] mt-[20px] cursor-pointer text-brass hover:text-brass-hover active:text-brass-mid"
                     >
                       {recommendationsCopy.sweptEmpty.cta}
                     </button>

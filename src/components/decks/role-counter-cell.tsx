@@ -149,7 +149,7 @@ export function RoleCounterCell({
     return (
       <div
         role="figure"
-        aria-label={addPanelCopy.strip.cellStaticAria(label, have ?? 0, target)}
+        aria-label={addPanelCopy.strip.cellStaticAria(label, have, target)}
         className={shell}
       >
         {face}
@@ -161,7 +161,7 @@ export function RoleCounterCell({
     <button
       type="button"
       onClick={onSeeShelf}
-      aria-label={addPanelCopy.strip.cellLinkAria(label, have ?? 0, target)}
+      aria-label={addPanelCopy.strip.cellLinkAria(label, have, target)}
       className={shell + interactive}
     >
       {face}

@@ -80,13 +80,20 @@ export const addPanelCopy = {
     // The whole cell is the control, so its accessible name carries the
     // figures a sighted user reads off the cell face. Two sentences, no dash —
     // the no-em-dash rule covers aria as much as visible copy.
-    cellLinkAria: (role: string, have: number, target: number) =>
-      `${role}, ${have} of ${target}. See ${role.toLowerCase()} cards to consider.`,
+    // A null `have` is the in-flight cell, whose face draws a dash for the
+    // numerator. Announcing "0 of 10" there would be the zero-for-no-data the
+    // dash exists to avoid, said in the one channel nobody can see it in.
+    cellLinkAria: (role: string, have: number | null, target: number) =>
+      have === null
+        ? `${role}, count not yet known, target ${target}. See ${role.toLowerCase()} cards to consider.`
+        : `${role}, ${have} of ${target}. See ${role.toLowerCase()} cards to consider.`,
     // A cell with no shelf to send anyone to is a figure and not a control.
     // Two cases reach it: the role has met its target, and the role is short
     // but Consider drew it no shelf because nothing owned fills it.
-    cellStaticAria: (role: string, have: number, target: number) =>
-      `${role}, ${have} of ${target}`,
+    cellStaticAria: (role: string, have: number | null, target: number) =>
+      have === null
+        ? `${role}, count not yet known, target ${target}`
+        : `${role}, ${have} of ${target}`,
     // One disclosure for the strip instead of five per-cell buttons.
     rationaleToggle: "Why these numbers?",
     rationaleToggleAria: "Show why each role has the target it has",

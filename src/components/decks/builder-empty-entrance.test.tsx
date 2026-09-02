@@ -117,6 +117,22 @@ describe("swept-empty branch", () => {
     expect(screen.queryByText(/a king with no army/i)).toBeNull();
   });
 
+  it("names the commander the short way the rest of the shell does", () => {
+    renderSwept();
+    // "Korvold", not "Korvold, Fae-Cursed King" — the sibling first-run branch
+    // and every other commander mention in the shell use the short name.
+    expect(
+      screen.getByText(recommendationsCopy.sweptEmpty.body("Korvold")),
+    ).toBeInTheDocument();
+  });
+
+  it("offers the way back into Consider", () => {
+    renderSwept();
+    expect(
+      screen.getByRole("button", { name: recommendationsCopy.sweptEmpty.cta }),
+    ).toBeInTheDocument();
+  });
+
   it("an empty deck that was never filled keeps the shipped first-run copy", () => {
     renderNeverFilled();
     // The first-run heading must be present

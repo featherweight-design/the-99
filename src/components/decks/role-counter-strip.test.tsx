@@ -290,6 +290,21 @@ describe("role counter cell — A3 in-flight treatment (have === null)", () => {
     // The numerator reads as a dash — textContent of the cell must include an em dash before the denominator
     // Check the cell contains "—" (em dash) but NOT a digit as the count
     expect(container.textContent).toMatch(/—\s*\/\s*10/);
+    // The rule itself: height 0 so the cell does not change height between
+    // frames, and dashed so it does not read as an empty track.
+    const rule = container.querySelector('[style*="dashed"]') as HTMLElement;
+    expect(rule).not.toBeNull();
+    expect(rule.style.borderTop).toContain("dashed");
+    expect(rule.style.height).toBe("0px");
+  });
+
+  it("does not announce a zero count to a screen reader", () => {
+    const { container } = renderInFlight();
+    const label = container.firstElementChild?.getAttribute("aria-label") ?? "";
+    // "0 of 10" is the zero-for-no-data the dash on the cell face exists to
+    // avoid, said in the one channel nobody can see it in.
+    expect(label).not.toContain("0 of 10");
+    expect(label).toBe(addPanelCopy.strip.cellStaticAria("Ramp", null, 10));
   });
 
   it("keeps the denominator when have is null", () => {
