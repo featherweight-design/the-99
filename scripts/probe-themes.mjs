@@ -9,7 +9,7 @@
 // across all six themes while sitting in a family that is supposed to move.
 //
 // Run by hand, like its siblings, and not part of `pnpm test`:
-//   node --env-file=.env scripts/probe-themes.mjs
+//   PROBE_USER_EMAIL=you@example.com node --env-file=.env scripts/probe-themes.mjs
 import { mkdir } from "node:fs/promises";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -21,13 +21,15 @@ const SECRET = process.env.CLERK_SECRET_KEY;
 // keeping a literal. Its sibling probes sign in by password, but the audit user
 // they name is not a member of this Clerk instance; a backend-issued sign-in
 // ticket needs no password and works for whichever account actually holds data.
-// `||` rather than `??` so that an exported-but-empty PROBE_USER_EMAIL falls
-// back too, instead of asking Clerk for the empty string.
-const EMAIL = process.env.PROBE_USER_EMAIL || "hugh@featherweight.design";
+// Named rather than defaulted: which account holds a collection is a property of
+// the instance a run points at, not of this file, and a committed default is
+// somebody's address checked into the repo.
+const EMAIL = process.env.PROBE_USER_EMAIL;
 // The reel the run leaves behind. Playwright will not create a missing parent,
 // so on a fresh machine the first screenshot throws and the whole walk is lost.
 const SHOTS = process.env.PROBE_SHOT_DIR ?? "/tmp/theme-shots";
 if (!SECRET) throw new Error("Set CLERK_SECRET_KEY.");
+if (!EMAIL) throw new Error("Set PROBE_USER_EMAIL to an account that holds a collection.");
 
 async function clerkApi(path, init) {
   const response = await fetch(`https://api.clerk.com/v1${path}`, {
