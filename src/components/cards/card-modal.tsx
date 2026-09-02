@@ -332,11 +332,8 @@ export function CardModal({
             onClick={onClose}
             aria-label="Close card details"
             // §Mobile: Art Close Button
-            className="absolute rounded-full flex items-center justify-center"
-            style={{
-              top: 22, right: 18, width: 32, height: 32,
-              background: "color-mix(in oklab, var(--bg) 55%, transparent)", color: "var(--fg)", fontSize: 16,
-            }}
+            className="absolute rounded-full flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
+            style={{ top: 22, right: 18, width: 32, height: 32, fontSize: 16 }}
           >
             ✕
           </button>
@@ -390,12 +387,8 @@ export function CardModal({
             type="button"
             onClick={onClose}
             aria-label="Close card details"
-            className="hidden md:flex absolute items-center justify-center rounded-full"
-            style={{
-              top: 22, right: 24, width: 34, height: 34,
-              background: "var(--surface-raised)", border: "1px solid var(--border-strong)",
-              color: "var(--fg-muted)", fontSize: 15,
-            }}
+            className="hidden md:flex absolute items-center justify-center rounded-full bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
+            style={{ top: 22, right: 24, width: 34, height: 34, fontSize: 15 }}
           >
             ✕
           </button>
@@ -516,8 +509,7 @@ export function CardModal({
               onClick={onPrev ?? undefined}
               disabled={!onPrev}
               aria-label="Previous card"
-              className="cursor-pointer text-[15px] disabled:opacity-40"
-              style={{ color: "var(--fg-faint)" }}
+              className="cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--fg-faint)]"
             >
               ‹ Prev
             </button>
@@ -529,8 +521,7 @@ export function CardModal({
               onClick={onNext ?? undefined}
               disabled={!onNext}
               aria-label="Next card"
-              className="ml-auto cursor-pointer text-[15px] disabled:opacity-40"
-              style={{ color: "var(--accent)" }}
+              className="ml-auto cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--accent)]"
             >
               Next ›
             </button>
@@ -677,8 +668,7 @@ function PickerTrigger({
       // pointing at a missing element is a broken relationship, not an empty one.
       aria-controls={expanded ? controls : undefined}
       aria-label={expanded ? pickerCopy.triggerCollapseAria : pickerCopy.triggerAria(count, caption)}
-      className="cursor-pointer text-left rounded-[8px] p-[8px_12px] m-[-8px_-12px]"
-      style={{ background: "var(--elevated)", border: "1px solid var(--border-dashed)" }}
+      className="cursor-pointer text-left rounded-[8px] p-[8px_12px] m-[-8px_-12px] bg-[color:var(--elevated)] border border-[color:var(--border-dashed)]"
     >
       <div className="font-mono uppercase text-[10px] tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
         {pickerCopy.triggerLabel}
@@ -720,11 +710,9 @@ function MobileSetRow({
       // pointing at a missing element is a broken relationship, not an empty one.
       aria-controls={expanded ? controls : undefined}
       aria-label={expanded ? pickerCopy.triggerCollapseAria : pickerCopy.triggerAria(count, caption)}
-      className="cursor-pointer w-full text-left flex items-center gap-[12px] p-[11px_14px]"
+      className="cursor-pointer w-full text-left flex items-center gap-[12px] p-[11px_14px] bg-[color:var(--elevated)] border border-[color:var(--border-dashed)]"
       style={{
         minHeight: 62,
-        background: "var(--elevated)",
-        border: "1px solid var(--border-dashed)",
         // Square-bottomed while open so the region reads as a continuation of this row.
         borderRadius: expanded ? "10px 10px 0 0" : 10,
       }}
