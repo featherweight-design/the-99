@@ -172,10 +172,13 @@ Create `src/components/ui/crown.tsx`:
 // leaving a hole. `pulse` carries the retired LoaderDots' 1.2s stagger, so the
 // loading state keeps its animation and loses a component.
 //
-// Three intensities, per the handoff's decision 6: quiet for a mark inside a
-// panel, page for a full-route empty state, and loud — reserved for the 99/99
-// reveal. Only the colour separates quiet from page; loud is also the larger
-// geometry, per the canvas §G rule quoted in the phase heading above.
+// Three intensities, per the handoff's decision 6. Quiet is for a mark that
+// sits inside content — an empty state, a panel, an inline row — which is most
+// of them. Page is for a mark that stands for the route itself rather than for
+// something missing from it: a page's own heading mark, or the loading screen.
+// Loud is reserved for the 99/99 reveal. Only the colour separates quiet from
+// page; loud is also the larger geometry, per the canvas §G rule quoted in the
+// phase heading above.
 
 type Tone = "quiet" | "page" | "loud";
 
