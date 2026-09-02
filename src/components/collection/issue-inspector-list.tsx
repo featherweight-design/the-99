@@ -90,7 +90,8 @@ export function IssueInspectorList(props: Props) {
 function UnmatchedRowView({ row, query }: { row: UnmatchedRow; query: string }) {
   return (
     <div
-      // §Unmatched row: bg var(--surface) (--surface), 1px var(--elevated) (--border),
+      // §Unmatched row: bg --surface, 1px --border (the table draws it at
+      // --elevated's value, but names the border token),
       // 3px left border --warning, radius 8px, ~40px tall.
       className="flex items-center justify-between gap-[12px] rounded-lg p-[9px_12px] md:p-[10px_14px]"
       style={{

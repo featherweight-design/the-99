@@ -100,14 +100,14 @@ export function FilterBar({
   }
 
   return (
-    // §Filter Bar Container: sticky top:0 desktop, bg var(--bg) (--bg), padding 18px 34px 14px desktop, border-bottom 1px var(--border) (--border), z-index 2
+    // §Filter Bar Container: sticky top:0 desktop, bg --bg, padding 18px 34px 14px desktop, border-bottom 1px --border, z-index 2
     <div
       className="md:sticky md:top-0 md:z-[2] px-[16px] md:px-[34px] pt-[14px] pb-[14px] md:pt-[18px] md:pb-[14px]"
       style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
     >
       {/* §Filter Row: display flex, align center, gap 8px mobile / 12px desktop, horizontal-scroll on mobile */}
       <div className="flex items-center gap-[8px] md:gap-[12px] overflow-x-auto md:overflow-visible">
-        {/* Search input — §Search Input: bg var(--surface-sunken) (--surface-sunken), border 1px var(--border-strong) (--border-strong), radius 8px, padding 9px 12px mobile / 10px 14px desktop */}
+        {/* Search input — §Search Input: bg --surface-sunken, border 1px --border-strong, radius 8px, padding 9px 12px mobile / 10px 14px desktop */}
         <SearchField
           containerClassName="gap-[8px] md:gap-[10px] md:flex-1 px-[12px] md:px-[14px] py-[9px] md:py-[10px]"
           className="text-[14px]"
@@ -125,7 +125,7 @@ export function FilterBar({
             border: "1px solid var(--border-strong)",
           }}
         >
-          {/* §Color Filter Label "COLOR" — mono 10px, var(--fg-faint) (--fg-faint), letter-spacing 0.1em, margin-right 2px */}
+          {/* §Color Filter Label "COLOR" — mono 10px, --fg-faint, letter-spacing 0.1em, margin-right 2px */}
           <span className="font-mono text-[10px] mr-[2px] tracking-[0.1em]" style={{ color: "var(--fg-faint)" }}>
             COLOR
           </span>
@@ -253,7 +253,7 @@ export function FilterBar({
           onAnnounce={onAnnounce}
         />
 
-        {/* View toggle — §View Toggle Container: bg var(--surface-sunken) (--surface-sunken), border 1px var(--border-strong) (--border-strong), radius 8px, padding 2px, gap 2px */}
+        {/* View toggle — §View Toggle Container: bg --surface-sunken, border 1px --border-strong, radius 8px, padding 2px, gap 2px */}
         <div
           className="flex gap-[2px] md:ml-[2px] rounded-lg p-[2px]"
           style={{

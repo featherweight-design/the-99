@@ -55,7 +55,7 @@ export function ConfirmModal({
         aria-modal="true"
         aria-labelledby="confirm-title"
         onClick={(e) => e.stopPropagation()}
-        // Mobile: bottom sheet (§Mobile: Bottom Sheet: bg var(--surface-rail) (--surface-rail), radius 22px 22px 34px 34px, padding 26px 22px 30px)
+        // Mobile: bottom sheet (§Mobile: Bottom Sheet: bg --surface-rail, radius 22px 22px 34px 34px, padding 26px 22px 30px)
         // Desktop: §Desktop: Modal Container: 520px, bg var(--surface-rail), border 1px var(--border-strong), radius 16px, padding 32px 34px 30px, shadow 0 40px 100px rgba(0,0,0,0.7)
         className="w-full md:w-[520px] rounded-[22px_22px_34px_34px] md:rounded-2xl p-[26px_22px_30px] md:p-[32px_34px_30px] mt-auto md:mt-0 [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)]"
         style={{
@@ -63,7 +63,7 @@ export function ConfirmModal({
           boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
         }}
       >
-        {/* Mobile drag handle — §Mobile: Sheet Drag Handle: 40×4, radius 999px, bg var(--border-strong) (--border-strong), margin 0 auto 20px */}
+        {/* Mobile drag handle — §Mobile: Sheet Drag Handle: 40×4, radius 999px, bg --border-strong, margin 0 auto 20px */}
         <div className="md:hidden mx-auto mb-[20px] rounded-full" style={{ width: 40, height: 4, background: "var(--border-strong)" }} />
 
         {/* Warning icon header — §Warning Icon Header + §Warning Icon */}
@@ -130,7 +130,7 @@ export function ConfirmModal({
             spellCheck={false}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            // §Confirm Input Field: bg var(--surface-sunken) (--surface-sunken), border 1px var(--danger) (--danger), radius 8px, padding 12/13px 14/16px, mono 15/16px, --fg, letter-spacing 0.1/0.12em
+            // §Confirm Input Field: bg --surface-sunken, border 1px --danger, radius 8px, padding 12/13px 14/16px, mono 15/16px, --fg, letter-spacing 0.1/0.12em
             className="w-full font-mono text-[15px] md:text-[16px] tracking-[0.1em] md:tracking-[0.12em] p-[12px_14px] md:p-[13px_16px] border-[color:var(--danger)]"
           />
         </div>
@@ -145,8 +145,8 @@ export function ConfirmModal({
             type="button"
             onClick={onClose}
             disabled={pending}
-            // §Cancel / Keep Button — mobile text-only var(--fg-faint) (--fg-faint), padding 12px 0 0;
-            // desktop outlined 1px var(--border-strong) (--border-strong), padding 13px 22px, accent border on hover
+            // §Cancel / Keep Button — mobile text-only --fg-faint, padding 12px 0 0;
+            // desktop outlined 1px --border-strong, padding 13px 22px, accent border on hover
             className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--accent)]"
             style={{
               color: "var(--fg-faint)",

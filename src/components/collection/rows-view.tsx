@@ -53,12 +53,12 @@ export function RowsView({
             // produces today's exact string, unchanged.
             (c.availability ? markerAria(c.availability, { nameless: true }) : null) ?? undefined,
           )}
-          // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 8px, bg var(--surface) (--surface), border 1px var(--border) (--border)
+          // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 8px, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: inline values
           // outrank the hover: variants and neither hover state ever lands.
           className={`grid items-center text-left rounded-lg gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} [grid-template-columns:38px_40px_1fr_auto] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]`}
         >
-          {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, var(--accent) (--accent), font-weight 500 */}
+          {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, --accent, font-weight 500 */}
           <span className="font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--accent)" }}>
             ×{c.quantity}
           </span>
@@ -87,7 +87,7 @@ export function RowsView({
                 marker inline after the name, inside the existing 1fr cell, so
                 neither grid template changes. */}
             <span className="flex items-center gap-[7px] md:gap-[9px] min-w-0">
-              {/* §Row: Card Name — 14/15px 600, var(--fg) (--fg), ellipsis */}
+              {/* §Row: Card Name — 14/15px 600, --fg, ellipsis */}
               {/* Row 13.2 wants the full name in the title as well as the
                   accessible name. It matters more now than it did: the marker
                   shares this cell, so the name truncates sooner. */}
@@ -121,7 +121,7 @@ export function RowsView({
                 />
               )}
             </span>
-            {/* Mobile type line — §Row: Type Line (mobile): 11.5px, var(--fg-faint) (--fg-faint), truncate */}
+            {/* Mobile type line — §Row: Type Line (mobile): 11.5px, --fg-faint, truncate */}
             <span className="block md:hidden truncate text-[11.5px]" style={{ color: "var(--fg-faint)" }}>
               {c.typeLine}
             </span>
@@ -149,7 +149,7 @@ export function RowsView({
 function SetRarityColumn({ card }: { card: BrowseCard }) {
   return (
     <>
-      {/* Mobile: single trailing set code — §Row: Set Code (mobile): mono 10.5px, var(--fg-faint) (--fg-faint), letter-spacing 0.04em */}
+      {/* Mobile: single trailing set code — §Row: Set Code (mobile): mono 10.5px, --fg-faint, letter-spacing 0.04em */}
       <span
         className="md:hidden font-mono text-[10.5px] tracking-[0.04em] text-right"
         style={{ color: "var(--fg-faint)" }}

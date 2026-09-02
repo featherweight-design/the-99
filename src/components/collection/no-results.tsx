@@ -28,7 +28,7 @@ export function NoResults({
     <div className="flex-1 flex flex-col items-center justify-center text-center p-[36px] md:p-[48px] bg-[radial-gradient(440px_260px_at_50%_78%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
       <Crown tone="quiet" className="mb-[14px]" />
 
-      {/* Heading — §No Results Heading: Cinzel 700, 21/26px, var(--fg) (--fg) */}
+      {/* Heading — §No Results Heading: Cinzel 700, 21/26px, --fg */}
       <h2
         className="font-display font-bold text-[21px] md:text-[26px] m-0"
         style={{ color: "var(--fg)" }}
@@ -36,7 +36,7 @@ export function NoResults({
         {collectionBrowseCopy.noResults.heading(query, colorLabel)}
       </h2>
 
-      {/* Body — §No Results Body Copy: 13.5/15px, var(--fg-body) (--fg-body), line-height 1.55/1.6 */}
+      {/* Body — §No Results Body Copy: 13.5/15px, --fg-body, line-height 1.55/1.6 */}
       <p
         className="mt-[10px] md:mt-[12px] text-[13.5px] md:text-[15px] md:max-w-[360px] leading-[1.55] md:leading-[1.6]"
         style={{ color: "var(--fg-body)" }}

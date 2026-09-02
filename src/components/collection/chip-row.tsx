@@ -164,7 +164,7 @@ function Chip({
 }) {
   return (
     // Chip per §Filter Chip: inline-flex, gap 6/7px, font 12/12.5px, radius 999px,
-    // bg var(--elevated) (--elevated), border 1px var(--border-strong) (--border-strong)
+    // bg --elevated, border 1px --border-strong
     <span
       className="inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] gap-[6px] md:gap-[7px] px-[9px] py-[5px] md:pl-[11px] md:pr-[8px]"
       style={{
@@ -183,7 +183,7 @@ function Chip({
       )}
       {leadingGlyph}
       {label}
-      {/* Dismiss "✕" — §Filter Chip Dismiss, color var(--fg-faint) (--fg-faint).
+      {/* Dismiss "✕" — §Filter Chip Dismiss, color --fg-faint.
           The glyph draws about 10×19px, so the hit area is grown to 44px with a
           centred pseudo-element rather than with padding: padding would inflate
           the chip itself, and the chip's size is drawn. The overlay is wider
