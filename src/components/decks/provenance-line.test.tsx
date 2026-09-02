@@ -138,6 +138,63 @@ describe("ProvenanceLine", () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it("still names a short role at phone width, where the mobile copy has no room for it", () => {
+    const cards = [
+      makeCard("a", { auto: true, owned: false }),
+      makeCard("b", { auto: true, owned: true }),
+    ];
+    render(
+      <ProvenanceLine
+        cards={cards}
+        filled={2}
+        bought={1}
+        open={97}
+        shortRole="ramp"
+        width="phone"
+      />,
+    );
+    expect(
+      screen.getByText(recommendationsCopy.fill.provenanceShort("2", "Ramp", "97")),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.fill.provenanceMobile("2", "1", "97")),
+    ).not.toBeInTheDocument();
+  });
+
+  it("takes the all-owned branch at phone width rather than reporting nothing bought", () => {
+    const cards = [makeCard("a", { auto: true, owned: true })];
+    render(
+      <ProvenanceLine cards={cards} filled={1} bought={0} open={98} width="phone" />,
+    );
+    expect(
+      screen.getByText(recommendationsCopy.fill.provenanceAllOwned("1", "98")),
+    ).toBeInTheDocument();
+  });
+
+  it("leaves when the last auto card does", () => {
+    const { rerender } = render(
+      <ProvenanceLine
+        cards={[makeCard("a", { auto: true, owned: true })]}
+        filled={1}
+        bought={0}
+        open={98}
+        width="desktop"
+      />,
+    );
+    expect(screen.getByText(/We filled/)).toBeInTheDocument();
+
+    rerender(
+      <ProvenanceLine
+        cards={[makeCard("a", { auto: false, owned: true })]}
+        filled={1}
+        bought={0}
+        open={98}
+        width="desktop"
+      />,
+    );
+    expect(screen.queryByText(/We filled/)).not.toBeInTheDocument();
+  });
 });
 
 // ── FillFailedBanner ────────────────────────────────────────────────────────
@@ -146,7 +203,6 @@ describe("FillFailedBanner", () => {
   it("renders for an empty unfilled deck (filled=false, no cards)", () => {
     render(
       <FillFailedBanner
-        deckId="deck-1"
         filled={false}
         cardCount={0}
         onRetry={vi.fn()}
@@ -169,7 +225,6 @@ describe("FillFailedBanner", () => {
   it("does not render for an empty swept deck (filled=true, no cards)", () => {
     render(
       <FillFailedBanner
-        deckId="deck-1"
         filled={true}
         cardCount={0}
         onRetry={vi.fn()}
@@ -185,7 +240,6 @@ describe("FillFailedBanner", () => {
   it("does not render when the deck has cards", () => {
     render(
       <FillFailedBanner
-        deckId="deck-1"
         filled={false}
         cardCount={5}
         onRetry={vi.fn()}

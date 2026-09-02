@@ -392,6 +392,13 @@ export async function fillDeck(deckId: string): Promise<void> {
 
   const plan = await buildFillPlan(userId, commander);
   await db.transaction(async (tx) => {
+    // Re-read inside the transaction. buildFillPlan reaches out to EDHREC, so
+    // the check above is seconds stale by now and the player may have added a
+    // card by hand in the meantime — filling on top of it would double a deck
+    // they had already started.
+    const stillEmpty = await tx.select({ oracleId: deckCards.oracleId })
+      .from(deckCards).where(eq(deckCards.deckId, deckId)).limit(1);
+    if (stillEmpty.length > 0) return;
     if (plan.rows.length > 0) {
       await tx.insert(deckCards).values(
         plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),

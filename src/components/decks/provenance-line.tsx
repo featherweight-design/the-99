@@ -55,16 +55,21 @@ export function ProvenanceLine({
   const boughtStr = String(bought);
   const openStr = String(open);
 
+  // A shortfall outranks width: naming the role is the whole reason this branch
+  // exists, and the mobile string has nowhere to put it, so a phone would
+  // quietly report the smaller number instead. `provenanceMobile` counts bought
+  // cards on its face, so it only stands in for the bought branch — an
+  // all-owned phone takes the all-owned string, which is already one sentence.
   let text: string;
-  if (width === "phone") {
-    text = copy.provenanceMobile(filledStr, boughtStr, openStr);
-  } else if (shortRole) {
+  if (shortRole) {
     const roleLabel = ROLE_LABELS[shortRole] ?? shortRole;
     text = copy.provenanceShort(filledStr, roleLabel, openStr);
-  } else if (bought > 0) {
-    text = copy.provenance(filledStr, boughtStr, openStr);
-  } else {
+  } else if (bought === 0) {
     text = copy.provenanceAllOwned(filledStr, openStr);
+  } else if (width === "phone") {
+    text = copy.provenanceMobile(filledStr, boughtStr, openStr);
+  } else {
+    text = copy.provenance(filledStr, boughtStr, openStr);
   }
 
   return (
@@ -105,7 +110,6 @@ export function ProvenanceLine({
 // ── FillFailedBanner ─────────────────────────────────────────────────────────
 
 interface FillFailedBannerProps {
-  deckId: string;
   /** deck.filled — true if the fill ran, even if the deck was later swept. */
   filled: boolean;
   /** Total cards currently in the deck (auto + kept). */
@@ -200,7 +204,6 @@ export function FillFailedBannerConnected({
 
   return (
     <FillFailedBanner
-      deckId={deckId}
       filled={filled}
       cardCount={cardCount}
       onRetry={handleRetry}
