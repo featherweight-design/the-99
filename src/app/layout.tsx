@@ -111,7 +111,7 @@ export default async function RootLayout({
         {/* Signed-out routes render without the shell, so the stretch chain has
             to start here or a full-height child has nothing to grow into. */}
         <body className="flex min-h-full flex-col bg-[color:var(--bg)] text-[color:var(--fg)]">
-          <Shell>{children}</Shell>
+          <Shell theme={theme}>{children}</Shell>
         </body>
       </html>
     </ClerkProvider>

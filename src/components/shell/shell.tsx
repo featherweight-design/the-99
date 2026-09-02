@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NavRail, TabBar, MobileHeader } from "./nav";
 import { getCollectionStats } from "../../lib/home/summary";
-import { resolveTheme } from "../../lib/theme/server";
+import type { ThemeKey } from "../../lib/theme/themes";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -12,14 +12,22 @@ import { resolveTheme } from "../../lib/theme/server";
  * this to render Collection/Commanders/Decks as non-interactive until the user
  * completes Step 1 of the first-run flow (§Rail Locked state, property table).
  */
-export default async function Shell({ children }: { children: React.ReactNode }) {
+export default async function Shell({
+  children,
+  theme,
+}: {
+  children: React.ReactNode;
+  // Resolved once in the root layout, which needs it for `<html data-theme>`
+  // anyway. Passing it down keeps the cookie read to one per request.
+  theme: ThemeKey;
+}) {
   const { userId } = await auth();
 
   if (!userId) {
     return <>{children}</>;
   }
 
-  const [stats, theme] = await Promise.all([getCollectionStats(userId), resolveTheme()]);
+  const stats = await getCollectionStats(userId);
   const locked = stats.uniqueCards === 0;
 
   return (
