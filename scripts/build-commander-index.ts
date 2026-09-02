@@ -37,14 +37,16 @@ buildCommanderIndex({
     // is materially incomplete and the run should not look successful.
     // "Attempted" excludes skipped commanders so a legitimate resume run — where
     // most commanders are skipped — cannot trip this on a handful of failures.
+    // Compared as an integer ratio rather than against a rounded count: a
+    // Math.ceil threshold rounds the allowance *up*, so at attempted=21 it
+    // permits 2 failures — 9.5%, nearly double the stated bar.
     const attempted = r.commanders + r.degraded + r.failed;
     if (attempted > 0) {
       const bad = r.degraded + r.failed;
-      const threshold = Math.ceil(attempted * 0.05);
-      if (bad > threshold) {
+      if (bad * 20 > attempted) {
         console.error(
           `commander-index: ${bad} of ${attempted} attempted commanders degraded or failed ` +
-          `(threshold: ${threshold}, 5% of attempted). Index is materially incomplete.`,
+          `(threshold: 5% of attempted). Index is materially incomplete.`,
         );
         process.exit(1);
       }

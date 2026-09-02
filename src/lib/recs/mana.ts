@@ -4,7 +4,12 @@ const BASIC_TYPES: Record<string, string> = {
   plains: "W", island: "U", swamp: "B", mountain: "R", forest: "G",
 };
 const ALL_COLORS = ["W", "U", "B", "R", "G"];
-const ANY_COLOR = /add .{0,30}\bany color\b/;
+// Bounded to a single clause rather than a character window: the distance
+// between "add" and "any color" varies with the rider ("...in your commander's
+// color identity", "...that a land an opponent controls could produce"), and a
+// fixed cap silently drops whichever riders happen to run long. "any one color"
+// is the same grant phrased differently.
+const ANY_COLOR = /\badd\b[^.\n]*\bany (?:one )?color\b/;
 
 /**
  * Which colours a set of lands can actually produce.

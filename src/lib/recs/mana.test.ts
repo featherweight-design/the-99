@@ -63,6 +63,28 @@ describe("producibleColors", () => {
     expect(producibleColors([land("Land", "{T}: Add {C}.")])).toEqual(new Set());
   });
 
+  it("grants all five however long the any-colour rider runs", () => {
+    // Exotic Orchard's rider is far longer than City of Brass's. A fixed-width
+    // window between "add" and "any color" drops one and keeps the other.
+    const orchard = land(
+      "Land",
+      "{T}: Add one mana of any color that a land an opponent controls could produce.",
+    );
+    expect(producibleColors([orchard])).toEqual(new Set(["W", "U", "B", "R", "G"]));
+  });
+
+  it("grants all five for the 'any one color' phrasing", () => {
+    expect(producibleColors([land("Land", "{2}, {T}: Add X mana of any one color.")]))
+      .toEqual(new Set(["W", "U", "B", "R", "G"]));
+  });
+
+  it("does not carry an any-colour phrase across a sentence boundary", () => {
+    // The clause bound is what stops an unrelated sentence from turning a
+    // colourless land into a five-colour source.
+    const decoy = land("Land", "{T}: Add {C}. Creatures you control of any color get +1/+1.");
+    expect(producibleColors([decoy])).toEqual(new Set());
+  });
+
   it("returns an empty set for no lands", () => {
     expect(producibleColors([])).toEqual(new Set());
   });
