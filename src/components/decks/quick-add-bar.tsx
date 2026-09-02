@@ -365,6 +365,7 @@ function QuickAddRow({
           role: result.role,
           owned: result.owned,
           quantity: 1,
+          auto: false,
         }),
     );
   }, [applied, run, deckId, result, addOptimisticCard]);

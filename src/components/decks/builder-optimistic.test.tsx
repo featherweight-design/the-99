@@ -67,6 +67,7 @@ function makeDeck(): DeckDetail {
       oracleText: null,
       imageUri: null,
     },
+    filled: false,
     cards: [
       {
         oracleId: "forest",
@@ -76,6 +77,7 @@ function makeDeck(): DeckDetail {
         role: "land",
         owned: true,
         quantity: 1,
+        auto: false,
       },
     ],
     built: 1,

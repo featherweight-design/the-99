@@ -42,6 +42,7 @@ function makeCards(n: number) {
     role: "other" as const,
     owned: true,
     quantity: 1,
+    auto: false,
   }));
 }
 

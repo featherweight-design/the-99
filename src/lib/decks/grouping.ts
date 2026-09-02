@@ -16,6 +16,7 @@ export type DeckDetailCard = {
   role: "ramp" | "draw" | "removal" | "wipes" | "land" | "other";
   owned: boolean;
   quantity: number;
+  auto: boolean;
   /**
    * Optional because six sites build this literal (optimistic reducers, tests,
    * fixtures) and none of them can reach the database. Absent and null both mean

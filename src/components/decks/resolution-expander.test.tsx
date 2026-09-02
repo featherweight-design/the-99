@@ -52,6 +52,7 @@ const solRing: DeckDetailCard = {
   role: "ramp",
   owned: true,
   quantity: 1,
+  auto: false,
 };
 
 const line = (over: Partial<DeckUnresolvedRow> = {}): DeckUnresolvedRow => ({

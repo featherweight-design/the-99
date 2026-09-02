@@ -26,6 +26,7 @@ const card = (role: DeckDetailCard["role"], i: number): DeckDetailCard => ({
   role,
   owned: true,
   quantity: 1,
+  auto: false,
 });
 
 /** Enough of one role to sit ON target, leaving every other role short. */

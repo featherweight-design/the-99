@@ -31,6 +31,7 @@ const deckCard = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
   role: "ramp",
   owned: true,
   quantity: 1,
+  auto: false,
   ...over,
 });
 

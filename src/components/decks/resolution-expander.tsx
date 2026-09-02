@@ -137,6 +137,7 @@ export function ResolutionExpander({
           // Mirrors the server: a "3 Rhystic Study" line resolves to one copy,
           // and only a basic land carries the line's own quantity over.
           quantity: isBasicLand(result.typeLine) ? row.quantity : 1,
+          auto: false,
         });
       },
     );

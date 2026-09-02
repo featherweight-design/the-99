@@ -249,6 +249,7 @@ const solRing: DeckDetailCard = {
   role: "ramp",
   owned: true,
   quantity: 1,
+  auto: false,
 };
 const arcaneSignet: DeckDetailCard = {
   ...solRing,
@@ -271,6 +272,7 @@ function makeDeck(cards: DeckDetailCard[] = [solRing, arcaneSignet]): DeckDetail
       oracleText: null,
       imageUri: null,
     },
+    filled: false,
     cards,
     built,
     ownedCount: built,
