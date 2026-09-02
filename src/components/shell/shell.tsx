@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NavRail, TabBar, MobileHeader } from "./nav";
 import { getCollectionStats } from "../../lib/home/summary";
+import { resolveTheme } from "../../lib/theme/server";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -18,14 +19,14 @@ export default async function Shell({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  const stats = await getCollectionStats(userId);
+  const [stats, theme] = await Promise.all([getCollectionStats(userId), resolveTheme()]);
   const locked = stats.uniqueCards === 0;
 
   return (
     <div className="flex min-h-screen flex-1">
-      <NavRail locked={locked} />
+      <NavRail locked={locked} theme={theme} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileHeader />
+        <MobileHeader theme={theme} />
         {/* pb-[80px] on mobile leaves room for the fixed tab bar
             (48px content + 22px safe-area + ~10px gap). */}
         {/* `flex flex-col` continues the stretch chain the rail already starts,

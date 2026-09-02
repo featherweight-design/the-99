@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { AccountMenu } from "./account-menu";
 import { Crowned99 } from "../marks";
 import { shellCopy } from "../../lib/copy/shell";
+import type { ThemeKey } from "../../lib/theme/themes";
 
 // ---------------------------------------------------------------------------
 // Nav items
@@ -74,7 +75,7 @@ function TabDiamond({ active }: { active: boolean }) {
 // §Rail container / §Rail Wordmark area / §Rail Nav section / §Rail Account trigger
 // ---------------------------------------------------------------------------
 
-export function NavRail({ locked }: { locked: boolean }) {
+export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey }) {
   const pathname = usePathname();
 
   return (
@@ -196,7 +197,7 @@ export function NavRail({ locked }: { locked: boolean }) {
       {/* avatar-only trigger, so the row is now just the 38px box.           */}
       {/* ------------------------------------------------------------------ */}
       <div className="mt-auto flex py-[14px] px-3">
-        <AccountMenu panel="popover" />
+        <AccountMenu panel="popover" theme={theme} />
       </div>
     </aside>
   );
@@ -279,7 +280,7 @@ export function TabBar({ locked }: { locked: boolean }) {
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader() {
+export function MobileHeader({ theme }: { theme: ThemeKey }) {
   return (
     <header
       className="md:hidden flex items-center justify-between px-5 pt-5 pb-[14px]"
@@ -304,7 +305,7 @@ export function MobileHeader() {
       </div>
 
       {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-      <AccountMenu panel="sheet" />
+      <AccountMenu panel="sheet" theme={theme} />
     </header>
   );
 }

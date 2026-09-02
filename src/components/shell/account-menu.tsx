@@ -14,6 +14,8 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { shellCopy } from "../../lib/copy/shell";
 import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
+import { ThemePicker } from "./theme-picker";
+import type { ThemeKey } from "../../lib/theme/themes";
 
 const { manageAccount, signOut: signOutLabel, triggerLabel } = shellCopy.accountMenu;
 
@@ -103,6 +105,7 @@ type PanelProps = MenuItemsProps & {
   identity: AccountIdentity;
   panelId: string;
   nameId: string;
+  theme: ThemeKey;
   onClose: () => void;
 };
 
@@ -114,7 +117,10 @@ function AccountPopover(props: PanelProps) {
   return (
     <div
       ref={ref}
-      className="anim-menu-in absolute bottom-[calc(100%+8px)] left-0 z-20 w-[216px] p-2"
+      // 300px, not the 216px this menu shipped at: §C draws the picker's 3-up
+      // grid inside a 300px popover, and at 216px the three chips fall to 61px,
+      // which no theme name survives.
+      className="anim-menu-in absolute bottom-[calc(100%+8px)] left-0 z-20 w-[300px] p-2"
       style={{
         background: "var(--surface-raised)",
         border: "1px solid var(--border-strong)",
@@ -147,14 +153,17 @@ function AccountPopover(props: PanelProps) {
           )}
         </div>
       </div>
-      {/* The identity header is not a menu item, so it sits outside role="menu"
-          rather than as foreign content inside it — the same split the sheet
-          makes with its dialog wrapper. */}
+      {/* Neither the identity header nor the picker is a menu item, so both sit
+          outside role="menu" rather than as foreign content inside it — the same
+          split the sheet makes with its dialog wrapper. A radiogroup in
+          particular cannot legally live inside a menu. */}
+      <ThemePicker current={props.theme} panel="popover" />
       <div
         id={props.panelId}
         role="menu"
         aria-labelledby={props.nameId}
-        className="flex flex-col gap-[2px] pt-[6px]"
+        className="mt-[10px] flex flex-col gap-[2px] pt-[10px]"
+        style={{ borderTop: "1px solid var(--border)" }}
       >
         <MenuItems {...props} />
       </div>
@@ -228,7 +237,13 @@ function AccountSheet(props: PanelProps) {
             )}
           </div>
         </div>
-        <div role="menu" aria-labelledby={props.nameId} className="flex flex-col">
+        <ThemePicker current={props.theme} panel="sheet" />
+        <div
+          role="menu"
+          aria-labelledby={props.nameId}
+          className="mt-[14px] flex flex-col pt-[10px]"
+          style={{ borderTop: "1px solid var(--border)" }}
+        >
           <MenuItems {...props} />
         </div>
       </div>
@@ -266,7 +281,7 @@ function Avatar({
   );
 }
 
-export function AccountMenu({ panel }: { panel: PanelKind }) {
+export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKey }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const { user } = useUser();
@@ -364,6 +379,7 @@ export function AccountMenu({ panel }: { panel: PanelKind }) {
           <AccountPopover
             kind="popover"
             identity={identity}
+            theme={theme}
             panelId={panelId}
             nameId={nameId}
             busy={busy}
@@ -375,6 +391,7 @@ export function AccountMenu({ panel }: { panel: PanelKind }) {
           <AccountSheet
             kind="sheet"
             identity={identity}
+            theme={theme}
             panelId={panelId}
             nameId={nameId}
             busy={busy}

@@ -45,7 +45,7 @@ beforeEach(() => {
 
 describe("AccountMenu trigger", () => {
   it("names the person rather than the initials, and hides the glyphs", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     const button = trigger();
     expect(button).toHaveAttribute("aria-haspopup", "menu");
     expect(button).toHaveAttribute("aria-expanded", "false");
@@ -55,7 +55,7 @@ describe("AccountMenu trigger", () => {
   });
 
   it("points aria-controls at the panel only while it is open", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     expect(trigger()).not.toHaveAttribute("aria-controls");
     fireEvent.click(trigger());
     const id = trigger().getAttribute("aria-controls");
@@ -65,7 +65,7 @@ describe("AccountMenu trigger", () => {
   });
 
   it("toggles closed on a second press", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     expect(screen.getByRole("menu")).toBeTruthy();
     fireEvent.click(trigger());
@@ -75,7 +75,7 @@ describe("AccountMenu trigger", () => {
 
 describe("AccountMenu popover", () => {
   it("renders the identity header and both items", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     expect(screen.getByText("Ana Ruiz")).toBeTruthy();
     expect(screen.getByText("ana.ruiz@example.com")).toBeTruthy();
@@ -85,7 +85,7 @@ describe("AccountMenu popover", () => {
 
   // RD§1 — --fg-faint is 4.42:1 on --surface-raised and fails AA at 11px.
   it("uses --fg-muted for the popover email, not --fg-faint", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     const email = screen.getByText("ana.ruiz@example.com");
     expect(email.getAttribute("style")).toContain("--fg-muted");
@@ -93,7 +93,7 @@ describe("AccountMenu popover", () => {
   });
 
   it("keeps the identity header out of the menu — it is not a menu item", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     const menu = screen.getByRole("menu");
     expect(within(menu).queryByText("ana.ruiz@example.com")).toBeNull();
@@ -101,7 +101,7 @@ describe("AccountMenu popover", () => {
   });
 
   it("shows the open-state diamond only while open", () => {
-    const { container } = render(<AccountMenu panel="popover" />);
+    const { container } = render(<AccountMenu panel="popover" theme="amonkhet" />);
     const diamond = () => container.querySelector(".rotate-45.h-1");
     expect(diamond()).toBeNull();
     fireEvent.click(trigger());
@@ -109,28 +109,28 @@ describe("AccountMenu popover", () => {
   });
 
   it("renders no backdrop — a menu, not a modal", () => {
-    const { container } = render(<AccountMenu panel="popover" />);
+    const { container } = render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     expect(container.querySelector(".fixed.inset-0")).toBeNull();
     expect(document.body.style.overflow).not.toBe("hidden");
   });
 
   it("closes on an outside press", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
   it("does not close on a press inside the panel", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.pointerDown(screen.getByRole("menu"));
     expect(screen.getByRole("menu")).toBeTruthy();
   });
 
   it("closes on Escape and returns focus to the trigger", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     press(trigger());
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("menu")).toBeNull();
@@ -140,7 +140,7 @@ describe("AccountMenu popover", () => {
 
 describe("AccountMenu sheet", () => {
   it("is a modal dialog containing the menu", () => {
-    render(<AccountMenu panel="sheet" />);
+    render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
@@ -150,7 +150,7 @@ describe("AccountMenu sheet", () => {
   });
 
   it("labels the dialog with the account name", () => {
-    render(<AccountMenu panel="sheet" />);
+    render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
     const dialog = screen.getByRole("dialog");
     const labelId = dialog.getAttribute("aria-labelledby");
@@ -162,7 +162,7 @@ describe("AccountMenu sheet", () => {
   // Read off the attribute, not `style.background`: jsdom's CSS parser drops a
   // declaration whose value it cannot parse, and it cannot parse color-mix().
   it("dims with the canvas at the shipped alpha and locks scroll", () => {
-    const { container } = render(<AccountMenu panel="sheet" />);
+    const { container } = render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
     const backdrop = container.querySelector(".fixed.inset-0") as HTMLElement;
     expect(backdrop.getAttribute("style")).toContain(
@@ -174,7 +174,7 @@ describe("AccountMenu sheet", () => {
   // TabBar is z-40 and paints later in the DOM, so an equal layer would leave
   // the tab bar drawn on top of the backdrop.
   it("stacks the backdrop above the tab bar and below the sheet", () => {
-    const { container } = render(<AccountMenu panel="sheet" />);
+    const { container } = render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
     const backdrop = container.querySelector(".fixed.inset-0")!;
     expect(backdrop.className).toContain("z-[45]");
@@ -184,7 +184,7 @@ describe("AccountMenu sheet", () => {
 
   // RD§2 — the handoff gives a bare surface hex, which is --surface.
   it("draws the sheet on the --surface token, not a raw hex", () => {
-    render(<AccountMenu panel="sheet" />);
+    render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
     const style = screen.getByRole("dialog").getAttribute("style") ?? "";
     expect(style).toContain("var(--surface)");
@@ -192,31 +192,38 @@ describe("AccountMenu sheet", () => {
   });
 
   it("closes when the backdrop is tapped", () => {
-    const { container } = render(<AccountMenu panel="sheet" />);
+    const { container } = render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(container.querySelector(".fixed.inset-0")!);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("carries no open-state diamond — the sheet is not adjacent to the trigger", () => {
-    const { container } = render(<AccountMenu panel="sheet" />);
+    const { container } = render(<AccountMenu panel="sheet" theme="amonkhet" />);
     fireEvent.click(trigger());
     expect(container.querySelector(".rotate-45.h-1")).toBeNull();
   });
 });
 
 describe("AccountMenu items", () => {
-  it("focuses Manage account first, with Sign out untabbable", () => {
-    render(<AccountMenu panel="popover" />);
+  // Focus lands on the first control in the panel, which since the picker moved
+  // in is the chip for the theme in force — not the first menu item. Tabbing on
+  // from there reaches Manage account, so nothing is stranded; starting instead
+  // at Manage account would put the caret in the middle of the panel and leave
+  // the picker reachable only by tabbing backwards.
+  it("opens onto the current theme, with the menu items roving behind it", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     press(trigger());
+    expect(document.activeElement).toBe(
+      screen.getByRole("radio", { name: "Gilded Stone — Amonkhet" }),
+    );
     const [manage, signOutItem] = screen.getAllByRole("menuitem");
-    expect(document.activeElement).toBe(manage);
     expect(manage).toHaveAttribute("tabindex", "0");
     expect(signOutItem).toHaveAttribute("tabindex", "-1");
   });
 
   it("roves with the arrow keys and wraps in both directions", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     const [manage, signOutItem] = screen.getAllByRole("menuitem");
 
@@ -231,7 +238,7 @@ describe("AccountMenu items", () => {
   });
 
   it("dismisses the menu before handing the focus trap to Clerk's modal", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Manage account" }));
     expect(screen.queryByRole("menu")).toBeNull();
@@ -239,7 +246,7 @@ describe("AccountMenu items", () => {
   });
 
   it("disables both items once sign-out is in flight", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
     expect(signOut).toHaveBeenCalledOnce();
@@ -255,7 +262,7 @@ describe("AccountMenu items", () => {
   // released on failure — without that release the menu stays dead until reload.
   it("re-enables the items when sign-out rejects", async () => {
     signOut.mockRejectedValueOnce(new Error("network"));
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
     await waitFor(() =>
@@ -264,7 +271,7 @@ describe("AccountMenu items", () => {
   });
 
   it("signals Sign out with words plus a danger marker, never colour alone", () => {
-    render(<AccountMenu panel="popover" />);
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());
     const item = screen.getByRole("menuitem", { name: "Sign out" });
     // The label keeps --fg; only the aria-hidden diamond carries --danger.
