@@ -517,9 +517,9 @@ git commit -m "refactor(ui): migrate commanders CTA and lint against inline colo
 
 - [ ] **Step 1:** Add a `## Component: Shared CTA primitives` section recording: the primary and ghost contracts as property tables; that padding and font-size are per-surface and owned by the caller; the uniqueness test that decides what stays hand-rolled; and the inline-`style` prohibition with its cause (inline styles outrank `hover:` utilities). Cross-reference `src/components/ui/button.tsx`.
 
-- [ ] **Step 2: Flip the ESLint rule from `warn` to `error`**
+- [x] **Step 2: Flip the ESLint rule from `warn` to `error`** — done ahead of the rest of Task 7.
 
-Every CTA has now migrated and every remaining violation carries a documented exemption, so the rule can enforce.
+Done not by migrating every CTA to the primitives, but by moving colour and border out of inline `style` at each site. That clears what the rule exists to prevent — an inline style outranking a `hover:` utility — without changing radius, padding or font-weight, which a swap to `PrimaryButton` would. Three sites keep an inline `background` under a documented `eslint-disable`: the fill is a mana colour looked up per render, so no class can name it. Adopting the primitives at the remaining hand-rolled sites is still open.
 
 Run: `pnpm lint`
 Expected: clean.

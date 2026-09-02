@@ -53,7 +53,7 @@ export function ReviewScreen({
         className="md:hidden flex items-center gap-[12px] p-[20px_18px_14px]"
         style={{ borderBottom: "1px solid var(--border)" }}
       >
-        <button type="button" onClick={onCancel} aria-label="Back to upload" className="text-[20px]" style={{ color: "var(--accent)" }}>‹</button>
+        <button type="button" onClick={onCancel} aria-label="Back to upload" className="text-[20px] text-[color:var(--accent)]">‹</button>
         <span className="font-display font-semibold text-[18px]" style={{ color: "var(--fg)" }}>Review import</span>
         <span className="ml-auto font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>{preview.filename}</span>
       </div>

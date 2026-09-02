@@ -147,11 +147,7 @@ export function ConfirmModal({
             disabled={pending}
             // §Cancel / Keep Button — mobile text-only --fg-faint, padding 12px 0 0;
             // desktop outlined 1px --border-strong, padding 13px 22px, accent border on hover
-            className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--accent)]"
-            style={{
-              color: "var(--fg-faint)",
-              background: "transparent",
-            }}
+            className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--accent)] text-[color:var(--fg-faint)] bg-transparent"
           >
             {isInitialImport ? (
               <>
@@ -170,13 +166,8 @@ export function ConfirmModal({
             onClick={onConfirm}
             disabled={!armed || pending}
             // §Confirm Button — Disabled: a dim wash of --danger, border 1px --danger, color --fg, radius 8px, opacity 0.6; armed → opacity 1
-            className="rounded-lg font-sans font-semibold text-[15px] md:text-[14px] w-full md:flex-1 py-[14px] md:py-[13px] cursor-pointer"
-            style={{
-              color: "var(--fg)",
-              background: "color-mix(in srgb, var(--danger) 22%, var(--bg))",
-              border: "1px solid var(--danger)",
-              opacity: armed && !pending ? 1 : 0.6,
-            }}
+            className="rounded-lg font-sans font-semibold text-[15px] md:text-[14px] w-full md:flex-1 py-[14px] md:py-[13px] cursor-pointer text-[color:var(--fg)] bg-[color-mix(in_srgb,var(--danger)_22%,var(--bg))] border border-[color:var(--danger)]"
+            style={{ opacity: armed && !pending ? 1 : 0.6 }}
           >
             {pending
               ? isInitialImport

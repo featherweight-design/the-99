@@ -454,15 +454,13 @@ export function CommanderDetail({
         <Link
           href="/commanders"
           // brand focus-visible outline treatment inherited from globals.css
-          className="absolute flex items-center justify-center rounded-full"
+          className="absolute flex items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
           style={{
             top: 16,
             left: 16,
             width: 30,
             height: 30,
-            background: "color-mix(in oklab, var(--bg) 55%, transparent)",
             backdropFilter: "blur(4px)",
-            color: "var(--fg)",
             fontSize: 15,
             textDecoration: "none",
             zIndex: 1,
@@ -756,10 +754,9 @@ export function CommanderDetail({
           <Link
             href="/commanders"
             // brand focus-visible outline treatment inherited from globals.css
-            className="inline-flex items-center gap-[7px] font-sans"
+            className="inline-flex items-center gap-[7px] font-sans text-[color:var(--fg-faint)]"
             style={{
               fontSize: 13,
-              color: "var(--fg-faint)",
               textDecoration: "none",
             }}
           >

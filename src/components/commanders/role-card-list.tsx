@@ -76,8 +76,8 @@ export function RoleCardList({ cards, emptyLabel }: { cards: RoleCard[]; emptyLa
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded((e) => !e)}
-          className="font-mono underline cursor-pointer bg-transparent border-0 p-0"
-          style={{ fontSize: 11, color: "var(--fg-faint)", marginTop: 9 }}
+          className="font-mono underline cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)]"
+          style={{ fontSize: 11, marginTop: 9 }}
         >
           {expanded ? commandersCopy.roleCoverage.showFewer : commandersCopy.roleCoverage.showRest(hidden)}
         </button>

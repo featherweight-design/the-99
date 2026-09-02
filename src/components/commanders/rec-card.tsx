@@ -262,8 +262,8 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
                 <button
                   type="submit"
                   // brand focus-visible outline treatment inherited from globals.css
-                  className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
-                  style={{ color: "var(--accent)", fontSize: 12 }}
+                  className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent)]"
+                  style={{ fontSize: 12 }}
                 >
                   Retry
                 </button>
@@ -447,8 +447,8 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
                   <button
                     type="submit"
                     // brand focus-visible outline treatment inherited from globals.css
-                    className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
-                    style={{ color: "var(--accent)", fontSize: 12.5 }}
+                    className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent)]"
+                    style={{ fontSize: 12.5 }}
                   >
                     Retry
                   </button>

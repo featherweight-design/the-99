@@ -86,15 +86,12 @@ export function CommanderLightbox({
         }}
         aria-label="Close full card view"
         // brand focus-visible outline treatment inherited from globals.css
-        className="absolute flex items-center justify-center rounded-full"
+        className="absolute flex items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--fg)_10%,transparent)] border border-[color:color-mix(in_oklab,var(--fg)_18%,transparent)] text-[color:var(--fg)]"
         style={{
           top: 20,
           right: 18,
           width: 34,
           height: 34,
-          background: "color-mix(in oklab, var(--fg) 10%, transparent)",
-          border: "1px solid color-mix(in oklab, var(--fg) 18%, transparent)",
-          color: "var(--fg)",
           fontSize: 16,
           cursor: "pointer",
           zIndex: 10,
