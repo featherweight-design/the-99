@@ -314,8 +314,13 @@ export function BuilderShell({
 
   const handleRestoreAuto = useCallback(async () => {
     if (!sweptRows) return;
-    await restoreAutoCards(deck.id, sweptRows);
-    setSweptRows(null);
+    try {
+      await restoreAutoCards(deck.id, sweptRows);
+      setSweptRows(null);
+    } catch {
+      // Keep the receipt so Undo stays reachable — the rows are still gone.
+      setSweepError(recommendationsCopy.auto.sweepFailed);
+    }
   }, [sweptRows, deck.id]);
 
   // Clear sweep state when the server list changes (revalidation settled).
@@ -324,8 +329,9 @@ export function BuilderShell({
   const [lastServerCardsForSweep, setLastServerCardsForSweep] = useState(deck.cards);
   if (lastServerCardsForSweep !== deck.cards) {
     setLastServerCardsForSweep(deck.cards);
-    // If sweptRows is set and the server list no longer has those oracle ids,
-    // the undo landed — clear the receipt.
+    // The swept rows being back in the server list means the undo landed, so
+    // the receipt has nothing left to offer. A settled sweep leaves them
+    // absent, which is what keeps the receipt on screen.
     if (sweptRows && sweptRows.every((r) => deck.cards.some((c) => c.oracleId === r.oracleId))) {
       setSweptRows(null);
     }

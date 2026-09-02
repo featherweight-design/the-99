@@ -7,11 +7,6 @@ const { clearAutoCards, restoreAutoCards } = vi.hoisted(() => ({
   clearAutoCards: vi.fn(),
   restoreAutoCards: vi.fn(),
 }));
-vi.mock("../../app/decks/actions", () => ({
-  clearAutoCards,
-  restoreAutoCards,
-}));
-
 const { ClearAutoButton, SweepReceipt } = await import("./clear-auto");
 
 afterEach(() => {
@@ -175,7 +170,9 @@ describe("SweepReceipt", () => {
 const { BuilderShell } = await import("./builder-shell");
 import type { DeckDetail } from "../../lib/decks/read";
 
-// BuilderShell uses keepAutoCard and others, so mock them too.
+// One factory for the whole file: vi.mock is hoisted per module path, so a
+// second call on this path would silently replace this one. BuilderShell needs
+// the wider surface, so every action the file touches is stubbed here.
 vi.mock("../../app/decks/actions", () => ({
   clearAutoCards,
   restoreAutoCards,
