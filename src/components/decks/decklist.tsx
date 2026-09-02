@@ -105,6 +105,10 @@ export function Decklist({
   const shoppingCards = cards.filter((c) => !c.owned && !isBasicLand(c.typeLine));
   const visibleCards = filter === "shopping" ? shoppingCards : cards;
 
+  // The receipt counts cards, not rows: a swept basic-land row carries its
+  // whole stack in `quantity`, and undo puts every copy back.
+  const sweptCount = (sweptRows ?? []).reduce((n, r) => n + r.quantity, 0);
+
   // Shopping hides the unresolved group outright. The rows are outside
   // toBuyCount by definition, so listing them here would offer the player
   // something they cannot go and buy.
@@ -251,7 +255,7 @@ export function Decklist({
           {/* Sweep receipt */}
           {sweptRows && sweptRows.length > 0 && onRestoreAuto && (
             <SweepReceipt
-              removed={sweptRows.length}
+              removed={sweptCount}
               onUndo={onRestoreAuto}
             />
           )}
@@ -360,7 +364,7 @@ export function Decklist({
         {/* Sweep receipt — one strip above the first group. */}
         {sweptRows && sweptRows.length > 0 && onRestoreAuto && (
           <SweepReceipt
-            removed={sweptRows.length}
+            removed={sweptCount}
             onUndo={onRestoreAuto}
           />
         )}

@@ -360,6 +360,41 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     expect(receipts).toHaveLength(1);
   });
 
+  it("counts a stacked basic-land row by its copies, not as one card", async () => {
+    // A fill puts every basic into a single row of ~37. Counting rows would
+    // offer to sweep "2 cards" and then take 38 away.
+    const basics: DeckDetailCard = {
+      oracleId: "forest",
+      name: "Forest",
+      typeLine: "Basic Land — Forest",
+      cardTypeGroup: "Lands",
+      role: "land",
+      owned: true,
+      quantity: 37,
+      auto: true,
+    };
+    clearAutoCards.mockResolvedValue([
+      { oracleId: "sol-ring", quantity: 1 },
+      { oracleId: "forest", quantity: 37 },
+    ]);
+
+    const { revalidate } = renderBuilder([card1, basics]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.clearAllAria("38") })
+        .click();
+    });
+
+    await revalidate([]);
+
+    expect(
+      screen.getByRole("button", {
+        name: recommendationsCopy.auto.sweptUndoAria("38"),
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("Undo calls restoreAutoCards with the swept rows", async () => {
     const sweptRows = [
       { oracleId: "sol-ring", quantity: 1 },

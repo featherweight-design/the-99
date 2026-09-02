@@ -295,8 +295,10 @@ export function BuilderShell({
   // The auto count and kept count, computed from the optimistic card list.
   // `autoCount` is how many untouched auto cards remain (these will be swept).
   // `keptCount` is how many cards have auto=false (kept or player-added).
-  const autoCount = cards.filter((c) => c.auto).length;
-  const keptCount = cards.filter((c) => !c.auto).length;
+  // Both sum quantity rather than counting rows: a fill stacks its basics into
+  // a single row of roughly 37, so a row count would offer to sweep "1 card".
+  const autoCount = cards.filter((c) => c.auto).reduce((n, c) => n + c.quantity, 0);
+  const keptCount = cards.filter((c) => !c.auto).reduce((n, c) => n + c.quantity, 0);
 
   const handleClearAuto = useCallback(() => {
     if (sweepPending) return;
@@ -311,8 +313,9 @@ export function BuilderShell({
         const removed = await clearAutoCards(deck.id);
         setSweptRows(removed);
         const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
+        const removedCount = removed.reduce((n, r) => n + r.quantity, 0);
         setAnnouncement(
-          recommendationsCopy.auto.sweptAnnounce(String(removed.length), String(remaining)),
+          recommendationsCopy.auto.sweptAnnounce(String(removedCount), String(remaining)),
         );
       } catch {
         // No explicit rollback: the transition ends here and React drops the
@@ -483,7 +486,11 @@ export function BuilderShell({
               const autoCards = cards.filter((c) => c.auto);
               const filledCount = autoCards.reduce((n, c) => n + c.quantity, 0);
               const boughtCount = autoCards.filter((c) => !c.owned).reduce((n, c) => n + c.quantity, 0);
-              const openCount = 99 - filledCount;
+              // Open slots are measured against everything the deck now holds,
+              // not against the fill alone. A kept auto card or a manual add
+              // occupies a slot the player can no longer fill, so subtracting
+              // only the auto quantity would keep promising room that is gone.
+              const openCount = Math.max(0, 99 - built);
               // Detect a role shortfall: compare the auto cards' role tally to ROLE_TARGETS.
               const roleCounts = computeRoleCounts(autoCards);
               const shortRole = (["ramp", "draw", "removal", "wipes"] as const).find(
