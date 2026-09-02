@@ -451,7 +451,7 @@ export function BuilderShell({
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (
               /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
-              <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,rgba(201,162,75,0.07),transparent_70%)]">
+              <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
                 {/* §Mark container (mobile). Each breakpoint keeps its own
                     card-mark geometry; the quiet crown sits below both. */}
                 <div className="md:hidden mb-[20px] flex items-end justify-center gap-[16px]">

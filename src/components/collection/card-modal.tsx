@@ -290,8 +290,8 @@ export function CardModal({
         aria-modal="true"
         aria-labelledby="card-modal-title"
         onClick={(e) => e.stopPropagation()}
-        // Mobile: full-screen sheet (§Mobile: Full-Screen Sheet Container: bg #181410)
-        // Desktop: 820px centered, bg #1A160F (--surface-rail), border 1px #3A3229 (--border-strong), radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7)
+        // Mobile: full-screen sheet (§Mobile: Full-Screen Sheet Container: bg var(--surface-sunken))
+        // Desktop: 820px centered, bg var(--surface-rail) (--surface-rail), border 1px var(--border-strong) (--border-strong), radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7)
         // Desktop height is fixed rather than h-auto: oracle text runs from one
         // line to twelve, and paging Prev/Next through the collection resized
         // the dialog under the cursor on every step. The content column scrolls
@@ -348,7 +348,7 @@ export function CardModal({
           )}
         </div>
 
-        {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg #14110E (--bg) */}
+        {/* DESKTOP art column — §Desktop: Art Column: 320px, padding 28px, bg var(--bg) (--bg) */}
         <div
           className="hidden md:flex items-center justify-center flex-none"
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
@@ -396,7 +396,7 @@ export function CardModal({
                 >
                   {card.name}
                 </h3>
-                {/* Type line — §Card Type Line: 13/14px, #A89B84 (--fg-muted), margin-top 4/6px */}
+                {/* Type line — §Card Type Line: 13/14px, var(--fg-muted) (--fg-muted), margin-top 4/6px */}
                 <p
                   className="text-[13px] md:text-[14px] mt-[4px] md:mt-[6px]"
                   style={{ color: "var(--fg-muted)" }}
@@ -407,7 +407,7 @@ export function CardModal({
               <ManaCost cost={card.manaCost} />
             </div>
 
-            {/* Oracle text block — §Oracle Text Block: bg #14110E (--bg), border 1px #2A241D (--border), radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, #C6B79A (--fg-body), line-height 1.6/1.65 */}
+            {/* Oracle text block — §Oracle Text Block: bg var(--bg) (--bg), border 1px var(--border) (--border), radius 10px, padding 14px 16px / 18px 20px, margin-top 16/22px, 13.5/15px, var(--fg-body) (--fg-body), line-height 1.6/1.65 */}
             {card.oracleText && (
               <div
                 className="rounded-[10px] mt-[16px] md:mt-[22px] p-[14px_16px] md:p-[18px_20px] text-[13.5px] md:text-[15px] leading-[1.6] md:leading-[1.65]"
@@ -532,7 +532,7 @@ function MetaCell({
   span?: 2;
 }) {
   return (
-    // §Mobile: Meta Cell: bg #1E1A15 (--surface), padding 11px 14px
+    // §Mobile: Meta Cell: bg var(--surface) (--surface), padding 11px 14px
     <div
       className={span === 2 ? "p-[11px_14px] col-span-2" : "p-[11px_14px]"}
       style={{ background: "var(--surface)" }}
@@ -551,8 +551,8 @@ function MetaCell({
             style={{
               width: 12, height: 12,
               background: identity.length === 1
-                ? WUBRG_COLOR[identity[0]] ?? "#8E8269"
-                : "#8E8269",
+                ? WUBRG_COLOR[identity[0]] ?? "var(--fg-faint)"
+                : "var(--fg-faint)",
             }}
           />
         )}
@@ -575,7 +575,7 @@ function MetaField({
 }: { label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean }) {
   return (
     <div>
-      {/* §Meta Label desktop: mono 10px, letter-spacing 0.14em, uppercase, #8E8269 (--fg-faint) */}
+      {/* §Meta Label desktop: mono 10px, letter-spacing 0.14em, uppercase, var(--fg-faint) (--fg-faint) */}
       <div
         className="font-mono uppercase text-[10px] tracking-[0.14em]"
         style={{ color: "var(--fg-faint)" }}
@@ -590,8 +590,8 @@ function MetaField({
             style={{
               width: 13, height: 13,
               background: identity.length === 1
-                ? WUBRG_COLOR[identity[0]] ?? "#8E8269"
-                : "#8E8269",
+                ? WUBRG_COLOR[identity[0]] ?? "var(--fg-faint)"
+                : "var(--fg-faint)",
             }}
           />
         )}

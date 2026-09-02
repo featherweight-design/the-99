@@ -18,10 +18,10 @@ function progressFillColor(built: number): string {
 function pillStyles(status: DeckListItem["statusPill"]): { color: string; background: string } {
   switch (status) {
     case "Building":
-      return { color: "var(--warning)", background: "rgba(224,145,60,0.13)" };
+      return { color: "var(--warning)", background: "color-mix(in oklab, var(--warning) 13%, transparent)" };
     case "Playable":
     case "Complete":
-      return { color: "var(--success)", background: "rgba(111,163,104,0.13)" };
+      return { color: "var(--success)", background: "color-mix(in oklab, var(--success) 13%, transparent)" };
     case "Draft":
     default:
       return { color: "var(--fg-muted)", background: "rgba(168,155,132,0.12)" };

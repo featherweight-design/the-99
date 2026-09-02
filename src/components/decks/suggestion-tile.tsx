@@ -236,7 +236,7 @@ export function SuggestionTile({
             // variant can win: an inline boxShadow outranks group-hover:.
             applied || noArt
               ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"
-              : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(201,162,75,0.35)]"
+              : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_color-mix(in_oklab,var(--accent)_35%,transparent)]"
           }`}
           style={{
             aspectRatio: "63 / 88",

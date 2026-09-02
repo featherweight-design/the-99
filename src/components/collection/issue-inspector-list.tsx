@@ -90,7 +90,7 @@ export function IssueInspectorList(props: Props) {
 function UnmatchedRowView({ row, query }: { row: UnmatchedRow; query: string }) {
   return (
     <div
-      // §Unmatched row: bg #1E1A15 (--surface), 1px #2A241D (--border),
+      // §Unmatched row: bg var(--surface) (--surface), 1px var(--elevated) (--border),
       // 3px left border --warning, radius 8px, ~40px tall.
       className="flex items-center justify-between gap-[12px] rounded-lg p-[9px_12px] md:p-[10px_14px]"
       style={{
@@ -175,13 +175,13 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   ranges.forEach(([start, end]) => {
     if (start > cursor) nodes.push(text.slice(cursor, start));
     nodes.push(
-      // §Match highlight: rgba(201,162,75,.28) bg, --fg color, radius 2px.
+      // §Match highlight: color-mix(in oklab, var(--accent) 28%, transparent) bg, --fg color, radius 2px.
       // Key uses range positions (stable across re-renders as query changes) —
       // avoids React reusing stale <mark> nodes for a shifted match set.
       <mark
         key={`${start}-${end}`}
         style={{
-          background: "rgba(201,162,75,0.28)",
+          background: "color-mix(in oklab, var(--accent) 28%, transparent)",
           color: "var(--fg)",
           borderRadius: 2,
           padding: "0 1px",

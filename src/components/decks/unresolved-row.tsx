@@ -108,7 +108,7 @@ export function UnresolvedRow({
 
         <span
           className="flex-none font-mono text-[9px] md:text-[9.5px] rounded-[4px] px-[5px] py-[1px]"
-          style={{ color: "var(--warning)", background: "rgba(224,145,60,0.13)" }}
+          style={{ color: "var(--warning)", background: "color-mix(in oklab, var(--warning) 13%, transparent)" }}
         >
           {copy.rowTag}
         </span>

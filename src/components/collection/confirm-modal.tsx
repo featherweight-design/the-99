@@ -55,15 +55,15 @@ export function ConfirmModal({
         aria-modal="true"
         aria-labelledby="confirm-title"
         onClick={(e) => e.stopPropagation()}
-        // Mobile: bottom sheet (§Mobile: Bottom Sheet: bg #1A160F (--surface-rail), radius 22px 22px 34px 34px, padding 26px 22px 30px)
-        // Desktop: §Desktop: Modal Container: 520px, bg #1A160F, border 1px #3A3229, radius 16px, padding 32px 34px 30px, shadow 0 40px 100px rgba(0,0,0,0.7)
+        // Mobile: bottom sheet (§Mobile: Bottom Sheet: bg var(--surface-rail) (--surface-rail), radius 22px 22px 34px 34px, padding 26px 22px 30px)
+        // Desktop: §Desktop: Modal Container: 520px, bg var(--surface-rail), border 1px var(--border-strong), radius 16px, padding 32px 34px 30px, shadow 0 40px 100px rgba(0,0,0,0.7)
         className="w-full md:w-[520px] rounded-[22px_22px_34px_34px] md:rounded-2xl p-[26px_22px_30px] md:p-[32px_34px_30px] mt-auto md:mt-0 [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)]"
         style={{
           background: "var(--surface-rail)",
           boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
         }}
       >
-        {/* Mobile drag handle — §Mobile: Sheet Drag Handle: 40×4, radius 999px, bg #3A3229 (--border-strong), margin 0 auto 20px */}
+        {/* Mobile drag handle — §Mobile: Sheet Drag Handle: 40×4, radius 999px, bg var(--border-strong) (--border-strong), margin 0 auto 20px */}
         <div className="md:hidden mx-auto mb-[20px] rounded-full" style={{ width: 40, height: 4, background: "var(--border-strong)" }} />
 
         {/* Warning icon header — §Warning Icon Header + §Warning Icon */}
@@ -72,8 +72,8 @@ export function ConfirmModal({
             aria-hidden
             className="flex-none rounded-full flex items-center justify-center text-[18px] md:text-[22px] w-[40px] h-[40px] md:w-[48px] md:h-[48px]"
             style={{
-              background: "rgba(198,83,63,0.14)",
-              border: "1px solid #4A2F28",
+              background: "color-mix(in oklab, var(--danger) 14%, transparent)",
+              border: "1px solid color-mix(in oklab, var(--danger) 30%, transparent)",
               color: "var(--danger)",
             }}
           >
@@ -130,7 +130,7 @@ export function ConfirmModal({
             spellCheck={false}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            // §Confirm Input Field: bg #181410 (--surface-sunken), border 1px #C6533F (--danger), radius 8px, padding 12/13px 14/16px, mono 15/16px, --fg, letter-spacing 0.1/0.12em
+            // §Confirm Input Field: bg var(--surface-sunken) (--surface-sunken), border 1px var(--danger) (--danger), radius 8px, padding 12/13px 14/16px, mono 15/16px, --fg, letter-spacing 0.1/0.12em
             className="w-full font-mono text-[15px] md:text-[16px] tracking-[0.1em] md:tracking-[0.12em] p-[12px_14px] md:p-[13px_16px] border-[color:var(--danger)]"
           />
         </div>
@@ -145,8 +145,8 @@ export function ConfirmModal({
             type="button"
             onClick={onClose}
             disabled={pending}
-            // §Cancel / Keep Button — mobile text-only #8E8269 (--fg-faint), padding 12px 0 0;
-            // desktop outlined 1px #3A3229 (--border-strong), padding 13px 22px, accent border on hover
+            // §Cancel / Keep Button — mobile text-only var(--fg-faint) (--fg-faint), padding 12px 0 0;
+            // desktop outlined 1px var(--border-strong) (--border-strong), padding 13px 22px, accent border on hover
             className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--accent)]"
             style={{
               color: "var(--fg-faint)",
@@ -169,11 +169,11 @@ export function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={!armed || pending}
-            // §Confirm Button — Disabled: bg #3A2019, border 1px #C6533F (--danger), color --fg, radius 8px, opacity 0.6; armed → opacity 1
+            // §Confirm Button — Disabled: a dim wash of --danger, border 1px --danger, color --fg, radius 8px, opacity 0.6; armed → opacity 1
             className="rounded-lg font-sans font-semibold text-[15px] md:text-[14px] w-full md:flex-1 py-[14px] md:py-[13px] cursor-pointer"
             style={{
               color: "var(--fg)",
-              background: "#3A2019",
+              background: "color-mix(in srgb, var(--danger) 22%, var(--bg))",
               border: "1px solid var(--danger)",
               opacity: armed && !pending ? 1 : 0.6,
             }}

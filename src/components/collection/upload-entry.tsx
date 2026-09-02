@@ -61,7 +61,7 @@ export function UploadEntry({
   return (
     // Desktop content area — §Desktop Content Area: padding 44px 48px, max-width 760px
     <div className="md:max-w-[760px] md:p-[44px_48px]">
-      {/* Warning banner — §Warning Banner (Replace Warning): bg #211C15 (--elevated-hover), border 1px #3A3229 (--border-strong), border-left 3px #E0913C (--warning), radius 8/10px, padding 12/16px, gap 10/12px, margin-top 20px desktop */}
+      {/* Warning banner — §Warning Banner (Replace Warning): bg var(--elevated-hover) (--elevated-hover), border 1px var(--border-strong) (--border-strong), border-left 3px var(--warning) (--warning), radius 8/10px, padding 12/16px, gap 10/12px, margin-top 20px desktop */}
       <div
         className="flex items-start gap-[10px] md:gap-[12px] rounded-lg md:rounded-[10px] p-[12px_14px] md:p-[16px_18px] md:mt-[20px]"
         style={{
@@ -70,7 +70,7 @@ export function UploadEntry({
           borderLeft: "3px solid var(--warning)",
         }}
       >
-        {/* Warning icon — §Warning Banner Icon: #E0913C (--warning), 15/17px */}
+        {/* Warning icon — §Warning Banner Icon: var(--warning) (--warning), 15/17px */}
         <span
           aria-hidden
           className="text-[15px] md:text-[17px] leading-[1.3] md:leading-[1.2]"
@@ -78,7 +78,7 @@ export function UploadEntry({
         >
           ⚠
         </span>
-        {/* Body — §Warning Banner Body: 12.5/14px, #C6B79A (--fg-body), line-height 1.55/1.6 */}
+        {/* Body — §Warning Banner Body: 12.5/14px, var(--fg-body) (--fg-body), line-height 1.55/1.6 */}
         <p
           className="text-[12.5px] md:text-[14px] leading-[1.55] md:leading-[1.6]"
           style={{ color: "var(--fg-body)" }}
@@ -106,7 +106,7 @@ export function UploadEntry({
       </div>
 
       {mode === "dropzone" ? (
-        // Upload Drop Zone — §Upload Drop Zone: border 1.5px dashed #4A4033 (--border-dashed), radius 12px, bg #181410 (--surface-sunken), padding 30px 18px mobile / 40px desktop, mobile centered / desktop flex row (icon left)
+        // Upload Drop Zone — §Upload Drop Zone: border 1.5px dashed var(--border-dashed) (--border-dashed), radius 12px, bg var(--surface-sunken) (--surface-sunken), padding 30px 18px mobile / 40px desktop, mobile centered / desktop flex row (icon left)
         <label
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}

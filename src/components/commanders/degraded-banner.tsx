@@ -113,7 +113,7 @@ export function DegradedBanner({
           style={{
             width: 40,
             height: 40,
-            background: "rgba(224,145,60,0.13)",
+            background: "color-mix(in oklab, var(--warning) 13%, transparent)",
             border: "1px solid color-mix(in srgb, var(--accent) 30%, var(--bg))",
             color: "var(--warning)",
             fontSize: 18,

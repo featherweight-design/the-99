@@ -58,7 +58,7 @@ export function ImportNoCommander({
       className="text-center p-[44px_24px_32px] md:p-[64px_40px]"
       style={{
         backgroundImage:
-          "radial-gradient(400px 220px at 50% 80%, rgba(201,162,75,0.07), transparent 70%)",
+          "radial-gradient(400px 220px at 50% 80%, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%)",
       }}
     >
       {/* Mark: three cards, the front one dashed and unanswered */}

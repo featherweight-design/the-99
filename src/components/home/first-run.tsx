@@ -9,7 +9,7 @@ import { Crown } from "../ui/crown";
  */
 export function FirstRunChecklist({ name }: { name: string | null }) {
   return (
-    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 bg-[radial-gradient(640px_340px_at_40%_-40px,rgba(201,162,75,0.07),transparent_70%)]">
+    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 bg-[radial-gradient(640px_340px_at_40%_-40px,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
       {/* §Page heading:
           Mobile:  Cinzel 700 23px primary, line-height 1.2
           Desktop: Cinzel 700 30px primary

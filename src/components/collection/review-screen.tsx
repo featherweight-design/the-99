@@ -85,11 +85,11 @@ export function ReviewScreen({
               borderLeft: "3px solid var(--success)",
             }}
           >
-            {/* §Matched Count: Success Icon — 30/44px circle rgba(111,163,104,0.15) with #6FA368 (--success) checkmark */}
+            {/* §Matched Count: Success Icon — 30/44px circle, a 15% wash of --success behind a --success checkmark */}
             <span
               aria-hidden
               className="rounded-full flex items-center justify-center flex-none text-[15px] md:text-[20px] w-[30px] h-[30px] md:w-[44px] md:h-[44px]"
-              style={{ background: "rgba(111,163,104,0.15)", color: "var(--success)" }}
+              style={{ background: "color-mix(in oklab, var(--success) 15%, transparent)", color: "var(--success)" }}
             >
               ✓
             </span>
@@ -168,7 +168,7 @@ export function ReviewScreen({
           {/* Unmatched section */}
           {preview.unmatchedRows.length > 0 && (
             <div>
-              {/* §Issue Section Headers — mono uppercase 10px, letter-spacing 0.14em, color #E0913C (--warning) */}
+              {/* §Issue Section Headers — mono uppercase 10px, letter-spacing 0.14em, color var(--warning) (--warning) */}
               <h2
                 className="font-mono uppercase text-[10px] tracking-[0.14em] mb-[8px] md:mb-[10px]"
                 style={{ color: "var(--warning)" }}
@@ -180,7 +180,7 @@ export function ReviewScreen({
                 {unmatchedShown.map((r, i) => (
                   <li
                     key={`${r.line}-${i}`}
-                    // §Issue Row — Unmatched Name: bg #1E1A15, border 1px #2A241D, border-left 3px #E0913C, radius 8px, padding 9px 12px / 11px 14px
+                    // §Issue Row — Unmatched Name: bg var(--surface), border 1px var(--border), border-left 3px var(--warning), radius 8px, padding 9px 12px / 11px 14px
                     className="flex items-center justify-between gap-[10px] md:gap-[12px] rounded-lg p-[9px_12px] md:p-[11px_14px]"
                     style={{
                       background: "var(--surface)",
@@ -274,7 +274,7 @@ export function ReviewScreen({
         )}
       </div>
 
-      {/* Sticky confirm bar — §Sticky Confirm Bar: border-top 1px #3A3229 (--border-strong), bg #1A160F (--surface-rail), padding 14px 18px 22px mobile / 16px 56px desktop */}
+      {/* Sticky confirm bar — §Sticky Confirm Bar: border-top 1px var(--border-strong) (--border-strong), bg var(--surface-rail) (--surface-rail), padding 14px 18px 22px mobile / 16px 56px desktop */}
       <div
         className={`${embedded ? "" : "md:sticky"} bottom-0 z-10 p-[14px_18px_22px] md:p-[16px_56px] md:flex md:items-center md:gap-[20px]`}
         style={{ background: "var(--surface-rail)", borderTop: "1px solid var(--border-strong)" }}
@@ -336,7 +336,7 @@ export function ReviewScreen({
 
 function MiniStat({ number, numberColor, label }: { number: number; numberColor: string; label: string }) {
   return (
-    // §Mini Stat Cell: flex 1, bg #181410 (--surface-sunken), border 1px #2A241D (--border), radius 8px, padding 10px 12px (was 9/11 — bumped for #33 to match the mock's tighter-looking pill with more prominent number/label breathing).
+    // §Mini Stat Cell: flex 1, bg var(--surface-sunken) (--surface-sunken), border 1px var(--border) (--border), radius 8px, padding 10px 12px (was 9/11 — bumped for #33 to match the mock's tighter-looking pill with more prominent number/label breathing).
     <div
       className="flex-1 rounded-lg p-[10px_12px]"
       style={{ background: "var(--surface-sunken)", border: "1px solid var(--border)" }}

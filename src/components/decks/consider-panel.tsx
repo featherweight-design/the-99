@@ -290,7 +290,7 @@ export function ConsiderPanel({
           className="flex flex-col items-center justify-center text-center px-[30px] py-[28px]"
           style={{
             background:
-              "radial-gradient(320px 180px at 50% 70%, rgba(201,162,75,0.06), transparent 70%)",
+              "radial-gradient(320px 180px at 50% 70%, color-mix(in oklab, var(--accent) 6%, transparent), transparent 70%)",
           }}
         >
           <CardFan />

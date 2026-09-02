@@ -91,7 +91,7 @@ export default async function CommandersPage({
               fontWeight: 700,
               fontSize: 26,
               letterSpacing: "0.04em",
-              boxShadow: "0 0 0 8px rgba(201,162,75,0.05)",
+              boxShadow: "0 0 0 8px color-mix(in oklab, var(--accent) 5%, transparent)",
             }}
           >
             XCIX
@@ -108,7 +108,7 @@ export default async function CommandersPage({
               fontWeight: 700,
               fontSize: 30,
               letterSpacing: "0.04em",
-              boxShadow: "0 0 0 10px rgba(201,162,75,0.05)",
+              boxShadow: "0 0 0 10px color-mix(in oklab, var(--accent) 5%, transparent)",
             }}
           >
             XCIX

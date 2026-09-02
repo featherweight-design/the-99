@@ -81,7 +81,7 @@ export function SearchField({
         FIELD_CHROME,
         "flex items-center gap-[10px] px-[12px] " +
           "focus-within:border-[color:var(--accent)] " +
-          "focus-within:shadow-[0_0_0_3px_rgba(201,162,75,0.16)]",
+          "focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_16%,transparent)]",
         containerClassName,
       )}
     >

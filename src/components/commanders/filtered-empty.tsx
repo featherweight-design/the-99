@@ -22,7 +22,7 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
 
   return (
     // Vignette per Surfaces v2 — accent at 7%, existing token, no new hex.
-    <div className="flex flex-1 flex-col items-center justify-center text-center p-[24px_30px] sm:p-[40px] bg-[radial-gradient(420px_240px_at_50%_76%,rgba(201,162,75,0.07),transparent_70%)]">
+    <div className="flex flex-1 flex-col items-center justify-center text-center p-[24px_30px] sm:p-[40px] bg-[radial-gradient(420px_240px_at_50%_76%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
       <Crown tone="quiet" className="mb-[14px]" />
 
       {/* The dimmed pips stay: they were beside the crab, not part of it, and

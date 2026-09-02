@@ -123,7 +123,7 @@ export function IssueInspector({
         aria-modal="true"
         aria-labelledby="issue-inspector-title"
         onClick={(e) => e.stopPropagation()}
-        // Mobile: full-screen sheet on --bg (design's #14110E).
+        // Mobile: full-screen sheet on --bg (design's var(--bg)).
         // Desktop: 660px × 640px (fixed height, not max-height — the dialog
         // must not shrink as filter results narrow), --surface-rail, 1px
         // --border-strong, radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7).
@@ -197,7 +197,7 @@ export function IssueInspector({
 
           <div className="mt-[12px] flex items-center gap-[10px]">
             {/* §Filter input: --surface-sunken, 1px --border-strong, radius 8, 40px (44 mobile).
-                Focus: border → --accent + 3px ring rgba(201,162,75,.16) via focus-within. */}
+                Focus: border → --accent + 3px ring color-mix(in oklab, var(--accent) 16%, transparent) via focus-within. */}
             <SearchField
               ref={filterInputRef}
               type="text"
@@ -386,8 +386,8 @@ function TabList({
         onSelect={() => onSwitch("unmatched")}
         pillTint={
           unmatchedTotal === 0
-            ? { color: "var(--success)", bg: "rgba(111,163,104,0.14)" }
-            : { color: "var(--warning)", bg: "rgba(224,145,60,0.14)" }
+            ? { color: "var(--success)", bg: "color-mix(in oklab, var(--success) 14%, transparent)" }
+            : { color: "var(--warning)", bg: "color-mix(in oklab, var(--warning) 14%, transparent)" }
         }
       />
       <TabButton
@@ -400,8 +400,8 @@ function TabList({
         onSelect={() => onSwitch("errors")}
         pillTint={
           errorsTotal === 0
-            ? { color: "var(--success)", bg: "rgba(111,163,104,0.14)" }
-            : { color: "var(--danger)", bg: "rgba(198,83,63,0.16)" }
+            ? { color: "var(--success)", bg: "color-mix(in oklab, var(--success) 14%, transparent)" }
+            : { color: "var(--danger)", bg: "color-mix(in oklab, var(--danger) 16%, transparent)" }
         }
       />
     </div>

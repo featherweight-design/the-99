@@ -187,7 +187,7 @@ export function CreatePreFilled({
           <div
             className="flex items-center gap-[9px] md:gap-[11px] rounded-[8px] md:rounded-[10px] mb-[24px] md:mb-[28px] p-[10px_13px] md:p-[13px_16px]"
             style={{
-              background: "rgba(111,163,104,0.1)",
+              background: "color-mix(in oklab, var(--success) 10%, transparent)",
               border: "1px solid color-mix(in srgb, var(--success) 40%, var(--bg))",
             }}
           >
@@ -195,7 +195,7 @@ export function CreatePreFilled({
             <div
               className="shrink-0 flex items-center justify-center rounded-full w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[12px] md:text-[14px]"
               style={{
-                background: "rgba(111,163,104,0.2)",
+                background: "color-mix(in oklab, var(--success) 20%, transparent)",
                 color: "var(--success)",
               }}
             >

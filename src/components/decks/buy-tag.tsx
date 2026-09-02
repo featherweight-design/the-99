@@ -9,10 +9,10 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 type BuyTagVariant = "row" | "tile";
 
 const PLATE: Record<BuyTagVariant, React.CSSProperties> = {
-  row: { background: "rgba(224,145,60,0.13)" },
+  row: { background: "color-mix(in oklab, var(--warning) 13%, transparent)" },
   tile: {
     background: "rgba(20,17,14,0.82)",
-    boxShadow: "inset 0 0 0 1px rgba(224,145,60,0.5)",
+    boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--warning) 50%, transparent)",
   },
 };
 
