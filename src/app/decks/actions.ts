@@ -110,11 +110,12 @@ export async function buildFillPlan(
 ): Promise<FillPlan> {
   const pool = await ownedColorLegalPool(userId, commander);
   const { data } = await getEdhrecData(commander.oracleId, commander.name);
-  const inclusionByName = data?.inclusionByName ?? {};
+  // Sparse: EDHREC reports a figure only for the cards it knows.
+  const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
   const inclusionOf = (name: string): number | null => {
     const lower = name.toLowerCase();
     const raw = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
-    return Number.isFinite(raw) ? raw : null;
+    return raw != null && Number.isFinite(raw) ? raw : null;
   };
 
   const ownedIds = new Set(pool.map((c) => c.oracleId));
@@ -209,8 +210,9 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   const { data, unreachable } = await getEdhrecData(commander.oracleId, commander.name);
   const degraded = unreachable;
   const topCards = data?.topCards ?? null;
-  const inclusionByName = data?.inclusionByName ?? {};
-  const synergyByName = data?.synergyByName ?? {};
+  // Sparse: EDHREC reports a figure only for the cards it knows.
+  const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
+  const synergyByName: Record<string, number | undefined> = data?.synergyByName ?? {};
 
   // Build a map for name lookups
   const byId = new Map(available.map((c) => [c.oracleId, c]));
@@ -312,8 +314,8 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   for (const row of unownedDeckRows) {
     const lower = row.name.toLowerCase();
     const raw = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
-    if (Number.isFinite(raw)) {
-      shoppingFigures[row.oracleId] = raw as number;
+    if (raw != null && Number.isFinite(raw)) {
+      shoppingFigures[row.oracleId] = raw;
     }
   }
 

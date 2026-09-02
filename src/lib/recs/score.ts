@@ -100,7 +100,10 @@ export function scoreCommander(args: {
   commander: PoolCard;
   collection: PoolCard[];
   edhrecTopCards: string[] | null;
-  inclusionByName: Record<string, number> | null;
+  // Sparse: EDHREC reports a figure for the cards it knows, so most names miss.
+  // The `| undefined` is what makes the guard below type-visible rather than
+  // dead-looking code.
+  inclusionByName: Record<string, number | undefined> | null;
 }): CommanderScore {
   const pool = commanderPool(args.commander, args.collection);
 
@@ -113,7 +116,7 @@ export function scoreCommander(args: {
     if (!map) return null;
     const lower = name.toLowerCase();
     const hit = map[lower] ?? map[lower.split(" // ")[0]];
-    return Number.isFinite(hit) ? hit : null;
+    return hit != null && Number.isFinite(hit) ? hit : null;
   };
 
   const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };

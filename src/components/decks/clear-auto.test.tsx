@@ -535,6 +535,13 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     expect(
       screen.getByText(recommendationsCopy.auto.sweepFailed),
     ).toBeInTheDocument();
+    // And the cards are back. The sweep takes no explicit rollback because the
+    // optimistic edit is dispatched inside the transition, and React drops its
+    // predictions when that transition ends however it ends — but "the deck is
+    // unchanged" beside a swept list would be the worst outcome this flow has,
+    // so the recovery is asserted rather than assumed.
+    expect(screen.getByText("Sol Ring")).toBeInTheDocument();
+    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
   });
 
   // The sweep succeeded, so the deck is not unchanged — the cards really are
