@@ -84,8 +84,8 @@ export function ExportDialog({
           className="hidden md:flex md:flex-col pointer-events-auto"
           style={{
             width: 560,
-            background: "#1A160F",
-            border: "1px solid #3A3229",
+            background: "var(--surface-rail)",
+            border: "1px solid var(--border-strong)",
             borderRadius: 16,
             boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
             overflow: "hidden",
@@ -110,8 +110,8 @@ export function ExportDialog({
         <div
           className="flex flex-col md:hidden absolute left-0 right-0 bottom-0 pointer-events-auto"
           style={{
-            background: "#1A160F",
-            borderTop: "1px solid #3A3229",
+            background: "var(--surface-rail)",
+            borderTop: "1px solid var(--border-strong)",
             borderRadius: "22px 22px 0 0",
             boxShadow: "0 -20px 50px rgba(0,0,0,0.5)",
             height: 590,
@@ -174,7 +174,7 @@ function DialogContent({
         className="flex items-center justify-between"
         style={{
           padding: isMobile ? "8px 18px 14px" : "20px 24px 16px",
-          borderBottom: isMobile ? "1px solid #2A241D" : undefined,
+          borderBottom: isMobile ? "1px solid var(--border)" : undefined,
         }}
       >
         <div>
@@ -182,7 +182,7 @@ function DialogContent({
             className="font-display font-bold m-0"
             style={{
               fontSize: isMobile ? 19 : 22,
-              color: "#EDE6D8",
+              color: "var(--fg)",
             }}
           >
             Export deck
@@ -191,7 +191,7 @@ function DialogContent({
           {!isMobile && (
             <p
               className="font-mono m-0"
-              style={{ fontSize: 11, color: "#8E8269", marginTop: 3 }}
+              style={{ fontSize: 11, color: "var(--fg-faint)", marginTop: 3 }}
             >
               Plain text · Moxfield · Archidekt ready
             </p>
@@ -203,7 +203,7 @@ function DialogContent({
             type="button"
             onClick={onClose}
             className=""
-            style={{ color: "#8E8269", fontSize: 17, background: "none", border: "none" }}
+            style={{ color: "var(--fg-faint)", fontSize: 17, background: "none", border: "none" }}
             aria-label="Close export dialog"
           >
             ✕
@@ -217,9 +217,9 @@ function DialogContent({
               width: 32,
               height: 32,
               borderRadius: 999,
-              background: "#221D16",
-              border: "1px solid #3A3229",
-              color: "#A89B84",
+              background: "var(--surface-raised)",
+              border: "1px solid var(--border-strong)",
+              color: "var(--fg-muted)",
               fontSize: 14,
               cursor: "pointer",
             }}
@@ -246,9 +246,9 @@ function DialogContent({
           style={{
             borderRadius: isMobile ? 999 : 8,
             padding: isMobile ? "6px 15px" : "8px 16px",
-            color: tab === "decklist" ? "#14110E" : "#A89B84",
-            background: tab === "decklist" ? "#C9A24B" : "transparent",
-            border: tab === "decklist" ? "none" : "1px solid #3A3229",
+            color: tab === "decklist" ? "var(--bg)" : "var(--fg-muted)",
+            background: tab === "decklist" ? "var(--accent)" : "transparent",
+            border: tab === "decklist" ? "none" : "1px solid var(--border-strong)",
             fontWeight: tab === "decklist" ? 600 : 500,
             cursor: "pointer",
           }}
@@ -263,13 +263,13 @@ function DialogContent({
           style={{
             borderRadius: isMobile ? 999 : 8,
             padding: isMobile ? "6px 15px" : "8px 16px",
-            color: tab === "shopping" ? "#14110E" : (isMobile ? "#E0913C" : "#A89B84"),
-            background: tab === "shopping" ? "#E0913C" : "transparent",
+            color: tab === "shopping" ? "var(--bg)" : (isMobile ? "var(--warning)" : "var(--fg-muted)"),
+            background: tab === "shopping" ? "var(--warning)" : "transparent",
             border: tab === "shopping"
               ? "none"
               : isMobile
-              ? "1px solid #4A3A24"
-              : "1px solid #3A3229",
+              ? "1px solid color-mix(in srgb, var(--accent) 30%, var(--bg))"
+              : "1px solid var(--border-strong)",
             fontWeight: tab === "shopping" ? 600 : 500,
             cursor: "pointer",
           }}
@@ -288,9 +288,9 @@ function DialogContent({
               style={{
                 fontSize: isMobile ? 11.5 : 12.5,
                 lineHeight: isMobile ? 1.85 : 1.8,
-                color: "#C6B79A",
-                background: isMobile ? "#14110E" : "#100D0A",
-                border: "1px solid #2A241D",
+                color: "var(--fg-body)",
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
                 borderRadius: 10,
                 padding: isMobile ? "14px 16px" : "16px 18px",
                 height: isMobile ? undefined : 250,
@@ -300,17 +300,17 @@ function DialogContent({
               }}
             >
               {/* Preview-only comment header — not part of the copied text */}
-              <span aria-hidden style={{ color: "#8E8269" }}>
+              <span aria-hidden style={{ color: "var(--fg-faint)" }}>
                 {`// ${deckName} — ${totalCards} cards`}
                 {"\n"}
               </span>
               {/* Commander line: 1 commanderName */}
-              <span style={{ color: "#C9A24B" }}>
+              <span style={{ color: "var(--accent)" }}>
                 {commanderLine}
                 {"\n"}
               </span>
               {/* Preview-only separator — not part of the copied text */}
-              <span aria-hidden style={{ color: "#3A3229" }}>
+              <span aria-hidden style={{ color: "var(--border-strong)" }}>
                 {isMobile ? "—" : "————————————"}
                 {"\n"}
               </span>
@@ -323,7 +323,7 @@ function DialogContent({
                 }
               >
                 {bodyLines.map((line, i) => (
-                  <span key={line} style={{ color: "#C6B79A" }}>
+                  <span key={line} style={{ color: "var(--fg-body)" }}>
                     {line}
                     {i < bodyLines.length - 1 ? "\n" : ""}
                   </span>
@@ -340,8 +340,8 @@ function DialogContent({
               style={{
                 gap: 9,
                 margin: "0 24px 10px",
-                background: "#181410",
-                border: "1px solid #2A241D",
+                background: "var(--surface-sunken)",
+                border: "1px solid var(--border)",
                 borderRadius: 8,
                 padding: "9px 12px",
               }}
@@ -353,8 +353,8 @@ function DialogContent({
                   width: 18,
                   height: 18,
                   borderRadius: 999,
-                  border: "1.5px solid #8E8269",
-                  color: "#8E8269",
+                  border: "1.5px solid var(--fg-faint)",
+                  color: "var(--fg-faint)",
                   fontSize: 10,
                 }}
               >
@@ -362,7 +362,7 @@ function DialogContent({
               </div>
               <span
                 className="font-mono"
-                style={{ fontSize: 11, color: "#8E8269" }}
+                style={{ fontSize: 11, color: "var(--fg-faint)" }}
               >
                 Names only. Pricing is a planned add — see release notes.
               </span>
@@ -373,7 +373,7 @@ function DialogContent({
               className="font-mono"
               style={{
                 fontSize: 11,
-                color: "#8E8269",
+                color: "var(--fg-faint)",
                 padding: isMobile ? "0 20px" : "0 26px 8px",
                 margin: 0,
               }}
@@ -387,7 +387,7 @@ function DialogContent({
                 className="font-mono"
                 style={{
                   fontSize: 9.5,
-                  color: "#6E6353",
+                  color: "var(--fg-locked)",
                   padding: "0 20px 2px",
                   margin: 0,
                 }}
@@ -405,13 +405,13 @@ function DialogContent({
                   style={{
                     gap: isMobile ? 10 : 12,
                     padding: isMobile ? "8px 10px" : "9px 16px",
-                    borderBottom: `1px solid ${isMobile ? "#1E1A15" : "#1A160F"}`,
+                    borderBottom: `1px solid ${isMobile ? "var(--surface)" : "var(--surface-rail)"}`,
                   }}
                 >
                   {/* Quantity — real per-card count (basics can run multiples) */}
                   <span
                     className="font-mono"
-                    style={{ fontSize: 12, color: "#8E8269" }}
+                    style={{ fontSize: 12, color: "var(--fg-faint)" }}
                   >
                     {card.quantity}
                   </span>
@@ -424,7 +424,7 @@ function DialogContent({
                     className="font-sans flex-1"
                     style={{
                       fontSize: isMobile ? 13 : 14,
-                      color: "#EDE6D8",
+                      color: "var(--fg)",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -438,8 +438,8 @@ function DialogContent({
                       className="font-mono"
                       style={{
                         fontSize: 10,
-                        color: "#8E8269",
-                        background: "#221D16",
+                        color: "var(--fg-faint)",
+                        background: "var(--surface-raised)",
                         borderRadius: 5,
                         padding: "2px 8px",
                       }}
@@ -459,7 +459,7 @@ function DialogContent({
         className="flex items-center gap-[8px]"
         style={{
           padding: isMobile ? "14px 18px" : "16px 24px",
-          borderTop: "1px solid #2A241D",
+          borderTop: "1px solid var(--border)",
         }}
       >
         {/* Copy to clipboard — primary */}
@@ -488,7 +488,7 @@ function DialogContent({
         {!isMobile && (
           <span
             className="font-mono"
-            style={{ fontSize: 11, color: "#8E8269", marginLeft: "auto" }}
+            style={{ fontSize: 11, color: "var(--fg-faint)", marginLeft: "auto" }}
           >
             Moxfield · Archidekt ready
           </span>

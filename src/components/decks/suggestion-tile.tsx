@@ -87,12 +87,12 @@ function Evidence({
   return (
     <div className="flex flex-col gap-[3px]">
       <div className="flex items-center gap-[6px]">
-        {/* #4A4033 is only bound to --border-dashed, a border token; the repo
-            spends it raw wherever it is a foreground (decklist-row.tsx:115). */}
+        {/* The contract binds this value only as a border token, but the design
+            spends it as a dim foreground here and in decklist-row.tsx. */}
         <span
           aria-hidden
           className="font-mono text-[9px]"
-          style={{ color: inDeck ? "#4A4033" : "var(--fg-locked)" }}
+          style={{ color: inDeck ? "var(--border-dashed)" : "var(--fg-locked)" }}
         >
           {addPanelCopy.tile.evidenceLabel}
         </span>
@@ -241,7 +241,7 @@ export function SuggestionTile({
           style={{
             aspectRatio: "63 / 88",
             background: noArt
-              ? "linear-gradient(158deg, #3A3229 0%, #241F19 62%, #161311 100%)"
+              ? "linear-gradient(158deg, var(--border-strong) 0%, var(--surface-raised) 62%, var(--surface-sunken) 100%)"
               : `center / cover no-repeat url(${suggestion.imageUri})`,
             filter: applied ? "grayscale(.6)" : undefined,
             opacity: applied ? 0.5 : undefined,

@@ -103,7 +103,7 @@ function CardFan() {
         <span
           key={i}
           className="w-[11px] h-[11px] rotate-45 border border-[color:var(--border-strong)]"
-          style={{ background: "#3A3229" }}
+          style={{ background: "var(--border-strong)" }}
         />
       ))}
     </div>

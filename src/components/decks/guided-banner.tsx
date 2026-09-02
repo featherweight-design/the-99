@@ -10,8 +10,8 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
   return (
     /*
       §Banner container
-      mobile:  bg #1E1A15, border 1px #2A241D, border-left 3px #C9A24B, br 10px, p 12px 14px, block, m 20px 16px 0
-      desktop: bg linear-gradient(120deg,#221D14,#1A160F 60%), border 1px #3A3229, br 14px,
+      mobile:  bg var(--surface), border 1px var(--border), border-left 3px var(--accent), br 10px, p 12px 14px, block, m 20px 16px 0
+      desktop: bg linear-gradient(120deg,var(--surface-raised),var(--surface-rail) 60%), border 1px var(--border-strong), br 14px,
                p 22px 26px, flex, items-center, gap 24px, m 26px 32px 0
       Responsive background/border split handled by .guided-banner in globals.css.
     */
@@ -23,7 +23,7 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
         {/* §Banner — step label */}
         <p
           className="font-mono uppercase text-[10px] tracking-[0.14em] md:tracking-[0.16em]"
-          style={{ color: "#C9A24B" }}
+          style={{ color: "var(--accent)" }}
         >
           Step 3 of 3
         </p>
@@ -33,33 +33,33 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
           {/* Done steps: 6×6px (mobile) / 7×7px (desktop), green */}
           <div
             className="md:hidden"
-            style={{ width: 6, height: 6, background: "#6FA368", transform: "rotate(45deg)" }}
+            style={{ width: 6, height: 6, background: "var(--success)", transform: "rotate(45deg)" }}
             aria-hidden
           />
           <div
             className="hidden md:block"
-            style={{ width: 7, height: 7, background: "#6FA368", transform: "rotate(45deg)" }}
+            style={{ width: 7, height: 7, background: "var(--success)", transform: "rotate(45deg)" }}
             aria-hidden
           />
           <div
             className="md:hidden"
-            style={{ width: 6, height: 6, background: "#6FA368", transform: "rotate(45deg)" }}
+            style={{ width: 6, height: 6, background: "var(--success)", transform: "rotate(45deg)" }}
             aria-hidden
           />
           <div
             className="hidden md:block"
-            style={{ width: 7, height: 7, background: "#6FA368", transform: "rotate(45deg)" }}
+            style={{ width: 7, height: 7, background: "var(--success)", transform: "rotate(45deg)" }}
             aria-hidden
           />
           {/* Active step: 8×8px (mobile) / 9×9px (desktop), accent */}
           <div
             className="md:hidden"
-            style={{ width: 8, height: 8, background: "#C9A24B", transform: "rotate(45deg)" }}
+            style={{ width: 8, height: 8, background: "var(--accent)", transform: "rotate(45deg)" }}
             aria-hidden
           />
           <div
             className="hidden md:block"
-            style={{ width: 9, height: 9, background: "#C9A24B", transform: "rotate(45deg)" }}
+            style={{ width: 9, height: 9, background: "var(--accent)", transform: "rotate(45deg)" }}
             aria-hidden
           />
         </div>
@@ -67,7 +67,7 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
         {/* §Banner — title "Build your first deck" */}
         <h2
           className="font-display font-semibold md:font-bold text-[15px] md:text-[23px] mt-[7px] md:mt-[6px]"
-          style={{ color: "#EDE6D8" }}
+          style={{ color: "var(--fg)" }}
         >
           Build your first deck
         </h2>
@@ -75,7 +75,7 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
         {/* §Banner — body copy */}
         <p
           className="text-[12.5px] md:text-[14px] leading-[1.5] md:leading-[1.55] mt-[3px] md:mt-[4px] md:max-w-[640px]"
-          style={{ color: "#C6B79A" }}
+          style={{ color: "var(--fg-body)" }}
         >
           Search cards or pick from your suggestions below — every card you add is counted
           toward your 99.
@@ -93,7 +93,7 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
         {/* §Banner — 0/99 figure */}
         <p
           className="font-mono font-semibold text-[30px] text-center"
-          style={{ color: "#EDE6D8" }}
+          style={{ color: "var(--fg)" }}
         >
           0/99
         </p>
@@ -101,7 +101,7 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
         {/* §Banner — "+ Korvold" sub-label */}
         <p
           className="font-mono text-[10px] text-center mt-[2px]"
-          style={{ color: "#8E8269" }}
+          style={{ color: "var(--fg-faint)" }}
         >
           + {commanderName}
         </p>

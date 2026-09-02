@@ -65,14 +65,14 @@ export function CreatePreFilled({
       {/* Mobile: flex center gap-[10px] p-[20px_18px_14px] border-bottom */}
       {/* Desktop: block p-[34px_40px] no border-bottom */}
       <div
-        className="flex items-center gap-[10px] p-[20px_18px_14px] md:block md:p-[34px_40px] border-b border-[#2A241D] md:border-b-0"
+        className="flex items-center gap-[10px] p-[20px_18px_14px] md:block md:p-[34px_40px] border-b border-[color:var(--border)] md:border-b-0"
       >
         {/* Mobile back chevron */}
         <Link
           href="/decks/new"
           className="md:hidden"
           aria-label="Back to commander picker"
-          style={{ color: "#8E8269", fontSize: 18, lineHeight: 1 }}
+          style={{ color: "var(--fg-faint)", fontSize: 18, lineHeight: 1 }}
         >
           ‹
         </Link>
@@ -85,26 +85,26 @@ export function CreatePreFilled({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#8E8269",
+              color: "var(--fg-faint)",
               marginBottom: 6,
             }}
           >
             ‹ Commanders · {name}
           </Link>
 
-          {/* §Page title "New deck": Cinzel 700 20/28px #EDE6D8; desktop margin 2px 0 4px */}
+          {/* §Page title "New deck": Cinzel 700 20/28px var(--fg); desktop margin 2px 0 4px */}
           <h1
             className="font-display font-bold text-[20px] md:text-[28px] m-0 md:m-[2px_0_4px]"
-            style={{ color: "#EDE6D8" }}
+            style={{ color: "var(--fg)" }}
           >
             New deck
           </h1>
 
-          {/* §Subtitle: mobile mono 10px #8E8269 mt 1; desktop IBM Plex Sans 14px #A89B84 mb 26 */}
-          <p className="font-mono text-[10px] mt-[1px] md:hidden" style={{ color: "#8E8269", marginBottom: 0 }}>
+          {/* §Subtitle: mobile mono 10px var(--fg-faint) mt 1; desktop IBM Plex Sans 14px var(--fg-muted) mb 26 */}
+          <p className="font-mono text-[10px] mt-[1px] md:hidden" style={{ color: "var(--fg-faint)", marginBottom: 0 }}>
             Commander selected
           </p>
-          <p className="font-sans hidden md:block text-[14px]" style={{ color: "#A89B84", marginBottom: 26 }}>
+          <p className="font-sans hidden md:block text-[14px]" style={{ color: "var(--fg-muted)", marginBottom: 26 }}>
             Name your deck to get started.
           </p>
         </div>
@@ -118,7 +118,7 @@ export function CreatePreFilled({
           {/* Mobile: thumbnail row §Commander card thumbnail */}
           <div
             className="md:hidden flex gap-[14px] rounded-[12px] p-[14px] mb-[24px]"
-            style={{ background: "#1E1A15", border: "1px solid #2A241D" }}
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             {/* §Commander art thumb mobile: 58×81px, br 8px, inset shadow */}
             <div
@@ -131,17 +131,17 @@ export function CreatePreFilled({
               }}
             />
             <div className="flex flex-col justify-center min-w-0">
-              {/* §Commander name mobile: Cinzel 600 16px #EDE6D8 */}
+              {/* §Commander name mobile: Cinzel 600 16px var(--fg) */}
               <p
                 className="font-display font-semibold leading-[1.2] truncate"
-                style={{ fontSize: 16, color: "#EDE6D8", margin: 0 }}
+                style={{ fontSize: 16, color: "var(--fg)", margin: 0 }}
               >
                 {name}
               </p>
-              {/* §Commander type line mobile: 11.5px #A89B84 mt-[3px] */}
+              {/* §Commander type line mobile: 11.5px var(--fg-muted) mt-[3px] */}
               <p
                 className="truncate"
-                style={{ fontSize: 11.5, color: "#A89B84", marginTop: 3, marginBottom: 0 }}
+                style={{ fontSize: 11.5, color: "var(--fg-muted)", marginTop: 3, marginBottom: 0 }}
               >
                 {typeLine}
               </p>
@@ -165,16 +165,16 @@ export function CreatePreFilled({
 
           {/* Desktop: commander name + type below card */}
           <div className="hidden md:block" style={{ marginTop: 14 }}>
-            {/* §Commander name desktop: Cinzel 600 17px #EDE6D8 */}
+            {/* §Commander name desktop: Cinzel 600 17px var(--fg) */}
             <p
               className="font-display font-semibold leading-[1.2]"
-              style={{ fontSize: 17, color: "#EDE6D8", margin: 0 }}
+              style={{ fontSize: 17, color: "var(--fg)", margin: 0 }}
             >
               {name}
             </p>
-            {/* §Commander type line desktop: 12.5px #A89B84 mt-[4px] */}
+            {/* §Commander type line desktop: 12.5px var(--fg-muted) mt-[4px] */}
             <p
-              style={{ fontSize: 12.5, color: "#A89B84", marginTop: 4, marginBottom: 0 }}
+              style={{ fontSize: 12.5, color: "var(--fg-muted)", marginTop: 4, marginBottom: 0 }}
             >
               {typeLine}
             </p>
@@ -188,7 +188,7 @@ export function CreatePreFilled({
             className="flex items-center gap-[9px] md:gap-[11px] rounded-[8px] md:rounded-[10px] mb-[24px] md:mb-[28px] p-[10px_13px] md:p-[13px_16px]"
             style={{
               background: "rgba(111,163,104,0.1)",
-              border: "1px solid #33402F",
+              border: "1px solid color-mix(in srgb, var(--success) 40%, var(--bg))",
             }}
           >
             {/* Checkmark icon: 20×20px mobile / 24×24px desktop */}
@@ -196,14 +196,14 @@ export function CreatePreFilled({
               className="shrink-0 flex items-center justify-center rounded-full w-[20px] h-[20px] md:w-[24px] md:h-[24px] text-[12px] md:text-[14px]"
               style={{
                 background: "rgba(111,163,104,0.2)",
-                color: "#6FA368",
+                color: "var(--success)",
               }}
             >
               ✓
             </div>
             <span
               className="text-[12.5px] md:text-[13.5px]"
-              style={{ color: "#C6B79A" }}
+              style={{ color: "var(--fg-body)" }}
             >
               Legal · validated
             </span>
@@ -214,7 +214,7 @@ export function CreatePreFilled({
             {/* §Color identity locked row label */}
             <p
               className="font-mono uppercase tracking-[0.14em]"
-              style={{ fontSize: 10, color: "#8E8269", marginBottom: 9 }}
+              style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 9 }}
             >
               Color identity
             </p>
@@ -227,15 +227,15 @@ export function CreatePreFilled({
                   style={{
                     width: 22,
                     height: 22,
-                    background: WUBRG_COLOR[color] ?? "#8E8269",
+                    background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
                   }}
                   aria-hidden
                 />
               ))}
-              {/* §Color identity caption: IBM Plex Mono 12px #A89B84 ml-[4px] */}
+              {/* §Color identity caption: IBM Plex Mono 12px var(--fg-muted) ml-[4px] */}
               <span
                 className="font-mono"
-                style={{ fontSize: 12, color: "#A89B84", marginLeft: 4 }}
+                style={{ fontSize: 12, color: "var(--fg-muted)", marginLeft: 4 }}
               >
                 {colorLabel(colorIdentity)}
               </span>
@@ -244,16 +244,16 @@ export function CreatePreFilled({
 
           {/* Deck name form */}
           <form onSubmit={handleSubmit}>
-            {/* §Deck name field label: IBM Plex Mono 10px 0.14em uppercase #8E8269 mb 8/9px */}
+            {/* §Deck name field label: IBM Plex Mono 10px 0.14em uppercase var(--fg-faint) mb 8/9px */}
             <label
               htmlFor="deck-name-input"
               className="block font-mono uppercase tracking-[0.14em] mb-[8px] md:mb-[9px]"
-              style={{ fontSize: 10, color: "#8E8269" }}
+              style={{ fontSize: 10, color: "var(--fg-faint)" }}
             >
               Deck name
             </label>
 
-            {/* §Deck name input: bg #181410, border 1px #C9A24B (active), br 8/9px */}
+            {/* §Deck name input: bg var(--surface-sunken), border 1px var(--accent) (active), br 8/9px */}
             <TextField
               id="deck-name-input"
               ref={inputRef}
@@ -271,7 +271,7 @@ export function CreatePreFilled({
             {error && (
               <p
                 className="font-mono text-[11px] mb-[16px]"
-                style={{ color: "#C6533F" }}
+                style={{ color: "var(--danger)" }}
               >
                 {error}
               </p>
@@ -303,8 +303,8 @@ export function CreatePreFilled({
 
             {/* §Helper text: mobile fs 12.5px lh 1.55; desktop fs 13px lh 1.6 border-top pt 16px */}
             <p
-              className="mt-[20px] text-[12.5px] md:text-[13px] leading-[1.55] md:leading-[1.6] md:border-t md:border-[#2A241D] md:pt-[16px]"
-              style={{ color: "#8E8269" }}
+              className="mt-[20px] text-[12.5px] md:text-[13px] leading-[1.55] md:leading-[1.6] md:border-t md:border-[color:var(--border)] md:pt-[16px]"
+              style={{ color: "var(--fg-faint)" }}
             >
               Color identity is locked to your commander. Cards outside this
               identity won&apos;t be suggested.

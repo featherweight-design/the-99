@@ -9,22 +9,22 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 
 /** Progress bar fill color by built bucket. §Deck card — progress bar fill */
 function progressFillColor(built: number): string {
-  if (built >= 99) return "#6FA368";
-  if (built >= 55) return "#E0913C";
-  return "#C6533F";
+  if (built >= 99) return "var(--success)";
+  if (built >= 55) return "var(--warning)";
+  return "var(--danger)";
 }
 
 /** Status pill variant styles. */
 function pillStyles(status: DeckListItem["statusPill"]): { color: string; background: string } {
   switch (status) {
     case "Building":
-      return { color: "#E0913C", background: "rgba(224,145,60,0.13)" };
+      return { color: "var(--warning)", background: "rgba(224,145,60,0.13)" };
     case "Playable":
     case "Complete":
-      return { color: "#6FA368", background: "rgba(111,163,104,0.13)" };
+      return { color: "var(--success)", background: "rgba(111,163,104,0.13)" };
     case "Draft":
     default:
-      return { color: "#A89B84", background: "rgba(168,155,132,0.12)" };
+      return { color: "var(--fg-muted)", background: "rgba(168,155,132,0.12)" };
   }
 }
 
@@ -58,15 +58,15 @@ export function DeckCard({ deck }: DeckCardProps) {
   const artGradient = commanderGradient(deck.commanderColorIdentity);
 
   return (
-    // §Deck card: br 12px, bg #1E1A15, border 1px #2A241D, p 13px/22px, flex col, gap 11px/18px
+    // §Deck card: br 12px, bg var(--surface), border 1px var(--border), p 13px/22px, flex col, gap 11px/18px
     // Desktop padding and gap lifted by the richness pass ("deck-list cards
     // padding 16→22, gap +4"); mobile is unchanged. Browse loosens, working
     // surfaces (the decklist ledger, the Add panel) stay tight.
     <article
       className="relative rounded-[12px] flex flex-col gap-[11px] md:gap-[18px] p-[13px] md:p-[22px]"
       style={{
-        background: "#1E1A15",
-        border: "1px solid #2A241D",
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
       }}
     >
       {/* Whole-card tap target — absolute inset Link overlay, aria-labelledby the name */}
@@ -92,12 +92,12 @@ export function DeckCard({ deck }: DeckCardProps) {
 
         {/* Name, pips, and pill stack */}
         <div className="min-w-0 flex-1 flex flex-col gap-[4px] md:gap-[6px]">
-          {/* §Deck card — name: Cinzel 600 15/18px #EDE6D8, nowrap ellipsis */}
+          {/* §Deck card — name: Cinzel 600 15/18px var(--fg), nowrap ellipsis */}
           <div className="flex items-start justify-between gap-[8px]">
             <p
               id={nameId}
               className="font-display font-semibold text-[15px] md:text-[18px] leading-[1.3] truncate"
-              style={{ color: "#EDE6D8" }}
+              style={{ color: "var(--fg)" }}
             >
               {deck.name}
             </p>
@@ -122,15 +122,15 @@ export function DeckCard({ deck }: DeckCardProps) {
                 key={color}
                 className="shrink-0 rounded-[999px] w-[11px] h-[11px] md:w-[12px] md:h-[12px]"
                 style={{
-                  background: WUBRG_COLOR[color] ?? "#8E8269",
+                  background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
                 }}
                 aria-hidden
               />
             ))}
-            {/* §Deck card — guild/type label: IBM Plex Mono 11/12px #A89B84, ml 2px */}
+            {/* §Deck card — guild/type label: IBM Plex Mono 11/12px var(--fg-muted), ml 2px */}
             <span
               className="font-mono text-[11px] md:text-[12px] ml-[2px]"
-              style={{ color: "#A89B84" }}
+              style={{ color: "var(--fg-muted)" }}
             >
               {colorLabel(deck.commanderColorIdentity)}
             </span>
@@ -144,30 +144,30 @@ export function DeckCard({ deck }: DeckCardProps) {
         <div
           className="flex justify-between items-baseline mb-[5px] md:mb-[6px]"
         >
-          {/* §Deck card — built figure: IBM Plex Mono 600 13/15px #EDE6D8 */}
+          {/* §Deck card — built figure: IBM Plex Mono 600 13/15px var(--fg) */}
           <span
             className="font-mono font-semibold text-[13px] md:text-[15px]"
-            style={{ color: "#EDE6D8" }}
+            style={{ color: "var(--fg)" }}
           >
             {deck.built}
-            {/* §Deck card — "/ 99" suffix (desktop only): #8E8269 weight 400 */}
-            <span className="hidden md:inline font-normal" style={{ color: "#8E8269" }}> / 99</span>
+            {/* §Deck card — "/ 99" suffix (desktop only): var(--fg-faint) weight 400 */}
+            <span className="hidden md:inline font-normal" style={{ color: "var(--fg-faint)" }}> / 99</span>
           </span>
 
-          {/* §Deck card — owned · to-buy caption: IBM Plex Mono 11/12px #A89B84 */}
+          {/* §Deck card — owned · to-buy caption: IBM Plex Mono 11/12px var(--fg-muted) */}
           <span
             className="font-mono text-[11px] md:text-[12px]"
-            style={{ color: "#A89B84" }}
+            style={{ color: "var(--fg-muted)" }}
           >
             {deck.ownedCount} owned · {deck.toBuyCount} to buy
           </span>
         </div>
 
-        {/* §Deck card — progress bar track: h 6/7px, br 999px, bg #2A241D, overflow hidden */}
+        {/* §Deck card — progress bar track: h 6/7px, br 999px, bg var(--elevated), overflow hidden */}
         <div
           className="rounded-[999px] overflow-hidden h-[6px] md:h-[7px]"
           style={{
-            background: "#2A241D",
+            background: "var(--elevated)",
           }}
           role="progressbar"
           aria-valuenow={deck.built}
@@ -193,7 +193,7 @@ export function DeckCard({ deck }: DeckCardProps) {
         {deck.unresolvedCount > 0 && (
           <p
             className="font-mono text-[10px] md:text-[10.5px] mt-[6px] md:mt-[7px] m-0"
-            style={{ color: "#E0913C" }}
+            style={{ color: "var(--warning)" }}
           >
             {deckImportCopy.unresolved.deckCardBadge(deck.unresolvedCount)}
           </p>
@@ -203,8 +203,8 @@ export function DeckCard({ deck }: DeckCardProps) {
       {/* ── Desktop-only action buttons ── */}
       {/* §Deck card — action buttons: desktop only, flex, gap 9px */}
       <div className="hidden md:flex gap-[9px]">
-        {/* §Deck card — "Open builder" button: flex 1, IBM Plex Sans 600 13px #EDE6D8,
-            transparent bg, border 1px #3A3229, br 8px, p 9px 0 */}
+        {/* §Deck card — "Open builder" button: flex 1, IBM Plex Sans 600 13px var(--fg),
+            transparent bg, border 1px var(--border-strong), br 8px, p 9px 0 */}
         <GhostButton
           href={`/decks/${deck.id}`}
           className="relative z-10 flex-1 text-center text-[13px] py-[9px] px-0"

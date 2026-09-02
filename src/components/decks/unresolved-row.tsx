@@ -62,11 +62,11 @@ export function UnresolvedRow({
         aria-controls={expanded ? panelId : undefined}
         aria-label={copy.rowAria(row.rawName, row.quantity)}
         onClick={expanded ? collapse : onToggle}
-        className="flex items-center gap-[9px] md:gap-[10px] w-full text-left px-[8px] py-[6px] md:px-[9px] md:py-[7px] rounded-[6px] md:rounded-[7px] min-h-[44px] cursor-pointer bg-[#1A160F] border-l-2 border-[#E0913C] active:bg-[#221D16] md:hover:bg-[#221D16]"
+        className="flex items-center gap-[9px] md:gap-[10px] w-full text-left px-[8px] py-[6px] md:px-[9px] md:py-[7px] rounded-[6px] md:rounded-[7px] min-h-[44px] cursor-pointer bg-[color:var(--surface-rail)] border-l-2 border-[color:var(--warning)] active:bg-[color:var(--surface-raised)] md:hover:bg-[color:var(--surface-raised)]"
       >
         <span
           className="flex-none text-center w-[7px] md:w-[8px] text-[11px] md:text-[12px]"
-          style={{ color: "#E0913C" }}
+          style={{ color: "var(--warning)" }}
           aria-hidden
         >
           ?
@@ -77,7 +77,7 @@ export function UnresolvedRow({
 
         <span
           className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis font-mono text-[11.5px] md:text-[12.5px]"
-          style={{ color: "#C6B79A" }}
+          style={{ color: "var(--fg-body)" }}
         >
           {row.rawName}
         </span>
@@ -89,7 +89,7 @@ export function UnresolvedRow({
             <span
               aria-hidden
               className="md:hidden flex-none font-mono text-[10px]"
-              style={{ color: "#8E8269" }}
+              style={{ color: "var(--fg-faint)" }}
             >
               ×{row.quantity}
             </span>
@@ -101,14 +101,14 @@ export function UnresolvedRow({
 
         <span
           className="flex-none font-mono text-[10px] md:text-[10.5px]"
-          style={{ color: "#6E6353" }}
+          style={{ color: "var(--fg-locked)" }}
         >
           {deckImportCopy.resolve.rawLineNumber(row.sourceLine)}
         </span>
 
         <span
           className="flex-none font-mono text-[9px] md:text-[9.5px] rounded-[4px] px-[5px] py-[1px]"
-          style={{ color: "#E0913C", background: "rgba(224,145,60,0.13)" }}
+          style={{ color: "var(--warning)", background: "rgba(224,145,60,0.13)" }}
         >
           {copy.rowTag}
         </span>
@@ -118,7 +118,7 @@ export function UnresolvedRow({
         <span
           aria-hidden
           className="hidden md:inline flex-none text-[12px] font-semibold"
-          style={{ color: "#C9A24B" }}
+          style={{ color: "var(--accent)" }}
         >
           {copy.rowFix}
         </span>

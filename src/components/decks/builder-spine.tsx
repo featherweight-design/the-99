@@ -6,6 +6,7 @@ import { useState } from "react";
 import { RenameForm } from "./rename-form";
 import type { DeckDetail } from "../../lib/decks/read";
 import { commanderGradient } from "../../lib/collection/gradients";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { colorLabel } from "../../lib/decks/format";
 import { PrimaryButton } from "@/components/ui/button";
 import { AvailabilityGlyph } from "@/components/ui/availability-marker";
@@ -40,10 +41,10 @@ interface BuilderSpineProps {
 
 // The seam in the doubled glyph is the colour of whatever sits behind it, and
 // both widths put the red line on the same band.
-const RED_BAND = "#211C15";
-const OVER_FG = "#E9917A";
-const SOFT_FG = "#C6B79A";
-const BODY_FG = "#A89B84";
+const RED_BAND = "var(--elevated-hover)";
+const OVER_FG = "var(--avail-over-fg)";
+const SOFT_FG = "var(--fg-body)";
+const BODY_FG = "var(--fg-muted)";
 
 /**
  * The two widths are separate trees rather than one responsive one, because the
@@ -88,13 +89,13 @@ function RollupBands({
   const softPhoneBody = overCommitted > 0 ? rollup.softBodyShort : rollup.softBody;
 
   return (
-    <section aria-label={rollup.regionAria} style={{ borderBottom: "1px solid #2A241D" }}>
+    <section aria-label={rollup.regionAria} style={{ borderBottom: "1px solid var(--border)" }}>
       {/* Phone — full-bleed bands, heading over body */}
       <div className="md:hidden">
         {overCommitted > 0 && (
           <div
             className="flex items-start gap-[9px] px-[16px] py-[10px]"
-            style={{ background: RED_BAND, borderLeft: "3px solid #C6533F" }}
+            style={{ background: RED_BAND, borderLeft: "3px solid var(--danger)" }}
           >
             <span className="mt-[4px] flex-none">
               <AvailabilityGlyph state="over" seam={RED_BAND} />
@@ -126,9 +127,9 @@ function RollupBands({
           <div
             className="flex items-start gap-[9px] px-[16px] py-[10px]"
             style={{
-              background: "#1E1A15",
-              borderLeft: "3px solid #4A4033",
-              borderTop: overCommitted > 0 ? "1px solid #2A241D" : undefined,
+              background: "var(--surface)",
+              borderLeft: "3px solid var(--border-dashed)",
+              borderTop: overCommitted > 0 ? "1px solid var(--border)" : undefined,
             }}
           >
             <span className="mt-[4px] flex-none">
@@ -156,8 +157,8 @@ function RollupBands({
             className="flex items-center gap-[11px] rounded-[10px] px-[16px] py-[12px]"
             style={{
               background: RED_BAND,
-              border: "1px solid #3A3229",
-              borderLeft: "3px solid #C6533F",
+              border: "1px solid var(--border-strong)",
+              borderLeft: "3px solid var(--danger)",
             }}
           >
             <AvailabilityGlyph state="over" seam={RED_BAND} />
@@ -180,9 +181,9 @@ function RollupBands({
           <div
             className="flex items-center gap-[11px] rounded-[10px] px-[16px] py-[12px]"
             style={{
-              background: "#1E1A15",
-              border: "1px solid #2A241D",
-              borderLeft: "3px solid #4A4033",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderLeft: "3px solid var(--border-dashed)",
             }}
           >
             <AvailabilityGlyph state="soft" seam={RED_BAND} />
@@ -198,15 +199,6 @@ function RollupBands({
     </section>
   );
 }
-
-// WUBRG pip hex colors (design table §Global Tokens)
-const PIP_HEX: Record<string, string> = {
-  W: "#E8E4D6",
-  U: "#4A7FB5",
-  B: "#5B5566",
-  R: "#C05A48",
-  G: "#6B9E63",
-};
 
 export function BuilderSpine({
   deck,
@@ -231,14 +223,14 @@ export function BuilderSpine({
 
   /*
     §Spine container
-    mobile:  p 40px 16px 12px, border-bottom 1px #2A241D, flex col, items-center
-    desktop: p 20px 30px,      border-bottom 1px #2A241D, flex row, items-center, gap 18px
+    mobile:  p 40px 16px 12px, border-bottom 1px var(--border), flex col, items-center
+    desktop: p 20px 30px,      border-bottom 1px var(--border), flex row, items-center, gap 18px
   */
   return (
     <>
     <header
       className="flex flex-col items-center md:flex-row md:items-center md:gap-[18px] px-[16px] pt-[40px] pb-[12px] md:px-[30px] md:py-[20px]"
-      style={{ borderBottom: "1px solid #2A241D" }}
+      style={{ borderBottom: "1px solid var(--border)" }}
     >
       {/* §Spine — commander art thumb (mobile). The thumb is the commander's only
           representation on this page, so it is also the way into its details (#91). */}
@@ -314,7 +306,7 @@ export function BuilderSpine({
             }}
             aria-label={`Rename deck: ${deck.name}`}
             className="max-w-full truncate text-left font-display font-bold text-[16px] md:text-[21px] leading-[1.2] rounded-[3px]"
-            style={{ color: "#EDE6D8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+            style={{ color: "var(--fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
           >
             {deck.name}
           </button>
@@ -323,7 +315,7 @@ export function BuilderSpine({
         {/* §Spine — deck meta caption */}
         <p
           className="font-mono text-[10px] md:text-[11px] mt-[1px] md:mt-[2px]"
-          style={{ color: "#8E8269" }}
+          style={{ color: "var(--fg-faint)" }}
         >
           {commander.name} · {identityLabel}
         </p>
@@ -338,7 +330,7 @@ export function BuilderSpine({
                 style={{
                   width: 10,
                   height: 10,
-                  background: PIP_HEX[pip] ?? "#8E8269",
+                  background: WUBRG_COLOR[pip] ?? "var(--fg-faint)",
                 }}
                 aria-hidden
               />
@@ -350,13 +342,13 @@ export function BuilderSpine({
         <div className="flex items-baseline gap-[4px] mt-[6px] md:mt-[4px]">
           <span
             className="font-mono font-semibold text-[14px] md:text-[20px]"
-            style={{ color: "#EDE6D8" }}
+            style={{ color: "var(--fg)" }}
           >
             {built}
           </span>
           <span
             className="font-mono font-normal text-[14px] md:text-[13px]"
-            style={{ color: "#8E8269" }}
+            style={{ color: "var(--fg-faint)" }}
           >
             / 99
           </span>
@@ -366,15 +358,15 @@ export function BuilderSpine({
         <div
           className="w-full md:w-[170px] rounded-full overflow-hidden mt-[4px] md:mt-[6px] h-[5px] md:h-[6px]"
           style={{
-            background: "#2A241D",
+            background: "var(--elevated)",
           }}
         >
-          {/* §Spine — progress bar fill: built ≥99 #6FA368 / ≥55 #E0913C / <55 #C6533F */}
+          {/* §Spine — progress bar fill: built ≥99 var(--success) / ≥55 var(--warning) / <55 var(--danger) */}
           <div
             className="h-full rounded-full"
             style={{
               width: `${pct}%`,
-              background: built >= 99 ? "#6FA368" : built >= 55 ? "#E0913C" : "#C6533F",
+              background: built >= 99 ? "var(--success)" : built >= 55 ? "var(--warning)" : "var(--danger)",
             }}
           />
         </div>
@@ -386,7 +378,7 @@ export function BuilderSpine({
         {built > 0 && (
           <p
             className="hidden md:block font-mono text-[10px] mt-[5px]"
-            style={{ color: "#8E8269" }}
+            style={{ color: "var(--fg-faint)" }}
           >
             {ownedCount} owned · {toBuyCount} to buy
           </p>
@@ -402,9 +394,9 @@ export function BuilderSpine({
             disabled
             className="hidden md:flex items-center gap-[6px] rounded-[8px] font-sans font-semibold text-[13px] px-[18px] py-[11px]"
             style={{
-              color: "#8E8269",
+              color: "var(--fg-faint)",
               background: "transparent",
-              border: "1px solid #2A241D",
+              border: "1px solid var(--border)",
               cursor: "not-allowed",
             }}
           >
@@ -419,18 +411,18 @@ export function BuilderSpine({
               onClick={onExport}
               className="md:hidden flex items-center gap-[5px] rounded-[7px] font-mono text-[11px] px-[9px] py-[6px]"
               style={{
-                color: "#C9A24B",
+                color: "var(--accent)",
                 background: "transparent",
-                border: "1px solid #3A3229",
+                border: "1px solid var(--border-strong)",
               }}
             >
-              {/* §Spine — export link icon (mobile): 16px #8E8269 */}
+              {/* §Spine — export link icon (mobile): 16px var(--fg-faint) */}
               <svg
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#8E8269"
+                stroke="var(--fg-faint)"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"

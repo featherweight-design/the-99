@@ -182,28 +182,28 @@ export function ResolutionExpander({
       id={id}
       className="anim-quickadd-in rounded-[9px] px-[14px] pt-[13px] pb-[16px] md:px-[16px] md:py-[14px] mb-[16px] md:mb-0"
       style={{
-        background: "#181410",
-        border: "1px solid #3A3229",
-        borderLeft: "2px solid #E0913C",
+        background: "var(--surface-sunken)",
+        border: "1px solid var(--border-strong)",
+        borderLeft: "2px solid var(--warning)",
       }}
     >
       <div className="flex items-center gap-[9px] md:gap-[10px] mb-[10px] md:mb-[12px]">
-        <span aria-hidden className="text-[11px] md:text-[12px]" style={{ color: "#E0913C" }}>
+        <span aria-hidden className="text-[11px] md:text-[12px]" style={{ color: "var(--warning)" }}>
           ?
         </span>
-        <span className="font-mono text-[12px] md:text-[13px]" style={{ color: "#EDE6D8" }}>
+        <span className="font-mono text-[12px] md:text-[13px]" style={{ color: "var(--fg)" }}>
           {row.rawName}
         </span>
         <span
           className="hidden md:inline text-[13px]"
-          style={{ color: "#A89B84" }}
+          style={{ color: "var(--fg-muted)" }}
         >
           — {copy.prompt}
         </span>
         <button
           type="button"
           onClick={onCollapse}
-          className="flex-none font-mono text-[10.5px] md:text-[11px] ml-auto cursor-pointer bg-transparent border-none p-0 text-[#8E8269] hover:text-[#C9A24B]"
+          className="flex-none font-mono text-[10.5px] md:text-[11px] ml-auto cursor-pointer bg-transparent border-none p-0 text-[color:var(--fg-faint)] hover:text-[color:var(--accent)]"
         >
           {copy.collapse} ▴
         </button>
@@ -211,13 +211,13 @@ export function ResolutionExpander({
 
       <h4
         className="md:hidden font-display font-semibold text-[16px] m-0"
-        style={{ color: "#EDE6D8" }}
+        style={{ color: "var(--fg)" }}
       >
         {copy.headingMobile}
       </h4>
       <p
         className="md:hidden text-[12.5px] leading-[1.55] mt-[5px]"
-        style={{ color: "#C6B79A" }}
+        style={{ color: "var(--fg-body)" }}
       >
         {copy.promptMobile(row.rawName)}
       </p>
@@ -253,20 +253,20 @@ export function ResolutionExpander({
           {!noResults && (
             <>
               <div className="flex items-center justify-between md:justify-start gap-[10px] md:gap-[14px] mt-[11px]">
-                <span className="font-mono text-[10.5px]" style={{ color: "#8E8269" }}>
+                <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
                   {open ? copy.resultsCount(results.length) : ""}
                 </span>
 
                 <span
                   id={hintId}
                   className="sr-only md:not-sr-only md:font-mono md:text-[10.5px]"
-                  style={{ color: "#6A6152" }}
+                  style={{ color: "var(--fg-locked)" }}
                 >
                   {copy.keyboardHint}
                 </span>
 
                 <label className="flex items-center gap-[7px] text-[11.5px] md:text-[12px] md:ml-auto cursor-pointer select-none"
-                  style={{ color: "#A89B84" }}
+                  style={{ color: "var(--fg-muted)" }}
                 >
                   <input
                     type="checkbox"
@@ -279,7 +279,7 @@ export function ResolutionExpander({
                     aria-label={copy.ownedToggleLabel}
                   />
                   <span
-                    className="relative inline-block rounded-[999px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#C9A24B]"
+                    className="relative inline-block rounded-[999px] peer-focus-visible:ring-2 peer-focus-visible:ring-[color:var(--accent)]"
                     style={{ width: 30, height: 17 }}
                     aria-hidden
                   >
@@ -289,7 +289,7 @@ export function ResolutionExpander({
                         width: 30,
                         height: 17,
                         borderRadius: 999,
-                        background: ownedOnly ? "#C9A24B" : "#2A241D",
+                        background: ownedOnly ? "var(--accent)" : "var(--elevated)",
                         transition: "background 0.15s",
                       }}
                     />
@@ -301,7 +301,7 @@ export function ResolutionExpander({
                         width: 13,
                         height: 13,
                         borderRadius: 999,
-                        background: ownedOnly ? "#14110E" : "#8E8269",
+                        background: ownedOnly ? "var(--bg)" : "var(--fg-faint)",
                         transition: "left 0.15s",
                       }}
                     />
@@ -312,7 +312,7 @@ export function ResolutionExpander({
 
               <p
                 className="font-mono text-[10px] md:text-[10.5px] leading-[1.5] mt-[5px] md:mt-[6px]"
-                style={{ color: "#6A6152" }}
+                style={{ color: "var(--fg-locked)" }}
               >
                 <span className="md:hidden">{copy.filterCaptionMobile}</span>
                 <span className="hidden md:inline">{copy.filterCaption}</span>
@@ -351,19 +351,19 @@ export function ResolutionExpander({
               <span
                 aria-hidden
                 className="flex items-center justify-center mx-auto w-[34px] h-[34px] mb-[14px] md:mb-[12px] text-[15px]"
-                style={{ borderRadius: 999, border: "1px dashed #4A4033", color: "#8E8269" }}
+                style={{ borderRadius: 999, border: "1px dashed var(--border-dashed)", color: "var(--fg-faint)" }}
               >
                 ?
               </span>
               <p
                 className="font-display font-bold text-[17px] md:text-[18px] m-0"
-                style={{ color: "#EDE6D8" }}
+                style={{ color: "var(--fg)" }}
               >
                 {copy.noResultsHeading}
               </p>
               <p
                 className="text-[13px] leading-[1.55] md:text-[13.5px] md:leading-[1.6] md:max-w-[400px] mx-auto mt-[8px]"
-                style={{ color: "#C6B79A" }}
+                style={{ color: "var(--fg-body)" }}
               >
                 {copy.noResultsBody}
               </p>
@@ -377,24 +377,24 @@ export function ResolutionExpander({
         <div className="md:w-[220px] md:flex-none">
           <p
             className="hidden md:block font-mono text-[10px] uppercase tracking-[0.14em] mb-[8px]"
-            style={{ color: "#8E8269" }}
+            style={{ color: "var(--fg-faint)" }}
           >
             {copy.rawLabel}
           </p>
           <p
             className="md:hidden font-mono text-[10px] leading-[1.5] mt-[9px]"
-            style={{ color: "#6A6152" }}
+            style={{ color: "var(--fg-locked)" }}
           >
             {copy.rawLine(row.quantity, row.rawName)} · {copy.rawLineNumber(row.sourceLine)}
           </p>
           <div
             className="hidden md:block rounded-[8px] px-[13px] py-[11px] font-mono text-[12px] leading-[1.6]"
-            style={{ background: "#14110E", border: "1px solid #2A241D", color: "#C6B79A" }}
+            style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--fg-body)" }}
           >
             {copy.rawLine(row.quantity, row.rawName)}
             <span
               className="block font-mono text-[10.5px] mt-[5px]"
-              style={{ color: "#6E6353" }}
+              style={{ color: "var(--fg-locked)" }}
             >
               {copy.rawLineNumber(row.sourceLine)}
             </span>
@@ -406,14 +406,14 @@ export function ResolutionExpander({
             <button
               type="button"
               onClick={remove}
-              className="flex-1 md:w-full font-semibold text-[13px] md:text-[13px] rounded-[8px] py-[12px] md:py-[10px] min-h-[44px] md:min-h-0 cursor-pointer bg-transparent border border-[#3A3229] text-[#EDE6D8] hover:border-[#C9A24B] hover:text-[#D8B25E]"
+              className="flex-1 md:w-full font-semibold text-[13px] md:text-[13px] rounded-[8px] py-[12px] md:py-[10px] min-h-[44px] md:min-h-0 cursor-pointer bg-transparent border border-[color:var(--border-strong)] text-[color:var(--fg)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
             >
               {copy.delete}
             </button>
             <button
               type="button"
               onClick={onCollapse}
-              className="md:hidden flex-1 font-semibold text-[13px] rounded-[8px] py-[12px] min-h-[44px] cursor-pointer bg-transparent border border-[#3A3229] text-[#EDE6D8] hover:border-[#C9A24B] hover:text-[#D8B25E]"
+              className="md:hidden flex-1 font-semibold text-[13px] rounded-[8px] py-[12px] min-h-[44px] cursor-pointer bg-transparent border border-[color:var(--border-strong)] text-[color:var(--fg)] hover:border-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
             >
               {copy.dismiss}
             </button>
@@ -421,7 +421,7 @@ export function ResolutionExpander({
 
           <p
             className="hidden md:block text-[11.5px] leading-[1.55] mt-[10px]"
-            style={{ color: "#8E8269" }}
+            style={{ color: "var(--fg-faint)" }}
           >
             {copy.deleteNote}
           </p>
@@ -477,7 +477,7 @@ function ResultRow({
       onMouseEnter={onActivate}
       onClick={onUse}
       className="flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] px-[10px] md:px-[12px] py-[8px] cursor-pointer"
-      style={{ background: "#1E1A15", border: `1px solid ${active ? "#C9A24B" : "#2A241D"}` }}
+      style={{ background: "var(--surface)", border: `1px solid ${active ? "var(--accent)" : "var(--border)"}` }}
     >
       <CardSearchRowBody
         result={result}
@@ -495,7 +495,7 @@ function ResultRow({
             <span
               aria-hidden
               className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[96px]"
-              style={{ opacity: pending ? 0.5 : undefined, color: "#C9A24B" }}
+              style={{ opacity: pending ? 0.5 : undefined, color: "var(--accent)" }}
             >
               <span className="md:hidden">↵</span>
               <span className="hidden md:inline">{copy.activeRowHint}</span>
@@ -506,9 +506,9 @@ function ResultRow({
               className="flex-none font-semibold text-[13px] md:text-[12.5px] flex items-center justify-center w-[96px] h-[40px] md:h-auto md:py-[6px] rounded-[7px]"
               style={{
                 opacity: pending ? 0.5 : undefined,
-                color: "#C9A24B",
+                color: "var(--accent)",
                 background: "transparent",
-                border: "1px solid #3A3229",
+                border: "1px solid var(--border-strong)",
               }}
             >
               <span className="md:hidden">{copy.useShort}</span>
