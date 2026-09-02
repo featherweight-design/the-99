@@ -159,8 +159,10 @@ export function Decklist({
       return [{ role, label: SHOPPING_ROLE_LABELS[role], cards: roleCards, gapClause }];
     });
 
-    // Also include unowned cards in roles without ROLE_TARGETS ("other", "land").
-    // land is excluded (basic lands are filtered). "other" is included if it has unowned.
+    // Also include unowned cards in roles without ROLE_TARGETS — "other", and
+    // the non-basic lands that still carry the "land" role. Basics never reach
+    // here (shoppingCards filters them), but a fetchland the player does not own
+    // is something they can go and buy, so it belongs in the list.
     const otherShoppingCards = shoppingCards.filter(
       (c) => !SHOPPING_ROLE_ORDER.includes(c.role as "ramp" | "draw" | "removal" | "wipes"),
     );

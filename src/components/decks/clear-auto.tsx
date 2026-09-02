@@ -50,7 +50,8 @@ export function ClearAutoButton({ count, keptCount, onClear, pending }: ClearAut
 // ── SweepReceipt ──────────────────────────────────────────────────────────────
 
 interface SweepReceiptProps {
-  /** Number of rows removed — the receipt reads "{n} auto cards removed". */
+  /** Cards removed, counted in copies rather than rows — a swept basic-land
+   *  stack contributes 37. The receipt reads "{n} auto cards removed". */
   removed: number;
   onUndo: () => void;
 }

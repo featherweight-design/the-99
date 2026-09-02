@@ -131,7 +131,9 @@ export const decks = pgTable("decks", {
   commanderOracleId: uuid("commander_oracle_id").notNull().references(() => cards.oracleId),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  // True once a fill has written rows into this deck. Never reset by a sweep:
+  // True once a fill has run against this deck — including a fill that found
+  // nothing to add, because a collection thin enough to plan zero rows still
+  // answers the question this column exists to answer. Never reset by a sweep:
   // the swept-empty copy branches on "was this ever filled", not "is it filled".
   filled: boolean("filled").notNull().default(false),
 });

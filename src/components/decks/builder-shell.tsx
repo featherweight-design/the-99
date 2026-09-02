@@ -346,6 +346,13 @@ export function BuilderShell({
   // Clear sweep state when the server list changes (revalidation settled).
   // The sweep receipt is decklist state: it persists across tab switches but
   // leaves when the player navigates away and the component unmounts.
+  //
+  // This sets state during render on purpose — React's documented "adjusting
+  // state when a prop changes" pattern, not a stray render-phase write. The
+  // `!==` guard makes it converge: React restarts the render immediately, the
+  // stored value now matches, and the branch does not run again. An effect
+  // would be worse here, because it lands a render later and the receipt
+  // would flash back on screen offering to undo a sweep already undone.
   const [lastServerCardsForSweep, setLastServerCardsForSweep] = useState(deck.cards);
   if (lastServerCardsForSweep !== deck.cards) {
     setLastServerCardsForSweep(deck.cards);
