@@ -32,7 +32,7 @@ interface ProvenanceLineProps {
   filled: number;
   /** Of filled, how many came from outside the collection. */
   bought: number;
-  /** 99 - filled — the slots left open for the player. */
+  /** 99 - filled — everything that is not the fill's, kept cards included. */
   open: number;
   /** The first role that missed its target, if any. */
   shortRole?: string;

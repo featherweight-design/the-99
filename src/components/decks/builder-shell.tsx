@@ -34,7 +34,7 @@ import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLine, FillFailedBannerConnected } from "./provenance-line";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
-import { deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
+import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
@@ -491,13 +491,15 @@ export function BuilderShell({
                 run because the deck is still in-flight then. */}
             {autoCount > 0 && !firstRun && (() => {
               const autoCards = cards.filter((c) => c.auto);
-              const filledCount = autoCards.reduce((n, c) => n + c.quantity, 0);
-              const boughtCount = autoCards.filter((c) => !c.owned).reduce((n, c) => n + c.quantity, 0);
-              // Open slots are measured against everything the deck now holds,
-              // not against the fill alone. A kept auto card or a manual add
-              // occupies a slot the player can no longer fill, so subtracting
-              // only the auto quantity would keep promising room that is gone.
-              const openCount = Math.max(0, 99 - built);
+              const filledCount = cardCopies(autoCards);
+              const boughtCount = cardCopies(autoCards.filter((c) => !c.owned));
+              // The line reads "we filled N — the other M are yours", so N and M
+              // have to close at 99: measuring M against `built` would drop the
+              // cards the player kept or added out of the sentence entirely.
+              // "Yours" covers both — a kept card and an empty slot are equally
+              // the player's, and the spine carries the authoritative built/open
+              // split for anyone asking how much room is actually left.
+              const openCount = Math.max(0, 99 - filledCount);
               // Detect a role shortfall: compare the auto cards' role tally to ROLE_TARGETS.
               const roleCounts = computeRoleCounts(autoCards);
               const shortRole = (["ramp", "draw", "removal", "wipes"] as const).find(

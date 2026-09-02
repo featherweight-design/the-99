@@ -5,7 +5,7 @@
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
-import { groupByCardType, groupByRole, isBasicLand } from "../../lib/decks/grouping";
+import { cardCopies, groupByCardType, groupByRole, isBasicLand } from "../../lib/decks/grouping";
 import { computeRoleCounts } from "../../lib/decks/mix";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -107,7 +107,11 @@ export function Decklist({
   // Those differ by any unowned basic land — the filter drops basics, and a
   // pill promising a card the list refuses to show sends the player looking
   // for something that is not there.
-  const shoppingCount = shoppingCards.reduce((n, c) => n + c.quantity, 0);
+  //
+  // Every Shopping figure below counts copies through `cardCopies` for the same
+  // reason: they all describe one purchase, so they have to move together if the
+  // multi-copy exception ever widens past basics.
+  const shoppingCount = cardCopies(shoppingCards);
 
   // The receipt counts cards, not rows: a swept basic-land row carries its
   // whole stack in `quantity`, and undo puts every copy back.
@@ -156,7 +160,7 @@ export function Decklist({
       const from = roleCounts[role];
       const to = ROLE_TARGETS[role];
       const gapClause = recommendationsCopy.shopping.groupGap(
-        String(roleCards.length),
+        String(cardCopies(roleCards)),
         String(from),
         String(to),
       );
@@ -171,8 +175,8 @@ export function Decklist({
       (c) => !SHOPPING_ROLE_ORDER.includes(c.role as "ramp" | "draw" | "removal" | "wipes"),
     );
 
-    const n = shoppingCards.length;
-    const autoN = shoppingCards.filter((c) => c.auto).length;
+    const n = shoppingCount;
+    const autoN = cardCopies(shoppingCards.filter((c) => c.auto));
     const allAuto = autoN === n;
 
     // The open slots the player kept for themselves (not filled by auto).
@@ -278,7 +282,7 @@ export function Decklist({
           {/* Role groups */}
           {shoppingGroups.map(({ role, label, cards: groupCards, gapClause }) => (
             <div key={role} className="mb-[16px] md:mb-[20px]">
-              <DecklistGroupHeader label={label} count={groupCards.length} gapClause={gapClause} />
+              <DecklistGroupHeader label={label} count={cardCopies(groupCards)} gapClause={gapClause} />
               <div
                 className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
                 style={{ gridTemplateColumns: "1fr 1fr" }}
@@ -304,7 +308,7 @@ export function Decklist({
           {/* Other/non-targeted roles (e.g. "other") */}
           {otherShoppingCards.length > 0 && (
             <div className="mb-[16px] md:mb-[20px]">
-              <DecklistGroupHeader label="Other" count={otherShoppingCards.length} />
+              <DecklistGroupHeader label="Other" count={cardCopies(otherShoppingCards)} />
               <div
                 className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
                 style={{ gridTemplateColumns: "1fr 1fr" }}
