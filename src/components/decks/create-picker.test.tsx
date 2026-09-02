@@ -28,7 +28,7 @@ describe("CreatePicker — phone bottom stack", () => {
     render(<CreatePicker legalCommanders={commanders} />);
     const footer = screen.getByTestId("create-picker-dock");
 
-    expect(footer).toHaveClass("bottom-[80px]");
+    expect(footer).toHaveClass("bottom-[var(--tabbar-h)]");
     expect(footer).not.toHaveClass("bottom-0");
     expect(screen.getAllByRole("button", { name: /create deck/i }).some((b) =>
       footer?.contains(b),

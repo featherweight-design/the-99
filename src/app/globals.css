@@ -344,6 +344,18 @@
 html, body { background: var(--bg); color: var(--fg); }
 body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 
+/* The height of the mobile tab bar, which is `fixed` and so reserved by hand by
+   everything that has to sit clear of it — the shell's main padding, the deck
+   builder's quick-add bar, the create picker's dock, the collection column's
+   min-height. Four places had guessed 80px at a bar that measured about 61,
+   which left a band of scrolling content visible above it. The bar is now held
+   to this height rather than sized by its contents, so the reservation is exact
+   by construction rather than an estimate that can drift.
+
+   Deliberately not a theme token: the theme contract is a colour contract, and
+   `parseThemeBlocks` reads only `:root` and `[data-theme]` blocks. */
+html { --tabbar-h: 64px; }
+
 /* ------------------------------------------------------------------
  * Guided Banner — responsive border/background split
  * mobile:  solid surface, hairline border, accent left border 3px

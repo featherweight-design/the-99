@@ -578,17 +578,25 @@ export function BuilderShell({
                 widths, and it takes the slot the mobile "+ Add cards" footer
                 used to hold. `mt-auto` keeps it at the foot of a short column
                 rather than floating under a two-line empty state. */}
-            {/* `bottom-[80px]` at phone width, not `bottom-0`: the shell's
-                tab bar is `fixed` and 80px tall, and the `pb-[80px]` main
-                carries to reserve it does nothing to a sticky element, which
-                pins to the scrollport edge and so sat underneath it. */}
+            {/* One tab-bar height up at phone width, not `bottom-0`: the shell's
+                tab bar is `fixed`, and the bottom padding `main` carries to
+                reserve it does nothing to a sticky element, which pins to the
+                scrollport edge and so sat underneath it. The offset reads
+                --tabbar-h rather than the 80px it used to guess, which was 19px
+                taller than the bar and left that band of the scrolling list
+                showing between the two. */}
+            {/* `z-20`: without it this bar is a positioned element at `z-auto`,
+                which loses to the `z-10` availability dots on the suggestion
+                tiles scrolling underneath — they drew on top of the search
+                field. Below the tab bar's `z-40`, which owns the bottom edge. */}
             {/* The phone drops the bar entirely while a resolution expander is
                 open: two comboboxes on one narrow screen means the keyboard
                 covers one of them and `↵` is ambiguous. Desktop has room for
                 both, so it keeps the bar. */}
             {(isDesktop || !unresolvedExpanded) && (
               <div
-                className="sticky bottom-[80px] md:bottom-0 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]"
+                data-testid="quick-add-dock"
+                className="sticky bottom-[var(--tabbar-h)] md:bottom-0 z-20 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]"
                 style={{ background: "var(--bg)", borderTop: "1px solid var(--border)" }}
               >
                 <QuickAddBar

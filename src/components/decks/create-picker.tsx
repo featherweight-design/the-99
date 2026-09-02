@@ -245,8 +245,8 @@ export function CreatePicker(props: CreatePickerProps) {
               : "flex-1 min-w-0 p-[16px_18px] md:p-[24px_40px_24px_40px]") +
             " pb-[var(--picker-reserve)] md:pb-[24px]"
           }
-          // The shell's `main` already reserves the 80px tab bar, so the
-          // picker owes only the footer stacked on top of it.
+          // The shell's `main` already reserves the tab bar, so the picker owes
+          // only the footer stacked on top of it.
           style={{ "--picker-reserve": `${footerHeight + 12}px` } as CSSProperties}
         >
           {isImport ? (
@@ -540,16 +540,16 @@ export function CreatePicker(props: CreatePickerProps) {
           </PrimaryButton>
         </div>
 
-        {/* The route's dock (#177, table §2 B1). `bottom-[80px]` clears the
-            shell tab bar, which owns the true bottom edge at a higher
-            z-index — at `bottom-0` the tab bar draws straight over the
-            button. Summary and button only: a pinned bar covers the row it
-            acts on, so the selection is restated, and nothing else may live
-            here or the dock's height moves under a thumb. */}
+        {/* The route's dock (#177, table §2 B1). It sits one tab-bar height up:
+            the tab bar owns the true bottom edge at a higher z-index, so at
+            `bottom-0` it draws straight over the button. Summary and button
+            only: a pinned bar covers the row it acts on, so the selection is
+            restated, and nothing else may live here or the dock's height moves
+            under a thumb. */}
         <div
           ref={footerRef}
           data-testid="create-picker-dock"
-          className="md:hidden fixed bottom-[80px] left-0 right-0 z-20"
+          className="md:hidden fixed bottom-[var(--tabbar-h)] left-0 right-0 z-20"
           style={{
             padding: "10px 16px 12px",
             borderTop: "1px solid var(--border)",
