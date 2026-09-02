@@ -147,7 +147,7 @@ export function DecklistRow({
             name={card.name}
             siblings={siblings}
             className={nameClass}
-            style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
+            style={{ color: "var(--fg)" }}
           >
             {label}
           </CardDetailTrigger>

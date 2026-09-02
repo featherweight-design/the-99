@@ -31,4 +31,11 @@ export const commandersCopy = {
     // directive — dropping it would leave step 2 of 3 with nothing to act on.
     directive: "Pick one to build your first 99.",
   },
+  roleCoverage: {
+    // The count is the number still hidden, not the total: the chips above it
+    // are already on screen and counting them again tells the reader nothing.
+    showRest: (hidden: number) => `Show ${hidden} more`,
+    showFewer: "Show fewer",
+    empty: (role: string) => `No ${role} cards in your pool`,
+  },
 } as const;
