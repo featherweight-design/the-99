@@ -352,8 +352,11 @@ describe("edge count: 0 cards", () => {
       roleCards: EMPTY_ROLE_CARDS,
       roleCounts: BASE_ROLE_COUNTS,
     });
-    expect(screen.getAllByText(/No .+ cards in your pool/)).not.toHaveLength(0);
-    expect(screen.queryByRole("button", { name: /Show all/i })).toBeNull();
+    // The sentence takes the role noun, not the column heading — "Card Draw"
+    // would read "No card draw cards in your pool".
+    expect(screen.getByText("No ramp cards in your pool")).toBeInTheDocument();
+    expect(screen.getByText("No draw cards in your pool")).toBeInTheDocument();
+    expect(screen.getByText("No board wipe cards in your pool")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Show all/i })).toBeNull();
   });
 

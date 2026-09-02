@@ -19,6 +19,17 @@ const ROLE_LABELS: Record<RoleName, string> = {
   wipes: "Board Wipes",
 };
 
+// Sentence form. A heading label is a column title and reads as one ("Card
+// Draw"), but dropped into "No {role} cards in your pool" it says the noun
+// twice. The handoff writes that string as "No ramp cards in your pool", so
+// prose takes this map and headings take ROLE_LABELS.
+const ROLE_NOUNS: Record<RoleName, string> = {
+  ramp: "ramp",
+  draw: "draw",
+  removal: "removal",
+  wipes: "board wipe",
+};
+
 // ── One role panel ─────────────────────────────────────────────────────────────
 
 function RolePanelDesktop({
@@ -81,7 +92,7 @@ function RolePanelDesktop({
       {/* Card chips */}
       {cards.length === 0 ? (
         <span id={listId} className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
-          No {ROLE_LABELS[role].toLowerCase()} cards in your pool
+          No {ROLE_NOUNS[role]} cards in your pool
         </span>
       ) : (
         <>
@@ -108,7 +119,7 @@ function RolePanelDesktop({
               <CoverageDisclosure
                 width="desktop"
                 total={cards.length}
-                role={ROLE_LABELS[role].toLowerCase()}
+                role={ROLE_NOUNS[role]}
                 expanded={expanded}
                 controls={listId}
                 onToggle={onToggle}
@@ -192,7 +203,7 @@ function RolePanelPhone({
       >
         {cards.length === 0 ? (
           <span id={listId} className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
-            No {ROLE_LABELS[role].toLowerCase()} cards in your pool
+            No {ROLE_NOUNS[role]} cards in your pool
           </span>
         ) : (
           <>
@@ -216,7 +227,7 @@ function RolePanelPhone({
               <CoverageDisclosure
                 width="phone"
                 total={cards.length}
-                role={ROLE_LABELS[role].toLowerCase()}
+                role={ROLE_NOUNS[role]}
                 expanded={expanded}
                 controls={listId}
                 onToggle={onToggle}
