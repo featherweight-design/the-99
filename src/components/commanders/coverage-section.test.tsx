@@ -404,6 +404,49 @@ describe("edge count: 13-40 cards (both widths capped + disclosure)", () => {
   });
 });
 
+// ── Degraded pool order ────────────────────────────────────────────────────────
+// When EDHREC is unreachable scoreCommander deliberately skips its sort and
+// leaves cards in pool order, so an alphabetical list is never shown as if it
+// were an authored ranking. The component must not re-sort.
+
+describe("degraded state preserves pool order", () => {
+  it("renders ramp cards in pool order, not alphabetical order", () => {
+    // Pool order: Zombie Infestation, Mana Vault, Swords to Plowshares
+    // Alphabetical order: Mana Vault, Swords to Plowshares, Zombie Infestation
+    // The two orderings differ, so a sort introduced by the component is detectable.
+    const poolOrderedCards: RoleCard[] = [
+      { oracleId: "oracle-z", name: "Zombie Infestation", inclusionPct: null },
+      { oracleId: "oracle-m", name: "Mana Vault", inclusionPct: null },
+      { oracleId: "oracle-s", name: "Swords to Plowshares", inclusionPct: null },
+    ];
+
+    renderSection({
+      width: "desktop",
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: poolOrderedCards },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 },
+      synergyState: "degraded",
+    });
+
+    // All three names must appear
+    expect(screen.getByText("Zombie Infestation")).toBeInTheDocument();
+    expect(screen.getByText("Mana Vault")).toBeInTheDocument();
+    expect(screen.getByText("Swords to Plowshares")).toBeInTheDocument();
+
+    // Assert pool order: Zombie Infestation must appear before Mana Vault,
+    // which must appear before Swords to Plowshares — the opposite of alphabetical.
+    const allChipNames = screen
+      .getAllByText(/Zombie Infestation|Mana Vault|Swords to Plowshares/)
+      .map((el) => el.textContent ?? "");
+
+    const zombieIdx = allChipNames.indexOf("Zombie Infestation");
+    const manaIdx = allChipNames.indexOf("Mana Vault");
+    const swordsIdx = allChipNames.indexOf("Swords to Plowshares");
+
+    expect(zombieIdx).toBeLessThan(manaIdx);
+    expect(manaIdx).toBeLessThan(swordsIdx);
+  });
+});
+
 describe("edge count: 41+ cards (beyond expansion cap)", () => {
   it("desktop: 45 cards, collapsed shows 12 plus '+33 more' disclosure", () => {
     renderSection({

@@ -75,7 +75,11 @@ function RolePanelDesktop({
       </div>
 
       {/* Card chips */}
-      <div id={listId} className="flex flex-wrap gap-[7px]">
+      <div
+        id={listId}
+        className="flex flex-wrap gap-[7px]"
+        style={expanded ? { maxHeight: 320, overflowY: "auto" } : undefined}
+      >
         {cards.length === 0 ? (
           <span className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
             No {ROLE_LABELS[role].toLowerCase()} cards in your pool
@@ -105,13 +109,6 @@ function RolePanelDesktop({
           </>
         )}
       </div>
-      {/* Expanded container with scroll */}
-      {expanded && (
-        <div
-          style={{ maxHeight: 320, overflowY: "auto" }}
-          aria-hidden
-        />
-      )}
     </div>
   );
 }
@@ -169,7 +166,11 @@ function RolePanelPhone({
       </div>
 
       {/* Rows */}
-      <div id={listId} className="flex flex-col gap-[8px]">
+      <div
+        id={listId}
+        className="flex flex-col gap-[8px]"
+        style={expanded ? { maxHeight: 320, overflowY: "auto" } : undefined}
+      >
         {cards.length === 0 ? (
           <span className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
             No {ROLE_LABELS[role].toLowerCase()} cards in your pool
