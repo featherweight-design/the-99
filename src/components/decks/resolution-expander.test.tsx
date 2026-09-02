@@ -402,7 +402,7 @@ describe("the resolution row's availability marker", () => {
     hard: names.length,
     soft: 0,
     free: 0,
-    hardDeckNames: names,
+    hardDecks: names.map((n, i) => ({ id: `d${i + 1}`, name: n })),
   });
 
   const mount = (r: SearchResult, deckOracleIds: string[] = [], commanderOracleId?: string) => {

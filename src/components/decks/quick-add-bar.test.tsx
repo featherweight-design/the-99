@@ -345,7 +345,7 @@ describe("QuickAddBar — availability marker", () => {
     hard: hardDeckNames.length,
     soft: 0,
     free: 0,
-    hardDeckNames,
+    hardDecks: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n })),
   });
 
   it("claims an off-list card another finished deck already holds", async () => {
@@ -383,7 +383,7 @@ describe("QuickAddBar — availability marker", () => {
   // the marker declines to draw them. The separator must decline with it.
   it("draws no separator on a free card, whose marker draws nothing", async () => {
     searchCards.mockResolvedValue([
-      { ...rhystic, availability: { owned: 2, hard: 0, soft: 0, free: 2, hardDeckNames: [] } },
+      { ...rhystic, availability: { owned: 2, hard: 0, soft: 0, free: 2, hardDecks: [] } },
     ]);
     mount();
     await search();

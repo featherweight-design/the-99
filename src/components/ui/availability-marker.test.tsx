@@ -10,7 +10,7 @@ const a = (owned: number, hard: number, soft: number, names: string[] = []) => (
   hard,
   soft,
   free: owned - hard,
-  hardDeckNames: names,
+  hardDecks: names.map((n, i) => ({ id: `d${i + 1}`, name: n })),
 });
 
 const root = (c: HTMLElement) => c.firstElementChild as HTMLElement;
@@ -64,6 +64,60 @@ describe("AvailabilityMarker", () => {
     const name = deckName();
     expect(name).toHaveTextContent("Atraxa");
     expect(name).toHaveClass("truncate");
+  });
+
+  // `linkDeck` is card detail's alone. Everywhere else the marker sits inside a
+  // `role="button"` row or an option, where a nested link is invalid — so the
+  // default has to be the plain span.
+  it("draws the deck name as plain text unless asked for a link", () => {
+    render(<AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" />);
+    expect(deckName().tagName).toBe("SPAN");
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("links the named deck to that deck when asked", () => {
+    render(
+      <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" linkDeck />,
+    );
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "/decks/d1");
+    expect(link).toHaveTextContent("Atraxa");
+  });
+
+  // The visible text is a bare proper noun that truncates, so "Atraxa…" alone
+  // does not say the link opens a deck.
+  it("gives the link a name that says what it opens", () => {
+    render(
+      <AvailabilityMarker availability={a(1, 1, 0, ["Atraxa"])} density="row" linkDeck />,
+    );
+    expect(
+      screen.getByRole("link", {
+        name: availabilityCopy.collection.detailDeckLinkAria("Atraxa"),
+      }),
+    ).toBeInTheDocument();
+  });
+
+  // A silent precedence rule would hide the mistake at the one moment it is
+  // still cheap to fix, so the combination throws in dev instead.
+  it("refuses to be both spoken and linked", () => {
+    expect(() =>
+      render(
+        <AvailabilityMarker
+          availability={a(1, 1, 0, ["Atraxa"])}
+          density="row"
+          spoken
+          linkDeck
+        />,
+      ),
+    ).toThrow(/mutually exclusive/);
+  });
+
+  // Nothing to link to: the counted branch names no deck at all.
+  it("draws no link when several decks share the claim", () => {
+    render(
+      <AvailabilityMarker availability={a(2, 2, 0, ["Atraxa", "Kykar"])} density="row" linkDeck />,
+    );
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
   // Design table row 3.6: no title-on-marker. A clipped name stays clipped for
@@ -337,7 +391,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
     hard: names.length,
     soft,
     free,
-    hardDeckNames: names,
+    hardDecks: names.map((n, i) => ({ id: `d${i + 1}`, name: n })),
   });
 
   // The ruling that makes the whole vantage worth having: free === 0 means

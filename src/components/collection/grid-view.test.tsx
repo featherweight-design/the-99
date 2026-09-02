@@ -32,7 +32,13 @@ const avail = (
   hard: number,
   soft = 0,
   hardDeckNames: string[] = [],
-): Availability => ({ owned, hard, soft, free: owned - hard, hardDeckNames });
+): Availability => ({
+  owned,
+  hard,
+  soft,
+  free: owned - hard,
+  hardDecks: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n })),
+});
 
 function renderTiles(c: BrowseCard) {
   return render(

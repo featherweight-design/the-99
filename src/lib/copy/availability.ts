@@ -239,6 +239,10 @@ export const availabilityCopy = {
     // Card detail carries the FULL clause — the one place on this surface with
     // room for the deck name. Describes a list, never a location.
     detailHeading: "In your collection",
+    // The named deck is a link here, and only here. Its visible text is a bare
+    // proper noun that truncates, so the link's own name has to say what it
+    // opens.
+    detailDeckLinkAria: (deckName: string) => `Open the ${deckName} deck`,
     detailHardNote:
       "You can still build with it — you’d be taking it out of something.",
     detailSoftNote:
