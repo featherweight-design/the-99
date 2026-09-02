@@ -327,16 +327,16 @@ Expected: FAIL — the crab's `<svg>` is still in the tree.
 For `loading-screen.tsx`, the whole `<div className="relative inline-flex">` block becomes:
 
 ```tsx
-<Crown pulse />
+<Crown tone="page" pulse />
 ```
 
 and the two character imports are removed in favour of `import { Crown } from "../ui/crown";`.
 
-For the eight empty-state surfaces, delete the `<Crab … />` element and its wrapper if the wrapper existed only to position the crab, then place `<Crown className="mb-[18px]" />` immediately above the heading. Update the import the same way.
+For the eight empty-state surfaces, delete the `<Crab … />` element and its wrapper if the wrapper existed only to position the crab, then place `<Crown tone="quiet" className="mb-[14px]" />` immediately above the heading. Update the import the same way. Two of the eight carry the page's own mark rather than an empty state's — `app/decks/page.tsx` and `home/first-run.tsx` take `tone="page"` at the same 14px — and `collection/review-screen.tsx` sits inline in a row, so it takes no bottom margin at all.
 
 `commanders/guided-banner.tsx` is the exception: **it loses its mark entirely and gains nothing.** It is an inline directive banner with copy beside it, not an empty state; its mark is the 3px accent left border `.guided-banner` already carries. Delete the `<Crab>` and the import, add no `Crown`.
 
-`decks/completion-reveal.tsx` needs four edits: delete the `<Kaiju>` block and both `<Crab>` instances with their imports; replace the hand-rolled three-span crown with `<Crown className="mb-[12px]" />`; and swap the celebration band's background from the deleted gradient to `bg-[color:var(--surface-sunken)]`.
+`decks/completion-reveal.tsx` needs four edits: delete the `<Kaiju>` block and both `<Crab>` instances with their imports; replace the hand-rolled three-span crown with `<Crown tone="loud" className="mb-[14px]" />` — this is the one surface the loud tone is for; and swap the celebration band's background from the deleted gradient to `bg-[color:var(--surface-sunken)]`.
 
 - [ ] **Step 4: Delete the three character tokens**
 
