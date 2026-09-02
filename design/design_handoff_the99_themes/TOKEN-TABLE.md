@@ -86,14 +86,14 @@ every pip is ≥ 0.10 from every other pip. The accent-button label is `--bg` in
 CI-enforcing. In each case the minimum passing change was applied and recorded. All but the two
 Innistrad rows are imperceptible (ΔE ≤ 0.014).
 
-| Theme | Token | §8 locked | Shipped | ΔE | Why |
+| Theme | Token | §8 locked | Corrected | ΔE | Why |
 |---|---|---|---|---|---|
 | Amonkhet | `--fg-faint` | `#8E8269` | `#8B8270` | 0.0105 | chroma > 0.03 |
 | Kamigawa | `--fg-faint` | `#6E7488` | `#6F7486` | 0.0034 | chroma > 0.03 |
 | New Phyrexia | `--accent` | `#518179` | `#52827A` | 0.0034 | button label on accent < 4.5:1 |
 | Duskmourn | `--fg-faint` | `#606D86` | `#646D7E` | 0.0136 | chroma > 0.03 |
 | Innistrad | `--accent` | `#9AA9A3` | `#8AAFA1` | 0.0262 | §9.5 ruling — chroma floor 0.045 |
-| Innistrad | `--success` | `#6FA368 (shipped)` | `#679F5F` | 0.0182 | ΔE to the floored accent < 0.10 (spec rule 5) |
+| Innistrad | `--success` | `#6FA368` | `#679F5F` | 0.0182 | ΔE to the floored accent < 0.10 (spec rule 5). `#6FA368` is also the value in `globals.css` today. |
 
 Two more, outside the locked table:
 

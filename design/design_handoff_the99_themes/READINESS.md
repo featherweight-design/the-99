@@ -22,7 +22,7 @@ ruled. Nothing is waiting on Engineering.
 `@layer base`. §H carries the specimen and the reasoning; the short version is that synthetic
 bold is a uniform dilation, which is precisely wrong for a high-contrast decorative face, and
 it does its worst work at 15–18px where most of the 32 sites sit. The visible consequence is
-that Rune Frost headings sit a little lighter than the other five themes'.
+that Rune Frost headings sit a little lighter than the other five themes' headings.
 
 This is a taste call with a real trade-off, so it is flagged rather than assumed. It does not
 block: if you would rather keep synthetic bold, delete one rule and nothing else moves.
