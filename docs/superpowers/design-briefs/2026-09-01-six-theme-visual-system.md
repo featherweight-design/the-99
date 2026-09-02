@@ -179,9 +179,16 @@ Externalise strings per the existing convention
    | 05 | Duskmourn | `#49A9DC` | Big Shoulders Display |
    | 06 | Kaldheim | `#5C86C9` | Metamorphous |
 
-2. **Chrome ramps are set.** bg / surface / border-strong / fg / fg-muted:
+2. **Chrome ramps are set.** bg / surface / border-strong / fg / fg-faint:
 
-   | Theme | bg | surface | border-strong | fg | fg-muted |
+   > **Corrected 2026-09-01 (R1 audit).** The fifth column was originally
+   > labelled `fg-muted`. It is `fg-faint`: every Amonkhet value in this table
+   > is the shipped `globals.css` token verbatim, and `#8E8269` is shipped
+   > `--fg-faint` (shipped `--fg-muted` is `#A89B84`). Read as `fg-muted` these
+   > values fail §8.9's own 4.5:1 floor in four of six themes. `--fg-muted` is
+   > derived above this row.
+
+   | Theme | bg | surface | border-strong | fg | fg-faint |
    |---|---|---|---|---|---|
    | Amonkhet | `#14110E` | `#1E1A15` | `#3A3229` | `#EDE6D8` | `#8E8269` |
    | Kamigawa | `#0E0F14` | `#16181F` | `#262A35` | `#E6E8F0` | `#6E7488` |
@@ -204,6 +211,12 @@ Externalise strings per the existing convention
 
 5. **Accent is budgeted by area, not by count.** Roughly 10% of any viewport.
    Six accent tokens used everywhere is still a violation.
+
+   > **Clarified 2026-09-01 (R1 audit).** This is an eyes-on heuristic, not a
+   > CI check — only §8.4's chroma budget and §8.9's contrast floors are
+   > CI-enforced. Painted accent area is not statically computable (it depends
+   > on content, viewport and scroll position). The reviewing model is area ×
+   > alpha, under which the empty-state vignette is ~2.5% and stays.
 
 6. **All six themes are dark.** No light mode — it is a separate axis.
 
