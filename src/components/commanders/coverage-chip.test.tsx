@@ -5,7 +5,7 @@ import { render, screen } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
-import { CardDetailProvider } from "../decks/card-detail-provider";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CoverageChip, CoverageDisclosure, CoverageRow } from "./coverage-chip";
 import type { RoleCard } from "../../lib/recs/score";
 

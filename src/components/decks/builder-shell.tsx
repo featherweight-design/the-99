@@ -28,7 +28,7 @@ import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { QuickAddBar } from "./quick-add-bar";
 import { ExportDialog } from "./export-dialog";
-import { CardDetailProvider } from "./card-detail-provider";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";

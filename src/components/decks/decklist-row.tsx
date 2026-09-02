@@ -14,7 +14,7 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
-import { CardDetailTrigger } from "./card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
 import {
   useAnnounceUndo,

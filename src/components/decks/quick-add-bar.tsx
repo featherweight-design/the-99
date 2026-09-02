@@ -162,8 +162,7 @@ export function QuickAddBar({
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setQuery("")}
                 aria-label={addPanelCopy.quickAdd.clear}
-                className="flex-none w-[20px] h-[20px] rounded-full text-[10px] cursor-pointer"
-                style={{ background: "var(--elevated)", color: "var(--fg-faint)", border: "none" }}
+                className="flex-none w-[20px] h-[20px] rounded-full text-[10px] cursor-pointer bg-[color:var(--elevated)] text-[color:var(--fg-faint)] border-none"
               >
                 ✕
               </button>
@@ -305,8 +304,8 @@ export function QuickAddBar({
             <button
               type="button"
               onClick={() => setOwnedOnly(false)}
-              className="mt-[12px] text-[12.5px] font-semibold underline cursor-pointer"
-              style={{ color: "var(--accent)", background: "transparent", border: "none", padding: 0 }}
+              className="mt-[12px] text-[12.5px] font-semibold underline cursor-pointer text-[color:var(--accent)] bg-transparent border-none"
+              style={{ padding: 0 }}
             >
               {addPanelCopy.quickAddEmpty.dropFilter}
             </button>

@@ -11,7 +11,7 @@ import { colorLabel } from "../../lib/decks/format";
 import { PrimaryButton } from "@/components/ui/button";
 import { AvailabilityGlyph } from "@/components/ui/availability-marker";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { CardDetailTrigger } from "./card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 
 interface BuilderSpineProps {
   deck: DeckDetail;
@@ -284,8 +284,8 @@ export function BuilderSpine({
               }
             }}
             aria-label={`Rename deck: ${deck.name}`}
-            className="max-w-full truncate text-left font-display font-bold text-[16px] md:text-[21px] leading-[1.2] rounded-[3px]"
-            style={{ color: "var(--fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+            className="max-w-full truncate text-left font-display font-bold text-[16px] md:text-[21px] leading-[1.2] rounded-[3px] text-[color:var(--fg)]"
+            style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
           >
             {deck.name}
           </button>
@@ -371,13 +371,8 @@ export function BuilderSpine({
           <button
             type="button"
             disabled
-            className="hidden md:flex items-center gap-[6px] rounded-[8px] font-sans font-semibold text-[13px] px-[18px] py-[11px]"
-            style={{
-              color: "var(--fg-faint)",
-              background: "transparent",
-              border: "1px solid var(--border)",
-              cursor: "not-allowed",
-            }}
+            className="hidden md:flex items-center gap-[6px] rounded-[8px] font-sans font-semibold text-[13px] px-[18px] py-[11px] text-[color:var(--fg-faint)] bg-transparent border border-[color:var(--border)]"
+            style={{ cursor: "not-allowed" }}
           >
             Export
           </button>
@@ -388,12 +383,7 @@ export function BuilderSpine({
             <button
               type="button"
               onClick={onExport}
-              className="md:hidden flex items-center gap-[5px] rounded-[7px] font-mono text-[11px] px-[9px] py-[6px]"
-              style={{
-                color: "var(--accent)",
-                background: "transparent",
-                border: "1px solid var(--border-strong)",
-              }}
+              className="md:hidden flex items-center gap-[5px] rounded-[7px] font-mono text-[11px] px-[9px] py-[6px] text-[color:var(--accent)] bg-transparent border border-[color:var(--border-strong)]"
             >
               {/* §Spine — export link icon (mobile): 16px var(--fg-faint) */}
               <svg

@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
-import { CardDetailProvider, cardDetailCopy } from "./card-detail-provider";
+import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
 // ── Server-action mocks ───────────────────────────────────────────────────────
 vi.mock("../../app/decks/actions", () => ({

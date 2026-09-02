@@ -35,14 +35,13 @@ import {
   initialAvailability,
   serializeAvailability,
 } from "../../lib/collection/availability-filter";
-import type { AvailabilityState } from "../../lib/decks/availability";
 import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
 import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
 import { ChipRow } from "./chip-row";
 import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
 import { NoResults } from "./no-results";
-import { CardModal } from "./card-modal";
+import { CardModal } from "../cards/card-modal";
 
 const PAGE_SIZE = 200;
 

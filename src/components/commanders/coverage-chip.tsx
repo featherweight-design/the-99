@@ -17,7 +17,7 @@
 //   Phone disclosure:   full-width 44px dashed row · mono 12px --accent (Show all N)
 
 import type { RoleCard } from "../../lib/recs/score";
-import { CardDetailTrigger } from "../decks/card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import type { JSX } from "react";
 

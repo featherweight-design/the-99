@@ -351,11 +351,12 @@ export function CreatePicker(props: CreatePickerProps) {
                     <button
                       type="button"
                       onClick={() => setSelectedId(isSelected ? null : c.oracleId)}
-                      className="w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left transition-colors p-[10px_12px] md:p-[12px_15px] min-h-[44px]"
-                      style={{
-                        background: isSelected ? "var(--elevated-hover)" : "var(--surface-rail)",
-                        border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
-                      }}
+                      className={[
+                        "w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left transition-colors p-[10px_12px] md:p-[12px_15px] min-h-[44px] border border-solid",
+                        isSelected
+                          ? "bg-[color:var(--elevated-hover)] border-[color:var(--accent)]"
+                          : "bg-[color:var(--surface-rail)] border-[color:var(--border)]",
+                      ].join(" ")}
                       aria-pressed={isSelected}
                     >
                       {/* §Commander picker row — art thumb: 34×48px mobile / 40×56px desktop */}

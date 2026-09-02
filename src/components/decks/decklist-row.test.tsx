@@ -6,7 +6,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
-import { CardDetailProvider } from "./card-detail-provider";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),

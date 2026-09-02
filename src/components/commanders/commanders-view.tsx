@@ -133,18 +133,17 @@ function ScoreAgainst({
               step(i, dir);
             }}
             className={[
-              "flex items-center justify-center rounded-md",
+              "flex items-center justify-center rounded-md border-0",
               size === "mobile" ? "flex-1 px-[10px]" : "px-[13px]",
               off ? "cursor-not-allowed" : "cursor-pointer",
+              active
+                ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)]"
+                : `font-medium bg-transparent ${off ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg-body)]"}`,
             ].join(" ")}
             style={{
               height,
               fontSize,
-              border: 0,
               whiteSpace: "nowrap",
-              background: active ? "var(--accent)" : "transparent",
-              color: active ? "var(--bg)" : off ? "var(--fg-locked)" : "var(--fg-body)",
-              fontWeight: active ? 600 : 500,
               textDecoration: off ? "line-through" : undefined,
             }}
           >
@@ -456,6 +455,7 @@ export function CommandersView({
                   style={{
                     width: 16,
                     height: 16,
+                    // eslint-disable-next-line no-restricted-syntax -- the fill is the mana colour itself, looked up per render; no class can name it
                     background: WUBRG_COLOR[c],
                     opacity: active ? 1 : 0.35,
                     boxShadow: active ? "0 0 0 2px var(--accent)" : "none",
@@ -513,8 +513,7 @@ export function CommandersView({
                 type="button"
                 aria-label={`Remove ${COLOR_LABELS[c]} filter`}
                 onClick={() => toggleColor(c)}
-                className="cursor-pointer bg-transparent border-0 p-0 leading-none"
-                style={{ color: "var(--fg-faint)" }}
+                className="cursor-pointer bg-transparent border-0 p-0 leading-none text-[color:var(--fg-faint)]"
               >
                 ✕
               </button>
@@ -526,8 +525,8 @@ export function CommandersView({
             <button
               type="button"
               onClick={handleClearFilter}
-              className="bg-transparent border-0 p-0 cursor-pointer font-mono"
-              style={{ fontSize: 12, color: "var(--accent)" }}
+              className="bg-transparent border-0 p-0 cursor-pointer font-mono text-[color:var(--accent)]"
+              style={{ fontSize: 12 }}
             >
               Clear
             </button>
@@ -605,6 +604,7 @@ export function CommandersView({
                 style={{
                   width: 14,
                   height: 14,
+                  // eslint-disable-next-line no-restricted-syntax -- the fill is the mana colour itself, looked up per render; no class can name it
                   background: WUBRG_COLOR[c],
                   opacity: active ? 1 : 0.35,
                   boxShadow: active ? "0 0 0 2px var(--accent)" : "none",
@@ -695,8 +695,7 @@ export function CommandersView({
                   type="button"
                   aria-label={`Remove ${COLOR_LABELS[c]} filter`}
                   onClick={() => toggleColor(c)}
-                  className="cursor-pointer bg-transparent border-0 p-0 leading-none"
-                  style={{ color: "var(--fg-faint)" }}
+                  className="cursor-pointer bg-transparent border-0 p-0 leading-none text-[color:var(--fg-faint)]"
                 >
                   ✕
                 </button>
@@ -706,8 +705,8 @@ export function CommandersView({
             <button
               type="button"
               onClick={handleClearFilter}
-              className="bg-transparent border-0 p-0 cursor-pointer font-mono"
-              style={{ fontSize: 11.5, color: "var(--accent)" }}
+              className="bg-transparent border-0 p-0 cursor-pointer font-mono text-[color:var(--accent)]"
+              style={{ fontSize: 11.5 }}
             >
               Clear
             </button>

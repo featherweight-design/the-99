@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetail } from "../../lib/decks/read";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { CardDetailProvider } from "./card-detail-provider";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { BuilderSpine } from "./builder-spine";
 
 const deck = {

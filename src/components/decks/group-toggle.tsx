@@ -41,12 +41,12 @@ export function GroupToggle({
       <button
         type="button"
         onClick={() => onFilterChange("all")}
-        className="font-sans font-semibold transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]"
-        style={
+        className={[
+          "font-sans font-semibold transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
           filter === "all"
-            ? { color: "var(--bg)", background: "var(--accent)" }
-            : { color: "var(--fg-faint)", background: "transparent", border: "1px solid var(--border-strong)" }
-        }
+            ? "text-[color:var(--bg)] bg-[color:var(--accent)]"
+            : "text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
+        ].join(" ")}
       >
         All {allCount}
       </button>
@@ -55,12 +55,12 @@ export function GroupToggle({
       <button
         type="button"
         onClick={() => onFilterChange("shopping")}
-        className="font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]"
-        style={
+        className={[
+          "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
           filter === "shopping"
-            ? { fontWeight: 600, color: "var(--bg)", background: "var(--accent)" }
-            : { fontWeight: 500, color: "var(--warning)", background: "transparent", border: "1px solid color-mix(in srgb, var(--accent) 30%, var(--bg))" }
-        }
+            ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)]"
+            : "font-medium text-[color:var(--warning)] bg-transparent border border-solid border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]",
+        ].join(" ")}
       >
         Shopping {shoppingCount}
       </button>
@@ -94,13 +94,8 @@ export function GroupToggle({
         onClick={() => onGroupingChange("type")}
         className={
           grouping === "type"
-            ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px]"
-            : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)]"
-        }
-        style={
-          grouping === "type"
-            ? { fontWeight: 600, color: "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)" }
-            : { fontWeight: 500, color: "var(--fg-faint)", background: "transparent" }
+            ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
+            : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)] font-medium text-[color:var(--fg-faint)] bg-transparent"
         }
       >
         By type
@@ -112,13 +107,8 @@ export function GroupToggle({
         onClick={() => onGroupingChange("role")}
         className={
           grouping === "role"
-            ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px]"
-            : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)]"
-        }
-        style={
-          grouping === "role"
-            ? { fontWeight: 600, color: "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)" }
-            : { fontWeight: 500, color: "var(--fg-faint)", background: "transparent" }
+            ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px] font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
+            : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)] font-medium text-[color:var(--fg-faint)] bg-transparent"
         }
       >
         By role

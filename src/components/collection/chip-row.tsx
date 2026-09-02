@@ -125,8 +125,7 @@ export function ChipRow({
         <button
           type="button"
           onClick={onClearAll}
-          className="ml-[2px] text-[12px]"
-          style={{ color: "var(--accent)" }}
+          className="ml-[2px] text-[12px] text-[color:var(--accent)]"
         >
           Clear all
         </button>
@@ -197,8 +196,8 @@ function Chip({
           "relative cursor-pointer",
           "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-[44px]",
           "after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
+          "text-[color:var(--fg-faint)]",
         ].join(" ")}
-        style={{ color: "var(--fg-faint)" }}
       >
         ✕
       </button>

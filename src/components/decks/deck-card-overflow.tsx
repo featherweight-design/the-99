@@ -59,14 +59,11 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
         onClick={handleToggle}
         aria-label="Deck options"
         aria-expanded={open}
-        className="rounded-[8px] transition-colors"
+        className="rounded-[8px] transition-colors text-[color:var(--fg-muted)] bg-transparent border border-[color:var(--border)]"
         style={{
           fontFamily: "var(--font-sans)",
           fontWeight: 500,
           fontSize: 13,
-          color: "var(--fg-muted)",
-          background: "transparent",
-          border: "1px solid var(--border)",
           padding: "9px 13px",
           cursor: "pointer",
         }}
@@ -91,8 +88,7 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
                 onClick={handleRename}
                 // bg/border as utilities, not inline: an inline background
                 // outranks hover: and the row never highlights.
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none cursor-pointer hover:bg-[color:var(--elevated)]"
-                style={{ color: "var(--fg)" }}
+                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none cursor-pointer hover:bg-[color:var(--elevated)] text-[color:var(--fg)]"
               >
                 Rename
               </button>
@@ -100,8 +96,8 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
                 type="button"
                 onClick={handleDelete}
                 disabled={isPending}
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none hover:bg-[color:var(--elevated)]"
-                style={{ color: "var(--danger)", cursor: isPending ? "default" : "pointer" }}
+                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none hover:bg-[color:var(--elevated)] text-[color:var(--danger)]"
+                style={{ cursor: isPending ? "default" : "pointer" }}
               >
                 {isPending ? "Deleting…" : "Delete"}
               </button>

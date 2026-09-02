@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
 import type { Availability } from "../../lib/decks/availability";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
-import { CardDetailProvider } from "./card-detail-provider";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SuggestionTile } from "./suggestion-tile";
 
 vi.mock("../../app/decks/actions", () => ({

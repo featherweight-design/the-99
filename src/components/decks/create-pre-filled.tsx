@@ -70,9 +70,9 @@ export function CreatePreFilled({
         {/* Mobile back chevron */}
         <Link
           href="/decks/new"
-          className="md:hidden"
+          className="md:hidden text-[color:var(--fg-faint)]"
           aria-label="Back to commander picker"
-          style={{ color: "var(--fg-faint)", fontSize: 18, lineHeight: 1 }}
+          style={{ fontSize: 18, lineHeight: 1 }}
         >
           ‹
         </Link>
@@ -81,11 +81,10 @@ export function CreatePreFilled({
           {/* Desktop back link */}
           <Link
             href="/decks/new"
-            className="hidden md:block"
+            className="hidden md:block text-[color:var(--fg-faint)]"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "var(--fg-faint)",
               marginBottom: 6,
             }}
           >

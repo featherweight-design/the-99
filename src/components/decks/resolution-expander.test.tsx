@@ -23,7 +23,7 @@ vi.mock("../../app/decks/import-actions", () => ({
 const { ResolutionExpander } = await import("./resolution-expander");
 const { AddOptimisticCardProvider, useOptimisticDeckCards } = await import("./optimistic-deck");
 const { Decklist } = await import("./decklist");
-const { CardDetailProvider } = await import("./card-detail-provider");
+const { CardDetailProvider } = await import("../cards/card-detail-provider");
 
 const copy = deckImportCopy.resolve;
 const unresolvedCopy = deckImportCopy.unresolved;

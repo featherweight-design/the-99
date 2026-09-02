@@ -285,8 +285,7 @@ export function PrintingRegion({
             // current, which only the resolver knows.
             onClick={onReset}
             aria-label={copy.resetAria}
-            className="shrink-0 cursor-pointer text-[13px]"
-            style={{ color: "var(--accent)" }}
+            className="shrink-0 cursor-pointer text-[13px] text-[color:var(--accent)]"
           >
             {copy.resetToDefault}
           </button>
@@ -313,8 +312,7 @@ export function PrintingRegion({
               onAnnounce(copy.announceForget);
             }}
             aria-label={copy.dormantClearAria}
-            className="shrink-0 cursor-pointer text-[12.5px]"
-            style={{ color: "var(--accent)" }}
+            className="shrink-0 cursor-pointer text-[12.5px] text-[color:var(--accent)]"
           >
             {copy.dormantClear}
           </button>
@@ -349,8 +347,7 @@ export function PrintingRegion({
           <button
             type="button"
             onClick={() => onQueryChange("")}
-            className="mt-[10px] cursor-pointer text-[13px]"
-            style={{ color: "var(--accent)" }}
+            className="mt-[10px] cursor-pointer text-[13px] text-[color:var(--accent)]"
           >
             {copy.clearSearch}
           </button>
@@ -411,12 +408,13 @@ function FinishChip({ label, active, onClick }: { label: string; active: boolean
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="cursor-pointer inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] px-[11px] py-[5px]"
-      style={{
-        color: active ? "var(--bg)" : "var(--fg)",
-        background: active ? "var(--accent)" : "var(--elevated)",
-        border: "1px solid var(--border-strong)",
-      }}
+      className={[
+        "cursor-pointer inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] px-[11px] py-[5px]",
+        "border border-solid border-[color:var(--border-strong)]",
+        active
+          ? "text-[color:var(--bg)] bg-[color:var(--accent)]"
+          : "text-[color:var(--fg)] bg-[color:var(--elevated)]",
+      ].join(" ")}
     >
       {label}
     </button>

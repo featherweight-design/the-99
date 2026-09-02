@@ -69,13 +69,8 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
           type="button"
           onClick={onDone}
           disabled={isPending}
-          className="rounded-[6px] px-[12px] py-[7px] text-[13px] font-sans transition-colors"
-          style={{
-            background: "transparent",
-            border: "1px solid var(--border-strong)",
-            color: "var(--fg-muted)",
-            cursor: isPending ? "default" : "pointer",
-          }}
+          className="rounded-[6px] px-[12px] py-[7px] text-[13px] font-sans transition-colors bg-transparent border border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
+          style={{ cursor: isPending ? "default" : "pointer" }}
         >
           Cancel
         </button>

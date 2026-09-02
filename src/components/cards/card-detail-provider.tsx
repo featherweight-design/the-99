@@ -9,9 +9,10 @@
 import {
   createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode,
 } from "react";
+import { twMerge } from "tailwind-merge";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
-import { CardModal } from "../collection/card-modal";
+import { CardModal } from "./card-modal";
 
 export const cardDetailCopy = {
   triggerAria: (name: string) => `View details for ${name}`,
@@ -68,15 +69,16 @@ export function CardDetailTrigger({
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-busy={pending}
       title={title}
-      className={className}
       // The chrome reset lives here rather than at each call site: every surface
       // wraps its own already-styled content, so a UA's default button border,
-      // padding and background is never what any of them wants. Spread last, so
-      // a caller that does want one of them still wins.
+      // padding and background is never what any of them wants. twMerge puts a
+      // caller's own bg-/border- utility ahead of the reset; an inline style
+      // from a caller outranks both. The reset is border-0 rather than
+      // border-none: border-none sets --tw-border-style, which a caller's own
+      // `border` reads, so it would give them a 1px border styled `none`.
+      className={twMerge("bg-transparent border-0", className)}
       style={{
         cursor: "pointer",
-        background: "transparent",
-        border: "none",
         padding: 0,
         opacity: pending ? 0.55 : undefined,
         ...style,

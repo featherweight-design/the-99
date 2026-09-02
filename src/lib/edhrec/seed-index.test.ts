@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));

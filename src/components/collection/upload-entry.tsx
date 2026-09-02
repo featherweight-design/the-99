@@ -243,8 +243,7 @@ export function UploadEntry({
         <button
           type="button"
           onClick={() => setMode("paste")}
-          className="hidden md:inline-block mt-[14px] text-[13px] whitespace-nowrap"
-          style={{ color: "var(--accent)" }}
+          className="hidden md:inline-block mt-[14px] text-[13px] whitespace-nowrap text-[color:var(--accent)]"
         >
           Paste a list instead →
         </button>
