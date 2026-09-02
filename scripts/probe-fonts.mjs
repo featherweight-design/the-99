@@ -10,6 +10,7 @@
 //
 // Run by hand, like its siblings, and not part of `pnpm test`:
 //   PROBE_USER_EMAIL=you@example.com node --env-file=.env scripts/probe-fonts.mjs
+import { readFileSync } from "node:fs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 
@@ -49,7 +50,18 @@ async function signInTicket() {
 }
 
 const BASELINE = "amonkhet";
-const THEMES = ["amonkhet", "kamigawa", "innistrad", "phyrexia", "duskmourn", "kaldheim"];
+// Read from the stylesheet rather than restated here, so a seventh theme cannot
+// ship with its face unmeasured while the run still reports clean. Amonkhet is
+// named because it deliberately has no block of its own: it is the `:root`
+// default, which is what makes an unrecognised value degrade to a whole theme.
+const SHEET = new URL("../src/app/globals.css", import.meta.url);
+const THEMES = [
+  ...new Set([
+    "amonkhet",
+    ...[...readFileSync(SHEET, "utf8").matchAll(/\[data-theme="([a-z]+)"\]/g)].map((m) => m[1]),
+  ]),
+];
+if (THEMES.length < 2) throw new Error(`Read no [data-theme] blocks from ${SHEET.pathname}.`);
 const ROUTES = ["/", "/collection", "/commanders", "/decks"];
 const VIEWPORTS = [
   { label: "390", width: 390, height: 844 },
