@@ -74,6 +74,7 @@ export function RoleCardList({ cards, emptyLabel }: { cards: RoleCard[]; emptyLa
       {(hidden > 0 || expanded) && (
         <button
           type="button"
+          aria-expanded={expanded}
           onClick={() => setExpanded((e) => !e)}
           className="font-mono underline cursor-pointer"
           style={{ fontSize: 11, color: "var(--fg-faint)", marginTop: 9 }}

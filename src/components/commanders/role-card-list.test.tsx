@@ -51,6 +51,20 @@ describe("RoleCardList", () => {
     expect(screen.getAllByText(/^Card \d+$/)).toHaveLength(12);
   });
 
+  // The chips it reveals are its own siblings, so the toggle is a disclosure and
+  // a screen reader should hear which way it currently sits.
+  it("reports the disclosure state on the toggle", () => {
+    renderList(cards(40));
+    const toggle = screen.getByRole("button", { name: "Show 28 more" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Show fewer" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
   it("opens card detail for the chip that was clicked", async () => {
     const fetchCard = vi.fn(async () => null);
     renderList(cards(3), fetchCard);
