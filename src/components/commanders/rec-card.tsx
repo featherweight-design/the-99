@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_HEX, cssUrl } from "../../lib/collection/browse";
+import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
 import { FitBar } from "./fit-bar";
@@ -53,26 +53,26 @@ function ReceiptLine({
     counts.inUse > 0
       ? {
           text: receipt.inUse(counts.inUse),
-          color: "#E8CE93",
-          glyph: { background: "#C9A24B" },
+          color: "var(--avail-hard-fg)",
+          glyph: { background: "var(--accent)" },
         }
       : counts.wantedByBrew > 0
         ? {
             text: receipt.wantedByBrew(counts.wantedByBrew),
-            color: "#C6B79A",
-            glyph: { border: "1.5px solid #A89B84" },
+            color: "var(--fg-body)",
+            glyph: { border: "1.5px solid var(--fg-muted)" },
           }
         : null;
 
   return (
     <p
       className="m-0 font-mono flex items-center gap-[6px] flex-wrap"
-      style={{ fontSize, color: "#8E8269" }}
+      style={{ fontSize, color: "var(--fg-faint)" }}
     >
       {avail === "free" ? receipt.fitFree(fits) : receipt.fit(fits)}
       {clause && (
         <>
-          <span style={{ color: "#3A3229" }}>·</span>
+          <span style={{ color: "var(--border-strong)" }}>·</span>
           <span
             aria-hidden="true"
             className="block shrink-0"
@@ -140,10 +140,10 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
       />
       {/* ── Mobile layout: stacked tile ── */}
       <div
-        className="sm:hidden rounded-[11px] p-[12px_13px] flex flex-col gap-[9px] transition-colors group-hover:border-[#3A3229] group-hover:bg-[#211C15]"
+        className="sm:hidden rounded-[11px] p-[12px_13px] flex flex-col gap-[9px] transition-colors group-hover:border-[color:var(--border-strong)] group-hover:bg-[color:var(--elevated-hover)]"
         style={{
-          background: "#1E1A15",
-          border: "1px solid #2A241D",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
         }}
       >
         {/* Mobile top row: art + name/info + fit score */}
@@ -170,13 +170,13 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
             <div className="flex items-center gap-[6px]">
               <span
                 className="font-display font-[800] shrink-0"
-                style={{ fontSize: 17, color: "#8E8269", width: 16, textAlign: "center" }}
+                style={{ fontSize: 17, color: "var(--fg-faint)", width: 16, textAlign: "center" }}
               >
                 {rank}
               </span>
               <span
                 className="font-display font-[600] truncate"
-                style={{ fontSize: 14.5, color: "#EDE6D8" }}
+                style={{ fontSize: 14.5, color: "var(--fg)" }}
               >
                 {c.name}
               </span>
@@ -187,20 +187,20 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
           <div className="flex flex-col items-center shrink-0">
             <span
               className="font-mono font-[600]"
-              style={{ fontSize: 20, color: "#EDE6D8", lineHeight: 1 }}
+              style={{ fontSize: 20, color: "var(--fg)", lineHeight: 1 }}
             >
               {scoreDisplay}
             </span>
             <span
               className="font-mono"
-              style={{ fontSize: 9, letterSpacing: "0.12em", color: "#8E8269" }}
+              style={{ fontSize: 9, letterSpacing: "0.12em", color: "var(--fg-faint)" }}
             >
               FIT
             </span>
             {delta && (
               <span
                 className="font-mono"
-                style={{ fontSize: 10, color: "#C6B79A", marginTop: 2 }}
+                style={{ fontSize: 10, color: "var(--fg-body)", marginTop: 2 }}
               >
                 <span aria-hidden="true">
                   {availabilityCopy.receipt.delta(delta.drop)}
@@ -221,9 +221,9 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
 
         {/* Receipts / synergy short (mobile) */}
         {c.edhrecOwnedCount !== null && c.edhrecTotal !== null && (
-          <p className="m-0 font-mono" style={{ fontSize: 10.5, color: "#8E8269" }}>
+          <p className="m-0 font-mono" style={{ fontSize: 10.5, color: "var(--fg-faint)" }}>
             own{" "}
-            <strong style={{ fontWeight: 600, color: "#C6B79A" }}>
+            <strong style={{ fontWeight: 600, color: "var(--fg-body)" }}>
               {c.edhrecOwnedCount}
             </strong>{" "}
             of top {c.edhrecTotal}
@@ -245,21 +245,21 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
           <div
             className="flex items-center gap-[8px] rounded-[7px]"
             style={{
-              background: "#211C15",
-              border: "1px solid #3A3229",
-              borderLeft: "2px solid #8E8269",
+              background: "var(--elevated-hover)",
+              border: "1px solid var(--border-strong)",
+              borderLeft: "2px solid var(--fg-faint)",
               padding: "7px 11px",
             }}
           >
-            <span style={{ color: "#8E8269", fontSize: 12 }}>⚠</span>
-            <div style={{ fontSize: 12, color: "#A89B84" }}>
+            <span style={{ color: "var(--fg-faint)", fontSize: 12 }}>⚠</span>
+            <div style={{ fontSize: 12, color: "var(--fg-muted)" }}>
               Synergy data unavailable.{" "}
               <form action={retryRecs} className="inline relative z-[2]">
                 <button
                   type="submit"
                   // brand focus-visible outline treatment inherited from globals.css
                   className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
-                  style={{ color: "#C9A24B", fontSize: 12 }}
+                  style={{ color: "var(--accent)", fontSize: 12 }}
                 >
                   Retry
                 </button>
@@ -273,14 +273,14 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
           <div
             className="flex items-center gap-[8px] rounded-[7px]"
             style={{
-              background: "#211C15",
-              border: "1px solid #3A3229",
-              borderLeft: "2px solid #8E8269",
+              background: "var(--elevated-hover)",
+              border: "1px solid var(--border-strong)",
+              borderLeft: "2px solid var(--fg-faint)",
               padding: "7px 11px",
             }}
           >
-            <span style={{ color: "#8E8269", fontSize: 12 }}>⚠</span>
-            <div style={{ fontSize: 12, color: "#A89B84" }}>
+            <span style={{ color: "var(--fg-faint)", fontSize: 12 }}>⚠</span>
+            <div style={{ fontSize: 12, color: "var(--fg-muted)" }}>
               EDHREC doesn&apos;t track this commander, so fit comes from pool and roles alone.
             </div>
           </div>
@@ -289,20 +289,20 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
 
       {/* ── Desktop layout: grid 40px 100px 1fr 236px ── */}
       <div
-        className="hidden sm:grid rounded-[12px] p-[24px_26px] transition-colors group-hover:border-[#3A3229] group-hover:bg-[#211C15]"
+        className="hidden sm:grid rounded-[12px] p-[24px_26px] transition-colors group-hover:border-[color:var(--border-strong)] group-hover:bg-[color:var(--elevated-hover)]"
         style={{
           gridTemplateColumns: "40px 100px 1fr 236px",
           gap: 20,
           alignItems: "stretch",
-          background: "#1E1A15",
-          border: "1px solid #2A241D",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
         }}
       >
         {/* Rank column */}
         <div className="flex flex-col items-center justify-center gap-[7px]">
           <span
             className="font-display font-[800]"
-            style={{ fontSize: 26, color: "#8E8269", lineHeight: 1 }}
+            style={{ fontSize: 26, color: "var(--fg-faint)", lineHeight: 1 }}
           >
             {rank}
           </span>
@@ -312,7 +312,7 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
             style={{
               width: 6,
               height: 6,
-              background: "#3A3229",
+              background: "var(--border-strong)",
               transform: "rotate(45deg)",
             }}
           />
@@ -346,7 +346,7 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
                   style={{
                     width: 11,
                     height: 11,
-                    background: WUBRG_HEX[color] ?? "#8E8269",
+                    background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
                     boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
                   }}
                 />
@@ -360,7 +360,7 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
           {/* Commander name */}
           <h3
             className="font-display font-[600] m-0"
-            style={{ fontSize: 20, color: "#EDE6D8", lineHeight: 1.1 }}
+            style={{ fontSize: 20, color: "var(--fg)", lineHeight: 1.1 }}
           >
             {c.name}
           </h3>
@@ -377,7 +377,7 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
                   fontSize: 10,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "#8E8269",
+                  color: "var(--fg-faint)",
                 }}
               >
                 Synergy
@@ -385,17 +385,17 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
               {/* Overlap bar track */}
               <div
                 className="overflow-hidden rounded-full"
-                style={{ width: 120, height: 6, background: "#2A241D" }}
+                style={{ width: 120, height: 6, background: "var(--elevated)" }}
               >
                 <div
                   className="h-full"
-                  style={{ width: `${synergyPct}%`, background: "#C9A24B" }}
+                  style={{ width: `${synergyPct}%`, background: "var(--accent)" }}
                 />
               </div>
               {/* "own N of top M" text */}
-              <span className="font-mono" style={{ fontSize: 12, color: "#C6B79A" }}>
+              <span className="font-mono" style={{ fontSize: 12, color: "var(--fg-body)" }}>
                 own{" "}
-                <strong style={{ fontWeight: 600, color: "#EDE6D8" }}>
+                <strong style={{ fontWeight: 600, color: "var(--fg)" }}>
                   {c.edhrecOwnedCount}
                 </strong>{" "}
                 of top {c.edhrecTotal}
@@ -415,9 +415,9 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
           {receipts && (
             <p
               className="m-0 font-mono overflow-hidden text-ellipsis whitespace-nowrap"
-              style={{ fontSize: 11, color: "#6E6353", lineHeight: 1.4 }}
+              style={{ fontSize: 11, color: "var(--fg-locked)", lineHeight: 1.4 }}
             >
-              <span style={{ color: "#8E8269" }}>receipts:</span>{" "}
+              <span style={{ color: "var(--fg-faint)" }}>receipts:</span>{" "}
               {receipts}
             </p>
           )}
@@ -427,15 +427,15 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
             <div
               className="flex items-center gap-[9px] rounded-[7px]"
               style={{
-                background: "#211C15",
-                border: "1px solid #3A3229",
-                borderLeft: "2px solid #8E8269",
+                background: "var(--elevated-hover)",
+                border: "1px solid var(--border-strong)",
+                borderLeft: "2px solid var(--fg-faint)",
                 padding: "9px 13px",
               }}
             >
-              <span style={{ color: "#8E8269", fontSize: 13 }}>⚠</span>
-              <div style={{ fontSize: 12.5, color: "#A89B84", lineHeight: 1.45 }}>
-                <strong style={{ color: "#C6B79A", fontWeight: 600 }}>
+              <span style={{ color: "var(--fg-faint)", fontSize: 13 }}>⚠</span>
+              <div style={{ fontSize: 12.5, color: "var(--fg-muted)", lineHeight: 1.45 }}>
+                <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
                   Synergy data unavailable
                 </strong>{" "}
                 for this commander.{" "}
@@ -444,7 +444,7 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
                     type="submit"
                     // brand focus-visible outline treatment inherited from globals.css
                     className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
-                    style={{ color: "#C9A24B", fontSize: 12.5 }}
+                    style={{ color: "var(--accent)", fontSize: 12.5 }}
                   >
                     Retry
                   </button>
@@ -458,15 +458,15 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
             <div
               className="flex items-center gap-[9px] rounded-[7px]"
               style={{
-                background: "#211C15",
-                border: "1px solid #3A3229",
-                borderLeft: "2px solid #8E8269",
+                background: "var(--elevated-hover)",
+                border: "1px solid var(--border-strong)",
+                borderLeft: "2px solid var(--fg-faint)",
                 padding: "9px 13px",
               }}
             >
-              <span style={{ color: "#8E8269", fontSize: 13 }}>⚠</span>
-              <div style={{ fontSize: 12.5, color: "#A89B84", lineHeight: 1.45 }}>
-                <strong style={{ color: "#C6B79A", fontWeight: 600 }}>
+              <span style={{ color: "var(--fg-faint)", fontSize: 13 }}>⚠</span>
+              <div style={{ fontSize: 12.5, color: "var(--fg-muted)", lineHeight: 1.45 }}>
+                <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
                   No synergy data
                 </strong>{" "}
                 — EDHREC doesn&apos;t track this commander, so fit comes from pool
@@ -479,17 +479,17 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
         {/* Fit column */}
         <div
           className="flex flex-col justify-center gap-[10px]"
-          style={{ borderLeft: "1px solid #2A241D", paddingLeft: 20 }}
+          style={{ borderLeft: "1px solid var(--border)", paddingLeft: 20 }}
         >
           {/* Score + /100 + Fit label row */}
           <div className="flex items-baseline gap-[6px]">
             <span
               className="font-mono font-[600]"
-              style={{ fontSize: 34, color: "#EDE6D8", lineHeight: 1 }}
+              style={{ fontSize: 34, color: "var(--fg)", lineHeight: 1 }}
             >
               {scoreDisplay}
             </span>
-            <span className="font-mono" style={{ fontSize: 13, color: "#8E8269" }}>
+            <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
               /100
             </span>
             <span
@@ -498,7 +498,7 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
                 fontSize: 10,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#8E8269",
+                color: "var(--fg-faint)",
                 marginLeft: 2,
               }}
             >
@@ -509,7 +509,7 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
           {/* Score delta (§9). Desktop buys the longer form: the bare arrow
               says how far without saying from where. */}
           {delta && (
-            <p className="m-0 font-mono" style={{ fontSize: 12, color: "#C6B79A" }}>
+            <p className="m-0 font-mono" style={{ fontSize: 12, color: "var(--fg-body)" }}>
               <span aria-hidden="true">
                 {availabilityCopy.receipt.deltaFrom(delta.drop, delta.was)}
               </span>

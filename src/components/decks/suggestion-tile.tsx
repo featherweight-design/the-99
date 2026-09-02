@@ -10,7 +10,7 @@ import { addCardToDeck } from "../../app/decks/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { availabilityState } from "../../lib/decks/availability";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { shelfRoleOf } from "../../lib/decks/suggest";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -46,9 +46,9 @@ export function CostPips({ cost, className }: { cost: string; className?: string
         const colours = parts.filter((p) => /^[WUBRG]$/.test(p));
         const numeral = parts.find((p) => /^\d+$/.test(p));
         const background = colours.length >= 2
-          ? `linear-gradient(135deg, ${WUBRG_HEX[colours[0]]} 50%, ${WUBRG_HEX[colours[1]]} 50%)`
+          ? `linear-gradient(135deg, ${WUBRG_COLOR[colours[0]]} 50%, ${WUBRG_COLOR[colours[1]]} 50%)`
           : colours.length === 1
-            ? WUBRG_HEX[colours[0]]
+            ? WUBRG_COLOR[colours[0]]
             : "var(--fg-faint)";
         return (
           <span

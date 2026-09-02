@@ -7,7 +7,7 @@
 
 import React, { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
-import { cssUrl, printingCaption, resolvedPrinting, WUBRG_HEX } from "../../lib/collection/browse";
+import { cssUrl, printingCaption, resolvedPrinting, WUBRG_COLOR } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/collection/gradients";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { availabilityState } from "../../lib/decks/availability";
@@ -551,7 +551,7 @@ function MetaCell({
             style={{
               width: 12, height: 12,
               background: identity.length === 1
-                ? WUBRG_HEX[identity[0]] ?? "#8E8269"
+                ? WUBRG_COLOR[identity[0]] ?? "#8E8269"
                 : "#8E8269",
             }}
           />
@@ -590,7 +590,7 @@ function MetaField({
             style={{
               width: 13, height: 13,
               background: identity.length === 1
-                ? WUBRG_HEX[identity[0]] ?? "#8E8269"
+                ? WUBRG_COLOR[identity[0]] ?? "#8E8269"
                 : "#8E8269",
             }}
           />

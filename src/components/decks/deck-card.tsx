@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import type { DeckListItem } from "../../lib/decks/read";
 import { colorLabel } from "../../lib/decks/format";
 import { DeckCardOverflow } from "./deck-card-overflow";
@@ -122,7 +122,7 @@ export function DeckCard({ deck }: DeckCardProps) {
                 key={color}
                 className="shrink-0 rounded-[999px] w-[11px] h-[11px] md:w-[12px] md:h-[12px]"
                 style={{
-                  background: WUBRG_HEX[color] ?? "#8E8269",
+                  background: WUBRG_COLOR[color] ?? "#8E8269",
                 }}
                 aria-hidden
               />

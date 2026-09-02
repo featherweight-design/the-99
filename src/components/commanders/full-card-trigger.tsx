@@ -41,10 +41,10 @@ export function FullCardTrigger({
         aria-label="View full card"
         onClick={() => setOpen(true)}
       >
-        <span style={{ color: "#EDE6D8", fontSize: 12 }}>⛶</span>
+        <span style={{ color: "var(--fg)", fontSize: 12 }}>⛶</span>
         <span
           className="font-mono"
-          style={{ fontSize: 10, letterSpacing: "0.08em", color: "#EDE6D8" }}
+          style={{ fontSize: 10, letterSpacing: "0.08em", color: "var(--fg)" }}
         >
           Full card
         </span>

@@ -16,7 +16,7 @@
 import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { CSSProperties } from "react";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
 import type { ImportCommanderCandidate } from "../../app/decks/import-actions";
 import type { OwnedLegalCommander } from "../../lib/decks/read";
@@ -393,7 +393,7 @@ export function CreatePicker(props: CreatePickerProps) {
                               key={color}
                               className="rounded-full shrink-0 w-[9px] h-[9px] md:w-[11px] md:h-[11px]"
                               style={{
-                                background: WUBRG_HEX[color] ?? "#8E8269",
+                                background: WUBRG_COLOR[color] ?? "#8E8269",
                               }}
                               aria-hidden
                             />

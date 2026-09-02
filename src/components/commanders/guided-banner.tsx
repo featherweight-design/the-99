@@ -25,16 +25,16 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
       <div
         className="sm:hidden rounded-[10px] p-[12px_14px]"
         style={{
-          background: "#1E1A15",
-          border: "1px solid #2A241D",
-          borderLeft: "3px solid #C9A24B",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderLeft: "3px solid var(--accent)",
         }}
       >
         {/* Step label + progress crumb row */}
         <div className="flex items-center justify-between">
           <span
             className="font-mono uppercase"
-            style={{ fontSize: 10, letterSpacing: "0.14em", color: "#C9A24B" }}
+            style={{ fontSize: 10, letterSpacing: "0.14em", color: "var(--accent)" }}
           >
             Step 2 of 3
           </span>
@@ -44,17 +44,17 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
             {/* Step 1 — done */}
             <span
               className="block"
-              style={{ width: 6, height: 6, background: "#6FA368", transform: "rotate(45deg)" }}
+              style={{ width: 6, height: 6, background: "var(--success)", transform: "rotate(45deg)" }}
             />
             {/* Step 2 — active */}
             <span
               className="block"
-              style={{ width: 8, height: 8, background: "#C9A24B", transform: "rotate(45deg)" }}
+              style={{ width: 8, height: 8, background: "var(--accent)", transform: "rotate(45deg)" }}
             />
             {/* Step 3 — locked */}
             <span
               className="block"
-              style={{ width: 6, height: 6, background: "#3A3229", transform: "rotate(45deg)" }}
+              style={{ width: 6, height: 6, background: "var(--border-strong)", transform: "rotate(45deg)" }}
             />
           </div>
         </div>
@@ -62,7 +62,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
         {/* Heading */}
         <h2
           className="font-display m-0"
-          style={{ fontSize: 15, fontWeight: 600, color: "#EDE6D8", marginTop: 7 }}
+          style={{ fontSize: 15, fontWeight: 600, color: "var(--fg)", marginTop: 7 }}
         >
           Review your commanders
         </h2>
@@ -71,7 +71,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
             an empty state, and its mark is the 3px accent left border it
             already carries. */}
         <div style={{ marginTop: 3 }}>
-          <p className="m-0" style={{ fontSize: 12.5, color: "#C6B79A", lineHeight: 1.5 }}>
+          <p className="m-0" style={{ fontSize: 12.5, color: "var(--fg-body)", lineHeight: 1.5 }}>
             {commandersCopy.firstRun.line(uniqueCardsRead, candidateCount)}{" "}
             {commandersCopy.firstRun.directive}
           </p>
@@ -83,8 +83,8 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
         className="hidden sm:flex items-center gap-[26px] rounded-[14px] p-[22px_26px]"
         style={{
           margin: "28px 34px 0",
-          background: "linear-gradient(120deg, #221D14, #1A160F 60%)",
-          border: "1px solid #3A3229",
+          background: "linear-gradient(120deg, var(--surface-raised), var(--surface-rail) 60%)",
+          border: "1px solid var(--border-strong)",
         }}
       >
         {/* XCIX ring seal */}
@@ -93,12 +93,12 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
           style={{
             width: 52,
             height: 52,
-            border: "2px solid #C9A24B",
+            border: "2px solid var(--accent)",
           }}
         >
           <span
             className="font-display font-[700]"
-            style={{ fontSize: 13, color: "#C9A24B", letterSpacing: "0.06em" }}
+            style={{ fontSize: 13, color: "var(--accent)", letterSpacing: "0.06em" }}
           >
             XCIX
           </span>
@@ -110,7 +110,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
           <div className="flex items-center gap-[16px]">
             <span
               className="font-mono uppercase"
-              style={{ fontSize: 10, letterSpacing: "0.16em", color: "#C9A24B" }}
+              style={{ fontSize: 10, letterSpacing: "0.16em", color: "var(--accent)" }}
             >
               Guided setup · step 2 of 3
             </span>
@@ -120,17 +120,17 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
               {/* Step 1 — done */}
               <span
                 className="block"
-                style={{ width: 7, height: 7, background: "#6FA368", transform: "rotate(45deg)" }}
+                style={{ width: 7, height: 7, background: "var(--success)", transform: "rotate(45deg)" }}
               />
               {/* Step 2 — active */}
               <span
                 className="block"
-                style={{ width: 9, height: 9, background: "#C9A24B", transform: "rotate(45deg)" }}
+                style={{ width: 9, height: 9, background: "var(--accent)", transform: "rotate(45deg)" }}
               />
               {/* Step 3 — locked */}
               <span
                 className="block"
-                style={{ width: 7, height: 7, background: "#3A3229", transform: "rotate(45deg)" }}
+                style={{ width: 7, height: 7, background: "var(--border-strong)", transform: "rotate(45deg)" }}
               />
             </div>
           </div>
@@ -138,7 +138,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
           {/* Heading */}
           <h2
             className="font-display m-0"
-            style={{ fontSize: 23, fontWeight: 700, color: "#EDE6D8", marginTop: 6 }}
+            style={{ fontSize: 23, fontWeight: 700, color: "var(--fg)", marginTop: 6 }}
           >
             Meet your commanders
           </h2>
@@ -148,7 +148,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount }: GuidedBannerPr
             className="m-0"
             style={{
               fontSize: 14,
-              color: "#C6B79A",
+              color: "var(--fg-body)",
               lineHeight: 1.55,
               marginTop: 4,
               maxWidth: 640,

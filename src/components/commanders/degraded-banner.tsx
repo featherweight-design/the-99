@@ -61,26 +61,26 @@ export function DegradedBanner({
       <div
         className="sm:hidden flex gap-[10px] rounded-[10px] p-[11px_13px]"
         style={{
-          background: "#211C15",
-          border: "1px solid #3A3229",
-          borderLeft: "3px solid #E0913C",
+          background: "var(--elevated-hover)",
+          border: "1px solid var(--border-strong)",
+          borderLeft: "3px solid var(--warning)",
         }}
       >
         {/* Warning icon inline */}
         <span
           aria-hidden="true"
-          style={{ color: "#E0913C", fontSize: 14, lineHeight: 1.3, flexShrink: 0 }}
+          style={{ color: "var(--warning)", fontSize: 14, lineHeight: 1.3, flexShrink: 0 }}
         >
           ⚠
         </span>
 
         <div className="flex-1 min-w-0">
-          <p className="m-0" style={{ fontSize: 12.5, color: "#EDE6D8", fontWeight: 500 }}>
+          <p className="m-0" style={{ fontSize: 12.5, color: "var(--fg)", fontWeight: 500 }}>
             {heading}
           </p>
           <div
             className="m-0"
-            style={{ fontSize: 11.5, color: "#A89B84", lineHeight: 1.5, marginTop: 2 }}
+            style={{ fontSize: 11.5, color: "var(--fg-muted)", lineHeight: 1.5, marginTop: 2 }}
           >
             {mobileBody}{" "}
             <form action={retryRecs} className="inline">
@@ -88,7 +88,7 @@ export function DegradedBanner({
                 type="submit"
                 // brand focus-visible outline treatment inherited from globals.css
                 className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
-                style={{ color: "#C9A24B", fontSize: 11.5 }}
+                style={{ color: "var(--accent)", fontSize: 11.5 }}
               >
                 {mobileRetry}
               </button>
@@ -102,9 +102,9 @@ export function DegradedBanner({
         className="hidden sm:flex items-center gap-[16px] rounded-[12px] p-[16px_20px]"
         style={{
           margin: "20px 34px 0",
-          background: "#211C15",
-          border: "1px solid #3A3229",
-          borderLeft: "3px solid #E0913C",
+          background: "var(--elevated-hover)",
+          border: "1px solid var(--border-strong)",
+          borderLeft: "3px solid var(--warning)",
         }}
       >
         {/* Warning icon ring */}
@@ -114,8 +114,8 @@ export function DegradedBanner({
             width: 40,
             height: 40,
             background: "rgba(224,145,60,0.13)",
-            border: "1px solid #4A3A24",
-            color: "#E0913C",
+            border: "1px solid color-mix(in srgb, var(--accent) 30%, var(--bg))",
+            color: "var(--warning)",
             fontSize: 18,
           }}
           aria-hidden="true"
@@ -125,12 +125,12 @@ export function DegradedBanner({
 
         {/* Text block */}
         <div className="flex-1 min-w-0">
-          <p className="m-0" style={{ fontSize: 15, color: "#EDE6D8", fontWeight: 600 }}>
+          <p className="m-0" style={{ fontSize: 15, color: "var(--fg)", fontWeight: 600 }}>
             {heading}
           </p>
           <p
             className="m-0"
-            style={{ fontSize: 13, color: "#C6B79A", lineHeight: 1.55, marginTop: 3 }}
+            style={{ fontSize: 13, color: "var(--fg-body)", lineHeight: 1.55, marginTop: 3 }}
           >
             {desktopBody}
           </p>

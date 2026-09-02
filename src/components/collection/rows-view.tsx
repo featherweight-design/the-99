@@ -6,7 +6,7 @@
 // Rarity dot colors per §Rarity Dot Colors.
 
 import type { BrowseCard } from "../../lib/collection/browse";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
@@ -76,7 +76,7 @@ export function RowsView({
                 key={col}
                 aria-hidden
                 className="w-[11px] h-[11px] md:w-[13px] md:h-[13px] rounded-full"
-                style={{ background: WUBRG_HEX[col] ?? "#8E8269", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }}
+                style={{ background: WUBRG_COLOR[col] ?? "#8E8269", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }}
               />
             ))}
           </span>

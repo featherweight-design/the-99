@@ -5,9 +5,9 @@
 // One deliberate departure from the handoff, recorded in the PR body: the
 // `Revealing…` working state (E1c/N4) is not built. The reveal is a synchronous
 // slice of an array already in memory, so the state can never be perceptible,
-// and its two colours (#1B1711, #6E6353) have no var(--*) while the handoff also
-// forbids new tokens. Building it would mean inlining raw hexes for a state no
-// one can see.
+// and neither of its two colours was in the token set the handoff shipped,
+// which also forbade new tokens. Building it would have meant inlining raw
+// hexes for a state no one can see.
 //
 // The mobile chevron is part of the label string and so cannot turn accent
 // independently the way the desktop one does. That is drawn consistently across

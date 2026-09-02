@@ -4,7 +4,7 @@
 
 import type { ReactNode } from "react";
 import type { BrowseFilters, SortKey } from "../../lib/collection/browse";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { availabilityLabel } from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -77,7 +77,7 @@ export function ChipRow({
         <Chip
           key={c}
           label={c}
-          leadingDot={WUBRG_HEX[c]}
+          leadingDot={WUBRG_COLOR[c]}
           onRemove={() => onRemoveColor(c)}
         />
       ))}

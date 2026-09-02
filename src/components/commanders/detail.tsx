@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_HEX, cssUrl } from "../../lib/collection/browse";
+import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import type { RankedCommander } from "../../lib/recs/recommend";
@@ -30,17 +30,17 @@ function OwnedChip({ name }: { name: string }) {
       className="inline-flex items-center font-mono rounded-full"
       style={{
         fontSize: "11.5px",
-        background: "#221D16",
-        border: "1px solid #33402F",
+        background: "var(--surface-raised)",
+        border: "1px solid color-mix(in srgb, var(--success) 40%, var(--bg))",
         padding: "4px 10px",
-        color: "#C6B79A",
+        color: "var(--fg-body)",
         gap: 6,
       }}
     >
       {/* Green dot */}
       <span
         className="block shrink-0 rounded-full"
-        style={{ width: 6, height: 6, background: "#6FA368" }}
+        style={{ width: 6, height: 6, background: "var(--success)" }}
       />
       {name}
     </span>
@@ -56,9 +56,9 @@ function MissingChip({ name }: { name: string }) {
       style={{
         fontSize: "12px",
         background: "transparent",
-        border: "1px dashed #3A3229",
+        border: "1px dashed var(--border-strong)",
         padding: "5px 11px",
-        color: "#8E8269",
+        color: "var(--fg-faint)",
         gap: 7,
       }}
     >
@@ -68,7 +68,7 @@ function MissingChip({ name }: { name: string }) {
         style={{
           width: 6,
           height: 6,
-          border: "1px solid #6E6353",
+          border: "1px solid var(--fg-locked)",
           background: "transparent",
         }}
       />
@@ -90,10 +90,14 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
   const scoreDisplay = Math.round(fit.pct);
   const hasSynergy = fit.segments.some((s) => s.key === "synergy");
 
+  // The same three-step ramp the fit bar draws, so it takes the same three
+  // tokens. Reading these two as --accent-shadow and --accent-strong would
+  // split one gradient across two token families, and Phase 3 moves those
+  // families independently.
   const SEGMENT_COLORS: Record<"pool" | "roles" | "synergy", string> = {
-    pool: "#6E5B33",
-    roles: "#A9863E",
-    synergy: "#C9A24B",
+    pool: "var(--accent-dim)",
+    roles: "var(--accent-mid)",
+    synergy: "var(--accent)",
   };
   const SEGMENT_LABELS: Record<"pool" | "roles" | "synergy", string> = {
     pool: "Pool",
@@ -110,15 +114,15 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
     <div
       className="rounded-[14px]"
       style={{
-        background: "#1A160F",
-        border: "1px solid #2A241D",
+        background: "var(--surface-rail)",
+        border: "1px solid var(--border)",
         padding: "22px 24px",
       }}
     >
       {/* "FIT FOR YOUR COLLECTION" label */}
       <p
         className="m-0 font-mono uppercase"
-        style={{ fontSize: 11, letterSpacing: "0.14em", color: "#8E8269" }}
+        style={{ fontSize: 11, letterSpacing: "0.14em", color: "var(--fg-faint)" }}
       >
         Fit for your collection
       </p>
@@ -127,20 +131,20 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
       <div className="flex items-baseline gap-[8px] mt-[8px]">
         <span
           className="font-mono font-[600]"
-          style={{ fontSize: 52, color: "#EDE6D8", lineHeight: 0.9 }}
+          style={{ fontSize: 52, color: "var(--fg)", lineHeight: 0.9 }}
         >
           {scoreDisplay}
         </span>
         <span
           className="font-mono"
-          style={{ fontSize: 16, color: "#8E8269" }}
+          style={{ fontSize: 16, color: "var(--fg-faint)" }}
         >
           /100
         </span>
         {isBestFit && (
           <span
             className="font-sans font-[600]"
-            style={{ fontSize: 13, color: "#6FA368", marginLeft: 6 }}
+            style={{ fontSize: 13, color: "var(--success)", marginLeft: 6 }}
           >
             Best in your pool
           </span>
@@ -148,7 +152,7 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
         {!isBestFit && (
           <span
             className="font-mono"
-            style={{ fontSize: 13, color: "#8E8269" }}
+            style={{ fontSize: 13, color: "var(--fg-faint)" }}
           >
             Rank #{rank}
           </span>
@@ -158,7 +162,7 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
       {/* Fit bar — 12px height for detail hero */}
       <div
         className="overflow-hidden flex rounded-full"
-        style={{ height: 12, background: "#2A241D", marginTop: 18 }}
+        style={{ height: 12, background: "var(--elevated)", marginTop: 18 }}
       >
         <div className="flex h-full" style={{ width: `${fit.pct}%` }}>
           {fit.segments.map((seg) => (
@@ -191,13 +195,13 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
             />
             <span
               className="font-sans"
-              style={{ fontSize: 13, color: "#C6B79A" }}
+              style={{ fontSize: 13, color: "var(--fg-body)" }}
             >
               {SEGMENT_LABELS[seg.key]}
             </span>
             <span
               className="font-mono"
-              style={{ fontSize: 12, color: "#8E8269" }}
+              style={{ fontSize: 12, color: "var(--fg-faint)" }}
             >
               {seg.key === "pool"
                 ? segPct(c.fitPool)
@@ -216,12 +220,12 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
                 width: 10,
                 height: 10,
                 borderRadius: 3,
-                background: "#3A3229",
+                background: "var(--border-strong)",
               }}
             />
             <span
               className="font-mono"
-              style={{ fontSize: "9.5px", color: "#5E5647" }}
+              style={{ fontSize: "9.5px", color: "var(--fg-locked)" }}
             >
               Synergy —
             </span>
@@ -235,24 +239,24 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
         <div
           className="flex items-center gap-[9px] rounded-[8px] mt-[16px]"
           style={{
-            background: "#211C15",
-            border: "1px solid #3A3229",
-            borderLeft: "2px solid #8E8269",
+            background: "var(--elevated-hover)",
+            border: "1px solid var(--border-strong)",
+            borderLeft: "2px solid var(--fg-faint)",
             padding: "9px 13px",
           }}
         >
-          <span style={{ color: "#8E8269", fontSize: 13 }}>⚠</span>
-          <span style={{ fontSize: 12.5, color: "#A89B84", lineHeight: 1.45 }}>
+          <span style={{ color: "var(--fg-faint)", fontSize: 13 }}>⚠</span>
+          <span style={{ fontSize: 12.5, color: "var(--fg-muted)", lineHeight: 1.45 }}>
             {c.synergyState === "degraded" ? (
               <>
-                <strong style={{ color: "#C6B79A", fontWeight: 600 }}>
+                <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
                   Synergy data unavailable
                 </strong>{" "}
                 — we couldn&apos;t reach EDHREC, so receipts are hidden for now.
               </>
             ) : (
               <>
-                <strong style={{ color: "#C6B79A", fontWeight: 600 }}>
+                <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
                   No synergy data
                 </strong>{" "}
                 — EDHREC doesn&apos;t track this commander, so fit comes from pool
@@ -283,8 +287,8 @@ function RolePanel({
     <div
       className="rounded-[10px]"
       style={{
-        background: "#1A160F",
-        border: "1px solid #2A241D",
+        background: "var(--surface-rail)",
+        border: "1px solid var(--border)",
         padding: "15px 18px",
       }}
     >
@@ -295,19 +299,19 @@ function RolePanel({
       >
         <span
           className="font-sans font-[600]"
-          style={{ fontSize: 15, color: "#EDE6D8" }}
+          style={{ fontSize: 15, color: "var(--fg)" }}
         >
           {ROLE_LABELS[role]}
         </span>
         <span
           className="font-mono"
-          style={{ fontSize: 12, color: "#6FA368" }}
+          style={{ fontSize: 12, color: "var(--success)" }}
         >
           {count} owned
         </span>
         <span
           className="font-mono"
-          style={{ fontSize: 12, color: "#8E8269", marginLeft: "auto" }}
+          style={{ fontSize: 12, color: "var(--fg-faint)", marginLeft: "auto" }}
         >
           {count > target
             ? `Well past the ${target}-source baseline`
@@ -325,7 +329,7 @@ function RolePanel({
         {cards.length === 0 && (
           <span
             className="font-mono"
-            style={{ fontSize: 11, color: "#6E6353" }}
+            style={{ fontSize: 11, color: "var(--fg-locked)" }}
           >
             No {ROLE_LABELS[role].toLowerCase()} cards in your pool
           </span>
@@ -346,8 +350,8 @@ function SynergyPanel({ commander: c }: { commander: RankedCommander }) {
     <div
       className="rounded-[12px]"
       style={{
-        background: "#1A160F",
-        border: "1px solid #2A241D",
+        background: "var(--surface-rail)",
+        border: "1px solid var(--border)",
         padding: "18px 20px",
       }}
     >
@@ -355,13 +359,13 @@ function SynergyPanel({ commander: c }: { commander: RankedCommander }) {
       <div className="flex items-center gap-[14px]">
         <span
           className="font-mono font-[600]"
-          style={{ fontSize: 30, color: "#EDE6D8" }}
+          style={{ fontSize: 30, color: "var(--fg)" }}
         >
           {ownedCount}
         </span>
         <span
           className="font-mono"
-          style={{ fontSize: 14, color: "#8E8269" }}
+          style={{ fontSize: 14, color: "var(--fg-faint)" }}
         >
           of top {total}
         </span>
@@ -371,17 +375,17 @@ function SynergyPanel({ commander: c }: { commander: RankedCommander }) {
           style={{
             flex: 1,
             height: 10,
-            background: "#2A241D",
+            background: "var(--elevated)",
           }}
         >
           <div
             className="h-full"
-            style={{ width: `${pct}%`, background: "#C9A24B" }}
+            style={{ width: `${pct}%`, background: "var(--accent)" }}
           />
         </div>
         <span
           className="font-mono"
-          style={{ fontSize: 12, color: "#6FA368" }}
+          style={{ fontSize: 12, color: "var(--success)" }}
         >
           {pct}% owned
         </span>
@@ -393,7 +397,7 @@ function SynergyPanel({ commander: c }: { commander: RankedCommander }) {
         style={{
           fontSize: 10,
           letterSpacing: "0.12em",
-          color: "#8E8269",
+          color: "var(--fg-faint)",
           margin: "18px 0 10px",
         }}
       >
@@ -408,7 +412,7 @@ function SynergyPanel({ commander: c }: { commander: RankedCommander }) {
         {c.overlapOwned.length === 0 && (
           <span
             className="font-mono"
-            style={{ fontSize: 11, color: "#6E6353" }}
+            style={{ fontSize: 11, color: "var(--fg-locked)" }}
           >
             None of the top synergy cards are in your collection
           </span>
@@ -423,12 +427,12 @@ function SynergyPanel({ commander: c }: { commander: RankedCommander }) {
             style={{
               fontSize: 10,
               letterSpacing: "0.12em",
-              color: "#8E8269",
+              color: "var(--fg-faint)",
               margin: "20px 0 10px",
             }}
           >
             Not in your collection —{" "}
-            <span style={{ color: "#6E6353" }}>
+            <span style={{ color: "var(--fg-locked)" }}>
               {c.overlapMissing.length} · the gap to close
             </span>
           </p>
@@ -486,7 +490,7 @@ export function CommanderDetail({
             height: 30,
             background: "rgba(10,7,4,0.55)",
             backdropFilter: "blur(4px)",
-            color: "#EDE6D8",
+            color: "var(--fg)",
             fontSize: 15,
             textDecoration: "none",
             zIndex: 1,
@@ -509,7 +513,7 @@ export function CommanderDetail({
                 style={{
                   width: 16,
                   height: 16,
-                  background: WUBRG_HEX[color] ?? "#8E8269",
+                  background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
                   boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
                 }}
               />
@@ -539,7 +543,7 @@ export function CommanderDetail({
             style={{
               fontSize: 10,
               letterSpacing: "0.14em",
-              color: "#C9A24B",
+              color: "var(--accent)",
             }}
           >
             Rank {rank}
@@ -549,7 +553,7 @@ export function CommanderDetail({
             className="font-display font-[700]"
             style={{
               fontSize: 23,
-              color: "#EDE6D8",
+              color: "var(--fg)",
               lineHeight: 1.1,
               marginTop: 3,
               marginBottom: 0,
@@ -559,7 +563,7 @@ export function CommanderDetail({
           </h1>
           <p
             className="m-0"
-            style={{ fontSize: 12, color: "#C6B79A", marginTop: 2 }}
+            style={{ fontSize: 12, color: "var(--fg-body)", marginTop: 2 }}
           >
             {c.typeLine}
           </p>
@@ -579,13 +583,13 @@ export function CommanderDetail({
           <div className="mb-[12px]">
             <h2
               className="font-display font-[600] m-0"
-              style={{ fontSize: 20, color: "#EDE6D8" }}
+              style={{ fontSize: 20, color: "var(--fg)" }}
             >
               The Pool
             </h2>
             <p
               className="m-0 font-mono"
-              style={{ fontSize: 12, color: "#8E8269" }}
+              style={{ fontSize: 12, color: "var(--fg-faint)" }}
             >
               {c.colorPoolSize} card{c.colorPoolSize === 1 ? "" : "s"} fit this
               identity
@@ -594,7 +598,7 @@ export function CommanderDetail({
               className="m-0"
               style={{
                 fontSize: 13.5,
-                color: "#C6B79A",
+                color: "var(--fg-body)",
                 lineHeight: 1.6,
                 margin: "8px 0 0",
                 maxWidth: 640,
@@ -611,13 +615,13 @@ export function CommanderDetail({
           <div className="mb-[12px]">
             <h2
               className="font-display font-[600] m-0"
-              style={{ fontSize: 20, color: "#EDE6D8" }}
+              style={{ fontSize: 20, color: "var(--fg)" }}
             >
               Role Coverage
             </h2>
             <p
               className="m-0 font-mono"
-              style={{ fontSize: 12, color: "#8E8269" }}
+              style={{ fontSize: 12, color: "var(--fg-faint)" }}
             >
               Your owned cards by role
             </p>
@@ -640,13 +644,13 @@ export function CommanderDetail({
             <div className="mb-[12px]">
               <h2
                 className="font-display font-[600] m-0"
-                style={{ fontSize: 20, color: "#EDE6D8" }}
+                style={{ fontSize: 20, color: "var(--fg)" }}
               >
                 EDHREC Synergy
               </h2>
               <p
                 className="m-0 font-mono"
-                style={{ fontSize: 12, color: "#8E8269" }}
+                style={{ fontSize: 12, color: "var(--fg-faint)" }}
               >
                 Top {c.edhrecTotal} synergy cards for this commander
               </p>
@@ -655,8 +659,8 @@ export function CommanderDetail({
             <div
               className="rounded-[10px]"
               style={{
-                background: "#1A160F",
-                border: "1px solid #2A241D",
+                background: "var(--surface-rail)",
+                border: "1px solid var(--border)",
                 padding: "13px 14px",
               }}
             >
@@ -666,14 +670,14 @@ export function CommanderDetail({
                   style={{
                     fontSize: 10,
                     letterSpacing: "0.12em",
-                    color: "#8E8269",
+                    color: "var(--fg-faint)",
                   }}
                 >
                   EDHREC synergy
                 </span>
                 <span
                   className="font-mono"
-                  style={{ fontSize: 12, color: "#EDE6D8" }}
+                  style={{ fontSize: 12, color: "var(--fg)" }}
                 >
                   {c.edhrecOwnedCount} / {c.edhrecTotal} owned
                 </span>
@@ -681,13 +685,13 @@ export function CommanderDetail({
               {/* Overlap bar (mobile) */}
               <div
                 className="overflow-hidden rounded-full"
-                style={{ height: 6, background: "#2A241D", margin: "9px 0 11px" }}
+                style={{ height: 6, background: "var(--elevated)", margin: "9px 0 11px" }}
               >
                 <div
                   className="h-full"
                   style={{
                     width: `${c.edhrecTotal > 0 ? Math.round(((c.edhrecOwnedCount ?? 0) / c.edhrecTotal) * 100) : 0}%`,
-                    background: "#C9A24B",
+                    background: "var(--accent)",
                   }}
                 />
               </div>
@@ -700,7 +704,7 @@ export function CommanderDetail({
               {c.overlapMissing.length > 0 && (
                 <p
                   className="m-0 font-mono"
-                  style={{ fontSize: 10.5, color: "#8E8269", marginTop: 8 }}
+                  style={{ fontSize: 10.5, color: "var(--fg-faint)", marginTop: 8 }}
                 >
                   +{c.overlapMissing.length} more not in collection
                 </p>
@@ -712,14 +716,14 @@ export function CommanderDetail({
           <div
             className="flex items-center gap-[8px] rounded-[7px]"
             style={{
-              background: "#211C15",
-              border: "1px solid #33302A",
+              background: "var(--elevated-hover)",
+              border: "1px solid var(--border-strong)",
               padding: "7px 11px",
             }}
           >
             <span
               className="font-mono"
-              style={{ fontSize: 10, color: "#6E6353" }}
+              style={{ fontSize: 10, color: "var(--fg-locked)" }}
             >
               Synergy receipts hidden — EDHREC data unavailable
             </span>
@@ -734,19 +738,19 @@ export function CommanderDetail({
       <div
         className="sm:hidden flex-none flex items-center gap-[12px]"
         style={{
-          borderTop: "1px solid #3A3229",
-          background: "#1A160F",
+          borderTop: "1px solid var(--border-strong)",
+          background: "var(--surface-rail)",
           padding: "12px 16px 24px",
         }}
       >
         <div className="flex flex-col flex-1">
           <span
             className="font-mono"
-            style={{ fontSize: 10, color: "#8E8269" }}
+            style={{ fontSize: 10, color: "var(--fg-faint)" }}
           >
             READY TO BUILD
           </span>
-          <span style={{ fontSize: 12, color: "#C6B79A" }}>
+          <span style={{ fontSize: 12, color: "var(--fg-body)" }}>
             {c.colorPoolSize} cards in your pool
           </span>
         </div>
@@ -782,7 +786,7 @@ export function CommanderDetail({
             className="inline-flex items-center gap-[7px] font-sans"
             style={{
               fontSize: 13,
-              color: "#8E8269",
+              color: "var(--fg-faint)",
               textDecoration: "none",
             }}
           >
@@ -811,11 +815,11 @@ export function CommanderDetail({
           <div className="flex flex-col gap-[2px]">
             <h1
               className="font-display font-[700] m-0"
-              style={{ fontSize: 21, color: "#EDE6D8", lineHeight: 1.15 }}
+              style={{ fontSize: 21, color: "var(--fg)", lineHeight: 1.15 }}
             >
               {c.name}
             </h1>
-            <p className="m-0" style={{ fontSize: 12.5, color: "#C6B79A" }}>
+            <p className="m-0" style={{ fontSize: 12.5, color: "var(--fg-body)" }}>
               {c.typeLine}
             </p>
           </div>
@@ -830,14 +834,14 @@ export function CommanderDetail({
                   style={{
                     width: 16,
                     height: 16,
-                    background: WUBRG_HEX[color] ?? "#8E8269",
+                    background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
                     boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
                   }}
                 />
               ))}
               <span
                 className="font-mono ml-[4px]"
-                style={{ fontSize: 12, color: "#8E8269" }}
+                style={{ fontSize: 12, color: "var(--fg-faint)" }}
               >
                 {c.colorIdentity.join("")}
               </span>
@@ -858,7 +862,7 @@ export function CommanderDetail({
             className="m-0 font-mono text-center"
             style={{
               fontSize: 10.5,
-              color: "#6E6353",
+              color: "var(--fg-locked)",
               textAlign: "center",
               lineHeight: 1.5,
             }}
@@ -876,13 +880,13 @@ export function CommanderDetail({
           <div>
             <h2
               className="font-display font-[600] m-0"
-              style={{ fontSize: 20, color: "#EDE6D8" }}
+              style={{ fontSize: 20, color: "var(--fg)" }}
             >
               The Pool
             </h2>
             <p
               className="m-0 font-mono"
-              style={{ fontSize: 12, color: "#8E8269" }}
+              style={{ fontSize: 12, color: "var(--fg-faint)" }}
             >
               {c.colorPoolSize} card{c.colorPoolSize === 1 ? "" : "s"} fit this
               identity
@@ -891,7 +895,7 @@ export function CommanderDetail({
               className="m-0"
               style={{
                 fontSize: 13.5,
-                color: "#C6B79A",
+                color: "var(--fg-body)",
                 lineHeight: 1.6,
                 margin: "8px 0 0",
                 maxWidth: 640,
@@ -906,13 +910,13 @@ export function CommanderDetail({
           <div>
             <h2
               className="font-display font-[600] m-0"
-              style={{ fontSize: 20, color: "#EDE6D8" }}
+              style={{ fontSize: 20, color: "var(--fg)" }}
             >
               Role Coverage
             </h2>
             <p
               className="m-0 font-mono"
-              style={{ fontSize: 12, color: "#8E8269" }}
+              style={{ fontSize: 12, color: "var(--fg-faint)" }}
             >
               Your owned cards by role
             </p>
@@ -933,13 +937,13 @@ export function CommanderDetail({
             <div>
               <h2
                 className="font-display font-[600] m-0"
-                style={{ fontSize: 20, color: "#EDE6D8" }}
+                style={{ fontSize: 20, color: "var(--fg)" }}
               >
                 EDHREC Synergy
               </h2>
               <p
                 className="m-0 font-mono"
-                style={{ fontSize: 12, color: "#8E8269" }}
+                style={{ fontSize: 12, color: "var(--fg-faint)" }}
               >
                 Top {c.edhrecTotal} synergy cards for this commander
               </p>
@@ -952,15 +956,15 @@ export function CommanderDetail({
             <div
               className="flex items-center gap-[9px] rounded-[7px]"
               style={{
-                background: "#211C15",
-                border: "1px solid #33302A",
+                background: "var(--elevated-hover)",
+                border: "1px solid var(--border-strong)",
                 padding: "7px 11px",
                 width: "fit-content",
               }}
             >
               <span
                 className="font-mono"
-                style={{ fontSize: 11, color: "#8E8269" }}
+                style={{ fontSize: 11, color: "var(--fg-faint)" }}
               >
                 Synergy receipts hidden — EDHREC data unavailable
               </span>

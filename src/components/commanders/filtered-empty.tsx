@@ -5,7 +5,7 @@
 // heading, body copy, the "Showing 0 of N" diagnostic, "Clear color filter".
 // Mobile breakpoint: sm:640px (project uses sm: prefix, table breakpoint is 640px).
 
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { guildLabel, colorWords } from "../../lib/copy/color-labels";
 import { commandersCopy } from "../../lib/copy/commanders";
 import { Crown } from "../ui/crown";
@@ -36,7 +36,7 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
               style={{
                 width: 16,
                 height: 16,
-                background: WUBRG_HEX[c] ?? "#8E8269",
+                background: WUBRG_COLOR[c] ?? "var(--fg-faint)",
                 opacity: 0.5,
                 boxShadow: "0 0 0 2px var(--accent)",
               }}

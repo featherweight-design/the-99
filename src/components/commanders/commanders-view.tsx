@@ -15,7 +15,7 @@ import { filterByColors } from "../../lib/commanders/filter";
 import { rankMap } from "../../lib/commanders/rank-maps";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { RecCard, type ScoreDelta } from "./rec-card";
 import { GuidedBanner } from "./guided-banner";
 import { DegradedBanner } from "./degraded-banner";
@@ -52,16 +52,6 @@ function serializeParams(colors: string[], avail: AvailMode): string {
   const s = p.toString();
   return s ? `?${s}` : "";
 }
-
-// ── Color pip background colors per table §Color pip (inactive) ───────────────
-
-const PIP_BG: Record<string, string> = {
-  W: "#E8E4D6",
-  U: "#4A7FB5",
-  B: "#5B5566",
-  R: "#C05A48",
-  G: "#6B9E63",
-};
 
 /**
  * `Score against` (§7). A radiogroup, not a tablist: it switches the data the
@@ -110,7 +100,7 @@ function ScoreAgainst({
       role="radiogroup"
       aria-labelledby={labelId}
       className="flex gap-[3px] rounded-lg p-[3px]"
-      style={{ background: "#181410", border: "1px solid #3A3229" }}
+      style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-strong)" }}
     >
       {segments.map((s, i) => {
         const active = s.mode === value;
@@ -152,8 +142,8 @@ function ScoreAgainst({
               fontSize,
               border: 0,
               whiteSpace: "nowrap",
-              background: active ? "#C9A24B" : "transparent",
-              color: active ? "#14110E" : off ? "#6A6152" : "#C6B79A",
+              background: active ? "var(--accent)" : "transparent",
+              color: active ? "var(--bg)" : off ? "var(--fg-locked)" : "var(--fg-body)",
               fontWeight: active ? 600 : 500,
               textDecoration: off ? "line-through" : undefined,
             }}
@@ -423,9 +413,9 @@ export function CommandersView({
         style={{
           position: "sticky",
           top: 0,
-          background: "#14110E",
+          background: "var(--bg)",
           padding: "18px 34px 14px",
-          borderBottom: "1px solid #2A241D",
+          borderBottom: "1px solid var(--border)",
           zIndex: 2,
         }}
       >
@@ -435,8 +425,8 @@ export function CommandersView({
           <div
             className="flex items-center gap-[8px]"
             style={{
-              background: "#181410",
-              border: "1px solid #3A3229",
+              background: "var(--surface-sunken)",
+              border: "1px solid var(--border-strong)",
               borderRadius: 8,
               padding: "8px 12px",
             }}
@@ -447,7 +437,7 @@ export function CommandersView({
               style={{
                 fontSize: 10,
                 letterSpacing: "0.12em",
-                color: "#8E8269",
+                color: "var(--fg-faint)",
               }}
             >
               COLORS
@@ -466,9 +456,9 @@ export function CommandersView({
                   style={{
                     width: 16,
                     height: 16,
-                    background: PIP_BG[c],
+                    background: WUBRG_COLOR[c],
                     opacity: active ? 1 : 0.35,
-                    boxShadow: active ? "0 0 0 2px #C9A24B" : "none",
+                    boxShadow: active ? "0 0 0 2px var(--accent)" : "none",
                   }}
                 />
               );
@@ -484,7 +474,7 @@ export function CommandersView({
                 fontSize: 10,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                color: "#8E8269",
+                color: "var(--fg-faint)",
               }}
             >
               {availabilityCopy.ranking.label}
@@ -505,9 +495,9 @@ export function CommandersView({
               className="inline-flex items-center gap-[7px]"
               style={{
                 fontSize: 12.5,
-                color: "#EDE6D8",
-                background: "#2A241D",
-                border: "1px solid #3A3229",
+                color: "var(--fg)",
+                background: "var(--elevated)",
+                border: "1px solid var(--border-strong)",
                 borderRadius: 999,
                 padding: "5px 8px 5px 11px",
               }}
@@ -515,7 +505,7 @@ export function CommandersView({
               {/* Color dot */}
               <span
                 className="block rounded-full shrink-0"
-                style={{ width: 9, height: 9, background: PIP_BG[c] ?? WUBRG_HEX[c] }}
+                style={{ width: 9, height: 9, background: WUBRG_COLOR[c] }}
               />
               {COLOR_LABELS[c]}
               {/* Dismiss ✕ */}
@@ -524,7 +514,7 @@ export function CommandersView({
                 aria-label={`Remove ${COLOR_LABELS[c]} filter`}
                 onClick={() => toggleColor(c)}
                 className="cursor-pointer bg-transparent border-0 p-0 leading-none"
-                style={{ color: "#8E8269" }}
+                style={{ color: "var(--fg-faint)" }}
               >
                 ✕
               </button>
@@ -537,7 +527,7 @@ export function CommandersView({
               type="button"
               onClick={handleClearFilter}
               className="bg-transparent border-0 p-0 cursor-pointer font-mono"
-              style={{ fontSize: 12, color: "#C9A24B" }}
+              style={{ fontSize: 12, color: "var(--accent)" }}
             >
               Clear
             </button>
@@ -557,7 +547,7 @@ export function CommandersView({
           {/* "Order: Fit ↓ · fixed" label (desktop, §Order label) */}
           <span
             className="font-mono"
-            style={{ fontSize: 11, color: "#8E8269", marginLeft: wasWindowed ? undefined : "auto" }}
+            style={{ fontSize: 11, color: "var(--fg-faint)", marginLeft: wasWindowed ? undefined : "auto" }}
           >
             Order: Fit ↓ · fixed
           </span>
@@ -565,7 +555,7 @@ export function CommandersView({
           {/* "Showing N of 24" count — right-aligned amber label */}
           <span
             className="font-mono"
-            style={{ fontSize: 11, color: "#8E8269" }}
+            style={{ fontSize: 11, color: "var(--fg-faint)" }}
           >
             Showing {filtered.length} of {active.length}
           </span>
@@ -575,7 +565,7 @@ export function CommandersView({
         {avail === "free" && (
           <p
             className="font-mono m-0 mt-[8px]"
-            style={{ fontSize: 11, color: "#8E8269" }}
+            style={{ fontSize: 11, color: "var(--fg-faint)" }}
           >
             {availabilityCopy.ranking.freeNoteLong}
           </p>
@@ -588,8 +578,8 @@ export function CommandersView({
         <div
           className="inline-flex items-center gap-[8px]"
           style={{
-            background: "#181410",
-            border: "1px solid #3A3229",
+            background: "var(--surface-sunken)",
+            border: "1px solid var(--border-strong)",
             borderRadius: 8,
             padding: "8px 11px",
           }}
@@ -597,7 +587,7 @@ export function CommandersView({
           {/* "COLORS" label */}
           <span
             className="font-mono"
-            style={{ fontSize: 10, letterSpacing: "0.1em", color: "#8E8269" }}
+            style={{ fontSize: 10, letterSpacing: "0.1em", color: "var(--fg-faint)" }}
           >
             COLORS
           </span>
@@ -615,9 +605,9 @@ export function CommandersView({
                 style={{
                   width: 14,
                   height: 14,
-                  background: PIP_BG[c],
+                  background: WUBRG_COLOR[c],
                   opacity: active ? 1 : 0.35,
-                  boxShadow: active ? "0 0 0 2px #C9A24B" : "none",
+                  boxShadow: active ? "0 0 0 2px var(--accent)" : "none",
                 }}
               />
             );
@@ -626,7 +616,7 @@ export function CommandersView({
           {/* Showing count (mobile inline, within pip row wrapper area) */}
           <span
             className="font-mono"
-            style={{ fontSize: 10.5, color: "#8E8269", marginLeft: "auto" }}
+            style={{ fontSize: 10.5, color: "var(--fg-faint)", marginLeft: "auto" }}
           >
             {filtered.length}/{active.length}
           </span>
@@ -641,7 +631,7 @@ export function CommandersView({
               fontSize: 9,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#8E8269",
+              color: "var(--fg-faint)",
             }}
           >
             {availabilityCopy.ranking.label}
@@ -658,7 +648,7 @@ export function CommandersView({
           {avail === "free" && (
             <p
               className="font-mono m-0 mt-[7px]"
-              style={{ fontSize: 10.5, color: "#8E8269", lineHeight: 1.5 }}
+              style={{ fontSize: 10.5, color: "var(--fg-faint)", lineHeight: 1.5 }}
             >
               {availabilityCopy.ranking.freeNote}
             </p>
@@ -689,16 +679,16 @@ export function CommandersView({
                 className="inline-flex items-center gap-[6px]"
                 style={{
                   fontSize: 12,
-                  color: "#EDE6D8",
-                  background: "#2A241D",
-                  border: "1px solid #3A3229",
+                  color: "var(--fg)",
+                  background: "var(--elevated)",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: 999,
                   padding: "4px 8px 4px 10px",
                 }}
               >
                 <span
                   className="block rounded-full shrink-0"
-                  style={{ width: 9, height: 9, background: PIP_BG[c] ?? WUBRG_HEX[c] }}
+                  style={{ width: 9, height: 9, background: WUBRG_COLOR[c] }}
                 />
                 {COLOR_LABELS[c]}
                 <button
@@ -706,7 +696,7 @@ export function CommandersView({
                   aria-label={`Remove ${COLOR_LABELS[c]} filter`}
                   onClick={() => toggleColor(c)}
                   className="cursor-pointer bg-transparent border-0 p-0 leading-none"
-                  style={{ color: "#8E8269" }}
+                  style={{ color: "var(--fg-faint)" }}
                 >
                   ✕
                 </button>
@@ -717,7 +707,7 @@ export function CommandersView({
               type="button"
               onClick={handleClearFilter}
               className="bg-transparent border-0 p-0 cursor-pointer font-mono"
-              style={{ fontSize: 11.5, color: "#C9A24B" }}
+              style={{ fontSize: 11.5, color: "var(--accent)" }}
             >
               Clear
             </button>

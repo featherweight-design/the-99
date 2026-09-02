@@ -6,7 +6,7 @@
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
 import { colorLabel } from "../../lib/decks/format";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
@@ -227,7 +227,7 @@ export function CreatePreFilled({
                   style={{
                     width: 22,
                     height: 22,
-                    background: WUBRG_HEX[color] ?? "#8E8269",
+                    background: WUBRG_COLOR[color] ?? "#8E8269",
                   }}
                   aria-hidden
                 />
