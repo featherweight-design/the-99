@@ -68,8 +68,9 @@ interface BuilderShellProps {
   /** True only on the navigation the import itself made — see src/lib/decks/arrival.ts. */
   arrivedFromImport: boolean;
   /** EDHREC inclusion % for each unowned card in the deck, keyed by oracleId.
-      Cards with no EDHREC figure are absent from the map — never stored as 0. */
-  shoppingFigures?: Record<string, number>;
+      Cards with no EDHREC figure are absent from the map — never stored as 0.
+      Null when EDHREC was unreachable, which is not the same claim. */
+  shoppingFigures?: Record<string, number> | null;
 }
 
 export function BuilderShell({

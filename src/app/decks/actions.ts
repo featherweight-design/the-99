@@ -186,7 +186,11 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
   redirect(`/decks/${deckId}`);
 }
 
-export async function getDeckSuggestions(deckId: string): Promise<{ suggestions: DeckSuggestion[]; degraded: boolean; shoppingFigures: Record<string, number> }> {
+/** `shoppingFigures` is null when EDHREC is unreachable, and a map otherwise. An
+    empty map says "we asked and these cards have no figure"; null says "we could
+    not ask". The Shopping rows print an absence for the first and nothing at all
+    for the second — an outage is not a fact about any one card. */
+export async function getDeckSuggestions(deckId: string): Promise<{ suggestions: DeckSuggestion[]; degraded: boolean; shoppingFigures: Record<string, number> | null }> {
   const userId = await requireUserId();
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
@@ -313,7 +317,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
     }
   }
 
-  return { suggestions, degraded, shoppingFigures };
+  return { suggestions, degraded, shoppingFigures: degraded ? null : shoppingFigures };
 }
 
 async function requireDeck(deckId: string, userId: string) {

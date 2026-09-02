@@ -60,7 +60,7 @@ const { AddOptimisticCardProvider } = await import("./optimistic-deck");
 function renderDecklist(
   cards: DeckDetailCard[],
   opts: {
-    shoppingFigures?: Record<string, number>;
+    shoppingFigures?: Record<string, number> | null;
     filled?: boolean;
     fetchCard?: (oracleId: string) => Promise<unknown>;
   } = {},
@@ -93,7 +93,7 @@ function renderDecklist(
           grouping="role"
           onFilterChange={vi.fn()}
           onGroupingChange={vi.fn()}
-          shoppingFigures={opts.shoppingFigures ?? {}}
+          shoppingFigures={opts.shoppingFigures === undefined ? {} : opts.shoppingFigures}
         />
       </AddOptimisticCardProvider>
     </CardDetailProvider>,
@@ -351,6 +351,18 @@ describe("Shopping row figure rendering differs by width", () => {
     expect(screen.getByText(recommendationsCopy.shopping.rowNoFigure)).toBeInTheDocument();
     // Desktop em dash is also in the DOM (CSS-hidden on phone)
     expect(screen.getByText(recommendationsCopy.shopping.rowNoFigureDesktop)).toBeInTheDocument();
+  });
+
+  // An outage says nothing about any one card, so the row prints nothing rather
+  // than an absence it cannot vouch for. The degraded banner explains the gap.
+  it("prints no figure line at all when EDHREC was unreachable", () => {
+    renderDecklist([rampOwned, rampUnowned], { shoppingFigures: null });
+
+    expect(screen.queryByText(recommendationsCopy.shopping.rowNoFigure)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.rowNoFigureDesktop),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/edhrec/i)).not.toBeInTheDocument();
   });
 
   it("renders rowFigure (phone) and rowFigureDesktop (desktop) when figure present", () => {

@@ -68,9 +68,11 @@ interface DecklistProps {
   /**
    * EDHREC inclusion % for each unowned card in the deck, keyed by oracleId.
    * Cards with no figure are absent from the map — never stored as 0.
+   * Null when EDHREC was unreachable: the rows then print no figure line at
+   * all, rather than claiming an absence for every card in the list.
    * Threaded from getDeckSuggestions via BuilderShell.
    */
-  shoppingFigures?: Record<string, number>;
+  shoppingFigures?: Record<string, number> | null;
 }
 
 export function Decklist({
@@ -96,6 +98,15 @@ export function Decklist({
   onRestoreAuto,
   shoppingFigures = {},
 }: DecklistProps) {
+  // undefined = no figure line on the row. That is the All view's answer, and
+  // also the outage's: with EDHREC unreachable we know nothing about any of
+  // these cards, so a per-card "no EDHREC figure" would be a claim we can't make.
+  function figureFor(oracleId: string): number | null | undefined {
+    if (shoppingFigures === null) return undefined;
+    const raw = shoppingFigures[oracleId];
+    return Number.isFinite(raw) ? raw : null;
+  }
+
   // Apply shopping filter: unowned cards only, excluding basic lands.
   // Basics are never in Shopping — the fill never buys them, and asserting it
   // here means a future change to the fill fails this filter loudly.
@@ -306,9 +317,7 @@ export function Decklist({
                 style={{ gridTemplateColumns: "1fr 1fr" }}
               >
                 {groupCards.map((card) => {
-                  const figureRaw = shoppingFigures[card.oracleId];
-                  // null = in Shopping but no figure; number = in Shopping with figure.
-                  const shoppingFigure = Number.isFinite(figureRaw) ? figureRaw : null;
+                  const shoppingFigure = figureFor(card.oracleId);
                   return (
                     <DecklistRow
                       key={card.oracleId}
@@ -332,8 +341,7 @@ export function Decklist({
                 style={{ gridTemplateColumns: "1fr 1fr" }}
               >
                 {otherShoppingCards.map((card) => {
-                  const figureRaw = shoppingFigures[card.oracleId];
-                  const shoppingFigure = Number.isFinite(figureRaw) ? figureRaw : null;
+                  const shoppingFigure = figureFor(card.oracleId);
                   return (
                     <DecklistRow
                       key={card.oracleId}
