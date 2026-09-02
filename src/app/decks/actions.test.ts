@@ -328,11 +328,23 @@ describe("restoreAutoCards — the rows come from the client", () => {
   const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
   const CARD_A = "11111111-1111-1111-1111-111111111111";
   const CARD_B = "22222222-2222-2222-2222-222222222222";
+  const CARD_OFF = "33333333-3333-3333-3333-333333333333";
+  const CARD_BANNED = "44444444-4444-4444-4444-444444444444";
+  const CARD_ABSENT = "55555555-5555-5555-5555-555555555555";
+  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 
   /** requireDeck reads `decks` through the same select stub the pool uses, so a
-      single row is enough to make the deck resolve as owned. */
+      single row is enough to make the deck resolve as owned. The commander
+      lookup takes the first `cards` row; the candidate lookup reads them all. */
   function ownDeck() {
-    stub.state.collectionItems.push({ id: DECK, userId: "user_1" });
+    stub.state.collectionItems.push({ id: DECK, userId: "user_1", commanderOracleId: CMDR });
+    stub.state.cards.push(
+      { oracleId: CMDR, commanderLegal: true, colorIdentity: ["B", "R", "G"] },
+      { oracleId: CARD_A, commanderLegal: true, colorIdentity: [] },
+      { oracleId: CARD_B, commanderLegal: true, colorIdentity: ["G"] },
+      { oracleId: CARD_OFF, commanderLegal: true, colorIdentity: ["U"] },
+      { oracleId: CARD_BANNED, commanderLegal: false, colorIdentity: [] },
+    );
   }
 
   function restoredRows() {
@@ -398,6 +410,32 @@ describe("restoreAutoCards — the rows come from the client", () => {
     ownDeck();
     await restoreAutoCards(DECK, []);
     expect(stub.state.insertCalls).toEqual([]);
+  });
+
+  // A substituted oracle id would otherwise land a card the add path refuses.
+  it.each([
+    ["off the commander's identity", CARD_OFF, "off-color-identity"],
+    ["not commander legal", CARD_BANNED, "not-commander-legal"],
+    ["the commander itself", CMDR, "is-commander"],
+    ["absent from the catalog", CARD_ABSENT, "card not found"],
+  ])("refuses a card %s", async (_label, oracleId, message) => {
+    ownDeck();
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId, quantity: 1 }]),
+    ).rejects.toThrow(message);
+    expect(restoredRows()).toEqual([]);
+  });
+
+  // The conflict clause skips a card the player re-added by hand, so counting
+  // the receipt would overstate what the announcement claims to have put back.
+  it("counts only the rows that land", async () => {
+    ownDeck();
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    const restored = await restoreAutoCards(DECK, [
+      { oracleId: CARD_A, quantity: 1 },
+      { oracleId: CARD_B, quantity: 4 },
+    ]);
+    expect(restored).toBe(4);
   });
 
   it("refuses a deck the player does not own", async () => {

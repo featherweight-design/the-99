@@ -334,8 +334,10 @@ export function BuilderShell({
     // still reads as a failure.
     setSweepError(null);
     try {
-      await restoreAutoCards(deck.id, sweptRows);
-      const restored = sweptRows.reduce((sum, r) => sum + r.quantity, 0);
+      // The count comes back from the server rather than off the receipt: a
+      // card the player re-added by hand between the sweep and the Undo is
+      // skipped by the restore, and announcing it would overstate both numbers.
+      const restored = await restoreAutoCards(deck.id, sweptRows);
       setAnnouncement(
         recommendationsCopy.auto.sweptRestoredAnnounce(
           String(restored),

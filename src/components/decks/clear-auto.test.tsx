@@ -434,7 +434,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
       { oracleId: "arcane-signet", quantity: 1 },
     ];
     clearAutoCards.mockResolvedValue(sweptRows);
-    restoreAutoCards.mockResolvedValue(undefined);
+    restoreAutoCards.mockResolvedValue(2);
 
     renderBuilder([card1, card2]);
 
@@ -466,7 +466,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
       { oracleId: "arcane-signet", quantity: 1 },
     ];
     clearAutoCards.mockResolvedValue(sweptRows);
-    restoreAutoCards.mockResolvedValue(undefined);
+    restoreAutoCards.mockResolvedValue(2);
 
     const { revalidate } = renderBuilder([card1, card2]);
 
@@ -486,6 +486,35 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
 
     expect(
       screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("2", "2")),
+    ).toBeInTheDocument();
+  });
+
+  // A card the player re-added by hand between the sweep and the Undo is skipped
+  // by the restore, so the receipt's own total would overstate both numbers.
+  it("announces the count the server restored, not the receipt's", async () => {
+    clearAutoCards.mockResolvedValue([
+      { oracleId: "sol-ring", quantity: 1 },
+      { oracleId: "arcane-signet", quantity: 1 },
+    ]);
+    restoreAutoCards.mockResolvedValue(1);
+
+    const { revalidate } = renderBuilder([card1, card2]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.clearAllAria("2") })
+        .click();
+    });
+    await revalidate([]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.sweptUndoAria("2") })
+        .click();
+    });
+
+    expect(
+      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("1", "1")),
     ).toBeInTheDocument();
   });
 
@@ -549,7 +578,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     clearAutoCards.mockResolvedValue(sweptRows);
     restoreAutoCards
       .mockRejectedValueOnce(new Error("network error"))
-      .mockResolvedValueOnce(undefined);
+      .mockResolvedValueOnce(2);
 
     renderBuilder([card1, card2]);
 

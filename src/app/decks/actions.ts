@@ -491,13 +491,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     The rows arrive from the client, and a server action answers any crafted
     request that reaches it — so they are re-checked here rather than trusted.
     A malformed oracle id would otherwise reach Postgres as a failed uuid cast,
-    and a forged quantity would write a deck past the 99 the add path enforces. */
-export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promise<void> {
+    a forged quantity would write a deck past the 99 the add path enforces, and
+    a substituted oracle id would put a card in the deck that the add path would
+    have refused as illegal, off-identity, or the commander itself.
+
+    Returns how many cards actually landed, which is not the receipt's total: a
+    card the player re-added by hand is skipped by the conflict clause, and the
+    announcement must not claim to have restored it. */
+export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promise<number> {
   const userId = await requireUserId();
-  await requireDeck(deckId, userId);
+  const deck = await requireDeck(deckId, userId);
   if (rows.length === 0) {
     revalidatePath(`/decks/${deckId}`);
-    return;
+    return 0;
   }
   // A duplicated oracle id would make the insert's own values conflict, which
   // onConflictDoNothing does not cover — Postgres rejects the statement whole.
@@ -510,9 +516,31 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     byId.set(r.oracleId, r.quantity);
   }
 
+  // Every id gets the same legality pass addCardToDeck runs. The cap lives with
+  // the write below, so `built: 0` here asks about legality alone.
+  const ids = [...byId.keys()];
+  const [[commander], candidates] = await Promise.all([
+    db.select({ colorIdentity: cards.colorIdentity })
+      .from(cards).where(eq(cards.oracleId, deck.commanderOracleId)),
+    db.select({ oracleId: cards.oracleId, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
+      .from(cards).where(inArray(cards.oracleId, ids)),
+  ]);
+  if (!commander) throw new Error("commander not found");
+  const byOracleId = new Map(candidates.map((c) => [c.oracleId, c]));
+  for (const oracleId of ids) {
+    const card = byOracleId.get(oracleId);
+    if (!card) throw new Error("card not found");
+    const rejection = validateCardForDeck(card, {
+      commanderOracleId: deck.commanderOracleId,
+      commanderColorIdentity: commander.colorIdentity,
+      built: 0,
+    });
+    if (rejection) throw new Error(rejection);
+  }
+
   // Locking the deck row makes the cap check and the write atomic, the same way
   // addCardToDeck does — an Undo racing a hand-add must not slip past 99.
-  await db.transaction(async (tx) => {
+  return await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     // The deck holds 99 rows at most, so reading it whole costs no more than a
     // sum would and also answers which rows the insert is going to skip.
@@ -530,6 +558,7 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     await tx.insert(deckCards)
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
       .onConflictDoNothing();
+    revalidatePath(`/decks/${deckId}`);
+    return restored;
   });
-  revalidatePath(`/decks/${deckId}`);
 }
