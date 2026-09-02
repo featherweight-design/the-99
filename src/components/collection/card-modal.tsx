@@ -302,15 +302,31 @@ export function CardModal({
           boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
         }}
       >
-        {/* MOBILE art header — §Mobile: Art Header */}
+        {/* MOBILE art header — §Mobile: Art Header. The band and the tile inside it
+            draw the same picture, and at full sharpness the two competed: the
+            card's own text was legible twice over, at two sizes, one behind the
+            other. The band keeps the art as atmosphere — blurred, dimmed, and
+            scaled past its own edges so the blur has no transparent rim — and
+            the tile is the only sharp copy. */}
         <div
-          className={`relative md:hidden ${compactArt ? "flex items-end gap-[14px]" : ""}`}
+          className={`relative overflow-hidden md:hidden ${compactArt ? "flex items-end gap-[14px]" : ""}`}
           style={{
             padding: compactArt ? "44px 20px 14px" : "44px 20px 20px",
-            ...artStyle,
+            background: "var(--surface-sunken)",
             boxShadow: "inset 0 -60px 60px -40px rgba(0,0,0,0.55)",
           }}
         >
+          <div
+            aria-hidden
+            data-testid="mobile-art-wash"
+            className="absolute inset-0 z-0"
+            style={{
+              ...artStyle,
+              filter: "blur(22px)",
+              transform: "scale(1.2)",
+              opacity: 0.45,
+            }}
+          />
           <button
             type="button"
             onClick={onClose}
@@ -327,7 +343,7 @@ export function CardModal({
           {/* §Mobile: Art Image — 180px, aspect 63/88, radius 10px. Past the overflow
               threshold it collapses to a 72px thumbnail and the name comes with it. */}
           <div
-            className={compactArt ? "flex-none rounded-[10px]" : "mx-auto rounded-[10px]"}
+            className={`relative z-[1] rounded-[10px] ${compactArt ? "flex-none" : "mx-auto"}`}
             style={{
               width: compactArt ? 72 : 180, aspectRatio: "63/88",
               marginTop: compactArt ? 0 : 6,
@@ -338,7 +354,7 @@ export function CardModal({
           {compactArt && (
             // The dialog's accessible name still comes from the h3 below, which stays in the
             // DOM (display:none on phone) — this copy is the visual half of the same heading.
-            <div aria-hidden className="min-w-0" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+            <div aria-hidden className="relative z-[1] min-w-0" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
               <div className="font-display font-bold text-[22px] leading-[1.15]" style={{ color: "var(--fg)" }}>
                 {card.name}
               </div>

@@ -232,15 +232,18 @@ export function BuilderSpine({
       className="flex flex-col items-center md:flex-row md:items-center md:gap-[18px] px-[16px] pt-[40px] pb-[12px] md:px-[30px] md:py-[20px]"
       style={{ borderBottom: "1px solid var(--border)" }}
     >
-      {/* §Spine — commander art thumb (mobile). The thumb is the commander's only
-          representation on this page, so it is also the way into its details (#91). */}
+      {/* §Spine — commander art thumb. The thumb is the commander's only
+          representation on this page, so it is also the way into its details (#91).
+          One element with responsive sizing rather than a mobile/desktop pair —
+          they differed only in box size, and a split subtree drifts.
+          Every size holds Scryfall's 63:88, so `object-cover` never crops. */}
       <CardDetailTrigger
         oracleId={commander.oracleId}
         name={commander.name}
-        className="block flex-none rounded-[5px] overflow-hidden md:hidden"
+        className={`block flex-none overflow-hidden rounded-[5px] md:rounded-[6px] md:h-[100px] md:w-[72px] ${
+          built === 0 ? "h-[75px] w-[54px]" : "h-[67px] w-[48px]"
+        }`}
         style={{
-          width: built === 0 ? 34 : 30,
-          height: built === 0 ? 48 : 42,
           boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
           background: commander.imageUri ? undefined : thumbGradient,
           border: "none",
@@ -256,30 +259,6 @@ export function BuilderSpine({
           />
         ) : (
           <span className="block w-full h-full" style={{ background: thumbGradient }} />
-        )}
-      </CardDetailTrigger>
-
-      {/* Commander thumb — desktop (different size) */}
-      <CardDetailTrigger
-        oracleId={commander.oracleId}
-        name={commander.name}
-        className="hidden md:block flex-none rounded-[6px] overflow-hidden flex-shrink-0"
-        style={{
-          width: 44,
-          height: 62,
-          boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-          background: thumbGradient,
-          border: "none",
-          padding: 0,
-        }}
-      >
-        {commander.imageUri && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={commander.imageUri}
-            alt=""
-            className="w-full h-full object-cover object-top"
-          />
         )}
       </CardDetailTrigger>
 

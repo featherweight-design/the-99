@@ -529,6 +529,7 @@ export function CommanderDetail({
             typeLine: c.typeLine,
             oracleText: c.oracleText,
             colorIdentity: c.colorIdentity,
+            imageUri: c.imageUri,
           }}
         />
 
