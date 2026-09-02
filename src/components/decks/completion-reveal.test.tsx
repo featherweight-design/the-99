@@ -19,10 +19,10 @@ function renderReveal(overrides: Partial<Parameters<typeof CompletionReveal>[0]>
 describe("CompletionReveal", () => {
   it("renders the mock's heading and caption naming the commander", () => {
     renderReveal();
-    expect(screen.getByRole("heading", { name: "The 99 is complete." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ninety-nine." })).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Korvold is fed — 99 of 99, all owned. Try not to let it get to your head at the table.",
+        "Korvold has a full deck. Sleeve it up before you change your mind.",
       ),
     ).toBeInTheDocument();
   });
@@ -51,7 +51,7 @@ describe("CompletionReveal", () => {
 
   it("is a band, not a full-surface overlay — no fixed positioning", () => {
     renderReveal();
-    const band = screen.getByRole("heading", { name: "The 99 is complete." }).closest("section");
+    const band = screen.getByRole("heading", { name: "Ninety-nine." }).closest("section");
     expect(band).not.toBeNull();
     expect(band!.className).toContain("h-[420px]");
     expect(band!.className).toContain("md:h-[380px]");

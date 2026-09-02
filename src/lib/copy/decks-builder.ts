@@ -6,18 +6,18 @@
 // Exports are untouched by this pass — "plain text is sacred" (mock, Decks
 // deltas). No copy here reaches export-dialog.tsx.
 
-/** The mock names the commander in the short register ("Korvold is fed"), not
- *  the full "Korvold, Fae-Cursed King" shown in the builder header. Everything
- *  up to the first comma. */
+/** The mock names the commander in the short register ("Korvold has a full
+ *  deck"), not the full "Korvold, Fae-Cursed King" shown in the builder
+ *  header. Everything up to the first comma. */
 export function shortCommanderName(name: string): string {
   return name.split(",")[0].trim();
 }
 
 export const decksBuilderCopy = {
   completion: {
-    heading: "The 99 is complete.",
+    heading: "Ninety-nine.",
     caption: (commander: string) =>
-      `${commander} is fed — 99 of 99, all owned. Try not to let it get to your head at the table.`,
+      `${commander} has a full deck. Sleeve it up before you change your mind.`,
     primaryCta: "Export decklist",
     secondaryCta: "Back to the deck",
   },

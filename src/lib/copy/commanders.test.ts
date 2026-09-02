@@ -12,13 +12,13 @@ describe("commandersCopy.filteredEmpty", () => {
 
   it("reproduces the mock's caption", () => {
     expect(commandersCopy.filteredEmpty.caption("white-red", 24)).toBe(
-      "Your collection has opinions about white-red. All 24 candidates are one filter away.",
+      "You own 24 legal commanders, but none of them are white-red.",
     );
   });
 
   it("agrees in number when exactly one candidate is filtered out", () => {
     expect(commandersCopy.filteredEmpty.caption("white-red", 1)).toBe(
-      "Your collection has opinions about white-red. Only 1 candidate is one filter away.",
+      "You own 1 legal commander, but none of them are white-red.",
     );
   });
 

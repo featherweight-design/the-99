@@ -63,7 +63,7 @@ function renderBuilder(deck: DeckDetail) {
   );
 }
 
-const HEADING = "The 99 is complete.";
+const HEADING = "Ninety-nine.";
 
 describe("BuilderShell — 99/99 celebration", () => {
   beforeEach(() => {

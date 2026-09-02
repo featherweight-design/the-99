@@ -16,7 +16,7 @@ describe("FilteredEmpty", () => {
     expect(screen.getByRole("heading").textContent).toBe("No generals in Boros.");
     expect(
       screen.getByText(
-        "Your collection has opinions about white-red. All 24 candidates are one filter away.",
+        "You own 24 legal commanders, but none of them are white-red.",
       ),
     ).toBeTruthy();
   });
@@ -26,7 +26,7 @@ describe("FilteredEmpty", () => {
     expect(screen.getByRole("heading").textContent).toBe("No generals in Red.");
     expect(
       screen.getByText(
-        "Your collection has opinions about red. All 24 candidates are one filter away.",
+        "You own 24 legal commanders, but none of them are red.",
       ),
     ).toBeTruthy();
   });

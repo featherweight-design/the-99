@@ -54,7 +54,7 @@ describe("NoResults", () => {
     renderNoResults("counterspell", ["R"]);
     expect(
       screen.getAllByText(
-        "Which, honestly, checks out. Drop the color filter or try another name.",
+        "Nothing matches that search and that colour filter together. Drop one of them.",
       ),
     ).toHaveLength(1);
   });

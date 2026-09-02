@@ -43,7 +43,7 @@ export const shellCopy = {
   notFound: {
     numeral: "404",
     heading: "There's no page here.",
-    caption: "I checked. Twice. Probably a typo in the URL — happens to the best of us.",
+    caption: "I checked. Twice. Probably a typo in the URL.",
     primaryCta: "Back home",
     secondaryCta: "View decks",
   },

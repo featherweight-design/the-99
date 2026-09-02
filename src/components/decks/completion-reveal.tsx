@@ -34,8 +34,8 @@ export function CompletionReveal({
   onDismiss,
   onExport,
 }: {
-  /** Already shortened to the first comma — the mock says "Korvold is fed",
-   *  not "Korvold, Fae-Cursed King is fed". */
+  /** Already shortened to the first comma — the mock says "Korvold has a full
+   *  deck", not "Korvold, Fae-Cursed King has a full deck". */
   commanderShortName: string;
   onDismiss: () => void;
   onExport: () => void;

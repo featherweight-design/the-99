@@ -8,13 +8,8 @@
 export const commandersCopy = {
   filteredEmpty: {
     heading: (guild: string) => `No generals in ${guild}.`,
-    caption: (words: string, total: number) =>
-      // "All 1 candidate is…" is grammatical but reads badly, so the singular
-      // swaps the quantifier rather than just the verb. The plural is the mock's
-      // string verbatim and is not touched.
-      total === 1
-        ? `Your collection has opinions about ${words}. Only 1 candidate is one filter away.`
-        : `Your collection has opinions about ${words}. All ${total} candidates are one filter away.`,
+    caption: (colorWords: string, total: number) =>
+      `You own ${total} legal commander${total === 1 ? "" : "s"}, but none of them are ${colorWords}.`,
     count: (total: number) => `Showing 0 of ${total}`,
     cta: "Clear color filter",
   },

@@ -25,7 +25,7 @@ export const collectionBrowseCopy = {
       if (colorLabel) return `Nothing matches in ${colorLabel}.`;
       return "Nothing matches those filters.";
     },
-    caption: "Which, honestly, checks out. Drop the color filter or try another name.",
+    caption: "Nothing matches that search and that colour filter together. Drop one of them.",
     cta: "Clear filters",
   },
 } as const;
