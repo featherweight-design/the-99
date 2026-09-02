@@ -137,7 +137,17 @@ for (const vp of VIEWPORTS) {
 
   console.log(`\n=== ${vp.label} ===`);
 
-  for (const t of await triggers(page)) {
+  // A probe that measured nothing must not report success. Every path that
+  // gives up early counts a failure for the same reason: the interesting
+  // outcome is "we could not check", and an exit 0 would read as "checked, fine".
+  const bail = (why) => {
+    console.log(`  ! ${why}`);
+    failures++;
+  };
+
+  const found = await triggers(page);
+  if (found.length === 0) bail("No filter triggers found — nothing was measured.");
+  for (const t of found) {
     const short = vp.touch && t.height < MIN;
     if (short) failures++;
     console.log(`  trigger ${short ? "✗" : "✓"} ${t.height}px  ${t.text}`);
@@ -154,7 +164,7 @@ for (const vp of VIEWPORTS) {
     return true;
   });
   if (!opened) {
-    console.log("  ! Availability trigger missing or disabled — no chip to probe.");
+    bail("Availability trigger missing or disabled — no chip to probe.");
     await context.close();
     continue;
   }
@@ -191,7 +201,7 @@ for (const vp of VIEWPORTS) {
   try {
     await page.waitForSelector('button[aria-label^="Remove filter:"]', { timeout: 10_000 });
   } catch {
-    console.log("  ! No chip appeared after selecting a filter row.");
+    bail("No chip appeared after selecting a filter row — the ✕ went unprobed.");
     await context.close();
     continue;
   }
@@ -209,5 +219,12 @@ for (const vp of VIEWPORTS) {
 }
 
 await browser.close();
-console.log(failures === 0 ? "\nAll touch targets pass at 44px." : `\n${failures} under 44px.`);
+// Not "N under 44px": the count also carries doubled announcements and every
+// path that could not measure at all, and naming it a size failure would send
+// the reader to the wrong line.
+console.log(
+  failures === 0
+    ? "\nAll touch targets pass at 44px, and every check ran."
+    : `\n${failures} problems. Read the ✗ and ! lines above.`,
+);
 process.exit(failures === 0 ? 0 : 1);
