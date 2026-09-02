@@ -27,7 +27,7 @@ export function FullCardTrigger({
       <button
         type="button"
         // brand focus-visible outline treatment inherited from globals.css
-        className="absolute inline-flex items-center rounded-full bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] border border-[color-mix(in_oklab,var(--fg)_18%,transparent)]"
+        className="absolute inline-flex items-center rounded-full bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] border border-[color:color-mix(in_oklab,var(--fg)_18%,transparent)]"
         style={{
           top: 56,
           right: 16,

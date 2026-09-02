@@ -264,7 +264,7 @@ function DialogContent({
               : [
                   "font-medium bg-transparent border border-solid",
                   isMobile
-                    ? "text-[color:var(--warning)] border-[color-mix(in_srgb,var(--accent)_30%,var(--bg))]"
+                    ? "text-[color:var(--warning)] border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]"
                     : "text-[color:var(--fg-muted)] border-[color:var(--border-strong)]",
                 ].join(" "),
           ].join(" ")}

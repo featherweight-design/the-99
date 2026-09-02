@@ -47,7 +47,7 @@ export function GroupToggle({
           "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
           filter === "shopping"
             ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)]"
-            : "font-medium text-[color:var(--warning)] bg-transparent border border-solid border-[color-mix(in_srgb,var(--accent)_30%,var(--bg))]",
+            : "font-medium text-[color:var(--warning)] bg-transparent border border-solid border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]",
         ].join(" ")}
       >
         Shopping {shoppingCount}

@@ -439,7 +439,7 @@ function TabButton({
       // avoid a Tailwind class-order conflict (py-[10px] + pt-[4px] loses to pt-[4px]).
       className={[
         "flex items-center gap-[8px] pt-[10px] px-[4px] pb-[13px] font-sans font-semibold text-[14px]",
-        "cursor-pointer disabled:cursor-not-allowed bg-none border-none",
+        "cursor-pointer disabled:cursor-not-allowed bg-transparent border-none",
         disabled
           ? "text-[color:var(--fg-locked)]"
           : selected
