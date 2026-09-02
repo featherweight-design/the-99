@@ -21,7 +21,13 @@ export async function retryCoverageFigures(
   if (!scored) return null;
 
   // Return only roleCards — the section owns the state update.
-  if (scored.synergyState === "degraded") return null;
+  //
+  // Only "ok" carries figures. A retry that comes back "absent" has reached
+  // EDHREC and been told there is nothing for this commander, which is a
+  // different answer from "degraded" and not a better one: handing the section
+  // role cards would flip it to the ok treatment and draw figures for a
+  // commander EDHREC has no data on. Both non-ok states leave the note in place.
+  if (scored.synergyState !== "ok") return null;
 
   return scored.roleCards;
 }

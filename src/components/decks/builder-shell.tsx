@@ -326,12 +326,19 @@ export function BuilderShell({
     if (!sweptRows) return;
     try {
       await restoreAutoCards(deck.id, sweptRows);
+      const restored = sweptRows.reduce((sum, r) => sum + r.quantity, 0);
+      setAnnouncement(
+        recommendationsCopy.auto.sweptRestoredAnnounce(
+          String(restored),
+          String(deckCounts(cards).built + restored),
+        ),
+      );
       setSweptRows(null);
     } catch {
       // Keep the receipt so Undo stays reachable — the rows are still gone.
       setSweepError(recommendationsCopy.auto.sweepFailed);
     }
-  }, [sweptRows, deck.id]);
+  }, [sweptRows, deck.id, cards]);
 
   // Clear sweep state when the server list changes (revalidation settled).
   // The sweep receipt is decklist state: it persists across tab switches but

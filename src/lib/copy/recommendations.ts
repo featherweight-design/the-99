@@ -90,6 +90,10 @@ export const recommendationsCopy = {
     // The single live-region message. One, never one per row.
     sweptAnnounce: (removed: string, total: string) =>
       `${removed} auto cards removed. ${total} of 99.`,
+    // Undo's counterpart. Accepting Undo unmounts the receipt, so without this
+    // a screen reader hears the removal announced and the reversal not at all.
+    sweptRestoredAnnounce: (restored: string, total: string) =>
+      `${restored} auto cards put back. ${total} of 99.`,
     sweepFailed: 'We couldn’t clear those. The deck is unchanged.',
   },
 

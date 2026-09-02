@@ -392,6 +392,35 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     expect(restoreAutoCards).toHaveBeenCalledWith("deck-sweep", sweptRows);
   });
 
+  it("announces the restore, since accepting Undo unmounts the receipt", async () => {
+    const sweptRows = [
+      { oracleId: "sol-ring", quantity: 1 },
+      { oracleId: "arcane-signet", quantity: 1 },
+    ];
+    clearAutoCards.mockResolvedValue(sweptRows);
+    restoreAutoCards.mockResolvedValue(undefined);
+
+    const { revalidate } = renderBuilder([card1, card2]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.clearAllAria("2") })
+        .click();
+    });
+    // The server list settles without the swept rows before Undo is offered.
+    await revalidate([]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.sweptUndoAria("2") })
+        .click();
+    });
+
+    expect(
+      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("2", "2")),
+    ).toBeInTheDocument();
+  });
+
   it("a failed sweep restores the list and says so", async () => {
     clearAutoCards.mockRejectedValue(new Error("network error"));
 
