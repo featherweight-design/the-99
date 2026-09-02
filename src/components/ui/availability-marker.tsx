@@ -245,7 +245,7 @@ const LABEL_COLOUR: Record<Exclude<AvailabilityState, "free">, string> = {
 // the loudest.
 const CHIP_SKIN: Record<Exclude<AvailabilityState, "free">, string> = {
   soft: "bg-[rgba(11,9,7,0.86)] border-[color:var(--border-dashed)]",
-  hard: "bg-[rgba(11,9,7,0.90)] border-[color:var(--brass)]",
+  hard: "bg-[rgba(11,9,7,0.90)] border-[color:var(--accent)]",
   over: "bg-[rgba(11,9,7,0.92)] border-[color:var(--danger)]",
 };
 
@@ -329,7 +329,7 @@ export function AvailabilityMarker({
       className={twMerge(
         "inline-flex items-center min-w-0",
         chip
-          ? // Top-left: top-right is the shipped brass quantity badge on both
+          ? // Top-left: top-right is the shipped accent quantity badge on both
             // tile surfaces (A2RM:51–60).
             `absolute left-[6px] top-[6px] gap-[4px] rounded-[4px] border px-[5px] py-[2px] ${CHIP_SKIN[state]}`
           : // Row density sets no font size and no family — it rides the

@@ -147,7 +147,7 @@ function ShelfSection({
           id={headingId}
           tabIndex={-1}
           className="font-mono uppercase text-[10.5px] md:text-[11px] tracking-[0.14em]"
-          style={{ color: "var(--brass)" }}
+          style={{ color: "var(--accent)" }}
         >
           {label}
         </h3>
@@ -178,7 +178,7 @@ function ShelfSection({
                 ? addPanelCopy.consider.collapse
                 : addPanelCopy.consider.showAllAria(label.toLowerCase(), shelf.suggestions.length)
             }
-            className="ml-auto p-0 font-mono text-[11px] cursor-pointer border-none bg-transparent text-brass hover:text-brass-hover"
+            className="ml-auto p-0 font-mono text-[11px] cursor-pointer border-none bg-transparent text-accent hover:text-accent-hover"
           >
             {expanded
               ? addPanelCopy.consider.collapse
@@ -277,7 +277,7 @@ export function ConsiderPanel({
             <button
               type="button"
               onClick={() => router.refresh()}
-              className="p-0 text-[12.5px] underline border-none bg-transparent cursor-pointer text-brass hover:text-brass-hover"
+              className="p-0 text-[12.5px] underline border-none bg-transparent cursor-pointer text-accent hover:text-accent-hover"
             >
               {addPanelCopy.degraded.retry}
             </button>

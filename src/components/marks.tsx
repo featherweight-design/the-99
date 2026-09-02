@@ -123,7 +123,7 @@ export function Crowned99({
       className={className}
       style={{ overflow: "visible" }}
     >
-      {/* Crown row: s / l / s diamonds, each rotated 45°, filled brass */}
+      {/* Crown row: s / l / s diamonds, each rotated 45°, filled accent */}
       <g>
         {/* Small diamond 1 */}
         <rect
@@ -132,7 +132,7 @@ export function Crowned99({
           width={s}
           height={s}
           transform={`rotate(45, ${d1cx}, ${crownCenterY})`}
-          fill="var(--brass)"
+          fill="var(--accent)"
         />
         {/* Large diamond */}
         <rect
@@ -141,7 +141,7 @@ export function Crowned99({
           width={l}
           height={l}
           transform={`rotate(45, ${d2cx}, ${crownCenterY})`}
-          fill="var(--brass)"
+          fill="var(--accent)"
         />
         {/* Small diamond 2 */}
         <rect
@@ -150,7 +150,7 @@ export function Crowned99({
           width={s}
           height={s}
           transform={`rotate(45, ${d3cx}, ${crownCenterY})`}
-          fill="var(--brass)"
+          fill="var(--accent)"
         />
       </g>
       {/* Numeral "99" */}
@@ -283,7 +283,7 @@ export function CardFan({ variant = "mobile", className }: CardFanProps) {
           strokeWidth="1.5"
         />
       </g>
-      {/* Front card: rotated forward, translated right, brass border + "99" */}
+      {/* Front card: rotated forward, translated right, accent border + "99" */}
       <g transform={`translate(${cx}, ${cy}) rotate(${frontRotate}) translate(${frontTranslateX}, 0)`}>
         <rect
           x={-hw}
@@ -292,7 +292,7 @@ export function CardFan({ variant = "mobile", className }: CardFanProps) {
           height={cardH}
           rx={cardRx}
           fill="#3E3020"
-          stroke="var(--brass)"
+          stroke="var(--accent)"
           strokeWidth="1.5"
         />
         <text
@@ -302,7 +302,7 @@ export function CardFan({ variant = "mobile", className }: CardFanProps) {
           fontFamily="var(--font-display), 'Cinzel', serif"
           fontWeight={800}
           fontSize={fontSize}
-          fill="var(--brass)"
+          fill="var(--accent)"
         >
           99
         </text>
@@ -350,7 +350,7 @@ export function XcixSeal({ variant = "mobile", className }: XcixSealProps) {
       height={size}
       className={className}
     >
-      {/* Brass border, no fill */}
+      {/* Accent border, no fill */}
       <rect
         x="1"
         y="1"
@@ -358,7 +358,7 @@ export function XcixSeal({ variant = "mobile", className }: XcixSealProps) {
         height={size - 2}
         rx={borderRadius}
         fill="none"
-        stroke="var(--brass)"
+        stroke="var(--accent)"
         strokeWidth="2"
       />
       {/* XCIX glyph centered */}

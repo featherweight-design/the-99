@@ -52,7 +52,7 @@ describe("deltaEOk", () => {
   });
 
   // The pair that came closest to colliding: the shipped warning against the
-  // accent §8 replaces brass with. Below the 0.05 floor, which is the whole
+  // accent §8 replaces accent with. Below the 0.05 floor, which is the whole
   // reason --warning moves in Task 7.
   //
   // Task 8's snap-hex.mjs carries its own inline copy of this maths; if these

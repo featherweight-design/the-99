@@ -271,18 +271,18 @@ describe("FilterPanel", () => {
     expect(screen.queryByRole("listbox")).toBeNull();
   });
 
-  // Focus draws ONE brass ring — the 2px outline at +2px. The brass border is
+  // Focus draws ONE accent ring — the 2px outline at +2px. The accent border is
   // reserved for the filled state, where it means "this field is filtering";
   // drawing both at once read as two stacked focus rings.
-  it("turns the search field's border brass only once there is a query", () => {
+  it("turns the search field's border accent only once there is a query", () => {
     setViewport(true);
     renderPanel();
     openPanel();
     const field = () => screen.getByRole("combobox").closest("label")!;
-    expect(field().className).not.toContain("focus-within:border-[color:var(--brass)]");
+    expect(field().className).not.toContain("focus-within:border-[color:var(--accent)]");
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "blo" } });
-    expect(field().className).toContain("focus-within:border-[color:var(--brass)]");
+    expect(field().className).toContain("focus-within:border-[color:var(--accent)]");
   });
 
   describe("desktop popover placement", () => {

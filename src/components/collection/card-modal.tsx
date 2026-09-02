@@ -123,7 +123,7 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
         className="mt-[8px] flex items-center gap-[8px] text-[13px]"
         style={{ color: "var(--fg-body)" }}
       >
-        <span className="font-mono" style={{ color: "var(--brass)" }}>×{card.quantity}</span>
+        <span className="font-mono" style={{ color: "var(--accent)" }}>×{card.quantity}</span>
         <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
         {/* No `nameless` here — this is the ONE place on /collection that names
             the claiming deck ("none free — in Atraxa"). Still no `selfExcluded`. */}
@@ -513,7 +513,7 @@ export function CardModal({
               disabled={!onNext}
               aria-label="Next card"
               className="ml-auto cursor-pointer text-[15px] disabled:opacity-40"
-              style={{ color: "var(--brass)" }}
+              style={{ color: "var(--accent)" }}
             >
               Next ›
             </button>
@@ -559,7 +559,7 @@ function MetaCell({
         <span
           className={quantity || rarity ? "font-mono" : ""}
           style={{
-            color: quantity || rarity ? "var(--brass)" : "var(--fg)",
+            color: quantity || rarity ? "var(--accent)" : "var(--fg)",
             fontSize: 13,
           }}
         >
@@ -597,7 +597,7 @@ function MetaField({
         )}
         <span
           className={quantity || rarity ? "font-mono text-[14px]" : "text-[14px]"}
-          style={{ color: quantity || rarity ? "var(--brass)" : "var(--fg)" }}
+          style={{ color: quantity || rarity ? "var(--accent)" : "var(--fg)" }}
         >
           {value}
         </span>
@@ -614,17 +614,17 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: boole
   const chevron = pickerCopy.triggerChevron(expanded);
   if (!picked) {
     return (
-      <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--brass)" }}>
+      <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--accent)" }}>
         {pickerCopy.triggerCount(count)} {chevron}
       </div>
     );
   }
   return (
     <div className="flex items-center gap-[5px] mt-[4px]">
-      <span aria-hidden className="rotate-45" style={{ width: 7, height: 7, background: "var(--brass)" }} />
+      <span aria-hidden className="rotate-45" style={{ width: 7, height: 7, background: "var(--accent)" }} />
       <span
         className="font-mono uppercase text-[10px] tracking-[0.14em]"
-        style={{ color: "var(--brass)" }}
+        style={{ color: "var(--accent)" }}
       >
         {pickerCopy.triggerPicked}
       </span>

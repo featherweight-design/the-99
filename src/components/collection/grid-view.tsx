@@ -31,7 +31,7 @@ export function GridView({
         const border =
           state === "over"
             ? "[border:1px_solid_var(--avail-over-border)] hover:[border:1px_solid_var(--avail-over-border)]"
-            : "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--brass)]";
+            : "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--accent)]";
         return (
         <button
           key={c.oracleId}
@@ -39,7 +39,7 @@ export function GridView({
           onClick={() => onOpen(c.oracleId)}
           // §Grid Tile Container: radius 9/10px, overflow hidden, bg #1E1A15 (--surface), border 1px #2A241D (--border)
           // Background and border are utilities, not inline style: an inline
-          // border outranks the hover: variant and the brass hover never lands.
+          // border outranks the hover: variant and the accent hover never lands.
           className={`text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border}`}
         >
           {/* Art region — §Grid Tile: Art Region */}
@@ -53,10 +53,10 @@ export function GridView({
               backgroundPosition: "center",
             }}
           >
-            {/* §Grid Tile: Quantity Badge — mono 11/12px 600, #14110E (--bg) on #C9A24B (--brass), radius 6px */}
+            {/* §Grid Tile: Quantity Badge — mono 11/12px 600, #14110E (--bg) on #C9A24B (--accent), radius 6px */}
             <span
               className="absolute font-mono font-semibold text-[11px] md:text-[12px] rounded-md top-[6px] md:top-[8px] right-[6px] md:right-[8px] px-[6px] md:px-[7px] py-[2px]"
-              style={{ background: "var(--brass)", color: "var(--bg)" }}
+              style={{ background: "var(--accent)", color: "var(--bg)" }}
             >
               ×{c.quantity}
             </span>

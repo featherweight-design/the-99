@@ -443,7 +443,7 @@ export function BuilderSpine({
               Export
             </button>
 
-            {/* Desktop: filled brass button */}
+            {/* Desktop: filled accent button */}
             <PrimaryButton
               onClick={onExport}
               className="hidden md:flex items-center gap-[6px] text-[13px] px-[18px] py-[11px]"

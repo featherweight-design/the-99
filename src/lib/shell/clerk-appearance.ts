@@ -111,17 +111,17 @@ export const clerkAppearance: Appearance = {
       fontSize: "13.5px",
       lineHeight: 1.6,
     },
-    // Quiet on purpose: brass fill is reserved for the one formButtonPrimary.
+    // Quiet on purpose: accent fill is reserved for the one formButtonPrimary.
     profileSectionPrimaryButton: {
       background: "transparent",
-      color: "var(--brass)",
+      color: "var(--accent)",
       fontWeight: 600,
       "&:hover": { background: "var(--elevated)" },
     },
     activeDeviceIcon: { color: "var(--fg-faint)" },
     badge: {
       background: "rgba(201,162,75,0.14)",
-      color: "var(--brass)",
+      color: "var(--accent)",
       fontFamily: "var(--font-plex-mono)",
       fontSize: "10.5px",
       borderRadius: 999,
@@ -134,7 +134,7 @@ export const clerkAppearance: Appearance = {
       borderRadius: 8,
       height: 40,
       color: "var(--fg)",
-      "&:focus": { borderColor: "var(--brass)", boxShadow: RING },
+      "&:focus": { borderColor: "var(--accent)", boxShadow: RING },
     },
     formFieldHintText: {
       fontFamily: "var(--font-plex-mono)",
@@ -144,25 +144,25 @@ export const clerkAppearance: Appearance = {
     // Clerk pairs these with its own icon, so colour is never the only signal.
     formFieldErrorText: { color: "var(--danger)", fontSize: 12 },
     formFieldSuccessText: { color: "var(--success)", fontSize: 12 },
-    formFieldAction: { color: "var(--brass)", fontWeight: 600 },
+    formFieldAction: { color: "var(--accent)", fontWeight: 600 },
     formButtonPrimary: {
-      background: "var(--brass)",
+      background: "var(--accent)",
       color: "var(--bg)",
       fontWeight: 600,
       borderRadius: 8,
       padding: "12px 26px",
-      "&:hover": { background: "var(--brass-hover)" },
+      "&:hover": { background: "var(--accent-hover)" },
     },
     formButtonReset: {
       background: "transparent",
       border: "1px solid var(--border-strong)",
       color: "var(--fg-muted)",
       borderRadius: 8,
-      "&:hover": { borderColor: "var(--brass)" },
+      "&:hover": { borderColor: "var(--accent)" },
     },
 
-    avatarBox: { borderRadius: 12, border: "1px solid var(--brass)" },
-    avatarImageActionsUpload: { color: "var(--brass)", fontWeight: 600 },
+    avatarBox: { borderRadius: 12, border: "1px solid var(--accent)" },
+    avatarImageActionsUpload: { color: "var(--accent)", fontWeight: 600 },
     dividerLine: { background: "var(--border)" },
     dividerText: {
       fontFamily: "var(--font-plex-mono)",
@@ -203,8 +203,8 @@ export const clerkAppearance: Appearance = {
     // question for eng/legal, not a design one, and #35 does not settle it.
     footer: { background: "transparent" },
     footerActionLink: {
-      color: "var(--brass)",
-      "&:hover": { color: "var(--brass-hover)" },
+      color: "var(--accent)",
+      "&:hover": { color: "var(--accent-hover)" },
     },
   },
 };

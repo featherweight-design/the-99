@@ -43,8 +43,8 @@ describe("Crown", () => {
       return (container.querySelector("span") as HTMLElement).style.background;
     };
     expect(colorOf("quiet")).toBe("var(--border-strong)");
-    expect(colorOf("page")).toBe("var(--brass-strong)");
-    expect(colorOf("loud")).toBe("var(--brass)");
+    expect(colorOf("page")).toBe("var(--accent-strong)");
+    expect(colorOf("loud")).toBe("var(--accent)");
   });
 
   it("enlarges the geometry for the one loud crown", () => {

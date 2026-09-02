@@ -146,8 +146,8 @@ export function ConfirmModal({
             onClick={onClose}
             disabled={pending}
             // §Cancel / Keep Button — mobile text-only #8E8269 (--fg-faint), padding 12px 0 0;
-            // desktop outlined 1px #3A3229 (--border-strong), padding 13px 22px, brass border on hover
-            className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--brass)]"
+            // desktop outlined 1px #3A3229 (--border-strong), padding 13px 22px, accent border on hover
+            className="w-full md:w-auto md:flex-none font-sans font-semibold text-[14px] cursor-pointer pt-[12px] pb-0 px-0 md:p-[13px_22px] md:rounded-lg md:[border:1px_solid_var(--border-strong)] md:hover:[border:1px_solid_var(--accent)]"
             style={{
               color: "var(--fg-faint)",
               background: "transparent",

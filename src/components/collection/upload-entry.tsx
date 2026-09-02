@@ -121,8 +121,8 @@ export function UploadEntry({
             "p-[30px_18px] md:p-[40px]",
             "md:flex md:items-center md:gap-[28px] md:text-left",
             dragOver
-              ? "bg-[color:var(--surface-inset)] [border:1.5px_dashed_var(--brass)]"
-              : "bg-[color:var(--surface-sunken)] [border:1.5px_dashed_var(--border-dashed)] hover:bg-[color:var(--surface-inset)] hover:[border:1.5px_dashed_var(--brass)]",
+              ? "bg-[color:var(--surface-inset)] [border:1.5px_dashed_var(--accent)]"
+              : "bg-[color:var(--surface-sunken)] [border:1.5px_dashed_var(--border-dashed)] hover:bg-[color:var(--surface-inset)] hover:[border:1.5px_dashed_var(--accent)]",
           ].join(" ")}
         >
           <input
@@ -138,10 +138,10 @@ export function UploadEntry({
             }}
           />
 
-          {/* Icon circle — §Upload Icon Circle: 48×48 mobile / 58×58 desktop, radius 999px, border 1px #C9A24B (--brass), color --brass, font 20/26px, margin auto mobile */}
+          {/* Icon circle — §Upload Icon Circle: 48×48 mobile / 58×58 desktop, radius 999px, border 1px #C9A24B (--accent), color --accent, font 20/26px, margin auto mobile */}
           <div
             className="mx-auto mb-[14px] md:mx-0 md:mb-0 md:flex-none rounded-full flex items-center justify-center text-[20px] md:text-[26px] w-[48px] h-[48px] md:w-[58px] md:h-[58px]"
-            style={{ border: "1px solid var(--brass)", color: "var(--brass)" }}
+            style={{ border: "1px solid var(--accent)", color: "var(--accent)" }}
             aria-hidden
           >
             ↑
@@ -177,7 +177,7 @@ export function UploadEntry({
             >
               <span className="md:hidden">
                 Only a Name and Quantity column are required.{" "}
-                <button type="button" onClick={(e) => { e.preventDefault(); setMode("paste"); }} className="text-[color:var(--brass)]">
+                <button type="button" onClick={(e) => { e.preventDefault(); setMode("paste"); }} className="text-[color:var(--accent)]">
                   Paste a list instead
                 </button>
               </span>
@@ -244,7 +244,7 @@ export function UploadEntry({
           type="button"
           onClick={() => setMode("paste")}
           className="hidden md:inline-block mt-[14px] text-[13px] whitespace-nowrap"
-          style={{ color: "var(--brass)" }}
+          style={{ color: "var(--accent)" }}
         >
           Paste a list instead →
         </button>

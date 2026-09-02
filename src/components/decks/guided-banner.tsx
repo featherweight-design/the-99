@@ -51,7 +51,7 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
             style={{ width: 7, height: 7, background: "#6FA368", transform: "rotate(45deg)" }}
             aria-hidden
           />
-          {/* Active step: 8×8px (mobile) / 9×9px (desktop), brass */}
+          {/* Active step: 8×8px (mobile) / 9×9px (desktop), accent */}
           <div
             className="md:hidden"
             style={{ width: 8, height: 8, background: "#C9A24B", transform: "rotate(45deg)" }}

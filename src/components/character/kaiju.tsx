@@ -3,7 +3,7 @@
 // design/design_handoff_the99_richness/kaiju.svg.
 //
 // Faces LEFT by design; compose it looming from the right, gazing down at the
-// crab. The brass alphas below are opacity variants of --brass (#C9A24B) — the
+// crab. The accent alphas below are opacity variants of --accent (#C9A24B) — the
 // palette is locked, so they stay as literal rgba() rather than becoming tokens.
 
 const VIEWBOX_W = 480;
@@ -29,7 +29,7 @@ export function Kaiju({
       height={height}
       className={[breathe ? "anim-breathe" : "", className].filter(Boolean).join(" ")}
     >
-      {/* Dorsal fins — soft brass glow */}
+      {/* Dorsal fins — soft accent glow */}
       <path
         d="M132 96 C 142 82, 154 68, 162 60 C 168 80, 168 100, 170 116 C 182 102, 200 88, 214 84 C 216 104, 214 126, 208 142 C 222 126, 244 114, 258 116 C 258 136, 252 160, 244 176 C 258 162, 280 152, 296 156 C 294 176, 284 196, 272 212 C 288 200, 310 196, 326 202 C 320 222, 308 238, 296 252 C 312 244, 332 244, 348 252 C 340 270, 324 282, 310 292 C 324 288, 342 292, 356 302 C 346 316, 334 324, 322 330 Z"
         fill="rgba(201,162,75,0.16)"
@@ -57,7 +57,7 @@ export function Kaiju({
       {/* Smug half-lid eye */}
       <circle cx="96" cy="102" r="4" fill="rgba(201,162,75,0.9)" />
       <path d="M89 97 L 103 98" stroke="rgba(201,162,75,0.9)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      {/* Crown nod — brass diamond on the tail */}
+      {/* Crown nod — accent diamond on the tail */}
       <rect x="396" y="338" width="9" height="9" fill="rgba(201,162,75,0.55)" transform="rotate(45 400 342)" />
     </svg>
   );

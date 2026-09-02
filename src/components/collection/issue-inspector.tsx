@@ -197,7 +197,7 @@ export function IssueInspector({
 
           <div className="mt-[12px] flex items-center gap-[10px]">
             {/* §Filter input: --surface-sunken, 1px --border-strong, radius 8, 40px (44 mobile).
-                Focus: border → --brass + 3px ring rgba(201,162,75,.16) via focus-within. */}
+                Focus: border → --accent + 3px ring rgba(201,162,75,.16) via focus-within. */}
             <SearchField
               ref={filterInputRef}
               type="text"
@@ -312,10 +312,10 @@ export function IssueInspector({
           type="button"
           onClick={onClose}
           aria-label={issueInspectorCopy.header.closeAriaLabel}
-          // §Close: --surface-raised circle, 1px --border-strong, hover brass.
+          // §Close: --surface-raised circle, 1px --border-strong, hover accent.
           // Color is a utility, not inline style: an inline color outranks the
-          // hover: variant and the brass hover never lands.
-          className="absolute top-[18px] right-[20px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center text-[color:var(--fg-muted)] hover:[color:var(--brass)]"
+          // hover: variant and the accent hover never lands.
+          className="absolute top-[18px] right-[20px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center text-[color:var(--fg-muted)] hover:[color:var(--accent)]"
           style={{
             width: 32,
             height: 32,
@@ -441,7 +441,7 @@ function TabButton({
       disabled={disabled}
       tabIndex={selected ? 0 : -1}
       onClick={onSelect}
-      // §Tab: Plex Sans 600 14px; active --fg + inset -2px --brass; idle --fg-faint.
+      // §Tab: Plex Sans 600 14px; active --fg + inset -2px --accent; idle --fg-faint.
       // Disabled: --fg-locked adjacent, opacity .7, cursor not-allowed.
       // Padding matches the mock's 10px 4px 13px (pt/px/pb) — split classes to
       // avoid a Tailwind class-order conflict (py-[10px] + pt-[4px] loses to pt-[4px]).
@@ -455,7 +455,7 @@ function TabButton({
             ? "var(--fg)"
             : "var(--fg-faint)",
         opacity: disabled ? 0.7 : 1,
-        boxShadow: selected ? "inset 0 -2px 0 var(--brass)" : "none",
+        boxShadow: selected ? "inset 0 -2px 0 var(--accent)" : "none",
       }}
     >
       {label}
@@ -485,7 +485,7 @@ function EmptyFilter({
       className="flex flex-col items-center text-center gap-[10px] py-[36px]"
       style={{ color: "var(--fg-muted)" }}
     >
-      <div style={{ color: "var(--brass-mid)" }}>
+      <div style={{ color: "var(--accent-mid)" }}>
         <CardFanMark size={56} />
       </div>
       <p

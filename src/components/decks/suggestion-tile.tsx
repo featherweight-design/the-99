@@ -105,7 +105,7 @@ function Evidence({
             className="block h-full rounded-full"
             style={{
               width: `${Math.min(100, Math.max(0, inclusionPct))}%`,
-              background: inDeck ? "var(--brass-shadow)" : "var(--brass)",
+              background: inDeck ? "var(--accent-shadow)" : "var(--accent)",
             }}
           />
         </span>
@@ -118,7 +118,7 @@ function Evidence({
         </span>
       </div>
       {lift != null && suggestion.owned && (
-        <p className="font-mono text-[9.5px]" style={{ color: "var(--brass-shadow)" }}>
+        <p className="font-mono text-[9.5px]" style={{ color: "var(--accent-shadow)" }}>
           {/* EDHREC hands synergy back as a fraction; the tile states it in points.
               The canvas draws this line on the owned tile and not on the unowned
               one, and design table §8-6 says it is unclear whether that turns on
@@ -262,7 +262,7 @@ export function SuggestionTile({
                   className="absolute inset-x-0 bottom-0 hidden pt-[14px] pr-[6px] pb-[5px] text-right font-mono text-[9px] group-hover:block"
                   style={{
                     background: "linear-gradient(180deg, transparent, rgba(10,8,6,.85))",
-                    color: "var(--brass)",
+                    color: "var(--accent)",
                   }}
                 >
                   {addPanelCopy.tile.detailHint}
@@ -308,7 +308,7 @@ export function SuggestionTile({
           // The caption takes its colour from the state, not from the state it
           // is usually in: the chip is nameless at this density, so this line
           // is the only thing that separates an over-committed card from one
-          // merely in use. Painting both brass makes them the same card.
+          // merely in use. Painting both accent makes them the same card.
           <p
             className={`truncate font-mono text-[8.5px] font-semibold ${
               availState === "over"
@@ -342,7 +342,7 @@ export function SuggestionTile({
           onClick={handleAdd}
           disabled={isPending}
           aria-label={addPanelCopy.tile.addAria(suggestion.name)}
-          className="w-full rounded-[8px] md:rounded-[7px] h-[44px] md:h-auto md:py-[7px] text-[14px] md:text-[12px] font-semibold cursor-pointer disabled:opacity-50 border-none bg-brass text-bg hover:bg-brass-hover"
+          className="w-full rounded-[8px] md:rounded-[7px] h-[44px] md:h-auto md:py-[7px] text-[14px] md:text-[12px] font-semibold cursor-pointer disabled:opacity-50 border-none bg-accent text-bg hover:bg-accent-hover"
         >
           {addPanelCopy.tile.add}
         </button>

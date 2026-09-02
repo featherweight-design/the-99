@@ -104,7 +104,7 @@ describe("QuickAddBar — combobox contract", () => {
     expect(addCardToDeck).not.toHaveBeenCalled();
 
     // Once the new results land, Enter works again. Matched by option label
-    // rather than by text: the row splits the name around the brass-highlighted
+    // rather than by text: the row splits the name around the accent-highlighted
     // run of the query, so no single node holds the whole string. A predicate
     // rather than a RegExp, because a card name is free to contain `(` or `[`.
     expect(
@@ -271,7 +271,7 @@ describe("QuickAddBar — result rows", () => {
     expect(screen.getByText("Enchantment · ×5 owned")).toBeInTheDocument();
   });
 
-  it("brasses the run of the name the query matched, wherever it falls", async () => {
+  it("highlights the run of the name the query matched, wherever it falls", async () => {
     searchCards.mockResolvedValue([row({ name: "Rhystic Study" })]);
     mount();
     await search("stu");

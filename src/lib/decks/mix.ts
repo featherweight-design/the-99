@@ -92,7 +92,7 @@ export const RECOMMENDED_MIX_WORKED_EXAMPLE =
 // held back from the met colours on the grounds that ~37 lands is a range rather
 // than a finish line — but design table E-N1/E-N2 keys the cell's whole state on
 // `have >= target` and knows nothing of advisory, so a Land at 40 was drawing a
-// brass figure inside a cell that had already given up its caption and its
+// accent figure inside a cell that had already given up its caption and its
 // action. The `~` in `rec ~37` is where the range still speaks.
 export function roleCellState(args: {
   have: number;
@@ -101,8 +101,8 @@ export function roleCellState(args: {
   const pct = Math.min(100, Math.round((args.have / args.target) * 100));
   if (args.have >= args.target)
     return { figureColor: "var(--success)", barColor: "var(--success)", pct };
-  // Design table E4/E5: a short cell's figure is brass and its bar brass-mid.
-  // It read as body text with a brass bar, which made the one number the strip
+  // Design table E4/E5: a short cell's figure is accent and its bar accent-mid.
+  // It read as body text with a accent bar, which made the one number the strip
   // exists to draw the eye to the quietest thing in the cell.
-  return { figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct };
+  return { figureColor: "var(--accent)", barColor: "var(--accent-mid)", pct };
 }

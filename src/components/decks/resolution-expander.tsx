@@ -226,7 +226,7 @@ export function ResolutionExpander({
         <div className="md:flex-1 md:min-w-0">
           <SearchField
             ref={fieldRef}
-            containerClassName="mt-[14px] md:mt-0 gap-[10px] px-[13px] py-[11px] rounded-[8px] bg-[color:var(--bg)] border-[color:var(--brass)] shadow-[0_0_0_3px_rgba(201,162,75,.16)]"
+            containerClassName="mt-[14px] md:mt-0 gap-[10px] px-[13px] py-[11px] rounded-[8px] bg-[color:var(--bg)] border-[color:var(--accent)] shadow-[0_0_0_3px_rgba(201,162,75,.16)]"
             // 16px at phone width so Safari does not zoom the page on focus.
             className="text-[16px] md:text-[14.5px]"
             iconClassName="font-mono text-[15px]"

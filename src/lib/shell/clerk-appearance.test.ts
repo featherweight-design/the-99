@@ -130,10 +130,10 @@ describe("Clerk appearance elements", () => {
     expect(elements.footer.display).toBeUndefined();
   });
 
-  // Brass fill marks the single primary action per panel; a second one on a
+  // Accent fill marks the single primary action per panel; a second one on a
   // section button would make the hierarchy meaningless.
-  it("reserves the brass fill for formButtonPrimary", () => {
-    expect(elements.formButtonPrimary.background).toBe("var(--brass)");
+  it("reserves the accent fill for formButtonPrimary", () => {
+    expect(elements.formButtonPrimary.background).toBe("var(--accent)");
     expect(elements.profileSectionPrimaryButton.background).toBe("transparent");
   });
 });

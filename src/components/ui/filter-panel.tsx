@@ -14,7 +14,7 @@
 //    hidden duplicate listbox corrupts the accessibility tree.
 // 2. DOM focus never leaves the search input while the panel is open. ↑/↓ move
 //    `aria-activedescendant`; the active row is styled, not focused. The two
-//    brass rings are deliberately distinct — DOM focus at +2px offset (outside,
+//    accent rings are deliberately distinct — DOM focus at +2px offset (outside,
 //    from globals.css), keyboard-active at -2px (inside the row).
 // 3. Esc is dismiss, never undo. Selections apply live; there is no Apply.
 //
@@ -467,7 +467,7 @@ export function FilterPanel({
           // rather than overridden, so nothing rests on generated-CSS order.
           !option.disabled && !isActive ? "md:hover:bg-[color:var(--surface-raised)]" : "",
           isActive
-            ? "rounded-[6px] outline outline-2 -outline-offset-2 outline-[color:var(--brass)]"
+            ? "rounded-[6px] outline outline-2 -outline-offset-2 outline-[color:var(--accent)]"
             : "",
         ].join(" ")}
       >
@@ -481,7 +481,7 @@ export function FilterPanel({
             selectionMode === "single" ? "rounded-full" : "rounded-[4px]",
             "border border-solid leading-none text-[12px] md:text-[11px]",
             isSelected
-              ? "bg-[color:var(--brass)] border-[color:var(--brass)] text-[color:var(--bg)]"
+              ? "bg-[color:var(--accent)] border-[color:var(--accent)] text-[color:var(--bg)]"
               : option.disabled
                 ? "bg-[color:var(--bg)] border-[color:var(--border-strong)]"
                 : "bg-[color:var(--bg)] border-[color:var(--border-dashed)]",
@@ -643,7 +643,7 @@ export function FilterPanel({
         className={[
           "font-sans text-[13.5px] md:text-[12.5px] font-medium",
           selected.length > 0
-            ? "text-[color:var(--brass)] cursor-pointer"
+            ? "text-[color:var(--accent)] cursor-pointer"
             : "text-[color:var(--border-dashed)] cursor-default",
         ].join(" ")}
       >
@@ -710,11 +710,11 @@ export function FilterPanel({
             // primitive — every other field in the app keeps the halo.
             //
             // The border stands down to --border-strong while focused. The table
-            // also turns it brass, but a 1px brass border inside a 2px brass
+            // also turns it accent, but a 1px accent border inside a 2px accent
             // outline reads as two stacked focus rings; the outline is the row
             // the table itself calls canonical, so the border yields.
             //
-            // It comes back brass once there is a query (§Filled), where it
+            // It comes back accent once there is a query (§Filled), where it
             // signals "this field is filtering" rather than focus. That state
             // needs the focus-within variant to outrank the line above, because
             // DOM focus never leaves this input while the panel is open — the
@@ -723,9 +723,9 @@ export function FilterPanel({
               "mx-[16px] mb-[8px] md:m-[10px] px-[12px] py-[12px] md:py-[9px] gap-[9px] " +
               "focus-within:border-[color:var(--border-strong)] " +
               "focus-within:shadow-none focus-within:outline focus-within:outline-2 " +
-              "focus-within:outline-offset-2 focus-within:outline-[color:var(--brass)] " +
+              "focus-within:outline-offset-2 focus-within:outline-[color:var(--accent)] " +
               (hasQuery
-                ? "border-[color:var(--brass)] focus-within:border-[color:var(--brass)]"
+                ? "border-[color:var(--accent)] focus-within:border-[color:var(--accent)]"
                 : "")
             }
             // §Leading icon: 14px mobile / 13px desktop, not the primitive's 15.
@@ -825,9 +825,9 @@ export function FilterPanel({
           disabled
             ? "cursor-not-allowed bg-[#221D16] text-[#6E6353] border-[color:var(--border)]"
             : open
-              ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--border-strong)] border-[color:var(--brass)]"
+              ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--border-strong)] border-[color:var(--accent)]"
               : selected.length > 0
-                ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--brass)] md:hover:bg-[#332C23]"
+                ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[#332C23]"
                 : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[#332C23] md:hover:border-[color:var(--border-dashed)]",
         ].join(" ")}
       >
@@ -840,7 +840,7 @@ export function FilterPanel({
         )}
         {/* Names never go in the label past one — they live in the chip row. */}
         {selected.length >= 2 && (
-          <span className="rounded-full px-[7px] py-px font-mono text-[11px] font-semibold bg-[color:var(--brass)] text-[color:var(--bg)]">
+          <span className="rounded-full px-[7px] py-px font-mono text-[11px] font-semibold bg-[color:var(--accent)] text-[color:var(--bg)]">
             {selected.length}
           </span>
         )}
@@ -905,7 +905,7 @@ export function FilterPanel({
                 <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
                   {copy.sheetTitle}
                   {selected.length > 0 && (
-                    <span className="ml-[8px] rounded-full px-[8px] py-px align-middle font-mono text-[12px] font-semibold bg-[color:var(--brass)] text-[color:var(--bg)]">
+                    <span className="ml-[8px] rounded-full px-[8px] py-px align-middle font-mono text-[12px] font-semibold bg-[color:var(--accent)] text-[color:var(--bg)]">
                       {selected.length}
                     </span>
                   )}

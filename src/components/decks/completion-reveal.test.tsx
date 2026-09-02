@@ -67,7 +67,7 @@ describe("CompletionReveal", () => {
     const diamonds = Array.from(container.querySelectorAll("[aria-hidden] > span"));
     expect(diamonds).toHaveLength(3);
     for (const d of diamonds) {
-      expect((d as HTMLElement).style.background).toBe("var(--brass)");
+      expect((d as HTMLElement).style.background).toBe("var(--accent)");
     }
     // Loud is the enlarged geometry — 13/19/13 against the quiet 8/12/8.
     expect(diamonds.map((d) => d.className)).toEqual([

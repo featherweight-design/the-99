@@ -24,7 +24,7 @@ export function ColorPip({
         "rounded-full transition-opacity",
         // selected uses brand focus-visible outline treatment inherited from globals.css
         selected
-          ? "opacity-100 shadow-[0_0_0_2px_var(--brass)]"
+          ? "opacity-100 shadow-[0_0_0_2px_var(--accent)]"
           : "opacity-40 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]",
       ].join(" ")}
       style={{ width: size, height: size, background: WUBRG_HEX[color] }}

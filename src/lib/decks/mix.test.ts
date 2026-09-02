@@ -50,9 +50,9 @@ describe("computeRoleCounts", () => {
 describe("roleCellState", () => {
   // Design table E4/E5: the figure is the loudest thing in a short cell, not
   // the quietest. It read as body text until #184.
-  it("below-rec is a brass figure over a brass-mid bar", () => {
+  it("below-rec is a accent figure over a accent-mid bar", () => {
     expect(roleCellState({ have: 4, target: 10 })).toEqual({
-      figureColor: "var(--brass)", barColor: "var(--brass-mid)", pct: 40,
+      figureColor: "var(--accent)", barColor: "var(--accent-mid)", pct: 40,
     });
   });
   it("met-rec turns green", () => {
@@ -61,7 +61,7 @@ describe("roleCellState", () => {
     });
   });
   // The advisory Land target no longer buys a colour of its own. Holding it in
-  // the short palette put a brass figure in a cell that had already dropped its
+  // the short palette put a accent figure in a cell that had already dropped its
   // caption and its action, because the control keys on the number alone.
   it("colours an over-target advisory role exactly like any other met role", () => {
     expect(roleCellState({ have: 40, target: 37 })).toEqual({

@@ -263,7 +263,7 @@ export function CreatePreFilled({
               maxLength={120}
               placeholder="My awesome deck"
               disabled={isPending}
-              className={`block w-full rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px] text-[15px] md:text-[16px] border-[color:var(--brass)] ${
+              className={`block w-full rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px] text-[15px] md:text-[16px] border-[color:var(--accent)] ${
                 error ? "mb-[8px]" : "mb-[24px]"
               }`}
             />

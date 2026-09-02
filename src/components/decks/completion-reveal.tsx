@@ -2,9 +2,8 @@
 
 // The 99/99 completion reveal — the app's ONE loud crown
 // (design/design_handoff_the99_themes/README.md decision 6: the accent at its
-// loudest is reserved for this surface — `--brass` today, renamed `--accent`
-// when the theme system lands). Fires once per deck, the first time it reads
-// Complete.
+// loudest is reserved for this surface). Fires once per deck, the first time it
+// reads Complete.
 //
 // Two deliberate narrowings of the mock, both flagged for design review:
 //

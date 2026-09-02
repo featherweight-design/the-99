@@ -25,7 +25,7 @@ function ItemDiamond({ danger }: { danger?: boolean }) {
     <span
       aria-hidden
       className="inline-block h-[6px] w-[6px] shrink-0 rotate-45"
-      style={{ background: danger ? "var(--danger)" : "var(--brass)" }}
+      style={{ background: danger ? "var(--danger)" : "var(--accent)" }}
     />
   );
 }
@@ -257,8 +257,8 @@ function Avatar({
         borderRadius: radius,
         fontSize,
         background: "var(--bg)",
-        border: "1px solid var(--brass)",
-        color: "var(--brass)",
+        border: "1px solid var(--accent)",
+        color: "var(--accent)",
       }}
     >
       {identity.initials}
@@ -321,7 +321,7 @@ export function AccountMenu({ panel }: { panel: PanelKind }) {
 
   return (
     <div className="relative" ref={wrapperRef}>
-      {/* Open-state marker: 4px brass diamond 6px above the trigger, desktop
+      {/* Open-state marker: 4px accent diamond 6px above the trigger, desktop
           only. Absolutely positioned so opening the menu doesn't shift the
           trigger (table ambiguity 8), and centred on the 38px box rather than
           the mock's 62px wrapper (ambiguity 9 — the prose wins). */}
@@ -329,7 +329,7 @@ export function AccountMenu({ panel }: { panel: PanelKind }) {
         <span
           aria-hidden
           className="absolute bottom-[calc(100%+6px)] left-[22px] h-1 w-1 -translate-x-1/2 rotate-45"
-          style={{ background: "var(--brass)" }}
+          style={{ background: "var(--accent)" }}
         />
       )}
       <button
@@ -352,8 +352,8 @@ export function AccountMenu({ panel }: { panel: PanelKind }) {
           aria-hidden
           className={`flex h-[38px] w-[38px] items-center justify-center rounded-[12px] border border-solid font-mono text-[13px] transition-colors duration-[120ms] ${
             open
-              ? "bg-[color:var(--elevated)] border-[color:var(--brass-hover)] text-[color:var(--brass-hover)]"
-              : "bg-[color:var(--bg)] border-[color:var(--brass)] text-[color:var(--brass)] group-hover:bg-[color:var(--surface-raised)] group-hover:border-[color:var(--brass-hover)] group-hover:text-[color:var(--brass-hover)]"
+              ? "bg-[color:var(--elevated)] border-[color:var(--accent-hover)] text-[color:var(--accent-hover)]"
+              : "bg-[color:var(--bg)] border-[color:var(--accent)] text-[color:var(--accent)] group-hover:bg-[color:var(--surface-raised)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
           }`}
         >
           {identity.initials}

@@ -9,7 +9,7 @@
 // forbids new tokens. Building it would mean inlining raw hexes for a state no
 // one can see.
 //
-// The mobile chevron is part of the label string and so cannot turn brass
+// The mobile chevron is part of the label string and so cannot turn accent
 // independently the way the desktop one does. That is drawn consistently across
 // all four mobile frames, so it is built as drawn.
 
@@ -29,7 +29,7 @@ export function RevealControl({
       type="button"
       onClick={onReveal}
       aria-label={`Show ${REVEAL_STEP} more commanders, ${remaining.toLocaleString("en-US")} remaining`}
-      className="group w-full rounded-lg flex flex-col items-center gap-[3px] min-h-[52px] px-[16px] py-[14px] sm:min-h-0 sm:flex-row sm:justify-center sm:gap-[12px] sm:px-[20px] sm:py-[15px] sm:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] hover:bg-[color:var(--elevated-hover)] hover:[border:1px_solid_var(--border-dashed)] focus-visible:bg-[color:var(--elevated-hover)] focus-visible:[border:1px_solid_var(--border-dashed)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brass)]"
+      className="group w-full rounded-lg flex flex-col items-center gap-[3px] min-h-[52px] px-[16px] py-[14px] sm:min-h-0 sm:flex-row sm:justify-center sm:gap-[12px] sm:px-[20px] sm:py-[15px] sm:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] hover:bg-[color:var(--elevated-hover)] hover:[border:1px_solid_var(--border-dashed)] focus-visible:bg-[color:var(--elevated-hover)] focus-visible:[border:1px_solid_var(--border-dashed)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
     >
       <span
         className="font-semibold text-[14.5px] sm:text-[14px]"
@@ -42,7 +42,7 @@ export function RevealControl({
       </span>
       <span
         aria-hidden
-        className="hidden sm:block text-[13px] leading-none text-[color:var(--fg-faint)] group-hover:text-[color:var(--brass)] group-focus-visible:text-[color:var(--brass)]"
+        className="hidden sm:block text-[13px] leading-none text-[color:var(--fg-faint)] group-hover:text-[color:var(--accent)] group-focus-visible:text-[color:var(--accent)]"
       >
         ↓
       </span>

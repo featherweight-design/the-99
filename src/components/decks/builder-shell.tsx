@@ -486,7 +486,7 @@ export function BuilderShell({
                         transform: "translate(-50%, -50%)",
                       }}
                     />
-                    {/* Front card: tilted right, brass-outlined, "99" */}
+                    {/* Front card: tilted right, accent-outlined, "99" */}
                     <div
                       className="absolute rounded-[8px] flex items-center justify-center"
                       style={{
