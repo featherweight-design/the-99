@@ -15,7 +15,7 @@
 //
 // SELF-EXCLUSION (addendum 2 / R3). On a deck's own decklist the marker scores
 // against every deck EXCEPT that one — both severities, no special case. A deck
-// holding a card is not competition for itself, and "0 free — in Atraxa"
+// holding a card is not competition for itself, and "none free — in Atraxa"
 // rendered inside Atraxa names the deck the player is already inside. The soft
 // copy already said "other brews" for this reason. Two consequences:
 //   • inside a finished deck the HARD state is unreachable — a second finished
@@ -45,10 +45,13 @@ export const availabilityCopy = {
         : `${softQty} copies are on unfinished decks`,
 
     // hard: free = 0. Names the claiming deck ONLY when there is exactly one.
-    hard: "0 free",
-    hardIn: (deckName: string) => `0 free — in ${deckName}`,
+    // "none" rather than "0": every neighbouring number on these surfaces is a
+    // quantity you can act on (`54 owned · 8 to buy`, `×3`), and a leading 0
+    // beside them reads as one more tally rather than as an absence.
+    hard: "none free",
+    hardIn: (deckName: string) => `none free — in ${deckName}`,
     hardMulti: (deckCount: number) =>
-      deckCount === 1 ? "0 free — in 1 deck" : `0 free — across ${deckCount} decks`,
+      deckCount === 1 ? "none free — in 1 deck" : `none free — across ${deckCount} decks`,
     hardAria: (deckName: string) =>
       `no free copies; this one is on your ${deckName} list`,
     hardMultiAria: (deckCount: number) =>
@@ -59,18 +62,20 @@ export const availabilityCopy = {
     // over: free < 0. Never names decks — it is a count problem, not a location.
     // One deck CAN be the whole demand: "any number" cards (Relentless Rats,
     // Nazgûl) let a single list claim nine copies of something you own four of.
+    // "also in" throughout, matching overAlsoIn below: one grammar for the
+    // over clause, whether the second claimant is named or counted.
     over: (shortBy: number) => `short ${shortBy}`,
     overWithDemand: (shortBy: number, deckCount: number) =>
       deckCount === 1
-        ? `short ${shortBy} — 1 deck wants it`
-        : `short ${shortBy} — ${deckCount} decks want it`,
+        ? `short ${shortBy} — also in 1 deck`
+        : `short ${shortBy} — also in ${deckCount} decks`,
     overAria: (shortBy: number, deckCount: number) =>
       deckCount === 1
         ? `1 of your finished lists includes this card and you own ${shortBy} too few`
         : `${deckCount} of your finished lists include this card and you own ${shortBy} too few`,
 
     // On a deck's OWN list the current deck is excluded from the marker, so
-    // "N decks want it" would count the deck the player is standing in. Name the
+    // "also in N decks" would count the deck the player is standing in. Name the
     // other claimant instead. Decklist-of-the-holder only.
     overAlsoIn: (shortBy: number, otherDeck: string) =>
       `short ${shortBy} — also in ${otherDeck}`,
@@ -80,7 +85,7 @@ export const availabilityCopy = {
     // Tile caption line (sits under the type line, not on the art).
     tileInUse: (deckName: string) => `in use — ${deckName}`,
     tileOver: (deckCount: number) =>
-      deckCount === 1 ? "1 deck wants it" : `${deckCount} decks want it`,
+      deckCount === 1 ? "also in 1 deck" : `also in ${deckCount} decks`,
   },
 
   // ── Surface 1 · commanders list ───────────────────────────────────────

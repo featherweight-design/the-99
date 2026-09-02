@@ -53,7 +53,7 @@ describe("GridView availability chip", () => {
 
   it("carries a count-only chip on a committed tile", () => {
     renderTiles({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
-    expect(screen.getByText("0 free")).toBeInTheDocument();
+    expect(screen.getByText("none free")).toBeInTheDocument();
     expect(screen.queryByText(/Atraxa/)).toBeNull();
   });
 

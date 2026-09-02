@@ -424,7 +424,7 @@ describe("the resolution row's availability marker", () => {
     await mount(result({ name: "Rhystic Study", availability: claimed(["Atraxa"]) }));
 
     // Both widths are drawn, so the marker is in the DOM twice.
-    expect(screen.getAllByText(/0 free — in/)).toHaveLength(2);
+    expect(screen.getAllByText(/none free — in/)).toHaveLength(2);
   });
 
   it("stays silent on a duplicate line for a card this deck already runs", async () => {
@@ -433,7 +433,7 @@ describe("the resolution row's availability marker", () => {
       ["rhystic study"],
     );
 
-    expect(screen.queryByText(/0 free/)).toBeNull();
+    expect(screen.queryByText(/none free/)).toBeNull();
   });
 
   // The commander is no `deck_cards` row, so it is absent from `deckOracleIds`
@@ -445,6 +445,6 @@ describe("the resolution row's availability marker", () => {
       "cmdr",
     );
 
-    expect(screen.queryByText(/0 free/)).toBeNull();
+    expect(screen.queryByText(/none free/)).toBeNull();
   });
 });

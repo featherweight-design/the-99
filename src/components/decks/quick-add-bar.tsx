@@ -74,7 +74,7 @@ export function QuickAddBar({
   // So it deliberately does NOT reuse `inDeck`, whose basic-land carve-out
   // exists to keep a second Forest addable. A Forest already on the list is
   // still a `deck_cards` row and the read still dropped it, and inheriting that
-  // carve-out drew a false `0 free` on the last Forest a player owns.
+  // carve-out drew a false `none free` on the last Forest a player owns.
   const selfClaims = useCallback(
     (r: SearchResult) =>
       deckOracleIds.includes(r.oracleId) || r.oracleId === commanderOracleId,

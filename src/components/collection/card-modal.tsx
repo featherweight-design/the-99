@@ -92,7 +92,7 @@ function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
  * tiles are count-only; here there is room for the full clause.
  *
  * The claiming deck's status pill is deliberately absent. Addendum 2 §3 draws
- * `×1 · ◆ 0 free — in Atraxa [Complete]`, but `hardDeckNames` carries names and
+ * `×1 · ◆ none free — in Atraxa [Complete]`, but `hardDeckNames` carries names and
  * nothing else, and `statusPill()` needs that deck's built/owned/unresolved
  * counts. Deriving "Complete" from `hard > 0` would be a guess that reads as
  * fact, so the clause ships without it.
@@ -123,7 +123,7 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
         <span className="font-mono" style={{ color: "var(--brass)" }}>×{card.quantity}</span>
         <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
         {/* No `nameless` here — this is the ONE place on /collection that names
-            the claiming deck ("0 free — in Atraxa"). Still no `selfExcluded`. */}
+            the claiming deck ("none free — in Atraxa"). Still no `selfExcluded`. */}
         {/* Row density supplies no type of its own, and this line is not a mono
             meta line either, so the canvas's 12px mono is set here. */}
         <AvailabilityMarker

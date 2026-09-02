@@ -72,7 +72,7 @@ describe("SuggestionTile availability caption", () => {
   });
 
   // §17. Neither detail trigger wraps the chip, so nothing above it would carry
-  // the prose — and the drawn `0 free` is written for the eye.
+  // the prose — and the drawn `none free` is written for the eye.
   it("speaks the chip's sentence, count-only as the chip is drawn", () => {
     mount({ owned: 1, hard: 1, soft: 0, free: 0, hardDeckNames: ["Atraxa"] });
 

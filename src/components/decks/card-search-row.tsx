@@ -151,7 +151,7 @@ export function CardSearchRowBody({
 
       {/* Ownership as a word and a figure. Never colour alone.
           `min-w-` rather than `w-`: the marker shares this cell (design 3.1
-          forbids a new column) and `0 free — in Atraxa` does not fit 80px. The
+          forbids a new column) and `none free — in Atraxa` does not fit 80px. The
           flex-1 type-line cell above absorbs the difference, so the ownership
           figures still line up down a list where nothing is marked. */}
       <span

@@ -2,7 +2,12 @@
 
 **Verdict: 🟢 Green.** R2's single blocker is closed with a rule that generalises rather than a
 patch, all four corrections are landed in the canvas as well as the ledger, and the new surfaces
-are drawn at both widths. Nothing is waiting on Design.
+are drawn at both widths. Nothing blocked the build.
+
+Items 8–11 below were added 2026-09-01, after the eleven implementation PRs merged and the shipped
+surfaces were walked whole. Items 8–10 are ratifications of calls already taken. **Item 11 is the
+one open ask**: a pre-existing pip overflow that needs a Design call because the fix is a grid
+change.
 
 Addendum 2 extends the #43 marker to the two surfaces the original brief left out of scope:
 `/collection` (states 1–5) and deck detail (states 6–9). The deck **index** stays untouched per
@@ -115,6 +120,34 @@ heading numbers are unchanged, verified by diffing the sorted line multiset agai
 Renumbering was the tempting fix and the wrong one — the heading numbers are the anchors every
 reference in the plan, this document and the pipeline status resolves against, so renumbering would
 have broken all of them to fix an ordering nobody reads sequentially.
+
+**8. `0 free` now reads `none free`, and the over clause is unified on `also in`.** Two wording
+changes taken 2026-09-01 after walking the shipped surfaces. `0 free`: every neighbouring number on
+these rows is a quantity you can act on (`54 owned · 8 to buy`, `×3`), so a leading `0` beside them
+reads as one more tally rather than as an absence. `also in`: the over clause said `wants it` on the
+row and `also in` on the tile, so a player learning the grammar on one surface could not read it on
+the other. Both are swept across every string at once, per the copy file's own rule that vocabulary
+never changes on a single surface. The handoff's `availability · copy strings.ts` still carries the
+old forms and is left untouched as a frozen record. **Ratify the wording, or name the form you want
+and it sweeps again.**
+
+**9. The header subtitle says `cards scanned`, which is a machine's noun for the player's shelf.**
+Considered and kept. The alternative readings either lose the "we looked at all of it" claim that
+makes the count worth printing, or imply a scan that can go stale. Ratify, or supply a phrase.
+
+**10. On a phone, an over-committed row truncates the deck name harder than the drawing shows.**
+The marker is a `flex-none` prefix and the name is the flexible half, per the Gap §2 decision above,
+so the longest clause — `short 1 — also in <name>` — leaves the least room for the name it is naming.
+The drawing uses short fixture names and does not hit it. Accepted rather than fixed: the full name
+is in `title` and in the accessible name, and the alternative is a character budget the Gap §2
+decision already rejected twice. Ratify the accepted truncation.
+
+**11. Five mana pips overrun their grid track on `/collection` rows, at both widths.** The row grid
+gives the pip cell `40px` on phone and `54px` on desktop; five pips measure roughly `67px` and
+`81px`. **This predates availability entirely** — no #43 or addendum work touched the pip row or the
+grid template — and is reported here only because the availability sweep is what found it. It is a
+grid change, which addendum 2 explicitly rules out for itself, so it needs a Design call rather than
+an engineering one: widen the track, wrap, or cap the pips with an overflow affordance.
 
 ## Decisions taken 2026-08-27, outside the design cycle
 
