@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
- * Brand tokens — the 35-key contract enforced by src/lib/theme/contract.test.ts.
+ * Brand tokens — the 36-key contract enforced by src/lib/theme/contract.test.ts.
  * Semantic names first; raw hexes live only here.
  * ------------------------------------------------------------------ */
 :root {
@@ -53,6 +53,9 @@
   --b: #1E1B1A;
   --r: #C05A3E;
   --g: #4B7A46;
+
+  /* Display face (1) */
+  --font-display-face: var(--font-cinzel);
 }
 
 /* Theme: kamigawa — "Neon Rain". Cyberpunk; the one high-chroma accent. */
@@ -92,6 +95,9 @@
   --b: #1E1B1A;
   --r: #C05A3E;
   --g: #4B7A46;
+
+  /* Display face (1) */
+  --font-display-face: var(--font-chakra-petch);
 }
 
 /* Theme: innistrad — "Moonlit". Gothic horror; near-achromatic by design, and
@@ -136,6 +142,9 @@
   --b: #1E1B1A;
   --r: #C05A3E;
   --g: #4B7A46;
+
+  /* Display face (1) */
+  --font-display-face: var(--font-spectral);
 }
 
 /* Theme: phyrexia — "Oil and Iron". Biomechanical; the only theme in which a
@@ -177,6 +186,9 @@
   --r: #C05A3E;
   /* Deepened and pushed toward yellow-green, away from the oil-teal accent. */
   --g: #527030;
+
+  /* Display face (1) */
+  --font-display-face: var(--font-syncopate);
 }
 
 /* Theme: duskmourn — "Screen Glow". Analog horror; the bright one. */
@@ -216,6 +228,9 @@
   --b: #1E1B1A;
   --r: #C05A3E;
   --g: #4B7A46;
+
+  /* Display face (1) */
+  --font-display-face: var(--font-big-shoulders);
 }
 
 /* Theme: kaldheim — "Rune Frost". Norse; the lightest chrome of the six. */
@@ -255,6 +270,9 @@
   --b: #1E1B1A;
   --r: #C05A3E;
   --g: #4B7A46;
+
+  /* Display face (1) */
+  --font-display-face: var(--font-metamorphous);
 }
 
 /* ------------------------------------------------------------------
@@ -302,7 +320,12 @@
   --color-r: var(--r);
   --color-g: var(--g);
 
-  --font-display: var(--font-cinzel);
+  /* One level of indirection. `@theme inline` substitutes the value of
+     --font-display at build time, so redefining --font-display inside a theme
+     block would do nothing — the utility would keep resolving to whatever
+     :root held. Pointing it at a second variable moves the substitution to
+     --font-display-face, which each theme block is free to reassign. */
+  --font-display: var(--font-display-face);
   --font-sans: var(--font-plex-sans);
   --font-mono: var(--font-plex-mono);
 }
@@ -363,6 +386,18 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
      different cursor writes a utility and wins. */
   button:not(:disabled) {
     cursor: pointer;
+  }
+
+  /* Metamorphous ships a single static weight. `font-synthesis-weight` defaults
+     to `auto`, so the display sites carrying `font-bold` do not simply fall back
+     to 400 — the browser fakes bold by dilating every stroke uniformly, which is
+     precisely wrong for a high-contrast decorative face and does its worst work
+     at the 15–18px where most of those sites sit. Pinned to the real 400.
+     The visible consequence is that Rune Frost headings sit a little lighter
+     than the other five themes'; that is the trade, and it was taken
+     deliberately. Delete this rule to reverse it — nothing else moves. */
+  [data-theme="kaldheim"] .font-display {
+    font-synthesis-weight: none;
   }
 }
 
