@@ -170,7 +170,11 @@ export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardPro
             <div className="flex items-center gap-[6px]">
               <span
                 className="font-display font-[800] shrink-0"
-                style={{ fontSize: 17, color: "var(--fg-faint)", width: 16, textAlign: "center" }}
+                // minWidth, not width: 16px was measured against Cinzel, and a
+                // two-digit rank in a wider display face overflows a fixed box
+                // into the name beside it. The floor still aligns the single
+                // digits, which is what the fixed width was for.
+                style={{ fontSize: 17, color: "var(--fg-faint)", minWidth: 16, textAlign: "center" }}
               >
                 {rank}
               </span>
