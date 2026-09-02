@@ -114,8 +114,7 @@ describe("Shopping groups by role and heads each group with the gap it closes", 
   it("does not render owned cards in the Shopping filter", () => {
     renderDecklist([rampOwned, rampUnowned]);
     expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
-    // Shopping rows render two name elements (phone + desktop, one hidden by CSS).
-    expect(screen.getAllByText("Arcane Signet").length).toBeGreaterThan(0);
+    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
   });
 });
 
@@ -147,8 +146,8 @@ describe("a basic land never appears in Shopping", () => {
     renderDecklist([basicLand, rampUnowned]);
     // Forest is a basic land — must not appear in Shopping even if unowned
     expect(screen.queryByText("Forest")).not.toBeInTheDocument();
-    // The ramp card still shows (two DOM nodes: phone + desktop, one hidden by CSS)
-    expect(screen.getAllByText("Arcane Signet").length).toBeGreaterThan(0);
+    // The ramp card still shows
+    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
   });
 
   it("excludes a basic land the classifier put in a shopping role", () => {
@@ -165,8 +164,7 @@ describe("a basic land never appears in Shopping", () => {
     });
     renderDecklist([basicInRampRole, rampUnowned]);
     expect(screen.queryByText("Forest")).not.toBeInTheDocument();
-    // Two DOM nodes: phone + desktop, one hidden by CSS
-    expect(screen.getAllByText("Arcane Signet").length).toBeGreaterThan(0);
+    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
   });
 });
 

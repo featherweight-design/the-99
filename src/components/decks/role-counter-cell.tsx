@@ -113,11 +113,9 @@ export function RoleCounterCell({
       </p>
 
       {/* §Role counter cell — fill bar track (desktop only).
-          A3: replaced by a dashed rule at height 0. The 10px top + 11px bottom
-          margins hold the cell to the same height as a live track (5px tall)
-          plus its own 8px top margin plus the 8px bottom gap — 21px total for
-          both paths. A rule is not a container, so there is nothing for a fill
-          to be measured against. */}
+          A3: replaced by a dashed rule at height 0, carrying the margins the
+          design specifies for it rather than the live track's. A rule is not a
+          container, so there is nothing for a fill to be measured against. */}
       {inFlight ? (
         <div
           aria-hidden

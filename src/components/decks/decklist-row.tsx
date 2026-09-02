@@ -177,53 +177,39 @@ export function DecklistRow({
             exists only on phone because the figure is detached from the name there
             and needs context; inline on desktop it reads fine without it. */}
         {hasShoppingMeta ? (
-          <>
-            {/* Phone: two-line column layout. Hidden on desktop. */}
-            <div className="md:hidden flex-auto min-w-0 flex flex-col justify-center">
-              <CardDetailTrigger
-                oracleId={card.oracleId}
-                name={card.name}
-                siblings={siblings}
-                className="flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px]"
-                style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
-              >
-                {label}
-              </CardDetailTrigger>
-              <span
-                className="font-mono text-[10px]"
-                style={{
-                  color: "var(--fg-faint)",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {figureTextPhone}
-              </span>
-            </div>
-            {/* Desktop: single-line row. Hidden on phone. */}
-            <div className="hidden md:flex flex-auto min-w-0 items-center gap-[6px]">
-              <CardDetailTrigger
-                oracleId={card.oracleId}
-                name={card.name}
-                siblings={siblings}
-                className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[13.5px]"
-                style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
-              >
-                {label}
-              </CardDetailTrigger>
-              <span
-                className="flex-none font-mono text-[10px] tabular-nums"
-                style={{
-                  color: Number.isFinite(shoppingFigure)
-                    ? "var(--fg-faint)"
-                    : "var(--fg-locked)",
-                }}
-              >
-                {figureTextDesktop}
-              </span>
-            </div>
-          </>
+          // One trigger at both widths — the layout changes, the card does not.
+          // Only the figure's wording differs, so only the figure is drawn twice.
+          <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:items-center md:gap-[6px]">
+            <CardDetailTrigger
+              oracleId={card.oracleId}
+              name={card.name}
+              siblings={siblings}
+              className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]"
+              style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
+            >
+              {label}
+            </CardDetailTrigger>
+            <span
+              className="md:hidden font-mono text-[10px] tabular-nums truncate"
+              style={{
+                color: Number.isFinite(shoppingFigure)
+                  ? "var(--fg-faint)"
+                  : "var(--fg-locked)",
+              }}
+            >
+              {figureTextPhone}
+            </span>
+            <span
+              className="hidden md:inline flex-none font-mono text-[10px] tabular-nums"
+              style={{
+                color: Number.isFinite(shoppingFigure)
+                  ? "var(--fg-faint)"
+                  : "var(--fg-locked)",
+              }}
+            >
+              {figureTextDesktop}
+            </span>
+          </div>
         ) : isMeta ? (
           <span className={nameClass} style={{ color: "var(--fg-faint)" }}>
             {label}

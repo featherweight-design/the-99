@@ -27,6 +27,14 @@ export type FillPlan = {
 
 const NON_LAND_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
 
+/** What a fill reaches for: every role target plus the land target. `planFill`
+    stops at each target and never exceeds it, so this is the plan's ceiling and
+    the number the commander page can promise before any query has run. Derived
+    rather than written down, because a target that moves must move the promise
+    with it. */
+export const FILL_BASELINE_TOTAL =
+  NON_LAND_ROLES.reduce((n, r) => n + ROLE_TARGETS[r], 0) + LAND_TARGET;
+
 /** Owned first, then inclusion descending, absent last, then name. Owned wins
     outright: a bought card is only ever here because the collection ran out,
     which is the promise Shopping makes about every row it prints. */
