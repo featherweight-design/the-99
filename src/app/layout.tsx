@@ -12,6 +12,7 @@ import {
 import { ClerkProvider } from "@clerk/nextjs";
 import Shell from "../components/shell/shell";
 import { clerkAppearance } from "../lib/shell/clerk-appearance";
+import { resolveTheme } from "../lib/theme/server";
 import "./globals.css";
 
 // The six display faces, one per theme. `preload: false` on every one of them
@@ -93,13 +94,18 @@ export const metadata: Metadata = {
   description: "MTG Commander companion",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Resolved on the server and written into the markup, so the first paint is
+  // already in the chosen theme. A client-side read would paint Amonkhet first
+  // and then swap, which is the flash the cookie exists to avoid.
+  const theme = await resolveTheme();
   return (
     <ClerkProvider appearance={clerkAppearance}>
       <html
         lang="en"
+        data-theme={theme}
         className={`${cinzel.variable} ${chakraPetch.variable} ${spectral.variable} ${syncopate.variable} ${bigShoulders.variable} ${metamorphous.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
       >
         {/* Signed-out routes render without the shell, so the stretch chain has
