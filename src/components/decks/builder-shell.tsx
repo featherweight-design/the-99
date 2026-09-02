@@ -544,6 +544,7 @@ export function BuilderShell({
               cards={cards}
               onSeeShelf={seeShelf}
               rolesWithShelves={shelvedRoles}
+              justFilled={deck.filled && autoCount > 0}
             />
 
             {/* No degraded banner here. The old one ("Synergy data offline")
@@ -589,7 +590,9 @@ export function BuilderShell({
             ) : (
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (
-              /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
+              /* §Empty Builder Mark + empty state (§Empty Builder Mark section).
+                 Branches on deck.filled: a deck reached by deletion congratulates
+                 the sweep; one that was never built welcomes the player. */
               <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
                 {/* §Mark container (mobile). Each breakpoint keeps its own
                     card-mark geometry; the quiet crown sits below both. */}
@@ -666,31 +669,64 @@ export function BuilderShell({
 
                 <Crown tone="quiet" className="mb-[14px]" />
 
-                {/* §Empty state heading */}
-                <h2
-                  className="font-display font-bold text-[21px] md:text-[24px] m-0"
-                  style={{ color: "var(--fg)" }}
-                >
-                  {addPanelCopy.builderEmpty.heading}
-                </h2>
+                {deck.filled ? (
+                  /* §Swept-empty branch: deck was filled then cleared by sweep */
+                  <>
+                    {/* §Swept-empty heading */}
+                    <h2
+                      className="font-display font-bold text-[21px] md:text-[24px] m-0"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {recommendationsCopy.sweptEmpty.heading}
+                    </h2>
 
-                {/* §Empty state body. One string at both widths now that both
-                    point at the same two entrances. */}
-                <p
-                  className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
-                  style={{ color: "var(--fg-body)" }}
-                >
-                  {addPanelCopy.builderEmpty.caption(commanderShortName)}
-                </p>
+                    {/* §Swept-empty body */}
+                    <p
+                      className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
+                      style={{ color: "var(--fg-body)" }}
+                    >
+                      {recommendationsCopy.sweptEmpty.body(deck.commander.name)}
+                    </p>
 
-                {/* §Empty state role hint, now at both widths — mobile spent
-                    that vertical budget on the deleted CTA. */}
-                <p
-                  className="font-mono text-[11px] mt-[20px]"
-                  style={{ color: "var(--fg-faint)" }}
-                >
-                  {addPanelCopy.builderEmpty.roleHint}
-                </p>
+                    {/* §Swept-empty CTA — links into Consider */}
+                    <button
+                      type="button"
+                      onClick={() => setView("consider")}
+                      className="font-mono text-[11px] mt-[20px] text-brass hover:text-brass-hover active:text-brass-mid"
+                    >
+                      {recommendationsCopy.sweptEmpty.cta}
+                    </button>
+                  </>
+                ) : (
+                  /* §First-run empty branch: deck was never filled */
+                  <>
+                    {/* §Empty state heading */}
+                    <h2
+                      className="font-display font-bold text-[21px] md:text-[24px] m-0"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {addPanelCopy.builderEmpty.heading}
+                    </h2>
+
+                    {/* §Empty state body. One string at both widths now that both
+                        point at the same two entrances. */}
+                    <p
+                      className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
+                      style={{ color: "var(--fg-body)" }}
+                    >
+                      {addPanelCopy.builderEmpty.caption(commanderShortName)}
+                    </p>
+
+                    {/* §Empty state role hint, now at both widths — mobile spent
+                        that vertical budget on the deleted CTA. */}
+                    <p
+                      className="font-mono text-[11px] mt-[20px]"
+                      style={{ color: "var(--fg-faint)" }}
+                    >
+                      {addPanelCopy.builderEmpty.roleHint}
+                    </p>
+                  </>
+                )}
               </section>
             ) : (
               /* Task 8: Decklist body */

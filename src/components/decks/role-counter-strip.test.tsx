@@ -12,6 +12,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { RoleCounterStrip } from "./role-counter-strip";
+import { RoleCounterCell } from "./role-counter-cell";
 
 const ROLES: MixRole[] = ["ramp", "draw", "removal", "wipes", "land"];
 
@@ -267,5 +268,78 @@ describe("role counter strip — unresolved rows", () => {
     );
     expect(container.textContent).not.toMatch(/unresolved/i);
     expect(container.textContent).not.toContain("*");
+  });
+});
+
+describe("role counter cell — A3 in-flight treatment (have === null)", () => {
+  const renderInFlight = () =>
+    render(
+      <RoleCounterCell
+        label="Ramp"
+        have={null}
+        target={10}
+        advisory={false}
+      />,
+    );
+
+  it("draws a dashed rule and a dash numerator, and no fill element", () => {
+    const { container } = renderInFlight();
+    // No fill bar track (the track has this specific class combination)
+    const fillBar = container.querySelector(".rounded-full.overflow-hidden");
+    expect(fillBar).toBeNull();
+    // The numerator reads as a dash — textContent of the cell must include an em dash before the denominator
+    // Check the cell contains "—" (em dash) but NOT a digit as the count
+    expect(container.textContent).toMatch(/—\s*\/\s*10/);
+  });
+
+  it("keeps the denominator when have is null", () => {
+    const { container } = renderInFlight();
+    // The denominator (/ 10) must be present
+    expect(container.textContent).toContain("/ 10");
+  });
+
+  it("drops the label to --fg-locked and the figure to --border-strong", () => {
+    const { container } = renderInFlight();
+    // Label must use text-fg-locked (not text-fg-faint)
+    const label = container.querySelector("p:first-child");
+    expect(label?.className).toContain("text-fg-locked");
+    expect(label?.className).not.toContain("text-fg-faint");
+    // Figure color must be --border-strong
+    const figure = container.querySelector("p:nth-child(2)");
+    expect(figure?.getAttribute("style")).toContain("var(--border-strong)");
+  });
+});
+
+describe("role counter cell — A4 short cell in a just-filled deck", () => {
+  it("a short cell in a just-filled deck takes the border-strong hairline", () => {
+    const { container } = render(
+      <RoleCounterCell
+        label="Ramp"
+        have={0}
+        target={10}
+        advisory={false}
+        justFilled={true}
+      />,
+    );
+    // The cell shell must use border-border-strong, not the default border-border
+    const cell = container.firstElementChild as HTMLElement;
+    expect(cell.className).toContain("border-border-strong");
+    expect(cell.className).not.toContain("border-border ");
+  });
+
+  it("a met cell in a just-filled deck does not take border-strong", () => {
+    const { container } = render(
+      <RoleCounterCell
+        label="Ramp"
+        have={10}
+        target={10}
+        advisory={false}
+        justFilled={true}
+      />,
+    );
+    // The met cell keeps the default border — border-strong is only for short cells
+    const cell = container.firstElementChild as HTMLElement;
+    expect(cell.className).not.toContain("border-border-strong");
+    expect(cell.className).toContain("border-border");
   });
 });
