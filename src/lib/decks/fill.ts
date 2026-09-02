@@ -64,6 +64,12 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
     // The fill has no obligation to reproduce suggestDeck's ordering — ruling:
     // the panel order wins, because a user reading the filled deck against the
     // coverage panels should see the same sequence in both.
+    // A land is never spent on a non-land role. classifyRoles excludes lands
+    // from `ramp` alone, so a land that draws or wipes would otherwise be taken
+    // here — bought, if the player does not own it, against the promise the
+    // land pass makes below — and then skipped as spent, leaving the mana base
+    // short by exactly the cards that should have filled it.
+    if (roles.includes("land")) continue;
     const role = NON_LAND_ROLES.find((r) => roles.includes(r) && counts[r] < ROLE_TARGETS[r]);
     if (!role) continue;
     spent.add(candidate.oracleId);

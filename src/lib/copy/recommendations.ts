@@ -132,6 +132,14 @@ export const recommendationsCopy = {
   shopping: {
     intro: (n: string) =>
       `${n} cards we reached past your collection for, to get each role to its baseline. Nothing here is a wildcard — every one is closing a specific gap.`,
+    // This surface was drawn for a list the fill produced, and the intro above
+    // says so. A deck built by hand, or one the player has added unowned cards
+    // to on top of the fill, holds rows nobody reached past the collection for
+    // — so the list states its size and claims nothing about where the cards
+    // came from. The group headings keep their gap clause either way: "closes
+    // 7→10" is arithmetic about the deck, true whoever put the card on the list.
+    introUnfilled: (n: string) =>
+      `${n} cards this deck wants that your collection does not have.`,
     // Role group heading clause. The arithmetic the group closes, stated once.
     groupGap: (n: string, from: string, to: string) =>
       `${n} · closes ${from}→${to}`,

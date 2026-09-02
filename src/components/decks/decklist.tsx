@@ -276,7 +276,9 @@ export function Decklist({
             className="text-[12.5px] md:text-[13.5px] leading-[1.6] mb-[14px]"
             style={{ color: "var(--fg-body)" }}
           >
-            {recommendationsCopy.shopping.intro(String(n))}
+            {allAuto
+              ? recommendationsCopy.shopping.intro(String(n))
+              : recommendationsCopy.shopping.introUnfilled(String(n))}
           </p>
 
           {/* Role groups */}

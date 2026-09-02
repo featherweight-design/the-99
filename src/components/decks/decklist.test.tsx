@@ -98,6 +98,25 @@ function renderDecklist(
 
 // ── Test suites ───────────────────────────────────────────────────────────────
 
+describe("Shopping's intro claims provenance only where it has it", () => {
+  it("says we reached past the collection when every row is the fill's", () => {
+    renderDecklist([rampUnowned, drawUnowned]);
+    expect(
+      screen.getByText(recommendationsCopy.shopping.intro("2")),
+    ).toBeInTheDocument();
+  });
+
+  it("states the size and nothing more once a row is the player's own", () => {
+    renderDecklist([rampUnowned, drawUnownedManual]);
+    expect(
+      screen.getByText(recommendationsCopy.shopping.introUnfilled("2")),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.intro("2")),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("Shopping groups by role and heads each group with the gap it closes", () => {
   it("renders the role label as a group header for unowned cards", () => {
     renderDecklist([rampOwned, rampUnowned, drawOwned, drawUnowned]);

@@ -71,6 +71,31 @@ describe("planFill", () => {
     expect(plan.bought).toBe(0);
   });
 
+  it("never buys a land that also reads as removal", () => {
+    // classifyRoles keeps lands out of `ramp` only, so a land whose text
+    // matches a removal pattern is the one shape that could reach the
+    // non-land pass and be bought there.
+    const plan = planFill([
+      c({
+        oracleId: "blast-zone", name: "blast-zone", typeLine: "Land",
+        oracleText: "Destroy all permanents. {T}: Add {C}.",
+        owned: false, ownedQuantity: 0,
+      }),
+    ]);
+    expect(plan.rows).toHaveLength(0);
+    expect(plan.bought).toBe(0);
+  });
+
+  it("leaves an owned utility land for the mana base rather than a role slot", () => {
+    const plan = planFill([
+      c({
+        oracleId: "mikokoro", name: "mikokoro", typeLine: "Land",
+        oracleText: "{T}: Add {C}. {2}, {T}: Draw a card.",
+      }),
+    ]);
+    expect(plan.rows).toEqual([{ oracleId: "mikokoro", quantity: 1, role: "land" }]);
+  });
+
   it("names every role it came up short on, in role order", () => {
     const plan = planFill([ramp("r0", 5), basic("forest", 37)]);
     expect(plan.shortfalls).toEqual(["ramp", "draw", "removal", "wipes"]);
