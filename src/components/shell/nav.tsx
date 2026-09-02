@@ -219,7 +219,10 @@ export function TabBar({ locked }: { locked: boolean }) {
 
   return (
     <nav
-      className="md:hidden fixed inset-x-0 bottom-0 z-40 flex px-[6px] pt-[10px] pb-[22px]"
+      // Held to --tabbar-h rather than sized by its contents: the bar is fixed,
+      // so every surface that has to sit clear of it reserves that height by
+      // hand, and an intrinsic height gives them nothing exact to reserve.
+      className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-[var(--tabbar-h)] items-center px-[6px] pt-[10px] pb-[22px]"
       style={{
         background: "var(--surface-rail)",
         borderTop: "1px solid var(--border-strong)",

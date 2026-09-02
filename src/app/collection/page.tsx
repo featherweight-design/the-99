@@ -88,7 +88,7 @@ export default async function CollectionPage() {
   }
 
   return (
-    <section className="flex flex-col min-h-[calc(100vh-80px)] md:min-h-screen">
+    <section className="flex flex-col min-h-[calc(100vh-var(--tabbar-h))] md:min-h-screen">
       {/* Header — §Collection Page Header */}
       <div
         className="flex items-center md:items-end justify-between gap-[20px] p-[20px_18px_12px] md:p-[28px_34px_0] mb-[14px] md:mb-0"

@@ -35,12 +35,14 @@ export default async function Shell({
       <NavRail locked={locked} theme={theme} />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader theme={theme} />
-        {/* pb-[80px] on mobile leaves room for the fixed tab bar
-            (48px content + 22px safe-area + ~10px gap). */}
+        {/* The bottom padding on mobile leaves room for the fixed tab bar, which
+            is held to exactly --tabbar-h so this reservation is not an estimate. */}
         {/* `flex flex-col` continues the stretch chain the rail already starts,
             so a route child can claim the leftover height with flex-1 instead
             of guessing at the header/tab-bar offsets in a calc(). */}
-        <main className="flex min-w-0 flex-1 flex-col pb-[80px] md:pb-0">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col pb-[var(--tabbar-h)] md:pb-0">
+          {children}
+        </main>
       </div>
       <TabBar locked={locked} />
     </div>
