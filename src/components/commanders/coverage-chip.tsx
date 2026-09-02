@@ -7,14 +7,14 @@
 //   Chip:  --surface-raised bg · 1px solid success-at-40% · radius 999px · h-[28px]
 //          padding 0 4px 0 10px (with figure) / 0 10px (absent or showFigures=false)
 //          gap 8px · dot 6px --success · name mono 11.5px --fg-body
-//          hover: border --brass, name --fg
+//          hover: border --accent, name --fg
 //   Figure plate: bg --elevated · radius 999px · 3px 7px · mono 10.5px --fg · tabular-nums
 //   Absent (showFigures=true, inclusionPct=null): plate removed, dash mono 10.5px --fg-locked
 //   showFigures=false: neither plate nor dash (panel note says it once)
 //   Phone row: --surface · 1px solid --border · radius 8px · min-height 44px · 0 12px · gap 9px
 //              dot 7px · name 13.5px --fg ellipsed · figure mono 11.5px --fg right-aligned tabular
-//   Desktop disclosure: dashed --border-strong chip · mono 11px --fg-faint (+N more) → --brass
-//   Phone disclosure:   full-width 44px dashed row · mono 12px --brass (Show all N)
+//   Desktop disclosure: dashed --border-strong chip · mono 11px --fg-faint (+N more) → --accent
+//   Phone disclosure:   full-width 44px dashed row · mono 12px --accent (Show all N)
 
 import type { RoleCard } from "../../lib/recs/score";
 import { CardDetailTrigger } from "../decks/card-detail-provider";
@@ -51,8 +51,8 @@ export function CoverageChip({
       name={card.name}
       siblings={siblings}
       ariaLabel={ariaLabel}
-      className="group inline-flex items-center rounded-full h-[28px] border border-[color-mix(in_srgb,var(--success)_40%,var(--bg))] bg-surface-raised hover:border-brass"
-      style={{ gap: 8, padding: showFigures ? "0 4px 0 10px" : "0 10px" }}
+      className="group inline-flex items-center rounded-full h-[28px] border border-[color-mix(in_srgb,var(--success)_40%,var(--bg))] bg-surface-raised hover:border-accent"
+      style={{ gap: 8, padding: hasFigure ? "0 4px 0 10px" : "0 10px" }}
     >
       {/* Dot — 6px green, aria-hidden */}
       <span
@@ -137,7 +137,7 @@ export function CoverageRow({
       ) : showFigures ? (
         <span
           aria-hidden
-          className="font-mono text-[10.5px] text-fg-locked text-right shrink-0"
+          className="font-mono text-[11.5px] text-fg-locked text-right shrink-0"
         >
           {recommendationsCopy.coverage.chipNoFigure}
         </span>
@@ -159,6 +159,9 @@ export function CoverageDisclosure({
   onToggle,
 }: {
   width: "desktop" | "phone";
+  /** The role's whole card count — not the overflow. Both widths announce
+      "Show all N <role> cards", so the number they name has to be the same
+      number; only the desktop chip's visible label counts the remainder. */
   total: number;
   role: string;
   expanded: boolean;
@@ -183,7 +186,7 @@ export function CoverageDisclosure({
         className="flex w-full items-center justify-center rounded-[8px] border border-dashed border-border-strong"
         style={{ minHeight: "44px" }}
       >
-        <span className="font-mono text-[12px] text-brass">
+        <span className="font-mono text-[12px] text-accent">
           {expanded
             ? recommendationsCopy.coverage.showFewer
             : recommendationsCopy.coverage.showAll(n)}
@@ -202,15 +205,15 @@ export function CoverageDisclosure({
       aria-label={
         expanded
           ? recommendationsCopy.coverage.showFewer
-          : recommendationsCopy.coverage.moreChips(n)
+          : recommendationsCopy.coverage.showAllAria(n, role)
       }
       className="inline-flex items-center rounded-full border border-dashed border-border-strong"
-      style={{ padding: "0 10px", height: 28 }}
+      style={{ padding: "0 12px", height: 28 }}
     >
-      <span className={`font-mono text-[11px] ${expanded ? "text-fg-faint" : "text-brass"}`}>
+      <span className={`font-mono text-[11px] ${expanded ? "text-fg-faint" : "text-accent"}`}>
         {expanded
           ? recommendationsCopy.coverage.showFewer
-          : recommendationsCopy.coverage.moreChips(n)}
+          : recommendationsCopy.coverage.moreChips(String(total - COVERAGE_CAP.desktop))}
       </span>
     </button>
   );

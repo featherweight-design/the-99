@@ -288,7 +288,7 @@ describe("edge count: 0 cards", () => {
       roleCounts: BASE_ROLE_COUNTS,
     });
     expect(screen.getAllByText(/No .+ cards in your pool/)).not.toHaveLength(0);
-    expect(screen.queryByRole("button", { name: /\+\d+ more/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Show all/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Show all/i })).toBeNull();
   });
 
@@ -311,7 +311,7 @@ describe("edge count: 1-6 cards (both widths, no disclosure)", () => {
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 5 },
     });
     expect(screen.getAllByText(/Card \d+/).length).toBeGreaterThanOrEqual(5);
-    expect(screen.queryByRole("button", { name: /\+\d+ more/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Show all/i })).toBeNull();
   });
 
   it("phone: 5 ramp cards, no disclosure", () => {
@@ -342,7 +342,7 @@ describe("edge count: 7-12 cards", () => {
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 10 },
     });
     // 10 <= desktop cap(12), no disclosure
-    expect(screen.queryByRole("button", { name: /\+\d+ more/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Show all/i })).toBeNull();
   });
 
   it("phone: 10 ramp cards, shows 6 plus Show all disclosure", () => {
@@ -363,7 +363,7 @@ describe("edge count: 7-12 cards", () => {
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(12) },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 12 },
     });
-    expect(screen.queryByRole("button", { name: /\+\d+ more/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Show all/i })).toBeNull();
   });
 });
 
@@ -374,8 +374,10 @@ describe("edge count: 13-40 cards (both widths capped + disclosure)", () => {
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(20) },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 20 },
     });
+    // Visible label is "+8 more"; the accessible name spells the role out.
+    expect(screen.getByText(/\+8 more/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /\+8 more/i }),
+      screen.getByRole("button", { name: /Show all 20 ramp cards/i }),
     ).toBeInTheDocument();
   });
 
@@ -396,7 +398,7 @@ describe("edge count: 13-40 cards (both widths capped + disclosure)", () => {
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(20) },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 20 },
     });
-    const disclosureBtn = screen.getByRole("button", { name: /\+8 more/i });
+    const disclosureBtn = screen.getByRole("button", { name: /Show all 20 ramp cards/i });
     fireEvent.click(disclosureBtn);
     await waitFor(() => {
       expect(screen.getByText("Show fewer")).toBeInTheDocument();
@@ -454,8 +456,9 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(45) },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 45 },
     });
+    expect(screen.getByText(/\+33 more/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /\+33 more/i }),
+      screen.getByRole("button", { name: /Show all 45 ramp cards/i }),
     ).toBeInTheDocument();
   });
 
@@ -465,7 +468,7 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(45) },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 45 },
     });
-    const disclosureBtn = screen.getByRole("button", { name: /\+33 more/i });
+    const disclosureBtn = screen.getByRole("button", { name: /Show all 45 ramp cards/i });
     fireEvent.click(disclosureBtn);
     await waitFor(() => {
       expect(

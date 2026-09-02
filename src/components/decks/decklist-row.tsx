@@ -174,7 +174,7 @@ export function DecklistRow({
               name={card.name}
               siblings={siblings}
               className="flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]"
-              style={{ color: "#EDE6D8", background: "transparent", border: "none", padding: 0 }}
+              style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
             >
               {label}
             </CardDetailTrigger>
@@ -191,7 +191,7 @@ export function DecklistRow({
             </span>
           </div>
         ) : isMeta ? (
-          <span className={nameClass} style={{ color: "#8E8269" }}>
+          <span className={nameClass} style={{ color: "var(--fg-faint)" }}>
             {label}
           </span>
         ) : (

@@ -5,8 +5,8 @@
 // card. Activating it calls keepAutoCard, which clears auto=false for that row.
 //
 // Geometry is BuyTag's exactly, hueless: mono 9.5px --fg-locked on --elevated,
-// radius 4px, padding 1px 5px. Hover/focus take label --brass, border 1px
-// --brass-shadow. On phone the row already provides 44px height, so this tag
+// radius 4px, padding 1px 5px. Hover/focus take label --accent, border 1px
+// --accent-shadow. On phone the row already provides 44px height, so this tag
 // pads out to the full hit box without growing its own visual box.
 
 import { useState } from "react";
@@ -47,7 +47,7 @@ export function AutoTag({ deckId, oracleId, name }: AutoTagProps) {
         " self-center min-h-[44px] md:min-h-0" +
         " cursor-pointer border" +
         (active
-          ? " text-brass border-brass-shadow bg-elevated"
+          ? " text-accent border-accent-shadow bg-elevated"
           : " text-fg-locked border-transparent bg-elevated") +
         " disabled:opacity-50 disabled:cursor-default"
       }

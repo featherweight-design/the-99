@@ -49,7 +49,8 @@ function RolePanelDesktop({
     : 0;
 
   return (
-    <div
+    <section
+      aria-labelledby={`${listId}-name`}
       className="rounded-[10px]"
       style={{
         background: "var(--surface-rail)",
@@ -58,10 +59,14 @@ function RolePanelDesktop({
       }}
     >
       {/* Header row */}
-      <div className="flex items-center gap-[12px]" style={{ marginBottom: 10 }}>
-        <span className="font-sans font-[600]" style={{ fontSize: 15, color: "var(--fg)" }}>
+      <div className="flex items-baseline gap-[12px]" style={{ marginBottom: 10 }}>
+        <h3
+          id={`${listId}-name`}
+          className="font-sans font-[600] m-0"
+          style={{ fontSize: 15, color: "var(--fg)" }}
+        >
           {ROLE_LABELS[role]}
-        </span>
+        </h3>
         <span className="font-mono" style={{ fontSize: 12, color: "var(--success)" }}>
           {count} owned
         </span>
@@ -75,20 +80,24 @@ function RolePanelDesktop({
       </div>
 
       {/* Card chips */}
-      <div
-        id={listId}
-        className="flex flex-wrap gap-[7px]"
-        style={expanded ? { maxHeight: 320, overflowY: "auto" } : undefined}
-      >
-        {cards.length === 0 ? (
-          <span className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
-            No {ROLE_LABELS[role].toLowerCase()} cards in your pool
-          </span>
-        ) : (
-          <>
+      {cards.length === 0 ? (
+        <span id={listId} className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
+          No {ROLE_LABELS[role].toLowerCase()} cards in your pool
+        </span>
+      ) : (
+        <>
+          <ul
+            id={listId}
+            className="flex flex-wrap gap-[7px] list-none m-0 p-0"
+            style={expanded ? { maxHeight: 320, overflowY: "auto" } : undefined}
+          >
             {visible.map((c) => (
-              <CoverageChip key={c.oracleId} card={c} siblings={siblings} showFigures={showFigures} />
+              <li key={c.oracleId} className="contents">
+                <CoverageChip card={c} siblings={siblings} showFigures={showFigures} />
+              </li>
             ))}
+          </ul>
+          <div className="flex flex-wrap items-center gap-[7px] mt-[7px] empty:mt-0">
             {/* Beyond expansion cap: inert text, no hit box */}
             {expanded && beyondExpanded > 0 && (
               <span className="font-mono text-[11px] text-fg-faint self-center">
@@ -99,17 +108,24 @@ function RolePanelDesktop({
             {hiddenCount > 0 && (
               <CoverageDisclosure
                 width="desktop"
-                total={cards.length - cap}
+                total={cards.length}
                 role={ROLE_LABELS[role].toLowerCase()}
                 expanded={expanded}
                 controls={listId}
                 onToggle={onToggle}
               />
             )}
-          </>
-        )}
-      </div>
-    </div>
+          </div>
+          {/* §7 legend — only where a neighbouring chip actually prints a figure,
+              so it never explains a dash that is not on screen. */}
+          {showFigures && visible.some((c) => !Number.isFinite(c.inclusionPct)) && (
+            <p className="font-mono text-[10px] text-fg-locked m-0 mt-[10px]">
+              {recommendationsCopy.coverage.chipNoFigureLegend}
+            </p>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -140,7 +156,8 @@ function RolePanelPhone({
     : 0;
 
   return (
-    <div
+    <section
+      aria-labelledby={`${listId}-name`}
       className="rounded-[10px]"
       style={{
         background: "var(--surface-rail)",
@@ -148,38 +165,49 @@ function RolePanelPhone({
         padding: "13px 14px",
       }}
     >
-      {/* Header */}
-      <div className="flex items-center gap-[10px]" style={{ marginBottom: 10 }}>
-        <span className="font-sans font-[600]" style={{ fontSize: 14, color: "var(--fg)" }}>
+      {/* Header — the gap clause takes its own line here, because at phone width
+          a role name, a count and a full sentence do not fit on one. */}
+      <div className="flex items-baseline gap-[10px]">
+        <h3
+          id={`${listId}-name`}
+          className="font-sans font-[600] m-0"
+          style={{ fontSize: 15, color: "var(--fg)" }}
+        >
           {ROLE_LABELS[role]}
-        </span>
+        </h3>
         <span className="font-mono" style={{ fontSize: 11.5, color: "var(--success)" }}>
           {count} owned
         </span>
-        <span className="font-mono" style={{ fontSize: 11, color: "var(--fg-faint)", marginLeft: "auto" }}>
-          {count > target
-            ? `Well past the ${target}-source baseline`
-            : count === target
-              ? `At the ${target}-source baseline`
-              : `${target - count} short of baseline`}
-        </span>
       </div>
+      <p className="font-mono m-0" style={{ fontSize: 10.5, color: "var(--fg-faint)", marginBottom: 9 }}>
+        {count > target
+          ? `Well past the ${target}-source baseline`
+          : count === target
+            ? `At the ${target}-source baseline`
+            : `${target - count} short of baseline`}
+      </p>
 
       {/* Rows */}
       <div
-        id={listId}
         className="flex flex-col gap-[8px]"
-        style={expanded ? { maxHeight: 320, overflowY: "auto" } : undefined}
       >
         {cards.length === 0 ? (
-          <span className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
+          <span id={listId} className="font-mono" style={{ fontSize: 11, color: "var(--fg-locked)" }}>
             No {ROLE_LABELS[role].toLowerCase()} cards in your pool
           </span>
         ) : (
           <>
-            {visible.map((c) => (
-              <CoverageRow key={c.oracleId} card={c} siblings={siblings} showFigures={showFigures} />
-            ))}
+            <ul
+              id={listId}
+              className="flex flex-col gap-[8px] list-none m-0 p-0"
+              style={expanded ? { maxHeight: 320, overflowY: "auto" } : undefined}
+            >
+              {visible.map((c) => (
+                <li key={c.oracleId}>
+                  <CoverageRow card={c} siblings={siblings} showFigures={showFigures} />
+                </li>
+              ))}
+            </ul>
             {expanded && beyondExpanded > 0 && (
               <span className="font-mono text-[12px] text-fg-faint text-center py-[10px]">
                 {recommendationsCopy.coverage.beyondCap(String(beyondExpanded))}
@@ -195,10 +223,16 @@ function RolePanelPhone({
                 onToggle={onToggle}
               />
             )}
+            {/* §7 legend — phone copy is the shorter of the two. */}
+            {showFigures && visible.some((c) => !Number.isFinite(c.inclusionPct)) && (
+              <p className="font-mono text-[10px] text-fg-locked m-0">
+                {recommendationsCopy.coverage.chipNoFigureLegendMobile}
+              </p>
+            )}
           </>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -271,11 +305,12 @@ export function CoverageSection({
 
   return (
     <CardDetailProvider>
+      <div>
       {/* Heading */}
       <h2 className="font-display font-[600] m-0" style={{ fontSize: 20, color: "var(--fg)" }}>
         Role Coverage
       </h2>
-      <p className="m-0 font-mono" style={{ fontSize: 12, color: "var(--fg-faint)" }}>
+      <p className="m-0 font-mono mt-[2px]" style={{ fontSize: 12, color: "var(--fg-faint)" }}>
         {subcaption}
       </p>
 
@@ -284,19 +319,27 @@ export function CoverageSection({
         <div
           data-absent
           data-testid="coverage-note"
-          className="flex items-start gap-[10px] rounded-[8px] mt-[12px]"
+          className="flex items-start gap-[10px] rounded-[8px]"
           style={{
             background: "var(--elevated-hover)",
             border: "1px solid var(--border-strong)",
-            borderLeft: "3px solid var(--fg-faint)",
-            padding: "10px 13px",
+            // 2px, where degraded's is 3px: the weight of the rule is the only
+            // thing separating a permanent absence from an outage at a glance.
+            borderLeft: "2px solid var(--fg-faint)",
+            padding: isDesktop ? "9px 13px" : "9px 12px",
+            marginTop: isDesktop ? 14 : undefined,
+            marginBottom: isDesktop ? undefined : 14,
+            maxWidth: isDesktop ? 640 : undefined,
           }}
         >
+          <span aria-hidden style={{ fontSize: isDesktop ? 13 : 12, color: "var(--fg-faint)" }}>
+            ⚠
+          </span>
           <div>
             <strong className="font-sans" style={{ fontSize: 13, color: "var(--fg-body)", fontWeight: 600 }}>
               {recommendationsCopy.coverage.absentHeading}
             </strong>
-            <span style={{ fontSize: 12.5, color: "var(--fg-muted)", lineHeight: 1.45 }}>
+            <span style={{ fontSize: isDesktop ? 12.5 : 12, color: "var(--fg-muted)", lineHeight: 1.45 }}>
               {" — "}
               {isDesktop
                 ? recommendationsCopy.coverage.absentBody
@@ -310,12 +353,14 @@ export function CoverageSection({
         <div
           data-degraded
           data-testid="coverage-note"
-          className="rounded-[8px] mt-[12px]"
+          className={isDesktop ? "rounded-[9px]" : "rounded-[8px]"}
           style={{
-            background: "var(--elevated-hover)",
-            border: "1px solid var(--border-strong)",
+            background: "var(--surface-sunken)",
+            border: "1px solid var(--border)",
             borderLeft: "3px solid var(--warning)",
-            padding: "10px 13px",
+            padding: isDesktop ? "11px 15px" : "10px 12px",
+            marginTop: 14,
+            maxWidth: isDesktop ? 700 : undefined,
           }}
         >
           {isDesktop ? (
@@ -336,9 +381,10 @@ export function CoverageSection({
                 disabled={retrying}
                 aria-busy={retrying}
                 aria-label={recommendationsCopy.coverage.degradedRetryAria}
-                className="bg-transparent border-0 p-0 font-mono text-brass shrink-0"
+                className="bg-transparent border-0 p-0 font-semibold text-accent shrink-0"
                 style={{
-                  fontSize: 12,
+                  fontSize: 12.5,
+                  borderBottom: "1px solid var(--accent-shadow)",
                   cursor: retrying ? "default" : "pointer",
                   opacity: retrying ? 0.55 : undefined,
                 }}
@@ -364,12 +410,15 @@ export function CoverageSection({
                 disabled={retrying}
                 aria-busy={retrying}
                 aria-label={recommendationsCopy.coverage.degradedRetryAria}
-                className="bg-transparent border-0 flex items-center justify-center w-full font-mono text-brass"
+                className="bg-transparent border-0 flex items-center font-semibold text-accent"
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
+                  borderBottom: "1px solid var(--accent-shadow)",
                   cursor: retrying ? "default" : "pointer",
                   opacity: retrying ? 0.55 : undefined,
                   minHeight: 44,
+                  marginTop: 2,
+                  paddingLeft: 20,
                 }}
               >
                 {recommendationsCopy.coverage.degradedRetry}
@@ -407,6 +456,7 @@ export function CoverageSection({
             />
           );
         })}
+      </div>
       </div>
     </CardDetailProvider>
   );

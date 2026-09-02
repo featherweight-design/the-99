@@ -179,7 +179,7 @@ export function Decklist({
           <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
             <p
               className="font-mono text-[12px] font-semibold mb-[6px]"
-              style={{ color: "var(--brass)" }}
+              style={{ color: "var(--accent)" }}
             >
               {recommendationsCopy.shopping.emptyCoveredHeading}
             </p>

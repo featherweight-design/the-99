@@ -119,33 +119,37 @@ describe("CoverageDisclosure", () => {
     render(
       <CoverageDisclosure
         width="desktop"
-        total={5}
+        total={17}
         role="ramp"
         expanded={false}
         controls="ramp-list"
         onToggle={vi.fn()}
       />,
     );
-    expect(screen.getByRole("button", { name: /\+5 more/i })).toBeInTheDocument();
+    // The visible label stays "+5 more"; the accessible name spells the role out.
+    expect(screen.getByText(/\+5 more/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Show all 17 ramp cards/i }),
+    ).toBeInTheDocument();
   });
 
-  it("paints the desktop label brass while it can still expand, faint once it cannot", () => {
+  it("paints the desktop label accent while it can still expand, faint once it cannot", () => {
     const { rerender } = render(
       <CoverageDisclosure
         width="desktop"
-        total={5}
+        total={17}
         role="ramp"
         expanded={false}
         controls="ramp-list"
         onToggle={vi.fn()}
       />,
     );
-    expect(screen.getByText(/\+5 more/)).toHaveClass("text-brass");
+    expect(screen.getByText(/\+5 more/)).toHaveClass("text-accent");
 
     rerender(
       <CoverageDisclosure
         width="desktop"
-        total={5}
+        total={17}
         role="ramp"
         expanded
         controls="ramp-list"
@@ -174,7 +178,7 @@ describe("CoverageDisclosure", () => {
     render(
       <CoverageDisclosure
         width="desktop"
-        total={5}
+        total={17}
         role="ramp"
         expanded
         controls="ramp-list"
@@ -205,14 +209,14 @@ describe("CoverageDisclosure", () => {
     render(
       <CoverageDisclosure
         width="desktop"
-        total={3}
+        total={15}
         role="draw"
         expanded={false}
         controls="draw-overflow"
         onToggle={vi.fn()}
       />,
     );
-    expect(screen.getByRole("button", { name: /\+3 more/i })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /Show all 15 draw cards/i })).toHaveAttribute(
       "aria-controls",
       "draw-overflow",
     );
@@ -223,14 +227,14 @@ describe("CoverageDisclosure", () => {
     render(
       <CoverageDisclosure
         width="desktop"
-        total={5}
+        total={17}
         role="ramp"
         expanded={false}
         controls="ramp-list"
         onToggle={onToggle}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /\+5 more/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Show all 17 ramp cards/i }));
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 });

@@ -76,9 +76,9 @@ export function ProvenanceLine({
     <div
       className="flex items-start gap-[10px] mx-[16px] my-[10px] md:mx-[30px]"
       style={{
-        background: "#181410",
+        background: "var(--surface-sunken)",
         border: "1px solid var(--border)",
-        borderLeft: "3px solid var(--brass)",
+        borderLeft: "3px solid var(--accent)",
         borderRadius: 9,
         padding: "11px 15px",
       }}
@@ -90,8 +90,8 @@ export function ProvenanceLine({
         style={{
           width: 20,
           height: 20,
-          background: "var(--brass)",
-          color: "#181410",
+          background: "var(--accent)",
+          color: "var(--bg)",
           fontWeight: 700,
         }}
       >
@@ -132,7 +132,7 @@ export function FillFailedBanner({
     <div
       className="flex items-start gap-[10px] mx-[16px] my-[10px] md:mx-[30px]"
       style={{
-        background: "#181410",
+        background: "var(--surface-sunken)",
         border: "1px solid var(--border)",
         borderLeft: "3px solid var(--warning)",
         borderRadius: 9,
@@ -147,7 +147,7 @@ export function FillFailedBanner({
           width: 20,
           height: 20,
           background: "var(--warning)",
-          color: "#181410",
+          color: "var(--bg)",
           fontWeight: 700,
         }}
       >
@@ -171,7 +171,7 @@ export function FillFailedBanner({
           onClick={onRetry}
           disabled={pending}
           aria-label={copy.failedRetryAria}
-          className="mt-[8px] font-mono text-[11px] cursor-pointer bg-transparent border-0 p-0 underline text-[color:var(--brass)]"
+          className="mt-[8px] font-mono text-[11px] cursor-pointer bg-transparent border-0 p-0 underline text-[color:var(--accent)]"
         >
           {copy.failedRetry}
         </button>

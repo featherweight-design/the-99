@@ -66,7 +66,7 @@ export function SweepReceipt({ removed, onUndo }: SweepReceiptProps) {
         type="button"
         onClick={onUndo}
         aria-label={recommendationsCopy.auto.sweptUndoAria(String(removed))}
-        className="font-mono text-[11px] md:text-[12px] text-brass-shadow underline cursor-pointer"
+        className="font-mono text-[11px] md:text-[12px] text-accent-shadow underline cursor-pointer"
       >
         {recommendationsCopy.auto.sweptUndo}
       </button>
