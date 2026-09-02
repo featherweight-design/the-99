@@ -9,6 +9,7 @@ import { groupByCardType, groupByRole, isBasicLand } from "../../lib/decks/group
 import { computeRoleCounts } from "../../lib/decks/mix";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { GroupToggle } from "./group-toggle";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
@@ -368,7 +369,7 @@ export function Decklist({
             className="font-mono text-[11px] text-center py-[20px]"
             style={{ color: "var(--fg-locked)" }}
           >
-            {"No cards in this deck."}
+            {addPanelCopy.emptyList}
           </p>
         )}
         {groups.map(([label, groupCards]) => (

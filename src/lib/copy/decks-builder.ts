@@ -172,6 +172,10 @@ export const addPanelCopy = {
     shelfCoverage: "not in your collection",
   },
 
+  // The decklist's own empty line, distinct from Shopping's empty state: this
+  // one says the deck holds nothing at all, not that nothing is left to buy.
+  emptyList: "No cards in this deck.",
+
   // ── Consider, empty (expressive moment — zero suggestions is a win) ────
   considerEmpty: {
     heading: "We’re out of ideas, and that’s a compliment",

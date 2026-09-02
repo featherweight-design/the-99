@@ -517,7 +517,17 @@ export function BuilderShell({
 
             {/* Fill-failed banner — shown when the fill never landed (State
                 15). Offers a retry. A swept deck is filled=true and must not
-                see this banner — that is the entire reason the column exists. */}
+                see this banner — that is the entire reason the column exists.
+
+                `!firstRun` costs one real case: a player whose only deck is a
+                failed fill gets the guided banner instead of the retry. Nothing
+                persisted distinguishes "the fill was attempted and failed" from
+                "no fill was ever attempted" — both are filled=false with zero
+                cards — so the alternative is telling every player who has just
+                made their first deck by hand that a fill they never ran broke.
+                That player still reaches the fill from the commander page's
+                Build button; the second deck onwards sees the banner. Closing
+                the gap properly needs a persisted attempt marker. */}
             {!firstRun && (
               <FillFailedBannerConnected
                 deckId={deck.id}
