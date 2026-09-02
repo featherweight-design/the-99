@@ -191,7 +191,7 @@ function AccountSheet(props: PanelProps) {
         aria-labelledby={props.nameId}
         className="anim-sheet-up fixed inset-x-0 bottom-0 z-50"
         style={{
-          // RD§2: the handoff gives a bare #1E1A15; that is --surface.
+          // RD§2: the handoff gives a bare surface hex; that is --surface.
           background: "var(--surface)",
           borderTop: "1px solid var(--border-strong)",
           borderRadius: "20px 20px 0 0",

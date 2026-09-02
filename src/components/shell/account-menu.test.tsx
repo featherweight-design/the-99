@@ -178,13 +178,13 @@ describe("AccountMenu sheet", () => {
     expect(screen.getByRole("dialog").className).toContain("z-50");
   });
 
-  // RD§2 — the handoff gives a bare #1E1A15, which is --surface.
+  // RD§2 — the handoff gives a bare surface hex, which is --surface.
   it("draws the sheet on the --surface token, not a raw hex", () => {
     render(<AccountMenu panel="sheet" />);
     fireEvent.click(trigger());
     const style = screen.getByRole("dialog").getAttribute("style") ?? "";
     expect(style).toContain("var(--surface)");
-    expect(style).not.toContain("#1E1A15");
+    expect(style).not.toMatch(/#[0-9A-Fa-f]{6}/);
   });
 
   it("closes when the backdrop is tapped", () => {

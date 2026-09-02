@@ -232,8 +232,8 @@ export function AvailabilityGlyph({
 }
 
 // Row 3.4 gives the row density the same lifted foregrounds as the chip: the
-// hard label is #E8CE93 on both, and the soft label is --fg-body (#C6B79A),
-// which is a step brighter than the #A89B84 its own glyph outline uses.
+// hard label is --avail-hard-fg on both, and the soft label is --fg-body, a
+// step brighter than the --fg-muted its own glyph outline uses.
 const LABEL_COLOUR: Record<Exclude<AvailabilityState, "free">, string> = {
   soft: "text-[color:var(--fg-body)]",
   hard: "text-[color:var(--avail-hard-fg)]",
@@ -243,15 +243,19 @@ const LABEL_COLOUR: Record<Exclude<AvailabilityState, "free">, string> = {
 // Rows 2.1 and 2.5–2.7. Both halves move with the state: a soft chip is the
 // quietest scrim behind the dimmest border, an over chip the densest behind
 // the loudest.
+//
+// The scrim was a near-black literal a shade below the canvas. It is the canvas
+// itself now, at the same three opacities, so a theme change carries the chip
+// with it instead of leaving one fixed dark rectangle on every card.
 const CHIP_SKIN: Record<Exclude<AvailabilityState, "free">, string> = {
-  soft: "bg-[rgba(11,9,7,0.86)] border-[color:var(--border-dashed)]",
-  hard: "bg-[rgba(11,9,7,0.90)] border-[color:var(--accent)]",
-  over: "bg-[rgba(11,9,7,0.92)] border-[color:var(--danger)]",
+  soft: "bg-[color-mix(in_srgb,var(--bg)_86%,transparent)] border-[color:var(--border-dashed)]",
+  hard: "bg-[color-mix(in_srgb,var(--bg)_90%,transparent)] border-[color:var(--accent)]",
+  over: "bg-[color-mix(in_srgb,var(--bg)_92%,transparent)] border-[color:var(--danger)]",
 };
 
 // The chip paints its own scrim, so the thing behind its glyph is that scrim
 // and never anything else. Callers do not get to name it.
-const CHIP_SCRIM = "#0B0907";
+const CHIP_SCRIM = "var(--bg)";
 
 export function AvailabilityMarker({
   availability,

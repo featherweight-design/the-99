@@ -266,7 +266,7 @@ export function CardFan({ variant = "mobile", className }: CardFanProps) {
           height={cardH}
           rx={cardRx}
           fill="var(--elevated)"
-          stroke="#4A4033"
+          stroke="var(--border-dashed)"
           strokeWidth="1.5"
         />
       </g>
@@ -278,8 +278,8 @@ export function CardFan({ variant = "mobile", className }: CardFanProps) {
           width={cardW}
           height={cardH}
           rx={cardRx}
-          fill="#33291F"
-          stroke="#5A4B38"
+          fill="var(--border)"
+          stroke="var(--accent-shadow)"
           strokeWidth="1.5"
         />
       </g>
@@ -291,7 +291,7 @@ export function CardFan({ variant = "mobile", className }: CardFanProps) {
           width={cardW}
           height={cardH}
           rx={cardRx}
-          fill="#3E3020"
+          fill="var(--border-strong)"
           stroke="var(--accent)"
           strokeWidth="1.5"
         />

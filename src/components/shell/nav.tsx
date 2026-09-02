@@ -35,9 +35,9 @@ function isActive(pathname: string, href: string): boolean {
 
 /**
  * 6×6px rotated diamond for rail nav items (§Rail Nav item Active/Idle/Locked).
- * Active  → accent (--accent)
- * Idle    → line   (--border-strong)
- * Locked  → line   (--border-strong)
+ * Active  → --accent
+ * Idle    → --border-strong
+ * Locked  → --border-strong
  */
 function RailDiamond({ active, locked }: { active: boolean; locked: boolean }) {
   const bg =
@@ -55,16 +55,16 @@ function RailDiamond({ active, locked }: { active: boolean; locked: boolean }) {
 
 /**
  * 8×8px rotated diamond for tab bar items (§Tab item Active/Idle).
- * Active  → accent (--accent)
- * Idle    → #4A4033 (raw hex, no token per design table)
- * Locked  → #4A4033
+ * Active  → --accent
+ * Idle    → --border-dashed
+ * Locked  → --border-dashed
  */
 function TabDiamond({ active }: { active: boolean }) {
   return (
     <span
       aria-hidden
       className="inline-block h-[8px] w-[8px] shrink-0 rotate-45"
-      style={{ background: active ? "var(--accent)" : "#4A4033" }}
+      style={{ background: active ? "var(--accent)" : "var(--border-dashed)" }}
     />
   );
 }
@@ -81,17 +81,17 @@ export function NavRail({ locked }: { locked: boolean }) {
     <aside
       className="hidden md:flex md:flex-col w-[236px] shrink-0 h-screen sticky top-0"
       style={{
-        background: "var(--surface-rail)",       // #1A160F
-        borderRight: "1px solid var(--border-strong)", // #3A3229 (token: line)
+        background: "var(--surface-rail)",
+        borderRight: "1px solid var(--border-strong)",
       }}
     >
       {/* ------------------------------------------------------------------ */}
       {/* Wordmark — §Rail: Wordmark area                                     */}
-      {/* padding: 22px 20px 20px; border-bottom: 1px solid #2A241D (elevated)*/}
+      {/* padding: 22px 20px 20px; border-bottom: 1px solid var(--border)*/}
       {/* ------------------------------------------------------------------ */}
       <div
         className="flex items-end gap-[7px] px-5 pt-[22px] pb-5"
-        style={{ borderBottom: "1px solid var(--border)" }} // var(--border) = #2A241D = elevated
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         {/* "THE" label: mono 10px, 0.42em tracking, accent, pb 5px */}
         <span
@@ -132,7 +132,7 @@ export function NavRail({ locked }: { locked: boolean }) {
           const active = !isLocked && isActive(pathname, href);
 
           if (isLocked) {
-            // §Rail Nav item — Locked: non-interactive, color #8E8269 (--fg-faint) — lifted for AA per the richness pass
+            // §Rail Nav item — Locked: non-interactive, color --fg-faint — lifted for AA per the richness pass
             // Diamond + label ONLY (adjudication #1 — no Mark icon)
             return (
               <div
@@ -155,7 +155,7 @@ export function NavRail({ locked }: { locked: boolean }) {
           // §Rail Nav item — Active / Idle / Hover
           // Active  → bg-elevated text-fg font-semibold
           // Idle    → bg-transparent text-fg-muted font-medium hover:bg-elevated-hover hover:text-fg
-          // (--color-elevated-hover = #211C15 per token; matches table's Idle-hover background)
+          // (--elevated-hover matches the table's Idle-hover background)
           return (
             <Link
               key={href}
@@ -173,7 +173,7 @@ export function NavRail({ locked }: { locked: boolean }) {
           );
         })}
 
-        {/* §Rail: Locked surfaces caption — mono 10px, #8E8269, 4px 12px, lh 1.5 */}
+        {/* §Rail: Locked surfaces caption — mono 10px, --fg-faint, 4px 12px, lh 1.5 */}
         {locked && (
           <p
             className="mt-1"
@@ -214,8 +214,8 @@ export function TabBar({ locked }: { locked: boolean }) {
     <nav
       className="md:hidden fixed inset-x-0 bottom-0 z-40 flex px-[6px] pt-[10px] pb-[22px]"
       style={{
-        background: "var(--surface-rail)",           // #1A160F
-        borderTop: "1px solid var(--border-strong)", // #3A3229
+        background: "var(--surface-rail)",
+        borderTop: "1px solid var(--border-strong)",
       }}
       aria-label="Primary"
     >
@@ -283,7 +283,7 @@ export function MobileHeader() {
   return (
     <header
       className="md:hidden flex items-center justify-between px-5 pt-5 pb-[14px]"
-      style={{ borderBottom: "1px solid var(--border)" }} // #2A241D (token: elevated)
+      style={{ borderBottom: "1px solid var(--border)" }}
     >
       {/* Wordmark: gap 3px, items-end */}
       <div className="flex items-end gap-[3px]">

@@ -660,7 +660,7 @@ export function FilterPanel({
     ) : selectionMode === "single" ? null : selected.length > 0 ? (
       clearButton
     ) : footerStatus ? (
-      <span className="font-mono text-[11px] text-[#6E6353]">{status}</span>
+      <span className="font-mono text-[11px] text-[color:var(--fg-locked)]">{status}</span>
     ) : null;
     return (
       <div
@@ -705,7 +705,7 @@ export function FilterPanel({
               setActiveCode(null);
             }}
             // The trailing classes replace the primitive's focus halo with the
-            // canonical keyboard-walk ring: 2px --accent at outline-offset 2px
+            // canonical keyboard-walk ring: a 2px accent outline at offset 2px
             // (§Panel search field · Focused). Overridden here, not in the
             // primitive — every other field in the app keeps the halo.
             //
@@ -733,9 +733,10 @@ export function FilterPanel({
             // 14px mobile / 13px desktop as specced. 14px sits under Safari's
             // 16px focus-zoom floor; a global maximum-scale=1 is an App Shell
             // decision, not one to make inside a single control (gap 3).
-            // The placeholder is #6E6353 here, not --fg-faint; there is no token
-            // for it (see the table's token map) and twMerge drops the default.
-            className="text-[14px] md:text-[13px] placeholder:text-[#6E6353]"
+            // The placeholder is --fg-locked here, not --fg-faint: the table
+            // draws it a step quieter, and twMerge drops the primitive's own
+            // placeholder colour unless this restates it.
+            className="text-[14px] md:text-[13px] placeholder:text-[color:var(--fg-locked)]"
             trailing={
               query !== "" ? (
                 <button
@@ -823,12 +824,12 @@ export function FilterPanel({
           "min-h-[44px] md:min-h-0",
           "border border-solid",
           disabled
-            ? "cursor-not-allowed bg-[#221D16] text-[#6E6353] border-[color:var(--border)]"
+            ? "cursor-not-allowed bg-[color:var(--surface-raised)] text-[color:var(--fg-locked)] border-[color:var(--border)]"
             : open
               ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--border-strong)] border-[color:var(--accent)]"
               : selected.length > 0
-                ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[#332C23]"
-                : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[#332C23] md:hover:border-[color:var(--border-dashed)]",
+                ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[color:var(--border-strong)]"
+                : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)]",
         ].join(" ")}
       >
         {oneName !== null ? (
