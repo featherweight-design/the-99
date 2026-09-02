@@ -14,8 +14,8 @@ const stub = vi.hoisted(() => {
     insertCalls: [] as { table: string; values: unknown; returning: unknown[] | null }[],
     // Tracks whether the transaction was called and whether it should reject
     transactionError: null as Error | null,
-    // The card count already in the deck, returned by the in-transaction sum
-    deckBuiltTotal: 0,
+    // The rows already in the deck, returned by the in-transaction read
+    deckRows: [] as { oracleId: string; quantity: number }[],
     // Whether getEdhrecData should reject
     edhrecError: null as Error | null,
     // redirect target captured
@@ -102,7 +102,7 @@ const stub = vi.hoisted(() => {
     insert: (table: unknown) => makeInsertBuilder(table),
     execute: async () => {},
     select: () => ({
-      from: () => ({ where: async () => [{ total: state.deckBuiltTotal }] }),
+      from: () => ({ where: async () => state.deckRows }),
     }),
   };
 
@@ -208,7 +208,7 @@ beforeEach(() => {
   stub.state.collectionItems.length = 0;
   stub.state.insertCalls.length = 0;
   stub.state.transactionError = null;
-  stub.state.deckBuiltTotal = 0;
+  stub.state.deckRows.length = 0;
   stub.state.edhrecError = null;
   stub.state.redirectTarget = null;
 });
@@ -378,11 +378,20 @@ describe("restoreAutoCards — the rows come from the client", () => {
 
   it("refuses a restore that would push the deck past 99", async () => {
     ownDeck();
-    stub.state.deckBuiltTotal = 97;
+    stub.state.deckRows.push({ oracleId: CARD_B, quantity: 97 });
     await expect(
       restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 3 }]),
     ).rejects.toThrow("deck full");
     expect(restoredRows()).toEqual([]);
+  });
+
+  // A card re-added by hand before Undo is skipped by the conflict clause, so
+  // counting it against the cap would refuse a restore that fits.
+  it("ignores a row already in the deck when measuring the cap", async () => {
+    ownDeck();
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 99 });
+    await restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 1 }]);
+    expect(restoredRows().map((r) => r.oracleId)).toEqual([CARD_A]);
   });
 
   it("writes nothing when the receipt is empty", async () => {
