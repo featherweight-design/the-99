@@ -111,7 +111,14 @@ export async function loadAvailability(
         -- records back as an unparsed "(uuid,name)" string, and a name with a
         -- comma or a quote in it is then unrecoverable. jsonb_agg arrives as a
         -- real array of objects.
-        jsonb_agg(jsonb_build_object('id', cd.deck_id, 'name', cd.name) order by cd.name) as hard_decks
+        -- deck_id breaks the tie because names are NOT unique, which is the very
+        -- premise this CTE keys on. Without it two decks sharing a name order
+        -- arbitrarily, and the first entry is the deck the card-detail link
+        -- points at — so the link would wander between reads.
+        jsonb_agg(
+          jsonb_build_object('id', cd.deck_id, 'name', cd.name)
+          order by cd.name, cd.deck_id
+        ) as hard_decks
       from claim_decks cd
       where cd.cards >= ${MATURE_DECK_SIZE}
         and (${skip}::uuid is null or cd.deck_id <> ${skip}::uuid)

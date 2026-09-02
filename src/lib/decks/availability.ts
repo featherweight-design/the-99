@@ -23,7 +23,8 @@ export type Availability = {
   free: number;
   /**
    * The mature decks holding a hard claim, minus the excluded deck when one was
-   * passed. Ordered by name.
+   * passed. Ordered by name, then by id — the id is the tiebreak, not decoration,
+   * because names collide and `hardDecks[0]` is the deck card detail links to.
    *
    * The id rides along because two decks can share a name — `claim_decks` keys
    * on `deck_id` for exactly that reason — so a surface wanting to link the
