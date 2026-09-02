@@ -4,7 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { availabilityState } from "../../lib/decks/availability";
@@ -185,14 +185,21 @@ export function BuilderShell({
   // (or it has been undone/navigated away). Lives beside spentSlot: it is decklist
   // state, and its lifetime is the current route per PR #204. Never a timer.
   const [sweptRows, setSweptRows] = useState<SweptRow[] | null>(null);
-  const [sweepPending, setSweepPending] = useState(false);
+  // The sweep's optimistic removal has to be dispatched inside a transition or
+  // React discards it, so the pending flag is the transition's rather than
+  // hand-rolled state.
+  const [sweepPending, startSweep] = useTransition();
   const [sweepError, setSweepError] = useState<string | null>(null);
 
   // Unresolved rows keep the builder out of the empty state: a deck whose every
   // line failed to match has nothing built, but it has plenty to show and act on.
   // A spent slot does the same — emptying the deck by removing its last card
   // must not swap the undo row out for "a king with no army".
-  const isEmpty = built === 0 && unresolvedRows.length === 0 && !spentSlot;
+  // Swept rows are the same shape at deck scale: sweeping an all-auto deck
+  // empties the list, and the empty state would take the sweep receipt — the
+  // only route back — down with it.
+  const isEmpty =
+    built === 0 && unresolvedRows.length === 0 && !spentSlot && !sweptRows?.length;
   const commanderShortName = shortCommanderName(deck.commander.name);
 
   // An add changes three numbers at once — the tile's button, the tab count and
@@ -291,32 +298,29 @@ export function BuilderShell({
   const autoCount = cards.filter((c) => c.auto).length;
   const keptCount = cards.filter((c) => !c.auto).length;
 
-  const handleClearAuto = useCallback(async () => {
+  const handleClearAuto = useCallback(() => {
     if (sweepPending) return;
-    setSweepPending(true);
-    setSweepError(null);
-    // Optimistically remove auto rows from the list so the decklist is instant.
-    const autoIds = new Set(cards.filter((c) => c.auto).map((c) => c.oracleId));
-    for (const c of cards) {
-      if (autoIds.has(c.oracleId)) removeOptimisticCard(c.oracleId);
-    }
-    try {
-      const removed = await clearAutoCards(deck.id);
-      setSweptRows(removed);
-      const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
-      setAnnouncement(
-        recommendationsCopy.auto.sweptAnnounce(String(removed.length), String(remaining)),
-      );
-    } catch {
-      // Roll back: re-add the auto cards to the optimistic list
+    startSweep(async () => {
+      setSweepError(null);
+      // Optimistically remove auto rows from the list so the decklist is instant.
+      const autoIds = new Set(cards.filter((c) => c.auto).map((c) => c.oracleId));
       for (const c of cards) {
-        if (autoIds.has(c.oracleId)) addOptimisticCard(c);
+        if (autoIds.has(c.oracleId)) removeOptimisticCard(c.oracleId);
       }
-      setSweepError(recommendationsCopy.auto.sweepFailed);
-    } finally {
-      setSweepPending(false);
-    }
-  }, [sweepPending, cards, deck.id, removeOptimisticCard, addOptimisticCard]);
+      try {
+        const removed = await clearAutoCards(deck.id);
+        setSweptRows(removed);
+        const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
+        setAnnouncement(
+          recommendationsCopy.auto.sweptAnnounce(String(removed.length), String(remaining)),
+        );
+      } catch {
+        // No explicit rollback: the transition ends here and React drops the
+        // predictions with it, putting the rows back from the server list.
+        setSweepError(recommendationsCopy.auto.sweepFailed);
+      }
+    });
+  }, [sweepPending, cards, deck.id, removeOptimisticCard]);
 
   const handleRestoreAuto = useCallback(async () => {
     if (!sweptRows) return;

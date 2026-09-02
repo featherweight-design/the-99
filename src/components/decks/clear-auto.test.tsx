@@ -260,6 +260,65 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     expect(clearAutoCards).toHaveBeenCalledWith("deck-sweep");
   });
 
+  it("takes the auto rows off the list before the server answers", async () => {
+    // The prediction is only observable while the action is in flight: once the
+    // transition ends React hands the list back to the server props, which in a
+    // test never revalidate. Holding the action open is what makes the
+    // optimistic frame assertable at all — and an optimistic dispatch made
+    // outside a transition never reaches this frame.
+    let settle: (rows: { oracleId: string; quantity: number }[]) => void = () => {};
+    clearAutoCards.mockReturnValue(
+      new Promise<{ oracleId: string; quantity: number }[]>((resolve) => {
+        settle = resolve;
+      }),
+    );
+
+    renderBuilder([card1, card2]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.clearAllAria("2") })
+        .click();
+    });
+
+    expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
+    expect(screen.queryByText("Arcane Signet")).not.toBeInTheDocument();
+
+    await act(async () => {
+      settle([
+        { oracleId: "sol-ring", quantity: 1 },
+        { oracleId: "arcane-signet", quantity: 1 },
+      ]);
+    });
+  });
+
+  it("keeps the receipt after a sweep empties the deck", async () => {
+    // The canonical case: every card in the deck is auto, so the sweep leaves
+    // nothing built. The empty state must not claim the screen while the only
+    // route back to those cards is the receipt's Undo.
+    clearAutoCards.mockResolvedValue([
+      { oracleId: "sol-ring", quantity: 1 },
+      { oracleId: "arcane-signet", quantity: 1 },
+    ]);
+
+    const { revalidate } = renderBuilder([card1, card2]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.clearAllAria("2") })
+        .click();
+    });
+
+    await revalidate([]);
+
+    expect(
+      screen.getByRole("button", {
+        name: recommendationsCopy.auto.sweptUndoAria("2"),
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.sweptEmpty.heading)).toBeNull();
+  });
+
   it("a kept row survives the sweep", async () => {
     clearAutoCards.mockResolvedValue([
       { oracleId: "sol-ring", quantity: 1 },
