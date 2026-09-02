@@ -39,15 +39,12 @@ export function AutoTag({ deckId, oracleId, name }: AutoTagProps) {
       disabled={isPending}
       aria-label={recommendationsCopy.auto.keepAria(name)}
       aria-busy={isPending || undefined}
-      // Phone: 44×44 hit box via negative margin + padding, row provides the
-      // height so no visual growth. Desktop: inline, no extra hit box needed.
       className={
         "flex-none font-mono rounded-[4px] px-[5px] py-[1px]" +
         " text-[9px] md:text-[9.5px] leading-none" +
-        // Phone hit-box expansion without changing the row height — the row
-        // itself is min-h-[44px] and the button expands inward.
-        " self-center py-[1px] md:py-[1px]" +
-        " min-h-[44px] md:min-h-0" +
+        // Phone gets the 44px target from min-height, not padding, so the tag's
+        // visual box stays 1px 5px while the hit area fills the row.
+        " self-center min-h-[44px] md:min-h-0" +
         " cursor-pointer border" +
         (active
           ? " text-brass border-brass-shadow bg-elevated"
