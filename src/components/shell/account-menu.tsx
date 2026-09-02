@@ -175,9 +175,9 @@ function AccountSheet(props: PanelProps) {
         // z-45, not z-40: TabBar is z-40 and paints later in the DOM, so an
         // equal layer would leave the tab bar sitting on top of the backdrop.
         className="anim-backdrop-in fixed inset-0 z-[45]"
-        // RD§5: the handoff says rgba(10,8,6,0.72), a value present nowhere in
-        // src/. Every shipped overlay uses rgba(8,6,4,0.72).
-        style={{ background: "rgba(8,6,4,0.72)" }}
+        // RD§5 gives a fixed near-black at 0.72. Every shipped overlay mixes the
+        // canvas at that alpha instead, so a lighter theme dims rather than blackens.
+        style={{ background: "color-mix(in oklab, var(--bg) 72%, transparent)" }}
         onClick={props.onClose}
       />
       {/* `aria-modal` is only valid on a dialog, so the sheet is a modal dialog

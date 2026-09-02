@@ -527,8 +527,8 @@ function PrintingTile({
               background: picked
                 ? "var(--accent)"
                 : entry.dormant
-                  ? "rgba(10,8,6,0.78)"
-                  : "rgba(10,8,6,0.72)",
+                  ? "color-mix(in oklab, var(--bg) 78%, transparent)"
+                  : "color-mix(in oklab, var(--bg) 72%, transparent)",
               border: picked
                 ? undefined
                 : entry.dormant

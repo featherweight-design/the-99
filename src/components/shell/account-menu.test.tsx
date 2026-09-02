@@ -157,13 +157,17 @@ describe("AccountMenu sheet", () => {
     expect(document.getElementById(labelId!)?.textContent).toBe("Ana Ruiz");
   });
 
-  // RD§5 — every shipped overlay uses rgba(8,6,4,0.72); the handoff's
-  // rgba(10,8,6,0.72) appears nowhere in src/.
-  it("uses the shipped backdrop value and locks scroll", () => {
+  // RD§5 gives the backdrop as a fixed near-black at 0.72. Every shipped overlay
+  // now mixes the canvas at that alpha instead, so the dim tracks the theme.
+  // Read off the attribute, not `style.background`: jsdom's CSS parser drops a
+  // declaration whose value it cannot parse, and it cannot parse color-mix().
+  it("dims with the canvas at the shipped alpha and locks scroll", () => {
     const { container } = render(<AccountMenu panel="sheet" />);
     fireEvent.click(trigger());
     const backdrop = container.querySelector(".fixed.inset-0") as HTMLElement;
-    expect(backdrop.style.background).toBe("rgba(8, 6, 4, 0.72)");
+    expect(backdrop.getAttribute("style")).toContain(
+      "color-mix(in oklab, var(--bg) 72%, transparent)",
+    );
     expect(document.body.style.overflow).toBe("hidden");
   });
 

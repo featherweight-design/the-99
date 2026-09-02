@@ -475,7 +475,7 @@ export function CommanderDetail({
           backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center top",
-          boxShadow: "inset 0 -60px 60px -30px rgba(10,7,4,0.9)",
+          boxShadow: "inset 0 -60px 60px -30px color-mix(in oklab, var(--bg) 90%, transparent)",
         }}
       >
         {/* Back chevron */}
@@ -488,7 +488,7 @@ export function CommanderDetail({
             left: 16,
             width: 30,
             height: 30,
-            background: "rgba(10,7,4,0.55)",
+            background: "color-mix(in oklab, var(--bg) 55%, transparent)",
             backdropFilter: "blur(4px)",
             color: "var(--fg)",
             fontSize: 15,

@@ -62,7 +62,7 @@ export function ExportDialog({
     <>
       {/* Overlay dim — 0.60 mobile / 0.68 desktop */}
       <div
-        className="fixed inset-0 z-40 bg-[rgba(8,6,4,0.60)] md:bg-[rgba(8,6,4,0.68)]"
+        className="fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_60%,transparent)] md:bg-[color-mix(in_oklab,var(--bg)_68%,transparent)]"
         onClick={onClose}
         aria-hidden
       />

@@ -11,7 +11,11 @@ type BuyTagVariant = "row" | "tile";
 const PLATE: Record<BuyTagVariant, React.CSSProperties> = {
   row: { background: "color-mix(in oklab, var(--warning) 13%, transparent)" },
   tile: {
-    background: "rgba(20,17,14,0.82)",
+    // The scrim holds the warning text off the card art, so it has to be the
+    // canvas colour rather than a fixed near-black — a theme with a lighter
+    // canvas wants a lighter scrim, or the tag reads as a hole punched in the
+    // art.
+    background: "color-mix(in oklab, var(--bg) 82%, transparent)",
     boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--warning) 50%, transparent)",
   },
 };

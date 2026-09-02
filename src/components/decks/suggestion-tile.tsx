@@ -222,7 +222,7 @@ export function SuggestionTile({
           <span
             aria-hidden
             className="absolute z-10 right-[6px] top-[6px] w-[8px] h-[8px] rounded-full pointer-events-none"
-            style={{ background: "var(--success)", boxShadow: "0 0 0 2px rgba(10,8,6,.7)" }}
+            style={{ background: "var(--success)", boxShadow: "0 0 0 2px color-mix(in oklab, var(--bg) 70%, transparent)" }}
           />
         ) : (
           <BuyTag variant="tile" label={addPanelCopy.unowned.tagAria(suggestion.name)} />
@@ -261,7 +261,7 @@ export function SuggestionTile({
                   aria-hidden
                   className="absolute inset-x-0 bottom-0 hidden pt-[14px] pr-[6px] pb-[5px] text-right font-mono text-[9px] group-hover:block"
                   style={{
-                    background: "linear-gradient(180deg, transparent, rgba(10,8,6,.85))",
+                    background: "linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 85%, transparent))",
                     color: "var(--accent)",
                   }}
                 >

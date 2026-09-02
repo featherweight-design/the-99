@@ -873,7 +873,7 @@ export function FilterPanel({
             <div
               role="presentation"
               onClick={() => close()}
-              className="fixed inset-0 z-40 bg-[rgba(8,6,4,0.72)]"
+              className="fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_72%,transparent)]"
             />
             <div
               ref={panelRef}

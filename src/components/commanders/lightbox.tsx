@@ -41,7 +41,7 @@ export function CommanderLightbox({
       ref={overlayRef}
       className="fixed inset-0 flex flex-col items-center justify-center"
       style={{
-        background: "rgba(8,6,4,0.86)",
+        background: "color-mix(in oklab, var(--bg) 86%, transparent)",
         backdropFilter: "blur(6px)",
         padding: "34px 30px",
         zIndex: 50,
@@ -120,7 +120,7 @@ export function CommanderLightbox({
             aspectRatio: "63/88",
             background: gradient,
             boxShadow:
-              "inset 0 -80px 80px -46px rgba(10,7,4,0.85), inset 0 0 0 1px rgba(0,0,0,0.3), 0 24px 60px rgba(0,0,0,0.6)",
+              "inset 0 -80px 80px -46px color-mix(in oklab, var(--bg) 85%, transparent), inset 0 0 0 1px rgba(0,0,0,0.3), 0 24px 60px rgba(0,0,0,0.6)",
             padding: 16,
           }}
         >
@@ -187,7 +187,7 @@ export function CommanderLightbox({
           <div
             className="rounded-[9px]"
             style={{
-              background: "rgba(10,7,4,0.5)",
+              background: "color-mix(in oklab, var(--bg) 50%, transparent)",
               backdropFilter: "blur(3px)",
               padding: "11px 13px",
             }}

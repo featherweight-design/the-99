@@ -32,7 +32,7 @@ export function FullCardTrigger({
           top: 56,
           right: 16,
           gap: 6,
-          background: "rgba(10,7,4,0.55)",
+          background: "color-mix(in oklab, var(--bg) 55%, transparent)",
           backdropFilter: "blur(4px)",
           border: "1px solid color-mix(in oklab, var(--fg) 18%, transparent)",
           padding: "6px 11px",

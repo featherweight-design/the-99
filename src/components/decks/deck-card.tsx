@@ -24,7 +24,7 @@ function pillStyles(status: DeckListItem["statusPill"]): { color: string; backgr
       return { color: "var(--success)", background: "color-mix(in oklab, var(--success) 13%, transparent)" };
     case "Draft":
     default:
-      return { color: "var(--fg-muted)", background: "rgba(168,155,132,0.12)" };
+      return { color: "var(--fg-muted)", background: "color-mix(in oklab, var(--fg-muted) 12%, transparent)" };
   }
 }
 

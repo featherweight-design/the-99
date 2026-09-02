@@ -277,12 +277,13 @@ export function CardModal({
     : { background: identityGradient(card.colorIdentity) };
 
   return (
-    // Fixed backdrop wrapper — §Backdrop: rgba(8,6,4,0.72) desktop; blurred collection behind is decorative and out-of-scope
+    // Fixed backdrop wrapper — §Backdrop at 0.72, mixed against the canvas so the
+    // dim tracks the theme; blurred collection behind is decorative and out-of-scope
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       role="presentation"
       onClick={onClose}
-      style={{ background: "rgba(8,6,4,0.72)" }}
+      style={{ background: "color-mix(in oklab, var(--bg) 72%, transparent)" }}
     >
       <div
         ref={dialogRef}
@@ -318,7 +319,7 @@ export function CardModal({
             className="absolute rounded-full flex items-center justify-center"
             style={{
               top: 22, right: 18, width: 32, height: 32,
-              background: "rgba(10,8,6,0.55)", color: "var(--fg)", fontSize: 16,
+              background: "color-mix(in oklab, var(--bg) 55%, transparent)", color: "var(--fg)", fontSize: 16,
             }}
           >
             ✕

@@ -107,12 +107,12 @@ export function IssueInspector({
 
   return (
     <div
-      // §Backdrop: rgba(8,6,4,0.72) over the blurred (blur(3px)) review page.
+      // §Backdrop: color-mix(in oklab, var(--bg) 72%, transparent) over the blurred (blur(3px)) review page.
       className="fixed inset-0 z-50 flex md:items-center md:justify-center"
       role="presentation"
       onClick={onClose}
       style={{
-        background: "rgba(8,6,4,0.72)",
+        background: "color-mix(in oklab, var(--bg) 72%, transparent)",
         backdropFilter: "blur(3px)",
         WebkitBackdropFilter: "blur(3px)",
       }}

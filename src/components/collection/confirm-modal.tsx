@@ -43,9 +43,9 @@ export function ConfirmModal({
   useEffect(() => { if (pending) inputRef.current?.focus(); }, [pending]);
 
   return (
-    // §Backdrop: rgba(8,6,4,0.74) desktop
+    // §Backdrop at 0.74 desktop, mixed against the canvas so the dim tracks the theme
     <div
-      className="fixed inset-0 z-50 flex items-center md:items-center justify-center bg-[rgba(8,6,4,0.7)] md:bg-[rgba(8,6,4,0.74)]"
+      className="fixed inset-0 z-50 flex items-center md:items-center justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
       role="presentation"
       onClick={() => { if (!pending) onClose(); }}
     >
