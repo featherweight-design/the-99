@@ -3,8 +3,10 @@
 // Mobile: ribbon style (left brass border) with step label + crumb, heading, body.
 // Shown when firstRun===true, above the list.
 //
-// Richness pass (Surfaces v2 §Commanders): "crab joins the XCIX crumb row,
+// Richness pass (Surfaces v2 §Commanders): "a mark joins the XCIX crumb row,
 // copy: '1,418 cards read. 24 can lead. I ranked them — you're welcome.'"
+// The mark itself was retired by the theme handoff (decision 8) — the banner's
+// 3px accent left border is the whole of its identity now.
 // That line *replaces* the v1 body copy rather than joining it — the v1 body
 // said the same thing in a straight register ("N cards → M legal commanders"),
 // and shipping both would put two strings with identical content on one surface.

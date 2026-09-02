@@ -56,7 +56,7 @@ export const issueInspectorCopy = {
     noUnmatched:
       "No unmatched names — every card matched the Oracle database. The Unmatched tab is disabled.",
   },
-  // Richness pass §Non-safety-critical error moment — the crab gets to be funny
+  // Richness pass §Non-safety-critical error moment — the copy gets to be funny
   // here because nothing was lost. Transcribed from Surfaces v2 §Collection.
   // Singular forms are derived, not mocked: a one-row import is reachable.
   entry: {

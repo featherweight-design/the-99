@@ -44,7 +44,7 @@ export function CompletionReveal({
     >
       {/* Text block */}
       <div className="anim-rise absolute top-[32px] left-[24px] right-[24px] md:top-[56px] md:left-[40px] md:right-auto md:max-w-[330px]">
-        <Crown tone="loud" className="mb-[12px]" />
+        <Crown tone="loud" className="mb-[14px]" />
         <h2
           id="completion-reveal-heading"
           className="font-display font-extrabold m-0 text-[24px] md:text-[32px] text-[color:var(--fg)]"

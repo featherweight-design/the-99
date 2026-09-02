@@ -26,7 +26,7 @@ export function NoResults({
     // §No Results Container: flex-1, column, centered, padding 36px mobile / 48px desktop.
     // Vignette per Surfaces v2 — brass at 7%, existing token, no new hex.
     <div className="flex-1 flex flex-col items-center justify-center text-center p-[36px] md:p-[48px] bg-[radial-gradient(440px_260px_at_50%_78%,rgba(201,162,75,0.07),transparent_70%)]">
-      <Crown tone="quiet" className="mb-[18px]" />
+      <Crown tone="quiet" className="mb-[14px]" />
 
       {/* Heading — §No Results Heading: Cinzel 700, 21/26px, #EDE6D8 (--fg) */}
       <h2

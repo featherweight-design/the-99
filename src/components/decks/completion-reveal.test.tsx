@@ -69,11 +69,11 @@ describe("CompletionReveal", () => {
     for (const d of diamonds) {
       expect((d as HTMLElement).style.background).toBe("var(--brass)");
     }
-    // Loud is the doubled geometry — 18/26/18 against the quiet 9/13/9.
+    // Loud is the enlarged geometry — 13/19/13 against the quiet 8/12/8.
     expect(diamonds.map((d) => d.className)).toEqual([
-      expect.stringContaining("w-[18px]"),
-      expect.stringContaining("w-[26px]"),
-      expect.stringContaining("w-[18px]"),
+      expect.stringContaining("w-[13px]"),
+      expect.stringContaining("w-[19px]"),
+      expect.stringContaining("w-[13px]"),
     ]);
   });
 

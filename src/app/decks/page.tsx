@@ -39,7 +39,7 @@ export default async function DecksPage({
           <CardFan variant="decks-desktop" className="hidden md:block" />
         </div>
 
-        <Crown tone="page" className="mb-[18px]" />
+        <Crown tone="page" className="mb-[14px]" />
 
         <EmptyStateTitle className="text-[24px] md:text-[28px]">
           No decks yet.

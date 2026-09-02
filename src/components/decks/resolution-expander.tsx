@@ -345,7 +345,7 @@ export function ResolutionExpander({
 
           {noResults && (
             // The expander's own dead end, not the shared NoResults component:
-            // that one's crab mark belongs to browsing a collection you own, and
+            // that one's crown belongs to browsing a collection you own, and
             // this search deliberately looks outside it.
             <div className="text-center pt-[30px] px-[8px] pb-[8px] md:pt-[26px] md:px-0 md:pb-[6px]">
               <span

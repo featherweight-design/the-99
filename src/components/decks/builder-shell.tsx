@@ -356,7 +356,7 @@ export function BuilderShell({
           </span>
 
           <div className="flex-1 flex flex-col min-w-0 md:min-h-0 md:overflow-y-auto">
-            {/* The 99/99 kaiju reveal — one-shot, above the builder body */}
+            {/* The 99/99 reveal — one-shot, above the builder body */}
             {showReveal && (
               <CompletionReveal
                 commanderShortName={commanderShortName}
@@ -525,7 +525,7 @@ export function BuilderShell({
                   </div>
                 </div>
 
-                <Crown tone="quiet" className="mb-[18px]" />
+                <Crown tone="quiet" className="mb-[14px]" />
 
                 {/* §Empty state heading */}
                 <h2

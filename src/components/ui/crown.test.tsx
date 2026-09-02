@@ -8,14 +8,14 @@ describe("Crown", () => {
     expect(container.firstElementChild).toHaveAttribute("aria-hidden");
   });
 
-  it("draws three diamonds at the specced 9/13/9 geometry", () => {
+  it("draws three diamonds at the specced 8/12/8 geometry", () => {
     const { container } = render(<Crown />);
     const diamonds = Array.from(container.querySelectorAll("span"));
     expect(diamonds).toHaveLength(3);
     expect(diamonds.map((d) => d.className)).toEqual([
-      expect.stringContaining("w-[9px]"),
-      expect.stringContaining("w-[13px]"),
-      expect.stringContaining("w-[9px]"),
+      expect.stringContaining("w-[8px]"),
+      expect.stringContaining("w-[12px]"),
+      expect.stringContaining("w-[8px]"),
     ]);
   });
 
@@ -47,14 +47,22 @@ describe("Crown", () => {
     expect(colorOf("loud")).toBe("var(--brass)");
   });
 
-  it("doubles the geometry for the one loud crown", () => {
+  it("enlarges the geometry for the one loud crown", () => {
     const { container } = render(<Crown tone="loud" />);
     const diamonds = Array.from(container.querySelectorAll("span"));
     expect(diamonds.map((d) => d.className)).toEqual([
-      expect.stringContaining("w-[18px]"),
-      expect.stringContaining("w-[26px]"),
-      expect.stringContaining("w-[18px]"),
+      expect.stringContaining("w-[13px]"),
+      expect.stringContaining("w-[19px]"),
+      expect.stringContaining("w-[13px]"),
     ]);
-    expect(container.firstElementChild?.className).toContain("gap-[14px]");
+    expect(container.firstElementChild?.className).toContain("gap-[9px]");
+  });
+
+  it("separates quiet from page by colour alone, not size", () => {
+    const geometryOf = (tone: "quiet" | "page") => {
+      const { container } = render(<Crown tone={tone} />);
+      return Array.from(container.querySelectorAll("span")).map((d) => d.className);
+    };
+    expect(geometryOf("quiet")).toEqual(geometryOf("page"));
   });
 });

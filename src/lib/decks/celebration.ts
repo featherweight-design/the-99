@@ -2,7 +2,7 @@ import type { StatusPill } from "./status";
 
 /** The 99/99 reveal is a one-shot event, but statusPill() is a derived status
  *  that reads "Complete" forever. Gate on a persisted per-deck flag so the
- *  kaiju stays a rare win rather than permanent furniture.
+ *  reveal stays a rare win rather than permanent furniture.
  *
  *  Deliberately pure: the localStorage read stays at the component boundary so
  *  this decision is node-testable and has no DOM dependency.
