@@ -756,10 +756,9 @@ export function CommanderDetail({
           <Link
             href="/commanders"
             // brand focus-visible outline treatment inherited from globals.css
-            className="inline-flex items-center gap-[7px] font-sans"
+            className="inline-flex items-center gap-[7px] font-sans text-[color:var(--fg-faint)]"
             style={{
               fontSize: 13,
-              color: "var(--fg-faint)",
               textDecoration: "none",
             }}
           >

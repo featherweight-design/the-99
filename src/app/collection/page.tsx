@@ -117,8 +117,7 @@ export default async function CollectionPage() {
         <div className="flex items-center gap-[12px]">
           <a
             href="/collection/replace"
-            className="md:hidden text-[13px]"
-            style={{ color: "var(--accent)" }}
+            className="md:hidden text-[13px] text-[color:var(--accent)]"
           >
             <ReplaceIcon />
             Replace

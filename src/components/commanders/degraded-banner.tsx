@@ -87,8 +87,8 @@ export function DegradedBanner({
               <button
                 type="submit"
                 // brand focus-visible outline treatment inherited from globals.css
-                className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit]"
-                style={{ color: "var(--accent)", fontSize: 11.5 }}
+                className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent)]"
+                style={{ fontSize: 11.5 }}
               >
                 {mobileRetry}
               </button>

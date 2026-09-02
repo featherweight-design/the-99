@@ -513,8 +513,7 @@ export function CommandersView({
                 type="button"
                 aria-label={`Remove ${COLOR_LABELS[c]} filter`}
                 onClick={() => toggleColor(c)}
-                className="cursor-pointer bg-transparent border-0 p-0 leading-none"
-                style={{ color: "var(--fg-faint)" }}
+                className="cursor-pointer bg-transparent border-0 p-0 leading-none text-[color:var(--fg-faint)]"
               >
                 ✕
               </button>
@@ -526,8 +525,8 @@ export function CommandersView({
             <button
               type="button"
               onClick={handleClearFilter}
-              className="bg-transparent border-0 p-0 cursor-pointer font-mono"
-              style={{ fontSize: 12, color: "var(--accent)" }}
+              className="bg-transparent border-0 p-0 cursor-pointer font-mono text-[color:var(--accent)]"
+              style={{ fontSize: 12 }}
             >
               Clear
             </button>
@@ -695,8 +694,7 @@ export function CommandersView({
                   type="button"
                   aria-label={`Remove ${COLOR_LABELS[c]} filter`}
                   onClick={() => toggleColor(c)}
-                  className="cursor-pointer bg-transparent border-0 p-0 leading-none"
-                  style={{ color: "var(--fg-faint)" }}
+                  className="cursor-pointer bg-transparent border-0 p-0 leading-none text-[color:var(--fg-faint)]"
                 >
                   ✕
                 </button>
@@ -706,8 +704,8 @@ export function CommandersView({
             <button
               type="button"
               onClick={handleClearFilter}
-              className="bg-transparent border-0 p-0 cursor-pointer font-mono"
-              style={{ fontSize: 11.5, color: "var(--accent)" }}
+              className="bg-transparent border-0 p-0 cursor-pointer font-mono text-[color:var(--accent)]"
+              style={{ fontSize: 11.5 }}
             >
               Clear
             </button>

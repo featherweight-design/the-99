@@ -91,7 +91,7 @@ export function Dashboard({
         >
           Recommended commander
         </div>
-        <Link href="/commanders" style={{ fontSize: 13, color: "var(--accent)" }}>
+        <Link href="/commanders" className="text-[color:var(--accent)]" style={{ fontSize: 13 }}>
           All commanders →
         </Link>
       </div>
@@ -129,11 +129,10 @@ export function Dashboard({
                       §Deck row hover: bg surface-raised (Tailwind class, not inline style per adjudication #3) */}
                   <Link
                     href={`/decks/${d.id}`}
-                    className="flex items-center gap-[14px] rounded-[8px] p-[13px_16px] bg-surface hover:bg-surface-raised transition-colors"
-                    style={{
-                      border: "1px solid var(--border-strong)",
-                      borderLeft: `3px solid ${deckStateColor(d.cardCount)}`,
-                    }}
+                    className="flex items-center gap-[14px] rounded-[8px] p-[13px_16px] bg-surface hover:bg-surface-raised transition-colors border border-[color:var(--border-strong)]"
+                    // Only the left edge stays inline: its colour is derived from the
+                    // deck's card count, so no class can express it.
+                    style={{ borderLeft: `3px solid ${deckStateColor(d.cardCount)}` }}
                   >
                     <div className="min-w-0 flex-1">
                       {/* §Deck name: Cinzel 600 16px primary */}
