@@ -32,6 +32,11 @@
   --fg-body: #C0B8A6;
   --fg-muted: #A59C89;
   --fg-faint: #8B8270;
+  /* Every theme's --fg-locked clears the 3:1 floor on its own --surface with
+     almost nothing to spare (3.02–3.05:1 across all six). Both tokens are
+     per-theme, so an edit to one theme's --surface only endangers that theme —
+     but because no theme holds any headroom, a change applied across the set
+     fails in all six. Re-measure the pair after any surface change. */
   --fg-locked: #6E6654;
 
   /* Flavor (6) — the only family permitted real chroma. */
