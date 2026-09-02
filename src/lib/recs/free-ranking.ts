@@ -178,12 +178,13 @@ export async function rankFree(
     // before it has topCards. An unexpected shape degrades to an empty list,
     // which scoreCommander reads as a null fitSynergy.
     const cached = cache.get(commander.oracleId);
-    const topCards = cached ? parseEdhrecPayload(cached.payload).topCards : null;
+    const parsed = cached ? parseEdhrecPayload(cached.payload) : null;
     return {
       ...scoreCommander({
         commander,
         collection: pool,
-        edhrecTopCards: topCards,
+        edhrecTopCards: parsed?.topCards ?? null,
+        inclusionByName: parsed?.inclusionByName ?? null,
       }),
       // CARRIED from canonical, never recomputed — the same rule as slugs, and
       // for a sharper reason. Both modes read the same cache, so a miss here is

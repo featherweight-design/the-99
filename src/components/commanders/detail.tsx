@@ -8,6 +8,7 @@ import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import type { RankedCommander } from "../../lib/recs/recommend";
+import type { RoleCard } from "../../lib/recs/score";
 import { FullCardTrigger } from "./full-card-trigger";
 import { PrimaryButton } from "../ui/button";
 
@@ -278,7 +279,7 @@ function RolePanel({
   count,
 }: {
   role: RoleName;
-  cards: string[];
+  cards: RoleCard[];
   count: number;
 }) {
   const target = ROLE_TARGETS[role];
@@ -323,8 +324,8 @@ function RolePanel({
 
       {/* Card chips */}
       <div className="flex flex-wrap gap-[7px]">
-        {cards.map((name) => (
-          <OwnedChip key={name} name={name} />
+        {cards.map((c) => (
+          <OwnedChip key={c.oracleId} name={c.name} />
         ))}
         {cards.length === 0 && (
           <span

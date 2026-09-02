@@ -8,7 +8,7 @@ import {
   type PoolCard,
 } from "./score";
 
-const card = (over: Partial<PoolCard>): PoolCard => ({
+const card = (over: Partial<PoolCard> & { oracleId?: string; name?: string }): PoolCard => ({
   oracleId: over.oracleId ?? randomUUID(),
   name: "X", typeLine: "Creature", oracleText: "", keywords: [], colorIdentity: [],
   imageUri: null, manaCost: null,
@@ -69,30 +69,30 @@ describe("scoreCommander", () => {
   ];
 
   it("counts only color-legal cards in the pool", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Cultivate"] });
+    const s = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Cultivate"], inclusionByName: null });
     expect(s.colorPoolSize).toBe(3); // Bolt excluded
   });
 
   it("counts owned EDHREC top cards (color-legal only)", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Lightning Bolt", "Craterhoof Behemoth"] });
+    const s = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Lightning Bolt", "Craterhoof Behemoth"], inclusionByName: null });
     expect(s.edhrecOwnedCount).toBe(1);
     expect(s.edhrecTotal).toBe(3);
   });
 
   it("reports role counts and gaps against targets", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
     expect(s.roleCounts).toEqual({ ramp: 2, draw: 1, removal: 0, wipes: 0 });
     expect(s.roleGaps).toEqual(["ramp", "draw", "removal", "wipes"]);
   });
 
   it("degrades: null edhrec fields but still scores by pool+roles", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
     expect(s.edhrecOwnedCount).toBeNull();
     expect(s.score).toBeGreaterThan(0);
   });
 
   it("treats an empty EDHREC top-cards list as no synergy data", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: [] });
+    const s = scoreCommander({ commander, collection, edhrecTopCards: [], inclusionByName: null });
     expect(s.edhrecTotal).toBeNull();
     expect(s.edhrecOwnedCount).toBeNull();
     expect(s.fitSynergy).toBeNull();
@@ -100,23 +100,23 @@ describe("scoreCommander", () => {
   });
 
   it("ranks a commander with more EDHREC overlap higher, all else equal", () => {
-    const low = scoreCommander({ commander, collection, edhrecTopCards: ["Craterhoof Behemoth"] });
-    const high = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"] });
+    const low = scoreCommander({ commander, collection, edhrecTopCards: ["Craterhoof Behemoth"], inclusionByName: null });
+    const high = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"], inclusionByName: null });
     expect(high.score).toBeGreaterThan(low.score);
   });
 
   it("passes commander colorIdentity and imageUri through onto the score", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
     expect(s.colorIdentity).toEqual(["B", "G"]);
     expect(s.imageUri).toBe("https://cards.example/golgari.jpg");
   });
 
   // Task 2: roleCards
   it("roleCards.ramp contains a ramp card name", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
     // Sol Ring and Cultivate are both ramp
-    expect(s.roleCards.ramp).toContain("Sol Ring");
-    expect(s.roleCards.ramp).toContain("Cultivate");
+    expect(s.roleCards.ramp.map((c) => c.name)).toContain("Sol Ring");
+    expect(s.roleCards.ramp.map((c) => c.name)).toContain("Cultivate");
   });
 
   it("a wrath lands in roleCards.wipes not roleCards.removal", () => {
@@ -132,9 +132,9 @@ describe("scoreCommander", () => {
       typeLine: "Legendary Creature",
       colorIdentity: ["W", "U", "B", "G"],
     });
-    const s = scoreCommander({ commander: commanderW, collection: colWithWrath, edhrecTopCards: null });
-    expect(s.roleCards.wipes).toContain("Wrath of God");
-    expect(s.roleCards.removal).not.toContain("Wrath of God");
+    const s = scoreCommander({ commander: commanderW, collection: colWithWrath, edhrecTopCards: null, inclusionByName: null });
+    expect(s.roleCards.wipes.map((c) => c.name)).toContain("Wrath of God");
+    expect(s.roleCards.removal.map((c) => c.name)).not.toContain("Wrath of God");
   });
 
   // Task 2: overlapOwned / overlapMissing
@@ -144,20 +144,21 @@ describe("scoreCommander", () => {
       commander,
       collection,
       edhrecTopCards: ["Sol Ring", "Rhystic Study"],
+      inclusionByName: null,
     });
     expect(s.overlapOwned).toEqual(["Sol Ring"]);
     expect(s.overlapMissing).toEqual(["Rhystic Study"]);
   });
 
   it("overlapOwned and overlapMissing are [] when edhrecTopCards is null", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
     expect(s.overlapOwned).toEqual([]);
     expect(s.overlapMissing).toEqual([]);
   });
 
   // Task 2: fitNS renormalization — no synergy
   it("fitSynergy is null when edhrecTopCards is null, score is renormalized", () => {
-    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
     expect(s.fitSynergy).toBeNull();
     expect(s.fitPool).toBeLessThanOrEqual(15);
     expect(s.fitRoles).toBeLessThanOrEqual(25);
@@ -171,6 +172,7 @@ describe("scoreCommander", () => {
       commander,
       collection,
       edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"],
+      inclusionByName: null,
     });
     expect(s.fitSynergy).not.toBeNull();
     expect(s.fitPool).toBeLessThanOrEqual(15);
@@ -178,6 +180,73 @@ describe("scoreCommander", () => {
     expect(s.fitSynergy!).toBeLessThanOrEqual(60);
     const expected = Math.round((s.fitPool + s.fitRoles + s.fitSynergy!) * 10) / 10;
     expect(s.score).toBe(expected);
+  });
+});
+
+describe("roleCards", () => {
+  const rampA = card({ oracleId: "a", name: "Sol Ring", typeLine: "Artifact", oracleText: "{T}: Add {C}{C}." });
+  const rampB = card({ oracleId: "b", name: "Arcane Signet", typeLine: "Artifact", oracleText: "{T}: Add one mana of any color." });
+  const rampC = card({ oracleId: "c", name: "Fellwar Stone", typeLine: "Artifact", oracleText: "{T}: Add one mana of any color." });
+
+  const commander = card({
+    oracleId: "00000000-0000-0000-0000-0000000000c0",
+    name: "Commander", typeLine: "Legendary Creature — Human",
+  });
+
+  it("carries oracle id, name, and the EDHREC figure", () => {
+    const s = scoreCommander({
+      commander, collection: [rampA],
+      edhrecTopCards: null, inclusionByName: { "sol ring": 82 },
+    });
+    expect(s.roleCards.ramp).toEqual([{ oracleId: "a", name: "Sol Ring", inclusionPct: 82 }]);
+  });
+
+  it("orders by inclusion descending with absent figures last", () => {
+    const s = scoreCommander({
+      commander, collection: [rampB, rampA, rampC],
+      edhrecTopCards: null, inclusionByName: { "sol ring": 82, "arcane signet": 61 },
+    });
+    expect(s.roleCards.ramp.map((c) => c.name)).toEqual(["Sol Ring", "Arcane Signet", "Fellwar Stone"]);
+  });
+
+  it("reads a double-faced card's figure from its front face", () => {
+    // Deliberately NOT a land back face: `classifyRoles` pushes `land` for any
+    // type line containing "land" and gates `ramp` on the card not being a land,
+    // so an "Instant // Land" DFC lands in no non-land role at all and this
+    // assertion could never run.
+    const dfc = card({
+      oracleId: "d", name: "Jace, Vryn's Prodigy // Jace, Telepath Unbound",
+      typeLine: "Legendary Creature — Human Wizard // Legendary Planeswalker — Jace",
+      oracleText: "Draw a card, then discard a card.",
+    });
+    const s = scoreCommander({
+      commander, collection: [dfc],
+      edhrecTopCards: null, inclusionByName: { "jace, vryn's prodigy": 44 },
+    });
+    expect(s.roleCards.draw[0]?.inclusionPct).toBe(44);
+  });
+
+  it("leaves every figure null when there is no inclusion map", () => {
+    const s = scoreCommander({
+      commander, collection: [rampA], edhrecTopCards: null, inclusionByName: null,
+    });
+    expect(s.roleCards.ramp[0]?.inclusionPct).toBeNull();
+  });
+
+  it("keeps pool order when there is no inclusion map at all", () => {
+    const s = scoreCommander({
+      commander, collection: [rampC, rampA, rampB], edhrecTopCards: null, inclusionByName: null,
+    });
+    expect(s.roleCards.ramp.map((c) => c.name))
+      .toEqual(["Fellwar Stone", "Sol Ring", "Arcane Signet"]);
+  });
+
+  it("breaks an inclusion tie on name so the order is stable", () => {
+    const s = scoreCommander({
+      commander, collection: [rampC, rampB],
+      edhrecTopCards: null, inclusionByName: { "arcane signet": 50, "fellwar stone": 50 },
+    });
+    expect(s.roleCards.ramp.map((c) => c.name)).toEqual(["Arcane Signet", "Fellwar Stone"]);
   });
 });
 
