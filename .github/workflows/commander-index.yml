@@ -5,9 +5,9 @@ name: Commander index
 # maxDuration. Same reasoning as catalog-refresh.yml, which this mirrors.
 on:
   schedule:
-    # 09:00 UTC on the 3rd — two days after the catalog refresh, so a commander
-    # printed in a set that landed on the 1st already has its cards row and the
-    # name index can resolve it.
+    # 09:00 UTC on the 3rd — the catalog refreshes every Monday, so by the 3rd
+    # of any month a set released in the previous week has already been ingested
+    # and the name index can resolve it.
     - cron: '0 9 3 * *'
   workflow_dispatch:
     inputs:

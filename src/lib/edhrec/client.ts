@@ -108,7 +108,16 @@ export async function getEdhrecData(
 export async function fetchEdhrecUncached(commanderName: string): Promise<EdhrecFetchResult> {
   try {
     const res = await fetch(edhrecUrl(commanderName), edhrecInit());
-    // 4xx = not indexed on EDHREC. A data-shaped absence, not an outage.
+    // 429 and 403 mean the service is blocking the index run — a rate-limit or
+    // access denial that is temporary and says nothing about whether this
+    // commander is indexed. Treating them as absent would overwrite a good row
+    // (and delete all its support cards) with an empty absent row; instead,
+    // route them through the degraded path so the previous row survives.
+    // A resumed run would then see those rows as done and skip them, compounding
+    // the loss. 404 (commander genuinely not on EDHREC) remains absent — that
+    // IS a fact about the commander, not about the service.
+    if (res.status === 429 || res.status === 403) return { data: null, unreachable: true };
+    // Other 4xx = not indexed on EDHREC. A data-shaped absence, not an outage.
     if (res.status >= 400 && res.status < 500) return { data: null, unreachable: false };
     if (!res.ok) throw new Error(`edhrec ${res.status}`);
     return { data: parseEdhrecPayload(await res.json()), unreachable: false };

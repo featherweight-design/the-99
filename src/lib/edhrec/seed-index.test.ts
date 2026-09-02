@@ -22,7 +22,7 @@ const okResult = (topCards: string[]) => ({
 });
 
 it("writes one header per commander and one child row per resolved card", async () => {
-  const writes: unknown[] = [];
+  const writes: { header: { synergyState: string; edhrecTotal: number | null }; cards: unknown[] }[] = [];
   const r = await buildCommanderIndex({
     loadCommanders: async () => [commander("Ghoulcaller Gisa", "g")],
     loadNameIndex: async () => [
@@ -37,6 +37,11 @@ it("writes one header per commander and one child row per resolved card", async 
   expect(r.cardRows).toBe(1);           // Gisa herself is never her own support card
   expect(r.unresolved).toBe(0);
   expect(r.degraded).toBe(0);
+  // The written header should reflect the fixture: two topCards → edhrecTotal 2,
+  // and the synergy state should be "ok" (data present, not absent or degraded).
+  expect(writes).toHaveLength(1);
+  expect(writes[0].header.synergyState).toBe("ok");
+  expect(writes[0].header.edhrecTotal).toBe(2);
 });
 
 it("counts an unresolvable name without dropping it from edhrecTotal", async () => {
