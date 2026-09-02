@@ -102,3 +102,40 @@ describe("CardModal availability detail", () => {
     expect(screen.queryByText(/Complete|Playable|Building|Draft/)).toBeNull();
   });
 });
+
+// The mobile art header and the tile inside it draw the same picture. At full
+// sharpness on both, the card's own text was legible twice over at two sizes,
+// one behind the other, and the band read as noise rather than as backdrop.
+describe("CardModal mobile art header", () => {
+  // The art follows the resolved printing, not the card-level image, so the
+  // fixture has to own one for anything but the identity gradient to render.
+  const art: BrowseCard = {
+    ...card,
+    imageUri: "https://cards.scryfall.io/normal/tithe.jpg",
+    printings: [
+      {
+        setCode: "RVR",
+        setName: "Ravnica Remastered",
+        collectorNumber: "24",
+        releasedAt: "2024-01-12",
+        quantity: 1,
+        finishes: { nonfoil: 1 },
+        imageUri: "https://cards.scryfall.io/normal/tithe.jpg",
+      },
+    ],
+  };
+
+  it("keeps the band's copy of the art as a blurred wash", () => {
+    mount(art);
+    const wash = screen.getByTestId("mobile-art-wash");
+    expect(wash.style.filter).toContain("blur");
+    expect(Number(wash.style.opacity)).toBeLessThan(1);
+    expect(wash.style.backgroundImage).toContain("tithe.jpg");
+  });
+
+  it("leaves the band itself unpainted, so only the wash carries the art", () => {
+    mount(art);
+    const band = screen.getByTestId("mobile-art-wash").parentElement!;
+    expect(band.style.backgroundImage).toBe("");
+  });
+});

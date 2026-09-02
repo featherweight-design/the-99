@@ -8,12 +8,12 @@ import { useRef } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_COLOR } from "../../lib/collection/browse";
+import { cssUrl, WUBRG_COLOR } from "../../lib/collection/browse";
 
 /** Only the fields the lightbox renders — keeps the client payload slim. */
 export type LightboxCommander = Pick<
   RankedCommander,
-  "name" | "manaCost" | "typeLine" | "oracleText" | "colorIdentity"
+  "name" | "manaCost" | "typeLine" | "oracleText" | "colorIdentity" | "imageUri"
 >;
 
 export function CommanderLightbox({
@@ -54,7 +54,7 @@ export function CommanderLightbox({
         aria-hidden
         className="absolute inset-0"
         style={{
-          background: gradient,
+          background: c.imageUri ? `${cssUrl(c.imageUri)} center/cover` : gradient,
           opacity: 0.28,
           filter: "blur(3px)",
         }}
@@ -112,7 +112,33 @@ export function CommanderLightbox({
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* §Card frame (lightbox) — 262px wide, 63/88 aspect */}
+        {/* The surface is called "Full card", so when there is a card to show it
+            shows that card. The frame below is a drawing of one — name, pips and
+            oracle text over an identity gradient — and it is the fallback for a
+            commander the catalog has no image for, not the primary rendering. */}
+        {c.imageUri ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={c.imageUri}
+              alt={c.name}
+              className="rounded-[16px]"
+              style={{
+                width: 262,
+                aspectRatio: "63/88",
+                objectFit: "cover",
+                boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
+              }}
+            />
+            {/* The image carries the type line and rules text as pixels; this is
+                the same text for anyone not reading pixels. */}
+            <p className="sr-only">
+              {c.typeLine}
+              {c.oracleText ? `. ${c.oracleText}` : ""}
+            </p>
+          </>
+        ) : (
+        /* §Card frame (lightbox) — 262px wide, 63/88 aspect */
         <div
           className="flex flex-col rounded-[16px]"
           style={{
@@ -238,6 +264,7 @@ export function CommanderLightbox({
             )}
           </div>
         </div>
+        )}
 
         {/* §"Tap anywhere to close" hint */}
         <p

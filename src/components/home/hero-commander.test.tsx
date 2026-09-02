@@ -105,6 +105,24 @@ describe("HeroCommander", () => {
     expect(screen.getByText(/top-cards list isn't ready yet/i)).toBeInTheDocument();
   });
 
+  // The art was a 200px full-height strip with `center/cover`, which cropped a
+  // band out of the middle of Scryfall's 63:88 card — and it was `hidden
+  // md:block`, so the phone hero had no art at all.
+  it("shows the whole card, at every width", async () => {
+    await renderHero([item({ imageUri: "https://cards.scryfall.io/normal/krenko.jpg" })]);
+    const art = screen.getByTestId("hero-art");
+    expect(art.style.aspectRatio).toBe("63/88");
+    expect(art.style.background).toContain("krenko.jpg");
+    expect(art.className).not.toMatch(/(^|\s|:)hidden(\s|$)/);
+  });
+
+  it("keeps the striped placeholder for a commander with no art", async () => {
+    await renderHero([item({ imageUri: null })]);
+    expect(screen.getByTestId("hero-art").style.background).toContain(
+      "repeating-linear-gradient",
+    );
+  });
+
   it("renders the quiet placeholder when there are no candidates", async () => {
     await renderHero([]);
     expect(screen.getByText("No commander candidates yet.")).toBeInTheDocument();

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cssUrl } from "../../lib/collection/browse";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { completeness, COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
 import type { SynergyState } from "../../lib/recs/synergy-state";
@@ -47,6 +48,37 @@ const COMPLETENESS_FALLBACK: Record<SynergyState, string> = {
   degraded: "We couldn't reach EDHREC. The count returns once it's back.",
 };
 
+/** The no-art fallback the handoff specified for the art column. */
+const ART_STRIPES =
+  "repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px), var(--bg)";
+
+/**
+ * §Hero card: Art. The tile holds Scryfall's 63:88 instead of filling a
+ * full-height strip, so the whole card reads rather than a band cropped out of
+ * its middle — the crop the appshell addendum left open for Eng to take. It
+ * renders at both widths too; the strip was `hidden md:block`, which left the
+ * phone hero with no art at all.
+ */
+function ArtColumn({ imageUri }: { imageUri: string | null }) {
+  return (
+    <div
+      className="flex flex-none items-center justify-center p-[10px] md:p-[14px]"
+      style={{ background: "var(--bg)", borderRight: "1px solid var(--border-strong)" }}
+      aria-hidden
+    >
+      <div
+        data-testid="hero-art"
+        className="w-[84px] rounded-[6px] md:w-[132px]"
+        style={{
+          aspectRatio: "63/88",
+          background: imageUri ? `${cssUrl(imageUri)} center/cover` : ART_STRIPES,
+          boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
+        }}
+      />
+    </div>
+  );
+}
+
 export function HeroCommanderSkeleton() {
   return (
     <div
@@ -55,15 +87,7 @@ export function HeroCommanderSkeleton() {
       style={{ background: "var(--surface)", border: "1px solid var(--border-strong)" }}
       aria-busy="true"
     >
-      {/* Art placeholder: striped, 200px, desktop only */}
-      <div
-        className="hidden md:block w-[200px] shrink-0"
-        style={{
-          background:
-            "repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px), var(--bg)",
-          borderRight: "1px solid var(--border-strong)",
-        }}
-      />
+      <ArtColumn imageUri={null} />
       {/* Info area skeleton */}
       <div className="flex flex-1 flex-col justify-center p-6 md:p-[26px_30px]">
         <p
@@ -119,7 +143,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
       // Border and background are classes, not inline style, so the hover state can
       // reach them — the card became clickable and had no hover feedback at all.
       // Hover values match commanders/rec-card.tsx.
-      className="relative mb-[34px] flex flex-col overflow-hidden rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--elevated-hover)] md:flex-row"
+      className="relative mb-[34px] flex overflow-hidden rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--elevated-hover)]"
     >
       {/* Stretched link — same pattern as commanders/rec-card.tsx. The hero has
           no interactive children, so nothing needs lifting above it. */}
@@ -129,18 +153,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
         className="absolute inset-0 z-[1] rounded-[14px]"
       />
 
-      {/* §Hero card: Art — 200px, flex none, border-right line. The striped
-          placeholder the handoff specified is now the no-art fallback only. */}
-      <div
-        className="hidden md:block w-[200px] shrink-0"
-        style={{
-          background: top.imageUri
-            ? `url(${top.imageUri}) center/cover`
-            : "repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px), var(--bg)",
-          borderRight: "1px solid var(--border-strong)",
-        }}
-        aria-hidden
-      />
+      <ArtColumn imageUri={top.imageUri} />
 
       {/* Info area — §Hero card: Info area — flex 1, padding 26px 30px, flex-col, justify center */}
       <div className="flex flex-1 flex-col justify-center p-6 md:p-[26px_30px]">

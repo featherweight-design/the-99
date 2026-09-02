@@ -166,11 +166,12 @@ describe("deck card-detail triggers", () => {
       />,
     );
 
-    // Mobile and desktop thumbs are parallel trees; both must lead to the same card.
+    // One thumb sized responsively, not a mobile/desktop pair: a duplicated
+    // subtree gave the same commander two buttons in the accessibility tree.
     const triggers = screen.getAllByRole("button", {
       name: cardDetailCopy.triggerAria("Muldrotha, the Gravetide"),
     });
-    expect(triggers).toHaveLength(2);
+    expect(triggers).toHaveLength(1);
     await act(async () => {
       fireEvent.click(triggers[0]);
     });
