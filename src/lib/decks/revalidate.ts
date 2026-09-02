@@ -11,9 +11,11 @@
  */
 
 /**
- * The deck itself, the index, and the home dashboard — which lists the three
- * most recent decks and so moves whenever a deck is created, renamed, deleted,
- * or gains and loses cards.
+ * The deck itself, the index, and the home dashboard. Home lists the three most
+ * recent decks with a card count each, so a create or a delete changes which
+ * decks it names and a rename or a membership change alters what it says about
+ * one of them. (The order is by `createdAt` and does not move — see
+ * `listRecentDecks`.)
  */
 export function deckSurfaces(deckId: string): string[] {
   return [`/decks/${deckId}`, "/decks", "/"];
