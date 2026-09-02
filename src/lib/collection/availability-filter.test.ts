@@ -180,15 +180,21 @@ describe("the panel's option aria", () => {
   });
 
   // The row already carries aria-selected inside an aria-multiselectable
-  // listbox, so a ", selected" tail was the same fact twice in one breath. The
-  // arity is the assertion that matters: a two-parameter member cannot start
-  // varying on the selection again without this failing. Sort keeps its third,
-  // because "choose again to reverse" is not something the role announces.
+  // listbox, so a ", selected" tail was the same fact twice in one breath.
+  //
+  // Arity alone would not hold the line: `(name, count, selected = false)` still
+  // reports `.length === 2`, so the output is called with a third argument both
+  // ways and asserted identical. That is the property that matters — the copy
+  // does not vary on the selection — and it survives a defaulted parameter.
+  // Sort keeps its third, because "choose again to reverse" is not something the
+  // role announces.
   it("leaves the selected state to the role on every multi-select panel", () => {
     for (const panel of ["set", "type", "availability", "color"] as const) {
       const member = collectionFilterCopy[panel].optionAria;
-      expect(member.length, panel).toBe(2);
+      const loose = member as (...args: unknown[]) => string;
       expect(member("Anything", 2), panel).not.toMatch(/selected/);
+      expect(loose("Anything", 2, true), panel).toBe(loose("Anything", 2, false));
+      expect(loose("Anything", 2, true), panel).toBe(member("Anything", 2));
     }
     expect(collectionFilterCopy.sort.optionAria("Name", 0, true)).toBe(
       "Name, current order, choose again to reverse",
