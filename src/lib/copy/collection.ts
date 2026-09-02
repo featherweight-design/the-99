@@ -281,7 +281,7 @@ export type FilterPanelCopy = {
 
   /**
    * `selected` is passed but the multi-select panels ignore it. Their rows carry
-   * `aria-selected` inside a `aria-multiselectable` listbox, so a ", selected"
+   * `aria-selected` inside an `aria-multiselectable` listbox, so a ", selected"
    * tail in the name is the same fact twice in one breath. Sort takes it because
    * its selected row says something the role cannot: choosing it again reverses.
    */
