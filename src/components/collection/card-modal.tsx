@@ -88,14 +88,17 @@ function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
 }
 
 /**
- * The one place on `/collection` that names the deck holding a card. Rows and
- * tiles are count-only; here there is room for the full clause.
+ * The one place on `/collection` that names the deck holding a card, and the one
+ * place the name is a link. Rows and tiles are count-only, and both sit inside a
+ * `role="button"` or an option row, where a nested link would be invalid.
  *
  * The claiming deck's status pill is deliberately absent. Addendum 2 §3 draws
- * `×1 · ◆ none free — in Atraxa [Complete]`, but `hardDeckNames` carries names and
- * nothing else, and `statusPill()` needs that deck's built/owned/unresolved
- * counts. Deriving "Complete" from `hard > 0` would be a guess that reads as
- * fact, so the clause ships without it.
+ * `×1 · ◆ none free — in Atraxa [Complete]`, but `hardDecks` carries an id and a
+ * name and nothing else, and `statusPill()` needs that deck's
+ * built/owned/unresolved counts. Deriving "Complete" from `hard > 0` would be a
+ * guess that reads as fact, so the clause ships without it. The link is the
+ * honest version of the same impulse: it takes you to the pill instead of
+ * inventing one.
  */
 function AvailabilityDetail({ card }: { card: BrowseCard }) {
   if (!card.availability) return null;
@@ -129,6 +132,7 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
         <AvailabilityMarker
           availability={card.availability}
           density="row"
+          linkDeck
           className="font-mono text-[12px]"
         />
       </div>

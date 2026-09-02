@@ -11,6 +11,7 @@
 // docs/superpowers/design-tables/card-availability.md §2 and §3, which is the
 // authority where the execution plan's draft disagreed with it.
 
+import Link from "next/link";
 import { twMerge } from "tailwind-merge";
 import { availabilityCopy } from "../../lib/copy/availability";
 import {
@@ -87,14 +88,14 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
       // return counts without them. Counting to zero out loud ("on 0 of your
       // finished lists") is worse than the base form the copy file ships for
       // exactly this case.
-      if (opts?.nameless || a.hardDeckNames.length === 0) return namelessHardAria();
-      return a.hardDeckNames.length === 1
-        ? c.hardAria(a.hardDeckNames[0])
-        : c.hardMultiAria(a.hardDeckNames.length);
+      if (opts?.nameless || a.hardDecks.length === 0) return namelessHardAria();
+      return a.hardDecks.length === 1
+        ? c.hardAria(a.hardDecks[0].name)
+        : c.hardMultiAria(a.hardDecks.length);
     case "over":
       // Self-excluded and exactly one other claimant: name it, don't count it.
-      if (!opts?.nameless && opts?.selfExcluded && a.hardDeckNames.length === 1) {
-        return c.overAlsoInAria(a.hardDeckNames[0]);
+      if (!opts?.nameless && opts?.selfExcluded && a.hardDecks.length === 1) {
+        return c.overAlsoInAria(a.hardDecks[0].name);
       }
       // Two ways to lose the count, and the same answer to both — which is why
       // this guard is shaped exactly like the hard branch's. `nameless` is
@@ -104,10 +105,10 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
       // (a degraded read) the shortfall is still true where the count is not,
       // since `overAria(n, 0)` would say "0 of your finished lists include this
       // card". Both drop to the count-free shortfall the label already shows.
-      if (opts?.nameless || a.hardDeckNames.length === 0) {
+      if (opts?.nameless || a.hardDecks.length === 0) {
         return countlessOverAria(-a.free);
       }
-      return c.overAria(-a.free, a.hardDeckNames.length);
+      return c.overAria(-a.free, a.hardDecks.length);
   }
 }
 
@@ -126,11 +127,11 @@ function label(
   state: AvailabilityState,
   a: Availability,
   opts: MarkerOpts,
-): { prefix: string; name?: string } | null {
+): { prefix: string; deck?: { id: string; name: string } } | null {
   const c = availabilityCopy.marker;
-  const withName = (full: string, name: string) => ({
-    prefix: full.slice(0, full.length - name.length),
-    name,
+  const withName = (full: string, deck: { id: string; name: string }) => ({
+    prefix: full.slice(0, full.length - deck.name.length),
+    deck,
   });
 
   switch (state) {
@@ -142,26 +143,26 @@ function label(
       // Addendum 2 §3: collection never renders hardIn or hardMulti. A hard
       // state with no names lands here too — `none free — across 0 decks` is the
       // alternative, and `marker.hard` is the base form the copy file ships.
-      if (opts.nameless || a.hardDeckNames.length === 0) return { prefix: c.hard };
-      return a.hardDeckNames.length === 1
-        ? withName(c.hardIn(a.hardDeckNames[0]), a.hardDeckNames[0])
-        : { prefix: c.hardMulti(a.hardDeckNames.length) };
+      if (opts.nameless || a.hardDecks.length === 0) return { prefix: c.hard };
+      return a.hardDecks.length === 1
+        ? withName(c.hardIn(a.hardDecks[0].name), a.hardDecks[0])
+        : { prefix: c.hardMulti(a.hardDecks.length) };
     case "over":
       // Collection is count-only here too — the canvas draws a bare `short 1`.
       if (opts.nameless) return { prefix: c.over(-a.free) };
-      // Self-excluded: hardDeckNames already omits the current deck, so a lone
+      // Self-excluded: hardDecks already omits the current deck, so a lone
       // remaining entry is the OTHER claimant. "also in 2 decks" would count
       // the deck the player is standing in.
-      if (opts.selfExcluded && a.hardDeckNames.length === 1) {
-        return withName(c.overAlsoIn(-a.free, a.hardDeckNames[0]), a.hardDeckNames[0]);
+      if (opts.selfExcluded && a.hardDecks.length === 1) {
+        return withName(c.overAlsoIn(-a.free, a.hardDecks[0].name), a.hardDecks[0]);
       }
       // One deck CAN be the whole demand — "any number" cards (Relentless
       // Rats, Nazgûl) let a single list claim nine copies of something you own
       // four of. `overWithDemand` ships a singular branch for precisely that,
       // so the threshold is one deck, not two; below it there is no name and
       // nothing to count, and the bare `short N` is all that is true.
-      return a.hardDeckNames.length >= 1
-        ? { prefix: c.overWithDemand(-a.free, a.hardDeckNames.length) }
+      return a.hardDecks.length >= 1
+        ? { prefix: c.overWithDemand(-a.free, a.hardDecks.length) }
         : { prefix: c.over(-a.free) };
   }
 }
@@ -256,6 +257,7 @@ export function AvailabilityMarker({
   density = "row",
   seam = "var(--bg)",
   spoken = false,
+  linkDeck = false,
   className,
   ...opts
 }: {
@@ -280,6 +282,19 @@ export function AvailabilityMarker({
    * label on a generic role is discarded outright.
    */
   spoken?: boolean;
+  /**
+   * Draw the deck name as a link to that deck. Card detail only — it is the one
+   * surface with room for the clause, a real hover surface, and no enclosing
+   * control for a link to nest inside. Rows and tiles are inside a `role="button"`
+   * or an option row, where a nested link is invalid.
+   *
+   * Never combine with `spoken`: the prose would name the deck a second time,
+   * and the name half is aria-hidden under `spoken`, which cannot be applied to
+   * something focusable. Nothing does both, and the two props are documented
+   * against each other rather than enforced, because a silent no-op is worse
+   * than a rule you can read.
+   */
+  linkDeck?: boolean;
   className?: string;
 } & MarkerOpts) {
   const state = availabilityState(availability, {
@@ -348,18 +363,35 @@ export function AvailabilityMarker({
       >
         {text.prefix}
       </span>
-      {text.name && (
+      {text.deck &&
         // -ml cancels the container's gap between the two halves of what is one
         // sentence: the gap separates the glyph from the text, not `none free — in`
         // from `Atraxa`.
-        <span
-          aria-hidden={spoken || undefined}
-          className={twMerge("truncate min-w-[6ch] -ml-[6px]", colour)}
-          data-deck-name=""
-        >
-          {text.name}
-        </span>
-      )}
+        (linkDeck ? (
+          // The accessible name says which deck it opens, because the visible
+          // text is a bare proper noun that truncates, and "Atraxa…" out of
+          // context does not say it is a link to a deck.
+          <Link
+            href={`/decks/${text.deck.id}`}
+            aria-label={availabilityCopy.collection.detailDeckLinkAria(text.deck.name)}
+            className={twMerge(
+              "truncate min-w-[6ch] -ml-[6px] underline underline-offset-2",
+              "decoration-[color:var(--border-strong)] hover:decoration-current",
+              colour,
+            )}
+            data-deck-name=""
+          >
+            {text.deck.name}
+          </Link>
+        ) : (
+          <span
+            aria-hidden={spoken || undefined}
+            className={twMerge("truncate min-w-[6ch] -ml-[6px]", colour)}
+            data-deck-name=""
+          >
+            {text.deck.name}
+          </span>
+        ))}
       {prose && <span className="sr-only">{prose}</span>}
     </span>
   );

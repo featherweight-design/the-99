@@ -19,7 +19,7 @@ const avail = (over: Partial<Availability> = {}): Availability => ({
   hard: 0,
   soft: 0,
   free: 1,
-  hardDeckNames: [],
+  hardDecks: [],
   ...over,
 });
 

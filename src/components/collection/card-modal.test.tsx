@@ -39,7 +39,13 @@ const avail = (
   hard: number,
   soft = 0,
   hardDeckNames: string[] = [],
-): Availability => ({ owned, hard, soft, free: owned - hard, hardDeckNames });
+): Availability => ({
+  owned,
+  hard,
+  soft,
+  free: owned - hard,
+  hardDecks: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n })),
+});
 
 function mount(c: BrowseCard) {
   render(
@@ -69,6 +75,16 @@ describe("CardModal availability detail", () => {
     expect(screen.getByText(availabilityCopy.collection.detailHardNote)).toBeInTheDocument();
   });
 
+  // The clause ships no status pill, so the link is what takes the player to
+  // the deck that has their card.
+  it("links the named deck to that deck", () => {
+    mount({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
+    const link = screen.getByRole("link", {
+      name: availabilityCopy.collection.detailDeckLinkAria("Atraxa"),
+    });
+    expect(link).toHaveAttribute("href", "/decks/d1");
+  });
+
   it("picks the note off the state rather than off the hard count", () => {
     mount({ ...card, quantity: 2, availability: avail(2, 1, 1) });
     expect(screen.getByText(availabilityCopy.collection.detailSoftNote)).toBeInTheDocument();
@@ -79,7 +95,7 @@ describe("CardModal availability detail", () => {
     expect(screen.getByText(availabilityCopy.collection.detailOverNote)).toBeInTheDocument();
   });
 
-  // `hardDeckNames` carries names and nothing else, so a pill here would be
+  // `hardDecks` carries an id and a name and nothing else, so a pill here would be
   // derived from `hard > 0` — a guess that reads as fact.
   it("does not invent the claiming deck's status pill", () => {
     mount({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });

@@ -8,7 +8,7 @@ type Row = {
   hard: number;
   soft: number;
   free: number;
-  hard_deck_names: string[] | null;
+  hard_decks: { id: string; name: string }[] | null;
 };
 
 /**
@@ -80,7 +80,7 @@ export async function loadAvailability(
       group by ac.oracle_id
     ),
     -- One row per (oracle, claiming deck). select distinct is what makes the
-    -- name list right: a deck whose commander is also on its own list appears
+    -- claimant list right: a deck whose commander is also on its own list appears
     -- twice in all_claims, and two decks that share a name are still two rows
     -- because deck_id is in the key. Quantities are NOT summed here.
     claim_decks as (
@@ -104,10 +104,14 @@ export async function loadAvailability(
       where ${skip}::uuid is null or ac.deck_id <> ${skip}::uuid
       group by ac.oracle_id
     ),
-    claim_names as (
+    hard_claimants as (
       select
         cd.oracle_id,
-        array_agg(cd.name order by cd.name) as hard_deck_names
+        -- json, not a composite array: the pg driver hands a Postgres array of
+        -- records back as an unparsed "(uuid,name)" string, and a name with a
+        -- comma or a quote in it is then unrecoverable. jsonb_agg arrives as a
+        -- real array of objects.
+        jsonb_agg(jsonb_build_object('id', cd.deck_id, 'name', cd.name) order by cd.name) as hard_decks
       from claim_decks cd
       where cd.cards >= ${MATURE_DECK_SIZE}
         and (${skip}::uuid is null or cd.deck_id <> ${skip}::uuid)
@@ -131,10 +135,10 @@ export async function loadAvailability(
       -- (owned − ownClaim) − (hard − ownHardClaim). The right-hand subtraction
       -- already happened in the claims CTE; this applies the supply half.
       (o.owned - coalesce(oc.own_claim, 0) - coalesce(c.hard, 0))::int as free,
-      n.hard_deck_names
+      n.hard_decks
     from owned o
     left join claims c on c.oracle_id = o.oracle_id
-    left join claim_names n on n.oracle_id = o.oracle_id
+    left join hard_claimants n on n.oracle_id = o.oracle_id
     left join own_claims oc on oc.oracle_id = o.oracle_id
     where ${only}::uuid[] is null or o.oracle_id = any(${only}::uuid[])
   `);
@@ -149,7 +153,7 @@ export async function loadAvailability(
       // that is right only when excludeDeckId is unset, and silently wrong on
       // a deck's own decklist, where supply is self-excluded too.
       free: r.free,
-      hardDeckNames: r.hard_deck_names ?? [],
+      hardDecks: r.hard_decks ?? [],
     });
   }
   return out;

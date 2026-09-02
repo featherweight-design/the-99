@@ -147,8 +147,8 @@ export function BuilderShell({
         // counts finished lists out loud, and with an empty name array it would
         // say "on 0 finished lists" — the same hole `markerAria` guards.
         lone =
-          a.hardDeckNames.length > 0
-            ? { name: card.name, deckCount: a.hardDeckNames.length, ownedQty: a.owned }
+          a.hardDecks.length > 0
+            ? { name: card.name, deckCount: a.hardDecks.length, ownedQty: a.owned }
             : null;
       } else if (state === "soft") {
         softClaimed++;

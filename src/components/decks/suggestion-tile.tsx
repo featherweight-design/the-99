@@ -162,7 +162,7 @@ export function SuggestionTile({
   // Only the two states the design draws a caption for, and only when there is
   // a name or a count to put in it. A hard claim held by several decks has no
   // shipped string — `tileInUse` takes one name — so it draws the chip alone.
-  const names = suggestion.availability?.hardDeckNames ?? [];
+  const names = (suggestion.availability?.hardDecks ?? []).map((d) => d.name);
   const tileCaption =
     availState === "hard" && names.length === 1
       ? availabilityCopy.marker.tileInUse(names[0])

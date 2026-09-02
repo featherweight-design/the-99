@@ -22,10 +22,14 @@ export type Availability = {
    */
   free: number;
   /**
-   * Names of the mature decks holding a hard claim, minus the excluded deck
-   * when one was passed. Used only when length === 1.
+   * The mature decks holding a hard claim, minus the excluded deck when one was
+   * passed. Ordered by name.
+   *
+   * The id rides along because two decks can share a name — `claim_decks` keys
+   * on `deck_id` for exactly that reason — so a surface wanting to link the
+   * named deck cannot recover it from the name alone.
    */
-  hardDeckNames: string[];
+  hardDecks: { id: string; name: string }[];
 };
 
 export type AvailabilityState = "free" | "soft" | "hard" | "over";
