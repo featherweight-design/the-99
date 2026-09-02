@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { parseThemeBlocks } from "./parse-css";
 
 // import.meta.url, not __dirname: Vitest runs tests as ESM.
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -28,14 +29,23 @@ const ALLOWED = new Set([
 // ten surfaces. Not swept, because nothing renders it.
 const ALLOWED_DIRS = ["components/character/"];
 
-// The brand hexes, as RGB triples. A theme-aware colour written as rgba() is
-// invisible to a hex scan and stays Gilded Stone in all six themes, so the
-// scan looks for both spellings.
+// A theme-aware colour written as rgba() is invisible to a hex scan and stays
+// Gilded Stone under every theme, so the scan looks for both spellings.
 const HEX = /#[0-9A-Fa-f]{6}\b/;
+
+// Derived from globals.css rather than listed here. Hand-written triples went
+// stale the moment the accent moved: the list still named the pre-rebrand brass
+// rgba(201,162,75) and knew nothing of rgba(207,135,69), so the one spelling the
+// guard exists to catch was the one it let through. Deriving them means a token
+// cannot change without the guard following it.
+const CHANNELS = [...parseThemeBlocks(readFileSync(join(SRC, "app/globals.css"), "utf8")).values()]
+  .flatMap((tokens) => [...tokens.values()])
+  .filter((value) => /^#[0-9A-Fa-f]{6}$/.test(value))
+  .map((hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(",\\s*"));
+
 // The trailing comma matters: without it the last channel is a prefix match, so
-// rgba(201, 162, 750, …) — a different colour — would trip the guard.
-const BRAND_RGBA =
-  /rgba\(\s*(201,\s*162,\s*75|111,\s*163,\s*104|198,\s*83,\s*63|224,\s*145,\s*60|237,\s*230,\s*216)\s*,/;
+// rgba(207, 135, 690, …) — a different colour — would trip the guard.
+const BRAND_RGBA = new RegExp(`rgba\\(\\s*(${[...new Set(CHANNELS)].join("|")})\\s*,`);
 
 function* sources(dir: string, prefix = ""): Generator<string> {
   for (const entry of readdirSync(join(SRC, dir), { withFileTypes: true })) {
@@ -52,6 +62,20 @@ const files = [...sources(".")].filter(
 describe("colour comes from tokens", () => {
   it("scans a plausible number of files", () => {
     expect(files.length).toBeGreaterThan(100);
+  });
+
+  // A guard that matches nothing passes every file and reports success. These
+  // two pin the ends: the live accent must be caught, and a colour one digit
+  // away from it must not be.
+  it("recognises the accent it is derived from", () => {
+    expect(BRAND_RGBA.test("rgba(207, 135, 69, 0.1)")).toBe(true);
+    expect(BRAND_RGBA.test("rgba(207, 135, 690, 0.1)")).toBe(false);
+  });
+
+  // Every scanned path is src-relative, which is what makes ALLOWED's
+  // src-relative entries — lib/shell/clerk-appearance.ts — line up with them.
+  it("scans from src, not from this directory", () => {
+    expect(files).toContain("components/ui/button.tsx");
   });
 
   // Both spellings checked in one case per file, off one read. Split across two
