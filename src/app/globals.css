@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
- * Brand tokens — the 35-key contract enforced by src/lib/theme/contract.test.ts.
+ * Brand tokens — the 36-key contract enforced by src/lib/theme/contract.test.ts.
  * Semantic names first; raw hexes live only here.
  * ------------------------------------------------------------------ */
 :root {
