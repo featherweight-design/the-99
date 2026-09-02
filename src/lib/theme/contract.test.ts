@@ -47,11 +47,15 @@ const TEXT = ["fg", "fg-body", "fg-muted", "fg-faint", "fg-locked"];
 const PIPS = ["w", "u", "b", "r", "g"];
 const SEMANTICS = ["success", "warning", "danger"];
 
+const EXPECTED_THEMES = [
+  "amonkhet", "kamigawa", "innistrad", "phyrexia", "duskmourn", "kaldheim",
+];
+
 const entries = [...THEMES.entries()];
 
 describe("theme contract", () => {
-  it("finds at least the default theme", () => {
-    expect(THEMES.has("amonkhet")).toBe(true);
+  it("declares all six themes", () => {
+    expect([...THEMES.keys()].sort()).toEqual([...EXPECTED_THEMES].sort());
   });
 
   describe.each(entries)("%s", (name, tokens) => {
@@ -72,8 +76,17 @@ describe("theme contract", () => {
       }
     });
 
-    it("gives every key its own value, bar the fit-bar ramp", () => {
+    it("gives every key its own value, bar the ramp and a settled accent", () => {
       const twin = new Map(INTENTIONAL_TWINS.flatMap(([a, b]) => [[a, b], [b, a]]));
+      // --avail-hard-fg is the accent lifted until it clears the 7:1 floor
+      // asserted below. Innistrad's accent already clears it, so lifting would
+      // move the marker off the accent for nothing. Named as well as gated on
+      // the contrast: were the gate alone, a later tweak that pushed some other
+      // theme's accent over 7:1 would quietly license the same duplication.
+      if (name === "innistrad" && contrast(hex("accent"), hex("surface")) >= 7) {
+        twin.set("avail-hard-fg", "accent");
+        twin.set("accent", "avail-hard-fg");
+      }
       const seen = new Map<string, string>();
       for (const key of CONTRACT) {
         if (key in ALIASES) continue;
@@ -108,6 +121,9 @@ describe("theme contract", () => {
       expect(contrast(hex("bg"), hex("accent"))).toBeGreaterThanOrEqual(4.5);
       // The focus ring is the accent, drawn on the canvas.
       expect(contrast(hex("accent"), hex("bg"))).toBeGreaterThanOrEqual(3);
+      // --avail-hard-fg exists so the "sleeved elsewhere" count reads as body
+      // text rather than as decoration; the accent itself is often too dark.
+      expect(contrast(hex("avail-hard-fg"), hex("surface"))).toBeGreaterThanOrEqual(7);
     });
 
     it("separates every pip and semantic from the accent by 0.10 delta-E", () => {

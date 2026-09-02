@@ -55,6 +55,208 @@
   --g: #4B7A46;
 }
 
+/* Theme: kamigawa — "Neon Rain". Cyberpunk; the one high-chroma accent. */
+[data-theme="kamigawa"] {
+  --bg: #0E0F14;
+  --surface: #16181F;
+  --surface-raised: #191B22;
+  --surface-rail: #12141B;
+  --surface-sunken: #101219;
+  --surface-inset: #13151C;
+  --elevated: #20222A;
+  --elevated-hover: #181A21;
+  --border: #181C26;
+  --border-strong: #262A35;
+  --border-dashed: #343843;
+  --fg: #E6E8F0;
+  --fg-body: #B1B6C7;
+  --fg-muted: #959AAD;
+  --fg-faint: #6F7486;
+  --fg-locked: #606476;
+  --accent: #FF4D9A;
+  --accent-hover: #FF62A9;
+  --accent-strong: #D33E7E;
+  --accent-shadow: #843052;
+  --accent-dim: #843052;
+  --accent-mid: #D33E7E;
+  --success: #6FA368;
+  --warning: #E0913C;
+  --danger: #C6533F;
+  --avail-soft: var(--fg-muted);
+  --avail-hard: var(--accent);
+  --avail-hard-fg: #DF8AA7;
+  --avail-over-fg: #C26755;
+  --avail-over-border: #752619;
+  --w: #F4E9C4;
+  --u: #3A6AA5;
+  --b: #1E1B1A;
+  --r: #C05A3E;
+  --g: #4B7A46;
+}
+
+/* Theme: innistrad — "Moonlit". Gothic horror; near-achromatic by design, and
+   the only theme whose --avail-hard-fg equals its --accent. That is correct,
+   not a copy-paste: this accent already clears 7:1 on --surface. */
+[data-theme="innistrad"] {
+  --bg: #101314;
+  --surface: #191D1E;
+  --surface-raised: #1C2021;
+  --surface-rail: #15191A;
+  --surface-sunken: #131718;
+  --surface-inset: #161A1B;
+  --elevated: #242829;
+  --elevated-hover: #1B1F20;
+  --border: #1C2224;
+  --border-strong: #2B3133;
+  --border-dashed: #3A4042;
+  --fg: #DDE3E1;
+  --fg-body: #B3BDBB;
+  --fg-muted: #96A19E;
+  --fg-faint: #737D7B;
+  --fg-locked: #606A68;
+  --accent: #8AAFA1;
+  --accent-hover: #9ABEB0;
+  --accent-strong: #729186;
+  --accent-shadow: #4E6059;
+  --accent-dim: #4E6059;
+  --accent-mid: #729186;
+  /* Deepened from the shared #6FA368: the accent was floored to chroma 0.045
+     per the brief's §9.5 ruling, which pulled success inside the 0.10 ΔE
+     separation floor. */
+  --success: #679F5F;
+  --warning: #E0913C;
+  --danger: #C6533F;
+  --avail-soft: var(--fg-muted);
+  --avail-hard: var(--accent);
+  --avail-hard-fg: #8AAFA1;
+  --avail-over-fg: #C56A58;
+  --avail-over-border: #752619;
+  --w: #F4E9C4;
+  --u: #3A6AA5;
+  --b: #1E1B1A;
+  --r: #C05A3E;
+  --g: #4B7A46;
+}
+
+/* Theme: phyrexia — "Oil and Iron". Biomechanical; the only theme in which a
+   WUBRG pip moves, because the oil-teal accent sat ΔE 0.09 from green. */
+[data-theme="phyrexia"] {
+  --bg: #0D0B0E;
+  --surface: #151317;
+  --surface-raised: #18161A;
+  --surface-rail: #110F13;
+  --surface-sunken: #100E12;
+  --surface-inset: #131115;
+  --elevated: #1E1C20;
+  --elevated-hover: #171519;
+  --border: #19161C;
+  --border-strong: #262329;
+  --border-dashed: #332F36;
+  --fg: #E4E2E6;
+  --fg-body: #B5B2BB;
+  --fg-muted: #9A96A0;
+  --fg-faint: #78747E;
+  --fg-locked: #64616A;
+  --accent: #52827A;
+  --accent-hover: #629189;
+  --accent-strong: #3E665F;
+  --accent-shadow: #213834;
+  --accent-dim: #213834;
+  --accent-mid: #3E665F;
+  --success: #6FA368;
+  --warning: #E0913C;
+  --danger: #C6533F;
+  --avail-soft: var(--fg-muted);
+  --avail-hard: var(--accent);
+  --avail-hard-fg: #77A9A0;
+  --avail-over-fg: #BE6453;
+  --avail-over-border: #752619;
+  --w: #F4E9C4;
+  --u: #3A6AA5;
+  --b: #1E1B1A;
+  --r: #C05A3E;
+  /* Deepened and pushed toward yellow-green, away from the oil-teal accent. */
+  --g: #527030;
+}
+
+/* Theme: duskmourn — "Screen Glow". Analog horror; the bright one. */
+[data-theme="duskmourn"] {
+  --bg: #100E15;
+  --surface: #1A1822;
+  --surface-raised: #1E1C26;
+  --surface-rail: #15131C;
+  --surface-sunken: #13111A;
+  --surface-inset: #17151F;
+  --elevated: #26242E;
+  --elevated-hover: #1C1A24;
+  --border: #1F2933;
+  --border-strong: #2F3A44;
+  --border-dashed: #3F4B55;
+  --fg: #D8DBE0;
+  --fg-body: #AFB8C8;
+  --fg-muted: #929CAE;
+  --fg-faint: #646D7E;
+  --fg-locked: #5D6676;
+  --accent: #49A9DC;
+  --accent-hover: #5DB9EB;
+  --accent-strong: #3B8BB6;
+  --accent-shadow: #2F5A73;
+  --accent-dim: #2F5A73;
+  --accent-mid: #3B8BB6;
+  --success: #6FA368;
+  --warning: #E0913C;
+  --danger: #C6533F;
+  --avail-soft: var(--fg-muted);
+  --avail-hard: var(--accent);
+  --avail-hard-fg: #54ADDD;
+  --avail-over-fg: #C36756;
+  --avail-over-border: #752619;
+  --w: #F4E9C4;
+  --u: #3A6AA5;
+  --b: #1E1B1A;
+  --r: #C05A3E;
+  --g: #4B7A46;
+}
+
+/* Theme: kaldheim — "Rune Frost". Norse; the lightest chrome of the six. */
+[data-theme="kaldheim"] {
+  --bg: #121217;
+  --surface: #1E1F26;
+  --surface-raised: #22232B;
+  --surface-rail: #181920;
+  --surface-sunken: #16171D;
+  --surface-inset: #1A1B22;
+  --elevated: #2D2E35;
+  --elevated-hover: #212229;
+  --border: #1A1F2B;
+  --border-strong: #2E3340;
+  --border-dashed: #424755;
+  --fg: #C6D2D3;
+  --fg-body: #B3C0C2;
+  --fg-muted: #95A4A6;
+  --fg-faint: #7C8A8C;
+  --fg-locked: #5F6D6E;
+  --accent: #5C86C9;
+  --accent-hover: #6C95D8;
+  --accent-strong: #486BA3;
+  --accent-shadow: #2C405F;
+  --accent-dim: #2C405F;
+  --accent-mid: #486BA3;
+  --success: #6FA368;
+  --warning: #E0913C;
+  --danger: #C6533F;
+  --avail-soft: var(--fg-muted);
+  --avail-hard: var(--accent);
+  --avail-hard-fg: #80ABEF;
+  --avail-over-fg: #C86D5B;
+  --avail-over-border: #752619;
+  --w: #F4E9C4;
+  --u: #3A6AA5;
+  --b: #1E1B1A;
+  --r: #C05A3E;
+  --g: #4B7A46;
+}
+
 /* ------------------------------------------------------------------
  * Tailwind v4 theme wiring — Tailwind utility classes read these.
  * `bg-bg`, `text-fg`, `border-border-strong`, `font-display`, etc.
