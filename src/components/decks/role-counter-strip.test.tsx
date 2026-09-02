@@ -339,7 +339,10 @@ describe("role counter cell — A4 short cell in a just-filled deck", () => {
     // The cell shell must use border-border-strong, not the default border-border
     const cell = container.firstElementChild as HTMLElement;
     expect(cell.className).toContain("border-border-strong");
-    expect(cell.className).not.toContain("border-border ");
+    // The default class must be replaced, not layered beside the stronger one.
+    // Matching on a word boundary rather than a trailing space, which never
+    // appears — the border class is last in the string.
+    expect(cell.className).not.toMatch(/\bborder-border\b(?!-strong)/);
   });
 
   it("a met cell in a just-filled deck does not take border-strong", () => {

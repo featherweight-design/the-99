@@ -15,7 +15,13 @@ interface RoleCounterCellProps {
   label: string;
   /** The current count, or `null` when the count is not yet known (A3
    *  in-flight treatment). `0` is a real known zero and keeps the ordinary
-   *  short-cell treatment. */
+   *  short-cell treatment.
+   *
+   *  No caller passes `null` today: the strip derives its counts from
+   *  `computeRoleCounts`, which always resolves to a number. The treatment is
+   *  built ahead of its consumer because any path that hands the cell an
+   *  unknown count needs it, and drawing a zero there would be a real bar
+   *  standing for no data. */
   have: number | null;
   target: number;
   advisory: boolean;
