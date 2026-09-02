@@ -10,6 +10,7 @@
 //
 // Run by hand, like its siblings, and not part of `pnpm test`:
 //   node --env-file=.env scripts/probe-themes.mjs
+import { mkdir } from "node:fs/promises";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 
@@ -21,6 +22,9 @@ const SECRET = process.env.CLERK_SECRET_KEY;
 // they name is not a member of this Clerk instance; a backend-issued sign-in
 // ticket needs no password and works for whichever account actually holds data.
 const EMAIL = process.env.PROBE_USER_EMAIL ?? "hugh@featherweight.design";
+// The reel the run leaves behind. Playwright will not create a missing parent,
+// so on a fresh machine the first screenshot throws and the whole walk is lost.
+const SHOTS = process.env.PROBE_SHOT_DIR ?? "/tmp/theme-shots";
 if (!SECRET) throw new Error("Set CLERK_SECRET_KEY.");
 
 async function clerkApi(path, init) {
@@ -112,6 +116,8 @@ function sample(page) {
 
 await clerkSetup();
 
+await mkdir(SHOTS, { recursive: true });
+
 const browser = await chromium.launch();
 const findings = [];
 
@@ -138,7 +144,7 @@ for (const viewport of VIEWPORTS) {
         seen.get(key).set(theme, row);
       }
       await page.screenshot({
-        path: `/tmp/theme-shots/${theme}-${viewport.label}-${route.replace(/\W+/g, "_")}.png`,
+        path: `${SHOTS}/${theme}-${viewport.label}-${route.replace(/\W+/g, "_")}.png`,
         fullPage: false,
       });
     }

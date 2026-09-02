@@ -80,9 +80,10 @@ describe("theme contract", () => {
       const twin = new Map(INTENTIONAL_TWINS.flatMap(([a, b]) => [[a, b], [b, a]]));
       // --avail-hard-fg is the accent lifted until it clears the 7:1 floor
       // asserted below. Innistrad's accent already clears it, so lifting would
-      // move the marker off the accent for nothing. Allowed only on that
-      // condition, so a theme cannot copy the pair across by accident.
-      if (contrast(hex("accent"), hex("surface")) >= 7) {
+      // move the marker off the accent for nothing. Named as well as gated on
+      // the contrast: were the gate alone, a later tweak that pushed some other
+      // theme's accent over 7:1 would quietly license the same duplication.
+      if (name === "innistrad" && contrast(hex("accent"), hex("surface")) >= 7) {
         twin.set("avail-hard-fg", "accent");
         twin.set("accent", "avail-hard-fg");
       }
