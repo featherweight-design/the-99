@@ -8,14 +8,10 @@ import { twMerge } from "tailwind-merge";
 // the dot at 7px responsive in the decklist row, a flat 8px on the suggestion
 // card and a flat 7px in the export dialog, so a fixed size here would be
 // overridden at every call site.
-//
-// #6E6353 is a literal because there is no token for it — the same reason
-// filter-panel.tsx spells it out for its placeholder text. The owned fill is
-// --success, which is exactly the #6FA368 the call sites used to hardcode.
 const BASE = "flex-none rounded-full";
 const OWNED =
   "bg-[color:var(--success)] [border:1px_solid_var(--success)]";
-const UNOWNED = "bg-transparent [border:1px_dashed_#6E6353]";
+const UNOWNED = "bg-transparent [border:1px_dashed_var(--fg-locked)]";
 
 type OwnershipDotProps = {
   owned: boolean;

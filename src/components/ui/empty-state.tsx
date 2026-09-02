@@ -6,8 +6,9 @@ import { twMerge } from "tailwind-merge";
 // mark to the caller, because every surface's design table sizes them
 // differently. Fixing sizes here would only mean overriding them everywhere.
 //
-// Tokens, never hex: the sites these replaced had drifted to a literal
-// #EDE6D8 in one place and var(--fg) in another for the same heading.
+// Tokens, never hex: the sites these replaced had drifted to a pasted
+// foreground literal in one place and var(--fg) in another for the same
+// heading.
 
 const CONTAINER = "flex flex-col items-center justify-center text-center p-8";
 const TITLE = "font-display font-bold text-[color:var(--fg)] m-0";

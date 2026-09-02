@@ -3,7 +3,7 @@ import { twMerge } from "tailwind-merge";
 // Shared text-entry primitives, sibling to button.tsx.
 //
 // These exist for one bug: every input in the app hand-rolled
-// `focus-visible:ring-2 focus-visible:ring-[#C9A24B]`, which has no offset and
+// `focus-visible:ring-2` with a pasted accent hex, which has no offset and
 // so draws the accent indicator INSIDE the field's own border. globals.css
 // already ships `:focus-visible { outline: 2px solid var(--accent);
 // outline-offset: 2px }` — outside, where it belongs. The primitives' job is to
