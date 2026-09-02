@@ -70,7 +70,10 @@ async function triggers(page) {
       .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)
       .map((b) => ({
         text: (b.textContent ?? "").trim(),
-        height: Math.round(b.getBoundingClientRect().height),
+        // floor, not round: this figure is compared against MIN, and rounding
+        // 43.6 up to 44 would report a passing target that a thumb still misses.
+        // Every measurement in this probe errs small for the same reason.
+        height: Math.floor(b.getBoundingClientRect().height),
       })),
   );
 }
@@ -109,7 +112,7 @@ async function dismissHitBox(page, min) {
     };
     const half = minPx / 2 - 1;
     return {
-      glyph: { w: Math.round(box.width), h: Math.round(box.height) },
+      glyph: { w: Math.floor(box.width), h: Math.floor(box.height) },
       hit: { w: reach("x") * 2, h: reach("y") * 2 },
       cornersOk: hits(-half, -half) && hits(half, -half) && hits(-half, half) && hits(half, half),
       aria: btn.getAttribute("aria-label"),
