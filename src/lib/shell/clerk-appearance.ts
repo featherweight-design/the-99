@@ -6,10 +6,11 @@ import type { ClerkProvider } from "@clerk/nextjs";
 type Appearance = NonNullable<ComponentProps<typeof ClerkProvider>["appearance"]>;
 
 /**
- * Brand theme for Clerk's own surfaces — chiefly the `<UserProfile/>` modal the
- * account menu's "Manage account" opens. Keys and values track the appearance
- * map in docs/superpowers/design-tables/user-menu.md (V1–V16, M1–M45); the row
- * ids in the comments below are the audit trail back to it.
+ * Brand theme for Clerk's own surfaces — chiefly the user-profile modal the
+ * account menu's "Manage account" opens via `clerk.openUserProfile()`. Keys and
+ * values track the appearance map in docs/superpowers/design-tables/user-menu.md
+ * (V1–V16, M1–M45); the row ids in the comments below are the audit trail back
+ * to it.
  *
  * The table was written against an older Clerk. Seven of its rows name elements
  * that 6.12 no longer renders at all — M15/M16 `breadcrumbs*`, M21/M22
@@ -69,8 +70,17 @@ export const clerkAppearance: Appearance = {
       boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
       [MOBILE]: { borderRadius: 0, border: "none" },
     },
-    // cardBox owns the surface; card must not paint a second one over it.
-    card: { background: "transparent", padding: 0 },
+    // cardBox owns the surface; card must not paint a second one over it. The
+    // padding is set rather than zeroed: `card` is the only element between
+    // cardBox's rounded edge and the content, so at 0 every surface using this
+    // map — the landing page's `<SignInButton mode="modal">` as much as the
+    // account menu's user-profile modal — sits its header and its fields flush
+    // against that edge.
+    card: {
+      background: "transparent",
+      padding: "28px 32px",
+      [MOBILE]: { padding: "26px 22px" },
+    },
     scrollBox: { background: "transparent" },
 
     navbar: {
@@ -100,6 +110,9 @@ export const clerkAppearance: Appearance = {
       fontFamily: "var(--font-cinzel)",
       fontWeight: 700,
       fontSize: 22,
+      // Cinzel is all-caps with tall ascenders; at Clerk's default leading a
+      // title this size clips against whatever sits above it.
+      lineHeight: 1.35,
       color: "var(--fg)",
     },
     headerSubtitle: {
