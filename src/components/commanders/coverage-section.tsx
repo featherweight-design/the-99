@@ -240,7 +240,6 @@ function RolePanelPhone({
 
 export type CoverageSectionProps = {
   width: "desktop" | "phone";
-  oracleId: string;
   slug: string;
   roleCards: Record<RoleName, RoleCard[]>;
   roleCounts: Record<RoleName, number>;

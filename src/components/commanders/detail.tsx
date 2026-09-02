@@ -537,7 +537,6 @@ export function CommanderDetail({
         {/* Role Coverage section */}
         <CoverageSection
           width="phone"
-          oracleId={c.oracleId}
           slug={c.slug}
           roleCards={c.roleCards}
           roleCounts={c.roleCounts}
@@ -816,7 +815,6 @@ export function CommanderDetail({
           {/* Role Coverage section */}
           <CoverageSection
             width="desktop"
-            oracleId={c.oracleId}
             slug={c.slug}
             roleCards={c.roleCards}
             roleCounts={c.roleCounts}

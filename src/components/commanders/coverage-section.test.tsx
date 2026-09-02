@@ -52,7 +52,6 @@ function renderSection(
     <CardDetailProvider fetchCard={fetchCard}>
       <CoverageSection
         width={width}
-        oracleId="oracle-commander"
         slug="commander-slug"
         roleCards={roleCards}
         roleCounts={roleCounts}
@@ -171,7 +170,6 @@ describe("absent vs degraded note rendering", () => {
       <CardDetailProvider fetchCard={vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null)}>
         <CoverageSection
           width="desktop"
-          oracleId="oracle-commander"
           slug="commander-slug"
           roleCards={EMPTY_ROLE_CARDS}
           roleCounts={BASE_ROLE_COUNTS}
@@ -189,7 +187,6 @@ describe("absent vs degraded note rendering", () => {
       <CardDetailProvider fetchCard={vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null)}>
         <CoverageSection
           width="desktop"
-          oracleId="oracle-commander"
           slug="commander-slug"
           roleCards={EMPTY_ROLE_CARDS}
           roleCounts={BASE_ROLE_COUNTS}

@@ -10,12 +10,15 @@
 import { useTransition } from "react";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import type { FillRole } from "../../lib/decks/fill";
 import { fillDeck } from "../../app/decks/actions";
 
 const copy = recommendationsCopy.fill;
 
 // Role display names — keyed off the FillRole union, matches RECOMMENDED_MIX.
-const ROLE_LABELS: Record<string, string> = {
+// The union key is what keeps the map honest: adding a role to the fill without
+// a label here is a type error rather than a raw "wipes" reaching the sentence.
+const ROLE_LABELS: Record<FillRole, string> = {
   ramp: "Ramp",
   draw: "Draw",
   removal: "Removal",
@@ -35,7 +38,7 @@ interface ProvenanceLineProps {
   /** 99 - filled — everything that is not the fill's, kept cards included. */
   open: number;
   /** The first role that missed its target, if any. */
-  shortRole?: string;
+  shortRole?: FillRole;
   /** "desktop" renders the full copy; "phone" renders provenanceMobile. */
   width: "desktop" | "phone";
 }
@@ -62,8 +65,7 @@ export function ProvenanceLine({
   // all-owned phone takes the all-owned string, which is already one sentence.
   let text: string;
   if (shortRole) {
-    const roleLabel = ROLE_LABELS[shortRole] ?? shortRole;
-    text = copy.provenanceShort(filledStr, roleLabel, openStr);
+    text = copy.provenanceShort(filledStr, ROLE_LABELS[shortRole], openStr);
   } else if (bought === 0) {
     text = copy.provenanceAllOwned(filledStr, openStr);
   } else if (width === "phone") {
