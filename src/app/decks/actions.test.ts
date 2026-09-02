@@ -49,8 +49,18 @@ const stub = vi.hoisted(() => {
                   then: (resolve: (v: unknown) => unknown) =>
                     Promise.resolve(state.collectionItems).then(resolve),
                 }),
-                groupBy: async (..._args: unknown[]) =>
-                  state.collectionItems,
+                // Mirrors the real ownedQuantities query: group by oracleId,
+                // sum quantities. Returns { oracleId, quantity } rows — the
+                // exact shape that ownedQuantities passes to new Map(...).
+                groupBy: async (..._args: unknown[]) => {
+                  const agg = new Map<string, number>();
+                  for (const item of state.collectionItems) {
+                    const id = (item as Record<string, unknown>).oracleId as string;
+                    const q = ((item as Record<string, unknown>).quantity as number | undefined) ?? 1;
+                    agg.set(id, (agg.get(id) ?? 0) + q);
+                  }
+                  return Array.from(agg.entries()).map(([oracleId, quantity]) => ({ oracleId, quantity }));
+                },
               }),
             } as unknown as SelectFromBuilder;
           },
@@ -216,6 +226,19 @@ describe("createDeck — filled baseline", () => {
     for (const row of rows) {
       expect(row.auto).toBe(true);
     }
+
+    // Basic lands owned in multiples must stack to the actual owned quantity,
+    // not the ?? 1 fallback.  The pool has 40 Forests each owned in quantity 4;
+    // planFill stacks them up to LAND_TARGET (37), so forest rows should sum to
+    // 37 and the early ones should carry quantity 4 (not 1).
+    const forestRows = rows.filter((r) =>
+      typeof r.oracleId === "string" && r.oracleId.startsWith("forest-"),
+    );
+    expect(forestRows.length).toBeGreaterThan(0);
+    const forestTotal = forestRows.reduce((n, r) => n + (r.quantity as number), 0);
+    expect(forestTotal).toBe(37);
+    // At least the first several forests should carry quantity 4 (not 1).
+    expect(forestRows.some((r) => r.quantity === 4)).toBe(true);
   });
 
   it("still creates the deck when the transaction throws", async () => {

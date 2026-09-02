@@ -170,10 +170,11 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
       }
       return deck.id;
     });
-  } catch {
+  } catch (err) {
     // State 15: the deck is here, the cards aren't. The player keeps the deck
     // and the banner offers the fill again — losing the deck too would cost
     // them the one thing they actually asked for.
+    console.error("buildFillPlan failed — falling back to empty deck", err);
     const [deck] = await db.insert(decks)
       .values({ userId, name: deckName, commanderOracleId, filled: false })
       .returning({ id: decks.id });
