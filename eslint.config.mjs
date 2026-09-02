@@ -22,10 +22,8 @@ const eslintConfig = defineConfig([
   {
     files: ["src/**/*.tsx"],
     rules: {
-      // Ships as "warn" while the migration runs; flipped to "error" in the
-      // final task of docs/superpowers/plans/2026-07-25-ui-button-primitives.md.
       "no-restricted-syntax": [
-        "warn",
+        "error",
         {
           // Scoped to interactive elements: an inline style can only kill a
           // hover state on something that has one. Inline colour on a static

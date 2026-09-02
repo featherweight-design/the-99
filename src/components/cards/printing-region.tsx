@@ -408,12 +408,13 @@ function FinishChip({ label, active, onClick }: { label: string; active: boolean
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="cursor-pointer inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] px-[11px] py-[5px]"
-      style={{
-        color: active ? "var(--bg)" : "var(--fg)",
-        background: active ? "var(--accent)" : "var(--elevated)",
-        border: "1px solid var(--border-strong)",
-      }}
+      className={[
+        "cursor-pointer inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] px-[11px] py-[5px]",
+        "border border-solid border-[color:var(--border-strong)]",
+        active
+          ? "text-[color:var(--bg)] bg-[color:var(--accent)]"
+          : "text-[color:var(--fg)] bg-[color:var(--elevated)]",
+      ].join(" ")}
     >
       {label}
     </button>

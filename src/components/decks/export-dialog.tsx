@@ -202,8 +202,8 @@ function DialogContent({
           <button
             type="button"
             onClick={onClose}
-            className=""
-            style={{ color: "var(--fg-faint)", fontSize: 17, background: "none", border: "none" }}
+            className="bg-transparent border-none text-[color:var(--fg-faint)]"
+            style={{ fontSize: 17 }}
             aria-label="Close export dialog"
           >
             ✕
@@ -212,14 +212,11 @@ function DialogContent({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center"
+            className="flex items-center justify-center bg-[color:var(--surface-raised)] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
             style={{
               width: 32,
               height: 32,
               borderRadius: 999,
-              background: "var(--surface-raised)",
-              border: "1px solid var(--border-strong)",
-              color: "var(--fg-muted)",
               fontSize: 14,
               cursor: "pointer",
             }}
@@ -242,14 +239,15 @@ function DialogContent({
         <button
           type="button"
           onClick={() => setTab("decklist")}
-          className="font-sans font-semibold text-[13px]"
+          className={[
+            "font-sans text-[13px]",
+            tab === "decklist"
+              ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)] border-none"
+              : "font-medium text-[color:var(--fg-muted)] bg-transparent border border-solid border-[color:var(--border-strong)]",
+          ].join(" ")}
           style={{
             borderRadius: isMobile ? 999 : 8,
             padding: isMobile ? "6px 15px" : "8px 16px",
-            color: tab === "decklist" ? "var(--bg)" : "var(--fg-muted)",
-            background: tab === "decklist" ? "var(--accent)" : "transparent",
-            border: tab === "decklist" ? "none" : "1px solid var(--border-strong)",
-            fontWeight: tab === "decklist" ? 600 : 500,
             cursor: "pointer",
           }}
         >
@@ -259,18 +257,20 @@ function DialogContent({
         <button
           type="button"
           onClick={() => setTab("shopping")}
-          className="font-sans text-[13px]"
+          className={[
+            "font-sans text-[13px]",
+            tab === "shopping"
+              ? "font-semibold text-[color:var(--bg)] bg-[color:var(--warning)] border-none"
+              : [
+                  "font-medium bg-transparent border border-solid",
+                  isMobile
+                    ? "text-[color:var(--warning)] border-[color-mix(in_srgb,var(--accent)_30%,var(--bg))]"
+                    : "text-[color:var(--fg-muted)] border-[color:var(--border-strong)]",
+                ].join(" "),
+          ].join(" ")}
           style={{
             borderRadius: isMobile ? 999 : 8,
             padding: isMobile ? "6px 15px" : "8px 16px",
-            color: tab === "shopping" ? "var(--bg)" : (isMobile ? "var(--warning)" : "var(--fg-muted)"),
-            background: tab === "shopping" ? "var(--warning)" : "transparent",
-            border: tab === "shopping"
-              ? "none"
-              : isMobile
-              ? "1px solid color-mix(in srgb, var(--accent) 30%, var(--bg))"
-              : "1px solid var(--border-strong)",
-            fontWeight: tab === "shopping" ? 600 : 500,
             cursor: "pointer",
           }}
         >

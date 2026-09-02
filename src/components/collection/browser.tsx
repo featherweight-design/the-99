@@ -35,7 +35,6 @@ import {
   initialAvailability,
   serializeAvailability,
 } from "../../lib/collection/availability-filter";
-import type { AvailabilityState } from "../../lib/decks/availability";
 import { collectionFilterCopy, type FilterPanelCopy } from "../../lib/copy/collection";
 import { FilterBar, useIsDesktop, type FilterChangeIntent, type ViewMode } from "./filter-bar";
 import { ChipRow } from "./chip-row";
