@@ -212,7 +212,7 @@ describe("AvailabilityMarker glyph", () => {
       />,
     );
     const front = glyphOf(container).querySelectorAll("span")[1];
-        expect(front.style.borderLeft).toBe("1px solid var(--elevated-hover)");
+    expect(front.style.borderLeft).toBe("1px solid var(--elevated-hover)");
   });
 
   // The chip draws its own scrim, so its seam is that scrim and nothing else.
