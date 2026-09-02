@@ -290,13 +290,22 @@ export function AvailabilityMarker({
    *
    * Never combine with `spoken`: the prose would name the deck a second time,
    * and the name half is aria-hidden under `spoken`, which cannot be applied to
-   * something focusable. Nothing does both, and the two props are documented
-   * against each other rather than enforced, because a silent no-op is worse
-   * than a rule you can read.
+   * something focusable. The guard below is a throw rather than a silent
+   * precedence rule, because quietly dropping one prop hides the mistake at the
+   * one moment someone could still fix it.
    */
   linkDeck?: boolean;
   className?: string;
 } & MarkerOpts) {
+  // Dev only: production strips it, so a late regression degrades to the
+  // duplicated announcement rather than a blank screen for the player.
+  if (process.env.NODE_ENV !== "production" && spoken && linkDeck) {
+    throw new Error(
+      "AvailabilityMarker: `spoken` and `linkDeck` are mutually exclusive. " +
+        "`spoken` aria-hides the deck name, which is invalid on a focusable link, " +
+        "and its prose already names the deck.",
+    );
+  }
   const state = availabilityState(availability, {
     selfExcluded: opts.selfExcluded,
   });

@@ -97,6 +97,21 @@ describe("AvailabilityMarker", () => {
     ).toBeInTheDocument();
   });
 
+  // A silent precedence rule would hide the mistake at the one moment it is
+  // still cheap to fix, so the combination throws in dev instead.
+  it("refuses to be both spoken and linked", () => {
+    expect(() =>
+      render(
+        <AvailabilityMarker
+          availability={a(1, 1, 0, ["Atraxa"])}
+          density="row"
+          spoken
+          linkDeck
+        />,
+      ),
+    ).toThrow(/mutually exclusive/);
+  });
+
   // Nothing to link to: the counted branch names no deck at all.
   it("draws no link when several decks share the claim", () => {
     render(
