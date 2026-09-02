@@ -4,7 +4,7 @@
 
 import type { ReactNode } from "react";
 import type { BrowseFilters, SortKey } from "../../lib/collection/browse";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { availabilityLabel } from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -77,7 +77,7 @@ export function ChipRow({
         <Chip
           key={c}
           label={c}
-          leadingDot={WUBRG_HEX[c]}
+          leadingDot={WUBRG_COLOR[c]}
           onRemove={() => onRemoveColor(c)}
         />
       ))}
@@ -164,7 +164,7 @@ function Chip({
 }) {
   return (
     // Chip per §Filter Chip: inline-flex, gap 6/7px, font 12/12.5px, radius 999px,
-    // bg #2A241D (--elevated), border 1px #3A3229 (--border-strong)
+    // bg --elevated, border 1px --border-strong
     <span
       className="inline-flex items-center rounded-full font-sans text-[12px] md:text-[12.5px] gap-[6px] md:gap-[7px] px-[9px] py-[5px] md:pl-[11px] md:pr-[8px]"
       style={{
@@ -183,7 +183,7 @@ function Chip({
       )}
       {leadingGlyph}
       {label}
-      {/* Dismiss "✕" — §Filter Chip Dismiss, color #8E8269 (--fg-faint).
+      {/* Dismiss "✕" — §Filter Chip Dismiss, color --fg-faint.
           The glyph draws about 10×19px, so the hit area is grown to 44px with a
           centred pseudo-element rather than with padding: padding would inflate
           the chip itself, and the chip's size is drawn. The overlay is wider

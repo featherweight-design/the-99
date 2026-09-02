@@ -95,11 +95,11 @@ export default async function CollectionPage() {
         style={{ background: "var(--bg)" }}
       >
         <div>
-          {/* Title — §Page Title "Collection": Cinzel 700, 22/30px, #EDE6D8 (--fg) */}
+          {/* Title — §Page Title "Collection": Cinzel 700, 22/30px, --fg */}
           <h1 className="font-display font-bold text-[22px] md:text-[30px] m-0" style={{ color: "var(--fg)" }}>
             Collection
           </h1>
-          {/* Subtitle — §Subtitle / Stats Line: mono 11/12px, #8E8269 (--fg-faint), margin-top 2/4px */}
+          {/* Subtitle — §Subtitle / Stats Line: mono 11/12px, --fg-faint, margin-top 2/4px */}
           <p
             className="font-mono text-[11px] md:text-[12px] mt-[2px] md:mt-[4px]"
             style={{ color: "var(--fg-faint)" }}

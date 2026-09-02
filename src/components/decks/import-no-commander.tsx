@@ -58,25 +58,25 @@ export function ImportNoCommander({
       className="text-center p-[44px_24px_32px] md:p-[64px_40px]"
       style={{
         backgroundImage:
-          "radial-gradient(400px 220px at 50% 80%, rgba(201,162,75,0.07), transparent 70%)",
+          "radial-gradient(400px 220px at 50% 80%, color-mix(in oklab, var(--accent) 7%, transparent), transparent 70%)",
       }}
     >
       {/* Mark: three cards, the front one dashed and unanswered */}
       <div className="relative mx-auto w-[96px] h-[104px] md:w-[112px] md:h-[120px] mb-[20px] md:mb-[22px]">
         <MarkCard
           className="w-[48px] h-[68px] md:w-[56px] md:h-[78px]"
-          background="#221D16"
+          background="var(--surface-raised)"
           border="1.5px solid var(--border-strong)"
           transform="rotate(-15deg) translateX(-18px)"
         />
         <MarkCard
           className="w-[48px] h-[68px] md:w-[56px] md:h-[78px]"
-          background="#2A241D"
-          border="1.5px solid #4A4033"
+          background="var(--elevated)"
+          border="1.5px solid var(--border-dashed)"
         />
         <MarkCard
           className="w-[48px] h-[68px] md:w-[56px] md:h-[78px]"
-          background="#241B12"
+          background="var(--elevated-hover)"
           border="1.5px dashed var(--warning)"
           transform="rotate(15deg) translateX(18px)"
         >

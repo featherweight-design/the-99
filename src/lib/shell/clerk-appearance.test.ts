@@ -142,10 +142,12 @@ describe("Clerk appearance elements", () => {
     }
   });
 
-  // RD§5 — every shipped overlay uses rgba(8,6,4,0.72); the canvas's
-  // rgba(10,8,6,0.72) appears nowhere in src/.
-  it("uses the shipped backdrop value", () => {
-    expect(elements.modalBackdrop.background).toBe("rgba(8,6,4,0.72)");
+  // RD§5 gives the backdrop as a fixed near-black at 0.72. Every shipped overlay
+  // now mixes the canvas at that alpha instead, so the dim tracks the theme.
+  it("dims with the canvas at the shipped alpha", () => {
+    expect(elements.modalBackdrop.background).toBe(
+      "color-mix(in oklab, var(--bg) 72%, transparent)",
+    );
   });
 
   // Outside `variables`, raw hexes are a token that got away.

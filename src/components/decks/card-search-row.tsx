@@ -28,7 +28,7 @@ export function HighlightedName({
   return (
     <>
       {name.slice(0, at)}
-      <span style={{ color: "#C9A24B" }}>{name.slice(at, end)}</span>
+      <span style={{ color: "var(--accent)" }}>{name.slice(at, end)}</span>
       {name.slice(end)}
     </>
   );
@@ -94,7 +94,7 @@ export function CardSearchRowBody({
         aria-hidden
         className="flex-none rounded-[5px] overflow-hidden w-[32px] h-[45px] md:w-[30px] md:h-[42px]"
         style={{
-          background: "#241F19",
+          background: "var(--surface-raised)",
           opacity: dim ? 0.5 : 1,
           filter: dim ? "grayscale(0.6)" : undefined,
         }}
@@ -114,7 +114,7 @@ export function CardSearchRowBody({
       <span className={nameClassName}>
         <span
           className="text-[14px] font-semibold truncate"
-          style={{ color: dim ? "#A89B84" : "#EDE6D8" }}
+          style={{ color: dim ? "var(--fg-muted)" : "var(--fg)" }}
         >
           <HighlightedName name={result.name} query={query} dim={dim} />
         </span>
@@ -122,7 +122,7 @@ export function CardSearchRowBody({
             its own — design 3.1: no column, no extra row height. */}
         <span
           className="md:hidden flex items-center min-w-0 font-mono text-[10px]"
-          style={{ color: "#8E8269" }}
+          style={{ color: "var(--fg-faint)" }}
         >
           {/* The shipped meta is the half that yields. `truncate` already
               resolves this item's automatic minimum size to zero via its
@@ -138,7 +138,7 @@ export function CardSearchRowBody({
 
       <span
         className="hidden md:block flex-1 min-w-0 font-mono text-[11px] truncate"
-        style={{ color: dim ? "#6A6152" : "#8E8269" }}
+        style={{ color: dim ? "var(--fg-locked)" : "var(--fg-faint)" }}
       >
         {result.typeLine}
       </span>
@@ -156,7 +156,7 @@ export function CardSearchRowBody({
           figures still line up down a list where nothing is marked. */}
       <span
         className="hidden md:flex flex-none min-w-[80px] items-center justify-end gap-0 font-mono text-[11px] text-right"
-        style={{ color: result.owned ? "#8E8269" : "#E0913C" }}
+        style={{ color: result.owned ? "var(--fg-faint)" : "var(--warning)" }}
       >
         {ownership}
         {marker && joiner}

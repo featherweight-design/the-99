@@ -82,24 +82,24 @@ export default async function DecksPage({
     <section>
       {/*
         §Page header container:
-        mobile:  p 20px 18px 14px, border-bottom 1px #2A241D, flex center space-between, mb 12px
+        mobile:  p 20px 18px 14px, border-bottom 1px var(--border), flex center space-between, mb 12px
         desktop: p 30px 34px, no border-bottom, flex flex-end space-between, mb 22px
       */}
       <div
-        className="flex items-center md:items-end justify-between p-[20px_18px_14px] md:p-[30px_34px] mb-[12px] md:mb-[22px] border-b border-[#2A241D] md:border-b-0"
+        className="flex items-center md:items-end justify-between p-[20px_18px_14px] md:p-[30px_34px] mb-[12px] md:mb-[22px] border-b border-[color:var(--border)] md:border-b-0"
       >
         <div>
-          {/* §Page header — title "Your decks": Cinzel 700, 22/28px, #EDE6D8 */}
+          {/* §Page header — title "Your decks": Cinzel 700, 22/28px, var(--fg) */}
           <h1
             className="font-display font-bold text-[22px] md:text-[28px] m-0"
-            style={{ color: "#EDE6D8" }}
+            style={{ color: "var(--fg)" }}
           >
             Your decks
           </h1>
-          {/* §Page header — subtitle: IBM Plex Mono 11/12px #8E8269, mt 2/5px */}
+          {/* §Page header — subtitle: IBM Plex Mono 11/12px var(--fg-faint), mt 2/5px */}
           <p
             className="font-mono text-[11px] md:text-[12px] mt-[2px] md:mt-[5px]"
-            style={{ color: "#8E8269" }}
+            style={{ color: "var(--fg-faint)" }}
           >
             {decks.length} deck{decks.length !== 1 ? "s" : ""} · {totalBuilt} cards built
           </p>

@@ -23,7 +23,7 @@ export function GroupToggle({
   return (
     /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px */
     <div
-      className="flex items-center gap-[7px] md:gap-[10px] px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-[#2A241D] md:border-b-0"
+      className="flex items-center gap-[7px] md:gap-[10px] px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-[color:var(--border)] md:border-b-0"
     >
       {/* "All N" filter pill — active: accent bg dark text | idle: muted with border */}
       <button
@@ -32,8 +32,8 @@ export function GroupToggle({
         className="font-sans font-semibold transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]"
         style={
           filter === "all"
-            ? { color: "#14110E", background: "#C9A24B" }
-            : { color: "#8E8269", background: "transparent", border: "1px solid #3A3229" }
+            ? { color: "var(--bg)", background: "var(--accent)" }
+            : { color: "var(--fg-faint)", background: "transparent", border: "1px solid var(--border-strong)" }
         }
       >
         All {allCount}
@@ -46,8 +46,8 @@ export function GroupToggle({
         className="font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]"
         style={
           filter === "shopping"
-            ? { fontWeight: 600, color: "#14110E", background: "#C9A24B" }
-            : { fontWeight: 500, color: "#E0913C", background: "transparent", border: "1px solid #4A3A24" }
+            ? { fontWeight: 600, color: "var(--bg)", background: "var(--accent)" }
+            : { fontWeight: 500, color: "var(--warning)", background: "transparent", border: "1px solid color-mix(in srgb, var(--accent) 30%, var(--bg))" }
         }
       >
         Shopping {shoppingCount}
@@ -59,7 +59,7 @@ export function GroupToggle({
       {/* "Group" label — desktop only, margin-left: auto is handled by spacer above */}
       <span
         className="hidden md:inline font-mono text-[10px] uppercase tracking-[0.1em]"
-        style={{ color: "#8E8269" }}
+        style={{ color: "var(--fg-faint)" }}
       >
         Group
       </span>
@@ -73,30 +73,30 @@ export function GroupToggle({
         className={
           grouping === "type"
             ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px]"
-            : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[#2A241D]"
+            : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)]"
         }
         style={
           grouping === "type"
-            ? { fontWeight: 600, color: "#EDE6D8", background: "#2A241D", border: "1px solid #3A3229" }
-            : { fontWeight: 500, color: "#8E8269", background: "transparent" }
+            ? { fontWeight: 600, color: "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)" }
+            : { fontWeight: 500, color: "var(--fg-faint)", background: "transparent" }
         }
       >
         By type
       </button>
 
-      {/* By role — idle: no border mobile, 1px solid #2A241D desktop */}
+      {/* By role — idle: no border mobile, 1px solid var(--border) desktop */}
       <button
         type="button"
         onClick={() => onGroupingChange("role")}
         className={
           grouping === "role"
             ? "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[10px] py-[4px] md:px-[13px] md:py-[5px]"
-            : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[#2A241D]"
+            : "font-sans transition-[filter] hover:brightness-125 text-[11.5px] md:text-[12.5px] rounded-full px-[6px] py-[4px] md:px-[13px] md:py-[5px] border-0 md:border md:border-solid md:border-[color:var(--border)]"
         }
         style={
           grouping === "role"
-            ? { fontWeight: 600, color: "#EDE6D8", background: "#2A241D", border: "1px solid #3A3229" }
-            : { fontWeight: 500, color: "#8E8269", background: "transparent" }
+            ? { fontWeight: 600, color: "var(--fg)", background: "var(--elevated)", border: "1px solid var(--border-strong)" }
+            : { fontWeight: 500, color: "var(--fg-faint)", background: "transparent" }
         }
       >
         By role

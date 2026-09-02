@@ -93,7 +93,7 @@ export function Decklist({
         {groups.length === 0 && visibleUnresolved.length === 0 && (
           <p
             className="font-mono text-[11px] text-center py-[20px]"
-            style={{ color: "#6E6353" }}
+            style={{ color: "var(--fg-locked)" }}
           >
             {filter === "shopping" ? "No cards to buy." : "No cards in this deck."}
           </p>

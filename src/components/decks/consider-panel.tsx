@@ -103,7 +103,7 @@ function CardFan() {
         <span
           key={i}
           className="w-[11px] h-[11px] rotate-45 border border-[color:var(--border-strong)]"
-          style={{ background: "#3A3229" }}
+          style={{ background: "var(--border-strong)" }}
         />
       ))}
     </div>
@@ -290,7 +290,7 @@ export function ConsiderPanel({
           className="flex flex-col items-center justify-center text-center px-[30px] py-[28px]"
           style={{
             background:
-              "radial-gradient(320px 180px at 50% 70%, rgba(201,162,75,0.06), transparent 70%)",
+              "radial-gradient(320px 180px at 50% 70%, color-mix(in oklab, var(--accent) 6%, transparent), transparent 70%)",
           }}
         >
           <CardFan />

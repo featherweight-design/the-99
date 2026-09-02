@@ -17,7 +17,7 @@ describe("OwnershipDot", () => {
   it("renders a dashed hollow ring when unowned", () => {
     const el = renderDot(<OwnershipDot owned={false} />);
     expect(el.className).toContain("bg-transparent");
-    expect(el.className).toContain("[border:1px_dashed_#6E6353]");
+    expect(el.className).toContain("[border:1px_dashed_var(--fg-locked)]");
   });
 
   // The three call sites size the dot differently (7px responsive, 8px, 7px),

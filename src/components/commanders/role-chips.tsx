@@ -34,8 +34,8 @@ export function RoleChips({ roleCounts }: RoleChipsProps) {
             key={role}
             className="inline-flex items-center font-mono rounded-full text-[10px] sm:text-[11px] px-[8px] py-[3px] sm:px-[10px] sm:py-[4px]"
             style={{
-              background: "#2A241D",
-              border: isGap ? "1px solid #4A3A24" : "1px solid #3A3229",
+              background: "var(--elevated)",
+              border: isGap ? "1px solid color-mix(in srgb, var(--accent) 30%, var(--bg))" : "1px solid var(--border-strong)",
             }}
           >
             {/* Label — uppercase */}
@@ -43,7 +43,7 @@ export function RoleChips({ roleCounts }: RoleChipsProps) {
               style={{
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
-                color: "#8E8269",
+                color: "var(--fg-faint)",
               }}
             >
               {ROLE_LABELS[role]}
@@ -54,14 +54,14 @@ export function RoleChips({ roleCounts }: RoleChipsProps) {
             <span
               style={{
                 fontWeight: 600,
-                color: isGap ? "#E0913C" : "#EDE6D8",
+                color: isGap ? "var(--warning)" : "var(--fg)",
               }}
             >
               {count}/{target}
             </span>
             {/* " gap" suffix for gap state */}
             {isGap && (
-              <span style={{ color: "#E0913C" }}>&nbsp;gap</span>
+              <span style={{ color: "var(--warning)" }}>&nbsp;gap</span>
             )}
           </span>
         );

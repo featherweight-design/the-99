@@ -8,7 +8,7 @@ import { useRef } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 
 /** Only the fields the lightbox renders — keeps the client payload slim. */
 export type LightboxCommander = Pick<
@@ -41,7 +41,7 @@ export function CommanderLightbox({
       ref={overlayRef}
       className="fixed inset-0 flex flex-col items-center justify-center"
       style={{
-        background: "rgba(8,6,4,0.86)",
+        background: "color-mix(in oklab, var(--bg) 86%, transparent)",
         backdropFilter: "blur(6px)",
         padding: "34px 30px",
         zIndex: 50,
@@ -70,7 +70,7 @@ export function CommanderLightbox({
           textAlign: "center",
           fontSize: 10,
           letterSpacing: "0.16em",
-          color: "#8E8269",
+          color: "var(--fg-faint)",
           margin: 0,
         }}
       >
@@ -92,9 +92,9 @@ export function CommanderLightbox({
           right: 18,
           width: 34,
           height: 34,
-          background: "rgba(237,230,216,0.1)",
-          border: "1px solid rgba(237,230,216,0.18)",
-          color: "#EDE6D8",
+          background: "color-mix(in oklab, var(--fg) 10%, transparent)",
+          border: "1px solid color-mix(in oklab, var(--fg) 18%, transparent)",
+          color: "var(--fg)",
           fontSize: 16,
           cursor: "pointer",
           zIndex: 10,
@@ -120,7 +120,7 @@ export function CommanderLightbox({
             aspectRatio: "63/88",
             background: gradient,
             boxShadow:
-              "inset 0 -80px 80px -46px rgba(10,7,4,0.85), inset 0 0 0 1px rgba(0,0,0,0.3), 0 24px 60px rgba(0,0,0,0.6)",
+              "inset 0 -80px 80px -46px color-mix(in oklab, var(--bg) 85%, transparent), inset 0 0 0 1px rgba(0,0,0,0.3), 0 24px 60px rgba(0,0,0,0.6)",
             padding: 16,
           }}
         >
@@ -130,7 +130,7 @@ export function CommanderLightbox({
               className="font-display font-[700] m-0"
               style={{
                 fontSize: 14,
-                color: "#F4EEE0",
+                color: "var(--fg)",
                 textShadow: "0 1px 6px rgba(0,0,0,0.6)",
                 lineHeight: 1.1,
               }}
@@ -143,14 +143,19 @@ export function CommanderLightbox({
                 {[...c.manaCost.matchAll(/\{([^}]+)\}/g)].map((m, i) => {
                   const sym = m[1];
                   const isWUBRG = /^[WUBRG]$/.test(sym);
-                  // Per §Mana pip text colors: B: #0E0C10, R: #1a0b08, G: #0c1608;
-                  // W and U are not explicitly listed — generic #C6B79A fallback.
+                  // The design table names one near-black ink per pip, drawn
+                  // against pip discs that were lighter than the ones the token
+                  // contract ships. The contract has no pip-text key, and the
+                  // one pattern it does state for a label on a coloured field
+                  // is "--bg" (the accent button's label). So four pips take
+                  // --bg, and black — whose disc is near-black in every theme —
+                  // takes the light ink instead.
                   const PIP_TEXT: Record<string, string> = {
-                    W: "#C6B79A",
-                    U: "#C6B79A",
-                    B: "#0E0C10",
-                    R: "#1a0b08",
-                    G: "#0c1608",
+                    W: "var(--bg)",
+                    U: "var(--bg)",
+                    B: "var(--fg-body)",
+                    R: "var(--bg)",
+                    G: "var(--bg)",
                   };
                   return (
                     <span
@@ -161,9 +166,9 @@ export function CommanderLightbox({
                         height: 16,
                         fontSize: 9,
                         background: isWUBRG
-                          ? WUBRG_HEX[sym] ?? "#3A322A"
-                          : "#3A322A",
-                        color: isWUBRG ? PIP_TEXT[sym] ?? "#C6B79A" : "#C6B79A",
+                          ? WUBRG_COLOR[sym] ?? "var(--border-strong)"
+                          : "var(--border-strong)",
+                        color: isWUBRG ? PIP_TEXT[sym] ?? "var(--fg-body)" : "var(--fg-body)",
                         boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
                       }}
                     >
@@ -182,7 +187,7 @@ export function CommanderLightbox({
           <div
             className="rounded-[9px]"
             style={{
-              background: "rgba(10,7,4,0.5)",
+              background: "color-mix(in oklab, var(--bg) 50%, transparent)",
               backdropFilter: "blur(3px)",
               padding: "11px 13px",
             }}
@@ -192,7 +197,7 @@ export function CommanderLightbox({
               className="m-0 font-[500]"
               style={{
                 fontSize: 12,
-                color: "#EDE6D8",
+                color: "var(--fg)",
                 textShadow: "0 1px 4px rgba(0,0,0,0.6)",
               }}
             >
@@ -204,7 +209,7 @@ export function CommanderLightbox({
                 className="m-0"
                 style={{
                   fontSize: 11,
-                  color: "#E4DCCB",
+                  color: "var(--fg)",
                   lineHeight: 1.45,
                   marginTop: 6,
                   textShadow: "0 1px 3px rgba(0,0,0,0.7)",
@@ -224,7 +229,7 @@ export function CommanderLightbox({
                     style={{
                       width: 10,
                       height: 10,
-                      background: WUBRG_HEX[color] ?? "#8E8269",
+                      background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
                       boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
                     }}
                   />
@@ -239,7 +244,7 @@ export function CommanderLightbox({
           className="font-mono"
           style={{
             fontSize: 10.5,
-            color: "#8E8269",
+            color: "var(--fg-faint)",
             marginTop: 18,
             letterSpacing: "0.04em",
             margin: "18px 0 0",

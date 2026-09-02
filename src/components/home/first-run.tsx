@@ -9,7 +9,7 @@ import { Crown } from "../ui/crown";
  */
 export function FirstRunChecklist({ name }: { name: string | null }) {
   return (
-    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 bg-[radial-gradient(640px_340px_at_40%_-40px,rgba(201,162,75,0.07),transparent_70%)]">
+    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 bg-[radial-gradient(640px_340px_at_40%_-40px,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
       {/* §Page heading:
           Mobile:  Cinzel 700 23px primary, line-height 1.2
           Desktop: Cinzel 700 30px primary
@@ -93,25 +93,25 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
       {/* Steps 2 & 3 — Locked.
           §Step container — Locked:
             Mobile:  flex, align-center, gap 10px, padding 15px 16px,
-                     mt 12px (step 2) / 10px (step 3), bg #181410,
+                     mt 12px (step 2) / 10px (step 3), bg --surface-sunken,
                      border 1px solid elevated, br 12px, opacity 0.55
             Desktop: flex, align-center, gap 12px, padding 18px 22px,
-                     mt 14px (step 2) / 12px (step 3), bg #181410,
+                     mt 14px (step 2) / 12px (step 3), bg --surface-sunken,
                      border 1px solid elevated, br 14px, opacity 0.55 */}
       <div
         className="mt-[12px] md:mt-[14px] flex items-center gap-[10px] md:gap-[12px] rounded-[12px] md:rounded-[14px] p-[15px_16px] md:p-[18px_22px] opacity-[0.55]"
         style={{
-          background: "#181410",
+          background: "var(--surface-sunken)",
           border: "1px solid var(--border)",
         }}
       >
         {/* §Step badge — Locked:
-            Mobile:  22×22px, br 999px, border #4A4033, color faint, mono 12px
-            Desktop: 26×26px, br 999px, border #4A4033, color faint, mono 13px */}
+            Mobile:  22×22px, br 999px, border --border-dashed, color faint, mono 12px
+            Desktop: 26×26px, br 999px, border --border-dashed, color faint, mono 13px */}
         <span
           className="flex h-[22px] w-[22px] md:h-[26px] md:w-[26px] shrink-0 items-center justify-center rounded-full text-[12px] md:text-[13px]"
           style={{
-            border: "1px solid #4A4033",
+            border: "1px solid var(--border-dashed)",
             color: "var(--fg-faint)",
             fontFamily: "var(--font-mono)",
           }}
@@ -132,7 +132,7 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
           Review your commanders
         </span>
         {/* §Locked step "unlocks after upload" hint (desktop only):
-            ml-auto, mono 11px, color #8E8269, content "unlocks after upload" (step 2 only) */}
+            ml-auto, mono 11px, color --fg-faint, content "unlocks after upload" (step 2 only) */}
         <span
           className="ml-auto hidden md:block"
           style={{
@@ -148,14 +148,14 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
       <div
         className="mt-[10px] md:mt-[12px] flex items-center gap-[10px] md:gap-[12px] rounded-[12px] md:rounded-[14px] p-[15px_16px] md:p-[18px_22px] opacity-[0.55]"
         style={{
-          background: "#181410",
+          background: "var(--surface-sunken)",
           border: "1px solid var(--border)",
         }}
       >
         <span
           className="flex h-[22px] w-[22px] md:h-[26px] md:w-[26px] shrink-0 items-center justify-center rounded-full text-[12px] md:text-[13px]"
           style={{
-            border: "1px solid #4A4033",
+            border: "1px solid var(--border-dashed)",
             color: "var(--fg-faint)",
             fontFamily: "var(--font-mono)",
           }}

@@ -64,9 +64,9 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
           fontFamily: "var(--font-sans)",
           fontWeight: 500,
           fontSize: 13,
-          color: "#A89B84",
+          color: "var(--fg-muted)",
           background: "transparent",
-          border: "1px solid #2A241D",
+          border: "1px solid var(--border)",
           padding: "9px 13px",
           cursor: "pointer",
         }}
@@ -78,8 +78,8 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
         <div
           className="absolute right-0 top-full mt-[6px] z-20 min-w-[180px] rounded-[10px] shadow-lg"
           style={{
-            background: "#1E1A15",
-            border: "1px solid #3A3229",
+            background: "var(--surface)",
+            border: "1px solid var(--border-strong)",
           }}
           // stop click propagation so the Link overlay beneath doesn't fire
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
@@ -91,8 +91,8 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
                 onClick={handleRename}
                 // bg/border as utilities, not inline: an inline background
                 // outranks hover: and the row never highlights.
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none cursor-pointer hover:bg-[#2A241D]"
-                style={{ color: "#EDE6D8" }}
+                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none cursor-pointer hover:bg-[color:var(--elevated)]"
+                style={{ color: "var(--fg)" }}
               >
                 Rename
               </button>
@@ -100,8 +100,8 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
                 type="button"
                 onClick={handleDelete}
                 disabled={isPending}
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none hover:bg-[#2A241D]"
-                style={{ color: "#C6533F", cursor: isPending ? "default" : "pointer" }}
+                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none hover:bg-[color:var(--elevated)]"
+                style={{ color: "var(--danger)", cursor: isPending ? "default" : "pointer" }}
               >
                 {isPending ? "Deleting…" : "Delete"}
               </button>

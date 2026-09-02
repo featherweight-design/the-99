@@ -120,7 +120,7 @@ export function DecklistRow({
           The over tint (design 4.5/4.10) is an inset ring rather than a border:
           a real border would add 2px to one row's height and shunt the list. */}
       <div
-        className={`group ${ROW_SHELL} bg-[#1A160F] md:hover:bg-[#211C15]
+        className={`group ${ROW_SHELL} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]
           ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
       >
@@ -138,7 +138,7 @@ export function DecklistRow({
         {/* Card name — the click target for the detail modal (#127). A meta row names no card
             of its own, so it stays inert text. */}
         {isMeta ? (
-          <span className={nameClass} style={{ color: "#8E8269" }}>
+          <span className={nameClass} style={{ color: "var(--fg-faint)" }}>
             {label}
           </span>
         ) : (
@@ -147,7 +147,7 @@ export function DecklistRow({
             name={card.name}
             siblings={siblings}
             className={nameClass}
-            style={{ color: "#EDE6D8", background: "transparent", border: "none", padding: 0 }}
+            style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
           >
             {label}
           </CardDetailTrigger>
@@ -190,9 +190,9 @@ export function DecklistRow({
             onClick={handleRemove}
             disabled={isPending}
             className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto
-              rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[#4A4033]
-              active:bg-[#2A241D] active:text-[#C6B79A] md:active:bg-transparent
-              md:group-hover:text-[#C6B79A] cursor-pointer disabled:opacity-50 disabled:cursor-default"
+              rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
+              active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
+              md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default"
             aria-label={
               card.quantity > 1
                 ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)

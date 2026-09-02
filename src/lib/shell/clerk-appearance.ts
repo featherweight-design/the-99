@@ -57,9 +57,10 @@ export const clerkAppearance: Appearance = {
   },
   elements: {
     rootBox: { width: "100%", fontFamily: "var(--font-plex-sans)" },
-    // RD§5: the canvas says rgba(10,8,6,0.72), a value present nowhere in src/.
-    // Every shipped overlay — sheet backdrop, card detail — uses this one.
-    modalBackdrop: { background: "rgba(8,6,4,0.72)" },
+    // RD§5 gives the backdrop as a fixed near-black at 0.72. Every shipped
+    // overlay — sheet backdrop, card detail — now mixes the canvas at that same
+    // alpha instead, so a theme with a lighter canvas dims rather than blackens.
+    modalBackdrop: { background: "color-mix(in oklab, var(--bg) 72%, transparent)" },
     modalContent: { borderRadius: 16, [MOBILE]: { borderRadius: 0 } },
     cardBox: {
       background: "var(--surface)",

@@ -188,7 +188,7 @@ describe("AvailabilityMarker glyph", () => {
     );
   });
 
-  // Row 2.7: two #C6533F diamonds with a 1px seam in the container's own
+  // Row 2.7: two --danger diamonds with a 1px seam in the container's own
   // background. One diamond in the over state is the plan's error.
   it("doubles the diamond in the over state", () => {
     const { container } = render(
@@ -208,12 +208,11 @@ describe("AvailabilityMarker glyph", () => {
       <AvailabilityMarker
         availability={a(1, 3, 0, ["A", "B", "C"])}
         density="row"
-        seam="#211C15"
+        seam="var(--elevated-hover)"
       />,
     );
     const front = glyphOf(container).querySelectorAll("span")[1];
-    // jsdom normalises a hex border colour to rgb() on read-back.
-    expect(front.style.borderLeft).toBe("1px solid rgb(33, 28, 21)");
+    expect(front.style.borderLeft).toBe("1px solid var(--elevated-hover)");
   });
 
   // The chip draws its own scrim, so its seam is that scrim and nothing else.
@@ -223,11 +222,11 @@ describe("AvailabilityMarker glyph", () => {
       <AvailabilityMarker
         availability={a(1, 3, 0, ["A", "B", "C"])}
         density="chip"
-        seam="#211C15"
+        seam="var(--elevated-hover)"
       />,
     );
     const front = glyphOf(container).querySelectorAll("span")[1];
-    expect(front.style.borderLeft).toBe("1px solid rgb(11, 9, 7)");
+    expect(front.style.borderLeft).toBe("1px solid var(--bg)");
   });
 });
 
@@ -239,7 +238,7 @@ describe("AvailabilityMarker chip density", () => {
       render(<AvailabilityMarker availability={a(2, 0, 1)} density="chip" />)
         .container,
     );
-    expect(soft.className).toContain("bg-[rgba(11,9,7,0.86)]");
+    expect(soft.className).toContain("bg-[color-mix(in_srgb,var(--bg)_86%,transparent)]");
     expect(soft.className).toContain("border-[color:var(--border-dashed)]");
 
     const hard = root(
@@ -250,7 +249,7 @@ describe("AvailabilityMarker chip density", () => {
         />,
       ).container,
     );
-    expect(hard.className).toContain("bg-[rgba(11,9,7,0.90)]");
+    expect(hard.className).toContain("bg-[color-mix(in_srgb,var(--bg)_90%,transparent)]");
     expect(hard.className).toContain("border-[color:var(--accent)]");
 
     const over = root(
@@ -261,7 +260,7 @@ describe("AvailabilityMarker chip density", () => {
         />,
       ).container,
     );
-    expect(over.className).toContain("bg-[rgba(11,9,7,0.92)]");
+    expect(over.className).toContain("bg-[color-mix(in_srgb,var(--bg)_92%,transparent)]");
     expect(over.className).toContain("border-[color:var(--danger)]");
   });
 
@@ -326,7 +325,7 @@ describe("AvailabilityMarker row density", () => {
     expect(el.className).not.toContain("text-[");
   });
 
-  // Row 3.4 gives the row-density hard label #E8CE93 too. The plan reserved
+  // Row 3.4 gives the row-density hard label --avail-hard-fg too. The plan reserved
   // --avail-hard-fg for the chip and painted rows accent.
   it("uses the lifted hard foreground, not raw accent", () => {
     const { container } = render(
@@ -338,7 +337,7 @@ describe("AvailabilityMarker row density", () => {
     expect(container.innerHTML).not.toContain("text-[color:var(--avail-hard)]");
   });
 
-  // Row 3.4: soft is #C6B79A (--fg-body), which is NOT the #A89B84 the glyph
+  // Row 3.4: soft is --fg-body, which is NOT the --fg-muted the glyph
   // outline uses. One state, two greys.
   it("paints the soft label a step brighter than its glyph", () => {
     const { container } = render(

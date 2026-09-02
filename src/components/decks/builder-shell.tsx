@@ -349,7 +349,7 @@ export function BuilderShell({
             bottom edge rather than at the end of a long page scroll. */}
         <div
           className="flex flex-col min-h-screen md:h-screen md:min-h-0 md:overflow-hidden"
-          style={{ background: "#100D0A" }}
+          style={{ background: "var(--bg)" }}
         >
           <span className="sr-only" aria-live="polite" aria-atomic="true">
             {announcement}
@@ -451,7 +451,7 @@ export function BuilderShell({
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (
               /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
-              <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,rgba(201,162,75,0.07),transparent_70%)]">
+              <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
                 {/* §Mark container (mobile). Each breakpoint keeps its own
                     card-mark geometry; the quiet crown sits below both. */}
                 <div className="md:hidden mb-[20px] flex items-end justify-center gap-[16px]">
@@ -468,8 +468,8 @@ export function BuilderShell({
                         top: "50%",
                         width: 48,
                         height: 68,
-                        background: "#221D16",
-                        border: "1.5px solid #3A3229",
+                        background: "var(--surface-raised)",
+                        border: "1.5px solid var(--border-strong)",
                         transform: "translate(-50%, -50%) rotate(-15deg) translateX(-18px)",
                       }}
                     />
@@ -481,8 +481,8 @@ export function BuilderShell({
                         top: "50%",
                         width: 48,
                         height: 68,
-                        background: "#2A241D",
-                        border: "1.5px solid #4A4033",
+                        background: "var(--elevated)",
+                        border: "1.5px solid var(--border-dashed)",
                         transform: "translate(-50%, -50%)",
                       }}
                     />
@@ -494,15 +494,15 @@ export function BuilderShell({
                         top: "50%",
                         width: 48,
                         height: 68,
-                        background: "#3E3020",
-                        border: "1.5px solid #C9A24B",
+                        background: "color-mix(in srgb, var(--accent) 24%, var(--bg))",
+                        border: "1.5px solid var(--accent)",
                         transform: "translate(-50%, -50%) rotate(15deg) translateX(18px)",
                       }}
                     >
                       {/* §Front card — "99" numeral */}
                       <span
                         className="font-display font-extrabold text-[18px]"
-                        style={{ color: "#C9A24B" }}
+                        style={{ color: "var(--accent)" }}
                       >
                         99
                       </span>
@@ -530,7 +530,7 @@ export function BuilderShell({
                 {/* §Empty state heading */}
                 <h2
                   className="font-display font-bold text-[21px] md:text-[24px] m-0"
-                  style={{ color: "#EDE6D8" }}
+                  style={{ color: "var(--fg)" }}
                 >
                   {addPanelCopy.builderEmpty.heading}
                 </h2>
@@ -539,7 +539,7 @@ export function BuilderShell({
                     point at the same two entrances. */}
                 <p
                   className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
-                  style={{ color: "#C6B79A" }}
+                  style={{ color: "var(--fg-body)" }}
                 >
                   {addPanelCopy.builderEmpty.caption(commanderShortName)}
                 </p>
@@ -548,7 +548,7 @@ export function BuilderShell({
                     that vertical budget on the deleted CTA. */}
                 <p
                   className="font-mono text-[11px] mt-[20px]"
-                  style={{ color: "#8E8269" }}
+                  style={{ color: "var(--fg-faint)" }}
                 >
                   {addPanelCopy.builderEmpty.roleHint}
                 </p>

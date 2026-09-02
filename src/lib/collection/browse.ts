@@ -107,8 +107,8 @@ export function formatLastUpdated(date: Date, now: Date = new Date()): string {
 }
 
 /** Shared WUBRG palette — used by mana-pips, rows-view, chip-row, card-modal. */
-export const WUBRG_HEX: Record<string, string> = {
-  W: "#E8E4D6", U: "#4A7FB5", B: "#5B5566", R: "#C05A48", G: "#6B9E63",
+export const WUBRG_COLOR: Record<string, string> = {
+  W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)",
 };
 
 /** Coarse card-type options shown in the Type ▾ dropdown (property table §Filter Button). */

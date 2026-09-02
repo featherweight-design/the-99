@@ -32,19 +32,19 @@ export function FullCardTrigger({
           top: 56,
           right: 16,
           gap: 6,
-          background: "rgba(10,7,4,0.55)",
+          background: "color-mix(in oklab, var(--bg) 55%, transparent)",
           backdropFilter: "blur(4px)",
-          border: "1px solid rgba(237,230,216,0.18)",
+          border: "1px solid color-mix(in oklab, var(--fg) 18%, transparent)",
           padding: "6px 11px",
           cursor: "pointer",
         }}
         aria-label="View full card"
         onClick={() => setOpen(true)}
       >
-        <span style={{ color: "#EDE6D8", fontSize: 12 }}>⛶</span>
+        <span style={{ color: "var(--fg)", fontSize: 12 }}>⛶</span>
         <span
           className="font-mono"
-          style={{ fontSize: 10, letterSpacing: "0.08em", color: "#EDE6D8" }}
+          style={{ fontSize: 10, letterSpacing: "0.08em", color: "var(--fg)" }}
         >
           Full card
         </span>

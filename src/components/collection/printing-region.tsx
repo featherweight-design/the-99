@@ -510,7 +510,7 @@ function PrintingTile({
             style={{
               background:
                 "linear-gradient(115deg, rgba(255,255,255,0.20) 4%, transparent 24%, " +
-                "rgba(201,162,75,0.20) 44%, rgba(255,255,255,0.16) 56%, transparent 80%)",
+                "color-mix(in oklab, var(--accent) 20%, transparent) 44%, rgba(255,255,255,0.16) 56%, transparent 80%)",
             }}
           />
         )}
@@ -527,8 +527,8 @@ function PrintingTile({
               background: picked
                 ? "var(--accent)"
                 : entry.dormant
-                  ? "rgba(10,8,6,0.78)"
-                  : "rgba(10,8,6,0.72)",
+                  ? "color-mix(in oklab, var(--bg) 78%, transparent)"
+                  : "color-mix(in oklab, var(--bg) 72%, transparent)",
               border: picked
                 ? undefined
                 : entry.dormant

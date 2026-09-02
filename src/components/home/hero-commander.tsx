@@ -60,7 +60,7 @@ export function HeroCommanderSkeleton() {
         className="hidden md:block w-[200px] shrink-0"
         style={{
           background:
-            "repeating-linear-gradient(135deg, #1E1A15 0 11px, #181209 11px 22px), var(--bg)",
+            "repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px), var(--bg)",
           borderRight: "1px solid var(--border-strong)",
         }}
       />
@@ -119,7 +119,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
       // Border and background are classes, not inline style, so the hover state can
       // reach them — the card became clickable and had no hover feedback at all.
       // Hover values match commanders/rec-card.tsx.
-      className="relative mb-[34px] flex flex-col overflow-hidden rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] transition-colors hover:border-[#3A3229] hover:bg-[#211C15] md:flex-row"
+      className="relative mb-[34px] flex flex-col overflow-hidden rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--surface)] transition-colors hover:border-[color:var(--border-strong)] hover:bg-[color:var(--elevated-hover)] md:flex-row"
     >
       {/* Stretched link — same pattern as commanders/rec-card.tsx. The hero has
           no interactive children, so nothing needs lifting above it. */}
@@ -136,7 +136,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
         style={{
           background: top.imageUri
             ? `url(${top.imageUri}) center/cover`
-            : "repeating-linear-gradient(135deg, #1E1A15 0 11px, #181209 11px 22px), var(--bg)",
+            : "repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px), var(--bg)",
           borderRight: "1px solid var(--border-strong)",
         }}
         aria-hidden

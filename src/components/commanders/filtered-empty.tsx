@@ -5,7 +5,7 @@
 // heading, body copy, the "Showing 0 of N" diagnostic, "Clear color filter".
 // Mobile breakpoint: sm:640px (project uses sm: prefix, table breakpoint is 640px).
 
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { guildLabel, colorWords } from "../../lib/copy/color-labels";
 import { commandersCopy } from "../../lib/copy/commanders";
 import { Crown } from "../ui/crown";
@@ -22,7 +22,7 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
 
   return (
     // Vignette per Surfaces v2 — accent at 7%, existing token, no new hex.
-    <div className="flex flex-1 flex-col items-center justify-center text-center p-[24px_30px] sm:p-[40px] bg-[radial-gradient(420px_240px_at_50%_76%,rgba(201,162,75,0.07),transparent_70%)]">
+    <div className="flex flex-1 flex-col items-center justify-center text-center p-[24px_30px] sm:p-[40px] bg-[radial-gradient(420px_240px_at_50%_76%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
       <Crown tone="quiet" className="mb-[14px]" />
 
       {/* The dimmed pips stay: they were beside the crab, not part of it, and
@@ -36,7 +36,7 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
               style={{
                 width: 16,
                 height: 16,
-                background: WUBRG_HEX[c] ?? "#8E8269",
+                background: WUBRG_COLOR[c] ?? "var(--fg-faint)",
                 opacity: 0.5,
                 boxShadow: "0 0 0 2px var(--accent)",
               }}

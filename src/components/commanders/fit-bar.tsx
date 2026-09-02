@@ -1,14 +1,14 @@
 // Fit Bar — 3-segment accent ramp (§Fit Bar, §Fit Bar — Degraded).
-// Segments: Pool (#6E5B33 = --accent-dim), Roles (#A9863E = --accent-mid),
-// Synergy (#C9A24B = --accent). Degraded: 2 segments (Pool + Roles, no Synergy).
+// Segments: Pool is --accent-dim, Roles --accent-mid, Synergy --accent.
+// Degraded: 2 segments (Pool + Roles, no Synergy).
 // Legend dots below bar (desktop only, when legend=true).
 
 import type { FitSegmentsResult } from "../../lib/recs/format";
 
 const SEGMENT_COLORS: Record<"pool" | "roles" | "synergy", string> = {
-  pool:    "#6E5B33",
-  roles:   "#A9863E",
-  synergy: "#C9A24B",
+  pool:    "var(--accent-dim)",
+  roles:   "var(--accent-mid)",
+  synergy: "var(--accent)",
 };
 
 const SEGMENT_LABELS: Record<"pool" | "roles" | "synergy", string> = {
@@ -32,7 +32,7 @@ export function FitBar({ fit, legend = false }: FitBarProps) {
       {/* Track — mobile 6px / desktop 8px height */}
       <div
         className="overflow-hidden flex rounded-full h-[6px] sm:h-[8px]"
-        style={{ background: "#2A241D" }}
+        style={{ background: "var(--elevated)" }}
       >
         {/* Filled region — dynamic width = pct% of track */}
         <div
@@ -69,7 +69,7 @@ export function FitBar({ fit, legend = false }: FitBarProps) {
               />
               <span
                 className="font-mono"
-                style={{ fontSize: "9.5px", color: "#8E8269" }}
+                style={{ fontSize: "9.5px", color: "var(--fg-faint)" }}
               >
                 {SEGMENT_LABELS[seg.key]}
               </span>
@@ -84,12 +84,12 @@ export function FitBar({ fit, legend = false }: FitBarProps) {
                   width: 7,
                   height: 7,
                   borderRadius: 2,
-                  background: "#3A3229",
+                  background: "var(--border-strong)",
                 }}
               />
               <span
                 className="font-mono"
-                style={{ fontSize: "9.5px", color: "#5E5647" }}
+                style={{ fontSize: "9.5px", color: "var(--fg-locked)" }}
               >
                 Synergy —
               </span>

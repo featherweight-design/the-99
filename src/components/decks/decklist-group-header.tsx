@@ -16,7 +16,7 @@ interface DecklistGroupHeaderProps {
 export function DecklistGroupHeader({
   label,
   count,
-  countColor = "#8E8269",
+  countColor = "var(--fg-faint)",
   note,
   headingId,
 }: DecklistGroupHeaderProps) {
@@ -25,7 +25,7 @@ export function DecklistGroupHeader({
   const labelClass = "font-sans md:font-display font-semibold text-[12.5px] md:text-[15px] m-0";
 
   return (
-    <div className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-[#2A241D]">
+    <div className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-[color:var(--border)]">
       <div className="flex items-baseline gap-[6px] md:gap-[10px]">
         {headingId ? (
           // Labelled rather than left to its text content, so the count is part
@@ -35,12 +35,12 @@ export function DecklistGroupHeader({
             id={headingId}
             aria-label={`${label} · ${count}`}
             className={labelClass}
-            style={{ color: "#EDE6D8" }}
+            style={{ color: "var(--fg)" }}
           >
             {label}
           </h3>
         ) : (
-          <span className={labelClass} style={{ color: "#EDE6D8" }}>
+          <span className={labelClass} style={{ color: "var(--fg)" }}>
             {label}
           </span>
         )}
@@ -57,7 +57,7 @@ export function DecklistGroupHeader({
       {note && (
         <span
           className="hidden md:block font-mono text-[10.5px]"
-          style={{ color: "#6E6353", marginLeft: "auto" }}
+          style={{ color: "var(--fg-locked)", marginLeft: "auto" }}
         >
           {note}
         </span>

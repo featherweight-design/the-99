@@ -278,7 +278,7 @@ describe("QuickAddBar — result rows", () => {
 
     // "stu" is mid-name here, so a prefix-only highlight would find nothing.
     const hit = screen.getByText("Stu");
-    expect(hit).toHaveStyle({ color: "#C9A24B" });
+    expect(hit).toHaveStyle({ color: "var(--accent)" });
     expect(hit.parentElement).toHaveTextContent("Rhystic Study");
   });
 

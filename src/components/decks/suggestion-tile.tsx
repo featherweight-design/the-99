@@ -10,7 +10,7 @@ import { addCardToDeck } from "../../app/decks/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { availabilityState } from "../../lib/decks/availability";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { shelfRoleOf } from "../../lib/decks/suggest";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -46,9 +46,9 @@ export function CostPips({ cost, className }: { cost: string; className?: string
         const colours = parts.filter((p) => /^[WUBRG]$/.test(p));
         const numeral = parts.find((p) => /^\d+$/.test(p));
         const background = colours.length >= 2
-          ? `linear-gradient(135deg, ${WUBRG_HEX[colours[0]]} 50%, ${WUBRG_HEX[colours[1]]} 50%)`
+          ? `linear-gradient(135deg, ${WUBRG_COLOR[colours[0]]} 50%, ${WUBRG_COLOR[colours[1]]} 50%)`
           : colours.length === 1
-            ? WUBRG_HEX[colours[0]]
+            ? WUBRG_COLOR[colours[0]]
             : "var(--fg-faint)";
         return (
           <span
@@ -87,12 +87,12 @@ function Evidence({
   return (
     <div className="flex flex-col gap-[3px]">
       <div className="flex items-center gap-[6px]">
-        {/* #4A4033 is only bound to --border-dashed, a border token; the repo
-            spends it raw wherever it is a foreground (decklist-row.tsx:115). */}
+        {/* The contract binds this value only as a border token, but the design
+            spends it as a dim foreground here and in decklist-row.tsx. */}
         <span
           aria-hidden
           className="font-mono text-[9px]"
-          style={{ color: inDeck ? "#4A4033" : "var(--fg-locked)" }}
+          style={{ color: inDeck ? "var(--border-dashed)" : "var(--fg-locked)" }}
         >
           {addPanelCopy.tile.evidenceLabel}
         </span>
@@ -222,7 +222,7 @@ export function SuggestionTile({
           <span
             aria-hidden
             className="absolute z-10 right-[6px] top-[6px] w-[8px] h-[8px] rounded-full pointer-events-none"
-            style={{ background: "var(--success)", boxShadow: "0 0 0 2px rgba(10,8,6,.7)" }}
+            style={{ background: "var(--success)", boxShadow: "0 0 0 2px color-mix(in oklab, var(--bg) 70%, transparent)" }}
           />
         ) : (
           <BuyTag variant="tile" label={addPanelCopy.unowned.tagAria(suggestion.name)} />
@@ -236,12 +236,12 @@ export function SuggestionTile({
             // variant can win: an inline boxShadow outranks group-hover:.
             applied || noArt
               ? "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.3)]"
-              : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(201,162,75,0.35)]"
+              : "shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.65),inset_0_0_0_1px_rgba(0,0,0,0.3)] group-hover:shadow-[inset_0_-26px_30px_-22px_rgba(0,0,0,0.5),inset_0_0_0_1px_color-mix(in_oklab,var(--accent)_35%,transparent)]"
           }`}
           style={{
             aspectRatio: "63 / 88",
             background: noArt
-              ? "linear-gradient(158deg, #3A3229 0%, #241F19 62%, #161311 100%)"
+              ? "linear-gradient(158deg, var(--border-strong) 0%, var(--surface-raised) 62%, var(--surface-sunken) 100%)"
               : `center / cover no-repeat url(${suggestion.imageUri})`,
             filter: applied ? "grayscale(.6)" : undefined,
             opacity: applied ? 0.5 : undefined,
@@ -261,7 +261,7 @@ export function SuggestionTile({
                   aria-hidden
                   className="absolute inset-x-0 bottom-0 hidden pt-[14px] pr-[6px] pb-[5px] text-right font-mono text-[9px] group-hover:block"
                   style={{
-                    background: "linear-gradient(180deg, transparent, rgba(10,8,6,.85))",
+                    background: "linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 85%, transparent))",
                     color: "var(--accent)",
                   }}
                 >

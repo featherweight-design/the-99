@@ -49,10 +49,10 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
         maxLength={120}
         disabled={isPending}
         aria-label="Deck name"
-        className="w-full rounded-[6px] px-[10px] py-[7px] text-[13px] font-sans bg-[#14110E]"
+        className="w-full rounded-[6px] px-[10px] py-[7px] text-[13px] font-sans bg-[color:var(--bg)]"
       />
       {error && (
-        <p className="font-mono text-[11px]" style={{ color: "#C6533F" }}>
+        <p className="font-mono text-[11px]" style={{ color: "var(--danger)" }}>
           {error}
         </p>
       )}
@@ -72,8 +72,8 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
           className="rounded-[6px] px-[12px] py-[7px] text-[13px] font-sans transition-colors"
           style={{
             background: "transparent",
-            border: "1px solid #3A3229",
-            color: "#A89B84",
+            border: "1px solid var(--border-strong)",
+            color: "var(--fg-muted)",
             cursor: isPending ? "default" : "pointer",
           }}
         >

@@ -163,7 +163,7 @@ export function QuickAddBar({
                 onClick={() => setQuery("")}
                 aria-label={addPanelCopy.quickAdd.clear}
                 className="flex-none w-[20px] h-[20px] rounded-full text-[10px] cursor-pointer"
-                style={{ background: "#2A241D", color: "#8E8269", border: "none" }}
+                style={{ background: "var(--elevated)", color: "var(--fg-faint)", border: "none" }}
               >
                 ✕
               </button>
@@ -173,7 +173,7 @@ export function QuickAddBar({
 
         <label
           className="flex items-center gap-[7px] text-[12px] cursor-pointer select-none"
-          style={{ color: "#A89B84" }}
+          style={{ color: "var(--fg-muted)" }}
         >
           <input
             type="checkbox"
@@ -188,7 +188,7 @@ export function QuickAddBar({
             aria-label={addPanelCopy.quickAdd.ownedToggleAria}
           />
           <span
-            className="relative inline-block rounded-[999px] peer-focus-visible:ring-2 peer-focus-visible:ring-[#C9A24B]"
+            className="relative inline-block rounded-[999px] peer-focus-visible:ring-2 peer-focus-visible:ring-[color:var(--accent)]"
             style={{ width: 30, height: 17 }}
             aria-hidden
           >
@@ -198,7 +198,7 @@ export function QuickAddBar({
                 width: 30,
                 height: 17,
                 borderRadius: 999,
-                background: ownedOnly ? "#C9A24B" : "#2A241D",
+                background: ownedOnly ? "var(--accent)" : "var(--elevated)",
                 transition: "background 0.15s",
               }}
             />
@@ -210,7 +210,7 @@ export function QuickAddBar({
                 width: 13,
                 height: 13,
                 borderRadius: 999,
-                background: ownedOnly ? "#14110E" : "#8E8269",
+                background: ownedOnly ? "var(--bg)" : "var(--fg-faint)",
                 transition: "left 0.15s",
               }}
             />
@@ -223,7 +223,7 @@ export function QuickAddBar({
         <span
           role="status"
           className="font-mono text-[10.5px] ml-auto"
-          style={{ color: "#6A6152" }}
+          style={{ color: "var(--fg-locked)" }}
         >
           {/* noResults is a landed search too, and "0 matches" is the one thing
               a screen reader most needs to hear — falling back to the identity
@@ -277,7 +277,7 @@ export function QuickAddBar({
               />
             ))}
           </ul>
-          <p className="font-mono text-[10px] mt-[8px]" style={{ color: "#6A6152" }}>
+          <p className="font-mono text-[10px] mt-[8px]" style={{ color: "var(--fg-locked)" }}>
             {addPanelCopy.quickAdd.keyboardHint}
           </p>
         </>
@@ -288,12 +288,12 @@ export function QuickAddBar({
         // a dead end rather than a row of the list, so it is not left-aligned
         // against results that are not there.
         <div className="flex flex-col items-center text-center py-[26px] px-[30px]">
-          <p className="font-display font-bold text-[17px] m-0" style={{ color: "#EDE6D8" }}>
+          <p className="font-display font-bold text-[17px] m-0" style={{ color: "var(--fg)" }}>
             {addPanelCopy.quickAddEmpty.heading}
           </p>
           <p
             className="text-[13.5px] leading-[1.55] mt-[8px] max-w-[420px]"
-            style={{ color: "#A89B84" }}
+            style={{ color: "var(--fg-muted)" }}
           >
             {ownedOnly
               ? addPanelCopy.quickAddEmpty.body(trimmed, commanderShortName)
@@ -306,7 +306,7 @@ export function QuickAddBar({
               type="button"
               onClick={() => setOwnedOnly(false)}
               className="mt-[12px] text-[12.5px] font-semibold underline cursor-pointer"
-              style={{ color: "#C9A24B", background: "transparent", border: "none", padding: 0 }}
+              style={{ color: "var(--accent)", background: "transparent", border: "none", padding: 0 }}
             >
               {addPanelCopy.quickAddEmpty.dropFilter}
             </button>
@@ -408,8 +408,8 @@ function QuickAddRow({
       // An in-deck row is not actionable, so it must not offer a pointer.
       className={`flex flex-col rounded-[9px] min-h-[56px] md:min-h-[52px] px-[10px] md:px-[12px] py-[8px] ${applied ? "cursor-default" : "cursor-pointer"}`}
       style={{
-        background: "#1E1A15",
-        border: `1px solid ${active ? "#C9A24B" : "#2A241D"}`,
+        background: "var(--surface)",
+        border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
       }}
     >
       <CardSearchRowBody
@@ -425,7 +425,7 @@ function QuickAddRow({
             // Label as well as greyscale, and aria-disabled on the option above.
             <span
               className="flex-none font-sans text-[12.5px] font-semibold text-right md:w-[56px]"
-              style={{ color: "#6FA368" }}
+              style={{ color: "var(--success)" }}
             >
               {addPanelCopy.quickAdd.rowInDeck}
             </span>
@@ -436,7 +436,7 @@ function QuickAddRow({
             <span
               aria-hidden
               className="flex-none font-mono text-[10px] md:text-[11px] text-right md:w-[56px]"
-              style={{ opacity: isPending ? 0.5 : undefined, color: "#C9A24B" }}
+              style={{ opacity: isPending ? 0.5 : undefined, color: "var(--accent)" }}
             >
               {/* The phone row's meta line has already used the width the words
                   would need, so it keeps the glyph alone. */}
@@ -454,9 +454,9 @@ function QuickAddRow({
               className="flex-none font-sans text-[13px] md:text-[12.5px] font-semibold flex items-center justify-center w-[56px] h-[44px] md:h-[36px]"
               style={{
                 opacity: isPending ? 0.5 : undefined,
-                color: "#C9A24B",
+                color: "var(--accent)",
                 background: "transparent",
-                border: "1px solid #3A3229",
+                border: "1px solid var(--border-strong)",
                 borderRadius: 7,
               }}
             >

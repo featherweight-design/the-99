@@ -16,7 +16,7 @@
 import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { CSSProperties } from "react";
 import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_HEX } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
 import type { ImportCommanderCandidate } from "../../app/decks/import-actions";
 import type { OwnedLegalCommander } from "../../lib/decks/read";
@@ -196,12 +196,12 @@ export function CreatePicker(props: CreatePickerProps) {
             ? "p-[30px_18px_14px] md:p-[32px_40px_24px]"
             : "p-[20px_18px_14px] md:p-[34px_40px_28px]"
         }
-        style={{ borderBottom: "1px solid #2A241D" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         {/* §Page header — "Pick a commander" / "New deck" */}
         <h1
           className="font-display font-bold text-[20px] md:text-[28px] m-0"
-          style={{ color: "#EDE6D8" }}
+          style={{ color: "var(--fg)" }}
         >
           {isImport ? (
             copy.heading
@@ -214,19 +214,19 @@ export function CreatePicker(props: CreatePickerProps) {
         </h1>
         <p
           className="font-mono text-[10px] md:text-[14px] mt-[2px] md:mt-[4px]"
-          style={{ color: "#8E8269" }}
+          style={{ color: "var(--fg-faint)" }}
         >
           {isImport ? (
             <>
               <span className="md:hidden">{copy.subMobile}</span>
-              <span className="hidden md:inline md:font-sans" style={{ color: "#A89B84" }}>
+              <span className="hidden md:inline md:font-sans" style={{ color: "var(--fg-muted)" }}>
                 {copy.sub}
               </span>
             </>
           ) : (
             <>
               <span className="md:hidden">Choose a commander you own.</span>
-              <span className="hidden md:inline" style={{ color: "#A89B84" }}>
+              <span className="hidden md:inline" style={{ color: "var(--fg-muted)" }}>
                 Choose a commander from your collection.
               </span>
             </>
@@ -254,19 +254,19 @@ export function CreatePicker(props: CreatePickerProps) {
             <>
               <p
                 className="md:hidden text-[13px] leading-[1.55] mb-[14px]"
-                style={{ color: "#C4B8A2" }}
+                style={{ color: "var(--fg-body)" }}
               >
                 {copy.introMobile(rows.length)}
               </p>
               <p
                 className="hidden md:block font-mono text-[11px] mb-[14px]"
-                style={{ color: "#8E8269" }}
+                style={{ color: "var(--fg-faint)" }}
               >
                 {copy.count(rows.length)}
               </p>
             </>
           ) : (
-            /* §Search input: mobile border #3A3229 p 9px 12px gap 8; desktop border #C9A24B p 12px 15px gap 10 */
+            /* §Search input: mobile border var(--border-strong) p 9px 12px gap 8; desktop border var(--accent) p 12px 15px gap 10 */
             <SearchField
               containerClassName="md:rounded-[9px] mb-[16px] p-[9px_12px] md:p-[12px_15px] gap-[8px] md:gap-[10px] md:border-[color:var(--accent)]"
               className="text-[14px] md:text-[15px]"
@@ -278,7 +278,7 @@ export function CreatePicker(props: CreatePickerProps) {
                 /* §Search input — results count (desktop only) */
                 <span
                   className="hidden md:block font-mono ml-auto shrink-0"
-                  style={{ fontSize: 11, color: "#8E8269" }}
+                  style={{ fontSize: 11, color: "var(--fg-faint)" }}
                 >
                   {filtered.length} result{filtered.length !== 1 ? "s" : ""}
                 </span>
@@ -307,7 +307,7 @@ export function CreatePicker(props: CreatePickerProps) {
               <label
                 htmlFor="picker-deck-name-mobile"
                 className="block font-mono"
-                style={{ fontSize: 10, color: "#8E8269", marginBottom: 9 }}
+                style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 9 }}
               >
                 {copy.nameLabelFromSource}
               </label>
@@ -330,14 +330,14 @@ export function CreatePicker(props: CreatePickerProps) {
           {rows.length === 0 ? (
             <p
               className="font-mono text-[12px] text-center py-[40px]"
-              style={{ color: "#8E8269" }}
+              style={{ color: "var(--fg-faint)" }}
             >
               No owned commanders found. Add cards to your collection first.
             </p>
           ) : filtered.length === 0 ? (
             <p
               className="font-mono text-[12px] text-center py-[40px]"
-              style={{ color: "#8E8269" }}
+              style={{ color: "var(--fg-faint)" }}
             >
               No commanders match &ldquo;{query}&rdquo;.
             </p>
@@ -353,8 +353,8 @@ export function CreatePicker(props: CreatePickerProps) {
                       onClick={() => setSelectedId(isSelected ? null : c.oracleId)}
                       className="w-full flex items-center gap-[11px] md:gap-[14px] rounded-[10px] md:rounded-[11px] text-left transition-colors p-[10px_12px] md:p-[12px_15px] min-h-[44px]"
                       style={{
-                        background: isSelected ? "#211C15" : "#1A160F",
-                        border: `1px solid ${isSelected ? "#C9A24B" : "#2A241D"}`,
+                        background: isSelected ? "var(--elevated-hover)" : "var(--surface-rail)",
+                        border: `1px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
                       }}
                       aria-pressed={isSelected}
                     >
@@ -371,11 +371,11 @@ export function CreatePicker(props: CreatePickerProps) {
 
                       {/* Name + pips + meta caption */}
                       <div className="flex-1 min-w-0">
-                        {/* §Commander picker row — name: Cinzel 600 14/16px #EDE6D8, ellipsis */}
+                        {/* §Commander picker row — name: Cinzel 600 14/16px var(--fg), ellipsis */}
                         <p
                           className="font-display font-semibold truncate text-[14px] md:text-[16px]"
                           style={{
-                            color: "#EDE6D8",
+                            color: "var(--fg)",
                             lineHeight: 1.3,
                             margin: 0,
                           }}
@@ -386,14 +386,14 @@ export function CreatePicker(props: CreatePickerProps) {
                         {/* §Commander picker row — pip + caption: mobile gap 5 mt 4 fs 10; desktop gap 6 mt 5 fs 11 */}
                         <div
                           className="flex items-center font-mono gap-[5px] md:gap-[6px] mt-[4px] md:mt-[5px] text-[10px] md:text-[11px]"
-                          style={{ color: "#A89B84" }}
+                          style={{ color: "var(--fg-muted)" }}
                         >
                           {c.colorIdentity.map((color) => (
                             <span
                               key={color}
                               className="rounded-full shrink-0 w-[9px] h-[9px] md:w-[11px] md:h-[11px]"
                               style={{
-                                background: WUBRG_HEX[color] ?? "#8E8269",
+                                background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
                               }}
                               aria-hidden
                             />
@@ -413,8 +413,8 @@ export function CreatePicker(props: CreatePickerProps) {
                       <div
                         className="shrink-0 rounded-full w-[20px] h-[20px] md:w-[22px] md:h-[22px]"
                         style={{
-                          border: `2px solid ${isSelected ? "#C9A24B" : "#4A4033"}`,
-                          background: isSelected ? "#C9A24B" : "transparent",
+                          border: `2px solid ${isSelected ? "var(--accent)" : "var(--border-dashed)"}`,
+                          background: isSelected ? "var(--accent)" : "transparent",
                         }}
                         aria-hidden
                       />
@@ -429,7 +429,7 @@ export function CreatePicker(props: CreatePickerProps) {
           {isImport && (
             <p
               className="hidden md:block text-[12.5px] leading-[1.6] mt-[16px]"
-              style={{ color: "#8E8269" }}
+              style={{ color: "var(--fg-faint)" }}
             >
               {copy.footnote}
             </p>
@@ -443,15 +443,15 @@ export function CreatePicker(props: CreatePickerProps) {
           className="hidden md:block shrink-0 sticky top-0 rounded-[12px] m-[24px_40px_24px_0]"
           style={{
             width: 300,
-            background: "#1A160F",
-            border: "1px solid #2A241D",
+            background: "var(--surface-rail)",
+            border: "1px solid var(--border)",
             padding: 20,
           }}
         >
           {/* §Selected summary — "Selected" label */}
           <p
             className="font-mono uppercase tracking-[0.14em]"
-            style={{ fontSize: 10, color: "#8E8269", marginBottom: 14 }}
+            style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 14 }}
           >
             {copy.selectedLabel}
           </p>
@@ -472,17 +472,17 @@ export function CreatePicker(props: CreatePickerProps) {
                   }}
                 />
                 <div className="min-w-0">
-                  {/* §Selected summary — commander name: Cinzel 600 15px #EDE6D8 */}
+                  {/* §Selected summary — commander name: Cinzel 600 15px var(--fg) */}
                   <p
                     className="font-display font-semibold leading-[1.2]"
-                    style={{ fontSize: 15, color: "#EDE6D8", margin: 0 }}
+                    style={{ fontSize: 15, color: "var(--fg)", margin: 0 }}
                   >
                     {selected.name}
                   </p>
-                  {/* §Selected summary — caption: IBM Plex Mono 11px #A89B84 mt-[3px] */}
+                  {/* §Selected summary — caption: IBM Plex Mono 11px var(--fg-muted) mt-[3px] */}
                   <p
                     className="font-mono"
-                    style={{ fontSize: 11, color: "#A89B84", marginTop: 3, marginBottom: 0 }}
+                    style={{ fontSize: 11, color: "var(--fg-muted)", marginTop: 3, marginBottom: 0 }}
                   >
                     {selected.metaDesktop}
                   </p>
@@ -496,7 +496,7 @@ export function CreatePicker(props: CreatePickerProps) {
                 <label
                   htmlFor="picker-deck-name"
                   className="block font-mono"
-                  style={{ fontSize: 10, color: "#8E8269", marginBottom: 7 }}
+                  style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 7 }}
                 >
                   {copy.nameLabel}
                 </label>
@@ -515,7 +515,7 @@ export function CreatePicker(props: CreatePickerProps) {
           ) : (
             <p
               className="font-mono text-[12px] mb-[16px]"
-              style={{ color: "#8E8269" }}
+              style={{ color: "var(--fg-faint)" }}
             >
               No commander selected.
             </p>
@@ -524,7 +524,7 @@ export function CreatePicker(props: CreatePickerProps) {
           {error && (
             <p
               className="font-mono text-[11px] mb-[12px]"
-              style={{ color: "#C6533F" }}
+              style={{ color: "var(--danger)" }}
             >
               {error}
             </p>
@@ -552,14 +552,14 @@ export function CreatePicker(props: CreatePickerProps) {
           className="md:hidden fixed bottom-[80px] left-0 right-0 z-20"
           style={{
             padding: "10px 16px 12px",
-            borderTop: "1px solid #2A241D",
-            background: "#14110E",
+            borderTop: "1px solid var(--border)",
+            background: "var(--bg)",
           }}
         >
           {/* §Dock summary — one line, always drawn (B2/B-N1/B-N2) */}
           <p
             className="font-mono text-[10.5px] truncate mb-[7px]"
-            style={{ color: "#8E8269" }}
+            style={{ color: "var(--fg-faint)" }}
           >
             {selected
               ? addPanelCopy.createPicker.dockSummary(
@@ -572,7 +572,7 @@ export function CreatePicker(props: CreatePickerProps) {
           {error && (
             <p
               className="font-mono text-[11px] mb-[7px]"
-              style={{ color: "#C6533F" }}
+              style={{ color: "var(--danger)" }}
             >
               {error}
             </p>

@@ -180,7 +180,7 @@ export function UnresolvedGroup({
             // show two different numbers for the same thing. The card nuance is what
             // `groupNote` and the footnote are for.
             count={ordered.length}
-            countColor="#E0913C"
+            countColor="var(--warning)"
             note={copy.groupNote}
             headingId="unresolved-h"
           />
@@ -231,9 +231,9 @@ export function UnresolvedGroup({
         style={
           note
             ? {
-                background: "#1A160F",
-                border: "1px solid #2A241D",
-                color: "#C6B79A",
+                background: "var(--surface-rail)",
+                border: "1px solid var(--border)",
+                color: "var(--fg-body)",
               }
             : undefined
         }
@@ -246,7 +246,7 @@ export function UnresolvedGroup({
                 ? "flex-none text-[12px] md:text-[14px]"
                 : "flex-none font-mono text-[12px] md:text-[13px]"
             }
-            style={{ color: note.kind === "resolve" ? "#6FA368" : "#8E8269" }}
+            style={{ color: note.kind === "resolve" ? "var(--success)" : "var(--fg-faint)" }}
           >
             {note.kind === "resolve" ? "✓" : "−"}
           </span>
@@ -257,7 +257,7 @@ export function UnresolvedGroup({
       {ordered.length > 0 && (
         <p
           className="text-[12px] leading-[1.55] mt-[10px] md:text-[12.5px] md:leading-[1.6] md:mt-[12px]"
-          style={{ color: "#8E8269" }}
+          style={{ color: "var(--fg-faint)" }}
         >
           <span className="md:hidden">
             {copy.footnoteMobile} {copy.footnoteMobileResolve}
