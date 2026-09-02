@@ -102,7 +102,7 @@ export function roleCellState(args: {
   if (args.have >= args.target)
     return { figureColor: "var(--success)", barColor: "var(--success)", pct };
   // Design table E4/E5: a short cell's figure is accent and its bar accent-mid.
-  // It read as body text with a accent bar, which made the one number the strip
+  // It read as body text with an accent bar, which made the one number the strip
   // exists to draw the eye to the quietest thing in the cell.
   return { figureColor: "var(--accent)", barColor: "var(--accent-mid)", pct };
 }

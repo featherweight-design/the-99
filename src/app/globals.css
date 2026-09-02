@@ -113,20 +113,23 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
 
 /* ------------------------------------------------------------------
  * Guided Banner — responsive border/background split
- * mobile:  solid bg #1E1A15, border 1px #2A241D, accent left border 3px
- * desktop: gradient bg, border 1px #3A3229, no accent left border
+ * mobile:  solid surface, hairline border, accent left border 3px
+ * desktop: gradient bg, stronger hairline border, no accent left border
  * (design table §Banner container)
+ *
+ * The literals these replace were drawn against the old brass accent, so once
+ * the accent moved the left border no longer matched the thing it accents.
  * ------------------------------------------------------------------ */
 .guided-banner {
-  background: #1E1A15;
-  border: 1px solid #2A241D;
-  border-left: 3px solid #C9A24B;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
 }
 @media (min-width: 768px) {
   .guided-banner {
-    background: linear-gradient(120deg, #221D14, #1A160F 60%);
-    border: 1px solid #3A3229;
-    border-left: 1px solid #3A3229;
+    background: linear-gradient(120deg, var(--surface-raised), var(--surface-rail) 60%);
+    border: 1px solid var(--border-strong);
+    border-left: 1px solid var(--border-strong);
   }
 }
 

@@ -28,6 +28,16 @@ const ALIASES: Record<string, string> = {
   "avail-hard": "var(--accent)",
 };
 
+// The fit bar draws a three-step ramp from --accent-dim through --accent-mid to
+// --accent. Outside that one component the two extra steps have no separate
+// identity, so every theme sets them to the values it already has. Written down
+// here so a theme block that duplicates any *other* pair is caught as the
+// copy-paste it almost certainly is.
+const INTENTIONAL_TWINS = [
+  ["accent-dim", "accent-shadow"],
+  ["accent-mid", "accent-strong"],
+];
+
 const SURFACES = [
   "bg", "surface", "surface-raised", "surface-rail", "surface-sunken",
   "surface-inset", "elevated", "elevated-hover",
@@ -62,6 +72,20 @@ describe("theme contract", () => {
       }
     });
 
+    it("gives every key its own value, bar the fit-bar ramp", () => {
+      const twin = new Map(INTENTIONAL_TWINS.flatMap(([a, b]) => [[a, b], [b, a]]));
+      const seen = new Map<string, string>();
+      for (const key of CONTRACT) {
+        if (key in ALIASES) continue;
+        const value = hex(key).toUpperCase();
+        const owner = seen.get(value);
+        if (owner && twin.get(key) !== owner) {
+          expect.unreachable(`--${key} repeats --${owner} (${value})`);
+        }
+        if (!owner) seen.set(value, key);
+      }
+    });
+
     it("keeps surfaces under 0.02 chroma", () => {
       for (const key of SURFACES) expect(chroma(hex(key))).toBeLessThanOrEqual(0.02);
     });
@@ -80,7 +104,7 @@ describe("theme contract", () => {
       expect(contrast(hex("fg-muted"), hex("surface"))).toBeGreaterThanOrEqual(4.5);
       expect(contrast(hex("fg-faint"), hex("surface"))).toBeGreaterThanOrEqual(3);
       expect(contrast(hex("fg-locked"), hex("surface"))).toBeGreaterThanOrEqual(3);
-      // The accent button's label is --bg in all six themes.
+      // The accent button's label is --bg, in every theme block present.
       expect(contrast(hex("bg"), hex("accent"))).toBeGreaterThanOrEqual(4.5);
       // The focus ring is the accent, drawn on the canvas.
       expect(contrast(hex("accent"), hex("bg"))).toBeGreaterThanOrEqual(3);
