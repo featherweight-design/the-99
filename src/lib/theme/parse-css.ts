@@ -1,3 +1,5 @@
+import { DEFAULT_THEME } from "./themes";
+
 // A deliberately small reader for globals.css: find the theme blocks, return
 // their custom-property declarations verbatim. It does not resolve var(), on
 // purpose — --avail-soft and --avail-hard are aliases, and the contract test
@@ -23,7 +25,8 @@ export function parseThemeBlocks(css: string): Map<string, Map<string, string>> 
     const named = [...selectors.matchAll(NAMED)].map(([, name]) => name);
     // `:root` alone names the default; alongside its own attribute selector it
     // adds nothing, which is why the list is de-duplicated rather than summed.
-    const keys = new Set(named.length ? named : ["amonkhet"]);
+    // The registry names that default, so moving it is one edit rather than two.
+    const keys = new Set(named.length ? named : [DEFAULT_THEME]);
     for (const key of keys) {
       const tokens = themes.get(key) ?? new Map<string, string>();
       for (const [, name, value] of body.matchAll(DECL)) tokens.set(name, value.trim());

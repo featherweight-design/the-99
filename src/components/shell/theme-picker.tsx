@@ -18,7 +18,13 @@
 
 import { useState } from "react";
 import { themeCopy } from "../../lib/copy/theme";
-import { THEME_COOKIE, THEME_COOKIE_MAX_AGE, THEMES, type ThemeKey } from "../../lib/theme/themes";
+import {
+  THEME_COOKIE,
+  THEME_COOKIE_MAX_AGE,
+  THEMES,
+  isThemeKey,
+  type ThemeKey,
+} from "../../lib/theme/themes";
 
 type PanelKind = "popover" | "sheet";
 
@@ -78,7 +84,24 @@ function Miniature({ theme, compact, selected }: { theme: ThemeKey; compact: boo
  */
 function applyTheme(key: ThemeKey) {
   document.documentElement.dataset.theme = key;
-  document.cookie = `${THEME_COOKIE}=${key}; path=/; max-age=${THEME_COOKIE_MAX_AGE}; SameSite=Lax`;
+  // Secure over HTTPS only: on plain-HTTP localhost the attribute makes the
+  // browser drop the cookie outright, so setting it unconditionally would
+  // reintroduce the flash of the default theme in development.
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${THEME_COOKIE}=${key}; path=/; max-age=${THEME_COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
+}
+
+/**
+ * What the app is wearing right now, which is not always what the server said.
+ * The account menu unmounts the picker when it closes, so a second opening
+ * remounts it against a `current` prop that was resolved on the last navigation
+ * — before any choice made in the first opening. The document attribute is the
+ * live truth, since `applyTheme` is what writes it.
+ */
+function themeInForce(fallback: ThemeKey): ThemeKey {
+  if (typeof document === "undefined") return fallback;
+  const painted = document.documentElement.dataset.theme;
+  return isThemeKey(painted) ? painted : fallback;
 }
 
 export function ThemePicker({
@@ -88,7 +111,7 @@ export function ThemePicker({
   current: ThemeKey;
   panel?: PanelKind;
 }) {
-  const [selected, setSelected] = useState<ThemeKey>(current);
+  const [selected, setSelected] = useState<ThemeKey>(() => themeInForce(current));
   const [announcement, setAnnouncement] = useState("");
   const compact = panel === "sheet";
 

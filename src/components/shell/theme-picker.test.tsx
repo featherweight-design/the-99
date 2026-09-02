@@ -5,6 +5,14 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { ThemePicker } from "./theme-picker";
 
+// The layout writes the attribute and the prop from the same cookie, so a first
+// mount always finds the two agreeing. Painting the document alongside the
+// render keeps the tests describing a state the app can actually be in.
+function renderPicker(current: "amonkhet" | "duskmourn" | "kaldheim") {
+  document.documentElement.dataset.theme = current;
+  return render(<ThemePicker current={current} />);
+}
+
 describe("ThemePicker", () => {
   beforeEach(() => {
     document.documentElement.dataset.theme = "amonkhet";
@@ -17,13 +25,32 @@ describe("ThemePicker", () => {
     expect(screen.getAllByRole("radio")).toHaveLength(6);
   });
 
+  // The account menu unmounts the picker when it closes, and `current` is
+  // resolved on the server at the last navigation. A second opening therefore
+  // arrives with a prop that predates any choice made in the first.
+  it("shows the theme in force, not the one the server last resolved", () => {
+    const { unmount } = render(<ThemePicker current="amonkhet" />);
+    fireEvent.click(screen.getByRole("radio", { name: "Screen Glow — Duskmourn" }));
+    unmount();
+
+    render(<ThemePicker current="amonkhet" />);
+    expect(screen.getByRole("radio", { name: "Screen Glow — Duskmourn" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByRole("radio", { name: "Gilded Stone — Amonkhet" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+  });
+
   it("names each option by theme and plane", () => {
     render(<ThemePicker current="amonkhet" />);
     expect(screen.getByRole("radio", { name: "Rune Frost — Kaldheim" })).toBeInTheDocument();
   });
 
   it("marks the current theme checked, and only that one", () => {
-    render(<ThemePicker current="duskmourn" />);
+    renderPicker("duskmourn");
     const checked = screen
       .getAllByRole("radio")
       .filter((r) => r.getAttribute("aria-checked") === "true");
@@ -32,7 +59,7 @@ describe("ThemePicker", () => {
   });
 
   it("does not carry selection by colour alone — the checked chip draws a tick", () => {
-    render(<ThemePicker current="duskmourn" />);
+    renderPicker("duskmourn");
     const checked = screen.getByRole("radio", { name: "Screen Glow — Duskmourn" });
     expect(checked.querySelector("[data-selected-tick]")).not.toBeNull();
     const other = screen.getByRole("radio", { name: "Moonlit — Innistrad" });
