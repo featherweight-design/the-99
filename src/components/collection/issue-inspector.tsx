@@ -231,12 +231,10 @@ export function IssueInspector({
                   aria-label={issueInspectorCopy.filter.clearAriaLabel}
                   aria-hidden={rawQuery === "" || undefined}
                   tabIndex={rawQuery === "" ? -1 : 0}
-                  className="flex-none rounded-full flex items-center justify-center"
+                  className="flex-none rounded-full flex items-center justify-center bg-[color:var(--border)] text-[color:var(--fg-muted)]"
                   style={{
                     width: 22,
                     height: 22,
-                    background: "var(--border)",
-                    color: "var(--fg-muted)",
                     fontSize: 12,
                     visibility: rawQuery === "" ? "hidden" : "visible",
                   }}
@@ -315,14 +313,8 @@ export function IssueInspector({
           // §Close: --surface-raised circle, 1px --border-strong, hover accent.
           // Color is a utility, not inline style: an inline color outranks the
           // hover: variant and the accent hover never lands.
-          className="absolute top-[18px] right-[20px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center text-[color:var(--fg-muted)] hover:[color:var(--accent)]"
-          style={{
-            width: 32,
-            height: 32,
-            background: "var(--surface-raised)",
-            border: "1px solid var(--border-strong)",
-            fontSize: 15,
-          }}
+          className="absolute top-[18px] right-[20px] md:top-[22px] md:right-[26px] flex-none rounded-full flex items-center justify-center text-[color:var(--fg-muted)] hover:[color:var(--accent)] bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)]"
+          style={{ width: 32, height: 32, fontSize: 15 }}
         >
           ✕
         </button>
@@ -445,15 +437,16 @@ function TabButton({
       // Disabled: --fg-locked adjacent, opacity .7, cursor not-allowed.
       // Padding matches the mock's 10px 4px 13px (pt/px/pb) — split classes to
       // avoid a Tailwind class-order conflict (py-[10px] + pt-[4px] loses to pt-[4px]).
-      className="flex items-center gap-[8px] pt-[10px] px-[4px] pb-[13px] font-sans font-semibold text-[14px] cursor-pointer disabled:cursor-not-allowed"
-      style={{
-        background: "none",
-        border: "none",
-        color: disabled
-          ? "var(--fg-locked)"
+      className={[
+        "flex items-center gap-[8px] pt-[10px] px-[4px] pb-[13px] font-sans font-semibold text-[14px]",
+        "cursor-pointer disabled:cursor-not-allowed bg-none border-none",
+        disabled
+          ? "text-[color:var(--fg-locked)]"
           : selected
-            ? "var(--fg)"
-            : "var(--fg-faint)",
+            ? "text-[color:var(--fg)]"
+            : "text-[color:var(--fg-faint)]",
+      ].join(" ")}
+      style={{
         opacity: disabled ? 0.7 : 1,
         boxShadow: selected ? "inset 0 -2px 0 var(--accent)" : "none",
       }}

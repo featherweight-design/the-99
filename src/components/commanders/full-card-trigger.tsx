@@ -27,14 +27,12 @@ export function FullCardTrigger({
       <button
         type="button"
         // brand focus-visible outline treatment inherited from globals.css
-        className="absolute inline-flex items-center rounded-full"
+        className="absolute inline-flex items-center rounded-full bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] border border-[color-mix(in_oklab,var(--fg)_18%,transparent)]"
         style={{
           top: 56,
           right: 16,
           gap: 6,
-          background: "color-mix(in oklab, var(--bg) 55%, transparent)",
           backdropFilter: "blur(4px)",
-          border: "1px solid color-mix(in oklab, var(--fg) 18%, transparent)",
           padding: "6px 11px",
           cursor: "pointer",
         }}
