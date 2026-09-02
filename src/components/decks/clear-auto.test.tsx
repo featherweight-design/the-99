@@ -505,4 +505,42 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(recommendationsCopy.auto.sweepFailed)).toBeNull();
   });
+
+  // The receipt stays up after a refused Undo so the player can try again. If
+  // the refusal outlived the retry, a restored deck would still read as broken.
+  it("a retried Undo that succeeds drops the earlier refusal", async () => {
+    const sweptRows = [
+      { oracleId: "sol-ring", quantity: 1 },
+      { oracleId: "arcane-signet", quantity: 1 },
+    ];
+    clearAutoCards.mockResolvedValue(sweptRows);
+    restoreAutoCards
+      .mockRejectedValueOnce(new Error("network error"))
+      .mockResolvedValueOnce(undefined);
+
+    renderBuilder([card1, card2]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.clearAllAria("2") })
+        .click();
+    });
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.sweptUndoAria("2") })
+        .click();
+    });
+    expect(
+      screen.getByText(recommendationsCopy.auto.restoreFailed),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.sweptUndoAria("2") })
+        .click();
+    });
+
+    expect(screen.queryByText(recommendationsCopy.auto.restoreFailed)).toBeNull();
+  });
 });

@@ -49,17 +49,22 @@ const stub = vi.hoisted(() => {
                   then: (resolve: (v: unknown) => unknown) =>
                     Promise.resolve(state.collectionItems).then(resolve),
                 }),
-                // Mirrors the real ownedQuantities query: group by oracleId,
-                // sum quantities. Returns { oracleId, quantity } rows — the
-                // exact shape that ownedQuantities passes to new Map(...).
+                // Mirrors the real pool query: one row per oracle id, carrying
+                // the card columns plus `ownedQuantity` summed across printings.
                 groupBy: async () => {
-                  const agg = new Map<string, number>();
+                  const agg = new Map<string, Record<string, unknown>>();
                   for (const item of state.collectionItems) {
-                    const id = (item as Record<string, unknown>).oracleId as string;
-                    const q = ((item as Record<string, unknown>).quantity as number | undefined) ?? 1;
-                    agg.set(id, (agg.get(id) ?? 0) + q);
+                    const row = item as Record<string, unknown>;
+                    const id = row.oracleId as string;
+                    const q = (row.quantity as number | undefined) ?? 1;
+                    const seen = agg.get(id);
+                    if (seen) {
+                      seen.ownedQuantity = (seen.ownedQuantity as number) + q;
+                    } else {
+                      agg.set(id, { ...row, ownedQuantity: q });
+                    }
                   }
-                  return Array.from(agg.entries()).map(([oracleId, quantity]) => ({ oracleId, quantity }));
+                  return Array.from(agg.values());
                 },
               }),
             } as unknown as SelectFromBuilder;

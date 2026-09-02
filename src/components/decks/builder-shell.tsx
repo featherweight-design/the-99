@@ -328,6 +328,10 @@ export function BuilderShell({
 
   const handleRestoreAuto = useCallback(async () => {
     if (!sweptRows) return;
+    // A refused Undo leaves its message beside a receipt the player can click
+    // again; without this the second, successful attempt restores the rows and
+    // still reads as a failure.
+    setSweepError(null);
     try {
       await restoreAutoCards(deck.id, sweptRows);
       const restored = sweptRows.reduce((sum, r) => sum + r.quantity, 0);

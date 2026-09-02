@@ -20,34 +20,29 @@ import { planFill, type FillPlan } from "../../lib/decks/fill";
 
 // The pool carries mana on top of PoolCard so a tile can draw cost pips and the
 // Consider panel can sort by cost without a second round trip.
-type SuggestionPoolCard = PoolCard & { manaValue: number };
+// `ownedQuantity` is the copies owned summed across printings — a basic is
+// owned in quantity, and the fill stacks it to what the shelf actually holds.
+// It rides on the pool rather than arriving from a second query because both
+// reads scan the same join under the same predicate.
+type SuggestionPoolCard = PoolCard & { manaValue: number; ownedQuantity: number };
 
 async function ownedColorLegalPool(userId: string, commander: Pick<PoolCard, "oracleId" | "colorIdentity">): Promise<SuggestionPoolCard[]> {
   const owned = await db
-    .selectDistinctOn([cards.oracleId], {
+    .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords, colorIdentity: cards.colorIdentity,
       imageUri: cards.imageUri, manaCost: cards.manaCost, manaValue: cards.cmc,
+      ownedQuantity: sql<number>`sum(${collectionItems.quantity})::int`,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
     .where(ownedCardsWhere(userId, { commanderLegalOnly: true }))
-    // Postgres requires DISTINCT ON expressions to lead the ORDER BY.
-    .orderBy(cards.oracleId);
+    // Grouping on the primary key makes every other `cards` column functionally
+    // dependent, so Postgres accepts them ungrouped — one row per oracle id,
+    // which is what the old DISTINCT ON produced.
+    .groupBy(cards.oracleId);
   const identity = new Set(commander.colorIdentity);
   return owned.filter((c) => c.oracleId !== commander.oracleId && c.colorIdentity.every((x) => identity.has(x)));
-}
-
-/** Owned copies per oracle id, summed across printings — a basic is owned in
-    quantity, and the fill stacks it to what the shelf actually holds. */
-async function ownedQuantities(userId: string): Promise<Map<string, number>> {
-  const rows = await db
-    .select({ oracleId: collectionItems.oracleId, quantity: sql<number>`sum(${collectionItems.quantity})::int` })
-    .from(collectionItems)
-    .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
-    .where(ownedCardsWhere(userId, { commanderLegalOnly: true }))
-    .groupBy(collectionItems.oracleId);
-  return new Map(rows.map((r) => [r.oracleId, r.quantity]));
 }
 
 type UnownedStapleCard = {
@@ -103,7 +98,7 @@ async function unownedStaples(
   return eligible;
 }
 
-/** Gathers the pool, the owned quantities, and the unowned EDHREC staples, then
+/** Gathers the pool (quantities included) and the unowned EDHREC staples, then
     plans the fill. The EDHREC call is not the failure to guard: `getEdhrecData`
     degrades an unreachable upstream to `{ data: null }` and the fill goes ahead
     on the collection alone. The database reads are what can throw, so callers
@@ -113,7 +108,6 @@ export async function buildFillPlan(
   commander: { oracleId: string; name: string; colorIdentity: string[] },
 ): Promise<FillPlan> {
   const pool = await ownedColorLegalPool(userId, commander);
-  const quantities = await ownedQuantities(userId);
   const { data } = await getEdhrecData(commander.oracleId, commander.name);
   const inclusionByName = data?.inclusionByName ?? {};
   const inclusionOf = (name: string): number | null => {
@@ -131,7 +125,7 @@ export async function buildFillPlan(
     ...pool.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
       oracleText: c.oracleText, keywords: c.keywords,
-      owned: true, ownedQuantity: quantities.get(c.oracleId) ?? 1,
+      owned: true, ownedQuantity: c.ownedQuantity,
       inclusionPct: inclusionOf(c.name),
     })),
     ...staples.map((c) => ({
