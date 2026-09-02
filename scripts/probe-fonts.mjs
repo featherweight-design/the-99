@@ -99,16 +99,14 @@ function sample(page) {
         text: (el.textContent ?? "").trim().slice(0, 40),
         lines: Math.round(box.height / lineHeight),
         fontSize: style.fontSize,
-        // A heading whose ink is wider than its box overflows it — but only
-        // report that where the overflow is not the design's own doing. A
-        // `truncate` site is *meant* to run past its box and ellipsize, so a
-        // wider face reaching that point sooner is a threshold shift, not a
-        // defect. Without this the run buries its real findings under every
-        // long deck and commander name in the fixtures.
-        clipped:
-          el.scrollWidth > el.clientWidth + 1 &&
-          style.textOverflow !== "ellipsis" &&
-          style.overflow === "visible",
+        // A heading whose ink is wider than its box overflows it — whether it
+        // spills over its neighbours under `overflow: visible` or is cut off
+        // under `overflow: hidden`. Both are defects. The one overflow that is
+        // not is an ellipsis: a `truncate` site is *meant* to run past its box,
+        // so a wider face reaching that point sooner is a threshold shift, not
+        // a defect. Without that exemption the run buries its real findings
+        // under every long deck and commander name in the fixtures.
+        clipped: el.scrollWidth > el.clientWidth + 1 && style.textOverflow !== "ellipsis",
       });
     }
     return out;

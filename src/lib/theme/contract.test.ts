@@ -159,7 +159,15 @@ describe("the display face", () => {
     // Read from the parsed map, not by slicing the raw CSS: a slice that runs
     // from a theme's selector to end-of-file will happily match the *next*
     // theme's declaration and report a missing face as present.
-    const faces = [...THEMES.values()].map((t) => t.get("font-display-face"));
+    // Each face is asserted present before the set is counted. A `Set` holds
+    // every `undefined` as one member but a single missing face still leaves
+    // six entries, so uniqueness alone would pass a theme that declares no
+    // face at all whenever it is the only one missing.
+    const faces = [...THEMES.entries()].map(([name, tokens]) => {
+      const face = tokens.get("font-display-face");
+      expect(face, `${name} declares no --font-display-face`).toMatch(/^var\(--font-[a-z-]+\)$/);
+      return face;
+    });
     expect(faces).toHaveLength(6);
     expect(new Set(faces).size).toBe(6);
   });
