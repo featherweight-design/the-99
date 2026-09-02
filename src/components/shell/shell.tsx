@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NavRail, TabBar, MobileHeader } from "./nav";
 import { getCollectionStats } from "../../lib/home/summary";
+import type { ThemeKey } from "../../lib/theme/themes";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -11,7 +12,15 @@ import { getCollectionStats } from "../../lib/home/summary";
  * this to render Collection/Commanders/Decks as non-interactive until the user
  * completes Step 1 of the first-run flow (§Rail Locked state, property table).
  */
-export default async function Shell({ children }: { children: React.ReactNode }) {
+export default async function Shell({
+  children,
+  theme,
+}: {
+  children: React.ReactNode;
+  // Resolved once in the root layout, which needs it for `<html data-theme>`
+  // anyway. Passing it down keeps the cookie read to one per request.
+  theme: ThemeKey;
+}) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -23,9 +32,9 @@ export default async function Shell({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen flex-1">
-      <NavRail locked={locked} />
+      <NavRail locked={locked} theme={theme} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileHeader />
+        <MobileHeader theme={theme} />
         {/* pb-[80px] on mobile leaves room for the fixed tab bar
             (48px content + 22px safe-area + ~10px gap). */}
         {/* `flex flex-col` continues the stretch chain the rail already starts,
