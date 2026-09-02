@@ -6,22 +6,12 @@ import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
-import { ROLE_TARGETS } from "../../lib/recs/roles";
 import type { RankedCommander } from "../../lib/recs/recommend";
-import type { RoleCard } from "../../lib/recs/score";
 import { FullCardTrigger } from "./full-card-trigger";
 import { PrimaryButton } from "../ui/button";
-
-// ─── Internal sub-component types ───────────────────────────────────────────
-
-type RoleName = "ramp" | "draw" | "removal" | "wipes";
-const ROLE_ORDER: RoleName[] = ["ramp", "draw", "removal", "wipes"];
-const ROLE_LABELS: Record<RoleName, string> = {
-  ramp: "Ramp",
-  draw: "Card Draw",
-  removal: "Removal",
-  wipes: "Board Wipes",
-};
+import { CoverageSection } from "./coverage-section";
+import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
 
 // ─── Owned card chip ─────────────────────────────────────────────────────────
 
@@ -267,75 +257,6 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
           </span>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Role panel (one per role) ────────────────────────────────────────────────
-
-function RolePanel({
-  role,
-  cards,
-  count,
-}: {
-  role: RoleName;
-  cards: RoleCard[];
-  count: number;
-}) {
-  const target = ROLE_TARGETS[role];
-
-  return (
-    <div
-      className="rounded-[10px]"
-      style={{
-        background: "var(--surface-rail)",
-        border: "1px solid var(--border)",
-        padding: "15px 18px",
-      }}
-    >
-      {/* Header row */}
-      <div
-        className="flex items-center gap-[12px]"
-        style={{ marginBottom: 10 }}
-      >
-        <span
-          className="font-sans font-[600]"
-          style={{ fontSize: 15, color: "var(--fg)" }}
-        >
-          {ROLE_LABELS[role]}
-        </span>
-        <span
-          className="font-mono"
-          style={{ fontSize: 12, color: "var(--success)" }}
-        >
-          {count} owned
-        </span>
-        <span
-          className="font-mono"
-          style={{ fontSize: 12, color: "var(--fg-faint)", marginLeft: "auto" }}
-        >
-          {count > target
-            ? `Well past the ${target}-source baseline`
-            : count === target
-              ? `At the ${target}-source baseline`
-              : `${target - count} short of baseline`}
-        </span>
-      </div>
-
-      {/* Card chips */}
-      <div className="flex flex-wrap gap-[7px]">
-        {cards.map((c) => (
-          <OwnedChip key={c.oracleId} name={c.name} />
-        ))}
-        {cards.length === 0 && (
-          <span
-            className="font-mono"
-            style={{ fontSize: 11, color: "var(--fg-locked)" }}
-          >
-            No {ROLE_LABELS[role].toLowerCase()} cards in your pool
-          </span>
-        )}
-      </div>
     </div>
   );
 }
@@ -613,32 +534,15 @@ export function CommanderDetail({
         </div>
 
         {/* Role Coverage section */}
-        <div>
-          <div className="mb-[12px]">
-            <h2
-              className="font-display font-[600] m-0"
-              style={{ fontSize: 20, color: "var(--fg)" }}
-            >
-              Role Coverage
-            </h2>
-            <p
-              className="m-0 font-mono"
-              style={{ fontSize: 12, color: "var(--fg-faint)" }}
-            >
-              Your owned cards by role
-            </p>
-          </div>
-          <div className="flex flex-col gap-[12px]">
-            {ROLE_ORDER.map((role) => (
-              <RolePanel
-                key={role}
-                role={role}
-                cards={c.roleCards[role]}
-                count={c.roleCounts[role]}
-              />
-            ))}
-          </div>
-        </div>
+        <CoverageSection
+          width="phone"
+          oracleId={c.oracleId}
+          slug={c.slug}
+          roleCards={c.roleCards}
+          roleCounts={c.roleCounts}
+          synergyState={c.synergyState}
+          retryCoverageFigures={retryCoverageFigures}
+        />
 
         {/* EDHREC Synergy section (mobile) */}
         {c.fitSynergy !== null && c.edhrecTotal !== null ? (
@@ -750,10 +654,10 @@ export function CommanderDetail({
             className="font-mono"
             style={{ fontSize: 10, color: "var(--fg-faint)" }}
           >
-            READY TO BUILD
+            {recommendationsCopy.build.stickyLabel}
           </span>
           <span style={{ fontSize: 12, color: "var(--fg-body)" }}>
-            {c.colorPoolSize} cards in your pool
+            {recommendationsCopy.build.stickyPromise("68")}
           </span>
         </div>
         <PrimaryButton
@@ -869,7 +773,7 @@ export function CommanderDetail({
               lineHeight: 1.5,
             }}
           >
-            Your owned pool will seed the deck builder
+            {recommendationsCopy.build.seedNote("68")}
           </p>
         </div>
 
@@ -909,30 +813,15 @@ export function CommanderDetail({
           </div>
 
           {/* Role Coverage section */}
-          <div>
-            <h2
-              className="font-display font-[600] m-0"
-              style={{ fontSize: 20, color: "var(--fg)" }}
-            >
-              Role Coverage
-            </h2>
-            <p
-              className="m-0 font-mono"
-              style={{ fontSize: 12, color: "var(--fg-faint)" }}
-            >
-              Your owned cards by role
-            </p>
-            <div className="flex flex-col gap-[12px] mt-[16px]">
-              {ROLE_ORDER.map((role) => (
-                <RolePanel
-                  key={role}
-                  role={role}
-                  cards={c.roleCards[role]}
-                  count={c.roleCounts[role]}
-                />
-              ))}
-            </div>
-          </div>
+          <CoverageSection
+            width="desktop"
+            oracleId={c.oracleId}
+            slug={c.slug}
+            roleCards={c.roleCards}
+            roleCounts={c.roleCounts}
+            synergyState={c.synergyState}
+            retryCoverageFigures={retryCoverageFigures}
+          />
 
           {/* EDHREC Synergy section */}
           {c.fitSynergy !== null && c.edhrecTotal !== null ? (

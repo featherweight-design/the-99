@@ -4,7 +4,7 @@
 // panels.
 //
 // Design bindings (all from the handoff's component table, exact):
-//   Chip:  #221D16 bg · 1px solid #33402F · radius 999px · h-[28px]
+//   Chip:  --surface-raised bg · 1px solid success-at-40% · radius 999px · h-[28px]
 //          padding 0 4px 0 10px (with figure) / 0 10px (absent or showFigures=false)
 //          gap 8px · dot 6px --success · name mono 11.5px --fg-body
 //          hover: border --brass, name --fg
@@ -51,7 +51,7 @@ export function CoverageChip({
       name={card.name}
       siblings={siblings}
       ariaLabel={ariaLabel}
-      className="group inline-flex items-center rounded-full h-[28px] border border-[#33402F] bg-[#221D16] hover:border-brass"
+      className="group inline-flex items-center rounded-full h-[28px] border border-[color-mix(in_srgb,var(--success)_40%,var(--bg))] bg-surface-raised hover:border-brass"
       style={{ gap: 8, padding: showFigures ? "0 4px 0 10px" : "0 10px" }}
     >
       {/* Dot — 6px green, aria-hidden */}
