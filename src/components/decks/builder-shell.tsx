@@ -81,7 +81,7 @@ export function BuilderShell({
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
   const isDesktop = useIsDesktop();
 
-  const [celebrated, markCelebrated] = useCelebrated(deck.id);
+  const [celebrated, markCelebrated, celebratedHere] = useCelebrated(deck.id);
 
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
@@ -108,7 +108,7 @@ export function BuilderShell({
     unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
   });
 
-  const showReveal = shouldCelebrate({
+  const revealDue = shouldCelebrate({
     status: serverStatus,
     alreadyCelebrated: celebrated,
     arrivedFromImport,
@@ -330,13 +330,26 @@ export function BuilderShell({
     pendingUnresolved.current = false;
   }, [view, filter]);
 
-  // Every route into the export dialog dismisses the reveal, not just the one
+  // The one-shot is spent by the band appearing, not by the user dismissing it.
+  // Scrolling past is the commonest way to leave a page, and "Complete" is a
+  // derived status that reads true forever, so while the flag burned only on an
+  // explicit dismiss the reveal fired again on every visit to a finished deck.
+  //
+  // Burning it makes `revealDue` false in the same frame, so `celebratedHere`
+  // — "this visit is the one that spent it" — holds the band up for the rest of
+  // the visit.
+  useEffect(() => {
+    if (revealDue) markCelebrated();
+  }, [revealDue, markCelebrated]);
+
+  const [revealDismissed, setRevealDismissed] = useState(false);
+  const revealOpen = (revealDue || celebratedHere) && !revealDismissed;
+
+  // Every route into the export dialog closes the reveal, not just the one
   // inside it — the user has acted on the moment, so leaving the band standing
-  // behind the dialog is noise. Only while the band is actually up, though:
-  // the spine's Export is live from the first card on, and marking there would
-  // burn the one-shot flag long before the deck ever reaches 99/99.
+  // behind the dialog is noise.
   const openExport = () => {
-    if (showReveal) markCelebrated();
+    setRevealDismissed(true);
     setExportOpen(true);
   };
 
@@ -357,10 +370,10 @@ export function BuilderShell({
 
           <div className="flex-1 flex flex-col min-w-0 md:min-h-0 md:overflow-y-auto">
             {/* The 99/99 reveal — one-shot, above the builder body */}
-            {showReveal && (
+            {revealOpen && (
               <CompletionReveal
                 commanderShortName={commanderShortName}
-                onDismiss={markCelebrated}
+                onDismiss={() => setRevealDismissed(true)}
                 onExport={openExport}
               />
             )}

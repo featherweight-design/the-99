@@ -116,6 +116,22 @@ describe("BuilderShell — 99/99 celebration", () => {
     expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
   });
 
+  // The reported bug: the flag used to burn only on an explicit dismiss or
+  // export, so a visitor who scrolled past the band and navigated away left it
+  // unspent — and "Complete" is derived, so it read true forever and the
+  // one-shot fired on every subsequent visit.
+  it("never fires again after a visit the user left without dismissing", async () => {
+    const first = await act(async () => renderBuilder(makeDeck()));
+    expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
+    expect(localStorage.getItem(celebrationKey("deck-1"))).toBe("1");
+    first.unmount();
+
+    await act(async () => {
+      renderBuilder(makeDeck());
+    });
+    expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
+  });
+
   it("is keyed per deck — a second finished deck gets its own reveal", async () => {
     localStorage.setItem(celebrationKey("deck-1"), "1");
     await act(async () => {

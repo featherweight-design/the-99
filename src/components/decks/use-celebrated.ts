@@ -3,7 +3,11 @@
 import { celebrationKey } from "../../lib/decks/celebration";
 import { useLocalFlag } from "./use-local-flag";
 
-/** Returns `[alreadyCelebrated, markCelebrated]` for this deck's 99/99 reveal. */
-export function useCelebrated(deckId: string): [boolean, () => void] {
+/**
+ * Returns `[alreadyCelebrated, markCelebrated, celebratedHere]` for this deck's
+ * 99/99 reveal. The third is "this visit is the one that spent it", which keeps
+ * the band on screen after it burns its own flag on sight.
+ */
+export function useCelebrated(deckId: string): [boolean, () => void, boolean] {
   return useLocalFlag(celebrationKey(deckId));
 }
