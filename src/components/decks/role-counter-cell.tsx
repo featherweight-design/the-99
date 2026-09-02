@@ -60,10 +60,12 @@ export function RoleCounterCell({
     not a control — they arrive as classes rather than inline style so the
     caption inside can follow the cell through group-hover / group-active.
   */
-  // A4: a short cell in a just-filled deck takes border-border-strong. Met
-  // cells are unaffected. The conditional replaces border-border entirely so
-  // the original class does not linger beside the stronger one.
-  const borderClass = !met && justFilled ? "border-border-strong" : "border-border";
+  // A4: a short cell in a just-filled deck takes border-border-strong at phone
+  // only — desktop stays on the default border-border so the stronger hairline
+  // reads as a phone-only affordance. The conditional replaces border-border
+  // entirely so the original class does not linger beside the stronger one.
+  const borderClass =
+    !met && justFilled ? "border-border-strong md:border-border" : "border-border";
   const shell =
     "group flex-1 min-w-0 min-h-[62px] md:min-h-[72px] rounded-[7px] md:rounded-[9px] " +
     "pt-[7px] px-[2px] pb-[6px] md:px-[14px] md:py-[11px] text-center md:text-left " +
@@ -97,20 +99,29 @@ export function RoleCounterCell({
         style={{ color: figureColor }}
       >
         {inFlight ? "—" : have}
-        <span className="hidden md:inline font-normal text-[11px] text-fg-faint">
+        {/* In flight the denominator drops to --border-dashed so the whole
+            figure reads as not-yet rather than 0/target. */}
+        <span
+          className={
+            "hidden md:inline font-normal text-[11px] " +
+            (inFlight ? "text-border-dashed" : "text-fg-faint")
+          }
+        >
           {" "}
           / {target}
         </span>
       </p>
 
       {/* §Role counter cell — fill bar track (desktop only).
-          A3: replaced by a dashed rule at height 0, with 5px margin-top so
-          the cell height is unchanged between frames. A rule is not a
-          container, so there is nothing for a fill to be measured against. */}
+          A3: replaced by a dashed rule at height 0. The 10px top + 11px bottom
+          margins hold the cell to the same height as a live track (5px tall)
+          plus its own 8px top margin plus the 8px bottom gap — 21px total for
+          both paths. A rule is not a container, so there is nothing for a fill
+          to be measured against. */}
       {inFlight ? (
         <div
           aria-hidden
-          className="hidden md:block mt-[8px]"
+          className="hidden md:block mt-[10px] mb-[11px]"
           style={{ height: 0, borderTop: "1px dashed var(--border-strong)" }}
         />
       ) : (
@@ -127,7 +138,14 @@ export function RoleCounterCell({
       {/* §Role counter cell — caption row. Desktop sets `rec N` and the caption
           on one baseline; the phone stacks them. */}
       <div className="md:flex md:items-baseline md:justify-between md:gap-[8px] md:mt-[6px]">
-        <span className="block font-mono text-[8px] md:text-[9px] text-fg-locked md:text-fg-faint">
+        {/* In flight both widths drop to --border-dashed so the rec line is
+            consistent with the em-dash numerator above it. */}
+        <span
+          className={
+            "block font-mono text-[8px] md:text-[9px] " +
+            (inFlight ? "text-border-dashed" : "text-fg-locked md:text-fg-faint")
+          }
+        >
           {advisory ? `rec ~${target}` : `rec ${target}`}
         </span>
         {onSeeShelf ? (

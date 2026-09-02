@@ -36,7 +36,7 @@ export function ClearAutoButton({ count, keptCount, onClear, pending }: ClearAut
         onClick={onClear}
         disabled={pending}
         aria-label={recommendationsCopy.auto.clearAllAria(String(count))}
-        className="font-mono text-[11px] md:text-[12px] text-fg-locked disabled:opacity-50 disabled:cursor-default"
+        className="font-mono text-[12px] text-fg-body bg-transparent border border-border-strong rounded-[8px] px-[12px] py-[6px] cursor-pointer disabled:opacity-50 disabled:cursor-default"
       >
         {/* Responsive label: desktop shows the full string, mobile shows the short form.
             Both live in one button element to keep a single interactive control. */}
@@ -58,15 +58,19 @@ interface SweepReceiptProps {
 /** One strip, not one per row. Lifetime is decklist state, matching PR #204. */
 export function SweepReceipt({ removed, onUndo }: SweepReceiptProps) {
   return (
-    <div className="flex items-center justify-between gap-[12px] px-[12px] py-[8px] mb-[12px] md:mb-[14px] bg-surface-sunken border border-dashed border-border-strong rounded-[8px]">
-      <span className="font-mono text-[11px] md:text-[12px] text-fg-locked">
+    <div className="flex items-center gap-[10px] px-[13px] py-[10px] mb-[16px] bg-surface-sunken border border-dashed border-border-strong rounded-[8px]">
+      <span className="flex-1 font-mono text-[11px] md:text-[12px] text-fg-locked">
         {recommendationsCopy.auto.swept(String(removed))}
       </span>
+      {/* Undo — matches decklist-row.tsx Undo treatment: sans 12.5px semibold,
+          accent coloured, border-bottom underline in accent-shadow. */}
       <button
         type="button"
         onClick={onUndo}
         aria-label={recommendationsCopy.auto.sweptUndoAria(String(removed))}
-        className="font-mono text-[11px] md:text-[12px] text-accent-shadow underline cursor-pointer"
+        className="flex-none flex items-center bg-transparent border-0 border-b border-accent-shadow p-0
+          text-[12.5px] font-semibold leading-[1.4]
+          text-accent cursor-pointer"
       >
         {recommendationsCopy.auto.sweptUndo}
       </button>

@@ -74,32 +74,42 @@ export function ProvenanceLine({
 
   return (
     <div
-      className="flex items-start gap-[10px] mx-[16px] my-[10px] md:mx-[30px]"
+      className="flex items-start gap-[9px] mx-[16px] mt-[10px] mb-[10px] md:mx-[30px] md:mt-[12px]"
       style={{
         background: "var(--surface-sunken)",
         border: "1px solid var(--border)",
         borderLeft: "3px solid var(--accent)",
-        borderRadius: 9,
-        padding: "11px 15px",
+        // 8px phone, 9px desktop
+        borderRadius: width === "phone" ? 8 : 9,
+        // 9px 12px phone, 11px 15px desktop
+        padding: width === "phone" ? "9px 12px" : "11px 15px",
       }}
     >
-      {/* ⓘ disc */}
-      <span
-        aria-hidden
-        className="flex-none flex items-center justify-center rounded-full font-mono text-[11px] leading-none"
-        style={{
-          width: 20,
-          height: 20,
-          background: "var(--accent)",
-          color: "var(--bg)",
-          fontWeight: 700,
-        }}
-      >
-        i
-      </span>
+      {/* ⓘ outlined disc — desktop only; drops at phone where the accent
+          bar already anchors the note visually. Matches role-counter-strip.tsx
+          §Worked-example callout treatment: outlined, font-display (Cinzel 700),
+          12px, accent coloured, no fill. */}
+      {width === "desktop" && (
+        <div
+          className="flex-none flex items-center justify-center rounded-full font-display font-bold text-[12px]"
+          style={{
+            width: 20,
+            height: 20,
+            border: "1.5px solid var(--accent)",
+            color: "var(--accent)",
+          }}
+          aria-hidden
+        >
+          i
+        </div>
+      )}
       <p
-        className="m-0 text-[12.5px] leading-[1.6]"
-        style={{ color: "var(--fg-body)" }}
+        className="m-0 leading-[1.55]"
+        style={{
+          color: "var(--fg-body)",
+          // 12px phone, 12.5px desktop
+          fontSize: width === "phone" ? "12px" : "12.5px",
+        }}
       >
         {text}
       </p>
@@ -130,26 +140,18 @@ export function FillFailedBanner({
 
   return (
     <div
-      className="flex items-start gap-[10px] mx-[16px] my-[10px] md:mx-[30px]"
+      className="flex items-start gap-[11px] mx-[16px] mt-[10px] mb-[10px] md:mx-[30px] md:mt-[12px] rounded-[8px] md:rounded-[9px] px-[12px] py-[9px] md:px-[15px] md:py-[11px]"
       style={{
         background: "var(--surface-sunken)",
         border: "1px solid var(--border)",
         borderLeft: "3px solid var(--warning)",
-        borderRadius: 9,
-        padding: "11px 15px",
       }}
     >
-      {/* ⚠ disc */}
+      {/* ⚠ bare glyph — no disc, no background. 13px in --warning. */}
       <span
         aria-hidden
-        className="flex-none flex items-center justify-center rounded-full text-[11px] leading-none"
-        style={{
-          width: 20,
-          height: 20,
-          background: "var(--warning)",
-          color: "var(--bg)",
-          fontWeight: 700,
-        }}
+        className="flex-none leading-none text-[13px]"
+        style={{ color: "var(--warning)" }}
       >
         ⚠
       </span>
@@ -161,17 +163,21 @@ export function FillFailedBanner({
           {copy.failedHeading}
         </p>
         <p
-          className="m-0 text-[12.5px] leading-[1.6] mt-[4px]"
+          className="m-0 text-[12.5px] leading-[1.55] mt-[4px]"
           style={{ color: "var(--fg-body)" }}
         >
           {copy.failedBody}
         </p>
+        {/* Retry link — matches decklist-row.tsx Undo treatment: sans 12.5px
+            semibold, accent coloured, border-bottom underline in accent-shadow. */}
         <button
           type="button"
           onClick={onRetry}
           disabled={pending}
           aria-label={copy.failedRetryAria}
-          className="mt-[8px] font-mono text-[11px] cursor-pointer bg-transparent border-0 p-0 underline text-[color:var(--accent)]"
+          className="flex-none flex items-center mt-[10px] bg-transparent border-0 border-b border-accent-shadow p-0
+            text-[12.5px] font-semibold leading-[1.4]
+            text-accent cursor-pointer disabled:opacity-50 disabled:cursor-default"
         >
           {copy.failedRetry}
         </button>
