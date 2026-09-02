@@ -9,7 +9,7 @@ import { requireUserId } from "../../lib/auth";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
-import { claimSurfaces } from "../../lib/decks/revalidate";
+import { claimSurfaces, deckSurfaces } from "../../lib/decks/revalidate";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
@@ -52,6 +52,10 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
   // The deck starts empty; the deck page surfaces getDeckSuggestions.
   const [deck] = await db.insert(decks)
     .values({ userId, name: validateDeckName(name), commanderOracleId }).returning({ id: decks.id });
+  // The redirect renders the new deck's own page, but /decks and the home
+  // dashboard both list decks and are held in the client cache for a window
+  // now — without this the deck you just made is missing when you navigate back.
+  for (const path of deckSurfaces(deck.id)) revalidatePath(path);
   redirect(`/decks/${deck.id}`);
 }
 
@@ -227,8 +231,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
   // that exists, and without a fresh render the optimistic "✓ In deck" would
   // flash back to "+ Add" when the transition ends.
   if (existingRow && !isBasicLand(card.typeLine)) {
-    revalidatePath(`/decks/${deckId}`);
-    revalidatePath(`/decks`);
+    for (const path of deckSurfaces(deckId)) revalidatePath(path);
     return { ok: true };
   }
 
@@ -294,6 +297,7 @@ export async function renameDeck(deckId: string, name: string): Promise<void> {
   await requireDeck(deckId, userId);
   const trimmed = validateDeckName(name);
   await db.update(decks).set({ name: trimmed }).where(eq(decks.id, deckId));
-  revalidatePath(`/decks/${deckId}`);
-  revalidatePath(`/decks`);
+  // No claim changes, so the availability surfaces are untouched — but the home
+  // dashboard names the three most recent decks and would keep the old one.
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
 }

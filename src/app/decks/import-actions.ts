@@ -9,7 +9,7 @@ import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { buildDeckImport, type DeckImport, type ImportNote } from "../../lib/decks/import";
 import { isBasicLand } from "../../lib/decks/grouping";
-import { claimSurfaces } from "../../lib/decks/revalidate";
+import { claimSurfaces, deckSurfaces } from "../../lib/decks/revalidate";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   deckImportMaxBytes,
@@ -285,6 +285,7 @@ export async function deleteUnresolvedRow(deckId: string, rowId: string): Promis
     if (deleted.length === 0) throw new Error("unresolved row not found");
   });
 
-  revalidatePath(`/decks/${deckId}`);
-  revalidatePath("/decks");
+  // Dropping a line changes the deck's totals but claims nothing, so the
+  // availability surfaces stay out of it.
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
 }

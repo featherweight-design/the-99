@@ -77,7 +77,7 @@ vi.mock("next/cache", () => ({
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { deleteUnresolvedRow, resolveUnresolvedRow } from "./import-actions";
-import { claimSurfaces } from "../../lib/decks/revalidate";
+import { claimSurfaces, deckSurfaces } from "../../lib/decks/revalidate";
 
 const dialect = new PgDialect();
 
@@ -219,7 +219,8 @@ describe("deleteUnresolvedRow", () => {
     seed();
     await deleteUnresolvedRow(DECK, ROW);
     expect(stub.state.deletedFrom).toEqual(["deck_unresolved_rows"]);
-    expect(stub.state.revalidated).toEqual([`/decks/${DECK}`, "/decks"]);
+    // A dropped line changes no claim, so the availability surfaces stay out.
+    expect(stub.state.revalidated).toEqual(deckSurfaces(DECK));
   });
 
   it("scopes both lookups server-side", async () => {
