@@ -170,7 +170,7 @@ describe("DecklistRow availability marker (#43)", () => {
     hard: names.length,
     soft: 0,
     free,
-    hardDeckNames: names,
+    hardDecks: names.map((n, i) => ({ id: `d${i + 1}`, name: n })),
   });
 
   it("carries no marker when the card is free", () => {

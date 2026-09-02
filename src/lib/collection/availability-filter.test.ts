@@ -42,7 +42,7 @@ const card = (
   ...base,
   oracleId,
   quantity: owned,
-  availability: { owned, hard, soft, free, hardDeckNames: [] },
+  availability: { owned, hard, soft, free, hardDecks: [] },
 });
 
 const cards: BrowseCard[] = [
@@ -163,23 +163,41 @@ describe("the panel's option aria", () => {
   // raw number rather than a formatted one: recovering a number from a locale
   // string is not possible under every locale, and a label that announces
   // "NaN cards" is worse than one carrying no thousands separator.
-  it("pluralises on the count and marks the selection", () => {
+  it("pluralises on the count", () => {
     const aria = collectionFilterCopy.availability.optionAria;
-    expect(aria("Free", 1240, false)).toBe("Free, 1240 cards");
-    expect(aria("Free", 1, true)).toBe("Free, 1 card, selected");
+    expect(aria("Free", 1240)).toBe("Free, 1240 cards");
+    expect(aria("Free", 1)).toBe("Free, 1 card");
   });
 
   // The sibling panels take the same raw count. A one-card set is an ordinary
   // state, and these are accessible names, so a reader would say "1 cards".
   it("pluralises the sibling panels' labels too", () => {
-    expect(collectionFilterCopy.set.optionAria("Modern Horizons 3", 1, false)).toBe(
+    expect(collectionFilterCopy.set.optionAria("Modern Horizons 3", 1)).toBe(
       "Modern Horizons 3, 1 card",
     );
-    expect(collectionFilterCopy.type.optionAria("Artifact", 1240, false)).toBe(
-      "Artifact, 1,240 cards",
-    );
-    expect(collectionFilterCopy.color.optionAria("White", 1, true)).toBe(
-      "White, 1 card, selected",
+    expect(collectionFilterCopy.type.optionAria("Artifact", 1240)).toBe("Artifact, 1,240 cards");
+    expect(collectionFilterCopy.color.optionAria("White", 1)).toBe("White, 1 card");
+  });
+
+  // The row already carries aria-selected inside an aria-multiselectable
+  // listbox, so a ", selected" tail was the same fact twice in one breath.
+  //
+  // Arity alone would not hold the line: `(name, count, selected = false)` still
+  // reports `.length === 2`, so the output is called with a third argument both
+  // ways and asserted identical. That is the property that matters — the copy
+  // does not vary on the selection — and it survives a defaulted parameter.
+  // Sort keeps its third, because "choose again to reverse" is not something the
+  // role announces.
+  it("leaves the selected state to the role on every multi-select panel", () => {
+    for (const panel of ["set", "type", "availability", "color"] as const) {
+      const member = collectionFilterCopy[panel].optionAria;
+      const loose = member as (...args: unknown[]) => string;
+      expect(member("Anything", 2), panel).not.toMatch(/selected/);
+      expect(loose("Anything", 2, true), panel).toBe(loose("Anything", 2, false));
+      expect(loose("Anything", 2, true), panel).toBe(member("Anything", 2));
+    }
+    expect(collectionFilterCopy.sort.optionAria("Name", 0, true)).toBe(
+      "Name, current order, choose again to reverse",
     );
   });
 });

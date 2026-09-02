@@ -40,8 +40,7 @@ export const collectionFilterCopy = {
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
     // Option
-    optionAria: (setName: string, count: number, selected: boolean) =>
-      `${setName}, ${cards(count)}${selected ? ", selected" : ""}`,
+    optionAria: (setName: string, count: number) => `${setName}, ${cards(count)}`,
     optionAriaUnavailable: (setName: string) => `${setName}, no cards match your other filters`,
 
     // Footer
@@ -93,8 +92,7 @@ export const collectionFilterCopy = {
     groupSelected: (n: number) => `Selected · ${n}`,
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
-    optionAria: (typeName: string, count: number, selected: boolean) =>
-      `${typeName}, ${cards(count)}${selected ? ", selected" : ""}`,
+    optionAria: (typeName: string, count: number) => `${typeName}, ${cards(count)}`,
     optionAriaUnavailable: (typeName: string) =>
       `${typeName}, no cards match your other filters`,
 
@@ -142,10 +140,8 @@ export const collectionFilterCopy = {
     groupSelected: (n: number) => `Selected · ${n}`,
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
-    // The ", selected" tail is this panel family's convention, not the
-    // addendum's — every shipped block appends it.
-    optionAria: (name: string, count: number, selected: boolean) =>
-      availabilityCopy.collection.filterOptionAria(name, count) + (selected ? ", selected" : ""),
+    optionAria: (name: string, count: number) =>
+      availabilityCopy.collection.filterOptionAria(name, count),
     optionAriaUnavailable: (name: string) =>
       availabilityCopy.collection.filterEmptyOptionAria(name),
 
@@ -193,8 +189,7 @@ export const collectionFilterCopy = {
     groupSelected: (n: number) => `Selected · ${n}`,
     groupMatches: (n: number) => (n === 1 ? "1 match" : `${n} matches`),
 
-    optionAria: (colorName: string, count: number, selected: boolean) =>
-      `${colorName}, ${cards(count)}${selected ? ", selected" : ""}`,
+    optionAria: (colorName: string, count: number) => `${colorName}, ${cards(count)}`,
     optionAriaUnavailable: (colorName: string) =>
       `${colorName}, no cards match your other filters`,
 
@@ -243,7 +238,9 @@ export const collectionFilterCopy = {
     // The hint carries the direction ("A–Z"), so the name reads as the whole
     // order — and the chosen row says how to reverse it, since re-picking is
     // the only way and nothing else on screen says so.
-    optionAria: (order: string, _count: number, selected: boolean) =>
+    // Defaulted rather than required: `selected` is optional on the contract, so
+    // the unselected row is what an omitted argument means.
+    optionAria: (order: string, _count: number, selected = false) =>
       selected ? `${order}, current order, choose again to reverse` : order,
     optionAriaUnavailable: (order: string) => order,
 
@@ -284,7 +281,20 @@ export type FilterPanelCopy = {
   groupSelected: (n: number) => string;
   groupMatches: (n: number) => string;
 
-  optionAria: (name: string, count: number, selected: boolean) => string;
+  /**
+   * `FilterPanel` always passes `selected`, and Sort is the only block that
+   * declares it: its selected row says something the role cannot, that choosing
+   * it again reverses. The four multi-select blocks declare two parameters and
+   * stop there, because their rows carry `aria-selected` inside an
+   * `aria-multiselectable` listbox and a ", selected" tail in the name would be
+   * the same fact twice in one breath.
+   *
+   * Optional here so the contract matches them rather than the other way round.
+   * The shorter arity is the honest signature and worth keeping: a caller that
+   * writes `optionAria(name, count, isSelected)` against one of those four gets
+   * a compile error naming the exact thing it got wrong.
+   */
+  optionAria: (name: string, count: number, selected?: boolean) => string;
   optionAriaUnavailable: (name: string) => string;
 
   footerTotal: (total: string) => string;
