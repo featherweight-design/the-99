@@ -21,6 +21,7 @@ vi.mock("../../app/decks/actions", () => ({
   removeCardFromDeck: vi.fn(),
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
+  fillDeck: vi.fn(),
 }));
 
 const { BuilderShell } = await import("./builder-shell");
@@ -139,5 +140,39 @@ describe("swept-empty branch", () => {
     expect(screen.getByText(/a king with no army/i)).toBeInTheDocument();
     // The swept heading must NOT be present
     expect(screen.queryByText(recommendationsCopy.sweptEmpty.heading)).toBeNull();
+  });
+});
+
+// An import whose every line went unresolved lands as filled=false with zero
+// cards — the same shape a failed fill leaves behind. It is not one: the player
+// asked for a decklist, and the unresolved group already explains what happened.
+describe("fill-failed banner on an empty deck", () => {
+  const renderWith = (deck: DeckDetail) =>
+    render(
+      <BuilderShell
+        deck={deck}
+        suggestions={[]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+      />,
+    );
+
+  it("offers the retry when nothing came over", () => {
+    renderWith(emptyDeck);
+    expect(
+      screen.getByText(recommendationsCopy.fill.failedHeading),
+    ).toBeInTheDocument();
+  });
+
+  it("stays away when the deck is empty because an import went unresolved", () => {
+    renderWith({
+      ...emptyDeck,
+      unresolvedRows: [
+        { id: "row-1", rawName: "Sol Ringg", quantity: 1, sourceLine: 1 },
+      ],
+    } as unknown as DeckDetail);
+    expect(screen.queryByText(recommendationsCopy.fill.failedHeading)).toBeNull();
   });
 });

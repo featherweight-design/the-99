@@ -550,8 +550,14 @@ export function BuilderShell({
                 made their first deck by hand that a fill they never ran broke.
                 That player still reaches the fill from the commander page's
                 Build button; the second deck onwards sees the banner. Closing
-                the gap properly needs a persisted attempt marker. */}
-            {!firstRun && (
+                the gap properly needs a persisted attempt marker.
+
+                An import whose every line went unresolved is also filled=false
+                with zero cards, and it is not a failed fill — the player asked
+                for a decklist, not a baseline. The unresolved group already
+                explains what happened, so the banner would only add a second,
+                wrong account of it. */}
+            {!firstRun && unresolvedRows.length === 0 && (
               <FillFailedBannerConnected
                 deckId={deck.id}
                 filled={deck.filled}

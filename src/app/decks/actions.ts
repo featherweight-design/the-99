@@ -416,6 +416,11 @@ export async function fillDeck(deckId: string): Promise<void> {
 
   const plan = await buildFillPlan(userId, commander);
   await db.transaction(async (tx) => {
+    // Lock the deck row before re-reading, the same way addCardToDeck does.
+    // Without it the read sees a snapshot: a hand-add that commits between the
+    // read and the insert would slip past the check, and the fill would land on
+    // top of a deck the player had already started.
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     // Re-read inside the transaction. buildFillPlan reaches out to EDHREC, so
     // the check above is seconds stale by now and the player may have added a
     // card by hand in the meantime — filling on top of it would double a deck
