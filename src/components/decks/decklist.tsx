@@ -188,6 +188,23 @@ export function Decklist({
     // The open slots the player kept for themselves (not filled by auto).
     const openSlots = 99 - built;
 
+    // The sweep's refusal and its receipt. Shared by both branches below: a
+    // sweep usually empties this tab (bought cards are the fill's), so leaving
+    // the receipt out of the empty state would strand Undo behind a tab switch
+    // at exactly the moment the player is most likely to want it.
+    const sweepBanner = (
+      <>
+        {sweepError && (
+          <p role="alert" className="font-mono text-[11px] mb-[10px] text-fg-locked">
+            {sweepError}
+          </p>
+        )}
+        {sweptRows && sweptRows.length > 0 && onRestoreAuto && (
+          <SweepReceipt removed={sweptCount} onUndo={onRestoreAuto} />
+        )}
+      </>
+    );
+
     // Empty shopping list — branch on whether the deck was ever filled.
     // The compliment ("Nothing to buy. Your shelf covered it.") belongs only to
     // a deck the fill actually ran on. A deck the player built by hand that
@@ -208,6 +225,9 @@ export function Decklist({
             sweepPending={sweepPending}
             onClearAuto={onClearAuto}
           />
+          <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
+            {sweepBanner}
+          </div>
           {filled ? (
             /* Design: centered, padding 24px 14px 28px, heading Cinzel 18px
                weight-600 --fg, body 13.5px --fg-body line-height 1.6
@@ -264,22 +284,7 @@ export function Decklist({
         />
 
         <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
-          {/* Sweep error */}
-          {sweepError && (
-            <p
-              role="alert"
-              className="font-mono text-[11px] mb-[10px] text-fg-locked"
-            >
-              {sweepError}
-            </p>
-          )}
-          {/* Sweep receipt */}
-          {sweptRows && sweptRows.length > 0 && onRestoreAuto && (
-            <SweepReceipt
-              removed={sweptCount}
-              onUndo={onRestoreAuto}
-            />
-          )}
+          {sweepBanner}
 
           {/* Intro line — sans (default family), 12.5px phone / 13.5px desktop,
               --fg-body per design §Shopping intro. font-mono was wrong. */}

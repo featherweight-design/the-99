@@ -31,6 +31,11 @@ const keptCard = (id: string, name: string): DeckDetailCard => ({
   auto: false,
 });
 
+const unownedAutoCard = (id: string, name: string): DeckDetailCard => ({
+  ...autoCard(id, name),
+  owned: false,
+});
+
 // ── ClearAutoButton ────────────────────────────────────────────────────────────
 
 describe("ClearAutoButton", () => {
@@ -317,6 +322,34 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.queryByText(recommendationsCopy.sweptEmpty.heading)).toBeNull();
+  });
+
+  // The cards Shopping lists are the fill's, so a sweep usually empties that
+  // tab. If the empty state took the screen alone, Undo would sit behind a tab
+  // switch the player has no reason to guess at.
+  it("keeps the receipt reachable when a sweep empties the Shopping tab", async () => {
+    const unowned = unownedAutoCard("dockside", "Dockside Extortionist");
+    clearAutoCards.mockResolvedValue([{ oracleId: "dockside", quantity: 1 }]);
+
+    const { revalidate } = renderBuilder([unowned]);
+
+    await act(async () => {
+      screen.getByRole("button", { name: "Shopping 1" }).click();
+    });
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.clearAllAria("1") })
+        .click();
+    });
+
+    await revalidate([]);
+
+    expect(
+      screen.getByRole("button", {
+        name: recommendationsCopy.auto.sweptUndoAria("1"),
+      }),
+    ).toBeInTheDocument();
   });
 
   it("a kept row survives the sweep", async () => {
