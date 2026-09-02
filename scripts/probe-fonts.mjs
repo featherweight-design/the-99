@@ -9,16 +9,19 @@
 // against; any theme that adds a line to a heading Cinzel fits is a finding.
 //
 // Run by hand, like its siblings, and not part of `pnpm test`:
-//   node --env-file=.env scripts/probe-fonts.mjs
+//   PROBE_USER_EMAIL=you@example.com node --env-file=.env scripts/probe-fonts.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const SECRET = process.env.CLERK_SECRET_KEY;
 // The seeded account. An empty collection renders a fraction of the headings,
-// and a heading that never renders cannot be caught wrapping.
-const EMAIL = process.env.PROBE_USER_EMAIL ?? "hugh@featherweight.design";
+// and a heading that never renders cannot be caught wrapping. Named rather than
+// defaulted: which account holds a collection is a property of the Clerk
+// instance a run points at, not of this file.
+const EMAIL = process.env.PROBE_USER_EMAIL;
 if (!SECRET) throw new Error("Set CLERK_SECRET_KEY.");
+if (!EMAIL) throw new Error("Set PROBE_USER_EMAIL to an account that holds a collection.");
 
 async function clerkApi(path, init) {
   const response = await fetch(`https://api.clerk.com/v1${path}`, {
