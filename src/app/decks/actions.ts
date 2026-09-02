@@ -463,7 +463,14 @@ export type SweptRow = { oracleId: string; quantity: number };
 
 /** The whole sweep in one statement — 58 rows must not be 58 round trips, and a
     partial sweep would leave a receipt that lies about what it removed. Returns
-    the rows so Undo can put back exactly what went, and nothing the player kept. */
+    the rows so Undo can put back exactly what went, and nothing the player kept.
+
+    No lock, deliberately: under Read Committed a DELETE that meets a row an
+    uncommitted UPDATE holds waits for that transaction, then re-evaluates its
+    own WHERE against the updated row. A keep that lands mid-sweep therefore
+    turns `auto` false before the delete re-reads it, and the sweep passes the
+    card by. Serialising these two by hand would buy nothing Postgres is not
+    already doing. */
 export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);

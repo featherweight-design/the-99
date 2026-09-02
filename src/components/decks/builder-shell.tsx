@@ -34,6 +34,7 @@ import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLine, FillFailedBannerConnected } from "./provenance-line";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
+import { LAND_TARGET } from "../../lib/decks/suggest";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -507,11 +508,16 @@ export function BuilderShell({
               // the player's, and the spine carries the authoritative built/open
               // split for anyone asking how much room is actually left.
               const openCount = Math.max(0, 99 - filledCount);
-              // Detect a role shortfall: compare the auto cards' role tally to ROLE_TARGETS.
+              // Detect a role shortfall: compare the auto cards' role tally to
+              // ROLE_TARGETS, and the lands to LAND_TARGET — a mana base that
+              // missed its target is a shortfall the line has copy for, and
+              // leaving it out let the commonest one of all go unnamed.
+              // Land comes last, the order buildFillPlan reports shortfalls in.
               const roleCounts = computeRoleCounts(autoCards);
-              const shortRole = (["ramp", "draw", "removal", "wipes"] as const).find(
-                (r) => roleCounts[r] < ROLE_TARGETS[r],
-              );
+              const shortRole =
+                (["ramp", "draw", "removal", "wipes"] as const).find(
+                  (r) => roleCounts[r] < ROLE_TARGETS[r],
+                ) ?? (roleCounts.land < LAND_TARGET ? ("land" as const) : undefined);
               return (
                 <>
                   <div className="md:hidden">

@@ -86,3 +86,40 @@ describe("BuilderShell — provenance arithmetic", () => {
     ).toHaveLength(2);
   });
 });
+
+// The line names the role the fill came up short in. Lands were left out of
+// that check, so the commonest shortfall of all — a collection with too few
+// lands to reach 37 — went unnamed even though the copy has a label for it.
+describe("BuilderShell — a mana base that missed its target", () => {
+  function deckShortOnLandsOnly(): DeckDetail {
+    const roles: Array<[string, number]> = [
+      ["ramp", 10], ["draw", 10], ["removal", 8], ["wipes", 3],
+    ];
+    const cards = roles.flatMap(([role, n]) =>
+      Array.from({ length: n }, (_, i) => ({
+        oracleId: `${role}-${i}`,
+        name: `${role} ${i}`,
+        typeLine: "Artifact",
+        cardTypeGroup: "Artifacts" as const,
+        role,
+        owned: true,
+        quantity: 1,
+        auto: true,
+      })),
+    );
+    return {
+      ...makeDeck(1, 0),
+      cards,
+      built: cards.length,
+      ownedCount: cards.length,
+      total: cards.length,
+    } as unknown as DeckDetail;
+  }
+
+  it("names the land shortfall when every other role is met", async () => {
+    await mount(deckShortOnLandsOnly());
+    expect(
+      screen.getAllByText(recommendationsCopy.fill.provenanceShort("31", "Land", "68")),
+    ).toHaveLength(2);
+  });
+});
