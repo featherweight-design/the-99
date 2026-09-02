@@ -85,17 +85,26 @@ async function signIn(page, ticket) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
-// One sample per display-face element: its text, its line count, and whether it
-// overflows the box it was given.
+// One sample per display-face element: its ordinal, its text, its line count,
+// and whether it overflows the box it was given.
 function sample(page) {
   return page.evaluate(() => {
     const out = [];
+    // The ordinal is what makes a sample addressable. A route renders the same
+    // heading text at the same size more than once — every deck tile's status,
+    // every section label — and a key built from text and size alone lets the
+    // last of them overwrite the rest, hiding a wrap in all but one. The walk
+    // is the same document at the same width for every theme, so position in
+    // it is stable across the runs being compared.
+    let ordinal = 0;
     for (const el of document.querySelectorAll(".font-display")) {
+      ordinal += 1;
       const box = el.getBoundingClientRect();
       if (box.width < 2 || box.height < 2) continue;
       const style = getComputedStyle(el);
       const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
       out.push({
+        ordinal,
         text: (el.textContent ?? "").trim().slice(0, 40),
         lines: Math.round(box.height / lineHeight),
         fontSize: style.fontSize,
@@ -127,7 +136,7 @@ for (const viewport of VIEWPORTS) {
   await signIn(page, await signInTicket());
 
   for (const route of ROUTES) {
-    // theme -> "text|fontSize" -> sample
+    // theme -> "ordinal|text|fontSize" -> sample
     const seen = new Map();
     for (const theme of THEMES) {
       await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
@@ -139,7 +148,9 @@ for (const viewport of VIEWPORTS) {
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(250);
       const rows = new Map();
-      for (const row of await sample(page)) rows.set(`${row.text}|${row.fontSize}`, row);
+      for (const row of await sample(page)) {
+        rows.set(`${row.ordinal}|${row.text}|${row.fontSize}`, row);
+      }
       seen.set(theme, rows);
     }
 
