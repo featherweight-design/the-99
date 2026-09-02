@@ -1,0 +1,122 @@
+{
+ "tag_counts": [
+  {
+   "count": 566,
+   "slug": "zombies",
+   "value": "Zombies"
+  },
+  {
+   "count": 327,
+   "slug": "tokens",
+   "value": "Tokens"
+  },
+  {
+   "count": 153,
+   "slug": "aristocrats",
+   "value": "Aristocrats"
+  },
+  {
+   "count": 146,
+   "slug": "reanimator",
+   "value": "Reanimator"
+  },
+  {
+   "count": 76,
+   "slug": "sacrifice",
+   "value": "Sacrifice"
+  }
+ ],
+ "panels": {
+  "taglinks": [
+   {
+    "count": 566,
+    "slug": "zombies",
+    "value": "Zombies"
+   },
+   {
+    "count": 327,
+    "slug": "tokens",
+    "value": "Tokens"
+   }
+  ]
+ },
+ "bracket_counts": {
+  "1": 15,
+  "2": 608,
+  "3": 329,
+  "4": 78,
+  "5": 5
+ },
+ "budget_counts": {
+  "budget": 434,
+  "middle": 3481,
+  "expensive": 434
+ },
+ "similar": [
+  "Endrek Sahr, Master Breeder",
+  "Ayara, First of Locthwain",
+  "Jadar, Ghoulcaller of Nephalia",
+  "Whisper, Blood Liturgist",
+  "Braids, Arisen Nightmare",
+  "Yahenni, Undying Partisan"
+ ],
+ "container": {
+  "json_dict": {
+   "card": {
+    "name": "Ghoulcaller Gisa",
+    "salt": 0.19125683060109305,
+    "cmc": 5,
+    "num_decks": 4349,
+    "rank": 649
+   },
+   "cardlists": [
+    {
+     "header": "New Cards",
+     "cardviews": [
+      {
+       "name": "Thomil, the Destroyer",
+       "synergy": 0.033930258034007836,
+       "num_decks": 14,
+       "potential_decks": 383
+      },
+      {
+       "name": "Troop of Ponies",
+       "synergy": 0.0028461165042637585,
+       "num_decks": 9,
+       "potential_decks": 410
+      },
+      {
+       "name": "Orcrist, Goblin-cleaver",
+       "synergy": 0.002202151657869158,
+       "num_decks": 4,
+       "potential_decks": 495
+      }
+     ]
+    },
+    {
+     "header": "High Synergy Cards",
+     "cardviews": [
+      {
+       "name": "Lord of the Accursed",
+       "synergy": 0.7150037003561468,
+       "num_decks": 3276,
+       "potential_decks": 4349
+      },
+      {
+       "name": "Death Baron",
+       "synergy": 0.7007734829067435,
+       "num_decks": 3281,
+       "potential_decks": 4349
+      },
+      {
+       "name": "Champion of the Perished",
+       "synergy": 0.6804896612546872,
+       "num_decks": 3121,
+       "potential_decks": 4349
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

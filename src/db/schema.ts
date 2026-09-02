@@ -3,6 +3,8 @@ import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
 } from "drizzle-orm/pg-core";
 import { FINISHES } from "../lib/collection/key";
+import type { EdhrecTag } from "../lib/edhrec/parse";
+import type { CommanderEngine } from "../lib/recs/engine";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -212,3 +214,64 @@ export const csvUploads = pgTable("csv_uploads", {
   // Set when the preview is confirmed into the collection; null = abandoned preview.
   confirmedAt: timestamp("confirmed_at"),
 });
+
+/**
+ * Precomputed EDHREC support data for every commander-legal legendary, not just
+ * the ones a user owns. #213/#214/#215 all need to score against the whole
+ * candidate universe, and a per-request fetch across ~3,000 commanders is not
+ * something a request can do — hence an offline index.
+ */
+export const commanderSupport = pgTable("commander_support", {
+  commanderOracleId: uuid("commander_oracle_id").primaryKey().references(() => cards.oracleId),
+  // Same three-value distinction commander_scores preserves, and for the same
+  // reason: "absent" is a settled fact about a commander EDHREC does not index,
+  // "degraded" is an outage worth retrying. Collapsing them loses the retry signal.
+  synergyState: text("synergy_state", { enum: ["ok", "absent", "degraded"] }).notNull(),
+  // Null iff synergyState !== "ok". Size of the support list, before unresolvable
+  // names are dropped — so an unresolvable name reduces measured overlap rather
+  // than silently shrinking the denominator.
+  edhrecTotal: integer("edhrec_total"),
+  tags: jsonb("tags").$type<EdhrecTag[]>().notNull(),
+  bracketCounts: jsonb("bracket_counts").$type<Record<string, number>>().notNull(),
+  budgetCounts: jsonb("budget_counts").$type<Record<string, number>>().notNull(),
+  // EDHREC's own commander-adjacency graph, resolved to ids. Unresolvable names dropped.
+  similarOracleIds: uuid("similar_oracle_ids").array().notNull(),
+  deckCount: integer("deck_count"),
+  rank: integer("rank"),
+  saltScore: real("salt_score"),
+  // Null when the commander has no rules text to classify.
+  engine: text("engine", { enum: ["etb", "triggered", "activated", "tap", "static"] })
+    .$type<CommanderEngine>(),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+}, (t) => [
+  // The enum options above only narrow the TypeScript type; without these the
+  // database would accept any text. Same reasoning as commander_scores.
+  check("commander_support_synergy_state_check", sql`${t.synergyState} in ('ok', 'absent', 'degraded')`),
+  check(
+    "commander_support_total_null_check",
+    sql`(${t.synergyState} = 'ok') = (${t.edhrecTotal} is not null)`,
+  ),
+  check(
+    "commander_support_engine_check",
+    sql`${t.engine} is null or ${t.engine} in ('etb', 'triggered', 'activated', 'tap', 'static')`,
+  ),
+]);
+
+/**
+ * Normalised rather than a uuid[] on the header: every consuming query is
+ * "intersect this support list with the oracle ids a user has", which is a join
+ * Postgres does well and an array containment check does badly at ~700-900k rows.
+ */
+export const commanderSupportCards = pgTable("commander_support_cards", {
+  commanderOracleId: uuid("commander_oracle_id").notNull()
+    .references(() => commanderSupport.commanderOracleId, { onDelete: "cascade" }),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  // Null when upstream carried none. Never 0 — a 0 draws a real bar for no data.
+  inclusion: real("inclusion"),
+  synergy: real("synergy"),
+}, (t) => [
+  primaryKey({ columns: [t.commanderOracleId, t.oracleId] }),
+  // #218 traverses this relation in the opposite direction: one card, which
+  // commanders support it. The PK's leading column cannot serve that query.
+  index("commander_support_cards_oracle_idx").on(t.oracleId),
+]);

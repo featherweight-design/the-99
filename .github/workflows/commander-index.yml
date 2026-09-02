@@ -1,0 +1,72 @@
+name: Commander index
+
+# ~3,000 serial EDHREC fetches at 250ms apart is a minimum of 13 minutes of
+# sleeping before any parsing, which is well past a Vercel function's 300s
+# maxDuration. Same reasoning as catalog-refresh.yml, which this mirrors.
+on:
+  schedule:
+    # 09:00 UTC on the 3rd — the catalog refreshes every Monday, so by the 3rd
+    # of any month a set released in the previous week has already been ingested
+    # and the name index can resolve it.
+    - cron: '0 9 3 * *'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which database to index
+        type: choice
+        options: [staging, production]
+        default: staging
+      resume_since:
+        description: >-
+          ISO timestamp; commanders recomputed at or after it are skipped. Set this
+          to the start time of an aborted run to resume it instead of restarting.
+        type: string
+        default: ''
+
+concurrency:
+  group: commander-index-${{ github.event.inputs.target || 'production' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  index:
+    # Kill switch for the schedule; a manual dispatch always runs. Set the
+    # COMMANDER_INDEX_ENABLED repository variable to 'true' or it never fires.
+    if: vars.COMMANDER_INDEX_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Serial-by-design: the wall clock is dominated by the politeness delay, not
+    # by compute. Leave headroom rather than trimming to the expected runtime —
+    # a timeout mid-run leaves a partially rebuilt index, which the resume input
+    # exists to recover.
+    timeout-minutes: 180
+    # Reuses the catalog-* environments rather than adding a commander-index-*
+    # pair: this writes to the same database with the same secret, and a second
+    # environment holding an identical value is a second thing to keep in sync
+    # for no benefit.
+    environment: catalog-${{ github.event.inputs.target || 'production' }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      RESUME_SINCE: ${{ github.event.inputs.resume_since || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build the commander index
+        run: |
+          {
+            echo "## Commander index"
+            echo ""
+            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:build:index | tee -a "$GITHUB_STEP_SUMMARY"

@@ -6,6 +6,16 @@ import { parseEdhrecPayload, type EdhrecData } from "./parse";
 
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+const edhrecUrl = (commanderName: string) =>
+  `https://json.edhrec.com/pages/commanders/${commanderSlug(commanderName)}.json`;
+
+// Timeout so a hung EDHREC request falls through to stale/degraded handling
+// instead of stalling the recommendations page.
+const edhrecInit = (): RequestInit => ({
+  headers: { "User-Agent": "the-99/1.0" },
+  signal: AbortSignal.timeout(10_000),
+});
+
 export type EdhrecFetchResult = {
   /** Parsed payload when available (fresh, cached, or stale-on-error). */
   data: EdhrecData | null;
@@ -46,12 +56,7 @@ export async function resolveEdhrecData(
   }
 
   try {
-    const res = await fetch(
-      `https://json.edhrec.com/pages/commanders/${commanderSlug(commanderName)}.json`,
-      // Timeout so a hung EDHREC request falls through to stale/degraded
-      // handling instead of stalling the recommendations page.
-      { headers: { "User-Agent": "the-99/1.0" }, signal: AbortSignal.timeout(10_000) },
-    );
+    const res = await fetch(edhrecUrl(commanderName), edhrecInit());
     // 4xx = this commander isn't on EDHREC (e.g. non-legendary in the candidate
     // pool, name→slug mismatch, novel legendary not yet indexed, or a transient
     // 403/429). That's a per-commander data absence, not a service outage —
@@ -85,4 +90,38 @@ export async function getEdhrecData(
 ): Promise<EdhrecFetchResult> {
   const cache = await readEdhrecCache([commanderOracleId]);
   return resolveEdhrecData(commanderOracleId, commanderName, cache.get(commanderOracleId));
+}
+
+/**
+ * Fetch + parse with NO cache read and NO cache write. The index job needs both
+ * halves skipped, for separate reasons:
+ *
+ * - Not reading: TTL_MS is 30 days, so a monthly index built through
+ *   resolveEdhrecData would re-serve rows fetched 29 days ago and stamp them
+ *   computed_at = now, making effective freshness up to 60 days.
+ * - Not writing: the index walks ~3,000 commanders at ~94KB of payload each.
+ *   Caching those is 300-400MB of jsonb for commanders nobody owns.
+ *
+ * Returns the same EdhrecFetchResult shape, so synergyStateFrom() applies to it
+ * verbatim and the index and live paths cannot disagree about what "absent" means.
+ */
+export async function fetchEdhrecUncached(commanderName: string): Promise<EdhrecFetchResult> {
+  try {
+    const res = await fetch(edhrecUrl(commanderName), edhrecInit());
+    // 429 and 403 mean the service is blocking the index run — a rate-limit or
+    // access denial that is temporary and says nothing about whether this
+    // commander is indexed. Treating them as absent would overwrite a good row
+    // (and delete all its support cards) with an empty absent row; instead,
+    // route them through the degraded path so the previous row survives.
+    // A resumed run would then see those rows as done and skip them, compounding
+    // the loss. 404 (commander genuinely not on EDHREC) remains absent — that
+    // IS a fact about the commander, not about the service.
+    if (res.status === 429 || res.status === 403) return { data: null, unreachable: true };
+    // Other 4xx = not indexed on EDHREC. A data-shaped absence, not an outage.
+    if (res.status >= 400 && res.status < 500) return { data: null, unreachable: false };
+    if (!res.ok) throw new Error(`edhrec ${res.status}`);
+    return { data: parseEdhrecPayload(await res.json()), unreachable: false };
+  } catch {
+    return { data: null, unreachable: true };
+  }
 }
