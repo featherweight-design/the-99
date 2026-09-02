@@ -130,16 +130,16 @@ export function scoreCommander(args: {
   // alphabetically, which reads as an authored ranking built on nothing.
   // Addendum A1: fall back to pool order.
   //
-  // The test is whether any card actually got a figure, not whether a map was
-  // passed: parseEdhrecPayload always returns an object, and a payload with
-  // topCards but no inclusion numbers yields an empty one. Guarding on the
-  // map's presence would sort a panel of all-null figures alphabetically —
-  // the exact outcome this guard exists to prevent.
-  const anyFigure = Object.values(roleCards).some((list) =>
-    list.some((c) => c.inclusionPct !== null),
-  );
-  if (anyFigure) {
-    for (const list of Object.values(roleCards)) list.sort(byInclusionThenName);
+  // The test is whether a card in *that panel* actually got a figure, not
+  // whether a map was passed: parseEdhrecPayload always returns an object, and
+  // a payload with topCards but no inclusion numbers yields an empty one.
+  // Guarding on the map's presence would sort a panel of all-null figures
+  // alphabetically — the exact outcome this guard exists to prevent. Asking the
+  // question per panel matters because EDHREC's coverage is uneven: a commander
+  // whose ramp cards carry figures and whose wipes carry none would otherwise
+  // hand the wipes panel an alphabetical order it did not earn.
+  for (const list of Object.values(roleCards)) {
+    if (list.some((c) => c.inclusionPct !== null)) list.sort(byInclusionThenName);
   }
   const roleGaps = (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
     .filter((r) => roleCounts[r] < ROLE_TARGETS[r]);

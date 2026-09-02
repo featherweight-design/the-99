@@ -14,7 +14,7 @@ interface GroupToggleProps {
   onGroupingChange: (g: "type" | "role") => void;
   /** Number of untouched auto cards. The button is absent at 0. */
   autoCount?: number;
-  /** Number of cards the player has kept (auto=false). */
+  /** Number of non-auto cards — kept fill cards and player additions alike. */
   keptCount?: number;
   sweepPending?: boolean;
   onClearAuto?: () => void;

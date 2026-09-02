@@ -55,7 +55,7 @@ interface DecklistProps {
   onUnresolvedExpandedChange?: (expanded: boolean) => void;
   /** Number of untouched auto cards — passed to the group toolbar. */
   autoCount?: number;
-  /** Number of auto cards the player has kept (auto=false). */
+  /** Number of non-auto cards — kept fill cards and player additions alike. */
   keptCount?: number;
   /** Whether a sweep is in-flight. */
   sweepPending?: boolean;

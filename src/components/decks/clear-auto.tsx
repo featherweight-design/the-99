@@ -13,7 +13,8 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 interface ClearAutoButtonProps {
   /** The number of untouched auto cards remaining. Absent (not rendered) at 0. */
   count: number;
-  /** Cards whose auto flag has been cleared (kept). Shows the kept note when ≥ 1. */
+  /** Non-auto cards — kept fill cards and the player's own additions alike.
+      Shows the kept note when ≥ 1. */
   keptCount: number;
   onClear: () => void;
   pending: boolean;

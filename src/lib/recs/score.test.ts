@@ -262,6 +262,27 @@ describe("roleCards", () => {
       .toEqual(["Fellwar Stone", "Sol Ring", "Arcane Signet"]);
   });
 
+  // EDHREC's coverage is uneven, so one commander can have figures for its ramp
+  // and none for its draw. Asking the question once across all panels would hand
+  // the draw panel an alphabetical order it did not earn.
+  it("keeps pool order in a panel with no figures even when another panel has them", () => {
+    const drawA = card({
+      oracleId: "z", name: "Zealous Persecution", typeLine: "Instant",
+      oracleText: "Draw a card.",
+    });
+    const drawB = card({
+      oracleId: "y", name: "Ancient Craving", typeLine: "Sorcery",
+      oracleText: "Draw three cards.",
+    });
+    const s = scoreCommander({
+      commander, collection: [rampC, rampA, drawA, drawB],
+      edhrecTopCards: null, inclusionByName: { "sol ring": 82 },
+    });
+    expect(s.roleCards.ramp.map((c) => c.name)).toEqual(["Sol Ring", "Fellwar Stone"]);
+    expect(s.roleCards.draw.map((c) => c.name))
+      .toEqual(["Zealous Persecution", "Ancient Craving"]);
+  });
+
   it("breaks an inclusion tie on name so the order is stable", () => {
     const s = scoreCommander({
       commander, collection: [rampC, rampB],
