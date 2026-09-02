@@ -245,6 +245,33 @@ describe("retry flow", () => {
     });
   });
 
+  it("retry stays available when the action rejects", async () => {
+    // A rejected server action is the same outcome as a null one — no figures.
+    // If the rejection escapes the transition it reaches an error boundary and
+    // the whole commander page goes down over a retry the player could repeat.
+    const retryCoverageFigures = vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>()
+      .mockRejectedValue(new Error("network"));
+
+    renderSection({ synergyState: "degraded", retryCoverageFigures });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria }),
+    );
+
+    await waitFor(() => {
+      expect(retryCoverageFigures).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", {
+          name: recommendationsCopy.coverage.degradedRetryAria,
+        }),
+      ).not.toBeDisabled();
+    });
+    expect(screen.getByText(recommendationsCopy.coverage.degradedHeading)).toBeInTheDocument();
+  });
+
   it("retry button is disabled with opacity and aria-busy during retrying", async () => {
     let resolve!: (val: Record<RoleName, RoleCard[]> | null) => void;
     const retryCoverageFigures = vi.fn<() => Promise<Record<RoleName, RoleCard[]> | null>>().mockImplementation(

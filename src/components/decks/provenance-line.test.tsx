@@ -1,14 +1,14 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 
-// ── Module mock — fillDeck action (not called in unit tests, but imported by component) ──
+// ── Module mock — fillDeck action, exercised by the connected banner's retry ──
 vi.mock("../../app/decks/actions", () => ({
   fillDeck: vi.fn(),
 }));
 
-const { ProvenanceLine, FillFailedBanner } = await import("./provenance-line");
+const { ProvenanceLine, FillFailedBanner, FillFailedBannerConnected } = await import("./provenance-line");
 
 // ── Fixture helpers ──────────────────────────────────────────────────────────
 
@@ -249,5 +249,32 @@ describe("FillFailedBanner", () => {
     expect(
       screen.queryByText(recommendationsCopy.fill.failedHeading),
     ).not.toBeInTheDocument();
+  });
+});
+
+// ── FillFailedBannerConnected ────────────────────────────────────────────────
+
+describe("FillFailedBannerConnected", () => {
+  it("keeps the banner and re-enables Retry when the fill action rejects", async () => {
+    // An escaped rejection reaches an error boundary and takes the retry
+    // affordance away with it — the one control the banner exists to offer.
+    const { fillDeck } = await import("../../app/decks/actions");
+    vi.mocked(fillDeck).mockRejectedValue(new Error("network"));
+
+    render(<FillFailedBannerConnected deckId="deck-1" filled={false} cardCount={0} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: recommendationsCopy.fill.failedRetryAria }),
+    );
+
+    await waitFor(() => {
+      expect(fillDeck).toHaveBeenCalledWith("deck-1");
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: recommendationsCopy.fill.failedRetryAria }),
+      ).not.toBeDisabled();
+    });
+    expect(screen.getByText(recommendationsCopy.fill.failedHeading)).toBeInTheDocument();
   });
 });

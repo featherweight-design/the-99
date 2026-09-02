@@ -204,7 +204,13 @@ export function FillFailedBannerConnected({
 
   const handleRetry = () => {
     startTransition(async () => {
-      await fillDeck(deckId);
+      try {
+        await fillDeck(deckId);
+      } catch {
+        // The banner already says the fill failed, so a rejected retry changes
+        // nothing the player can see — except that an escaped rejection would
+        // reach an error boundary and remove the retry affordance entirely.
+      }
     });
   };
 

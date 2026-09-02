@@ -292,12 +292,19 @@ export function CoverageSection({
 
   function handleRetry() {
     startRetry(async () => {
-      const result = await retryCoverageFigures(slug);
-      if (result !== null) {
-        setRoleCards(result);
-        setHasRetryData(true);
+      try {
+        const result = await retryCoverageFigures(slug);
+        if (result !== null) {
+          setRoleCards(result);
+          setHasRetryData(true);
+        }
+        // On null: note stays, button re-enables (transition ends)
+      } catch {
+        // A rejected action is the same outcome as a null one — no figures.
+        // Swallowing it keeps the degraded note and the Retry button on screen;
+        // letting it escape the transition would reach an error boundary and
+        // take the whole commander page down over a retry that can be retried.
       }
-      // On null: note stays, button re-enables (transition ends)
     });
   }
 
