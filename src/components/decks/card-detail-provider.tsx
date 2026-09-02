@@ -44,7 +44,7 @@ export function useCardDetail(): CardDetailContextValue {
  * focus-return would then have nothing to hand focus back to on close.
  */
 export function CardDetailTrigger({
-  oracleId, name, siblings, className, style, title, children,
+  oracleId, name, siblings, className, style, title, ariaLabel, children,
 }: {
   oracleId: string;
   name: string;
@@ -53,6 +53,10 @@ export function CardDetailTrigger({
   style?: React.CSSProperties;
   /** Hover tooltip, where the surface truncates the name it wraps. */
   title?: string;
+  /** Override the default accessible name. When omitted, falls back to
+   *  `cardDetailCopy.triggerAria(name)`. Chips pass a richer label that
+   *  includes the EDHREC inclusion figure. */
+  ariaLabel?: string;
   children: ReactNode;
 }) {
   const { open, pendingOracleId } = useCardDetail();
@@ -61,7 +65,7 @@ export function CardDetailTrigger({
     <button
       type="button"
       onClick={() => open(oracleId, siblings)}
-      aria-label={cardDetailCopy.triggerAria(name)}
+      aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-busy={pending}
       title={title}
       className={className}
