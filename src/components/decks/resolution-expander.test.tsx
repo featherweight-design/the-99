@@ -99,7 +99,6 @@ function Harness({
           cards={deck.cards}
           unresolvedRows={deck.unresolvedRows}
           built={counts.built}
-          toBuyCount={counts.toBuyCount}
           filter="all"
           grouping="type"
           onFilterChange={vi.fn()}

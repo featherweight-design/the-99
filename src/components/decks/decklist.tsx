@@ -40,7 +40,6 @@ interface DecklistProps {
   /** The committed claim set — see UnresolvedGroup. */
   deckOracleIds: string[];
   built: number;
-  toBuyCount: number;
   /** The card whose slot is spent, drawn in place as an undo row (#185). */
   spentSlot?: DeckDetailCard | null;
   /**
@@ -82,7 +81,6 @@ export function Decklist({
   commanderOracleId,
   deckOracleIds,
   built,
-  toBuyCount,
   spentSlot = null,
   filled = false,
   filter,
@@ -105,12 +103,18 @@ export function Decklist({
   const shoppingCards = cards.filter((c) => !c.owned && !isBasicLand(c.typeLine));
   const visibleCards = filter === "shopping" ? shoppingCards : cards;
 
+  // The Shopping pill counts the list it opens, not the deck's unowned total.
+  // Those differ by any unowned basic land — the filter drops basics, and a
+  // pill promising a card the list refuses to show sends the player looking
+  // for something that is not there.
+  const shoppingCount = shoppingCards.reduce((n, c) => n + c.quantity, 0);
+
   // The receipt counts cards, not rows: a swept basic-land row carries its
   // whole stack in `quantity`, and undo puts every copy back.
   const sweptCount = (sweptRows ?? []).reduce((n, r) => n + r.quantity, 0);
 
-  // Shopping hides the unresolved group outright. The rows are outside
-  // toBuyCount by definition, so listing them here would offer the player
+  // Shopping hides the unresolved group outright. The rows are outside the
+  // shopping count by definition, so listing them here would offer the player
   // something they cannot go and buy.
   const visibleUnresolved = filter === "shopping" ? [] : unresolvedRows;
 
@@ -184,7 +188,7 @@ export function Decklist({
         <div className="flex flex-col">
           <GroupToggle
             allCount={built}
-            shoppingCount={toBuyCount}
+            shoppingCount={shoppingCount}
             filter={filter}
             grouping={grouping}
             onFilterChange={onFilterChange}
@@ -233,7 +237,7 @@ export function Decklist({
       <div className="flex flex-col">
         <GroupToggle
           allCount={built}
-          shoppingCount={toBuyCount}
+          shoppingCount={shoppingCount}
           filter={filter}
           grouping={grouping}
           onFilterChange={onFilterChange}
@@ -341,7 +345,7 @@ export function Decklist({
       {/* Toggle bar */}
       <GroupToggle
         allCount={built}
-        shoppingCount={toBuyCount}
+        shoppingCount={shoppingCount}
         filter={filter}
         grouping={grouping}
         onFilterChange={onFilterChange}

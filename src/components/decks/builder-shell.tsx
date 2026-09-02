@@ -104,7 +104,7 @@ export function BuilderShell({
     deleteOptimisticRow,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
-  const { built, toBuyCount } = counts;
+  const { built } = counts;
 
   // The one deliberate exception. Keyed off the SERVER counts because the
   // reveal is a one-shot that burns a persisted flag — firing it on a predicted
@@ -772,7 +772,6 @@ export function BuilderShell({
                 commanderOracleId={deck.commander.oracleId}
                 deckOracleIds={deckOracleIds}
                 built={built}
-                toBuyCount={toBuyCount}
                 spentSlot={spentSlot}
                 filled={deck.filled}
                 filter={filter}

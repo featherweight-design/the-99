@@ -84,7 +84,6 @@ function renderDecklist(
           commanderOracleId="commander-1"
           deckOracleIds={cards.map((c) => c.oracleId)}
           built={cards.reduce((s, c) => s + c.quantity, 0)}
-          toBuyCount={cards.filter((c) => !c.owned).length}
           filled={opts.filled ?? false}
           filter="shopping"
           grouping="role"

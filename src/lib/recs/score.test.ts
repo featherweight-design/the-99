@@ -241,6 +241,27 @@ describe("roleCards", () => {
       .toEqual(["Fellwar Stone", "Sol Ring", "Arcane Signet"]);
   });
 
+  it("keeps pool order when the map is present but empty", () => {
+    // parseEdhrecPayload always hands back an object, so an EDHREC response
+    // carrying topCards and no inclusion numbers arrives as {}. Every figure is
+    // null, and sorting would present the panel alphabetically as though the
+    // order meant something.
+    const s = scoreCommander({
+      commander, collection: [rampC, rampA, rampB], edhrecTopCards: null, inclusionByName: {},
+    });
+    expect(s.roleCards.ramp.map((c) => c.name))
+      .toEqual(["Fellwar Stone", "Sol Ring", "Arcane Signet"]);
+  });
+
+  it("keeps pool order when the map holds no figure for any card in the pool", () => {
+    const s = scoreCommander({
+      commander, collection: [rampC, rampA, rampB],
+      edhrecTopCards: null, inclusionByName: { "some other card": 70 },
+    });
+    expect(s.roleCards.ramp.map((c) => c.name))
+      .toEqual(["Fellwar Stone", "Sol Ring", "Arcane Signet"]);
+  });
+
   it("breaks an inclusion tie on name so the order is stable", () => {
     const s = scoreCommander({
       commander, collection: [rampC, rampB],

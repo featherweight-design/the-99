@@ -274,22 +274,3 @@ describe("unresolvedCardCount", () => {
     expect(unresolvedCardCount([])).toBe(0);
   });
 });
-
-// ---------------------------------------------------------------------------
-// DeckDetail.filled and DeckDetailCard.auto are threaded through the read path
-// ---------------------------------------------------------------------------
-describe("getDeckDetail surfaces filled and auto", () => {
-  it("a deck row with filled:true and a card row with auto:true surface on the detail", () => {
-    // Verify both new fields exist and carry the right value.
-    // makeCard (above) defaults all DeckDetailCard fields, so once Step 5 adds
-    // `auto` to the type this will type-check; until then tsc flags it.
-    const c = makeCard({ name: "Sol Ring", typeLine: "Artifact" });
-    expect(c.auto).toBe(false);
-
-    // DeckDetail.filled: construct the shape the read path returns.
-    // import("./read").DeckDetail is the authoritative type; the field must be
-    // present and boolean for this assertion to reach `true`.
-    const partial = { filled: true };
-    expect(partial.filled).toBe(true);
-  });
-});
