@@ -4,9 +4,17 @@
  * Brand tokens — the 36-key contract enforced by src/lib/theme/contract.test.ts.
  * Semantic names first; raw hexes live only here.
  * ------------------------------------------------------------------ */
-:root {
+:root,
+[data-theme="amonkhet"] {
   /* Theme: amonkhet — "Gilded Stone". The default, and the fallback for an
-     unrecognised data-theme: a complete theme rather than unstyled tokens. */
+     unrecognised data-theme: a complete theme rather than unstyled tokens —
+     which is why it is declared on :root and not only on its own attribute.
+
+     It carries the attribute selector as well so that a nested element can ask
+     for Gilded Stone while some other theme is in force. The picker's
+     miniatures do exactly that: each chip sets data-theme to the theme it
+     previews, and without this the Amonkhet chip would inherit whatever theme
+     the app is currently wearing and preview the wrong palette. */
 
   /* Chrome (16) */
   --bg: #14110E;

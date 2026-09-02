@@ -40,8 +40,12 @@ describe("theme registry", () => {
     expect([...parseThemeBlocks(CSS).keys()].sort()).toEqual(THEMES.map((t) => t.key).sort());
   });
 
-  it("keeps the default in :root rather than an attribute block", () => {
-    expect(CSS).not.toContain(`[data-theme="${DEFAULT_THEME}"]`);
+  // The default is declared on `:root, [data-theme="amonkhet"]` together, so a
+  // picker chip can preview Gilded Stone under another theme. What matters is
+  // that :root is one of the two: an unrecognised data-theme has to land on a
+  // complete theme rather than on bare tokens, and only :root guarantees that.
+  it("keeps the default on :root, so an unknown theme degrades to a whole one", () => {
+    expect(CSS).toContain(`:root,\n[data-theme="${DEFAULT_THEME}"] {`);
   });
 
   it("guards against anything else", () => {
