@@ -32,7 +32,7 @@ const stub = vi.hoisted(() => {
     groupBy: (...args: unknown[]) => Promise<Record<string, unknown>[]>;
   };
 
-  function makeSelectBuilder(columns: Record<string, unknown>): SelectBuilder {
+  function makeSelectBuilder(): SelectBuilder {
     return {
       from: (table: unknown) => {
         const tableName = nameOf(table);
@@ -41,18 +41,18 @@ const stub = vi.hoisted(() => {
             if (tableName === "cards") return state.cards;
             return state.collectionItems;
           },
-          innerJoin: (_joinTable: unknown, _condition: unknown) => {
+          innerJoin: () => {
             // After innerJoin, the result is collection_items + cards join
             return {
-              where: (_w?: unknown) => ({
-                orderBy: (..._args: unknown[]) => ({
+              where: () => ({
+                orderBy: () => ({
                   then: (resolve: (v: unknown) => unknown) =>
                     Promise.resolve(state.collectionItems).then(resolve),
                 }),
                 // Mirrors the real ownedQuantities query: group by oracleId,
                 // sum quantities. Returns { oracleId, quantity } rows — the
                 // exact shape that ownedQuantities passes to new Map(...).
-                groupBy: async (..._args: unknown[]) => {
+                groupBy: async () => {
                   const agg = new Map<string, number>();
                   for (const item of state.collectionItems) {
                     const id = (item as Record<string, unknown>).oracleId as string;
@@ -64,7 +64,7 @@ const stub = vi.hoisted(() => {
               }),
             } as unknown as SelectFromBuilder;
           },
-          orderBy: (..._args: unknown[]) => builder,
+          orderBy: () => builder,
           groupBy: async () => state.collectionItems,
         };
         return builder;
@@ -83,7 +83,7 @@ const stub = vi.hoisted(() => {
         }
         state.insertCalls.push({ table: tableName, values, returning: returning.length ? returning : null });
         return {
-          returning: async (_cols?: unknown) => returning,
+          returning: async () => returning,
           onConflictDoUpdate: async () => {},
           onConflictDoNothing: async () => {},
         };
@@ -96,8 +96,8 @@ const stub = vi.hoisted(() => {
   };
 
   const db = {
-    select: (_columns?: unknown) => makeSelectBuilder((_columns ?? {}) as Record<string, unknown>),
-    selectDistinctOn: (_keys: unknown[], _columns?: unknown) => makeSelectBuilder((_columns ?? {}) as Record<string, unknown>),
+    select: () => makeSelectBuilder(),
+    selectDistinctOn: () => makeSelectBuilder(),
     insert: (table: unknown) => makeInsertBuilder(table),
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
       if (state.transactionError) throw state.transactionError;
@@ -125,7 +125,7 @@ vi.mock("next/navigation", () => ({
 
 // Mock EDHREC client
 vi.mock("../../lib/edhrec/client", () => ({
-  getEdhrecData: async (_oracleId: string, _name: string) => {
+  getEdhrecData: async () => {
     if (stub.state.edhrecError) throw stub.state.edhrecError;
     return { data: null, unreachable: false };
   },
