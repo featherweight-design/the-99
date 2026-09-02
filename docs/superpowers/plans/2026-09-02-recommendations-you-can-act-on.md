@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **No new design token, no new hex, no new motion class.** Every colour is either an existing CSS variable or a hex already present in `src/app/globals.css`. Where the handoff names a bare hex (`#221D16`, `#211C15`, `#181410`), that hex is already in the stylesheet — reuse the same literal, do not invent a token for it.
+- **No new design token, no new hex, no new motion class.** Every colour is either an existing CSS variable or a hex already present in `src/app/globals.css`. Where the handoff names a bare hex (`#221D16`, `#211C15`, `#181410`), that hex is already in the stylesheet — reuse the same literal, do not invent a token for it. `#33402F` (the coverage chip's border) is the one hex in this feature that is **not** in `globals.css`; it is already shipped inline in `detail.tsx`'s `OwnedChip`, and the handoff's component table names it explicitly. Carry it forward as the existing literal it is — do not tokenize it, and do not treat it as new.
 - **Missing data is omitted, never defaulted to zero.** A `0` draws a real bar for no data. Use `Number.isFinite(x)`, never `typeof x === "number"`, to decide whether a figure exists.
 - **Absent and degraded are different states.** Absent = EDHREC has no figure for this card (em dash, `--fg-locked`). Degraded = the EDHREC fetch failed (retry affordance, `--warning` left rule). The commander page already makes this distinction in `FitHero`; the role panels inherit it.
 - **Copy is verbatim.** Every user-visible string in this feature comes from `src/lib/copy/recommendations.ts` (Task 1), which is a byte-for-byte copy of the handoff's copy file. Never retype a string inline.
@@ -31,7 +31,9 @@ These resolve conflicts and gaps found in the pre-flight scan of the handoff. Ea
 3. **The "was this deck ever filled" bit is a real column** (`decks.filled`), not an inference. *Why:* a migration is already required for the `auto` flag, so the marginal cost is one column, and it makes the swept-empty copy correct instead of approximately correct.
 4. **The fill runs inside the create transaction**, so state 14 (the in-flight frame) never renders on this path. *Why:* the handoff's decision 9 states the preference — one write, hold the redirect. The A3 in-flight treatment is still built, because the role-counter cell renders it whenever a count is genuinely unknown.
 5. **`inclusionPct` comes from the already-resolved `EdhrecData.inclusionByName`.** No new query, no reader for `commander_support_cards.inclusion`. *Why:* `scoreOneCommander` already awaits `resolveEdhrecData` and discards everything but `topCards`. This closes the handoff's gap #5 at zero cost.
-6. **The fill is the role and land baseline — 68 cards (10 ramp + 10 draw + 8 removal + 3 wipes + 37 lands) — not `suggestDeck`'s full 99-card return.** *Why:* the addendum already corrected the engineering note that said "#130 commits what it already returns", and the copy states the promise as roles plus the mana base, leaving the other 31 slots deliberately open.
+
+   **This is what unblocks the handoff.** `READINESS.md` is 🟡, gated on brief §0 — where the per-card inclusion figure comes from. Ruling 5 answers it: the figure is already in memory on both code paths, so no new source, no new query, and no new cache is needed. With §0 answered, the remaining readiness items are the addendum's A1–A4 treatments, all of which Tasks 7 and 12 build.
+6. **The fill is the role and land baseline — 68 cards (10 ramp + 10 draw + 8 removal + 3 wipes + 37 lands) — not `suggestDeck`'s full 99-card return.** *Why:* the copy states the promise as roles plus the mana base, leaving the other 31 slots deliberately open — `build.seedNote` and `build.stickyPromise` both name a figure the fill has to match, and `suggestDeck`'s 99 would overshoot it. The addendum's related correction is narrower than this ruling: it corrects the *unowned top-up* (that reaching past the collection is not free), which Task 5 honours separately by handing `planFill` the ranked staple list instead of a flat `slice(0, 5)`.
 7. **Lands come from owned cards only, never bought.** Basics stack up to the owned quantity (summed across printings in `collection_items`), capped by the shortfall to 37. *Why:* consistent with "basics never enter Shopping". If a collection is land-poor the deck simply lands short, which is exactly the honest shortfall state 13 draws.
 8. **The next migration number is `0013`.** The last shipped migration is `0012_ambiguous_hobgoblin.sql`.
 
@@ -62,12 +64,13 @@ These resolve conflicts and gaps found in the pre-flight scan of the handoff. Ea
 | Path | Change |
 |---|---|
 | `src/lib/recs/score.ts` | `roleCards` becomes `{ oracleId, name, inclusionPct }[]`, ordered inclusion-desc with absent last. |
-| `src/lib/recs/recommend.ts` | Threads `inclusionByName` into `scoreCommander`. |
-| `src/components/commanders/detail.tsx` | `OwnedChip` becomes a `CardDetailTrigger`; `RolePanel` takes the new payload; `CardDetailProvider` mounts; the three `REPLACES` strings move to the copy module. |
+| `src/lib/recs/recommend.ts` | Threads `inclusionByName` into `scoreCommander` at both call sites. |
+| `src/lib/recs/free-ranking.ts` | The third `scoreCommander` call site. Reads `inclusionByName` off the payload it already parses. |
+| `src/components/commanders/detail.tsx` | `RolePanel` moves into `coverage-section.tsx`; `CardDetailProvider` mounts; the three `REPLACES` strings move to the copy module. `OwnedChip` stays — it also renders `overlapOwned` in two other places. |
 | `src/db/schema.ts` | `deckCards.auto`, `decks.filled`. |
 | `src/lib/decks/read.ts` | Threads `auto` onto each card and `filled` onto the deck. |
 | `src/lib/decks/grouping.ts` | `DeckDetailCard` gains `auto: boolean`. |
-| `src/app/decks/actions.ts` | `createDeck` fills; new `keepAutoCard` and `clearAutoCards` actions; `getDeckSuggestions`' unbounded unowned top-up becomes role-bounded. |
+| `src/app/decks/actions.ts` | `createDeck` fills via a new exported `buildFillPlan`; new `keepAutoCard`, `clearAutoCards`, `restoreAutoCards`, and `fillDeck` actions; `getDeckSuggestions`' flat `slice(0, 5)` top-up becomes role-bounded. |
 | `src/components/decks/decklist-row.tsx` | One new slot between `BuyTag` and the `✕`. |
 | `src/components/decks/decklist.tsx` | Shopping view groups by role with gap headers. |
 | `src/components/decks/group-toggle.tsx` | `Clear all auto` right-aligned in the toolbar. |
@@ -118,15 +121,20 @@ git commit -m "feat(copy): add the recommendations copy module (#130, #131)"
 **Files:**
 - Modify: `src/lib/recs/score.ts`
 - Modify: `src/lib/recs/recommend.ts`
-- Test: `src/lib/recs/score.test.ts` (exists — add cases)
+- Modify: `src/lib/recs/free-ranking.ts`
+- Test: `src/lib/recs/score.test.ts` (exists — add cases AND update existing ones)
 
 **Interfaces:**
-- Consumes: `EdhrecData.inclusionByName` (`Record<string, number>`), already resolved by `resolveEdhrecData`.
+- Consumes: `EdhrecData.inclusionByName` (`Record<string, number>`), already resolved by `resolveEdhrecData`. **Its keys are lowercased** — `parse.ts:90` writes `card.name.toLowerCase()`, and `parse.test.ts:49` asserts that `inclusionByName["Sol Ring"]` is `undefined`. Every lookup in this task therefore lowercases before reading, and every test fixture is keyed in lowercase.
 - Produces: `RoleCard = { oracleId: string; name: string; inclusionPct: number | null }`, and `CommanderScore.roleCards: Record<"ramp"|"draw"|"removal"|"wipes", RoleCard[]>` ordered by `inclusionPct` descending with absent entries last. `scoreCommander` gains a fourth argument `inclusionByName: Record<string, number> | null`.
 
 Today `roleCards` is a list of bare names, which cannot open a card-detail modal (no oracle id) and cannot print a figure. Ruling 5: the figure map is already awaited inside `scoreOneCommander` and thrown away, so this is a threading change, not a new query.
 
 `toListItem` in `recommend.ts` does not include `roleCards`, so the client list payload is unaffected — do not add it.
+
+**Ordering under A1 (degraded).** The addendum says a panel with no figures at all falls back to pool order, not to an alphabetical list that looks authored. So the sort runs only when `inclusionByName` is non-null. With a map present but a given card missing from it, that card sorts last, which is the absent-last rule and is correct.
+
+**There are three call sites, not two.** `recommend.ts:179`, `recommend.ts:211`, and `free-ranking.ts:183`. The third already calls `parseEdhrecPayload(cached.payload)` and takes `.topCards` off the result, so the map is free there too — bind the parse result to a local and read both fields off it.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -154,7 +162,7 @@ describe("roleCards", () => {
   it("carries oracle id, name, and the EDHREC figure", () => {
     const s = scoreCommander({
       commander, collection: [rampA],
-      edhrecTopCards: null, inclusionByName: { "Sol Ring": 82 },
+      edhrecTopCards: null, inclusionByName: { "sol ring": 82 },
     });
     expect(s.roleCards.ramp).toEqual([{ oracleId: "a", name: "Sol Ring", inclusionPct: 82 }]);
   });
@@ -162,21 +170,26 @@ describe("roleCards", () => {
   it("orders by inclusion descending with absent figures last", () => {
     const s = scoreCommander({
       commander, collection: [rampB, rampA, rampC],
-      edhrecTopCards: null, inclusionByName: { "Sol Ring": 82, "Arcane Signet": 61 },
+      edhrecTopCards: null, inclusionByName: { "sol ring": 82, "arcane signet": 61 },
     });
     expect(s.roleCards.ramp.map((c) => c.name)).toEqual(["Sol Ring", "Arcane Signet", "Fellwar Stone"]);
   });
 
   it("reads a double-faced card's figure from its front face", () => {
+    // Deliberately NOT a land back face: `classifyRoles` pushes `land` for any
+    // type line containing "land" and gates `ramp` on the card not being a land,
+    // so an "Instant // Land" DFC lands in no non-land role at all and this
+    // assertion could never run.
     const dfc = card({
-      oracleId: "d", name: "Malakir Rebirth // Malakir Mire",
-      typeLine: "Instant // Land", oracleText: "{T}: Add {B}.",
+      oracleId: "d", name: "Jace, Vryn's Prodigy // Jace, Telepath Unbound",
+      typeLine: "Legendary Creature — Human Wizard // Legendary Planeswalker — Jace",
+      oracleText: "Draw a card, then discard a card.",
     });
     const s = scoreCommander({
       commander, collection: [dfc],
-      edhrecTopCards: null, inclusionByName: { "Malakir Rebirth": 44 },
+      edhrecTopCards: null, inclusionByName: { "jace, vryn's prodigy": 44 },
     });
-    expect(s.roleCards.ramp[0]?.inclusionPct).toBe(44);
+    expect(s.roleCards.draw[0]?.inclusionPct).toBe(44);
   });
 
   it("leaves every figure null when there is no inclusion map", () => {
@@ -186,15 +199,39 @@ describe("roleCards", () => {
     expect(s.roleCards.ramp[0]?.inclusionPct).toBeNull();
   });
 
+  it("keeps pool order when there is no inclusion map at all", () => {
+    const s = scoreCommander({
+      commander, collection: [rampC, rampA, rampB], edhrecTopCards: null, inclusionByName: null,
+    });
+    expect(s.roleCards.ramp.map((c) => c.name))
+      .toEqual(["Fellwar Stone", "Sol Ring", "Arcane Signet"]);
+  });
+
   it("breaks an inclusion tie on name so the order is stable", () => {
     const s = scoreCommander({
       commander, collection: [rampC, rampB],
-      edhrecTopCards: null, inclusionByName: { "Arcane Signet": 50, "Fellwar Stone": 50 },
+      edhrecTopCards: null, inclusionByName: { "arcane signet": 50, "fellwar stone": 50 },
     });
     expect(s.roleCards.ramp.map((c) => c.name)).toEqual(["Arcane Signet", "Fellwar Stone"]);
   });
 });
 ```
+
+- [ ] **Step 1b: Update the existing tests that this change breaks**
+
+Two groups in `src/lib/recs/score.test.ts` break, and only one of them breaks at typecheck:
+
+1. Lines 72–104 and 143–175 call `scoreCommander` without `inclusionByName`. Add `inclusionByName: null` to every one of those calls. Typecheck catches these.
+2. Lines 115–137 assert against bare strings — `expect(s.roleCards.ramp).toContain("Sol Ring")`, `expect(s.roleCards.wipes).toContain("Wrath of God")`, `expect(s.roleCards.removal).not.toContain("Wrath of God")`. These still compile and fail only at runtime. Rewrite each to map first:
+
+```ts
+expect(s.roleCards.ramp.map((c) => c.name)).toContain("Sol Ring");
+expect(s.roleCards.ramp.map((c) => c.name)).toContain("Cultivate");
+expect(s.roleCards.wipes.map((c) => c.name)).toContain("Wrath of God");
+expect(s.roleCards.removal.map((c) => c.name)).not.toContain("Wrath of God");
+```
+
+Do not rely on `pnpm typecheck` to find group 2 — run `pnpm test src/lib/recs/score.test.ts` and read the failures.
 
 - [ ] **Step 2: Run to verify they fail**
 
@@ -227,12 +264,15 @@ export function scoreCommander(args: {
 }): CommanderScore {
   const pool = commanderPool(args.commander, args.collection);
 
-  // EDHREC names a double-faced card by its front face while Scryfall names it
-  // "Front // Back", the same mismatch the topCards overlap handles below.
+  // `inclusionByName` is keyed lowercase by parseEdhrecPayload, so every read
+  // lowercases first. And EDHREC names a double-faced card by its front face
+  // while Scryfall names it "Front // Back" — the same mismatch the topCards
+  // overlap below already handles.
   const inclusionOf = (name: string): number | null => {
     const map = args.inclusionByName;
     if (!map) return null;
-    const hit = map[name] ?? map[name.split(" // ")[0]];
+    const lower = name.toLowerCase();
+    const hit = map[lower] ?? map[lower.split(" // ")[0]];
     return Number.isFinite(hit) ? hit : null;
   };
 
@@ -246,7 +286,12 @@ export function scoreCommander(args: {
       }
     }
   }
-  for (const list of Object.values(roleCards)) list.sort(byInclusionThenName);
+  // Only sort when figures exist. With no map at all (EDHREC absent or the
+  // fetch degraded), sorting would order the panel alphabetically, which reads
+  // as an authored ranking built on nothing. Addendum A1: fall back to pool order.
+  if (args.inclusionByName) {
+    for (const list of Object.values(roleCards)) list.sort(byInclusionThenName);
+  }
 ```
 
 Add the comparator beside `byScoreThenOracleId`'s sibling in `score.ts`:
@@ -264,9 +309,9 @@ export function byInclusionThenName(a: RoleCard, b: RoleCard): number {
 }
 ```
 
-- [ ] **Step 4: Thread the map through `recommend.ts`**
+- [ ] **Step 4: Thread the map through all three call sites**
 
-Both call sites of `scoreCommander` already hold the resolved `result`. Pass the map:
+The two in `recommend.ts` already hold the resolved `result`. Pass the map:
 
 ```ts
 // in recommendCommanders' fanout
@@ -286,10 +331,28 @@ Both call sites of `scoreCommander` already hold the resolved `result`. Pass the
 }),
 ```
 
+The third is `free-ranking.ts:176-187`, which parses the cached payload for `topCards` and throws the rest away. Bind the parse once and read both fields:
+
+```ts
+const cached = cache.get(commander.oracleId);
+const parsed = cached ? parseEdhrecPayload(cached.payload) : null;
+return {
+  ...scoreCommander({
+    commander,
+    collection: pool,
+    edhrecTopCards: parsed?.topCards ?? null,
+    inclusionByName: parsed?.inclusionByName ?? null,
+  }),
+```
+
+Leave the `synergyState: canon.synergyState` line and its comment exactly as they are.
+
 - [ ] **Step 5: Fix every remaining call site and consumer**
 
 Run: `pnpm typecheck`
-Fix what it names. `src/components/commanders/detail.tsx`'s `RolePanel` will now fail on `cards: string[]` — for this task only, change its prop type to `RoleCard[]` and render `cards.map((c) => <OwnedChip key={c.oracleId} name={c.name} />)`. Task 6 replaces that rendering properly.
+Fix what it names. `src/components/commanders/detail.tsx`'s `RolePanel` will now fail on `cards: string[]` — for this task only, change its prop type to `RoleCard[]` and render `cards.map((c) => <OwnedChip key={c.oracleId} name={c.name} />)`. Task 7 replaces that rendering properly.
+
+Do **not** delete `OwnedChip`. It has two other call sites — `detail.tsx:406` and `detail.tsx:697`, both rendering `overlapOwned`, which stays `string[]`. Only its use inside `RolePanel` moves.
 
 - [ ] **Step 6: Run the tests**
 
@@ -299,7 +362,7 @@ Expected: PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/lib/recs/score.ts src/lib/recs/score.test.ts src/lib/recs/recommend.ts src/components/commanders/detail.tsx
+git add src/lib/recs/score.ts src/lib/recs/score.test.ts src/lib/recs/recommend.ts src/lib/recs/free-ranking.ts src/components/commanders/detail.tsx
 git commit -m "feat(recs): role cards carry an oracle id and an EDHREC inclusion figure (#131)"
 ```
 
@@ -418,7 +481,9 @@ git commit -m "feat(decks): record which rows the fill added and whether a deck 
   ```
 - Later tasks rely on: `planFill` being pure and db-free, so `fill.test.ts` needs no stub and Task 5 can call it inside a transaction.
 
-Ruling 6 sets the target: 10 ramp + 10 draw + 8 removal + 3 wipes + 37 lands = 68. Ruling 7 sets the land rule: owned only, basics stacking to the owned quantity, capped by the shortfall to 37. A candidate can classify into several roles; it is spent on the first role, in `ramp, draw, removal, wipes` order, that still has a gap — matching `suggestDeck`'s existing behaviour so the two engines never disagree about what a card is for.
+Ruling 6 sets the target: 10 ramp + 10 draw + 8 removal + 3 wipes + 37 lands = 68. Ruling 7 sets the land rule: owned only, basics stacking to the owned quantity, capped by the shortfall to 37. A candidate can classify into several roles; it is spent on the first role, in `ramp, draw, removal, wipes` order, that still has a gap.
+
+This is deliberately **not** identical to `suggestDeck`. That engine (`suggest.ts:157-163`) iterates `classifyRoles(c)` directly, whose push order is `land, ramp, draw, wipes, removal` (`roles.ts:28-32`) — so a card that is both a wrath and targeted removal is spent on `wipes` there. `NON_LAND_ROLES` here reads `ramp, draw, removal, wipes`, matching the order the four coverage panels render in and the order the `ROLE_TARGETS` object declares. The divergence only bites a card classifying into both `wipes` and `removal`, and the fill has no obligation to reproduce `suggestDeck`'s ordering — ruling: the panel order wins, because a user reading the filled deck against the coverage panels should see the same sequence in both. Do not claim these two engines agree.
 
 Within a role: owned before unowned, then inclusion descending, then absent, then name. Unowned cards therefore only ever appear where the collection ran out, which is what makes every Shopping row "closing a specific gap".
 
@@ -648,14 +713,27 @@ git commit -m "feat(decks): add the fill engine for the role and land baseline (
 
 **Interfaces:**
 - Consumes: `planFill` from Task 4, `deckCards.auto` / `decks.filled` from Task 3.
-- Produces: `createDeck` still returns `void` and still redirects to `/decks/{id}`; the deck it redirects to now holds up to 68 rows, every one with `auto = true`, and `decks.filled = true`.
+- Produces:
+  ```ts
+  /** Everything the fill needs, gathered and planned but not yet written.
+      Exported so Task 10's retry can re-run the fill for a deck that already
+      exists, without duplicating the gathering. */
+  export async function buildFillPlan(
+    userId: string,
+    commander: { oracleId: string; name: string; colorIdentity: string[] },
+  ): Promise<FillPlan>;
+  ```
+  `createDeck` still returns `void` and still redirects to `/decks/{id}`; the deck it redirects to now holds up to 68 rows, every one with `auto = true`, and `decks.filled = true`.
 
 `createDeck` today writes an empty deck and redirects. It now: loads the owned colour-legal pool with owned quantities, resolves EDHREC once, gathers unowned staple candidates the same way `getDeckSuggestions` already does, runs `planFill`, and writes the deck and its rows in one transaction.
 
-Two things that will bite:
+Three things that will bite:
 
+- **The `try` must wrap the whole fill, not only the transaction.** `createDeck` makes no network call today; this task adds one (`getEdhrecData`). An unguarded `getEdhrecData`, `ownedQuantities`, `unownedStaples`, or `planFill` means an EDHREC outage yields **no deck at all** — the exact opposite of the state-15 promise. Everything from `buildFillPlan` through the transaction goes inside one `try`.
 - **`redirect()` throws.** It must be called after the transaction and outside any `try`, or the catch will swallow the redirect and the action will look like a fill failure.
-- **A failed fill still owes the player a deck.** If the transaction throws, fall back to inserting the deck alone with `filled = false`. That is state 15 — "The deck is here, the cards aren't" — and it is why the fill-failed banner in Task 9 exists.
+- **A failed fill still owes the player a deck.** If anything in the guarded block throws, fall back to inserting the deck alone with `filled = false`. That is state 15 — "The deck is here, the cards aren't" — and it is why the fill-failed banner in Task 10 exists.
+
+**`filled` records that the fill ran, not that it produced rows.** A player with an empty collection gets zero rows from a fill that worked perfectly; writing `filled: false` there would render Task 10's fill-failed banner over a non-failure. Inside the successful path, `filled` is always `true`. Only the catch writes `false`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -668,10 +746,22 @@ it("writes the filled baseline and marks every row auto", async () => {
   // and the decks insert carried filled: true.
 });
 
-it("still creates the deck when the fill throws", async () => {
+it("still creates the deck when the transaction throws", async () => {
   // Stub: make the transaction reject.
   // Assert: a deck row was inserted with filled: false, no deck_cards insert
   // happened, and the redirect to /decks/{id} still ran.
+});
+
+it("still creates the deck when EDHREC is unreachable", async () => {
+  // Stub: make getEdhrecData reject.
+  // Assert: a deck row was inserted with filled: false and the redirect still
+  // ran. This is the case an unguarded network call would turn into no deck.
+});
+
+it("marks an empty collection filled, not failed", async () => {
+  // Stub: an empty owned pool and no EDHREC staples, so planFill returns no rows.
+  // Assert: the decks insert carried filled: true — the fill ran and found
+  // nothing, which is not the same as the fill failing.
 });
 
 it("refuses a card that cannot lead a deck", async () => {
@@ -708,11 +798,18 @@ async function ownedQuantities(userId: string): Promise<Map<string, number>> {
 
 While it is being lifted, bound it. The shipped `eligible.slice(0, 5)` is a flat cap taken with no idea which role is short, which is exactly what the handoff's correction calls out: the unowned top-up is not free. Return the ranked list and let each caller bound it — `getDeckSuggestions` keeps its five, and `createDeck` hands the whole ranked list to `planFill`, which reaches past the collection only where a role is genuinely short.
 
-- [ ] **Step 5: Fill inside `createDeck`**
+- [ ] **Step 5a: Extract `buildFillPlan`**
 
-Replace the body after the legality guard:
+The gathering is worth its own exported function: Task 10's retry needs to re-run exactly this work against a deck that already exists, and a second copy of it would drift. Add it at module level:
 
 ```ts
+/** Gathers the pool, the owned quantities, and the unowned EDHREC staples, then
+    plans the fill. Every await inside can throw — the network call especially —
+    so callers guard it. */
+export async function buildFillPlan(
+  userId: string,
+  commander: { oracleId: string; name: string; colorIdentity: string[] },
+): Promise<FillPlan> {
   const pool = await ownedColorLegalPool(userId, commander);
   const quantities = await ownedQuantities(userId);
   const { data } = await getEdhrecData(commander.oracleId, commander.name);
@@ -728,7 +825,7 @@ Replace the body after the legality guard:
     ? await unownedStaples(commander, data.topCards, ownedIds, new Set([commander.oracleId]))
     : [];
 
-  const plan = planFill([
+  return planFill([
     ...pool.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
       oracleText: c.oracleText, keywords: c.keywords,
@@ -742,13 +839,21 @@ Replace the body after the legality guard:
       inclusionPct: inclusionOf(c.name),
     })),
   ]);
+}
+```
 
+- [ ] **Step 5b: Fill inside `createDeck`**
+
+Replace the body after the legality guard. Note where the `try` opens — before `buildFillPlan`, not after it:
+
+```ts
   const deckName = validateDeckName(name);
   let deckId: string;
   try {
+    const plan = await buildFillPlan(userId, commander);
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
-        .values({ userId, name: deckName, commanderOracleId, filled: plan.rows.length > 0 })
+        .values({ userId, name: deckName, commanderOracleId, filled: true })
         .returning({ id: decks.id });
       if (plan.rows.length > 0) {
         await tx.insert(deckCards).values(
@@ -762,7 +867,8 @@ Replace the body after the legality guard:
     // and the banner offers the fill again — losing the deck too would cost
     // them the one thing they actually asked for.
     const [deck] = await db.insert(decks)
-      .values({ userId, name: deckName, commanderOracleId }).returning({ id: decks.id });
+      .values({ userId, name: deckName, commanderOracleId, filled: false })
+      .returning({ id: decks.id });
     deckId = deck.id;
   }
   // Outside the try: redirect() signals by throwing, and a catch here would
@@ -958,7 +1064,7 @@ Create `src/components/commanders/coverage-section.tsx` with `"use client"`. It 
 
 - [ ] **Step 5: Rewire `detail.tsx`**
 
-- Delete `OwnedChip` and `RolePanel`; move their bodies into `coverage-section.tsx`.
+- Delete `RolePanel` and move its body into `coverage-section.tsx`. **Keep `OwnedChip`** — `detail.tsx:406` and `detail.tsx:697` both render `overlapOwned` (still `string[]`) through it, and neither is part of this feature.
 - Replace both Role Coverage blocks (the mobile block around `:609` and the desktop block around `:905`) with `<CoverageSection width="phone" … />` and `<CoverageSection width="desktop" … />`. Each block's heading and sub-caption move inside the component, so the `Your owned cards by role` string exists in exactly one place — the copy module.
 - Wrap the component's whole returned tree in `<CardDetailProvider>`. It is a client component and `detail.tsx` is a server component, which is fine: only serializable props cross. The modal ships no Add control, so the handoff's "no Add control in the modal on this route" needs no code.
 - Replace the desktop seed note at `:866` (`Your owned pool will seed the deck builder`) with `recommendationsCopy.build.seedNote("68")`.
@@ -990,7 +1096,9 @@ git commit -m "feat(commanders): Role Coverage explains its figures and opens ea
 
 **Interfaces:**
 - Consumes: `recommendationsCopy.auto`, `DeckDetailCard.auto` from Task 3.
-- Produces: `AutoTag({ name, onKeep, pending })`, and the server action `keepAutoCard(deckId: string, oracleId: string): Promise<void>`, which sets `deck_cards.auto = false` for that one row and revalidates the deck path.
+- Produces: `AutoTag({ deckId, oracleId, name })`, and the server action `keepAutoCard(deckId: string, oracleId: string): Promise<void>`, which sets `deck_cards.auto = false` for that one row and revalidates the deck path.
+
+**The tag calls the action itself.** `decklist-row.tsx` takes no handler props at all — it imports `removeCardFromDeck` directly (`:6`) and runs it through `useDeckMutation` (`:66`). Threading an `onKeep` down would mean touching `decklist.tsx` and `builder-shell.tsx` for a control that has one call site. `AutoTag` follows the row's own pattern instead: import the action, hold its own `useDeckMutation`, own its own pending state.
 
 Ruling 1: the tag is the button. `auto` at rest, `keep ✓` on hover and on focus, and activating it clears the flag for good. Geometry is `BuyTag`'s exactly, hueless: mono 9.5px `--fg-locked` on `--elevated`, radius 4px, padding `1px 5px`. Hover and focus take label `--brass`, border `1px --brass-shadow`, text `keep ✓`. On the phone it needs a 44×44 hit box, which the row already provides in height — pad the tag out to it rather than growing the tag's own box.
 
@@ -1007,8 +1115,8 @@ The flag is cleared by this control and by nothing else — not the modal, not a
 - on hover the label becomes "keep ✓"
 - on keyboard focus the label becomes "keep ✓" (the same as hover — a keyboard user must be able to read the control before activating it)
 - the accessible name is "Keep {name} in this deck" in both states, so it does not change under the user's cursor
-- activating it calls onKeep once
-- while pending it is aria-busy and does not call onKeep again
+- activating it calls keepAutoCard once with the deck id and the oracle id
+- while pending it is aria-busy and does not fire the action again
 ```
 
 `decklist-row.test.tsx`, added cases:
@@ -1026,7 +1134,7 @@ Expected: FAIL.
 
 - [ ] **Step 3: Write the component and the action**
 
-`src/components/decks/auto-tag.tsx` is a `"use client"` component holding one `hovered` / `focused` boolean. The label swaps; the `aria-label` does not.
+`src/components/decks/auto-tag.tsx` is a `"use client"` component holding one `hovered` / `focused` boolean. The label swaps; the `aria-label` does not. It imports `keepAutoCard` from `../../app/decks/actions` and drives it with `useDeckMutation` from `./use-deck-mutation`, exactly as `DecklistRow` drives `removeCardFromDeck` at `decklist-row.tsx:66-93`. `aria-busy` comes from that hook's `isPending`.
 
 In `src/app/decks/actions.ts`:
 
@@ -1048,11 +1156,11 @@ In `decklist-row.tsx`, after the `BuyTag` line:
 
 ```tsx
 {!isMeta && card.auto && (
-  <AutoTag name={card.name} onKeep={() => onKeep(card.oracleId)} pending={keepPending} />
+  <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />
 )}
 ```
 
-Thread `onKeep` and `keepPending` down from `builder-shell.tsx` using the shipped `useDeckMutation` hook, the same way removal already flows.
+That is the whole wiring. No new props cross `decklist.tsx` or `builder-shell.tsx`, and neither file is touched by this task.
 
 - [ ] **Step 5: Run the tests, the gate, and commit**
 
@@ -1076,7 +1184,16 @@ git commit -m "feat(decks): the auto marker is the keep control (#130)"
 
 **Interfaces:**
 - Consumes: `recommendationsCopy.auto`, `DeckDetailCard.auto`.
-- Produces: `ClearAutoButton({ count, keptCount, onClear, pending })` and `SweepReceipt({ removed, onUndo })`; the server actions `clearAutoCards(deckId): Promise<string[]>` (returns the oracle ids removed, for undo) and `restoreAutoCards(deckId, oracleIds): Promise<void>`.
+- Produces:
+  ```ts
+  /** One removed row, carried so Undo can restore a stacked basic at the exact
+      quantity it was swept at rather than guessing 1. */
+  export type SweptRow = { oracleId: string; quantity: number };
+
+  export async function clearAutoCards(deckId: string): Promise<SweptRow[]>;
+  export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promise<void>;
+  ```
+  plus `ClearAutoButton({ count, keptCount, onClear, pending })` and `SweepReceipt({ removed, onUndo })`.
 
 One server action, one optimistic list update, one live-region message — never one per row. That is the difference between this and the shipped per-row undo, which stays exactly as it is.
 
@@ -1112,19 +1229,19 @@ Expected: FAIL.
 ```ts
 /** The whole sweep in one statement — 58 rows must not be 58 round trips, and a
     partial sweep would leave a receipt that lies about what it removed. Returns
-    the ids so Undo can put back exactly what went, and nothing the player kept. */
-export async function clearAutoCards(deckId: string): Promise<string[]> {
+    the rows so Undo can put back exactly what went, and nothing the player kept. */
+export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   const removed = await db.delete(deckCards)
     .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
-    .returning({ oracleId: deckCards.oracleId });
+    .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
   revalidatePath(`/decks/${deckId}`);
-  return removed.map((r) => r.oracleId);
+  return removed;
 }
 ```
 
-`restoreAutoCards(deckId, oracleIds)` re-inserts those rows with `auto: true`, using `onConflictDoNothing` so a double-undo is harmless. It must re-read each card's owned quantity for basics — or, simpler and correct, store the removed rows' quantities in the returning clause and hand them back to the client for the undo payload. Take the second: `returning({ oracleId, quantity })`.
+`restoreAutoCards(deckId, rows)` re-inserts those rows with `auto: true`, using `onConflictDoNothing` so a double-undo is harmless. The quantity comes from the delete's returning clause rather than a fresh read of the collection, so a stacked basic comes back at the count it was swept at even if the shelf changed in between.
 
 - [ ] **Step 4: Write the components and wire the toolbar**
 
@@ -1148,10 +1265,11 @@ git commit -m "feat(decks): sweep the untouched auto cards in one gesture (#130)
 - Create: `src/components/decks/provenance-line.test.tsx`
 - Modify: `src/components/decks/builder-shell.tsx`
 - Modify: `src/lib/decks/read.ts`
+- Modify: `src/app/decks/actions.ts` (the `fillDeck` retry)
 
 **Interfaces:**
-- Consumes: `recommendationsCopy.fill`, `DeckDetail.filled`, and the auto/owned counts already on the cards.
-- Produces: `ProvenanceLine({ filled, bought, open, shortRole, width })` and `FillFailedBanner({ onRetry, pending })`.
+- Consumes: `recommendationsCopy.fill`, `DeckDetail.filled`, the auto/owned counts already on the cards, and `buildFillPlan` from Task 5.
+- Produces: `ProvenanceLine({ filled, bought, open, shortRole, width })`, `FillFailedBanner({ onRetry, pending })`, and the server action `fillDeck(deckId: string): Promise<void>`.
 
 One provenance line, no toast, not dismissible, and it leaves when the last auto card does. It describes the deck's state, so it is derived, never stored: render it when the deck has at least one `auto` row.
 
@@ -1160,7 +1278,35 @@ One provenance line, no toast, not dismissible, and it leaves when the last auto
 - Phone takes `provenanceMobile`.
 - Shape: `#181410`, `1px solid --border`, `border-left: 3px solid --brass`, radius 9px, padding `11px 15px`, with a 20px `i` disc and body text 12.5px `--fg-body`.
 - **No celebration.** `shouldCelebrate` fires at 99 of 99 and the fill stops at 68, so nothing needs guarding — but do not add a celebration path here, and do not touch the shipped one.
-- The fill-failed banner is the same shape with `border-left: 3px solid --warning` and a `⚠` disc, using `fill.failedHeading` / `failedBody` / `failedRetry`. It renders when `deck.filled === false` and the deck has no cards at all. Its retry calls a new `fillDeck(deckId)` action that runs the same `planFill` path `createDeck` does.
+- The fill-failed banner is the same shape with `border-left: 3px solid --warning` and a `⚠` disc, using `fill.failedHeading` / `failedBody` / `failedRetry`. It renders when `deck.filled === false` and the deck has no cards at all. Its retry calls a new `fillDeck(deckId)` action:
+
+```ts
+/** The retry behind the fill-failed banner. Re-runs Task 5's gathering against a
+    deck that already exists. Refuses a deck that already holds cards — a retry
+    must not double a deck the player has since added to by hand. */
+export async function fillDeck(deckId: string): Promise<void> {
+  const userId = await requireUserId();
+  const deck = await requireDeck(deckId, userId);
+  const commander = await loadCommander(deck.commanderOracleId);
+  if (!commander) return;
+  const existing = await db.select({ oracleId: deckCards.oracleId })
+    .from(deckCards).where(eq(deckCards.deckId, deckId)).limit(1);
+  if (existing.length > 0) return;
+
+  const plan = await buildFillPlan(userId, commander);
+  await db.transaction(async (tx) => {
+    if (plan.rows.length > 0) {
+      await tx.insert(deckCards).values(
+        plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
+      );
+    }
+    await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
+  });
+  revalidatePath(`/decks/${deckId}`);
+}
+```
+
+`buildFillPlan` is Task 5's export — this action adds no second copy of the gathering. Use whatever the shipped `getDeckSuggestions` already uses to load a commander row by oracle id rather than inventing `loadCommander`; if no such helper exists, lift one alongside `unownedStaples` in Task 5 and name it in that task's Produces.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1256,7 +1402,16 @@ Two small, unrelated finishes that share a file boundary.
 
 **The swept-empty branch.** The shipped first-run empty state welcomes a player to a deck they have not built. Reached by deletion, it congratulates them on a demolition. So an empty deck with `filled === true` takes `sweptEmpty.heading`, `sweptEmpty.body(commanderName)`, and the `sweptEmpty.cta` link into Consider; an empty deck with `filled === false` keeps the shipped copy, untouched.
 
-**A3, the in-flight cell.** A role-counter cell whose count is genuinely unknown draws **no track and no fill element** — `height: 0; border-top: 1px dashed var(--border-strong)` — and keeps its denominator with a dash for a numerator. **No motion.** Ruling 4 means `createDeck` never renders this frame, but the treatment is still built: any path that hands the cell an unknown count needs it, and drawing a zero there would be a real bar for no data.
+**A3, the in-flight cell.** Four parts, all of them required by the addendum:
+
+1. **No track and no fill element** — `height: 0; border-top: 1px dashed var(--border-strong)`, holding the track's 5px as margin so the cell does not change height between frames. A rule is not a container, so there is nothing for a fill to be measured against.
+2. **The denominator stays, the numerator is a dash** — `— / 10`. The target is known before the fill starts, and printing it is what makes the dash read as *pending* rather than *broken*.
+3. **Every colour in the cell drops a step** — label `--fg-locked`, figure `--border-strong` — so the strip reads as not-yet rather than as five failed roles.
+4. **The status pill goes dashed and reads `Draft`.** Not a new string and not a new computation: `Draft` is what the shipped count-driven computation already returns for a deck with no rows, so the only change is the dashed treatment. Do **not** add a copy key for the pill — the copy file deliberately records a mapping instead, because a second live value in a second module is the exact defect the add-panel addendum flagged when `strip.hint` was written from two files.
+
+**No motion.** No shimmer, no pulse, no indeterminate sweep; nothing new joins the reduced-motion block.
+
+Ruling 4 means `createDeck` never renders this frame, but the treatment is still built: any path that hands the cell an unknown count needs it, and drawing a zero there would be a real bar for no data.
 
 **A4, the short cell in a just-filled deck.** It takes `1px solid var(--border-strong)` in place of `--border`. The strip itself is untouched — this is a cell-level treatment only.
 
@@ -1266,6 +1421,9 @@ Two small, unrelated finishes that share a file boundary.
 - an empty deck that was filled takes the swept copy
 - an empty deck that was never filled keeps the shipped first-run copy
 - a cell with an unknown count draws a dashed rule and a dash numerator, and no fill element
+- a cell with an unknown count keeps its denominator
+- a cell with an unknown count drops its label to --fg-locked and its figure to --border-strong
+- the status pill in a deck with no rows still reads "Draft" and is drawn dashed
 - a short cell in a just-filled deck takes the border-strong hairline
 - a met cell in a just-filled deck does not
 ```
