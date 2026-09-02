@@ -108,4 +108,33 @@ describe("AutoTag", () => {
     });
     expect(keepAutoCard).toHaveBeenCalledOnce();
   });
+
+  // The optimistic keep is dropped when the transition reverts, so without a
+  // message the tag simply reads "auto" again and the player is left to guess
+  // whether the click registered at all.
+  it("says so when the keep is refused", async () => {
+    keepAutoCard.mockRejectedValue(new Error("nope"));
+
+    render(<AutoTag deckId="d1" oracleId="sol-ring" name="Sol Ring" />);
+
+    await act(async () => {
+      screen.getByRole("button").click();
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      recommendationsCopy.auto.keepFailed,
+    );
+  });
+
+  it("says nothing when the keep is accepted", async () => {
+    keepAutoCard.mockResolvedValue(undefined);
+
+    render(<AutoTag deckId="d1" oracleId="sol-ring" name="Sol Ring" />);
+
+    await act(async () => {
+      screen.getByRole("button").click();
+    });
+
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });

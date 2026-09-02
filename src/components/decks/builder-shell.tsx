@@ -339,8 +339,9 @@ export function BuilderShell({
       );
       setSweptRows(null);
     } catch {
-      // Keep the receipt so Undo stays reachable — the rows are still gone.
-      setSweepError(recommendationsCopy.auto.sweepFailed);
+      // Keep the receipt so Undo stays reachable — the rows are still gone, so
+      // the sweep's "the deck is unchanged" would be the wrong action and false.
+      setSweepError(recommendationsCopy.auto.restoreFailed);
     }
   }, [sweptRows, deck.id, cards]);
 

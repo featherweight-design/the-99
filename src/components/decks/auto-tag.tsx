@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { keepAutoCard } from "../../app/decks/actions";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { MutationError } from "./mutation-error";
 import { useKeepOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
 
@@ -23,7 +24,10 @@ interface AutoTagProps {
 
 export function AutoTag({ deckId, oracleId, name }: AutoTagProps) {
   const [active, setActive] = useState(false);
-  const { isPending, run } = useDeckMutation(false, "");
+  const { isPending, error, run } = useDeckMutation(
+    false,
+    recommendationsCopy.auto.keepFailed,
+  );
   const keepOptimisticCard = useKeepOptimisticCard();
 
   function handleKeep() {
@@ -38,33 +42,39 @@ export function AutoTag({ deckId, oracleId, name }: AutoTagProps) {
     );
   }
 
+  // The refusal stacks under the tag rather than beside it: the row's own error
+  // slot belongs to the remove button, and a keep that failed has to say so
+  // where the player clicked. At rest the wrapper is exactly the tag's box.
   return (
-    <button
-      type="button"
-      onClick={handleKeep}
-      onMouseEnter={() => setActive(true)}
-      onMouseLeave={() => setActive(false)}
-      onFocus={() => setActive(true)}
-      onBlur={() => setActive(false)}
-      disabled={isPending}
-      aria-label={recommendationsCopy.auto.keepAria(name)}
-      aria-busy={isPending || undefined}
-      className={
-        "flex-none font-mono rounded-[4px] px-[5px] py-[1px]" +
-        " text-[9px] md:text-[9.5px] leading-none" +
-        // Phone gets the 44px target from min-height, not padding, so the tag's
-        // visual box stays 1px 5px while the hit area fills the row.
-        " self-center min-h-[44px] md:min-h-0" +
-        " cursor-pointer border" +
-        (active
-          ? " text-accent border-accent-shadow bg-elevated"
-          : " text-fg-locked border-transparent bg-elevated") +
-        " disabled:opacity-50 disabled:cursor-default"
-      }
-    >
-      {active
-        ? recommendationsCopy.auto.keep
-        : recommendationsCopy.auto.tag}
-    </button>
+    <span className="flex-none flex flex-col items-end">
+      <button
+        type="button"
+        onClick={handleKeep}
+        onMouseEnter={() => setActive(true)}
+        onMouseLeave={() => setActive(false)}
+        onFocus={() => setActive(true)}
+        onBlur={() => setActive(false)}
+        disabled={isPending}
+        aria-label={recommendationsCopy.auto.keepAria(name)}
+        aria-busy={isPending || undefined}
+        className={
+          "flex-none font-mono rounded-[4px] px-[5px] py-[1px]" +
+          " text-[9px] md:text-[9.5px] leading-none" +
+          // Phone gets the 44px target from min-height, not padding, so the tag's
+          // visual box stays 1px 5px while the hit area fills the row.
+          " self-center min-h-[44px] md:min-h-0" +
+          " cursor-pointer border" +
+          (active
+            ? " text-accent border-accent-shadow bg-elevated"
+            : " text-fg-locked border-transparent bg-elevated") +
+          " disabled:opacity-50 disabled:cursor-default"
+        }
+      >
+        {active
+          ? recommendationsCopy.auto.keep
+          : recommendationsCopy.auto.tag}
+      </button>
+      {error && <MutationError message={error} />}
+    </span>
   );
 }

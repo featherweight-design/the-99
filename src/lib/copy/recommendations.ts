@@ -98,6 +98,13 @@ export const recommendationsCopy = {
     sweptRestoredAnnounce: (restored: string, total: string) =>
       `${restored} auto cards put back. ${total} of 99.`,
     sweepFailed: 'We couldn’t clear those. The deck is unchanged.',
+    // Undo's refusal. The sweep already succeeded, so the deck is *not*
+    // unchanged — saying so would send the player looking for cards that are
+    // genuinely gone. The receipt stays up, so the line points back at it.
+    restoreFailed: 'We couldn’t put those back. They are still out of the deck — try Undo again.',
+    // `useDeckMutation` needs a message for a rejected keep. An empty one leaves
+    // the refusal silent and the card still counted as the fill's.
+    keepFailed: 'We couldn’t keep that one. It is still marked auto.',
   },
 
   // ── Surface B · the arrival (expressive moment 1) ─────────────────────

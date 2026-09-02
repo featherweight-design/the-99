@@ -474,4 +474,35 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
       screen.getByText(recommendationsCopy.auto.sweepFailed),
     ).toBeInTheDocument();
   });
+
+  // The sweep succeeded, so the deck is not unchanged — the cards really are
+  // gone. Reusing the sweep's refusal here would name the wrong action and tell
+  // the player the deck still holds what it no longer holds.
+  it("a failed Undo says the cards are still out, not that nothing happened", async () => {
+    const sweptRows = [
+      { oracleId: "sol-ring", quantity: 1 },
+      { oracleId: "arcane-signet", quantity: 1 },
+    ];
+    clearAutoCards.mockResolvedValue(sweptRows);
+    restoreAutoCards.mockRejectedValue(new Error("network error"));
+
+    renderBuilder([card1, card2]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.clearAllAria("2") })
+        .click();
+    });
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.sweptUndoAria("2") })
+        .click();
+    });
+
+    expect(
+      screen.getByText(recommendationsCopy.auto.restoreFailed),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.auto.sweepFailed)).toBeNull();
+  });
 });
