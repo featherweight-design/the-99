@@ -240,8 +240,13 @@ export function Decklist({
       );
     }
 
-    // The ordered ids for the Shopping view (for Prev/Next in the card detail modal).
-    const shoppingOrderedIds = shoppingCards.map((c) => c.oracleId);
+    // Prev/Next in the card detail modal walks the list the eye does, so the
+    // ids come from the rendered groups rather than from `shoppingCards`, whose
+    // deck order the role grouping below discards.
+    const shoppingOrderedIds = [
+      ...shoppingGroups.flatMap((g) => g.cards.map((c) => c.oracleId)),
+      ...otherShoppingCards.map((c) => c.oracleId),
+    ];
 
     return (
       <div className="flex flex-col">

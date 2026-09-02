@@ -2,12 +2,12 @@
 // Tests for the role-grouped Shopping view: group headers, gap clauses, footer
 // variants, empty-covered state, row heights, and the EDHREC figure meta line.
 
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
-import { CardDetailProvider } from "./card-detail-provider";
+import { CardDetailProvider, cardDetailCopy } from "./card-detail-provider";
 
 // ── Server-action mocks ───────────────────────────────────────────────────────
 vi.mock("../../app/decks/actions", () => ({
@@ -62,6 +62,7 @@ function renderDecklist(
   opts: {
     shoppingFigures?: Record<string, number>;
     filled?: boolean;
+    fetchCard?: (oracleId: string) => Promise<unknown>;
   } = {},
 ) {
   const deckEdits = {
@@ -76,7 +77,9 @@ function renderDecklist(
   };
 
   render(
-    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+    <CardDetailProvider
+      fetchCard={(opts.fetchCard ?? vi.fn().mockResolvedValue(null)) as never}
+    >
       <AddOptimisticCardProvider value={deckEdits}>
         <Decklist
           deckId="deck-1"
@@ -172,6 +175,36 @@ describe("the gap clause reads '{n} · closes {from}→{to}' against the deck's 
         recommendationsCopy.shopping.groupGap(String(n), "1", String(ROLE_TARGETS.ramp)),
       ),
     ).not.toBeInTheDocument();
+  });
+});
+
+// The modal's Prev/Next pages an ordered id list the Decklist hands it. Shopping
+// renders role-grouped, so a list built from the deck's own order would walk a
+// sequence the player is not looking at.
+describe("the detail modal pages Shopping in the order the list draws", () => {
+  const browseCard = (oracleId: string, name: string) => ({
+    oracleId, name, typeLine: "Artifact", manaCost: "{2}", oracleText: null,
+    keywords: [], rarity: "rare" as const, colorIdentity: [], imageUri: null,
+    quantity: 0, printings: [], setCodes: [], primarySetCode: "abc",
+    preferredPrinting: null,
+  });
+
+  it("puts a draw card after a ramp card even where the deck holds it first", async () => {
+    // Deck order is draw then ramp; Shopping draws ramp first.
+    renderDecklist([drawUnowned, rampUnowned], {
+      fetchCard: async (id: string) =>
+        browseCard(id, id === "mystic-remora" ? "Mystic Remora" : "Arcane Signet"),
+    });
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: cardDetailCopy.triggerAria("Mystic Remora") }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("2 of 2")).toBeInTheDocument();
+    });
   });
 });
 
