@@ -8,15 +8,17 @@ import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { CardDetailProvider } from "./card-detail-provider";
 
-const { addCardToDeck, removeCardFromDeck } = vi.hoisted(() => ({
+const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
   removeCardFromDeck: vi.fn(),
+  keepAutoCard: vi.fn(),
 }));
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
   addCardToDeck,
   removeCardFromDeck,
+  keepAutoCard,
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
 }));
@@ -66,6 +68,7 @@ function clickRemove(name = addPanelCopy.row.removeAria("Sol Ring")) {
 beforeEach(() => {
   removeCardFromDeck.mockReset();
   addCardToDeck.mockReset();
+  keepAutoCard.mockReset();
   localStorage.clear();
 });
 
@@ -477,5 +480,32 @@ describe("undo row lifetime (#185)", () => {
     expect(
       screen.getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") }),
     ).toBeInTheDocument();
+  });
+});
+
+// #130 — the auto tag is the keep control.
+describe("DecklistRow auto tag (#130)", () => {
+  it("a row with auto=true renders the auto tag between the buy tag and the remove button", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, auto: true }} />);
+    // The tag renders as a button whose accessible name is the keep aria label
+    expect(
+      screen.getByRole("button", { name: /Keep Sol Ring in this deck/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("a row with auto=false renders no auto tag", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, auto: false }} />);
+    expect(
+      screen.queryByRole("button", { name: /Keep Sol Ring in this deck/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("a meta row renders no auto tag even when auto is true", () => {
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...card, auto: true, quantity: 4 }} isMeta metaLabel="+3 more" />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /Keep Sol Ring in this deck/ }),
+    ).not.toBeInTheDocument();
   });
 });

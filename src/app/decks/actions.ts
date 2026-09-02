@@ -378,6 +378,16 @@ export async function deleteDeck(deckId: string): Promise<void> {
   redirect("/decks");
 }
 
+/** Clears the fill's marker on one row. The card stays in the deck — the marker
+    is a claim about who put it there, and keeping it is the player saying "mine". */
+export async function keepAutoCard(deckId: string, oracleId: string): Promise<void> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+  await db.update(deckCards).set({ auto: false })
+    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
+  revalidatePath(`/decks/${deckId}`);
+}
+
 export async function renameDeck(deckId: string, name: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);

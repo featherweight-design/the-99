@@ -10,6 +10,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
+import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "./card-detail-provider";
 import { MutationError } from "./mutation-error";
@@ -181,6 +182,11 @@ export function DecklistRow({
 
         {/* Buy tag — unowned non-meta only */}
         {!isMeta && !card.owned && <BuyTag variant="row" />}
+
+        {/* Auto tag — one per stack, never on a meta row */}
+        {!isMeta && card.auto && (
+          <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />
+        )}
 
         {/* Remove ✕ — at both widths now, never on a meta row. The glyph stays
             13px at both: the phone target is the padding around it. */}
