@@ -9,6 +9,7 @@ import { requireUserId } from "../../lib/auth";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
+import { claimSurfaces } from "../../lib/decks/revalidate";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
@@ -258,9 +259,9 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
     return null;
   });
   if (rejection) return { ok: false, message: deckAddRejectionMessage(rejection) };
-  // /decks shows derived stats (built / to-buy) — keep the index fresh too.
-  revalidatePath(`/decks/${deckId}`);
-  revalidatePath(`/decks`);
+  // /decks shows derived stats (built / to-buy) — keep the index fresh too, and
+  // the two surfaces that draw availability off deck rows with it.
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
   return { ok: true };
 }
 
@@ -275,15 +276,16 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
   if (decremented.length === 0) {
     await db.delete(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
   }
-  revalidatePath(`/decks/${deckId}`);
-  revalidatePath(`/decks`);
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
 }
 
 export async function deleteDeck(deckId: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   await db.delete(decks).where(eq(decks.id, deckId));
-  revalidatePath(`/decks`);
+  // Deleting a deck releases every claim it held, so the availability markers
+  // on /collection and /commanders are wrong until they are told.
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
   redirect("/decks");
 }
 

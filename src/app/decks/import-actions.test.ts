@@ -77,6 +77,7 @@ vi.mock("next/cache", () => ({
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { deleteUnresolvedRow, resolveUnresolvedRow } from "./import-actions";
+import { claimSurfaces } from "../../lib/decks/revalidate";
 
 const dialect = new PgDialect();
 
@@ -128,7 +129,9 @@ describe("resolveUnresolvedRow", () => {
       { values: { deckId: DECK, oracleId: ORACLE }, mode: "nothing" },
     ]);
     expect(stub.state.deletedFrom).toEqual(["deck_unresolved_rows"]);
-    expect(stub.state.revalidated).toEqual([`/decks/${DECK}`, "/decks"]);
+    // Resolving a row puts a card in the deck, which is a claim — so the
+    // surfaces that draw availability off deck rows are invalidated with it.
+    expect(stub.state.revalidated).toEqual(claimSurfaces(DECK));
   });
 
   it("leaves a non-basic already in the deck at one copy", async () => {
