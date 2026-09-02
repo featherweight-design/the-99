@@ -69,8 +69,16 @@ export const clerkAppearance: Appearance = {
       boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
       [MOBILE]: { borderRadius: 0, border: "none" },
     },
-    // cardBox owns the surface; card must not paint a second one over it.
-    card: { background: "transparent", padding: 0 },
+    // cardBox owns the surface; card must not paint a second one over it. The
+    // padding is set rather than zeroed: `card` is the only element between
+    // cardBox's rounded edge and the content, so at 0 every surface using this
+    // map — `<SignIn mode="modal">` as much as `<UserProfile>` — sits its header
+    // and its fields flush against that edge.
+    card: {
+      background: "transparent",
+      padding: "28px 32px",
+      [MOBILE]: { padding: "26px 22px" },
+    },
     scrollBox: { background: "transparent" },
 
     navbar: {
@@ -100,6 +108,9 @@ export const clerkAppearance: Appearance = {
       fontFamily: "var(--font-cinzel)",
       fontWeight: 700,
       fontSize: 22,
+      // Cinzel is all-caps with tall ascenders; at Clerk's default leading a
+      // title this size clips against whatever sits above it.
+      lineHeight: 1.35,
       color: "var(--fg)",
     },
     headerSubtitle: {

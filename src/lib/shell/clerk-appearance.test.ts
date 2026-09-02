@@ -127,6 +127,21 @@ describe("Clerk appearance elements", () => {
     }
   });
 
+  // `card` is the only element between cardBox's rounded edge and the content.
+  // It shipped at padding 0, which put the sign-in modal's header and its
+  // fields flush against that edge.
+  it("insets card content from the surface edge at both widths", () => {
+    expect(elements.card.padding).toBe("28px 32px");
+    const mobile = elements.card["@media (max-width: 639px)"] as Record<string, unknown>;
+    expect(mobile.padding).toBe("26px 22px");
+  });
+
+  // Cinzel's ascenders clip at the default leading, which is what cut the top
+  // off "Sign in to The 99".
+  it("gives the Cinzel header title room to sit in", () => {
+    expect(elements.headerTitle.lineHeight).toBe(1.35);
+  });
+
   // The design table predates Clerk 6.12, which stopped rendering these. A key
   // that matches nothing is dead config that reads as coverage.
   it("omits the elements Clerk no longer renders", () => {
