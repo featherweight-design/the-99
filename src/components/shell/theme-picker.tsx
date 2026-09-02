@@ -114,6 +114,7 @@ export function ThemePicker({
     const next = (index + delta + THEMES.length) % THEMES.length;
     const chips = e.currentTarget.parentElement?.querySelectorAll<HTMLElement>('[role="radio"]');
     chips?.[next]?.focus();
+    choose(THEMES[next].key, THEMES[next].name);
   }
 
   return (

@@ -162,7 +162,7 @@ function AccountPopover(props: PanelProps) {
         id={props.panelId}
         role="menu"
         aria-labelledby={props.nameId}
-        className="mt-[10px] flex flex-col gap-[2px] pt-[10px]"
+        className="mt-[12px] flex flex-col gap-[2px] pt-[10px]"
         style={{ borderTop: "1px solid var(--border)" }}
       >
         <MenuItems {...props} />

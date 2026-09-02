@@ -81,6 +81,19 @@ describe("ThemePicker", () => {
     expect(radios[0]).toHaveFocus();
   });
 
+  // A radiogroup with no Save has to select as it moves, or the arrow keys
+  // leave the caret somewhere the app has not gone.
+  it("selects as the arrow key moves, not on a second press", () => {
+    render(<ThemePicker current="amonkhet" />);
+    const radios = screen.getAllByRole("radio");
+    radios[0].focus();
+    fireEvent.keyDown(radios[0], { key: "ArrowUp" });
+    expect(radios[5]).toHaveAttribute("aria-checked", "true");
+    expect(document.documentElement.dataset.theme).toBe("kaldheim");
+    expect(document.cookie).toContain("the99_theme=kaldheim");
+    expect(screen.getByRole("status")).toHaveTextContent("Rune Frost applied.");
+  });
+
   it("keeps the mobile sheet's chips at the 44px minimum touch target", () => {
     render(<ThemePicker current="amonkhet" panel="sheet" />);
     for (const chip of screen.getAllByRole("radio")) {
