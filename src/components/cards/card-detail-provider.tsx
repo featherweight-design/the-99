@@ -69,8 +69,10 @@ export function CardDetailTrigger({
       // wraps its own already-styled content, so a UA's default button border,
       // padding and background is never what any of them wants. twMerge puts a
       // caller's own bg-/border- utility ahead of the reset; an inline style
-      // from a caller outranks both.
-      className={twMerge("bg-transparent border-none", className)}
+      // from a caller outranks both. The reset is border-0 rather than
+      // border-none: border-none sets --tw-border-style, which a caller's own
+      // `border` reads, so it would give them a 1px border styled `none`.
+      className={twMerge("bg-transparent border-0", className)}
       style={{
         cursor: "pointer",
         padding: 0,
