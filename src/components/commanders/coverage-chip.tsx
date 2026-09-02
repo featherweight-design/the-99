@@ -180,7 +180,7 @@ export function CoverageDisclosure({
         aria-controls={controls}
         aria-label={
           expanded
-            ? recommendationsCopy.coverage.showFewer
+            ? recommendationsCopy.coverage.showFewerAria(role)
             : recommendationsCopy.coverage.showAllAria(n, role)
         }
         className="flex w-full items-center justify-center rounded-[8px] border border-dashed border-border-strong"
@@ -204,7 +204,7 @@ export function CoverageDisclosure({
       aria-controls={controls}
       aria-label={
         expanded
-          ? recommendationsCopy.coverage.showFewer
+          ? recommendationsCopy.coverage.showFewerAria(role)
           : recommendationsCopy.coverage.showAllAria(n, role)
       }
       className="inline-flex items-center rounded-full border border-dashed border-border-strong"

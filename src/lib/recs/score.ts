@@ -11,8 +11,8 @@ export type PoolCard = {
 export type RoleName = "ramp" | "draw" | "removal" | "wipes";
 
 /** One owned card that fills a role, with its EDHREC inclusion figure.
-    `inclusionPct` is null when EDHREC has no figure — never 0, which would
-    draw a real number for no data. */
+    Missing data is encoded as null, never as 0 — 0 is a figure EDHREC really
+    reports, so collapsing the two would draw a real number for no data. */
 export type RoleCard = { oracleId: string; name: string; inclusionPct: number | null };
 
 export type CommanderScore = {

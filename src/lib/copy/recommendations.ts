@@ -41,6 +41,10 @@ export const recommendationsCopy = {
     showAll: (n: string) => `Show all ${n}`,
     showAllAria: (n: string, role: string) => `Show all ${n} ${role} cards`,
     showFewer: 'Show fewer',
+    // Four role panels each carry this control, and a screen reader lists them
+    // together — four buttons all named "Show fewer" name nothing. The visible
+    // label stays short because its panel is right there on screen.
+    showFewerAria: (role: string) => `Show fewer ${role} cards`,
     // Past the expansion cap of 40 — a count, not a control.
     beyondCap: (n: string) => `+${n} more not shown`,
 

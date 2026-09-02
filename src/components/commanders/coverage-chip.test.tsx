@@ -185,8 +185,11 @@ describe("CoverageDisclosure", () => {
         onToggle={vi.fn()}
       />,
     );
-    const btn = screen.getByRole("button", { name: /Show fewer/i });
+    // Four role panels each carry this control, so the accessible name has to
+    // name its role — the visible label stays short beside its own panel.
+    const btn = screen.getByRole("button", { name: /Show fewer ramp cards/i });
     expect(btn).toBeInTheDocument();
+    expect(btn).toHaveTextContent("Show fewer");
     expect(btn).toHaveAttribute("aria-expanded", "true");
   });
 
