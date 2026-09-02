@@ -174,6 +174,25 @@ describe("CoverageDisclosure", () => {
     expect(screen.getByText(/Show all 5/)).toBeInTheDocument();
   });
 
+  // Expansion stops at 40. A sighted reader sees the "+N more not shown" line
+  // as soon as the panel opens; the accessible name has to say it up front,
+  // because "Show all 52" is a promise the control cannot keep.
+  it("announces the expansion cap, not the total, past 40 cards", () => {
+    render(
+      <CoverageDisclosure
+        width="phone"
+        total={52}
+        role="ramp"
+        expanded={false}
+        controls="ramp-list"
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Show 40 of 52 ramp cards" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows 'Show fewer' and aria-expanded=true when expanded", () => {
     render(
       <CoverageDisclosure

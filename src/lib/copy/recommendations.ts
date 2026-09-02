@@ -40,6 +40,12 @@ export const recommendationsCopy = {
     moreChips: (n: string) => `+${n} more`,
     showAll: (n: string) => `Show all ${n}`,
     showAllAria: (n: string, role: string) => `Show all ${n} ${role} cards`,
+    // Expansion stops at 40, so a role holding more than that cannot show all
+    // of them however the visible label reads. A sighted reader sees the
+    // "+N more not shown" line the moment the panel opens; a screen reader
+    // would only hear the promise, so it hears the real number instead.
+    showCappedAria: (shown: string, total: string, role: string) =>
+      `Show ${shown} of ${total} ${role} cards`,
     showFewer: 'Show fewer',
     // Four role panels each carry this control, and a screen reader lists them
     // together — four buttons all named "Show fewer" name nothing. The visible

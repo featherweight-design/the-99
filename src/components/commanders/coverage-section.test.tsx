@@ -526,7 +526,7 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
     });
     expect(screen.getByText(/\+33 more/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Show all 45 ramp cards/i }),
+      screen.getByRole("button", { name: /Show 40 of 45 ramp cards/i }),
     ).toBeInTheDocument();
   });
 
@@ -536,7 +536,7 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(45) },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 45 },
     });
-    const disclosureBtn = screen.getByRole("button", { name: /Show all 45 ramp cards/i });
+    const disclosureBtn = screen.getByRole("button", { name: /Show 40 of 45 ramp cards/i });
     fireEvent.click(disclosureBtn);
     await waitFor(() => {
       expect(
@@ -555,7 +555,7 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 45 },
     });
     expect(
-      screen.getByRole("button", { name: /Show all 45 ramp cards/i }),
+      screen.getByRole("button", { name: /Show 40 of 45 ramp cards/i }),
     ).toBeInTheDocument();
   });
 
@@ -565,7 +565,7 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
       roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(45) },
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 45 },
     });
-    const disclosureBtn = screen.getByRole("button", { name: /Show all 45 ramp cards/i });
+    const disclosureBtn = screen.getByRole("button", { name: /Show 40 of 45 ramp cards/i });
     fireEvent.click(disclosureBtn);
     await waitFor(() => {
       expect(

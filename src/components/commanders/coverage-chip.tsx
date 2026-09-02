@@ -159,9 +159,9 @@ export function CoverageDisclosure({
   onToggle,
 }: {
   width: "desktop" | "phone";
-  /** The role's whole card count — not the overflow. Both widths announce
-      "Show all N <role> cards", so the number they name has to be the same
-      number; only the desktop chip's visible label counts the remainder. */
+  /** The role's whole card count — not the overflow. Both widths announce the
+      same number, so it has to be the role's total; only the desktop chip's
+      visible label counts the remainder. */
   total: number;
   role: string;
   expanded: boolean;
@@ -169,6 +169,14 @@ export function CoverageDisclosure({
   onToggle: () => void;
 }): JSX.Element {
   const n = String(total);
+
+  // Expanding reveals at most COVERAGE_EXPANDED_CAP cards; the rest print as an
+  // inert count. "Show all N" would be a promise the control cannot keep, so
+  // past the cap the accessible name says what will actually appear.
+  const collapsedAria =
+    total > COVERAGE_EXPANDED_CAP
+      ? recommendationsCopy.coverage.showCappedAria(String(COVERAGE_EXPANDED_CAP), n, role)
+      : recommendationsCopy.coverage.showAllAria(n, role);
 
   if (width === "phone") {
     // Full-width 44px dashed row. Text is "Show all N" or "Show fewer".
@@ -181,7 +189,7 @@ export function CoverageDisclosure({
         aria-label={
           expanded
             ? recommendationsCopy.coverage.showFewerAria(role)
-            : recommendationsCopy.coverage.showAllAria(n, role)
+            : collapsedAria
         }
         className="flex w-full items-center justify-center rounded-[8px] border border-dashed border-border-strong"
         style={{ minHeight: "44px" }}
@@ -205,7 +213,7 @@ export function CoverageDisclosure({
       aria-label={
         expanded
           ? recommendationsCopy.coverage.showFewerAria(role)
-          : recommendationsCopy.coverage.showAllAria(n, role)
+          : collapsedAria
       }
       className="inline-flex items-center rounded-full border border-dashed border-border-strong"
       style={{ padding: "0 12px", height: 28 }}
