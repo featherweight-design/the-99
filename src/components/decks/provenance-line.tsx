@@ -124,21 +124,24 @@ export function ProvenanceLine({
 interface FillFailedBannerProps {
   /** deck.filled — true if the fill ran, even if the deck was later swept. */
   filled: boolean;
-  /** Total cards currently in the deck (auto + kept). */
-  cardCount: number;
+  /** Whether the deck holds any card at all. Emptiness is the whole question
+      here, so the banner takes the answer rather than a total it would have to
+      interpret — a row count and a copy count disagree on stacked basics but
+      agree on empty. */
+  hasCards: boolean;
   onRetry: () => void;
   pending: boolean;
 }
 
 export function FillFailedBanner({
   filled,
-  cardCount,
+  hasCards,
   onRetry,
   pending,
 }: FillFailedBannerProps) {
   // Only shown when the fill failed (filled=false) and the deck is still empty.
   // A swept deck is filled=true, so it will never match here — that's the point.
-  if (filled || cardCount > 0) return null;
+  if (filled || hasCards) return null;
 
   return (
     <div
@@ -194,13 +197,13 @@ export function FillFailedBanner({
 interface FillFailedBannerConnectedProps {
   deckId: string;
   filled: boolean;
-  cardCount: number;
+  hasCards: boolean;
 }
 
 export function FillFailedBannerConnected({
   deckId,
   filled,
-  cardCount,
+  hasCards,
 }: FillFailedBannerConnectedProps) {
   const [pending, startTransition] = useTransition();
 
@@ -219,7 +222,7 @@ export function FillFailedBannerConnected({
   return (
     <FillFailedBanner
       filled={filled}
-      cardCount={cardCount}
+      hasCards={hasCards}
       onRetry={handleRetry}
       pending={pending}
     />

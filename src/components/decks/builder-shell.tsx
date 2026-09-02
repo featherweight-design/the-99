@@ -570,7 +570,7 @@ export function BuilderShell({
               <FillFailedBannerConnected
                 deckId={deck.id}
                 filled={deck.filled}
-                cardCount={cards.length}
+                hasCards={cards.length > 0}
               />
             )}
 

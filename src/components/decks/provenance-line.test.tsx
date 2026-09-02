@@ -204,7 +204,7 @@ describe("FillFailedBanner", () => {
     render(
       <FillFailedBanner
         filled={false}
-        cardCount={0}
+        hasCards={false}
         onRetry={vi.fn()}
         pending={false}
       />,
@@ -226,7 +226,7 @@ describe("FillFailedBanner", () => {
     render(
       <FillFailedBanner
         filled={true}
-        cardCount={0}
+        hasCards={false}
         onRetry={vi.fn()}
         pending={false}
       />,
@@ -241,7 +241,7 @@ describe("FillFailedBanner", () => {
     render(
       <FillFailedBanner
         filled={false}
-        cardCount={5}
+        hasCards
         onRetry={vi.fn()}
         pending={false}
       />,
@@ -261,7 +261,7 @@ describe("FillFailedBannerConnected", () => {
     const { fillDeck } = await import("../../app/decks/actions");
     vi.mocked(fillDeck).mockRejectedValue(new Error("network"));
 
-    render(<FillFailedBannerConnected deckId="deck-1" filled={false} cardCount={0} />);
+    render(<FillFailedBannerConnected deckId="deck-1" filled={false} hasCards={false} />);
 
     fireEvent.click(
       screen.getByRole("button", { name: recommendationsCopy.fill.failedRetryAria }),
