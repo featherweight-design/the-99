@@ -10,6 +10,7 @@
 //
 // Run by hand, like its siblings, and not part of `pnpm test`:
 //   PROBE_USER_EMAIL=you@example.com node --env-file=.env scripts/probe-themes.mjs
+import { readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -56,7 +57,23 @@ async function signInTicket() {
   return token;
 }
 
-const THEMES = ["amonkhet", "kamigawa", "innistrad", "phyrexia", "duskmourn", "kaldheim"];
+// Read from the stylesheet rather than restated here. A probe holding its own
+// copy of the list would let a seventh theme ship unwalked and still report
+// clean — the same silence this whole script exists to break. The blocks are
+// the source of truth for what is themeable at all, ahead of any registry that
+// names them for the UI, and `amonkhet` shares `:root` so it carries its own
+// selector too.
+// Amonkhet is named rather than read: it is deliberately the `:root` default and
+// so has no block of its own, which is what makes an unrecognised value degrade
+// to a complete theme instead of to bare tokens.
+const SHEET = new URL("../src/app/globals.css", import.meta.url);
+const THEMES = [
+  ...new Set([
+    "amonkhet",
+    ...[...readFileSync(SHEET, "utf8").matchAll(/\[data-theme="([a-z]+)"\]/g)].map((m) => m[1]),
+  ]),
+];
+if (THEMES.length < 2) throw new Error(`Read no [data-theme] blocks from ${SHEET.pathname}.`);
 const ROUTES = ["/", "/collection", "/commanders", "/decks"];
 const VIEWPORTS = [
   { label: "390", width: 390, height: 844 },
