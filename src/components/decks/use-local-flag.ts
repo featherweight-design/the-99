@@ -69,6 +69,17 @@ function readFlag(key: string): boolean {
   }
 }
 
+// The two bits the hook returns, packed into one number. useSyncExternalStore
+// compares snapshots by identity, so a number is the cheapest shape that can
+// carry both from a single subscription — reading them as two stores would
+// register a second callback and a second `storage` listener on every mount.
+const IS_SET = 1;
+const SET_HERE = 2;
+
+function readSnapshot(key: string): number {
+  return (readFlag(key) ? IS_SET : 0) | (setWhileWatched.has(key) ? SET_HERE : 0);
+}
+
 /**
  * Returns `[isSet, set, setHere]` for the given localStorage key. Write-once;
  * nothing unsets it.
@@ -87,20 +98,16 @@ export function useLocalFlag(key: string): [boolean, () => void, boolean] {
     [key],
   );
 
-  const value = useSyncExternalStore(
+  // Server snapshot is `IS_SET` alone — "assume seen", and nothing can have
+  // been set here during a render that has not happened in a browser yet — so
+  // neither the server render nor hydration can contain the gated surface.
+  const snapshot = useSyncExternalStore(
     subscribe,
-    () => readFlag(key),
-    () => true,
+    () => readSnapshot(key),
+    () => IS_SET,
   );
-
-  // Server snapshot `false`: nothing has been set during a render that has not
-  // happened in a browser yet. Pairs with `value`'s "assume seen" so neither
-  // the server render nor hydration can contain the gated surface.
-  const setHere = useSyncExternalStore(
-    subscribe,
-    () => setWhileWatched.has(key),
-    () => false,
-  );
+  const value = (snapshot & IS_SET) !== 0;
+  const setHere = (snapshot & SET_HERE) !== 0;
 
   const set = useCallback(() => {
     setWhileWatched.add(key);

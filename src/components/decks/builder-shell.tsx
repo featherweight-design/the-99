@@ -347,9 +347,11 @@ export function BuilderShell({
 
   // Every route into the export dialog closes the reveal, not just the one
   // inside it — the user has acted on the moment, so leaving the band standing
-  // behind the dialog is noise.
+  // behind the dialog is noise. Only while it is actually showing, though: an
+  // export from a half-built deck would otherwise spend the dismissal in
+  // advance and swallow the reveal when that same visit reaches 99.
   const openExport = () => {
-    setRevealDismissed(true);
+    if (revealOpen) setRevealDismissed(true);
     setExportOpen(true);
   };
 

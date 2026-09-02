@@ -50,8 +50,8 @@ function makeDeck(overrides: Partial<DeckDetail> = {}): DeckDetail {
   } as DeckDetail;
 }
 
-function renderBuilder(deck: DeckDetail) {
-  return render(
+function builder(deck: DeckDetail) {
+  return (
     <BuilderShell
       deck={deck}
       suggestions={[]}
@@ -59,8 +59,12 @@ function renderBuilder(deck: DeckDetail) {
       firstRun={false}
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={false}
-    />,
+    />
   );
+}
+
+function renderBuilder(deck: DeckDetail) {
+  return render(builder(deck));
 }
 
 const HEADING = "Ninety-nine.";
@@ -167,6 +171,22 @@ describe("BuilderShell — 99/99 celebration", () => {
 
     await act(async () => {
       renderBuilder(makeDeck({ id: "deck-mid-export" }));
+    });
+    expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
+  });
+
+  // The dismissal opening the export dialog spends is a piece of visit state,
+  // and the deck can reach 99 later in that same visit. Burning it on an export
+  // from a half-built deck would swallow the reveal the user has not seen yet.
+  it("mid-build export does not pre-dismiss the reveal for the rest of the visit", async () => {
+    const view = await act(async () =>
+      renderBuilder(makeDeck({ id: "deck-mid-visit", built: 40, ownedCount: 40 })),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Export" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Close export dialog" })[0]);
+
+    await act(async () => {
+      view.rerender(builder(makeDeck({ id: "deck-mid-visit" })));
     });
     expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
   });
