@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#14110E"/><g transform="translate(50 38)"><rect x="-19" y="-5" width="10" height="10" transform="rotate(45 -14 0)" fill="#CF8745"/><rect x="-7" y="-7" width="14" height="14" transform="rotate(45 0 0)" fill="#CF8745"/><rect x="9" y="-5" width="10" height="10" transform="rotate(45 14 0)" fill="#CF8745"/></g><text x="50" y="72" font-family="Georgia, serif" font-weight="700" font-size="26" fill="#EDE6D8" text-anchor="middle">99</text></svg></template>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&amp;family=Chakra+Petch:wght@400;500;600;700&amp;family=Spectral:wght@400;500;600;700&amp;family=Syncopate:wght@400;700&amp;family=Big+Shoulders+Display:wght@400..800&amp;family=Metamorphous&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<style>
+  body { margin: 0; background: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; text-decoration: underline; }
+  @keyframes crownPulse { 0%, 100% { opacity: 0.30; } 50% { opacity: 1; } }
+</style>
+</helmet>
+
+<div style="background: #14110E; color: #EDE6D8; font-family: 'IBM Plex Sans', system-ui, sans-serif; padding: 56px 48px 120px; display: flex; flex-direction: column; gap: 72px; max-width: 1560px; margin: 0 auto;">
+
+  <header style="display: flex; flex-direction: column; gap: 18px;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">The 99 · design handoff · R2 · 2026-09-01</div>
+    <h1 style="font-family: 'Cinzel', serif; font-weight: 800; font-size: 48px; line-height: 1.1; margin: 0; color: #EDE6D8;">Six-theme visual system</h1>
+    <p style="font-size: 19px; line-height: 1.6; max-width: 720px; margin: 0; color: #C0B8A6;">Six complete palettes, one display face each, and the retirement of the character layer across ten empty and loading states. Chrome carries the plane's temperature; card art keeps its monopoly on saturation.</p>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #14110E; background: #CF8745; padding: 6px 12px; border-radius: 999px; font-weight: 600;">All six pass every §8 gate</span>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #C0B8A6; border: 1px solid #3A3229; padding: 6px 12px; border-radius: 999px;">35 tokens × 6 themes</span>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #C0B8A6; border: 1px solid #3A3229; padding: 6px 12px; border-radius: 999px;">5 open calls answered</span>
+    </div>
+    <div style="border: 1px solid #3A3229; border-left: 3px solid #DEAA29; background: #1E1A15; border-radius: 10px; padding: 18px 22px; max-width: 900px; margin-top: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DEAA29; margin-bottom: 8px;">Amends the brand package</div>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.65; color: #C0B8A6;">“Palette A · Table Candlelight” and “Cinzel” are no longer <em>the</em> palette and <em>the</em> display face — each is one option of six. Everything else in <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A59C89;">design_handoff_the99_brand</code> still holds: the crowned-numeral logomark, WUBRG-as-tags-only, the type scale, the spacing scale.</p>
+    </div>
+  </header>
+
+  <section data-screen-label="A — The six themes" style="display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">§A</div>
+      <h2 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px; margin: 0; color: #EDE6D8;">The six themes</h2>
+      <p style="font-size: 15px; line-height: 1.65; max-width: 720px; margin: 0; color: #C0B8A6;">Descriptive name first, plane as a subtitle — §9.1. Each card is painted entirely in its own tokens, so the chrome temperature is doing the work, not the accent.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div style="border: 1px solid {{ t.borderStrong }}; border-radius: 12px; overflow: hidden; background: {{ t.bg }};">
+          <div style="padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="font-family: {{ t.faceStack }}; font-weight: 700; font-size: 26px; line-height: 1.15; color: {{ t.fg }};">{{ t.name }}</div>
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: {{ t.fgFaint }};">{{ t.plane }}</div>
+          </div>
+          <div style="display: flex; height: 46px;">
+            <div style="flex: 1; background: {{ t.bg }};"></div>
+            <div style="flex: 1; background: {{ t.surface }};"></div>
+            <div style="flex: 1; background: {{ t.elevated }};"></div>
+            <div style="flex: 1; background: {{ t.borderStrong }};"></div>
+            <div style="flex: 1.6; background: {{ t.accent }};"></div>
+          </div>
+          <div style="padding: 16px 22px 22px; background: {{ t.surface }}; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{ t.fgMuted }};">{{ t.accent }}</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: {{ t.fgFaint }};">C {{ t.accentC }}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: {{ t.fgFaint }};">display</span>
+              <span style="font-family: {{ t.faceStack }}; font-size: 15px; color: {{ t.fgBody }};">{{ t.face }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="B — Type specimen" style="display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">§B · §11 deliverable</div>
+      <h2 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px; margin: 0; color: #EDE6D8;">Type specimen — six faces, real headings, real sizes</h2>
+      <p style="font-size: 15px; line-height: 1.65; max-width: 780px; margin: 0; color: #C0B8A6;">Each column is a 320px measure — the card-modal content column, which is where the app's longest heading lives untruncated at <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">card-modal.tsx:390</code> (22px mobile / 29px desktop, no <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">truncate</code>). Drag the slider in Tweaks to find each face's wrap point.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(368px, 1fr)); gap: 20px;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div style="border: 1px solid #3A3229; border-radius: 12px; background: #1E1A15; padding: 22px; display: flex; flex-direction: column; gap: 18px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-bottom: 1px solid #2B241B; padding-bottom: 12px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #DE9757;">{{ t.face }}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #8B8270;">{{ t.name }}</span>
+          </div>
+          <div style="width: 320px; max-width: 100%;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E6654; margin-bottom: 6px;">card name · {{ specimenPx }}px</div>
+            <div style="font-family: {{ t.faceStack }}; font-weight: 700; font-size: {{ specimenPx }}px; line-height: 1.15; color: #EDE6D8;">Ghired, Mirror of the Wilds</div>
+          </div>
+          <div style="width: 320px; max-width: 100%;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E6654; margin-bottom: 6px;">page title · 30px</div>
+            <div style="font-family: {{ t.faceStack }}; font-weight: 700; font-size: 30px; line-height: 1.2; color: #EDE6D8;">Reading your collection</div>
+          </div>
+          <div style="width: 320px; max-width: 100%;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E6654; margin-bottom: 6px;">loading heading · 22px</div>
+            <div style="font-family: {{ t.faceStack }}; font-weight: 700; font-size: 22px; line-height: 1.25; color: #C0B8A6;">Consulting the council</div>
+          </div>
+          <div style="display: flex; align-items: flex-end; gap: 14px; border-top: 1px solid #2B241B; padding-top: 14px;">
+            <span style="font-family: {{ t.faceStack }}; font-weight: 900; font-size: 48px; line-height: 1; color: #29241F;">404</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; line-height: 1.5; color: #6E6654;">not-found<br/>48 / 64px</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="border: 1px solid #3A3229; border-radius: 10px; background: #1A1611; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; max-width: 900px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DE9757;">What the specimen surfaces</div>
+      <ul style="margin: 0; padding-left: 20px; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;">
+        <li><strong style="color: #EDE6D8;">Syncopate is the outlier.</strong> It has no bold below 700, very wide default tracking and tall caps — “Ghired, Mirror of the Wilds” takes three lines at 29px where Cinzel takes two. Oil and Iron needs a 26px cap on that slot, or the modal header grows a line.</li>
+        <li><strong style="color: #EDE6D8;">Big Shoulders is the opposite problem.</strong> Condensed and short — it fits everything, and at 22px reads a full step smaller than the others. Screen Glow wants +1px on headings under 24px to keep the hierarchy even.</li>
+        <li><strong style="color: #EDE6D8;">Metamorphous has no weight axis at all</strong> — one weight, 400. Every <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">font-bold</code> and <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">font-[700]</code> on a heading is a no-op under Rune Frost. That is 30-odd call sites silently losing their weight contrast; it needs a synthetic-bold decision, not a CSS one.</li>
+        <li><strong style="color: #EDE6D8;">Spectral and Cinzel are interchangeable at these sizes</strong> in width, so Moonlit is the safe theme and Cinzel-fitted layouts port to it unchanged.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section data-screen-label="C — Theme picker" style="display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">§C · answers §9.2 and §9.3</div>
+      <h2 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px; margin: 0; color: #EDE6D8;">The picker lives inline in the account menu</h2>
+      <p style="font-size: 15px; line-height: 1.65; max-width: 780px; margin: 0; color: #C0B8A6;">No new route, no second sheet. Six options as a 3×2 grid of miniatures inside the existing account popover (desktop) and bottom sheet (mobile). A miniature shows the three things a theme actually changes — chrome temperature, accent, display face — so the preview is the feature rather than a swatch standing in for it.</p>
+    </div>
+    <div style="display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start;">
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #8B8270;">desktop popover · 300px</div>
+        <div style="width: 300px; background: #1E1A15; border: 1px solid #3A3229; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 18px 44px rgba(0,0,0,0.55);">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 8px 8px 12px; border-bottom: 1px solid #2B241B;">
+            <span style="width: 32px; height: 32px; border-radius: 999px; background: #29241F; color: #CF8745; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center;">HH</span>
+            <span style="font-size: 14px; color: #EDE6D8;">Hugh Hartigan</span>
+          </div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270; padding: 0 4px;">Theme</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <sc-for list="{{ pickerThemes }}" as="p" hint-placeholder-count="6">
+              <div style="display: flex; flex-direction: column; gap: 5px; padding: 5px; border-radius: 10px; background: {{ p.chipBg }}; outline: {{ p.chipRing }}; outline-offset: {{ p.chipOffset }};">
+                <div style="position: relative; height: 46px; border-radius: 6px; overflow: hidden; background: {{ p.bg }}; border: 1px solid {{ p.borderStrong }};">
+                  <div style="position: absolute; left: 5px; right: 5px; top: 6px; height: 20px; border-radius: 3px; background: {{ p.surface }}; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-family: {{ p.faceStack }}; font-weight: 700; font-size: 12px; line-height: 1; color: {{ p.fg }};">99</span>
+                  </div>
+                  <div style="position: absolute; left: 5px; bottom: 6px; width: 18px; height: 4px; border-radius: 2px; background: {{ p.accent }};"></div>
+                  <div style="position: absolute; left: 27px; bottom: 6px; right: 5px; height: 4px; border-radius: 2px; background: {{ p.border }};"></div>
+                  <sc-if value="{{ p.selected }}" hint-placeholder-val="{{ false }}">
+                    <span style="position: absolute; top: 3px; right: 4px; width: 13px; height: 13px; border-radius: 999px; background: {{ p.accent }}; color: {{ p.bg }}; font-size: 9px; line-height: 13px; text-align: center; font-weight: 700;">✓</span>
+                  </sc-if>
+                </div>
+                <div style="font-size: 10.5px; line-height: 1.25; font-weight: 500; color: {{ p.nameColor }};">{{ p.name }}</div>
+                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; line-height: 1.2; color: #6E6654; letter-spacing: 0.04em;">{{ p.planeShort }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px; border-top: 1px solid #2B241B; padding-top: 10px;">
+            <div style="font-size: 13.5px; color: #C0B8A6; padding: 8px;">Manage account</div>
+            <div style="font-size: 13.5px; color: #C0B8A6; padding: 8px;">Sign out</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270; padding-left: 2px;">
+          <span>1 selected · Gilded Stone</span>
+          <span>2 hover · Neon Rain</span>
+          <span>3 focus · Moonlit</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #8B8270;">mobile sheet · 390px</div>
+        <div style="width: 390px; background: #1E1A15; border: 1px solid #3A3229; border-radius: 18px 18px 0 0; padding: 16px 16px 28px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="width: 42px; height: 4px; border-radius: 999px; background: #3A3229; margin: 0 auto 4px;"></div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">Theme</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+            <sc-for list="{{ pickerThemes }}" as="p" hint-placeholder-count="6">
+              <div style="display: flex; align-items: center; gap: 11px; padding: 10px; border-radius: 10px; min-height: 44px; background: {{ p.chipBg }}; outline: {{ p.chipRing }}; outline-offset: {{ p.chipOffset }};">
+                <div style="position: relative; width: 52px; height: 38px; flex: none; border-radius: 6px; overflow: hidden; background: {{ p.bg }}; border: 1px solid {{ p.borderStrong }};">
+                  <div style="position: absolute; left: 4px; right: 4px; top: 5px; height: 16px; border-radius: 3px; background: {{ p.surface }}; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-family: {{ p.faceStack }}; font-weight: 700; font-size: 10px; line-height: 1; color: {{ p.fg }};">99</span>
+                  </div>
+                  <div style="position: absolute; left: 4px; bottom: 5px; width: 16px; height: 4px; border-radius: 2px; background: {{ p.accent }};"></div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                  <span style="font-size: 12.5px; font-weight: 500; color: {{ p.nameColor }};">{{ p.name }}</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #6E6654;">{{ p.planeShort }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: 1; min-width: 300px; border: 1px solid #3A3229; border-radius: 10px; background: #1A1611; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DE9757;">Picker rules</div>
+        <ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.7; color: #C0B8A6;">
+          <li><strong style="color: #EDE6D8;">Selected is a ring plus a tick</strong>, never colour alone — §10's no-colour-only rule applies to the picker itself.</li>
+          <li><strong style="color: #EDE6D8;">Focus is the app's own 2px accent outline at 2px offset</strong>, inherited from <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A59C89;">globals.css</code> <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A59C89;">@layer base</code>. It reads against the popover surface in all six.</li>
+          <li><strong style="color: #EDE6D8;">Roving-tabindex radiogroup</strong>, arrow keys move and select in one step. Selection applies instantly; there is no Save, so the live region announces “Neon Rain applied.”</li>
+          <li><strong style="color: #EDE6D8;">Mobile chips are 44px minimum</strong> in a 2-up grid; the 3-up desktop grid is pointer-only.</li>
+          <li><strong style="color: #EDE6D8;">Font cost is deferred to the interaction.</strong> The miniatures render all six display faces, which fetches all six — but the chips do not exist until the menu opens, so page load is unaffected and the spec's lazy behaviour holds. One user-initiated fetch of ~6 woff2 subsets, once per session. Called out because it is the one place the six-font budget is spent deliberately.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="D — Empty states" style="display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">§D · answers §9.4 — the biggest open call</div>
+      <h2 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px; margin: 0; color: #EDE6D8;">The crown replaces the creature</h2>
+      <p style="font-size: 15px; line-height: 1.65; max-width: 840px; margin: 0; color: #C0B8A6;">The replacement mark is already in the codebase. <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">completion-reveal.tsx:78–80</code> draws three brass diamonds at 9/13/9px directly above the celebration heading — the logomark's crown, sitting beside the kaiju the whole time. Retiring the character layer does not create a hole; it removes the thing that was standing in front of the mark.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+      <div style="border: 1px solid #3A3229; border-radius: 12px; background: #1E1A15; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DE9757;">Why it works</div>
+        <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; color: #C0B8A6;">
+          <li>Three rotated squares — no illustration, no SVG asset, no per-theme art.</li>
+          <li>Already brand-owned. It is the logomark's crown at small-large-small.</li>
+          <li>Entirely token-driven, so it themes for free in all six.</li>
+          <li>It scales: one geometry, three intensities.</li>
+        </ul>
+      </div>
+      <div style="border: 1px solid #3A3229; border-radius: 12px; background: #1E1A15; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DE9757;">Three intensities</div>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; transform: rotate(45deg); background: #3A3229;"></span><span style="width: 9px; height: 9px; transform: rotate(45deg); background: #3A3229;"></span><span style="width: 6px; height: 6px; transform: rotate(45deg); background: #3A3229;"></span></div>
+            <span style="font-size: 13px; color: #A59C89;"><strong style="color: #EDE6D8;">Quiet</strong> · <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">--border-strong</code> · in-page empties</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="display: inline-flex; align-items: center; gap: 7px;"><span style="width: 9px; height: 9px; transform: rotate(45deg); background: #AB6E37;"></span><span style="width: 13px; height: 13px; transform: rotate(45deg); background: #AB6E37;"></span><span style="width: 9px; height: 9px; transform: rotate(45deg); background: #AB6E37;"></span></div>
+            <span style="font-size: 13px; color: #A59C89;"><strong style="color: #EDE6D8;">Page</strong> · <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">--accent-strong</code> · full-route empties</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="display: inline-flex; align-items: center; gap: 10px;"><span style="width: 14px; height: 14px; transform: rotate(45deg); background: #CF8745;"></span><span style="width: 20px; height: 20px; transform: rotate(45deg); background: #CF8745;"></span><span style="width: 14px; height: 14px; transform: rotate(45deg); background: #CF8745;"></span></div>
+            <span style="font-size: 13px; color: #A59C89;"><strong style="color: #EDE6D8;">Loud</strong> · <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">--accent</code> · the 99/99 reveal only</span>
+          </div>
+        </div>
+      </div>
+      <div style="border: 1px solid #3A3229; border-radius: 12px; background: #1E1A15; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DE9757;">And it absorbs the loader</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.7; color: #C0B8A6;"><code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A59C89;">LoaderDots</code> was three dots pulsing on a 1.2s stagger. The crown is three diamonds. The loading state keeps the animation and changes the shape — same keyframes, same timing, one fewer component.</p>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 8px; background: #14110E;">
+          <div style="display: inline-flex; align-items: center; gap: 7px;">
+            <span style="width: 9px; height: 9px; transform: rotate(45deg); background: #CF8745; animation: crownPulse 1.2s ease-in-out infinite;"></span>
+            <span style="width: 13px; height: 13px; transform: rotate(45deg); background: #CF8745; animation: crownPulse 1.2s ease-in-out 0.2s infinite;"></span>
+            <span style="width: 9px; height: 9px; transform: rotate(45deg); background: #CF8745; animation: crownPulse 1.2s ease-in-out 0.4s infinite;"></span>
+          </div>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8B8270;">reduced motion → all three hold at 1.0</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-top: 8px;">
+      <h3 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 22px; margin: 0; color: #EDE6D8;">All ten surfaces, in the two most different themes</h3>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8B8270;">{{ emptyColumnsLabel }}</span>
+    </div>
+    <div style="display: grid; grid-template-columns: {{ emptyGridCols }}; gap: 18px;">
+      <sc-for list="{{ emptyStates }}" as="e" hint-placeholder-count="20">
+        <div style="border: 1px solid {{ e.borderStrong }}; border-radius: 12px; overflow: hidden; background: {{ e.bg }}; display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 14px; background: {{ e.surface }}; border-bottom: 1px solid {{ e.border }};">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: {{ e.fgFaint }};">{{ e.label }}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: {{ e.fgLocked }};">{{ e.themeName }}</span>
+          </div>
+          <div style="flex: 1; min-height: 214px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 26px 22px; background: {{ e.vignette }};">
+            <sc-if value="{{ e.showNumeral }}" hint-placeholder-val="{{ false }}">
+              <span style="font-family: {{ e.faceStack }}; font-weight: 900; font-size: 46px; line-height: 1; letter-spacing: 0.04em; color: {{ e.elevated }}; margin-bottom: 2px;">404</span>
+            </sc-if>
+            <sc-if value="{{ e.showCrown }}" hint-placeholder-val="{{ true }}">
+              <div style="display: inline-flex; align-items: center; gap: {{ e.crownGap }}; margin-bottom: 14px;">
+                <span style="width: {{ e.crownSm }}; height: {{ e.crownSm }}; transform: rotate(45deg); background: {{ e.markColor }};"></span>
+                <span style="width: {{ e.crownLg }}; height: {{ e.crownLg }}; transform: rotate(45deg); background: {{ e.markColor }};"></span>
+                <span style="width: {{ e.crownSm }}; height: {{ e.crownSm }}; transform: rotate(45deg); background: {{ e.markColor }};"></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ e.showPips }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+                <span style="width: 14px; height: 14px; border-radius: 999px; background: {{ e.pipR }}; opacity: 0.5; box-shadow: 0 0 0 2px {{ e.accent }};"></span>
+                <span style="width: 14px; height: 14px; border-radius: 999px; background: {{ e.pipW }}; opacity: 0.5; box-shadow: 0 0 0 2px {{ e.accent }};"></span>
+              </div>
+            </sc-if>
+            <div style="font-family: {{ e.faceStack }}; font-weight: 700; font-size: {{ e.headingPx }}; line-height: 1.2; color: {{ e.fg }};">{{ e.heading }}</div>
+            <sc-if value="{{ e.status }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; margin-top: 7px; color: {{ e.fgFaint }};">{{ e.status }}</div>
+            </sc-if>
+            <p style="margin: 9px 0 0; font-size: 13px; line-height: 1.6; max-width: 300px; color: {{ e.fgBody }};">{{ e.body }}</p>
+            <sc-if value="{{ e.count }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; margin-top: 11px; color: {{ e.warning }};">{{ e.count }}</div>
+            </sc-if>
+            <sc-if value="{{ e.cta }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; justify-content: center;">
+                <span style="font-size: 12.5px; font-weight: 600; padding: 9px 17px; border-radius: 8px; background: {{ e.accent }}; color: {{ e.bg }};">{{ e.cta }}</span>
+                <sc-if value="{{ e.cta2 }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: 12.5px; font-weight: 600; padding: 9px 17px; border-radius: 8px; border: 1px solid {{ e.borderStrong }}; color: {{ e.fg }};">{{ e.cta2 }}</span>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+          <div style="padding: 9px 14px; background: {{ e.surface }}; border-top: 1px solid {{ e.border }};">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; line-height: 1.5; color: {{ e.fgLocked }};">{{ e.note }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="border: 1px solid #3A3229; border-radius: 10px; background: #1A1611; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DE9757;">The two §6 asked me to call explicitly</div>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">Decks index — keeps a mark.</strong> It is a full-route empty list, the same shape as first-run and 404, so it takes the Page crown. Nothing about it is special enough to earn an exception.</p>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">Guided banner — loses its mark entirely.</strong> It is an inline directive banner with copy beside it, not an empty state. A decorative crown inside a banner is exactly “absence dressed up as a design”. Its mark is the 3px accent left border it already has in <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A59C89;">.guided-banner</code> — which is also the rule that has to move into the token block in Phase 2, since it currently hardcodes six literals and a two-stop gradient.</p>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">The vignette survives, tokenised.</strong> Six of the ten surfaces paint <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A59C89;">rgba(201,162,75,0.07)</code> as a radial behind the creature, and <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A59C89;">loading-screen.tsx</code> a seventh at <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A59C89;">0.08</code>. That is a hardcoded brass literal and it must become accent-derived at ≤8% alpha. It is also the single largest accent area in the app — which is precisely why an empty state gets a crown and one button and nothing else. See §F.</p>
+    </div>
+  </section>
+
+  <section data-screen-label="E — Populated surface" style="display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">§E · §6 density stress test</div>
+      <h2 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px; margin: 0; color: #EDE6D8;">The densest surface, in all six</h2>
+      <p style="font-size: 15px; line-height: 1.65; max-width: 800px; margin: 0; color: #C0B8A6;">A commander recommendation card: accent in a primary button and a fit bar, WUBRG pips on <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">--surface</code>, all three semantics, and the availability marker. Turn on the accent overlay in Tweaks to see every accent-painted region outlined against the §8.5 area budget.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div style="border: 1px solid {{ t.borderStrong }}; border-radius: 12px; background: {{ t.bg }}; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: {{ t.surfaceRail }}; border-bottom: 1px solid {{ t.border }};">
+            <span style="font-family: {{ t.faceStack }}; font-weight: 700; font-size: 14px; color: {{ t.fg }};">{{ t.name }}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: {{ t.fgFaint }};">{{ t.id }}</span>
+          </div>
+          <div style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="background: {{ t.surface }}; border: 1px solid {{ t.border }}; border-radius: 10px; padding: 14px; display: flex; gap: 13px;">
+              <div style="width: 62px; height: 87px; flex: none; border-radius: 5px; background: repeating-linear-gradient(135deg, #7B3F6E 0 6px, #93507F 6px 12px); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px;">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 6.5px; letter-spacing: 0.06em; color: #EFE2EC;">card art</span>
+              </div>
+              <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px;">
+                <div style="display: flex; align-items: baseline; gap: 7px;">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 15px; color: {{ t.accent }}; outline: {{ overlay }};">92</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: {{ t.fgFaint }};">/100</span>
+                </div>
+                <div style="font-family: {{ t.faceStack }}; font-weight: 600; font-size: 13.5px; line-height: 1.2; color: {{ t.fg }};">Ghired, Mirror of the Wilds</div>
+                <div style="display: flex; gap: 4px;">
+                  <span style="width: 11px; height: 11px; border-radius: 999px; background: {{ t.w }};"></span>
+                  <span style="width: 11px; height: 11px; border-radius: 999px; background: {{ t.r }};"></span>
+                  <span style="width: 11px; height: 11px; border-radius: 999px; background: {{ t.g }};"></span>
+                  <span style="width: 11px; height: 11px; border-radius: 999px; background: {{ t.u }};"></span>
+                  <span style="width: 11px; height: 11px; border-radius: 999px; background: {{ t.b }}; box-shadow: 0 0 0 1px {{ t.borderStrong }};"></span>
+                </div>
+                <div style="display: flex; height: 5px; border-radius: 999px; overflow: hidden; background: {{ t.elevated }}; outline: {{ overlay }};">
+                  <span style="width: 52%; background: {{ t.accent }};"></span>
+                  <span style="width: 24%; background: {{ t.accentMid }};"></span>
+                  <span style="width: 11%; background: {{ t.accentDim }};"></span>
+                </div>
+                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: {{ t.fgMuted }};">34 fit · 12 in use</div>
+              </div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; padding: 4px 9px; border-radius: 999px; background: {{ t.elevated }}; color: {{ t.success }};">● Complete</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; padding: 4px 9px; border-radius: 999px; background: {{ t.elevated }}; color: {{ t.warning }};">▲ 3 missing</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; padding: 4px 9px; border-radius: 999px; background: {{ t.elevated }}; color: {{ t.availOverFg }}; border: 1px solid {{ t.availOverBorder }};">✕ Over by 2</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <span style="font-size: 12px; font-weight: 600; padding: 9px 16px; border-radius: 8px; background: {{ t.accent }}; color: {{ t.bg }}; outline: {{ overlay }};">Build this</span>
+              <span style="font-size: 12px; font-weight: 600; padding: 9px 16px; border-radius: 8px; border: 1px solid {{ t.borderStrong }}; color: {{ t.fg }};">Compare</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: {{ t.availHardFg }}; margin-left: auto; outline: {{ overlay }};">0 free</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 8px; background: {{ t.surfaceSunken }}; border: 1px solid {{ t.border }};">
+              <span style="font-size: 11.5px; color: {{ t.fgMuted }};">Focus ring →</span>
+              <span style="font-size: 11.5px; padding: 5px 11px; border-radius: 6px; background: {{ t.elevated }}; color: {{ t.fgBody }}; outline: 2px solid {{ t.accent }}; outline-offset: 2px;">Filter</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: {{ t.fgLocked }}; margin-left: auto;">{{ t.ringLabel }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="F — Audit" style="display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">§F · §8.4, §8.5, §8.9 checked</div>
+      <h2 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px; margin: 0; color: #EDE6D8;">Measured, not asserted</h2>
+      <p style="font-size: 15px; line-height: 1.65; max-width: 800px; margin: 0; color: #C0B8A6;">Every value in <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">TOKEN-TABLE.md</code> was generated by solving for these floors rather than picked and then checked. Contrast is WCAG 2.1 relative luminance; chroma and ΔE are OKLCH/OKLab, measured on the quantised 8-bit hex.</p>
+    </div>
+    <div style="border: 1px solid #3A3229; border-radius: 12px; overflow: hidden;">
+      <div style="display: grid; grid-template-columns: 1.4fr repeat(8, 1fr); background: #211D18; padding: 12px 16px; gap: 8px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8B8270;">Theme</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270;">fg/bg ≥7</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270;">body ≥4.5</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270;">muted ≥4.5</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270;">faint ≥3</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270;">locked ≥3</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270;">ring ≥3</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270;">label ≥4.5</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270;">accent C</span>
+      </div>
+      <sc-for list="{{ audit }}" as="a" hint-placeholder-count="6">
+        <div style="display: grid; grid-template-columns: 1.4fr repeat(8, 1fr); padding: 12px 16px; gap: 8px; background: {{ a.rowBg }}; border-top: 1px solid #2B241B;">
+          <span style="font-size: 13px; color: #EDE6D8;">{{ a.name }}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6FA368;">{{ a.fgBg }}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6FA368;">{{ a.body }}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6FA368;">{{ a.muted }}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6FA368;">{{ a.faint }}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6FA368;">{{ a.locked }}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6FA368;">{{ a.ring }}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6FA368;">{{ a.btn }}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #A59C89;">{{ a.accentC }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div style="border: 1px solid #3A3229; border-left: 3px solid #DEAA29; border-radius: 10px; background: #1E1A15; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DEAA29;">§8 conflicted with itself in two places — both resolved</div>
+        <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">1 · The fifth chrome column is <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">--fg-faint</code>, not <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">--fg-muted</code>.</strong> Read as muted it missed §8.9's 4.5:1 floor in four of six themes — Neon Rain 3.81, Screen Glow 3.36, Moonlit 4.00, Oil and Iron 4.04. Amonkhet settled it: §8.2's <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">#8E8269</code> is shipped <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">--fg-faint</code> verbatim, while shipped <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">--fg-muted</code> is <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">#A89B84</code>. <strong style="color: #6FA368;">Confirmed in the R1 audit — §8.2's header is being amended and no hex changed.</strong></p>
+        <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">2 · Oil and Iron's accent misses the button floor by 0.05.</strong> <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">#518179</code> gives 4.45:1 against its own <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">--bg</code>, and a lighter label is worse, not better — a mid-lightness accent is squeezed from both sides. Lifted to <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">#52827A</code>, ΔE 0.003.</p>
+      </div>
+      <div style="border: 1px solid #3A3229; border-left: 3px solid #CF8745; border-radius: 10px; background: #1E1A15; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #CF8745;">§9.5 — Moonlit needs a floor</div>
+        <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;">Confirmed, with a number. At C 0.0189 the locked accent carries <em>less chroma than the border budget allows</em> (0.04) and sits ΔE 0.021 from its own <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">--fg-muted</code>. A focus ring that cannot be told from muted body text is not an accent.</p>
+        <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">Floor: C = 0.045</strong> — the minimum that clears every chrome budget. <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">#9AA9A3</code> → <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">#8AAFA1</code>, ΔE 0.026. Still the least saturated of the six by 2.5×, and still moonlight rather than mint.</p>
+        <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;">One knock-on: the floored sage lands ΔE 0.09 from <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">--success</code>, so Moonlit's success deepens to <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">#679F5F</code>. It is the only theme where a semantic moves for this reason.</p>
+      </div>
+    </div>
+
+    <div style="border: 1px solid #3A3229; border-radius: 10px; background: #1A1611; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DE9757;">§8.5 — the accent area budget, counted</div>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;">On the recommendations card above, accent paints the fit figure, the three-segment fit bar, one primary button, the availability figure and the focus ring — <strong style="color: #EDE6D8;">about 4% of the card's area</strong>. The budget is not at risk on data surfaces. It is at risk in exactly one place: <strong style="color: #EDE6D8;">the empty-state vignette</strong>, a 560×320 radial that covers roughly a third of the viewport at 7–8% alpha. Counted as painted area it is the largest accent region in the app by an order of magnitude.</p>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">Ruled: §8.5 is not a CI check.</strong> §8.4 makes chroma CI-enforcing; §8.5's “roughly 10%” is an eyes-on heuristic, and painted area is not statically computable anyway. <strong style="color: #EDE6D8;">Area × alpha is the model</strong> — the vignette costs ~2.5% of the viewport and the densest data surface ~4%. <strong style="color: #EDE6D8;">The vignette stays</strong>, and the ten empty states are unchanged.</p>
+    </div>
+  </section>
+
+  <div style="border-top: 2px solid #CF8745; padding-top: 28px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #CF8745;">R2 — added after the R1 audit</div>
+    <p style="margin: 0; font-size: 15px; line-height: 1.65; max-width: 820px; color: #C0B8A6;">Everything above is R1 as audited, with two citation corrections applied in place (<code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">completion-reveal.tsx:78–80</code>, and the vignette on six surfaces at 0.07 plus loading at 0.08). The two sections below are new.</p>
+  </div>
+
+  <section data-screen-label="G — App shell at rest" style="display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">§G · §6 · audit item A</div>
+      <h2 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px; margin: 0; color: #EDE6D8;">The shell at rest, both widths</h2>
+      <p style="font-size: 15px; line-height: 1.65; max-width: 820px; margin: 0; color: #C0B8A6;">Geometry read from <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">shell/nav.tsx</code>: 236px rail on <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">--surface-rail</code>, wordmark over a <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">--border</code> rule, a <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">Play</code> group label, four nav rows at <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">px-3 py-[10px]</code> with a 6px rotated diamond, and the account trigger pinned by <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">mt-auto</code>. This is where the chrome ramp does nine-tenths of its work, and where a theme either reads as its plane or doesn't.</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <sc-for list="{{ shellDesktop }}" as="s" hint-placeholder-count="2">
+        <div style="border: 1px solid {{ s.borderStrong }}; border-radius: 12px; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #211D18; border-bottom: 1px solid #3A3229;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #8B8270;">desktop · 1180px · {{ s.name }}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: #6E6654;">rail 236px · content --bg</span>
+          </div>
+          <div style="display: flex; height: 372px; background: {{ s.bg }};">
+            <div style="width: 236px; flex: none; display: flex; flex-direction: column; background: {{ s.surfaceRail }}; border-right: 1px solid {{ s.borderStrong }};">
+              <div style="display: flex; align-items: flex-end; gap: 7px; padding: 22px 20px 20px; border-bottom: 1px solid {{ s.border }};">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.42em; color: {{ s.accent }}; padding-bottom: 5px;">THE</span>
+                <span style="font-family: {{ s.faceStack }}; font-weight: 800; font-size: 26px; line-height: 1; color: {{ s.fg }};">99</span>
+              </div>
+              <div style="padding: 16px 12px; display: flex; flex-direction: column; gap: 4px;">
+                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: {{ s.fgFaint }}; padding: 0 12px 8px;">Play</div>
+                <sc-for list="{{ s.navItems }}" as="n" hint-placeholder-count="4">
+                  <div style="display: flex; align-items: center; gap: 11px; border-radius: 8px; padding: 10px 12px; font-size: 14px; background: {{ n.rowBg }}; color: {{ n.rowColor }}; font-weight: {{ n.rowWeight }};">
+                    <span style="width: 6px; height: 6px; flex: none; transform: rotate(45deg); background: {{ n.diamond }};"></span>
+                    <span>{{ n.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top: auto; padding: 14px 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; border-radius: 14px; padding: 2px 12px 2px 2px; background: {{ s.surfaceRaised }}; border: 1px solid {{ s.borderStrong }};">
+                  <span style="width: 38px; height: 38px; flex: none; border-radius: 12px; border: 1px solid {{ s.accent }}; background: {{ s.elevated }}; color: {{ s.accent }}; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center;">HH</span>
+                  <span style="font-size: 13.5px; color: {{ s.fgBody }};">Hugh Hartigan</span>
+                </div>
+              </div>
+            </div>
+            <div style="flex: 1; min-width: 0; padding: 26px 30px; display: flex; flex-direction: column; gap: 18px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px;">
+                <span style="font-family: {{ s.faceStack }}; font-weight: 700; font-size: 30px; line-height: 1.2; color: {{ s.fg }};">Commanders you can build</span>
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: {{ s.fgFaint }};">24 of 1,418</span>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-size: 12px; padding: 7px 14px; border-radius: 999px; background: {{ s.elevated }}; color: {{ s.fgBody }};">Includes ▾</span>
+                <span style="font-size: 12px; padding: 7px 14px; border-radius: 999px; border: 1px solid {{ s.borderStrong }}; color: {{ s.fgMuted }};">Score against ▾</span>
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: {{ s.fgFaint }}; margin-left: auto;">Order: Fit ↓</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div style="display: flex; gap: 12px; padding: 13px; border-radius: 10px; background: {{ s.surface }}; border: 1px solid {{ s.border }};">
+                  <div style="width: 46px; height: 64px; flex: none; border-radius: 4px; background: repeating-linear-gradient(135deg, #7B3F6E 0 5px, #93507F 5px 10px);"></div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 14px; color: {{ s.accent }};">92</span>
+                    <span style="font-family: {{ s.faceStack }}; font-weight: 600; font-size: 13px; line-height: 1.2; color: {{ s.fg }};">Ghired, Mirror of the Wilds</span>
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: {{ s.fgMuted }};">34 fit · 12 in use</span>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 12px; padding: 13px; border-radius: 10px; background: {{ s.surface }}; border: 1px solid {{ s.border }};">
+                  <div style="width: 46px; height: 64px; flex: none; border-radius: 4px; background: repeating-linear-gradient(135deg, #2F5E6B 0 5px, #3D7484 5px 10px);"></div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 14px; color: {{ s.accent }};">88</span>
+                    <span style="font-family: {{ s.faceStack }}; font-weight: 600; font-size: 13px; line-height: 1.2; color: {{ s.fg }};">Atraxa, Praetors' Voice</span>
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: {{ s.fgMuted }};">41 fit · 3 in use</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <sc-for list="{{ shellMobile }}" as="s" hint-placeholder-count="3">
+        <div style="width: 390px; border: 1px solid {{ s.borderStrong }}; border-radius: 12px; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #211D18; border-bottom: 1px solid #3A3229;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #8B8270;">390px · {{ s.name }}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: #6E6654;">tab bar 80px</span>
+          </div>
+          <div style="height: 470px; display: flex; flex-direction: column; background: {{ s.bg }};">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 14px; border-bottom: 1px solid {{ s.border }};">
+              <div style="display: flex; align-items: flex-end; gap: 3px;">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.4em; color: {{ s.accent }}; padding-bottom: 4px;">THE</span>
+                <span style="font-family: {{ s.faceStack }}; font-weight: 800; font-size: 22px; line-height: 1; color: {{ s.fg }};">99</span>
+              </div>
+              <span style="width: 38px; height: 38px; border-radius: 12px; border: 1px solid {{ s.accent }}; background: {{ s.elevated }}; color: {{ s.accent }}; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">HH</span>
+            </div>
+            <div style="flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+              <span style="font-family: {{ s.faceStack }}; font-weight: 700; font-size: 22px; line-height: 1.2; color: {{ s.fg }};">Commanders you can build</span>
+              <div style="display: flex; gap: 7px;">
+                <span style="font-size: 11.5px; padding: 8px 13px; border-radius: 999px; background: {{ s.elevated }}; color: {{ s.fgBody }};">Includes ▾</span>
+                <span style="font-size: 11.5px; padding: 8px 13px; border-radius: 999px; border: 1px solid {{ s.borderStrong }}; color: {{ s.fgMuted }};">Score ▾</span>
+              </div>
+              <div style="display: flex; gap: 12px; padding: 13px; border-radius: 10px; background: {{ s.surface }}; border: 1px solid {{ s.border }};">
+                <div style="width: 50px; height: 70px; flex: none; border-radius: 4px; background: repeating-linear-gradient(135deg, #7B3F6E 0 5px, #93507F 5px 10px);"></div>
+                <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 14px; color: {{ s.accent }};">92</span>
+                  <span style="font-family: {{ s.faceStack }}; font-weight: 600; font-size: 13.5px; line-height: 1.2; color: {{ s.fg }};">Ghired, Mirror of the Wilds</span>
+                  <div style="display: flex; height: 5px; border-radius: 999px; overflow: hidden; background: {{ s.elevated }};">
+                    <span style="width: 52%; background: {{ s.accent }};"></span>
+                    <span style="width: 24%; background: {{ s.accentMid }};"></span>
+                  </div>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: {{ s.fgMuted }};">34 fit · 12 in use</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 12px; padding: 13px; border-radius: 10px; background: {{ s.surface }}; border: 1px solid {{ s.border }};">
+                <div style="width: 50px; height: 70px; flex: none; border-radius: 4px; background: repeating-linear-gradient(135deg, #2F5E6B 0 5px, #3D7484 5px 10px);"></div>
+                <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 14px; color: {{ s.accent }};">88</span>
+                  <span style="font-family: {{ s.faceStack }}; font-weight: 600; font-size: 13.5px; line-height: 1.2; color: {{ s.fg }};">Atraxa, Praetors' Voice</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; color: {{ s.fgMuted }};">41 fit · 3 in use</span>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; padding: 10px 6px 22px; background: {{ s.surfaceRail }}; border-top: 1px solid {{ s.borderStrong }};">
+              <sc-for list="{{ s.navItems }}" as="n" hint-placeholder-count="4">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                  <span style="width: 8px; height: 8px; transform: rotate(45deg); background: {{ n.diamond }};"></span>
+                  <span style="font-size: 10px; color: {{ n.rowColor }};">{{ n.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; align-items: baseline; gap: 14px; margin-top: 8px;">
+      <h3 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 22px; margin: 0; color: #EDE6D8;">Empty states at 390px — the reflow, shown</h3>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8B8270;">gap 10 closed: they reflow, they do not restructure</span>
+    </div>
+    <div style="display: flex; gap: 18px; flex-wrap: wrap;">
+      <sc-for list="{{ mobileEmpties }}" as="e" hint-placeholder-count="5">
+        <div style="width: 390px; border: 1px solid {{ e.borderStrong }}; border-radius: 12px; overflow: hidden; background: {{ e.bg }};">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; background: {{ e.surface }}; border-bottom: 1px solid {{ e.border }};">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: {{ e.fgFaint }};">{{ e.label }} · 390px</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: {{ e.fgLocked }};">{{ e.themeName }}</span>
+          </div>
+          <div style="min-height: 270px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px 24px 46px; background: {{ e.vignette }};">
+            <sc-if value="{{ e.showNumeral }}" hint-placeholder-val="{{ false }}">
+              <span style="font-family: {{ e.faceStack }}; font-weight: 900; font-size: 48px; line-height: 1; letter-spacing: 0.04em; color: {{ e.elevated }}; margin-bottom: 2px;">404</span>
+            </sc-if>
+            <sc-if value="{{ e.showCrown }}" hint-placeholder-val="{{ true }}">
+              <div style="display: inline-flex; align-items: center; gap: {{ e.crownGap }}; margin-bottom: 14px;">
+                <span style="width: {{ e.crownSm }}; height: {{ e.crownSm }}; transform: rotate(45deg); background: {{ e.markColor }};"></span>
+                <span style="width: {{ e.crownLg }}; height: {{ e.crownLg }}; transform: rotate(45deg); background: {{ e.markColor }};"></span>
+                <span style="width: {{ e.crownSm }}; height: {{ e.crownSm }}; transform: rotate(45deg); background: {{ e.markColor }};"></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ e.showPips }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+                <span style="width: 16px; height: 16px; border-radius: 999px; background: {{ e.pipR }}; opacity: 0.5; box-shadow: 0 0 0 2px {{ e.accent }};"></span>
+                <span style="width: 16px; height: 16px; border-radius: 999px; background: {{ e.pipW }}; opacity: 0.5; box-shadow: 0 0 0 2px {{ e.accent }};"></span>
+              </div>
+            </sc-if>
+            <div style="font-family: {{ e.faceStack }}; font-weight: 700; font-size: {{ e.headingPx }}; line-height: 1.2; color: {{ e.fg }};">{{ e.heading }}</div>
+            <sc-if value="{{ e.status }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; margin-top: 8px; color: {{ e.fgFaint }};">{{ e.status }}</div>
+            </sc-if>
+            <p style="margin: 10px 0 0; font-size: 13.5px; line-height: 1.6; max-width: 320px; color: {{ e.fgBody }};">{{ e.body }}</p>
+            <sc-if value="{{ e.count }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; margin-top: 12px; color: {{ e.warning }};">{{ e.count }}</div>
+            </sc-if>
+            <sc-if value="{{ e.cta }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px; width: 100%; max-width: 300px;">
+                <span style="font-size: 13px; font-weight: 600; padding: 13px 18px; border-radius: 8px; background: {{ e.accent }}; color: {{ e.bg }};">{{ e.cta }}</span>
+                <sc-if value="{{ e.cta2 }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: 13px; font-weight: 600; padding: 13px 18px; border-radius: 8px; border: 1px solid {{ e.borderStrong }}; color: {{ e.fg }};">{{ e.cta2 }}</span>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="border: 1px solid #3A3229; border-radius: 10px; background: #1A1611; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #DE9757;">What the mobile pass changes — three things, all small</div>
+      <ul style="margin: 0; padding-left: 20px; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;">
+        <li><strong style="color: #EDE6D8;">CTAs stack full-width below 480px</strong> and grow to a 44px hit box. On desktop they sit in a centred row. This is the only structural difference in the ten, and it is the shipped <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">flex-col md:flex-row</code> pattern from <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">not-found.tsx</code>, not a new one.</li>
+        <li><strong style="color: #EDE6D8;">The empty state reserves the tab bar.</strong> 80px of tab bar plus the add-panel handoff's 12px means centring is measured inside the reserve, not the viewport — otherwise every mark sits visually low. The 46px bottom padding in these frames is that reserve.</li>
+        <li><strong style="color: #EDE6D8;">The crown does not resize.</strong> 8/12px quiet and 13/19px loud at both widths. It is a mark, not a hero image, and shrinking it on mobile would make it read as a bullet.</li>
+        <li><strong style="color: #EDE6D8;">Gap 10 is closed.</strong> All ten are centred flex columns with a max-width caption; at 390px the caption reflows and nothing reorders. The 404's 48px numeral is the only element that was ever at risk and it fits with 90px to spare.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section data-screen-label="H — Metamorphous ruling" style="display: flex; flex-direction: column; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">§H · audit item B</div>
+      <h2 style="font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px; margin: 0; color: #EDE6D8;">Metamorphous — the ruling</h2>
+      <p style="font-size: 15px; line-height: 1.65; max-width: 820px; margin: 0; color: #C0B8A6;">Correction accepted: <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">font-synthesis-weight: auto</code> is the default, so all 32 call sites render synthetic bold rather than silently flattening. The question is whether that synthetic bold is good enough. Below, Metamorphous 400 against synthetic 700 at the app's four real display sizes, with Cinzel as the control — same sizes, a real weight axis.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px;">
+      <div style="border: 1px solid #3A3229; border-radius: 12px; background: #1E1F26; padding: 24px; display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid #2E3340; padding-bottom: 12px;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #5C86C9;">Metamorphous · Rune Frost</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #7C8A8C;">400 vs synthetic 700</span>
+        </div>
+        <sc-for list="{{ boldRows }}" as="b" hint-placeholder-count="4">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #5F6D6E;">{{ b.label }}</span>
+            <span style="font-family: 'Metamorphous', serif; font-weight: 400; font-size: {{ b.size }}; line-height: 1.2; color: #C6D2D3;">Commanders you can build</span>
+            <span style="font-family: 'Metamorphous', serif; font-weight: 700; font-size: {{ b.size }}; line-height: 1.2; color: #C6D2D3;">Commanders you can build</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="border: 1px solid #3A3229; border-radius: 12px; background: #1E1A15; padding: 24px; display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid #2B241B; padding-bottom: 12px;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #CF8745;">Cinzel · control</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8B8270;">400 vs real 700</span>
+        </div>
+        <sc-for list="{{ boldRows }}" as="b" hint-placeholder-count="4">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E6654;">{{ b.label }}</span>
+            <span style="font-family: 'Cinzel', serif; font-weight: 400; font-size: {{ b.size }}; line-height: 1.2; color: #EDE6D8;">Commanders you can build</span>
+            <span style="font-family: 'Cinzel', serif; font-weight: 700; font-size: {{ b.size }}; line-height: 1.2; color: #EDE6D8;">Commanders you can build</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="border: 1px solid #3A3229; border-left: 3px solid #CF8745; border-radius: 10px; background: #1E1A15; padding: 22px 26px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #CF8745;">Ruling</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">Metamorphous stays. Synthetic bold goes.</strong> Rune Frost pins every display weight to 400 and takes its hierarchy from size and colour, which the app's own scale already provides.</p>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;">Three reasons, in order of weight:</p>
+      <ul style="margin: 0; padding-left: 20px; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;">
+        <li><strong style="color: #EDE6D8;">It fails at the sizes the app actually uses most.</strong> Read the specimen from the bottom up, not the top. At 30px synthetic bold is merely crude — heavier, blunter, but legible. At 22px it starts losing the crispness that makes the face worth having. At 15px and below the decorative detail fills in and the word becomes a dark bar with a silhouette. That is the damaging range, and it is where most of the 32 sites live: the display scale runs 12 · 15 · 15.5 · 16 · 17 · 18 · 19 · 20 · 21 · 22 before it ever reaches a page title, so the majority of Rune Frost's headings would render in the worst part of this curve.</li>
+        <li><strong style="color: #EDE6D8;">Synthetic bold is a dilation, not a weight.</strong> The browser thickens the existing outline uniformly, which is exactly wrong for a face built on high stroke contrast — thin strokes gain the same absolute weight as thick ones, so the contrast that gives Metamorphous its character is the first thing flattened. Cinzel opposite is the control: at 700 the letterforms change shape. Metamorphous at 700 is the same letterforms, thicker. On a face chosen for character, that reads as a rendering fault rather than a style.</li>
+        <li><strong style="color: #EDE6D8;">The app does not need weight to carry hierarchy.</strong> Checked against the 32 sites: display headings are differentiated by <em>size</em> almost everywhere — 30/28/24/22/21/19/18/17/16/15 — and the handful of places where 600 and 700 appear at the same size are separated by colour (<code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">--fg</code> vs <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">--fg-body</code>) or by container. Nothing in the app is <em>only</em> distinguishable by display weight.</li>
+      </ul>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">The change is one rule, not 32 edits:</strong> <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">[data-theme="kaldheim"] .font-display { font-synthesis-weight: none; }</code>, in <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">@layer base</code> beside the focus ring so a component can still override. No call site changes, no new face, no per-theme type scale — §8.7 holds.</p>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">Why not swap the face?</strong> Considered and rejected. Metamorphous is the reason Rune Frost reads as Norse at all — it is the only one of the six display faces doing genuinely representational work, and the alternatives with real weight axes (Cinzel, Spectral) are already taken and would make two themes look alike. Losing a weight axis the app never used is cheaper than losing the theme's identity.</p>
+      <p style="margin: 0; font-size: 14.5px; line-height: 1.7; color: #C0B8A6;"><strong style="color: #EDE6D8;">One consequence to accept:</strong> a Rune Frost heading sits slightly lighter than the same heading in the other five. That is a legibility gain, not a loss — and it is the honest version of what the face actually offers, rather than a browser's impression of a weight that does not exist.</p>
+    </div>
+  </section>
+
+  <footer style="border-top: 1px solid #2B241B; padding-top: 28px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8B8270;">Package</div>
+    <p style="margin: 0; font-size: 14.5px; line-height: 1.8; color: #C0B8A6;"><code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">TOKEN-TABLE.md</code> — 35 keys × 6 themes as literal hexes, the CI contract · <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">README.md</code> — decisions log and gap report · <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">READINESS.md</code> — verdict · <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">themes · copy strings.ts</code> — new and replaced strings · <code style="font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: #A59C89;">tokens.json</code> — the same data, machine-readable.</p>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;specimenPx&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:29,&quot;min&quot;:18,&quot;max&quot;:48,&quot;step&quot;:1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Type specimen&quot;,&quot;label&quot;:&quot;Card-name heading size&quot;},&quot;emptyStateThemes&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Both&quot;,&quot;options&quot;:[&quot;Both&quot;,&quot;Gilded Stone only&quot;,&quot;Neon Rain only&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Empty states&quot;,&quot;label&quot;:&quot;Themes shown&quot;},&quot;accentOverlay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Accent budget&quot;,&quot;label&quot;:&quot;Outline accent-painted areas&quot;}}">
+const T = {
+  amonkhet:  ["#14110E","#1E1A15","#211D18","#1A1611","#18140F","#1B1712","#29241F","#201C17","#2B241B","#3A3229","#494037","#EDE6D8","#C0B8A6","#A59C89","#8B8270","#6E6654","#CF8745","#DE9757","#AB6E37","#6B482A","#6B482A","#AB6E37","#6FA368","#DEAA29","#C6533F","","","#D9975C","#C46857","#752619","#F4E9C4","#3A6AA5","#1E1B1A","#C05A3E","#4B7A46"],
+  kamigawa:  ["#0E0F14","#16181F","#191B22","#12141B","#101219","#13151C","#20222A","#181A21","#181C26","#262A35","#343843","#E6E8F0","#B1B6C7","#959AAD","#6F7486","#606476","#FF4D9A","#FF62A9","#D33E7E","#843052","#843052","#D33E7E","#6FA368","#E0913C","#C6533F","","","#DF8AA7","#C26755","#752619","#F4E9C4","#3A6AA5","#1E1B1A","#C05A3E","#4B7A46"],
+  innistrad: ["#101314","#191D1E","#1C2021","#15191A","#131718","#161A1B","#242829","#1B1F20","#1C2224","#2B3133","#3A4042","#DDE3E1","#B3BDBB","#96A19E","#737D7B","#606A68","#8AAFA1","#9ABEB0","#729186","#4E6059","#4E6059","#729186","#679F5F","#E0913C","#C6533F","","","#8AAFA1","#C56A58","#752619","#F4E9C4","#3A6AA5","#1E1B1A","#C05A3E","#4B7A46"],
+  phyrexia:  ["#0D0B0E","#151317","#18161A","#110F13","#100E12","#131115","#1E1C20","#171519","#19161C","#262329","#332F36","#E4E2E6","#B5B2BB","#9A96A0","#78747E","#64616A","#52827A","#629189","#3E665F","#213834","#213834","#3E665F","#6FA368","#E0913C","#C6533F","","","#77A9A0","#BE6453","#752619","#F4E9C4","#3A6AA5","#1E1B1A","#C05A3E","#527030"],
+  duskmourn: ["#100E15","#1A1822","#1E1C26","#15131C","#13111A","#17151F","#26242E","#1C1A24","#1F2933","#2F3A44","#3F4B55","#D8DBE0","#AFB8C8","#929CAE","#646D7E","#5D6676","#49A9DC","#5DB9EB","#3B8BB6","#2F5A73","#2F5A73","#3B8BB6","#6FA368","#E0913C","#C6533F","","","#54ADDD","#C36756","#752619","#F4E9C4","#3A6AA5","#1E1B1A","#C05A3E","#4B7A46"],
+  kaldheim:  ["#121217","#1E1F26","#22232B","#181920","#16171D","#1A1B22","#2D2E35","#212229","#1A1F2B","#2E3340","#424755","#C6D2D3","#B3C0C2","#95A4A6","#7C8A8C","#5F6D6E","#5C86C9","#6C95D8","#486BA3","#2C405F","#2C405F","#486BA3","#6FA368","#E0913C","#C6533F","","","#80ABEF","#C86D5B","#752619","#F4E9C4","#3A6AA5","#1E1B1A","#C05A3E","#4B7A46"],
+};
+const K = ["bg","surface","surfaceRaised","surfaceRail","surfaceSunken","surfaceInset","elevated","elevatedHover","border","borderStrong","fg","fgBody","fgMuted","fgFaint","fgLocked","accent","accentHover","accentStrong","accentShadow","accentDim","accentMid","success","warning","danger","availSoft","availHard","availHardFg","availOverFg","availOverBorder","w","u","b","r","g"];
+// index map: the array above is in TOKEN-TABLE order (borderStrong at 9, fg at 11)
+const IDX = {bg:0,surface:1,surfaceRaised:2,surfaceRail:3,surfaceSunken:4,surfaceInset:5,elevated:6,elevatedHover:7,border:8,borderStrong:9,borderDashed:10,fg:11,fgBody:12,fgMuted:13,fgFaint:14,fgLocked:15,accent:16,accentHover:17,accentStrong:18,accentShadow:19,accentDim:20,accentMid:21,success:22,warning:23,danger:24,availHardFg:27,availOverFg:28,availOverBorder:29,w:30,u:31,b:32,r:33,g:34};
+
+const META = [
+  ["amonkhet","Gilded Stone","Amonkhet","Cinzel","'Cinzel', serif","0.120","6.45:1"],
+  ["kamigawa","Neon Rain","Kamigawa: Neon Dynasty","Chakra Petch","'Chakra Petch', sans-serif","0.222","6.18:1"],
+  ["innistrad","Moonlit","Innistrad","Spectral","'Spectral', serif","0.045","7.76:1"],
+  ["phyrexia","Oil and Iron","New Phyrexia","Syncopate","'Syncopate', sans-serif","0.054","4.51:1"],
+  ["duskmourn","Screen Glow","Duskmourn","Big Shoulders Display","'Big Shoulders Display', sans-serif","0.117","7.29:1"],
+  ["kaldheim","Rune Frost","Kaldheim","Metamorphous","'Metamorphous', serif","0.112","5.08:1"],
+];
+const AUDIT = [
+  ["Gilded Stone","15.15","8.77","6.36","4.55","3.04","6.45","6.45","0.1203"],
+  ["Neon Rain","15.65","8.77","6.33","3.81","3.02","6.18","6.18","0.2218"],
+  ["Moonlit","14.35","8.83","6.38","4.00","3.04","7.76","7.76","0.0450"],
+  ["Oil and Iron","15.23","8.84","6.37","4.04","3.04","4.51","4.51","0.0538"],
+  ["Screen Glow","13.81","8.78","6.34","3.37","3.03","7.29","7.29","0.1165"],
+  ["Rune Frost","12.06","8.78","6.36","4.59","3.05","5.08","5.08","0.1123"],
+];
+
+// The ten §3 surfaces. treatment: quiet | page | loud
+const SURFACES = [
+  {id:"loading",   label:"loading",             file:"shell/loading-screen.tsx", t:"page",
+   heading:"Consulting the council", status:"ranking by what you own…",
+   body:"Scoring every legal commander in your collection. Won't be a moment.",
+   note:"Crown replaces Crab + LoaderDots. Three diamonds inherit the dots' 1.2s stagger — same keyframes, one fewer component."},
+  {id:"firstrun",  label:"first run",           file:"home/first-run.tsx", t:"page",
+   heading:"Nothing here yet.",
+   body:"Upload a collection export and I'll tell you what you can actually build.",
+   cta:"Upload collection", cta2:"See an example",
+   note:"The only surface where the crown is load-bearing: it is the first brand moment a new player sees."},
+  {id:"noresults", label:"no results",          file:"collection/no-results.tsx", t:"quiet",
+   heading:"No cards match.",
+   body:"Nothing matches that search and that colour filter together. Drop one of them.",
+   cta:"Clear filters", cta2:"Keep only search",
+   note:"Caption REPLACED — the old line pointed at the crab. It now names the two controls the buttons operate."},
+  {id:"filtered",  label:"filtered empty",      file:"commanders/filtered-empty.tsx", t:"quiet",
+   heading:"No generals in Boros.", pips:true,
+   body:"You own 24 legal commanders, but none of them are white-red.",
+   count:"Showing 0 of 24", cta:"Clear colour filter",
+   note:"The dimmed WUBRG pips stay — they were beside the crab, not part of it, and they are the only place the filter is visible."},
+  {id:"notfound",  label:"not found (404)",     file:"app/not-found.tsx", t:"page", numeral:true, crown:false,
+   heading:"There's no page here.",
+   body:"I checked. Twice. Probably a typo in the URL.",
+   cta:"Back home", cta2:"View decks",
+   note:"No crown: the 404 numeral IS the mark, already set in the display face at --elevated. Two marks would be one too many."},
+  {id:"completion",label:"deck completion",     file:"decks/completion-reveal.tsx", t:"loud",
+   heading:"Ninety-nine.",
+   body:"Ghired has a full deck. Sleeve it up before you change your mind.",
+   cta:"Export decklist", cta2:"Back to the deck",
+   note:"The one loud crown in the app. Kaiju, brass horizon and --celebrate-* gradient all retire; the band keeps its 420/380px height."},
+  {id:"builder",   label:"builder empty",       file:"decks/builder-shell.tsx", t:"quiet",
+   heading:"An empty ninety-nine.",
+   body:"Search above, or open Consider for cards that fit your commander.",
+   note:"Copy unchanged (add-panel R2). Crown sits above the existing empty section; the quick-add bar stays on screen."},
+  {id:"review",    label:"collection review",   file:"collection/review-screen.tsx", t:"quiet",
+   heading:"Nothing to review.",
+   body:"Every line in that import matched a card. Unusual, and good.",
+   cta:"Go to collection",
+   note:"Copy unchanged. Quiet crown — this is a success state reached mid-flow, not a destination."},
+  {id:"decksindex",label:"decks index empty",   file:"app/decks/page.tsx", t:"page",
+   heading:"No decks yet.",
+   body:"Pick a commander and I'll fill in the ninety-nine around it.",
+   cta:"New deck",
+   note:"§6 CALL — keeps a mark. Full-route empty list, same shape as first run and 404, so it takes the Page crown."},
+  {id:"banner",    label:"guided banner",       file:"commanders/guided-banner.tsx", t:"none",
+   heading:"Start with a commander.",
+   body:"Your collection supports 24 of them. The list below is ranked by how much of each deck you already own.",
+   cta:"Show me the top pick",
+   note:"§6 CALL — loses its mark entirely. It is an inline directive banner, not an empty state; its mark is the 3px accent left border it already has."},
+];
+
+class Component extends DCLogic {
+  state = {};
+  renderVals() {
+    const px = this.props.specimenPx ?? 29;
+    const overlayOn = this.props.accentOverlay ?? false;
+    const which = this.props.emptyStateThemes ?? "Both";
+
+    const get = (id, k) => T[id][IDX[k]];
+    const themes = META.map(([id, name, plane, face, faceStack, accentC, ringLabel]) => {
+      const o = { id, name, plane, face, faceStack, accentC, ringLabel };
+      for (const k in IDX) o[k] = T[id][IDX[k]];
+      return o;
+    });
+
+    // picker: 1 selected · 2 hover · 3 keyboard-focused · rest default
+    const pickerThemes = themes.map((t, i) => ({
+      ...t,
+      planeShort: t.plane.split(":")[0],
+      selected: i === 0,
+      nameColor: i === 0 ? "#EDE6D8" : "#C0B8A6",
+      chipBg: i === 0 ? "#29241F" : i === 1 ? "#211D18" : "transparent",
+      chipRing: i === 0 ? "1px solid #CF8745" : i === 2 ? "2px solid #CF8745" : "1px solid transparent",
+      chipOffset: i === 2 ? "2px" : "0px",
+    }));
+
+    const shown = which === "Gilded Stone only" ? ["amonkhet"]
+                : which === "Neon Rain only" ? ["kamigawa"]
+                : ["amonkhet", "kamigawa"];
+    const emptyStatesFor = (sid, id) => {
+      {
+        const s = SURFACES.find(x => x.id === sid);
+        const mark = s.t === "loud" ? get(id, "accent")
+                   : s.t === "page" ? get(id, "accentStrong")
+                   : get(id, "borderStrong");
+        const acc = get(id, "accent");
+        return ({
+          key: s.id + "-" + id,
+          label: s.label,
+          themeName: id === "amonkhet" ? "Gilded Stone" : "Neon Rain",
+          faceStack: themes.find(t => t.id === id).faceStack,
+          bg: get(id, "bg"), surface: get(id, "surface"), border: get(id, "border"),
+          borderStrong: get(id, "borderStrong"), elevated: get(id, "elevated"),
+          fg: get(id, "fg"), fgBody: get(id, "fgBody"), fgFaint: get(id, "fgFaint"),
+          fgLocked: get(id, "fgLocked"), accent: acc, warning: get(id, "warning"),
+          pipR: get(id, "r"), pipW: get(id, "w"),
+          markColor: mark,
+          showCrown: s.t !== "none" && s.crown !== false,
+          showNumeral: !!s.numeral,
+          showPips: !!s.pips,
+          crownSm: s.t === "loud" ? "13px" : "8px",
+          crownLg: s.t === "loud" ? "19px" : "12px",
+          crownGap: s.t === "loud" ? "9px" : "6px",
+          headingPx: s.t === "loud" ? "27px" : s.t === "page" ? "23px" : "19px",
+          heading: s.heading, body: s.body, status: s.status || "",
+          count: s.count || "", cta: s.cta || "", cta2: s.cta2 || "",
+          // the vignette: accent-derived, <=8% alpha, replacing rgba(201,162,75,0.07)
+          vignette: "radial-gradient(420px 240px at 50% 78%, " + acc + "14, transparent 70%)",
+          note: s.file + " — " + s.note,
+        });
+      }
+    };
+    const emptyStates = [];
+    for (const s of SURFACES) for (const id of shown) emptyStates.push(emptyStatesFor(s.id, id));
+
+    // ---- R2: app shell at rest. Geometry from src/components/shell/nav.tsx ----
+    const NAV = ["Home", "Collection", "Commanders", "Decks"];
+    const shellFor = (id) => {
+      const t = themes.find(x => x.id === id);
+      return {
+        ...t,
+        navItems: NAV.map(label => {
+          const active = label === "Commanders";
+          return {
+            label, active,
+            diamond: active ? t.accent : t.borderDashed,
+            rowBg: active ? t.elevated : "transparent",
+            rowColor: active ? t.fg : t.fgBody,
+            rowWeight: active ? "600" : "500",
+          };
+        }),
+      };
+    };
+    const shellDesktop = ["amonkhet", "kamigawa"].map(shellFor);
+    const shellMobile = ["amonkhet", "kamigawa", "kaldheim"].map(shellFor);
+
+    // ---- R2: the reflow proof — five surfaces at 390px ----
+    const MOBILE_PICKS = ["loading", "firstrun", "filtered", "completion", "notfound"];
+    const mobileEmpties = MOBILE_PICKS.map((sid, i) => {
+      const themeId = i % 2 ? "kamigawa" : "amonkhet";
+      return emptyStatesFor(sid, themeId);
+    });
+
+    // ---- R2: Metamorphous synthetic-bold evidence ----
+    const boldRows = [30, 22, 15, 13.5].map(size => ({
+      size: size + "px",
+      label: size + "px",
+    }));
+
+    return {
+      themes, pickerThemes, emptyStates,
+      shellDesktop, shellMobile, mobileEmpties, boldRows,
+      specimenPx: px,
+      overlay: overlayOn ? "2px dashed #FF3DCB" : "none",
+      emptyGridCols: shown.length === 1 ? "repeat(3, 1fr)" : "1fr 1fr",
+      emptyColumnsLabel: shown.length === 1
+        ? "one theme · " + which.replace(" only", "")
+        : "left column Gilded Stone · right column Neon Rain — the warmest and the coolest of the six",
+      audit: AUDIT.map(([name, fgBg, body, muted, faint, locked, ring, btn, accentC], i) => ({
+        name, fgBg, body, muted, faint, locked, ring, btn, accentC,
+        rowBg: i % 2 ? "#1A1611" : "#1E1A15",
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>
