@@ -14,22 +14,7 @@ vi.mock("../../app/decks/actions", () => ({
 
 const { ClearAutoButton, SweepReceipt } = await import("./clear-auto");
 
-const outstanding: Array<() => void> = [];
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((res) => {
-    resolve = res;
-  });
-  outstanding.push(() => resolve(undefined as T));
-  return { promise, resolve };
-}
-
-afterEach(async () => {
-  const settle = outstanding.splice(0);
-  await act(async () => {
-    settle.forEach((r) => r());
-  });
+afterEach(() => {
   clearAutoCards.mockReset();
   restoreAutoCards.mockReset();
 });
