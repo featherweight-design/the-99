@@ -817,6 +817,10 @@ export function FilterPanel({
         className={[
           "inline-flex items-center gap-[8px] whitespace-nowrap rounded-full md:rounded-lg",
           "font-sans text-[12.5px] md:text-[13px] font-medium px-[13px] md:px-[14px] py-[8px] md:py-[9px]",
+          // The drawn padding gives a ~37px chip, under the 44px touch minimum.
+          // Grown on phone only: a mouse does not need the margin, and the
+          // desktop chip is drawn against a denser toolbar.
+          "min-h-[44px] md:min-h-0",
           "border border-solid",
           disabled
             ? "cursor-not-allowed bg-[#221D16] text-[#6E6353] border-[color:var(--border)]"
