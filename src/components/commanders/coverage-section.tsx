@@ -4,7 +4,6 @@
 // One section owns the heading, sub-caption, note, retry, and all four role panels.
 
 import { useState, useTransition, useId, type JSX } from "react";
-import { CardDetailProvider } from "../decks/card-detail-provider";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
@@ -316,8 +315,7 @@ export function CoverageSection({
   const isDesktop = width === "desktop";
 
   return (
-    <CardDetailProvider>
-      <div>
+    <div>
       {/* Heading */}
       <h2 className="font-display font-[600] m-0" style={{ fontSize: 20, color: "var(--fg)" }}>
         Role Coverage
@@ -469,7 +467,6 @@ export function CoverageSection({
           );
         })}
       </div>
-      </div>
-    </CardDetailProvider>
+    </div>
   );
 }
