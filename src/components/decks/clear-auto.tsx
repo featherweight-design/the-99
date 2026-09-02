@@ -21,7 +21,9 @@ interface ClearAutoButtonProps {
 }
 
 /** A GhostButton in mono 12px, right-aligned in the group toolbar.
- *  Absent entirely at zero — never rendered disabled. */
+ *  Absent entirely at zero rather than shown disabled, because a disabled
+ *  "Clear 0 auto cards" is a control offering nothing. The one time it does
+ *  render disabled is while its own sweep is in flight. */
 export function ClearAutoButton({ count, keptCount, onClear, pending }: ClearAutoButtonProps) {
   if (count === 0) return null;
 

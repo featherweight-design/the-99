@@ -68,7 +68,7 @@ export function GroupToggle({
       {/* Spacer: pushes group pills to the right on both breakpoints */}
       <span className="flex-1" aria-hidden />
 
-      {/* Clear all auto — absent at zero, never rendered disabled */}
+      {/* Clear all auto — absent at zero, disabled only while its sweep runs */}
       {autoCount > 0 && onClearAuto && (
         <ClearAutoButton
           count={autoCount}
