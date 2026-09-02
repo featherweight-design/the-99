@@ -49,10 +49,19 @@ type AnnounceUndo = (card: DeckDetailCard) => void;
  */
 type KeepOptimisticCard = (oracleId: string) => void;
 
+/**
+ * "Clear auto", which deletes whole rows rather than decrementing copies. A
+ * loop of `remove` would take one copy off each row, leaving 36 of a fill's 37
+ * basics on screen until revalidation — so the sweep is its own edit, matching
+ * the server's delete-where-auto in a single dispatch.
+ */
+type SweepOptimisticAuto = () => void;
+
 type DeckEdit =
   | { kind: "add"; card: DeckDetailCard }
   | { kind: "remove"; oracleId: string }
-  | { kind: "keep"; oracleId: string };
+  | { kind: "keep"; oracleId: string }
+  | { kind: "sweep" };
 
 /**
  * A failed removal has nowhere to draw itself: the prediction has already taken
@@ -93,6 +102,7 @@ export function useOptimisticDeckCards(
   const [cards, applyEdit] = useOptimistic(
     serverCards,
     (current, edit: DeckEdit) => {
+      if (edit.kind === "sweep") return current.filter((c) => !c.auto);
       if (edit.kind === "keep") {
         const at = current.findIndex((c) => c.oracleId === edit.oracleId);
         if (at === -1) return current;
@@ -139,6 +149,7 @@ export function useOptimisticDeckCards(
   const deleteOptimisticRow: DeleteOptimisticRow = (rowId) => dropRow(rowId);
   const keepOptimisticCard: KeepOptimisticCard = (oracleId) =>
     applyEdit({ kind: "keep", oracleId });
+  const sweepOptimisticAuto: SweepOptimisticAuto = () => applyEdit({ kind: "sweep" });
 
   return {
     cards,
@@ -149,6 +160,7 @@ export function useOptimisticDeckCards(
     resolveOptimisticRow,
     deleteOptimisticRow,
     keepOptimisticCard,
+    sweepOptimisticAuto,
   };
 }
 

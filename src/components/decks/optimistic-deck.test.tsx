@@ -18,11 +18,12 @@ const forest: DeckDetailCard = {
   cardTypeGroup: "Lands", role: "land", owned: true, quantity: 1, auto: false,
 };
 
-type Edit = { add: DeckDetailCard } | { remove: string } | { keep: string };
+type Edit = { add: DeckDetailCard } | { remove: string } | { keep: string } | { sweep: true };
 
 function Harness({ server, edits }: { server: DeckDetailCard[]; edits: Edit[] }) {
-  const { cards, addOptimisticCard, removeOptimisticCard, keepOptimisticCard } =
-    useOptimisticDeckCards(server);
+  const {
+    cards, addOptimisticCard, removeOptimisticCard, keepOptimisticCard, sweepOptimisticAuto,
+  } = useOptimisticDeckCards(server);
   return (
     <button
       onClick={() => {
@@ -31,6 +32,7 @@ function Harness({ server, edits }: { server: DeckDetailCard[]; edits: Edit[] })
         startTransition(async () => {
           for (const edit of edits) {
             if ("add" in edit) addOptimisticCard(edit.add);
+            else if ("sweep" in edit) sweepOptimisticAuto();
             else if ("keep" in edit) keepOptimisticCard(edit.keep);
             else removeOptimisticCard(edit.remove);
           }
@@ -77,6 +79,21 @@ describe("useOptimisticDeckCards", () => {
 
   it("leaves the list alone when the kept card is not in it", async () => {
     expect(await apply([{ ...solRing, auto: true }], [{ keep: "ghost" }])).toBe("Sol Ring:1*");
+  });
+
+  // `clearAutoCards` deletes each auto row whole. A loop of removals would take
+  // one copy off the fill's ~37 basics and leave the other 36 on screen for the
+  // length of the revalidation.
+  it("takes a swept stack out whole rather than decrementing it", async () => {
+    const swept = await apply(
+      [{ ...forest, auto: true, quantity: 37 }, solRing],
+      [{ sweep: true }],
+    );
+    expect(swept).toBe("Sol Ring:1");
+  });
+
+  it("leaves a deck with nothing auto in it untouched", async () => {
+    expect(await apply([solRing, forest], [{ sweep: true }])).toBe("Sol Ring:1|Forest:1");
   });
 
   // `removeCardFromDeck` decrements while more than one copy remains, so a

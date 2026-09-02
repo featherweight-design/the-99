@@ -103,6 +103,7 @@ export function BuilderShell({
     resolveOptimisticRow,
     deleteOptimisticRow,
     keepOptimisticCard,
+    sweepOptimisticAuto,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
   const { built } = counts;
@@ -305,11 +306,10 @@ export function BuilderShell({
     if (sweepPending) return;
     startSweep(async () => {
       setSweepError(null);
-      // Optimistically remove auto rows from the list so the decklist is instant.
-      const autoIds = new Set(cards.filter((c) => c.auto).map((c) => c.oracleId));
-      for (const c of cards) {
-        if (autoIds.has(c.oracleId)) removeOptimisticCard(c.oracleId);
-      }
+      // One edit, not a loop of removals: the server deletes each auto row
+      // whole, while `removeOptimisticCard` takes off a single copy — which
+      // would leave 36 of the fill's 37 basics on screen until revalidation.
+      sweepOptimisticAuto();
       try {
         const removed = await clearAutoCards(deck.id);
         setSweptRows(removed);
@@ -324,7 +324,7 @@ export function BuilderShell({
         setSweepError(recommendationsCopy.auto.sweepFailed);
       }
     });
-  }, [sweepPending, cards, deck.id, removeOptimisticCard]);
+  }, [sweepPending, cards, deck.id, sweepOptimisticAuto]);
 
   const handleRestoreAuto = useCallback(async () => {
     if (!sweptRows) return;

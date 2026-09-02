@@ -7,7 +7,6 @@
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole, isBasicLand } from "../../lib/decks/grouping";
 import { computeRoleCounts } from "../../lib/decks/mix";
-import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { GroupToggle } from "./group-toggle";
@@ -158,9 +157,16 @@ export function Decklist({
       const roleCards = shoppingCards.filter((c) => c.role === role);
       if (roleCards.length === 0) return [];
       const from = roleCounts[role];
-      const to = ROLE_TARGETS[role];
+      const n = cardCopies(roleCards);
+      // Where the deck lands if the player buys this group, not the baseline.
+      // For a group the fill built they are the same number — the fill buys a
+      // role up to its target and no further, so from + n is the target. They
+      // part company once the player adds unowned cards of their own, and there
+      // the baseline would draw arithmetic the list cannot honour: "5 · closes
+      // 9→10", or, past a role already covered, the backwards "3 · closes 12→10".
+      const to = from + n;
       const gapClause = recommendationsCopy.shopping.groupGap(
-        String(cardCopies(roleCards)),
+        String(n),
         String(from),
         String(to),
       );

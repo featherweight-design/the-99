@@ -139,22 +139,37 @@ describe("Shopping groups by role and heads each group with the gap it closes", 
 
 describe("the gap clause reads '{n} · closes {from}→{to}' against the deck's real counts", () => {
   it("counts only the owned cards as the 'from', not the ones being bought", () => {
-    // ramp target = 10; owned ramp = 1 (Sol Ring), unowned ramp = 1 (Arcane Signet)
+    // owned ramp = 1 (Sol Ring), unowned ramp = 1 (Arcane Signet)
     // from = 1 — where the deck stands before the purchase
-    // n = 1 (unowned ramp cards to buy)
-    // gap clause: "1 · closes 1→10"
+    // n = 1, so buying the group lands the deck on 2: "1 · closes 1→2"
     renderDecklist([rampOwned, rampUnowned]);
 
-    const expected = recommendationsCopy.shopping.groupGap(
-      "1",
-      "1",
-      String(ROLE_TARGETS.ramp),
-    );
-    expect(screen.getByText(expected)).toBeInTheDocument();
+    expect(
+      screen.getByText(recommendationsCopy.shopping.groupGap("1", "1", "2")),
+    ).toBeInTheDocument();
     // The unowned card must not be credited to the deck's standing count.
     expect(
+      screen.queryByText(recommendationsCopy.shopping.groupGap("1", "2", "3")),
+    ).not.toBeInTheDocument();
+  });
+
+  // The clause promises where buying the group lands the deck, so it reads the
+  // group. Against the role baseline it would draw arithmetic the list cannot
+  // honour the moment the player adds unowned cards of their own — and past a
+  // role they have already covered, a range that runs backwards.
+  it("never promises the baseline when the group overshoots it", () => {
+    const extras = Array.from({ length: ROLE_TARGETS.ramp + 2 }, (_, i) =>
+      makeCard({ oracleId: `extra-${i}`, name: `Extra ${i}`, role: "ramp", owned: false, auto: false }),
+    );
+    renderDecklist([rampOwned, ...extras]);
+
+    const n = ROLE_TARGETS.ramp + 2;
+    expect(
+      screen.getByText(recommendationsCopy.shopping.groupGap(String(n), "1", String(n + 1))),
+    ).toBeInTheDocument();
+    expect(
       screen.queryByText(
-        recommendationsCopy.shopping.groupGap("1", "2", String(ROLE_TARGETS.ramp)),
+        recommendationsCopy.shopping.groupGap(String(n), "1", String(ROLE_TARGETS.ramp)),
       ),
     ).not.toBeInTheDocument();
   });
