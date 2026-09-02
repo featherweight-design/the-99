@@ -39,6 +39,17 @@ describe("buildNameIndex", () => {
     ]);
     expect(idx.get("bala ged recovery")).toBe("real");
   });
+
+  it("reclaims the front-face key for the real card even when the DFC is indexed first", () => {
+    // Order is reversed: DFC arrives in pass 1 and claims the front-face key;
+    // pass 2's unconditional overwrite is the only thing that gives it back to the real card.
+    const idx = buildNameIndex([
+      { oracleId: "dfc", name: "Bala Ged Recovery // Bala Ged Sanctuary" },
+      { oracleId: "real", name: "Bala Ged Recovery" },
+    ]);
+    expect(idx.get("bala ged recovery")).toBe("real");
+    expect(idx.get("bala ged recovery // bala ged sanctuary")).toBe("dfc");
+  });
 });
 
 describe("toSupportRows", () => {
@@ -71,6 +82,8 @@ describe("toSupportRows", () => {
     expect(header.engine).toBe("tap");
     expect(header.similarOracleIds).toEqual(["ayara"]);
     expect(header.deckCount).toBe(4332);
+    expect(header.rank).toBe(648);
+    expect(header.saltScore).toBe(0.19);
     expect(cards).toEqual([
       { commanderOracleId: GISA.oracleId, oracleId: "sol", inclusion: 71, synergy: null },
       { commanderOracleId: GISA.oracleId, oracleId: "gray", inclusion: null, synergy: 0.23 },
