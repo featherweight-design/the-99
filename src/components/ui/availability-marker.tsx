@@ -18,6 +18,7 @@ import {
   availabilityState,
   type Availability,
   type AvailabilityState,
+  type HardDeck,
 } from "../../lib/decks/availability";
 
 export type MarkerOpts = {
@@ -127,9 +128,9 @@ function label(
   state: AvailabilityState,
   a: Availability,
   opts: MarkerOpts,
-): { prefix: string; deck?: { id: string; name: string } } | null {
+): { prefix: string; deck?: HardDeck } | null {
   const c = availabilityCopy.marker;
-  const withName = (full: string, deck: { id: string; name: string }) => ({
+  const withName = (full: string, deck: HardDeck) => ({
     prefix: full.slice(0, full.length - deck.name.length),
     deck,
   });

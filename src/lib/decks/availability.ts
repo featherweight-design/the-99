@@ -6,6 +6,14 @@
  */
 export const MATURE_DECK_SIZE = 99;
 
+/**
+ * A deck holding a hard claim, as every surface downstream sees it. Named rather
+ * than inlined because the shape already widened once — from a bare name to
+ * this — and the widening had to be repeated at the SQL row, the model and the
+ * marker. One definition means the next change is one edit.
+ */
+export type HardDeck = { id: string; name: string };
+
 export type Availability = {
   owned: number;
   hard: number;
@@ -30,7 +38,7 @@ export type Availability = {
    * on `deck_id` for exactly that reason — so a surface wanting to link the
    * named deck cannot recover it from the name alone.
    */
-  hardDecks: { id: string; name: string }[];
+  hardDecks: HardDeck[];
 };
 
 export type AvailabilityState = "free" | "soft" | "hard" | "over";

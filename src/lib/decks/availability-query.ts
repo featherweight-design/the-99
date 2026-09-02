@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { MATURE_DECK_SIZE, type Availability } from "./availability";
+import { MATURE_DECK_SIZE, type Availability, type HardDeck } from "./availability";
 
 type Row = {
   oracle_id: string;
@@ -8,7 +8,7 @@ type Row = {
   hard: number;
   soft: number;
   free: number;
-  hard_decks: { id: string; name: string }[] | null;
+  hard_decks: HardDeck[] | null;
 };
 
 /**
