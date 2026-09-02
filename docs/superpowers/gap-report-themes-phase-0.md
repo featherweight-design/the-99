@@ -12,7 +12,7 @@ Two places in the handoff disagree about the crown's geometry, and the disagreem
 settled before anything could be built.
 
 **Crown sizes — canvas over README.** README decision 6 describes the crown as the mark
-`completion-reveal.tsx:78–80` "already draws in brass at 9/13/9px", and calls the loud tone
+`completion-reveal.tsx` "already draws in brass at 9/13/9px", and calls the loud tone
 "`--accent` at 2×". The canvas §G mobile rules instead state, normatively: *"The crown does not
 resize. 8/12px quiet and 13/19px loud at both widths."* The canvas's own renderer constants
 (`crownSm`, `crownLg`, `crownGap`) match its prose exactly.

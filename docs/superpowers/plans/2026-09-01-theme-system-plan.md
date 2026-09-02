@@ -80,7 +80,7 @@ page tones, and **13 / 19 / 13 px with a 9px gap** for the loud tone, which only
 reveal is allowed to use.
 
 This supersedes the 9/13/9-at-7px-gap figure the plan originally carried. Two sources in the
-handoff disagree. README decision 6 describes the mark `completion-reveal.tsx:78–80` "already
+handoff disagree. README decision 6 describes the mark `completion-reveal.tsx` "already
 draws in brass at 9/13/9px" and calls the loud tone "`--accent` at 2×"; the canvas §G mobile
 rules state normatively that *"The crown does not resize. 8/12px quiet and 13/19px loud at both
 widths,"* and the canvas's own renderer constants (`crownSm`, `crownLg`, `crownGap`) match its
@@ -336,7 +336,7 @@ For the eight empty-state surfaces, delete the `<Crab … />` element and its wr
 
 `commanders/guided-banner.tsx` is the exception: **it loses its mark entirely and gains nothing.** It is an inline directive banner with copy beside it, not an empty state; its mark is the 3px accent left border `.guided-banner` already carries. Delete the `<Crab>` and the import, add no `Crown`.
 
-`decks/completion-reveal.tsx` needs four edits: delete the `<Kaiju>` block and both `<Crab>` instances with their imports; replace the hand-rolled three-span crown at lines 78–80 with `<Crown className="mb-[12px]" />`; and swap the celebration band's background from the deleted gradient to `bg-[color:var(--surface-sunken)]`.
+`decks/completion-reveal.tsx` needs four edits: delete the `<Kaiju>` block and both `<Crab>` instances with their imports; replace the hand-rolled three-span crown with `<Crown className="mb-[12px]" />`; and swap the celebration band's background from the deleted gradient to `bg-[color:var(--surface-sunken)]`.
 
 - [ ] **Step 4: Delete the three character tokens**
 
