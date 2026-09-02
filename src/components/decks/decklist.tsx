@@ -127,8 +127,11 @@ export function Decklist({
 
   // Shopping view: role-grouped with gap clauses, intro, and footer.
   if (filter === "shopping") {
-    // Role counts from ALL cards (owned + unowned) — this is the "from" value.
-    const roleCounts = computeRoleCounts(cards);
+    // Owned cards only. The design draws "3 · closes 7→10", where from + n = to,
+    // so `from` is where the deck stands before the purchase — counting the
+    // unowned cards here would credit the player with the very cards the group
+    // is asking them to buy.
+    const roleCounts = computeRoleCounts(cards.filter((c) => c.owned));
 
     // Build shopping groups: only roles that have ROLE_TARGETS (no land or other).
     const shoppingGroups = SHOPPING_ROLE_ORDER.flatMap((role) => {

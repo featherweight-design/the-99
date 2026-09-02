@@ -117,19 +117,25 @@ describe("Shopping groups by role and heads each group with the gap it closes", 
 });
 
 describe("the gap clause reads '{n} · closes {from}→{to}' against the deck's real counts", () => {
-  it("produces the gap clause from ROLE_TARGETS vs current total role counts", () => {
+  it("counts only the owned cards as the 'from', not the ones being bought", () => {
     // ramp target = 10; owned ramp = 1 (Sol Ring), unowned ramp = 1 (Arcane Signet)
-    // current total ramp count = 2 (owned + unowned), target = 10
+    // from = 1 — where the deck stands before the purchase
     // n = 1 (unowned ramp cards to buy)
-    // gap clause: "1 · closes 2→10"
+    // gap clause: "1 · closes 1→10"
     renderDecklist([rampOwned, rampUnowned]);
 
     const expected = recommendationsCopy.shopping.groupGap(
       "1",
-      "2",
+      "1",
       String(ROLE_TARGETS.ramp),
     );
     expect(screen.getByText(expected)).toBeInTheDocument();
+    // The unowned card must not be credited to the deck's standing count.
+    expect(
+      screen.queryByText(
+        recommendationsCopy.shopping.groupGap("1", "2", String(ROLE_TARGETS.ramp)),
+      ),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -139,6 +145,23 @@ describe("a basic land never appears in Shopping", () => {
     // Forest is a basic land — must not appear in Shopping even if unowned
     expect(screen.queryByText("Forest")).not.toBeInTheDocument();
     // The ramp card still shows
+    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
+  });
+
+  it("excludes a basic land the classifier put in a shopping role", () => {
+    // The `land` role is already outside SHOPPING_ROLE_ORDER, so the case above
+    // would still pass with the typeLine guard deleted. This one reaches
+    // Shopping on its role and can only be stopped by the guard itself.
+    const basicInRampRole = makeCard({
+      oracleId: "forest-ramp",
+      name: "Forest",
+      role: "ramp",
+      typeLine: "Basic Land — Forest",
+      cardTypeGroup: "Lands",
+      owned: false,
+    });
+    renderDecklist([basicInRampRole, rampUnowned]);
+    expect(screen.queryByText("Forest")).not.toBeInTheDocument();
     expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
   });
 });
