@@ -1579,6 +1579,8 @@ Expected: PASS — six themes, all seven contrast gates, all three chroma budget
 
 A failure here means a transcription error, not a design error. Cross-check the failing token against `tokens.json` before touching a value.
 
+`tokens.json`'s `audit` block is trustworthy for this purpose: all 48 of its figures — seven contrast gates and one chroma reading across six themes — were recomputed from the theme blocks and reproduce exactly, after one stale Innistrad row was corrected in review. If the suite disagrees with it, suspect the transcription in `globals.css` first.
+
 - [ ] **Step 5: Look at all six**
 
 There is no picker yet. Set the attribute by hand in devtools — `document.documentElement.dataset.theme = "kaldheim"` — and walk the app at 390px and desktop under each of the six. Compare against `design/design_handoff_the99_themes/The 99 - Six-Theme Visual System.dc.html` §G, which draws the shell at rest at both widths.

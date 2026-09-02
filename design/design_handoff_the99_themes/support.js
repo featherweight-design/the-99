@@ -1,4 +1,8 @@
-// GENERATED from dc-runtime/src/*.ts — do not edit. Rebuild with `cd dc-runtime && bun run build`.
+// GENERATED — do not edit. This is the design-canvas runtime, built from
+// dc-runtime/src/*.ts inside the Claude Design tool that produced the .dc.html
+// exports beside it. That source is not part of this repository, so there is
+// nothing here to rebuild it from; the file travels with the handoff as a
+// binary would. Regenerating it means re-exporting the canvas.
 "use strict";
 (() => {
   var __defProp = Object.defineProperty;
