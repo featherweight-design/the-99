@@ -129,6 +129,32 @@ describe("CoverageDisclosure", () => {
     expect(screen.getByRole("button", { name: /\+5 more/i })).toBeInTheDocument();
   });
 
+  it("paints the desktop label brass while it can still expand, faint once it cannot", () => {
+    const { rerender } = render(
+      <CoverageDisclosure
+        width="desktop"
+        total={5}
+        role="ramp"
+        expanded={false}
+        controls="ramp-list"
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/\+5 more/)).toHaveClass("text-brass");
+
+    rerender(
+      <CoverageDisclosure
+        width="desktop"
+        total={5}
+        role="ramp"
+        expanded
+        controls="ramp-list"
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Show fewer/)).toHaveClass("text-fg-faint");
+  });
+
   it("phone reads 'Show all N' with the count", () => {
     render(
       <CoverageDisclosure

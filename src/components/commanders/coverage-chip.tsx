@@ -207,7 +207,7 @@ export function CoverageDisclosure({
       className="inline-flex items-center rounded-full border border-dashed border-border-strong"
       style={{ padding: "0 10px", height: 28 }}
     >
-      <span className={`font-mono text-[11px] ${expanded ? "text-brass" : "text-fg-faint"}`}>
+      <span className={`font-mono text-[11px] ${expanded ? "text-fg-faint" : "text-brass"}`}>
         {expanded
           ? recommendationsCopy.coverage.showFewer
           : recommendationsCopy.coverage.moreChips(n)}
