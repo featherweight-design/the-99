@@ -55,6 +55,10 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
   const counts: Record<FillRole, number> = { ramp: 0, draw: 0, removal: 0, wipes: 0, land: 0 };
 
   for (const candidate of ordered) {
+    // Every non-land role is closed, so the rest of the pool can only be
+    // classified and discarded — and the pool is the player's whole legal
+    // collection, which for a large one is thousands of candidates.
+    if (NON_LAND_ROLES.every((r) => counts[r] >= ROLE_TARGETS[r])) break;
     if (spent.has(candidate.oracleId)) continue;
     const roles = classifyRoles(candidate);
     // Spent on the first role it can close, in ramp→draw→removal→wipes order —

@@ -104,8 +104,10 @@ async function unownedStaples(
 }
 
 /** Gathers the pool, the owned quantities, and the unowned EDHREC staples, then
-    plans the fill. Every await inside can throw — the network call especially —
-    so callers guard it. */
+    plans the fill. The EDHREC call is not the failure to guard: `getEdhrecData`
+    degrades an unreachable upstream to `{ data: null }` and the fill goes ahead
+    on the collection alone. The database reads are what can throw, so callers
+    still guard this. */
 export async function buildFillPlan(
   userId: string,
   commander: { oracleId: string; name: string; colorIdentity: string[] },
