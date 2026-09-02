@@ -12,7 +12,7 @@ const CSS = readFileSync(
 );
 const THEMES = parseThemeBlocks(CSS);
 
-// The 35 keys, spelled out rather than derived from :root. Derived, a token
+// The 36 keys, spelled out rather than derived from :root. Derived, a token
 // dropped from every theme at once would still pass.
 const CONTRACT = [
   "bg", "surface", "surface-raised", "surface-rail", "surface-sunken",
@@ -21,7 +21,14 @@ const CONTRACT = [
   "accent", "accent-hover", "accent-strong", "accent-shadow", "accent-dim",
   "accent-mid", "success", "warning", "danger", "avail-soft", "avail-hard",
   "avail-hard-fg", "avail-over-fg", "avail-over-border", "w", "u", "b", "r", "g",
+  "font-display-face",
 ];
+
+// Not a colour. Excluded from the hex assertion and from the duplicate check;
+// the chroma, contrast and ΔE gates need no change, because each iterates
+// SURFACES, BORDERS, TEXT, PIPS or SEMANTICS rather than CONTRACT, and the font
+// key is in none of them.
+const FONTS = new Set(["font-display-face"]);
 
 const ALIASES: Record<string, string> = {
   "avail-soft": "var(--fg-muted)",
@@ -65,13 +72,14 @@ describe("theme contract", () => {
       return value;
     };
 
-    it("declares exactly the 35 contract keys", () => {
+    it("declares exactly the 36 contract keys", () => {
       expect([...tokens.keys()].sort()).toEqual([...CONTRACT].sort());
     });
 
-    it("writes every value as a hex, except the two aliases", () => {
+    it("writes every value as a hex, except the aliases and the face", () => {
       for (const key of CONTRACT) {
-        if (key in ALIASES) expect(hex(key)).toBe(ALIASES[key]);
+        if (FONTS.has(key)) expect(hex(key)).toMatch(/^var\(--font-[a-z-]+\)$/);
+        else if (key in ALIASES) expect(hex(key)).toBe(ALIASES[key]);
         else expect(hex(key)).toMatch(/^#[0-9A-F]{6}$/i);
       }
     });
@@ -89,7 +97,7 @@ describe("theme contract", () => {
       }
       const seen = new Map<string, string>();
       for (const key of CONTRACT) {
-        if (key in ALIASES) continue;
+        if (key in ALIASES || FONTS.has(key)) continue;
         const value = hex(key).toUpperCase();
         const owner = seen.get(value);
         if (owner && twin.get(key) !== owner) {
@@ -139,5 +147,26 @@ describe("theme contract", () => {
         }
       }
     });
+  });
+});
+
+describe("the display face", () => {
+  it("reaches the utility through one level of indirection", () => {
+    expect(CSS).toContain("--font-display: var(--font-display-face)");
+  });
+
+  it("gives each theme a different face", () => {
+    // Read from the parsed map, not by slicing the raw CSS: a slice that runs
+    // from a theme's selector to end-of-file will happily match the *next*
+    // theme's declaration and report a missing face as present.
+    const faces = [...THEMES.values()].map((t) => t.get("font-display-face"));
+    expect(faces).toHaveLength(6);
+    expect(new Set(faces).size).toBe(6);
+  });
+
+  it("never redefines --font-display inside a theme block", () => {
+    for (const tokens of THEMES.values()) {
+      expect(tokens.has("font-display")).toBe(false);
+    }
   });
 });
