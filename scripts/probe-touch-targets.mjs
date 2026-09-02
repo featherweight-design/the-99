@@ -110,7 +110,12 @@ async function dismissHitBox(page, min) {
       }
       return r;
     };
-    const half = minPx / 2 - 1;
+    // The outermost pixel *centres* of the min-sized box, not its mathematical
+    // corners. A 44px box centred on cx spans [cx-22, cx+22], and elementFromPoint
+    // at exactly ±22 samples the boundary, which belongs to the next pixel out.
+    // ±21.5 is the hardest point still inside the box, so this tests the full
+    // 44px rather than the 42px an integer inset would.
+    const half = minPx / 2 - 0.5;
     return {
       glyph: { w: Math.floor(box.width), h: Math.floor(box.height) },
       hit: { w: reach("x") * 2, h: reach("y") * 2 },
@@ -207,6 +212,11 @@ for (const vp of VIEWPORTS) {
   }
 
   const x = await dismissHitBox(page, MIN);
+  if (!x) {
+    bail("The chip ✕ went missing between the wait and the measurement — unprobed.");
+    await context.close();
+    continue;
+  }
   const short = vp.touch && !x.cornersOk;
   if (short) failures++;
   console.log(
