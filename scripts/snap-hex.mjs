@@ -10,10 +10,15 @@ import { join } from "node:path";
 const SNAP = 0.03; // the audit's own "imperceptible" band
 
 const css = readFileSync("src/app/globals.css", "utf8");
-const root = css.slice(css.indexOf(":root"), css.indexOf("@theme"));
-const tokens = [...root.matchAll(/--([a-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{6});/g)].map(
-  ([, name, hex]) => ({ name, hex }),
-);
+// Both markers, in this order, or the slice is nonsense. Unguarded, a missing
+// marker gives indexOf -1 and the script reports confident matches against a
+// block that is the wrong half of the file.
+const start = css.indexOf(":root");
+const end = css.indexOf("@theme");
+if (start === -1 || end === -1 || end < start) {
+  throw new Error("globals.css: expected a :root block followed by @theme");
+}
+const root = css.slice(start, end);
 
 function oklab(hex) {
   const [r, g, b] = [1, 3, 5].map((i) => {
@@ -30,7 +35,13 @@ function oklab(hex) {
   ];
 }
 
-const dist = (a, b) => Math.hypot(...oklab(a).map((v, i) => v - oklab(b)[i]));
+// Converted once here rather than inside the per-hex search, which would redo
+// every token's conversion for every literal found.
+const tokens = [...root.matchAll(/--([a-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{6});/g)].map(
+  ([, name, hex]) => ({ name, hex, lab: oklab(hex) }),
+);
+
+const dist = (a, b) => Math.hypot(...a.map((v, i) => v - b[i]));
 
 // Walked with fs rather than shelled out to rg: `execSync` runs under /bin/sh,
 // where rg is not necessarily on PATH even when it works fine in the terminal.
@@ -54,8 +65,9 @@ for (const hex of hits) {
 
 const rows = [...counts.entries()]
   .map(([hex, count]) => {
+    const lab = oklab(hex);
     const best = tokens
-      .map((t) => ({ ...t, d: dist(hex, t.hex) }))
+      .map((t) => ({ ...t, d: dist(lab, t.lab) }))
       .sort((a, b) => a.d - b.d)[0];
     return { hex, count, token: best.name, d: best.d, exact: best.hex === hex };
   })
