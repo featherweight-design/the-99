@@ -238,7 +238,9 @@ export const collectionFilterCopy = {
     // The hint carries the direction ("A–Z"), so the name reads as the whole
     // order — and the chosen row says how to reverse it, since re-picking is
     // the only way and nothing else on screen says so.
-    optionAria: (order: string, _count: number, selected: boolean) =>
+    // Defaulted rather than required: `selected` is optional on the contract, so
+    // the unselected row is what an omitted argument means.
+    optionAria: (order: string, _count: number, selected = false) =>
       selected ? `${order}, current order, choose again to reverse` : order,
     optionAriaUnavailable: (order: string) => order,
 
@@ -280,12 +282,19 @@ export type FilterPanelCopy = {
   groupMatches: (n: number) => string;
 
   /**
-   * `selected` is passed but the multi-select panels ignore it. Their rows carry
-   * `aria-selected` inside an `aria-multiselectable` listbox, so a ", selected"
-   * tail in the name is the same fact twice in one breath. Sort takes it because
-   * its selected row says something the role cannot: choosing it again reverses.
+   * `FilterPanel` always passes `selected`, and Sort is the only block that
+   * declares it: its selected row says something the role cannot, that choosing
+   * it again reverses. The four multi-select blocks declare two parameters and
+   * stop there, because their rows carry `aria-selected` inside an
+   * `aria-multiselectable` listbox and a ", selected" tail in the name would be
+   * the same fact twice in one breath.
+   *
+   * Optional here so the contract matches them rather than the other way round.
+   * The shorter arity is the honest signature and worth keeping: a caller that
+   * writes `optionAria(name, count, isSelected)` against one of those four gets
+   * a compile error naming the exact thing it got wrong.
    */
-  optionAria: (name: string, count: number, selected: boolean) => string;
+  optionAria: (name: string, count: number, selected?: boolean) => string;
   optionAriaUnavailable: (name: string) => string;
 
   footerTotal: (total: string) => string;
