@@ -1,6 +1,6 @@
 # Six-column token table — The 99 theme system
 
-`design/design_handoff_the99_themes/` · R1 · 2026-09-01
+`design/design_handoff_the99_themes/` · R2 · 2026-09-01
 
 **This is the artifact eng implements from.** Every key below appears in all six theme blocks;
 CI (theme spec, *Testing* rule 2) asserts set-equality against this list.

@@ -8,12 +8,13 @@ Living tracker of every design-track ticket + its position in the pipeline (work
 
 | Layer | Handoff | Landed |
 |---|---|---|
-| Brand system — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens | `design/design_handoff_the99_brand/` | refreshed 2026-07-24 (PR #54) · **two decisions under amendment**, see 📐 rank 1 |
+| Brand system — Palette A "Table Candlelight," Cinzel + IBM Plex, logomark, tokens | `design/design_handoff_the99_brand/` | refreshed 2026-07-24 (PR #54) · **two decisions amended 2026-09-01** — colour and display face are now per-theme, see 🟢 below |
 | Voice — Kitchen Table (locked, verbatim in the richness README) | `design/design_handoff_the99_richness/README.md` | locked 2026-07-20 |
 
-**The brand layer is mid-amendment as of 2026-09-01.** The six-theme visual
-system turns "one palette, Cinzel display" into "six palettes, one display face
-each." Its handoff landed and audited 🟢 Green on 2026-09-01 and now sits in 🟢
+**The brand layer was amended on 2026-09-01, and the amendment is designed but
+not yet built.** The six-theme visual system turns "one palette, Cinzel display"
+into "six palettes, one display face each." Its handoff landed and audited 🟢
+Green on 2026-09-01 and now sits in 🟢
 below, so `design/design_handoff_the99_themes/TOKEN-TABLE.md` is authoritative
 for colour and display face; the brand README still governs everything else in
 the layer (logomark, WUBRG-as-tags-only, type scale, spacing). Anything drawn

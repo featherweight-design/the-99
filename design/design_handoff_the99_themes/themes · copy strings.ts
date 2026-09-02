@@ -1,5 +1,5 @@
 // themes · copy strings.ts
-// Handoff: design/design_handoff_the99_themes/ · R1 · 2026-09-01
+// Handoff: design/design_handoff_the99_themes/ · R2 · 2026-09-01
 // Voice: Kitchen Table (design/design_handoff_the99_richness/README.md), unchanged.
 //
 // Two kinds of entry here:
