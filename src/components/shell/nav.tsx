@@ -35,9 +35,9 @@ function isActive(pathname: string, href: string): boolean {
 
 /**
  * 6×6px rotated diamond for rail nav items (§Rail Nav item Active/Idle/Locked).
- * Active  → accent (#C9A24B, token: --accent)
- * Idle    → line  (#3A3229, token: --border-strong)
- * Locked  → line  (#3A3229, token: --border-strong)
+ * Active  → accent (--accent)
+ * Idle    → line   (--border-strong)
+ * Locked  → line   (--border-strong)
  */
 function RailDiamond({ active, locked }: { active: boolean; locked: boolean }) {
   const bg =
@@ -55,7 +55,7 @@ function RailDiamond({ active, locked }: { active: boolean; locked: boolean }) {
 
 /**
  * 8×8px rotated diamond for tab bar items (§Tab item Active/Idle).
- * Active  → accent  (#C9A24B)
+ * Active  → accent (--accent)
  * Idle    → #4A4033 (raw hex, no token per design table)
  * Locked  → #4A4033
  */
@@ -261,7 +261,7 @@ export function TabBar({ locked }: { locked: boolean }) {
             <span
               style={{
                 fontSize: 10,
-                color: active ? "var(--accent)" : "var(--fg-faint)", // #C9A24B / #8E8269
+                color: active ? "var(--accent)" : "var(--fg-faint)",
                 fontWeight: active ? 600 : 500,
               }}
             >

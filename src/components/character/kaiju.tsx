@@ -3,8 +3,10 @@
 // design/design_handoff_the99_richness/kaiju.svg.
 //
 // Faces LEFT by design; compose it looming from the right, gazing down at the
-// crab. The accent alphas below are opacity variants of --accent (#C9A24B) — the
-// palette is locked, so they stay as literal rgba() rather than becoming tokens.
+// crab. The rgba() literals below are alphas of the original brass, frozen at
+// the value the SVG was drawn against rather than tracking --accent. This file
+// is dead code kept for a future per-theme creature, so the geometry and its
+// colour stay a verbatim port until something renders it again.
 
 const VIEWBOX_W = 480;
 const VIEWBOX_H = 380;

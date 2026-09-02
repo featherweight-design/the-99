@@ -138,7 +138,7 @@ export function UploadEntry({
             }}
           />
 
-          {/* Icon circle — §Upload Icon Circle: 48×48 mobile / 58×58 desktop, radius 999px, border 1px #C9A24B (--accent), color --accent, font 20/26px, margin auto mobile */}
+          {/* Icon circle — §Upload Icon Circle: 48×48 mobile / 58×58 desktop, radius 999px, border 1px --accent, color --accent, font 20/26px, margin auto mobile */}
           <div
             className="mx-auto mb-[14px] md:mx-0 md:mb-0 md:flex-none rounded-full flex items-center justify-center text-[20px] md:text-[26px] w-[48px] h-[48px] md:w-[58px] md:h-[58px]"
             style={{ border: "1px solid var(--accent)", color: "var(--accent)" }}

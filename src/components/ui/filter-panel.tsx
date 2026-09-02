@@ -705,7 +705,7 @@ export function FilterPanel({
               setActiveCode(null);
             }}
             // The trailing classes replace the primitive's focus halo with the
-            // canonical keyboard-walk ring: 2px #C9A24B at outline-offset 2px
+            // canonical keyboard-walk ring: 2px --accent at outline-offset 2px
             // (§Panel search field · Focused). Overridden here, not in the
             // primitive — every other field in the app keeps the halo.
             //

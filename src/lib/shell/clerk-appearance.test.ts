@@ -1,5 +1,17 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { parseThemeBlocks } from "@/lib/theme/parse-css";
 import { clerkAppearance } from "./clerk-appearance";
+
+// import.meta.url, not __dirname: Vitest runs tests as ESM.
+const AMONKHET = parseThemeBlocks(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app", "globals.css"),
+    "utf8",
+  ),
+).get("amonkhet")!;
 
 const elements = clerkAppearance.elements as Record<string, Record<string, unknown>>;
 const variables = clerkAppearance.variables as Record<string, unknown>;
@@ -36,10 +48,35 @@ describe("Clerk appearance variables", () => {
     ]);
   });
 
-  it("matches the brand tokens the hexes stand in for", () => {
-    expect(variables.colorPrimary).toBe("#C9A24B");
-    expect(variables.colorBackground).toBe("#1E1A15");
-    expect(variables.colorForeground).toBe("#EDE6D8");
+  // Read out of globals.css rather than written down here. Clerk cannot take a
+  // var(), so these hexes are a hand copy of the amonkhet block; asserting
+  // against the source is what stops the copy going stale when a token moves.
+  it("matches the amonkhet tokens the hexes stand in for", () => {
+    const pairs: [string, string][] = [
+      ["colorPrimary", "accent"],
+      ["colorBackground", "surface"],
+      ["colorForeground", "fg"],
+      ["colorMutedForeground", "fg-muted"],
+      ["colorPrimaryForeground", "bg"],
+      ["colorInput", "surface-sunken"],
+      ["colorInputForeground", "fg"],
+      ["colorNeutral", "fg-faint"],
+      ["colorDanger", "danger"],
+      ["colorSuccess", "success"],
+      ["colorWarning", "warning"],
+    ];
+    for (const [key, token] of pairs) {
+      expect(variables[key], `${key} should be --${token}`).toBe(AMONKHET.get(token));
+    }
+  });
+
+  // The two alpha washes Clerk needs as literals; only the alpha differs.
+  it("tints its shimmer and focus ring with the amonkhet accent", () => {
+    const [, r, g, b] = /^#(..)(..)(..)$/.exec(AMONKHET.get("accent")!)!;
+    const rgb = [r, g, b].map((c) => parseInt(c, 16)).join(",");
+    expect(variables.colorShimmer).toBe(`rgba(${rgb},0.10)`);
+    expect(values(elements.badge)).toContain(`rgba(${rgb},0.14)`);
+    expect(values(elements.formFieldInput)).toContain(`0 0 0 3px rgba(${rgb},0.16)`);
   });
 });
 

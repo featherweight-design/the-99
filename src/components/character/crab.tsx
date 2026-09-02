@@ -1,7 +1,7 @@
 // The crab — host of the character layer (richness handoff §The one big idea).
 // Geometry is a verbatim port of design/design_handoff_the99_richness/crab.svg;
-// only the hardcoded hexes are swapped for tokens (#C9A24B → --accent,
-// #1E1A15 → --surface).
+// only the hardcoded hexes are swapped for tokens (the brass strokes become
+// --accent, the panel fill becomes --surface).
 //
 // Takes a numeric `size` rather than a variant union, unlike the identity marks
 // in ../marks.tsx. Those compose px-sized diamonds and text, where a uniform
