@@ -33,7 +33,7 @@ describe("shouldCelebrate", () => {
   });
   // The ruling of 2026-08-04, and this test is its whole record: a clean
   // 99-line import lands on Complete without the player having built anything,
-  // and the one-shot kaiju must not be spent on a deck they did not assemble.
+  // and the one-shot reveal must not be spent on a deck they did not assemble.
   // It fires the first time they add a card themselves.
   it("does not fire on arrival from an import, even at a Complete 99/99", () => {
     expect(

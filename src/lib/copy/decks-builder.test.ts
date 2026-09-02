@@ -77,7 +77,7 @@ describe("addPanelCopy counts at n = 1", () => {
 describe("decksBuilderCopy", () => {
   it("reproduces the mock's completion caption verbatim", () => {
     expect(decksBuilderCopy.completion.caption("Korvold")).toBe(
-      "Korvold is fed — 99 of 99, all owned. Try not to let it get to your head at the table.",
+      "Korvold has a full deck. Sleeve it up before you change your mind.",
     );
   });
 });

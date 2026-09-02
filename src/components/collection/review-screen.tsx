@@ -8,7 +8,7 @@ import type { UploadPreview } from "../../app/collection/actions";
 import { IssueInspector } from "./issue-inspector";
 import { issueInspectorCopy } from "../../lib/copy/issue-inspector";
 import { GhostButton, PrimaryButton } from "../ui/button";
-import { Crab } from "../character/crab";
+import { Crown } from "../ui/crown";
 
 const INITIAL_LIMIT = 8; // Per-section preview cap; full list lives in the Issue Inspector.
 
@@ -246,14 +246,15 @@ export function ReviewScreen({
           )}
         </div>
 
-        {/* Issue CTA strip — Surfaces v2 §Collection. The crab is allowed here
-            because nothing was lost; the type-to-confirm modal stays straight. */}
+        {/* Issue CTA strip — Surfaces v2 §Collection. The quiet crown is
+            allowed here because nothing was lost; the type-to-confirm modal
+            stays straight. */}
         {skipped > 0 && (
           <div
             className="mt-[16px] md:mt-[20px] flex flex-col md:flex-row md:items-center gap-[12px] md:gap-[16px] rounded-[12px] p-[14px_16px] md:p-[16px_20px]"
             style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
-            <Crab size={56} className="flex-none self-start md:self-center" />
+            <Crown tone="quiet" className="flex-none self-start md:self-center" />
             <div className="min-w-0 flex-1">
               <div className="font-display font-bold text-[15px] md:text-[17px]" style={{ color: "var(--fg)" }}>
                 {issueInspectorCopy.entry.heading}

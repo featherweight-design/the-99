@@ -199,7 +199,7 @@ describe("Celebration provenance", () => {
     localStorage.clear();
   });
 
-  const HEADING = "The 99 is complete.";
+  const HEADING = "Ninety-nine.";
 
   it("suppresses the 99/99 reveal on a deck that arrived from an import", async () => {
     await act(async () => {

@@ -1,14 +1,14 @@
 "use client";
 // Empty State — Filtered to Zero (§Empty State — Filtered to Zero), as
 // re-skinned by the richness pass (Surfaces v2 §Commanders).
-// Contains: dimmed WUBRG pips of the active filter beside the crab, Cinzel
+// Contains: the quiet crown, dimmed WUBRG pips of the active filter, a Cinzel
 // heading, body copy, the "Showing 0 of N" diagnostic, "Clear color filter".
 // Mobile breakpoint: sm:640px (project uses sm: prefix, table breakpoint is 640px).
 
 import { WUBRG_HEX } from "../../lib/collection/browse";
 import { guildLabel, colorWords } from "../../lib/copy/color-labels";
 import { commandersCopy } from "../../lib/copy/commanders";
-import { Crab } from "../character/crab";
+import { Crown } from "../ui/crown";
 import { GhostButton } from "../ui/button";
 
 type FilteredEmptyProps = {
@@ -23,10 +23,11 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
   return (
     // Vignette per Surfaces v2 — brass at 7%, existing token, no new hex.
     <div className="flex flex-1 flex-col items-center justify-center text-center p-[24px_30px] sm:p-[40px] bg-[radial-gradient(420px_240px_at_50%_76%,rgba(201,162,75,0.07),transparent_70%)]">
-      {/* Mark row — the mock composes the dimmed pips and the crab side by
-          side (display:flex; align-items:center; gap:16px). */}
+      <Crown tone="quiet" className="mb-[14px]" />
+
+      {/* The dimmed pips stay: they were beside the crab, not part of it, and
+          they are the only place the active filter is visible. */}
       <div className="flex items-center gap-[16px]">
-        {/* Dimmed WUBRG pips (active filter colors) */}
         <div className="flex gap-[6px]" aria-hidden="true">
           {colors.map((c) => (
             <span
@@ -43,8 +44,6 @@ export function FilteredEmpty({ colors, total, onClear }: FilteredEmptyProps) {
           ))}
         </div>
 
-        <Crab size={72} className="sm:hidden" />
-        <Crab size={88} className="hidden sm:block" />
       </div>
 
       {/* Heading */}

@@ -18,7 +18,7 @@ import { ArrivalStrip } from "./arrival-strip";
 import { UnresolvedBanner } from "./unresolved-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
-import { Crab } from "../character/crab";
+import { Crown } from "../ui/crown";
 import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
@@ -356,7 +356,7 @@ export function BuilderShell({
           </span>
 
           <div className="flex-1 flex flex-col min-w-0 md:min-h-0 md:overflow-y-auto">
-            {/* The 99/99 kaiju reveal — one-shot, above the builder body */}
+            {/* The 99/99 reveal — one-shot, above the builder body */}
             {showReveal && (
               <CompletionReveal
                 commanderShortName={commanderShortName}
@@ -452,12 +452,9 @@ export function BuilderShell({
             {isEmpty ? (
               /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
               <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,rgba(201,162,75,0.07),transparent_70%)]">
-                {/* §Mark container (mobile). The richness mock composes the crab
-                    and the card mark as one flex row — crab first, gap 16px,
-                    baselines aligned — so each breakpoint's existing mark keeps
-                    its own geometry and gains a crab sized for it. */}
+                {/* §Mark container (mobile). Each breakpoint keeps its own
+                    card-mark geometry; the quiet crown sits below both. */}
                 <div className="md:hidden mb-[20px] flex items-end justify-center gap-[16px]">
-                  <Crab size={72} className="flex-none" />
                   <div
                     className="relative flex-none"
                     style={{ width: 96, height: 104 }}
@@ -515,7 +512,6 @@ export function BuilderShell({
 
                 {/* Desktop mark: §Mark container desktop 100-110 × 110-120; constrain to 104×112 */}
                 <div className="hidden md:flex mb-[22px] items-end justify-center gap-[16px]">
-                  <Crab size={88} className="flex-none" />
                   <div
                     className="overflow-hidden flex-none"
                     style={{ width: 104, height: 112 }}
@@ -528,6 +524,8 @@ export function BuilderShell({
                     />
                   </div>
                 </div>
+
+                <Crown tone="quiet" className="mb-[14px]" />
 
                 {/* §Empty state heading */}
                 <h2
