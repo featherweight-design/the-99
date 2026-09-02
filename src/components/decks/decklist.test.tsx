@@ -61,6 +61,7 @@ function renderDecklist(
   cards: DeckDetailCard[],
   opts: {
     shoppingFigures?: Record<string, number>;
+    filled?: boolean;
   } = {},
 ) {
   const deckEdits = {
@@ -84,6 +85,7 @@ function renderDecklist(
           deckOracleIds={cards.map((c) => c.oracleId)}
           built={cards.reduce((s, c) => s + c.quantity, 0)}
           toBuyCount={cards.filter((c) => !c.owned).length}
+          filled={opts.filled ?? false}
           filter="shopping"
           grouping="role"
           onFilterChange={vi.fn()}
@@ -112,7 +114,8 @@ describe("Shopping groups by role and heads each group with the gap it closes", 
   it("does not render owned cards in the Shopping filter", () => {
     renderDecklist([rampOwned, rampUnowned]);
     expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
-    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
+    // Shopping rows render two name elements (phone + desktop, one hidden by CSS).
+    expect(screen.getAllByText("Arcane Signet").length).toBeGreaterThan(0);
   });
 });
 
@@ -144,8 +147,8 @@ describe("a basic land never appears in Shopping", () => {
     renderDecklist([basicLand, rampUnowned]);
     // Forest is a basic land — must not appear in Shopping even if unowned
     expect(screen.queryByText("Forest")).not.toBeInTheDocument();
-    // The ramp card still shows
-    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
+    // The ramp card still shows (two DOM nodes: phone + desktop, one hidden by CSS)
+    expect(screen.getAllByText("Arcane Signet").length).toBeGreaterThan(0);
   });
 
   it("excludes a basic land the classifier put in a shopping role", () => {
@@ -162,7 +165,8 @@ describe("a basic land never appears in Shopping", () => {
     });
     renderDecklist([basicInRampRole, rampUnowned]);
     expect(screen.queryByText("Forest")).not.toBeInTheDocument();
-    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
+    // Two DOM nodes: phone + desktop, one hidden by CSS
+    expect(screen.getAllByText("Arcane Signet").length).toBeGreaterThan(0);
   });
 });
 
@@ -185,20 +189,32 @@ describe("the footer takes the mixed branch otherwise", () => {
 });
 
 describe("the empty-covered state renders when there is nothing to buy", () => {
-  it("renders emptyCoveredHeading and emptyCoveredBody when all cards are owned", () => {
-    // Pass cards=[] for Shopping — no unowned cards to show
-    renderDecklist([rampOwned, drawOwned]);
+  it("renders emptyCoveredHeading and emptyCoveredBody when all cards are owned and deck was filled", () => {
+    // The compliment is gated on filled=true: a deck the player built by hand
+    // that owns everything must not be congratulated on a fill that never ran.
+    renderDecklist([rampOwned, drawOwned], { filled: true });
     expect(
       screen.getByText(recommendationsCopy.shopping.emptyCoveredHeading),
     ).toBeInTheDocument();
   });
 
-  it("renders the empty covered body with the open slot count", () => {
-    renderDecklist([rampOwned, drawOwned]);
+  it("renders the empty covered body with the open slot count when filled", () => {
+    renderDecklist([rampOwned, drawOwned], { filled: true });
     // open = 99 - built(2) = 97
     expect(
       screen.getByText(recommendationsCopy.shopping.emptyCoveredBody("97")),
     ).toBeInTheDocument();
+  });
+
+  it("renders emptyUncovered (not the compliment) when the deck was never filled", () => {
+    // filled defaults to false in renderDecklist
+    renderDecklist([rampOwned, drawOwned]);
+    expect(
+      screen.getByText(recommendationsCopy.shopping.emptyUncovered),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.emptyCoveredHeading),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -260,23 +276,25 @@ describe("the phone All row stays 44px and prints no figure", () => {
   });
 });
 
-describe("a row with no figure prints 'no EDHREC figure', not an em dash", () => {
-  it("renders rowNoFigure sentence when shoppingFigure prop is absent from the map (undefined)", () => {
-    // Pass shoppingFigures map that does NOT include this card's oracleId
+describe("Shopping row figure rendering differs by width", () => {
+  it("phone renders rowNoFigure sentence, desktop renders em dash, when no figure in map", () => {
+    // The two widths differ deliberately: the sentence has enough space on a
+    // dedicated meta line (phone); an em dash reads fine inline (desktop).
     renderDecklist([rampOwned, rampUnowned], { shoppingFigures: {} });
 
-    // rowNoFigure should appear for arcane-signet which is in Shopping
+    // Phone sentence is in the DOM (the phone div is not JS-hidden, only CSS-hidden)
     expect(screen.getByText(recommendationsCopy.shopping.rowNoFigure)).toBeInTheDocument();
-    // Must NOT be an em dash
-    expect(screen.queryByText("—")).not.toBeInTheDocument();
+    // Desktop em dash is also in the DOM (CSS-hidden on phone)
+    expect(screen.getByText(recommendationsCopy.shopping.rowNoFigureDesktop)).toBeInTheDocument();
   });
 
-  it("renders rowFigure when the oracleId IS in the shoppingFigures map", () => {
+  it("renders rowFigure (phone) and rowFigureDesktop (desktop) when figure present", () => {
     renderDecklist([rampOwned, rampUnowned], {
       shoppingFigures: { "arcane-signet": 67 },
     });
 
     expect(screen.getByText(recommendationsCopy.shopping.rowFigure("67"))).toBeInTheDocument();
+    expect(screen.getByText(recommendationsCopy.shopping.rowFigureDesktop("67"))).toBeInTheDocument();
     expect(screen.queryByText(recommendationsCopy.shopping.rowNoFigure)).not.toBeInTheDocument();
   });
 });

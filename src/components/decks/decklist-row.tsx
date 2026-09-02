@@ -88,9 +88,16 @@ export function DecklistRow({
   // Basic lands are never in Shopping (the fill guarantees it), but guard anyway.
   const hasShoppingMeta = !isMeta && !isBasicLand(card.typeLine) && shoppingFigure !== undefined;
   const rowShell = hasShoppingMeta ? ROW_SHELL_SHOPPING : ROW_SHELL;
-  const figureText = Number.isFinite(shoppingFigure)
+  // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
+  // line and needs context. Desktop: bare "24%" because it is inline with the
+  // name. Absence: phone gets the full sentence; desktop gets "—" which reads
+  // fine beside the name but would be cryptic alone on a dedicated line.
+  const figureTextPhone = Number.isFinite(shoppingFigure)
     ? recommendationsCopy.shopping.rowFigure(String(shoppingFigure as number))
     : recommendationsCopy.shopping.rowNoFigure;
+  const figureTextDesktop = Number.isFinite(shoppingFigure)
+    ? recommendationsCopy.shopping.rowFigureDesktop(String(shoppingFigure as number))
+    : recommendationsCopy.shopping.rowNoFigureDesktop;
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
@@ -165,31 +172,58 @@ export function DecklistRow({
 
         {/* Card name — the click target for the detail modal (#127). A meta row names no card
             of its own, so it stays inert text.
-            Shopping rows: wrap name + EDHREC meta in a flex column so the meta
-            sits under the name while the control strip stays on the right. */}
+            Shopping rows: phone = two lines (name then prefixed figure below);
+            desktop = single line (name + bare figure inline). The `edhrec` prefix
+            exists only on phone because the figure is detached from the name there
+            and needs context; inline on desktop it reads fine without it. */}
         {hasShoppingMeta ? (
-          <div className="flex-auto min-w-0 flex flex-col justify-center">
-            <CardDetailTrigger
-              oracleId={card.oracleId}
-              name={card.name}
-              siblings={siblings}
-              className="flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]"
-              style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
-            >
-              {label}
-            </CardDetailTrigger>
-            <span
-              className="font-mono text-[10px] md:text-[10.5px]"
-              style={{
-                color: "var(--fg-faint)",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {figureText}
-            </span>
-          </div>
+          <>
+            {/* Phone: two-line column layout. Hidden on desktop. */}
+            <div className="md:hidden flex-auto min-w-0 flex flex-col justify-center">
+              <CardDetailTrigger
+                oracleId={card.oracleId}
+                name={card.name}
+                siblings={siblings}
+                className="flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px]"
+                style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
+              >
+                {label}
+              </CardDetailTrigger>
+              <span
+                className="font-mono text-[10px]"
+                style={{
+                  color: "var(--fg-faint)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {figureTextPhone}
+              </span>
+            </div>
+            {/* Desktop: single-line row. Hidden on phone. */}
+            <div className="hidden md:flex flex-auto min-w-0 items-center gap-[6px]">
+              <CardDetailTrigger
+                oracleId={card.oracleId}
+                name={card.name}
+                siblings={siblings}
+                className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[13.5px]"
+                style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
+              >
+                {label}
+              </CardDetailTrigger>
+              <span
+                className="flex-none font-mono text-[10px] tabular-nums"
+                style={{
+                  color: Number.isFinite(shoppingFigure)
+                    ? "var(--fg-faint)"
+                    : "var(--fg-locked)",
+                }}
+              >
+                {figureTextDesktop}
+              </span>
+            </div>
+          </>
         ) : isMeta ? (
           <span className={nameClass} style={{ color: "var(--fg-faint)" }}>
             {label}

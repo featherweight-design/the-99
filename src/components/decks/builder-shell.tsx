@@ -750,6 +750,7 @@ export function BuilderShell({
                 built={built}
                 toBuyCount={toBuyCount}
                 spentSlot={spentSlot}
+                filled={deck.filled}
                 filter={filter}
                 grouping={grouping}
                 onFilterChange={setFilter}

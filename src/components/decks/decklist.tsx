@@ -42,6 +42,12 @@ interface DecklistProps {
   toBuyCount: number;
   /** The card whose slot is spent, drawn in place as an undo row (#185). */
   spentSlot?: DeckDetailCard | null;
+  /**
+   * Whether this deck was ever filled by the auto-fill. Gates the Shopping
+   * "Nothing to buy" compliment: a deck that was never filled and simply owns
+   * everything in it must not be congratulated on a fill that never ran.
+   */
+  filled?: boolean;
   filter: "all" | "shopping";
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
@@ -77,6 +83,7 @@ export function Decklist({
   built,
   toBuyCount,
   spentSlot = null,
+  filled = false,
   filter,
   grouping,
   onFilterChange,
@@ -160,7 +167,11 @@ export function Decklist({
     // The open slots the player kept for themselves (not filled by auto).
     const openSlots = 99 - built;
 
-    // Empty covered: nothing in the shopping list.
+    // Empty shopping list — branch on whether the deck was ever filled.
+    // The compliment ("Nothing to buy. Your shelf covered it.") belongs only to
+    // a deck the fill actually ran on. A deck the player built by hand that
+    // happens to own everything it lists must not be congratulated on a fill
+    // that never ran.
     if (n === 0) {
       return (
         <div className="flex flex-col">
@@ -176,20 +187,34 @@ export function Decklist({
             sweepPending={sweepPending}
             onClearAuto={onClearAuto}
           />
-          <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
-            <p
-              className="font-mono text-[12px] font-semibold mb-[6px]"
-              style={{ color: "var(--accent)" }}
-            >
-              {recommendationsCopy.shopping.emptyCoveredHeading}
-            </p>
-            <p
-              className="font-mono text-[11px] leading-[1.6]"
-              style={{ color: "var(--fg-faint)" }}
-            >
-              {recommendationsCopy.shopping.emptyCoveredBody(String(openSlots))}
-            </p>
-          </div>
+          {filled ? (
+            /* Design: centered, padding 24px 14px 28px, heading Cinzel 18px
+               weight-600 --fg, body 13.5px --fg-body line-height 1.6
+               margin-top 8px max-width 300px. */
+            <div className="px-[14px] pt-[24px] pb-[28px] text-center">
+              <p
+                className="font-display font-semibold text-[18px] m-0"
+                style={{ color: "var(--fg)" }}
+              >
+                {recommendationsCopy.shopping.emptyCoveredHeading}
+              </p>
+              <p
+                className="text-[13.5px] leading-[1.6] mt-[8px] mx-auto mb-0 max-w-[300px]"
+                style={{ color: "var(--fg-body)" }}
+              >
+                {recommendationsCopy.shopping.emptyCoveredBody(String(openSlots))}
+              </p>
+            </div>
+          ) : (
+            <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
+              <p
+                className="font-mono text-[11px]"
+                style={{ color: "var(--fg-faint)" }}
+              >
+                {recommendationsCopy.shopping.emptyUncovered}
+              </p>
+            </div>
+          )}
         </div>
       );
     }
@@ -230,10 +255,11 @@ export function Decklist({
             />
           )}
 
-          {/* Intro line */}
+          {/* Intro line — sans (default family), 12.5px phone / 13.5px desktop,
+              --fg-body per design §Shopping intro. font-mono was wrong. */}
           <p
-            className="font-mono text-[10.5px] leading-[1.6] mb-[14px]"
-            style={{ color: "var(--fg-faint)" }}
+            className="text-[12.5px] md:text-[13.5px] leading-[1.6] mb-[14px]"
+            style={{ color: "var(--fg-body)" }}
           >
             {recommendationsCopy.shopping.intro(String(n))}
           </p>

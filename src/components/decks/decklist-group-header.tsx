@@ -2,6 +2,10 @@
 // Server-pure (no "use client" directive).
 // §Decklist Group, §`Couldn't identify` group header (design table).
 
+// src/lib/copy/recommendations is imported here so the auto-count clause
+// ("9 · 9 auto") comes from the copy module rather than a bare inline string.
+import { recommendationsCopy } from "../../lib/copy/recommendations";
+
 interface DecklistGroupHeaderProps {
   label: string;
   count: number;
@@ -17,6 +21,13 @@ interface DecklistGroupHeaderProps {
    * Brief: mono 10px --accent label, mono 10px --fg-faint gap clause beside it.
    */
   gapClause?: string;
+  /**
+   * How many cards in this group carry the `auto` flag. When > 0, the count
+   * span reads "{count} · {autoCount} auto" using recommendationsCopy.auto.groupCount.
+   * Zero means no auto clause — "9 · 0 auto" would be noise for groups where
+   * the player has already kept or removed everything.
+   */
+  autoCount?: number;
 }
 
 export function DecklistGroupHeader({
@@ -26,6 +37,7 @@ export function DecklistGroupHeader({
   note,
   headingId,
   gapClause,
+  autoCount = 0,
 }: DecklistGroupHeaderProps) {
   // The mobile gap was absent, not zero by intent: "Lands 1" rendered as
   // "Lands1". 6px matches the tab's own label/count pairing.
@@ -71,7 +83,9 @@ export function DecklistGroupHeader({
             style={{ color: countColor }}
             aria-hidden={headingId ? true : undefined}
           >
-            {count}
+            {autoCount > 0
+              ? `${count} · ${recommendationsCopy.auto.groupCount(String(autoCount))}`
+              : count}
           </span>
         )}
       </div>

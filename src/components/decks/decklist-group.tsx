@@ -34,10 +34,17 @@ export function DecklistGroup({
     (sum, c) => sum + (c.oracleId === spentOracleId ? 0 : c.quantity),
     0,
   );
+  // Auto tally: how many cards in this group still carry the auto flag. Spent
+  // cards are excluded for the same reason as the count — the slot is already
+  // gone from the player's perspective.
+  const autoCount = cards.reduce(
+    (sum, c) => sum + (c.oracleId !== spentOracleId && c.auto ? c.quantity : 0),
+    0,
+  );
 
   return (
     <div className="mb-[16px] md:mb-[20px]">
-      <DecklistGroupHeader label={label} count={count} note={note} />
+      <DecklistGroupHeader label={label} count={count} note={note} autoCount={autoCount} />
 
       {/* Card rows grid: mobile flex column gap-3px | desktop 2-col grid gap-4px-20px */}
       <div

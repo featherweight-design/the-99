@@ -31,6 +31,9 @@ export const recommendationsCopy = {
     // Absence, never 0%. Drawn only where neighbouring chips carry figures.
     chipNoFigure: '—',
     chipNoFigureLegend: '— = no EDHREC figure for this card',
+    // The phone drops "for this card": the row it explains is directly above,
+    // and the line has a full-width row to live in, not a wrap of chips.
+    chipNoFigureLegendMobile: '— = no EDHREC figure',
 
     // Disclosure. Desktop rests on the count; the phone names the action,
     // because a 44px row with "+22 more" in it does not read as a control.
@@ -136,16 +139,31 @@ export const recommendationsCopy = {
     // out of the pill that used to give it context — so it is prefixed.
     // Addendum A2. The All view's row keeps 44px and prints no figure.
     rowFigure: (pct: string) => `edhrec ${pct}%`,
+    // Desktop inline figure: no prefix because the percentage sits on the same
+    // line as the name — its position gives it context. Phone needs the prefix
+    // because the meta line is detached from the name, so "24%" alone would be
+    // ambiguous. Two keys because the two widths have different needs.
+    rowFigureDesktop: (pct: string) => `${pct}%`,
     // Absence on its own line, with no column of figures beside it to give an
     // em dash meaning: a sentence, exactly as suggestion-tile.tsx ships it.
     rowNoFigure: 'no EDHREC figure',
+    // Desktop absence: an em dash reads fine inline because the name is beside
+    // it; a full sentence there would be visually heavy on a 34px row.
+    rowNoFigureDesktop: '—',
     footer: (n: string, auto: string) => `${n} cards to buy · all ${auto} auto`,
     footerMixed: (n: string, auto: string) =>
       `${n} cards to buy · ${auto} auto`,
     // Expressive moment 2 — a covered collection is a win, and says so.
+    // Shown only when the deck was actually filled (deck.filled === true); an
+    // unfilled deck that happens to own everything it lists gets emptyUncovered
+    // instead — congratulating a fill that never ran would be wrong.
     emptyCoveredHeading: 'Nothing to buy. Your shelf covered it.',
     emptyCoveredBody: (open: string) =>
       `Every role hit its baseline from cards you already own. The ${open} slots we left open are the fun part.`,
+    // The unfilled deck's zero-shopping state: no compliment, just a neutral
+    // observation. Matches the original shipped string before the fill branch
+    // was added.
+    emptyUncovered: 'No cards to buy.',
   },
 
   // ── Surface B · swept back to the commander (expressive moment 3) ─────
