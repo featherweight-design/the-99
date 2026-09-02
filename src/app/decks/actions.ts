@@ -378,6 +378,30 @@ export async function deleteDeck(deckId: string): Promise<void> {
   redirect("/decks");
 }
 
+/** The retry behind the fill-failed banner. Re-runs Task 5's gathering against a
+    deck that already exists. Refuses a deck that already holds cards — a retry
+    must not double a deck the player has since added to by hand. */
+export async function fillDeck(deckId: string): Promise<void> {
+  const userId = await requireUserId();
+  const deck = await requireDeck(deckId, userId);
+  const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
+  if (!commander) return;
+  const existing = await db.select({ oracleId: deckCards.oracleId })
+    .from(deckCards).where(eq(deckCards.deckId, deckId)).limit(1);
+  if (existing.length > 0) return;
+
+  const plan = await buildFillPlan(userId, commander);
+  await db.transaction(async (tx) => {
+    if (plan.rows.length > 0) {
+      await tx.insert(deckCards).values(
+        plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
+      );
+    }
+    await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
+  });
+  revalidatePath(`/decks/${deckId}`);
+}
+
 /** Clears the fill's marker on one row. The card stays in the deck — the marker
     is a claim about who put it there, and keeping it is the player saying "mine". */
 export async function keepAutoCard(deckId: string, oracleId: string): Promise<void> {

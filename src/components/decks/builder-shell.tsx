@@ -32,6 +32,8 @@ import { CardDetailProvider } from "./card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
+import { ProvenanceLine, FillFailedBannerConnected } from "./provenance-line";
+import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -457,6 +459,57 @@ export function BuilderShell({
                 second bar, no "97 + 2": the deck's number is what's built, and
                 the exception lives in the prose below it. */}
             <BuilderSpine deck={deck} counts={counts} onExport={openExport} {...commitments} />
+
+            {/* Fill provenance line — tells the player where the auto cards
+                came from. Leaves when the last auto card does (autoCount
+                drives it off the optimistic list). Not shown during a first
+                run because the deck is still in-flight then. */}
+            {autoCount > 0 && !firstRun && (() => {
+              const autoCards = cards.filter((c) => c.auto);
+              const filledCount = autoCards.reduce((n, c) => n + c.quantity, 0);
+              const boughtCount = autoCards.filter((c) => !c.owned).reduce((n, c) => n + c.quantity, 0);
+              const openCount = 99 - filledCount;
+              // Detect a role shortfall: compare the auto cards' role tally to ROLE_TARGETS.
+              const roleCounts = computeRoleCounts(autoCards);
+              const shortRole = (["ramp", "draw", "removal", "wipes"] as const).find(
+                (r) => roleCounts[r] < ROLE_TARGETS[r],
+              );
+              return (
+                <>
+                  <div className="md:hidden">
+                    <ProvenanceLine
+                      cards={cards}
+                      filled={filledCount}
+                      bought={boughtCount}
+                      open={openCount}
+                      shortRole={shortRole}
+                      width="phone"
+                    />
+                  </div>
+                  <div className="hidden md:block">
+                    <ProvenanceLine
+                      cards={cards}
+                      filled={filledCount}
+                      bought={boughtCount}
+                      open={openCount}
+                      shortRole={shortRole}
+                      width="desktop"
+                    />
+                  </div>
+                </>
+              );
+            })()}
+
+            {/* Fill-failed banner — shown when the fill never landed (State
+                15). Offers a retry. A swept deck is filled=true and must not
+                see this banner — that is the entire reason the column exists. */}
+            {!firstRun && (
+              <FillFailedBannerConnected
+                deckId={deck.id}
+                filled={deck.filled}
+                cardCount={cards.length}
+              />
+            )}
 
             {/* Arrival chrome. Mutually exclusive by construction: a clean
                 import gets the strip, an import that came up short gets the
