@@ -80,7 +80,13 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
 
   return (
     <aside
-      className="hidden md:flex md:flex-col w-[236px] shrink-0 h-screen sticky top-0"
+      // `sticky` makes this a stacking context, so the account popover's own
+      // z-index cannot lift it past the main column — the rail as a whole has
+      // to outrank that column, or content with any positive z-index (the
+      // collection filter bar, a rec card's overlay) paints over the open menu.
+      // Below the tab bar, the menu backdrop and the modals, which all sit at
+      // 40 or above.
+      className="hidden md:flex md:flex-col w-[236px] shrink-0 h-screen sticky top-0 z-30"
       style={{
         background: "var(--surface-rail)",
         borderRight: "1px solid var(--border-strong)",
