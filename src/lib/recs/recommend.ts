@@ -177,7 +177,9 @@ export async function recommendCommanders(
         if (result.unreachable) degraded = true;
         return {
           ...scoreCommander({
-            commander, collection, edhrecTopCards: result.data?.topCards ?? null,
+            commander, collection,
+            edhrecTopCards: result.data?.topCards ?? null,
+            inclusionByName: result.data?.inclusionByName ?? null,
           }),
           synergyState: synergyStateFrom(result),
         };
@@ -208,7 +210,11 @@ export async function scoreOneCommander(
   const cache = await readEdhrecCache([oracleId]);
   const result = await resolveEdhrecData(oracleId, commander.name, cache.get(oracleId));
   return {
-    ...scoreCommander({ commander, collection, edhrecTopCards: result.data?.topCards ?? null }),
+    ...scoreCommander({
+      commander, collection,
+      edhrecTopCards: result.data?.topCards ?? null,
+      inclusionByName: result.data?.inclusionByName ?? null,
+    }),
     slug,
     synergyState: synergyStateFrom(result),
   };

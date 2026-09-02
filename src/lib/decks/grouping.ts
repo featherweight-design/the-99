@@ -16,6 +16,7 @@ export type DeckDetailCard = {
   role: "ramp" | "draw" | "removal" | "wipes" | "land" | "other";
   owned: boolean;
   quantity: number;
+  auto: boolean;
   /**
    * Optional because six sites build this literal (optimistic reducers, tests,
    * fixtures) and none of them can reach the database. Absent and null both mean
@@ -52,6 +53,16 @@ export type DeckUnresolvedRow = {
   quantity: number;
   sourceLine: number;
 };
+
+/**
+ * Copies, not rows. Only basic lands stack today, so anywhere basics are
+ * filtered out this returns the row count — but `isBasicLand` documents its
+ * exception as an implementation limit that may widen to self-naming cards,
+ * and every count that says "cards" has to follow it when it does.
+ */
+export function cardCopies(cards: Pick<DeckDetailCard, "quantity">[]): number {
+  return cards.reduce((sum, c) => sum + c.quantity, 0);
+}
 
 /**
  * Unresolved rows are counted in cards rather than lines, because the figure

@@ -78,6 +78,7 @@ function makeCard(
     role: "other",
     owned: true,
     quantity: 1,
+    auto: false,
     ...overrides,
   };
 }
@@ -225,7 +226,7 @@ describe("groupByRole", () => {
 describe("deckCounts", () => {
   const card = (over: Partial<DeckDetailCard>): DeckDetailCard => ({
     oracleId: "o", name: "n", typeLine: "Artifact", cardTypeGroup: "Artifacts",
-    role: "other", owned: true, quantity: 1, ...over,
+    role: "other", owned: true, quantity: 1, auto: false, ...over,
   });
 
   it("counts quantities, not rows", () => {

@@ -21,7 +21,7 @@ export default async function DeckBuilderPage({
   const detail = await getDeckDetail(id, userId);
   if (!detail) notFound();
 
-  const [{ suggestions, degraded }, allDecks] = await Promise.all([
+  const [{ suggestions, degraded, shoppingFigures }, allDecks] = await Promise.all([
     getDeckSuggestions(id),
     listDecksWithStats(userId),
   ]);
@@ -34,6 +34,7 @@ export default async function DeckBuilderPage({
       deck={detail}
       suggestions={suggestions}
       degraded={degraded}
+      shoppingFigures={shoppingFigures}
       firstRun={firstRun}
       commanderIdentity={detail.commander.colorIdentity}
       // Left in the URL rather than swept with a router.replace. Stripping it

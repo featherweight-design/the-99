@@ -24,6 +24,7 @@ const card = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
   role: "ramp",
   owned: false,
   quantity: 1,
+  auto: false,
   ...over,
 });
 
@@ -37,7 +38,6 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
         cards={[card()]}
         unresolvedRows={[row()]}
         built={1}
-        toBuyCount={1}
         filter="all"
         grouping="type"
         onFilterChange={vi.fn()}
@@ -125,7 +125,7 @@ describe("the unresolved group inside the decklist", () => {
   // Otherwise a deck whose every line failed reads "No cards in this deck"
   // directly above the lines it is denying.
   it("does not claim the deck is empty when only unresolved rows remain", () => {
-    renderDecklist({ cards: [], built: 0, toBuyCount: 0 });
+    renderDecklist({ cards: [], built: 0 });
     expect(screen.queryByText("No cards in this deck.")).not.toBeInTheDocument();
     expect(screen.getByText(copy.groupLabel)).toBeInTheDocument();
   });

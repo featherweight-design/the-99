@@ -4,7 +4,7 @@
 // coverage strip stays above both and the quick-add bar is pinned under both.
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { availabilityState } from "../../lib/decks/availability";
@@ -20,6 +20,8 @@ import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crown } from "../ui/crown";
 import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { clearAutoCards, restoreAutoCards, type SweptRow } from "../../app/decks/actions";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
@@ -30,7 +32,10 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-deck";
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
-import { deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
+import { ProvenanceLine, FillFailedBannerConnected } from "./provenance-line";
+import { ROLE_TARGETS } from "../../lib/recs/roles";
+import { LAND_TARGET } from "../../lib/decks/suggest";
+import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 
@@ -62,6 +67,10 @@ interface BuilderShellProps {
   commanderIdentity: string[];
   /** True only on the navigation the import itself made — see src/lib/decks/arrival.ts. */
   arrivedFromImport: boolean;
+  /** EDHREC inclusion % for each unowned card in the deck, keyed by oracleId.
+      Cards with no EDHREC figure are absent from the map — never stored as 0.
+      Null when EDHREC was unreachable, which is not the same claim. */
+  shoppingFigures?: Record<string, number> | null;
 }
 
 export function BuilderShell({
@@ -71,6 +80,7 @@ export function BuilderShell({
   firstRun,
   commanderIdentity,
   arrivedFromImport,
+  shoppingFigures = {},
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -94,9 +104,11 @@ export function BuilderShell({
     removeOptimisticCard,
     resolveOptimisticRow,
     deleteOptimisticRow,
+    keepOptimisticCard,
+    sweepOptimisticAuto,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
-  const { built, toBuyCount } = counts;
+  const { built } = counts;
 
   // The one deliberate exception. Keyed off the SERVER counts because the
   // reveal is a one-shot that burns a persisted flag — firing it on a predicted
@@ -173,11 +185,25 @@ export function BuilderShell({
   // (this component unmounting). Never by a timer.
   const [spentSlot, setSpentSlot] = useState<DeckDetailCard | null>(null);
 
+  // The swept rows from a clearAutoCards action. Null means no sweep has run
+  // (or it has been undone/navigated away). Lives beside spentSlot: it is decklist
+  // state, and its lifetime is the current route per PR #204. Never a timer.
+  const [sweptRows, setSweptRows] = useState<SweptRow[] | null>(null);
+  // The sweep's optimistic removal has to be dispatched inside a transition or
+  // React discards it, so the pending flag is the transition's rather than
+  // hand-rolled state.
+  const [sweepPending, startSweep] = useTransition();
+  const [sweepError, setSweepError] = useState<string | null>(null);
+
   // Unresolved rows keep the builder out of the empty state: a deck whose every
   // line failed to match has nothing built, but it has plenty to show and act on.
   // A spent slot does the same — emptying the deck by removing its last card
   // must not swap the undo row out for "a king with no army".
-  const isEmpty = built === 0 && unresolvedRows.length === 0 && !spentSlot;
+  // Swept rows are the same shape at deck scale: sweeping an all-auto deck
+  // empties the list, and the empty state would take the sweep receipt — the
+  // only route back — down with it.
+  const isEmpty =
+    built === 0 && unresolvedRows.length === 0 && !spentSlot && !sweptRows?.length;
   const commanderShortName = shortCommanderName(deck.commander.name);
 
   // An add changes three numbers at once — the tile's button, the tab count and
@@ -270,6 +296,84 @@ export function BuilderShell({
     setSpentSlot(null);
   }, []);
 
+  // The auto count and kept count, computed from the optimistic card list.
+  // `autoCount` is how many untouched auto cards remain (these will be swept).
+  // `keptCount` is how many cards have auto=false (kept or player-added).
+  // Both sum quantity rather than counting rows: a fill stacks its basics into
+  // a single row of roughly 37, so a row count would offer to sweep "1 card".
+  const autoCount = cards.filter((c) => c.auto).reduce((n, c) => n + c.quantity, 0);
+  const keptCount = cards.filter((c) => !c.auto).reduce((n, c) => n + c.quantity, 0);
+
+  const handleClearAuto = useCallback(() => {
+    if (sweepPending) return;
+    startSweep(async () => {
+      setSweepError(null);
+      // One edit, not a loop of removals: the server deletes each auto row
+      // whole, while `removeOptimisticCard` takes off a single copy — which
+      // would leave 36 of the fill's 37 basics on screen until revalidation.
+      sweepOptimisticAuto();
+      try {
+        const removed = await clearAutoCards(deck.id);
+        setSweptRows(removed);
+        const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
+        const removedCount = removed.reduce((n, r) => n + r.quantity, 0);
+        setAnnouncement(
+          recommendationsCopy.auto.sweptAnnounce(String(removedCount), String(remaining)),
+        );
+      } catch {
+        // No explicit rollback: the transition ends here and React drops the
+        // predictions with it, putting the rows back from the server list.
+        setSweepError(recommendationsCopy.auto.sweepFailed);
+      }
+    });
+  }, [sweepPending, cards, deck.id, sweepOptimisticAuto]);
+
+  const handleRestoreAuto = useCallback(async () => {
+    if (!sweptRows) return;
+    // A refused Undo leaves its message beside a receipt the player can click
+    // again; without this the second, successful attempt restores the rows and
+    // still reads as a failure.
+    setSweepError(null);
+    try {
+      // The count comes back from the server rather than off the receipt: a
+      // card the player re-added by hand between the sweep and the Undo is
+      // skipped by the restore, and announcing it would overstate both numbers.
+      const restored = await restoreAutoCards(deck.id, sweptRows);
+      setAnnouncement(
+        recommendationsCopy.auto.sweptRestoredAnnounce(
+          String(restored),
+          String(deckCounts(cards).built + restored),
+        ),
+      );
+      setSweptRows(null);
+    } catch {
+      // Keep the receipt so Undo stays reachable — the rows are still gone, so
+      // the sweep's "the deck is unchanged" would be the wrong action and false.
+      setSweepError(recommendationsCopy.auto.restoreFailed);
+    }
+  }, [sweptRows, deck.id, cards]);
+
+  // Clear sweep state when the server list changes (revalidation settled).
+  // The sweep receipt is decklist state: it persists across tab switches but
+  // leaves when the player navigates away and the component unmounts.
+  //
+  // This sets state during render on purpose — React's documented "adjusting
+  // state when a prop changes" pattern, not a stray render-phase write. The
+  // `!==` guard makes it converge: React restarts the render immediately, the
+  // stored value now matches, and the branch does not run again. An effect
+  // would be worse here, because it lands a render later and the receipt
+  // would flash back on screen offering to undo a sweep already undone.
+  const [lastServerCardsForSweep, setLastServerCardsForSweep] = useState(deck.cards);
+  if (lastServerCardsForSweep !== deck.cards) {
+    setLastServerCardsForSweep(deck.cards);
+    // The swept rows being back in the server list means the undo landed, so
+    // the receipt has nothing left to offer. A settled sweep leaves them
+    // absent, which is what keeps the receipt on screen.
+    if (sweptRows && sweptRows.every((r) => deck.cards.some((c) => c.oracleId === r.oracleId))) {
+      setSweptRows(null);
+    }
+  }
+
   // Not memoised: `removeOptimisticCard` is rebuilt every render and
   // `announceAdd` follows the card list, so a useMemo here would recompute on
   // essentially every pass while reading as though it prevented one.
@@ -281,6 +385,7 @@ export function BuilderShell({
     reportRemoveFailure,
     resolveRow: resolveOptimisticRow,
     deleteRow: deleteOptimisticRow,
+    keep: keepOptimisticCard,
   };
 
   // A shelf link is a two-step move: switch to Consider, then scroll to the
@@ -391,6 +496,84 @@ export function BuilderShell({
                 the exception lives in the prose below it. */}
             <BuilderSpine deck={deck} counts={counts} onExport={openExport} {...commitments} />
 
+            {/* Fill provenance line — tells the player where the auto cards
+                came from. Leaves when the last auto card does (autoCount
+                drives it off the optimistic list). Not shown during a first
+                run because the deck is still in-flight then. */}
+            {autoCount > 0 && !firstRun && (() => {
+              const autoCards = cards.filter((c) => c.auto);
+              const filledCount = cardCopies(autoCards);
+              const boughtCount = cardCopies(autoCards.filter((c) => !c.owned));
+              // The line reads "we filled N — the other M are yours", so N and M
+              // have to close at 99: measuring M against `built` would drop the
+              // cards the player kept or added out of the sentence entirely.
+              // "Yours" covers both — a kept card and an empty slot are equally
+              // the player's, and the spine carries the authoritative built/open
+              // split for anyone asking how much room is actually left.
+              const openCount = Math.max(0, 99 - filledCount);
+              // Detect a role shortfall: compare the auto cards' role tally to
+              // ROLE_TARGETS, and the lands to LAND_TARGET — a mana base that
+              // missed its target is a shortfall the line has copy for, and
+              // leaving it out let the commonest one of all go unnamed.
+              // Land comes last, the order buildFillPlan reports shortfalls in.
+              const roleCounts = computeRoleCounts(autoCards);
+              const shortRole =
+                (["ramp", "draw", "removal", "wipes"] as const).find(
+                  (r) => roleCounts[r] < ROLE_TARGETS[r],
+                ) ?? (roleCounts.land < LAND_TARGET ? ("land" as const) : undefined);
+              return (
+                <>
+                  <div className="md:hidden">
+                    <ProvenanceLine
+                      cards={cards}
+                      filled={filledCount}
+                      bought={boughtCount}
+                      open={openCount}
+                      shortRole={shortRole}
+                      width="phone"
+                    />
+                  </div>
+                  <div className="hidden md:block">
+                    <ProvenanceLine
+                      cards={cards}
+                      filled={filledCount}
+                      bought={boughtCount}
+                      open={openCount}
+                      shortRole={shortRole}
+                      width="desktop"
+                    />
+                  </div>
+                </>
+              );
+            })()}
+
+            {/* Fill-failed banner — shown when the fill never landed (State
+                15). Offers a retry. A swept deck is filled=true and must not
+                see this banner — that is the entire reason the column exists.
+
+                `!firstRun` costs one real case: a player whose only deck is a
+                failed fill gets the guided banner instead of the retry. Nothing
+                persisted distinguishes "the fill was attempted and failed" from
+                "no fill was ever attempted" — both are filled=false with zero
+                cards — so the alternative is telling every player who has just
+                made their first deck by hand that a fill they never ran broke.
+                That player still reaches the fill from the commander page's
+                Build button; the second deck onwards sees the banner. Closing
+                the gap properly needs a persisted attempt marker.
+
+                An import whose every line went unresolved is also filled=false
+                with zero cards, and it is not a failed fill — the player asked
+                for a decklist, not a baseline. The unresolved group already
+                explains what happened, so the banner would only add a second,
+                wrong account of it. */}
+            {!firstRun && unresolvedRows.length === 0 && (
+              <FillFailedBannerConnected
+                deckId={deck.id}
+                filled={deck.filled}
+                hasCards={cards.length > 0}
+              />
+            )}
+
             {/* Arrival chrome. Mutually exclusive by construction: a clean
                 import gets the strip, an import that came up short gets the
                 banner instead, whose warning would be contradicted by a line
@@ -420,6 +603,7 @@ export function BuilderShell({
               cards={cards}
               onSeeShelf={seeShelf}
               rolesWithShelves={shelvedRoles}
+              justFilled={deck.filled && autoCount > 0}
             />
 
             {/* No degraded banner here. The old one ("Synergy data offline")
@@ -465,7 +649,9 @@ export function BuilderShell({
             ) : (
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (
-              /* §Empty Builder Mark + empty state (§Empty Builder Mark section) */
+              /* §Empty Builder Mark + empty state (§Empty Builder Mark section).
+                 Branches on deck.filled: a deck reached by deletion congratulates
+                 the sweep; one that was never built welcomes the player. */
               <section className="flex flex-col items-center justify-center text-center px-[16px] py-[40px] md:py-[60px] bg-[radial-gradient(400px_220px_at_50%_80%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
                 {/* §Mark container (mobile). Each breakpoint keeps its own
                     card-mark geometry; the quiet crown sits below both. */}
@@ -542,31 +728,64 @@ export function BuilderShell({
 
                 <Crown tone="quiet" className="mb-[14px]" />
 
-                {/* §Empty state heading */}
-                <h2
-                  className="font-display font-bold text-[21px] md:text-[24px] m-0"
-                  style={{ color: "var(--fg)" }}
-                >
-                  {addPanelCopy.builderEmpty.heading}
-                </h2>
+                {deck.filled ? (
+                  /* §Swept-empty branch: deck was filled then cleared by sweep */
+                  <>
+                    {/* §Swept-empty heading */}
+                    <h2
+                      className="font-display font-bold text-[21px] md:text-[24px] m-0"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {recommendationsCopy.sweptEmpty.heading}
+                    </h2>
 
-                {/* §Empty state body. One string at both widths now that both
-                    point at the same two entrances. */}
-                <p
-                  className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
-                  style={{ color: "var(--fg-body)" }}
-                >
-                  {addPanelCopy.builderEmpty.caption(commanderShortName)}
-                </p>
+                    {/* §Swept-empty body */}
+                    <p
+                      className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
+                      style={{ color: "var(--fg-body)" }}
+                    >
+                      {recommendationsCopy.sweptEmpty.body(commanderShortName)}
+                    </p>
 
-                {/* §Empty state role hint, now at both widths — mobile spent
-                    that vertical budget on the deleted CTA. */}
-                <p
-                  className="font-mono text-[11px] mt-[20px]"
-                  style={{ color: "var(--fg-faint)" }}
-                >
-                  {addPanelCopy.builderEmpty.roleHint}
-                </p>
+                    {/* §Swept-empty CTA — links into Consider */}
+                    <button
+                      type="button"
+                      onClick={() => setView("consider")}
+                      className="font-mono text-[11px] mt-[20px] cursor-pointer text-accent hover:text-accent-hover active:text-accent-mid"
+                    >
+                      {recommendationsCopy.sweptEmpty.cta}
+                    </button>
+                  </>
+                ) : (
+                  /* §First-run empty branch: deck was never filled */
+                  <>
+                    {/* §Empty state heading */}
+                    <h2
+                      className="font-display font-bold text-[21px] md:text-[24px] m-0"
+                      style={{ color: "var(--fg)" }}
+                    >
+                      {addPanelCopy.builderEmpty.heading}
+                    </h2>
+
+                    {/* §Empty state body. One string at both widths now that both
+                        point at the same two entrances. */}
+                    <p
+                      className="text-[13.5px] leading-[1.6] mt-[10px] md:text-[14px] md:leading-[1.65] md:mt-[12px] md:max-w-[440px]"
+                      style={{ color: "var(--fg-body)" }}
+                    >
+                      {addPanelCopy.builderEmpty.caption(commanderShortName)}
+                    </p>
+
+                    {/* §Empty state role hint, now at both widths — mobile spent
+                        that vertical budget on the deleted CTA. */}
+                    <p
+                      className="font-mono text-[11px] mt-[20px]"
+                      style={{ color: "var(--fg-faint)" }}
+                    >
+                      {addPanelCopy.builderEmpty.roleHint}
+                    </p>
+                  </>
+                )}
               </section>
             ) : (
               /* Task 8: Decklist body */
@@ -577,13 +796,21 @@ export function BuilderShell({
                 commanderOracleId={deck.commander.oracleId}
                 deckOracleIds={deckOracleIds}
                 built={built}
-                toBuyCount={toBuyCount}
                 spentSlot={spentSlot}
+                filled={deck.filled}
                 filter={filter}
                 grouping={grouping}
                 onFilterChange={setFilter}
                 onGroupingChange={setGrouping}
                 onUnresolvedExpandedChange={setUnresolvedExpanded}
+                autoCount={autoCount}
+                keptCount={keptCount}
+                sweepPending={sweepPending}
+                sweptRows={sweptRows}
+                sweepError={sweepError}
+                onClearAuto={handleClearAuto}
+                onRestoreAuto={handleRestoreAuto}
+                shoppingFigures={shoppingFigures}
               />
             )}
             </div>

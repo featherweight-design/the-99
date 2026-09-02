@@ -75,6 +75,7 @@ export type DeckDetail = {
   id: string;
   name: string;
   createdAt: Date;
+  filled: boolean;
   commander: {
     oracleId: string;
     name: string;
@@ -105,6 +106,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       id: decks.id,
       name: decks.name,
       createdAt: decks.createdAt,
+      filled: decks.filled,
       commanderOracleId: decks.commanderOracleId,
     })
     .from(decks)
@@ -144,6 +146,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       keywords: cards.keywords,
       owned: ownedSql,
       quantity: deckCards.quantity,
+      auto: deckCards.auto,
     })
     .from(deckCards)
     .innerJoin(cards, eq(deckCards.oracleId, cards.oracleId))
@@ -177,6 +180,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     role: primaryRole({ typeLine: row.typeLine, oracleText: row.oracleText, keywords: row.keywords }),
     owned: row.owned,
     quantity: row.quantity,
+    auto: row.auto,
     availability: availability?.get(row.oracleId) ?? null,
   }));
 
@@ -196,6 +200,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     id: deck.id,
     name: deck.name,
     createdAt: deck.createdAt,
+    filled: deck.filled,
     commander,
     cards: detailCards,
     unresolvedRows,

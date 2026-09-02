@@ -41,9 +41,27 @@ type MarkSlotSpent = (card: DeckDetailCard) => void;
  */
 type AnnounceUndo = (card: DeckDetailCard) => void;
 
+/**
+ * Keeping a card the fill added. The server clears the row's `auto` flag, and
+ * until that revalidation lands the deck-wide list still calls the card the
+ * fill's — so "Clear auto", which reads that flag, would offer to sweep a card
+ * the player has just told us to keep, and would predict its removal.
+ */
+type KeepOptimisticCard = (oracleId: string) => void;
+
+/**
+ * "Clear auto", which deletes whole rows rather than decrementing copies. A
+ * loop of `remove` would take one copy off each row, leaving 36 of a fill's 37
+ * basics on screen until revalidation — so the sweep is its own edit, matching
+ * the server's delete-where-auto in a single dispatch.
+ */
+type SweepOptimisticAuto = () => void;
+
 type DeckEdit =
   | { kind: "add"; card: DeckDetailCard }
-  | { kind: "remove"; oracleId: string };
+  | { kind: "remove"; oracleId: string }
+  | { kind: "keep"; oracleId: string }
+  | { kind: "sweep" };
 
 /**
  * A failed removal has nowhere to draw itself: the prediction has already taken
@@ -65,6 +83,7 @@ type DeckEdits = {
   reportRemoveFailure: ReportRemoveFailure;
   resolveRow: ResolveOptimisticRow;
   deleteRow: DeleteOptimisticRow;
+  keep: KeepOptimisticCard;
 };
 
 const DeckEditContext = createContext<DeckEdits | null>(null);
@@ -83,6 +102,14 @@ export function useOptimisticDeckCards(
   const [cards, applyEdit] = useOptimistic(
     serverCards,
     (current, edit: DeckEdit) => {
+      if (edit.kind === "sweep") return current.filter((c) => !c.auto);
+      if (edit.kind === "keep") {
+        const at = current.findIndex((c) => c.oracleId === edit.oracleId);
+        if (at === -1) return current;
+        const next = [...current];
+        next[at] = { ...next[at], auto: false };
+        return next;
+      }
       if (edit.kind === "remove") {
         // One click removes one copy: the server decrements while more than one
         // remains and only deletes the row on the last. Predicting the whole
@@ -120,6 +147,9 @@ export function useOptimisticDeckCards(
     applyEdit({ kind: "add", card });
   };
   const deleteOptimisticRow: DeleteOptimisticRow = (rowId) => dropRow(rowId);
+  const keepOptimisticCard: KeepOptimisticCard = (oracleId) =>
+    applyEdit({ kind: "keep", oracleId });
+  const sweepOptimisticAuto: SweepOptimisticAuto = () => applyEdit({ kind: "sweep" });
 
   return {
     cards,
@@ -129,6 +159,8 @@ export function useOptimisticDeckCards(
     removeOptimisticCard,
     resolveOptimisticRow,
     deleteOptimisticRow,
+    keepOptimisticCard,
+    sweepOptimisticAuto,
   };
 }
 
@@ -169,6 +201,10 @@ export function useResolveOptimisticRow(): ResolveOptimisticRow {
 
 export function useDeleteOptimisticRow(): DeleteOptimisticRow {
   return useContext(DeckEditContext)?.deleteRow ?? noop;
+}
+
+export function useKeepOptimisticCard(): KeepOptimisticCard {
+  return useContext(DeckEditContext)?.keep ?? noop;
 }
 
 /**

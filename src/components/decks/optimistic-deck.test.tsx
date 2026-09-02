@@ -11,17 +11,19 @@ import { useOptimisticDeckCards } from "./optimistic-deck";
 
 const solRing: DeckDetailCard = {
   oracleId: "sol-ring", name: "Sol Ring", typeLine: "Artifact",
-  cardTypeGroup: "Artifacts", role: "ramp", owned: false, quantity: 1,
+  cardTypeGroup: "Artifacts", role: "ramp", owned: false, quantity: 1, auto: false,
 };
 const forest: DeckDetailCard = {
   oracleId: "forest", name: "Forest", typeLine: "Basic Land — Forest",
-  cardTypeGroup: "Lands", role: "land", owned: true, quantity: 1,
+  cardTypeGroup: "Lands", role: "land", owned: true, quantity: 1, auto: false,
 };
 
-type Edit = { add: DeckDetailCard } | { remove: string };
+type Edit = { add: DeckDetailCard } | { remove: string } | { keep: string } | { sweep: true };
 
 function Harness({ server, edits }: { server: DeckDetailCard[]; edits: Edit[] }) {
-  const { cards, addOptimisticCard, removeOptimisticCard } = useOptimisticDeckCards(server);
+  const {
+    cards, addOptimisticCard, removeOptimisticCard, keepOptimisticCard, sweepOptimisticAuto,
+  } = useOptimisticDeckCards(server);
   return (
     <button
       onClick={() => {
@@ -30,13 +32,16 @@ function Harness({ server, edits }: { server: DeckDetailCard[]; edits: Edit[] })
         startTransition(async () => {
           for (const edit of edits) {
             if ("add" in edit) addOptimisticCard(edit.add);
+            else if ("sweep" in edit) sweepOptimisticAuto();
+            else if ("keep" in edit) keepOptimisticCard(edit.keep);
             else removeOptimisticCard(edit.remove);
           }
           await new Promise(() => {});
         });
       }}
     >
-      {cards.map((c) => `${c.name}:${c.quantity}`).join("|") || "empty"}
+      {/* A trailing * marks a row the fill still owns, so the keep edit is visible. */}
+      {cards.map((c) => `${c.name}:${c.quantity}${c.auto ? "*" : ""}`).join("|") || "empty"}
     </button>
   );
 }
@@ -63,6 +68,32 @@ describe("useOptimisticDeckCards", () => {
 
   it("drops a removed card from the deck-wide list", async () => {
     expect(await apply([solRing, forest], [{ remove: "sol-ring" }])).toBe("Forest:1");
+  });
+
+  // "Clear auto" reads the optimistic list, so a keep that only landed on the
+  // server would leave the card sweepable — and counted as the fill's — for the
+  // whole revalidation window.
+  it("clears the fill's claim on a kept card", async () => {
+    expect(await apply([{ ...solRing, auto: true }], [{ keep: "sol-ring" }])).toBe("Sol Ring:1");
+  });
+
+  it("leaves the list alone when the kept card is not in it", async () => {
+    expect(await apply([{ ...solRing, auto: true }], [{ keep: "ghost" }])).toBe("Sol Ring:1*");
+  });
+
+  // `clearAutoCards` deletes each auto row whole. A loop of removals would take
+  // one copy off the fill's ~37 basics and leave the other 36 on screen for the
+  // length of the revalidation.
+  it("takes a swept stack out whole rather than decrementing it", async () => {
+    const swept = await apply(
+      [{ ...forest, auto: true, quantity: 37 }, solRing],
+      [{ sweep: true }],
+    );
+    expect(swept).toBe("Sol Ring:1");
+  });
+
+  it("leaves a deck with nothing auto in it untouched", async () => {
+    expect(await apply([solRing, forest], [{ sweep: true }])).toBe("Sol Ring:1|Forest:1");
   });
 
   // `removeCardFromDeck` decrements while more than one copy remains, so a

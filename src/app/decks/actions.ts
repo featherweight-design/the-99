@@ -17,25 +17,126 @@ import { validateDeckName } from "../../lib/decks/deck-name";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { validateCardForDeck } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
+import { planFill, type FillPlan } from "../../lib/decks/fill";
 
 // The pool carries mana on top of PoolCard so a tile can draw cost pips and the
 // Consider panel can sort by cost without a second round trip.
-type SuggestionPoolCard = PoolCard & { manaValue: number };
+// `ownedQuantity` is the copies owned summed across printings — a basic is
+// owned in quantity, and the fill stacks it to what the shelf actually holds.
+// It rides on the pool rather than arriving from a second query because both
+// reads scan the same join under the same predicate.
+type SuggestionPoolCard = PoolCard & { manaValue: number; ownedQuantity: number };
 
-async function ownedColorLegalPool(userId: string, commander: PoolCard): Promise<SuggestionPoolCard[]> {
+async function ownedColorLegalPool(userId: string, commander: Pick<PoolCard, "oracleId" | "colorIdentity">): Promise<SuggestionPoolCard[]> {
   const owned = await db
-    .selectDistinctOn([cards.oracleId], {
+    .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords, colorIdentity: cards.colorIdentity,
       imageUri: cards.imageUri, manaCost: cards.manaCost, manaValue: cards.cmc,
+      ownedQuantity: sql<number>`sum(${collectionItems.quantity})::int`,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
     .where(ownedCardsWhere(userId, { commanderLegalOnly: true }))
-    // Postgres requires DISTINCT ON expressions to lead the ORDER BY.
-    .orderBy(cards.oracleId);
+    // Grouping on the primary key makes every other `cards` column functionally
+    // dependent, so Postgres accepts them ungrouped — one row per oracle id,
+    // which is what the old DISTINCT ON produced.
+    .groupBy(cards.oracleId);
   const identity = new Set(commander.colorIdentity);
   return owned.filter((c) => c.oracleId !== commander.oracleId && c.colorIdentity.every((x) => identity.has(x)));
+}
+
+type UnownedStapleCard = {
+  oracleId: string; name: string; typeLine: string;
+  oracleText: string | null; keywords: string[];
+  imageUri: string | null; manaCost: string | null; manaValue: number;
+};
+
+/** Unowned EDHREC staples, ordered by EDHREC rank, that fit the commander's
+    colour identity. Returns the full ranked list; callers bound it. */
+async function unownedStaples(
+  commander: Pick<PoolCard, "oracleId" | "colorIdentity">,
+  topCards: string[],
+  ownedIds: Set<string>,
+  excludeIds: Set<string>,
+): Promise<UnownedStapleCard[]> {
+  if (topCards.length === 0) return [];
+  const lowerTopCards = topCards.slice(0, 100).map((n) => n.toLowerCase());
+  const candidateCards = await db
+    .select({
+      oracleId: cards.oracleId,
+      name: cards.name,
+      colorIdentity: cards.colorIdentity,
+      typeLine: cards.typeLine,
+      oracleText: cards.oracleText,
+      keywords: cards.keywords,
+      imageUri: cards.imageUri,
+      manaCost: cards.manaCost,
+      manaValue: cards.cmc,
+    })
+    .from(cards)
+    .where(
+      and(
+        or(
+          inArray(sql`lower(${cards.name})`, lowerTopCards),
+          inArray(sql`lower(split_part(${cards.name}, ' // ', 1))`, lowerTopCards),
+        ),
+        eq(cards.commanderLegal, true),
+        arrayContained(cards.colorIdentity, commander.colorIdentity),
+      ),
+    );
+
+  const eligible = candidateCards.filter(
+    (c) => !ownedIds.has(c.oracleId) && !excludeIds.has(c.oracleId),
+  );
+
+  const topCardIndex = new Map(lowerTopCards.map((n, i) => [n, i]));
+  const rankOf = (name: string): number => {
+    const lower = name.toLowerCase();
+    return topCardIndex.get(lower) ?? topCardIndex.get(lower.split(" // ")[0]) ?? Infinity;
+  };
+  eligible.sort((a, b) => rankOf(a.name) - rankOf(b.name));
+  return eligible;
+}
+
+/** Gathers the pool (quantities included) and the unowned EDHREC staples, then
+    plans the fill. The EDHREC call is not the failure to guard: `getEdhrecData`
+    degrades an unreachable upstream to `{ data: null }` and the fill goes ahead
+    on the collection alone. The database reads are what can throw, so callers
+    still guard this. */
+export async function buildFillPlan(
+  userId: string,
+  commander: { oracleId: string; name: string; colorIdentity: string[] },
+): Promise<FillPlan> {
+  const pool = await ownedColorLegalPool(userId, commander);
+  const { data } = await getEdhrecData(commander.oracleId, commander.name);
+  // Sparse: EDHREC reports a figure only for the cards it knows.
+  const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
+  const inclusionOf = (name: string): number | null => {
+    const lower = name.toLowerCase();
+    const raw = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
+    return raw != null && Number.isFinite(raw) ? raw : null;
+  };
+
+  const ownedIds = new Set(pool.map((c) => c.oracleId));
+  const staples = data?.topCards
+    ? await unownedStaples(commander, data.topCards, ownedIds, new Set([commander.oracleId]))
+    : [];
+
+  return planFill([
+    ...pool.map((c) => ({
+      oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
+      oracleText: c.oracleText, keywords: c.keywords,
+      owned: true, ownedQuantity: c.ownedQuantity,
+      inclusionPct: inclusionOf(c.name),
+    })),
+    ...staples.map((c) => ({
+      oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
+      oracleText: c.oracleText, keywords: c.keywords,
+      owned: false, ownedQuantity: 0,
+      inclusionPct: inclusionOf(c.name),
+    })),
+  ]);
 }
 
 export async function createDeck(commanderOracleId: string, name: string): Promise<void> {
@@ -48,22 +149,53 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
     throw new Error("card is not a legal commander");
   }
 
-  // Spec: suggestions are display-only — nothing is committed until the user adds it.
-  // The deck starts empty; the deck page surfaces getDeckSuggestions.
-  const [deck] = await db.insert(decks)
-    .values({ userId, name: validateDeckName(name), commanderOracleId }).returning({ id: decks.id });
+  const deckName = validateDeckName(name);
+  let deckId: string;
+  try {
+    const plan = await buildFillPlan(userId, {
+      oracleId: commanderOracleId,
+      name: commander.name,
+      colorIdentity: commander.colorIdentity,
+    });
+    deckId = await db.transaction(async (tx) => {
+      const [deck] = await tx.insert(decks)
+        .values({ userId, name: deckName, commanderOracleId, filled: true })
+        .returning({ id: decks.id });
+      if (plan.rows.length > 0) {
+        await tx.insert(deckCards).values(
+          plan.rows.map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
+        );
+      }
+      return deck.id;
+    });
+  } catch (err) {
+    // State 15: the deck is here, the cards aren't. The player keeps the deck
+    // and the banner offers the fill again — losing the deck too would cost
+    // them the one thing they actually asked for.
+    console.error("buildFillPlan failed — falling back to empty deck", err);
+    const [deck] = await db.insert(decks)
+      .values({ userId, name: deckName, commanderOracleId, filled: false })
+      .returning({ id: decks.id });
+    deckId = deck.id;
+  }
   // The redirect renders the new deck's own page, but /decks and the home
   // dashboard both list decks and are held in the client cache for a window
   // now — without this the deck you just made is missing when you navigate back.
-  for (const path of deckSurfaces(deck.id)) revalidatePath(path);
-  redirect(`/decks/${deck.id}`);
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  // Outside the try: redirect() signals by throwing, and a catch here would
+  // read that throw as a failed fill.
+  redirect(`/decks/${deckId}`);
 }
 
-export async function getDeckSuggestions(deckId: string): Promise<{ suggestions: DeckSuggestion[]; degraded: boolean }> {
+/** `shoppingFigures` is null when EDHREC is unreachable, and a map otherwise. An
+    empty map says "we asked and these cards have no figure"; null says "we could
+    not ask". The Shopping rows print an absence for the first and nothing at all
+    for the second — an outage is not a fact about any one card. */
+export async function getDeckSuggestions(deckId: string): Promise<{ suggestions: DeckSuggestion[]; degraded: boolean; shoppingFigures: Record<string, number> | null }> {
   const userId = await requireUserId();
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
-  if (!commander) return { suggestions: [], degraded: false };
+  if (!commander) return { suggestions: [], degraded: false, shoppingFigures: {} };
 
   const pool = await ownedColorLegalPool(userId, commander);
   const inDeckRows = await db.select({ oracleId: deckCards.oracleId }).from(deckCards)
@@ -78,8 +210,9 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   const { data, unreachable } = await getEdhrecData(commander.oracleId, commander.name);
   const degraded = unreachable;
   const topCards = data?.topCards ?? null;
-  const inclusionByName = data?.inclusionByName ?? {};
-  const synergyByName = data?.synergyByName ?? {};
+  // Sparse: EDHREC reports a figure only for the cards it knows.
+  const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
+  const synergyByName: Record<string, number | undefined> = data?.synergyByName ?? {};
 
   // Build a map for name lookups
   const byId = new Map(available.map((c) => [c.oracleId, c]));
@@ -111,49 +244,9 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   // Unowned EDHREC staples: up to 5
   let unownedSuggestions: DeckSuggestion[] = [];
   if (topCards && topCards.length > 0) {
-    // Query cards by name (case-insensitive), commander_legal, and color identity.
-    // Cap the IN list — only 5 unowned staples are surfaced, so the top of
-    // EDHREC's ranking is more than enough candidates.
-    const lowerTopCards = topCards.slice(0, 100).map((n) => n.toLowerCase());
-    const candidateCards = await db
-      .select({
-        oracleId: cards.oracleId,
-        name: cards.name,
-        colorIdentity: cards.colorIdentity,
-        // Only needed to classify the card for an optimistic decklist row.
-        typeLine: cards.typeLine,
-        oracleText: cards.oracleText,
-        keywords: cards.keywords,
-        imageUri: cards.imageUri,
-        manaCost: cards.manaCost,
-        manaValue: cards.cmc,
-      })
-      .from(cards)
-      .where(
-        and(
-          // EDHREC keys DFCs/MDFCs by front face while cards.name stores
-          // "Front // Back" — match either the full name or the front face.
-          or(
-            inArray(sql`lower(${cards.name})`, lowerTopCards),
-            inArray(sql`lower(split_part(${cards.name}, ' // ', 1))`, lowerTopCards),
-          ),
-          eq(cards.commanderLegal, true),
-          arrayContained(cards.colorIdentity, commander.colorIdentity),
-        ),
-      );
-
-    // Filter: not owned, not in deck, not the commander
-    const eligible = candidateCards.filter(
-      (c) => !ownedByOracleId.has(c.oracleId) && !inDeck.has(c.oracleId) && c.oracleId !== commander.oracleId,
-    );
-
-    // Order by position in topCards (front-face fallback for DFCs).
-    const topCardIndex = new Map(lowerTopCards.map((n, i) => [n, i]));
-    const rankOf = (name: string): number => {
-      const lower = name.toLowerCase();
-      return topCardIndex.get(lower) ?? topCardIndex.get(lower.split(" // ")[0]) ?? Infinity;
-    };
-    eligible.sort((a, b) => rankOf(a.name) - rankOf(b.name));
+    // unownedStaples returns the full ranked list; getDeckSuggestions caps at 5.
+    const excludeIds = new Set([commander.oracleId, ...inDeck]);
+    const eligible = await unownedStaples(commander, topCards, ownedByOracleId, excludeIds);
 
     unownedSuggestions = eligible.slice(0, 5).map((c) =>
       buildSuggestionPayload(
@@ -198,7 +291,35 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
     availability: availability?.get(s.oracleId) ?? null,
   }));
 
-  return { suggestions, degraded };
+  // Build shoppingFigures: EDHREC inclusion % for each unowned card in the deck.
+  // Uses the same name lookup as buildFillPlan (actions.ts:117-120): lowercase,
+  // then fall back to the front face of a double-faced card name. Cards with no
+  // figure are omitted — absence and "0% of decks" are different states.
+  const unownedDeckRows = await db
+    .select({ oracleId: cards.oracleId, name: cards.name })
+    .from(deckCards)
+    .innerJoin(cards, eq(deckCards.oracleId, cards.oracleId))
+    .where(
+      and(
+        eq(deckCards.deckId, deckId),
+        sql<boolean>`not exists (
+          select 1 from ${collectionItems}
+          where ${collectionItems.oracleId} = ${cards.oracleId}
+          and ${collectionItems.userId} = ${userId}
+        )`,
+      ),
+    );
+
+  const shoppingFigures: Record<string, number> = {};
+  for (const row of unownedDeckRows) {
+    const lower = row.name.toLowerCase();
+    const raw = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
+    if (raw != null && Number.isFinite(raw)) {
+      shoppingFigures[row.oracleId] = raw;
+    }
+  }
+
+  return { suggestions, degraded, shoppingFigures: degraded ? null : shoppingFigures };
 }
 
 async function requireDeck(deckId: string, userId: string) {
@@ -292,6 +413,52 @@ export async function deleteDeck(deckId: string): Promise<void> {
   redirect("/decks");
 }
 
+/** The retry behind the fill-failed banner. Re-runs Task 5's gathering against a
+    deck that already exists. Refuses a deck that already holds cards — a retry
+    must not double a deck the player has since added to by hand. */
+export async function fillDeck(deckId: string): Promise<void> {
+  const userId = await requireUserId();
+  const deck = await requireDeck(deckId, userId);
+  const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
+  if (!commander) return;
+  const existing = await db.select({ oracleId: deckCards.oracleId })
+    .from(deckCards).where(eq(deckCards.deckId, deckId)).limit(1);
+  if (existing.length > 0) return;
+
+  const plan = await buildFillPlan(userId, commander);
+  await db.transaction(async (tx) => {
+    // Lock the deck row before re-reading, the same way addCardToDeck does.
+    // Without it the read sees a snapshot: a hand-add that commits between the
+    // read and the insert would slip past the check, and the fill would land on
+    // top of a deck the player had already started.
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    // Re-read inside the transaction. buildFillPlan reaches out to EDHREC, so
+    // the check above is seconds stale by now and the player may have added a
+    // card by hand in the meantime — filling on top of it would double a deck
+    // they had already started.
+    const existingNow = await tx.select({ oracleId: deckCards.oracleId })
+      .from(deckCards).where(eq(deckCards.deckId, deckId)).limit(1);
+    if (existingNow.length > 0) return;
+    if (plan.rows.length > 0) {
+      await tx.insert(deckCards).values(
+        plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
+      );
+    }
+    await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
+  });
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
+}
+
+/** Clears the fill's marker on one row. The card stays in the deck — the marker
+    is a claim about who put it there, and keeping it is the player saying "mine". */
+export async function keepAutoCard(deckId: string, oracleId: string): Promise<void> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+  await db.update(deckCards).set({ auto: false })
+    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
+  revalidatePath(`/decks/${deckId}`);
+}
+
 export async function renameDeck(deckId: string, name: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
@@ -300,4 +467,110 @@ export async function renameDeck(deckId: string, name: string): Promise<void> {
   // No claim changes, so the availability surfaces are untouched — but the home
   // dashboard names the three most recent decks and would keep the old one.
   for (const path of deckSurfaces(deckId)) revalidatePath(path);
+}
+
+/** One removed row, carried so Undo can restore a stacked basic at the exact
+    quantity it was swept at rather than guessing 1. */
+export type SweptRow = { oracleId: string; quantity: number };
+
+/** The whole sweep in one statement — 58 rows must not be 58 round trips, and a
+    partial sweep would leave a receipt that lies about what it removed. Returns
+    the rows so Undo can put back exactly what went, and nothing the player kept.
+
+    No lock, deliberately: under Read Committed a DELETE that meets a row an
+    uncommitted UPDATE holds waits for that transaction, then re-evaluates its
+    own WHERE against the updated row. A keep that lands mid-sweep therefore
+    turns `auto` false before the delete re-reads it, and the sweep passes the
+    card by. Serialising these two by hand would buy nothing Postgres is not
+    already doing. */
+export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+  const removed = await db.delete(deckCards)
+    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
+    .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
+  for (const path of claimSurfaces(deckId)) revalidatePath(path);
+  return removed;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Re-inserts the swept rows with auto: true. Uses onConflictDoNothing so a
+    double-undo is harmless. The quantity comes from the delete's returning
+    clause rather than a fresh read, so a stacked basic comes back at the count
+    it was swept at even if the shelf changed in between.
+
+    The rows arrive from the client, and a server action answers any crafted
+    request that reaches it — so they are re-checked here rather than trusted.
+    A malformed oracle id would otherwise reach Postgres as a failed uuid cast,
+    a forged quantity would write a deck past the 99 the add path enforces, and
+    a substituted oracle id would put a card in the deck that the add path would
+    have refused as illegal, off-identity, or the commander itself.
+
+    Returns how many cards actually landed, which is not the receipt's total: a
+    card the player re-added by hand is skipped by the conflict clause, and the
+    announcement must not claim to have restored it. */
+export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promise<number> {
+  const userId = await requireUserId();
+  const deck = await requireDeck(deckId, userId);
+  if (rows.length === 0) {
+    revalidatePath(`/decks/${deckId}`);
+    return 0;
+  }
+  // A duplicated oracle id would make the insert's own values conflict, which
+  // onConflictDoNothing does not cover — Postgres rejects the statement whole.
+  const byId = new Map<string, number>();
+  for (const r of rows) {
+    if (!UUID_RE.test(r.oracleId)) throw new Error("invalid oracle id");
+    if (!Number.isInteger(r.quantity) || r.quantity < 1 || r.quantity > 99) {
+      throw new Error("invalid quantity");
+    }
+    byId.set(r.oracleId, r.quantity);
+  }
+
+  // Every id gets the same legality pass addCardToDeck runs. The cap lives with
+  // the write below, so `built: 0` here asks about legality alone.
+  const ids = [...byId.keys()];
+  const [[commander], candidates] = await Promise.all([
+    db.select({ colorIdentity: cards.colorIdentity })
+      .from(cards).where(eq(cards.oracleId, deck.commanderOracleId)),
+    db.select({ oracleId: cards.oracleId, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
+      .from(cards).where(inArray(cards.oracleId, ids)),
+  ]);
+  if (!commander) throw new Error("commander not found");
+  const byOracleId = new Map(candidates.map((c) => [c.oracleId, c]));
+  for (const oracleId of ids) {
+    const card = byOracleId.get(oracleId);
+    if (!card) throw new Error("card not found");
+    const rejection = validateCardForDeck(card, {
+      commanderOracleId: deck.commanderOracleId,
+      commanderColorIdentity: commander.colorIdentity,
+      built: 0,
+    });
+    if (rejection) throw new Error(rejection);
+  }
+
+  // Locking the deck row makes the cap check and the write atomic, the same way
+  // addCardToDeck does — an Undo racing a hand-add must not slip past 99.
+  return await db.transaction(async (tx) => {
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    // The deck holds 99 rows at most, so reading it whole costs no more than a
+    // sum would and also answers which rows the insert is going to skip.
+    const present = await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
+      .from(deckCards).where(eq(deckCards.deckId, deckId));
+    const built = present.reduce((n, r) => n + r.quantity, 0);
+    // Only the rows that will actually land count against the cap. A card the
+    // player re-added by hand before clicking Undo is skipped by the conflict
+    // clause, and counting it would refuse a restore that fits.
+    const here = new Set(present.map((r) => r.oracleId));
+    const restored = [...byId]
+      .filter(([oracleId]) => !here.has(oracleId))
+      .reduce((n, [, quantity]) => n + quantity, 0);
+    if (built + restored > 99) throw new Error("deck full");
+    await tx.insert(deckCards)
+      .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
+      .onConflictDoNothing();
+    for (const path of claimSurfaces(deckId)) revalidatePath(path);
+    return restored;
+  });
 }

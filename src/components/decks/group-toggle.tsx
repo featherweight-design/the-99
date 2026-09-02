@@ -3,6 +3,8 @@
 // Group Toggle — All/Shopping filter pills + By type / By role grouping pills.
 // §Decklist Group Toggle (design table).
 
+import { ClearAutoButton } from "./clear-auto";
+
 interface GroupToggleProps {
   allCount: number;
   shoppingCount: number;
@@ -10,6 +12,12 @@ interface GroupToggleProps {
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
   onGroupingChange: (g: "type" | "role") => void;
+  /** Number of untouched auto cards. The button is absent at 0. */
+  autoCount?: number;
+  /** Number of non-auto cards — kept fill cards and player additions alike. */
+  keptCount?: number;
+  sweepPending?: boolean;
+  onClearAuto?: () => void;
 }
 
 export function GroupToggle({
@@ -19,6 +27,10 @@ export function GroupToggle({
   grouping,
   onFilterChange,
   onGroupingChange,
+  autoCount = 0,
+  keptCount = 0,
+  sweepPending = false,
+  onClearAuto,
 }: GroupToggleProps) {
   return (
     /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px */
@@ -55,6 +67,16 @@ export function GroupToggle({
 
       {/* Spacer: pushes group pills to the right on both breakpoints */}
       <span className="flex-1" aria-hidden />
+
+      {/* Clear all auto — absent at zero, disabled only while its sweep runs */}
+      {autoCount > 0 && onClearAuto && (
+        <ClearAutoButton
+          count={autoCount}
+          keptCount={keptCount}
+          onClear={onClearAuto}
+          pending={sweepPending}
+        />
+      )}
 
       {/* "Group" label — desktop only, margin-left: auto is handled by spacer above */}
       <span

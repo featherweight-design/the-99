@@ -8,8 +8,12 @@ export type PoolCard = {
   manaCost: string | null;
 };
 
-/** A pool card named in a role list. The id is what opens its card detail. */
-export type RoleCard = { oracleId: string; name: string };
+export type RoleName = "ramp" | "draw" | "removal" | "wipes";
+
+/** One owned card that fills a role, with its EDHREC inclusion figure.
+    Missing data is encoded as null, never as 0 — 0 is a figure EDHREC really
+    reports, so collapsing the two would draw a real number for no data. */
+export type RoleCard = { oracleId: string; name: string; inclusionPct: number | null };
 
 export type CommanderScore = {
   oracleId: string; name: string;
@@ -21,9 +25,9 @@ export type CommanderScore = {
   colorPoolSize: number;
   edhrecOwnedCount: number | null;
   edhrecTotal: number | null;
-  roleCounts: Record<"ramp" | "draw" | "removal" | "wipes", number>;
-  roleGaps: ("ramp" | "draw" | "removal" | "wipes")[];
-  roleCards: Record<"ramp" | "draw" | "removal" | "wipes", RoleCard[]>;
+  roleCounts: Record<RoleName, number>;
+  roleGaps: RoleName[];
+  roleCards: Record<RoleName, RoleCard[]>;
   overlapOwned: string[];
   overlapMissing: string[];
   fitPool: number;
@@ -81,24 +85,64 @@ export function commanderPool(
   );
 }
 
+/** Inclusion descending, absent last, then name — so a chip row is ordered the
+    same on a re-render and on a second request. */
+export function byInclusionThenName(a: RoleCard, b: RoleCard): number {
+  if (a.inclusionPct !== b.inclusionPct) {
+    if (a.inclusionPct == null) return 1;
+    if (b.inclusionPct == null) return -1;
+    return b.inclusionPct - a.inclusionPct;
+  }
+  return a.name.localeCompare(b.name);
+}
+
 export function scoreCommander(args: {
   commander: PoolCard;
   collection: PoolCard[];
   edhrecTopCards: string[] | null;
+  // Sparse: EDHREC reports a figure for the cards it knows, so most names miss.
+  // The `| undefined` is what makes the guard below type-visible rather than
+  // dead-looking code.
+  inclusionByName: Record<string, number | undefined> | null;
 }): CommanderScore {
   const pool = commanderPool(args.commander, args.collection);
 
-  const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
-  const roleCards: Record<"ramp" | "draw" | "removal" | "wipes", RoleCard[]> = {
-    ramp: [], draw: [], removal: [], wipes: [],
+  // `inclusionByName` is keyed lowercase by parseEdhrecPayload, so every read
+  // lowercases first. And EDHREC names a double-faced card by its front face
+  // while Scryfall names it "Front // Back" — the same mismatch the topCards
+  // overlap below already handles.
+  const inclusionOf = (name: string): number | null => {
+    const map = args.inclusionByName;
+    if (!map) return null;
+    const lower = name.toLowerCase();
+    const hit = map[lower] ?? map[lower.split(" // ")[0]];
+    return hit != null && Number.isFinite(hit) ? hit : null;
   };
+
+  const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
+  const roleCards: Record<RoleName, RoleCard[]> = { ramp: [], draw: [], removal: [], wipes: [] };
   for (const c of pool) {
     for (const role of classifyRoles(c)) {
       if (role !== "land") {
         roleCounts[role]++;
-        roleCards[role].push({ oracleId: c.oracleId, name: c.name });
+        roleCards[role].push({ oracleId: c.oracleId, name: c.name, inclusionPct: inclusionOf(c.name) });
       }
     }
+  }
+  // Only sort when figures exist. Without them, sorting would order the panel
+  // alphabetically, which reads as an authored ranking built on nothing.
+  // Addendum A1: fall back to pool order.
+  //
+  // The test is whether a card in *that panel* actually got a figure, not
+  // whether a map was passed: parseEdhrecPayload always returns an object, and
+  // a payload with topCards but no inclusion numbers yields an empty one.
+  // Guarding on the map's presence would sort a panel of all-null figures
+  // alphabetically — the exact outcome this guard exists to prevent. Asking the
+  // question per panel matters because EDHREC's coverage is uneven: a commander
+  // whose ramp cards carry figures and whose wipes carry none would otherwise
+  // hand the wipes panel an alphabetical order it did not earn.
+  for (const list of Object.values(roleCards)) {
+    if (list.some((c) => c.inclusionPct !== null)) list.sort(byInclusionThenName);
   }
   const roleGaps = (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
     .filter((r) => roleCounts[r] < ROLE_TARGETS[r]);

@@ -31,6 +31,7 @@ const deckCard = (over: Partial<DeckDetailCard> = {}): DeckDetailCard => ({
   role: "ramp",
   owned: true,
   quantity: 1,
+  auto: false,
   ...over,
 });
 
@@ -58,7 +59,6 @@ describe("deck card-detail triggers", () => {
         unresolvedRows={[]}
         cards={[deckCard()]}
         built={1}
-        toBuyCount={0}
         filter="all"
         grouping="type"
         onFilterChange={vi.fn()}
@@ -79,7 +79,6 @@ describe("deck card-detail triggers", () => {
         unresolvedRows={[]}
         cards={[deckCard({ oracleId: "o-forest", name: "Forest", typeLine: "Basic Land — Forest", cardTypeGroup: "Lands", role: "land", quantity: 3 })]}
         built={3}
-        toBuyCount={0}
         filter="all"
         grouping="type"
         onFilterChange={vi.fn()}
@@ -191,7 +190,6 @@ describe("deck card-detail triggers", () => {
           deckCard(),
         ]}
         built={3}
-        toBuyCount={0}
         filter="all"
         grouping="type"
         onFilterChange={vi.fn()}

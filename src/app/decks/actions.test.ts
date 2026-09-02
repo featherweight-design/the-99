@@ -1,0 +1,446 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// The action module imports the db client, which throws at module init without a live URL.
+const stub = vi.hoisted(() => {
+  const nameOf = (table: unknown): string =>
+    (table as Record<symbol, string>)[Symbol.for("drizzle:Name")];
+
+  const state = {
+    // Card rows returned when actions query `cards` table
+    cards: [] as Record<string, unknown>[],
+    // Rows returned when querying `collection_items` (pool/quantity queries)
+    collectionItems: [] as Record<string, unknown>[],
+    // Insert calls tracked as { table, values, returning? }
+    insertCalls: [] as { table: string; values: unknown; returning: unknown[] | null }[],
+    // Tracks whether the transaction was called and whether it should reject
+    transactionError: null as Error | null,
+    // The rows already in the deck, returned by the in-transaction read
+    deckRows: [] as { oracleId: string; quantity: number }[],
+    // Whether getEdhrecData should reject
+    edhrecError: null as Error | null,
+    // redirect target captured
+    redirectTarget: null as string | null,
+  };
+
+  // A per-test fake for db.select chains
+  type SelectBuilder = {
+    from: (table: unknown) => SelectFromBuilder;
+  };
+  type SelectFromBuilder = {
+    from?: unknown;
+    where: (condition?: unknown) => Promise<Record<string, unknown>[]>;
+    innerJoin: (table: unknown, condition: unknown) => SelectFromBuilder;
+    orderBy: (...args: unknown[]) => SelectFromBuilder;
+    groupBy: (...args: unknown[]) => Promise<Record<string, unknown>[]>;
+  };
+
+  function makeSelectBuilder(): SelectBuilder {
+    return {
+      from: (table: unknown) => {
+        const tableName = nameOf(table);
+        const builder: SelectFromBuilder = {
+          where: async () => {
+            if (tableName === "cards") return state.cards;
+            return state.collectionItems;
+          },
+          innerJoin: () => {
+            // After innerJoin, the result is collection_items + cards join
+            return {
+              where: () => ({
+                orderBy: () => ({
+                  then: (resolve: (v: unknown) => unknown) =>
+                    Promise.resolve(state.collectionItems).then(resolve),
+                }),
+                // Mirrors the real pool query: one row per oracle id, carrying
+                // the card columns plus `ownedQuantity` summed across printings.
+                groupBy: async () => {
+                  const agg = new Map<string, Record<string, unknown>>();
+                  for (const item of state.collectionItems) {
+                    const row = item as Record<string, unknown>;
+                    const id = row.oracleId as string;
+                    const q = (row.quantity as number | undefined) ?? 1;
+                    const seen = agg.get(id);
+                    if (seen) {
+                      seen.ownedQuantity = (seen.ownedQuantity as number) + q;
+                    } else {
+                      agg.set(id, { ...row, ownedQuantity: q });
+                    }
+                  }
+                  return Array.from(agg.values());
+                },
+              }),
+            } as unknown as SelectFromBuilder;
+          },
+          orderBy: () => builder,
+          groupBy: async () => state.collectionItems,
+        };
+        return builder;
+      },
+    };
+  }
+
+  // insert builder
+  function makeInsertBuilder(table: unknown) {
+    const tableName = nameOf(table);
+    return {
+      values: (values: unknown) => {
+        const returning: unknown[] = [];
+        if (tableName === "decks") {
+          returning.push({ id: "deck-new-uuid" });
+        }
+        state.insertCalls.push({ table: tableName, values, returning: returning.length ? returning : null });
+        return {
+          returning: async () => returning,
+          onConflictDoUpdate: async () => {},
+          onConflictDoNothing: async () => {},
+        };
+      },
+    };
+  }
+
+  const tx = {
+    insert: (table: unknown) => makeInsertBuilder(table),
+    execute: async () => {},
+    select: () => ({
+      from: () => ({ where: async () => state.deckRows }),
+    }),
+  };
+
+  const db = {
+    select: () => makeSelectBuilder(),
+    selectDistinctOn: () => makeSelectBuilder(),
+    insert: (table: unknown) => makeInsertBuilder(table),
+    transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
+      if (state.transactionError) throw state.transactionError;
+      return fn(tx);
+    },
+  };
+
+  return { db, state };
+});
+
+vi.mock("../../db", () => ({ db: stub.db }));
+vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+vi.mock("next/navigation", () => ({
+  redirect: (target: string) => {
+    stub.state.redirectTarget = target;
+    // redirect() in Next.js throws a special error — simulate that so
+    // the calling code sees it propagate past the try/catch properly.
+    // We model it as a special sentinel that should never be caught.
+    const err = new Error(`NEXT_REDIRECT:${target}`);
+    (err as unknown as Record<string, unknown>)["__nextRedirect"] = true;
+    throw err;
+  },
+}));
+
+// Mock EDHREC client
+vi.mock("../../lib/edhrec/client", () => ({
+  getEdhrecData: async () => {
+    if (stub.state.edhrecError) throw stub.state.edhrecError;
+    return { data: null, unreachable: false };
+  },
+}));
+
+import { createDeck, restoreAutoCards } from "./actions";
+
+// IDs used across tests
+const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+
+/** A minimal legal commander card row */
+function commanderCard(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    oracleId: COMMANDER_ORACLE,
+    name: "Atraxa, Praetors' Voice",
+    typeLine: "Legendary Creature — Phyrexian Angel Horror",
+    oracleText: "Flying, vigilance, deathtouch, lifelink",
+    keywords: ["Flying", "Vigilance", "Deathtouch", "Lifelink"],
+    colorIdentity: ["W", "U", "B", "G"],
+    commanderLegal: true,
+    imageUri: null,
+    manaCost: "{G}{W}{U}{B}",
+    cmc: 4,
+    ...overrides,
+  };
+}
+
+/** A ramp artifact card */
+function rampCard(n: number): Record<string, unknown> {
+  return {
+    oracleId: `ramp-${n.toString().padStart(8, "0")}-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
+    name: `Ramp Artifact ${n}`,
+    typeLine: "Artifact",
+    oracleText: "Add {G}.",
+    keywords: [],
+    colorIdentity: [],
+    commanderLegal: true,
+    quantity: 1,
+  };
+}
+
+/** A basic Forest card */
+function forestCard(n: number, quantity = 1): Record<string, unknown> {
+  return {
+    oracleId: `forest-${n.toString().padStart(7, "0")}-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
+    name: "Forest",
+    typeLine: "Basic Land — Forest",
+    oracleText: null,
+    keywords: [],
+    colorIdentity: ["G"],
+    commanderLegal: true,
+    quantity,
+  };
+}
+
+/** Helper: run createDeck and capture the redirect target; swallow the redirect throw */
+async function runCreate(commanderOracleId = COMMANDER_ORACLE, name = "My Deck") {
+  try {
+    await createDeck(commanderOracleId, name);
+  } catch (err) {
+    const e = err as Error & { __nextRedirect?: boolean };
+    if (!e.__nextRedirect) throw err;
+    // redirect was thrown — that's expected; state.redirectTarget is already set
+  }
+}
+
+beforeEach(() => {
+  stub.state.cards.length = 0;
+  stub.state.collectionItems.length = 0;
+  stub.state.insertCalls.length = 0;
+  stub.state.transactionError = null;
+  stub.state.deckRows.length = 0;
+  stub.state.edhrecError = null;
+  stub.state.redirectTarget = null;
+});
+
+describe("createDeck — filled baseline", () => {
+  it("writes the filled baseline and marks every row auto", async () => {
+    // Commander card query
+    stub.state.cards.push(commanderCard());
+    // Pool: ten ramp artifacts and forty Forests
+    const pool: Record<string, unknown>[] = [
+      ...Array.from({ length: 10 }, (_, i) => rampCard(i)),
+      ...Array.from({ length: 40 }, (_, i) => forestCard(i, 4)),
+    ];
+    stub.state.collectionItems.push(...pool);
+
+    await runCreate();
+
+    const decksInsert = stub.state.insertCalls.find((c) => c.table === "decks");
+    expect(decksInsert).toBeDefined();
+    expect(decksInsert!.values).toMatchObject({ filled: true });
+
+    const deckCardsInsert = stub.state.insertCalls.find((c) => c.table === "deck_cards");
+    expect(deckCardsInsert).toBeDefined();
+    const rows = deckCardsInsert!.values as Array<Record<string, unknown>>;
+    expect(Array.isArray(rows)).toBe(true);
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.auto).toBe(true);
+    }
+
+    // Basic lands owned in multiples must stack to the actual owned quantity,
+    // not the ?? 1 fallback.  The pool has 40 Forests each owned in quantity 4;
+    // planFill stacks them up to LAND_TARGET (37), so forest rows should sum to
+    // 37 and the early ones should carry quantity 4 (not 1).
+    const forestRows = rows.filter((r) =>
+      typeof r.oracleId === "string" && r.oracleId.startsWith("forest-"),
+    );
+    expect(forestRows.length).toBeGreaterThan(0);
+    const forestTotal = forestRows.reduce((n, r) => n + (r.quantity as number), 0);
+    expect(forestTotal).toBe(37);
+    // At least the first several forests should carry quantity 4 (not 1).
+    expect(forestRows.some((r) => r.quantity === 4)).toBe(true);
+  });
+
+  it("still creates the deck when the transaction throws", async () => {
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+    stub.state.transactionError = new Error("transaction failed");
+
+    await runCreate();
+
+    // A fallback deck row must have been inserted with filled: false
+    const decksInserts = stub.state.insertCalls.filter((c) => c.table === "decks");
+    // The transaction threw, so the fallback insert is the only decks insert
+    expect(decksInserts.length).toBeGreaterThanOrEqual(1);
+    const fallback = decksInserts[decksInserts.length - 1];
+    expect(fallback.values).toMatchObject({ filled: false });
+
+    // No deck_cards rows should have been inserted (transaction rolled back)
+    const deckCardsInserts = stub.state.insertCalls.filter((c) => c.table === "deck_cards");
+    expect(deckCardsInserts.length).toBe(0);
+
+    // Redirect must still have fired
+    expect(stub.state.redirectTarget).toBe("/decks/deck-new-uuid");
+  });
+
+  it("still creates the deck when EDHREC is unreachable", async () => {
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+    stub.state.edhrecError = new Error("network timeout");
+
+    await runCreate();
+
+    // Fallback deck with filled: false
+    const decksInserts = stub.state.insertCalls.filter((c) => c.table === "decks");
+    expect(decksInserts.length).toBeGreaterThanOrEqual(1);
+    const fallback = decksInserts[decksInserts.length - 1];
+    expect(fallback.values).toMatchObject({ filled: false });
+
+    // Redirect still fired
+    expect(stub.state.redirectTarget).toBe("/decks/deck-new-uuid");
+  });
+
+  it("marks an empty collection filled, not failed", async () => {
+    stub.state.cards.push(commanderCard());
+    // Empty collection — no cards in pool, no quantities
+    // collectionItems stays empty
+
+    await runCreate();
+
+    // The fill ran and found nothing — this is NOT a failure
+    const decksInsert = stub.state.insertCalls.find((c) => c.table === "decks");
+    expect(decksInsert).toBeDefined();
+    expect(decksInsert!.values).toMatchObject({ filled: true });
+
+    // No deck_cards insert (nothing to insert)
+    const deckCardsInserts = stub.state.insertCalls.filter((c) => c.table === "deck_cards");
+    expect(deckCardsInserts.length).toBe(0);
+
+    expect(stub.state.redirectTarget).toBe("/decks/deck-new-uuid");
+  });
+
+  it("refuses a card that cannot lead a deck", async () => {
+    // Non-commander-legal card
+    stub.state.cards.push(commanderCard({ commanderLegal: false }));
+
+    await expect(runCreate()).rejects.toThrow("card is not a legal commander");
+
+    // No deck created
+    const decksInserts = stub.state.insertCalls.filter((c) => c.table === "decks");
+    expect(decksInserts.length).toBe(0);
+    expect(stub.state.redirectTarget).toBeNull();
+  });
+});
+
+describe("restoreAutoCards — the rows come from the client", () => {
+  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  const CARD_A = "11111111-1111-1111-1111-111111111111";
+  const CARD_B = "22222222-2222-2222-2222-222222222222";
+  const CARD_OFF = "33333333-3333-3333-3333-333333333333";
+  const CARD_BANNED = "44444444-4444-4444-4444-444444444444";
+  const CARD_ABSENT = "55555555-5555-5555-5555-555555555555";
+  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
+  /** requireDeck reads `decks` through the same select stub the pool uses, so a
+      single row is enough to make the deck resolve as owned. The commander
+      lookup takes the first `cards` row; the candidate lookup reads them all. */
+  function ownDeck() {
+    stub.state.collectionItems.push({ id: DECK, userId: "user_1", commanderOracleId: CMDR });
+    stub.state.cards.push(
+      { oracleId: CMDR, commanderLegal: true, colorIdentity: ["B", "R", "G"] },
+      { oracleId: CARD_A, commanderLegal: true, colorIdentity: [] },
+      { oracleId: CARD_B, commanderLegal: true, colorIdentity: ["G"] },
+      { oracleId: CARD_OFF, commanderLegal: true, colorIdentity: ["U"] },
+      { oracleId: CARD_BANNED, commanderLegal: false, colorIdentity: [] },
+    );
+  }
+
+  function restoredRows() {
+    const call = stub.state.insertCalls.find((c) => c.table === "deck_cards");
+    return (call?.values ?? []) as Array<Record<string, unknown>>;
+  }
+
+  it("restores the swept rows as auto", async () => {
+    ownDeck();
+    await restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 4 }]);
+    expect(restoredRows()).toEqual([
+      { deckId: DECK, oracleId: CARD_A, quantity: 4, auto: true },
+    ]);
+  });
+
+  it("rejects an oracle id that is not a uuid", async () => {
+    ownDeck();
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId: "'; drop table deck_cards; --", quantity: 1 }]),
+    ).rejects.toThrow("invalid oracle id");
+    expect(restoredRows()).toEqual([]);
+  });
+
+  it.each([0, -1, 100, 1.5, Number.NaN])("rejects the quantity %s", async (quantity) => {
+    ownDeck();
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity }]),
+    ).rejects.toThrow("invalid quantity");
+    expect(restoredRows()).toEqual([]);
+  });
+
+  // Duplicate ids inside one VALUES list conflict with each other, which
+  // onConflictDoNothing does not cover — Postgres rejects the statement whole.
+  it("collapses a repeated oracle id to one row", async () => {
+    ownDeck();
+    await restoreAutoCards(DECK, [
+      { oracleId: CARD_A, quantity: 1 },
+      { oracleId: CARD_A, quantity: 2 },
+      { oracleId: CARD_B, quantity: 1 },
+    ]);
+    expect(restoredRows().map((r) => r.oracleId)).toEqual([CARD_A, CARD_B]);
+  });
+
+  it("refuses a restore that would push the deck past 99", async () => {
+    ownDeck();
+    stub.state.deckRows.push({ oracleId: CARD_B, quantity: 97 });
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 3 }]),
+    ).rejects.toThrow("deck full");
+    expect(restoredRows()).toEqual([]);
+  });
+
+  // A card re-added by hand before Undo is skipped by the conflict clause, so
+  // counting it against the cap would refuse a restore that fits.
+  it("ignores a row already in the deck when measuring the cap", async () => {
+    ownDeck();
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 99 });
+    await restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 1 }]);
+    expect(restoredRows().map((r) => r.oracleId)).toEqual([CARD_A]);
+  });
+
+  it("writes nothing when the receipt is empty", async () => {
+    ownDeck();
+    await restoreAutoCards(DECK, []);
+    expect(stub.state.insertCalls).toEqual([]);
+  });
+
+  // A substituted oracle id would otherwise land a card the add path refuses.
+  it.each([
+    ["off the commander's identity", CARD_OFF, "off-color-identity"],
+    ["not commander legal", CARD_BANNED, "not-commander-legal"],
+    ["the commander itself", CMDR, "is-commander"],
+    ["absent from the catalog", CARD_ABSENT, "card not found"],
+  ])("refuses a card %s", async (_label, oracleId, message) => {
+    ownDeck();
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId, quantity: 1 }]),
+    ).rejects.toThrow(message);
+    expect(restoredRows()).toEqual([]);
+  });
+
+  // The conflict clause skips a card the player re-added by hand, so counting
+  // the receipt would overstate what the announcement claims to have put back.
+  it("counts only the rows that land", async () => {
+    ownDeck();
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    const restored = await restoreAutoCards(DECK, [
+      { oracleId: CARD_A, quantity: 1 },
+      { oracleId: CARD_B, quantity: 4 },
+    ]);
+    expect(restored).toBe(4);
+  });
+
+  it("refuses a deck the player does not own", async () => {
+    await expect(
+      restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 1 }]),
+    ).rejects.toThrow("deck not found");
+  });
+});

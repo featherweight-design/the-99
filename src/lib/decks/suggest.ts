@@ -68,8 +68,9 @@ export function buildSuggestionPayload(
     manaCost: string | null;
     manaValue: number;
   },
-  inclusionByName: Record<string, number>,
-  synergyByName: Record<string, number> = {},
+  // Sparse: a name EDHREC never reported is simply absent from either map.
+  inclusionByName: Record<string, number | undefined>,
+  synergyByName: Record<string, number | undefined> = {},
 ): DeckSuggestion {
   let reasonType: ReasonType;
   let reasonLabel: string;
@@ -87,10 +88,10 @@ export function buildSuggestionPayload(
     // "EDHREC · NaN% of decks", and an Infinity would clear the `> 0` test and
     // render as a real lift.
     const raw = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
-    const inclusion = Number.isFinite(raw) ? raw : undefined;
+    const inclusion = raw != null && Number.isFinite(raw) ? raw : undefined;
     inclusionPct = inclusion ?? null;
     const synergy = synergyByName[lower] ?? synergyByName[lower.split(" // ")[0]];
-    lift = Number.isFinite(synergy) && synergy > 0 ? synergy : null;
+    lift = synergy != null && Number.isFinite(synergy) && synergy > 0 ? synergy : null;
     reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
   } else {
     reasonType = "role";

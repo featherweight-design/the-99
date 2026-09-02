@@ -52,6 +52,7 @@ const solRing: DeckDetailCard = {
   role: "ramp",
   owned: true,
   quantity: 1,
+  auto: false,
 };
 
 const line = (over: Partial<DeckUnresolvedRow> = {}): DeckUnresolvedRow => ({
@@ -88,6 +89,7 @@ function Harness({
           reportRemoveFailure: vi.fn(),
           resolveRow: deck.resolveOptimisticRow,
           deleteRow: deck.deleteOptimisticRow,
+          keep: deck.keepOptimisticCard,
         }}
       >
         <p>{`built ${counts.built} total ${counts.total}`}</p>
@@ -98,7 +100,6 @@ function Harness({
           cards={deck.cards}
           unresolvedRows={deck.unresolvedRows}
           built={counts.built}
-          toBuyCount={counts.toBuyCount}
           filter="all"
           grouping="type"
           onFilterChange={vi.fn()}

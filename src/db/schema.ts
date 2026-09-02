@@ -131,12 +131,21 @@ export const decks = pgTable("decks", {
   commanderOracleId: uuid("commander_oracle_id").notNull().references(() => cards.oracleId),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // True once a fill has run against this deck — including a fill that found
+  // nothing to add, because a collection thin enough to plan zero rows still
+  // answers the question this column exists to answer. Never reset by a sweep:
+  // the swept-empty copy branches on "was this ever filled", not "is it filled".
+  filled: boolean("filled").notNull().default(false),
 });
 
 export const deckCards = pgTable("deck_cards", {
   deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
   quantity: integer("quantity").notNull().default(1),
+  // A row the fill added that the player has not claimed. Cleared by the keep
+  // control alone — re-sorting, regrouping, or opening the card detail must
+  // leave it set, or the sweep would silently spare cards the player only looked at.
+  auto: boolean("auto").notNull().default(false),
 }, (t) => [primaryKey({ columns: [t.deckId, t.oracleId] })]);
 
 /**

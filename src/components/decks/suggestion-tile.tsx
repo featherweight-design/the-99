@@ -181,6 +181,7 @@ export function SuggestionTile({
         role: suggestion.role,
         owned: suggestion.owned,
         quantity: 1,
+        auto: false,
       }),
     );
   }

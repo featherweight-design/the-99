@@ -2,6 +2,10 @@
 // Server-pure (no "use client" directive).
 // §Decklist Group, §`Couldn't identify` group header (design table).
 
+// src/lib/copy/recommendations is imported here so the auto-count clause
+// ("9 · 9 auto") comes from the copy module rather than a bare inline string.
+import { recommendationsCopy } from "../../lib/copy/recommendations";
+
 interface DecklistGroupHeaderProps {
   label: string;
   count: number;
@@ -11,6 +15,19 @@ interface DecklistGroupHeaderProps {
   note?: string;
   /** Promotes the label to an h3 so a group can be a labelled landmark. */
   headingId?: string;
+  /**
+   * Shopping groups: the arithmetic this group closes, shown beside the label in
+   * mono 10px --fg-faint. E.g. "1 · closes 2→10". Omit in normal groups.
+   * Brief: mono 10px --accent label, mono 10px --fg-faint gap clause beside it.
+   */
+  gapClause?: string;
+  /**
+   * How many cards in this group carry the `auto` flag. When > 0, the count
+   * span reads "{count} · {autoCount} auto" using recommendationsCopy.auto.groupCount.
+   * Zero means no auto clause — "9 · 0 auto" would be noise for groups where
+   * the player has already kept or removed everything.
+   */
+  autoCount?: number;
 }
 
 export function DecklistGroupHeader({
@@ -19,10 +36,17 @@ export function DecklistGroupHeader({
   countColor = "var(--fg-faint)",
   note,
   headingId,
+  gapClause,
+  autoCount = 0,
 }: DecklistGroupHeaderProps) {
   // The mobile gap was absent, not zero by intent: "Lands 1" rendered as
   // "Lands1". 6px matches the tab's own label/count pairing.
-  const labelClass = "font-sans md:font-display font-semibold text-[12.5px] md:text-[15px] m-0";
+  // Shopping groups use mono 10px --accent for the label; normal groups use the
+  // standard sans/display weight.
+  const labelClass = gapClause
+    ? "font-mono text-[10px] m-0 uppercase tracking-[.14em]"
+    : "font-sans md:font-display font-semibold text-[12.5px] md:text-[15px] m-0";
+  const labelColor = gapClause ? "var(--accent)" : "var(--fg)";
 
   return (
     <div className="flex items-baseline justify-between mb-[6px] md:mb-[8px] md:pb-[7px] md:border-b md:border-[color:var(--border)]">
@@ -35,23 +59,35 @@ export function DecklistGroupHeader({
             id={headingId}
             aria-label={`${label} · ${count}`}
             className={labelClass}
-            style={{ color: "var(--fg)" }}
+            style={{ color: labelColor }}
           >
             {label}
           </h3>
         ) : (
-          <span className={labelClass} style={{ color: "var(--fg)" }}>
+          <span className={labelClass} style={{ color: labelColor }}>
             {label}
           </span>
         )}
 
-        <span
-          className="font-mono text-[10px] md:text-[11px]"
-          style={{ color: countColor }}
-          aria-hidden={headingId ? true : undefined}
-        >
-          {count}
-        </span>
+        {/* Shopping: gap clause (e.g. "1 · closes 2→10") in --fg-faint beside label. */}
+        {gapClause ? (
+          <span
+            className="font-mono text-[10px]"
+            style={{ color: "var(--fg-faint)" }}
+          >
+            {gapClause}
+          </span>
+        ) : (
+          <span
+            className="font-mono text-[10px] md:text-[11px]"
+            style={{ color: countColor }}
+            aria-hidden={headingId ? true : undefined}
+          >
+            {autoCount > 0
+              ? `${count} · ${recommendationsCopy.auto.groupCount(String(autoCount))}`
+              : count}
+          </span>
+        )}
       </div>
 
       {note && (

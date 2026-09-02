@@ -33,6 +33,7 @@ function makeDeck(): DeckDetail {
     role: "other" as const,
     owned: true,
     quantity: 1,
+    auto: false,
   }));
   return {
     id: "deck-1",
@@ -52,6 +53,7 @@ function makeDeck(): DeckDetail {
     ownedCount: 40,
     toBuyCount: 0,
     total: 99,
+    filled: false,
     unresolvedRows: [],
   } as DeckDetail;
 }

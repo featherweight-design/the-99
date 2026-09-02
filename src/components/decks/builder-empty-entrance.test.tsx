@@ -12,6 +12,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
 
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock("../../app/decks/actions", () => ({
   removeCardFromDeck: vi.fn(),
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
+  fillDeck: vi.fn(),
 }));
 
 const { BuilderShell } = await import("./builder-shell");
@@ -28,6 +30,7 @@ const emptyDeck = {
   id: "deck-1",
   name: "Korvold",
   createdAt: new Date("2026-01-01"),
+  filled: false,
   commander: {
     oracleId: "korvold",
     name: "Korvold, Fae-Cursed King",
@@ -43,6 +46,12 @@ const emptyDeck = {
   toBuyCount: 0,
   total: 0,
   unresolvedRows: [],
+} as unknown as DeckDetail;
+
+const sweptDeck: DeckDetail = {
+  ...emptyDeck,
+  id: "deck-2",
+  filled: true,
 } as unknown as DeckDetail;
 
 describe("empty builder", () => {
@@ -73,5 +82,97 @@ describe("empty builder", () => {
     renderEmpty();
     const hint = screen.getByText(/ramp, draw, removal, and wipe slots first/i);
     expect(hint.className).not.toContain("hidden");
+  });
+});
+
+describe("swept-empty branch", () => {
+  const renderSwept = () =>
+    render(
+      <BuilderShell
+        deck={sweptDeck}
+        suggestions={[]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+      />,
+    );
+
+  const renderNeverFilled = () =>
+    render(
+      <BuilderShell
+        deck={emptyDeck}
+        suggestions={[]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+      />,
+    );
+
+  it("an empty deck that was filled takes the swept copy", () => {
+    renderSwept();
+    // The swept heading must be present
+    expect(screen.getByText(recommendationsCopy.sweptEmpty.heading)).toBeInTheDocument();
+    // The first-run heading must NOT be present
+    expect(screen.queryByText(/a king with no army/i)).toBeNull();
+  });
+
+  it("names the commander the short way the rest of the shell does", () => {
+    renderSwept();
+    // "Korvold", not "Korvold, Fae-Cursed King" — the sibling first-run branch
+    // and every other commander mention in the shell use the short name.
+    expect(
+      screen.getByText(recommendationsCopy.sweptEmpty.body("Korvold")),
+    ).toBeInTheDocument();
+  });
+
+  it("offers the way back into Consider", () => {
+    renderSwept();
+    expect(
+      screen.getByRole("button", { name: recommendationsCopy.sweptEmpty.cta }),
+    ).toBeInTheDocument();
+  });
+
+  it("an empty deck that was never filled keeps the shipped first-run copy", () => {
+    renderNeverFilled();
+    // The first-run heading must be present
+    expect(screen.getByText(/a king with no army/i)).toBeInTheDocument();
+    // The swept heading must NOT be present
+    expect(screen.queryByText(recommendationsCopy.sweptEmpty.heading)).toBeNull();
+  });
+});
+
+// An import whose every line went unresolved lands as filled=false with zero
+// cards — the same shape a failed fill leaves behind. It is not one: the player
+// asked for a decklist, and the unresolved group already explains what happened.
+describe("fill-failed banner on an empty deck", () => {
+  const renderWith = (deck: DeckDetail) =>
+    render(
+      <BuilderShell
+        deck={deck}
+        suggestions={[]}
+        degraded={false}
+        firstRun={false}
+        commanderIdentity={["B", "R", "G"]}
+        arrivedFromImport={false}
+      />,
+    );
+
+  it("offers the retry when nothing came over", () => {
+    renderWith(emptyDeck);
+    expect(
+      screen.getByText(recommendationsCopy.fill.failedHeading),
+    ).toBeInTheDocument();
+  });
+
+  it("stays away when the deck is empty because an import went unresolved", () => {
+    renderWith({
+      ...emptyDeck,
+      unresolvedRows: [
+        { id: "row-1", rawName: "Sol Ringg", quantity: 1, sourceLine: 1 },
+      ],
+    } as unknown as DeckDetail);
+    expect(screen.queryByText(recommendationsCopy.fill.failedHeading)).toBeNull();
   });
 });

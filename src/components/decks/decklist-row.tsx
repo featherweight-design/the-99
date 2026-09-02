@@ -10,6 +10,9 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { isBasicLand } from "../../lib/decks/grouping";
+import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
@@ -23,9 +26,15 @@ import { useDeckMutation } from "./use-deck-mutation";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
 // box making up the vertical padding, desktop 34px with real padding.
+// Exception: Shopping rows carry a meta line under the name (addendum A2), so
+// the phone shell grows to 52px to accommodate it.
 const ROW_SHELL =
   "flex items-center gap-[9px] md:gap-[10px] pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]" +
   " min-h-[44px] md:min-h-[34px] rounded-[6px] md:rounded-[7px]";
+
+const ROW_SHELL_SHOPPING =
+  "flex items-center gap-[9px] md:gap-[10px] pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]" +
+  " min-h-[52px] md:min-h-[34px] rounded-[6px] md:rounded-[7px]";
 
 interface DecklistRowProps {
   deckId: string;
@@ -43,6 +52,13 @@ interface DecklistRowProps {
    * switch to Consider and back.
    */
   spent?: boolean;
+  /**
+   * EDHREC inclusion % for the Shopping view's meta line (addendum A2).
+   * `undefined` — All view; no meta line is rendered (44px phone row).
+   * `null`      — Shopping view; card has no EDHREC figure → prints rowNoFigure.
+   * `number`    — Shopping view; prints rowFigure(pct). Never 0 as a stand-in for absent.
+   */
+  shoppingFigure?: number | null;
 }
 
 export function DecklistRow({
@@ -52,6 +68,7 @@ export function DecklistRow({
   metaLabel,
   siblings,
   spent = false,
+  shoppingFigure,
 }: DecklistRowProps) {
   const label = isMeta ? metaLabel! : card.name;
   // `flex-auto`, not `flex-1`, and the difference is the whole bug. `flex-1` is
@@ -63,6 +80,24 @@ export function DecklistRow({
   // there is room to spare the two are identical — grow still takes the slack.
   const nameClass =
     "flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
+
+  // Addendum A2: Shopping rows carry an EDHREC figure on a meta line below the
+  // name. shoppingFigure is only threaded for unowned deck cards shown in the
+  // Shopping filter. undefined = All view (no meta). null or number = Shopping view.
+  // The row grows to 52px on phone to hold the extra line.
+  // Basic lands are never in Shopping (the fill guarantees it), but guard anyway.
+  const hasShoppingMeta = !isMeta && !isBasicLand(card.typeLine) && shoppingFigure !== undefined;
+  const rowShell = hasShoppingMeta ? ROW_SHELL_SHOPPING : ROW_SHELL;
+  // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
+  // line and needs context. Desktop: bare "24%" because it is inline with the
+  // name. Absence: phone gets the full sentence; desktop gets "—" which reads
+  // fine beside the name but would be cryptic alone on a dedicated line.
+  const figureTextPhone = Number.isFinite(shoppingFigure)
+    ? recommendationsCopy.shopping.rowFigure(String(shoppingFigure as number))
+    : recommendationsCopy.shopping.rowNoFigure;
+  const figureTextDesktop = Number.isFinite(shoppingFigure)
+    ? recommendationsCopy.shopping.rowFigureDesktop(String(shoppingFigure as number))
+    : recommendationsCopy.shopping.rowNoFigureDesktop;
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
@@ -120,7 +155,7 @@ export function DecklistRow({
           The over tint (design 4.5/4.10) is an inset ring rather than a border:
           a real border would add 2px to one row's height and shunt the list. */}
       <div
-        className={`group ${ROW_SHELL} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
+        className={`group ${rowShell} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]
           ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
       >
@@ -136,8 +171,46 @@ export function DecklistRow({
         {isMeta && <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />}
 
         {/* Card name — the click target for the detail modal (#127). A meta row names no card
-            of its own, so it stays inert text. */}
-        {isMeta ? (
+            of its own, so it stays inert text.
+            Shopping rows: phone = two lines (name then prefixed figure below);
+            desktop = single line (name + bare figure inline). The `edhrec` prefix
+            exists only on phone because the figure is detached from the name there
+            and needs context; inline on desktop it reads fine without it. */}
+        {hasShoppingMeta ? (
+          // One trigger at both widths — the layout changes, the card does not.
+          // Only the figure's wording differs, so only the figure is drawn twice.
+          <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:items-center md:gap-[6px]">
+            <CardDetailTrigger
+              oracleId={card.oracleId}
+              name={card.name}
+              siblings={siblings}
+              className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]"
+              style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
+            >
+              {label}
+            </CardDetailTrigger>
+            <span
+              className="md:hidden font-mono text-[10px] tabular-nums truncate"
+              style={{
+                color: Number.isFinite(shoppingFigure)
+                  ? "var(--fg-faint)"
+                  : "var(--fg-locked)",
+              }}
+            >
+              {figureTextPhone}
+            </span>
+            <span
+              className="hidden md:inline flex-none font-mono text-[10px] tabular-nums"
+              style={{
+                color: Number.isFinite(shoppingFigure)
+                  ? "var(--fg-faint)"
+                  : "var(--fg-locked)",
+              }}
+            >
+              {figureTextDesktop}
+            </span>
+          </div>
+        ) : isMeta ? (
           <span className={nameClass} style={{ color: "var(--fg-faint)" }}>
             {label}
           </span>
@@ -181,6 +254,11 @@ export function DecklistRow({
 
         {/* Buy tag — unowned non-meta only */}
         {!isMeta && !card.owned && <BuyTag variant="row" />}
+
+        {/* Auto tag — one per stack, never on a meta row */}
+        {!isMeta && card.auto && (
+          <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />
+        )}
 
         {/* Remove ✕ — at both widths now, never on a meta row. The glyph stays
             13px at both: the phone target is the padding around it. */}

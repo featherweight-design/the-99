@@ -27,6 +27,10 @@ import { StripRationale } from "./strip-rationale";
  */
 type RoleCounterStripProps = {
   cards: DeckDetailCard[];
+  /** True when the deck was just filled (`deck.filled && autoCount > 0`). Passed
+   *  straight through to each cell so a short cell reads as a short-in-filled-deck
+   *  rather than as an ordinary short. Defaults to false. */
+  justFilled?: boolean;
 } & (
   | { onSeeShelf: (role: MixRole) => void; rolesWithShelves: ReadonlySet<MixRole> }
   | { onSeeShelf?: never; rolesWithShelves?: never }
@@ -38,6 +42,7 @@ export function RoleCounterStrip({
   cards,
   onSeeShelf,
   rolesWithShelves,
+  justFilled = false,
 }: RoleCounterStripProps) {
   const counts = computeRoleCounts(cards);
 
@@ -94,6 +99,7 @@ export function RoleCounterStrip({
             have={counts[role]}
             target={RECOMMENDED_MIX[role].target}
             advisory={RECOMMENDED_MIX[role].advisory}
+            justFilled={justFilled}
             onSeeShelf={
               onSeeShelf &&
               counts[role] < RECOMMENDED_MIX[role].target &&
