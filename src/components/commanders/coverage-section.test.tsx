@@ -155,8 +155,34 @@ describe("absent vs degraded note rendering", () => {
     expect(degradedEl).toBeTruthy();
   });
 
-  it("renders no note when synergyState is ok", () => {
+  // EDHREC can name cards without carrying a number for any of them, which
+  // reads as "ok" and hides every percentage. Without the note the reader is
+  // left with figures removed and no explanation for it.
+  it("renders the absent note when ok but no card carries a figure", () => {
+    renderSection({
+      synergyState: "ok",
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: [makeCard(1, null)] },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 1 },
+    });
+    expect(
+      screen.getByText(recommendationsCopy.coverage.absentHeading),
+    ).toBeInTheDocument();
+  });
+
+  // Nothing there a figure could have ranked — the note would be noise.
+  it("renders no note when ok with no cards at all", () => {
     renderSection({ synergyState: "ok" });
+    expect(
+      screen.queryByText(recommendationsCopy.coverage.absentHeading),
+    ).toBeNull();
+  });
+
+  it("renders no note when synergyState is ok", () => {
+    renderSection({
+      synergyState: "ok",
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: [makeCard(1, 75)] },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 1 },
+    });
     expect(
       screen.queryByText(recommendationsCopy.coverage.absentHeading),
     ).toBeNull();

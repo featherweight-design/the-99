@@ -274,6 +274,16 @@ export function CoverageSection({
   );
   const showFigures = effectiveSynergyState === "ok" && hasAnyFigure;
 
+  // The note explains why the figures are missing, so a payload that names
+  // cards but carries no numbers earns it too: that reads as "ok" and still
+  // leaves the section without a percentage anywhere. A section with no cards
+  // at all is exempt — there is nothing there a figure could have ranked.
+  // Degraded has its own note and its own retry.
+  const hasAnyCard = Object.values(roleCards).some((cs) => cs.length > 0);
+  const showAbsentNote =
+    effectiveSynergyState === "absent" ||
+    (effectiveSynergyState === "ok" && hasAnyCard && !hasAnyFigure);
+
   // Sub-caption: with figures when ok, without otherwise
   const subcaption = showFigures
     ? recommendationsCopy.coverage.subcaption
@@ -325,7 +335,7 @@ export function CoverageSection({
       </p>
 
       {/* Section-level note — absent or degraded */}
-      {effectiveSynergyState === "absent" && (
+      {showAbsentNote && (
         <div
           data-absent
           data-testid="coverage-note"
