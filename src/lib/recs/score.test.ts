@@ -115,8 +115,19 @@ describe("scoreCommander", () => {
   it("roleCards.ramp contains a ramp card name", () => {
     const s = scoreCommander({ commander, collection, edhrecTopCards: null });
     // Sol Ring and Cultivate are both ramp
-    expect(s.roleCards.ramp).toContain("Sol Ring");
-    expect(s.roleCards.ramp).toContain("Cultivate");
+    const names = s.roleCards.ramp.map((c) => c.name);
+    expect(names).toContain("Sol Ring");
+    expect(names).toContain("Cultivate");
+  });
+
+  // The chips on the commander detail page open card detail, which takes an
+  // oracle id and nothing else — a name-only role list cannot be clicked.
+  it("carries each role card's oracle id alongside its name", () => {
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null });
+    const solRing = s.roleCards.ramp.find((c) => c.name === "Sol Ring");
+    expect(solRing?.oracleId).toBe(
+      collection.find((c) => c.name === "Sol Ring")!.oracleId,
+    );
   });
 
   it("a wrath lands in roleCards.wipes not roleCards.removal", () => {
@@ -133,8 +144,8 @@ describe("scoreCommander", () => {
       colorIdentity: ["W", "U", "B", "G"],
     });
     const s = scoreCommander({ commander: commanderW, collection: colWithWrath, edhrecTopCards: null });
-    expect(s.roleCards.wipes).toContain("Wrath of God");
-    expect(s.roleCards.removal).not.toContain("Wrath of God");
+    expect(s.roleCards.wipes.map((c) => c.name)).toContain("Wrath of God");
+    expect(s.roleCards.removal.map((c) => c.name)).not.toContain("Wrath of God");
   });
 
   // Task 2: overlapOwned / overlapMissing

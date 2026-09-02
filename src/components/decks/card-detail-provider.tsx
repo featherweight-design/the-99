@@ -10,7 +10,7 @@ import {
   createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
-import { getCardDetail } from "../../app/decks/[id]/card-detail-action";
+import { getCardDetail } from "../../app/card-detail-action";
 import { CardModal } from "../collection/card-modal";
 
 export const cardDetailCopy = {

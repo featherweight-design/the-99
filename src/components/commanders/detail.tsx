@@ -8,7 +8,11 @@ import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import type { RankedCommander } from "../../lib/recs/recommend";
+import type { RoleCard } from "../../lib/recs/score";
+import { commandersCopy } from "../../lib/copy/commanders";
 import { FullCardTrigger } from "./full-card-trigger";
+import { OwnedChip, RoleCardList } from "./role-card-list";
+import { CardDetailProvider } from "../decks/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
 
 // ─── Internal sub-component types ───────────────────────────────────────────
@@ -21,31 +25,6 @@ const ROLE_LABELS: Record<RoleName, string> = {
   removal: "Removal",
   wipes: "Board Wipes",
 };
-
-// ─── Owned card chip ─────────────────────────────────────────────────────────
-
-function OwnedChip({ name }: { name: string }) {
-  return (
-    <span
-      className="inline-flex items-center font-mono rounded-full"
-      style={{
-        fontSize: "11.5px",
-        background: "var(--surface-raised)",
-        border: "1px solid color-mix(in srgb, var(--success) 40%, var(--bg))",
-        padding: "4px 10px",
-        color: "var(--fg-body)",
-        gap: 6,
-      }}
-    >
-      {/* Green dot */}
-      <span
-        className="block shrink-0 rounded-full"
-        style={{ width: 6, height: 6, background: "var(--success)" }}
-      />
-      {name}
-    </span>
-  );
-}
 
 // ─── Missing card chip (dashed border) ───────────────────────────────────────
 
@@ -278,7 +257,7 @@ function RolePanel({
   count,
 }: {
   role: RoleName;
-  cards: string[];
+  cards: RoleCard[];
   count: number;
 }) {
   const target = ROLE_TARGETS[role];
@@ -322,19 +301,10 @@ function RolePanel({
       </div>
 
       {/* Card chips */}
-      <div className="flex flex-wrap gap-[7px]">
-        {cards.map((name) => (
-          <OwnedChip key={name} name={name} />
-        ))}
-        {cards.length === 0 && (
-          <span
-            className="font-mono"
-            style={{ fontSize: 11, color: "var(--fg-locked)" }}
-          >
-            No {ROLE_LABELS[role].toLowerCase()} cards in your pool
-          </span>
-        )}
-      </div>
+      <RoleCardList
+        cards={cards}
+        emptyLabel={commandersCopy.roleCoverage.empty(ROLE_LABELS[role].toLowerCase())}
+      />
     </div>
   );
 }
@@ -465,7 +435,9 @@ export function CommanderDetail({
   const gradient = commanderGradient(c.colorIdentity);
 
   return (
-    <>
+    // One card-detail modal for the whole page, so the role chips below open the
+    // same modal the deck builder uses rather than a second implementation of it.
+    <CardDetailProvider>
       {/* ── Mobile: art header band ─────────────────────────────────── */}
       <div
         className="sm:hidden relative flex-none"
@@ -973,6 +945,6 @@ export function CommanderDetail({
           )}
         </div>
       </div>
-    </>
+    </CardDetailProvider>
   );
 }

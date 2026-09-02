@@ -8,6 +8,9 @@ export type PoolCard = {
   manaCost: string | null;
 };
 
+/** A pool card named in a role list. The id is what opens its card detail. */
+export type RoleCard = { oracleId: string; name: string };
+
 export type CommanderScore = {
   oracleId: string; name: string;
   colorIdentity: string[];
@@ -20,7 +23,7 @@ export type CommanderScore = {
   edhrecTotal: number | null;
   roleCounts: Record<"ramp" | "draw" | "removal" | "wipes", number>;
   roleGaps: ("ramp" | "draw" | "removal" | "wipes")[];
-  roleCards: Record<"ramp" | "draw" | "removal" | "wipes", string[]>;
+  roleCards: Record<"ramp" | "draw" | "removal" | "wipes", RoleCard[]>;
   overlapOwned: string[];
   overlapMissing: string[];
   fitPool: number;
@@ -86,14 +89,14 @@ export function scoreCommander(args: {
   const pool = commanderPool(args.commander, args.collection);
 
   const roleCounts = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
-  const roleCards: Record<"ramp" | "draw" | "removal" | "wipes", string[]> = {
+  const roleCards: Record<"ramp" | "draw" | "removal" | "wipes", RoleCard[]> = {
     ramp: [], draw: [], removal: [], wipes: [],
   };
   for (const c of pool) {
     for (const role of classifyRoles(c)) {
       if (role !== "land") {
         roleCounts[role]++;
-        roleCards[role].push(c.name);
+        roleCards[role].push({ oracleId: c.oracleId, name: c.name });
       }
     }
   }
