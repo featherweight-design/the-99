@@ -74,7 +74,21 @@ Every task's requirements implicitly include this section.
 
 **PR 1.** Ten surfaces render illustration-free, the crown becomes the mark, `LoaderDots` retires into it, and the three character tokens are deleted. This lands first because the character SVGs carry brand hexes of their own, and retiring them shrinks the Phase 2 sweep.
 
-**Design ruling carried into this phase:** the crown's geometry is the one Design specced and the one already in the codebase — three diamonds at **9 / 13 / 9 px, 7px gap, rotated 45°**, in the accent colour. It is used at that size on every surface, including page-level empty states. No second size is introduced: `completion-reveal.tsx:78–80` is the mark being promoted, and inventing a larger variant would be an unratified design call.
+**Design ruling carried into this phase (revised during implementation):** the crown is three
+diamonds rotated 45°, in two geometries — **8 / 12 / 8 px with a 6px gap** for the quiet and
+page tones, and **13 / 19 / 13 px with a 9px gap** for the loud tone, which only the 99/99
+reveal is allowed to use.
+
+This supersedes the 9/13/9-at-7px-gap figure the plan originally carried. Two sources in the
+handoff disagree. README decision 6 describes the mark `completion-reveal.tsx:78–80` "already
+draws in brass at 9/13/9px" and calls the loud tone "`--accent` at 2×"; the canvas §G mobile
+rules state normatively that *"The crown does not resize. 8/12px quiet and 13/19px loud at both
+widths,"* and the canvas's own renderer constants (`crownSm`, `crownLg`, `crownGap`) match its
+prose exactly. The README figure is a citation of the hand-rolled crown this phase *replaces*,
+offered as evidence the mark already existed — not a specification of the new one, and its
+"at 2×" is a loose adjective beside a drawn ratio of ~1.6×. Two agreeing sources, one of them
+machine-checkable, beat one descriptive aside. Recorded in
+`docs/superpowers/gap-report-themes-phase-0.md`.
 
 ### Task 1: The crown mark
 
@@ -84,7 +98,7 @@ Every task's requirements implicitly include this section.
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `Crown({ pulse?: boolean, className?: string }): JSX.Element`. Decorative — always `aria-hidden`.
+- Produces: `Crown({ tone?: "quiet" | "page" | "loud", pulse?: boolean, className?: string }): JSX.Element`. Decorative — always `aria-hidden`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -101,14 +115,24 @@ describe("Crown", () => {
     expect(container.firstElementChild).toHaveAttribute("aria-hidden");
   });
 
-  it("draws three diamonds at the specced 9/13/9 geometry", () => {
+  it("draws three diamonds at the canvas's quiet/page geometry", () => {
     const { container } = render(<Crown />);
     const diamonds = Array.from(container.querySelectorAll("span"));
     expect(diamonds).toHaveLength(3);
     expect(diamonds.map((d) => d.className)).toEqual([
-      expect.stringContaining("w-[9px]"),
+      expect.stringContaining("w-[8px]"),
+      expect.stringContaining("w-[12px]"),
+      expect.stringContaining("w-[8px]"),
+    ]);
+  });
+
+  it("draws the loud tone larger, and only the loud tone", () => {
+    const { container } = render(<Crown tone="loud" />);
+    const diamonds = Array.from(container.querySelectorAll("span"));
+    expect(diamonds.map((d) => d.className)).toEqual([
       expect.stringContaining("w-[13px]"),
-      expect.stringContaining("w-[9px]"),
+      expect.stringContaining("w-[19px]"),
+      expect.stringContaining("w-[13px]"),
     ]);
   });
 
@@ -147,30 +171,32 @@ Create `src/components/ui/crown.tsx`:
 // character layer removes the thing standing in front of it rather than
 // leaving a hole. `pulse` carries the retired LoaderDots' 1.2s stagger, so the
 // loading state keeps its animation and loses a component.
+//
+// Three intensities, per the handoff's decision 6: quiet for a mark inside a
+// panel, page for a full-route empty state, and loud — reserved for the 99/99
+// reveal. Only the colour separates quiet from page; loud is also the larger
+// geometry, per the canvas §G rule quoted in the phase heading above.
 
-const DIAMONDS = [
-  { size: "w-[9px] h-[9px]", delay: 0 },
-  { size: "w-[13px] h-[13px]", delay: 0.2 },
-  { size: "w-[9px] h-[9px]", delay: 0.4 },
-];
+type Tone = "quiet" | "page" | "loud";
 
-export function Crown({ pulse, className }: { pulse?: boolean; className?: string }) {
+const TONES: Record<Tone, { small: string; large: string; gap: string; color: string }> = {
+  quiet: { small: "w-[8px] h-[8px]", large: "w-[12px] h-[12px]", gap: "gap-[6px]", color: "var(--border-strong)" },
+  page: { small: "w-[8px] h-[8px]", large: "w-[12px] h-[12px]", gap: "gap-[6px]", color: "var(--brass-strong)" },
+  loud: { small: "w-[13px] h-[13px]", large: "w-[19px] h-[19px]", gap: "gap-[9px]", color: "var(--brass)" },
+};
+
+const DELAYS = [0, 0.2, 0.4];
+
+export function Crown({ tone = "page", pulse, className }: { tone?: Tone; pulse?: boolean; className?: string }) {
+  const { small, large, gap, color } = TONES[tone];
+  const sizes = [small, large, small];
   return (
-    <div
-      aria-hidden
-      className={["inline-flex items-center gap-[7px]", className].filter(Boolean).join(" ")}
-    >
-      {DIAMONDS.map(({ size, delay }, i) => (
+    <div aria-hidden className={["inline-flex items-center", gap, className].filter(Boolean).join(" ")}>
+      {sizes.map((size, i) => (
         <span
           key={i}
-          className={[
-            "block rotate-45 bg-[color:var(--brass)]",
-            size,
-            pulse ? "anim-dots" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          style={pulse ? { animationDelay: `${delay}s` } : undefined}
+          className={["block rotate-45", size, pulse ? "anim-dots" : ""].filter(Boolean).join(" ")}
+          style={{ background: color, ...(pulse ? { animationDelay: `${DELAYS[i]}s` } : {}) }}
         />
       ))}
     </div>
@@ -183,7 +209,7 @@ export function Crown({ pulse, className }: { pulse?: boolean; className?: strin
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `pnpm vitest run src/components/ui/crown.test.tsx`
-Expected: PASS, 4 tests.
+Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
