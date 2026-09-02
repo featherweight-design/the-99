@@ -9,6 +9,8 @@ import { groupByCardType, groupByRole } from "../../lib/decks/grouping";
 import { GroupToggle } from "./group-toggle";
 import { DecklistGroup } from "./decklist-group";
 import { UnresolvedGroup } from "./unresolved-group";
+import { SweepReceipt } from "./clear-auto";
+import type { SweptRow } from "../../app/decks/actions";
 
 interface DecklistProps {
   deckId: string;
@@ -28,6 +30,18 @@ interface DecklistProps {
   onGroupingChange: (g: "type" | "role") => void;
   /** The phone unmounts the quick-add bar while a resolution expander is open. */
   onUnresolvedExpandedChange?: (expanded: boolean) => void;
+  /** Number of untouched auto cards — passed to the group toolbar. */
+  autoCount?: number;
+  /** Number of auto cards the player has kept (auto=false). */
+  keptCount?: number;
+  /** Whether a sweep is in-flight. */
+  sweepPending?: boolean;
+  /** The swept rows held for Undo. Null = no pending undo. */
+  sweptRows?: SweptRow[] | null;
+  /** Error string from a failed sweep. */
+  sweepError?: string | null;
+  onClearAuto?: () => void;
+  onRestoreAuto?: () => void;
 }
 
 export function Decklist({
@@ -44,6 +58,13 @@ export function Decklist({
   onFilterChange,
   onGroupingChange,
   onUnresolvedExpandedChange,
+  autoCount = 0,
+  keptCount = 0,
+  sweepPending = false,
+  sweptRows = null,
+  sweepError = null,
+  onClearAuto,
+  onRestoreAuto,
 }: DecklistProps) {
   // Apply shopping filter: unowned cards only
   const visibleCards = filter === "shopping" ? cards.filter((c) => !c.owned) : cards;
@@ -86,10 +107,30 @@ export function Decklist({
         grouping={grouping}
         onFilterChange={onFilterChange}
         onGroupingChange={onGroupingChange}
+        autoCount={autoCount}
+        keptCount={keptCount}
+        sweepPending={sweepPending}
+        onClearAuto={onClearAuto}
       />
 
       {/* Grouped card rows */}
       <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
+        {/* Sweep error — a failed sweep, deck unchanged. */}
+        {sweepError && (
+          <p
+            role="alert"
+            className="font-mono text-[11px] mb-[10px] text-fg-locked"
+          >
+            {sweepError}
+          </p>
+        )}
+        {/* Sweep receipt — one strip above the first group. */}
+        {sweptRows && sweptRows.length > 0 && onRestoreAuto && (
+          <SweepReceipt
+            removed={sweptRows.length}
+            onUndo={onRestoreAuto}
+          />
+        )}
         {groups.length === 0 && visibleUnresolved.length === 0 && (
           <p
             className="font-mono text-[11px] text-center py-[20px]"

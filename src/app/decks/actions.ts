@@ -396,3 +396,35 @@ export async function renameDeck(deckId: string, name: string): Promise<void> {
   revalidatePath(`/decks/${deckId}`);
   revalidatePath(`/decks`);
 }
+
+/** One removed row, carried so Undo can restore a stacked basic at the exact
+    quantity it was swept at rather than guessing 1. */
+export type SweptRow = { oracleId: string; quantity: number };
+
+/** The whole sweep in one statement — 58 rows must not be 58 round trips, and a
+    partial sweep would leave a receipt that lies about what it removed. Returns
+    the rows so Undo can put back exactly what went, and nothing the player kept. */
+export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+  const removed = await db.delete(deckCards)
+    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
+    .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
+  revalidatePath(`/decks/${deckId}`);
+  return removed;
+}
+
+/** Re-inserts the swept rows with auto: true. Uses onConflictDoNothing so a
+    double-undo is harmless. The quantity comes from the delete's returning
+    clause rather than a fresh read, so a stacked basic comes back at the count
+    it was swept at even if the shelf changed in between. */
+export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promise<void> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+  if (rows.length > 0) {
+    await db.insert(deckCards)
+      .values(rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })))
+      .onConflictDoNothing();
+  }
+  revalidatePath(`/decks/${deckId}`);
+}

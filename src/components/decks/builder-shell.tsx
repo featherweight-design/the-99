@@ -20,6 +20,8 @@ import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crown } from "../ui/crown";
 import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { clearAutoCards, restoreAutoCards, type SweptRow } from "../../app/decks/actions";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
@@ -173,6 +175,13 @@ export function BuilderShell({
   // (this component unmounting). Never by a timer.
   const [spentSlot, setSpentSlot] = useState<DeckDetailCard | null>(null);
 
+  // The swept rows from a clearAutoCards action. Null means no sweep has run
+  // (or it has been undone/navigated away). Lives beside spentSlot: it is decklist
+  // state, and its lifetime is the current route per PR #204. Never a timer.
+  const [sweptRows, setSweptRows] = useState<SweptRow[] | null>(null);
+  const [sweepPending, setSweepPending] = useState(false);
+  const [sweepError, setSweepError] = useState<string | null>(null);
+
   // Unresolved rows keep the builder out of the empty state: a deck whose every
   // line failed to match has nothing built, but it has plenty to show and act on.
   // A spent slot does the same — emptying the deck by removing its last card
@@ -269,6 +278,58 @@ export function BuilderShell({
     // offer to put back a card the deck still holds.
     setSpentSlot(null);
   }, []);
+
+  // The auto count and kept count, computed from the optimistic card list.
+  // `autoCount` is how many untouched auto cards remain (these will be swept).
+  // `keptCount` is how many cards have auto=false (kept or player-added).
+  const autoCount = cards.filter((c) => c.auto).length;
+  const keptCount = cards.filter((c) => !c.auto).length;
+
+  const handleClearAuto = useCallback(async () => {
+    if (sweepPending) return;
+    setSweepPending(true);
+    setSweepError(null);
+    // Optimistically remove auto rows from the list so the decklist is instant.
+    const autoIds = new Set(cards.filter((c) => c.auto).map((c) => c.oracleId));
+    for (const c of cards) {
+      if (autoIds.has(c.oracleId)) removeOptimisticCard(c.oracleId);
+    }
+    try {
+      const removed = await clearAutoCards(deck.id);
+      setSweptRows(removed);
+      const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
+      setAnnouncement(
+        recommendationsCopy.auto.sweptAnnounce(String(removed.length), String(remaining)),
+      );
+    } catch {
+      // Roll back: re-add the auto cards to the optimistic list
+      for (const c of cards) {
+        if (autoIds.has(c.oracleId)) addOptimisticCard(c);
+      }
+      setSweepError(recommendationsCopy.auto.sweepFailed);
+    } finally {
+      setSweepPending(false);
+    }
+  }, [sweepPending, cards, deck.id, removeOptimisticCard, addOptimisticCard]);
+
+  const handleRestoreAuto = useCallback(async () => {
+    if (!sweptRows) return;
+    await restoreAutoCards(deck.id, sweptRows);
+    setSweptRows(null);
+  }, [sweptRows, deck.id]);
+
+  // Clear sweep state when the server list changes (revalidation settled).
+  // The sweep receipt is decklist state: it persists across tab switches but
+  // leaves when the player navigates away and the component unmounts.
+  const [lastServerCardsForSweep, setLastServerCardsForSweep] = useState(deck.cards);
+  if (lastServerCardsForSweep !== deck.cards) {
+    setLastServerCardsForSweep(deck.cards);
+    // If sweptRows is set and the server list no longer has those oracle ids,
+    // the undo landed — clear the receipt.
+    if (sweptRows && sweptRows.every((r) => deck.cards.some((c) => c.oracleId === r.oracleId))) {
+      setSweptRows(null);
+    }
+  }
 
   // Not memoised: `removeOptimisticCard` is rebuilt every render and
   // `announceAdd` follows the card list, so a useMemo here would recompute on
@@ -584,6 +645,13 @@ export function BuilderShell({
                 onFilterChange={setFilter}
                 onGroupingChange={setGrouping}
                 onUnresolvedExpandedChange={setUnresolvedExpanded}
+                autoCount={autoCount}
+                keptCount={keptCount}
+                sweepPending={sweepPending}
+                sweptRows={sweptRows}
+                sweepError={sweepError}
+                onClearAuto={handleClearAuto}
+                onRestoreAuto={handleRestoreAuto}
               />
             )}
             </div>
