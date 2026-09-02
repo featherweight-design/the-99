@@ -16,7 +16,7 @@ import { shelfRoleOf } from "../../lib/decks/suggest";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 import { BuyTag } from "./buy-tag";
-import { CardDetailTrigger } from "./card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";

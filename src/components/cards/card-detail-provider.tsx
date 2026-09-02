@@ -11,7 +11,7 @@ import {
 } from "react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { getCardDetail } from "../../app/card-detail-action";
-import { CardModal } from "../collection/card-modal";
+import { CardModal } from "./card-modal";
 
 export const cardDetailCopy = {
   triggerAria: (name: string) => `View details for ${name}`,

@@ -14,8 +14,8 @@ import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
-import { ManaCost } from "./mana-pips";
-import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
+import { ManaCost } from "../collection/mana-pips";
+import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "../collection/printing-region";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 
 const pickerCopy = printingPickerCopy.printing;

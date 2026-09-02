@@ -12,7 +12,7 @@ import type { RoleCard } from "../../lib/recs/score";
 import { commandersCopy } from "../../lib/copy/commanders";
 import { FullCardTrigger } from "./full-card-trigger";
 import { OwnedChip, RoleCardList } from "./role-card-list";
-import { CardDetailProvider } from "../decks/card-detail-provider";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
 
 // ─── Internal sub-component types ───────────────────────────────────────────

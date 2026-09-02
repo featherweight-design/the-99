@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { deckImportCopy } from "../../lib/copy/deck-import";
-import { CardDetailProvider } from "./card-detail-provider";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { Decklist } from "./decklist";
 import { UnresolvedGroup } from "./unresolved-group";
 

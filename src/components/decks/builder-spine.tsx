@@ -11,7 +11,7 @@ import { colorLabel } from "../../lib/decks/format";
 import { PrimaryButton } from "@/components/ui/button";
 import { AvailabilityGlyph } from "@/components/ui/availability-marker";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { CardDetailTrigger } from "./card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 
 interface BuilderSpineProps {
   deck: DeckDetail;

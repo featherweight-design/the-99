@@ -11,7 +11,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
-import { CardDetailTrigger } from "./card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
 import {
   useAnnounceUndo,

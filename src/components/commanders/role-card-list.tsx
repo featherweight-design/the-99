@@ -7,7 +7,7 @@
 import { useState } from "react";
 import type { RoleCard } from "../../lib/recs/score";
 import { commandersCopy } from "../../lib/copy/commanders";
-import { CardDetailTrigger } from "../decks/card-detail-provider";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 
 // A well-stocked pool puts 200+ cards under a single role, and the four panels
 // stacked turned the page into a wall of names with the panels below it pushed
