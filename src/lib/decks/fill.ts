@@ -112,6 +112,14 @@ function byPreference(a: FillCandidate, b: FillCandidate): number {
 
 export function planFill(candidates: FillCandidate[]): FillPlan {
   const ordered = [...candidates].sort(byPreference);
+  // One entry per oracle id, the most-preferred one, because `ordered` is
+  // already sorted and the first write wins. Both a row's cost lookup and the
+  // land sweeps read through this, so a duplicated id resolves to the same
+  // card everywhere and can never be taken twice.
+  const byOracleId = new Map<string, FillCandidate>();
+  for (const candidate of ordered) {
+    if (!byOracleId.has(candidate.oracleId)) byOracleId.set(candidate.oracleId, candidate);
+  }
   const spent = new Set<string>();
   const rows: FillRow[] = [];
   const counts: Record<FillRole, number> = { ramp: 0, draw: 0, removal: 0, wipes: 0, land: 0 };
@@ -144,17 +152,12 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
   }
 
   // Lands come from the collection alone — never bought, at any point below.
-  // Deduplicated here rather than re-checked in each sweep: three passes read
-  // this list, and a duplicated oracle id would otherwise be taken once per
-  // pass and double-counted in the per-colour capacity. The first entry wins,
-  // which is the most-preferred one because `ordered` is already sorted.
-  const lands = [
-    ...new Map(
-      ordered
-        .filter((c) => c.owned && !spent.has(c.oracleId) && classifyRoles(c).includes("land"))
-        .map((c) => [c.oracleId, c] as const),
-    ).values(),
-  ];
+  // Drawn from the deduplicated index rather than from `ordered`, because
+  // three sweeps read this list and a duplicated oracle id would otherwise be
+  // taken once per sweep and double-counted in the per-colour capacity.
+  const lands = [...byOracleId.values()].filter(
+    (c) => c.owned && !spent.has(c.oracleId) && classifyRoles(c).includes("land"),
+  );
   const takeLand = (candidate: FillCandidate, quantity: number): void => {
     spent.add(candidate.oracleId);
     counts.land += quantity;
@@ -177,7 +180,7 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
   const pips = new Map<string, number>();
   for (const row of rows) {
     if (row.role === "land") continue;
-    addPips(pips, candidates.find((c) => c.oracleId === row.oracleId)?.manaCost ?? null);
+    addPips(pips, byOracleId.get(row.oracleId)?.manaCost ?? null);
   }
   const basicsByColor = new Map<string, FillCandidate[]>();
   for (const candidate of lands) {
