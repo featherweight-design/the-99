@@ -738,7 +738,9 @@ async function fillLastSlots(deckId: string, ownedOnly: boolean) {
     // shortfall: derived from what actually landed (post-legality-filter) so the
     // reported numbers add up to 99. Pre-filter shortfall could read "0 short"
     // while the deck is one card light if the legality pass dropped a card.
-    const shortfall = 99 - (built + legal.length);
+    // Clamped at zero: a deck that somehow holds more than 99 is corrupt state,
+    // not a negative shortfall, and "−1 short" is a worse answer than "none".
+    const shortfall = Math.max(0, 99 - (built + legal.length));
     return { added: legal.length, total: built + legal.length, shortfall, userId, finalCounts };
   });
 }

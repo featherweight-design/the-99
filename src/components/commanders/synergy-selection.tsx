@@ -201,10 +201,12 @@ export function SelectableBuildButton({
   className?: string;
 }) {
   const { selected } = useSynergySelection();
-  const buildHref =
-    selected.size === 0
-      ? `/decks?commander=${oracleId}`
-      : `/decks?commander=${oracleId}&select=${[...selected].join(",")}`;
+  // Encoded rather than interpolated raw: both values are oracle ids today, but
+  // a query string built by concatenation is one upstream id-format change away
+  // from breaking, and the redirect path already encodes.
+  const params = new URLSearchParams({ commander: oracleId });
+  if (selected.size > 0) params.set("select", [...selected].join(","));
+  const buildHref = `/decks?${params}`;
   return (
     <Link href={buildHref} className={className}>
       Build this deck →

@@ -86,6 +86,10 @@ export const synergyCopy = {
     enchantments: 'Enchantments',
     lands: 'Lands',
     all: 'All',
+    // The prose noun for the All facet. The pill reads "All", but the
+    // disclosure copy puts the label in a sentence — "Show all {n} {facet}" —
+    // where "All" would read as "Show all 258 All".
+    allPlural: 'cards',
     // A radiogroup, not tabs: it filters one list rather than swapping panels.
     groupAria: 'Filter the synergy list by card type',
     itemAria: (facet: string, n: string) => `${facet}, ${n} cards`,

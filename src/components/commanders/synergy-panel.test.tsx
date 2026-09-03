@@ -84,6 +84,24 @@ describe("SynergyPanel", () => {
     expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
   });
 
+  // The pill reads "All", but the disclosure copy puts the label in a sentence.
+  // Substituting the pill's own label there produced "Show all 30 All", and the
+  // aria template appends "cards" of its own, so the prose noun cannot simply
+  // become "cards" everywhere either.
+  it("reads the All facet as cards in the disclosure, without doubling the noun", () => {
+    wrap(<SynergyPanel {...props} cards={make(30)} width="desktop" />);
+    fireEvent.click(screen.getByRole("radio", { name: synergyCopy.facet.itemAria("All", "30") }));
+    const button = screen.getByRole("button", { name: "Show all 30 cards" });
+    expect(button).toHaveTextContent("Show all 30 cards");
+    fireEvent.click(button);
+    expect(screen.getByRole("button", { name: synergyCopy.disclosure.showFewer }))
+      .toHaveAttribute("aria-expanded", "true");
+    // The scroll container keeps the pill's label: "All, 30 cards".
+    expect(screen.getByRole("list")).toHaveAccessibleName(
+      synergyCopy.facet.itemAria(synergyCopy.facet.all, "30"),
+    );
+  });
+
   it("keeps the headline's locked of-top figure beside the facet's own count", () => {
     wrap(<SynergyPanel {...props} cards={make(30)} width="desktop" />);
     expect(screen.getByText(/of top 258/)).toBeInTheDocument();

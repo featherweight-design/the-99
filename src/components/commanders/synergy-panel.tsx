@@ -26,7 +26,7 @@ const RESTING_CAP_PHONE = 6;
 
 // Display label for each facet in the disclosure copy (plural noun).
 const FACET_PLURAL: Record<CardFacet | "all", string> = {
-  all: synergyCopy.facet.all,
+  all: synergyCopy.facet.allPlural,
   creature: synergyCopy.facet.creatures,
   spell: synergyCopy.facet.spells,
   artifact: synergyCopy.facet.artifacts,
@@ -86,9 +86,21 @@ export function SynergyPanel({
   // Ownership headline bar figures.
   const pct = edhrecTotal > 0 ? Math.round((ownedCount / edhrecTotal) * 100) : 0;
 
-  // Disclosure copy.
+  // Disclosure copy. The All facet's prose noun is "cards" — the same word the
+  // aria templates append — so at that facet the accessible name is the visible
+  // sentence rather than "Show all 258 cards cards".
+  const isAllFacet = facet === "all";
   const facetLabel = FACET_PLURAL[facet];
   const facetCountStr = String(facetCount);
+  const showAllName = isAllFacet
+    ? synergyCopy.disclosure.showAll(facetCountStr, facetLabel)
+    : synergyCopy.disclosure.showAllAria(facetCountStr, facetLabel);
+  const showFewerName = isAllFacet
+    ? synergyCopy.disclosure.showFewer
+    : synergyCopy.disclosure.showFewerAria(facetLabel);
+  // The scroll container is named by the pill the player chose, so it takes the
+  // pill's label and not the prose noun: "All, 258 cards".
+  const scrollLabel = isAllFacet ? synergyCopy.facet.all : facetLabel;
 
   // Sibling oracle ids for the card-detail trigger (the full list, so tapping
   // opens a list-traversal modal that covers the whole set).
@@ -290,7 +302,7 @@ export function SynergyPanel({
           // but only while it is actually scrollable, or a resting six-row list
           // would put a stop in the tab order for nothing.
           tabIndex={scrollable ? 0 : undefined}
-          aria-label={scrollable ? synergyCopy.facet.itemAria(facetLabel, facetCountStr) : undefined}
+          aria-label={scrollable ? synergyCopy.facet.itemAria(scrollLabel, facetCountStr) : undefined}
           style={{
             listStyle: "none",
             margin: 0,
@@ -328,11 +340,7 @@ export function SynergyPanel({
             fontSize: 12,
             marginTop: 4,
           }}
-          aria-label={
-            expanded
-              ? synergyCopy.disclosure.showFewerAria(facetLabel)
-              : synergyCopy.disclosure.showAllAria(facetCountStr, facetLabel)
-          }
+          aria-label={expanded ? showFewerName : showAllName}
         >
           {expanded ? (
             synergyCopy.disclosure.showFewer
