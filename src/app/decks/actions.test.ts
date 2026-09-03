@@ -10,6 +10,8 @@ const stub = vi.hoisted(() => {
     cards: [] as Record<string, unknown>[],
     // Rows returned when querying `collection_items` (pool/quantity queries)
     collectionItems: [] as Record<string, unknown>[],
+    // Rows returned when querying `decks` table (used by requireDeck)
+    decks: [] as Record<string, unknown>[],
     // Insert calls tracked as { table, values, returning? }
     insertCalls: [] as { table: string; values: unknown; returning: unknown[] | null }[],
     // Tracks whether the transaction was called and whether it should reject
@@ -41,6 +43,7 @@ const stub = vi.hoisted(() => {
         const builder: SelectFromBuilder = {
           where: async () => {
             if (tableName === "cards") return state.cards;
+            if (tableName === "decks") return state.decks;
             return state.collectionItems;
           },
           innerJoin: () => {
@@ -142,7 +145,12 @@ vi.mock("../../lib/edhrec/client", () => ({
   },
 }));
 
-import { createDeck, restoreAutoCards } from "./actions";
+// Mock synergy-read so fillLastSlots tests don't need live DB or EDHREC data
+vi.mock("../commanders/[slug]/synergy-read", () => ({
+  readSynergyCards: async () => [],
+}));
+
+import { createDeck, fillLastSlotsOwned, fillLastSlotsUnowned, restoreAutoCards } from "./actions";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -206,6 +214,7 @@ async function runCreate(commanderOracleId = COMMANDER_ORACLE, name = "My Deck")
 beforeEach(() => {
   stub.state.cards.length = 0;
   stub.state.collectionItems.length = 0;
+  stub.state.decks.length = 0;
   stub.state.insertCalls.length = 0;
   stub.state.transactionError = null;
   stub.state.deckRows.length = 0;
@@ -333,11 +342,11 @@ describe("restoreAutoCards — the rows come from the client", () => {
   const CARD_ABSENT = "55555555-5555-5555-5555-555555555555";
   const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 
-  /** requireDeck reads `decks` through the same select stub the pool uses, so a
-      single row is enough to make the deck resolve as owned. The commander
-      lookup takes the first `cards` row; the candidate lookup reads them all. */
+  /** requireDeck reads the `decks` table; push a row with the caller's userId
+      to make the deck resolve as owned. The commander lookup takes the first
+      `cards` row; the candidate lookup reads them all. */
   function ownDeck() {
-    stub.state.collectionItems.push({ id: DECK, userId: "user_1", commanderOracleId: CMDR });
+    stub.state.decks.push({ id: DECK, userId: "user_1", commanderOracleId: CMDR });
     stub.state.cards.push(
       { oracleId: CMDR, commanderLegal: true, colorIdentity: ["B", "R", "G"] },
       { oracleId: CARD_A, commanderLegal: true, colorIdentity: [] },
@@ -442,5 +451,77 @@ describe("restoreAutoCards — the rows come from the client", () => {
     await expect(
       restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 1 }]),
     ).rejects.toThrow("deck not found");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fillLastSlotsOwned / fillLastSlotsUnowned — authorization boundary
+// ---------------------------------------------------------------------------
+// These tests constrain the explicit row.userId !== userId check inside
+// requireDeck. The stub's `where` method ignores its predicate argument, so
+// without the explicit check a wrong-owner row would pass through undetected.
+
+describe("fillLastSlotsOwned — authorization", () => {
+  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
+  /** Push a commander card so the fill can proceed past requireDeck if auth passes.
+   *  Without this the test would pass on a downstream "commander not found" throw. */
+  function withCommander() {
+    stub.state.cards.push({ oracleId: CMDR, colorIdentity: ["B", "R", "G"] });
+  }
+
+  it("returns ok:false and performs no write when the deck belongs to another user", async () => {
+    // Stub returns a deck row whose userId differs from the authenticated caller ("user_1").
+    // withCommander() is set so that if the ownership check is absent the action
+    // proceeds past requireDeck and reaches ok:true — proving the check matters.
+    stub.state.decks.push({ id: DECK, userId: "user_other", commanderOracleId: CMDR });
+    withCommander();
+
+    const result = await fillLastSlotsOwned(DECK);
+
+    expect(result.ok).toBe(false);
+    // No deck_cards were written
+    expect(stub.state.insertCalls).toEqual([]);
+  });
+
+  it("returns ok:false and performs no write when no deck row exists", async () => {
+    // state.decks stays empty — deck not found
+    withCommander();
+    const result = await fillLastSlotsOwned(DECK);
+
+    expect(result.ok).toBe(false);
+    expect(stub.state.insertCalls).toEqual([]);
+  });
+});
+
+describe("fillLastSlotsUnowned — authorization", () => {
+  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+
+  function withCommander() {
+    stub.state.cards.push({ oracleId: CMDR, colorIdentity: ["B", "R", "G"] });
+  }
+
+  it("returns ok:false and performs no write when the deck belongs to another user", async () => {
+    // Same logic as fillLastSlotsOwned: commander is present so that if the
+    // ownership check is removed the action proceeds to ok:true, proving the check.
+    stub.state.decks.push({ id: DECK, userId: "user_other", commanderOracleId: CMDR });
+    withCommander();
+
+    const result = await fillLastSlotsUnowned(DECK);
+
+    expect(result.ok).toBe(false);
+    // No deck_cards were written
+    expect(stub.state.insertCalls).toEqual([]);
+  });
+
+  it("returns ok:false and performs no write when no deck row exists", async () => {
+    // state.decks stays empty — deck not found
+    withCommander();
+    const result = await fillLastSlotsUnowned(DECK);
+
+    expect(result.ok).toBe(false);
+    expect(stub.state.insertCalls).toEqual([]);
   });
 });

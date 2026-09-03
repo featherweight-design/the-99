@@ -406,7 +406,10 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
 async function requireDeck(deckId: string, userId: string) {
   const [deck] = await db.select().from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
-  if (!deck) throw new Error("deck not found");
+  // The predicate above is defence in depth at the query layer. The explicit
+  // comparison below is the authorization the tests constrain — it fires even
+  // when the stub or ORM ignores the WHERE clause.
+  if (!deck || deck.userId !== userId) throw new Error("deck not found");
   return deck;
 }
 
