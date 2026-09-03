@@ -1826,7 +1826,10 @@ async function fillLastSlots(deckId: string, ownedOnly: boolean) {
         .onConflictDoNothing();
     }
     for (const path of claimSurfaces(deckId)) revalidatePath(path);
-    return { added: legal.length, total: built + legal.length, shortfall, ranked, inDeck, legal };
+    // The deck's membership after the write, deduplicated. The top-up wrapper
+    // scopes its collection read to this.
+    const finalOracleIds = [...new Set([...inDeck, ...legal])];
+    return { added: legal.length, total: built + legal.length, shortfall, userId, finalOracleIds };
   });
 }
 
@@ -1845,8 +1848,21 @@ export async function fillLastSlotsUnowned(deckId: string): Promise<LastSlotsTop
     const r = await fillLastSlots(deckId, false);
     // `bought` is what the player still has to acquire for the whole deck, not
     // just this call — the strip's figure is about the deck, not the click.
-    const unowned = new Set(r.ranked.filter((c) => !c.owned).map((c) => c.oracleId));
-    const bought = [...r.inDeck, ...r.legal].filter((id) => unowned.has(id)).length;
+    // Ownership therefore comes from `collection_items`, not from the ranked
+    // list: a deck card EDHREC never ranked is still one the player has to buy.
+    // The read sits outside the transaction because `collection_items` is
+    // untouched by the deck write and needs no row lock, and it lives only in
+    // this wrapper so the owned-only path does not pay for a figure it drops.
+    const owned = new Set(
+      (await db.select({ oracleId: collectionItems.oracleId })
+        .from(collectionItems)
+        .where(and(
+          eq(collectionItems.userId, r.userId),
+          inArray(collectionItems.oracleId, r.finalOracleIds),
+        )))
+        .map((c) => c.oracleId),
+    );
+    const bought = r.finalOracleIds.filter((id) => !owned.has(id)).length;
     return { ok: true, added: r.added, total: r.total, bought };
   } catch (err) {
     console.error("fillLastSlotsUnowned failed", err);
