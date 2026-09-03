@@ -40,9 +40,10 @@ export const FILL_BASELINE_TOTAL =
 
 /** How many of the 37 land slots non-basics may take before basics get the
     rest. A deck of nothing but basics is hamstrung, but so is one with no
-    basics at all: fetches, filters and utility lands produce no mana of their
-    own, and a large collection can offer far more of them than a mana base
-    should run. The remaining slots are still reachable by non-basics — the
+    basics at all: many non-basics fix colours only by reaching for a basic, or
+    tap for colourless, so a base without a basic core casts less than its land
+    count suggests — and a large collection can offer far more non-basics than
+    a mana base should run. The remaining slots stay reachable by them — the
     second sweep below takes them when the collection has too few basics to
     fill the base. */
 const NONBASIC_LAND_CAP = 12;
