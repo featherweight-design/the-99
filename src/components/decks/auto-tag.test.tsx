@@ -135,12 +135,12 @@ describe("AutoTag", () => {
     render(<AutoTag deckId="d1" oracleId="sol-ring" name="Sol Ring" />);
     const btn = screen.getByRole("button");
 
-    expect(btn.className).toMatch(/min-h-\[44px\]/);
-    expect(btn.className).not.toMatch(/bg-elevated/);
+    expect(btn).toHaveClass("min-h-[44px]");
+    expect(btn).not.toHaveClass("bg-elevated");
 
     const plate = screen.getByText(recommendationsCopy.auto.tag);
-    expect(plate.className).toMatch(/bg-elevated/);
-    expect(plate.className).not.toMatch(/min-h-\[44px\]/);
+    expect(plate).toHaveClass("bg-elevated");
+    expect(plate).not.toHaveClass("min-h-[44px]");
   });
 
   it("says nothing when the keep is accepted", async () => {
