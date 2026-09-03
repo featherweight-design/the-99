@@ -19,10 +19,29 @@ describe("FacetStrip", () => {
     expect(checked[0]).toHaveAccessibleName(synergyCopy.facet.itemAria("Creatures", "66"));
   });
 
-  // A pill for a facet with no rows behind it is a control that does nothing.
-  it("omits a facet with a zero count", () => {
-    render(<FacetStrip counts={counts} selected="creature" onSelect={() => {}} />);
-    expect(screen.queryByText(/^Other/)).not.toBeInTheDocument();
+  // "other" never gets a pill — its rows are only reachable through "All".
+  it("omits the other facet regardless of count", () => {
+    render(<FacetStrip counts={{ ...counts, other: 5 }} selected="creature" onSelect={() => {}} />);
+    expect(screen.queryByRole("radio", { name: /Other/ })).not.toBeInTheDocument();
+  });
+
+  // Zero-count facet pills render as disabled so the empty-facet branch in
+  // SynergyPanel is reachable. The pill must be present but not clickable.
+  it("renders a zero-count facet pill as disabled so the empty-facet state is reachable", () => {
+    const onSelect = vi.fn();
+    render(
+      <FacetStrip
+        counts={{ ...counts, artifact: 0 }}
+        selected="creature"
+        onSelect={onSelect}
+      />,
+    );
+    const pill = screen.getByRole("radio", { name: synergyCopy.facet.itemAria("Artifacts", "0") });
+    expect(pill).toBeInTheDocument();
+    expect(pill).toBeDisabled();
+    // Clicking a disabled zero-count pill must not call onSelect.
+    fireEvent.click(pill);
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   it("reports the chosen facet", () => {

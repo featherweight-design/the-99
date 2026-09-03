@@ -92,6 +92,22 @@ describe("ClearAutoButton", () => {
     ).toBeInTheDocument();
   });
 
+  // Design table state 7: the keptNote must survive the button's absence.
+  // Before the fix, keptNote was rendered inside the early `if (count === 0) return null`
+  // guard, so it disappeared with the button.
+  it("shows the keptNote even when count is 0 and the button is absent", () => {
+    render(
+      <ClearAutoButton
+        count={0}
+        keptCount={4}
+        onClear={vi.fn()}
+        pending={false}
+      />,
+    );
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getByText(recommendationsCopy.auto.keptNote("4"))).toBeInTheDocument();
+  });
+
   it("calls onClear once when clicked", async () => {
     const onClear = vi.fn();
     render(

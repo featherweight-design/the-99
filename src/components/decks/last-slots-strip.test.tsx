@@ -253,4 +253,38 @@ describe("LastSlotsStrip", () => {
     });
     expect(onCompletedByFill).toHaveBeenCalledOnce();
   });
+
+  // Design table state 3 / state 8: onInflight signals the shell so it can
+  // disable control C while either fill is in flight.
+  it("calls onInflight(true) when A starts and onInflight(false) when A settles", async () => {
+    const pending = deferred<{ ok: true; added: number; total: number; shortfall: number }>();
+    actions.fillOwned.mockReturnValue(pending.promise);
+    const onInflight = vi.fn();
+    render(<LastSlotsStrip {...base} onInflight={onInflight} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
+    });
+    expect(onInflight).toHaveBeenLastCalledWith(true);
+    await act(async () => {
+      pending.resolve({ ok: true, added: 12, total: 80, shortfall: 19 });
+    });
+    expect(onInflight).toHaveBeenLastCalledWith(false);
+    expect(onInflight).toHaveBeenCalledTimes(2);
+  });
+
+  it("calls onInflight(true) when B starts and onInflight(false) when B settles", async () => {
+    const pending = deferred<{ ok: true; added: number; total: number; bought: number }>();
+    actions.fillUnowned.mockReturnValue(pending.promise);
+    const onInflight = vi.fn();
+    render(<LastSlotsStrip {...base} onInflight={onInflight} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
+    });
+    expect(onInflight).toHaveBeenLastCalledWith(true);
+    await act(async () => {
+      pending.resolve({ ok: true, added: 19, total: 99, bought: 19 });
+    });
+    expect(onInflight).toHaveBeenLastCalledWith(false);
+    expect(onInflight).toHaveBeenCalledTimes(2);
+  });
 });

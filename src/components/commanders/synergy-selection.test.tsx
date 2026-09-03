@@ -31,7 +31,14 @@ describe("SynergySelection", () => {
 
   it("states the fill, the pick and the total", () => {
     render(<SynergySelection selectedCards={owned(7)} onClear={() => {}} width="desktop" />);
-    expect(screen.getByText(synergyCopy.select.promise("68", "7", "75"))).toBeInTheDocument();
+    // The total ("75") is wrapped in a highlighted span, so getByText on the full
+    // string no longer matches; use a function query on the container instead.
+    expect(
+      screen.getByText((_content, el) =>
+        el?.tagName === "SPAN" &&
+        el.textContent === synergyCopy.select.promise("68", "7", "75"),
+      ),
+    ).toBeInTheDocument();
   });
 
   it("names the unowned cards in the selection", () => {
@@ -52,9 +59,18 @@ describe("SynergySelection", () => {
 
   it("takes the mobile promise string at phone width", () => {
     render(<SynergySelection selectedCards={owned(7)} onClear={() => {}} width="phone" />);
-    expect(screen.getByText(synergyCopy.select.promiseMobile("68", "7", "75"))).toBeInTheDocument();
+    // Total is wrapped in a span; check the container text content instead.
     expect(
-      screen.queryByText(synergyCopy.select.promise("68", "7", "75")),
+      screen.getByText((_content, el) =>
+        el?.tagName === "SPAN" &&
+        el.textContent === synergyCopy.select.promiseMobile("68", "7", "75"),
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText((_content, el) =>
+        el?.tagName === "SPAN" &&
+        el.textContent === synergyCopy.select.promise("68", "7", "75"),
+      ),
     ).not.toBeInTheDocument();
   });
 
