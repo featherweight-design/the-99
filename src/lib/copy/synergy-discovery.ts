@@ -161,8 +161,13 @@ export const synergyCopy = {
     // Shopping footer), so the control names itself with it rather than with a
     // new noun.
     topUp: 'Top up with cards to buy',
+    // Not 'with cards you do not own': B plans against the whole ranked list
+    // (`ownedOnly: false`), so it places the best card for each slot whether or
+    // not the player owns it. Buying is what the control adds over A, not what
+    // it does exclusively, and an aria-label is the only name a screen reader
+    // gets — it cannot afford to be the one that overstates.
     topUpAria: (n: string) =>
-      `Top up ${n} slots with cards you do not own`,
+      `Top up ${n} slots from the full list, including cards you do not own`,
     topUpFailed: 'We couldn’t add those. The deck is unchanged.',
 
     // §7.6 — settled below 99. The clause after the dash is lifted verbatim
