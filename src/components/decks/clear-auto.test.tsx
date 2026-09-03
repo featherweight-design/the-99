@@ -108,6 +108,20 @@ describe("ClearAutoButton", () => {
     expect(screen.getByText(recommendationsCopy.auto.keptNote("4"))).toBeInTheDocument();
   });
 
+  // With neither a note nor a button, the wrapper is an empty flex child that
+  // still collects the toolbar's gap. Nothing to say means nothing rendered.
+  it("renders no element at all when there is neither a count nor a kept note", () => {
+    const { container } = render(
+      <ClearAutoButton
+        count={0}
+        keptCount={0}
+        onClear={vi.fn()}
+        pending={false}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it("calls onClear once when clicked", async () => {
     const onClear = vi.fn();
     render(
@@ -366,6 +380,16 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
         name: recommendationsCopy.auto.sweptUndoAria("1"),
       }),
     ).toBeInTheDocument();
+  });
+
+  // Design table state 7 again, this time end to end. The component keeps the
+  // note past the button's absence, but the toolbar used to gate the whole
+  // component on the auto count — so at zero the note went with it.
+  it("keeps the kept-note in the toolbar after the last auto card is gone", async () => {
+    renderBuilder([card3]);
+
+    expect(screen.queryByRole("button", { name: /Clear all/ })).not.toBeInTheDocument();
+    expect(screen.getByText(recommendationsCopy.auto.keptNote("1"))).toBeInTheDocument();
   });
 
   it("a kept row survives the sweep", async () => {

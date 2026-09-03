@@ -26,9 +26,13 @@ interface ClearAutoButtonProps {
  *  render disabled is while its own sweep is in flight.
  *
  *  Design table state 7: the keptNote must survive even when count === 0 and
- *  the button is absent. The note is rendered outside the early-return guard
- *  so it stays visible throughout the auto-card lifecycle. */
+ *  the button is absent. The note is rendered outside the button's own guard
+ *  so it stays visible throughout the auto-card lifecycle — but with neither a
+ *  note nor a button to show, the wrapper leaves too, rather than sitting in
+ *  the toolbar's flex row as an empty child collecting a gap. */
 export function ClearAutoButton({ count, keptCount, onClear, pending }: ClearAutoButtonProps) {
+  if (count === 0 && keptCount === 0) return null;
+
   return (
     <span className="flex items-center gap-[8px]">
       {keptCount >= 1 && (
