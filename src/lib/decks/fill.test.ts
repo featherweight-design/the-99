@@ -152,6 +152,18 @@ describe("planFill", () => {
     expect(quantityOf("swamp")).toBe(19);
   });
 
+  it("weights Wastes by a true colourless requirement, not by generic cost", () => {
+    const plan = planFill([
+      c({ oracleId: "eldrazi", manaCost: "{4}{C}{C}" }),
+      c({ oracleId: "g0", manaCost: "{G}" }),
+      basic("wastes", 40, "Wastes"),
+      basic("forest", 40, "Forest"),
+    ]);
+    const quantityOf = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
+    expect(quantityOf("wastes")).toBe(25);
+    expect(quantityOf("forest")).toBe(12);
+  });
+
   it("names every role it came up short on, in role order", () => {
     const plan = planFill([ramp("r0", 5), basic("forest", 37)]);
     expect(plan.shortfalls).toEqual(["ramp", "draw", "removal", "wipes"]);

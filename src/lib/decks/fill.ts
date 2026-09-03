@@ -60,15 +60,20 @@ function basicLandColor(name: string): string | null {
   return BASIC_LAND_COLORS[stem] ?? null;
 }
 
-const COLORED_PIPS = ["W", "U", "B", "R", "G"] as const;
+/** The keys of `BASIC_LAND_COLORS`, which is the point: a pip only earns a
+    basic if some basic taps for it. `C` is here because `{C}` is a true
+    colourless requirement that only Wastes answers — generic costs are written
+    `{2}` and match nothing below. No other mana symbol contains these letters,
+    so a plain substring test is exact. */
+const MANA_PIPS = ["W", "U", "B", "R", "G", "C"] as const;
 
-/** Coloured pips in a cost string, one per symbol per colour. A hybrid symbol
+/** Mana pips in a cost string, one per symbol per colour. A hybrid symbol
     counts for both its halves, which is the right weight for a mana base: the
     card can be cast off either colour, so either colour is worth having. */
 function addPips(into: Map<string, number>, manaCost: string | null): void {
   if (!manaCost) return;
   for (const symbol of manaCost.match(/\{[^}]*\}/g) ?? []) {
-    for (const color of COLORED_PIPS) {
+    for (const color of MANA_PIPS) {
       if (symbol.includes(color)) into.set(color, (into.get(color) ?? 0) + 1);
     }
   }
