@@ -64,6 +64,12 @@ export function DecklistRow({
   spent = false,
   shoppingFigure,
 }: DecklistRowProps) {
+  // The name is a flex item of its own block, not of the row: `flex-auto` on
+  // the trigger itself would grow the trigger's box past its text and strand a
+  // count rendered after it at the far right of the row.
+  const nameTextClass =
+    "min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
+
   // `flex-auto`, not `flex-1`, and the difference is the whole bug. `flex-1` is
   // basis-0: the name gets only what the marker has not already claimed as its
   // own intrinsic width, so a 390px over-committed row renders
@@ -71,8 +77,7 @@ export function DecklistRow({
   // gone. `flex-auto` bases the name on its own text, so a row too narrow for
   // both shrinks the two halves in proportion instead of starving one. Where
   // there is room to spare the two are identical — grow still takes the slack.
-  const nameClass =
-    "flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
+  const nameBlockClass = "flex-auto min-w-0 flex items-center gap-[6px]";
 
   // Multi-copy count (addendum C5): one row per card, the count inline after
   // the name. aria-hidden because the ✕ beside it already speaks the same
@@ -188,7 +193,7 @@ export function DecklistRow({
                 oracleId={card.oracleId}
                 name={card.name}
                 siblings={siblings}
-                className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]"
+                className={nameTextClass}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
               >
                 {card.name}
@@ -217,20 +222,19 @@ export function DecklistRow({
             </span>
           </div>
         ) : (
-          <CardDetailTrigger
-            oracleId={card.oracleId}
-            name={card.name}
-            siblings={siblings}
-            className={nameClass}
-            style={{ color: "var(--fg)" }}
-          >
-            {card.name}
-          </CardDetailTrigger>
+          <div className={nameBlockClass}>
+            <CardDetailTrigger
+              oracleId={card.oracleId}
+              name={card.name}
+              siblings={siblings}
+              className={nameTextClass}
+              style={{ color: "var(--fg)" }}
+            >
+              {card.name}
+            </CardDetailTrigger>
+            {quantityGlyph}
+          </div>
         )}
-
-        {/* Shopping rows draw it inside the name block above, beside the name
-            rather than after the EDHREC figure. */}
-        {!hasShoppingMeta && quantityGlyph}
 
         {/* Availability marker */}
         {card.availability && (

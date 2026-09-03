@@ -6,7 +6,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
-import { CardDetailProvider } from "../cards/card-detail-provider";
+import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -144,6 +144,19 @@ describe("DecklistRow remove control (#179)", () => {
 
     expect(screen.getByText("×37")).toBeInTheDocument();
     expect(screen.queryByText(/more$/)).not.toBeInTheDocument();
+  });
+
+  // The name block is what grows to fill the row, not the name itself: a
+  // growing trigger would strand the count at the row's right edge, away from
+  // the text it counts.
+  it("keeps the count beside the name text", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 37 }} />);
+
+    const count = screen.getByText("×37");
+    const name = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") });
+    expect(count.parentElement).toBe(name.parentElement);
+    expect(name.className).not.toContain("flex-auto");
+    expect(count.parentElement?.className).toContain("flex-auto");
   });
 
   // The ✕'s aria already says "37 in deck", so a reader that also voiced the
