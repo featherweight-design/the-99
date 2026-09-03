@@ -307,9 +307,32 @@ describe("createDeck with a selection", () => {
     expect(total).toBeGreaterThan(68);
     // The selection is placed first, so every pick survives the cap.
     for (const id of picks) expect(insertedIds()).toContain(id);
-    // And the cap spends the last slots rather than stranding them: a stack
-    // that overruns is truncated to what is left, so the deck lands on 99
-    // instead of stopping short of a four-deep row it could not fit whole.
+  });
+
+  // The cap has to spend the last slots, not strand them. With only stacked
+  // rows left to draw from, a cap that skips whatever will not fit whole stops
+  // at 96 and never reaches 99 — every remaining row is the same four-deep
+  // stack that just failed. Truncating the overrunning row spends the three.
+  it("truncates a stack that overruns the cap rather than skipping it", async () => {
+    const picks = selectionOf(65);
+    // Basics only: every fill row is four deep, so there is no single-quantity
+    // row further down the list for a skipping cap to fall back on.
+    const forests = Array.from({ length: 40 }, (_, i) =>
+      cardRow(`4${i.toString().padStart(7, "0")}-1111-4111-8111-111111111111`, {
+        name: "Forest",
+        typeLine: "Basic Land — Forest",
+        oracleText: null,
+        colorIdentity: ["G"],
+        quantity: 4,
+      }),
+    );
+    stub.state.cards.push(commanderRow(), ...picks.map((id) => cardRow(id)));
+    stub.state.collectionItems.push(...forests);
+
+    await runCreate("My deck", picks);
+
+    const rows = insertedRows();
+    const total = rows.reduce((n, r) => n + (r.quantity as number), 0);
     expect(total).toBe(99);
   });
 
