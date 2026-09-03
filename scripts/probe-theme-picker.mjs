@@ -9,20 +9,21 @@
 // display face the theme actually loaded.
 //
 // Run by hand, like its siblings, and not part of `pnpm test`:
-//   PROBE_USER_EMAIL=you@example.com node --env-file=.env scripts/probe-theme-picker.mjs
+//   PROBE_USER_EMAIL=you@example.com node scripts/probe-theme-picker.mjs
 import { mkdir } from "node:fs/promises";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { requireEnv } from "./lib/env.mjs";
 
+// PROBE_USER_EMAIL is the seeded account: the shell only renders its account
+// menu for a signed-in user, and the rail is where the desktop trigger lives.
+// Named rather than defaulted, so no address is checked into the repo.
+const { PROBE_USER_EMAIL: EMAIL, CLERK_SECRET_KEY: SECRET } = requireEnv([
+  "PROBE_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const SECRET = process.env.CLERK_SECRET_KEY;
-// The seeded account: the shell only renders its account menu for a signed-in
-// user, and the rail is where the desktop trigger lives. Named rather than
-// defaulted, so no address is checked into the repo.
-const EMAIL = process.env.PROBE_USER_EMAIL;
 const SHOTS = process.env.PROBE_SHOT_DIR ?? "/tmp/theme-picker-shots";
-if (!SECRET) throw new Error("Set CLERK_SECRET_KEY.");
-if (!EMAIL) throw new Error("Set PROBE_USER_EMAIL to an account in this Clerk instance.");
 
 async function clerkApi(path, init) {
   const response = await fetch(`https://api.clerk.com/v1${path}`, {

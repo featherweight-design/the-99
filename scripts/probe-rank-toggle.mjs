@@ -30,14 +30,16 @@
 // other, check `csv_uploads` for that user before touching the code.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { requireEnv } from "./lib/env.mjs";
 
+// CLERK_SECRET_KEY is asserted but not bound: `clerkSetup()` reads it from the
+// environment itself.
+const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "E2E_AUDIT_USER_PASSWORD",
+  "CLERK_SECRET_KEY",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;
-const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
-const SECRET = process.env.CLERK_SECRET_KEY;
-if (!EMAIL || !PASSWORD || !SECRET) {
-  throw new Error("Set E2E_AUDIT_USER_EMAIL, E2E_AUDIT_USER_PASSWORD, CLERK_SECRET_KEY.");
-}
 
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },

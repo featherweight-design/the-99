@@ -3,7 +3,10 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
+    // `scripts/` is in the second entry because the env convention its scripts
+    // share is only a convention if something checks it. `.mts` so the test is
+    // typechecked alongside the rest of the repo — tsconfig includes `**/*.mts`.
+    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.mts"],
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
   },

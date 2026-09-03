@@ -15,14 +15,19 @@
 // test` — it needs a browser and a signed-in session.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { requireEnv } from "./lib/env.mjs";
 
+// CLERK_SECRET_KEY is asserted but not bound: `clerkSetup()` reads it from the
+// environment itself.
+const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "E2E_AUDIT_USER_PASSWORD",
+  "CLERK_SECRET_KEY",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const DECK = process.env.PROBE_DECK;
-const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;
-const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
-const SECRET = process.env.CLERK_SECRET_KEY;
-if (!EMAIL || !PASSWORD || !SECRET || !DECK) {
-  throw new Error("Set PROBE_DECK, E2E_AUDIT_USER_EMAIL, E2E_AUDIT_USER_PASSWORD, CLERK_SECRET_KEY.");
+if (!DECK) {
+  throw new Error("Set PROBE_DECK.");
 }
 
 const VIEWPORTS = [

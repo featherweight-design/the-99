@@ -12,24 +12,30 @@
 //
 // Every mutation is undone by the pass that follows it, so the deck ends where
 // it started. Run by hand, and not part of `pnpm test`:
-// `PROBE_DECK=<id> node --env-file=.env scripts/probe-collection-lifecycle.mjs`
+// `PROBE_DECK=<id> node scripts/probe-collection-lifecycle.mjs`
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { requireEnv } from "./lib/env.mjs";
 
+// CLERK_SECRET_KEY is asserted but not bound: `clerkSetup()` reads it from the
+// environment itself.
+const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 let DECK = process.env.PROBE_DECK;
 const CARD = process.env.PROBE_CARD ?? "Sol Ring";
-const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
-const SECRET = process.env.CLERK_SECRET_KEY;
-// Named one by one, because "sign-in failed" thirty seconds into a browser run
-// is a much worse way to learn that a variable is missing. A `+clerk_test`
-// fixture address takes the email-code path and has no password to supply.
+// Named one by one, for the same reason `requireEnv` lists every missing
+// variable at once: "sign-in failed" thirty seconds into a browser run is a
+// much worse way to learn a value is absent. These two stay here rather than in
+// the call above because neither is unconditionally required — PROBE_DECK is
+// supplied per run, and a `+clerk_test` fixture address takes the email-code
+// path and has no password to supply.
 const missing = [
   !DECK && "PROBE_DECK",
-  !EMAIL && "E2E_AUDIT_USER_EMAIL",
-  !SECRET && "CLERK_SECRET_KEY",
-  EMAIL && !EMAIL.includes("+clerk_test") && !PASSWORD && "E2E_AUDIT_USER_PASSWORD",
+  !EMAIL.includes("+clerk_test") && !PASSWORD && "E2E_AUDIT_USER_PASSWORD",
 ].filter(Boolean);
 if (missing.length > 0) throw new Error(`Set ${missing.join(", ")}.`);
 

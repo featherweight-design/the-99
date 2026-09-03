@@ -1,9 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { decideMigration } from "../src/lib/deploy/migrate-decision";
 
-// Deliberately no `import "dotenv/config"` (unlike scripts/seed-cards.ts): this must
-// read only the real deployment environment, so a stray .env in a build container
-// cannot redirect a production migration.
+// The one script that deliberately does not import `scripts/lib/env.mjs`: this
+// must read only the real deployment environment, so a stray .env in a build
+// container cannot redirect a production migration.
 const decision = decideMigration(process.env);
 
 if (decision.action === "skip") {

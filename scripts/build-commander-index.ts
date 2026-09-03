@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./lib/env.mjs";
 import { alreadyComputedSince, buildCommanderIndex } from "../src/lib/edhrec/seed-index";
 
 // RESUME_SINCE is an ISO timestamp set by a re-dispatched workflow run so the

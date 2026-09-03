@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./lib/env.mjs";
 import { seedPrintings } from "../src/lib/scryfall/seed-printings";
 
 seedPrintings()
