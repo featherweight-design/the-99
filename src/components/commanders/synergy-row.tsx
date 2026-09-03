@@ -10,15 +10,10 @@
 import type { CardFacet } from "../../lib/cards/facet";
 import { FACET_TYPE_LABEL } from "../../lib/cards/facet";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
-import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 
 // ── Figure formatters ────────────────────────────────────────────────────────
-
-function formatSynergyDisplay(pts: number): string {
-  if (pts < 0) return synergyCopy.figure.synergyNegative(String(Math.abs(pts)));
-  return synergyCopy.figure.synergy(String(pts));
-}
 
 function formatSynergyAria(pts: number): string {
   if (pts < 0) return synergyCopy.figure.ariaSynergyMinus(String(Math.abs(pts)));
@@ -71,7 +66,7 @@ export function SynergyRow({
   // Display figures
   const synergyDisplay =
     card.synergyPts !== null
-      ? formatSynergyDisplay(card.synergyPts)
+      ? synergySignedDisplay(card.synergyPts)
       : synergyCopy.figure.synergyNone;
 
   const inclusionDisplay =

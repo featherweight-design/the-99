@@ -188,3 +188,15 @@ export const synergyCopy = {
     noSynergy: 'no synergy figure',
   },
 } as const;
+
+/**
+ * Signs a synergy figure that has already been scaled to whole points. Both
+ * surfaces that print one — the panel row and the Consider tile — go through
+ * here, so a figure of 0 reads as '+0 pts' on both rather than '−0 pts' on
+ * either.
+ */
+export function synergySignedDisplay(pts: number): string {
+  return pts < 0
+    ? synergyCopy.figure.synergyNegative(String(Math.abs(pts)))
+    : synergyCopy.figure.synergy(String(pts));
+}

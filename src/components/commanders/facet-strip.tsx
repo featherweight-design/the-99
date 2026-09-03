@@ -2,7 +2,9 @@
 // FacetStrip — the radiogroup of pills that filters the synergy row list.
 // Pill order: All · Creatures · Instants & sorceries · Artifacts · Enchantments · Lands.
 // Other never gets a pill — its rows are reachable through All.
-// Zero-count facets are omitted (a pill for a facet with no rows is a control that does nothing).
+// A zero-count facet keeps an ordinary pill: selecting one is the only route to
+// the panel's empty-facet line. Only a zero-count All is dropped, and only
+// because the panel is never drawn when the full list is empty.
 
 import type { CardFacet } from "../../lib/cards/facet";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";

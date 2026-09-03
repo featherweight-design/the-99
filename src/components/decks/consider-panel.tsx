@@ -57,14 +57,17 @@ function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]
     return gap(b) - gap(a);
   });
 
-  // Synergy shelf: owned cards sorted by synergyFigure descending, figureless
-  // ones last. They stay on the shelf rather than being filtered out so the
-  // tail can say "no synergy figure" instead of silently shortening the shelf.
+  // Synergy shelf: owned EDHREC picks sorted by synergyFigure descending,
+  // figureless ones last. Role suggestions are excluded because they carry no
+  // EDHREC figure at all — including them would duplicate the coverage shelves
+  // above and bury the ranking under "no synergy figure" rows. An EDHREC pick
+  // EDHREC reported no synergy for does stay, and keeping it is what makes that
+  // line reachable.
   // Placed below the sorted coverage shelves and above the unowned append —
   // appended rather than ranked because it has no gap score to sort by.
-  const synergySorted = [...owned].sort(
-    (a, b) => (b.synergyFigure ?? -Infinity) - (a.synergyFigure ?? -Infinity),
-  );
+  const synergySorted = owned
+    .filter((s) => s.reasonType === "edhrec")
+    .sort((a, b) => (b.synergyFigure ?? -Infinity) - (a.synergyFigure ?? -Infinity));
   if (synergySorted.some((s) => s.synergyFigure != null)) {
     shelves.push({ key: "synergy" as const, suggestions: synergySorted, coverage: null });
   }

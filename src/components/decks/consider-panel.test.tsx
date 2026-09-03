@@ -524,6 +524,31 @@ describe("ConsiderPanel — synergy shelf", () => {
     const synergyShelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
     expect(within(synergyShelf).getByText(synergyCopy.shelf.noSynergy)).toBeInTheDocument();
   });
+
+  // A role pick was never EDHREC-ranked, so it has no synergy figure by
+  // construction. Shelving it here would repeat the coverage shelf above it and
+  // bury the ranking under absent-figure rows.
+  it("leaves role picks off the synergy shelf", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Ranked Card", owned: true, synergyFigure: 0.9 }),
+        suggestion({
+          name: "Role Pick",
+          owned: true,
+          reasonType: "role",
+          reason: "ramp",
+          synergyFigure: null,
+          lift: null,
+        }),
+      ],
+    });
+    const synergyShelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    expect(within(synergyShelf).queryByText("Role Pick")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Ramp" })).getByText("Role Pick"))
+      .toBeInTheDocument();
+  });
 });
 
 // The set the coverage strip gates its cells on. It has to agree with

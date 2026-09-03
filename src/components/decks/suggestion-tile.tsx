@@ -9,7 +9,7 @@ import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { availabilityState } from "../../lib/decks/availability";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -140,10 +140,12 @@ function Evidence({
           {addPanelCopy.tile.lift(String(Math.round(lift * 100)))}
         </p>
       ) : synergyFigure != null ? (
-        // Negative figure: still a rank — the design table says the line is always
-        // rendered when the figure is present. Negatives are not absences.
+        // A figure that never became a lift — zero or negative. Still a rank:
+        // the design table says the line is always rendered when the figure is
+        // present, and neither zero nor a negative is an absence. Signed by the
+        // shared formatter so a rounded 0 does not print as "−0 pts".
         <p className="font-mono text-[9.5px]" style={{ color: "var(--fg-faint)" }}>
-          {synergyCopy.figure.synergyNegative(String(Math.abs(Math.round(synergyFigure * 100))))}
+          {synergySignedDisplay(Math.round(synergyFigure * 100))}
         </p>
       ) : showNoSynergy ? (
         // Only on the synergy shelf: a card with no figure at all is named rather

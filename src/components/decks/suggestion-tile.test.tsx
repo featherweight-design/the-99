@@ -124,6 +124,15 @@ describe("SuggestionTile — lift line", () => {
     // −0.05 → Math.abs(Math.round(-5)) = 5 → "−5 pts"
     expect(screen.getByText(synergyCopy.figure.synergyNegative("5"))).toBeInTheDocument();
   });
+
+  // A figure that rounds to zero reaches the same branch as a negative one,
+  // because `lift` is positive-only. Zero is a real figure of no advantage, and
+  // the minus glyph would misstate it as a penalty.
+  it("prints a zero synergy figure without a minus sign", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: 0.004 }, { showNoSynergy: true });
+    expect(screen.getByText(synergyCopy.figure.synergy("0"))).toBeInTheDocument();
+    expect(screen.queryByText(synergyCopy.figure.synergyNegative("0"))).not.toBeInTheDocument();
+  });
 });
 
 describe("SuggestionTile availability caption", () => {
