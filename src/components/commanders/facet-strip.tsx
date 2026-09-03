@@ -51,16 +51,16 @@ export function FacetStrip({
         if (facet === "other") return null;
         const count = counts[facet];
 
-        // Zero-count facets: render as disabled pills so the empty-facet branch
-        // in SynergyPanel is reachable when the player selects them.
-        const isEmpty = count === 0;
+        // A zero-count facet keeps an ordinary selectable pill. The design table
+        // gives it no disabled treatment, and selecting one is the only route to
+        // the panel's empty-facet line.
         const isSelected = facet === selected;
         const label = FACET_LABEL[facet];
         const countStr = String(count);
 
         // Omit zero-count "All" pill — the panel is only drawn when the full
         // list is non-empty, so All can never be 0.
-        if (facet === "all" && isEmpty) return null;
+        if (facet === "all" && count === 0) return null;
 
         return (
           <button
@@ -69,9 +69,8 @@ export function FacetStrip({
             aria-checked={isSelected}
             aria-label={synergyCopy.facet.itemAria(label, countStr)}
             type="button"
-            onClick={() => !isEmpty && onSelect(facet)}
-            disabled={isEmpty}
-            className="shrink-0 md:shrink flex items-center gap-[5px] md:gap-[6px] font-mono cursor-pointer h-8 md:h-[30px] disabled:cursor-default disabled:opacity-60"
+            onClick={() => onSelect(facet)}
+            className="shrink-0 md:shrink flex items-center gap-[5px] md:gap-[6px] font-mono cursor-pointer h-8 md:h-[30px]"
             style={{
               padding: "0 11px",
               borderRadius: 999,

@@ -74,6 +74,16 @@ describe("SynergyPanel", () => {
     ).toHaveAttribute("aria-expanded", "false");
   });
 
+  // Reachable only because FacetStrip keeps a zero-count pill selectable.
+  it("says the facet is empty when its pill is selected and it holds no rows", () => {
+    wrap(<SynergyPanel {...props} cards={make(20, "land")} width="desktop" />);
+    fireEvent.click(
+      screen.getByRole("radio", { name: synergyCopy.facet.itemAria("Artifacts", "0") }),
+    );
+    expect(screen.getByText(synergyCopy.facet.empty("Artifacts"))).toBeInTheDocument();
+    expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
+  });
+
   it("keeps the headline's locked of-top figure beside the facet's own count", () => {
     wrap(<SynergyPanel {...props} cards={make(30)} width="desktop" />);
     expect(screen.getByText(/of top 258/)).toBeInTheDocument();

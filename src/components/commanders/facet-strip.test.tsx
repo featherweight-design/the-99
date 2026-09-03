@@ -25,9 +25,9 @@ describe("FacetStrip", () => {
     expect(screen.queryByRole("radio", { name: /Other/ })).not.toBeInTheDocument();
   });
 
-  // Zero-count facet pills render as disabled so the empty-facet branch in
-  // SynergyPanel is reachable. The pill must be present but not clickable.
-  it("renders a zero-count facet pill as disabled so the empty-facet state is reachable", () => {
+  // Selecting a zero-count pill is the only route to the panel's empty-facet
+  // line, so the pill stays present and clickable.
+  it("keeps a zero-count facet pill selectable so the empty-facet state is reachable", () => {
     const onSelect = vi.fn();
     render(
       <FacetStrip
@@ -37,11 +37,9 @@ describe("FacetStrip", () => {
       />,
     );
     const pill = screen.getByRole("radio", { name: synergyCopy.facet.itemAria("Artifacts", "0") });
-    expect(pill).toBeInTheDocument();
-    expect(pill).toBeDisabled();
-    // Clicking a disabled zero-count pill must not call onSelect.
+    expect(pill).toBeEnabled();
     fireEvent.click(pill);
-    expect(onSelect).not.toHaveBeenCalled();
+    expect(onSelect).toHaveBeenCalledWith("artifact");
   });
 
   it("reports the chosen facet", () => {
