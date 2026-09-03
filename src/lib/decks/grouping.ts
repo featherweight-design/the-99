@@ -119,14 +119,6 @@ const ROLE_GROUP_LABELS = Object.fromEntries(
   ROLE_GROUP_ORDER.map((r) => [r, addPanelCopy.shelf.labels[r]]),
 ) as Record<(typeof ROLE_GROUP_ORDER)[number], string>;
 
-/**
- * Returns true when a card should render a "+N more" meta row below its primary row.
- * Only basic lands with quantity > 1 qualify.
- */
-export function shouldShowMetaRow(card: Pick<DeckDetailCard, "quantity" | "typeLine">): boolean {
-  return card.quantity > 1 && isBasicLand(card.typeLine);
-}
-
 export function groupByCardType(cards: DeckDetailCard[]): [CardTypeGroup, DeckDetailCard[]][] {
   const map = new Map<CardTypeGroup, DeckDetailCard[]>();
   for (const g of CARD_TYPE_GROUP_ORDER) map.set(g, []);

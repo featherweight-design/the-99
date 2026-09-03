@@ -277,6 +277,10 @@ export const addPanelCopy = {
   // ── Decklist row — remove, at both widths (#179) ──────────────────────
   row: {
     remove: "✕",
+    // Addendum C5 / C-N4. Visual only: the name's own button already speaks the
+    // card and the ✕'s aria carries the same count in prose, so a screen reader
+    // that also read this glyph would say the number twice.
+    quantity: (n: number) => `×${n}`,
     removeAria: (name: string) => `Remove ${name}`,
     // A stack of basics decrements rather than unmounting, so the phone label
     // says which of the two is about to happen.
