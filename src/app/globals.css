@@ -258,7 +258,13 @@
    its own table, keyed on `bigShouldersDisplay` against `arial`. Running the
    same arithmetic on Cinzel reproduces the `Cinzel Fallback` face Next emits,
    digit for digit. Delete this block once Next's table learns the new family
-   name — the build warning is the signal that it has not yet. */
+   name — the build warning is the signal that it has not yet.
+
+   No font-weight descriptor, matching what Next emits for the other five. Face
+   selection picks the nearest weight within a family and never rejects the
+   family, so this face applies to bold headings too. Declaring 100 900 would
+   claim non-variable Arial covers the range and suppress synthetic bold, so
+   bold headings would swap in at regular weight. */
 @font-face {
   font-family: "Big Shoulders Fallback";
   src: local(Arial);
