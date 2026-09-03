@@ -9,12 +9,17 @@ import { fitSegments } from "../../lib/recs/format";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { FullCardTrigger } from "./full-card-trigger";
 import { CardDetailProvider } from "../cards/card-detail-provider";
-import { PrimaryButton } from "../ui/button";
 import { CoverageSection } from "./coverage-section";
 import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { FILL_BASELINE_TOTAL } from "../../lib/decks/fill";
-import { SynergySelectionProvider, SelectableSynergyPanel } from "./synergy-selection";
+import {
+  SynergySelectionProvider,
+  SelectableSynergyPanel,
+  SelectableSynergySelection,
+  SelectableBuildButton,
+  SelectableLiveAnnouncer,
+} from "./synergy-selection";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 
 // ─── Fit Hero (right column top section) ─────────────────────────────────────
@@ -449,14 +454,13 @@ export function CommanderDetail({
           <span style={{ fontSize: 12, color: "var(--fg-body)" }}>
             {recommendationsCopy.build.stickyPromise(String(FILL_BASELINE_TOTAL))}
           </span>
+          <SelectableSynergySelection cards={synergyCards} width="phone" />
         </div>
-        <PrimaryButton
-          href={`/decks?commander=${c.oracleId}`}
+        <SelectableBuildButton
+          oracleId={c.oracleId}
           // brand focus-visible outline treatment inherited from globals.css
-          className="text-[14px] p-[12px_20px] text-center whitespace-nowrap"
-        >
-          Build this deck →
-        </PrimaryButton>
+          className="font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] disabled:hover:bg-[color:var(--accent)] text-[14px] p-[12px_20px] text-center whitespace-nowrap"
+        />
       </div>
 
       {/* ── Desktop: two-column layout ──────────────────────────────── */}
@@ -544,13 +548,11 @@ export function CommanderDetail({
           )}
 
           {/* Build this deck button */}
-          <PrimaryButton
-            href={`/decks?commander=${c.oracleId}`}
+          <SelectableBuildButton
+            oracleId={c.oracleId}
             // brand focus-visible outline treatment inherited from globals.css
-            className="text-[15px] p-[14px_0] text-center block w-full"
-          >
-            Build this deck →
-          </PrimaryButton>
+            className="font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] disabled:hover:bg-[color:var(--accent)] text-[15px] p-[14px_0] text-center block w-full"
+          />
 
           {/* Seed note */}
           <p
@@ -564,6 +566,12 @@ export function CommanderDetail({
           >
             {recommendationsCopy.build.seedNote(String(FILL_BASELINE_TOTAL))}
           </p>
+
+          {/* Promise line + clear, below seed note — desktop width */}
+          <SelectableSynergySelection cards={synergyCards} width="desktop" />
+
+          {/* One live region for the whole page */}
+          <SelectableLiveAnnouncer cards={synergyCards} />
         </div>
 
         {/* Right column — scrolling */}

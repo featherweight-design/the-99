@@ -125,4 +125,25 @@ describe("CommanderDetail synergy panel", () => {
     fireEvent.click(pressed[0]);
     expect(screen.getAllByRole("button", { name: addLabel })).toHaveLength(2);
   });
+
+  it("leaves the Build href unchanged while nothing is selected", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} />,
+    );
+    for (const link of screen.getAllByRole("link", { name: /Build this deck/i })) {
+      expect(link).toHaveAttribute("href", `/decks?commander=${commander().oracleId}`);
+    }
+  });
+
+  it("carries the selected oracle ids into the Build href", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} />,
+    );
+    const rows = screen.getAllByRole("listitem");
+    fireEvent.click(within(rows[0]).getByRole("button", { name: /^Add / }));
+    fireEvent.click(within(rows[1]).getByRole("button", { name: /^Add / }));
+    const href = screen.getAllByRole("link", { name: /Build this deck/i })[0].getAttribute("href");
+    expect(href).toContain(`commander=${commander().oracleId}`);
+    expect(new URL(href!, "http://x").searchParams.get("select")?.split(",")).toHaveLength(2);
+  });
 });
