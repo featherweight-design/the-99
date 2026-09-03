@@ -37,6 +37,10 @@ export interface LastSlotsStripProps {
   /** Called when a fill settles at total === 99, so the shell can suppress the
       reveal band — a two-click fill has not earned the one-shot reveal. */
   onCompletedByFill?: () => void;
+  /** Called whenever the in-flight state changes. True = a write is running;
+      false = the write settled. The shell uses this to disable control C while
+      either fill is in flight (design table state 3 / state 8). */
+  onInflight?: (inflight: boolean) => void;
 }
 
 // ── Shortfall line (§7.6) ──────────────────────────────────────────────────
@@ -107,6 +111,7 @@ function LastSlotsStripInner({
   commanderShortName,
   onAnnounce,
   onCompletedByFill,
+  onInflight,
 }: LastSlotsStripProps) {
   // Which write is in flight. Null when idle.
   const [inflight, setInflight] = useState<"owned" | "unowned" | null>(null);
@@ -123,9 +128,11 @@ function LastSlotsStripInner({
 
   async function runOwned() {
     setInflight("owned");
+    onInflight?.(true);
     setOwnedError(null);
     const result = await fillLastSlotsOwned(deckId);
     setInflight(null);
+    onInflight?.(false);
     if (!result.ok) {
       setOwnedError(result.message);
       return;
@@ -143,12 +150,14 @@ function LastSlotsStripInner({
 
   async function runUnowned() {
     setInflight("unowned");
+    onInflight?.(true);
     setUnownedError(null);
     // Clear any shortfall line from a prior A run: B is the way forward from
     // that state, and once B fires the A-settled numbers are stale.
     setSettled(null);
     const result = await fillLastSlotsUnowned(deckId);
     setInflight(null);
+    onInflight?.(false);
     if (!result.ok) {
       setUnownedError(result.message);
       return;
@@ -167,110 +176,109 @@ function LastSlotsStripInner({
 
   return (
     <div
-      className="mx-[16px] mt-[10px] mb-[10px] md:mx-[30px] md:mt-[12px] rounded-[10px] px-[16px] py-[14px]"
+      className="mx-[16px] mt-[10px] md:mb-[16px] md:mx-[30px] md:mt-[12px] rounded-[10px]"
       style={{
-        background: "var(--surface-rail)",
+        background: "var(--surface-raised)",
         border: "1px solid var(--border-strong)",
       }}
     >
-      {/* Heading — mono 10.5px accent uppercase, letter-spacing .14em */}
-      <p
-        className="font-mono uppercase mb-[6px]"
-        style={{ fontSize: "10.5px", letterSpacing: ".14em", color: "var(--accent)" }}
-      >
-        {synergyCopy.lastSlots.heading(String(openSlots))}
-      </p>
+      <div className="px-[14px] py-[13px] md:px-[16px] md:py-[14px]">
+        {/* Heading — mono 10.5px accent uppercase, letter-spacing .14em; margin-bottom 4px */}
+        <p
+          className="font-mono uppercase mb-[4px]"
+          style={{ fontSize: "10.5px", letterSpacing: ".14em", color: "var(--accent)" }}
+        >
+          {synergyCopy.lastSlots.heading(String(openSlots))}
+        </p>
 
-      {/* Caption — responsive: desktop gets the long form, phone the short. One
-          element with responsive classes, not two hidden subtrees. */}
-      <p
-        className="font-mono mb-[12px]"
-        style={{ fontSize: "10.5px", color: "var(--fg-faint)" }}
-      >
-        <span className="hidden md:inline">{synergyCopy.lastSlots.caption(String(openSlots))}</span>
-        <span className="md:hidden">{synergyCopy.lastSlots.captionMobile(String(openSlots))}</span>
-      </p>
+        {/* Caption — responsive: desktop gets the long form, phone the short. One
+            element with responsive classes, not two hidden subtrees. margin-bottom 11px */}
+        <p
+          className="font-mono mb-[11px]"
+          style={{ fontSize: "10.5px", color: "var(--fg-faint)" }}
+        >
+          <span className="hidden md:inline">{synergyCopy.lastSlots.caption(String(openSlots))}</span>
+          <span className="md:hidden">{synergyCopy.lastSlots.captionMobile(String(openSlots))}</span>
+        </p>
 
-      {/* Control A row — owned fill plus its owned note. Both absent when there
-          are no owned candidates (Rule 1). Flex row at desktop so the note sits
-          beside the button without wrapping onto a second line. */}
-      {ownedCandidates > 0 && (
-        <div className="flex flex-col md:flex-row md:flex-wrap gap-[10px] md:items-center mb-[10px]">
-          {/* Control A — owned fill. In flight: border softens to --accent-shadow,
-              label colour to --fg-faint. State-dependent values are Tailwind
-              arbitrary classes so hover utilities cannot be silently killed by an
-              inline style override. */}
-          <div className="flex flex-col">
-            <button
-              type="button"
-              onClick={runOwned}
-              disabled={busy}
-              aria-label={synergyCopy.lastSlots.fillOwnedAria(String(ownedPlaces))}
-              className={[
-                "w-full md:w-auto min-h-[44px] md:min-h-0",
-                "rounded-[8px] px-[16px] py-[10px]",
-                "font-sans font-semibold text-[13px]",
-                "bg-transparent cursor-pointer",
-                "disabled:opacity-50 disabled:cursor-default",
-                inflight === "owned"
-                  ? "[border:1px_solid_var(--accent-shadow)] [color:var(--fg-faint)]"
-                  : "[border:1px_solid_var(--accent)] [color:var(--accent)]",
-              ].join(" ")}
+        {/* Controls — on mobile: column; on desktop: flex row so A and B sit
+            side-by-side. The shortfall line (§7.6) must appear between A and B
+            in document order; it sits inside this flex container with full width
+            so it forces B onto the next flex line even at desktop width. */}
+        <div className="flex flex-col md:flex-row md:flex-wrap gap-[8px] md:gap-[10px] md:items-center">
+          {/* Control A — owned fill. Absent when no owned candidates (Rule 1). */}
+          {ownedCandidates > 0 && (
+            <div className="flex flex-col">
+              <button
+                type="button"
+                onClick={runOwned}
+                disabled={busy}
+                aria-label={synergyCopy.lastSlots.fillOwnedAria(String(ownedPlaces))}
+                className={[
+                  "w-full md:w-auto min-h-[44px] md:min-h-0",
+                  "rounded-[8px] px-[16px] py-[10px]",
+                  "font-sans font-semibold text-[14px] md:text-[13px]",
+                  "bg-transparent cursor-pointer",
+                  "disabled:opacity-50 disabled:cursor-default",
+                  inflight === "owned"
+                    ? "[border:1px_solid_var(--accent-shadow)] [color:var(--fg-faint)]"
+                    : "[border:1px_solid_var(--accent)] [color:var(--accent)]",
+                ].join(" ")}
+              >
+                {inflight === "owned"
+                  ? recommendationsCopy.fill.fillingRows(String(ownedPlaces))
+                  : synergyCopy.lastSlots.fillOwned(String(ownedPlaces))}
+              </button>
+              {ownedError && <MutationError message={ownedError} />}
+            </div>
+          )}
+
+          {/* Owned note — explains the number beside A. Mono --fg-locked. Present
+              only when there are owned candidates. */}
+          {ownedCandidates > 0 && (
+            <p
+              className="font-mono"
+              style={{ fontSize: "10.5px", color: "var(--fg-locked)" }}
             >
-              {inflight === "owned"
-                ? recommendationsCopy.fill.fillingRows(String(ownedPlaces))
-                : synergyCopy.lastSlots.fillOwned(String(ownedPlaces))}
-            </button>
-            {ownedError && <MutationError message={ownedError} />}
-          </div>
+              {synergyCopy.lastSlots.ownedNote(String(ownedCandidates), commanderShortName)}
+            </p>
+          )}
 
-          {/* Owned note — explains the number beside A. Mono --fg-locked. Sits
-              beside the button so neither control has to carry the explanation
-              in its own label. */}
-          <p
-            className="font-mono md:ml-[4px]"
-            style={{ fontSize: "10.5px", color: "var(--fg-locked)" }}
-          >
-            {synergyCopy.lastSlots.ownedNote(String(ownedCandidates), commanderShortName)}
-          </p>
+          {/* §7.6 shortfall line — rendered when A settled below 99. Full width
+              (w-full) forces B below it even in the desktop flex-row layout, so
+              B always sits directly beneath the shortfall in document order. */}
+          {settled && (
+            <div className="w-full">
+              <ShortfallLine total={settled.total} shortfall={settled.shortfall} />
+            </div>
+          )}
+
+          {/* Control B — buying top-up. Absent at 0 unowned candidates (Rule 1).
+              Disabled while either write is in flight (Rule 2). */}
+          {unownedCandidates > 0 && (
+            <div className="flex flex-col">
+              <GhostButton
+                onClick={runUnowned}
+                disabled={busy}
+                aria-label={synergyCopy.lastSlots.topUpAria(String(openSlots))}
+                className="w-full md:w-auto min-h-[44px] md:min-h-0 rounded-[8px] px-[16px] py-[10px] text-[14px] md:text-[13px] disabled:opacity-50"
+              >
+                {inflight === "unowned"
+                  ? recommendationsCopy.fill.fillingRows(String(openSlots))
+                  : <>
+                      {synergyCopy.lastSlots.topUp}
+                      {/* Count badge: open-slot count, matching the aria-label */}
+                      {" "}
+                      <span className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>
+                        {openSlots}
+                      </span>
+                    </>}
+              </GhostButton>
+              {unownedError && <MutationError message={unownedError} />}
+            </div>
+          )}
         </div>
-      )}
-
-      {/* §7.6 shortfall line — rendered when A settled below 99. The brief
-          requires B to sit directly beneath it, so the shortfall line is placed
-          between control A and control B in the DOM. */}
-      {settled && (
-        <ShortfallLine total={settled.total} shortfall={settled.shortfall} />
-      )}
-
-      {/* Control B — buying top-up. Absent at 0 unowned candidates (Rule 1).
-          Disabled while either write is in flight (Rule 2). In flight: label
-          swaps to fillingRows, same as A, so the player knows the write is
-          running. GhostButton carries no disabled:opacity-* of its own, so the
-          class is added here — matching control A (disabled:opacity-50) and the
-          shipped ClearAutoButton precedent. */}
-      {unownedCandidates > 0 && (
-        <div className="flex flex-col mt-[10px]">
-          <GhostButton
-            onClick={runUnowned}
-            disabled={busy}
-            aria-label={synergyCopy.lastSlots.topUpAria(String(openSlots))}
-            className="w-full md:w-auto min-h-[44px] md:min-h-0 rounded-[8px] px-[16px] py-[10px] text-[13px] disabled:opacity-50"
-          >
-            {inflight === "unowned"
-              ? recommendationsCopy.fill.fillingRows(String(openSlots))
-              : <>
-                  {synergyCopy.lastSlots.topUp}
-                  {/* Count badge: open-slot count, matching the aria-label */}
-                  {" "}
-                  <span className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>
-                    {openSlots}
-                  </span>
-                </>}
-          </GhostButton>
-          {unownedError && <MutationError message={unownedError} />}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

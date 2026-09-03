@@ -107,8 +107,8 @@ export function SynergyPanel({
         }}
       >
         {isPhone ? (
-          /* Phone: single line "{ownedCount} / {edhrecTotal} owned" */
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          /* Phone: single line "{ownedCount} / {edhrecTotal} owned" — 9px bottom margin */
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 9 }}>
             <span
               className="font-mono"
               style={{ fontSize: 12, color: "var(--fg)" }}
@@ -191,36 +191,48 @@ export function SynergyPanel({
         )}
       </div>
 
-      {/* Sub-caption */}
+      {/* Sub-caption — 11.5px phone, 12px desktop; 2px top margin */}
       <p
         className="m-0 font-mono"
-        style={{ fontSize: 12, color: "var(--fg-faint)", margin: "10px 0 10px" }}
+        style={{
+          fontSize: isPhone ? 11.5 : 12,
+          color: "var(--fg-faint)",
+          marginTop: 2,
+          marginBottom: 0,
+        }}
       >
         {isPhone
           ? synergyCopy.panel.subcaptionMobile(String(cards.length))
           : synergyCopy.panel.subcaption(String(cards.length))}
       </p>
 
-      {/* Facet strip */}
-      <FacetStrip counts={counts} selected={facet} onSelect={selectFacet} />
+      {/* Facet strip — block margin: 18px top, 10px bottom (design table §FacetStrip) */}
+      <div style={{ marginTop: 18, marginBottom: 10 }}>
+        <FacetStrip counts={counts} selected={facet} onSelect={selectFacet} />
+      </div>
 
-      {/* Figure legend */}
+      {/* Figure legend — 9.5px phone, 10px desktop; margin-bottom 10px/12px */}
       <p
         className="m-0 font-mono"
-        style={{ fontSize: 10, color: "var(--fg-locked)", margin: "8px 0 8px", lineHeight: 1.4 }}
+        style={{
+          fontSize: isPhone ? 9.5 : 10,
+          color: "var(--fg-locked)",
+          marginTop: 0,
+          marginBottom: isPhone ? 10 : 12,
+          lineHeight: 1.4,
+        }}
       >
         {isPhone ? synergyCopy.panel.legendMobile : synergyCopy.panel.legend}
       </p>
 
-      {/* Column header row — desktop only */}
+      {/* Column header row — desktop only; 9.5px mono uppercase 0.14em tracking */}
       {!isPhone && (
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
-            padding: "0 6px 0 12px",
-            marginBottom: 4,
+            padding: "0 6px 6px 12px",
           }}
         >
           {/* Spacer for ownership dot */}
@@ -228,28 +240,28 @@ export function SynergyPanel({
           {/* Card name column */}
           <span
             className="font-mono"
-            style={{ flex: "auto", fontSize: 10, color: "var(--fg-locked)", textTransform: "uppercase" }}
+            style={{ flex: "auto", fontSize: 9.5, color: "var(--fg-locked)", textTransform: "uppercase", letterSpacing: "0.14em" }}
           >
             {synergyCopy.panel.colCard}
           </span>
           {/* Type column */}
           <span
             className="font-mono"
-            style={{ width: 150, flexShrink: 0, fontSize: 10, color: "var(--fg-locked)", textTransform: "uppercase" }}
+            style={{ width: 150, flexShrink: 0, fontSize: 9.5, color: "var(--fg-locked)", textTransform: "uppercase", letterSpacing: "0.14em" }}
           >
             {synergyCopy.panel.colType}
           </span>
-          {/* Synergy column */}
+          {/* Synergy column — accent per design table */}
           <span
             className="font-mono"
-            style={{ width: 64, flexShrink: 0, fontSize: 10, color: "var(--fg-locked)", textTransform: "uppercase", textAlign: "right" }}
+            style={{ width: 64, flexShrink: 0, fontSize: 9.5, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.14em", textAlign: "right" }}
           >
             {synergyCopy.panel.colSynergy}
           </span>
           {/* Decks column */}
           <span
             className="font-mono"
-            style={{ width: 46, flexShrink: 0, fontSize: 10, color: "var(--fg-locked)", textTransform: "uppercase", textAlign: "right" }}
+            style={{ width: 46, flexShrink: 0, fontSize: 9.5, color: "var(--fg-locked)", textTransform: "uppercase", letterSpacing: "0.14em", textAlign: "right" }}
           >
             {synergyCopy.panel.colDecks}
           </span>
@@ -284,7 +296,7 @@ export function SynergyPanel({
             padding: 0,
             display: "flex",
             flexDirection: "column",
-            gap: 4,
+            gap: 6,
             ...(scrollable ? { maxHeight: "480px", overflowY: "auto" } : {}),
           }}
         >
@@ -309,7 +321,7 @@ export function SynergyPanel({
           aria-expanded={expanded}
           aria-controls={listId}
           onClick={() => setExpanded((prev) => !prev)}
-          className="font-mono cursor-pointer w-full flex items-center justify-center gap-[6px] bg-transparent border-0 text-[color:var(--accent)] [border-top:1px_dashed_var(--border-strong)]"
+          className="font-mono cursor-pointer w-full flex items-center justify-center gap-[8px] bg-transparent text-[color:var(--accent)] [border:1px_dashed_var(--border-strong)] rounded-[8px]"
           style={{
             height: 44,
             fontSize: 12,

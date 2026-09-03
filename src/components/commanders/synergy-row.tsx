@@ -109,7 +109,8 @@ export function SynergyRow({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        // Phone: 9px gap; desktop: 10px gap (design table)
+        gap: isPhone ? 9 : 10,
         padding: "0 6px 0 12px",
         minHeight: isPhone ? 52 : 44,
         borderRadius: 8,
@@ -123,8 +124,14 @@ export function SynergyRow({
       {/* Slot 1: ownership dot */}
       <OwnershipDot owned={card.owned} />
 
-      {/* Slot 2: name + phone meta line */}
-      <div style={{ flex: "auto", minWidth: 0 }}>
+      {/* Slot 2: name + phone meta line — flex column gap 2px on phone */}
+      <div
+        style={{
+          flex: "auto",
+          minWidth: 0,
+          ...(isPhone ? { display: "flex", flexDirection: "column", gap: 2 } : {}),
+        }}
+      >
         <CardDetailTrigger
           oracleId={card.oracleId}
           name={card.name}
@@ -152,7 +159,7 @@ export function SynergyRow({
               gap: 6,
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 10,
-              marginTop: 1,
+              fontVariantNumeric: "tabular-nums",
             }}
           >
             {card.synergyPts !== null ? (
@@ -171,7 +178,13 @@ export function SynergyRow({
               </span>
             )}
             <span aria-hidden="true" style={{ color: "var(--fg-locked)" }}>·</span>
-            <span aria-hidden="true" style={{ color: "var(--fg-faint)" }}>{inclusionMobileDisplay}</span>
+            {/* Inclusion: --fg-faint when present, --fg-locked when absent (em dash) */}
+            <span
+              aria-hidden="true"
+              style={{ color: card.inclusionPct !== null ? "var(--fg-faint)" : "var(--fg-locked)" }}
+            >
+              {inclusionMobileDisplay}
+            </span>
           </div>
         )}
       </div>
@@ -217,7 +230,7 @@ export function SynergyRow({
         </span>
       )}
 
-      {/* Slot 5: inclusion figure — desktop only */}
+      {/* Slot 5: inclusion figure — desktop only; absent em dash uses --fg-locked */}
       {!isPhone && (
         <span
           style={{
@@ -227,7 +240,7 @@ export function SynergyRow({
             flexShrink: 0,
             textAlign: "right",
             fontVariantNumeric: "tabular-nums",
-            color: "var(--fg-faint)",
+            color: card.inclusionPct !== null ? "var(--fg-faint)" : "var(--fg-locked)",
           }}
           aria-hidden="true"
         >
@@ -249,7 +262,8 @@ export function SynergyRow({
           width: toggleSize,
           height: toggleSize,
           borderRadius: 7,
-          fontSize: 14,
+          // phone: rest 17px / selected 15px; desktop: rest 15px / selected 13px
+          fontSize: isPhone ? (selected ? 15 : 17) : (selected ? 13 : 15),
           // eslint-disable-next-line no-restricted-syntax -- border changes with selected state; genuinely dynamic
           border: selected ? "1px solid var(--accent)" : "1px solid var(--border-strong)",
           // eslint-disable-next-line no-restricted-syntax -- background changes with selected state; genuinely dynamic

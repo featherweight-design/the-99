@@ -13,7 +13,7 @@
 // state through `useSynergySelection` as siblings of the panel, which is why the
 // state is context and not a prop threaded down one branch.
 
-import {
+import React, {
   createContext,
   useCallback,
   useContext,
@@ -93,30 +93,50 @@ export function SynergySelection({ selectedCards, onClear, width }: SynergySelec
   const unownedCount = selectedCards.filter((c) => !c.owned).length;
   const full = FILL_BASELINE_TOTAL + picked >= 99;
 
-  const promise = full
-    ? synergyCopy.select.promiseFull(String(picked))
-    : width === "phone"
-      ? synergyCopy.select.promiseMobile(
-          String(FILL_BASELINE_TOTAL),
-          String(picked),
-          String(total),
-        )
-      : synergyCopy.select.promise(String(FILL_BASELINE_TOTAL), String(picked), String(total));
-
+  const totalStr = String(total);
   const promiseFontSize = width === "phone" ? 12 : 10.5;
 
+  // Build a React node for the promise line that highlights {total} in --fg.
+  // The promiseFull and clamp cases do not contain the total figure, so they
+  // render as plain strings. The non-full cases embed the total literal in the
+  // string — split on it and inject a highlighted span.
+  let promiseNode: React.ReactNode;
+  if (full) {
+    promiseNode = synergyCopy.select.promiseFull(String(picked));
+  } else {
+    const raw =
+      width === "phone"
+        ? synergyCopy.select.promiseMobile(String(FILL_BASELINE_TOTAL), String(picked), totalStr)
+        : synergyCopy.select.promise(String(FILL_BASELINE_TOTAL), String(picked), totalStr);
+    const idx = raw.indexOf(totalStr);
+    if (idx === -1) {
+      promiseNode = raw;
+    } else {
+      promiseNode = (
+        <>
+          {raw.slice(0, idx)}
+          <span style={{ color: "var(--fg)" }}>{totalStr}</span>
+          {raw.slice(idx + totalStr.length)}
+        </>
+      );
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-[4px]">
+    <div
+      className="flex flex-col"
+      style={{ marginTop: width === "phone" ? 0 : 12 }}
+    >
       <span
-        className="font-mono text-[color:var(--fg-body)]"
-        style={{ fontSize: promiseFontSize }}
+        className="font-mono text-center text-[color:var(--fg-body)]"
+        style={{ fontSize: promiseFontSize, lineHeight: 1.5 }}
       >
-        {promise}
+        {promiseNode}
       </span>
       {unownedCount > 0 && (
         <span
-          className="font-mono text-[var(--warning)]"
-          style={{ fontSize: promiseFontSize }}
+          className="font-mono text-center text-[var(--warning)]"
+          style={{ fontSize: promiseFontSize, lineHeight: 1.5 }}
         >
           {synergyCopy.select.promiseUnowned(String(unownedCount))}
         </span>
@@ -125,7 +145,8 @@ export function SynergySelection({ selectedCards, onClear, width }: SynergySelec
         type="button"
         aria-label={synergyCopy.select.clearAria(String(picked))}
         onClick={onClear}
-        className="font-mono text-left bg-transparent border-0 p-0 cursor-pointer text-[color:var(--accent)] text-[11px]"
+        className="font-mono text-center bg-transparent border-0 p-0 cursor-pointer text-[color:var(--accent)] text-[11px]"
+        style={{ marginTop: 8 }}
       >
         {synergyCopy.select.clear(String(picked))}
       </button>

@@ -42,18 +42,25 @@ export function FacetStrip({
       role="radiogroup"
       aria-label={synergyCopy.facet.groupAria}
       // Horizontal scroll at phone width; wraps naturally on desktop where space allows.
-      className="flex gap-[6px] overflow-x-auto"
+      // gap-[6px] at both widths per design table (desktop also uses 6px).
+      className="flex flex-wrap gap-[6px] overflow-x-auto md:overflow-visible"
       style={{ scrollbarWidth: "none" }}
     >
       {FACET_ORDER.map((facet) => {
-        // Other never gets a pill; zero-count facets are omitted.
+        // Other never gets a pill.
         if (facet === "other") return null;
         const count = counts[facet];
-        if (count === 0) return null;
 
+        // Zero-count facets: render as disabled pills so the empty-facet branch
+        // in SynergyPanel is reachable when the player selects them.
+        const isEmpty = count === 0;
         const isSelected = facet === selected;
         const label = FACET_LABEL[facet];
         const countStr = String(count);
+
+        // Omit zero-count "All" pill — the panel is only drawn when the full
+        // list is non-empty, so All can never be 0.
+        if (facet === "all" && isEmpty) return null;
 
         return (
           <button
@@ -62,14 +69,15 @@ export function FacetStrip({
             aria-checked={isSelected}
             aria-label={synergyCopy.facet.itemAria(label, countStr)}
             type="button"
-            onClick={() => onSelect(facet)}
-            className="shrink-0 flex items-center gap-[5px] font-mono cursor-pointer h-8 md:h-[30px]"
+            onClick={() => !isEmpty && onSelect(facet)}
+            disabled={isEmpty}
+            className="shrink-0 md:shrink flex items-center gap-[5px] md:gap-[6px] font-mono cursor-pointer h-8 md:h-[30px] disabled:cursor-default disabled:opacity-60"
             style={{
               padding: "0 11px",
               borderRadius: 999,
               fontSize: 11.5,
-              // eslint-disable-next-line no-restricted-syntax -- background is constant (--surface-raised); no interactive state
-              background: "var(--surface-raised)",
+              // eslint-disable-next-line no-restricted-syntax -- background is constant (transparent for All-unselected, --surface-raised otherwise); genuinely conditional
+              background: !isSelected && facet === "all" ? "transparent" : "var(--surface-raised)",
               // eslint-disable-next-line no-restricted-syntax -- border changes with isSelected and facet=all; genuinely dynamic
               border: isSelected
                 ? "1px solid var(--accent)"
@@ -88,7 +96,9 @@ export function FacetStrip({
                 label
               )}
             </span>
+            {/* Count: 10px phone, 10.5px desktop */}
             <span
+              className="text-[10px] md:text-[10.5px]"
               style={{
                 color: isSelected ? "var(--accent)" : "var(--fg-locked)",
               }}
