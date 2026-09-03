@@ -7,6 +7,9 @@ export type FillRole = "ramp" | "draw" | "removal" | "wipes" | "land";
 export type FillCandidate = {
   oracleId: string; name: string; typeLine: string;
   oracleText: string | null; keywords: string[];
+  /** Scryfall cost string, e.g. `{2}{G}{G}`. Read only for its coloured pips,
+      which are what the basic-land split is proportioned against. */
+  manaCost: string | null;
   owned: boolean;
   /** Total copies owned, summed across printings. 0 for an unowned card. */
   ownedQuantity: number;
@@ -34,6 +37,60 @@ const NON_LAND_ROLES = ["ramp", "draw", "removal", "wipes"] as const;
     with it. */
 export const FILL_BASELINE_TOTAL =
   NON_LAND_ROLES.reduce((n, r) => n + ROLE_TARGETS[r], 0) + LAND_TARGET;
+
+/** How many of the 37 land slots non-basics may take before basics get the
+    rest. A deck of nothing but basics is hamstrung, but so is one with no
+    basics at all: fetches, filters and utility lands produce no mana of their
+    own, and a large collection can offer far more of them than a mana base
+    should run. The remaining slots are still reachable by non-basics — the
+    second sweep below takes them when the collection has too few basics to
+    fill the base. */
+const NONBASIC_LAND_CAP = 12;
+
+const BASIC_LAND_COLORS: Record<string, string> = {
+  plains: "W", island: "U", swamp: "B", mountain: "R", forest: "G", wastes: "C",
+};
+
+/** The colour a basic taps for, or null if the name is not one of the six.
+    Keyed off the name rather than the oracle text because a Snow-Covered
+    printing, a full-art printing and the ordinary one all share a name stem
+    and must land in the same colour bucket. */
+function basicLandColor(name: string): string | null {
+  const stem = name.toLowerCase().replace(/^snow-covered\s+/, "").trim();
+  return BASIC_LAND_COLORS[stem] ?? null;
+}
+
+const COLORED_PIPS = ["W", "U", "B", "R", "G"] as const;
+
+/** Coloured pips in a cost string, one per symbol per colour. A hybrid symbol
+    counts for both its halves, which is the right weight for a mana base: the
+    card can be cast off either colour, so either colour is worth having. */
+function addPips(into: Map<string, number>, manaCost: string | null): void {
+  if (!manaCost) return;
+  for (const symbol of manaCost.match(/\{[^}]*\}/g) ?? []) {
+    for (const color of COLORED_PIPS) {
+      if (symbol.includes(color)) into.set(color, (into.get(color) ?? 0) + 1);
+    }
+  }
+}
+
+/** Splits `slots` across `colors` in proportion to `weights`, by largest
+    remainder so the parts sum to exactly `slots`. Colours the deck casts
+    nothing off get no basics; a deck with no coloured pips at all splits
+    evenly, which is the only sensible reading of a colourless cost sheet. */
+function splitByWeight(colors: string[], weights: Map<string, number>, slots: number): Map<string, number> {
+  const total = colors.reduce((n, c) => n + (weights.get(c) ?? 0), 0);
+  const share = (c: string) => (total > 0 ? ((weights.get(c) ?? 0) / total) * slots : slots / colors.length);
+  const out = new Map(colors.map((c) => [c, Math.floor(share(c))]));
+  let remaining = slots - [...out.values()].reduce((n, v) => n + v, 0);
+  const byRemainder = [...colors].sort((a, b) => (share(b) % 1) - (share(a) % 1) || a.localeCompare(b));
+  for (const color of byRemainder) {
+    if (remaining <= 0) break;
+    out.set(color, out.get(color)! + 1);
+    remaining--;
+  }
+  return out;
+}
 
 /** Owned first, then inclusion descending, absent last, then name. Owned wins
     outright: a bought card is only ever here because the collection ran out,
@@ -81,20 +138,81 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
     rows.push({ oracleId: candidate.oracleId, quantity: 1, role });
   }
 
-  // Lands come from the collection alone (never bought), and a basic stacks to
-  // the copies actually owned rather than to the shortfall — a deck must not
-  // claim eleven Forests off four.
-  for (const candidate of ordered) {
-    if (counts.land >= LAND_TARGET) break;
-    if (spent.has(candidate.oracleId) || !candidate.owned) continue;
-    if (!classifyRoles(candidate).includes("land")) continue;
-    const room = LAND_TARGET - counts.land;
-    const quantity = isBasicLand(candidate.typeLine)
-      ? Math.min(Math.max(candidate.ownedQuantity, 1), room)
-      : 1;
+  // Lands come from the collection alone — never bought, at any point below.
+  const lands = ordered.filter(
+    (c) => c.owned && !spent.has(c.oracleId) && classifyRoles(c).includes("land"),
+  );
+  const takeLand = (candidate: FillCandidate, quantity: number): void => {
     spent.add(candidate.oracleId);
     counts.land += quantity;
     rows.push({ oracleId: candidate.oracleId, quantity, role: "land" });
+  };
+
+  // Utility lands first, one copy each and capped, so the mana base is not
+  // 37 copies of one basic — the shape this fill used to produce whenever a
+  // player owned a playset of anything.
+  for (const candidate of lands) {
+    if (counts.land >= Math.min(NONBASIC_LAND_CAP, LAND_TARGET)) break;
+    if (isBasicLand(candidate.typeLine)) continue;
+    takeLand(candidate, 1);
+  }
+
+  // Basics take the rest, split across the colours the chosen spells actually
+  // cost. A basic still stacks only to the copies owned — a deck must not
+  // claim eleven Forests off four — so a colour whose basics run out hands its
+  // slots back to the colours that can still fill them.
+  const pips = new Map<string, number>();
+  for (const row of rows) {
+    if (row.role === "land") continue;
+    addPips(pips, candidates.find((c) => c.oracleId === row.oracleId)?.manaCost ?? null);
+  }
+  const basicsByColor = new Map<string, FillCandidate[]>();
+  for (const candidate of lands) {
+    if (spent.has(candidate.oracleId) || !isBasicLand(candidate.typeLine)) continue;
+    const color = basicLandColor(candidate.name);
+    if (!color || candidate.ownedQuantity < 1) continue;
+    basicsByColor.set(color, [...(basicsByColor.get(color) ?? []), candidate]);
+  }
+  const colors = [...basicsByColor.keys()].sort();
+  if (colors.length > 0 && counts.land < LAND_TARGET) {
+    const capacity = new Map(
+      colors.map((c) => [c, basicsByColor.get(c)!.reduce((n, b) => n + b.ownedQuantity, 0)]),
+    );
+    const allocated = splitByWeight(colors, pips, LAND_TARGET - counts.land);
+    // A colour capped below its share leaves slots on the table; they go to
+    // whichever colours still have copies, heaviest first.
+    let spare = 0;
+    for (const color of colors) {
+      const capped = Math.min(allocated.get(color)!, capacity.get(color)!);
+      spare += allocated.get(color)! - capped;
+      allocated.set(color, capped);
+    }
+    const byWeight = [...colors].sort(
+      (a, b) => (pips.get(b) ?? 0) - (pips.get(a) ?? 0) || a.localeCompare(b),
+    );
+    while (spare > 0) {
+      const color = byWeight.find((c) => allocated.get(c)! < capacity.get(c)!);
+      if (!color) break;
+      allocated.set(color, allocated.get(color)! + 1);
+      spare--;
+    }
+    for (const color of colors) {
+      let room = allocated.get(color)!;
+      for (const candidate of basicsByColor.get(color)!) {
+        if (room <= 0) break;
+        const quantity = Math.min(candidate.ownedQuantity, room);
+        room -= quantity;
+        takeLand(candidate, quantity);
+      }
+    }
+  }
+
+  // The collection had too few basics to finish the base, so the cap lifts and
+  // the remaining utility lands take what is left.
+  for (const candidate of lands) {
+    if (counts.land >= LAND_TARGET) break;
+    if (spent.has(candidate.oracleId)) continue;
+    takeLand(candidate, 1);
   }
 
   const boughtIds = new Set(candidates.filter((c) => !c.owned).map((c) => c.oracleId));

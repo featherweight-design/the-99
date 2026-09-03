@@ -126,13 +126,13 @@ export async function buildFillPlan(
   return planFill([
     ...pool.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
-      oracleText: c.oracleText, keywords: c.keywords,
+      oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
       owned: true, ownedQuantity: c.ownedQuantity,
       inclusionPct: inclusionOf(c.name),
     })),
     ...staples.map((c) => ({
       oracleId: c.oracleId, name: c.name, typeLine: c.typeLine,
-      oracleText: c.oracleText, keywords: c.keywords,
+      oracleText: c.oracleText, keywords: c.keywords, manaCost: c.manaCost,
       owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),

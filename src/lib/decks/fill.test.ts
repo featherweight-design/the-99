@@ -3,14 +3,17 @@ import { planFill, type FillCandidate } from "./fill";
 
 const c = (over: Partial<FillCandidate> & { oracleId: string }): FillCandidate => ({
   name: over.oracleId, typeLine: "Artifact", oracleText: "{T}: Add {C}.",
-  keywords: [], owned: true, ownedQuantity: 1, inclusionPct: null, ...over,
+  keywords: [], manaCost: null, owned: true, ownedQuantity: 1, inclusionPct: null, ...over,
 });
 
 const ramp = (id: string, pct: number | null, owned = true) =>
   c({ oracleId: id, name: id, inclusionPct: pct, owned, ownedQuantity: owned ? 1 : 0 });
 
-const basic = (id: string, qty: number) =>
-  c({ oracleId: id, name: id, typeLine: "Basic Land — Forest", oracleText: "{T}: Add {G}.", ownedQuantity: qty });
+const basic = (id: string, qty: number, name = "Forest") =>
+  c({
+    oracleId: id, name, typeLine: `Basic Land — ${name}`,
+    oracleText: "{T}: Add {G}.", ownedQuantity: qty,
+  });
 
 const nonBasicLand = (id: string) =>
   c({ oracleId: id, name: id, typeLine: "Land", oracleText: "{T}: Add {G}." });
@@ -94,6 +97,59 @@ describe("planFill", () => {
       }),
     ]);
     expect(plan.rows).toEqual([{ oracleId: "mikokoro", quantity: 1, role: "land" }]);
+  });
+
+  it("gives utility lands the first land slots rather than one stacked basic", () => {
+    const utility = Array.from({ length: 20 }, (_, i) => nonBasicLand(`u${i}`));
+    const plan = planFill([...utility, basic("forest", 60)]);
+    const lands = plan.rows.filter((r) => r.role === "land");
+    expect(lands.filter((r) => r.oracleId.startsWith("u"))).toHaveLength(12);
+    expect(lands.find((r) => r.oracleId === "forest")!.quantity).toBe(25);
+    expect(lands.reduce((n, r) => n + r.quantity, 0)).toBe(37);
+  });
+
+  it("splits basics across colours in proportion to the pips the spells cost", () => {
+    const plan = planFill([
+      ...Array.from({ length: 3 }, (_, i) => c({ oracleId: `g${i}`, manaCost: "{G}{G}" })),
+      c({ oracleId: "b0", manaCost: "{B}" }),
+      basic("forest", 40, "Forest"),
+      basic("swamp", 40, "Swamp"),
+    ]);
+    const quantityOf = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
+    expect(quantityOf("forest")).toBe(32);
+    expect(quantityOf("swamp")).toBe(5);
+  });
+
+  it("hands a colour's unreachable slots to a colour that can still fill them", () => {
+    const plan = planFill([
+      ...Array.from({ length: 3 }, (_, i) => c({ oracleId: `g${i}`, manaCost: "{G}{G}" })),
+      c({ oracleId: "b0", manaCost: "{B}" }),
+      basic("forest", 3, "Forest"),
+      basic("swamp", 60, "Swamp"),
+    ]);
+    const quantityOf = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
+    expect(quantityOf("forest")).toBe(3);
+    expect(quantityOf("swamp")).toBe(34);
+  });
+
+  it("reaches past the utility-land cap when the basics run short", () => {
+    const utility = Array.from({ length: 40 }, (_, i) => nonBasicLand(`u${i}`));
+    const plan = planFill([...utility, basic("forest", 5)]);
+    const lands = plan.rows.filter((r) => r.role === "land");
+    expect(lands.find((r) => r.oracleId === "forest")!.quantity).toBe(5);
+    expect(lands.reduce((n, r) => n + r.quantity, 0)).toBe(37);
+    expect(plan.shortfalls).not.toContain("land");
+  });
+
+  it("counts a hybrid pip for both of its colours", () => {
+    const plan = planFill([
+      c({ oracleId: "hybrid", manaCost: "{G/B}" }),
+      basic("forest", 40, "Forest"),
+      basic("swamp", 40, "Swamp"),
+    ]);
+    const quantityOf = (id: string) => plan.rows.find((r) => r.oracleId === id)!.quantity;
+    expect(quantityOf("forest")).toBe(18);
+    expect(quantityOf("swamp")).toBe(19);
   });
 
   it("names every role it came up short on, in role order", () => {
