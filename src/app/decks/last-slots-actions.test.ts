@@ -21,6 +21,10 @@ const stub = vi.hoisted(() => {
     collectionItems: [] as Record<string, unknown>[],
     // collection_items rows — queried by fillLastSlotsUnowned for the bought count
     ownedItems: [] as { oracleId: string; userId: string; quantity: number }[],
+    // How many times collection_items was read. The stub answers an unfiltered
+    // `in ()` happily where Postgres would not, so the guard against it is only
+    // observable as a read that never happens.
+    collectionReads: 0,
     // Insert calls tracked as { table, values }
     insertCalls: [] as { table: string; values: unknown }[],
     // Rows representing cards currently in the deck (in-transaction read)
@@ -37,6 +41,7 @@ const stub = vi.hoisted(() => {
     state.cards.length = 0;
     state.collectionItems.length = 0;
     state.ownedItems.length = 0;
+    state.collectionReads = 0;
     state.insertCalls.length = 0;
     state.deckCards.length = 0;
     state.transactionError = null;
@@ -76,7 +81,10 @@ const stub = vi.hoisted(() => {
             if (tableName === "deck_cards" && isTx) return state.deckCards;
             if (tableName === "deck_cards") throw new Error("stub: deck_cards select outside tx — not exercised");
             if (tableName === "cards") return state.cards;
-            if (tableName === "collection_items") return state.ownedItems;
+            if (tableName === "collection_items") {
+              state.collectionReads += 1;
+              return state.ownedItems;
+            }
             // decks table — used by requireDeck
             return state.collectionItems;
           },
@@ -404,6 +412,19 @@ describe("fillLastSlotsUnowned", () => {
     const { fillLastSlotsUnowned } = await import("./actions");
     const out = await fillLastSlotsUnowned("deck-1");
     expect(out).toMatchObject({ ok: true, added: 1, bought: 2 });
+  });
+
+  // An empty deck whose fill places nothing leaves no ids to ask about, and
+  // Postgres refuses `in ()`. The stub is more forgiving than the database, so
+  // the guard is asserted as a read that does not happen rather than as an
+  // error that is not thrown.
+  it("asks the collection nothing when the fill leaves the deck empty", async () => {
+    stub.state.deckCards = [];
+    ranked.value = [];
+    const { fillLastSlotsUnowned } = await import("./actions");
+    const out = await fillLastSlotsUnowned("deck-1");
+    expect(out).toMatchObject({ ok: true, added: 0, total: 0, bought: 0 });
+    expect(stub.state.collectionReads).toBe(0);
   });
 
   it("counts an unowned stacked row by its copies, not as one card", async () => {

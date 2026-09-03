@@ -762,15 +762,22 @@ export async function fillLastSlotsUnowned(deckId: string): Promise<LastSlotsTop
     // in collection_items, not the ranked list, so a deck card EDHREC never ranked
     // still counts. This read is outside the transaction: collection_items is not
     // touched by the deck write and needs no row lock.
-    const owned = new Set(
-      (await db.select({ oracleId: collectionItems.oracleId })
-        .from(collectionItems)
-        .where(and(
-          eq(collectionItems.userId, r.userId),
-          inArray(collectionItems.oracleId, [...r.finalCounts.keys()]),
-        )))
-        .map((c) => c.oracleId),
-    );
+    const finalIds = [...r.finalCounts.keys()];
+    // Gated on a non-empty list like every other inArray in this file: a deck
+    // holding nothing, whose fill placed nothing, would otherwise ask for
+    // `in ()`. It has no answer to give either — nothing in the deck is nothing
+    // bought.
+    const owned = finalIds.length === 0
+      ? new Set<string>()
+      : new Set(
+          (await db.select({ oracleId: collectionItems.oracleId })
+            .from(collectionItems)
+            .where(and(
+              eq(collectionItems.userId, r.userId),
+              inArray(collectionItems.oracleId, finalIds),
+            )))
+            .map((c) => c.oracleId),
+        );
     const bought = [...r.finalCounts].reduce(
       (n, [oracleId, quantity]) => (owned.has(oracleId) ? n : n + quantity),
       0,
