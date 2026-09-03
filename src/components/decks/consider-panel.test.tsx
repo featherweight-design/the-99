@@ -348,9 +348,8 @@ describe("ConsiderPanel — unowned staples", () => {
       .toContain("bg-accent");
   });
 
-  // Design table §8-6 asked whether the lift line keys off ownership or off
-  // thinner data for unowned cards. Ruling (task 12): ungate from ownership so
-  // the synergy shelf's second tile shows why it ranked second.
+  // Design table §8-6 ungates the lift line from ownership so a synergy-ranked
+  // tile can show why it ranked where it did, even if the card is unowned.
   it("shows the lift line on an unowned tile", () => {
     mount({
       suggestions: [suggestion({ name: "Mana Drain", owned: false, lift: 0.31 })],
@@ -444,34 +443,17 @@ describe("ConsiderPanel — panel states", () => {
   });
 });
 
-// Convenience wrappers for synergy-shelf tests.
-const ownedSuggestion = (name: string, over: Partial<DeckSuggestion> = {}): DeckSuggestion =>
-  suggestion({ name, owned: true, ...over });
-const unownedSuggestion = (name: string, over: Partial<DeckSuggestion> = {}): DeckSuggestion =>
-  suggestion({ name, owned: false, ...over });
-
-const base = {
-  deckId: "deck-1",
-  deckCards: [] as DeckDetailCard[],
-  deckOracleIds: [] as string[],
-  commanderShortName: "Atraxa",
-  commanderOracleId: "cmd-atraxa",
-  degraded: false,
-  sort: "gaps" as SortKey,
-  onSortChange: () => {},
-};
-
 describe("ConsiderPanel — synergy shelf", () => {
   it("puts the synergy shelf above the unowned append and below the role shelves", () => {
-    render(
-      <CardDetailProvider fetchCard={async () => null}>
-        <ConsiderPanel {...base} suggestions={[
-          ownedSuggestion("Rampant Growth", { role: "ramp" }),
-          ownedSuggestion("Beast Within", { synergyFigure: 0.4 }),
-          unownedSuggestion("Mana Crypt"),
-        ]} />
-      </CardDetailProvider>,
-    );
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Rampant Growth", owned: true, role: "ramp" }),
+        suggestion({ name: "Beast Within", owned: true, synergyFigure: 0.4 }),
+        suggestion({ name: "Mana Crypt", owned: false }),
+      ],
+    });
     const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
     expect(headings.indexOf(synergyCopy.shelf.label("Atraxa")))
       .toBeGreaterThan(headings.findIndex((h) => h?.startsWith("Ramp")));
@@ -480,26 +462,47 @@ describe("ConsiderPanel — synergy shelf", () => {
   });
 
   it("rests the synergy shelf in synergy order, negatives included", () => {
-    render(
-      <CardDetailProvider fetchCard={async () => null}>
-        <ConsiderPanel {...base} suggestions={[
-          ownedSuggestion("Low", { synergyFigure: -0.1 }),
-          ownedSuggestion("High", { synergyFigure: 0.9 }),
-          ownedSuggestion("Mid", { synergyFigure: 0.2 }),
-        ]} />
-      </CardDetailProvider>,
-    );
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Low Synergy Card", owned: true, synergyFigure: -0.1 }),
+        suggestion({ name: "High Synergy Card", owned: true, synergyFigure: 0.9 }),
+        suggestion({ name: "Middle Synergy Card", owned: true, synergyFigure: 0.2 }),
+      ],
+    });
     const shelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
-    // The tile renders two CardDetailTrigger buttons per card — one for the art,
-    // one for the name. The name button's text content is the card name; the art
-    // button's text content is the hover hint ("details ↗…"). Pick the shorter one.
+    // Each tile has two CardDetailTrigger buttons: one for the art (aria-label
+    // "View details for <name>") and one for the name (text content is the card
+    // name). Use the aria-label on the first button to identify the card.
     expect(within(shelf).getAllByRole("listitem").map((li) => {
-      const btns = within(li).getAllByRole("button");
-      const nameBtn = btns.reduce((a, b) =>
-        (a.textContent?.length ?? 0) <= (b.textContent?.length ?? 0) ? a : b,
-      );
-      return nameBtn.textContent?.trim();
-    })).toEqual(["High", "Mid", "Low"]);
+      const artBtn = within(li).getAllByRole("button")[0];
+      const ariaLabel = artBtn.getAttribute("aria-label") ?? "";
+      // aria-label is "View details for <Card Name>"
+      return ariaLabel.replace(/^View details for /, "");
+    })).toEqual(["High Synergy Card", "Middle Synergy Card", "Low Synergy Card"]);
+  });
+
+  // showNoSynergy is wired to isSynergyShelf. A card with a negative synergyFigure
+  // (lift is null) lands on the synergy shelf but must not show the absent-figure
+  // label — it has a figure; the label means "no data at all". A role-shelf card
+  // with no figure must also stay silent — showNoSynergy is false there.
+  it("suppresses the absent-figure label on the synergy shelf when the card has a figure", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        // Negative synergyFigure: on the synergy shelf, lift is null, but the
+        // card has a figure — the absent-state label must not appear.
+        suggestion({ name: "Negative Card", owned: true, synergyFigure: -0.1, lift: null }),
+        // Role shelf: synergyFigure null, lift null, showNoSynergy false — silent.
+        suggestion({ name: "Ramp Card", owned: true, role: "ramp", synergyFigure: null, lift: null }),
+      ],
+    });
+    const synergyShelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    const rampShelf = screen.getByRole("region", { name: "Ramp" });
+    expect(within(synergyShelf).queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
+    expect(within(rampShelf).queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
   });
 });
 

@@ -101,12 +101,19 @@ describe("SuggestionTile — lift line", () => {
   });
 
   it("says so on the synergy shelf when there is no figure at all", () => {
-    mountTile({ inclusionPct: 40, lift: null }, { showNoSynergy: true });
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: null }, { showNoSynergy: true });
     expect(screen.getByText(synergyCopy.shelf.noSynergy)).toBeInTheDocument();
   });
 
   it("stays silent about an absent figure everywhere else", () => {
-    mountTile({ inclusionPct: 40, lift: null });
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: null });
+    expect(screen.queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
+  });
+
+  // A negative synergyFigure is a rank, not an absence — the design table calls
+  // the absent-state label for cards with no figure at all, not for low figures.
+  it("does not say no-synergy on the synergy shelf when the card has a negative figure", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: -0.1 }, { showNoSynergy: true });
     expect(screen.queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
   });
 });

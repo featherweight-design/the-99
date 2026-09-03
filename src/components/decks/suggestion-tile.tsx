@@ -84,7 +84,7 @@ function Evidence({
   // explicit absent-state label rather than staying silent as everywhere else.
   showNoSynergy?: boolean;
 }) {
-  const { inclusionPct, lift } = suggestion;
+  const { inclusionPct, lift, synergyFigure } = suggestion;
   const pct = inclusionPct != null ? String(Math.round(inclusionPct)) : null;
 
   // The no-inclusion sentence is rendered in place of the bar row (not instead
@@ -108,7 +108,7 @@ function Evidence({
         <span
           className="block h-full rounded-full"
           style={{
-            width: `${Math.min(100, Math.max(0, inclusionPct!))}%`,
+            width: `${Math.min(100, Math.max(0, inclusionPct ?? 0))}%`,
             background: inDeck ? "var(--accent-shadow)" : "var(--accent)",
           }}
         />
@@ -139,9 +139,10 @@ function Evidence({
           {/* EDHREC hands synergy back as a fraction; the tile states it in points. */}
           {addPanelCopy.tile.lift(String(Math.round(lift * 100)))}
         </p>
-      ) : showNoSynergy ? (
-        // Only on the synergy shelf: an absent figure is named rather than silent,
-        // so the player knows the card simply has no data, not that it ranks last.
+      ) : synergyFigure == null && showNoSynergy ? (
+        // Only on the synergy shelf: a card with no figure at all is named rather
+        // than silent, so the player knows the card simply has no data. A negative
+        // synergyFigure is still a rank, not an absence — it gets no label here.
         <p className="font-mono text-[9.5px]" style={{ color: "var(--fg-faint)" }}>
           {synergyCopy.shelf.noSynergy}
         </p>

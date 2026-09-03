@@ -233,7 +233,7 @@ describe("LastSlotsStrip", () => {
 
   it("calls onCompletedByFill when B returns total 99", async () => {
     const onCompletedByFill = vi.fn();
-    actions.fillUnowned.mockResolvedValue({ ok: true, added: 19, total: 99, bought: 19 });
+    actions.fillUnowned.mockResolvedValueOnce({ ok: true, added: 19, total: 99, bought: 19 });
     render(<LastSlotsStrip {...base} onCompletedByFill={onCompletedByFill} />);
     await act(async () => {
       screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();

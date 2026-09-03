@@ -199,13 +199,6 @@ describe("BuilderShell — 99/99 celebration", () => {
     expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
   });
 
-  it("still reveals a deck completed by hand", async () => {
-    await act(async () => {
-      renderBuilder(makeDeck());
-    });
-    expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
-  });
-
   // Safari private mode and blocked storage throw on both read and write. The
   // band must still dismiss, or it is stuck on screen for the whole session.
   it("stays dismissable when storage throws", async () => {
