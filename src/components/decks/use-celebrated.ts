@@ -9,5 +9,6 @@ import { useLocalFlag } from "./use-local-flag";
  * the band on screen after it burns its own flag on sight.
  */
 export function useCelebrated(deckId: string): [boolean, () => void, boolean] {
-  return useLocalFlag(celebrationKey(deckId));
+  const [isSet, set, setHere] = useLocalFlag(celebrationKey(deckId));
+  return [isSet, set, setHere];
 }

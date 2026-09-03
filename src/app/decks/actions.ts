@@ -683,7 +683,7 @@ async function fillLastSlots(deckId: string, ownedOnly: boolean) {
     const built = present.reduce((n, r) => n + r.quantity, 0);
     const inDeck = new Set(present.map((r) => r.oracleId));
 
-    const { place, shortfall } = planLastSlots({
+    const { place } = planLastSlots({
       ranked, openSlots: 99 - built, inDeckOracleIds: inDeck, ownedOnly,
     });
 
@@ -720,6 +720,10 @@ async function fillLastSlots(deckId: string, ownedOnly: boolean) {
     // finalOracleIds: union of what was already in the deck and what just landed,
     // deduplicated. The wrapper uses this to scope the collection read correctly.
     const finalOracleIds = [...new Set([...inDeck, ...legal])];
+    // shortfall: derived from what actually landed (post-legality-filter) so the
+    // reported numbers add up to 99. Pre-filter shortfall could read "0 short"
+    // while the deck is one card light if the legality pass dropped a card.
+    const shortfall = 99 - (built + legal.length);
     return { added: legal.length, total: built + legal.length, shortfall, userId, finalOracleIds };
   });
 }

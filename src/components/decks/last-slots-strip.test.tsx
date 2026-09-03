@@ -207,8 +207,21 @@ describe("LastSlotsStrip", () => {
     });
     const ownedBtn = screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") });
     expect(ownedBtn).toBeDisabled();
-    expect(screen.getByText(recommendationsCopy.fill.fillingRows("40"))).toBeInTheDocument();
+    // In-flight label uses openSlots (31), not unownedCandidates (40) — B places
+    // every open slot, owned and unowned alike, so the count must match the aria-label.
+    expect(screen.getByText(recommendationsCopy.fill.fillingRows("31"))).toBeInTheDocument();
     pending.resolve({ ok: true, added: 19, total: 99, bought: 19 });
+  });
+
+  // M4 — the badge on B's face must match the aria-label (both should be openSlots).
+  it("shows openSlots on B's badge face, matching the aria-label count", () => {
+    render(<LastSlotsStrip {...base} openSlots={7} unownedCandidates={40} />);
+    // aria-label uses openSlots; the visible badge must also use openSlots.
+    const btn = screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("7") });
+    // The badge text "7" appears inside the button.
+    expect(btn).toHaveTextContent("7");
+    // The unowned-candidate count (40) must not appear on the button face.
+    expect(btn.textContent).not.toMatch(/40/);
   });
 
   it("calls onCompletedByFill when A returns total 99", async () => {

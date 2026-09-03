@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { SynergySelection, SelectableLiveAnnouncer, SynergySelectionProvider } from "./synergy-selection";
+import { SynergySelection } from "./synergy-selection";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 
@@ -66,18 +66,57 @@ describe("SynergySelection", () => {
   });
 });
 
-describe("SelectableLiveAnnouncer", () => {
-  it("renders exactly one ARIA live region regardless of how many breakpoint containers exist", () => {
-    // Simulates the detail page structure: one announcer mounted outside any
-    // breakpoint container, serving both phone and desktop widths. If someone
-    // moves it back inside a hidden container or mounts a second one, this
-    // query returning a single element will fail.
+// The live-region test must assert against CommanderDetail itself, not the
+// announcer in isolation: only a real render of detail.tsx can prove the
+// announcer is placed correctly in the page tree. A test that mounts the
+// announcer directly is a tautology — it always finds exactly one because it
+// always mounts exactly one, regardless of what detail.tsx does.
+import { CommanderDetail } from "./detail";
+import type { RankedCommander } from "../../lib/recs/recommend";
+
+function detailCommander(): RankedCommander {
+  return {
+    oracleId: "oracle-1",
+    name: "Krenko, Mob Boss",
+    colorIdentity: ["R"],
+    imageUri: null,
+    typeLine: "Legendary Creature — Goblin Warrior",
+    oracleText: "Tap: Create X 1/1 red Goblin creature tokens.",
+    manaCost: "{2}{R}{R}",
+    colorPoolSize: 120,
+    edhrecOwnedCount: 40,
+    edhrecTotal: 100,
+    roleCounts: { ramp: 4, draw: 3, removal: 5, wipes: 1 },
+    roleGaps: [],
+    roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
+    overlapOwned: [],
+    fitPool: 12,
+    fitRoles: 8,
+    fitSynergy: 24,
+    score: 44,
+    slug: "krenko-mob-boss",
+    synergyState: "ok",
+  };
+}
+
+describe("SelectableLiveAnnouncer — placement in CommanderDetail", () => {
+  it("renders exactly one ARIA live region in the full CommanderDetail tree", () => {
+    // Assert against the page component, not the announcer in isolation.
+    // Deleting the announcer from detail.tsx, or moving it inside a breakpoint
+    // container and duplicating it, will fail this assertion — the isolated test
+    // above cannot see either of those regressions.
     const { container } = render(
-      <SynergySelectionProvider>
-        <SelectableLiveAnnouncer cards={synergyCards(3)} />
-      </SynergySelectionProvider>,
+      <CommanderDetail
+        commander={detailCommander()}
+        rank={1}
+        isBestFit
+        synergyCards={synergyCards(3)}
+      />,
     );
-    const regions = container.querySelectorAll('[aria-live="polite"]');
+    // The SelectableLiveAnnouncer renders a <span>; other providers in the tree
+    // (e.g. CardDetailProvider) render <div> live regions. Querying for the span
+    // form isolates the announcer from siblings.
+    const regions = container.querySelectorAll('span[aria-live="polite"]');
     expect(regions).toHaveLength(1);
     expect(regions[0]).toHaveClass("sr-only");
   });

@@ -102,7 +102,7 @@ export function BuilderShell({
   const isDesktop = useIsDesktop();
 
   const [celebrated, markCelebrated, celebratedHere] = useCelebrated(deck.id);
-  const [completedByFill, markCompletedByFill] = useLocalFlag(fillCompletedKey(deck.id));
+  const [completedByFill, markCompletedByFill, , clearCompletedByFill] = useLocalFlag(fillCompletedKey(deck.id));
 
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
@@ -327,6 +327,10 @@ export function BuilderShell({
       try {
         const removed = await clearAutoCards(deck.id);
         setSweptRows(removed);
+        // The fill-suppression flag is a receipt for a deck completed by fill.
+        // After a sweep the fill is no longer what completed it, so a player who
+        // rebuilds to 99 by hand can earn the reveal.
+        clearCompletedByFill();
         const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
         const removedCount = removed.reduce((n, r) => n + r.quantity, 0);
         setAnnouncement(
@@ -338,7 +342,7 @@ export function BuilderShell({
         setSweepError(recommendationsCopy.auto.sweepFailed);
       }
     });
-  }, [sweepPending, cards, deck.id, sweepOptimisticAuto]);
+  }, [sweepPending, cards, deck.id, sweepOptimisticAuto, clearCompletedByFill]);
 
   const handleRestoreAuto = useCallback(async () => {
     if (!sweptRows) return;

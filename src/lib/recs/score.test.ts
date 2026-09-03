@@ -147,8 +147,8 @@ describe("scoreCommander", () => {
     expect(s.roleCards.removal.map((c) => c.name)).not.toContain("Wrath of God");
   });
 
-  // Task 2: overlapOwned / overlapMissing
-  it("overlapOwned and overlapMissing preserve EDHREC casing and order", () => {
+  // Task 2: overlapOwned
+  it("overlapOwned preserves EDHREC casing and order, excluding missing cards", () => {
     // Sol Ring is in pool (colorIdentity []); Rhystic Study is not in collection
     const s = scoreCommander({
       commander,
@@ -157,13 +157,13 @@ describe("scoreCommander", () => {
       inclusionByName: null,
     });
     expect(s.overlapOwned).toEqual(["Sol Ring"]);
-    expect(s.overlapMissing).toEqual(["Rhystic Study"]);
+    expect(s).not.toHaveProperty("overlapMissing");
   });
 
-  it("overlapOwned and overlapMissing are [] when edhrecTopCards is null", () => {
+  it("overlapOwned is [] when edhrecTopCards is null", () => {
     const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
     expect(s.overlapOwned).toEqual([]);
-    expect(s.overlapMissing).toEqual([]);
+    expect(s).not.toHaveProperty("overlapMissing");
   });
 
   // Task 2: fitNS renormalization — no synergy

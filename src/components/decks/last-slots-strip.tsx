@@ -57,7 +57,7 @@ function ShortfallLine({ total, shortfall }: ShortfallLineProps) {
   return (
     <div
       data-testid="last-slots-shortfall"
-      className="flex items-start gap-[9px] mt-[10px] mb-[2px] rounded-[8px] md:rounded-[9px] px-[12px] py-[9px] md:px-[15px] md:py-[11px]"
+      className="flex items-start gap-[9px] md:gap-[10px] mt-[10px] mb-[12px] rounded-[9px] px-[13px] py-[11px]"
       style={{
         background: "var(--surface-sunken)",
         border: "1px solid var(--border)",
@@ -66,21 +66,19 @@ function ShortfallLine({ total, shortfall }: ShortfallLineProps) {
         borderLeftColor: "var(--accent)",
       }}
     >
-      {/* ⓘ disc — desktop only, matching provenance-line.tsx treatment. Drops at
-          phone where the accent bar already anchors the note visually. */}
+      {/* ⓘ disc — present at both widths per design table §ShortfallLine.
+          18px mobile, 20px desktop. Border uses --accent-shadow, not --accent. */}
       <div
-        className="hidden md:flex flex-none items-center justify-center rounded-full font-display font-bold text-[12px]"
+        className="flex flex-none items-center justify-center rounded-full font-mono text-[10px] md:text-[11px] w-[18px] h-[18px] md:w-[20px] md:h-[20px]"
         aria-hidden
         style={{
-          width: 20,
-          height: 20,
-          border: "1.5px solid var(--accent)",
+          border: "1px solid var(--accent-shadow)",
           color: "var(--accent)",
         }}
       >
         i
       </div>
-      <p className="flex-1 font-mono text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-body)" }}>
+      <p className="flex-1 font-mono text-[12.5px] leading-[1.6]" style={{ color: "var(--fg-body)" }}>
         {synergyCopy.lastSlots.short(total, shortfall)}
       </p>
     </div>
@@ -260,13 +258,13 @@ function LastSlotsStripInner({
             className="w-full md:w-auto min-h-[44px] md:min-h-0 rounded-[8px] px-[16px] py-[10px] text-[13px] disabled:opacity-50"
           >
             {inflight === "unowned"
-              ? recommendationsCopy.fill.fillingRows(String(unownedCandidates))
+              ? recommendationsCopy.fill.fillingRows(String(openSlots))
               : <>
                   {synergyCopy.lastSlots.topUp}
-                  {/* Count in mono warning — on the button's face, after the label */}
+                  {/* Count badge: open-slot count, matching the aria-label */}
                   {" "}
                   <span className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>
-                    {unownedCandidates}
+                    {openSlots}
                   </span>
                 </>}
           </GhostButton>

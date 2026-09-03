@@ -157,6 +157,7 @@ export function SynergyRow({
           >
             {card.synergyPts !== null ? (
               <span
+                aria-hidden="true"
                 style={{
                   color:
                     card.synergyPts >= 0 ? "var(--accent)" : "var(--fg-locked)",
@@ -169,8 +170,8 @@ export function SynergyRow({
                 {synergyCopy.figure.synergyNone}
               </span>
             )}
-            <span style={{ color: "var(--fg-locked)" }}>·</span>
-            <span style={{ color: "var(--fg-faint)" }}>{inclusionMobileDisplay}</span>
+            <span aria-hidden="true" style={{ color: "var(--fg-locked)" }}>·</span>
+            <span aria-hidden="true" style={{ color: "var(--fg-faint)" }}>{inclusionMobileDisplay}</span>
           </div>
         )}
       </div>
@@ -210,7 +211,7 @@ export function SynergyRow({
                   ? "var(--accent)"
                   : "var(--fg-locked)",
           }}
-          aria-hidden={card.synergyPts === null ? "true" : undefined}
+          aria-hidden="true"
         >
           {synergyDisplay}
         </span>
@@ -228,7 +229,7 @@ export function SynergyRow({
             fontVariantNumeric: "tabular-nums",
             color: "var(--fg-faint)",
           }}
-          aria-hidden={card.inclusionPct === null ? "true" : undefined}
+          aria-hidden="true"
         >
           {inclusionDisplay}
         </span>

@@ -13,6 +13,10 @@ vi.mock("../../app/decks/actions", () => ({
   removeCardFromDeck: vi.fn(),
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
+  clearAutoCards: vi.fn(async () => []),
+  restoreAutoCards: vi.fn(async () => ({})),
+  fillLastSlotsOwned: vi.fn(),
+  fillLastSlotsUnowned: vi.fn(),
 }));
 
 const { BuilderShell } = await import("./builder-shell");
@@ -197,6 +201,36 @@ describe("BuilderShell — 99/99 celebration", () => {
       renderBuilder(makeDeck());
     });
     expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
+  });
+
+  // L2 — sweeping the auto cards clears the fill suppression so the reveal is
+  // available again if the player rebuilds the deck to 99 by hand.
+  it("clears the fill-suppression flag when auto cards are swept", async () => {
+    window.localStorage.setItem(fillCompletedKey("deck-fill"), "1");
+    // A deck with one auto card so the sweep button is present.
+    const cards = Array.from({ length: 98 }, (_, i) => ({
+      oracleId: `card-${i}`,
+      name: `Card ${i}`,
+      typeLine: "Artifact",
+      cardTypeGroup: "Artifacts" as const,
+      role: "other" as const,
+      owned: true,
+      quantity: 1,
+      auto: false,
+    }));
+    const autoCard = {
+      oracleId: "auto-1", name: "Sol Ring", typeLine: "Artifact",
+      cardTypeGroup: "Artifacts" as const, role: "ramp" as const,
+      owned: true, quantity: 1, auto: true,
+    };
+    await act(async () => {
+      renderBuilder(makeDeck({ id: "deck-fill", built: 99, cards: [...cards, autoCard] }));
+    });
+    // Click the sweep button.
+    const sweepBtn = screen.getByRole("button", { name: /Clear all 1/ });
+    await act(async () => { fireEvent.click(sweepBtn); });
+    // The fill-suppression flag must be gone.
+    expect(localStorage.getItem(fillCompletedKey("deck-fill"))).toBeNull();
   });
 
   // Safari private mode and blocked storage throw on both read and write. The

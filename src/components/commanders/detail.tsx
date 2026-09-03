@@ -396,7 +396,7 @@ export function CommanderDetail({
         />
 
         {/* EDHREC Synergy section (mobile) */}
-        {c.fitSynergy !== null && c.edhrecTotal !== null ? (
+        {c.fitSynergy !== null && c.edhrecTotal !== null && synergyCards.length > 0 ? (
           <div>
             <div className="mb-[12px]">
               <h2
@@ -620,7 +620,7 @@ export function CommanderDetail({
           />
 
           {/* EDHREC Synergy section */}
-          {c.fitSynergy !== null && c.edhrecTotal !== null ? (
+          {c.fitSynergy !== null && c.edhrecTotal !== null && synergyCards.length > 0 ? (
             <div>
               <h2
                 className="font-display font-[600] m-0"

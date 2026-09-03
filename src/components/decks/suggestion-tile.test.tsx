@@ -116,6 +116,14 @@ describe("SuggestionTile — lift line", () => {
     mountTile({ inclusionPct: 40, lift: null, synergyFigure: -0.1 }, { showNoSynergy: true });
     expect(screen.queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
   });
+
+  // M5 — a negative synergyFigure must print its figure, not be silent.
+  // The design table states the line is always rendered when the figure is present.
+  it("prints the negative synergy figure on the synergy shelf", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: -0.05 }, { showNoSynergy: true });
+    // −0.05 → Math.abs(Math.round(-5)) = 5 → "−5 pts"
+    expect(screen.getByText(synergyCopy.figure.synergyNegative("5"))).toBeInTheDocument();
+  });
 });
 
 describe("SuggestionTile availability caption", () => {

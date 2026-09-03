@@ -81,8 +81,7 @@ function readSnapshot(key: string): number {
 }
 
 /**
- * Returns `[isSet, set, setHere]` for the given localStorage key. Write-once;
- * nothing unsets it.
+ * Returns `[isSet, set, setHere, clear]` for the given localStorage key.
  *
  * `setHere` is "this visit is the one that set it" — true from the write until
  * the last watcher unmounts, so a later visit starts false. It exists because a
@@ -91,8 +90,11 @@ function readSnapshot(key: string): number {
  * reads it. Kept in the store rather than in component state or a ref so the
  * value is render-safe — setting state inside the effect that burns the flag is
  * the cascading-render pattern, and a ref cannot be read during render.
+ *
+ * `clear` removes the flag so a later lifecycle can re-earn it. It wakes all
+ * watchers of this key, same as `set`.
  */
-export function useLocalFlag(key: string): [boolean, () => void, boolean] {
+export function useLocalFlag(key: string): [boolean, () => void, boolean, () => void] {
   const subscribe = useCallback(
     (onStoreChange: () => void) => subscribeToKey(key, onStoreChange),
     [key],
@@ -126,5 +128,16 @@ export function useLocalFlag(key: string): [boolean, () => void, boolean] {
     for (const listener of listeners.get(key) ?? []) listener();
   }, [key]);
 
-  return [value, set, setHere];
+  const clear = useCallback(() => {
+    setWhileWatched.delete(key);
+    setThisSession.delete(key);
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Best-effort; the in-memory fallbacks are already cleared.
+    }
+    for (const listener of listeners.get(key) ?? []) listener();
+  }, [key]);
+
+  return [value, set, setHere, clear];
 }

@@ -288,6 +288,25 @@ describe("fillLastSlotsOwned", () => {
     ).toEqual(["o1"]);
   });
 
+  // M3 — shortfall must be computed after the legality filter, not before.
+  // If shortfall is pre-filter, a fill where one card is dropped reports
+  // "0 short" while the deck is one card light.
+  it("reports shortfall from post-filter card count when a card is dropped by legality", async () => {
+    // 96 cards in deck → 3 open slots. Plan places 3, legality drops 1 → 2 land.
+    // shortfall should be 1, not 0 (pre-filter value).
+    stub.state.deckCards = rowsFor(96);
+    stub.state.cards = [
+      commanderRow(),
+      cardRow("o1"),
+      cardRow("o2"),
+      cardRow("bad", { colorIdentity: ["U"] }), // off-identity, will be dropped
+    ];
+    ranked.value = [synergy("bad", 99, true), synergy("o1", 90, true), synergy("o2", 80, true)];
+    const { fillLastSlotsOwned } = await import("./actions");
+    const out = await fillLastSlotsOwned("deck-1");
+    expect(out).toMatchObject({ ok: true, added: 2, total: 98, shortfall: 1 });
+  });
+
   it("returns the refusal rather than throwing when the write fails", async () => {
     stub.state.deckCards = rowsFor(97);
     stub.state.transactionError = new Error("boom");
@@ -297,6 +316,19 @@ describe("fillLastSlotsOwned", () => {
       ok: false,
       message: synergyCopy.lastSlots.fillFailed,
     });
+  });
+
+  // M6 — cross-user authorization boundary. requireDeck must refuse when the
+  // deck does not belong to the authenticated user.
+  it("refuses when the deck does not belong to the authenticated user", async () => {
+    stub.state.collectionItems = []; // no deck visible to this user
+    stub.state.deckCards = rowsFor(97);
+    ranked.value = [synergy("o1", 90, true)];
+    const { fillLastSlotsOwned } = await import("./actions");
+    const out = await fillLastSlotsOwned("deck-1");
+    expect(out).toMatchObject({ ok: false });
+    // Nothing must have been inserted.
+    expect(stub.state.insertCalls).toHaveLength(0);
   });
 
   it("revalidates the claim surfaces, not just the deck's own", async () => {
@@ -383,5 +415,20 @@ describe("fillLastSlotsUnowned", () => {
       ok: false,
       message: synergyCopy.lastSlots.topUpFailed,
     });
+  });
+
+  // M6 — cross-user authorization boundary. requireDeck must refuse when the
+  // deck's userId does not match the authenticated user. Simulated by clearing
+  // collectionItems so the `select from decks where id = ? and userId = ?` query
+  // returns no row — the same outcome as a deck owned by a different user.
+  it("refuses when the deck does not belong to the authenticated user", async () => {
+    stub.state.collectionItems = []; // no deck visible to this user
+    stub.state.deckCards = rowsFor(97);
+    ranked.value = [synergy("u1", 90, false)];
+    const { fillLastSlotsUnowned } = await import("./actions");
+    const out = await fillLastSlotsUnowned("deck-1");
+    expect(out).toMatchObject({ ok: false });
+    // Nothing must have been inserted.
+    expect(stub.state.insertCalls).toHaveLength(0);
   });
 });

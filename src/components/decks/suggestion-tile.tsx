@@ -139,10 +139,15 @@ function Evidence({
           {/* EDHREC hands synergy back as a fraction; the tile states it in points. */}
           {addPanelCopy.tile.lift(String(Math.round(lift * 100)))}
         </p>
-      ) : synergyFigure == null && showNoSynergy ? (
+      ) : synergyFigure != null ? (
+        // Negative figure: still a rank — the design table says the line is always
+        // rendered when the figure is present. Negatives are not absences.
+        <p className="font-mono text-[9.5px]" style={{ color: "var(--fg-faint)" }}>
+          {synergyCopy.figure.synergyNegative(String(Math.abs(Math.round(synergyFigure * 100))))}
+        </p>
+      ) : showNoSynergy ? (
         // Only on the synergy shelf: a card with no figure at all is named rather
-        // than silent, so the player knows the card simply has no data. A negative
-        // synergyFigure is still a rank, not an absence — it gets no label here.
+        // than silent, so the player knows the card simply has no data.
         <p className="font-mono text-[9.5px]" style={{ color: "var(--fg-faint)" }}>
           {synergyCopy.shelf.noSynergy}
         </p>

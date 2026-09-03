@@ -29,7 +29,6 @@ export type CommanderScore = {
   roleGaps: RoleName[];
   roleCards: Record<RoleName, RoleCard[]>;
   overlapOwned: string[];
-  overlapMissing: string[];
   fitPool: number;
   fitRoles: number;
   fitSynergy: number | null;
@@ -150,7 +149,6 @@ export function scoreCommander(args: {
   let edhrecOwnedCount: number | null = null;
   let edhrecTotal: number | null = null;
   const overlapOwned: string[] = [];
-  const overlapMissing: string[] = [];
 
   if (args.edhrecTopCards && args.edhrecTopCards.length > 0) {
     // Index full name AND front face: EDHREC lists DFCs/MDFCs by front face
@@ -166,8 +164,6 @@ export function scoreCommander(args: {
     for (const n of args.edhrecTopCards) {
       if (poolNames.has(n.toLowerCase())) {
         overlapOwned.push(n);
-      } else {
-        overlapMissing.push(n);
       }
     }
     edhrecOwnedCount = overlapOwned.length;
@@ -198,7 +194,7 @@ export function scoreCommander(args: {
     colorPoolSize: pool.length,
     edhrecOwnedCount, edhrecTotal,
     roleCounts, roleGaps, roleCards,
-    overlapOwned, overlapMissing,
+    overlapOwned,
     fitPool, fitRoles, fitSynergy, score,
   };
 }

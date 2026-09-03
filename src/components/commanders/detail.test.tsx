@@ -45,7 +45,6 @@ function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
     roleGaps: [],
     roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
     overlapOwned: [],
-    overlapMissing: [],
     fitPool: 12,
     fitRoles: 8,
     fitSynergy: 24,

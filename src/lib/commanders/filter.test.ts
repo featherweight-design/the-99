@@ -19,7 +19,6 @@ function stub(name: string, colorIdentity: string[], score = 0): RankedCommander
     roleGaps: [],
     roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
     overlapOwned: [],
-    overlapMissing: [],
     fitPool: 0,
     fitRoles: 0,
     fitSynergy: null,
