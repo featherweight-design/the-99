@@ -307,6 +307,10 @@ describe("createDeck with a selection", () => {
     expect(total).toBeGreaterThan(68);
     // The selection is placed first, so every pick survives the cap.
     for (const id of picks) expect(insertedIds()).toContain(id);
+    // And the cap spends the last slots rather than stranding them: a stack
+    // that overruns is truncated to what is left, so the deck lands on 99
+    // instead of stopping short of a four-deep row it could not fit whole.
+    expect(total).toBe(99);
   });
 
   it("is byte-identical to the shipped path when no selection is passed", async () => {

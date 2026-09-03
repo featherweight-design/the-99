@@ -549,6 +549,23 @@ describe("ConsiderPanel — synergy shelf", () => {
     expect(within(screen.getByRole("region", { name: "Ramp" })).getByText("Role Pick"))
       .toBeInTheDocument();
   });
+
+  // One figureless card among ranked ones is an exception to a ranking and keeps
+  // its label (the test above). A shelf where nothing has a figure is not a
+  // ranking at all, so the heading that promises one is never drawn.
+  it("draws no synergy shelf when not one pick has a figure", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Figureless One", owned: true, synergyFigure: null, lift: null }),
+        suggestion({ name: "Figureless Two", owned: true, synergyFigure: null, lift: null }),
+      ],
+    });
+    expect(
+      screen.queryByRole("region", { name: synergyCopy.shelf.label("Atraxa") }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 // The set the coverage strip gates its cells on. It has to agree with

@@ -65,6 +65,12 @@ function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]
   // line reachable.
   // Placed below the sorted coverage shelves and above the unowned append —
   // appended rather than ranked because it has no gap score to sort by.
+  //
+  // The shelf as a whole still needs one figure to exist. A figureless card sits
+  // inside a ranking and reads as an exception to it; a shelf where nothing has
+  // a figure is not a ranking at all, only the coverage shelves repeated under a
+  // heading that promises "ranked by synergy". Surface A draws the same line —
+  // with no synergy data the commander's panel is not rendered either.
   const synergySorted = owned
     .filter((s) => s.reasonType === "edhrec")
     .sort((a, b) => (b.synergyFigure ?? -Infinity) - (a.synergyFigure ?? -Infinity));

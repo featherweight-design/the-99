@@ -240,9 +240,14 @@ export async function createDeck(
       const capped: typeof rows = [];
       let built = 0;
       for (const row of rows) {
-        if (built + row.quantity > 99) continue;
-        capped.push(row);
-        built += row.quantity;
+        const remaining = 99 - built;
+        if (remaining <= 0) break;
+        // A stack that overruns the cap is truncated, not dropped. Skipping it
+        // would leave the deck short of 99 with room still on the table — two
+        // slots left and a stack of four Forests next would spend neither.
+        const quantity = Math.min(row.quantity, remaining);
+        capped.push({ ...row, quantity });
+        built += quantity;
       }
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
