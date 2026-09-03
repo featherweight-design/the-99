@@ -24,6 +24,7 @@
 // The ones that are overridden that way in practice — PROBE_BASE, PROBE_DECK,
 // PROBE_USER_EMAIL, AVAIL_FORCE, RESUME_SINCE — are absent from `.env` and so
 // keep working.
+import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 
 /** The repository `.env`, resolved from this module rather than the cwd. */
@@ -42,9 +43,19 @@ export function requireEnv(names) {
   if (missing.length > 0) {
     // Every missing name at once. One at a time costs a browser launch per
     // variable to discover what the next one is.
-    const cause = loaded.error
-      ? `no .env at ${ENV_PATH.pathname} — copy it from the repository root into this worktree`
-      : `.env is present but does not set ${missing.length === 1 ? "it" : "them"}`;
+    // A missing file and an unreadable one call for different responses, and
+    // reporting both as "no .env" sends the reader off to copy a file that is
+    // already there. `fileURLToPath` rather than `pathname`, which is
+    // percent-encoded and, on Windows, not a native path.
+    const path = fileURLToPath(ENV_PATH);
+    let cause;
+    if (loaded.error?.code === "ENOENT") {
+      cause = `no .env at ${path} — copy it from the repository root into this worktree`;
+    } else if (loaded.error) {
+      cause = `.env at ${path} could not be read: ${loaded.error.message}`;
+    } else {
+      cause = `.env is present but does not set ${missing.length === 1 ? "it" : "them"}`;
+    }
     throw new Error(`Missing ${missing.join(", ")}: ${cause}.`);
   }
   return Object.fromEntries(names.map((name) => [name, process.env[name]]));
