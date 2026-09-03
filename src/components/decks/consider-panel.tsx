@@ -57,14 +57,15 @@ function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]
     return gap(b) - gap(a);
   });
 
-  // Synergy shelf: owned cards that have a synergyFigure, sorted by it descending.
+  // Synergy shelf: owned cards sorted by synergyFigure descending, figureless
+  // ones last. They stay on the shelf rather than being filtered out so the
+  // tail can say "no synergy figure" instead of silently shortening the shelf.
   // Placed below the sorted coverage shelves and above the unowned append —
   // appended rather than ranked because it has no gap score to sort by.
-  const synergyOwned = owned.filter((s) => s.synergyFigure != null);
-  const synergySorted = [...synergyOwned].sort(
+  const synergySorted = [...owned].sort(
     (a, b) => (b.synergyFigure ?? -Infinity) - (a.synergyFigure ?? -Infinity),
   );
-  if (synergySorted.length > 0) {
+  if (synergySorted.some((s) => s.synergyFigure != null)) {
     shelves.push({ key: "synergy" as const, suggestions: synergySorted, coverage: null });
   }
 

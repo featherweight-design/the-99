@@ -501,8 +501,28 @@ describe("ConsiderPanel — synergy shelf", () => {
     });
     const synergyShelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
     const rampShelf = screen.getByRole("region", { name: "Ramp" });
-    expect(within(synergyShelf).queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
+    // Scoped to the negative card's own tile: the figureless ramp card also sits
+    // on this shelf, and it is supposed to carry the label.
+    const negativeTile = within(synergyShelf)
+      .getAllByRole("listitem")
+      .find((li) => within(li).queryAllByLabelText("View details for Negative Card").length > 0)!;
+    expect(within(negativeTile).queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
     expect(within(rampShelf).queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
+  });
+
+  // The positive half of the pair above: without it, showNoSynergy could be
+  // hardcoded false and every assertion here would still pass.
+  it("says so on the synergy shelf for a card with no figure at all", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Ranked Card", owned: true, synergyFigure: 0.9 }),
+        suggestion({ name: "Figureless Card", owned: true, synergyFigure: null, lift: null }),
+      ],
+    });
+    const synergyShelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    expect(within(synergyShelf).getByText(synergyCopy.shelf.noSynergy)).toBeInTheDocument();
   });
 });
 
