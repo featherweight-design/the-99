@@ -33,6 +33,7 @@ import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLine, FillFailedBannerConnected } from "./provenance-line";
+import { LastSlotsStrip } from "./last-slots-strip";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { LAND_TARGET } from "../../lib/decks/suggest";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
@@ -71,6 +72,12 @@ interface BuilderShellProps {
       Cards with no EDHREC figure are absent from the map — never stored as 0.
       Null when EDHREC was unreachable, which is not the same claim. */
   shoppingFigures?: Record<string, number> | null;
+  /** Owned synergy cards planLastSlots would place into the open slots, derived
+      once by the page route. Zero means the owned fill control is absent. */
+  ownedCandidates?: number;
+  /** Unowned synergy cards planLastSlots would add beyond the owned ones.
+      Zero means the top-up control is absent. */
+  unownedCandidates?: number;
 }
 
 export function BuilderShell({
@@ -81,6 +88,8 @@ export function BuilderShell({
   commanderIdentity,
   arrivedFromImport,
   shoppingFigures = {},
+  ownedCandidates = 0,
+  unownedCandidates = 0,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -546,6 +555,28 @@ export function BuilderShell({
                 </>
               );
             })()}
+
+            {/* Last-31 strip — shown when the deck still has open slots and
+                the commander's EDHREC support list has cards to offer. Unmounts
+                as a unit at 0 open slots. Mounted once: unlike ProvenanceLine,
+                which passes a `width` prop to conditional non-interactive content
+                and therefore needs two mounts, the strip uses responsive Tailwind
+                classes for all width-dependent elements (caption text, the ⓘ disc,
+                the shortfall border-radius). Interactive controls A and B appear
+                exactly once in the DOM. The `width` prop is still part of the
+                exported interface so the strip can be rendered standalone at a
+                fixed breakpoint where needed. */}
+            {(ownedCandidates > 0 || unownedCandidates > 0) && (
+              <LastSlotsStrip
+                deckId={deck.id}
+                openSlots={99 - built}
+                ownedCandidates={ownedCandidates}
+                unownedCandidates={unownedCandidates}
+                commanderShortName={commanderShortName}
+                onAnnounce={setAnnouncement}
+                width="desktop"
+              />
+            )}
 
             {/* Fill-failed banner — shown when the fill never landed (State
                 15). Offers a retry. A swept deck is filled=true and must not
