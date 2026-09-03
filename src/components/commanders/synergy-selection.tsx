@@ -25,6 +25,7 @@ import React, {
 } from "react";
 import Link from "next/link";
 import { FILL_BASELINE_TOTAL } from "../../lib/decks/fill";
+import { MAX_SELECTION } from "../../lib/decks/selection-param";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { SynergyPanel } from "./synergy-panel";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
@@ -51,12 +52,20 @@ export function useSynergySelection(): SynergySelectionValue {
 export function SynergySelectionProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
+  // The picker honours the same bound the build does. `sanitizeSelection` caps
+  // the URL at MAX_SELECTION, so a longer selection would show a pick count and
+  // a promise the build could not keep, and would carry the surplus in a Build
+  // href long enough to be refused before it arrived. Removing always works;
+  // only adding past the bound is refused.
   const toggle = useCallback((oracleId: string) => {
     setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(oracleId)) next.delete(oracleId);
-      else next.add(oracleId);
-      return next;
+      if (prev.has(oracleId)) {
+        const next = new Set(prev);
+        next.delete(oracleId);
+        return next;
+      }
+      if (prev.size >= MAX_SELECTION) return prev;
+      return new Set(prev).add(oracleId);
     });
   }, []);
 

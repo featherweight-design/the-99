@@ -14,7 +14,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /** A deck holds 99 cards beside its commander, so a longer selection cannot
     land in full however it was crafted. Bounding it here keeps a hostile URL
     from widening the `in (…)` array behind the legality check. */
-const MAX_SELECTION = 99;
+export const MAX_SELECTION = 99;
 
 /** Keeps only uuid-shaped ids, drops repeats, and caps the result at a deck's
     worth. `createDeck` is a directly callable server action, so it applies this

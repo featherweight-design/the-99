@@ -1,7 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { SynergySelection } from "./synergy-selection";
+import {
+  SynergySelection,
+  SynergySelectionProvider,
+  useSynergySelection,
+} from "./synergy-selection";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { MAX_SELECTION } from "../../lib/decks/selection-param";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 
 const owned = (n: number) =>
@@ -20,6 +25,41 @@ const synergyCard = (id: string): SynergyCard => ({
 });
 const synergyCards = (n: number): SynergyCard[] =>
   Array.from({ length: n }, (_, i) => synergyCard(`o${i}`));
+
+// The provider's own bound, exercised through a probe rather than through the
+// panel: 100 rows of UI to prove an arithmetic rule is a slower test that
+// asserts less. `sanitizeSelection` drops everything past MAX_SELECTION, so a
+// picker that let the set grow past it would show a count and promise the build
+// silently cannot keep.
+describe("SynergySelectionProvider — the picker honours the build's bound", () => {
+  function Probe() {
+    const { selected, toggle } = useSynergySelection();
+    return (
+      <>
+        <span data-testid="count">{selected.size}</span>
+        <button type="button" onClick={() => toggle(`o${selected.size}`)}>add</button>
+        <button type="button" onClick={() => toggle("o0")}>remove first</button>
+      </>
+    );
+  }
+
+  const mountProbe = () =>
+    render(
+      <SynergySelectionProvider>
+        <Probe />
+      </SynergySelectionProvider>,
+    );
+
+  it("refuses a pick past MAX_SELECTION and keeps removal working", () => {
+    mountProbe();
+    const add = screen.getByText("add");
+    for (let i = 0; i < MAX_SELECTION + 5; i += 1) fireEvent.click(add);
+    expect(screen.getByTestId("count")).toHaveTextContent(String(MAX_SELECTION));
+
+    fireEvent.click(screen.getByText("remove first"));
+    expect(screen.getByTestId("count")).toHaveTextContent(String(MAX_SELECTION - 1));
+  });
+});
 
 describe("SynergySelection", () => {
   it("renders nothing at zero selection so the locked promise stands alone", () => {
