@@ -92,9 +92,24 @@ describe("SynergySelection", () => {
     expect(screen.getByText(synergyCopy.select.promiseUnowned("2"))).toBeInTheDocument();
   });
 
-  it("clamps at 99 and says the selection fills the deck on its own", () => {
+  it("says the selection fills the deck on its own only when it does", () => {
+    render(<SynergySelection selectedCards={owned(99)} onClear={() => {}} width="desktop" />);
+    expect(screen.getByText(synergyCopy.select.promiseFull("99"))).toBeInTheDocument();
+  });
+
+  // The build places the selection first and fills what is left under the 99, so
+  // the baseline is a ceiling on the fill, not a fixed part of it. Reading it as
+  // fixed put the clamp line — "your picks fill the 99 on their own" — on a deck
+  // the fill was still placing 59 cards of.
+  it("shrinks the filled figure once the selection eats into the baseline", () => {
     render(<SynergySelection selectedCards={owned(40)} onClear={() => {}} width="desktop" />);
-    expect(screen.getByText(synergyCopy.select.promiseFull("40"))).toBeInTheDocument();
+    expect(screen.queryByText(synergyCopy.select.promiseFull("40"))).not.toBeInTheDocument();
+    expect(
+      screen.getByText((_content, el) =>
+        el?.tagName === "SPAN" &&
+        el.textContent === synergyCopy.select.promise("59", "40", "99"),
+      ),
+    ).toBeInTheDocument();
   });
 
   it("takes the mobile promise string at phone width", () => {

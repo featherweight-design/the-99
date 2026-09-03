@@ -98,9 +98,15 @@ export function SynergySelection({ selectedCards, onClear, width }: SynergySelec
   const picked = selectedCards.length;
   if (picked === 0) return null;
 
-  const total = Math.min(99, FILL_BASELINE_TOTAL + picked);
+  // `createDeck` places the selection first and fills what is left under the 99,
+  // so the baseline is a ceiling on the fill rather than a fixed part of it: at
+  // 40 picks the fill places 59, not 68. Reading it as fixed both overstated the
+  // filled figure and made the clamp line — "your picks fill the 99 on their
+  // own" — fire at 31 picks, where the fill is still placing most of the deck.
+  const filled = Math.min(FILL_BASELINE_TOTAL, 99 - picked);
+  const total = picked + filled;
   const unownedCount = selectedCards.filter((c) => !c.owned).length;
-  const full = FILL_BASELINE_TOTAL + picked >= 99;
+  const full = filled === 0;
 
   const totalStr = String(total);
   const promiseFontSize = width === "phone" ? 12 : 10.5;
@@ -115,8 +121,8 @@ export function SynergySelection({ selectedCards, onClear, width }: SynergySelec
   } else {
     const raw =
       width === "phone"
-        ? synergyCopy.select.promiseMobile(String(FILL_BASELINE_TOTAL), String(picked), totalStr)
-        : synergyCopy.select.promise(String(FILL_BASELINE_TOTAL), String(picked), totalStr);
+        ? synergyCopy.select.promiseMobile(String(filled), String(picked), totalStr)
+        : synergyCopy.select.promise(String(filled), String(picked), totalStr);
     const idx = raw.indexOf(totalStr);
     if (idx === -1) {
       promiseNode = raw;
