@@ -104,6 +104,11 @@ export function BuilderShell({
   const [celebrated, markCelebrated, celebratedHere] = useCelebrated(deck.id);
   const [completedByFill, markCompletedByFill, , clearCompletedByFill] = useLocalFlag(fillCompletedKey(deck.id));
 
+  // True while LastSlotsStrip has a fill write in flight (A or B). Used to
+  // disable control C (ClearAutoButton) during either fill per design table
+  // state 3 / state 8.
+  const [fillInflight, setFillInflight] = useState(false);
+
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
   // click. `deck.cards` remains the base React reverts to.
@@ -580,6 +585,7 @@ export function BuilderShell({
                 commanderShortName={commanderShortName}
                 onAnnounce={setAnnouncement}
                 onCompletedByFill={markCompletedByFill}
+                onInflight={setFillInflight}
               />
             )}
 
@@ -841,7 +847,7 @@ export function BuilderShell({
                 onUnresolvedExpandedChange={setUnresolvedExpanded}
                 autoCount={autoCount}
                 keptCount={keptCount}
-                sweepPending={sweepPending}
+                sweepPending={sweepPending || fillInflight}
                 sweptRows={sweptRows}
                 sweepError={sweepError}
                 onClearAuto={handleClearAuto}

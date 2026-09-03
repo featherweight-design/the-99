@@ -23,10 +23,12 @@ interface ClearAutoButtonProps {
 /** A GhostButton in mono 12px, right-aligned in the group toolbar.
  *  Absent entirely at zero rather than shown disabled, because a disabled
  *  "Clear 0 auto cards" is a control offering nothing. The one time it does
- *  render disabled is while its own sweep is in flight. */
+ *  render disabled is while its own sweep is in flight.
+ *
+ *  Design table state 7: the keptNote must survive even when count === 0 and
+ *  the button is absent. The note is rendered outside the early-return guard
+ *  so it stays visible throughout the auto-card lifecycle. */
 export function ClearAutoButton({ count, keptCount, onClear, pending }: ClearAutoButtonProps) {
-  if (count === 0) return null;
-
   return (
     <span className="flex items-center gap-[8px]">
       {keptCount >= 1 && (
@@ -34,18 +36,20 @@ export function ClearAutoButton({ count, keptCount, onClear, pending }: ClearAut
           {recommendationsCopy.auto.keptNote(String(keptCount))}
         </span>
       )}
-      <button
-        type="button"
-        onClick={onClear}
-        disabled={pending}
-        aria-label={recommendationsCopy.auto.clearAllAria(String(count))}
-        className="font-mono text-[12px] text-fg-body bg-transparent border border-border-strong rounded-[8px] px-[12px] py-[6px] cursor-pointer disabled:opacity-50 disabled:cursor-default"
-      >
-        {/* Responsive label: desktop shows the full string, mobile shows the short form.
-            Both live in one button element to keep a single interactive control. */}
-        <span className="hidden md:inline">{recommendationsCopy.auto.clearAll(String(count))}</span>
-        <span className="md:hidden">{recommendationsCopy.auto.clearAllMobile(String(count))}</span>
-      </button>
+      {count > 0 && (
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={pending}
+          aria-label={recommendationsCopy.auto.clearAllAria(String(count))}
+          className="font-mono text-[12px] text-fg-body bg-transparent border border-border-strong rounded-[8px] px-[12px] py-[6px] cursor-pointer disabled:opacity-50 disabled:cursor-default"
+        >
+          {/* Responsive label: desktop shows the full string, mobile shows the short form.
+              Both live in one button element to keep a single interactive control. */}
+          <span className="hidden md:inline">{recommendationsCopy.auto.clearAll(String(count))}</span>
+          <span className="md:hidden">{recommendationsCopy.auto.clearAllMobile(String(count))}</span>
+        </button>
+      )}
     </span>
   );
 }
