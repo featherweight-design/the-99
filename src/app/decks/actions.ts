@@ -19,6 +19,17 @@ import { validateCardForDeck } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
 import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
+import { readSynergyCards } from "../commanders/[slug]/synergy-read";
+import { planLastSlots } from "../../lib/decks/last-slots";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
+
+export type LastSlotsFillResult =
+  | { ok: true; added: number; total: number; shortfall: number }
+  | { ok: false; message: string };
+
+export type LastSlotsTopUpResult =
+  | { ok: true; added: number; total: number; bought: number }
+  | { ok: false; message: string };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -641,4 +652,95 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     for (const path of claimSurfaces(deckId)) revalidatePath(path);
     return restored;
   });
+}
+
+// ---------------------------------------------------------------------------
+// Last-slots fill actions
+// ---------------------------------------------------------------------------
+
+/** Shared logic for both fill controls. The only difference between owned-only
+ *  and top-up is `ownedOnly`. Both follow the restoreAutoCards locking pattern:
+ *  for-update, re-read inside the lock, legality pass per card (skipping rather
+ *  than throwing), insert with onConflictDoNothing, revalidate claim surfaces. */
+async function fillLastSlots(deckId: string, ownedOnly: boolean) {
+  const userId = await requireUserId();
+  const deck = await requireDeck(deckId, userId);
+  const [commander] = await db.select({ colorIdentity: cards.colorIdentity })
+    .from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
+  if (!commander) throw new Error("commander not found");
+
+  // The exclusion input is empty: the panel's role-coverage exclusion is a
+  // commander-page concern, and on the deck surface every ranked card is a
+  // candidate. planLastSlots does the in-deck filtering.
+  const ranked = await readSynergyCards(userId, deck.commanderOracleId, []);
+
+  return await db.transaction(async (tx) => {
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+    // Re-read inside the lock. openSlots computed before it is a number another
+    // tab may already have spent.
+    const present = await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
+      .from(deckCards).where(eq(deckCards.deckId, deckId));
+    const built = present.reduce((n, r) => n + r.quantity, 0);
+    const inDeck = new Set(present.map((r) => r.oracleId));
+
+    const { place, shortfall } = planLastSlots({
+      ranked, openSlots: 99 - built, inDeckOracleIds: inDeck, ownedOnly,
+    });
+
+    // Read card rows for the legality pass — same inArray shape as restoreAutoCards.
+    const byOracleId = place.length > 0
+      ? new Map(
+          (await tx.select({
+            oracleId: cards.oracleId,
+            commanderLegal: cards.commanderLegal,
+            colorIdentity: cards.colorIdentity,
+          }).from(cards).where(inArray(cards.oracleId, place)))
+            .map((c) => [c.oracleId, c]),
+        )
+      : new Map<string, { oracleId: string; commanderLegal: boolean; colorIdentity: string[] }>();
+
+    // Same legality pass the add path runs; a refusal skips one card rather
+    // than failing the fill, because a fill is a bulk act and one off-identity
+    // row is not a reason to place nothing.
+    const legal = place.filter((oracleId) => {
+      const card = byOracleId.get(oracleId);
+      return card != null && !validateCardForDeck(card, {
+        commanderOracleId: deck.commanderOracleId,
+        commanderColorIdentity: commander.colorIdentity,
+        built: 0,
+      });
+    });
+
+    if (legal.length > 0) {
+      await tx.insert(deckCards)
+        .values(legal.map((oracleId) => ({ deckId, oracleId, quantity: 1, auto: true })))
+        .onConflictDoNothing();
+    }
+    for (const path of claimSurfaces(deckId)) revalidatePath(path);
+    return { added: legal.length, total: built + legal.length, shortfall, ranked, inDeck, legal };
+  });
+}
+
+export async function fillLastSlotsOwned(deckId: string): Promise<LastSlotsFillResult> {
+  try {
+    const r = await fillLastSlots(deckId, true);
+    return { ok: true, added: r.added, total: r.total, shortfall: r.shortfall };
+  } catch (err) {
+    console.error("fillLastSlotsOwned failed", err);
+    return { ok: false, message: synergyCopy.lastSlots.fillFailed };
+  }
+}
+
+export async function fillLastSlotsUnowned(deckId: string): Promise<LastSlotsTopUpResult> {
+  try {
+    const r = await fillLastSlots(deckId, false);
+    // `bought` is what the player still has to acquire for the whole deck, not
+    // just this call — the strip's figure is about the deck, not the click.
+    const unowned = new Set(r.ranked.filter((c) => !c.owned).map((c) => c.oracleId));
+    const bought = [...r.inDeck, ...r.legal].filter((id) => unowned.has(id)).length;
+    return { ok: true, added: r.added, total: r.total, bought };
+  } catch (err) {
+    console.error("fillLastSlotsUnowned failed", err);
+    return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
+  }
 }
