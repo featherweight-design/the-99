@@ -57,22 +57,32 @@ export function AutoTag({ deckId, oracleId, name }: AutoTagProps) {
         disabled={isPending}
         aria-label={recommendationsCopy.auto.keepAria(name)}
         aria-busy={isPending || undefined}
+        // Phone gets the 44px target from min-height, not padding. The button is
+        // the hit area alone and carries no plate: the row marks an
+        // over-committed card with an inset ring, and an inset shadow paints
+        // beneath its children, so a background stretched to the full row height
+        // erases the ring across the tag's width.
         className={
-          "flex-none font-mono rounded-[4px] px-[5px] py-[1px]" +
-          " text-[9px] md:text-[9.5px] leading-none" +
-          // Phone gets the 44px target from min-height, not padding, so the tag's
-          // visual box stays 1px 5px while the hit area fills the row.
-          " self-center min-h-[44px] md:min-h-0" +
-          " cursor-pointer border" +
-          (active
-            ? " text-accent border-accent-shadow bg-elevated"
-            : " text-fg-locked border-transparent bg-elevated") +
-          " disabled:opacity-50 disabled:cursor-default"
+          "flex-none self-center min-h-[44px] md:min-h-0" +
+          " flex items-center bg-transparent border-none p-0" +
+          " cursor-pointer disabled:opacity-50 disabled:cursor-default"
         }
       >
-        {active
-          ? recommendationsCopy.auto.keep
-          : recommendationsCopy.auto.tag}
+        {/* The plate — 1px 5px around its own text, and no taller. */}
+        <span
+          className={
+            "font-mono rounded-[4px] px-[5px] py-[1px]" +
+            " text-[9px] md:text-[9.5px] leading-none" +
+            " border bg-elevated" +
+            (active
+              ? " text-accent border-accent-shadow"
+              : " text-fg-locked border-transparent")
+          }
+        >
+          {active
+            ? recommendationsCopy.auto.keep
+            : recommendationsCopy.auto.tag}
+        </span>
       </button>
       {error && <MutationError message={error} />}
     </span>
