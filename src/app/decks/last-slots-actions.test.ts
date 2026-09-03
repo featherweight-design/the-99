@@ -406,6 +406,25 @@ describe("fillLastSlotsUnowned", () => {
     expect(out).toMatchObject({ ok: true, added: 1, bought: 2 });
   });
 
+  it("counts an unowned stacked row by its copies, not as one card", async () => {
+    // A deck of 94 owned singles plus four unowned Forests in one row. `bought`
+    // is a card count — the announcement pairs it with a total that sums
+    // quantities — so the stack has to report four, not the one distinct id.
+    const existing = rowsFor(94);
+    stub.state.deckCards = [...existing, { oracleId: "forest", quantity: 4 }];
+    stub.state.cards.push(cardRow("u1"));
+    stub.state.ownedItems = existing.map((r) => ({
+      oracleId: r.oracleId,
+      userId: "user_1",
+      quantity: 1,
+    }));
+    ranked.value = [synergy("u1", 90, false)];
+    const { fillLastSlotsUnowned } = await import("./actions");
+    const out = await fillLastSlotsUnowned("deck-1");
+    // Four Forests plus the one card the top-up placed.
+    expect(out).toMatchObject({ ok: true, added: 1, bought: 5 });
+  });
+
   it("returns the top-up refusal rather than throwing", async () => {
     stub.state.deckCards = rowsFor(97);
     stub.state.transactionError = new Error("boom");

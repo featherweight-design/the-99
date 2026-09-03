@@ -19,6 +19,47 @@ describe("FacetStrip", () => {
     expect(checked[0]).toHaveAccessibleName(synergyCopy.facet.itemAria("Creatures", "66"));
   });
 
+  // Announcing the radiogroup role promises a keyboard model: one tab stop for
+  // the whole group, and the arrows moving within it. Without the roving
+  // tabIndex the group is six tab stops that arrow keys do nothing in.
+  it("is a single tab stop on the checked pill", () => {
+    render(<FacetStrip counts={counts} selected="creature" onSelect={() => {}} />);
+    const reachable = screen
+      .getAllByRole("radio")
+      .filter((r) => r.getAttribute("tabindex") === "0");
+    expect(reachable).toHaveLength(1);
+    expect(reachable[0]).toHaveAccessibleName(synergyCopy.facet.itemAria("Creatures", "66"));
+  });
+
+  it("moves the selection with the arrow keys and wraps at both ends", () => {
+    const onSelect = vi.fn();
+    render(<FacetStrip counts={counts} selected="creature" onSelect={onSelect} />);
+    const creatures = screen.getByRole("radio", {
+      name: synergyCopy.facet.itemAria("Creatures", "66"),
+    });
+    fireEvent.keyDown(creatures, { key: "ArrowRight" });
+    expect(onSelect).toHaveBeenLastCalledWith("spell");
+    fireEvent.keyDown(creatures, { key: "ArrowLeft" });
+    expect(onSelect).toHaveBeenLastCalledWith("all");
+
+    // Wrap: the last pill's ArrowRight lands back on the first.
+    const lands = screen.getByRole("radio", { name: synergyCopy.facet.itemAria("Lands", "56") });
+    fireEvent.keyDown(lands, { key: "ArrowRight" });
+    expect(onSelect).toHaveBeenLastCalledWith("all");
+  });
+
+  // The wrap has to count the pills actually drawn. A zero-count All is dropped,
+  // so wrapping over a fixed six-pill order would land on a pill that is not there.
+  it("wraps over the pills actually drawn when the All pill is omitted", () => {
+    const onSelect = vi.fn();
+    render(
+      <FacetStrip counts={{ ...counts, all: 0 }} selected="land" onSelect={onSelect} />,
+    );
+    const lands = screen.getByRole("radio", { name: synergyCopy.facet.itemAria("Lands", "56") });
+    fireEvent.keyDown(lands, { key: "ArrowRight" });
+    expect(onSelect).toHaveBeenLastCalledWith("creature");
+  });
+
   // "other" never gets a pill — its rows are only reachable through "All".
   it("omits the other facet regardless of count", () => {
     render(<FacetStrip counts={{ ...counts, other: 5 }} selected="creature" onSelect={() => {}} />);

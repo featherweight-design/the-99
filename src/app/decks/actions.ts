@@ -725,14 +725,21 @@ async function fillLastSlots(deckId: string, ownedOnly: boolean) {
         .onConflictDoNothing();
     }
     for (const path of claimSurfaces(deckId)) revalidatePath(path);
-    // finalOracleIds: union of what was already in the deck and what just landed,
-    // deduplicated. The wrapper uses this to scope the collection read correctly.
-    const finalOracleIds = [...new Set([...inDeck, ...legal])];
+    // finalCounts: copies per oracle id after the write — what was already in the
+    // deck at its stacked quantity, plus one copy for each card that just landed.
+    // The wrapper scopes its collection read to these ids and counts `bought` by
+    // copies, because `bought` is a card count everywhere else it appears
+    // (planFill sums quantities, and the announcement pairs it with a total that
+    // does), so a deck holding four unowned basics has to report four.
+    const finalCounts = new Map(present.map((r) => [r.oracleId, r.quantity]));
+    // `?? 1` rather than an unconditional 1: an id already present lost its
+    // insert to onConflictDoNothing and keeps the quantity it had.
+    for (const oracleId of legal) finalCounts.set(oracleId, finalCounts.get(oracleId) ?? 1);
     // shortfall: derived from what actually landed (post-legality-filter) so the
     // reported numbers add up to 99. Pre-filter shortfall could read "0 short"
     // while the deck is one card light if the legality pass dropped a card.
     const shortfall = 99 - (built + legal.length);
-    return { added: legal.length, total: built + legal.length, shortfall, userId, finalOracleIds };
+    return { added: legal.length, total: built + legal.length, shortfall, userId, finalCounts };
   });
 }
 
@@ -758,11 +765,14 @@ export async function fillLastSlotsUnowned(deckId: string): Promise<LastSlotsTop
         .from(collectionItems)
         .where(and(
           eq(collectionItems.userId, r.userId),
-          inArray(collectionItems.oracleId, r.finalOracleIds),
+          inArray(collectionItems.oracleId, [...r.finalCounts.keys()]),
         )))
         .map((c) => c.oracleId),
     );
-    const bought = r.finalOracleIds.filter((id) => !owned.has(id)).length;
+    const bought = [...r.finalCounts].reduce(
+      (n, [oracleId, quantity]) => (owned.has(oracleId) ? n : n + quantity),
+      0,
+    );
     return { ok: true, added: r.added, total: r.total, bought };
   } catch (err) {
     console.error("fillLastSlotsUnowned failed", err);
