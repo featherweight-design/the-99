@@ -20,26 +20,18 @@
 //
 // That seam stays UNCOMMITTED: a test hook on a production path costs more than
 // a two-line edit for the length of one run. Set PROBE_BASE if dev is not on 3000.
-import { config } from "dotenv";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { requireEnv } from "./lib/env.mjs";
 
-// Loaded here rather than sourced. `--env-file`, `set -a; . ./.env` and
-// `export $(grep …)` all choke on this file's special characters, and each one
-// fails by leaving the vars UNSET, which reads as "creds not configured".
-//
-// `override` is load-bearing. An inherited shell can carry another project's
-// `E2E_AUDIT_USER_EMAIL`, and the failure then looks like a Clerk problem
-// ("Couldn't find your account") rather than the wrong account.
-config({ path: new URL("../.env", import.meta.url), override: true, quiet: true });
-
+// CLERK_SECRET_KEY is asserted but not bound: `clerkSetup()` reads it from the
+// environment itself.
+const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "E2E_AUDIT_USER_PASSWORD",
+  "CLERK_SECRET_KEY",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;
-const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
-const SECRET = process.env.CLERK_SECRET_KEY;
-if (!EMAIL || !PASSWORD || !SECRET) {
-  throw new Error("Set E2E_AUDIT_USER_EMAIL, E2E_AUDIT_USER_PASSWORD, CLERK_SECRET_KEY.");
-}
 
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },

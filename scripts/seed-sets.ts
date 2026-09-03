@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./lib/env.mjs";
 import { seedSets } from "../src/lib/scryfall/seed-sets";
 
 seedSets()

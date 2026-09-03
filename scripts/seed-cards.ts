@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./lib/env.mjs";
 import { seedCards } from "../src/lib/scryfall/seed";
 
 seedCards()

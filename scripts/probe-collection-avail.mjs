@@ -11,23 +11,24 @@
 // That stub is reverted before the PR opens.
 //
 // Run by hand, and not part of `pnpm test` — it needs a browser and a
-// signed-in session: `node --env-file=.env scripts/probe-collection-avail.mjs`
+// signed-in session: `node scripts/probe-collection-avail.mjs`
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { requireEnv } from "./lib/env.mjs";
 
+// CLERK_SECRET_KEY is asserted but not bound: `clerkSetup()` reads it from the
+// environment itself.
+const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;
+// Demanded separately, because a `+clerk_test` fixture address takes the
+// email-code path and has no password to supply.
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
-const SECRET = process.env.CLERK_SECRET_KEY;
-// Named one by one, because "sign-in failed" thirty seconds into a browser run
-// is a much worse way to learn that a variable is missing. A `+clerk_test`
-// fixture address takes the email-code path and has no password to supply.
-const missing = [
-  !EMAIL && "E2E_AUDIT_USER_EMAIL",
-  !SECRET && "CLERK_SECRET_KEY",
-  EMAIL && !EMAIL.includes("+clerk_test") && !PASSWORD && "E2E_AUDIT_USER_PASSWORD",
-].filter(Boolean);
-if (missing.length > 0) throw new Error(`Set ${missing.join(", ")}.`);
+if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
+  throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
+}
 
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },

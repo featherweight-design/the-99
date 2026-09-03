@@ -9,20 +9,24 @@
 // a real hit test, through whatever is stacked above it.
 //
 // Run by hand, like its siblings, and not part of `pnpm test`:
-//   node --env-file=.env scripts/probe-touch-targets.mjs
+//   node scripts/probe-touch-targets.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { requireEnv } from "./lib/env.mjs";
 
+// CLERK_SECRET_KEY is asserted but not bound: `clerkSetup()` reads it from the
+// environment itself.
+const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv([
+  "E2E_AUDIT_USER_EMAIL",
+  "CLERK_SECRET_KEY",
+]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;
+// Demanded separately, because a `+clerk_test` fixture address takes the
+// email-code path and has no password to supply.
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
-const SECRET = process.env.CLERK_SECRET_KEY;
-const missing = [
-  !EMAIL && "E2E_AUDIT_USER_EMAIL",
-  !SECRET && "CLERK_SECRET_KEY",
-  EMAIL && !EMAIL.includes("+clerk_test") && !PASSWORD && "E2E_AUDIT_USER_PASSWORD",
-].filter(Boolean);
-if (missing.length > 0) throw new Error(`Set ${missing.join(", ")}.`);
+if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
+  throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
+}
 
 // 44px is the touch minimum. Desktop is a pointer surface and is reported for
 // information only, so a smaller desktop chip is not a failure.

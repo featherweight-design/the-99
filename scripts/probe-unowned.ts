@@ -6,7 +6,8 @@
 // field say nothing about that; this runs the real query against the real dev
 // database and reports the count at every stage the filter can zero out.
 //
-//   DATABASE_URL=... pnpm tsx scripts/probe-unowned.ts
+//   pnpm tsx scripts/probe-unowned.ts
+import "./lib/env.mjs";
 import { and, arrayContained, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { cards, collectionItems, deckCards, decks } from "../src/db/schema";

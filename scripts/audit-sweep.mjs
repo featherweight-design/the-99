@@ -12,25 +12,23 @@
 //
 // Run by hand, against a dev server on PROBE_BASE:
 //
-//   E2E_AUDIT_USER_EMAIL="alpha-test+clerk_test@the99.app" \
-//     node --env-file=.env scripts/audit-sweep.mjs
+//   node scripts/audit-sweep.mjs
 //
-// The `+clerk_test` address is the only identifier the local dev instance signs
-// in unattended, and it has no password: Clerk accepts the fixed 424242 code
-// for it, which is why E2E_AUDIT_USER_PASSWORD is optional below. Needs a
-// browser and a signed-in session, so it stays out of `pnpm test`.
+// Credentials come from `.env`, where E2E_AUDIT_USER_EMAIL has to be the
+// `+clerk_test` address — the only identifier the local dev instance signs in
+// unattended. It has no password: Clerk accepts the fixed 424242 code for it,
+// which is why E2E_AUDIT_USER_PASSWORD is optional below. Needs a browser and a
+// signed-in session, so it stays out of `pnpm test`.
 import { mkdir, writeFile } from "node:fs/promises";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
+import { requireEnv } from "./lib/env.mjs";
 
+const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3002";
-const EMAIL = process.env.E2E_AUDIT_USER_EMAIL;
 // Optional. A `+clerk_test` address takes the code path below and has no
 // password to give, which is how the local dev instance is actually set up.
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
-if (!EMAIL || !process.env.CLERK_SECRET_KEY) {
-  throw new Error("Set E2E_AUDIT_USER_EMAIL and CLERK_SECRET_KEY.");
-}
 
 // A surface-adding PR adds its route here in the same PR. A route missing from
 // this list is a route no cold-eyes pass will ever look at.
