@@ -21,7 +21,7 @@ function deferred<T>() {
 
 const base = {
   deckId: "deck-1", openSlots: 31, ownedCandidates: 12, unownedCandidates: 40,
-  commanderShortName: "Atraxa", onAnnounce: () => {}, width: "desktop" as const,
+  commanderShortName: "Atraxa", onAnnounce: () => {},
 };
 
 beforeEach(() => {
@@ -91,6 +91,19 @@ describe("LastSlotsStrip", () => {
       borderLeftStyle: "solid",
       borderLeftColor: "var(--accent)",
     });
+  });
+
+  // §7.6 ordering — the brief requires B to sit directly beneath the shortfall
+  // line, meaning the shortfall line must precede control B in document order.
+  it("places the shortfall line before control B in document order", async () => {
+    render(<LastSlotsStrip {...base} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
+    });
+    const shortfall = await screen.findByTestId("last-slots-shortfall");
+    const topUp = screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") });
+    // Node.DOCUMENT_POSITION_FOLLOWING (4) means shortfall precedes topUp.
+    expect(shortfall.compareDocumentPosition(topUp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   // State 10. Rule 5 — the refusal is under the clicked control and the other

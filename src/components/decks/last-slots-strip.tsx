@@ -20,13 +20,6 @@ import { fillLastSlotsOwned, fillLastSlotsUnowned } from "../../app/decks/action
 import { MutationError } from "./mutation-error";
 import { GhostButton } from "../ui/button";
 
-// The strip accepts `width` to match the provenance-line convention — it lets
-// the caller decide which responsive variant to mount, the same way
-// provenance-line.tsx is mounted twice under md:hidden / hidden md:block.
-// Interactive controls (A and B) are single elements with responsive classes,
-// never duplicated subtrees, per Rule §responsive-split.
-type Width = "phone" | "desktop";
-
 export interface LastSlotsStripProps {
   deckId: string;
   /** 99 minus the current built count from the optimistic card list. */
@@ -41,15 +34,16 @@ export interface LastSlotsStripProps {
   commanderShortName: string;
   /** Writes one message per settle to the live region in builder-shell.tsx. */
   onAnnounce: (message: string) => void;
-  width: Width;
 }
 
 // ── Shortfall line (§7.6) ──────────────────────────────────────────────────
-// Rendered inside the strip when A settles below 99. Provenance shape: inline
-// styles matching provenance-line.tsx (:79-84) so that the border-left inline
-// style is preserved and the test's toHaveStyle assertion passes.
-// Border-radius and padding use responsive Tailwind classes so this component
-// can be mounted once (not twice under md:hidden / hidden md:block).
+// Rendered inside the strip when A settles below 99. Takes the provenance shape
+// from provenance-line.tsx (:79-84): surface-sunken background, 1px --border,
+// 3px --accent left border — accent rather than warning because a shortfall is
+// honest, not alarming. Border-left is set via inline styles (same as
+// provenance-line.tsx) so jsdom can inspect the individual longhand properties.
+// Border-radius and padding use responsive Tailwind classes so the component
+// is mounted once without a width-prop branch.
 
 interface ShortfallLineProps {
   total: string;
@@ -93,37 +87,19 @@ function ShortfallLine({ total, shortfall }: ShortfallLineProps) {
 // ── LastSlotsStrip ─────────────────────────────────────────────────────────
 
 export function LastSlotsStrip(props: LastSlotsStripProps) {
-  // Rule 3: unmount as a unit at 0 open slots.
+  // Rule 3: unmount as a unit at 0 open slots. The guard lives in the outer
+  // component so that the stateful inner component never calls hooks
+  // conditionally — React requires hooks to run unconditionally.
   if (props.openSlots <= 0) return null;
-
-  // `props.width` is accepted in the interface so callers can declare the
-  // breakpoint they are rendering at — the test suite does this. The runtime
-  // never reads it: every width-dependent element inside the strip uses
-  // responsive Tailwind classes, so a single DOM mount is correct at both
-  // phone and desktop without any prop-driven branching.
-  return (
-    <LastSlotsStripInner
-      deckId={props.deckId}
-      openSlots={props.openSlots}
-      ownedCandidates={props.ownedCandidates}
-      unownedCandidates={props.unownedCandidates}
-      commanderShortName={props.commanderShortName}
-      onAnnounce={props.onAnnounce}
-    />
-  );
+  return <LastSlotsStripInner {...props} />;
 }
 
-// A narrower type for the inner component. `width` is part of the exported
-// LastSlotsStripProps so callers can declare the breakpoint they are rendering
-// at (the test suite does this). The inner component does not read it: every
-// width-dependent element uses responsive Tailwind classes so the strip renders
-// correctly in a single DOM mount without any prop-driven branching.
-type InnerProps = Omit<LastSlotsStripProps, "width">;
+// The inner component holds all state. Separated from the outer guard above so
+// that `if (openSlots <= 0) return null` can appear before any useState calls —
+// React's rules of hooks forbid a conditional return inside a component that
+// also calls hooks.
+type InnerProps = LastSlotsStripProps;
 
-// The inner component holds state. Separated from the outer so that `if
-// (openSlots <= 0) return null` is a pure guard with no hook calls above it —
-// React rules require hooks to run unconditionally, so the guard cannot live
-// in the same component as the state that follows it.
 function LastSlotsStripInner({
   deckId,
   openSlots,
@@ -210,14 +186,15 @@ function LastSlotsStripInner({
         <span className="md:hidden">{synergyCopy.lastSlots.captionMobile(String(openSlots))}</span>
       </p>
 
-      {/* Controls row: owned note beside A and B */}
-      <div className="flex flex-col md:flex-row md:flex-wrap gap-[10px] md:items-center">
-        {/* Control A — owned fill. Absent at 0 owned candidates (Rule 1). In
-            flight: border softens to --accent-shadow, label colour to --fg-faint.
-            All state-dependent values are Tailwind arbitrary classes so hover
-            utilities (inherited by future refactors) cannot be silently killed
-            by an inline style override. */}
-        {ownedCandidates > 0 && (
+      {/* Control A row — owned fill plus its owned note. Both absent when there
+          are no owned candidates (Rule 1). Flex row at desktop so the note sits
+          beside the button without wrapping onto a second line. */}
+      {ownedCandidates > 0 && (
+        <div className="flex flex-col md:flex-row md:flex-wrap gap-[10px] md:items-center mb-[10px]">
+          {/* Control A — owned fill. In flight: border softens to --accent-shadow,
+              label colour to --fg-faint. State-dependent values are Tailwind
+              arbitrary classes so hover utilities cannot be silently killed by an
+              inline style override. */}
           <div className="flex flex-col">
             <button
               type="button"
@@ -241,47 +218,46 @@ function LastSlotsStripInner({
             </button>
             {ownedError && <MutationError message={ownedError} />}
           </div>
-        )}
 
-        {/* Control B — buying top-up. Absent at 0 unowned candidates (Rule 1).
-            Disabled while either write is in flight (Rule 2). */}
-        {unownedCandidates > 0 && (
-          <div className="flex flex-col">
-            <GhostButton
-              onClick={runUnowned}
-              disabled={busy}
-              aria-label={synergyCopy.lastSlots.topUpAria(String(openSlots))}
-              className="w-full md:w-auto min-h-[44px] md:min-h-0 rounded-[8px] px-[16px] py-[10px] text-[13px]"
-            >
-              {synergyCopy.lastSlots.topUp}
-              {/* Count in mono warning — on the button's face, after the label */}
-              {" "}
-              <span className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>
-                {unownedCandidates}
-              </span>
-            </GhostButton>
-            {unownedError && <MutationError message={unownedError} />}
-          </div>
-        )}
-
-        {/* Owned note — explains the number when A is present. Mono --fg-locked.
-            Sits beside the controls so neither control has to carry the
-            explanation in its own label. */}
-        {ownedCandidates > 0 && (
+          {/* Owned note — explains the number beside A. Mono --fg-locked. Sits
+              beside the button so neither control has to carry the explanation
+              in its own label. */}
           <p
             className="font-mono md:ml-[4px]"
             style={{ fontSize: "10.5px", color: "var(--fg-locked)" }}
           >
             {synergyCopy.lastSlots.ownedNote(String(ownedCandidates), commanderShortName)}
           </p>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* §7.6 shortfall line — rendered below the controls when A settled below
-          99, and B sits directly beneath it. The shape matches provenance-line
-          so the accent border-left reads as informational, not alarming. */}
+      {/* §7.6 shortfall line — rendered when A settled below 99. The brief
+          requires B to sit directly beneath it, so the shortfall line is placed
+          between control A and control B in the DOM. */}
       {settled && (
         <ShortfallLine total={settled.total} shortfall={settled.shortfall} />
+      )}
+
+      {/* Control B — buying top-up. Absent at 0 unowned candidates (Rule 1).
+          Disabled while either write is in flight (Rule 2). Rendered after the
+          shortfall line so it sits directly beneath it once A has settled. */}
+      {unownedCandidates > 0 && (
+        <div className="flex flex-col mt-[10px]">
+          <GhostButton
+            onClick={runUnowned}
+            disabled={busy}
+            aria-label={synergyCopy.lastSlots.topUpAria(String(openSlots))}
+            className="w-full md:w-auto min-h-[44px] md:min-h-0 rounded-[8px] px-[16px] py-[10px] text-[13px]"
+          >
+            {synergyCopy.lastSlots.topUp}
+            {/* Count in mono warning — on the button's face, after the label */}
+            {" "}
+            <span className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>
+              {unownedCandidates}
+            </span>
+          </GhostButton>
+          {unownedError && <MutationError message={unownedError} />}
+        </div>
       )}
     </div>
   );

@@ -559,13 +559,11 @@ export function BuilderShell({
             {/* Last-31 strip — shown when the deck still has open slots and
                 the commander's EDHREC support list has cards to offer. Unmounts
                 as a unit at 0 open slots. Mounted once: unlike ProvenanceLine,
-                which passes a `width` prop to conditional non-interactive content
-                and therefore needs two mounts, the strip uses responsive Tailwind
-                classes for all width-dependent elements (caption text, the ⓘ disc,
-                the shortfall border-radius). Interactive controls A and B appear
-                exactly once in the DOM. The `width` prop is still part of the
-                exported interface so the strip can be rendered standalone at a
-                fixed breakpoint where needed. */}
+                which uses a `width` prop to branch conditional non-interactive
+                content and therefore needs two mounts, the strip uses responsive
+                Tailwind classes for all width-dependent elements (caption text,
+                the ⓘ disc, the shortfall border-radius). Interactive controls
+                A and B appear exactly once in the DOM. */}
             {(ownedCandidates > 0 || unownedCandidates > 0) && (
               <LastSlotsStrip
                 deckId={deck.id}
@@ -574,7 +572,6 @@ export function BuilderShell({
                 unownedCandidates={unownedCandidates}
                 commanderShortName={commanderShortName}
                 onAnnounce={setAnnouncement}
-                width="desktop"
               />
             )}
 
