@@ -83,8 +83,13 @@ describe("LastSlotsStrip", () => {
       screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
     });
     const line = await screen.findByText(synergyCopy.lastSlots.short("80", "19"));
+    // Asserted as longhands rather than the `border-left` shorthand: jsdom
+    // refuses to expand a shorthand whose value carries a var() reference, so
+    // the shorthand form reads as empty no matter what the element carries.
     expect(line.closest("[data-testid='last-slots-shortfall']")).toHaveStyle({
-      borderLeft: "3px solid var(--accent)",
+      borderLeftWidth: "3px",
+      borderLeftStyle: "solid",
+      borderLeftColor: "var(--accent)",
     });
   });
 

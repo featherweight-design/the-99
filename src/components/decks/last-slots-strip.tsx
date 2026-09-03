@@ -64,7 +64,9 @@ function ShortfallLine({ total, shortfall }: ShortfallLineProps) {
       style={{
         background: "var(--surface-sunken)",
         border: "1px solid var(--border)",
-        borderLeft: "3px solid var(--accent)",
+        borderLeftWidth: "3px",
+        borderLeftStyle: "solid",
+        borderLeftColor: "var(--accent)",
       }}
     >
       {/* ⓘ disc — desktop only, matching provenance-line.tsx treatment. Drops at

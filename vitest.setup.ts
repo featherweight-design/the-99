@@ -24,43 +24,6 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   } as unknown as typeof ResizeObserver;
 }
 
-// jsdom's getComputedStyle cannot resolve CSS custom properties — var(--foo)
-// stays at its initial default value, so toHaveStyle({ borderLeft: "3px solid
-// var(--accent)" }) always fails even when the element has exactly that inline
-// style. The proxy below prefers the element's own inline style value whenever
-// that value references a CSS custom property (contains "var("), which is the
-// only case where the computed style and the inline style diverge in a way that
-// breaks assertions about design token values. All other reads go through to the
-// real CSSStyleDeclaration unchanged.
-if (typeof window !== "undefined" && window.getComputedStyle) {
-  const _getComputedStyle = window.getComputedStyle.bind(window);
-  Object.defineProperty(window, "getComputedStyle", {
-    writable: true,
-    configurable: true,
-    value: (el: Element, pseudo?: string | null) => {
-      const computed = _getComputedStyle(el, pseudo);
-      const inlineStyle = (el as HTMLElement).style;
-      if (!inlineStyle) return computed;
-      return new Proxy(computed, {
-        get(target, prop, receiver) {
-          if (typeof prop !== "string") return Reflect.get(target, prop, receiver);
-          // Only intercept camelCase property names (not method names like
-          // getPropertyValue, which have their own non-string-return paths).
-          if (/^[a-z][a-zA-Z]+$/.test(prop)) {
-            const kebab = prop.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`);
-            const inlineVal = inlineStyle.getPropertyValue(kebab);
-            // Prefer the raw inline value when it references a CSS custom
-            // property — jsdom never resolves those, so the computed value is
-            // always the property's default, not the intended design token.
-            if (inlineVal && inlineVal.includes("var(")) return inlineVal;
-          }
-          return Reflect.get(target, prop, receiver);
-        },
-      });
-    },
-  });
-}
-
 // jsdom ships no matchMedia, so any component reaching useIsDesktop() throws
 // before it renders. Phone is the default because it is the hook's own SSR
 // snapshot; tests that need the other breakpoint redefine this themselves.
