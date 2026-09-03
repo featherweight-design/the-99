@@ -103,6 +103,15 @@ describe("SynergyPanel", () => {
     expect(screen.getByText("62 / 258 owned")).toBeInTheDocument();
   });
 
+  // The legend's unit token is the one accent-coloured span on an otherwise
+  // locked-grey line, so it has to survive as its own element.
+  it("colours the legend's +pts token with the accent", () => {
+    wrap(<SynergyPanel {...props} cards={make(3)} width="desktop" />);
+    expect(screen.getByText(synergyCopy.panel.legendToken)).toHaveStyle({
+      color: "var(--accent)",
+    });
+  });
+
   it("reports a toggle by oracle id", () => {
     const onToggle = vi.fn();
     wrap(<SynergyPanel {...props} onToggle={onToggle} cards={make(3)} width="desktop" />);

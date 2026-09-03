@@ -397,7 +397,14 @@ export function CommanderDetail({
 
         {/* EDHREC Synergy section (mobile) */}
         {c.fitSynergy !== null && c.edhrecTotal !== null && synergyCards.length > 0 ? (
-          <div>
+          <div
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              padding: "16px 14px",
+            }}
+          >
             <div className="mb-[12px]">
               <h2
                 className="font-display font-[600] m-0"
@@ -621,7 +628,14 @@ export function CommanderDetail({
 
           {/* EDHREC Synergy section */}
           {c.fitSynergy !== null && c.edhrecTotal !== null && synergyCards.length > 0 ? (
-            <div>
+            <div
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: 16,
+                padding: "26px 28px",
+              }}
+            >
               <h2
                 className="font-display font-[600] m-0"
                 style={{ fontSize: 20, color: "var(--fg)" }}

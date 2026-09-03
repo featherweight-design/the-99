@@ -222,7 +222,8 @@ export function SynergyPanel({
           lineHeight: 1.4,
         }}
       >
-        {isPhone ? synergyCopy.panel.legendMobile : synergyCopy.panel.legend}
+        <span style={{ color: "var(--accent)" }}>{synergyCopy.panel.legendToken}</span>{" "}
+        {isPhone ? synergyCopy.panel.legendRestMobile : synergyCopy.panel.legendRest}
       </p>
 
       {/* Column header row — desktop only; 9.5px mono uppercase 0.14em tracking */}

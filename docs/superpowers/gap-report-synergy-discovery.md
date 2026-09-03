@@ -509,3 +509,39 @@ Selected: border/background/colour/glyph ✅.
 ### `?select=` selection carry (supporting path)
 
 ✅ REACHABLE end-to-end: `SelectableBuildButton` writes `&select=` (`synergy-selection.tsx:169-171`) → `/decks` appends via `selectParamSuffix` → `/decks/new` parses via `parseSelectParam` → `CreatePreFilled` passes `selectedOracleIds` to `createDeck` (`create-pre-filled.tsx:60`). One sanitiser at all three layers.
+
+---
+
+## Resolution (confirm pass, 2026-09-03)
+
+Agent 3 confirmed all three state-reachability gaps and 37 of the 41 visual gaps
+as fixed, with mutation proofs on each state gap. The residue was closed or
+deferred as follows.
+
+### Closed after the confirm pass
+
+1. **Panel outer wrapper** — `detail.tsx` now gives the synergy section its card
+   treatment at both callsites: `background: var(--surface)`,
+   `border: 1px solid var(--border)`, `border-radius: 16px`, and the
+   width-specific padding the table asks for (`16px 14px` on the phone
+   callsite, `26px 28px` on the desktop one). The two callsites are already
+   split by width, so no duplicated subtree was introduced.
+2. **Figure legend `+pts` accent token** — the legend copy is now split into
+   `legendToken` and `legendRest` / `legendRestMobile`, letting the `+pts`
+   substring render as its own span in `var(--accent)` while the rest of the
+   line stays `var(--fg-locked)`. Locked by a test.
+
+### Deferred with cause
+
+3. **ConsiderSynergyShelf heading font-size (mobile)** — the table asks for 11px
+   at both widths; the implementation is `text-[10.5px] md:text-[11px]`. That
+   heading element is shared by every Consider shelf, and its 10.5px mobile size
+   was specified and shipped by the Consider design (#158, PR #175). Raising it
+   here would silently restyle four shelves outside this feature's scope for a
+   0.5px difference, and scoping the override to the synergy shelf alone would
+   put a conditional font-size on a shared heading. Left for Design to
+   reconcile across the two tables.
+
+Also still deferred from the verify pass, unchanged: the four out-of-scope
+visual gaps and the `detail.tsx` responsive duplication, all of which predate
+this branch (evidence recorded in the verify section above).

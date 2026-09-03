@@ -31,9 +31,12 @@ export const synergyCopy = {
     // Said once, above the column header. Both units named, both null states
     // named, in one line — because two figures in two columns is the one thing
     // a player has to be taught on this panel.
-    legend:
-      '+pts = how much more often it appears here than in decks generally · % = decks running it · — = no figure',
-    legendMobile: '+pts = synergy vs. all decks · % = decks running it',
+    // The '+pts' token is split out because it renders in the accent colour
+    // while the rest of the line stays locked-grey.
+    legendToken: '+pts',
+    legendRest:
+      '= how much more often it appears here than in decks generally · % = decks running it · — = no figure',
+    legendRestMobile: '= synergy vs. all decks · % = decks running it',
 
     // Column header row, desktop only. Three words, so they are strings and not
     // a formatter.
