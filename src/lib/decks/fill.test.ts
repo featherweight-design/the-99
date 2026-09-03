@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planFill, type FillCandidate } from "./fill";
+import { dedupeSelectionFromPool, planFill, type FillCandidate } from "./fill";
 
 const c = (over: Partial<FillCandidate> & { oracleId: string }): FillCandidate => ({
   name: over.oracleId, typeLine: "Artifact", oracleText: "{T}: Add {C}.",
@@ -198,5 +198,29 @@ describe("planFill", () => {
     expect(plan.rows.filter((r) => r.oracleId === "tower")).toHaveLength(1);
     expect(plan.rows.filter((r) => r.oracleId === "forest")).toHaveLength(1);
     expect(plan.rows.find((r) => r.oracleId === "forest")!.quantity).toBe(4);
+  });
+});
+
+// The pure half of the dedupe, extracted so the transaction does not have to be
+// stubbed to test the arithmetic that gap report 4 flagged.
+describe("dedupeSelectionFromPool", () => {
+  it("removes selected cards from the candidates the fill plans against", () => {
+    const pool = [{ oracleId: "a" }, { oracleId: "b" }, { oracleId: "c" }];
+    expect(dedupeSelectionFromPool(pool, ["b"]).map((x) => x.oracleId)).toEqual(["a", "c"]);
+  });
+
+  it("leaves the candidates alone when nothing was selected", () => {
+    const pool = [{ oracleId: "a" }];
+    expect(dedupeSelectionFromPool(pool, [])).toHaveLength(1);
+  });
+
+  it("ignores a selected id that is not among the candidates", () => {
+    const pool = [{ oracleId: "a" }];
+    expect(dedupeSelectionFromPool(pool, ["zzz"])).toHaveLength(1);
+  });
+
+  it("accepts a Set as well as an array", () => {
+    const pool = [{ oracleId: "a" }, { oracleId: "b" }];
+    expect(dedupeSelectionFromPool(pool, new Set(["a"])).map((x) => x.oracleId)).toEqual(["b"]);
   });
 });

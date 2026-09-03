@@ -3,6 +3,49 @@ import { suggestDeck, humanRole, buildSuggestionPayload } from "./suggest";
 import type { PoolCard } from "../recs/score";
 import type { DeckSuggestion, Suggestion } from "./suggest";
 
+// Test helpers for synergyFigure tests. edhrecCandidate and roleCandidate build
+// the payload shape buildSuggestionPayload requires; buildSuggestions maps over
+// an array of them so a test can assert on a specific index.
+function edhrecCandidate(name: string): Suggestion &
+  Pick<DeckSuggestion, "name" | "typeLine" | "cardTypeGroup" | "role" | "imageUri" | "manaCost" | "manaValue"> & { owned: boolean } {
+  return {
+    oracleId: name.toLowerCase().replace(/\W+/g, "-"),
+    name,
+    reason: "edhrec",
+    typeLine: "Instant",
+    cardTypeGroup: "Instants",
+    role: "other",
+    imageUri: null,
+    manaCost: "{U}",
+    manaValue: 1,
+    owned: true,
+  };
+}
+
+function roleCandidate(name: string, reason: "ramp" | "draw" | "removal" | "wipes" | "land"): Suggestion &
+  Pick<DeckSuggestion, "name" | "typeLine" | "cardTypeGroup" | "role" | "imageUri" | "manaCost" | "manaValue"> & { owned: boolean } {
+  return {
+    oracleId: name.toLowerCase().replace(/\W+/g, "-"),
+    name,
+    reason,
+    typeLine: "Sorcery",
+    cardTypeGroup: "Instants",
+    role: "ramp",
+    imageUri: null,
+    manaCost: "{1}{G}",
+    manaValue: 2,
+    owned: true,
+  };
+}
+
+function buildSuggestions(
+  candidates: ReturnType<typeof edhrecCandidate>[],
+  inclusionByName: Record<string, number | undefined>,
+  synergyByName: Record<string, number | undefined>,
+): DeckSuggestion[] {
+  return candidates.map((c) => buildSuggestionPayload(c, inclusionByName, synergyByName));
+}
+
 let n = 0;
 const card = (over: Partial<PoolCard>): PoolCard => ({
   oracleId: `o-${n++}`, name: `Card ${n}`, typeLine: "Creature",
@@ -184,6 +227,17 @@ describe("buildSuggestionPayload", () => {
       expect(
         buildSuggestionPayload({ ...dfc, owned: true }, {}, { "valki, god of lies": 0.5 }).lift,
       ).toBe(0.5);
+    });
+
+    it("carries a negative synergy figure that lift refuses", () => {
+      const [s] = buildSuggestions([edhrecCandidate("Ponder")], {}, { ponder: -0.03 });
+      expect(s.lift).toBeNull();
+      expect(s.synergyFigure).toBeCloseTo(-0.03);
+    });
+
+    it("leaves synergyFigure null on a role suggestion", () => {
+      const [s] = buildSuggestions([roleCandidate("Llanowar Elves", "ramp")], {}, {});
+      expect(s.synergyFigure).toBeNull();
     });
   });
 });

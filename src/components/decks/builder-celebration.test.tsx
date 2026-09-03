@@ -4,7 +4,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
-import { celebrationKey } from "../../lib/decks/celebration";
+import { celebrationKey, fillCompletedKey } from "../../lib/decks/celebration";
 
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
@@ -13,6 +13,10 @@ vi.mock("../../app/decks/actions", () => ({
   removeCardFromDeck: vi.fn(),
   deleteDeck: vi.fn(),
   renameDeck: vi.fn(),
+  clearAutoCards: vi.fn(async () => []),
+  restoreAutoCards: vi.fn(async () => ({})),
+  fillLastSlotsOwned: vi.fn(),
+  fillLastSlotsUnowned: vi.fn(),
 }));
 
 const { BuilderShell } = await import("./builder-shell");
@@ -189,6 +193,74 @@ describe("BuilderShell — 99/99 celebration", () => {
       view.rerender(builder(makeDeck({ id: "deck-mid-visit" })));
     });
     expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
+  });
+
+  it("does not reveal a deck that a fill completed", async () => {
+    window.localStorage.setItem(fillCompletedKey("deck-1"), "1");
+    await act(async () => {
+      renderBuilder(makeDeck());
+    });
+    expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
+  });
+
+  // The suppression describes one completion, not the deck forever. A fill
+  // finishes the deck, the player pulls a card back out, then builds to 99 by
+  // hand — the last card was theirs, so the reveal is theirs. Left standing the
+  // flag outlives the completion it describes and silences a 99 the fill had no
+  // part in.
+  it("retires the fill suppression once the deck falls out of Complete", async () => {
+    window.localStorage.setItem(fillCompletedKey("deck-redo"), "1");
+    const view = await act(async () =>
+      renderBuilder(makeDeck({ id: "deck-redo", built: 98, ownedCount: 98 })),
+    );
+    expect(localStorage.getItem(fillCompletedKey("deck-redo"))).toBeNull();
+
+    await act(async () => {
+      view.rerender(builder(makeDeck({ id: "deck-redo" })));
+    });
+    expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
+  });
+
+  // The other half of the rule: while the deck is still the Complete one the
+  // fill produced, the suppression stands. A retire that fired on any render
+  // would pass the test above and defeat the suppression entirely.
+  it("keeps the suppression while the filled deck is still Complete", async () => {
+    window.localStorage.setItem(fillCompletedKey("deck-held"), "1");
+    await act(async () => {
+      renderBuilder(makeDeck({ id: "deck-held" }));
+    });
+    expect(localStorage.getItem(fillCompletedKey("deck-held"))).toBe("1");
+    expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
+  });
+
+  // L2 — sweeping the auto cards clears the fill suppression so the reveal is
+  // available again if the player rebuilds the deck to 99 by hand.
+  it("clears the fill-suppression flag when auto cards are swept", async () => {
+    window.localStorage.setItem(fillCompletedKey("deck-fill"), "1");
+    // A deck with one auto card so the sweep button is present.
+    const cards = Array.from({ length: 98 }, (_, i) => ({
+      oracleId: `card-${i}`,
+      name: `Card ${i}`,
+      typeLine: "Artifact",
+      cardTypeGroup: "Artifacts" as const,
+      role: "other" as const,
+      owned: true,
+      quantity: 1,
+      auto: false,
+    }));
+    const autoCard = {
+      oracleId: "auto-1", name: "Sol Ring", typeLine: "Artifact",
+      cardTypeGroup: "Artifacts" as const, role: "ramp" as const,
+      owned: true, quantity: 1, auto: true,
+    };
+    await act(async () => {
+      renderBuilder(makeDeck({ id: "deck-fill", built: 99, cards: [...cards, autoCard] }));
+    });
+    // Click the sweep button.
+    const sweepBtn = screen.getByRole("button", { name: /Clear all 1/ });
+    await act(async () => { fireEvent.click(sweepBtn); });
+    // The fill-suppression flag must be gone.
+    expect(localStorage.getItem(fillCompletedKey("deck-fill"))).toBeNull();
   });
 
   // Safari private mode and blocked storage throw on both read and write. The

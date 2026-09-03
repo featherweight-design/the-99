@@ -6,16 +6,17 @@ import { cards } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
 import { isCommanderCandidate } from "../../../lib/recs/score";
 import { listOwnedLegalCommanders } from "../../../lib/decks/read";
+import { parseSelectParam } from "../../../lib/decks/selection-param";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
 
 export default async function NewDeckPage({
   searchParams,
 }: {
-  searchParams: Promise<{ commander?: string }>;
+  searchParams: Promise<{ commander?: string; select?: string | string[] }>;
 }) {
   const userId = await requireUserId();
-  const { commander: commanderParam } = await searchParams;
+  const { commander: commanderParam, select } = await searchParams;
 
   // Pre-filled door: validate the ?commander= param server-side.
   if (commanderParam) {
@@ -32,6 +33,10 @@ export default async function NewDeckPage({
           typeLine={row.typeLine}
           colorIdentity={row.colorIdentity}
           imageUri={row.imageUri}
+          // Shape-checked here, legality-checked in `createDeck`: this page has
+          // no commander context until the row above resolves, and the action
+          // has to re-check whatever it is handed anyway.
+          selectedOracleIds={parseSelectParam(select)}
         />
       );
     }

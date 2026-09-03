@@ -1,8 +1,33 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
 import { CommanderDetail } from "./detail";
+import type { SynergyCard } from "../../lib/commanders/synergy-cards";
+
+const noSynergyCards: SynergyCard[] = [];
+
+const synergyCards: SynergyCard[] = [
+  {
+    oracleId: "oracle-goblin-bombardment",
+    name: "Goblin Bombardment",
+    typeLine: "Enchantment",
+    facet: "enchantment",
+    inclusionPct: 31,
+    synergyPts: 47,
+    owned: true,
+  },
+  {
+    oracleId: "oracle-skullclamp",
+    name: "Skullclamp",
+    typeLine: "Artifact — Equipment",
+    facet: "artifact",
+    inclusionPct: 62,
+    synergyPts: null,
+    owned: false,
+  },
+];
 
 function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
   return {
@@ -20,7 +45,6 @@ function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
     roleGaps: [],
     roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
     overlapOwned: [],
-    overlapMissing: [],
     fitPool: 12,
     fitRoles: 8,
     fitSynergy: 24,
@@ -42,19 +66,109 @@ function noSynergy(synergyState: SynergyState): RankedCommander {
 
 describe("CommanderDetail synergy states", () => {
   it("shows no synergy note when the state is ok", () => {
-    render(<CommanderDetail commander={commander()} rank={1} isBestFit />);
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
   });
 
   it("says the data is unavailable when the state is degraded", () => {
-    render(<CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} />);
+    render(<CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} synergyCards={noSynergyCards} />);
     expect(screen.getAllByText(/Synergy data unavailable/i).length).toBeGreaterThan(0);
   });
 
   it("says the commander is not indexed, with no Retry, when the state is absent", () => {
-    render(<CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} />);
+    render(<CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} synergyCards={noSynergyCards} />);
     expect(screen.getAllByText(/EDHREC doesn't track this commander/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();
+  });
+});
+
+describe("CommanderDetail hidden-receipts note", () => {
+  // The note names an outage. The panel also stays down for a commander EDHREC
+  // does not index and for one whose rows are all excluded, and calling either
+  // of those an outage promises a recovery that will never come.
+  it("keeps the outage note off an absent commander", () => {
+    render(
+      <CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} synergyCards={noSynergyCards} />,
+    );
+    expect(screen.queryByText(/EDHREC data unavailable/i)).toBeNull();
+  });
+
+  it("keeps the outage note off a commander whose rows are all excluded", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />,
+    );
+    expect(screen.queryByText(/EDHREC data unavailable/i)).toBeNull();
+  });
+
+  it("still shows the outage note when EDHREC is unreachable", () => {
+    render(
+      <CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} synergyCards={noSynergyCards} />,
+    );
+    expect(screen.getAllByText(/EDHREC data unavailable/i).length).toBeGreaterThan(0);
+  });
+});
+
+// The panel mounts twice — once per width — and both mounts read the same
+// selection provider. These exercise the wiring the three state tests above skip
+// by passing an empty card list.
+describe("CommanderDetail synergy panel", () => {
+  it("says the sub-caption once per width, and never beside the heading as well", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} />,
+    );
+    expect(screen.getAllByText(synergyCopy.panel.subcaption("2"))).toHaveLength(1);
+    expect(screen.getAllByText(synergyCopy.panel.subcaptionMobile("2"))).toHaveLength(1);
+  });
+
+  it("toggles a row through the provider, the bridge and the panel together", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} />,
+    );
+    const addLabel = synergyCopy.select.addAria("Goblin Bombardment");
+    const removeLabel = synergyCopy.select.removeAria("Goblin Bombardment");
+
+    // One toggle per mount, both resting unselected.
+    const resting = screen.getAllByRole("button", { name: addLabel });
+    expect(resting).toHaveLength(2);
+    for (const button of resting) expect(button).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(resting[0]);
+
+    // Both mounts flip, because the state is one provider and not two useStates.
+    const pressed = screen.getAllByRole("button", { name: removeLabel });
+    expect(pressed).toHaveLength(2);
+    for (const button of pressed) expect(button).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: addLabel })).toBeNull();
+
+    // The row itself reads as selected — the panel passed `selected` down.
+    const row = screen.getAllByRole("listitem", {
+      name: /^Goblin Bombardment\./,
+    })[0];
+    expect(within(row).getByRole("button", { name: removeLabel })).toBeInTheDocument();
+
+    fireEvent.click(pressed[0]);
+    expect(screen.getAllByRole("button", { name: addLabel })).toHaveLength(2);
+  });
+
+  it("leaves the Build href unchanged while nothing is selected", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} />,
+    );
+    for (const link of screen.getAllByRole("link", { name: /Build this deck/i })) {
+      expect(link).toHaveAttribute("href", `/decks?commander=${commander().oracleId}`);
+    }
+  });
+
+  it("carries the selected oracle ids into the Build href", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} />,
+    );
+    const rows = screen.getAllByRole("listitem");
+    fireEvent.click(within(rows[0]).getByRole("button", { name: /^Add / }));
+    fireEvent.click(within(rows[1]).getByRole("button", { name: /^Add / }));
+    const href = screen.getAllByRole("link", { name: /Build this deck/i })[0].getAttribute("href");
+    expect(href).toContain(`commander=${commander().oracleId}`);
+    expect(new URL(href!, "http://x").searchParams.get("select")?.split(",")).toHaveLength(2);
   });
 });

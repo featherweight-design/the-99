@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { listDecksWithStats } from "../../lib/decks/read";
+import { selectParamSuffix } from "../../lib/decks/selection-param";
 import { CardFan } from "../../components/marks";
 import { Crown } from "../../components/ui/crown";
 import { DeckCard } from "../../components/decks/deck-card";
@@ -18,12 +19,18 @@ import {
 export default async function DecksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ commander?: string }>;
+  searchParams: Promise<{ commander?: string; select?: string | string[] }>;
 }) {
   // Step 1: redirect on ?commander= query param
   const params = await searchParams;
   if (params.commander) {
-    redirect(`/decks/new?commander=${encodeURIComponent(params.commander)}`);
+    // The synergy picks ride along. `selectParamSuffix` is empty when nothing
+    // uuid-shaped survives, so a build with no selection lands on exactly the
+    // URL this page has always produced.
+    redirect(
+      `/decks/new?commander=${encodeURIComponent(params.commander)}` +
+        selectParamSuffix(params.select),
+    );
   }
 
   const userId = await requireUserId();

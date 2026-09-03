@@ -10,6 +10,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SortKey } from "./consider-toolbar";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
@@ -37,6 +39,7 @@ const suggestion = (over: Partial<DeckSuggestion> & { name: string }): DeckSugge
   manaValue: 3,
   inclusionPct: 40,
   lift: null,
+  synergyFigure: null,
   ...over,
 });
 
@@ -345,14 +348,13 @@ describe("ConsiderPanel — unowned staples", () => {
       .toContain("bg-accent");
   });
 
-  // The canvas draws the lift line on the owned tile and not on the unowned
-  // one. Design table §8-6 leaves open whether that keys off ownership or off
-  // thinner data, so this asserts what shipped rather than a reason for it.
-  it("keeps the lift line off an unowned tile", () => {
+  // Design table §8-6 ungates the lift line from ownership so a synergy-ranked
+  // tile can show why it ranked where it did, even if the card is unowned.
+  it("shows the lift line on an unowned tile", () => {
     mount({
       suggestions: [suggestion({ name: "Mana Drain", owned: false, lift: 0.31 })],
     });
-    expect(screen.queryByText(/pts vs\./)).toBeNull();
+    expect(screen.getByText(/pts vs\./)).toBeInTheDocument();
   });
 
   // A shelf that says "you have 2 of 10" is about cards you can play tonight.
@@ -373,13 +375,14 @@ describe("ConsiderPanel — unowned staples", () => {
         unowned("Mana Drain"),
         suggestion({ name: "Villain", role: "other" }),
         suggestion({ name: "Cultivate", role: "ramp" }),
+        suggestion({ name: "Swords", role: "ramp", synergyFigure: 0.4 }),
       ],
       deckCards: [deckCard("ramp", 4)],
     });
 
     const headings = screen.getAllByRole("heading", { level: 3 });
     expect(headings.map((h) => h.textContent))
-      .toEqual(["Ramp", "Threats & synergy", "Top picks for Korvold"]);
+      .toEqual(["Ramp", "Threats & synergy", synergyCopy.shelf.label("Korvold"), "Top picks for Korvold"]);
     expect(screen.getByText("not in your collection")).toBeInTheDocument();
     expect(screen.getByText("· 1 to consider")).toBeInTheDocument();
   });
@@ -437,6 +440,131 @@ describe("ConsiderPanel — panel states", () => {
     mount({ degraded: true });
     expect(screen.queryByText(/you already own/i)).toBeNull();
     expect(screen.getByRole("combobox", { name: /sort suggestions/i })).toBeInTheDocument();
+  });
+});
+
+describe("ConsiderPanel — synergy shelf", () => {
+  it("puts the synergy shelf above the unowned append and below the role shelves", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Rampant Growth", owned: true, role: "ramp" }),
+        suggestion({ name: "Beast Within", owned: true, synergyFigure: 0.4 }),
+        suggestion({ name: "Mana Crypt", owned: false }),
+      ],
+    });
+    const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(headings.indexOf(synergyCopy.shelf.label("Atraxa")))
+      .toBeGreaterThan(headings.findIndex((h) => h?.startsWith("Ramp")));
+    expect(headings.indexOf(synergyCopy.shelf.label("Atraxa")))
+      .toBeLessThan(headings.indexOf(addPanelCopy.shelf.labels.edhrec("Atraxa")));
+  });
+
+  it("rests the synergy shelf in synergy order, negatives included", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Low Synergy Card", owned: true, synergyFigure: -0.1 }),
+        suggestion({ name: "High Synergy Card", owned: true, synergyFigure: 0.9 }),
+        suggestion({ name: "Middle Synergy Card", owned: true, synergyFigure: 0.2 }),
+      ],
+    });
+    const shelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    // Each tile has two CardDetailTrigger buttons: one for the art (aria-label
+    // "View details for <name>") and one for the name (text content is the card
+    // name). Use the aria-label on the first button to identify the card.
+    expect(within(shelf).getAllByRole("listitem").map((li) => {
+      const artBtn = within(li).getAllByRole("button")[0];
+      const ariaLabel = artBtn.getAttribute("aria-label") ?? "";
+      // aria-label is "View details for <Card Name>"
+      return ariaLabel.replace(/^View details for /, "");
+    })).toEqual(["High Synergy Card", "Middle Synergy Card", "Low Synergy Card"]);
+  });
+
+  // showNoSynergy is wired to isSynergyShelf. A card with a negative synergyFigure
+  // (lift is null) lands on the synergy shelf but must not show the absent-figure
+  // label — it has a figure; the label means "no data at all". A role-shelf card
+  // with no figure must also stay silent — showNoSynergy is false there.
+  it("suppresses the absent-figure label on the synergy shelf when the card has a figure", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        // Negative synergyFigure: on the synergy shelf, lift is null, but the
+        // card has a figure — the absent-state label must not appear.
+        suggestion({ name: "Negative Card", owned: true, synergyFigure: -0.1, lift: null }),
+        // Role shelf: synergyFigure null, lift null, showNoSynergy false — silent.
+        suggestion({ name: "Ramp Card", owned: true, role: "ramp", synergyFigure: null, lift: null }),
+      ],
+    });
+    const synergyShelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    const rampShelf = screen.getByRole("region", { name: "Ramp" });
+    // Scoped to the negative card's own tile: the figureless ramp card also sits
+    // on this shelf, and it is supposed to carry the label.
+    const negativeTile = within(synergyShelf)
+      .getAllByRole("listitem")
+      .find((li) => within(li).queryAllByLabelText("View details for Negative Card").length > 0)!;
+    expect(within(negativeTile).queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
+    expect(within(rampShelf).queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
+  });
+
+  // The positive half of the pair above: without it, showNoSynergy could be
+  // hardcoded false and every assertion here would still pass.
+  it("says so on the synergy shelf for a card with no figure at all", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Ranked Card", owned: true, synergyFigure: 0.9 }),
+        suggestion({ name: "Figureless Card", owned: true, synergyFigure: null, lift: null }),
+      ],
+    });
+    const synergyShelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    expect(within(synergyShelf).getByText(synergyCopy.shelf.noSynergy)).toBeInTheDocument();
+  });
+
+  // A role pick was never EDHREC-ranked, so it has no synergy figure by
+  // construction. Shelving it here would repeat the coverage shelf above it and
+  // bury the ranking under absent-figure rows.
+  it("leaves role picks off the synergy shelf", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Ranked Card", owned: true, synergyFigure: 0.9 }),
+        suggestion({
+          name: "Role Pick",
+          owned: true,
+          reasonType: "role",
+          reason: "ramp",
+          synergyFigure: null,
+          lift: null,
+        }),
+      ],
+    });
+    const synergyShelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    expect(within(synergyShelf).queryByText("Role Pick")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Ramp" })).getByText("Role Pick"))
+      .toBeInTheDocument();
+  });
+
+  // One figureless card among ranked ones is an exception to a ranking and keeps
+  // its label (the test above). A shelf where nothing has a figure is not a
+  // ranking at all, so the heading that promises one is never drawn.
+  it("draws no synergy shelf when not one pick has a figure", () => {
+    mount({
+      commanderShortName: "Atraxa",
+      commanderOracleId: "cmd-atraxa",
+      suggestions: [
+        suggestion({ name: "Figureless One", owned: true, synergyFigure: null, lift: null }),
+        suggestion({ name: "Figureless Two", owned: true, synergyFigure: null, lift: null }),
+      ],
+    });
+    expect(
+      screen.queryByRole("region", { name: synergyCopy.shelf.label("Atraxa") }),
+    ).not.toBeInTheDocument();
   });
 });
 

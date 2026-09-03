@@ -9,6 +9,7 @@ import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { addCardToDeck } from "../../app/decks/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { availabilityState } from "../../lib/decks/availability";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -70,63 +71,89 @@ export function CostPips({ cost, className }: { cost: string; className?: string
 
 // The bar is decoration for a figure that is always present as text, so a card
 // with no EDHREC percentage gets a sentence instead — never a 0%-wide bar,
-// which reads as "no deck runs this" rather than "we don't know".
+// which reads as "no deck runs this" rather than "we don't know". The lift line
+// lives below the bar row (or no-inclusion sentence) so ungating it from
+// ownership means the sentence branch must not short-circuit the whole component.
 function Evidence({
-  suggestion, inDeck, commanderShortName,
-}: { suggestion: DeckSuggestion; inDeck: boolean; commanderShortName: string }) {
-  const { inclusionPct, lift } = suggestion;
-  if (inclusionPct == null) {
+  suggestion, inDeck, commanderShortName, showNoSynergy,
+}: {
+  suggestion: DeckSuggestion;
+  inDeck: boolean;
+  commanderShortName: string;
+  // Only true on the synergy shelf, where a tile with no figure at all draws an
+  // explicit absent-state label rather than staying silent as everywhere else.
+  showNoSynergy?: boolean;
+}) {
+  const { inclusionPct, lift, synergyFigure } = suggestion;
+  const pct = inclusionPct != null ? String(Math.round(inclusionPct)) : null;
+
+  // The no-inclusion sentence is rendered in place of the bar row (not instead
+  // of the whole component) so the lift line below it remains reachable.
+  const barRow = pct != null ? (
+    <div className="flex items-center gap-[6px]">
+      {/* The contract binds this value only as a border token, but the design
+          spends it as a dim foreground here and in decklist-row.tsx. */}
+      <span
+        aria-hidden
+        className="font-mono text-[9px]"
+        style={{ color: inDeck ? "var(--border-dashed)" : "var(--fg-locked)" }}
+      >
+        {addPanelCopy.tile.evidenceLabel}
+      </span>
+      <span
+        aria-hidden
+        className="flex-1 h-[4px] rounded-full overflow-hidden"
+        style={{ background: "var(--border)" }}
+      >
+        <span
+          className="block h-full rounded-full"
+          style={{
+            width: `${Math.min(100, Math.max(0, inclusionPct ?? 0))}%`,
+            background: inDeck ? "var(--accent-shadow)" : "var(--accent)",
+          }}
+        />
+      </span>
+      <span
+        className="font-mono text-[10px] tabular-nums"
+        style={{ color: inDeck ? "var(--fg-faint)" : "var(--fg-body)" }}
+        aria-label={addPanelCopy.tile.inclusionAria(pct, commanderShortName)}
+      >
+        {addPanelCopy.tile.inclusion(pct)}
+      </span>
+    </div>
+  ) : (
     // The slot the card was picked for, never the card's own role — the two
     // diverge on a multi-role card, and the sentence is about why it is here.
-    const text = suggestion.reasonType === "role"
-      ? addPanelCopy.tile.fillsRole(addPanelCopy.shelf.labels[shelfRoleOf(suggestion)].toLowerCase())
-      : addPanelCopy.tile.noInclusion;
-    return <p className="font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>{text}</p>;
-  }
-  const pct = String(Math.round(inclusionPct));
+    <p className="font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>
+      {suggestion.reasonType === "role"
+        ? addPanelCopy.tile.fillsRole(addPanelCopy.shelf.labels[shelfRoleOf(suggestion)].toLowerCase())
+        : addPanelCopy.tile.noInclusion}
+    </p>
+  );
+
   return (
     <div className="flex flex-col gap-[3px]">
-      <div className="flex items-center gap-[6px]">
-        {/* The contract binds this value only as a border token, but the design
-            spends it as a dim foreground here and in decklist-row.tsx. */}
-        <span
-          aria-hidden
-          className="font-mono text-[9px]"
-          style={{ color: inDeck ? "var(--border-dashed)" : "var(--fg-locked)" }}
-        >
-          {addPanelCopy.tile.evidenceLabel}
-        </span>
-        <span
-          aria-hidden
-          className="flex-1 h-[4px] rounded-full overflow-hidden"
-          style={{ background: "var(--border)" }}
-        >
-          <span
-            className="block h-full rounded-full"
-            style={{
-              width: `${Math.min(100, Math.max(0, inclusionPct))}%`,
-              background: inDeck ? "var(--accent-shadow)" : "var(--accent)",
-            }}
-          />
-        </span>
-        <span
-          className="font-mono text-[10px] tabular-nums"
-          style={{ color: inDeck ? "var(--fg-faint)" : "var(--fg-body)" }}
-          aria-label={addPanelCopy.tile.inclusionAria(pct, commanderShortName)}
-        >
-          {addPanelCopy.tile.inclusion(pct)}
-        </span>
-      </div>
-      {lift != null && suggestion.owned && (
+      {barRow}
+      {lift != null ? (
         <p className="font-mono text-[9.5px]" style={{ color: "var(--accent-shadow)" }}>
-          {/* EDHREC hands synergy back as a fraction; the tile states it in points.
-              The canvas draws this line on the owned tile and not on the unowned
-              one, and design table §8-6 says it is unclear whether that turns on
-              ownership or on the data being thinner for a card you do not have.
-              Shipped as drawn, keyed on ownership, and flagged there. */}
+          {/* EDHREC hands synergy back as a fraction; the tile states it in points. */}
           {addPanelCopy.tile.lift(String(Math.round(lift * 100)))}
         </p>
-      )}
+      ) : synergyFigure != null ? (
+        // A figure that never became a lift — zero or negative. Still a rank:
+        // the design table says the line is always rendered when the figure is
+        // present, and neither zero nor a negative is an absence. Signed by the
+        // shared formatter so a rounded 0 does not print as "−0 pts".
+        <p className="font-mono text-[9.5px]" style={{ color: "var(--fg-faint)" }}>
+          {synergySignedDisplay(Math.round(synergyFigure * 100))}
+        </p>
+      ) : showNoSynergy ? (
+        // Only on the synergy shelf: a card with no figure at all is named rather
+        // than silent, so the player knows the card simply has no data.
+        <p className="font-mono text-[9.5px]" style={{ color: "var(--fg-faint)" }}>
+          {synergyCopy.shelf.noSynergy}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -144,10 +171,14 @@ interface SuggestionTileProps {
   /** The shelf's ordered ids, so the modal's Prev/Next pages this role group. */
   siblings: string[];
   commanderShortName: string;
+  /** Only true when rendered on the synergy shelf — renders the absent-figure
+      label instead of staying silent, so players know a null is no data, not
+      last rank. Absent on all other shelves. */
+  showNoSynergy?: boolean;
 }
 
 export function SuggestionTile({
-  suggestion, deckId, inDeck, selfClaimed, siblings, commanderShortName,
+  suggestion, deckId, inDeck, selfClaimed, siblings, commanderShortName, showNoSynergy,
 }: SuggestionTileProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
@@ -326,6 +357,7 @@ export function SuggestionTile({
         suggestion={suggestion}
         inDeck={applied}
         commanderShortName={commanderShortName}
+        showNoSynergy={showNoSynergy}
       />
 
       {applied ? (

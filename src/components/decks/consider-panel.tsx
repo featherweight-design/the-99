@@ -12,6 +12,7 @@ import { GhostButton } from "../ui/button";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { shelfRoleOf, type DeckSuggestion } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { SuggestionTile } from "./suggestion-tile";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
@@ -26,8 +27,8 @@ const META = "font-mono text-[10px] md:text-[11px]";
 type ShelfRole = MixRole | "other";
 const SHELF_ROLES: ShelfRole[] = ["ramp", "draw", "removal", "wipes", "land", "other"];
 
-/** The card roles, plus the one shelf grouped by ownership instead of by role. */
-type ShelfKey = ShelfRole | "unowned";
+/** The card roles, plus the synergy shelf and the unowned append. */
+type ShelfKey = ShelfRole | "synergy" | "unowned";
 
 type Shelf = {
   key: ShelfKey;
@@ -56,9 +57,29 @@ function buildShelves(suggestions: DeckSuggestion[], deckCards: DeckDetailCard[]
     return gap(b) - gap(a);
   });
 
-  // Appended rather than ranked: it belongs below the targetless shelf, and
-  // nothing sorts below -Infinity. getDeckSuggestions caps the append at five,
-  // so SHELF_CAP can never bite here and needs no exception.
+  // Synergy shelf: owned EDHREC picks sorted by synergyFigure descending,
+  // figureless ones last. Role suggestions are excluded because they carry no
+  // EDHREC figure at all — including them would duplicate the coverage shelves
+  // above and bury the ranking under "no synergy figure" rows. An EDHREC pick
+  // EDHREC reported no synergy for does stay, and keeping it is what makes that
+  // line reachable.
+  // Placed below the sorted coverage shelves and above the unowned append —
+  // appended rather than ranked because it has no gap score to sort by.
+  //
+  // The shelf as a whole still needs one figure to exist. A figureless card sits
+  // inside a ranking and reads as an exception to it; a shelf where nothing has
+  // a figure is not a ranking at all, only the coverage shelves repeated under a
+  // heading that promises "ranked by synergy". Surface A draws the same line —
+  // with no synergy data the commander's panel is not rendered either.
+  const synergySorted = owned
+    .filter((s) => s.reasonType === "edhrec")
+    .sort((a, b) => (b.synergyFigure ?? -Infinity) - (a.synergyFigure ?? -Infinity));
+  if (synergySorted.some((s) => s.synergyFigure != null)) {
+    shelves.push({ key: "synergy" as const, suggestions: synergySorted, coverage: null });
+  }
+
+  // Unowned append — below the synergy shelf, and nothing sorts below -Infinity.
+  // getDeckSuggestions caps the append at five, so SHELF_CAP can never bite here.
   const unowned = suggestions.filter((s) => !s.owned);
   return unowned.length > 0
     ? [...shelves, { key: "unowned" as const, suggestions: unowned, coverage: null }]
@@ -125,9 +146,12 @@ function ShelfSection({
 }) {
   const [expanded, setExpanded] = useState(false);
   const headingId = `shelf-${shelf.key}`;
+  const isSynergyShelf = shelf.key === "synergy";
   const label = shelf.key === "unowned"
     ? addPanelCopy.shelf.labels.edhrec(commanderShortName)
-    : addPanelCopy.shelf.labels[shelf.key];
+    : isSynergyShelf
+      ? synergyCopy.shelf.label(commanderShortName)
+      : addPanelCopy.shelf.labels[shelf.key as ShelfRole];
   const overflowing = shelf.suggestions.length > SHELF_CAP;
   const shown = expanded ? shelf.suggestions : shelf.suggestions.slice(0, SHELF_CAP);
   // The modal pages the whole shelf, not just the tiles currently drawn — a
@@ -161,6 +185,10 @@ function ShelfSection({
             <span style={{ color: "var(--fg-faint)" }}>
               {`· ${addPanelCopy.shelf.count(shelf.suggestions.length)}`}
             </span>
+          </p>
+        ) : isSynergyShelf ? (
+          <p className={META} style={{ color: "var(--fg-faint)" }}>
+            {synergyCopy.shelf.meta(String(shelf.suggestions.length))}
           </p>
         ) : (
           <p className={META} style={{ color: "var(--fg-faint)" }}>
@@ -196,6 +224,7 @@ function ShelfSection({
             selfClaimed={selfClaimedIds.has(s.oracleId)}
             siblings={siblings}
             commanderShortName={commanderShortName}
+            showNoSynergy={isSynergyShelf}
           />
         ))}
       </ul>

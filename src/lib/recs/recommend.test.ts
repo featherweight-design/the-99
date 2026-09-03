@@ -29,7 +29,6 @@ function stubScore(name: string, score = 0): CommanderScore & { synergyState: Sy
     roleGaps: [],
     roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
     overlapOwned: [],
-    overlapMissing: [],
     fitPool: 0,
     fitRoles: 0,
     fitSynergy: null,

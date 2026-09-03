@@ -8,9 +8,10 @@ import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { availabilityState } from "../../lib/decks/availability";
-import { shouldCelebrate } from "../../lib/decks/celebration";
+import { fillCompletedKey, shouldCelebrate } from "../../lib/decks/celebration";
 import { CompletionReveal } from "./completion-reveal";
 import { useCelebrated } from "./use-celebrated";
+import { useLocalFlag } from "./use-local-flag";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { RoleCounterStrip } from "./role-counter-strip";
@@ -33,6 +34,7 @@ import { AddOptimisticCardProvider, useOptimisticDeckCards } from "./optimistic-
 import { MutationError } from "./mutation-error";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { ProvenanceLine, FillFailedBannerConnected } from "./provenance-line";
+import { LastSlotsStrip } from "./last-slots-strip";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { LAND_TARGET } from "../../lib/decks/suggest";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
@@ -71,6 +73,12 @@ interface BuilderShellProps {
       Cards with no EDHREC figure are absent from the map — never stored as 0.
       Null when EDHREC was unreachable, which is not the same claim. */
   shoppingFigures?: Record<string, number> | null;
+  /** Owned synergy cards planLastSlots would place into the open slots, derived
+      once by the page route. Zero means the owned fill control is absent. */
+  ownedCandidates?: number;
+  /** Unowned synergy cards planLastSlots would add beyond the owned ones.
+      Zero means the top-up control is absent. */
+  unownedCandidates?: number;
 }
 
 export function BuilderShell({
@@ -81,6 +89,8 @@ export function BuilderShell({
   commanderIdentity,
   arrivedFromImport,
   shoppingFigures = {},
+  ownedCandidates = 0,
+  unownedCandidates = 0,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -92,6 +102,12 @@ export function BuilderShell({
   const isDesktop = useIsDesktop();
 
   const [celebrated, markCelebrated, celebratedHere] = useCelebrated(deck.id);
+  const [completedByFill, markCompletedByFill, , clearCompletedByFill] = useLocalFlag(fillCompletedKey(deck.id));
+
+  // True while LastSlotsStrip has a fill write in flight (A or B). Used to
+  // disable control C (ClearAutoButton) during either fill per design table
+  // state 3 / state 8.
+  const [fillInflight, setFillInflight] = useState(false);
 
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
@@ -120,10 +136,22 @@ export function BuilderShell({
     unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
   });
 
+  // The flag is a receipt for a deck a fill completed, and the rule it serves is
+  // that the reveal belongs to the player who placed the last card. Once the deck
+  // drops back out of Complete the fill is no longer what completed it — the same
+  // reasoning the sweep already applies — so the suppression is retired and a
+  // player who builds back to 99 by hand can earn the reveal. Left standing, it
+  // would outlive the completion it describes and silence a hand-built 99 the
+  // fill had no part in.
+  useEffect(() => {
+    if (completedByFill && serverStatus !== "Complete") clearCompletedByFill();
+  }, [completedByFill, serverStatus, clearCompletedByFill]);
+
   const revealDue = shouldCelebrate({
     status: serverStatus,
     alreadyCelebrated: celebrated,
     arrivedFromImport,
+    completedByFill,
   });
 
   // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and
@@ -315,6 +343,10 @@ export function BuilderShell({
       try {
         const removed = await clearAutoCards(deck.id);
         setSweptRows(removed);
+        // The fill-suppression flag is a receipt for a deck completed by fill.
+        // After a sweep the fill is no longer what completed it, so a player who
+        // rebuilds to 99 by hand can earn the reveal.
+        clearCompletedByFill();
         const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
         const removedCount = removed.reduce((n, r) => n + r.quantity, 0);
         setAnnouncement(
@@ -326,7 +358,7 @@ export function BuilderShell({
         setSweepError(recommendationsCopy.auto.sweepFailed);
       }
     });
-  }, [sweepPending, cards, deck.id, sweepOptimisticAuto]);
+  }, [sweepPending, cards, deck.id, sweepOptimisticAuto, clearCompletedByFill]);
 
   const handleRestoreAuto = useCallback(async () => {
     if (!sweptRows) return;
@@ -546,6 +578,27 @@ export function BuilderShell({
                 </>
               );
             })()}
+
+            {/* Last-31 strip — shown when the deck still has open slots and
+                the commander's EDHREC support list has cards to offer. Unmounts
+                as a unit at 0 open slots. Mounted once: unlike ProvenanceLine,
+                which uses a `width` prop to branch conditional non-interactive
+                content and therefore needs two mounts, the strip uses responsive
+                Tailwind classes for all width-dependent elements (caption text,
+                the ⓘ disc, the shortfall border-radius). Interactive controls
+                A and B appear exactly once in the DOM. */}
+            {(ownedCandidates > 0 || unownedCandidates > 0) && (
+              <LastSlotsStrip
+                deckId={deck.id}
+                openSlots={99 - built}
+                ownedCandidates={ownedCandidates}
+                unownedCandidates={unownedCandidates}
+                commanderShortName={commanderShortName}
+                onAnnounce={setAnnouncement}
+                onCompletedByFill={markCompletedByFill}
+                onInflight={setFillInflight}
+              />
+            )}
 
             {/* Fill-failed banner — shown when the fill never landed (State
                 15). Offers a retry. A swept deck is filled=true and must not
@@ -805,7 +858,7 @@ export function BuilderShell({
                 onUnresolvedExpandedChange={setUnresolvedExpanded}
                 autoCount={autoCount}
                 keptCount={keptCount}
-                sweepPending={sweepPending}
+                sweepPending={sweepPending || fillInflight}
                 sweptRows={sweptRows}
                 sweepError={sweepError}
                 onClearAuto={handleClearAuto}

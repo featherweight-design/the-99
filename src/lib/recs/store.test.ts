@@ -30,7 +30,6 @@ const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
   roleGaps: [],
   roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
   overlapOwned: ["Sol Ring", "Cultivate"],
-  overlapMissing: [],
   fitPool: 15,
   fitRoles: 25,
   fitSynergy: 18,

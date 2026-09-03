@@ -68,8 +68,10 @@ export function GroupToggle({
       {/* Spacer: pushes group pills to the right on both breakpoints */}
       <span className="flex-1" aria-hidden />
 
-      {/* Clear all auto — absent at zero, disabled only while its sweep runs */}
-      {autoCount > 0 && onClearAuto && (
+      {/* Clear all auto — absent at zero, disabled only while its sweep runs.
+          Not gated on autoCount here: state 7 keeps the kept-note after the
+          last auto card goes, and the component decides its own absence. */}
+      {onClearAuto && (
         <ClearAutoButton
           count={autoCount}
           keptCount={keptCount}

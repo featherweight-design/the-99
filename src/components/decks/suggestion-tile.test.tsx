@@ -8,6 +8,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { Availability } from "../../lib/decks/availability";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
@@ -42,6 +44,104 @@ function mount(availability: Availability | null, selfClaimed = false) {
     </CardDetailProvider>,
   );
 }
+
+// Factory for lift-line and noSynergy tests. Separate from the availability
+// factory above — takes partials rather than an Availability object.
+function makeSuggestion(over: Partial<DeckSuggestion> = {}): DeckSuggestion {
+  return {
+    oracleId: "o-test",
+    name: "Test Card",
+    reason: "edhrec",
+    reasonType: "edhrec",
+    reasonLabel: "EDHREC staple",
+    owned: true,
+    inDeck: false,
+    typeLine: "Instant",
+    cardTypeGroup: "Instants",
+    role: "other",
+    imageUri: null,
+    manaCost: null,
+    manaValue: 1,
+    inclusionPct: null,
+    lift: null,
+    synergyFigure: null,
+    ...over,
+  };
+}
+
+function mountTile(
+  over: Partial<DeckSuggestion>,
+  tileProps: Partial<React.ComponentProps<typeof SuggestionTile>> = {},
+) {
+  render(
+    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+      <SuggestionTile
+        suggestion={makeSuggestion(over)}
+        deckId="d1"
+        inDeck={false}
+        siblings={["o-test"]}
+        commanderShortName="Muldrotha"
+        selfClaimed={false}
+        {...tileProps}
+      />
+    </CardDetailProvider>,
+  );
+}
+
+describe("SuggestionTile — lift line", () => {
+  it("prints the lift line on an unowned tile", () => {
+    mountTile({ owned: false, inclusionPct: 40, lift: 0.12 });
+    expect(screen.getByText(addPanelCopy.tile.lift("12"))).toBeInTheDocument();
+  });
+
+  it("prints the lift line on a card with no inclusion figure", () => {
+    mountTile({ inclusionPct: null, lift: 0.12 });
+    expect(screen.getByText(addPanelCopy.tile.noInclusion)).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.tile.lift("12"))).toBeInTheDocument();
+  });
+
+  it("says so on the synergy shelf when there is no figure at all", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: null }, { showNoSynergy: true });
+    expect(screen.getByText(synergyCopy.shelf.noSynergy)).toBeInTheDocument();
+  });
+
+  it("stays silent about an absent figure everywhere else", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: null });
+    expect(screen.queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
+  });
+
+  // A negative synergyFigure is a rank, not an absence — the design table calls
+  // the absent-state label for cards with no figure at all, not for low figures.
+  it("does not say no-synergy on the synergy shelf when the card has a negative figure", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: -0.1 }, { showNoSynergy: true });
+    expect(screen.queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
+  });
+
+  // M5 — a negative synergyFigure must print its figure, not be silent.
+  // The design table states the line is always rendered when the figure is present.
+  it("prints the negative synergy figure on the synergy shelf", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: -0.05 }, { showNoSynergy: true });
+    // −0.05 → Math.abs(Math.round(-5)) = 5 → "−5 pts"
+    expect(screen.getByText(synergyCopy.figure.synergyNegative("5"))).toBeInTheDocument();
+  });
+
+  // The singular is a real case on this side of zero too, and the positive
+  // formatter already spells it. Asserted as a literal so the test cannot pass
+  // by agreeing with a formatter that is itself wrong.
+  it("prints a one-point negative figure in the singular", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: -0.01 }, { showNoSynergy: true });
+    expect(screen.getByText("−1 pt")).toBeInTheDocument();
+  });
+
+  // A figure that rounds to zero reaches the same branch as a negative one,
+  // because `lift` is positive-only. Zero is a real figure of no advantage, and
+  // the minus glyph would misstate it as a penalty.
+  it("prints a zero synergy figure without a minus sign", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: 0.004 }, { showNoSynergy: true });
+    expect(screen.getByText(synergyCopy.figure.synergy("0"))).toBeInTheDocument();
+    expect(screen.queryByText(synergyCopy.figure.synergyNegative("0"))).not.toBeInTheDocument();
+  });
+});
 
 describe("SuggestionTile availability caption", () => {
   it("paints the in-use caption the hard foreground", () => {

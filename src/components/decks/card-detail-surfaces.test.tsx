@@ -95,7 +95,7 @@ describe("deck card-detail triggers", () => {
       reasonLabel: "98% of decks", owned: false, inDeck: false,
       typeLine: "Artifact", cardTypeGroup: "Artifacts", role: "ramp",
       manaCost: "{1}", manaValue: 1,
-      imageUri: null, inclusionPct: null, lift: null,
+      imageUri: null, inclusionPct: null, lift: null, synergyFigure: null,
     };
     const { fetchCard } = renderInProvider(
       <SuggestionTile
