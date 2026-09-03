@@ -2,49 +2,24 @@
 // Desktop: sticky left column (63/88 card + oracle glass + build button) + scrolling right column.
 // Mobile: art header band (236px, gradient + overlay text) + sticky bottom Build bar + sections.
 
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { FullCardTrigger } from "./full-card-trigger";
-import { OwnedChip } from "./role-card-list";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { PrimaryButton } from "../ui/button";
 import { CoverageSection } from "./coverage-section";
 import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { FILL_BASELINE_TOTAL } from "../../lib/decks/fill";
-
-// ─── Missing card chip (dashed border) ───────────────────────────────────────
-
-function MissingChip({ name }: { name: string }) {
-  return (
-    <span
-      className="inline-flex items-center font-mono rounded-full"
-      style={{
-        fontSize: "12px",
-        background: "transparent",
-        border: "1px dashed var(--border-strong)",
-        padding: "5px 11px",
-        color: "var(--fg-faint)",
-        gap: 7,
-      }}
-    >
-      {/* Hollow dot */}
-      <span
-        className="block shrink-0 rounded-full"
-        style={{
-          width: 6,
-          height: 6,
-          border: "1px solid var(--fg-locked)",
-          background: "transparent",
-        }}
-      />
-      {name}
-    </span>
-  );
-}
+import { SynergyPanel } from "./synergy-panel";
+import type { SynergyCard } from "../../lib/commanders/synergy-cards";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
 
 // ─── Fit Hero (right column top section) ─────────────────────────────────────
 
@@ -239,130 +214,38 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
   );
 }
 
-// ─── EDHREC Synergy Panel ─────────────────────────────────────────────────────
-
-function SynergyPanel({ commander: c }: { commander: RankedCommander }) {
-  const ownedCount = c.edhrecOwnedCount ?? 0;
-  const total = c.edhrecTotal ?? 0;
-  const pct = total > 0 ? Math.round((ownedCount / total) * 100) : 0;
-
-  return (
-    <div
-      className="rounded-[12px]"
-      style={{
-        background: "var(--surface-rail)",
-        border: "1px solid var(--border)",
-        padding: "18px 20px",
-      }}
-    >
-      {/* Score row */}
-      <div className="flex items-center gap-[14px]">
-        <span
-          className="font-mono font-[600]"
-          style={{ fontSize: 30, color: "var(--fg)" }}
-        >
-          {ownedCount}
-        </span>
-        <span
-          className="font-mono"
-          style={{ fontSize: 14, color: "var(--fg-faint)" }}
-        >
-          of top {total}
-        </span>
-        {/* Overlap bar */}
-        <div
-          className="overflow-hidden rounded-full"
-          style={{
-            flex: 1,
-            height: 10,
-            background: "var(--elevated)",
-          }}
-        >
-          <div
-            className="h-full"
-            style={{ width: `${pct}%`, background: "var(--accent)" }}
-          />
-        </div>
-        <span
-          className="font-mono"
-          style={{ fontSize: 12, color: "var(--success)" }}
-        >
-          {pct}% owned
-        </span>
-      </div>
-
-      {/* Owned sub-label */}
-      <p
-        className="m-0 font-mono uppercase"
-        style={{
-          fontSize: 10,
-          letterSpacing: "0.12em",
-          color: "var(--fg-faint)",
-          margin: "18px 0 10px",
-        }}
-      >
-        Owned — {ownedCount}
-      </p>
-
-      {/* Owned chips */}
-      <div className="flex flex-wrap gap-[7px]">
-        {c.overlapOwned.map((name) => (
-          <OwnedChip key={name} name={name} />
-        ))}
-        {c.overlapOwned.length === 0 && (
-          <span
-            className="font-mono"
-            style={{ fontSize: 11, color: "var(--fg-locked)" }}
-          >
-            None of the top synergy cards are in your collection
-          </span>
-        )}
-      </div>
-
-      {/* Missing sub-label */}
-      {c.overlapMissing.length > 0 && (
-        <>
-          <p
-            className="m-0 font-mono uppercase"
-            style={{
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              color: "var(--fg-faint)",
-              margin: "20px 0 10px",
-            }}
-          >
-            Not in your collection —{" "}
-            <span style={{ color: "var(--fg-locked)" }}>
-              {c.overlapMissing.length} · the gap to close
-            </span>
-          </p>
-
-          {/* Missing chips */}
-          <div className="flex flex-wrap gap-[7px]">
-            {c.overlapMissing.map((name) => (
-              <MissingChip key={name} name={name} />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export type CommanderDetailProps = {
   commander: RankedCommander;
   rank: number;
   isBestFit: boolean;
+  synergyCards: SynergyCard[];
 };
 
 export function CommanderDetail({
   commander: c,
   rank,
   isBestFit,
+  synergyCards,
 }: CommanderDetailProps) {
   const gradient = commanderGradient(c.colorIdentity);
+
+  // Selection state for synergy card picks — oracle ids the player wants to add.
+  // Lives here so Task 7's promise line and Build href can also read it.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  function handleToggle(oracleId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(oracleId)) {
+        next.delete(oracleId);
+      } else {
+        next.add(oracleId);
+      }
+      return next;
+    });
+  }
 
   return (
     // One card-detail modal for the whole page, so the role chips below open the
@@ -535,64 +418,17 @@ export function CommanderDetail({
                 className="m-0 font-mono"
                 style={{ fontSize: 12, color: "var(--fg-faint)" }}
               >
-                Top {c.edhrecTotal} synergy cards for this commander
+                {synergyCopy.panel.subcaptionMobile(String(synergyCards.length))}
               </p>
             </div>
-            {/* Mobile EDHREC panel header */}
-            <div
-              className="rounded-[10px]"
-              style={{
-                background: "var(--surface-rail)",
-                border: "1px solid var(--border)",
-                padding: "13px 14px",
-              }}
-            >
-              <div className="flex items-center justify-between mb-[10px]">
-                <span
-                  className="font-mono uppercase"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "0.12em",
-                    color: "var(--fg-faint)",
-                  }}
-                >
-                  EDHREC synergy
-                </span>
-                <span
-                  className="font-mono"
-                  style={{ fontSize: 12, color: "var(--fg)" }}
-                >
-                  {c.edhrecOwnedCount} / {c.edhrecTotal} owned
-                </span>
-              </div>
-              {/* Overlap bar (mobile) */}
-              <div
-                className="overflow-hidden rounded-full"
-                style={{ height: 6, background: "var(--elevated)", margin: "9px 0 11px" }}
-              >
-                <div
-                  className="h-full"
-                  style={{
-                    width: `${c.edhrecTotal > 0 ? Math.round(((c.edhrecOwnedCount ?? 0) / c.edhrecTotal) * 100) : 0}%`,
-                    background: "var(--accent)",
-                  }}
-                />
-              </div>
-              {/* Owned chips */}
-              <div className="flex flex-wrap gap-[5px]">
-                {c.overlapOwned.map((name) => (
-                  <OwnedChip key={name} name={name} />
-                ))}
-              </div>
-              {c.overlapMissing.length > 0 && (
-                <p
-                  className="m-0 font-mono"
-                  style={{ fontSize: 10.5, color: "var(--fg-faint)", marginTop: 8 }}
-                >
-                  +{c.overlapMissing.length} more not in collection
-                </p>
-              )}
-            </div>
+            <SynergyPanel
+              width="phone"
+              cards={synergyCards}
+              ownedCount={c.edhrecOwnedCount ?? 0}
+              edhrecTotal={c.edhrecTotal}
+              selected={selected}
+              onToggle={handleToggle}
+            />
           </div>
         ) : (
           /* degraded: hidden-receipts note */
@@ -811,11 +647,16 @@ export function CommanderDetail({
                 className="m-0 font-mono"
                 style={{ fontSize: 12, color: "var(--fg-faint)" }}
               >
-                Top {c.edhrecTotal} synergy cards for this commander
+                {synergyCopy.panel.subcaption(String(synergyCards.length))}
               </p>
-              <div className="mt-[16px]">
-                <SynergyPanel commander={c} />
-              </div>
+              <SynergyPanel
+                width="desktop"
+                cards={synergyCards}
+                ownedCount={c.edhrecOwnedCount ?? 0}
+                edhrecTotal={c.edhrecTotal}
+                selected={selected}
+                onToggle={handleToggle}
+              />
             </div>
           ) : (
             /* degraded: hidden-receipts note */

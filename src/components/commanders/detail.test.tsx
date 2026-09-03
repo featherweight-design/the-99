@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
 import { CommanderDetail } from "./detail";
+import type { SynergyCard } from "../../lib/commanders/synergy-cards";
+
+const noSynergyCards: SynergyCard[] = [];
 
 function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
   return {
@@ -42,17 +45,17 @@ function noSynergy(synergyState: SynergyState): RankedCommander {
 
 describe("CommanderDetail synergy states", () => {
   it("shows no synergy note when the state is ok", () => {
-    render(<CommanderDetail commander={commander()} rank={1} isBestFit />);
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
   });
 
   it("says the data is unavailable when the state is degraded", () => {
-    render(<CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} />);
+    render(<CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} synergyCards={noSynergyCards} />);
     expect(screen.getAllByText(/Synergy data unavailable/i).length).toBeGreaterThan(0);
   });
 
   it("says the commander is not indexed, with no Retry, when the state is absent", () => {
-    render(<CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} />);
+    render(<CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} synergyCards={noSynergyCards} />);
     expect(screen.getAllByText(/EDHREC doesn't track this commander/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();

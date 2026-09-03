@@ -4,6 +4,7 @@ import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { getRankedList } from "../../../lib/recs/ranked-list";
 import { findScoredCommander } from "../../../lib/recs/store";
 import { CommanderDetail } from "../../../components/commanders/detail";
+import { readSynergyCards } from "./synergy-read";
 
 export default async function CommanderDetailPage({
   params,
@@ -42,7 +43,22 @@ export default async function CommanderDetailPage({
   const commander = await scoreOneCommander(userId, found.oracleId, slug);
   if (!commander) notFound();
 
+  // Derive the oracle ids of owned cards that Role Coverage already covers.
+  // Exclusion rule: an owned card drawn in any role list does not appear in the
+  // synergy panel a second time. Unowned role staples are NOT excluded — they
+  // have no presence elsewhere on the page and the player still needs to see them.
+  const coveredOracleIds = Object.values(commander.roleCards)
+    .flat()
+    .map((rc) => rc.oracleId);
+
+  const synergyCards = await readSynergyCards(userId, commander.oracleId, coveredOracleIds);
+
   return (
-    <CommanderDetail commander={commander} rank={found.rank} isBestFit={found.rank === 1} />
+    <CommanderDetail
+      commander={commander}
+      rank={found.rank}
+      isBestFit={found.rank === 1}
+      synergyCards={synergyCards}
+    />
   );
 }
