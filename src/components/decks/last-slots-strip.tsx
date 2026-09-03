@@ -153,7 +153,10 @@ function LastSlotsStripInner({
         setSettled(null);
         onAnnounce(synergyCopy.lastSlots.filledAnnounce(String(result.added), total));
       }
-      if (result.total === 99) onCompletedByFill?.();
+      // Only a fill that placed something can claim the 99th slot. A run that
+      // arrives at a deck another tab already finished reports 99 having added
+      // nothing, and would otherwise suppress a reveal it did not earn.
+      if (result.added > 0 && result.total === 99) onCompletedByFill?.();
     } catch {
       // The same refusal copy the action returns: to the player a call that
       // never arrived and one that arrived and failed are the same event.
@@ -184,7 +187,8 @@ function LastSlotsStripInner({
           String(result.bought),
         ),
       );
-      if (result.total === 99) onCompletedByFill?.();
+      // Same gate as A: a zero-add run reporting 99 is someone else's finish.
+      if (result.added > 0 && result.total === 99) onCompletedByFill?.();
     } catch {
       setUnownedError(synergyCopy.lastSlots.topUpFailed);
     } finally {

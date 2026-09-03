@@ -302,6 +302,23 @@ describe("LastSlotsStrip", () => {
     expect(onCompletedByFill).toHaveBeenCalledOnce();
   });
 
+  // A deck finished elsewhere while the request was in flight answers 99 with
+  // nothing added. The flag suppresses the 99/99 reveal, so attributing that
+  // finish to the fill costs the player the moment they were owed.
+  it("does not call onCompletedByFill when a run reaches 99 having added nothing", async () => {
+    const onCompletedByFill = vi.fn();
+    actions.fillOwned.mockResolvedValueOnce({ ok: true, added: 0, total: 99, shortfall: 0 });
+    actions.fillUnowned.mockResolvedValueOnce({ ok: true, added: 0, total: 99, bought: 0 });
+    render(<LastSlotsStrip {...base} onCompletedByFill={onCompletedByFill} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
+    });
+    expect(onCompletedByFill).not.toHaveBeenCalled();
+  });
+
   // Design table state 3 / state 8: onInflight signals the shell so it can
   // disable control C while either fill is in flight.
   it("calls onInflight(true) when A starts and onInflight(false) when A settles", async () => {
