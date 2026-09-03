@@ -74,6 +74,18 @@ export function DecklistRow({
   const nameClass =
     "flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
 
+  // Multi-copy count (addendum C5): one row per card, the count inline after
+  // the name. aria-hidden because the ✕ beside it already speaks the same
+  // figure in prose — a reader that voiced both would say the number twice.
+  const quantityGlyph = card.quantity > 1 && (
+    <span
+      aria-hidden
+      className="flex-none font-mono text-[11px] tabular-nums text-[color:var(--fg-faint)]"
+    >
+      {addPanelCopy.row.quantity(card.quantity)}
+    </span>
+  );
+
   // Addendum A2: Shopping rows carry an EDHREC figure on a meta line below the
   // name. shoppingFigure is only threaded for unowned deck cards shown in the
   // Shopping filter. undefined = All view (no meta). null or number = Shopping view.
@@ -168,15 +180,21 @@ export function DecklistRow({
           // One trigger at both widths — the layout changes, the card does not.
           // Only the figure's wording differs, so only the figure is drawn twice.
           <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:items-center md:gap-[6px]">
-            <CardDetailTrigger
-              oracleId={card.oracleId}
-              name={card.name}
-              siblings={siblings}
-              className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]"
-              style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
-            >
-              {card.name}
-            </CardDetailTrigger>
+            {/* Name and count share a line so the count stays inline after the
+                name at both widths — on phone the figure below is its own line,
+                and a count that flowed down with it would read as part of it. */}
+            <div className="min-w-0 flex items-center gap-[6px]">
+              <CardDetailTrigger
+                oracleId={card.oracleId}
+                name={card.name}
+                siblings={siblings}
+                className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]"
+                style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
+              >
+                {card.name}
+              </CardDetailTrigger>
+              {quantityGlyph}
+            </div>
             <span
               className="md:hidden font-mono text-[10px] tabular-nums truncate"
               style={{
@@ -210,18 +228,9 @@ export function DecklistRow({
           </CardDetailTrigger>
         )}
 
-        {/* Multi-copy count (addendum C5): one row per card, the count inline
-            after the name. aria-hidden because the ✕ beside it already speaks
-            the same figure in prose — a reader that voiced both would say the
-            number twice. */}
-        {card.quantity > 1 && (
-          <span
-            aria-hidden
-            className="flex-none font-mono text-[11px] tabular-nums text-[color:var(--fg-faint)]"
-          >
-            {addPanelCopy.row.quantity(card.quantity)}
-          </span>
-        )}
+        {/* Shopping rows draw it inside the name block above, beside the name
+            rather than after the EDHREC figure. */}
+        {!hasShoppingMeta && quantityGlyph}
 
         {/* Availability marker */}
         {card.availability && (
