@@ -30,6 +30,12 @@ const CONTRACT = [
 // key is in none of them.
 const FONTS = new Set(["font-display-face"]);
 
+// A face is the `next/font` variable, optionally followed by a hand-authored
+// fallback family. Duskmourn needs that tail: Next cannot metric-match Big
+// Shoulders, so globals.css declares the fallback itself. The variable stays
+// anchored at the start so a face that is *only* a fallback still fails.
+const FACE = /^var\(--font-[a-z-]+\)(, "[A-Za-z ]+ Fallback")?$/;
+
 const ALIASES: Record<string, string> = {
   "avail-soft": "var(--fg-muted)",
   "avail-hard": "var(--accent)",
@@ -78,7 +84,7 @@ describe("theme contract", () => {
 
     it("writes every value as a hex, except the aliases and the face", () => {
       for (const key of CONTRACT) {
-        if (FONTS.has(key)) expect(hex(key)).toMatch(/^var\(--font-[a-z-]+\)$/);
+        if (FONTS.has(key)) expect(hex(key)).toMatch(FACE);
         else if (key in ALIASES) expect(hex(key)).toBe(ALIASES[key]);
         else expect(hex(key)).toMatch(/^#[0-9A-F]{6}$/i);
       }
@@ -165,7 +171,7 @@ describe("the display face", () => {
     // face at all whenever it is the only one missing.
     const faces = [...THEMES.entries()].map(([name, tokens]) => {
       const face = tokens.get("font-display-face");
-      expect(face, `${name} declares no --font-display-face`).toMatch(/^var\(--font-[a-z-]+\)$/);
+      expect(face, `${name} declares no --font-display-face`).toMatch(FACE);
       return face;
     });
     expect(faces).toHaveLength(6);

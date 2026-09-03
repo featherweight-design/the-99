@@ -60,6 +60,55 @@ describe("global focus treatment", () => {
   });
 });
 
+describe("display-face fallback metrics", () => {
+  // `next/font/google` emits a metric-matched `<Family> Fallback` @font-face for
+  // each family it can find in Next's bundled capsize table, so headings hold
+  // their size during `font-display: swap`. A family missing from that table
+  // gets no fallback at all and snaps on first paint. Reading the table here
+  // rather than trusting the build's warning means a seventh theme picking an
+  // unlisted face fails in CI instead of shipping the shift.
+  const metricsPath = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../node_modules/next/dist/server/capsize-font-metrics.json",
+  );
+  const families = new Set(
+    Object.values(
+      JSON.parse(readFileSync(metricsPath, "utf8")) as Record<string, { familyName?: string }>,
+    ).map((entry) => entry.familyName),
+  );
+
+  /** `--font-big-shoulders` → `Big Shoulders`, the family `next/font` declares. */
+  function familyOf(variable: string): string {
+    return variable
+      .replace(/^--font-/, "")
+      .split("-")
+      .map((word) => word[0].toUpperCase() + word.slice(1))
+      .join(" ");
+  }
+
+  const faces = [...css.matchAll(/--font-display-face:\s*([^;]+);/g)].map((m) => m[1].trim());
+
+  it("finds a display face for every theme", () => {
+    expect(faces.length).toBe(6);
+  });
+
+  it("gives every display face a metric-matched fallback", () => {
+    const unmatched = faces.filter((face) => {
+      const variable = face.match(/var\((--font-[a-z-]+)\)/)?.[1];
+      if (!variable) return true;
+      // Either Next can build the fallback itself, or globals.css declares one
+      // and the face list names it — a bare `var()` with neither is the bug.
+      if (families.has(familyOf(variable))) return false;
+      const fallback = `${familyOf(variable)} Fallback`;
+      return !(
+        face.includes(fallback) &&
+        new RegExp(`@font-face\\s*\\{[^}]*font-family:\\s*"${fallback}"`).test(css)
+      );
+    });
+    expect(unmatched).toEqual([]);
+  });
+});
+
 describe("animation utilities", () => {
   // The reduced-motion block is scoped to a class list rather than a blanket
   // `* { animation: none }` precisely so that adding an animation forces an

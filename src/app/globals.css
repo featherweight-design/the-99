@@ -242,8 +242,36 @@
   --r: #C05A3E;
   --g: #4B7A46;
 
-  /* Display face (1) */
-  --font-display-face: var(--font-big-shoulders);
+  /* Display face (1). The fallback is named explicitly because `next/font`
+     cannot build one for this family — see the @font-face below. */
+  --font-display-face: var(--font-big-shoulders), "Big Shoulders Fallback";
+}
+
+/* The one display face `next/font` cannot metric-match on its own. Google merged
+   "Big Shoulders Display" into "Big Shoulders" in 2024; Next's bundled capsize
+   table still keys the metrics under the old name, so the lookup misses and the
+   build prints `Failed to find font override values for font 'Big Shoulders'`.
+   Duskmourn's headings then swap from unadjusted Arial, which is about 49%
+   wider, and visibly snap on first paint.
+
+   These four values are not tuned by eye: they are Next's own formula applied to
+   its own table, keyed on `bigShouldersDisplay` against `arial`. Running the
+   same arithmetic on Cinzel reproduces the `Cinzel Fallback` face Next emits,
+   digit for digit. Delete this block once Next's table learns the new family
+   name — the build warning is the signal that it has not yet.
+
+   No font-weight descriptor, matching what Next emits for the other five. Face
+   selection picks the nearest weight within a family and never rejects the
+   family, so this face applies to bold headings too. Declaring 100 900 would
+   claim non-variable Arial covers the range and suppress synthetic bold, so
+   bold headings would swap in at regular weight. */
+@font-face {
+  font-family: "Big Shoulders Fallback";
+  src: local(Arial);
+  size-adjust: 67.07%;
+  ascent-override: 146.71%;
+  descent-override: 31.76%;
+  line-gap-override: 0%;
 }
 
 /* Theme: kaldheim — "Rune Frost". Norse; the lightest chrome of the six. */

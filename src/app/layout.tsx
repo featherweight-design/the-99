@@ -57,6 +57,13 @@ const syncopate = Syncopate({
 // into "Big Shoulders" in 2024, and this Next version exports only
 // `Big_Shoulders` — `Big_Shoulders_Display` does not typecheck. It is a variable
 // font, so omitting `weight` is correct and gives the full axis.
+//
+// That same rename is why this is the one face with no automatic fallback:
+// Next's metrics table still keys the font under the old name, so the lookup
+// misses and every build logs `Failed to find font override values for font
+// 'Big Shoulders'`. globals.css supplies the fallback face by hand. The log line
+// is unavoidable noise — `adjustFontFallback: false` does not suppress it,
+// because Turbopack's font loader runs the lookup either way.
 const bigShoulders = Big_Shoulders({
   variable: "--font-big-shoulders",
   subsets: ["latin"],
