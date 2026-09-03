@@ -139,9 +139,17 @@ export function planFill(candidates: FillCandidate[]): FillPlan {
   }
 
   // Lands come from the collection alone — never bought, at any point below.
-  const lands = ordered.filter(
-    (c) => c.owned && !spent.has(c.oracleId) && classifyRoles(c).includes("land"),
-  );
+  // Deduplicated here rather than re-checked in each sweep: three passes read
+  // this list, and a duplicated oracle id would otherwise be taken once per
+  // pass and double-counted in the per-colour capacity. The first entry wins,
+  // which is the most-preferred one because `ordered` is already sorted.
+  const lands = [
+    ...new Map(
+      ordered
+        .filter((c) => c.owned && !spent.has(c.oracleId) && classifyRoles(c).includes("land"))
+        .map((c) => [c.oracleId, c] as const),
+    ).values(),
+  ];
   const takeLand = (candidate: FillCandidate, quantity: number): void => {
     spent.add(candidate.oracleId);
     counts.land += quantity;

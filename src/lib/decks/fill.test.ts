@@ -177,4 +177,14 @@ describe("planFill", () => {
     const plan = planFill([ramp("r", 50), ramp("r", 50)]);
     expect(plan.rows).toHaveLength(1);
   });
+
+  it("never spends one land twice, basic or not", () => {
+    const plan = planFill([
+      nonBasicLand("tower"), nonBasicLand("tower"),
+      basic("forest", 4), basic("forest", 4),
+    ]);
+    expect(plan.rows.filter((r) => r.oracleId === "tower")).toHaveLength(1);
+    expect(plan.rows.filter((r) => r.oracleId === "forest")).toHaveLength(1);
+    expect(plan.rows.find((r) => r.oracleId === "forest")!.quantity).toBe(4);
+  });
 });
