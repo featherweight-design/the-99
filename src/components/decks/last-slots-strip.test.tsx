@@ -183,6 +183,36 @@ describe("LastSlotsStrip", () => {
     expect(screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") })).toBeEnabled();
   });
 
+  // The actions catch their own failures, but the call itself can reject before
+  // any of that runs. Without the finally the strip would sit disabled with
+  // nothing said and no way back but a reload — the one failure that costs the
+  // player the whole surface rather than one control.
+  it.each([
+    {
+      name: "A",
+      mock: () => actions.fillOwned,
+      aria: synergyCopy.lastSlots.fillOwnedAria("12"),
+      other: synergyCopy.lastSlots.topUpAria("31"),
+      message: synergyCopy.lastSlots.fillFailed,
+    },
+    {
+      name: "B",
+      mock: () => actions.fillUnowned,
+      aria: synergyCopy.lastSlots.topUpAria("31"),
+      other: synergyCopy.lastSlots.fillOwnedAria("12"),
+      message: synergyCopy.lastSlots.topUpFailed,
+    },
+  ])("recovers both controls when $name's call rejects outright", async ({ mock, aria, other, message }) => {
+    mock().mockRejectedValue(new Error("network"));
+    render(<LastSlotsStrip {...base} />);
+    await act(async () => {
+      screen.getByRole("button", { name: aria }).click();
+    });
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: aria })).toBeEnabled();
+    expect(screen.getByRole("button", { name: other })).toBeEnabled();
+  });
+
   // B is the way forward from a shortfall, so once B settles the numbers A left
   // behind are stale. Without this the setSettled(null) in runUnowned could be
   // deleted with every other test still green.

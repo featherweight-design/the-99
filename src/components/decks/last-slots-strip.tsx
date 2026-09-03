@@ -126,26 +126,38 @@ function LastSlotsStripInner({
   // Rule 4: A states what it can place, never the gap.
   const ownedPlaces = Math.min(openSlots, ownedCandidates);
 
+  // Both runs clear the in-flight state in a `finally`. The actions catch their
+  // own failures and answer `{ ok: false }`, but the call itself can still
+  // reject before any of that runs — a dropped connection on the way out, a
+  // transport error on the way back. Clearing only on the success path would
+  // leave both controls disabled with nothing said and no way back but a reload.
   async function runOwned() {
     setInflight("owned");
     onInflight?.(true);
     setOwnedError(null);
-    const result = await fillLastSlotsOwned(deckId);
-    setInflight(null);
-    onInflight?.(false);
-    if (!result.ok) {
-      setOwnedError(result.message);
-      return;
+    try {
+      const result = await fillLastSlotsOwned(deckId);
+      if (!result.ok) {
+        setOwnedError(result.message);
+        return;
+      }
+      const total = String(result.total);
+      const shortfall = String(result.shortfall);
+      if (result.shortfall > 0) {
+        setSettled({ total, shortfall });
+        onAnnounce(synergyCopy.lastSlots.shortAnnounce(String(result.added), total, shortfall));
+      } else {
+        onAnnounce(synergyCopy.lastSlots.filledAnnounce(String(result.added), total));
+      }
+      if (result.total === 99) onCompletedByFill?.();
+    } catch {
+      // The same refusal copy the action returns: to the player a call that
+      // never arrived and one that arrived and failed are the same event.
+      setOwnedError(synergyCopy.lastSlots.fillFailed);
+    } finally {
+      setInflight(null);
+      onInflight?.(false);
     }
-    const total = String(result.total);
-    const shortfall = String(result.shortfall);
-    if (result.shortfall > 0) {
-      setSettled({ total, shortfall });
-      onAnnounce(synergyCopy.lastSlots.shortAnnounce(String(result.added), total, shortfall));
-    } else {
-      onAnnounce(synergyCopy.lastSlots.filledAnnounce(String(result.added), total));
-    }
-    if (result.total === 99) onCompletedByFill?.();
   }
 
   async function runUnowned() {
@@ -155,21 +167,26 @@ function LastSlotsStripInner({
     // Clear any shortfall line from a prior A run: B is the way forward from
     // that state, and once B fires the A-settled numbers are stale.
     setSettled(null);
-    const result = await fillLastSlotsUnowned(deckId);
-    setInflight(null);
-    onInflight?.(false);
-    if (!result.ok) {
-      setUnownedError(result.message);
-      return;
+    try {
+      const result = await fillLastSlotsUnowned(deckId);
+      if (!result.ok) {
+        setUnownedError(result.message);
+        return;
+      }
+      onAnnounce(
+        synergyCopy.lastSlots.boughtAnnounce(
+          String(result.added),
+          String(result.total),
+          String(result.bought),
+        ),
+      );
+      if (result.total === 99) onCompletedByFill?.();
+    } catch {
+      setUnownedError(synergyCopy.lastSlots.topUpFailed);
+    } finally {
+      setInflight(null);
+      onInflight?.(false);
     }
-    onAnnounce(
-      synergyCopy.lastSlots.boughtAnnounce(
-        String(result.added),
-        String(result.total),
-        String(result.bought),
-      ),
-    );
-    if (result.total === 99) onCompletedByFill?.();
   }
 
   const busy = inflight !== null;
