@@ -203,6 +203,36 @@ describe("BuilderShell — 99/99 celebration", () => {
     expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
   });
 
+  // The suppression describes one completion, not the deck forever. A fill
+  // finishes the deck, the player pulls a card back out, then builds to 99 by
+  // hand — the last card was theirs, so the reveal is theirs. Left standing the
+  // flag outlives the completion it describes and silences a 99 the fill had no
+  // part in.
+  it("retires the fill suppression once the deck falls out of Complete", async () => {
+    window.localStorage.setItem(fillCompletedKey("deck-redo"), "1");
+    const view = await act(async () =>
+      renderBuilder(makeDeck({ id: "deck-redo", built: 98, ownedCount: 98 })),
+    );
+    expect(localStorage.getItem(fillCompletedKey("deck-redo"))).toBeNull();
+
+    await act(async () => {
+      view.rerender(builder(makeDeck({ id: "deck-redo" })));
+    });
+    expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
+  });
+
+  // The other half of the rule: while the deck is still the Complete one the
+  // fill produced, the suppression stands. A retire that fired on any render
+  // would pass the test above and defeat the suppression entirely.
+  it("keeps the suppression while the filled deck is still Complete", async () => {
+    window.localStorage.setItem(fillCompletedKey("deck-held"), "1");
+    await act(async () => {
+      renderBuilder(makeDeck({ id: "deck-held" }));
+    });
+    expect(localStorage.getItem(fillCompletedKey("deck-held"))).toBe("1");
+    expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
+  });
+
   // L2 — sweeping the auto cards clears the fill suppression so the reveal is
   // available again if the player rebuilds the deck to 99 by hand.
   it("clears the fill-suppression flag when auto cards are swept", async () => {

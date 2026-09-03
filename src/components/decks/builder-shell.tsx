@@ -136,6 +136,17 @@ export function BuilderShell({
     unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
   });
 
+  // The flag is a receipt for a deck a fill completed, and the rule it serves is
+  // that the reveal belongs to the player who placed the last card. Once the deck
+  // drops back out of Complete the fill is no longer what completed it — the same
+  // reasoning the sweep already applies — so the suppression is retired and a
+  // player who builds back to 99 by hand can earn the reveal. Left standing, it
+  // would outlive the completion it describes and silence a hand-built 99 the
+  // fill had no part in.
+  useEffect(() => {
+    if (completedByFill && serverStatus !== "Complete") clearCompletedByFill();
+  }, [completedByFill, serverStatus, clearCompletedByFill]);
+
   const revealDue = shouldCelebrate({
     status: serverStatus,
     alreadyCelebrated: celebrated,
