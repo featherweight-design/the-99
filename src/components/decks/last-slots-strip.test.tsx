@@ -183,6 +183,21 @@ describe("LastSlotsStrip", () => {
     expect(screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") })).toBeEnabled();
   });
 
+  // B is the way forward from a shortfall, so once B settles the numbers A left
+  // behind are stale. Without this the setSettled(null) in runUnowned could be
+  // deleted with every other test still green.
+  it("clears A's shortfall line once B settles", async () => {
+    render(<LastSlotsStrip {...base} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
+    });
+    expect(await screen.findByTestId("last-slots-shortfall")).toBeInTheDocument();
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
+    });
+    expect(screen.queryByTestId("last-slots-shortfall")).not.toBeInTheDocument();
+  });
+
   it("disables A and shows B's fillingRows label while B's write is in flight", async () => {
     const pending = deferred<{ ok: true; added: number; total: number; bought: number }>();
     actions.fillUnowned.mockReturnValue(pending.promise);
