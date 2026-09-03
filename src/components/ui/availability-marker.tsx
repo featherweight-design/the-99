@@ -34,51 +34,11 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
   const c = availabilityCopy.marker;
 
   // Addendum 2 Accessibility: "Count-only in the label too — collection never
-  // speaks the deck name." The copy file has no nameless hard-aria key, so take
-  // the clause before the semicolon of the one that exists; `hardAria` is
-  // written as "no free copies; this one is on your X list", and the first
-  // clause is exactly the phrase the addendum's own rowAria example uses. Slice
-  // rather than re-type, so the copy file stays authoritative.
-  //
-  // The slice is deliberately defensive: a copy edit that drops the semicolon
-  // would otherwise leak the "x" placeholder into a screen reader. Falling back
-  // to the addendum's own literal keeps collection count-only no matter what
-  // the copy file does — and the test pins the failure mode, so a copy edit
-  // that silently switches us to the fallback is caught in CI rather than by a
-  // player. **Delete this whole helper the moment Design adds a real nameless
-  // key — a count-only `hardAria` for /collection**; it exists only because
-  // that key is missing.
-  const NAMELESS_HARD_FALLBACK = "no free copies";
-  // A control character cannot occur in copy, so "the first clause still holds
-  // the sentinel" is an exact test for "the name did not land after the
-  // semicolon" — covering both a dropped semicolon and a reordered string that
-  // puts the name first. Do NOT sentinel with a space or a word: the phrase we
-  // are trying to keep contains both.
-  const NAME_SENTINEL = "\u0000";
-  // `overAria` branches on `deckCount === 1`, so the count sentinel has to be a
-  // number that misses that branch and cannot collide with a real `shortBy`.
-  const COUNT_SENTINEL = -987654321;
-  const namelessHardAria = () => {
-    const [first, ...rest] = c.hardAria(NAME_SENTINEL).split(";");
-    return rest.length > 0 && !first.includes(NAME_SENTINEL)
-      ? first.trim()
-      : NAMELESS_HARD_FALLBACK;
-  };
-
-  // The same slice trick against `overAria`, which is written as
-  // "${deckCount} of your finished lists include this card and you own
-  // ${shortBy} too few". Everything after "and" is true without a deck count,
-  // and is the only true thing left when no names arrived. **Delete this the
-  // moment Design adds a real countless over key — an `overAria` that states
-  // the shortfall without a deck count**.
-  const countlessOverAria = (shortBy: number) => {
-    const [, ...rest] = c.overAria(shortBy, COUNT_SENTINEL).split(" and ");
-    const tail = rest.join(" and ");
-    return tail && !tail.includes(String(COUNT_SENTINEL))
-      ? tail
-      : `you own ${shortBy} too few`;
-  };
-
+  // speaks the deck name." Both count-only forms used to be sliced out of the
+  // name-bearing strings, which left the copy file authoritative for the words
+  // but not for that phrasing: an edit to a full string silently reshaped the
+  // sliced one. R5 §8 ratified the pair as part of the state, so they are
+  // dedicated keys now.
   switch (availabilityState(a, { selfExcluded: opts?.selfExcluded })) {
     case "free":
       return null;
@@ -89,7 +49,7 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
       // return counts without them. Counting to zero out loud ("on 0 of your
       // finished lists") is worse than the base form the copy file ships for
       // exactly this case.
-      if (opts?.nameless || a.hardDecks.length === 0) return namelessHardAria();
+      if (opts?.nameless || a.hardDecks.length === 0) return c.hardAriaCountOnly;
       return a.hardDecks.length === 1
         ? c.hardAria(a.hardDecks[0].name)
         : c.hardMultiAria(a.hardDecks.length);
@@ -107,7 +67,7 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
       // since `overAria(n, 0)` would say "0 of your finished lists include this
       // card". Both drop to the count-free shortfall the label already shows.
       if (opts?.nameless || a.hardDecks.length === 0) {
-        return countlessOverAria(-a.free);
+        return c.overAriaCountOnly(-a.free);
       }
       return c.overAria(-a.free, a.hardDecks.length);
   }

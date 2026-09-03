@@ -13,6 +13,14 @@
 // (collides with commander tax). Nothing here may assert where a physical card
 // is: we describe LISTS, never boxes, binders or sleeves.
 //
+// EVERY STATE THAT NAMES A DECK SHIPS A SIBLING THAT DOESN'T (R5 §8). Three
+// states name a deck — hard, hard-multi and over — and a degraded read can
+// strip the name from any of them, so the count-only variant is part of the
+// state rather than a fallback bolted on later. Both siblings take the same
+// `CountOnly` suffix, so the next state's author copies a pattern instead of
+// inventing one. Silence is the default for a FREE card, never for a degraded
+// one.
+//
 // SELF-EXCLUSION (addendum 2 / R3). On a deck's own decklist the marker scores
 // against every deck EXCEPT that one — both severities, no special case. A deck
 // holding a card is not competition for itself, and "none free — in Atraxa"
@@ -58,6 +66,7 @@ export const availabilityCopy = {
       deckCount === 1
         ? "no free copies; they are on 1 of your finished lists"
         : `no free copies; they are on ${deckCount} of your finished lists`,
+    hardAriaCountOnly: "no free copies",
 
     // over: free < 0. Never names decks — it is a count problem, not a location.
     // One deck CAN be the whole demand: "any number" cards (Relentless Rats,
@@ -73,6 +82,8 @@ export const availabilityCopy = {
       deckCount === 1
         ? `1 of your finished lists includes this card and you own ${shortBy} too few`
         : `${deckCount} of your finished lists include this card and you own ${shortBy} too few`,
+    overAriaCountOnly: (shortBy: number) =>
+      `you own ${shortBy} too few for the finished lists that include it`,
 
     // On a deck's OWN list the current deck is excluded from the marker, so
     // "also in N decks" would count the deck the player is standing in. Name the
