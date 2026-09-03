@@ -14,12 +14,13 @@ const stub = vi.hoisted(() => {
     (table as Record<symbol, string>)[Symbol.for("drizzle:Name")];
 
   const state = {
-    // Explicit card rows returned by select().from(cards). When a card oracle ID
-    // appears in the synergy ranking but not here, the tx select synthesizes a
-    // valid row automatically so tests that don't need custom card data still pass.
+    // Explicit card rows returned by select().from(cards). A ranked id with no
+    // row here produces no row in the tx select — the card-missing arm is reachable.
     cards: [] as Record<string, unknown>[],
-    // collectionItems rows — used by requireDeck via select().from(decks) dispatch
+    // Deck rows — used by requireDeck via select().from(decks)
     collectionItems: [] as Record<string, unknown>[],
+    // collection_items rows — queried by fillLastSlotsUnowned for the bought count
+    ownedItems: [] as { oracleId: string; userId: string; quantity: number }[],
     // Insert calls tracked as { table, values }
     insertCalls: [] as { table: string; values: unknown }[],
     // Rows representing cards currently in the deck (in-transaction read)
@@ -30,20 +31,17 @@ const stub = vi.hoisted(() => {
     onLock: null as (() => void) | null,
     // Paths passed to revalidatePath
     revalidated: [] as string[],
-    // Ref to the current ranked list so tx card selects can synthesize fallbacks
-    // without an explicit stub.state.cards setup for every basic test.
-    _rankedRef: null as Array<{ oracleId: string }> | null,
   };
 
   function reset() {
     state.cards.length = 0;
     state.collectionItems.length = 0;
+    state.ownedItems.length = 0;
     state.insertCalls.length = 0;
     state.deckCards.length = 0;
     state.transactionError = null;
     state.onLock = null;
     state.revalidated.length = 0;
-    state._rankedRef = null;
     // Deck row so requireDeck succeeds
     state.collectionItems.push({
       id: "deck-1",
@@ -57,22 +55,6 @@ const stub = vi.hoisted(() => {
       commanderLegal: true,
       colorIdentity: ["W"],
     });
-  }
-
-  /** Return state.cards augmented with auto-synthesized valid rows for every
-   *  oracle ID in the current ranked list that isn't explicitly present.
-   *  This means tests that only care about fill counts don't have to populate
-   *  state.cards for every candidate card — the stub handles it. */
-  function cardsWithFallback(): Record<string, unknown>[] {
-    if (!state._rankedRef) return state.cards;
-    const known = new Set(state.cards.map((c) => c.oracleId as string));
-    const extra: Record<string, unknown>[] = [];
-    for (const c of state._rankedRef) {
-      if (!known.has(c.oracleId)) {
-        extra.push({ oracleId: c.oracleId, commanderLegal: true, colorIdentity: [] });
-      }
-    }
-    return extra.length ? [...state.cards, ...extra] : state.cards;
   }
 
   type SelectBuilder = {
@@ -92,7 +74,9 @@ const stub = vi.hoisted(() => {
         const builder: SelectFromBuilder = {
           where: async () => {
             if (tableName === "deck_cards" && isTx) return state.deckCards;
-            if (tableName === "cards") return isTx ? cardsWithFallback() : state.cards;
+            if (tableName === "deck_cards") throw new Error("stub: deck_cards select outside tx — not exercised");
+            if (tableName === "cards") return state.cards;
+            if (tableName === "collection_items") return state.ownedItems;
             // decks table — used by requireDeck
             return state.collectionItems;
           },
@@ -142,8 +126,6 @@ const stub = vi.hoisted(() => {
 
 // ---------------------------------------------------------------------------
 // Hoisted ranked value — the synergy read returns this; individual tests set it.
-// We also wire it into stub.state._rankedRef so the tx stub can synthesize
-// fallback card rows without each test having to set stub.state.cards manually.
 // ---------------------------------------------------------------------------
 const ranked = vi.hoisted(() => ({ value: [] as unknown[] }));
 vi.mock("../commanders/[slug]/synergy-read", () => ({
@@ -229,7 +211,6 @@ function synergy(id: string, pts: number, owned: boolean) {
 beforeEach(() => {
   stub.reset();
   ranked.value = [];
-  stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
 });
 
 // ---------------------------------------------------------------------------
@@ -238,8 +219,8 @@ beforeEach(() => {
 describe("fillLastSlotsOwned", () => {
   it("writes every placed card as auto so the sweep undoes it", async () => {
     stub.state.deckCards = rowsFor(97); // two slots open
+    stub.state.cards.push(cardRow("o1"), cardRow("o2"));
     ranked.value = [synergy("o1", 90, true), synergy("o2", 80, true)];
-    stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
     const { fillLastSlotsOwned } = await import("./actions");
     const out = await fillLastSlotsOwned("deck-1");
     expect(out).toMatchObject({ ok: true, added: 2, total: 99, shortfall: 0 });
@@ -257,12 +238,12 @@ describe("fillLastSlotsOwned", () => {
     stub.state.onLock = () => {
       stub.state.deckCards = rowsFor(98);
     };
+    stub.state.cards.push(cardRow("o1"), cardRow("o2"), cardRow("o3"));
     ranked.value = [
       synergy("o1", 90, true),
       synergy("o2", 80, true),
       synergy("o3", 70, true),
     ];
-    stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
     const { fillLastSlotsOwned } = await import("./actions");
     const out = await fillLastSlotsOwned("deck-1");
     expect(out).toMatchObject({ ok: true, added: 1, total: 99 });
@@ -270,8 +251,8 @@ describe("fillLastSlotsOwned", () => {
 
   it("returns the shortfall when the owned pool runs out", async () => {
     stub.state.deckCards = rowsFor(90); // nine slots open
+    stub.state.cards.push(cardRow("o1"), cardRow("u1"));
     ranked.value = [synergy("o1", 90, true), synergy("u1", 80, false)];
-    stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
     const { fillLastSlotsOwned } = await import("./actions");
     const out = await fillLastSlotsOwned("deck-1");
     expect(out).toMatchObject({ ok: true, added: 1, total: 91, shortfall: 8 });
@@ -281,7 +262,22 @@ describe("fillLastSlotsOwned", () => {
     stub.state.deckCards = rowsFor(97);
     stub.state.cards = [commanderRow(), cardRow("o1"), cardRow("bad", { colorIdentity: ["U"] })];
     ranked.value = [synergy("bad", 99, true), synergy("o1", 90, true)];
-    stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
+    const { fillLastSlotsOwned } = await import("./actions");
+    const out = await fillLastSlotsOwned("deck-1");
+    expect(out).toMatchObject({ ok: true, added: 1 });
+    expect(
+      stub.state.insertCalls
+        .flatMap((c) => (Array.isArray(c.values) ? c.values : [c.values]))
+        .map((r) => (r as Record<string, unknown>).oracleId),
+    ).toEqual(["o1"]);
+  });
+
+  it("skips a ranked card absent from the catalog and continues the fill", async () => {
+    stub.state.deckCards = rowsFor(97);
+    // "missing" has no card row — it will be absent from byOracleId, so the
+    // legality filter drops it. "o1" has a row and must land.
+    stub.state.cards.push(cardRow("o1"));
+    ranked.value = [synergy("missing", 99, true), synergy("o1", 90, true)];
     const { fillLastSlotsOwned } = await import("./actions");
     const out = await fillLastSlotsOwned("deck-1");
     expect(out).toMatchObject({ ok: true, added: 1 });
@@ -296,7 +292,6 @@ describe("fillLastSlotsOwned", () => {
     stub.state.deckCards = rowsFor(97);
     stub.state.transactionError = new Error("boom");
     ranked.value = [synergy("o1", 90, true)];
-    stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
     const { fillLastSlotsOwned } = await import("./actions");
     await expect(fillLastSlotsOwned("deck-1")).resolves.toEqual({
       ok: false,
@@ -306,8 +301,8 @@ describe("fillLastSlotsOwned", () => {
 
   it("revalidates the claim surfaces, not just the deck's own", async () => {
     stub.state.deckCards = rowsFor(98);
+    stub.state.cards.push(cardRow("o1"));
     ranked.value = [synergy("o1", 90, true)];
-    stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
     const { fillLastSlotsOwned } = await import("./actions");
     await fillLastSlotsOwned("deck-1");
     expect(revalidated).toContain("/collection");
@@ -321,8 +316,13 @@ describe("fillLastSlotsOwned", () => {
 describe("fillLastSlotsUnowned", () => {
   it("does not filter on ownership", async () => {
     stub.state.deckCards = rowsFor(97);
+    stub.state.cards.push(cardRow("u1"), cardRow("o1"));
+    // Both cards owned so bought=0; this test only checks what was inserted.
+    stub.state.ownedItems = [
+      { oracleId: "u1", userId: "user_1", quantity: 1 },
+      { oracleId: "o1", userId: "user_1", quantity: 1 },
+    ];
     ranked.value = [synergy("u1", 90, false), synergy("o1", 80, true)];
-    stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
     const { fillLastSlotsUnowned } = await import("./actions");
     const out = await fillLastSlotsUnowned("deck-1");
     expect(
@@ -334,21 +334,50 @@ describe("fillLastSlotsUnowned", () => {
   });
 
   it("reports how many of the deck's cards are now unowned", async () => {
-    stub.state.deckCards = rowsFor(97);
+    // 97 pre-existing slots (all owned) + 2 top-up cards (neither owned).
+    const existing = rowsFor(97);
+    stub.state.deckCards = existing;
+    stub.state.cards.push(cardRow("u1"), cardRow("u2"));
+    // The 97 pre-existing cards are all owned; the two top-up cards are not.
+    stub.state.ownedItems = existing.map((r) => ({
+      oracleId: r.oracleId,
+      userId: "user_1",
+      quantity: 1,
+    }));
     ranked.value = [synergy("u1", 90, false), synergy("u2", 80, false)];
-    stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
     const { fillLastSlotsUnowned } = await import("./actions");
     const out = await fillLastSlotsUnowned("deck-1");
-    // `bought` is the whole deck's unowned count after the write, not this
-    // call's — the strip states what the player still has to buy.
+    // `bought` is the whole deck's unowned count after the write, derived from
+    // collection_items — not from the ranked list.
     expect(out).toMatchObject({ ok: true, bought: 2 });
+  });
+
+  it("counts an unowned deck card absent from the ranked list toward bought", async () => {
+    // "hand-added" was placed outside the EDHREC ranking — it does not appear in
+    // ranked.value at all. The player does not own it. After a top-up places "u1"
+    // (also unowned), bought must be 2, not 1.
+    const existing = rowsFor(97);
+    stub.state.deckCards = [
+      ...existing,
+      { oracleId: "hand-added", quantity: 1 },
+    ];
+    stub.state.cards.push(cardRow("u1"));
+    // The 97 slot-XXXX cards are owned; "hand-added" and "u1" are not.
+    stub.state.ownedItems = existing.map((r) => ({
+      oracleId: r.oracleId,
+      userId: "user_1",
+      quantity: 1,
+    }));
+    ranked.value = [synergy("u1", 90, false)];
+    const { fillLastSlotsUnowned } = await import("./actions");
+    const out = await fillLastSlotsUnowned("deck-1");
+    expect(out).toMatchObject({ ok: true, added: 1, bought: 2 });
   });
 
   it("returns the top-up refusal rather than throwing", async () => {
     stub.state.deckCards = rowsFor(97);
     stub.state.transactionError = new Error("boom");
     ranked.value = [synergy("u1", 90, false)];
-    stub.state._rankedRef = ranked.value as Array<{ oracleId: string }>;
     const { fillLastSlotsUnowned } = await import("./actions");
     await expect(fillLastSlotsUnowned("deck-1")).resolves.toEqual({
       ok: false,
