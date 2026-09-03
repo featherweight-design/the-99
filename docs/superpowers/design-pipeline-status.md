@@ -141,7 +141,7 @@ The 2026-08-29 intake filed five `type: feature` tickets, four of which ship UI 
 
 #216 and #217 ship no UI and are explicitly future work, so they need no design row.
 
-**Not blocked meanwhile.** The shared foundation these sit on — the EDHREC parser widening, the commander support index, the ManaPool price ingest, the commander engine classifier and the land-production check — is entirely backend/data. Per `AGENTS.md`, backend work proceeds without a handoff, so the foundation was built while these rows waited. **It merged as PR #244 on 2026-09-02**, so ranks 13–15 are unblocked.
+**Not blocked meanwhile.** The shared foundation these sit on is entirely backend/data, and per `AGENTS.md` backend work proceeds without a handoff, so it was built while these rows waited. **It merged as PR #244 on 2026-09-02** — the EDHREC parser widening, the commander support index, the commander engine classifier and the land colour-production check — so ranks 13–15 are unblocked. The plan's fifth component, the ManaPool price ingest, was not in that merge and is still open.
 
 ---
 
