@@ -1,11 +1,33 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { RankedCommander } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
 import { CommanderDetail } from "./detail";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 
 const noSynergyCards: SynergyCard[] = [];
+
+const synergyCards: SynergyCard[] = [
+  {
+    oracleId: "oracle-goblin-bombardment",
+    name: "Goblin Bombardment",
+    typeLine: "Enchantment",
+    facet: "enchantment",
+    inclusionPct: 31,
+    synergyPts: 47,
+    owned: true,
+  },
+  {
+    oracleId: "oracle-skullclamp",
+    name: "Skullclamp",
+    typeLine: "Artifact — Equipment",
+    facet: "artifact",
+    inclusionPct: 62,
+    synergyPts: null,
+    owned: false,
+  },
+];
 
 function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
   return {
@@ -59,5 +81,48 @@ describe("CommanderDetail synergy states", () => {
     expect(screen.getAllByText(/EDHREC doesn't track this commander/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();
+  });
+});
+
+// The panel mounts twice — once per width — and both mounts read the same
+// selection provider. These exercise the wiring the three state tests above skip
+// by passing an empty card list.
+describe("CommanderDetail synergy panel", () => {
+  it("says the sub-caption once per width, and never beside the heading as well", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} />,
+    );
+    expect(screen.getAllByText(synergyCopy.panel.subcaption("2"))).toHaveLength(1);
+    expect(screen.getAllByText(synergyCopy.panel.subcaptionMobile("2"))).toHaveLength(1);
+  });
+
+  it("toggles a row through the provider, the bridge and the panel together", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={synergyCards} />,
+    );
+    const addLabel = synergyCopy.select.addAria("Goblin Bombardment");
+    const removeLabel = synergyCopy.select.removeAria("Goblin Bombardment");
+
+    // One toggle per mount, both resting unselected.
+    const resting = screen.getAllByRole("button", { name: addLabel });
+    expect(resting).toHaveLength(2);
+    for (const button of resting) expect(button).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(resting[0]);
+
+    // Both mounts flip, because the state is one provider and not two useStates.
+    const pressed = screen.getAllByRole("button", { name: removeLabel });
+    expect(pressed).toHaveLength(2);
+    for (const button of pressed) expect(button).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: addLabel })).toBeNull();
+
+    // The row itself reads as selected — the panel passed `selected` down.
+    const row = screen.getAllByRole("listitem", {
+      name: /^Goblin Bombardment\./,
+    })[0];
+    expect(within(row).getByRole("button", { name: removeLabel })).toBeInTheDocument();
+
+    fireEvent.click(pressed[0]);
+    expect(screen.getAllByRole("button", { name: addLabel })).toHaveLength(2);
   });
 });

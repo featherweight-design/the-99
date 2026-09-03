@@ -2,9 +2,6 @@
 // Desktop: sticky left column (63/88 card + oracle glass + build button) + scrolling right column.
 // Mobile: art header band (236px, gradient + overlay text) + sticky bottom Build bar + sections.
 
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
@@ -17,9 +14,8 @@ import { CoverageSection } from "./coverage-section";
 import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { FILL_BASELINE_TOTAL } from "../../lib/decks/fill";
-import { SynergyPanel } from "./synergy-panel";
+import { SynergySelectionProvider, SelectableSynergyPanel } from "./synergy-selection";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
-import { synergyCopy } from "../../lib/copy/synergy-discovery";
 
 // ─── Fit Hero (right column top section) ─────────────────────────────────────
 
@@ -231,26 +227,13 @@ export function CommanderDetail({
 }: CommanderDetailProps) {
   const gradient = commanderGradient(c.colorIdentity);
 
-  // Selection state for synergy card picks — oracle ids the player wants to add.
-  // Lives here so Task 7's promise line and Build href can also read it.
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  function handleToggle(oracleId: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(oracleId)) {
-        next.delete(oracleId);
-      } else {
-        next.add(oracleId);
-      }
-      return next;
-    });
-  }
-
   return (
     // One card-detail modal for the whole page, so the role chips below open the
     // same modal the deck builder uses rather than a second implementation of it.
+    // The synergy selection sits beside it at the same level, so Task 7's promise
+    // line and Build href can read the picks as siblings of the panel.
     <CardDetailProvider>
+      <SynergySelectionProvider>
       {/* ── Mobile: art header band ─────────────────────────────────── */}
       <div
         className="sm:hidden relative flex-none"
@@ -414,20 +397,14 @@ export function CommanderDetail({
               >
                 EDHREC Synergy
               </h2>
-              <p
-                className="m-0 font-mono"
-                style={{ fontSize: 12, color: "var(--fg-faint)" }}
-              >
-                {synergyCopy.panel.subcaptionMobile(String(synergyCards.length))}
-              </p>
+              {/* The sub-caption belongs to the panel (brief §panel structure);
+                  printing it here as well drew it twice. */}
             </div>
-            <SynergyPanel
+            <SelectableSynergyPanel
               width="phone"
               cards={synergyCards}
               ownedCount={c.edhrecOwnedCount ?? 0}
               edhrecTotal={c.edhrecTotal}
-              selected={selected}
-              onToggle={handleToggle}
             />
           </div>
         ) : (
@@ -643,19 +620,13 @@ export function CommanderDetail({
               >
                 EDHREC Synergy
               </h2>
-              <p
-                className="m-0 font-mono"
-                style={{ fontSize: 12, color: "var(--fg-faint)" }}
-              >
-                {synergyCopy.panel.subcaption(String(synergyCards.length))}
-              </p>
-              <SynergyPanel
+              {/* The sub-caption belongs to the panel (brief §panel structure);
+                  printing it here as well drew it twice. */}
+              <SelectableSynergyPanel
                 width="desktop"
                 cards={synergyCards}
                 ownedCount={c.edhrecOwnedCount ?? 0}
                 edhrecTotal={c.edhrecTotal}
-                selected={selected}
-                onToggle={handleToggle}
               />
             </div>
           ) : (
@@ -679,6 +650,7 @@ export function CommanderDetail({
           )}
         </div>
       </div>
+      </SynergySelectionProvider>
     </CardDetailProvider>
   );
 }

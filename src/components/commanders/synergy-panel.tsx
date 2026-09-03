@@ -80,6 +80,8 @@ export function SynergyPanel({
   // Apply the resting cap unless expanded.
   const visibleCards = expanded ? facetCards : facetCards.slice(0, restingCap);
   const canExpand = facetCount > restingCap;
+  // Expanded past the resting cap is the only state where the list scrolls.
+  const scrollable = expanded && canExpand;
 
   // Ownership headline bar figures.
   const pct = edhrecTotal > 0 ? Math.round((ownedCount / edhrecTotal) * 100) : 0;
@@ -106,7 +108,7 @@ export function SynergyPanel({
       >
         {isPhone ? (
           /* Phone: single line "{ownedCount} / {edhrecTotal} owned" */
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span
               className="font-mono"
               style={{ fontSize: 12, color: "var(--fg)" }}
@@ -164,11 +166,13 @@ export function SynergyPanel({
           </div>
         )}
 
-        {/* Phone: progress bar (sits below the count line) */}
+        {/* Phone: progress bar (sits below the count line). The brief puts the
+            12px gap under the bar, not under the count line above it. */}
         {isPhone && (
           <div
             style={{
               height: 6,
+              marginBottom: 12,
               borderRadius: 999,
               overflow: "hidden",
               background: "var(--border)",
@@ -268,6 +272,12 @@ export function SynergyPanel({
       {facetCount > 0 && (
         <ul
           id={listId}
+          // Expanded, the list is a 480px scroll box. A scroll container with no
+          // tabIndex and no name is unreachable by keyboard, so it takes both —
+          // but only while it is actually scrollable, or a resting six-row list
+          // would put a stop in the tab order for nothing.
+          tabIndex={scrollable ? 0 : undefined}
+          aria-label={scrollable ? synergyCopy.facet.itemAria(facetLabel, facetCountStr) : undefined}
           style={{
             listStyle: "none",
             margin: 0,
@@ -275,9 +285,7 @@ export function SynergyPanel({
             display: "flex",
             flexDirection: "column",
             gap: 4,
-            ...(expanded
-              ? { maxHeight: "480px", overflowY: "auto" }
-              : {}),
+            ...(scrollable ? { maxHeight: "480px", overflowY: "auto" } : {}),
           }}
         >
           {visibleCards.map((card) => (
