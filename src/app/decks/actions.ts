@@ -138,11 +138,11 @@ export async function buildFillPlan(
     return raw != null && Number.isFinite(raw) ? raw : null;
   };
 
-  // Built from the deduped pool, which is correct: `unownedStaples` uses this
-  // to avoid offering a card the player already owns, and a selected owned card
-  // is still owned. The staples list is deduped separately below, because a
-  // selected card the player does *not* own reaches the plan through there and
-  // filtering only the pool would let it be placed twice.
+  // Built from the deduped pool, so a selected card the player owns is absent
+  // from it and `unownedStaples` may well offer that card back as a staple. The
+  // separate dedupe below is what settles it — for that card and for a selected
+  // card the player does not own, which only ever reaches the plan through the
+  // staples list. Filtering the pool alone would let either be placed twice.
   const ownedIds = new Set(pool.map((c) => c.oracleId));
   const staples = dedupeSelectionFromPool(
     data?.topCards
