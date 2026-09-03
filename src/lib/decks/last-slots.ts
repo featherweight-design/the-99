@@ -23,3 +23,22 @@ export function planLastSlots(args: {
   }
   return { place, shortfall: args.openSlots - place.length };
 }
+
+/** How many cards the top-up plan would require the player to buy.
+ *
+ *  This is NOT `allCandidates - ownedCandidates`. Both planLastSlots runs are
+ *  capped at `openSlots`, so when the owned pool alone covers the gap both
+ *  counts hit the cap and the difference is 0 — making control B disappear for
+ *  well-stocked players even though the ranked list has higher-synergy unowned
+ *  cards it would place. The honest figure is the number of unowned oracle ids
+ *  inside the single top-up plan: that is what the player would have to buy,
+ *  and it is 0 only when every card in the plan is already owned. */
+export function countLastSlotsUnowned(args: {
+  ranked: SynergyCard[];
+  openSlots: number;
+  inDeckOracleIds: Set<string>;
+}): number {
+  const plan = planLastSlots({ ...args, ownedOnly: false });
+  const ownedIds = new Set(args.ranked.filter((c) => c.owned).map((c) => c.oracleId));
+  return plan.place.filter((id) => !ownedIds.has(id)).length;
+}

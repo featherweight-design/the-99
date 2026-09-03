@@ -130,4 +130,69 @@ describe("LastSlotsStrip", () => {
       synergyCopy.lastSlots.shortAnnounce("12", "80", "19"),
     );
   });
+
+  // Finding 8 — the filled-at-99 path is a separate branch from the shortfall
+  // path and must be covered independently. Deleting the filledAnnounce branch
+  // leaves the shortfall tests green because they never exercise shortfall === 0.
+  it("announces the fill and shows no shortfall line when A fills the deck", async () => {
+    const onAnnounce = vi.fn();
+    actions.fillOwned.mockResolvedValue({ ok: true, added: 31, total: 99, shortfall: 0 });
+    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
+    });
+    expect(onAnnounce).toHaveBeenCalledExactlyOnceWith(
+      synergyCopy.lastSlots.filledAnnounce("31", "99"),
+    );
+    expect(screen.queryByTestId("last-slots-shortfall")).not.toBeInTheDocument();
+  });
+
+  // Finding 5 — rule 4's clamp. The fixture uses ownedCandidates < openSlots
+  // so the min never fires there. This case inverts it: ownedCandidates > openSlots
+  // and the label must carry openSlots, not ownedCandidates.
+  it("clamps A's label to openSlots when the pool exceeds the gap", () => {
+    render(<LastSlotsStrip {...base} openSlots={5} ownedCandidates={12} />);
+    expect(screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("5") })).toBeInTheDocument();
+    expect(screen.queryByText(/Fill 12/)).not.toBeInTheDocument();
+  });
+
+  // Finding 3 — control B's full path. Clicking B calls fillLastSlotsUnowned,
+  // its success announces boughtAnnounce exactly once, its refusal renders
+  // MutationError under B while leaving A enabled, and its in-flight state
+  // disables A while showing B's fillingRows label.
+
+  it("calls fillLastSlotsUnowned and announces the settle when B is clicked", async () => {
+    const onAnnounce = vi.fn();
+    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
+    });
+    expect(actions.fillUnowned).toHaveBeenCalledWith("deck-1");
+    expect(onAnnounce).toHaveBeenCalledExactlyOnceWith(
+      synergyCopy.lastSlots.boughtAnnounce("19", "99", "19"),
+    );
+  });
+
+  it("renders MutationError under B and leaves A enabled after B is refused", async () => {
+    actions.fillUnowned.mockResolvedValue({ ok: false, message: synergyCopy.lastSlots.topUpFailed });
+    render(<LastSlotsStrip {...base} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
+    });
+    expect(await screen.findByText(synergyCopy.lastSlots.topUpFailed)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") })).toBeEnabled();
+  });
+
+  it("disables A and shows B's fillingRows label while B's write is in flight", async () => {
+    const pending = deferred<{ ok: true; added: number; total: number; bought: number }>();
+    actions.fillUnowned.mockReturnValue(pending.promise);
+    render(<LastSlotsStrip {...base} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
+    });
+    const ownedBtn = screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") });
+    expect(ownedBtn).toBeDisabled();
+    expect(screen.getByText(recommendationsCopy.fill.fillingRows("40"))).toBeInTheDocument();
+    pending.resolve({ ok: true, added: 19, total: 99, bought: 19 });
+  });
 });

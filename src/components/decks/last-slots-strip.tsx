@@ -54,7 +54,7 @@ function ShortfallLine({ total, shortfall }: ShortfallLineProps) {
   return (
     <div
       data-testid="last-slots-shortfall"
-      className="flex items-start gap-[9px] mx-[16px] mt-[10px] mb-[2px] md:mx-[30px] rounded-[8px] md:rounded-[9px] px-[12px] py-[9px] md:px-[15px] md:py-[11px]"
+      className="flex items-start gap-[9px] mt-[10px] mb-[2px] rounded-[8px] md:rounded-[9px] px-[12px] py-[9px] md:px-[15px] md:py-[11px]"
       style={{
         background: "var(--surface-sunken)",
         border: "1px solid var(--border)",
@@ -98,8 +98,6 @@ export function LastSlotsStrip(props: LastSlotsStripProps) {
 // that `if (openSlots <= 0) return null` can appear before any useState calls —
 // React's rules of hooks forbid a conditional return inside a component that
 // also calls hooks.
-type InnerProps = LastSlotsStripProps;
-
 function LastSlotsStripInner({
   deckId,
   openSlots,
@@ -107,7 +105,7 @@ function LastSlotsStripInner({
   unownedCandidates,
   commanderShortName,
   onAnnounce,
-}: InnerProps) {
+}: LastSlotsStripProps) {
   // Which write is in flight. Null when idle.
   const [inflight, setInflight] = useState<"owned" | "unowned" | null>(null);
 
@@ -143,6 +141,9 @@ function LastSlotsStripInner({
   async function runUnowned() {
     setInflight("unowned");
     setUnownedError(null);
+    // Clear any shortfall line from a prior A run: B is the way forward from
+    // that state, and once B fires the A-settled numbers are stale.
+    setSettled(null);
     const result = await fillLastSlotsUnowned(deckId);
     setInflight(null);
     if (!result.ok) {
@@ -239,22 +240,29 @@ function LastSlotsStripInner({
       )}
 
       {/* Control B — buying top-up. Absent at 0 unowned candidates (Rule 1).
-          Disabled while either write is in flight (Rule 2). Rendered after the
-          shortfall line so it sits directly beneath it once A has settled. */}
+          Disabled while either write is in flight (Rule 2). In flight: label
+          swaps to fillingRows, same as A, so the player knows the write is
+          running. GhostButton carries no disabled:opacity-* of its own, so the
+          class is added here — matching control A (disabled:opacity-50) and the
+          shipped ClearAutoButton precedent. */}
       {unownedCandidates > 0 && (
         <div className="flex flex-col mt-[10px]">
           <GhostButton
             onClick={runUnowned}
             disabled={busy}
             aria-label={synergyCopy.lastSlots.topUpAria(String(openSlots))}
-            className="w-full md:w-auto min-h-[44px] md:min-h-0 rounded-[8px] px-[16px] py-[10px] text-[13px]"
+            className="w-full md:w-auto min-h-[44px] md:min-h-0 rounded-[8px] px-[16px] py-[10px] text-[13px] disabled:opacity-50"
           >
-            {synergyCopy.lastSlots.topUp}
-            {/* Count in mono warning — on the button's face, after the label */}
-            {" "}
-            <span className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>
-              {unownedCandidates}
-            </span>
+            {inflight === "unowned"
+              ? recommendationsCopy.fill.fillingRows(String(unownedCandidates))
+              : <>
+                  {synergyCopy.lastSlots.topUp}
+                  {/* Count in mono warning — on the button's face, after the label */}
+                  {" "}
+                  <span className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>
+                    {unownedCandidates}
+                  </span>
+                </>}
           </GhostButton>
           {unownedError && <MutationError message={unownedError} />}
         </div>
