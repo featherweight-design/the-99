@@ -83,6 +83,32 @@ describe("CommanderDetail synergy states", () => {
   });
 });
 
+describe("CommanderDetail hidden-receipts note", () => {
+  // The note names an outage. The panel also stays down for a commander EDHREC
+  // does not index and for one whose rows are all excluded, and calling either
+  // of those an outage promises a recovery that will never come.
+  it("keeps the outage note off an absent commander", () => {
+    render(
+      <CommanderDetail commander={noSynergy("absent")} rank={1} isBestFit={false} synergyCards={noSynergyCards} />,
+    );
+    expect(screen.queryByText(/EDHREC data unavailable/i)).toBeNull();
+  });
+
+  it("keeps the outage note off a commander whose rows are all excluded", () => {
+    render(
+      <CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />,
+    );
+    expect(screen.queryByText(/EDHREC data unavailable/i)).toBeNull();
+  });
+
+  it("still shows the outage note when EDHREC is unreachable", () => {
+    render(
+      <CommanderDetail commander={noSynergy("degraded")} rank={1} isBestFit={false} synergyCards={noSynergyCards} />,
+    );
+    expect(screen.getAllByText(/EDHREC data unavailable/i).length).toBeGreaterThan(0);
+  });
+});
+
 // The panel mounts twice — once per width — and both mounts read the same
 // selection provider. These exercise the wiring the three state tests above skip
 // by passing an empty card list.

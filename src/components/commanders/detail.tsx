@@ -422,8 +422,11 @@ export function CommanderDetail({
               edhrecTotal={c.edhrecTotal}
             />
           </div>
-        ) : (
-          /* degraded: hidden-receipts note */
+        ) : c.synergyState === "degraded" ? (
+          /* Only an outage gets the outage sentence. The panel also stays down
+             for a commander EDHREC does not index and for one whose rows are
+             all excluded, and neither is EDHREC being unreachable — the
+             FitHero note above already names those states correctly. */
           <div
             className="flex items-center gap-[8px] rounded-[7px]"
             style={{
@@ -439,7 +442,7 @@ export function CommanderDetail({
               Synergy receipts hidden — EDHREC data unavailable
             </span>
           </div>
-        )}
+        ) : null}
 
         {/* Bottom spacer so sticky bar doesn't cover last content */}
         <div style={{ height: 100 }} />
@@ -651,8 +654,9 @@ export function CommanderDetail({
                 edhrecTotal={c.edhrecTotal}
               />
             </div>
-          ) : (
-            /* degraded: hidden-receipts note */
+          ) : c.synergyState === "degraded" ? (
+            /* Same gate as the phone column: the outage sentence is for an
+               outage, not for every reason the panel might not mount. */
             <div
               className="flex items-center gap-[9px] rounded-[7px]"
               style={{
@@ -669,7 +673,7 @@ export function CommanderDetail({
                 Synergy receipts hidden — EDHREC data unavailable
               </span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
       </SynergySelectionProvider>
