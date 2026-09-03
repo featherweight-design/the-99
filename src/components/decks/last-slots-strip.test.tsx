@@ -147,6 +147,24 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByTestId("last-slots-shortfall")).not.toBeInTheDocument();
   });
 
+  // The shortfall line is a receipt for one run. A second A run — the player
+  // acquires cards, the page refreshes the pool, they press Fill again — can
+  // reach 99, and the earlier "still 19 short" must not survive under a deck
+  // that is no longer short.
+  it("clears a prior shortfall line once a later A run fills the deck", async () => {
+    render(<LastSlotsStrip {...base} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
+    });
+    expect(await screen.findByTestId("last-slots-shortfall")).toBeInTheDocument();
+
+    actions.fillOwned.mockResolvedValue({ ok: true, added: 19, total: 99, shortfall: 0 });
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
+    });
+    expect(screen.queryByTestId("last-slots-shortfall")).not.toBeInTheDocument();
+  });
+
   // Finding 5 — rule 4's clamp. The fixture uses ownedCandidates < openSlots
   // so the min never fires there. This case inverts it: ownedCandidates > openSlots
   // and the label must carry openSlots, not ownedCandidates.

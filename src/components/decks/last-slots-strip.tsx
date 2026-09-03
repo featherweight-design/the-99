@@ -147,6 +147,10 @@ function LastSlotsStripInner({
         setSettled({ total, shortfall });
         onAnnounce(synergyCopy.lastSlots.shortAnnounce(String(result.added), total, shortfall));
       } else {
+        // The line is a receipt for one run, not a standing property of the
+        // deck. A second run that reaches 99 would otherwise leave the earlier
+        // "still N short" beneath a deck that is no longer short.
+        setSettled(null);
         onAnnounce(synergyCopy.lastSlots.filledAnnounce(String(result.added), total));
       }
       if (result.total === 99) onCompletedByFill?.();

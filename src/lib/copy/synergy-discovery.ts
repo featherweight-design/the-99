@@ -54,7 +54,7 @@ export const synergyCopy = {
     synergy: (pts: string) => `${pts === '1' ? '+1 pt' : `+${pts} pts`}`,
     // U+2212 minus, not a hyphen: at mono 11.5px a hyphen beside tabular digits
     // reads as a dash, which is this panel's absence glyph.
-    synergyNegative: (pts: string) => `−${pts} pts`,
+    synergyNegative: (pts: string) => (pts === '1' ? '−1 pt' : `−${pts} pts`),
     // Absence, never 0 and never +0 (suggest.ts:31-33). Independent of the
     // inclusion figure: one null never suppresses the other.
     synergyNone: '—',

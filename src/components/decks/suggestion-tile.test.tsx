@@ -125,6 +125,14 @@ describe("SuggestionTile — lift line", () => {
     expect(screen.getByText(synergyCopy.figure.synergyNegative("5"))).toBeInTheDocument();
   });
 
+  // The singular is a real case on this side of zero too, and the positive
+  // formatter already spells it. Asserted as a literal so the test cannot pass
+  // by agreeing with a formatter that is itself wrong.
+  it("prints a one-point negative figure in the singular", () => {
+    mountTile({ inclusionPct: 40, lift: null, synergyFigure: -0.01 }, { showNoSynergy: true });
+    expect(screen.getByText("−1 pt")).toBeInTheDocument();
+  });
+
   // A figure that rounds to zero reaches the same branch as a negative one,
   // because `lift` is positive-only. Zero is a real figure of no advantage, and
   // the minus glyph would misstate it as a penalty.
