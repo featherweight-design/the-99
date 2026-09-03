@@ -16,19 +16,26 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     from widening the `in (…)` array behind the legality check. */
 const MAX_SELECTION = 99;
 
+/** Keeps only uuid-shaped ids, drops repeats, and caps the result at a deck's
+    worth. `createDeck` is a directly callable server action, so it applies this
+    to its own argument rather than trusting the URL layer to have run first. */
+export function sanitizeSelection(ids: string[]): string[] {
+  const seen = new Set<string>();
+  for (const raw of ids) {
+    const id = raw.trim();
+    if (UUID_RE.test(id)) seen.add(id.toLowerCase());
+    if (seen.size >= MAX_SELECTION) break;
+  }
+  return [...seen];
+}
+
 /** Splits a `select` search param into oracle ids, keeping only uuid-shaped
     ones and dropping repeats. Accepts the array form Next.js produces for a
     repeated parameter. */
 export function parseSelectParam(raw: string | string[] | undefined): string[] {
   if (raw === undefined) return [];
   const joined = Array.isArray(raw) ? raw.join(",") : raw;
-  const seen = new Set<string>();
-  for (const part of joined.split(",")) {
-    const id = part.trim();
-    if (UUID_RE.test(id)) seen.add(id.toLowerCase());
-    if (seen.size >= MAX_SELECTION) break;
-  }
-  return [...seen];
+  return sanitizeSelection(joined.split(","));
 }
 
 /** The `&select=…` suffix for a redirect target, or `""` when nothing survived

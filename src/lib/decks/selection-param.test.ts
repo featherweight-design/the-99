@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSelectParam, selectParamSuffix } from "./selection-param";
+import { parseSelectParam, sanitizeSelection, selectParamSuffix } from "./selection-param";
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -32,6 +32,26 @@ describe("parseSelectParam", () => {
       (_, i) => `${i.toString().padStart(8, "0")}-1111-4111-8111-111111111111`,
     );
     expect(parseSelectParam(many.join(","))).toHaveLength(99);
+  });
+});
+
+// createDeck is directly callable, so it applies these bounds to its own
+// argument rather than inheriting them from the URL layer.
+describe("sanitizeSelection", () => {
+  it("drops anything that is not uuid-shaped", () => {
+    expect(sanitizeSelection([A, "not-a-uuid", ""])).toEqual([A]);
+  });
+
+  it("collapses a repeated id and lowercases it", () => {
+    expect(sanitizeSelection([A.toUpperCase(), A])).toEqual([A]);
+  });
+
+  it("bounds a crafted call longer than the deck can hold", () => {
+    const many = Array.from(
+      { length: 50_000 },
+      (_, i) => `${i.toString().padStart(8, "0")}-1111-4111-8111-111111111111`,
+    );
+    expect(sanitizeSelection(many)).toHaveLength(99);
   });
 });
 

@@ -18,6 +18,7 @@ import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { validateCardForDeck } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
 import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
+import { sanitizeSelection } from "../../lib/decks/selection-param";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -182,10 +183,12 @@ export async function createDeck(
   let deckId: string;
   try {
     // A malformed id would otherwise reach Postgres as a failed uuid cast, and
-    // the whole create would fall back to an empty deck. Deduplicated first so
-    // one id repeated in the query string cannot conflict with itself inside
-    // the insert's own VALUES list.
-    const requested = [...new Set(selectedOracleIds)].filter((id) => UUID_RE.test(id));
+    // the whole create would fall back to an empty deck. Sanitizing here rather
+    // than trusting the URL layer: this action is directly callable, so the
+    // shape filter, the dedupe, and the 99 bound all have to hold on its own
+    // argument. Dedupe also keeps one repeated id from conflicting with itself
+    // inside the insert's own VALUES list.
+    const requested = sanitizeSelection(selectedOracleIds);
     const candidates = requested.length > 0
       ? await db
           .select({
