@@ -70,7 +70,7 @@ describe("SynergyRow", () => {
 
   it("names ownership in the accessible name rather than by colour alone", () => {
     mount({ card: { ...base, owned: false } });
-    expect(screen.getByLabelText(/Not in your collection/)).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: /Not in your collection/ })).toBeInTheDocument();
   });
 
   it("toggles through an aria-pressed button", () => {

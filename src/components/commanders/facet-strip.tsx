@@ -63,9 +63,8 @@ export function FacetStrip({
             aria-label={synergyCopy.facet.itemAria(label, countStr)}
             type="button"
             onClick={() => onSelect(facet)}
-            className="shrink-0 flex items-center gap-[5px] font-mono cursor-pointer"
+            className="shrink-0 flex items-center gap-[5px] font-mono cursor-pointer h-8 md:h-[30px]"
             style={{
-              height: "var(--facet-pill-height, 30px)",
               padding: "0 11px",
               borderRadius: 999,
               fontSize: 11.5,
@@ -79,8 +78,15 @@ export function FacetStrip({
                   : "1px solid var(--border)",
             }}
           >
-            <span style={{ color: isSelected ? "var(--fg)" : "var(--fg)" }}>
-              {label}
+            <span style={{ color: isSelected ? "var(--fg)" : "var(--fg-body)" }}>
+              {facet === "spell" ? (
+                <>
+                  <span className="md:hidden">{synergyCopy.facet.spellsShort}</span>
+                  <span className="hidden md:inline">{label}</span>
+                </>
+              ) : (
+                label
+              )}
             </span>
             <span
               style={{

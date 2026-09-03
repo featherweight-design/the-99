@@ -30,7 +30,7 @@ function formatSynergyAria(pts: number): string {
 function OwnershipDot({ owned }: { owned: boolean }) {
   return (
     <span
-      aria-label={owned ? synergyCopy.figure.ariaOwned : synergyCopy.figure.ariaUnowned}
+      aria-hidden="true"
       style={{
         display: "block",
         flexShrink: 0,
@@ -105,6 +105,7 @@ export function SynergyRow({
 
   return (
     <li
+      aria-label={rowAria}
       style={{
         display: "flex",
         alignItems: "center",
@@ -119,9 +120,6 @@ export function SynergyRow({
         listStyle: "none",
       }}
     >
-      {/* Screen-reader summary of the row: ownership + figures not otherwise announced */}
-      <span className="sr-only">{rowAria}</span>
-
       {/* Slot 1: ownership dot */}
       <OwnershipDot owned={card.owned} />
 
