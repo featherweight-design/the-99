@@ -76,6 +76,8 @@ Severity comes from `statusPill()` (`src/lib/decks/status.ts:15-24`, cited RM:21
 
 ### 1.1 The two `free` formulae — both are required
 
+**Never recompute `free` from `owned` and `hard` — read it from the map, which knows where you're standing** (R5 §6). The canvas callout's `free = owned − hard` is the **off-decklist** case, not a general rule inherited by every surface; 1.6 is the other half and neither is the default. A formula in a handoff gets copied, so this warning leads rather than follows.
+
 | # | Context | Formula | Source |
 |---|---|---|---|
 | 1.5 | Default / **off** the deck's own decklist — `/collection`, `/commanders`, commander detail, card detail | `free = owned − hard` | CV:48 callout, qualified RD2:105–110 |
@@ -133,7 +135,7 @@ Absolutely positioned over card art. **Top-left** — top-right is occupied by t
 
 | # | Element | Typography | Colour | Spacing | Size | States | Source |
 |---|---|---|---|---|---|---|---|
-| 3.1 | Placement | — | — | appended to the shipped `×${qty} owned` string, joined with ` · ` | **takes no column and no row height** | — | RM:60–84, A2RM:33–49 |
+| 3.1 | Placement | — | — | appended to the shipped `×${qty} owned` string, joined with ` · ` | **takes no column and no row height** | **Contested on the decklist row — awaiting Design**, not amended here: that row draws no meta line and no owned count, so there is nothing to append to, and the build places the marker inline between the card name and the buy tag. The hard constraints hold either way | RM:60–84, A2RM:33–49 |
 | 3.2 | Joiner | inherits meta line | `#3A3229` (`--border-strong`) | — | — | — | RM:60–84, CP:144–146 |
 | 3.3 | Glyph | — | per state | — | `6px`, rotated 45° | — | CV:62–135 |
 | 3.4 | Label | inherits the meta line's mono size | soft `#C6B79A` / hard `#E8CE93` / over `#E9917A` | — | — | — | CV:717–795 |
@@ -377,7 +379,7 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 | 14.2 | Tile caption | shipped | shipped | — | unchanged | `C21 · uncommon` **untouched** | A2RM:51–60 |
 | 14.3 | Desktop tile grid | — | — | `repeat(5, 1fr)` | unchanged | — | A2CV:371–396 |
 | 14.4 | Card detail marker | — | per state | — | — | carries the **full** form — `hardIn` / `hardMulti` / `overWithDemand` | A2RM:62–75 |
-| 14.5 | Card detail status pill | — | — | — | — | **ships WITHOUT the status pill the canvas draws.** `hardDeckNames` is names only | RD2:78–84 |
+| 14.5 | Card detail status pill | — | — | — | — | **ships WITHOUT the status pill the canvas draws** — ratified R5 §3; the pill would be inferred from `hard > 0` rather than read. `hardDeckNames` stays names only, never `{ name, pill }[]` | RD2:78–84, R5RM:102–116 |
 | 14.6 | Detail copy | shipped | shipped | — | — | `collection.detailHeading`, `detailHardNote`, `detailSoftNote`, `detailOverNote` | CP:195–227 |
 
 **Row count: 6 elements.**
@@ -399,7 +401,7 @@ Position: **fourth on desktop, fifth on phone** (A2RM:77–109). Four checkboxes
 | 15.7 | Chip `✕` | — | — | — | **44px** target | `collection.chipRemoveAria` | A2RM:195–210, CP:195–227 |
 | 15.8 | Desktop chip seam | — | `#2A241D` | — | 1px | — | A2CV:412–419 |
 | 15.9 | URL | — | — | — | — | `?avail=inuse,over` | A2RM:77–109 |
-| 15.10 | Grouping | — | — | — | — | checkbox **group** with a group name | A2RM:195–210 |
+| 15.10 | Grouping | — | — | — | — | checkbox **group** with a group name. **Contested — awaiting Design on #242**, not amended here: the shared `FilterPanel` ships `role="listbox" aria-multiselectable`, because its search field is a `role="combobox"` and WAI-ARIA 1.2 requires a combobox popup be a listbox/tree/grid/dialog | A2RM:195–210, #242 |
 
 ### 15.1 Named states
 

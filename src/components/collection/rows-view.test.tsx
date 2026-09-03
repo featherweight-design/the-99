@@ -98,3 +98,35 @@ describe("RowsView availability marker", () => {
     expect((seamed[0] as HTMLElement).style.borderLeft).toBe("1px solid var(--row-bg)");
   });
 });
+
+// R5 §1: five spaced pips measure 67px against a 40px track, so from four the
+// pips fan instead. A browser run confirmed the five-pip case at both widths;
+// four is the boundary the collection fixture has no card for.
+describe("RowsView colour pips", () => {
+  const pipsOf = (container: HTMLElement) =>
+    [...(container.querySelector("button")!.children[1].children as HTMLCollectionOf<HTMLElement>)];
+
+  it("leaves three pips spaced", () => {
+    const { container } = renderRows({ ...card, colorIdentity: ["W", "U", "B"] });
+    const pips = pipsOf(container);
+    expect(pips).toHaveLength(3);
+    expect(pips.every((p) => p.style.marginLeft === "")).toBe(true);
+    expect(pips.every((p) => p.style.zIndex === "")).toBe(true);
+  });
+
+  it("fans from four, in WUBRG order with the left edge on top", () => {
+    const { container } = renderRows({ ...card, colorIdentity: ["W", "U", "B", "R"] });
+    const pips = pipsOf(container);
+    expect(pips.map((p) => p.style.marginLeft)).toEqual(["", "-5px", "-5px", "-5px"]);
+    expect(pips.map((p) => p.style.zIndex)).toEqual(["4", "3", "2", "1"]);
+  });
+
+  it("rings every pip against the row background, not a pinned colour", () => {
+    const { container } = renderRows({ ...card, colorIdentity: ["W", "U", "B", "R", "G"] });
+    for (const pip of pipsOf(container)) {
+      expect(pip.style.boxShadow).toBe(
+        "0 0 0 1px var(--row-bg), inset 0 0 0 1px rgba(0,0,0,0.35)",
+      );
+    }
+  });
+});

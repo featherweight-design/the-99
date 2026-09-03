@@ -70,9 +70,15 @@ that deck names have no length budget. Rather than invent a truncation rule on t
 the app, collection uses `marker.hard` (`0 free`) and never `hardIn` or `hardMulti` — which also
 means **collection never needs `hardMulti`**, closing that drawn/undrawn gap on this surface.
 
-Card detail carries the full form: `0 free — in Atraxa` with the claiming deck's status pill
-beside it, plus the one sentence that describes a *list* rather than a location. It is the
-commander-detail disclosure at card scale — no new construct.
+Card detail carries the full form: `0 free — in Atraxa`, plus the one sentence that describes a
+*list* rather than a location. It is the commander-detail disclosure at card scale — no new
+construct.
+
+**No status pill beside it** (R5 §3). The canvas draws `[Complete]` after the clause and keeps it
+as a record, but the pill would be inferred from `hard > 0` rather than read, and a claim about
+somebody's *other* deck is the one place a guess cannot wear the shape of a fact. The clause
+already carries the severity: the marker is hard *because* the claiming list is finished.
+`hardDeckNames` is not widened to `{ name, pill }[]`.
 
 ## 4. Open call → **yes, `/collection` earns a filter. As `Availability ▾`, not a checkbox.**
 
@@ -140,10 +146,19 @@ keeps meaning card count and nothing else.
 
 ## 6. A deck never claims a card against itself (R3)
 
-**On a deck's own decklist, the marker scores against every deck except that one** — one rule,
-both severities, no special case. This was already implicit in the soft case (`1 in a brew` inside
-Kykar was always *another* brew, and the copy says "other brews"); R3 states it and extends it to
-the hard case.
+**Inside a deck's own list, that deck's copies count for neither side of the sum — not as supply,
+not as a claim** (R5 §2). One rule, both severities, no special case:
+
+    free = (owned − ownClaim) − (hard − ownHardClaim)
+
+This was already implicit in the soft case (`1 in a brew` inside Kykar was always *another* brew,
+and the copy says "other brews"); R3 states it and extends it to the hard case. Excluding claims
+alone is not a weaker version of the rule but a different one, and it renders `0 free — in Kykar`
+inside Atraxa — the exact sentence this section exists to prevent.
+
+**The vantage point is the deck you are editing, not the surface you are looking at** (R5 §5).
+Anything mounted inside a deck route excludes that deck; anything outside it computes against
+everything. That covers the decklist, the add panel, and a card modal opened from the builder.
 
 **Why.** The marker answers "can I still build with this?" — and inside a list, the card *is* built
 with. `0 free — in Atraxa` rendered inside Atraxa tells the player something the surrounding 98

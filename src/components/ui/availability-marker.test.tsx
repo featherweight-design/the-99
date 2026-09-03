@@ -359,15 +359,17 @@ describe("AvailabilityMarker sparse claimants", () => {
     expect(markerAria(a(1, 1, 0))).toBe("no free copies");
   });
 
-  // Same slice-with-fallback shape as the nameless hard aria: if the copy key's
-  // wording drifts so the tail stops being sliceable, the hard-coded fallback
-  // must still be what the slice would have produced.
+  // No names means no count either: `overAria(5, 0)` would say "0 of your
+  // finished lists include this card", so the branch drops to the count-only
+  // sibling the copy file ships for exactly this shape.
   it("drops the deck count from the over aria when no names arrived", () => {
     const { container } = render(
       <AvailabilityMarker availability={a(4, 9, 0)} density="row" />,
     );
     expect(container.textContent).toBe("short 5");
-    expect(markerAria(a(4, 9, 0))).toBe("you own 5 too few");
+    expect(markerAria(a(4, 9, 0))).toBe(
+      "you own 5 too few for the finished lists that include it",
+    );
   });
 
   it("still counts the claimant when a single deck is the whole demand", () => {
@@ -435,7 +437,9 @@ describe("selfExcluded, on a deck's own decklist", () => {
       <AvailabilityMarker availability={av} density="row" selfExcluded nameless />,
     );
     expect(container.textContent).toBe("short 1");
-    expect(markerAria(av, { selfExcluded: true, nameless: true })).toBe("you own 1 too few");
+    expect(markerAria(av, { selfExcluded: true, nameless: true })).toBe(
+      "you own 1 too few for the finished lists that include it",
+    );
   });
 });
 
@@ -459,7 +463,7 @@ describe("markerAria", () => {
 
   it("drops the deck count from the over aria when nameless", () => {
     expect(markerAria(a(4, 9, 0, ["Rats", "Nazgûl"]), { nameless: true })).toBe(
-      "you own 5 too few",
+      "you own 5 too few for the finished lists that include it",
     );
   });
 
@@ -486,15 +490,14 @@ describe("markerAria", () => {
     }
   });
 
-  // The nameless form is SLICED from the copy file rather than re-typed, with a
-  // hard-coded fallback if the slice ever stops working. Both must agree, or
-  // the fallback would silently start rewording /collection. Pinning the
-  // invariant here beats mocking `availabilityCopy`, which is `as const` and so
-  // cannot be spied on without a cast. If Design adds a real nameless key,
-  // delete the helper and this test together.
-  it("derives exactly the phrase its fallback hard-codes", () => {
-    expect(availabilityCopy.marker.hardAria("Atraxa")).toMatch(
-      /^no free copies;/,
-    );
+  // R5 §8: a count-only sibling is part of the state, not a fallback, so the
+  // two forms of a state have to open the same way. A reader who hears the
+  // name-bearing string on one surface and the count-only one on another should
+  // not think they are in different states.
+  it("opens a state's two forms the same way", () => {
+    const c = availabilityCopy.marker;
+    expect(c.hardAria("Atraxa").startsWith(c.hardAriaCountOnly)).toBe(true);
+    expect(c.overAriaCountOnly(5)).toContain("you own 5 too few");
+    expect(c.overAria(5, 2)).toContain("you own 5 too few");
   });
 });

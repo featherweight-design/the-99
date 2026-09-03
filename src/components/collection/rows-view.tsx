@@ -64,22 +64,7 @@ export function RowsView({
           </span>
 
           {/* Color pips — §Row: Color Pip Container: gap 3/4px; pips 11×11 mobile / 13×13 desktop */}
-          <span className="flex gap-[3px] md:gap-[4px]">
-            {c.colorIdentity.length === 0 ? (
-              <span
-                aria-hidden
-                className="w-[11px] h-[11px] md:w-[13px] md:h-[13px] rounded-full"
-                style={{ background: "var(--fg-faint)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }}
-              />
-            ) : c.colorIdentity.map((col) => (
-              <span
-                key={col}
-                aria-hidden
-                className="w-[11px] h-[11px] md:w-[13px] md:h-[13px] rounded-full"
-                style={{ background: WUBRG_COLOR[col] ?? "var(--fg-faint)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" }}
-              />
-            ))}
-          </span>
+          <ColorPips colorIdentity={c.colorIdentity} />
 
           {/* Name column — §Row: Name Column Container: min-width 0 */}
           <span className="min-w-0">
@@ -143,6 +128,49 @@ export function RowsView({
         </GhostButton>
       )}
     </div>
+  );
+}
+
+// R4 item 11 / R5 §1. Five pips measure 67px phone and 81px desktop against a
+// track of 40px and 54px, so from four up they shingle like a fanned hand
+// instead of the track widening: colour identity cannot exceed WUBRG, so five
+// is a hard ceiling and this is solved exactly once. One to three pips are
+// pixel-identical to what shipped.
+//
+// Both shadows are unconditional and neither substitutes for the other. The
+// inset rim defines a pip against the ROW — `--w` is near-white and needs it at
+// every count. The outset ring defines a pip against the pip UNDER it, and it
+// gates itself: painted in the row's own background it is invisible with
+// nothing beneath it, so there is no pip count to branch on.
+//
+// The ring rides `--row-bg`, which the row already swaps on hover for the
+// marker's seam. A pinned `--surface` would look right at rest and show a
+// hairline on hover at four-plus pips.
+const SHINGLE_FROM = 4;
+
+function ColorPips({ colorIdentity }: { colorIdentity: BrowseCard["colorIdentity"] }) {
+  const shingled = colorIdentity.length >= SHINGLE_FROM;
+  // Colourless draws one grey pip, so it can never shingle.
+  const pips: (string | null)[] = colorIdentity.length === 0 ? [null] : [...colorIdentity];
+
+  return (
+    <span className={shingled ? "flex" : "flex gap-[3px] md:gap-[4px]"}>
+      {pips.map((col, i) => (
+        <span
+          key={col ?? "colorless"}
+          aria-hidden
+          className={`w-[11px] h-[11px] md:w-[13px] md:h-[13px] rounded-full ${shingled ? "relative" : ""}`}
+          style={{
+            background: (col && WUBRG_COLOR[col]) || "var(--fg-faint)",
+            boxShadow: "0 0 0 1px var(--row-bg), inset 0 0 0 1px rgba(0,0,0,0.35)",
+            // WUBRG left to right with z descending, so each pip's left edge
+            // sits above its neighbour and the fan reads in order.
+            ...(shingled && { zIndex: pips.length - i }),
+            ...(shingled && i > 0 && { marginLeft: -5 }),
+          }}
+        />
+      ))}
+    </span>
   );
 }
 
