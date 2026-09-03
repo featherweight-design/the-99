@@ -239,6 +239,9 @@ export function CommanderDetail({
     // line and Build href can read the picks as siblings of the panel.
     <CardDetailProvider>
       <SynergySelectionProvider>
+      {/* Live region — outside both breakpoint containers so it is present
+          at every width. Exactly one instance in the DOM. */}
+      <SelectableLiveAnnouncer cards={synergyCards} />
       {/* ── Mobile: art header band ─────────────────────────────────── */}
       <div
         className="sm:hidden relative flex-none"
@@ -569,9 +572,6 @@ export function CommanderDetail({
 
           {/* Promise line + clear, below seed note — desktop width */}
           <SelectableSynergySelection cards={synergyCards} width="desktop" />
-
-          {/* One live region for the whole page */}
-          <SelectableLiveAnnouncer cards={synergyCards} />
         </div>
 
         {/* Right column — scrolling */}
