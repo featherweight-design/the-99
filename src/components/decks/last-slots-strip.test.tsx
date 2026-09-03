@@ -210,4 +210,34 @@ describe("LastSlotsStrip", () => {
     expect(screen.getByText(recommendationsCopy.fill.fillingRows("40"))).toBeInTheDocument();
     pending.resolve({ ok: true, added: 19, total: 99, bought: 19 });
   });
+
+  it("calls onCompletedByFill when A returns total 99", async () => {
+    const onCompletedByFill = vi.fn();
+    actions.fillOwned.mockResolvedValueOnce({ ok: true, added: 31, total: 99, shortfall: 0 });
+    render(<LastSlotsStrip {...base} onCompletedByFill={onCompletedByFill} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
+    });
+    expect(onCompletedByFill).toHaveBeenCalledOnce();
+  });
+
+  it("does not call onCompletedByFill when A returns total 80", async () => {
+    const onCompletedByFill = vi.fn();
+    actions.fillOwned.mockResolvedValueOnce({ ok: true, added: 12, total: 80, shortfall: 19 });
+    render(<LastSlotsStrip {...base} onCompletedByFill={onCompletedByFill} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
+    });
+    expect(onCompletedByFill).not.toHaveBeenCalled();
+  });
+
+  it("calls onCompletedByFill when B returns total 99", async () => {
+    const onCompletedByFill = vi.fn();
+    actions.fillUnowned.mockResolvedValue({ ok: true, added: 19, total: 99, bought: 19 });
+    render(<LastSlotsStrip {...base} onCompletedByFill={onCompletedByFill} />);
+    await act(async () => {
+      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
+    });
+    expect(onCompletedByFill).toHaveBeenCalledOnce();
+  });
 });

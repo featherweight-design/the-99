@@ -10,6 +10,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SortKey } from "./consider-toolbar";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
 vi.mock("../../app/decks/actions", () => ({ addCardToDeck }));
@@ -37,6 +39,7 @@ const suggestion = (over: Partial<DeckSuggestion> & { name: string }): DeckSugge
   manaValue: 3,
   inclusionPct: 40,
   lift: null,
+  synergyFigure: null,
   ...over,
 });
 
@@ -345,14 +348,14 @@ describe("ConsiderPanel — unowned staples", () => {
       .toContain("bg-accent");
   });
 
-  // The canvas draws the lift line on the owned tile and not on the unowned
-  // one. Design table §8-6 leaves open whether that keys off ownership or off
-  // thinner data, so this asserts what shipped rather than a reason for it.
-  it("keeps the lift line off an unowned tile", () => {
+  // Design table §8-6 asked whether the lift line keys off ownership or off
+  // thinner data for unowned cards. Ruling (task 12): ungate from ownership so
+  // the synergy shelf's second tile shows why it ranked second.
+  it("shows the lift line on an unowned tile", () => {
     mount({
       suggestions: [suggestion({ name: "Mana Drain", owned: false, lift: 0.31 })],
     });
-    expect(screen.queryByText(/pts vs\./)).toBeNull();
+    expect(screen.getByText(/pts vs\./)).toBeInTheDocument();
   });
 
   // A shelf that says "you have 2 of 10" is about cards you can play tonight.
@@ -373,13 +376,14 @@ describe("ConsiderPanel — unowned staples", () => {
         unowned("Mana Drain"),
         suggestion({ name: "Villain", role: "other" }),
         suggestion({ name: "Cultivate", role: "ramp" }),
+        suggestion({ name: "Swords", role: "ramp", synergyFigure: 0.4 }),
       ],
       deckCards: [deckCard("ramp", 4)],
     });
 
     const headings = screen.getAllByRole("heading", { level: 3 });
     expect(headings.map((h) => h.textContent))
-      .toEqual(["Ramp", "Threats & synergy", "Top picks for Korvold"]);
+      .toEqual(["Ramp", "Threats & synergy", synergyCopy.shelf.label("Korvold"), "Top picks for Korvold"]);
     expect(screen.getByText("not in your collection")).toBeInTheDocument();
     expect(screen.getByText("· 1 to consider")).toBeInTheDocument();
   });
@@ -437,6 +441,65 @@ describe("ConsiderPanel — panel states", () => {
     mount({ degraded: true });
     expect(screen.queryByText(/you already own/i)).toBeNull();
     expect(screen.getByRole("combobox", { name: /sort suggestions/i })).toBeInTheDocument();
+  });
+});
+
+// Convenience wrappers for synergy-shelf tests.
+const ownedSuggestion = (name: string, over: Partial<DeckSuggestion> = {}): DeckSuggestion =>
+  suggestion({ name, owned: true, ...over });
+const unownedSuggestion = (name: string, over: Partial<DeckSuggestion> = {}): DeckSuggestion =>
+  suggestion({ name, owned: false, ...over });
+
+const base = {
+  deckId: "deck-1",
+  deckCards: [] as DeckDetailCard[],
+  deckOracleIds: [] as string[],
+  commanderShortName: "Atraxa",
+  commanderOracleId: "cmd-atraxa",
+  degraded: false,
+  sort: "gaps" as SortKey,
+  onSortChange: () => {},
+};
+
+describe("ConsiderPanel — synergy shelf", () => {
+  it("puts the synergy shelf above the unowned append and below the role shelves", () => {
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <ConsiderPanel {...base} suggestions={[
+          ownedSuggestion("Rampant Growth", { role: "ramp" }),
+          ownedSuggestion("Beast Within", { synergyFigure: 0.4 }),
+          unownedSuggestion("Mana Crypt"),
+        ]} />
+      </CardDetailProvider>,
+    );
+    const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(headings.indexOf(synergyCopy.shelf.label("Atraxa")))
+      .toBeGreaterThan(headings.findIndex((h) => h?.startsWith("Ramp")));
+    expect(headings.indexOf(synergyCopy.shelf.label("Atraxa")))
+      .toBeLessThan(headings.indexOf(addPanelCopy.shelf.labels.edhrec("Atraxa")));
+  });
+
+  it("rests the synergy shelf in synergy order, negatives included", () => {
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <ConsiderPanel {...base} suggestions={[
+          ownedSuggestion("Low", { synergyFigure: -0.1 }),
+          ownedSuggestion("High", { synergyFigure: 0.9 }),
+          ownedSuggestion("Mid", { synergyFigure: 0.2 }),
+        ]} />
+      </CardDetailProvider>,
+    );
+    const shelf = screen.getByRole("region", { name: synergyCopy.shelf.label("Atraxa") });
+    // The tile renders two CardDetailTrigger buttons per card — one for the art,
+    // one for the name. The name button's text content is the card name; the art
+    // button's text content is the hover hint ("details ↗…"). Pick the shorter one.
+    expect(within(shelf).getAllByRole("listitem").map((li) => {
+      const btns = within(li).getAllByRole("button");
+      const nameBtn = btns.reduce((a, b) =>
+        (a.textContent?.length ?? 0) <= (b.textContent?.length ?? 0) ? a : b,
+      );
+      return nameBtn.textContent?.trim();
+    })).toEqual(["High", "Mid", "Low"]);
   });
 });
 

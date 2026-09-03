@@ -8,6 +8,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { Availability } from "../../lib/decks/availability";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
@@ -42,6 +44,72 @@ function mount(availability: Availability | null, selfClaimed = false) {
     </CardDetailProvider>,
   );
 }
+
+// Factory for lift-line and noSynergy tests. Separate from the availability
+// factory above — takes partials rather than an Availability object.
+function makeSuggestion(over: Partial<DeckSuggestion> = {}): DeckSuggestion {
+  return {
+    oracleId: "o-test",
+    name: "Test Card",
+    reason: "edhrec",
+    reasonType: "edhrec",
+    reasonLabel: "EDHREC staple",
+    owned: true,
+    inDeck: false,
+    typeLine: "Instant",
+    cardTypeGroup: "Instants",
+    role: "other",
+    imageUri: null,
+    manaCost: null,
+    manaValue: 1,
+    inclusionPct: null,
+    lift: null,
+    synergyFigure: null,
+    ...over,
+  };
+}
+
+function mountTile(
+  over: Partial<DeckSuggestion>,
+  tileProps: Partial<React.ComponentProps<typeof SuggestionTile>> = {},
+) {
+  render(
+    <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+      <SuggestionTile
+        suggestion={makeSuggestion(over)}
+        deckId="d1"
+        inDeck={false}
+        siblings={["o-test"]}
+        commanderShortName="Muldrotha"
+        selfClaimed={false}
+        {...tileProps}
+      />
+    </CardDetailProvider>,
+  );
+}
+
+describe("SuggestionTile — lift line", () => {
+  it("prints the lift line on an unowned tile", () => {
+    mountTile({ owned: false, inclusionPct: 40, lift: 0.12 });
+    expect(screen.getByText(addPanelCopy.tile.lift("12"))).toBeInTheDocument();
+  });
+
+  it("prints the lift line on a card with no inclusion figure", () => {
+    mountTile({ inclusionPct: null, lift: 0.12 });
+    expect(screen.getByText(addPanelCopy.tile.noInclusion)).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.tile.lift("12"))).toBeInTheDocument();
+  });
+
+  it("says so on the synergy shelf when there is no figure at all", () => {
+    mountTile({ inclusionPct: 40, lift: null }, { showNoSynergy: true });
+    expect(screen.getByText(synergyCopy.shelf.noSynergy)).toBeInTheDocument();
+  });
+
+  it("stays silent about an absent figure everywhere else", () => {
+    mountTile({ inclusionPct: 40, lift: null });
+    expect(screen.queryByText(synergyCopy.shelf.noSynergy)).not.toBeInTheDocument();
+  });
+});
 
 describe("SuggestionTile availability caption", () => {
   it("paints the in-use caption the hard foreground", () => {

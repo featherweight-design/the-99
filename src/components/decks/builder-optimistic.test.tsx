@@ -45,6 +45,7 @@ const suggestion: DeckSuggestion = {
   imageUri: null,
   inclusionPct: null,
   lift: null,
+  synergyFigure: null,
   reasonLabel: "EDHREC staple",
   owned: false,
   inDeck: false,

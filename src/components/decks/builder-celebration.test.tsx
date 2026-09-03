@@ -4,7 +4,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
-import { celebrationKey } from "../../lib/decks/celebration";
+import { celebrationKey, fillCompletedKey } from "../../lib/decks/celebration";
 
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
@@ -187,6 +187,21 @@ describe("BuilderShell — 99/99 celebration", () => {
 
     await act(async () => {
       view.rerender(builder(makeDeck({ id: "deck-mid-visit" })));
+    });
+    expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
+  });
+
+  it("does not reveal a deck that a fill completed", async () => {
+    window.localStorage.setItem(fillCompletedKey("deck-1"), "1");
+    await act(async () => {
+      renderBuilder(makeDeck());
+    });
+    expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
+  });
+
+  it("still reveals a deck completed by hand", async () => {
+    await act(async () => {
+      renderBuilder(makeDeck());
     });
     expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
   });

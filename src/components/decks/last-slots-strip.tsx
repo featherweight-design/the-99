@@ -34,6 +34,9 @@ export interface LastSlotsStripProps {
   commanderShortName: string;
   /** Writes one message per settle to the live region in builder-shell.tsx. */
   onAnnounce: (message: string) => void;
+  /** Called when a fill settles at total === 99, so the shell can suppress the
+      reveal band — a two-click fill has not earned the one-shot reveal. */
+  onCompletedByFill?: () => void;
 }
 
 // ── Shortfall line (§7.6) ──────────────────────────────────────────────────
@@ -105,6 +108,7 @@ function LastSlotsStripInner({
   unownedCandidates,
   commanderShortName,
   onAnnounce,
+  onCompletedByFill,
 }: LastSlotsStripProps) {
   // Which write is in flight. Null when idle.
   const [inflight, setInflight] = useState<"owned" | "unowned" | null>(null);
@@ -136,6 +140,7 @@ function LastSlotsStripInner({
     } else {
       onAnnounce(synergyCopy.lastSlots.filledAnnounce(String(result.added), total));
     }
+    if (result.total === 99) onCompletedByFill?.();
   }
 
   async function runUnowned() {
@@ -157,6 +162,7 @@ function LastSlotsStripInner({
         String(result.bought),
       ),
     );
+    if (result.total === 99) onCompletedByFill?.();
   }
 
   const busy = inflight !== null;

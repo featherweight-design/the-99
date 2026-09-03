@@ -8,9 +8,10 @@ import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { availabilityState } from "../../lib/decks/availability";
-import { shouldCelebrate } from "../../lib/decks/celebration";
+import { fillCompletedKey, shouldCelebrate } from "../../lib/decks/celebration";
 import { CompletionReveal } from "./completion-reveal";
 import { useCelebrated } from "./use-celebrated";
+import { useLocalFlag } from "./use-local-flag";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { RoleCounterStrip } from "./role-counter-strip";
@@ -101,6 +102,7 @@ export function BuilderShell({
   const isDesktop = useIsDesktop();
 
   const [celebrated, markCelebrated, celebratedHere] = useCelebrated(deck.id);
+  const [completedByFill, markCompletedByFill] = useLocalFlag(fillCompletedKey(deck.id));
 
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
@@ -133,6 +135,7 @@ export function BuilderShell({
     status: serverStatus,
     alreadyCelebrated: celebrated,
     arrivedFromImport,
+    completedByFill,
   });
 
   // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and
@@ -572,6 +575,7 @@ export function BuilderShell({
                 unownedCandidates={unownedCandidates}
                 commanderShortName={commanderShortName}
                 onAnnounce={setAnnouncement}
+                onCompletedByFill={markCompletedByFill}
               />
             )}
 

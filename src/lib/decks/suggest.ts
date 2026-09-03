@@ -36,6 +36,11 @@ export type DeckSuggestion = {
   // negative resolve to null, because "runs it less than average" is not a
   // reason to add a card.
   lift: number | null;
+  // The same synergy figure without the positive-only filter. The synergy shelf
+  // orders on this so a negative rank is still a rank, not an absence —
+  // "−3 pts" is a position in the list, not a reason to omit the card from it.
+  // Null on role suggestions, which have no EDHREC synergy figure at all.
+  synergyFigure: number | null;
   /** Absent or null renders no chip — see DeckDetailCard.availability. */
   availability?: Availability | null;
 };
@@ -76,6 +81,7 @@ export function buildSuggestionPayload(
   let reasonLabel: string;
   let inclusionPct: number | null = null;
   let lift: number | null = null;
+  let synergyFigure: number | null = null;
 
   if (s.reason === "edhrec") {
     reasonType = "edhrec";
@@ -91,7 +97,13 @@ export function buildSuggestionPayload(
     const inclusion = raw != null && Number.isFinite(raw) ? raw : undefined;
     inclusionPct = inclusion ?? null;
     const synergy = synergyByName[lower] ?? synergyByName[lower.split(" // ")[0]];
-    lift = synergy != null && Number.isFinite(synergy) && synergy > 0 ? synergy : null;
+    const figure = synergy != null && Number.isFinite(synergy) ? synergy : null;
+    // `lift` is the positive-only figure the Evidence line prints — a card the
+    // commander runs *less* often than average is not a lift and never was.
+    // `synergyFigure` is the same number unfiltered, because the synergy shelf
+    // orders on it and "−3 pts" is a rank, not an absence.
+    lift = figure != null && figure > 0 ? figure : null;
+    synergyFigure = figure;
     reasonLabel = inclusion != null ? `EDHREC · ${inclusion}% of decks` : "EDHREC staple";
   } else {
     reasonType = "role";
@@ -115,6 +127,7 @@ export function buildSuggestionPayload(
     manaValue: s.manaValue,
     inclusionPct,
     lift,
+    synergyFigure,
   };
 }
 
