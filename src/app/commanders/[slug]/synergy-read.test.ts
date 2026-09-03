@@ -23,9 +23,9 @@ beforeEach(() => {
 });
 
 describe("readSynergyCards", () => {
-  it("converts EDHREC's fraction to whole points and its inclusion to a percent", async () => {
+  it("scales synergy's fraction into points and rounds inclusion, which is already a percent", async () => {
     rows.value = [
-      { oracleId: "a", name: "Command Tower", typeLine: "Land", inclusion: 0.82, synergy: 0.01, ownedQuantity: 0 },
+      { oracleId: "a", name: "Command Tower", typeLine: "Land", inclusion: 82.4, synergy: 0.01, ownedQuantity: 0 },
     ];
     const out = await readSynergyCards("user", "cmdr", []);
     expect(out[0].inclusionPct).toBe(82);

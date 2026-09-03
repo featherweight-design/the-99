@@ -59,9 +59,10 @@ export async function readSynergyCards(
     // join, so there is no null to defend against here.
     typeLine: r.typeLine,
     facet: cardFacet(r.typeLine),
-    // `commander_support_cards.inclusion` is stored as a fraction (0..1);
-    // multiply by 100 to get the percentage the UI shows.
-    inclusionPct: r.inclusion == null ? null : Math.round(r.inclusion * 100),
+    // `commander_support_cards.inclusion` is already a percentage — parse.ts
+    // stores EDHREC's own `inclusion` field, or derives one as
+    // num_decks / potential_decks * 100. Round only; do not scale.
+    inclusionPct: r.inclusion == null ? null : Math.round(r.inclusion),
     // Points, not the fraction. The product has stated synergy in points since
     // suggestion-tile.tsx's Evidence line, and formatting it once here means no
     // component multiplies by 100 a second time.
