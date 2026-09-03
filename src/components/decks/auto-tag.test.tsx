@@ -126,6 +126,23 @@ describe("AutoTag", () => {
     );
   });
 
+  // The row marks an over-committed card with an inset ring rather than a
+  // border, and an inset shadow paints under its children. A tag whose own
+  // background filled the 44px touch target therefore erased the ring across
+  // the tag's width — so the target lives on the button and the plate stays
+  // the size of its own text.
+  it("keeps its plate off the row's full height so an inset ring stays visible", () => {
+    render(<AutoTag deckId="d1" oracleId="sol-ring" name="Sol Ring" />);
+    const btn = screen.getByRole("button");
+
+    expect(btn.className).toMatch(/min-h-\[44px\]/);
+    expect(btn.className).not.toMatch(/bg-elevated/);
+
+    const plate = screen.getByText(recommendationsCopy.auto.tag);
+    expect(plate.className).toMatch(/bg-elevated/);
+    expect(plate.className).not.toMatch(/min-h-\[44px\]/);
+  });
+
   it("says nothing when the keep is accepted", async () => {
     keepAutoCard.mockResolvedValue(undefined);
 
