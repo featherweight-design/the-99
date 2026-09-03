@@ -111,6 +111,27 @@ function byPreference(a: FillCandidate, b: FillCandidate): number {
   return a.name.localeCompare(b.name);
 }
 
+/** Gap report 4. The selection is placed first and the 68-card fill runs
+    against what is left, so a card the player picked is not also placed for a
+    role and the deck does not land at 98.
+
+    Generic over the row shape because it is applied twice — once to the owned
+    pool and once to the unowned staples — and those two have different types.
+
+    The consequence is deliberate and worth stating: the fill's role counts can
+    come out different from the zero-selection case, because a selected ramp
+    card closes a ramp gap the fill would have closed with something else. The
+    provenance line reads the counts off the placed rows, so it follows. */
+export function dedupeSelectionFromPool<T extends { oracleId: string }>(
+  pool: T[],
+  selectedOracleIds: Iterable<string>,
+): T[] {
+  const picked =
+    selectedOracleIds instanceof Set ? selectedOracleIds : new Set(selectedOracleIds);
+  if (picked.size === 0) return pool;
+  return pool.filter((c) => !picked.has(c.oracleId));
+}
+
 export function planFill(candidates: FillCandidate[]): FillPlan {
   const ordered = [...candidates].sort(byPreference);
   // One entry per oracle id, the most-preferred one, because `ordered` is

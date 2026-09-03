@@ -22,6 +22,10 @@ interface CreatePreFilledProps {
   typeLine: string;
   colorIdentity: string[];
   imageUri: string | null;
+  /** The synergy picks carried from the commander page in `?select=`. Optional
+      so the picker door, which has no commander in the URL and therefore no
+      selection to carry, needs no change. */
+  selectedOracleIds?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -34,6 +38,7 @@ export function CreatePreFilled({
   typeLine,
   colorIdentity,
   imageUri,
+  selectedOracleIds,
 }: CreatePreFilledProps) {
   const [deckName, setDeckName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +57,7 @@ export function CreatePreFilled({
     setError(null);
     startTransition(async () => {
       try {
-        await createDeck(oracleId, trimmed);
+        await createDeck(oracleId, trimmed, selectedOracleIds);
       } catch {
         setError("Failed to create deck. Try again.");
       }

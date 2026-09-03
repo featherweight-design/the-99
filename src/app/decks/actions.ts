@@ -17,7 +17,9 @@ import { validateDeckName } from "../../lib/decks/deck-name";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { validateCardForDeck } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
-import { planFill, type FillPlan } from "../../lib/decks/fill";
+import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The pool carries mana on top of PoolCard so a tile can draw cost pips and the
 // Consider panel can sort by cost without a second round trip.
@@ -107,8 +109,14 @@ async function unownedStaples(
 export async function buildFillPlan(
   userId: string,
   commander: { oracleId: string; name: string; colorIdentity: string[] },
+  // The cards a selection has already placed. Defaults to empty, so `fillDeck`
+  // and the no-selection `createDeck` are unchanged.
+  excludeOracleIds: Set<string> = new Set(),
 ): Promise<FillPlan> {
-  const pool = await ownedColorLegalPool(userId, commander);
+  const pool = dedupeSelectionFromPool(
+    await ownedColorLegalPool(userId, commander),
+    excludeOracleIds,
+  );
   const { data } = await getEdhrecData(commander.oracleId, commander.name);
   // Sparse: EDHREC reports a figure only for the cards it knows.
   const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
@@ -118,10 +126,18 @@ export async function buildFillPlan(
     return raw != null && Number.isFinite(raw) ? raw : null;
   };
 
+  // Built from the deduped pool, which is correct: `unownedStaples` uses this
+  // to avoid offering a card the player already owns, and a selected owned card
+  // is still owned. The staples list is deduped separately below, because a
+  // selected card the player does *not* own reaches the plan through there and
+  // filtering only the pool would let it be placed twice.
   const ownedIds = new Set(pool.map((c) => c.oracleId));
-  const staples = data?.topCards
-    ? await unownedStaples(commander, data.topCards, ownedIds, new Set([commander.oracleId]))
-    : [];
+  const staples = dedupeSelectionFromPool(
+    data?.topCards
+      ? await unownedStaples(commander, data.topCards, ownedIds, new Set([commander.oracleId]))
+      : [],
+    excludeOracleIds,
+  );
 
   return planFill([
     ...pool.map((c) => ({
@@ -139,7 +155,20 @@ export async function buildFillPlan(
   ]);
 }
 
-export async function createDeck(commanderOracleId: string, name: string): Promise<void> {
+/** `selectedOracleIds` are the synergy picks the player carried across the
+    navigation in `?select=`. They are untrusted twice over — a server action
+    answers any crafted request, and the ids rode in on a URL — so each is
+    re-checked here against the same legality pass `addCardToDeck` runs.
+
+    Unlike `restoreAutoCards`, an id that fails is **skipped, not thrown**: that
+    action's input is a receipt the server itself just issued, whereas this one
+    is a URL, and refusing the whole create would cost the player the commander
+    choice as well as the picks. */
+export async function createDeck(
+  commanderOracleId: string,
+  name: string,
+  selectedOracleIds: string[] = [],
+): Promise<void> {
   const userId = await requireUserId();
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, commanderOracleId));
   if (!commander) throw new Error("commander not found");
@@ -152,19 +181,57 @@ export async function createDeck(commanderOracleId: string, name: string): Promi
   const deckName = validateDeckName(name);
   let deckId: string;
   try {
+    // A malformed id would otherwise reach Postgres as a failed uuid cast, and
+    // the whole create would fall back to an empty deck. Deduplicated first so
+    // one id repeated in the query string cannot conflict with itself inside
+    // the insert's own VALUES list.
+    const requested = [...new Set(selectedOracleIds)].filter((id) => UUID_RE.test(id));
+    const candidates = requested.length > 0
+      ? await db
+          .select({
+            oracleId: cards.oracleId,
+            commanderLegal: cards.commanderLegal,
+            colorIdentity: cards.colorIdentity,
+          })
+          .from(cards)
+          .where(inArray(cards.oracleId, requested))
+      : [];
+    // `built: 0` asks about legality alone, exactly as restoreAutoCards does —
+    // the cap is enforced by the loop inside the transaction below.
+    const selected = candidates
+      .filter((card) => !validateCardForDeck(card, {
+        commanderOracleId,
+        commanderColorIdentity: commander.colorIdentity,
+        built: 0,
+      }))
+      .map((card) => card.oracleId);
+    const selectedSet = new Set(selected);
+
     const plan = await buildFillPlan(userId, {
       oracleId: commanderOracleId,
       name: commander.name,
       colorIdentity: commander.colorIdentity,
-    });
+    }, selectedSet);
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
         .values({ userId, name: deckName, commanderOracleId, filled: true })
         .returning({ id: decks.id });
-      if (plan.rows.length > 0) {
-        await tx.insert(deckCards).values(
-          plan.rows.map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
-        );
+      // The selection first, then as much of the fill as fits under 99. The cap
+      // sums quantity rather than counting rows, because planFill stacks basics
+      // (a single row can be thirty Forests).
+      const rows = [
+        ...selected.map((oracleId) => ({ deckId: deck.id, oracleId, quantity: 1, auto: true })),
+        ...plan.rows.map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
+      ];
+      const capped: typeof rows = [];
+      let built = 0;
+      for (const row of rows) {
+        if (built + row.quantity > 99) continue;
+        capped.push(row);
+        built += row.quantity;
+      }
+      if (capped.length > 0) {
+        await tx.insert(deckCards).values(capped).onConflictDoNothing();
       }
       return deck.id;
     });
@@ -492,8 +559,6 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   for (const path of claimSurfaces(deckId)) revalidatePath(path);
   return removed;
 }
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Re-inserts the swept rows with auto: true. Uses onConflictDoNothing so a
     double-undo is harmless. The quantity comes from the delete's returning
