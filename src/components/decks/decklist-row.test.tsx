@@ -6,7 +6,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
-import { CardDetailProvider } from "../cards/card-detail-provider";
+import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -136,10 +136,41 @@ describe("DecklistRow remove control (#179)", () => {
     ).toBeInTheDocument();
   });
 
-  it("never draws a ✕ on a meta row", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 8 }} isMeta metaLabel="+7 more" />);
+  // Addendum C5: one row per card, the count inline after the name — not a
+  // second "+N more" row, which the desktop two-column grid could flow into the
+  // other column, away from the card it describes.
+  it("carries the count on the card's own row", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 37 }} />);
 
-    expect(screen.queryByRole("button", { name: /^Remove/ })).not.toBeInTheDocument();
+    expect(screen.getByText("×37")).toBeInTheDocument();
+    expect(screen.queryByText(/more$/)).not.toBeInTheDocument();
+  });
+
+  // The name block is what grows to fill the row, not the name itself: a
+  // growing trigger would strand the count at the row's right edge, away from
+  // the text it counts.
+  it("keeps the count beside the name text", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 37 }} />);
+
+    const count = screen.getByText("×37");
+    const name = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") });
+    expect(count.parentElement).toBe(name.parentElement);
+    expect(name.className).not.toContain("flex-auto");
+    expect(count.parentElement?.className).toContain("flex-auto");
+  });
+
+  // The ✕'s aria already says "37 in deck", so a reader that also voiced the
+  // glyph would say the number twice.
+  it("keeps the count out of the accessible name", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 37 }} />);
+
+    expect(screen.getByText("×37")).toHaveAttribute("aria-hidden");
+  });
+
+  it("draws no count on a single copy", () => {
+    renderRow(<DecklistRow deckId="d1" card={card} />);
+
+    expect(screen.queryByText(/^×/)).not.toBeInTheDocument();
   });
 });
 
@@ -500,12 +531,10 @@ describe("DecklistRow auto tag (#130)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("a meta row renders no auto tag even when auto is true", () => {
-    renderRow(
-      <DecklistRow deckId="d1" card={{ ...card, auto: true, quantity: 4 }} isMeta metaLabel="+3 more" />,
-    );
+  it("a multi-copy stack renders one auto tag, not one per copy", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, auto: true, quantity: 4 }} />);
     expect(
-      screen.queryByRole("button", { name: /Keep Sol Ring in this deck/ }),
-    ).not.toBeInTheDocument();
+      screen.getAllByRole("button", { name: /Keep Sol Ring in this deck/ }),
+    ).toHaveLength(1);
   });
 });

@@ -39,10 +39,6 @@ const ROW_SHELL_SHOPPING =
 interface DecklistRowProps {
   deckId: string;
   card: DeckDetailCard;
-  /** When true, this is a "+N more" meta row for basic lands with quantity > 1. */
-  isMeta?: boolean;
-  /** Label override for meta rows ("+N more"). */
-  metaLabel?: string;
   /** The decklist in display order, so the modal's Prev/Next page through it. */
   siblings?: string[];
   /**
@@ -64,13 +60,16 @@ interface DecklistRowProps {
 export function DecklistRow({
   deckId,
   card,
-  isMeta = false,
-  metaLabel,
   siblings,
   spent = false,
   shoppingFigure,
 }: DecklistRowProps) {
-  const label = isMeta ? metaLabel! : card.name;
+  // The name is a flex item of its own block, not of the row: `flex-auto` on
+  // the trigger itself would grow the trigger's box past its text and strand a
+  // count rendered after it at the far right of the row.
+  const nameTextClass =
+    "min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
+
   // `flex-auto`, not `flex-1`, and the difference is the whole bug. `flex-1` is
   // basis-0: the name gets only what the marker has not already claimed as its
   // own intrinsic width, so a 390px over-committed row renders
@@ -78,15 +77,26 @@ export function DecklistRow({
   // gone. `flex-auto` bases the name on its own text, so a row too narrow for
   // both shrinks the two halves in proportion instead of starving one. Where
   // there is room to spare the two are identical — grow still takes the slack.
-  const nameClass =
-    "flex-auto min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]";
+  const nameBlockClass = "flex-auto min-w-0 flex items-center gap-[6px]";
+
+  // Multi-copy count (addendum C5): one row per card, the count inline after
+  // the name. aria-hidden because the ✕ beside it already speaks the same
+  // figure in prose — a reader that voiced both would say the number twice.
+  const quantityGlyph = card.quantity > 1 && (
+    <span
+      aria-hidden
+      className="flex-none font-mono text-[11px] tabular-nums text-[color:var(--fg-faint)]"
+    >
+      {addPanelCopy.row.quantity(card.quantity)}
+    </span>
+  );
 
   // Addendum A2: Shopping rows carry an EDHREC figure on a meta line below the
   // name. shoppingFigure is only threaded for unowned deck cards shown in the
   // Shopping filter. undefined = All view (no meta). null or number = Shopping view.
   // The row grows to 52px on phone to hold the extra line.
   // Basic lands are never in Shopping (the fill guarantees it), but guard anyway.
-  const hasShoppingMeta = !isMeta && !isBasicLand(card.typeLine) && shoppingFigure !== undefined;
+  const hasShoppingMeta = !isBasicLand(card.typeLine) && shoppingFigure !== undefined;
   const rowShell = hasShoppingMeta ? ROW_SHELL_SHOPPING : ROW_SHELL;
   // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
   // line and needs context. Desktop: bare "24%" because it is inline with the
@@ -160,18 +170,13 @@ export function DecklistRow({
           ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
       >
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
-        {!isMeta && (
-          <OwnershipDot
-            owned={card.owned}
-            className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
-            label={card.owned ? "Owned" : "Not owned"}
-          />
-        )}
-        {/* For meta rows render a same-sized empty spacer so name aligns */}
-        {isMeta && <span className="flex-none w-[7px] h-[7px] md:w-[8px] md:h-[8px]" aria-hidden />}
+        <OwnershipDot
+          owned={card.owned}
+          className="w-[7px] h-[7px] md:w-[8px] md:h-[8px]"
+          label={card.owned ? "Owned" : "Not owned"}
+        />
 
-        {/* Card name — the click target for the detail modal (#127). A meta row names no card
-            of its own, so it stays inert text.
+        {/* Card name — the click target for the detail modal (#127).
             Shopping rows: phone = two lines (name then prefixed figure below);
             desktop = single line (name + bare figure inline). The `edhrec` prefix
             exists only on phone because the figure is detached from the name there
@@ -180,15 +185,21 @@ export function DecklistRow({
           // One trigger at both widths — the layout changes, the card does not.
           // Only the figure's wording differs, so only the figure is drawn twice.
           <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:items-center md:gap-[6px]">
-            <CardDetailTrigger
-              oracleId={card.oracleId}
-              name={card.name}
-              siblings={siblings}
-              className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-left text-[12.5px] md:text-[13.5px]"
-              style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
-            >
-              {label}
-            </CardDetailTrigger>
+            {/* Name and count share a line so the count stays inline after the
+                name at both widths — on phone the figure below is its own line,
+                and a count that flowed down with it would read as part of it. */}
+            <div className="min-w-0 flex items-center gap-[6px]">
+              <CardDetailTrigger
+                oracleId={card.oracleId}
+                name={card.name}
+                siblings={siblings}
+                className={nameTextClass}
+                style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
+              >
+                {card.name}
+              </CardDetailTrigger>
+              {quantityGlyph}
+            </div>
             <span
               className="md:hidden font-mono text-[10px] tabular-nums truncate"
               style={{
@@ -210,24 +221,23 @@ export function DecklistRow({
               {figureTextDesktop}
             </span>
           </div>
-        ) : isMeta ? (
-          <span className={nameClass} style={{ color: "var(--fg-faint)" }}>
-            {label}
-          </span>
         ) : (
-          <CardDetailTrigger
-            oracleId={card.oracleId}
-            name={card.name}
-            siblings={siblings}
-            className={nameClass}
-            style={{ color: "var(--fg)" }}
-          >
-            {label}
-          </CardDetailTrigger>
+          <div className={nameBlockClass}>
+            <CardDetailTrigger
+              oracleId={card.oracleId}
+              name={card.name}
+              siblings={siblings}
+              className={nameTextClass}
+              style={{ color: "var(--fg)" }}
+            >
+              {card.name}
+            </CardDetailTrigger>
+            {quantityGlyph}
+          </div>
         )}
 
-        {/* Availability marker — never on a meta row: "+3 more" names no card. */}
-        {!isMeta && card.availability && (
+        {/* Availability marker */}
+        {card.availability && (
           <AvailabilityMarker
             availability={card.availability}
             seam="var(--row-bg)"
@@ -252,34 +262,30 @@ export function DecklistRow({
           />
         )}
 
-        {/* Buy tag — unowned non-meta only */}
-        {!isMeta && !card.owned && <BuyTag variant="row" />}
+        {/* Buy tag — unowned only */}
+        {!card.owned && <BuyTag variant="row" />}
 
-        {/* Auto tag — one per stack, never on a meta row */}
-        {!isMeta && card.auto && (
-          <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />
-        )}
+        {/* Auto tag — one per stack */}
+        {card.auto && <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />}
 
-        {/* Remove ✕ — at both widths now, never on a meta row. The glyph stays
-            13px at both: the phone target is the padding around it. */}
-        {!isMeta && (
-          <button
-            type="button"
-            onClick={handleRemove}
-            disabled={isPending}
-            className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto
-              rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
-              active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
-              md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default"
-            aria-label={
-              card.quantity > 1
-                ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)
-                : addPanelCopy.row.removeAria(card.name)
-            }
-          >
-            {addPanelCopy.row.remove}
-          </button>
-        )}
+        {/* Remove ✕ — at both widths now. The glyph stays 13px at both: the
+            phone target is the padding around it. */}
+        <button
+          type="button"
+          onClick={handleRemove}
+          disabled={isPending}
+          className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-auto md:h-auto
+            rounded-[6px] bg-transparent border-none text-[13px] leading-none text-[color:var(--border-dashed)]
+            active:bg-[color:var(--elevated)] active:text-[color:var(--fg-body)] md:active:bg-transparent
+            md:group-hover:text-[color:var(--fg-body)] cursor-pointer disabled:opacity-50 disabled:cursor-default"
+          aria-label={
+            card.quantity > 1
+              ? addPanelCopy.row.removeCopyAria(card.name, card.quantity)
+              : addPanelCopy.row.removeAria(card.name)
+          }
+        >
+          {addPanelCopy.row.remove}
+        </button>
       </div>
       {error && !shellReportsFailure && <MutationError message={error} />}
     </div>

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 
 import { cardTypeGroup, primaryRole, colorIdentityMask, poolCountFromMaskTally } from "./read";
-import { deckCounts, groupByCardType, groupByRole, shouldShowMetaRow, unresolvedCardCount } from "./grouping";
+import { deckCounts, groupByCardType, groupByRole, unresolvedCardCount } from "./grouping";
 import type { DeckDetailCard, DeckUnresolvedRow } from "./grouping";
 
 // ---------------------------------------------------------------------------
@@ -99,28 +99,6 @@ describe("primaryRole", () => {
     expect(primaryRole({ typeLine: "Sorcery", oracleText: "Destroy all creatures.", keywords: [] })).toBe("wipes"));
   it("returns 'other' when nothing classifies", () =>
     expect(primaryRole({ typeLine: "Creature — Bear", oracleText: "", keywords: [] })).toBe("other"));
-});
-
-// ---------------------------------------------------------------------------
-// shouldShowMetaRow
-// ---------------------------------------------------------------------------
-describe("shouldShowMetaRow", () => {
-  it("Basic Forest qty 5 → shows meta row (+4 more)", () => {
-    expect(shouldShowMetaRow({ quantity: 5, typeLine: "Basic Land — Forest" })).toBe(true);
-  });
-
-  it("Basic Forest qty 1 → no meta row", () => {
-    expect(shouldShowMetaRow({ quantity: 1, typeLine: "Basic Land — Forest" })).toBe(false);
-  });
-
-  it("non-basic land qty 2 → no meta row", () => {
-    // e.g. Llanowar Elves qty 2 — not a basic, so no meta row
-    expect(shouldShowMetaRow({ quantity: 2, typeLine: "Creature — Elf Druid" })).toBe(false);
-  });
-
-  it("non-basic with qty 3 → no meta row", () => {
-    expect(shouldShowMetaRow({ quantity: 3, typeLine: "Artifact" })).toBe(false);
-  });
 });
 
 // ---------------------------------------------------------------------------

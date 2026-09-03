@@ -317,6 +317,28 @@ describe("the phone Shopping row is 52px and prints the EDHREC figure on its met
     const rowShell = container.querySelector(".min-h-\\[52px\\]");
     expect(rowShell).toBeInTheDocument();
   });
+
+  // Addendum C5 puts the count inline after the name. A Shopping row's figure
+  // sits on its own line on phone, so a count rendered after the whole name
+  // block would land beside the figure instead of beside the name.
+  it("keeps a multi-copy count beside the name, not the figure", () => {
+    render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <AddOptimisticCardProvider value={{
+          add: vi.fn(), remove: vi.fn(), markSpent: vi.fn(),
+          announceUndo: vi.fn(), reportRemoveFailure: vi.fn(),
+          resolveRow: vi.fn(), deleteRow: vi.fn(), keep: vi.fn(),
+        }}>
+          <DecklistRow deckId="d1" card={{ ...rampUnowned, quantity: 4 }} shoppingFigure={42} />
+        </AddOptimisticCardProvider>
+      </CardDetailProvider>,
+    );
+
+    const count = screen.getByText("×4");
+    const name = screen.getByRole("button", { name: cardDetailCopy.triggerAria(rampUnowned.name) });
+    expect(count.parentElement).toBe(name.parentElement);
+    expect(count).toHaveAttribute("aria-hidden");
+  });
 });
 
 describe("the phone All row stays 44px and prints no figure", () => {

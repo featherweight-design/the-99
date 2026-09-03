@@ -69,8 +69,8 @@ describe("deck card-detail triggers", () => {
     expect(fetchCard).toHaveBeenCalledWith("o-signet");
   });
 
-  // The "+1 more" row under a basic land names no card of its own.
-  it("leaves the basic-land meta row inert", async () => {
+  // A stack of basics is one row carrying its count, so it offers one trigger.
+  it("gives a multi-copy basic land a single detail trigger", async () => {
     renderInProvider(
       <Decklist
         deckId="d1"
@@ -85,7 +85,7 @@ describe("deck card-detail triggers", () => {
         onGroupingChange={vi.fn()}
       />,
     );
-    expect(screen.getByText("+2 more").tagName).toBe("SPAN");
+    expect(screen.getByText("×3")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: cardDetailCopy.triggerAria("Forest") })).toHaveLength(1);
   });
 

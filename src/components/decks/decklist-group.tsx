@@ -3,7 +3,6 @@
 // §Decklist Group (design table).
 
 import type { DeckDetailCard } from "../../lib/decks/grouping";
-import { shouldShowMetaRow } from "../../lib/decks/grouping";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
 
@@ -51,30 +50,15 @@ export function DecklistGroup({
         className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
         style={{ gridTemplateColumns: "1fr 1fr" }}
       >
-        {cards.flatMap((card) => {
-          const rows = [
-            <DecklistRow
-              key={card.oracleId}
-              deckId={deckId}
-              card={card}
-              spent={card.oracleId === spentOracleId}
-              siblings={siblings}
-            />,
-          ];
-          // Basic lands with quantity > 1: render a "+N more" meta row
-          if (shouldShowMetaRow(card)) {
-            rows.push(
-              <DecklistRow
-                key={`${card.oracleId}-meta`}
-                deckId={deckId}
-                card={card}
-                isMeta
-                metaLabel={`+${card.quantity - 1} more`}
-              />,
-            );
-          }
-          return rows;
-        })}
+        {cards.map((card) => (
+          <DecklistRow
+            key={card.oracleId}
+            deckId={deckId}
+            card={card}
+            spent={card.oracleId === spentOracleId}
+            siblings={siblings}
+          />
+        ))}
       </div>
     </div>
   );
