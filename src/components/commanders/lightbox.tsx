@@ -166,20 +166,6 @@ export function CommanderLightbox({
                 {[...c.manaCost.matchAll(/\{([^}]+)\}/g)].map((m, i) => {
                   const sym = m[1];
                   const isWUBRG = /^[WUBRG]$/.test(sym);
-                  // The design table names one near-black ink per pip, drawn
-                  // against pip discs that were lighter than the ones the token
-                  // contract ships. The contract has no pip-text key, and the
-                  // one pattern it does state for a label on a coloured field
-                  // is "--bg" (the accent button's label). So four pips take
-                  // --bg, and black — whose disc is near-black in every theme —
-                  // takes the light ink instead.
-                  const PIP_TEXT: Record<string, string> = {
-                    W: "var(--bg)",
-                    U: "var(--bg)",
-                    B: "var(--fg-body)",
-                    R: "var(--bg)",
-                    G: "var(--bg)",
-                  };
                   return (
                     <span
                       key={i}
@@ -191,7 +177,7 @@ export function CommanderLightbox({
                         background: isWUBRG
                           ? WUBRG_COLOR[sym] ?? "var(--border-strong)"
                           : "var(--border-strong)",
-                        color: isWUBRG ? PIP_TEXT[sym] ?? "var(--fg-body)" : "var(--fg-body)",
+                        color: isWUBRG ? "var(--bg)" : "var(--fg-body)",
                         boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
                       }}
                     >
