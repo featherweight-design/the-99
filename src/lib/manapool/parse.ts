@@ -20,10 +20,14 @@ export type ManapoolFeed = {
 // mutating caller would poison every other.
 const empty = (): ManapoolFeed => ({ asOf: new Date(0), rows: [], collapsedDuplicates: 0 });
 
-// Number.isFinite, not typeof: a JSON null is typeof "object" but a JSON NaN
-// would pass a typeof check while being unusable as an integer column value.
+// Number.isInteger, not Number.isFinite plus a round: every one of these fields
+// is a whole count — cents or copies — so a fractional value means the field
+// stopped meaning what it did, and rounding 34.6 to 35 would store a price
+// ManaPool never quoted while hiding the drift the canary exists to catch.
+// Negatives are refused on the same ground: neither a price nor a stock level
+// has a meaningful one. (Number.isInteger also rejects NaN and the infinities.)
 const intOrNull = (v: unknown): number | null =>
-  typeof v === "number" && Number.isFinite(v) ? Math.round(v) : null;
+  typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null;
 
 // scryfall_id lands in a uuid column, so a malformed id fails the id lookup with
 // 22P02 rather than simply not matching — the whole batch dies for one bad row.

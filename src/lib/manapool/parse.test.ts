@@ -96,6 +96,32 @@ describe("parseManapoolPayload", () => {
     expect(feed.rows).toEqual([]);
   });
 
+  it("nulls a non-integer price rather than rounding it", () => {
+    // Rounding 34.6 to 35 would store a price ManaPool never quoted and hide
+    // the fact that a cents field stopped being cents.
+    const feed = parseManapoolPayload({
+      meta: { as_of: "2026-08-29T15:32:41.270Z" },
+      data: [{ scryfall_id: ID, price_cents: 34.6, available_quantity: 1 }],
+    });
+    expect(feed.rows[0].priceCents).toBeNull();
+  });
+
+  it("nulls a negative price", () => {
+    const feed = parseManapoolPayload({
+      meta: { as_of: "2026-08-29T15:32:41.270Z" },
+      data: [{ scryfall_id: ID, price_cents: -100, available_quantity: 1 }],
+    });
+    expect(feed.rows[0].priceCents).toBeNull();
+  });
+
+  it("skips an entry whose available_quantity is not a whole number", () => {
+    const feed = parseManapoolPayload({
+      meta: { as_of: "2026-08-29T15:32:41.270Z" },
+      data: [{ scryfall_id: ID, price_cents: 100, available_quantity: 2.5 }],
+    });
+    expect(feed.rows).toEqual([]);
+  });
+
   it("skips an entry whose scryfall_id is not a uuid", () => {
     // scryfall_id is a uuid column, so a non-uuid string fails the id lookup
     // with 22P02 rather than simply not matching — the same reason
