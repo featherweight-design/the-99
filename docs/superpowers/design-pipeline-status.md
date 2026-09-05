@@ -80,8 +80,7 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-
-_Currently empty — rank 1 (the six-theme visual system) moved to 🟢 above when its handoff landed and audited Green on 2026-09-01._
+| 1 | **#220** Design: commander discovery — one ranked list, two sorts (covers **#213** + **#214**) | `docs/superpowers/design-briefs/2026-09-05-commander-discovery.md` | Handoff prompt issued 2026-09-05; awaiting `design/design_handoff_the99_discovery/`, then readiness audit | Hugh picked it up on 2026-09-05 and asked for the whole feature end to end. Its foundation merged in PR #244 and the support index is populated (3,342 commanders), so nothing gates it |
 
 ---
 
@@ -109,7 +108,7 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-One ranked queue. **#130 + #131 left this queue on 2026-09-01** — promoted to rank 1 on 2026-08-29 when the recommendation-engine intake established #130 as a *precondition* for #213 and #214 rather than a peer (both terminate in "start a deck", and an empty deck lands them in exactly the disappointment #130 describes), workshopped the same week, and shipped on 2026-09-02 (PRs #249, #263) — it now sits in ✅ Shipped. #132 closed as already-shipped. Ranks 1–8 are v1 polish follow-ups against already-shipped surfaces; ranks 9–15 are post-v1 features ordered by the roadmap tracker (#44). **#220, #221 and #222 were written into the ranked rows on 2026-09-02.** The 2026-08-30 intake call below placed them "at the bottom" and assigned ranks 12–14, but the rows themselves were never added, so those numbers were left describing an older, longer list and collided with #151's. They now sit at 13–15 and the intake table matches. Five former ranks left this queue on 2026-08-08 — #183, #177, #179, #185 and #184 were answered together by the Add panel addendum, which completed on 2026-08-09 and now sits in ✅ Shipped with #176. The per-surface brand + richness refresh tickets and #35 shipped ahead of everything here.
+One ranked queue. **#130 + #131 left this queue on 2026-09-01** — promoted to rank 1 on 2026-08-29 when the recommendation-engine intake established #130 as a *precondition* for #213 and #214 rather than a peer (both terminate in "start a deck", and an empty deck lands them in exactly the disappointment #130 describes), workshopped the same week, and shipped on 2026-09-02 (PRs #249, #263) — it now sits in ✅ Shipped. #132 closed as already-shipped. Ranks 1–8 are v1 polish follow-ups against already-shipped surfaces; ranks 9–15 are post-v1 features ordered by the roadmap tracker (#44). **#220, #221 and #222 were written into the ranked rows on 2026-09-02.** The 2026-08-30 intake call below placed them "at the bottom" and assigned ranks 12–14, but the rows themselves were never added, so those numbers were left describing an older, longer list and collided with #151's. **#220 then left this queue on 2026-09-05** — workshopped that day, now in 📐 above — and #221 and #222 moved up behind it. The rows below carry the live ranks; prose and the intake table do not. Five former ranks left this queue on 2026-08-08 — #183, #177, #179, #185 and #184 were answered together by the Add panel addendum, which completed on 2026-08-09 and now sits in ✅ Shipped with #176. The per-surface brand + richness refresh tickets and #35 shipped ahead of everything here.
 
 **Audited 2026-09-05** — ledger at `docs/superpowers/backlog/audit-2026-09-05.md`, which carries the
 evidence behind every verdict and makes the next audit incremental. All 15 rows survived: **nothing
@@ -136,9 +135,8 @@ This list previously ran as two — a "Backlog" and a "Ready for design" — but
 | 10 | **#9** Design: Win/loss tracking for decks (incl. per-game strength/weakness notes — one combined brief) | Post-v1; extends the deck page from #8; unlocks the tuning tier |
 | 11 | **#10** Design: Deck tuning suggestions from play results | Post-v1; LLM tier; blocked on #9's data model — needs accumulated play data |
 | 12 | **#151** Design: per-deck printing override for a card's art | Post-v1. **Split out of #42** at the 2026-08-02 workshop — #42 had inherited it from #105 on the reasoning that a deck-level override needs a deck to attach to, but it is unrelated to import (import is getting a deck in; this is how a deck looks once it is there) and #42's brief was already large. Last because it is polish: `card_art_preferences` is keyed `(user_id, oracle_id)` and `deck_cards` has no printing column, so it needs new storage and a new read path for no functional gain |
-| 13 | **#220** Design: commander discovery — one ranked list, two sorts | Post-v1. Covers **#213** (commanders you do not own but already hold the 99 for) and **#214** (the novelty engine) in one design cycle, per the intake call recorded below. Both features sit on a shared foundation, which merged in PR #244, so this is no longer gated on backend work |
-| 14 | **#221** Design: audit a built deck's commander and offer alternatives | Post-v1. Covers **#215**. Reads against #220's ranked list — the same scoring surfaced from inside a finished deck rather than from the collection — so whoever picks these up should read them together |
-| 15 | **#222** Design: which of my decks does this card fit | Post-v1. Covers **#218**. An addendum to `design/design_handoff_the99_collection/` rather than a handoff of its own, and adjacent to the #43 availability marker it would sit beside on the same rows and tiles |
+| 13 | **#221** Design: audit a built deck's commander and offer alternatives | Post-v1. Covers **#215**. Reads against #220's ranked list — the same scoring surfaced from inside a finished deck rather than from the collection — so whoever picks these up should read them together |
+| 14 | **#222** Design: which of my decks does this card fit | Post-v1. Covers **#218**. An addendum to `design/design_handoff_the99_collection/` rather than a handoff of its own, and adjacent to the #43 availability marker it would sit beside on the same rows and tiles |
 
 ---
 
@@ -148,7 +146,9 @@ The 2026-08-29 intake filed five `type: feature` tickets, four of which ship UI 
 
 **Hugh's call (2026-08-30): companion `type: design` tickets, entering the ranked backlog at the bottom.** The alternative — widening the legend to admit `type: feature` rows — was declined because it makes 🕰️ mean two different things at once. Three tickets cover the four features:
 
-| Feature ticket | Design ticket | Rank |
+This table records the mapping as filed. **The rank column is historical — the ranked lists above are authoritative** and these numbers are not maintained as items move between states.
+
+| Feature ticket | Design ticket | Rank as filed |
 |---|---|---|
 | **#213** Recommend commanders I don't own but have the 99 for | **#220** | 13 |
 | **#214** Recommend a deck I haven't tried — novelty engine | **#220** (same cycle) | 13 |
@@ -158,7 +158,7 @@ The 2026-08-29 intake filed five `type: feature` tickets, four of which ship UI 
 
 #216 and #217 ship no UI and are explicitly future work, so they need no design row.
 
-**Not blocked meanwhile.** The shared foundation these sit on is entirely backend/data, and per `AGENTS.md` backend work proceeds without a handoff, so it was built while these rows waited. **It merged as PR #244 on 2026-09-02** — the EDHREC parser widening, the commander support index, the commander engine classifier and the land colour-production check — so ranks 13–15 are unblocked. The plan's fifth component, the ManaPool price ingest, was not in that merge and is still open.
+**Not blocked meanwhile.** The shared foundation these sit on is entirely backend/data, and per `AGENTS.md` backend work proceeds without a handoff, so it was built while these rows waited. **It merged as PR #244 on 2026-09-02** — the EDHREC parser widening, the commander support index, the commander engine classifier and the land colour-production check — so **#220, #221 and #222 are unblocked**. The plan's fifth component, the ManaPool price ingest, was not in that merge and is still open.
 
 ---
 
