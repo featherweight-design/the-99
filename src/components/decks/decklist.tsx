@@ -197,7 +197,9 @@ export function Decklist({
     const allAuto = autoN === n;
 
     // The open slots the player kept for themselves (not filled by auto).
-    const openSlots = 99 - built;
+    // Clamped because a deck past 99 has none: the copy this feeds says the
+    // slots are "the fun part", and a negative count of them is nonsense.
+    const openSlots = Math.max(0, 99 - built);
 
     // The sweep's refusal and its receipt. Shared by both branches below: a
     // sweep usually empties this tab (bought cards are the fill's), so leaving

@@ -61,14 +61,14 @@ describe("validateCardForDeck", () => {
     expect(validateCardForDeck(commanderAsCard, greenCommander)).toBe("is-commander");
   });
 
-  it("rejects any card when deck is already at 99", () => {
-    const fullDeck: DeckContextForValidation = { ...greenCommander, built: 99 };
-    expect(validateCardForDeck(legalGreenCard, fullDeck)).toBe("deck-full");
-  });
-
   it("allows a card when deck is at 98 (one slot remaining)", () => {
     const almostFull: DeckContextForValidation = { ...greenCommander, built: 98 };
     expect(validateCardForDeck(legalGreenCard, almostFull)).toBeNull();
+  });
+
+  it("allows a card past 99 — the count says Over, the add is not refused", () => {
+    const overDeck: DeckContextForValidation = { ...greenCommander, built: 104 };
+    expect(validateCardForDeck(legalGreenCard, overDeck)).toBeNull();
   });
 
   it("allows a basic land (colorless identity) in any mono-color deck", () => {

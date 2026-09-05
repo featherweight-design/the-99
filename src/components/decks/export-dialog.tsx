@@ -14,6 +14,7 @@ import {
 } from "../../lib/decks/export-helpers";
 import { ExportCopyButton } from "./export-copy-button";
 import { GhostButton } from "@/components/ui/button";
+import { overCopy } from "../../lib/copy/decks-builder";
 
 type Tab = "decklist" | "shopping";
 
@@ -57,6 +58,9 @@ export function ExportDialog({
   const commanderLine = decklistLines[0];
   const bodyLines = decklistLines.slice(1);
   const totalCards = 1 + decklistCards.reduce((sum, c) => sum + c.quantity, 0);
+  // The body count, which is what `built` means everywhere else — derived here
+  // rather than passed in, so it cannot disagree with the preview's own header.
+  const built = totalCards - 1;
 
   return (
     <>
@@ -100,6 +104,7 @@ export function ExportDialog({
             commanderLine={commanderLine}
             bodyLines={bodyLines}
             totalCards={totalCards}
+            built={built}
             setStatus={setStatus}
             onClose={onClose}
             isMobile={false}
@@ -126,6 +131,7 @@ export function ExportDialog({
             commanderLine={commanderLine}
             bodyLines={bodyLines}
             totalCards={totalCards}
+            built={built}
             setStatus={setStatus}
             onClose={onClose}
             isMobile={true}
@@ -149,6 +155,8 @@ interface DialogContentProps {
   commanderLine: string;
   bodyLines: string[];
   totalCards: number;
+  /** Matched body cards — over 99 adds one line, see overCopy.exportNote. */
+  built: number;
   setStatus: (s: string) => void;
   onClose: () => void;
   isMobile: boolean;
@@ -163,6 +171,7 @@ function DialogContent({
   commanderLine,
   bodyLines,
   totalCards,
+  built,
   setStatus,
   onClose,
   isMobile,
@@ -283,6 +292,22 @@ function DialogContent({
         {tab === "decklist" ? (
           /* Decklist tab body */
           <div style={{ margin: isMobile ? "14px 18px" : "0 24px" }}>
+            {/* Over 99: one line stating the arithmetic in the one place the
+                list leaves the app. Not a warning and not a blocker — export
+                stays enabled, because the player is very likely pasting this
+                somewhere to do the cutting. */}
+            {built > 99 && (
+              <p
+                style={{
+                  fontSize: isMobile ? 12 : 12.5,
+                  lineHeight: 1.5,
+                  color: "var(--warning)",
+                  margin: "0 0 10px",
+                }}
+              >
+                {overCopy.exportNote(String(built), String(built - 99))}
+              </p>
+            )}
             <pre
               className="font-mono"
               style={{

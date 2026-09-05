@@ -3,7 +3,6 @@ import type { DeckAddRejection } from "./add-validation";
 import { deckAddRejectionMessage } from "./mutation-result";
 
 const rejections: DeckAddRejection[] = [
-  "deck-full",
   "not-commander-legal",
   "off-color-identity",
   "is-commander",
@@ -17,9 +16,5 @@ describe("deckAddRejectionMessage", () => {
       expect(message).not.toMatch(/[!]/);
       expect(message.length).toBeGreaterThan(20);
     }
-  });
-
-  it("names the 99-card cap so the user knows what to do", () => {
-    expect(deckAddRejectionMessage("deck-full")).toContain("99");
   });
 });
