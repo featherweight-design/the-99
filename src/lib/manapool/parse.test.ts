@@ -74,6 +74,24 @@ describe("parseManapoolPayload", () => {
     expect(feed.collapsedDuplicates).toBe(0);
   });
 
+  it("returns an empty feed when as_of is a string it cannot parse", () => {
+    // An unparseable timestamp reaches `as_of timestamp NOT NULL` as an Invalid
+    // Date and throws at `toISOString()` in the canary — far from the field that
+    // actually moved. Refusing the payload puts the failure where the cause is.
+    const feed = parseManapoolPayload({
+      meta: { as_of: "29/08/2026" },
+      data: [{ scryfall_id: "aaa", price_cents: 100, available_quantity: 1 }],
+    });
+    expect(feed.rows).toEqual([]);
+  });
+
+  it("returns an empty feed when as_of is absent", () => {
+    const feed = parseManapoolPayload({
+      data: [{ scryfall_id: "aaa", price_cents: 100, available_quantity: 1 }],
+    });
+    expect(feed.rows).toEqual([]);
+  });
+
   it("skips an entry missing a scryfall_id", () => {
     const feed = parseManapoolPayload({
       meta: { as_of: "2026-08-29T15:32:41.270Z" },

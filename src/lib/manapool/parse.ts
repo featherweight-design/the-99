@@ -51,18 +51,24 @@ function preferred(a: PriceRow, b: PriceRow): PriceRow {
 /**
  * Turns ManaPool's `/api/v1/prices/singles` payload into one row per printing.
  *
- * Returns an empty feed rather than throwing on an unrecognised shape: this is
- * an undocumented public endpoint, and a nightly ingest that crashes on a
- * field rename is harder to diagnose than one that reports zero rows. The
- * contract canary (`pnpm check:manapool`) is what turns that zero into an alarm.
+ * Returns an empty feed rather than throwing on an unrecognised shape: ManaPool
+ * document v1 as "subject to change without notice", and a weekly ingest that
+ * crashes on a field rename is harder to diagnose than one that reports zero
+ * rows. The contract canary (`pnpm check:manapool`) turns that zero into an alarm.
  */
 export function parseManapoolPayload(raw: unknown): ManapoolFeed {
   if (typeof raw !== "object" || raw === null) return empty();
   const payload = raw as { meta?: { as_of?: unknown }; data?: unknown };
   if (!Array.isArray(payload.data)) return empty();
 
+  // An unparseable `as_of` is an unrecognised payload, not a recoverable one:
+  // an Invalid Date survives all the way to `as_of timestamp NOT NULL` and to
+  // `toISOString()` in the canary, where it throws about a timestamp rather
+  // than about the feed. Refuse it here so the alarm names the real cause.
   const asOfRaw = payload.meta?.as_of;
-  const asOf = typeof asOfRaw === "string" ? new Date(asOfRaw) : new Date(0);
+  if (typeof asOfRaw !== "string") return empty();
+  const asOf = new Date(asOfRaw);
+  if (Number.isNaN(asOf.getTime())) return empty();
 
   const byId = new Map<string, PriceRow>();
   let collapsedDuplicates = 0;
