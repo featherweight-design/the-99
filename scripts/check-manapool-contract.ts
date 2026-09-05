@@ -20,9 +20,13 @@ async function main(): Promise<void> {
   if (!Array.isArray(payload?.data)) {
     problems.push("data is not an array");
   } else {
-    const first = payload.data[0] as Record<string, unknown> | undefined;
+    const first = payload.data[0];
     if (first === undefined) {
       problems.push("data is empty");
+    } else if (typeof first !== "object" || first === null) {
+      // `in` throws a TypeError on a primitive, which would crash the canary
+      // instead of reporting the contract break that caused it.
+      problems.push(`first entry is ${first === null ? "null" : typeof first}, not an object`);
     } else {
       // `in`, not truthiness: price_cents is legitimately null on 13% of rows,
       // so a truthy check would fire on healthy data.
