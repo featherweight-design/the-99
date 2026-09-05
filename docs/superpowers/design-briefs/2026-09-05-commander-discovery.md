@@ -56,7 +56,7 @@ Today the page answers one question: *how well is a commander I already own supp
 
 ## §4 Interaction model
 
-**Three controls now sit above one list.** Two already ship:
+**Four controls now sit above one list.** Two already ship:
 
 - `Score against` — "Everything I own" vs "What's free" (`commanders-view.tsx:65-150`). Operates on the *collection* side.
 - `Availability ▾` — colour-identity filter with `?avail=` round-trip.
