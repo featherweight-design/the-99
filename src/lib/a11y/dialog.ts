@@ -1,7 +1,7 @@
 "use client";
 // useDialogA11y — shared focus-trap + Escape + focus-return hook.
 // Consumers: every role="dialog" surface — CardModal, Issue Inspector, the
-// export dialog, ConfirmModal, the account menu, and the commander Lightbox.
+// export dialog, ConfirmModal, and the account menu.
 
 import { type RefObject, useEffect, useRef } from "react";
 
