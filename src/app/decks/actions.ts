@@ -1,12 +1,13 @@
 "use server";
 
-import { and, arrayContained, eq, gt, inArray, or, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
+import { withinColorIdentity } from "../../lib/cards/identity-where";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { claimSurfaces, deckSurfaces } from "../../lib/decks/revalidate";
@@ -96,7 +97,7 @@ async function unownedStaples(
           inArray(sql`lower(split_part(${cards.name}, ' // ', 1))`, lowerTopCards),
         ),
         eq(cards.commanderLegal, true),
-        arrayContained(cards.colorIdentity, commander.colorIdentity),
+        withinColorIdentity(commander.colorIdentity),
       ),
     );
 

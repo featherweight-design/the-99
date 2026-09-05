@@ -1,9 +1,10 @@
 "use server";
 
-import { and, arrayContained, eq, ilike, sql } from "drizzle-orm";
+import { and, eq, ilike, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { cards, collectionItems } from "../../../db/schema";
 import { requireUserId } from "../../../lib/auth";
+import { withinColorIdentity } from "../../../lib/cards/identity-where";
 import type { Availability } from "../../../lib/decks/availability";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import type { DeckDetailCard } from "../../../lib/decks/grouping";
@@ -80,11 +81,7 @@ export async function searchCards(
     .leftJoin(ownedTotals, eq(ownedTotals.oracleId, cards.oracleId))
     .where(and(
       ilike(cards.name, `%${escaped}%`),
-      colorIdentity === null
-        ? undefined
-        : colorIdentity.length === 0
-          ? sql`cardinality(${cards.colorIdentity}) = 0`
-          : arrayContained(cards.colorIdentity, colorIdentity),
+      colorIdentity === null ? undefined : withinColorIdentity(colorIdentity),
       eq(cards.commanderLegal, true),
       ownedOnly ? sql`${ownedQtySql} > 0` : undefined,
     ))
