@@ -24,10 +24,14 @@ const THEMES = [
 ];
 if (THEMES.length < 6) throw new Error(`Read ${THEMES.length} themes, expected 6.`);
 
+// Mirrors `relativeLuminance` in src/lib/theme/color.ts, threshold included, so
+// a number printed here and a number asserted in contract.test.ts can be
+// compared directly at the 4.5:1 floor. The only difference is the input: this
+// reads a painted `rgb(...)` string, that one reads a hex.
 function lum(rgb) {
   const [r, g, b] = rgb.match(/\d+/g).slice(0, 3).map((n) => {
     const c = Number(n) / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
@@ -44,6 +48,14 @@ const page = await browser.newPage({ viewport: { width: 520, height: 220 } });
 // thing under test. The pip markup is injected so the probe does not depend on
 // a signed-in fixture happening to own a black card.
 await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+// Everything below reads computed colour, so the stylesheet has to be in before
+// the first measurement — `domcontentloaded` does not promise that, and an
+// unloaded globals.css reads as empty rather than as an error.
+await page.waitForFunction(
+  () => getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() !== "",
+  null,
+  { timeout: 15_000 },
+);
 await page.evaluate(() => {
   const host = document.createElement("div");
   host.id = "pip-probe";
