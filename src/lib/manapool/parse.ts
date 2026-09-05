@@ -52,7 +52,7 @@ function preferred(a: PriceRow, b: PriceRow): PriceRow {
  * Turns ManaPool's `/api/v1/prices/singles` payload into one row per printing.
  *
  * Returns an empty feed rather than throwing on an unrecognised shape: ManaPool
- * document v1 as "subject to change without notice", and a weekly ingest that
+ * documents v1 as "subject to change without notice", and a weekly ingest that
  * crashes on a field rename is harder to diagnose than one that reports zero
  * rows. The contract canary (`pnpm check:manapool`) turns that zero into an alarm.
  */
