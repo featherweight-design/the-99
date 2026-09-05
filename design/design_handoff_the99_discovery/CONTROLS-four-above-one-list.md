@@ -51,7 +51,7 @@ this page, which is the same class of change as the title. Label `Show`, two seg
 segmented geometry at 32px. The subtitle beneath the title restates the population in words on
 every flip:
 
-> `3,100 commanders you have not built · ranked by best fit · read against 2,805 cards`
+> `3,334 commanders you have not built · ranked by best fit · read against 2,805 cards`
 
 That line is how the player knows the list changed without counting rows, and it is the reason
 scope needs no count of its own.
@@ -78,7 +78,7 @@ strikethrough plus an aria label *because its reason lives in a banner* — and 
 an outage, so a banner is owed. Novelty being unavailable is not an outage; it is the normal state
 of every new account, and its reason has nowhere else to live. The menu row holds it:
 
-> **Something new** — `needs a finished deck to compare against — build one and this turns on`
+> **Something new** — `needs a deck to compare against — build one and this turns on`
 
 Each option also carries a one-line naming of its sort key (`most of its support list already
 owned` / `farthest from the archetypes you have built`), because ruling 3 forbids a blend and two
@@ -112,6 +112,6 @@ list.
   question, and ruling 2 already answered it: the built ones are excluded because they are done.
 - **Sort must not gain a "relevance" default.** That is a blend with a friendlier name.
 - **Neither control may animate the list.** Both flips re-render in place. A dimmed or sliding
-  list at 3,100 rows makes a state change look like a fetch even when it is one.
+  list at 3,334 rows makes a state change look like a fetch even when it is one.
 - **The subtitle must never be the only statement of the sort.** The sort control says it too. A
   player who arrives from a shared URL reads the control; a player who flips reads the subtitle.

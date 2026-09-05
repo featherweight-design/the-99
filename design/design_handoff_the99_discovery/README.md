@@ -19,23 +19,24 @@ Scope swaps the candidate universe from the page header; sort replaces the inert
 its ending — what changes is the justification line and what the right-hand column prints.
 
 **Not gated.** §0's index is populated (3,342 commanders, 3,226 tagged, ≈260 support cards each).
-Price and stock are #288, in flight, and the row is drawn complete without them. Readiness may
-treat this as ready-to-build.
+Price and stock are #288, **shipped**, and the row is drawn complete with or without them. Readiness
+may treat this as ready-to-build.
 
 ---
 
 > ## Audit corrections — read before implementing
 >
-> Audited 🟢 **Green at R1** on 2026-09-05. The drawing is what ships; four factual claims in the
-> prose below are stale against `main` and are corrected here rather than redrawn. The full
+> Audited 🟢 **Green at R1** on 2026-09-05. Four factual claims were stale against `main`. They are
+> explained here and have been **corrected in place** throughout this handoff and on the canvas —
+> figures and status prose only; **no layout, hex, geometry or drawn state changed**. The full
 > reasoning is on the #220 row in `docs/superpowers/design-pipeline-status.md`.
 >
 > 1. **The discovery population is 3,334, not 3,100.** Ruling 2 sets the universe to every indexed
->    commander minus the ones already built: 3,342 − 8. Every `3,100` in this handoff and on the
->    canvas is the count of commanders the player does not **own**, which is a different figure —
->    and one the canvas contradicts itself, since frame A2 draws an *owned* row under Something new.
->    The count line's `3,075 more below` is `3,309` at the corrected population. Nothing hard-codes
->    either number: the copy module already takes the count as an argument.
+>    commander minus the ones already built: 3,342 − 8. The `3,100` this handoff first carried is the
+>    count of commanders the player does not **own**, which is a different figure — and one the
+>    canvas contradicted itself on, since frame A2 draws an *owned* row under Something new. Every
+>    occurrence now reads `3,334`, and the count line's `3,075 more below` now reads `3,309`. Nothing
+>    hard-codes either number: the copy module already takes the count as an argument.
 > 2. **#288 has shipped.** Price and stock are live, not in flight. The row still draws complete
 >    without them, per-row, which is what makes states 4 and 5 correct rather than a fallback.
 > 3. **Price is keyed by printing, and there is no `stocked` boolean.** `printing_prices` keys on
@@ -103,7 +104,7 @@ the sort does not reflow the list; it rewrites one line per row.
 **Three shapes were rejected.**
 
 - **Both justifications on every row.** It is honest and it is unreadable: two evidence lines per
-  row at 3,100 rows, one of which is never the reason this row is here. It also implies a blend,
+  row at 3,334 rows, one of which is never the reason this row is here. It also implies a blend,
   which ruling 3 locked out.
 - **A badge naming the sort** (`FIT` / `NEW`) beside the figure. The label is not the problem —
   the *reason* is. A badge says which list you are in, which the header already says twice.
@@ -150,7 +151,7 @@ follows.
 
 **Not the `buy` tag.** The Add panel's `buy` is a verb attached to an action the player is taking;
 this is a fact about a row they have not acted on. Reusing it would put a shopping instruction on
-3,100 rows.
+3,334 rows.
 
 **Not the availability marker's severity colours.** Those describe *cards in decks*; ownership of
 a commander is a different axis, and colouring it `--avail-hard-fg` would make two unrelated facts
@@ -166,7 +167,7 @@ not four peers.
 
 **Scope goes in the page header, beside the title.** It changes *which commanders exist* on this
 page — the same class of change as the title itself. The subtitle under the title restates the
-population in words on every flip (`3,100 commanders you have not built · ranked by best fit ·
+population in words on every flip (`3,334 commanders you have not built · ranked by best fit ·
 read against 2,805 cards`), which is how the player knows the list changed without counting rows.
 
 **Sort takes the slot the inert `Order: Fit ↓ · fixed` label already occupies**, right-aligned in
@@ -237,7 +238,7 @@ ingest, and reads correctly for a player whose candidates are all in the binder.
 They are different failures and they must not converge on one apologetic paragraph.
 
 1. **No decks yet.** The machinery is missing. The *sort option* is disabled with its reason
-   (`needs a finished deck to compare against — build one and this turns on`) and a first-run
+   (`needs a deck to compare against — build one and this turns on`) and a first-run
    `GuidedBanner` carries the long form: *Something new needs something old first.* **The list
    underneath is full** — 3,342 candidates by fit, since nothing is built to exclude. Two signals,
    one fact, no third sentence.
@@ -254,7 +255,7 @@ State 2 is drawn from `EndOfRanking`'s hairline-and-diamond furniture rather tha
 component; state 1 from `GuidedBanner`'s shape. No new empty state in the product.
 
 ### 8. §7.7 — **the step stays 25**, and one line is added
-The windowing handoff solved 242; discovery is 3,100 in the same list. Three things were checked
+The windowing handoff solved 242; discovery is 3,334 in the same list. Three things were checked
 and only one changed.
 
 **The step is a reading unit, not a fraction of the list.** 25 rows is about a screen of decisions
@@ -267,8 +268,8 @@ already are. The filter bar's `Showing {filtered.length} of {active.length}` is 
 four digits it must be — that is the one shipped string this handoff asks to change.
 
 **One dimmer line on the reveal control**, naming the rank band it is about to add and pointing at
-the colour filter: `ranks 26–50 of 3,100 · narrowing by colour is faster than scrolling`. At 242
-rows the band was implicit. At 3,100, `Show 25 more` alone reads as an infinite scroller with
+the colour filter: `ranks 26–50 of 3,334 · narrowing by colour is faster than scrolling`. At 242
+rows the band was implicit. At 3,334, `Show 25 more` alone reads as an infinite scroller with
 extra steps.
 
 **No search, no page numbers, no jump-to-rank.** A jump control advertises that the interesting
@@ -318,7 +319,7 @@ state, no new modal, no new component.**
   `history.replaceState` effect: `?scope=play` and `?sort=new`. Only non-defaults are written, so
   today's URL is unchanged for a player who touches neither — the same rule `?avail=all` follows.
 - **Scope changes the candidate set server-side.** The owned scope is today's `results` (242).
-  Discovery is `commander_support` minus the commanders with decks, which is 3,100 rows and cannot
+  Discovery is `commander_support` minus the commanders with decks, which is 3,334 rows and cannot
   be shipped as two full arrays the way `results` / `freeItems` are. Design's expectation: the
   discovery list is fetched for the active sort only, and a sort flip is allowed to be a fetch —
   which is why the sort control is a menu, and why neither flip animates.
@@ -332,21 +333,22 @@ state, no new modal, no new component.**
   owned, then order by unplayed-tag count. Untagged commanders are excluded by the presence of
   `tags`, not by a zero — a zero-distance commander and an untagged one are different rows.
 - **The deck clause needs the player's own tag set**, aggregated once per request over the
-  commanders their finished decks are built around, plus the nearest-deck name for the partial
+  commanders the decks they have built are built around, plus the nearest-deck name for the partial
   case. One query, not one per row.
 - **`RecCard` takes a `sort` prop, not two components.** The row is one component with one
   branching slot; forking it into `FitCard` / `NoveltyCard` duplicates the grid, the link, the
   chips and the receipt line, and guarantees they drift.
 - **`ScoreDelta` does not apply under discovery.** The delta compares a commander to its own other
   score under `Score against`; it is orthogonal to scope and sort and is passed through unchanged.
-  It is null under discovery's first release because the free re-rank is not computed over 3,100
+  It is null under discovery's first release because the free re-rank is not computed over 3,334
   candidates — flagged in the gap report.
 - **`edhrec_total` is the denominator and must be non-null wherever N is printed.** §0 says 3,341
   of 3,342 carry a `similar_oracle_ids` list; a row with N and no M prints neither figure and
   falls back to the receipt line alone rather than inventing 99.
-- **Price is read from #288's table by oracle id, left-joined**, and `null` means the slot does not
-  render. No placeholder row, no zero, no "—". Stock is a boolean; a stocked-but-priceless row is
-  treated as absent.
+- **Price is read from #288's `printing_prices`, keyed on `scryfall_id`, left-joined** — a
+  commander's figure is its cheapest live printing — and `null` means the slot does not render. No
+  placeholder row, no zero, no "—". There is no `stocked` boolean: *live* means the row's `as_of`
+  matches the newest `as_of` in the table, and a live-but-priceless row is treated as absent.
 - **Price never enters an `ORDER BY`.** Ruling 7, and worth restating next to the join.
 - **One live region, three messages**, on the region the page already owns: scope announces the new
   population and ordering, sort announces the re-rank, the reveal keeps its shipped range message.
@@ -360,7 +362,7 @@ state, no new modal, no new component.**
 ## Gap report
 
 1. **`What's free` × discovery is not computed.** The free re-rank exists today because both
-   rankings arrive in one render over 242 commanders. Over 3,100 that is a second full scoring
+   rankings arrive in one render over 242 commanders. Over 3,334 that is a second full scoring
    pass, and this handoff draws the control as available under discovery without specifying it.
    Either it re-ranks (a fetch), or it is disabled under discovery with a reason — **a ruling, not
    a redraw**, and the audit will find it.
@@ -387,13 +389,13 @@ state, no new modal, no new component.**
 7. **Price staleness has no treatment.** #288's ingest cadence is unknown to this brief, and the
    row prints a figure with no as-of. If the ingest can lag by days, the slot needs a word and
    this handoff does not draw one.
-8. **3,100 rows of role chips and receipts is a lot of server-side preformatting.** The receipts
+8. **3,334 rows of role chips and receipts is a lot of server-side preformatting.** The receipts
    preview and `colorPoolSize` are computed per row today for 242. Nothing in this handoff reduces
    the per-row payload, and the windowed client only renders 25 of them — worth a look before the
    first discovery request goes out.
 9. **No way back to a commander you scrolled past.** With no search, no jump and no persistence,
    a player who reveals to rank 200, navigates into a detail page and comes back lands at 25 again.
-   The shipped windowing has the same property at 242, where it costs one activation; at 3,100 it
+   The shipped windowing has the same property at 242, where it costs one activation; at 3,334 it
    costs eight. Deliberate — but this is the most likely first support ticket.
 
 ## Files

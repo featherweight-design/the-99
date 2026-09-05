@@ -3,31 +3,34 @@
 Read with `README.md` decisions 6 and 7. The canvas draws every state below; this file is the
 matrix and the reasoning that does not fit in a frame.
 
-> **Audit correction (R1, 2026-09-05).** #288 has shipped, and the matrix's `stocked` column is not
-> a field: `printing_prices` keys on `scryfall_id` and carries an `as_of`. Read that column as
-> *"this printing's row sits at the newest `as_of` in the table"* — behind the mark is state 3
-> (`not stocked`), absent from the table is state 4. The drawn matrix is unchanged, and this closes
-> gap 7: no stale figure is ever printed, so the slot needs no as-of word after all. In Part 2, a
-> "finished deck" means **a deck** — `decks` carries `filled`, not a completion flag. See
-> `README.md`'s corrections banner.
+> **Audit correction (R1, 2026-09-05), applied in place below.** #288 has shipped, and the matrix's
+> stock column is not a field: `printing_prices` keys on `scryfall_id` and carries an `as_of`. It is
+> written below as `live` — *"this printing's row sits at the newest `as_of` in the table"* — behind
+> the mark is state 3 (`not stocked`), absent from the table is state 4. **The drawn matrix is
+> unchanged**, and this closes gap 7: no stale figure is ever printed, so the slot needs no as-of
+> word after all. In Part 2, a "finished deck" was corrected to **a deck** — `decks` carries
+> `filled`, not a completion flag — and the discovery population to **3,334** (3,342 indexed minus
+> the 8 built), not the 3,100 the player does not own. See `README.md`'s corrections banner.
 
 ---
 
 ## Part 1 — the price slot
 
-#288 (ManaPool ingest) is in flight. The list ships without it, so the slot has to be correct in
-four conditions and invisible in two of them.
+#288 (ManaPool ingest) has shipped. The list is drawn to be correct with or without it, so the slot
+has to be correct in four conditions and invisible in two of them.
 
 ### The matrix
 
-| # | `price` | `stocked` | Commander owned | Drawn |
+`live` = this printing's row sits at the newest `as_of` in `printing_prices`.
+
+| # | `price` | `live` | Commander owned | Drawn |
 |---|---|---|---|---|
-| 1 | `4.12`–`99.99` | true | no | filled `--success` dot · figure `--fg-body` · `manapool` `--fg-locked` |
-| 2 | `≥100` | true | no | same, figure `--fg` |
-| 3 | any | false | no | hollow `1.5px --fg-locked` dot · `not stocked` `--fg-faint` · `manapool` |
+| 1 | `4.12`–`99.99` | yes | no | filled `--success` dot · figure `--fg-body` · `manapool` `--fg-locked` |
+| 2 | `≥100` | yes | no | same, figure `--fg` |
+| 3 | any | no | no | hollow `1.5px --fg-locked` dot · `not stocked` `--fg-faint` · `manapool` |
 | 4 | `null` | — | no | **slot absent** — no dot, no dash, no hairline, no reserved height |
 | 5 | any | any | **yes** | **slot absent** — same treatment as 4, different reason |
-| 6 | `null` | true | no | treated as 4. A stocked row with no figure is not a fact worth a line. |
+| 6 | `null` | yes | no | treated as 4. A live row with no figure is not a fact worth a line. |
 
 ### Rules
 
@@ -41,9 +44,9 @@ The only concession to size is brightness — at three figures the figure takes 
 number is not *quieter* than a small one. Same hue family, one step of emphasis, no semantics.
 
 **Absence is absence.** State 4 renders nothing at all: no em dash, no skeleton, no ghost row. A
-dash asserts something about the card; #288 not having landed is a fact about us. This is the
-locked rule — missing data is omitted, never zeroed — applied to a signal that does not exist yet
-rather than one that failed.
+dash asserts something about the card; a printing missing from `printing_prices` is a fact about
+the feed. This is the locked rule — missing data is omitted, never zeroed — applied to a signal
+that is absent rather than one that failed.
 
 **State 5 is by design, not by accident.** An owned commander has no buy decision, so it has no
 price line. This is also what makes the whole list read correctly for a player whose top rows are
@@ -64,8 +67,8 @@ and the accessible name says it in words: *"$18.40, in stock at ManaPool."*
 ### What is deliberately not drawn
 
 - **No "price rose / fell" indicator.** #288 is an ingest, not a history.
-- **No as-of timestamp.** Gap report item 7: if the ingest can lag by days, this slot needs a word,
-  and nothing in the brief says whether it can.
+- **No as-of timestamp.** Gap report item 7, now closed: a lagging row is not shown as a figure at
+  all, it is state 3, so the slot never prints a stale price and needs no word for one.
 - **No total-cost-to-build figure.** That is a per-deck claim, and this row is one card.
 - **No buy link.** The row's ending is `/commanders/[slug]` or `Build this deck`; a third ending
   that leaves the product belongs to a different ticket.
@@ -85,13 +88,13 @@ exclude. This is not an empty state at all; it is a disabled control with the li
 
 Menu option:
 
-> **Something new** — `needs a finished deck to compare against — build one and this turns on`
+> **Something new** — `needs a deck to compare against — build one and this turns on`
 
 Banner (`GuidedBanner` shape, `border-left 3px --accent`):
 
 > **Something new needs something old first**
-> We rank "new" by how far a commander sits from the archetypes your finished decks already play —
-> and you have not finished one yet. **Best fit works from day one**: it only needs your
+> We rank "new" by how far a commander sits from the archetypes the decks you have built already play
+> — and you have not built one yet. **Best fit works from day one**: it only needs your
 > collection, and you have 2,805 cards in it.
 
 Two signals, one fact, no third sentence. The banner is not dismissible and not an error: it
@@ -133,7 +136,7 @@ knows*) and it does not apologise, because nothing went wrong.
 **Where:** the shipped `FilteredEmpty`, kept, one clause added.
 
 > **No unbuilt commander matches those colours**
-> White and Black together leave nothing in the 3,100 you have not built. **Two of your eight
+> White and Black together leave nothing in the 3,334 you have not built. **Two of your eight
 > decks are Orzhov** — that is where those commanders went.
 >
 > `[ Clear the colour filter ]`  `or switch to Commanders I own`
@@ -152,7 +155,7 @@ Under the owned scope this component renders byte-identically to today.
 
 | | What is missing | Where the reason lives | The way forward | List beneath |
 |---|---|---|---|---|
-| 1 | a finished deck (machinery) | menu option **and** banner | build a deck; use Best fit | **full** |
+| 1 | a deck (machinery) | menu option **and** banner | build a deck; use Best fit | **full** |
 | 2 | cards (collection) | the list region | the other sort | empty |
 | 3 | candidates in those colours | the list region | clear the filter; or scope | empty |
 

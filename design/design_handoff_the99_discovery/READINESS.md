@@ -2,11 +2,11 @@
 
 > **Audited 🟢 Green at R1 on 2026-09-05.** Item 1's requested ruling was taken in Design's favour:
 > `Score against` re-ranks under discovery, and the score delta is suppressed there. Four factual
-> claims below are stale against `main` — the discovery population is **3,334** (indexed minus
-> built, not the 3,100 unowned), **#288 has shipped**, price is keyed by printing with no `stocked`
-> boolean, and there is no "finished" deck. Full reasoning in `README.md`'s corrections banner and
-> on the #220 row in `docs/superpowers/design-pipeline-status.md`. None of them changes what is
-> drawn.
+> claims were stale against `main` and have been corrected in place throughout this handoff — the
+> discovery population is **3,334** (indexed minus built, not the 3,100 unowned), **#288 has
+> shipped**, price is keyed by printing with no `stocked` boolean, and there is no "finished" deck.
+> Full reasoning in `README.md`'s corrections banner and on the #220 row in
+> `docs/superpowers/design-pipeline-status.md`. None of them changes what is drawn.
 
 **Self-assessed: 🟢 Green with one ruling requested — and the ruling is a scope question the brief
 did not reach, not a design gap.**
@@ -18,16 +18,16 @@ believes it is handing over.
 
 **This handoff is not gated**, and the brief says so in as many words. §0's index is populated:
 3,342 commanders, 3,226 tagged, 3,341 carrying a similar-oracle list, ≈260 support cards each,
-measured against the live 2,805-card collection (242 owned, 3,100 unbuilt, 8 built). Nothing on
-this path fetches EDHREC. **Price and stock are #288, in flight**, and the row is drawn complete
-without them — state 4 of the price matrix is a drawn state, not a fallback, so the list ships on
+measured against the live 2,805-card collection (242 owned, 3,334 unbuilt, 8 built). Nothing on
+this path fetches EDHREC. **Price and stock are #288, shipped**, and the row is drawn complete with
+or without them — state 4 of the price matrix is a drawn state, not a fallback, so the list ships on
 the day it is built.
 
 ## Needs a ruling — one item, and the redraw behind one answer is small
 
 1. **`Score against` × discovery is not specified, and this canvas draws it available.** The free
    re-rank works today because both rankings arrive in one render over 242 commanders
-   (`commanders-view.tsx`, `results` / `freeItems`). Over 3,100 candidates that is a second full
+   (`commanders-view.tsx`, `results` / `freeItems`). Over 3,334 candidates that is a second full
    scoring pass, and the brief's §4 lists `Score against` as simply continuing to operate.
    Two answers, both cheap to draw:
    - **It re-ranks** — the flip becomes a fetch under discovery. Nothing in the canvas changes; the
@@ -56,18 +56,18 @@ the day it is built.
    one hue. The one place `--avail-hard-fg` still appears on the row is the shipped `N already in
    use` clause, unchanged.
 5. **The `buy` tag is deliberately not reused.** It is a verb attached to an action; this is a fact
-   about a row nobody has acted on, and 3,100 rows of shopping instruction is not the list ruling 2
+   about a row nobody has acted on, and 3,334 rows of shopping instruction is not the list ruling 2
    describes.
 6. **Sort is a menu, not segments**, specifically so ruling 8's reason can be stated on the row
    that carries the option. If the audit prefers segments for symmetry with `Score against`, the
    disabled reason has to move somewhere, and the only place left is a second banner.
-7. **The reveal step stays 25 at 3,100 rows.** A reading unit, not a fraction of the list. Raising
+7. **The reveal step stays 25 at 3,334 rows.** A reading unit, not a fraction of the list. Raising
    it makes each activation a wall and still leaves thousands behind it.
 
 ## Not blocking, and worth reading before estimating
 
 8. **The discovery list cannot ship as a second full client array.** Today's page sends `results`
-   *and* `freeItems`. At 3,100 rows × (role counts, receipts preview, pool size) that payload is
+   *and* `freeItems`. At 3,334 rows × (role counts, receipts preview, pool size) that payload is
    the thing to measure first. Design's expectation: fetch the active sort only, window on the
    client as today. Gap 8.
 9. **The floor and the distance are server-side, and untagged is excluded by presence of `tags`,
@@ -104,5 +104,5 @@ the day it is built.
 - The 99 appears nowhere as a denominator. Every figure prints its M at every width: `127 of 264`,
   `you own 127 of the 264 cards EDHREC lists for this commander`, `own 127 of 264 EDHREC lists`.
 - Every figure in the canvas is consistent with §0: 3,342 indexed, 3,226 tagged (116 untagged, one
-  drawn), 3,100 unbuilt, 242 owned, 8 built, 2,805 cards, floor 30% admitting 1,704; the count line
-  reads 25 shown / 3,075 more below against 3,100.
+  drawn), 3,334 unbuilt, 242 owned, 8 built, 2,805 cards, floor 30% admitting 1,704; the count line
+  reads 25 shown / 3,309 more below against 3,334.
