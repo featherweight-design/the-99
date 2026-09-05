@@ -211,16 +211,19 @@ control would still be promising a picture.
 
 ## Corrections owed to the handoff
 
-Neither is a design question and neither blocks the build. Both go back to
-Design as ratification alongside the marker deletion.
+Neither is a design question and neither blocks the build. Both were factual
+self-contradictions rather than design calls, so both are **corrected in this
+PR** and go back to Design as ratification alongside the marker deletion.
 
-1. `READINESS.md:62` says "`#98748F` is minimum-passing on the *accent* gate."
-   It contradicts line 60 and `CONTRAST-black-pip.md:117`, both of which
-   correctly report 0.115 against a 0.100 floor. `#8E7792` is the
-   minimum-passing value, and it was rejected on headroom.
-2. `deck-reimport · copy strings.ts:93-96` says "you added by hand" in the
-   summary sentence, which the same file's comment at line 130 rules out. Both
-   are removed by the marker deletion above.
+1. `READINESS.md` said "`#98748F` is minimum-passing on the *accent* gate."
+   It contradicted the preceding sentence and `CONTRAST-black-pip.md:117`, both
+   of which correctly report 0.115 against a 0.100 floor. `#8E7792` is the
+   minimum-passing value, and it was rejected on headroom. The clause is
+   removed; the sentence now reads "the *accent* gate is the binding one".
+2. `deck-reimport · copy strings.ts` said "you added by hand" in the summary
+   sentence, which the same file's own comment ruled out. The marker deletion
+   above removes `handAdded`, `ariaHandAdded`, `outBodyHandAdded` and
+   `outBodyMobileHandAdded`, leaving `outBody` as the single removal sentence.
 
 ## Build order
 
