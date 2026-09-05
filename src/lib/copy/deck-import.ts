@@ -29,7 +29,10 @@ export const deckImportCopy = {
      * the two doors that open. Design asked to ratify the wording.
      */
     subMobile: "Paste it or drop a file.",
-    sub: "You built it somewhere else. Paste it in and we'll set it up here.",
+    // Names both doors. The drawn line was mode-agnostic ("Point us at it")
+    // because a link was one of three; with two left, naming them is clearer
+    // than a phrase that fits neither exactly.
+    sub: "You built it somewhere else. Paste it in or drop a file and we'll set it up here.",
 
     modePaste: "Paste a list",
     modePasteShort: "Paste",
