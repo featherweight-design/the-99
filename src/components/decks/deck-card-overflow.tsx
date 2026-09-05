@@ -60,7 +60,8 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
         aria-label="Deck options"
         aria-expanded={open}
         // 44px square on phone so the control clears the touch-target floor;
-        // desktop keeps the drawn 13px-tall pill next to "Open builder".
+        // desktop keeps the drawn 13px-tall pill, sized against the card's top
+        // row rather than the desktop-only action row it used to sit in.
         className="inline-flex items-center justify-center rounded-[8px] transition-colors text-[color:var(--fg-muted)] bg-transparent border border-[color:var(--border)] min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 p-0 md:p-[9px_13px]"
         style={{
           fontFamily: "var(--font-sans)",
