@@ -139,3 +139,42 @@ describe("CardModal mobile art header", () => {
     expect(band.style.backgroundImage).toBe("");
   });
 });
+
+// A card nobody owns arrives from `catalogCard`, which fills `printings` with the whole
+// catalog at quantity 0 so the modal has art to resolve. The picker must not read that
+// list as a collection: it offered a pick over sixteen printings of a card owned ×0,
+// captioned "16 printings you own".
+describe("CardModal printing picker scope", () => {
+  const catalogPrinting = (setCode: string, collectorNumber: string) => ({
+    setCode,
+    setName: setCode,
+    collectorNumber,
+    releasedAt: "2024-01-12",
+    quantity: 0,
+    finishes: {},
+    imageUri: "https://cards.scryfall.io/normal/tithe.jpg",
+  });
+
+  it("offers no picker for a card the user owns none of", () => {
+    mount({
+      ...card,
+      quantity: 0,
+      printings: [catalogPrinting("RVR", "24"), catalogPrinting("ELD", "8")],
+    });
+    expect(screen.queryByText(/printings you own/)).toBeNull();
+  });
+
+  it("counts only the printings actually owned", () => {
+    mount({
+      ...card,
+      quantity: 3,
+      printings: [
+        { ...catalogPrinting("RVR", "24"), quantity: 1, finishes: { nonfoil: 1 } },
+        { ...catalogPrinting("ELD", "8"), quantity: 2, finishes: { nonfoil: 2 } },
+        catalogPrinting("M21", "99"),
+      ],
+    });
+    // The trigger sets the count beside a chevron, so match the phrase, not the whole node.
+    expect(screen.getAllByText(/2 printings you own/).length).toBeGreaterThan(0);
+  });
+});

@@ -191,8 +191,18 @@ export function CardModal({
   // reads from this one object, so an optimistic pick moves all three together or none.
   const preview = useMemo<BrowseCard>(() => ({ ...card, preferredPrinting: pick }), [card, pick]);
   const resolved = resolvedPrinting(preview);
-  const hasPicker = card.printings.length > 1;
-  const overflowing = printingEntryCount(card.printings, pick) > OVERFLOW_THRESHOLD;
+  // The picker is about the printings you OWN — every string it renders says so, and picking
+  // one only decides which of your copies represents the card. `card.printings` is not that
+  // list for an unowned card: `catalogCard` fills it with the whole catalog at quantity 0, so
+  // the modal offered a pick between sixteen printings of a card the user owns none of, under
+  // the heading "16 printings you own". For an owned card every row already has copies, so
+  // this filter changes nothing.
+  const ownedPrintings = useMemo(
+    () => card.printings.filter((p) => p.quantity > 0),
+    [card.printings],
+  );
+  const hasPicker = ownedPrintings.length > 1;
+  const overflowing = printingEntryCount(ownedPrintings, pick) > OVERFLOW_THRESHOLD;
   // The 180px phone header plus a 62px row plus search plus chips leaves about one tile row on
   // an 812px phone, so past the threshold — and only there — the header collapses.
   const compactArt = hasPicker && expanded && overflowing;
@@ -223,7 +233,7 @@ export function CardModal({
   function toggleExpanded() {
     const next = !expanded;
     setExpanded(next);
-    setAnnouncement(next ? pickerCopy.announceOpen(card.printings.length) : "");
+    setAnnouncement(next ? pickerCopy.announceOpen(ownedPrintings.length) : "");
   }
 
   function onPick(p: { setCode: string; collectorNumber: string }) {
@@ -255,7 +265,7 @@ export function CardModal({
   const renderRegion = (id: string) => hasPicker && expanded ? (
     <PrintingRegion
       id={id}
-      printings={card.printings}
+      printings={ownedPrintings}
       preferred={pick}
       resolvedKey={resolved === undefined ? null : printingKey(resolved)}
       cardName={card.name}
@@ -462,7 +472,7 @@ export function CardModal({
                   ref={mobileTriggerRef}
                   controls={REGION_MOBILE}
                   caption={caption}
-                  count={card.printings.length}
+                  count={ownedPrintings.length}
                   picked={pick !== null}
                   expanded={expanded}
                   imageUri={resolved?.imageUri ?? null}
@@ -480,7 +490,7 @@ export function CardModal({
                   ref={desktopTriggerRef}
                   controls={REGION_DESKTOP}
                   caption={caption}
-                  count={card.printings.length}
+                  count={ownedPrintings.length}
                   picked={pick !== null}
                   expanded={expanded}
                   onClick={toggleExpanded}
