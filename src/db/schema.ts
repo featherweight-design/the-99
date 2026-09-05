@@ -74,6 +74,36 @@ export const skippedPrintings = pgTable("skipped_printings", {
 });
 
 /**
+ * ManaPool's price for each printing. Refreshed weekly by its own workflow —
+ * price is the one field that genuinely moves, and tying it to the monthly
+ * catalog cadence would make the number wrong more often than right.
+ *
+ * A printing absent from this table is not currently stocked at ManaPool; the
+ * feed omits out-of-stock cards rather than listing them at zero. A row with a
+ * null `price_cents` but a set `price_cents_foil` is stocked in foil only.
+ * Both are honest states to render — neither is "free" or "unknown".
+ */
+export const printingPrices = pgTable("printing_prices", {
+  scryfallId: uuid("scryfall_id").primaryKey()
+    .references(() => printings.scryfallId, { onDelete: "cascade" }),
+  // Cheapest non-foil listing. Null means the only stock is foil or etched —
+  // 13,738 of 102,587 feed rows on 2026-08-29. Never defaulted to 0: a zero
+  // would render a real price of nothing.
+  priceCents: integer("price_cents"),
+  priceCentsNm: integer("price_cents_nm"),
+  priceCentsFoil: integer("price_cents_foil"),
+  priceCentsEtched: integer("price_cents_etched"),
+  // NOT NULL with no DEFAULT. The feed sets this on every row and never sends
+  // null or zero, so a default could only ever fire for a row the feed did not
+  // describe — and would be indistinguishable from real out-of-stock data.
+  availableQuantity: integer("available_quantity").notNull(),
+  buyUrl: text("buy_url"),
+  // From the payload's meta.as_of, not ingest wall-clock. Recording when
+  // ManaPool computed the price is what makes a staleness claim truthful.
+  asOf: timestamp("as_of").notNull(),
+});
+
+/**
  * A holding is a *printing*, not an oracle card: `(user, oracle, set, collector number, finish)`.
  *
  * `scryfall_id` is nullable because only ManaBox exports carry one — Moxfield, Archidekt,
