@@ -148,7 +148,7 @@ deleteGame(deckId, gameId)
 belongs to that deck before deleting — the deck check alone would let a caller pass their own deck's ID with
 someone else's game ID.
 
-Both follow the shape `addCardToDeck` established (`actions.ts:422-480`):
+Both follow the shape `addCardToDeck` established (`src/app/decks/actions.ts`):
 
 1. `const userId = await requireUserId()`
 2. `await requireDeck(deckId, userId)` — ownership
@@ -157,8 +157,10 @@ Both follow the shape `addCardToDeck` established (`actions.ts:422-480`):
 5. `for (const path of deckSurfaces(deckId)) revalidatePath(path)`
 
 Step 5 uses `deckSurfaces()` from `src/lib/decks/revalidate.ts` rather than a hand-written path. It returns
-`["/decks/<id>", "/decks", "/"]`, and every deck mutation in `actions.ts` and `import-actions.ts` already
-goes through it — a single hardcoded `/decks/<id>` would leave the deck list and home page stale.
+`["/decks/<id>", "/decks", "/"]`, and it is the pattern to follow — a single hardcoded `/decks/<id>` leaves
+the deck list and the home page stale. It is not yet universal: a few older actions still revalidate one
+path by hand (`actions.ts:549`, `actions.ts:605`). Those are the exception to move away from, not a
+precedent to copy.
 
 Validation, every failure **returned** as `{ ok: false, message }` from `REJECTION_MESSAGES` and never
 thrown — thrown errors are for database failures, per the existing convention:
