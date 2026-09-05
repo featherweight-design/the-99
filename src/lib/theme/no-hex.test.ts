@@ -25,10 +25,6 @@ const ALLOWED = new Set([
   "lib/theme/no-hex.test.ts",
 ]);
 
-// Dead by design — kept so a per-theme creature can return without re-plumbing
-// ten surfaces. Not swept, because nothing renders it.
-const ALLOWED_DIRS = ["components/character/"];
-
 // A theme-aware colour written as rgba() is invisible to a hex scan and stays
 // Gilded Stone under every theme, so the scan looks for both spellings.
 const HEX = /#[0-9A-Fa-f]{6}\b/;
@@ -55,9 +51,7 @@ function* sources(dir: string, prefix = ""): Generator<string> {
   }
 }
 
-const files = [...sources(".")].filter(
-  (f) => !ALLOWED.has(f) && !ALLOWED_DIRS.some((d) => f.startsWith(d)),
-);
+const files = [...sources(".")].filter((f) => !ALLOWED.has(f));
 
 describe("colour comes from tokens", () => {
   it("scans a plausible number of files", () => {
