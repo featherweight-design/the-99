@@ -74,6 +74,44 @@ export const skippedPrintings = pgTable("skipped_printings", {
 });
 
 /**
+ * ManaPool's price for each printing. Refreshed weekly by its own workflow —
+ * price is the one field that genuinely moves, and tying it to the monthly
+ * catalog cadence would make the number wrong more often than right.
+ *
+ * A printing absent from this table has never been stocked at ManaPool in any
+ * run so far; the feed omits out-of-stock cards rather than listing them at
+ * zero. **Presence is not the same as being stocked now.** The ingest upserts
+ * and never deletes, so a printing that sells out keeps its last row with a
+ * frozen `as_of` — deleting it would blank the price for the length of every
+ * load and lose the last known figure. A reader that needs "stocked now" must
+ * compare the row's `as_of` to the newest `as_of` in the table; a row behind
+ * that mark is a last-known price, not a live one.
+ *
+ * A row with a null `price_cents` but a set `price_cents_foil` is stocked in
+ * foil only. None of these are "free" or "unknown" — they are distinct states,
+ * and rendering them as one another is the mistake this comment exists to stop.
+ */
+export const printingPrices = pgTable("printing_prices", {
+  scryfallId: uuid("scryfall_id").primaryKey()
+    .references(() => printings.scryfallId, { onDelete: "cascade" }),
+  // Cheapest non-foil listing. Null means the only stock is foil or etched —
+  // 13,738 of 102,587 feed rows on 2026-08-29. Never defaulted to 0: a zero
+  // would render a real price of nothing.
+  priceCents: integer("price_cents"),
+  priceCentsNm: integer("price_cents_nm"),
+  priceCentsFoil: integer("price_cents_foil"),
+  priceCentsEtched: integer("price_cents_etched"),
+  // NOT NULL with no DEFAULT. The feed sets this on every row and never sends
+  // null or zero, so a default could only ever fire for a row the feed did not
+  // describe — and would be indistinguishable from real out-of-stock data.
+  availableQuantity: integer("available_quantity").notNull(),
+  buyUrl: text("buy_url"),
+  // From the payload's meta.as_of, not ingest wall-clock. Recording when
+  // ManaPool computed the price is what makes a staleness claim truthful.
+  asOf: timestamp("as_of").notNull(),
+});
+
+/**
  * A holding is a *printing*, not an oracle card: `(user, oracle, set, collector number, finish)`.
  *
  * `scryfall_id` is nullable because only ManaBox exports carry one — Moxfield, Archidekt,

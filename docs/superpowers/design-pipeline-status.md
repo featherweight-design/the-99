@@ -158,7 +158,19 @@ This table records the mapping as filed. **The rank column is historical — the
 
 #216 and #217 ship no UI and are explicitly future work, so they need no design row.
 
-**Not blocked meanwhile.** The shared foundation these sit on is entirely backend/data, and per `AGENTS.md` backend work proceeds without a handoff, so it was built while these rows waited. **It merged as PR #244 on 2026-09-02** — the EDHREC parser widening, the commander support index, the commander engine classifier and the land colour-production check — so **#220, #221 and #222 are unblocked**. The plan's fifth component, the ManaPool price ingest, was not in that merge and is still open.
+**Not blocked meanwhile.** The shared foundation these sit on is entirely backend/data, and per `AGENTS.md` backend work proceeds without a handoff, so it was built while these rows waited. **It merged as PR #244 on 2026-09-02** — the EDHREC parser widening, the commander support index, the commander engine classifier and the land colour-production check — so **#220, #221 and #222 are unblocked**. The plan's fifth component, the ManaPool price ingest, was not in that merge and is tracked as the unplaced row below.
+
+---
+
+## ❓ Unplaced — eng-only components this tracker has no state for
+
+The legend is exhaustive for `type: design` tickets, and a design ticket fitting none of its states is a gap in the legend rather than a ticket to file under the nearest match. This table records the other half of that rule: a component that carries no design ticket at all, and so has no row anywhere above even while it is real, planned and buildable.
+
+The gap is structural, not a one-off. The tracker is the answer to "what is ready for eng to pick right now?", but it indexes only design tickets — so a backend component that lives in a merged spec and plan with no GitHub issue is invisible to any scan that starts here. That is exactly how the ManaPool ingest went unnoticed until Hugh asked after it on 2026-09-05. Widening the tracker to admit eng-only rows would repeat the 2026-08-30 objection (it makes each state mean two things at once), so these sit apart until Hugh rules on where they belong.
+
+| Component | Source | Status | Why unplaced |
+|---|---|---|---|
+| **ManaPool price ingest** (Component C of the recommendation foundation) | `docs/superpowers/specs/2026-08-29-recommendation-foundation-design.md` §5 · plan tasks 8–10 | Issue **#288** filed 2026-09-05; built on PR **#291** | Ships no UI, so no handoff and no `type: design` ticket ever existed. It was the one component of the five-part foundation left out of PR #244 |
 
 ---
 
