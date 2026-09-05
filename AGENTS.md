@@ -31,9 +31,11 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - `pnpm db:seed:prices` refreshes `printing_prices` from ManaPool. The `Price refresh` workflow runs
   it 09:00 UTC every Monday; it needs the `PRICE_REFRESH_ENABLED` repository variable set to `'true'`
   to fire on schedule. The feed omits out-of-stock cards rather than listing them at zero, so a
-  printing absent from `printing_prices` is not currently stocked, and a row with a null
-  `price_cents` but a set `price_cents_foil` is stocked in foil only — neither is "free" or
-  "unknown".
+  printing absent from `printing_prices` has never been stocked in any run so far, and a row with
+  a null `price_cents` but a set `price_cents_foil` is stocked in foil only — neither is "free" or
+  "unknown". The ingest upserts and never deletes, so presence is not the same as being stocked
+  now: a sold-out printing keeps its last row with a frozen `as_of`, and any reader needing "stocked
+  now" compares that `as_of` to the newest one in the table.
 - `pnpm db:build:index` rebuilds `commander_support` / `commander_support_cards` from EDHREC.
   The `Commander index` workflow runs it monthly on the 3rd — the catalog refreshes every
   Monday, so by the 3rd a set released in the previous week has already been ingested and

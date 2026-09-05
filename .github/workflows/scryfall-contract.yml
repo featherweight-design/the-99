@@ -33,4 +33,9 @@ jobs:
       # always(), so a Scryfall failure does not hide a simultaneous ManaPool one.
       - name: Check the ManaPool contract
         if: always()
+        # The canary buffers and parses the whole ~51MB feed, so it needs the
+        # same headroom the weekly ingest gets. Without it a growing feed would
+        # OOM here and report a crash where it should report a clean contract break.
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm check:manapool

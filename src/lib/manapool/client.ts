@@ -15,8 +15,9 @@ const TIMEOUT_MS = 5 * 60 * 1000;
  * `seed-printings.ts`. That feed is ~2 GB and has no choice; this one was
  * ~51 MB on 2026-08-29, and `res.json()` keeps the parser a pure function of a
  * plain object — which is what makes the fixture-driven tests in `parse.test.ts`
- * possible at all. `price-refresh.yml` sets `NODE_OPTIONS=--max-old-space-size=4096`
- * to cover the parsed-object expansion. If the feed passes ~250 MB, revisit:
+ * possible at all. Both callers — `price-refresh.yml` and the canary step in
+ * `scryfall-contract.yml` — set `NODE_OPTIONS=--max-old-space-size=4096` to cover
+ * the parsed-object expansion. If the feed passes ~250 MB, revisit:
  * stream it and give the parser a row iterator instead.
  */
 export async function fetchManapoolSingles(): Promise<unknown> {

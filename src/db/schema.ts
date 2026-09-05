@@ -78,10 +78,18 @@ export const skippedPrintings = pgTable("skipped_printings", {
  * price is the one field that genuinely moves, and tying it to the monthly
  * catalog cadence would make the number wrong more often than right.
  *
- * A printing absent from this table is not currently stocked at ManaPool; the
- * feed omits out-of-stock cards rather than listing them at zero. A row with a
- * null `price_cents` but a set `price_cents_foil` is stocked in foil only.
- * Both are honest states to render — neither is "free" or "unknown".
+ * A printing absent from this table has never been stocked at ManaPool in any
+ * run so far; the feed omits out-of-stock cards rather than listing them at
+ * zero. **Presence is not the same as being stocked now.** The ingest upserts
+ * and never deletes, so a printing that sells out keeps its last row with a
+ * frozen `as_of` — deleting it would blank the price for the length of every
+ * load and lose the last known figure. A reader that needs "stocked now" must
+ * compare the row's `as_of` to the newest `as_of` in the table; a row behind
+ * that mark is a last-known price, not a live one.
+ *
+ * A row with a null `price_cents` but a set `price_cents_foil` is stocked in
+ * foil only. None of these are "free" or "unknown" — they are distinct states,
+ * and rendering them as one another is the mistake this comment exists to stop.
  */
 export const printingPrices = pgTable("printing_prices", {
   scryfallId: uuid("scryfall_id").primaryKey()
