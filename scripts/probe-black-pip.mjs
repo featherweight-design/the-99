@@ -10,6 +10,7 @@
 //   PROBE_BASE=http://localhost:3007 node scripts/probe-black-pip.mjs
 
 import { readFileSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -34,6 +35,8 @@ const contrast = (a, b) => {
   const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
   return (x + 0.05) / (y + 0.05);
 };
+
+await mkdir(SHOTS, { recursive: true });
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 520, height: 220 } });
