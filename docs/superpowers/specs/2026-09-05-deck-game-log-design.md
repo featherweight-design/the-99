@@ -171,6 +171,12 @@ thrown — thrown errors are for database failures, per the existing convention:
 - no key appears in both lists
 - `playedAt` is not in the future
 
+Each list is then **deduplicated** before the insert. A checkbox UI cannot produce `worked: ['mana', 'mana']`,
+but a crafted request can, and it would hit the composite primary key and *throw* — surfacing a database
+error where the convention promises a returned rejection. Collapsing each list to a unique set removes the
+case rather than adding a sixth rule to remember. A repeated key carries no meaning the first one does not,
+so there is nothing to reject.
+
 **No `FOR UPDATE` lock.** `addCardToDeck` locks because it reads the deck's card count, decides against the
 99-card cap, and writes — a read-modify-write whose invariant two concurrent callers could break. Logging a
 game has no such invariant: nothing about a new game depends on what other games exist, so two concurrent
@@ -261,8 +267,8 @@ landing in Mixed; ties broken by key; bucket ordering; a game with no axis marks
 **Server actions** — following the established stub pattern in `actions.test.ts`: `vi.hoisted()` to stub the
 db client before importing the action module, fake query builders, mocked `requireUserId()` and
 `revalidatePath()`, assertions against recorded insert calls. Cases: ownership rejection; each validation
-rejection named in §4; the same key in both lists; the happy path's insert calls; `deleteGame` on someone
-else's game.
+rejection named in §4; the same key in both lists; a key repeated within one list, asserting one axis row is
+written rather than an error surfacing; the happy path's insert calls; `deleteGame` on someone else's game.
 
 **Not tested:** that the composite primary key rejects a duplicate `(gameId, axis)`. That is Postgres doing
 its job, and asserting it tests the database rather than this code.
