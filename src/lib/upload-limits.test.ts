@@ -5,6 +5,7 @@ import {
   DECK_IMPORT_FILE_MAX_BYTES,
   DECK_IMPORT_FILE_MAX_LABEL,
   DECK_IMPORT_SOURCES,
+  type DeckImportSource,
   deckImportMaxBytes,
   deckImportTooLargeMessage,
   isDeckImportTooLargeMessage,
@@ -59,6 +60,15 @@ describe("upload limits", () => {
       expect(isDeckImportTooLargeMessage(deckImportTooLargeMessage(source))).toBe(true);
     }
     expect(isDeckImportTooLargeMessage("card is not a legal commander")).toBe(false);
+  });
+
+  it("falls back to the strictest cap for a source the type system never saw", () => {
+    // `source` arrives from a server action, so the type is the caller's claim.
+    // A missing arm would return undefined and compare a byte count against it,
+    // which is false for every size — the guard off entirely.
+    const rogue = "url" as unknown as DeckImportSource;
+    expect(deckImportMaxBytes(rogue)).toBe(PASTE_MAX_BYTES);
+    expect(deckImportTooLargeMessage(rogue)).toContain(PASTE_MAX_LABEL);
   });
 
   it("shares one paste cap across both flows", () => {

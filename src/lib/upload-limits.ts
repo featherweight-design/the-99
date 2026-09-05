@@ -41,7 +41,19 @@ export function deckImportMaxBytes(source: DeckImportSource): number {
       return PASTE_MAX_BYTES;
     case "file":
       return DECK_IMPORT_FILE_MAX_BYTES;
+    default:
+      // `source` reaches `importDeck` from a server action, so the type is a
+      // claim the caller makes and not one the runtime checks. An unrecognised
+      // value gets the strictest cap: returning nothing would compare a byte
+      // count against `undefined` and wave the whole guard through.
+      assertNever(source);
+      return PASTE_MAX_BYTES;
   }
+}
+
+/** Compile-time proof that every source is handled, with no runtime effect. */
+function assertNever(source: never): void {
+  void source;
 }
 
 /**
@@ -57,6 +69,11 @@ export function deckImportTooLargeMessage(source: DeckImportSource): string {
       return `Paste too large (max ${PASTE_MAX_LABEL})`;
     case "file":
       return `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`;
+    default:
+      // Pairs with the cap above: an unrecognised source is capped as a paste,
+      // so it must be told so too, or the message names a limit it never hit.
+      assertNever(source);
+      return `Paste too large (max ${PASTE_MAX_LABEL})`;
   }
 }
 
