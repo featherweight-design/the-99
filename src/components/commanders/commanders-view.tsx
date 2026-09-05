@@ -7,9 +7,8 @@ import {
   useLayoutEffect,
   useCallback,
   useRef,
-  useTransition,
 } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { filterByColors } from "../../lib/commanders/filter";
 import { rankMap } from "../../lib/commanders/rank-maps";
@@ -18,6 +17,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { RecCard, type ScoreDelta } from "./rec-card";
 import { GuidedBanner } from "./guided-banner";
+import { PageHeader } from "./page-header";
 import { DegradedBanner } from "./degraded-banner";
 import { FilteredEmpty } from "./filtered-empty";
 import {
@@ -45,10 +45,10 @@ function serializeParams(colors: string[], avail: AvailMode): string {
   const p = new URLSearchParams();
   if (colors.length > 0) p.set("c", colors.join(""));
   // Only the non-default is written, so a player who never touches the toggle
-  // keeps the URL they have today. Writing it at all is the point: this function
-  // runs on every colour change, and a narrower version would silently drop
-  // `?avail=free` on the next pip click and re-rank the page behind them.
-  if (avail === "free") p.set("avail", "free");
+  // carries no mode at all. Writing it at all is the point: this runs on every
+  // colour change too, and a narrower version would silently drop the mode on
+  // the next pip click.
+  if (avail === "all") p.set("avail", "all");
   const s = p.toString();
   return s ? `?${s}` : "";
 }
@@ -172,12 +172,12 @@ export type CommandersViewProps = {
   candidateCount: number;
   firstRun: boolean;
   /**
-   * Which ranking the server rendered, parsed from `?avail=`. The URL is the
-   * single source of truth: `rankFree` runs on the server, so a client-only
-   * mode would show one ranking's numerals over the other's rows.
+   * Which ranking to open on, parsed from `?avail=`. Only the initial mode: both
+   * rankings arrive in the same render, so the toggle switches between two lists
+   * already on the client and this component owns the mode from mount on.
    */
   avail: AvailMode;
-  /** The same commanders re-scored against the free pool. Null in `all` mode. */
+  /** The same commanders re-scored against the free pool. Null when unreadable. */
   freeItems: CommanderListItem[] | null;
   /** False when the availability read failed — `What's free` is unavailable. */
   availOk: boolean;
@@ -191,34 +191,25 @@ export function CommandersView({
   uniqueCardsRead,
   candidateCount,
   firstRun,
-  avail,
+  avail: initialAvail,
   freeItems,
   availOk,
   receiptCounts,
 }: CommandersViewProps) {
-  const router = useRouter();
   const search = useSearchParams();
 
   const [colors, setColors] = useState<string[]>(() =>
     parseColors(search.get("c")),
   );
+  const [avail, setAvailState] = useState<AvailMode>(initialAvail);
 
-  // Mirror color filter to URL via shallow replace (no RSC refetch). The mode is
-  // CARRIED here and never drives this effect, which is why it comes off a ref:
-  //
-  //   - Off the prop, a pip clicked while a flip is still in the air would write
-  //     the mode the server last sent, and a shallow replace to `?c=W` would
-  //     both drop `?avail=free` and race the push that was fetching it.
-  //   - As a dependency, the flip itself would fire a replace alongside its own
-  //     push — two navigations for one click.
-  //
-  // The ref reads what is DRAWN, so the pip lands on the same destination the
-  // transition was already heading for, with the filter added.
-  const availRef = useRef(avail);
+  // Mirror both controls to the URL through the History API rather than
+  // `router.replace`: a replace is a navigation, and this page's whole point is
+  // that neither control needs one — the server sends both rankings in the same
+  // render. The URL stays shareable and `useSearchParams` still sees it.
   useEffect(() => {
-    const qs = serializeParams(colors, availRef.current);
-    router.replace(`/commanders${qs}`, { scroll: false });
-  }, [colors, router]);
+    window.history.replaceState(null, "", `/commanders${serializeParams(colors, avail)}`);
+  }, [colors, avail]);
 
   // Which list is on screen. Falling back to `results` when the free ranking is
   // missing keeps the page rendering something true rather than nothing.
@@ -277,50 +268,18 @@ export function CommandersView({
   }, []);
 
   // ── Score against (§7) ─────────────────────────────────────────────────────
-  // The flip needs the server, because rankFree runs there. A server round trip
-  // with no local feedback reads as a dead control, so the pressed segment moves
-  // immediately and the list dims until the new ranking lands.
-  const [pending, startTransition] = useTransition();
-  // The override covers the round trip and nothing more, so it is scoped to the
-  // transition rather than cleared. Two failure shapes ride on that. Clearing it
-  // on the click would drop it before the new HTML lands and flash the old
-  // segment back; expiring it only when `avail` moves would strand it forever on
-  // the one navigation that does not move `avail` — a flip to free that the
-  // server answers with a degraded `all`, leaving a struck-out segment drawn as
-  // checked. Once the transition commits, whatever the server said is the truth.
-  const [optimisticAvail, setOptimisticAvail] = useState<{
-    from: AvailMode;
-    to: AvailMode;
-  } | null>(null);
-  const pressedAvail =
-    pending && optimisticAvail && optimisticAvail.from === avail
-      ? optimisticAvail.to
-      : avail;
-
-  // Declared after `pressedAvail` and therefore after the effect that reads it,
-  // so a pip click in the same commit sees the value the last commit drew. The
-  // two never change together: a flip moves the mode, a pip moves the colours.
-  useEffect(() => {
-    availRef.current = pressedAvail;
-  }, [pressedAvail]);
-
+  // Both rankings are already here, so the flip is a state change: no push, no
+  // transition, no dimmed list waiting on a server that has nothing left to say.
   const setAvail = useCallback(
     (next: AvailMode) => {
-      // Against what is DRAWN, not what the server last sent: mid-flight the two
-      // differ, and guarding on the server value makes the unpressed segment a
-      // dead control for the length of the trip.
-      if (next === pressedAvail) return;
-      setOptimisticAvail({ from: avail, to: next });
+      if (next === avail) return;
+      if (next === "free" && !freeItems) return;
       // The window belongs to the current result set, not the session, and a
       // re-rank means different commanders occupy the revealed range.
       setShown(REVEAL_STEP);
-      startTransition(() => {
-        router.push(`/commanders${serializeParams(colors, next)}`, {
-          scroll: false,
-        });
-      });
+      setAvailState(next);
     },
-    [avail, pressedAvail, colors, router],
+    [avail, freeItems],
   );
 
   const windowed = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
@@ -375,6 +334,8 @@ export function CommandersView({
 
   return (
     <div>
+      <PageHeader uniqueCardsRead={uniqueCardsRead} avail={avail} />
+
       {/* Present before the first reveal — a live region inserted at announce
           time is frequently not read. Unconditional since #43: the ranking
           toggle exists on every list, including one too short to ever window. */}
@@ -480,7 +441,7 @@ export function CommandersView({
               {availabilityCopy.ranking.label}
             </span>
             <ScoreAgainst
-              value={pressedAvail}
+              value={avail}
               onChange={setAvail}
               disabled={!availOk}
               labelId="score-against-desktop"
@@ -637,7 +598,7 @@ export function CommandersView({
             {availabilityCopy.ranking.label}
           </p>
           <ScoreAgainst
-            value={pressedAvail}
+            value={avail}
             onChange={setAvail}
             disabled={!availOk}
             labelId="score-against-mobile"
@@ -725,13 +686,7 @@ export function CommandersView({
           />
         ) : (
           <>
-            {/* The flip is a server round trip. Without this the list sits
-                unchanged after the click and the control reads as dead. */}
-            <ul
-              aria-busy={pending || undefined}
-              className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0 transition-opacity"
-              style={{ opacity: pending ? 0.55 : 1 }}
-            >
+            <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
               {windowed.map((r, i) => (
                 <li
                   key={r.slug}

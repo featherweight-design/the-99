@@ -9,14 +9,16 @@ import { REVEAL_STEP } from "./reveal-control";
 // collection yields 24 generals and REVEAL_STEP is 25. These tests are therefore
 // the primary evidence that the windowing works at all.
 
-const replace = vi.fn();
-const push = vi.fn();
 const params = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace, push }),
   useSearchParams: () => params,
 }));
+
+// Both controls mirror to the URL through the History API — no navigation, so
+// there is no router call left to assert on.
+const replaceState = vi.spyOn(window.history, "replaceState");
+const urls = () => replaceState.mock.calls.map((c) => c[2]);
 
 vi.mock("../../app/commanders/actions", () => ({ retryRecs: vi.fn() }));
 
@@ -90,8 +92,7 @@ const windowCounts = () =>
   );
 
 beforeEach(() => {
-  replace.mockClear();
-  push.mockClear();
+  replaceState.mockClear();
 });
 
 describe("CommandersView windowing", () => {
@@ -224,29 +225,31 @@ describe("CommandersView ranking toggle", () => {
   const ALL = /everything you own/;
   const FREE = /not already in a finished deck|What.s free is unavailable/;
 
-  it("marks the shipped ranking as the checked segment", () => {
-    view(results(3));
-    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
-    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "false");
-  });
-
-  // A colour filter is client-side; a re-rank is not, because rankFree runs on
-  // the server. The flip must push, and must carry the colours already applied.
-  it("pushes the free ranking, keeping the colour filter in the URL", () => {
-    view(results(3));
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Red" })[0]);
-    fireEvent.click(segments(FREE)[0]);
-    expect(push).toHaveBeenCalledWith("/commanders?c=R&avail=free", { scroll: false });
-  });
-
-  // The mirror effect writes the mode it is CARRYING. Driven by the server prop
-  // instead, a pip clicked while the flip was still in the air would replace to
-  // a bare `?c=W` and both drop the mode and race the push fetching it.
-  it("keeps the mode when a colour lands after the flip", () => {
+  it("opens on the mode the URL asked for", () => {
     view(results(3), { avail: "free", freeItems: results(3) });
-    replace.mockClear();
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "false");
+  });
+
+  // Both rankings arrive in one render, so the flip is a state change: the list
+  // swaps in place, and the URL is mirrored without a navigation.
+  it("swaps the list on the flip, mirroring the mode into the URL", () => {
+    const all = results(3);
+    view(all, { freeItems: [all[2], all[0], all[1]] });
+    fireEvent.click(segments(FREE)[0]);
+    expect(cards()[0]).toHaveTextContent("General 2");
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
+    // Free is the default mode, so the free URL carries no `avail` at all.
+    expect(urls().at(-1)).toBe("/commanders");
+  });
+
+  // The mirror writes both controls together. Written from the colours alone, a
+  // pip clicked after a flip back to `all` would drop the mode from the URL.
+  it("keeps the mode in the URL when a colour lands after the flip", () => {
+    view(results(3), { avail: "free", freeItems: results(3) });
+    fireEvent.click(segments(ALL)[0]);
     fireEvent.click(screen.getAllByRole("button", { name: "Filter by Red" })[0]);
-    expect(replace).toHaveBeenCalledWith("/commanders?c=R&avail=free", { scroll: false });
+    expect(urls().at(-1)).toBe("/commanders?c=R&avail=all");
   });
 
   it("ranks against the free list once the server sends one", () => {
@@ -264,13 +267,13 @@ describe("CommandersView ranking toggle", () => {
     expect(within(cards()[0]).getAllByText("1").length).toBeGreaterThan(0);
   });
 
-  // Only the arriving server render announces. On mount there is no re-rank to
-  // report, and a page that announces itself the moment it loads is noise.
+  // Only a flip announces. On mount there is no re-rank to report, and a page
+  // that announces itself the moment it loads is noise.
   it("announces the re-rank, and says nothing on first paint", () => {
-    const { container, again } = view(results(3));
+    const { container } = view(results(3), { freeItems: results(2) });
     const live = container.querySelector('[aria-live="polite"]')!;
     expect(live).toHaveTextContent("");
-    again(results(3), { avail: "free", freeItems: results(2) });
+    fireEvent.click(segments(FREE)[0]);
     expect(live).toHaveTextContent("Re-ranked by what’s free · 2 commanders");
   });
 
@@ -280,33 +283,30 @@ describe("CommandersView ranking toggle", () => {
       expect(s).toHaveAttribute("aria-disabled", "true");
     }
     fireEvent.click(segments(FREE)[0]);
-    expect(push).not.toHaveBeenCalled();
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
   });
 
-  // The one navigation that does not move `avail`: a flip to free the server
-  // answers with a degraded `all`. An override keyed on `avail` alone would
-  // strand here, drawing the struck-out segment as checked.
-  it("drops the optimistic press when the flip comes back degraded", () => {
-    view(results(3));
+  // `availOk` and a missing `freeItems` are separate failures — the second is
+  // what would render an empty list if the flip were allowed through.
+  it("refuses the flip when no free ranking arrived", () => {
+    view(results(3), { freeItems: null });
     fireEvent.click(segments(FREE)[0]);
-    expect(push).toHaveBeenCalled();
     for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
-    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "false");
   });
 
   it("is one tab stop, and the arrows move within it", () => {
-    view(results(3));
+    view(results(3), { freeItems: results(3) });
     const all = segments(ALL)[0];
     expect(all).toHaveAttribute("tabindex", "0");
     expect(segments(FREE)[0]).toHaveAttribute("tabindex", "-1");
     fireEvent.keyDown(all, { key: "ArrowRight" });
-    expect(push).toHaveBeenCalledWith("/commanders?avail=free", { scroll: false });
+    for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
   });
 
   it("leaves the arrows inert while the free ranking is unavailable", () => {
     view(results(3), { availOk: false });
     fireEvent.keyDown(segments(ALL)[0], { key: "ArrowRight" });
-    expect(push).not.toHaveBeenCalled();
+    for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
   });
 
   // The struck segment says a control is gone; the banner is the only thing
@@ -336,9 +336,9 @@ describe("CommandersView ranking toggle", () => {
   });
 
   it("explains the exclusion only while the free ranking is on", () => {
-    const { again } = view(results(3));
+    view(results(3), { freeItems: results(3) });
     expect(screen.queryByText(/don.t count toward these scores/)).toBeNull();
-    again(results(3), { avail: "free", freeItems: results(3) });
+    fireEvent.click(segments(FREE)[0]);
     expect(screen.getAllByText(/don.t count toward these scores/).length).toBeGreaterThan(0);
   });
 });

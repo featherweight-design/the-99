@@ -7,8 +7,9 @@
 //      does not, and #227's decklist-row width contest is the warning.
 //   2. Filtering must NOT renumber; a re-rank MUST. Both invariants are about
 //      numerals drawn down a page, so both want the numerals read back.
-//   3. `?avail=free` must survive the next colour pip click — the `router.replace`
-//      in the colours effect is the thing that would silently drop it.
+//   3. The mode must survive the next colour pip click, and the flip must not
+//      navigate: both rankings ship in one render, so the page keeps its
+//      identity across the toggle. A reload here is the regression (#285).
 //   4. The receipt line renders in BOTH modes, so the second clause has to be
 //      visible under `Everything I own`, which is the view most players never
 //      leave.
@@ -146,6 +147,9 @@ async function deltas(page) {
   );
 }
 
+const subtitle = (page) =>
+  page.evaluate(() => document.querySelector("p.font-mono")?.textContent?.trim() ?? null);
+
 const live = (page) =>
   page.evaluate(() => document.querySelector("[aria-live='polite']")?.textContent?.trim() ?? null);
 
@@ -164,9 +168,10 @@ for (const { label, width, height } of VIEWPORTS) {
   const bar = await toolbar(page);
   console.log(`  toolbar: ${JSON.stringify(bar)}`);
   for (const s of await segments(page)) console.log(`  segment: ${JSON.stringify(s)}`);
-  console.log(`  ranks (all):        ${JSON.stringify(await ranks(page))}`);
-  console.log(`  order (all):        ${JSON.stringify(await order(page))}`);
-  console.log(`  receipts (all):     ${JSON.stringify(await receipts(page))}`);
+  console.log(`  ranks (default):    ${JSON.stringify(await ranks(page))}`);
+  console.log(`  order (default):    ${JSON.stringify(await order(page))}`);
+  console.log(`  receipts (default): ${JSON.stringify(await receipts(page))}`);
+  console.log(`  subtitle:           ${JSON.stringify(await subtitle(page))}`);
   console.log(`  order line present: ${await page.getByText("Order: Fit ↓ · fixed").count()}`);
 
   // A colour filter hides rows and leaves a GAP: the numerals are global Fit
@@ -181,28 +186,36 @@ for (const { label, width, height } of VIEWPORTS) {
     await page.waitForTimeout(1200);
   }
 
-  // The flip. Unlike the filter this changes the score, so the numerals MUST
-  // move, the window MUST reset, and the live region MUST say so.
-  const free = page.getByRole("radio", { name: /not already in a finished deck/ }).first();
-  if ((await free.count()) === 0) {
-    console.log("  free segment not found — availability read may be degraded");
+  // The flip, away from the default. Unlike the filter this changes the score,
+  // so the numerals MUST move, the window MUST reset, and the live region MUST
+  // say so — all without a navigation, which the stamp below is the evidence for.
+  await page.evaluate(() => {
+    window.__probeStamp = true;
+  });
+  const other = page.getByRole("radio", { name: /everything you own/ }).first();
+  if ((await other.count()) === 0) {
+    console.log("  all segment not found");
   } else {
-    await free.click();
+    await other.click();
     await page.waitForTimeout(2500);
     console.log(`  url after flip:     ${page.url()}`);
-    console.log(`  ranks (free):       ${JSON.stringify(await ranks(page))}`);
-    console.log(`  order (free):       ${JSON.stringify(await order(page))}`);
-    console.log(`  receipts (free):    ${JSON.stringify(await receipts(page))}`);
-    console.log(`  deltas (free):      ${JSON.stringify(await deltas(page))}`);
+    console.log(
+      `  survived flip (no reload): ${await page.evaluate(() => window.__probeStamp === true)}`,
+    );
+    console.log(`  ranks (all):        ${JSON.stringify(await ranks(page))}`);
+    console.log(`  order (all):        ${JSON.stringify(await order(page))}`);
+    console.log(`  receipts (all):     ${JSON.stringify(await receipts(page))}`);
+    console.log(`  deltas (all):       ${JSON.stringify(await deltas(page))}`);
     console.log(`  announced:          ${JSON.stringify(await live(page))}`);
+    console.log(`  subtitle:           ${JSON.stringify(await subtitle(page))}`);
     for (const s of await segments(page)) console.log(`  segment: ${JSON.stringify(s)}`);
 
-    // The serializeParams trap: the colours effect runs router.replace on every
-    // pip click, and a one-argument version drops ?avail=free right here.
+    // The serializeParams trap: the mirror effect runs on every pip click, and a
+    // colours-only version drops the mode right here.
     if ((await pip.count()) > 0) {
       await pip.click();
       await page.waitForTimeout(1500);
-      console.log(`  url after pip in free mode: ${page.url()}`);
+      console.log(`  url after pip in all mode: ${page.url()}`);
     }
   }
 
