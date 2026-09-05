@@ -48,8 +48,13 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
+| **#286** Black mana pip illegible on the dark canvas | `design/design_handoff_the99_amendments/` (R3) | 🟢 Green | Amendment 1 of four. `--b` → `#98748F`. One CSS file, six declarations. R1 and R2 both failed `contract.test.ts:145`'s 0.10 accent-separation gate (0.064 and 0.087); R3 clears at 0.115 |
+| **#280** A deck can pass 99 cards with nothing on screen saying so | same handoff | 🟢 Green | Amendment 3. Fifth `statusPill` value `Over`, two-segment bar, trim line. **Must land before #277** |
+| **#287** Commanders detail: "Full card" opens the bare lightbox | same handoff | 🟢 Green | Amendment 4. Deletes `lightbox.tsx` (282 lines) + its test; `full-card-trigger.tsx` calls the already-mounted `CardDetailProvider`. `Full card` → `Card details` |
+| **#277** A deck cannot be updated by re-importing its list | same handoff | 🟡 Yellow | Amendment 2, and the only real build — one route, three components, 24 states. Yellow on build order alone: **blocked behind #280**, because `add-validation.ts:42` would silently drop cards past 99. Both Product questions were answered on 2026-09-05 (no undo; the "added by hand" marker is deleted) |
 
-_Currently empty — synergy discovery audited Green at R1 on 2026-09-03 and shipped the same day; it now sits in ✅ Shipped below._
+Spec: `docs/superpowers/specs/2026-09-05-four-amendments-design.md`. All four came out of the
+eleven-item batch triaged on 2026-09-05, whose five code-side fixes shipped in PR #289.
 
 ---
 
@@ -88,15 +93,16 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Ticket | Stage | Notes |
 |---|---|---|
-| **#286** Black mana pip is illegible on the dark canvas | Handoff in production | Placed here 2026-09-05. Dual-labelled `type: design` + `type: bug` — a contrast defect against the shipped six-theme system, not a backlog design cycle. It had been in no state at all until now |
-| **#287** Commanders detail on mobile: "Full card" opens the bare lightbox, not card details | Handoff in production | Placed here 2026-09-05, same class as #286 — a parity defect against a shipped surface rather than net-new design |
 
-**A note on these two rows.** Both are `type: design` **and** `type: bug`, and the legend
-above has no state for a design defect against an already-shipped surface: 🕰️ means a design
-cycle that has not started, which understates a live defect, and 🟢 means a handoff has landed,
-which is not yet true. They sit in 🎨 because design is genuinely being produced for them, and
-that is the honest reading — but the legend gap is real and worth closing the next time this
-file is edited, rather than being resolved case by case.
+_Currently empty — #286 and #287 moved to 🟢 on 2026-09-05 when the four-amendments handoff
+audited Green at R3, taking #277 and #280 with them._
+
+**The legend gap these rows exposed is still open.** #286 and #287 are `type: design` **and**
+`type: bug`, and the legend has no state for a design defect against an already-shipped surface:
+🕰️ means a design cycle that has not started, which understates a live defect, and 🟢 means a
+handoff has landed, which was not yet true while they sat here. They passed through 🎨 because
+design was genuinely being produced for them. The next defect of this class will hit the same
+gap, and it is worth closing rather than resolving case by case.
 
 ---
 
