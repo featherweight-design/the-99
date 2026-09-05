@@ -301,9 +301,9 @@ export const addPanelCopy = {
     actionAria: (name: string) => `Undo removing ${name}`,
     // Read on the builder's existing live region, after the removal itself.
     announceRemoved: (name: string, built: number) =>
-      `${name} removed · ${built} of 99 · undo available`,
+      `${name} removed · ${builtFragment(built)} · undo available`,
     announceUndone: (name: string, built: number) =>
-      `${name} back in the deck · ${built} of 99`,
+      `${name} back in the deck · ${builtFragment(built)}`,
     // The undo row is the only thing standing between a mis-tap and a lost
     // card, so a failed undo says so where the row is, not in a banner.
     failed: "Couldn’t put that back. Try adding it again.",
@@ -322,9 +322,9 @@ export const addPanelCopy = {
       role: string,
       have: number,
       target: number,
-    ) => `${name} added · ${built} of 99 · ${role} ${have} of ${target}`,
+    ) => `${name} added · ${builtFragment(built)} · ${role} ${have} of ${target}`,
     addedNoRole: (name: string, built: number) =>
-      `${name} added · ${built} of 99`,
+      `${name} added · ${builtFragment(built)}`,
   },
 
   // ── /decks/new — the Create button becomes the route's dock (#177) ─────
@@ -424,4 +424,13 @@ export const overCopy = {
 /** Spelled out to nineteen, digits past it — see `overCopy.trim.words`. */
 export function overWord(n: number): string {
   return overCopy.trim.words[n] ?? String(n);
+}
+
+/** The count fragment every live region uses to say where the deck stands.
+ *  Past 99 it borrows the progressbar's phrasing rather than saying "104 of
+ *  99", which is a range a screen reader cannot make sense of — the same
+ *  reading the amber bar exists to stop, in the one place the bar is not. */
+export function builtFragment(built: number): string {
+  if (built <= 99) return `${built} of 99`;
+  return overCopy.aria.progress(String(built), String(built - 99));
 }

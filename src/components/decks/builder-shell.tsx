@@ -20,7 +20,7 @@ import { UnresolvedBanner } from "./unresolved-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
 import { Crown } from "../ui/crown";
-import { addPanelCopy, shortCommanderName } from "../../lib/copy/decks-builder";
+import { addPanelCopy, builtFragment, shortCommanderName } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { clearAutoCards, restoreAutoCards, type SweptRow } from "../../app/decks/actions";
 import { Decklist } from "./decklist";
@@ -350,7 +350,7 @@ export function BuilderShell({
         const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
         const removedCount = removed.reduce((n, r) => n + r.quantity, 0);
         setAnnouncement(
-          recommendationsCopy.auto.sweptAnnounce(String(removedCount), String(remaining)),
+          recommendationsCopy.auto.sweptAnnounce(String(removedCount), builtFragment(remaining)),
         );
       } catch {
         // No explicit rollback: the transition ends here and React drops the
@@ -374,7 +374,7 @@ export function BuilderShell({
       setAnnouncement(
         recommendationsCopy.auto.sweptRestoredAnnounce(
           String(restored),
-          String(deckCounts(cards).built + restored),
+          builtFragment(deckCounts(cards).built + restored),
         ),
       );
       setSweptRows(null);

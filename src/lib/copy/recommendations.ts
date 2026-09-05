@@ -100,13 +100,16 @@ export const recommendationsCopy = {
     swept: (n: string) => `${n} auto cards removed`,
     sweptUndo: 'Undo',
     sweptUndoAria: (n: string) => `Put all ${n} auto cards back`,
-    // The single live-region message. One, never one per row.
-    sweptAnnounce: (removed: string, total: string) =>
-      `${removed} auto cards removed. ${total} of 99.`,
+    // The single live-region message. One, never one per row. `built` arrives
+    // pre-formatted from `builtFragment`, which past the limit reads "104
+    // cards, 5 over the 99" rather than the range "104 of 99", which a screen
+    // reader cannot make sense of.
+    sweptAnnounce: (removed: string, built: string) =>
+      `${removed} auto cards removed. ${built}.`,
     // Undo's counterpart. Accepting Undo unmounts the receipt, so without this
     // a screen reader hears the removal announced and the reversal not at all.
-    sweptRestoredAnnounce: (restored: string, total: string) =>
-      `${restored} auto cards put back. ${total} of 99.`,
+    sweptRestoredAnnounce: (restored: string, built: string) =>
+      `${restored} auto cards put back. ${built}.`,
     sweepFailed: 'We couldn’t clear those. The deck is unchanged.',
     // Undo's refusal. The sweep already succeeded, so the deck is *not*
     // unchanged — saying so would send the player looking for cards that are
