@@ -6,7 +6,8 @@
 import { useCardDetail } from "../cards/card-detail-provider";
 
 export function FullCardTrigger({ oracleId }: { oracleId: string }) {
-  const { open } = useCardDetail();
+  const { open, pendingOracleId } = useCardDetail();
+  const pending = pendingOracleId === oracleId;
 
   return (
     <>
@@ -34,8 +35,13 @@ export function FullCardTrigger({ oracleId }: { oracleId: string }) {
           backdropFilter: "blur(4px)",
           padding: "6px 11px",
           cursor: "pointer",
+          opacity: pending ? 0.55 : undefined,
         }}
         aria-label="View card details"
+        // Never `disabled` while the fetch runs, for the same reason
+        // CardDetailTrigger is not: disabling the focused element blurs it, and
+        // the modal's focus-return would have nothing to hand focus back to.
+        aria-busy={pending}
         onClick={() => open(oracleId)}
       >
         <span style={{ color: "var(--fg)", fontSize: 12 }}>⛶</span>

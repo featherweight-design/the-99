@@ -59,6 +59,25 @@ describe("FullCardTrigger", () => {
     expect(screen.getByRole("dialog")).toHaveTextContent("Atraxa, Praetors' Voice");
   });
 
+  // Parity with CardDetailTrigger: the fetch is a round trip, and a chip that
+  // looks inert until the modal appears invites a second click.
+  it("marks the chip busy while the fetch is in flight", async () => {
+    let release: (card: BrowseCard) => void = () => {};
+    renderTrigger(vi.fn(() => new Promise<BrowseCard>((resolve) => { release = resolve; })));
+    const chip = screen.getByRole("button", { name: "View card details" });
+    expect(chip).toHaveAttribute("aria-busy", "false");
+
+    await click(chip);
+    expect(chip).toHaveAttribute("aria-busy", "true");
+
+    await act(async () => {
+      release(ATRAXA);
+    });
+    await waitFor(() => {
+      expect(chip).toHaveAttribute("aria-busy", "false");
+    });
+  });
+
   // Tapping the art band is the mobile gesture the lightbox carried, and it
   // survives the swap. It stays aria-hidden because the labeled chip is the
   // accessible control — two names for one action would double it in the
