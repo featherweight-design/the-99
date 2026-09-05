@@ -42,10 +42,14 @@ const strOrNull = (v: unknown): string | null =>
  *
  * The feed lists the same printing under different product forms — the single
  * card and a card-plus-token bundle, for instance — so an ingest that keys on
- * `scryfall_id` must pick one. Prefer a priced entry, then the lowest price,
- * then the deepest stock. On the Adorned Pouncer pair this selects the 34c
- * single over the 55c bundle, which is the answer a "what does this cost to
- * buy" feature wants.
+ * `scryfall_id` must pick one. Prefer an entry with a non-foil price, then the
+ * lowest of those, then the deepest stock. On the Adorned Pouncer pair this
+ * selects the 34c single over the 55c bundle, which is the answer a "what does
+ * this cost to buy" feature wants.
+ *
+ * Only `price_cents` decides — the foil and etched prices ride along on whichever
+ * entry wins rather than competing. They price different objects, so a cheap foil
+ * is not a reason to prefer an entry whose non-foil price is worse.
  */
 function preferred(a: PriceRow, b: PriceRow): PriceRow {
   if (a.priceCents === null && b.priceCents !== null) return b;

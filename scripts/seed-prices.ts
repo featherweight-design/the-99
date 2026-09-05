@@ -5,7 +5,8 @@ seedPrices()
   .then((r) => {
     console.log(
       `Priced ${r.upserted} printings as of ${r.asOf.toISOString()}; ` +
-      `collapsed ${r.collapsedDuplicates} surplus duplicate rows, skipped ${r.skippedOrphan} orphan.`,
+      `collapsed ${r.collapsedDuplicates} surplus duplicate rows, ` +
+      `skipped ${r.skippedOrphan} priced for printings not in our catalog.`,
     );
     process.exit(0);
   })
