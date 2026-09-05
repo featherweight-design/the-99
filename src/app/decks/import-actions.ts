@@ -20,13 +20,13 @@ import {
 const INSERT_BATCH = 500;
 
 export type ImportDeckInput = {
-  /** The decklist exactly as the player gave it — paste, file text, or fetched deck. */
+  /** The decklist exactly as the player gave it — pasted text or file text. */
   text: string;
   /**
    * Which entry point produced `text`, and therefore which cap applies. A paste is
-   * typed by hand and stays small; a file or a fetched deck can carry far more and
-   * gets the 2 MB deck-import cap. Without this the file cap would be enforced
-   * nowhere and a valid 200 KB export would be rejected as an oversized paste.
+   * typed by hand and stays small; a file can carry far more and gets the 2 MB
+   * deck-import cap. Without this the file cap would be enforced nowhere and a
+   * valid 200 KB export would be rejected as an oversized paste.
    */
   source: DeckImportSource;
   name: string;

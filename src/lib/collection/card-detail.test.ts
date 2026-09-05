@@ -3,6 +3,7 @@ import { catalogCard, type CatalogCardRow, type CatalogPrintingRow } from "./car
 
 const card = (over: Partial<CatalogCardRow> = {}): CatalogCardRow => ({
   oracleId: "o-1",
+  scryfallId: "s-default",
   name: "Arcane Signet",
   typeLine: "Artifact",
   manaCost: "{2}",
@@ -14,7 +15,10 @@ const card = (over: Partial<CatalogCardRow> = {}): CatalogCardRow => ({
   ...over,
 });
 
+// The default id is deliberately NOT the card's: most of these cases exercise the
+// fallback, which is what a card whose default printing never ingested falls to.
 const printing = (over: Partial<CatalogPrintingRow> = {}): CatalogPrintingRow => ({
+  scryfallId: "s-other",
   setCode: "c21",
   setName: "Commander 2021",
   collectorNumber: "263",
@@ -65,6 +69,17 @@ describe("catalogCard", () => {
   it("falls a printing with no art back to the oracle-level image", () => {
     const c = catalogCard(card(), [printing({ imageUri: null })]);
     expect(c.printings[0].imageUri).toBe("https://img/oracle.jpg");
+  });
+
+  // The tile that opened this modal draws the oracle-level image, so the modal has to
+  // land on the printing that image came from — not on whichever set code sorts first.
+  it("takes art and primary set from the printing the oracle image came from", () => {
+    const c = catalogCard(card(), [
+      printing({ setCode: "aaa", imageUri: "https://img/aaa.jpg" }),
+      printing({ scryfallId: "s-default", setCode: "znr", imageUri: "https://img/znr.jpg" }),
+    ]);
+    expect(c.imageUri).toBe("https://img/znr.jpg");
+    expect(c.primarySetCode).toBe("ZNR");
   });
 
   it("takes art and primary set from the first printing that has art", () => {

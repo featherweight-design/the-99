@@ -16,6 +16,8 @@ import {
 /** The `cards` columns the modal reads. */
 export type CatalogCardRow = {
   oracleId: string;
+  /** The printing `cards.imageUri` was ingested from — see `catalogCard`. */
+  scryfallId: string;
   name: string;
   typeLine: string;
   manaCost: string | null;
@@ -28,6 +30,7 @@ export type CatalogCardRow = {
 
 /** One `printings` row joined to its `sets` row. */
 export type CatalogPrintingRow = {
+  scryfallId: string;
   setCode: string;
   setName: string | null;
   collectorNumber: string;
@@ -45,23 +48,27 @@ export function catalogCard(
   card: CatalogCardRow,
   printingRows: CatalogPrintingRow[],
 ): BrowseCard {
-  const printings: BrowsePrinting[] = printingRows
+  const entries = printingRows
     .map((p) => ({
-      setCode: p.setCode.toUpperCase(),
-      setName: p.setName,
-      collectorNumber: p.collectorNumber,
-      releasedAt: p.releasedAt,
-      quantity: 0,
-      finishes: {},
-      // Same tier order as an owned printing, minus the representative tier: this row IS the
-      // exact printing, so tier 2 could only ever repeat it.
-      imageUri: resolveImageUri({
-        exactImageUri: p.imageUri,
-        representativeImageUri: null,
-        cardImageUri: card.imageUri,
-      }),
+      scryfallId: p.scryfallId,
+      printing: {
+        setCode: p.setCode.toUpperCase(),
+        setName: p.setName,
+        collectorNumber: p.collectorNumber,
+        releasedAt: p.releasedAt,
+        quantity: 0,
+        finishes: {},
+        // Same tier order as an owned printing, minus the representative tier: this row IS the
+        // exact printing, so tier 2 could only ever repeat it.
+        imageUri: resolveImageUri({
+          exactImageUri: p.imageUri,
+          representativeImageUri: null,
+          cardImageUri: card.imageUri,
+        }),
+      } satisfies BrowsePrinting,
     }))
-    .sort(comparePrintings);
+    .sort((a, b) => comparePrintings(a.printing, b.printing));
+  const printings: BrowsePrinting[] = entries.map((e) => e.printing);
 
   const result: BrowseCard = {
     oracleId: card.oracleId,
@@ -82,7 +89,16 @@ export function catalogCard(
 
   // Art and caption come from the same printing, exactly as aggregateCollection insists.
   // A card whose printings never ingested keeps the oracle-level image and an empty set code.
-  const primary = resolvedPrinting(result);
+  //
+  // For a card nobody owns there is no preference to honour, so the primary is the printing
+  // `cards.imageUri` was ingested from — `cards.scryfallId` names it exactly, and every surface
+  // that shows an unowned card off the oracle row (the Consider tile, the suggestion list) is
+  // already showing that art. Without this the primary fell out of `comparePrintings`, which
+  // sorts by set code alphabetically: the modal opened on a different printing from the tile
+  // the user had just tapped. The fallback covers the ~6% of oracle rows whose default printing
+  // is not itself in `printings`.
+  const primary =
+    entries.find((e) => e.scryfallId === card.scryfallId)?.printing ?? resolvedPrinting(result);
   if (primary) {
     result.primarySetCode = primary.setCode;
     result.imageUri = primary.imageUri;
@@ -110,6 +126,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   const [card] = await db
     .select({
       oracleId: cards.oracleId,
+      scryfallId: cards.scryfallId,
       name: cards.name,
       typeLine: cards.typeLine,
       manaCost: cards.manaCost,
@@ -125,6 +142,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
 
   const printingRows = await db
     .select({
+      scryfallId: printings.scryfallId,
       setCode: printings.setCode,
       setName: sets.name,
       collectorNumber: printings.collectorNumber,

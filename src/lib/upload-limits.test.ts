@@ -5,6 +5,7 @@ import {
   DECK_IMPORT_FILE_MAX_BYTES,
   DECK_IMPORT_FILE_MAX_LABEL,
   DECK_IMPORT_SOURCES,
+  type DeckImportSource,
   deckImportMaxBytes,
   deckImportTooLargeMessage,
   isDeckImportTooLargeMessage,
@@ -61,16 +62,24 @@ describe("upload limits", () => {
     expect(isDeckImportTooLargeMessage("card is not a legal commander")).toBe(false);
   });
 
+  it("falls back to the strictest cap for a source the type system never saw", () => {
+    // `source` arrives from a server action, so the type is the caller's claim.
+    // A missing arm would return undefined and compare a byte count against it,
+    // which is false for every size — the guard off entirely.
+    const rogue = "url" as unknown as DeckImportSource;
+    expect(deckImportMaxBytes(rogue)).toBe(PASTE_MAX_BYTES);
+    expect(deckImportTooLargeMessage(rogue)).toContain(PASTE_MAX_LABEL);
+  });
+
   it("shares one paste cap across both flows", () => {
     expect(PASTE_MAX_BYTES).toBe(100_000);
   });
 
-  it("caps a paste at 100 KB but lets a file or a fetched deck use the full 2 MB", () => {
+  it("caps a paste at 100 KB but lets a file use the full 2 MB", () => {
     // The file cap was previously enforced nowhere: every import went through the
     // paste check, so a valid 200 KB export was rejected as an oversized paste.
     expect(deckImportMaxBytes("paste")).toBe(PASTE_MAX_BYTES);
     expect(deckImportMaxBytes("file")).toBe(DECK_IMPORT_FILE_MAX_BYTES);
-    expect(deckImportMaxBytes("url")).toBe(DECK_IMPORT_FILE_MAX_BYTES);
     expect(200 * 1024).toBeGreaterThan(deckImportMaxBytes("paste"));
     expect(200 * 1024).toBeLessThan(deckImportMaxBytes("file"));
   });

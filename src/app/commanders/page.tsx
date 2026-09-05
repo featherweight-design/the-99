@@ -27,8 +27,12 @@ export default async function CommandersPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const userId = await requireUserId();
+  // `What's free` is the default: a ranking that ignores which cards are already
+  // committed to a deck recommends commanders the player cannot build without
+  // taking one apart. `?avail=all` is the opt-out, so a shared link that predates
+  // this still opens on the mode it names.
   const avail =
-    (await searchParams).avail === "free" ? ("free" as const) : ("all" as const);
+    (await searchParams).avail === "all" ? ("all" as const) : ("free" as const);
   const stats = await getCollectionStats(userId);
 
   if (stats.uniqueCards === 0) {
@@ -208,12 +212,13 @@ export default async function CommandersPage({
     availOk = false;
   }
 
-  // Only `?avail=free` pays for the second scoring run. Both reads it would
-  // otherwise make have already happened above, so they are handed over — which
-  // also makes the receipt and the free ranking describe one snapshot of the
-  // decks rather than two taken moments apart.
+  // Both rankings ship in every render, whichever mode is asked for, so the
+  // toggle is a client-side swap between two lists rather than a round trip.
+  // This costs no extra query: `rankFree` re-scores the same `items` against the
+  // collection and availability already read above, which also makes the receipt
+  // and the free ranking describe one snapshot of the decks rather than two.
   let freeItems: CommanderListItem[] | null = null;
-  if (avail === "free" && availOk && availability) {
+  if (availOk && availability) {
     const free = await rankFree(userId, items, { collection, availability });
     if (free.ok) freeItems = free.items;
     else availOk = false;
@@ -228,9 +233,8 @@ export default async function CommandersPage({
 
   return (
     <section className="flex flex-col min-h-screen">
-      {/* Page header (mobile + desktop) */}
-      <PageHeader uniqueCardsRead={uniqueCardsRead} avail={renderedAvail} />
-
+      {/* The header renders inside the view: its subtitle names the mode, and the
+          mode is now the client's to change. */}
       <CommandersView
         results={items}
         degraded={degraded}

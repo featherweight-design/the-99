@@ -21,19 +21,39 @@ export const PASTE_MAX_LABEL = "100 KB";
 
 /**
  * Where a decklist came from, which is the only thing that decides its cap. The
- * array is the source of truth so a fourth arrival route cannot be added without
+ * array is the source of truth so a third arrival route cannot be added without
  * `isDeckImportTooLargeMessage` learning about it.
  */
-export const DECK_IMPORT_SOURCES = ["paste", "file", "url"] as const;
+export const DECK_IMPORT_SOURCES = ["paste", "file"] as const;
 export type DeckImportSource = (typeof DECK_IMPORT_SOURCES)[number];
 
 /**
  * The cap for a decklist, chosen by how it arrived. A paste is typed by hand and
- * stays small; a file or a fetched deck can carry far more. Pure and exported so
+ * stays small; a file can carry far more. Pure and exported so
  * the choice is testable — it lives in a server action otherwise, where it is not.
  */
 export function deckImportMaxBytes(source: DeckImportSource): number {
-  return source === "paste" ? PASTE_MAX_BYTES : DECK_IMPORT_FILE_MAX_BYTES;
+  // Exhaustive rather than `paste ? … : …`: the fallback arm would hand a third
+  // arrival route the file cap silently, which is the drift this module exists
+  // to prevent. Written this way, adding one is a type error until it is priced.
+  switch (source) {
+    case "paste":
+      return PASTE_MAX_BYTES;
+    case "file":
+      return DECK_IMPORT_FILE_MAX_BYTES;
+    default:
+      // `source` reaches `importDeck` from a server action, so the type is a
+      // claim the caller makes and not one the runtime checks. An unrecognised
+      // value gets the strictest cap: returning nothing would compare a byte
+      // count against `undefined` and wave the whole guard through.
+      assertNever(source);
+      return PASTE_MAX_BYTES;
+  }
+}
+
+/** Compile-time proof that every source is handled, with no runtime effect. */
+function assertNever(source: never): void {
+  void source;
 }
 
 /**
@@ -44,9 +64,17 @@ export function deckImportMaxBytes(source: DeckImportSource): number {
  * string is what makes that recognition safe instead of a copy of it going stale.
  */
 export function deckImportTooLargeMessage(source: DeckImportSource): string {
-  return source === "paste"
-    ? `Paste too large (max ${PASTE_MAX_LABEL})`
-    : `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`;
+  switch (source) {
+    case "paste":
+      return `Paste too large (max ${PASTE_MAX_LABEL})`;
+    case "file":
+      return `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`;
+    default:
+      // Pairs with the cap above: an unrecognised source is capped as a paste,
+      // so it must be told so too, or the message names a limit it never hit.
+      assertNever(source);
+      return `Paste too large (max ${PASTE_MAX_LABEL})`;
+  }
 }
 
 /** True for a message this module authored, and therefore safe to show a player. */

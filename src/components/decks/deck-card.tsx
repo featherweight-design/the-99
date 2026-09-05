@@ -76,7 +76,13 @@ export function DeckCard({ deck }: DeckCardProps) {
         aria-labelledby={nameId}
       />
 
-      {/* ── Top row: art thumb + name/pips/pill ── */}
+      {/* ── Top row: art thumb + name/pips/pill + overflow ── */}
+      {/* The overflow lives here rather than in the action row below, because
+          that row is desktop-only — the whole card is the tap target on phone,
+          so "Open builder" would be a second way to do the same thing. Rename
+          and delete have no such duplicate, and were unreachable on phone for
+          as long as they shared that row. One instance at one place beats a
+          responsive pair that can drift. */}
       <div className="flex gap-[12px] md:gap-[14px] items-start">
         {/* §Deck card — art thumb: 42×59px mobile / 52×73px desktop, br 6/8px, gradient bg, inset shadow */}
         {/* Mobile size: w-[42px] h-[59px]. Desktop: md:w-[52px] md:h-[73px]. */}
@@ -136,6 +142,9 @@ export function DeckCard({ deck }: DeckCardProps) {
             </span>
           </div>
         </div>
+
+        {/* §Deck card — "⋯" overflow button — client component, relative z-10 */}
+        <DeckCardOverflow deckId={deck.id} deckName={deck.name} />
       </div>
 
       {/* ── Progress section ── */}
@@ -213,9 +222,6 @@ export function DeckCard({ deck }: DeckCardProps) {
         >
           Open builder
         </GhostButton>
-
-        {/* §Deck card — "⋯" overflow button — client component, relative z-10 */}
-        <DeckCardOverflow deckId={deck.id} deckName={deck.name} />
       </div>
     </article>
   );
