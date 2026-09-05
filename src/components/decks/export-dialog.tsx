@@ -305,7 +305,12 @@ function DialogContent({
                   margin: "0 0 10px",
                 }}
               >
-                {overCopy.exportNote(String(built), String(built - 99))}
+                {/* The size figure is the whole list, commander included, so it
+                    agrees with the preview header a few lines down rather than
+                    contradicting it. The overage is still measured off the body:
+                    a Commander deck holds a hundred cards, ninety-nine and its
+                    commander, so 105 really is five over. */}
+                {overCopy.exportNote(String(totalCards), String(built - 99))}
               </p>
             )}
             <pre

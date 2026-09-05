@@ -23,9 +23,12 @@ function mount(bodyCards: number) {
 }
 
 describe("ExportDialog over 99", () => {
-  it("says how far over the list is", () => {
+  // 104 in the body plus the commander is a list of 105, which is the figure
+  // the preview header prints — the note has to agree with it. The overage is
+  // still five, because a Commander deck holds a hundred.
+  it("says how far over the list is, sized to the whole list", () => {
     mount(104);
-    expect(screen.getAllByText(overCopy.exportNote("104", "5"))).not.toHaveLength(0);
+    expect(screen.getAllByText(overCopy.exportNote("105", "5"))).not.toHaveLength(0);
   });
 
   it("says nothing at 99", () => {

@@ -404,10 +404,13 @@ export const overCopy = {
 
   // Stating a fact where the list leaves the app. Not a warning, not a blocker
   // — the player is very likely exporting it in order to cut somewhere else.
-  exportNote: (built: string, n: string) =>
+  // `total` is the whole list, commander included — the same figure the preview
+  // header prints — while `n` is measured off the ninety-nine. Both are true of
+  // the same list: a Commander deck holds a hundred cards.
+  exportNote: (total: string, n: string) =>
     n === "1"
-      ? `This list is ${built} cards. One over what a Commander deck can hold.`
-      : `This list is ${built} cards. ${n} over what a Commander deck can hold.`,
+      ? `This list is ${total} cards. One over what a Commander deck can hold.`
+      : `This list is ${total} cards. ${n} over what a Commander deck can hold.`,
 
   aria: {
     // Replaces `${built} of 99 cards built` on the progressbar when over.
