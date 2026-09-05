@@ -21,7 +21,13 @@ const TIMEOUT_MS = 5 * 60 * 1000;
  */
 export async function fetchManapoolSingles(): Promise<unknown> {
   const res = await fetch(MANAPOOL_SINGLES_URL, {
-    headers: { accept: "application/json" },
+    headers: {
+      accept: "application/json",
+      // Weekly ~51MB pulls should be attributable. An identified caller is one
+      // ManaPool can contact about a change in cadence or shape; an anonymous
+      // one is only ever something to rate-limit.
+      "user-agent": "the-99 (+https://the-99.dev)",
+    },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
   if (!res.ok) {

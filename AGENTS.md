@@ -22,7 +22,18 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - Pre-push gate, every push: `pnpm typecheck && pnpm lint && pnpm test` plus the stub-DB build, then `git fetch origin && git rebase origin/main`.
 - Database migrations apply automatically during each Vercel **production** build (`vercel-build` → `scripts/vercel-migrate.ts`). Every Vercel project therefore needs `MIGRATE_DATABASE_URL` set — non-sensitive, Production scope only, same value as that project's `DATABASE_URL` — or its production builds fail by design. Preview deployments skip migrations entirely.
 - `GET /api/health` (public, unauthenticated) reports migration state — 200 when the schema matches the build or is ahead of it, 503 when migrations are pending or the ledger is unreadable. Use it to confirm a deploy instead of loading a page that depends on the schema.
-- `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. The `Scryfall contract check` workflow runs it daily, because the catalog refresh is weekly and an upstream shape change would otherwise go unnoticed until it failed.
+- `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. The `Upstream contract checks` workflow runs it daily, because the catalog refresh is weekly and an upstream shape change would otherwise go unnoticed until it failed.
+- `pnpm check:manapool` validates ManaPool's price-feed contract (payload shape, a real parse, and
+  the `scryfall_id` duplication ratio) without touching a database, and runs daily in that same
+  workflow. `/prices/singles` is a documented endpoint of the Mana Pool Public API, but those docs
+  warn v1 "is subject to change without notice" and the ingest is weekly, so a silent shape change
+  would otherwise sit unnoticed for days.
+- `pnpm db:seed:prices` refreshes `printing_prices` from ManaPool. The `Price refresh` workflow runs
+  it 09:00 UTC every Monday; it needs the `PRICE_REFRESH_ENABLED` repository variable set to `'true'`
+  to fire on schedule. The feed omits out-of-stock cards rather than listing them at zero, so a
+  printing absent from `printing_prices` is not currently stocked, and a row with a null
+  `price_cents` but a set `price_cents_foil` is stocked in foil only — neither is "free" or
+  "unknown".
 - `pnpm db:build:index` rebuilds `commander_support` / `commander_support_cards` from EDHREC.
   The `Commander index` workflow runs it monthly on the 3rd — the catalog refreshes every
   Monday, so by the 3rd a set released in the previous week has already been ingested and

@@ -1,8 +1,12 @@
-name: Scryfall contract check
+name: Upstream contract checks
 
 # The catalog refresh only runs weekly, so an upstream shape change would otherwise surface as
 # a failed refresh up to 7 days later (#103). This canary hits the bulk-data index and the first
 # line of each bulk download daily. No database, no secrets.
+#
+# The ManaPool check rides along rather than taking a workflow of its own: same daily cadence,
+# same "an ingest that runs weekly needs a faster alarm than the ingest itself" reasoning, and
+# neither check needs a secret.
 on:
   schedule:
     # 07:00 UTC daily — two hours ahead of the weekly refresh, so a break on a Monday is known
@@ -26,3 +30,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:scryfall
+      # always(), so a Scryfall failure does not hide a simultaneous ManaPool one.
+      - name: Check the ManaPool contract
+        if: always()
+        run: pnpm check:manapool

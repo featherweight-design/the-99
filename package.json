@@ -20,7 +20,9 @@
     "db:seed:sets": "tsx scripts/seed-sets.ts",
     "db:seed:printings": "tsx scripts/seed-printings.ts",
     "db:seed:collection": "tsx scripts/seed-collection.ts",
+    "db:seed:prices": "tsx scripts/seed-prices.ts",
     "check:scryfall": "tsx scripts/check-scryfall-contract.ts",
+    "check:manapool": "tsx scripts/check-manapool-contract.ts",
     "db:build:index": "tsx scripts/build-commander-index.ts"
   },
   "dependencies": {

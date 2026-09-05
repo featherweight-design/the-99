@@ -1,0 +1,59 @@
+name: Price refresh
+
+# Weekly, not monthly: price is the one catalog field that genuinely moves, and
+# a monthly cadence would make the number wrong more often than right. The body
+# is ~51MB, which is past a Vercel function's practical reach, so this runs on a
+# runner like the other ingests.
+on:
+  schedule:
+    # 09:00 UTC every Monday.
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which database to price
+        type: choice
+        options: [staging, production]
+        default: staging
+
+concurrency:
+  group: price-refresh-${{ github.event.inputs.target || 'production' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    # Set the PRICE_REFRESH_ENABLED repository variable to 'true' or the
+    # schedule never fires; a manual dispatch always runs.
+    if: vars.PRICE_REFRESH_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: catalog-${{ github.event.inputs.target || 'production' }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      # The feed buffers whole (see fetchManapoolSingles) — ~51MB of JSON text
+      # expands well past Node's default headroom once parsed into objects.
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Refresh prices
+        run: |
+          {
+            echo "## Price refresh"
+            echo ""
+            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed:prices | tee -a "$GITHUB_STEP_SUMMARY"
