@@ -20,7 +20,9 @@ export function FullCardTrigger({ oracleId }: { oracleId: string }) {
         onClick={() => open(oracleId)}
       />
 
-      {/* ⛶ affordance chip — §"⛶ Full card" affordance chip. The label reads
+      {/* ⛶ affordance chip. The handoff heading is still §"⛶ Full card"
+          affordance chip — that is the design doc's own title, kept here so the
+          section is still findable, not this control's label. The label reads
           "Card details" rather than "Full card": the modal leads with
           printings and rulings and draws the art at 180px, so the old label
           would be promising a picture this surface no longer opens. */}
