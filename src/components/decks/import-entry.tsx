@@ -1,10 +1,10 @@
 "use client";
 
 // Deck import entry surface — states 1, 3, 8, 9 and 10 of the deck-import
-// handoff. The Moxfield link mode (states 2 and 4–7) is deliberately absent:
-// the fetch spike (#191) found every Moxfield host answers 403 behind bot
-// protection, so a link chip would open a door onto a state no runtime can
-// reach. MODES below is the seam — a third entry is purely additive.
+// handoff. The link mode (states 2 and 4–7) is absent for good: the fetch spike
+// (#191) found the host it was drawn against answers 403 behind bot protection,
+// and a decklist arrives here by paste or by file instead (#282). MODES below is
+// the seam if a third door ever opens.
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -230,7 +230,7 @@ export function ImportEntry() {
         {copy.entry.heading}
       </h2>
       <p className="mt-[3px] md:mt-[4px] font-mono text-[10px] text-[color:var(--fg-faint)] md:font-sans md:text-[14px] md:text-[color:var(--fg-muted)]">
-        <span className="md:hidden">{copy.entry.subMobileNoLink}</span>
+        <span className="md:hidden">{copy.entry.subMobile}</span>
         <span className="hidden md:inline">{copy.entry.sub}</span>
       </p>
 

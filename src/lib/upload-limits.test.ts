@@ -65,12 +65,11 @@ describe("upload limits", () => {
     expect(PASTE_MAX_BYTES).toBe(100_000);
   });
 
-  it("caps a paste at 100 KB but lets a file or a fetched deck use the full 2 MB", () => {
+  it("caps a paste at 100 KB but lets a file use the full 2 MB", () => {
     // The file cap was previously enforced nowhere: every import went through the
     // paste check, so a valid 200 KB export was rejected as an oversized paste.
     expect(deckImportMaxBytes("paste")).toBe(PASTE_MAX_BYTES);
     expect(deckImportMaxBytes("file")).toBe(DECK_IMPORT_FILE_MAX_BYTES);
-    expect(deckImportMaxBytes("url")).toBe(DECK_IMPORT_FILE_MAX_BYTES);
     expect(200 * 1024).toBeGreaterThan(deckImportMaxBytes("paste"));
     expect(200 * 1024).toBeLessThan(deckImportMaxBytes("file"));
   });

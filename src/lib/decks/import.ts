@@ -68,8 +68,8 @@ export type DeckImport = {
 export type DeckImportInput = { catalog: ImportCatalogCard[]; indexes?: MatchIndexes } & (
   // Paste and text-file modes, where section markers and *CMDR* are visible.
   | { text: string; rows?: never }
-  // CSV and (from PR 3) Moxfield modes, already normalised to the parser's row
-  // shape. A CSV carries no section markers, so none are looked for.
+  // CSV mode, already normalised to the parser's row shape. A CSV carries no
+  // section markers, so none are looked for.
   | { rows: CollectionRow[]; text?: never }
 );
 

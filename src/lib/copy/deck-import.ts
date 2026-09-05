@@ -1,4 +1,4 @@
-// src/lib/copy/deck-import.ts — deck import (Moxfield) block (#42).
+// src/lib/copy/deck-import.ts — deck import block (#42).
 // Shape follows src/lib/copy/collection.ts and src/lib/copy/shell.ts: flat const
 // object, functions for interpolated strings, no JSX, no number formatting
 // (callers pass pre-formatted, thousands-separated strings).
@@ -10,7 +10,8 @@
 //   - §Shape of the flow    → no review gate; nothing here confirms an import
 //   - §Reconciliation model → unresolved rows never read as errors or as "to buy"
 //   - §Commander            → a declared commander is used SILENTLY; no strings for it
-//   - §Entry failures       → seven distinct blocks; retry copy appears once, in `unreachable`
+//   - §Entry failures       → the blocks a paste or a file can reach; the four the spec
+//                             wrote for URL fetching are gone with the mode itself (#282)
 //   - §Locked decisions     → sideboard/maybeboard, dedupe and re-import are silent;
 //                             quantity > 1 on a non-basic is the only parse note
 
@@ -21,27 +22,19 @@ export const deckImportCopy = {
   entry: {
     headingMobile: "Bring a deck over",
     heading: "Bring a deck over",
-    subMobile: "Paste it, drop a file, or hand us a link.",
     /**
-     * The handoff's `subMobile` names three doors; the link door does not exist
-     * yet (Moxfield answers 403 behind bot protection — spike #191). Offering it
-     * in the one line of orienting copy a phone gets would advertise a mode the
-     * surface cannot open. Rendered instead of `subMobile` until the link mode
-     * ships, then deleted. Design asked to ratify the wording.
+     * The handoff's `subMobile` names three doors, the third being a deck link.
+     * That mode does not exist and is not being built (#282) — a decklist arrives
+     * here by paste or by file — so the phone's one line of orienting copy names
+     * the two doors that open. Design asked to ratify the wording.
      */
-    subMobileNoLink: "Paste it or drop a file.",
-    sub: "You built it somewhere else. Point us at it and we'll set it up here.",
+    subMobile: "Paste it or drop a file.",
+    sub: "You built it somewhere else. Paste it in and we'll set it up here.",
 
-    modeUrl: "Moxfield link",
     modePaste: "Paste a list",
     modePasteShort: "Paste",
     modeFile: "Upload a file",
     modeFileShort: "File",
-
-    urlLabel: "Moxfield deck link",
-    urlPlaceholder: "moxfield.com/decks/…",
-    urlHintMobile: "Public or unlisted decks only",
-    urlHint: "Public or unlisted decks only · we don't need your Moxfield account",
 
     pasteLabel: "Your list",
     pastePlaceholder: "1 Sol Ring\n1 Cultivate\n1 Rhystic Study",
@@ -72,16 +65,10 @@ export const deckImportCopy = {
       "The deck still gets made. We'll flag the line inside it and you can sort it out there.",
   },
 
-  // ---- Waiting states ------------------------------------------------------
-  // Two of them, because one is a third-party round-trip and one is local.
-  // The fetch gets a Cancel and no percentage; the parse gets a percentage and
-  // no Cancel.
-  fetching: {
-    heading: "Asking Moxfield for it",
-    body: "Their servers, their pace. Usually a second or two.",
-    cancel: "Cancel",
-    live: "Fetching the deck from Moxfield.",
-  },
+  // ---- Waiting state -------------------------------------------------------
+  // One of them. The spec drew a second for the third-party round trip a link
+  // mode would have made; there is no such round trip, so reading is all there
+  // is to wait on.
   parsing: {
     heading: "Reading the list",
     body: (total: string) => `Putting a card to each of the ${total} lines.`,
@@ -92,45 +79,11 @@ export const deckImportCopy = {
   },
 
   // ---- Entry failures ------------------------------------------------------
-  // Each block is {heading, body, bodyMobile, action}. `retry: true` appears on
-  // exactly one — `unreachable` — because it is the only case where trying the
-  // same thing again is the advice. Do not add a Try again button to the others.
+  // Each block is {heading, body, bodyMobile, action}. Nothing here carries a
+  // Try again button: every remaining failure is one where trying the same thing
+  // again cannot succeed. The four the spec wrote for a link fetch — bad URL,
+  // private, 404, upstream down — went with the mode.
   failures: {
-    notMoxfield: {
-      heading: "That's not a Moxfield deck link",
-      bodyMobile:
-        "We only read Moxfield links right now. If your list lives somewhere else, paste it in instead.",
-      body:
-        "We only read Moxfield deck links right now — they look like moxfield.com/decks/AbC123. If your list lives somewhere else, paste it in instead and we’ll read it the same way.",
-      action: "Paste the list instead",
-      retry: false,
-    },
-    private: {
-      heading: "That deck is set to private",
-      bodyMobile:
-        "Moxfield won't hand it over. Make it public or unlisted there, then come back.",
-      body:
-        "Moxfield won’t hand it over unless the deck is public or unlisted. Flip it over there and come back — or paste the list straight in and skip the round trip.",
-      action: "Paste the list instead",
-      retry: false,
-    },
-    notFound: {
-      heading: "There's no deck at that link",
-      bodyMobile: "Moxfield says nothing is there. It may be deleted, or a character may be off.",
-      body:
-        "Moxfield says there’s nothing there. Either the deck was deleted, or a character in the link is off — they’re case-sensitive, which catches people out.",
-      action: "Edit the link",
-      retry: false,
-    },
-    unreachable: {
-      heading: "Moxfield isn't answering",
-      bodyMobile: "Could be them, could be us knocking too often. Give it a minute.",
-      body:
-        "Could be them, could be us knocking too often. Give it a minute and try again — nothing is lost, the link is still here.",
-      retryAction: "Try again",
-      action: "Paste the list instead",
-      retry: true,
-    },
     fileRejected: {
       heading: "We can't open that file",
       // Both numbers are interpolated so the message names the actual file.
@@ -165,7 +118,7 @@ export const deckImportCopy = {
       heading: "That deck is empty",
       bodyMobile: "It read fine — there just aren't any cards in it yet.",
       body:
-        "It read fine — there just aren’t any cards in it yet. Nothing to bring over. Add some in Moxfield and we’ll be here.",
+        "It read fine — there just aren’t any cards in it yet. Nothing to bring over. Add some where you built it and we’ll be here.",
       action: "Try a different deck",
       retry: false,
     },
@@ -225,7 +178,7 @@ export const deckImportCopy = {
       `${identity} · line ${line} · not in your collection`,
     selectedLabel: "Selected",
     nameLabel: "Deck name",
-    nameLabelFromSource: "Deck name — from Moxfield",
+    nameLabelFromSource: "Deck name — from your list",
     submit: "Make the deck →",
     footnote:
       "Only legendary creatures from this import are listed. If the one you want isn't here, it didn't come over — make the deck and add it from the builder.",
@@ -245,9 +198,9 @@ export const deckImportCopy = {
   // One dismissible strip. There is no "import complete" screen — the deck is
   // the confirmation.
   arrival: {
-    cleanMobile: (n: string) => `All ${n} came over · from Moxfield, just now`,
+    cleanMobile: (n: string) => `All ${n} came over · from your list, just now`,
     clean: (n: string) =>
-      `All ${n} lines came over clean. Imported from Moxfield a moment ago — nothing needs your attention.`,
+      `All ${n} lines came over clean. Imported from your list a moment ago — nothing needs your attention.`,
     dismiss: "Dismiss",
   },
 

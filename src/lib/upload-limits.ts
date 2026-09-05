@@ -21,15 +21,15 @@ export const PASTE_MAX_LABEL = "100 KB";
 
 /**
  * Where a decklist came from, which is the only thing that decides its cap. The
- * array is the source of truth so a fourth arrival route cannot be added without
+ * array is the source of truth so a third arrival route cannot be added without
  * `isDeckImportTooLargeMessage` learning about it.
  */
-export const DECK_IMPORT_SOURCES = ["paste", "file", "url"] as const;
+export const DECK_IMPORT_SOURCES = ["paste", "file"] as const;
 export type DeckImportSource = (typeof DECK_IMPORT_SOURCES)[number];
 
 /**
  * The cap for a decklist, chosen by how it arrived. A paste is typed by hand and
- * stays small; a file or a fetched deck can carry far more. Pure and exported so
+ * stays small; a file can carry far more. Pure and exported so
  * the choice is testable — it lives in a server action otherwise, where it is not.
  */
 export function deckImportMaxBytes(source: DeckImportSource): number {
