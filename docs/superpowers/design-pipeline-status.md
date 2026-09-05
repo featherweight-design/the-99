@@ -101,7 +101,7 @@ _Currently empty._
 
 ## 🕰️ Backlog (design cycle not started)
 
-One ranked queue. **#130 + #131 left this queue on 2026-09-01** — promoted to rank 1 on 2026-08-29 when the recommendation-engine intake established #130 as a *precondition* for #213 and #214 rather than a peer (both terminate in "start a deck", and an empty deck lands them in exactly the disappointment #130 describes), workshopped the same week, and shipped on 2026-09-02 (PRs #249, #263) — it now sits in ✅ Shipped. #132 closed as already-shipped. Ranks 1–8 are v1 polish follow-ups against already-shipped surfaces; ranks 9–15 are post-v1 features ordered by the roadmap tracker (#44). **#220, #221 and #222 were written into the ranked rows on 2026-09-02.** The 2026-08-30 intake call below placed them "at the bottom" and assigned ranks 12–14, but the rows themselves were never added, so those numbers were left describing an older, longer list and collided with #151's. They sat at 13–15 until **#220 left this queue on 2026-09-05** — workshopped that day and now in 📐 above — leaving #221 and #222 at 13–14. Five former ranks left this queue on 2026-08-08 — #183, #177, #179, #185 and #184 were answered together by the Add panel addendum, which completed on 2026-08-09 and now sits in ✅ Shipped with #176. The per-surface brand + richness refresh tickets and #35 shipped ahead of everything here.
+One ranked queue. **#130 + #131 left this queue on 2026-09-01** — promoted to rank 1 on 2026-08-29 when the recommendation-engine intake established #130 as a *precondition* for #213 and #214 rather than a peer (both terminate in "start a deck", and an empty deck lands them in exactly the disappointment #130 describes), workshopped the same week, and shipped on 2026-09-02 (PRs #249, #263) — it now sits in ✅ Shipped. #132 closed as already-shipped. Ranks 1–8 are v1 polish follow-ups against already-shipped surfaces; ranks 9–15 are post-v1 features ordered by the roadmap tracker (#44). **#220, #221 and #222 were written into the ranked rows on 2026-09-02.** The 2026-08-30 intake call below placed them "at the bottom" and assigned ranks 12–14, but the rows themselves were never added, so those numbers were left describing an older, longer list and collided with #151's. **#220 then left this queue on 2026-09-05** — workshopped that day, now in 📐 above — and #221 and #222 moved up behind it. The rows below carry the live ranks; prose and the intake table do not. Five former ranks left this queue on 2026-08-08 — #183, #177, #179, #185 and #184 were answered together by the Add panel addendum, which completed on 2026-08-09 and now sits in ✅ Shipped with #176. The per-surface brand + richness refresh tickets and #35 shipped ahead of everything here.
 
 This list previously ran as two — a "Backlog" and a "Ready for design" — but the legend gave them the same definition (`type: design`, not yet workshopped), so nothing could be sorted between them by rule. The split was really a priority band, which the Rank column now carries.
 
@@ -130,7 +130,9 @@ The 2026-08-29 intake filed five `type: feature` tickets, four of which ship UI 
 
 **Hugh's call (2026-08-30): companion `type: design` tickets, entering the ranked backlog at the bottom.** The alternative — widening the legend to admit `type: feature` rows — was declined because it makes 🕰️ mean two different things at once. Three tickets cover the four features:
 
-| Feature ticket | Design ticket | Rank |
+This table records the mapping as filed. **The rank column is historical — the ranked lists above are authoritative** and these numbers are not maintained as items move between states.
+
+| Feature ticket | Design ticket | Rank as filed |
 |---|---|---|
 | **#213** Recommend commanders I don't own but have the 99 for | **#220** | 13 |
 | **#214** Recommend a deck I haven't tried — novelty engine | **#220** (same cycle) | 13 |
@@ -140,7 +142,7 @@ The 2026-08-29 intake filed five `type: feature` tickets, four of which ship UI 
 
 #216 and #217 ship no UI and are explicitly future work, so they need no design row.
 
-**Not blocked meanwhile.** The shared foundation these sit on is entirely backend/data, and per `AGENTS.md` backend work proceeds without a handoff, so it was built while these rows waited. **It merged as PR #244 on 2026-09-02** — the EDHREC parser widening, the commander support index, the commander engine classifier and the land colour-production check — so ranks 13–15 are unblocked. The plan's fifth component, the ManaPool price ingest, was not in that merge and is still open.
+**Not blocked meanwhile.** The shared foundation these sit on is entirely backend/data, and per `AGENTS.md` backend work proceeds without a handoff, so it was built while these rows waited. **It merged as PR #244 on 2026-09-02** — the EDHREC parser widening, the commander support index, the commander engine classifier and the land colour-production check — so **#220, #221 and #222 are unblocked**. The plan's fifth component, the ManaPool price ingest, was not in that merge and is still open.
 
 ---
 
