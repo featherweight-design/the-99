@@ -128,7 +128,8 @@ phrases the app has to guess are opposites.
 every time Design renames or adds a box, and the write path validates against the constant anyway. Adding an
 axis is a code change; relabelling one is a copy change.
 
-Migration is whatever `pnpm db:generate` emits — next in sequence after `0013_warm_quasimodo.sql`.
+Migration is whatever `pnpm db:generate` emits — next in sequence at whatever `drizzle/` is at when the work
+starts. Do not hardcode a number in the plan; it moves.
 
 ---
 
@@ -139,16 +140,25 @@ Two server actions in `src/app/decks/actions.ts`, both returning `DeckMutationRe
 
 ```
 logGame(deckId, { result, podSize, playedAt?, worked: string[], hurt: string[] })
-deleteGame(gameId)
+deleteGame(deckId, gameId)
 ```
+
+`deleteGame` takes `deckId` alongside the game ID so both actions authorise through the same
+`requireDeck(deckId, userId)` call and revalidate the same way. It then loads the game row and confirms it
+belongs to that deck before deleting — the deck check alone would let a caller pass their own deck's ID with
+someone else's game ID.
 
 Both follow the shape `addCardToDeck` established (`actions.ts:422-480`):
 
 1. `const userId = await requireUserId()`
 2. `await requireDeck(deckId, userId)` — ownership
 3. validate the input
-4. transaction: insert the game row, then its axis rows
-5. `revalidatePath("/decks/" + deckId)`
+4. transaction: insert the game row, then its axis rows (`deleteGame`: delete the row, axes cascade)
+5. `for (const path of deckSurfaces(deckId)) revalidatePath(path)`
+
+Step 5 uses `deckSurfaces()` from `src/lib/decks/revalidate.ts` rather than a hand-written path. It returns
+`["/decks/<id>", "/decks", "/"]`, and every deck mutation in `actions.ts` and `import-actions.ts` already
+goes through it — a single hardcoded `/decks/<id>` would leave the deck list and home page stale.
 
 Validation, every failure **returned** as `{ ok: false, message }` from `REJECTION_MESSAGES` and never
 thrown — thrown errors are for database failures, per the existing convention:
@@ -167,9 +177,6 @@ logs are both simply correct. Locking here would be copied from a case that is n
 **No edit action.** Delete-and-relog covers a mislogged result, and an update path would have to reconcile
 an existing set of axis rows against a new one for no gain at this scale. If it chafes in use it is a small
 addition later.
-
-`deleteGame` takes a game ID, loads the row, and checks `userId` against the caller before deleting; the
-axis rows go with it by cascade.
 
 ---
 
