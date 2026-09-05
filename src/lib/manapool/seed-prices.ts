@@ -71,23 +71,31 @@ export async function seedPrices(): Promise<SeedPricesResult> {
 
   const { rows, skippedOrphan } = filterKnownPrintings(feed.rows, known);
 
+  // One transaction across every batch. The staleness rule schema.ts documents
+  // — a row is live when its `as_of` matches the newest in the table — only
+  // holds if a run is all-or-nothing. A crash halfway through a loose loop
+  // leaves half the table on the new `as_of` and half on the old, which makes
+  // every surviving row read as sold out. Batching stays: it is about statement
+  // size, not durability, and 100k rows in one insert is not a statement to send.
   let upserted = 0;
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    await db.insert(printingPrices).values(rows.slice(i, i + BATCH_SIZE))
-      .onConflictDoUpdate({
-        target: printingPrices.scryfallId,
-        set: {
-          priceCents: sql`excluded.price_cents`,
-          priceCentsNm: sql`excluded.price_cents_nm`,
-          priceCentsFoil: sql`excluded.price_cents_foil`,
-          priceCentsEtched: sql`excluded.price_cents_etched`,
-          availableQuantity: sql`excluded.available_quantity`,
-          buyUrl: sql`excluded.buy_url`,
-          asOf: sql`excluded.as_of`,
-        },
-      });
-    upserted += Math.min(BATCH_SIZE, rows.length - i);
-  }
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      await tx.insert(printingPrices).values(rows.slice(i, i + BATCH_SIZE))
+        .onConflictDoUpdate({
+          target: printingPrices.scryfallId,
+          set: {
+            priceCents: sql`excluded.price_cents`,
+            priceCentsNm: sql`excluded.price_cents_nm`,
+            priceCentsFoil: sql`excluded.price_cents_foil`,
+            priceCentsEtched: sql`excluded.price_cents_etched`,
+            availableQuantity: sql`excluded.available_quantity`,
+            buyUrl: sql`excluded.buy_url`,
+            asOf: sql`excluded.as_of`,
+          },
+        });
+      upserted += Math.min(BATCH_SIZE, rows.length - i);
+    }
+  });
 
   return {
     upserted, skippedOrphan,
