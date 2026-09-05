@@ -140,6 +140,14 @@ describe("theme contract", () => {
       expect(contrast(hex("avail-hard-fg"), hex("surface"))).toBeGreaterThanOrEqual(7);
     });
 
+    // --b shipped near-black, which cleared the ΔE gates below on lightness
+    // alone while its --bg glyph was invisible against it. The floor is stated
+    // for --b only: the other four pips are lighter than the canvas by design
+    // and sit between 3.4 and 4.5, so a blanket 4.5 would fail them.
+    it("carries a legible --bg glyph on the black pip", () => {
+      expect(contrast(hex("bg"), hex("b"))).toBeGreaterThanOrEqual(4.5);
+    });
+
     it("separates every pip and semantic from the accent by 0.10 delta-E", () => {
       for (const key of [...PIPS, ...SEMANTICS]) {
         expect(deltaEOk(hex(key), hex("accent"))).toBeGreaterThanOrEqual(0.1);
