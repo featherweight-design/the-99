@@ -6,6 +6,10 @@ import { parseManapoolPayload } from "./parse";
 // an observed payload is fine; inventing a field shape we have not seen upstream
 // is not — a test that passes against a fabricated shape proves nothing.
 
+// A real uuid, because the parser now rejects ids that are not one: a made-up
+// id like "aaa" would make these tests pass for the wrong reason.
+const ID = "71dc8556-a658-40e1-8a93-6a62af208a28";
+
 describe("parseManapoolPayload", () => {
   it("reads as_of from the payload, not the wall clock", () => {
     const feed = parseManapoolPayload(fixture);
@@ -32,8 +36,8 @@ describe("parseManapoolPayload", () => {
     const feed = parseManapoolPayload({
       meta: { as_of: "2026-08-29T15:32:41.270Z" },
       data: [
-        { scryfall_id: "aaa", price_cents: null, available_quantity: 99, url: "u1" },
-        { scryfall_id: "aaa", price_cents: 500, available_quantity: 1, url: "u2" },
+        { scryfall_id: ID, price_cents: null, available_quantity: 99, url: "u1" },
+        { scryfall_id: ID, price_cents: 500, available_quantity: 1, url: "u2" },
       ],
     });
     expect(feed.rows[0].priceCents).toBe(500);
@@ -43,8 +47,8 @@ describe("parseManapoolPayload", () => {
     const feed = parseManapoolPayload({
       meta: { as_of: "2026-08-29T15:32:41.270Z" },
       data: [
-        { scryfall_id: "aaa", price_cents: 100, available_quantity: 3, url: "u1" },
-        { scryfall_id: "aaa", price_cents: 100, available_quantity: 9, url: "u2" },
+        { scryfall_id: ID, price_cents: 100, available_quantity: 3, url: "u1" },
+        { scryfall_id: ID, price_cents: 100, available_quantity: 9, url: "u2" },
       ],
     });
     expect(feed.rows[0].availableQuantity).toBe(9);
@@ -80,14 +84,25 @@ describe("parseManapoolPayload", () => {
     // actually moved. Refusing the payload puts the failure where the cause is.
     const feed = parseManapoolPayload({
       meta: { as_of: "29/08/2026" },
-      data: [{ scryfall_id: "aaa", price_cents: 100, available_quantity: 1 }],
+      data: [{ scryfall_id: ID, price_cents: 100, available_quantity: 1 }],
     });
     expect(feed.rows).toEqual([]);
   });
 
   it("returns an empty feed when as_of is absent", () => {
     const feed = parseManapoolPayload({
-      data: [{ scryfall_id: "aaa", price_cents: 100, available_quantity: 1 }],
+      data: [{ scryfall_id: ID, price_cents: 100, available_quantity: 1 }],
+    });
+    expect(feed.rows).toEqual([]);
+  });
+
+  it("skips an entry whose scryfall_id is not a uuid", () => {
+    // scryfall_id is a uuid column, so a non-uuid string fails the id lookup
+    // with 22P02 rather than simply not matching — the same reason
+    // collection/import.ts filters before querying.
+    const feed = parseManapoolPayload({
+      meta: { as_of: "2026-08-29T15:32:41.270Z" },
+      data: [{ scryfall_id: "not-a-uuid", price_cents: 100, available_quantity: 1 }],
     });
     expect(feed.rows).toEqual([]);
   });
@@ -105,7 +120,7 @@ describe("parseManapoolPayload", () => {
     // no honest value to insert — dropping it is the only correct answer.
     const feed = parseManapoolPayload({
       meta: { as_of: "2026-08-29T15:32:41.270Z" },
-      data: [{ scryfall_id: "aaa", price_cents: 100, available_quantity: null }],
+      data: [{ scryfall_id: ID, price_cents: 100, available_quantity: null }],
     });
     expect(feed.rows).toEqual([]);
   });

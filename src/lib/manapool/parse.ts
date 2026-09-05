@@ -25,6 +25,11 @@ const empty = (): ManapoolFeed => ({ asOf: new Date(0), rows: [], collapsedDupli
 const intOrNull = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? Math.round(v) : null;
 
+// scryfall_id lands in a uuid column, so a malformed id fails the id lookup with
+// 22P02 rather than simply not matching — the whole batch dies for one bad row.
+// Same guard, same reasoning, as collection/import.ts applies to CSV ids.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const strOrNull = (v: unknown): string | null =>
   typeof v === "string" && v.length > 0 ? v : null;
 
@@ -77,7 +82,7 @@ export function parseManapoolPayload(raw: unknown): ManapoolFeed {
     if (typeof entry !== "object" || entry === null) continue;
     const e = entry as Record<string, unknown>;
     const scryfallId = strOrNull(e.scryfall_id);
-    if (scryfallId === null) continue;
+    if (scryfallId === null || !UUID_RE.test(scryfallId)) continue;
     const availableQuantity = intOrNull(e.available_quantity);
     if (availableQuantity === null) continue;
 

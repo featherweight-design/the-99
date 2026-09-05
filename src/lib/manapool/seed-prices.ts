@@ -1,10 +1,11 @@
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { printingPrices, printings } from "../../db/schema";
 import { fetchManapoolSingles } from "./client";
 import { parseManapoolPayload, type PriceRow } from "./parse";
 
 const BATCH_SIZE = 500;
+const LOOKUP_CHUNK = 1000;
 
 export type SeedPricesResult = {
   upserted: number;
@@ -49,12 +50,23 @@ export async function seedPrices(): Promise<SeedPricesResult> {
   // printing_prices.scryfall_id has an FK to printings.scryfall_id and the two
   // ingests are not lock-stepped, so filter orphans in memory rather than
   // failing a batch. Same pattern and same reasoning as seed-printings.ts.
-  const known = new Set(
-    (await db.select({ scryfallId: printings.scryfallId }).from(printings))
-      .map((p) => p.scryfallId),
-  );
+  //
+  // Looked up by the ids the feed actually carries rather than by reading the
+  // table whole: `printings` holds every printing in existence and the feed
+  // names roughly 100k of them, so a full load moves far more rows than the run
+  // can use. Chunked for the same reason collection/import.ts chunks — one
+  // `in (...)` of 100k ids is not a query Postgres should be asked to plan.
+  const feedIds = [...new Set(feed.rows.map((r) => r.scryfallId))];
+  const known = new Set<string>();
+  for (let i = 0; i < feedIds.length; i += LOOKUP_CHUNK) {
+    const found = await db.select({ scryfallId: printings.scryfallId }).from(printings)
+      .where(inArray(printings.scryfallId, feedIds.slice(i, i + LOOKUP_CHUNK)));
+    for (const p of found) known.add(p.scryfallId);
+  }
   if (known.size === 0) {
-    throw new Error("printings table is empty — run `pnpm db:seed:printings` first");
+    throw new Error(
+      "no printing in the feed is in our catalog — run `pnpm db:seed:printings` first",
+    );
   }
 
   const { rows, skippedOrphan } = filterKnownPrintings(feed.rows, known);
