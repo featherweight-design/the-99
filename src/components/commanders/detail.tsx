@@ -295,20 +295,11 @@ export function CommanderDetail({
           </div>
         )}
 
-        {/* ⛶ Full card trigger + lightbox (client component) */}
-        <FullCardTrigger
-          commander={{
-            name: c.name,
-            manaCost: c.manaCost,
-            typeLine: c.typeLine,
-            oracleText: c.oracleText,
-            colorIdentity: c.colorIdentity,
-            imageUri: c.imageUri,
-          }}
-        />
+        {/* ⛶ Card details trigger (client component) */}
+        <FullCardTrigger oracleId={c.oracleId} />
 
         {/* Art header overlay (bottom) — pointer-events-none so taps fall
-            through to the full-band lightbox trigger */}
+            through to the full-band card-details trigger */}
         <div
           className="absolute pointer-events-none"
           style={{ left: 16, right: 16, bottom: 14 }}
