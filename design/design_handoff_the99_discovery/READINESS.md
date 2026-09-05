@@ -1,5 +1,13 @@
 # READINESS — Commander discovery: one ranked list, two sorts (R1)
 
+> **Audited 🟢 Green at R1 on 2026-09-05.** Item 1's requested ruling was taken in Design's favour:
+> `Score against` re-ranks under discovery, and the score delta is suppressed there. Four factual
+> claims below are stale against `main` — the discovery population is **3,334** (indexed minus
+> built, not the 3,100 unowned), **#288 has shipped**, price is keyed by printing with no `stocked`
+> boolean, and there is no "finished" deck. Full reasoning in `README.md`'s corrections banner and
+> on the #220 row in `docs/superpowers/design-pipeline-status.md`. None of them changes what is
+> drawn.
+
 **Self-assessed: 🟢 Green with one ruling requested — and the ruling is a scope question the brief
 did not reach, not a design gap.**
 

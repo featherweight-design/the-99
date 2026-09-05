@@ -3,6 +3,14 @@
 Read with `README.md` decisions 6 and 7. The canvas draws every state below; this file is the
 matrix and the reasoning that does not fit in a frame.
 
+> **Audit correction (R1, 2026-09-05).** #288 has shipped, and the matrix's `stocked` column is not
+> a field: `printing_prices` keys on `scryfall_id` and carries an `as_of`. Read that column as
+> *"this printing's row sits at the newest `as_of` in the table"* — behind the mark is state 3
+> (`not stocked`), absent from the table is state 4. The drawn matrix is unchanged, and this closes
+> gap 7: no stale figure is ever printed, so the slot needs no as-of word after all. In Part 2, a
+> "finished deck" means **a deck** — `decks` carries `filled`, not a completion flag. See
+> `README.md`'s corrections banner.
+
 ---
 
 ## Part 1 — the price slot

@@ -24,6 +24,40 @@ treat this as ready-to-build.
 
 ---
 
+> ## Audit corrections — read before implementing
+>
+> Audited 🟢 **Green at R1** on 2026-09-05. The drawing is what ships; four factual claims in the
+> prose below are stale against `main` and are corrected here rather than redrawn. The full
+> reasoning is on the #220 row in `docs/superpowers/design-pipeline-status.md`.
+>
+> 1. **The discovery population is 3,334, not 3,100.** Ruling 2 sets the universe to every indexed
+>    commander minus the ones already built: 3,342 − 8. Every `3,100` in this handoff and on the
+>    canvas is the count of commanders the player does not **own**, which is a different figure —
+>    and one the canvas contradicts itself, since frame A2 draws an *owned* row under Something new.
+>    The count line's `3,075 more below` is `3,309` at the corrected population. Nothing hard-codes
+>    either number: the copy module already takes the count as an argument.
+> 2. **#288 has shipped.** Price and stock are live, not in flight. The row still draws complete
+>    without them, per-row, which is what makes states 4 and 5 correct rather than a fallback.
+> 3. **Price is keyed by printing, and there is no `stocked` boolean.** `printing_prices` keys on
+>    `scryfall_id` (`src/db/schema.ts:94-112`). A commander's figure is its cheapest live printing,
+>    and *live* is defined by that table's own rule — compare the row's `as_of` to the newest
+>    `as_of` in the table. This closes gap 7 with **no new state and no redraw**: absent from the
+>    table → state 4, the slot and its hairline do not render; present but behind the mark →
+>    **state 3, `not stocked`**; at the mark → states 1/2. No stale figure is ever printed, so the
+>    slot needs no as-of word.
+> 4. **There is no "finished" deck.** `decks` carries `filled`, not a completion flag
+>    (`src/db/schema.ts:165-177`), and ruling 8 turns on having built anything at all. Every
+>    "finished deck" in the copy and on the canvas means **a deck** — the novelty sort unlocks on
+>    the first one of any kind.
+>
+> One further ruling, which `READINESS.md` asked for and the audit took in Design's favour:
+> **`Score against` re-ranks under discovery** rather than switching off, so the flip is a fetch
+> exactly as the sort flip is. Its companion is taken as drawn — the `↓N from M` delta is
+> suppressed under discovery, because it annotates a 0–100 score while this column prints
+> `127 of 264`.
+
+---
+
 ## The seven §7 calls
 
 | # | Call | Answer |

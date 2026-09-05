@@ -13,7 +13,9 @@
 //                     never a bare "of 99". The 99 is not the denominator and never was.
 //   • "support"     — the noun for that list, used in the column LABEL only. It is not a claim.
 // Two more, from ruling 2:
-//   • "built"       — a commander you finished a deck around. The excluded population.
+//   • "built"       — a commander you have a deck around. The excluded population. There is no
+//                     "finished" deck: `decks` carries `filled`, not a completion flag, so the
+//                     novelty sort unlocks on the first deck of any kind.
 //   • "never built" — owned, unbuilt. The row ruling 2 exists for, and it must stay a fact, not
 //                     a nudge: no "why not?", no "ready to build", no exclamation.
 // The `buy` verb from the Add panel is BANNED here. Discovery states ownership; it does not shop.
@@ -23,8 +25,9 @@
 // the receipt line — see `README.md` notes for engineering.
 //
 // NUMBERS ARE LOCALE-FORMATTED HERE, unlike availability.ts. Every count on this surface can reach
-// four digits (3,342 indexed, 3,100 unbuilt, 1,704 clearing the floor), which is the whole
-// difference between this list and the 242-row one it extends.
+// four digits (3,342 indexed, 3,334 unbuilt, 1,704 clearing the floor), which is the whole
+// difference between this list and the 242-row one it extends. Note the unbuilt figure: ruling 2
+// excludes the 8 commanders with decks, not the 3,100 the player does not own.
 
 const n = (v: number) => v.toLocaleString("en-US");
 
@@ -69,12 +72,12 @@ export const discoveryCopy = {
     newKey: "farthest from the archetypes you have built",
     triggerAria: (current: string) => `Sort: ${current}. Choose how these are ranked`,
     fitAria: "Rank by how much of each commander's support list you already own",
-    newAria: "Rank by distance from the archetypes your finished decks play",
+    newAria: "Rank by distance from the archetypes the decks you have built play",
 
     // Ruling 8. Short form on the menu row; the long form is `empty.noDecks`.
-    newDisabled: "needs a finished deck to compare against — build one and this turns on",
+    newDisabled: "needs a deck to compare against — build one and this turns on",
     newDisabledAria:
-      "Something new is unavailable — we need a finished deck to compare against",
+      "Something new is unavailable — we need a deck to compare against",
 
     announce: (sort: "fit" | "new", count: number) =>
       sort === "new"
@@ -161,7 +164,7 @@ export const discoveryCopy = {
     // with a stated reason, not an empty list. Expressive heading, marked.
     noDecksHeading: "Something new needs something old first",
     noDecksBody: (cards: number) =>
-      `We rank “new” by how far a commander sits from the archetypes your finished decks already play — and you have not finished one yet. Best fit works from day one: it only needs your collection, and you have ${n(
+      `We rank “new” by how far a commander sits from the archetypes the decks you have built already play — and you have not built one yet. Best fit works from day one: it only needs your collection, and you have ${n(
         cards,
       )} cards in it.`,
 
