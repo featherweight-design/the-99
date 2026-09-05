@@ -9,7 +9,7 @@ extends the same page. Also read `design/design_handoff_the99_commanders/` for t
 `design/design_handoff_the99_availability/` for the two controls discovery sits beside.
 
 File: `The 99 - Commander Discovery.dc.html` (canvas — pan/zoom). Read
-`design_handoff_the99_richness/README.md` for the locked voice before auditing copy,
+`design/design_handoff_the99_richness/README.md` for the locked voice before auditing copy,
 `CONTROLS-four-above-one-list.md` for the §7.2 composition in full, and
 `STATES-price-and-empties.md` for the §7.4 matrix and the three empty states.
 
