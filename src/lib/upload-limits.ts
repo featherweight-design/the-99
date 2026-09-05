@@ -33,7 +33,15 @@ export type DeckImportSource = (typeof DECK_IMPORT_SOURCES)[number];
  * the choice is testable — it lives in a server action otherwise, where it is not.
  */
 export function deckImportMaxBytes(source: DeckImportSource): number {
-  return source === "paste" ? PASTE_MAX_BYTES : DECK_IMPORT_FILE_MAX_BYTES;
+  // Exhaustive rather than `paste ? … : …`: the fallback arm would hand a third
+  // arrival route the file cap silently, which is the drift this module exists
+  // to prevent. Written this way, adding one is a type error until it is priced.
+  switch (source) {
+    case "paste":
+      return PASTE_MAX_BYTES;
+    case "file":
+      return DECK_IMPORT_FILE_MAX_BYTES;
+  }
 }
 
 /**
@@ -44,9 +52,12 @@ export function deckImportMaxBytes(source: DeckImportSource): number {
  * string is what makes that recognition safe instead of a copy of it going stale.
  */
 export function deckImportTooLargeMessage(source: DeckImportSource): string {
-  return source === "paste"
-    ? `Paste too large (max ${PASTE_MAX_LABEL})`
-    : `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`;
+  switch (source) {
+    case "paste":
+      return `Paste too large (max ${PASTE_MAX_LABEL})`;
+    case "file":
+      return `Decklist too large (max ${DECK_IMPORT_FILE_MAX_LABEL})`;
+  }
 }
 
 /** True for a message this module authored, and therefore safe to show a player. */
