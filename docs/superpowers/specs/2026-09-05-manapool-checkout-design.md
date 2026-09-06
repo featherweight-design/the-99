@@ -181,7 +181,7 @@ surprising.
 "buy the whole deck" link, and the API's own naming (`deckCreateResponse`) suggests that is the
 intended use. It is not in scope: Hugh asked to buy the shopping list, buying 99 cards you already
 own is not a thing anyone wants, and adding it costs a design round for a surface no one requested.
-Flagged in §8 rather than built.
+Ruled out on 2026-09-06 (§8) — rejected, not deferred.
 
 ### 4.2 The card link — the shared card modal
 
@@ -200,6 +200,14 @@ cannot be it either: rows already open the modal on click, and a nested link ins
 
 The modal is reachable from the decklist row, so "buy this specific card" is two clicks from the
 buy tag that priced it — row, then link — and zero new surfaces.
+
+**The link renders for every card, owned or not** (ruled 2026-09-06). It is a per-card fact — this
+card is purchasable at Mana Pool — not a shopping-list fact, so it carries no ownership condition
+and Design draws one state, not two. The alternative was to mirror the buy tag's visibility rule and
+show it only for shopping-list cards, which was rejected because the modal opens from three places
+(`builder-shell.tsx:514`, `browser.tsx:450`, `detail.tsx:240`) and `/collection` holds nothing but
+owned cards: the condition would make the same modal grow and lose an actions row depending on which
+surface opened it, with no explanation visible to the player.
 
 ### 4.3 The outbound-link convention
 
@@ -255,9 +263,9 @@ handoff:
    the shipped **Copy** and **Download .txt**. What weight does a link-out carry next to two local
    actions, and does it read as peer, primary, or quieter than both? It is the only control in the
    app that hands the player to another company.
-2. **The shared card modal** — a per-card link. The modal's existing chrome has no actions row, so
-   where one goes is part of the ask. Mobile and desktop, across the six shipped themes
-   (`src/lib/theme/themes.ts`).
+2. **The shared card modal** — a per-card link, drawn once and unconditional per §4.2. The modal's
+   existing chrome has no actions row, so where one goes is part of the ask. Mobile and desktop,
+   across the six shipped themes (`src/lib/theme/themes.ts`).
 
 Both need the app's first outbound-link treatment: whether an external-link glyph is drawn, whether
 "Mana Pool" is named in the label, and what the visited/hover/focus states are. Engineering has
@@ -270,11 +278,17 @@ letter to Design, not a versioned artifact. The handoff it asks for is an addend
 
 ---
 
-## 8. Open questions
+## 8. Questions, answered 2026-09-06
 
-1. **Buy the whole deck as well?** §4.1 scopes the link to the Shopping tab. The Decklist tab could
-   carry the same link for the full 100 cards at zero extra cost. Recommend no.
-2. **Production pricing.** Carried over unresolved from #288: `printing_prices` is empty in
-   production, so the card link will take the `/add-deck` fallback for every card there until a
-   price refresh runs against it. The links work either way — this is not a blocker for this pass,
-   but it is the second feature to ship degraded for the same reason.
+All three were put to Hugh and closed. Nothing here is open.
+
+1. **Buy the whole deck as well? No — rejected, not deferred.** §4.1 scopes the link to the
+   Shopping tab and the Decklist tab does not get one; its audience already owns the deck.
+2. **Does the card link show for cards you already own? Yes, always** — §4.2 carries the reasoning.
+3. **Production pricing: Monday's scheduled run, deliberately not pulled forward.**
+   `printing_prices` is empty in production, so the card link takes the `/add-deck` fallback there
+   and every price surface from #288 renders bare. `PRICE_REFRESH_ENABLED` is already `true` and
+   the scheduled run targets production by default (`github.event.inputs.target || 'production'`),
+   so the next 09:00 UTC Monday fills it with no intervention. A manual dispatch was offered and
+   declined: the scheduled run is wanted *as* the test of the production path, and staging carries
+   the working data until then.
