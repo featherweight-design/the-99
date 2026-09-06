@@ -22,7 +22,9 @@ import { PageHeader } from "./page-header";
 import { useScopeAnnouncement, useScopeNav } from "./list-nav";
 import { DegradedBanner } from "./degraded-banner";
 import { FilteredEmpty } from "./filtered-empty";
-import { REVEAL_STEP, RevealControl, EndOfRanking } from "./reveal-control";
+import {
+  REVEAL_STEP, RevealControl, EndOfRanking, revealAnnouncement,
+} from "./reveal-control";
 
 // ── URL helpers (mirrors collection/browser.tsx pattern) ─────────────────────
 
@@ -198,10 +200,7 @@ export function CommandersView({
       setAnnouncement("");
       return;
     }
-    const n = (v: number) => v.toLocaleString("en-US");
-    setAnnouncement(
-      `${n(shown)} shown, ${n(filtered.length - shown)} more below. Ranks ${n(before + 1)} to ${n(shown)} added.`,
-    );
+    setAnnouncement(revealAnnouncement(shown, filtered.length, before));
     // preventScroll: revealing must not move the reader's place. The accent ring
     // is the cue that keyboard position advanced, not a jump down the page.
     itemRefs.current[before]?.focus({ preventScroll: true });

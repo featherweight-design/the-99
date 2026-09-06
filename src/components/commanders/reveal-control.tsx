@@ -17,6 +17,16 @@
  *  collection yields, so the control stays unreachable on real data for now. */
 export const REVEAL_STEP = 25;
 
+/**
+ * What the live region says once a reveal has committed. Both scopes send the
+ * same sentence — the handoff's state 9 asks discovery to keep the shipped
+ * message — so it lives here rather than being written out at each list.
+ */
+export function revealAnnouncement(shown: number, total: number, before: number) {
+  const n = (v: number) => v.toLocaleString("en-US");
+  return `${n(shown)} shown, ${n(total - shown)} more below. Ranks ${n(before + 1)} to ${n(shown)} added.`;
+}
+
 export function RevealControl({
   remaining,
   onReveal,

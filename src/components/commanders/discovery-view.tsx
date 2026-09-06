@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { filterByColors } from "../../lib/commanders/filter";
 import { parseColors } from "../../lib/color-param";
@@ -24,7 +24,9 @@ import {
 } from "./list-nav";
 // Imported, never redeclared: it is 25, and the reveal band only lines up with
 // the shipped control if both windows step by the same number.
-import { EndOfRanking, REVEAL_STEP, RevealControl } from "./reveal-control";
+import {
+  EndOfRanking, REVEAL_STEP, RevealControl, revealAnnouncement,
+} from "./reveal-control";
 import { FloorEmpty, NoDecksBanner } from "./discovery-empty";
 import { FilteredEmpty } from "./filtered-empty";
 import { NOVELTY_FLOOR } from "../../lib/discovery/floor";
@@ -109,6 +111,33 @@ export function DiscoveryView({
     setShown(REVEAL_STEP);
   }
 
+  // The reveal's announcement and focus move, derived from the *committed*
+  // window rather than written in the click handler: the row to focus does not
+  // exist yet when the handler runs, and reading `shown` there would let two
+  // fast clicks announce a range that was never revealed. Same shape as the
+  // owned scope's, which is why both send `revealAnnouncement`.
+  //
+  // A layout effect, and the two re-rank announcements above are plain effects,
+  // so a flip's message always lands after this one clears the region.
+  const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const prevShown = useRef(shown);
+  useLayoutEffect(() => {
+    const before = prevShown.current;
+    prevShown.current = shown;
+    // Only a reveal widens the window; a filter or flip narrows it back to the
+    // first step. Clearing rather than returning drops screen-reader text that
+    // no longer describes the list, and stops React bailing out later if a
+    // reveal produces the string already sitting in the region.
+    if (shown <= before) {
+      setAnnouncement("");
+      return;
+    }
+    setAnnouncement(revealAnnouncement(shown, filtered.length, before));
+    // preventScroll: revealing must not move the reader's place. The accent ring
+    // is the cue that keyboard position advanced, not a jump down the page.
+    itemRefs.current[before]?.focus({ preventScroll: true });
+  }, [shown, filtered.length]);
+
   // A colour filter is a client-side narrowing, so it is mirrored with
   // `replaceState` rather than routed — routing would re-run the server rank for
   // a change the server does not make. Every other param is read back off the
@@ -129,13 +158,21 @@ export function DiscoveryView({
   );
 
   const remaining = Math.max(0, filtered.length - shown);
+  // A list too short to have ever been windowed ends on a plain spacer, and its
+  // count line says nothing about a window that never existed.
+  const wasWindowed = filtered.length > REVEAL_STEP;
 
   // The floor state names a percentage and the nearest miss, so it renders only
   // when the floor actually excluded someone AND a nearest miss exists. An empty
   // list with `floorExcluded === 0` is a different fact — nothing had a distance
   // to measure — and this copy would name a floor that took nobody.
+  //
+  // The server's list, not the filtered one: the floor is a server-side
+  // exclusion the colour filter played no part in, so reading `filtered.length`
+  // here would blame the floor for an emptiness the pips caused and tell a
+  // player who narrowed to Azorius that none of the N candidates cleared it.
   const showFloorEmpty =
-    filtered.length === 0 && discovery.floorExcluded > 0 && discovery.bestPct != null;
+    discovery.items.length === 0 && discovery.floorExcluded > 0 && discovery.bestPct != null;
   // Only when the filter is what emptied it. Without that guard this would also
   // swallow the unfiltered no-results case, whose reason is not the colours.
   const showFilteredEmpty = !showFloorEmpty && colors.length > 0 && filtered.length === 0;
@@ -189,7 +226,7 @@ export function DiscoveryView({
         avail={avail}
         onAvailChange={setAvail}
         availOk={discovery.availOk}
-        wasWindowed={false}
+        wasWindowed={wasWindowed}
         shown={Math.min(shown, filtered.length)}
         filteredTotal={filtered.length}
         activeTotal={discovery.items.length}
@@ -223,11 +260,15 @@ export function DiscoveryView({
           body={emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
           extraClause={builtClause ?? undefined}
           cta={emptyCopy.filteredCta}
+          // Accent, not the canvas's `--fg-faint`: M-10 resolves the link that
+          // way, because the drawing gives it exactly the appearance of the
+          // inert aside beside the floor empty's CTA, and the one thing the
+          // design says about it is that it is a link.
           secondary={
             <button
               type="button"
               onClick={() => setScope("owned")}
-              className="font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] hover:text-[color:var(--accent)]"
+              className="font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--accent)] hover:underline"
             >
               {emptyCopy.filteredScopeLink}
             </button>
@@ -236,8 +277,26 @@ export function DiscoveryView({
       ) : (
         <>
           <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
-            {filtered.slice(0, shown).map((item) => (
-              <li key={item.slug}>
+            {filtered.slice(0, shown).map((item, i) => (
+              // Focusable only while the list is windowed, matching the owned
+              // scope: a row that never receives the reveal's focus move has no
+              // reason to be a tab stop between every card.
+              <li
+                key={item.slug}
+                tabIndex={wasWindowed ? -1 : undefined}
+                ref={
+                  wasWindowed
+                    ? (el) => {
+                        itemRefs.current[i] = el;
+                      }
+                    : undefined
+                }
+                className={
+                  wasWindowed
+                    ? "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+                    : undefined
+                }
+              >
                 {/* `item.rank`, not the map index: the server ranked every item
                     this list carries, so a colour filter narrows what is shown
                     without renumbering what it leaves behind. */}

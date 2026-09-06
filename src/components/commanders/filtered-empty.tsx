@@ -87,8 +87,15 @@ export function FilteredEmpty({
         {body ?? commandersCopy.filteredEmpty.caption(colorWords(colors), total)}
         {/* The clause is a second sentence rather than a second paragraph: it
             gives the reason the first sentence is true, and a break would read
-            as a change of subject. */}
-        {extraClause ? ` ${extraClause}` : null}
+            as a change of subject. Emphasised whole, unlike the other two
+            empties' one marked phrase — the clause IS the new reason here, so
+            there is nothing inside it to lift above the rest. */}
+        {extraClause ? (
+          <>
+            {" "}
+            <strong className="font-semibold text-[color:var(--fg)]">{extraClause}</strong>
+          </>
+        ) : null}
       </p>
 
       {/* "Showing 0 of N" count — amber, and now below the caption: the
@@ -106,9 +113,11 @@ export function FilteredEmpty({
           affordance beside it, so the two sit in a wrapping group; the owned
           scope has nothing to put there and keeps the bare button it shipped
           with. `flex-wrap` because no phone frame was drawn for this state and
-          a 40px button plus a mono note does not fit 390px on one line. */}
+          a 40px button plus a mono note does not fit 390px on one line. The
+          group's `10px` matches the floor empty's identical CTA-plus-note
+          pairing: M-9 resolves the canvas's 12px here as drafting drift. */}
       {secondary ? (
-        <span className="mt-[16px] inline-flex flex-wrap items-center justify-center gap-[12px]">
+        <span className="mt-[16px] inline-flex flex-wrap items-center justify-center gap-[10px]">
           <GhostButton
             onClick={onClear}
             className="inline-flex items-center h-[40px] px-[18px] text-[13.5px] [border:1px_solid_var(--accent)] text-[color:var(--accent)]"
