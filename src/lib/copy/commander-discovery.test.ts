@@ -25,7 +25,6 @@ describe("discoveryCopy", () => {
       const out = (fn as (...a: number[]) => string)(1234, 5678, 9012);
       expect(out, fn.toString()).not.toMatch(/\d{4}/);
     }
-    expect(discoveryCopy.justify.overlapAria(1234, 5678, "Atraxa")).not.toMatch(/\d{4}/);
     expect(discoveryCopy.justify.tagList(["Aristocrats"], 1234)).not.toMatch(/\d{4}/);
     expect(discoveryCopy.empty.filteredBody("Azorius", 1234)).not.toMatch(/\d{4}/);
     expect(discoveryCopy.empty.filteredBuiltClause(1234, 5678, "Azorius")).not.toMatch(/\d{4}/);

@@ -249,9 +249,8 @@ export function DiscoveryRow({
   const justifyAria = !hasFigure
     ? null
     : fit
-      ? // The name-carrying `overlapAria` would repeat it: `rowLabel` already
-        // opens on `item.name`, so the variant that says "this commander"
-        // reads correctly there and says the name once.
+      ? // "this commander" rather than the name: `rowLabel` already opens on
+        // `item.name`, and naming it again here would say it twice in one label.
         justify.overlap(item.ownedSupport, total)
       : justify.distanceAria(item.unplayedCount, item.tagTotal);
 
