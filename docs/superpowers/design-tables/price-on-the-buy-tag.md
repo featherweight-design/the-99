@@ -72,7 +72,7 @@ R3's structural correction: the price facts belong to the **Shopping filter**, w
 | 2.3 | Parity | Identical at both widths — one home, no per-width disagreement | R3RM:34, R3RM:49–50 |
 | 2.4 | `builder-spine.tsx:391` | **Untouched.** Same words, same deliberate desktop-only condition | R3RM:30–31 |
 | 2.5 | Under the `All` filter | No strip, no total, no provenance line. Item 3's old ruling re-derives itself structurally | R3C:143–145 |
-| 2.5a | Empty Shopping list | No strip. Eng ruling, 2026-09-06 — the design does not draw this case, and a provenance line above "Nothing to buy" would date a list with nothing in it | — |
+| 2.5a | Empty Shopping list (`totalCopies === 0`) | No strip. Eng ruling, 2026-09-06 — the design does not draw this case, and a provenance line above an empty list dates a list with nothing in it. Enforced **inside the strip**, so it holds wherever the strip is mounted | — |
 | 2.6 | Plate | Own surface plate: sunken background, 1px `--border`, ~9px radius | R3C:61, R3C:94 |
 | 2.7 | Phone arrangement | Two lines: figure line above, provenance line below, left-aligned | R3C:61–64, R3RM:55–57 |
 | 2.8 | Desktop arrangement | One line: **provenance at the left, figure at the right**, baseline-aligned, space between | R3C:94–96 |

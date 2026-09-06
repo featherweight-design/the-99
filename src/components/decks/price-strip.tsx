@@ -19,6 +19,12 @@ export function PriceStrip({
 }) {
   if (!provenance) return null;
 
+  // Nothing to shop for is not a total of nothing. Every line the strip renders
+  // is a claim about a list, and a provenance line above an empty one dates a
+  // list with nothing in it. The rule lives here rather than at the call site so
+  // it holds wherever the strip is mounted.
+  if (summary.totalCopies === 0) return null;
+
   // Both figures drop rather than render as zero. No price at all is not
   // "$0.00", and a denominator that names nothing missing is a third copy of a
   // number the pill and the spine already carry.

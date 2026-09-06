@@ -32,9 +32,11 @@ Three observations were raised. None was a table mismatch; all three are settled
 1. **Foil-only tile lost its qualifier when spoken.** The tag drew `$2.10 foil` but said
    "$2.10 at ManaPool", quoting a foil price as if it were the card's. The qualifier now travels
    into the spoken figure, with a test.
-2. **Empty Shopping list shows no strip.** Kept. The design does not draw this case, and a
-   provenance line above "Nothing to buy" would date a list with nothing in it. Recorded as row
-   2.5a of the property table so a later reviewer does not read it as a gap.
+2. **Empty Shopping list shows no strip.** Kept, and moved into the strip. The design does not
+   draw this case, and a provenance line above an empty list dates a list with nothing in it. The
+   suppression had lived at the call site while the component still rendered a provenance-only
+   strip, so the two disagreed; `totalCopies === 0` now returns null inside `PriceStrip`. Recorded
+   as row 2.5a of the property table.
 3. **Stale comment in `src/lib/decks/suggest.ts`** still said "cheapest first" after the §4 sort
    rename. Corrected.
 

@@ -16,6 +16,21 @@ export type PriceRead = {
 };
 
 /**
+ * `as_of` arrives as a driver string, and `new Date` answers an unparseable one
+ * with an Invalid Date rather than an error. That failure is silent and it
+ * inverts: `NaN !== NaN` makes every card fail the liveness comparison, so a
+ * whole deck would read `sold out` on a timestamp we simply could not read.
+ * Throwing hands the caller's `.catch` a clean absence instead.
+ */
+function parseAsOf(value: string): Date {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`printing_prices.as_of is not a readable timestamp: ${value}`);
+  }
+  return parsed;
+}
+
+/**
  * One chosen printing per oracle card. Price is keyed by PRINTING
  * (`printing_prices.scryfall_id`) and a decklist row is an ORACLE card, so
  * this is a join through `printings.oracle_id`, not a lookup.
@@ -86,10 +101,10 @@ export async function loadPrices(oracleIds: string[]): Promise<PriceRead> {
       cents: row.price_cents,
       foilCents: row.price_cents_foil,
       etchedCents: row.price_cents_etched,
-      asOf: new Date(row.as_of),
+      asOf: parseAsOf(row.as_of),
     });
   }
 
   const newestAsOf = newest.rows[0]?.as_of ?? null;
-  return { prices, newestAsOf: newestAsOf ? new Date(newestAsOf) : null };
+  return { prices, newestAsOf: newestAsOf ? parseAsOf(newestAsOf) : null };
 }

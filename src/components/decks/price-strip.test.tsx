@@ -114,15 +114,15 @@ describe("PriceStrip figure line", () => {
     expect(screen.getByText(priceCopy.strip.pricedClause(0, 8))).toBeInTheDocument();
   });
 
-  it("renders only the provenance line when the list is empty", () => {
-    render(
+  // Nothing to shop for is not a total of nothing, and a provenance line above
+  // an empty list dates a list with nothing in it.
+  it("renders nothing at all when the list is empty", () => {
+    const { container } = render(
       <PriceStrip
         summary={{ totalCents: 0, pricedCopies: 0, totalCopies: 0 }}
         provenance={fresh}
       />,
     );
-    expect(screen.queryByText("$0.00")).toBeNull();
-    expect(screen.queryByText(priceCopy.strip.pricedClause(0, 0))).toBeNull();
-    expect(screen.getByText(/prices from ManaPool/)).toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 });
