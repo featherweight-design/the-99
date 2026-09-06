@@ -33,3 +33,9 @@ export const collectionBrowseCopy = {
     cta: "Clear filters",
   },
 } as const;
+
+/** Card modal. "any printing" because the link is keyed by the oracle card,
+ *  not the printing on screen — Mana Pool's grid shows them all. */
+export const cardLinkOutCopy = {
+  card: "Buy any printing at Mana Pool",
+} as const;

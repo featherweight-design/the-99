@@ -17,6 +17,9 @@ import { clearCardArtPreference, setCardArtPreference } from "../../app/collecti
 import { ManaCost } from "./mana-pips";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { ExternalLink } from "../ui/external-link";
+import { manapoolCardUrl } from "../../lib/manapool/links";
+import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 
 const pickerCopy = printingPickerCopy.printing;
 
@@ -504,6 +507,17 @@ export function CardModal({
             </div>
 
             {hasPicker && <div className="hidden md:block">{renderRegion(REGION_DESKTOP)}</div>}
+
+            {/* MOBILE link-out — in flow at the end of the scrolling column, not
+                pinned. The hairline is load-bearing: it separates the link from
+                the printings disclosure so it never reads as "buy this
+                printing". Above md: the link lives in the pinned nav row. */}
+            <div
+              className="md:hidden flex items-center min-h-[44px] mt-[14px]"
+              style={{ borderTop: "1px solid var(--border)" }}
+            >
+              <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+            </div>
           </div>
 
           {/* The modal's one live region (handoff §Accessibility). Do not add a second. */}
@@ -511,30 +525,35 @@ export function CardModal({
 
           {/* DESKTOP Prev/Next — §Desktop: Prev/Next Navigation */}
           <div
-            className="hidden md:flex items-center gap-[10px] flex-none mx-[32px] mb-[30px] pt-[20px]"
+            className="hidden md:flex items-center gap-[16px] flex-none mx-[32px] mb-[30px] pt-[20px]"
             style={{ borderTop: "1px solid var(--border)" }}
           >
-            <button
-              type="button"
-              onClick={onPrev ?? undefined}
-              disabled={!onPrev}
-              aria-label="Previous card"
-              className="cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--fg-faint)]"
-            >
-              ‹ Prev
-            </button>
-            <span className="ml-auto font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-              {position.toLocaleString()} of {total.toLocaleString()}
+            {/* The link is first in the DOM because the focus trap follows DOM
+                order — there is no initialFocusRef on this dialog. */}
+            <ExternalLink href={manapoolCardUrl(card.name)} label={cardLinkOutCopy.card} />
+            <span className="ml-auto flex items-center gap-[14px] flex-none">
+              <button
+                type="button"
+                onClick={onPrev ?? undefined}
+                disabled={!onPrev}
+                aria-label="Previous card"
+                className="cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--fg-faint)]"
+              >
+                ‹ Prev
+              </button>
+              <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
+                {position.toLocaleString()} of {total.toLocaleString()}
+              </span>
+              <button
+                type="button"
+                onClick={onNext ?? undefined}
+                disabled={!onNext}
+                aria-label="Next card"
+                className="cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--accent)]"
+              >
+                Next ›
+              </button>
             </span>
-            <button
-              type="button"
-              onClick={onNext ?? undefined}
-              disabled={!onNext}
-              aria-label="Next card"
-              className="ml-auto cursor-pointer text-[15px] disabled:opacity-40 text-[color:var(--accent)]"
-            >
-              Next ›
-            </button>
           </div>
         </div>
       </div>

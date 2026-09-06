@@ -3,8 +3,9 @@
 // The mock's instance is Korvold; the templates below reproduce it exactly
 // when passed "Korvold".
 //
-// Exports are untouched by this pass — "plain text is sacred" (mock, Decks
-// deltas). No copy here reaches export-dialog.tsx.
+// The exported *text* is untouched by this pass — "plain text is sacred"
+// (mock, Decks deltas). The export dialog's own chrome does draw copy from
+// here: see `overCopy.exportNote` and `exportLinkOutCopy`.
 
 /** The mock names the commander in the short register ("Korvold has a full
  *  deck"), not the full "Korvold, Fae-Cursed King" shown in the builder
@@ -437,3 +438,9 @@ export function builtFragment(built: number): string {
   if (built <= 99) return `${built} of 99`;
   return overCopy.aria.progress(String(built), String(built - 99));
 }
+
+/** Export dialog, Shopping tab. "these" is the list rendered above the link,
+ *  so it never reads as an offer to buy the whole deck. */
+export const exportLinkOutCopy = {
+  shopping: "Buy these at Mana Pool",
+} as const;
