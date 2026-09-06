@@ -259,8 +259,9 @@ Both need the app's first outbound-link treatment: whether an external-link glyp
 settled the mechanics (`target="_blank"`, `rel="noopener noreferrer"`, an accessible name that says
 the link leaves the app); the marks are Design's.
 
-The paste-ready handoff prompt, per the canonical six-section template, ships in this document's PR
-body rather than here — it is an instruction to Design, not a record of the design.
+The paste-ready handoff prompt is delivered in chat, not committed anywhere — it is a one-time cover
+letter to Design, not a versioned artifact. The handoff it asks for is an addendum to
+`design/design_handoff_the99_decks/`, which already owns both surfaces.
 
 ---
 
