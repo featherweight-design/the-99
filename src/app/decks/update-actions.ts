@@ -223,6 +223,18 @@ export async function updateDeckFromList(
   const { deck, rows } = await loadDeck(userId, input.deckId);
   const { catalog, indexes } = await loadMatchInputs([], { detailed: true });
   const parsed = buildDeckImport({ text: input.text, catalog, indexes });
+
+  // The same two guards the preview applies, repeated rather than assumed. A
+  // server action is callable directly, so reaching here means nothing about
+  // having passed through the diff — and a list that parsed to nothing plans
+  // every card in the deck as a removal. The preview turns those parses into
+  // screens; here they are simply refused, and the refusal copy the player sees
+  // ("your deck is exactly as it was") stays true.
+  if (parsed.lineCount === 0) throw new Error("list had no lines");
+  if (parsed.cards.length === 0 && !parsed.declaredCommander) {
+    throw new Error("no line in the list matched a card");
+  }
+
   const plan = planDeckUpdate({
     parsed,
     deckCards: rows,
