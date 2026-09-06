@@ -126,22 +126,21 @@ type RecCardProps =
        * before one has happened, or when one changed nothing.
        */
       delta: ScoreDelta | null;
-      discovery?: undefined;
-      sort?: undefined;
+      discovery?: never;
+      sort?: never;
     })
   | (RecCardCommon & {
       discovery: DiscoveryItem;
       sort: "fit" | "new";
       delta?: null;
-      commander?: undefined;
+      commander?: never;
     });
 
 export function RecCard(props: RecCardProps) {
   // The discovery arm renders nothing until Phase 10 fills it in. Narrowed on
-  // the presence of the `discovery` key rather than the absence of `commander`,
-  // so a call site that passes `commander: undefined` fails the type check
-  // instead of silently rendering an empty row.
-  if ("discovery" in props) return null;
+  // the arm's own required prop: the forbidden keys are typed `never`, so a call
+  // site cannot pass `discovery={undefined}` into the owned arm and land here.
+  if (props.commander === undefined) return null;
   const { commander: c, rank, avail, counts, delta } = props;
   const gradient = commanderGradient(c.colorIdentity);
   const fit = fitSegments(c);

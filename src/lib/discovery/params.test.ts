@@ -11,11 +11,10 @@ describe("parseScope", () => {
 });
 
 describe("parseSort", () => {
-  it("defaults to fit", () => expect(parseSort(undefined, true)).toBe("fit"));
-  it("reads new when a deck exists", () => expect(parseSort("new", true)).toBe("new"));
-  it("falls back to fit with no deck to compare against", () => {
-    // Ruling 8: the option is unavailable with a stated reason, so a URL that
-    // names it must land on a real list rather than on an empty one.
-    expect(parseSort("new", false)).toBe("fit");
+  it("defaults to fit", () => {
+    expect(parseSort(undefined)).toBe("fit");
+    expect(parseSort("nonsense")).toBe("fit");
+    expect(parseSort(["new"])).toBe("fit"); // a repeated param is not a sort
   });
+  it("reads new", () => expect(parseSort("new")).toBe("new"));
 });

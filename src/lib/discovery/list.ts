@@ -214,6 +214,10 @@ export async function loadDiscovery(
     prices,
     rollup: buildPoolRollup(scored, availability),
     cardsRead: collection.length,
-    sort: opts.sort,
+    // Ruling 8's gate, applied here rather than at the route: novelty measures
+    // distance from what you have built, and `playedTags` is already the answer
+    // to whether anything has been. Asking the route to check would mean a second
+    // read of `decks` on every discovery request.
+    sort: playedTags.length > 0 ? opts.sort : "fit",
   });
 }

@@ -69,9 +69,13 @@ export default async function CommandersPage({
     // all three are shaped for the owned scope's few hundred rows, and two of them
     // walk the collection once per commander. `loadDiscovery` answers the same
     // questions from the offline index in one pass over ~3,300 candidates.
-    const decksBuilt = await listRecentDecks(userId, 1);
-    const sort = parseSort(sp.sort, decksBuilt.length > 0);
-    const discovery = await loadDiscovery(userId, { sort, avail });
+    // The requested sort, not necessarily the one that comes back: `loadDiscovery`
+    // reads the played tags either way, and downgrades `new` to `fit` when there
+    // is no deck to measure distance from.
+    const discovery = await loadDiscovery(userId, {
+      sort: parseSort(sp.sort),
+      avail,
+    });
     return (
       <section className="flex flex-col min-h-screen">
         <DiscoveryView discovery={discovery} avail={avail} />
