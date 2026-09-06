@@ -101,7 +101,7 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 **#330 was filed on 2026-09-06, after the row already existed.** The feature was scoped from a
 direct request with no issue behind it, so the row sat here ticketless for a day rather than have
-one invented for it; Hugh then asked for the issue, and it carries the three rulings that closed the
+one invented for it; Hugh then asked for the issue, and it carries the four rulings that closed the
 spec's open questions.
 
 ---

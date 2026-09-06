@@ -30,7 +30,7 @@ console.log("textarea value:\n" + textarea + "\n");
 const fold = (s) =>
   s
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036F]/g, "")
     .replace(/æ/gi, "ae")
     .toLowerCase();
 

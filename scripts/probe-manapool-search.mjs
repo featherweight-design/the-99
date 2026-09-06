@@ -32,7 +32,7 @@ console.log("  card links on page:", [...new Set(hrefs.filter((h) => h.includes(
 const fold = (s) =>
   s
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036F]/g, "")
     .replace(/æ/gi, "ae")
     .toLowerCase();
 
@@ -40,7 +40,12 @@ console.log("\n== the working search shape, every awkward name");
 for (const n of names) {
   const url = `https://manapool.com/cards?q=${encodeURIComponent(n)}`;
   const res = await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 }).catch((e) => e);
-  const status = res?.status?.() ?? `NAV FAILED: ${res?.message ?? "unknown"}`;
+  const ok = typeof res?.status === "function";
+  const status = ok ? res.status() : `NAV FAILED: ${res?.message ?? "unknown"}`;
+  if (!ok) {
+    console.log(`  ${n}\n      ${status}`);
+    continue;
+  }
   await page.waitForTimeout(2500);
   const body = fold(await page.locator("body").innerText().catch(() => ""));
   // Every segment must appear, so `Fire // Ice` cannot pass on the word `Fire` alone.
