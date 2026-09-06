@@ -1,6 +1,6 @@
 # Amendment 5 — Shopping reads availability (#281)
 
-`design/design_handoff_the99_amendments/` · 2026-09-05 · **R1, new files only.**
+`design/design_handoff_the99_amendments/` · 2026-09-05 · **R1, new files plus two ledger entries.**
 
 Extends the four-amendment package with a fifth. **Nothing in R1–R3 is reopened**, no existing
 file in this folder is edited, and no string in a shipped copy module is rewritten. Read
@@ -258,5 +258,6 @@ surfaces can disagree in front of the player.
   and what it must never edit.
 - `AMENDMENT-5-READINESS.md` — verdict, what carries forward, what an audit should check first.
 
-**New files only.** `README.md`, `READINESS.md`, the R3 canvas, the four earlier copy files and
-every document in `design_handoff_the99_availability/` are untouched.
+**New files, plus two ledger entries.** `README.md` and `READINESS.md` gain an amendment 5 row
+each and change in no other way. The R3 canvas, the four earlier copy files and every document in
+`design_handoff_the99_availability/` are untouched.

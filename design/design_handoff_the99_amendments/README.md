@@ -307,7 +307,7 @@ lightbox had one.
 - `support.js` — runtime for the HTML reference; not production code.
 
 **Amendment 5 (#281) — Shopping reads availability — was added to this folder on 2026-09-05 as
-new files only, and nothing above is reopened by it:** `The 99 - Shopping Availability (R1).dc.html`,
+new files, and nothing above is reopened by it:** `The 99 - Shopping Availability (R1).dc.html`,
 `AMENDMENT-5-README.md`, `AMENDMENT-5-READINESS.md`, `STATES-shopping-availability.md`,
 `shopping-availability · copy strings.ts`. It is independent of all four above; on an over-99
 deck it and §3 both render and neither mentions the other.

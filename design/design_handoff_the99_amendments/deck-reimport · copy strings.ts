@@ -84,16 +84,10 @@ export const updateCopy = {
 
     // ── Coming out — the group with the decision in it ────────────────
     outHeading: (n: string) => `Coming out · ${n}`,
-    // Two sentences: the fact, then what to do about it. The hand-added clause
-    // only appears when there are hand-added removals, and it is the reason
-    // this group is first.
+    // One sentence. The hand-added variants were removed by the Product ruling
+    // of 2026-09-05: no column records who placed a card, so no removal row can
+    // be labelled differently from any other. See spec §Amendment 2, ruling 2.
     outBody: "Your list does not name these.",
-    outBodyHandAdded: (n: string) =>
-      n === "1"
-        ? "Your list does not name these. One of them you added by hand — keep anything you meant to keep."
-        : `Your list does not name these. ${n} of them you added by hand — keep anything you meant to keep.`,
-    outBodyMobileHandAdded: (n: string) =>
-      n === "1" ? "One you added by hand." : `${n} you added by hand.`,
     keepAll: (n: string) => `Keep all ${n}`,
 
     // ── Going in — a list, not a decision ─────────────────────────────
@@ -126,16 +120,10 @@ export const updateCopy = {
     kept: "Kept ✓",
     keptMobile: "✓",
     keepAria: (name: string) => `Keep ${name} in the deck`,
-    // The inverse of the shipped `auto` tag. Deliberately NOT 'you added this
-    // by hand' — the signal is `auto = false`, which is also true of a card a
-    // previous import brought in. A previous import was still the player's
-    // list, so 'you added this' is defensible where 'by hand' would not be.
-    // README gap 3.
-    handAdded: "you added this",
-    // The row's accessible name carries both markers, because both are visual
-    // pills beside a name.
+    // The row's accessible name carries the `auto` marker, which is a visual
+    // pill beside the name. The hand-added marker was removed by the Product
+    // ruling of 2026-09-05 — see `outBody` above.
     rowAria: (name: string, marker: string) => (marker ? `${name}. ${marker}.` : name),
-    ariaHandAdded: "You added this card",
     ariaAuto: "Added automatically",
     sourceLine: (n: string) => `line ${n}`,
 
