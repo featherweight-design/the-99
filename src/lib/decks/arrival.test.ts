@@ -56,6 +56,14 @@ describe("readUpdateArrival", () => {
     expect(readUpdateArrival("")).toBe("countless");
   });
 
+  // Digits alone are not a figure this app wrote. Past 2^53 `Number` stops
+  // round-tripping and eventually returns Infinity, and either would reach the
+  // sentence as a count.
+  it("is countless for digits too large to be a count", () => {
+    expect(readUpdateArrival(`${"9".repeat(400)}-6`)).toBe("countless");
+    expect(readUpdateArrival("9007199254740993-6")).toBe("countless");
+  });
+
   // No param at all is an ordinary visit, which is a different thing from an
   // update whose figures did not survive the trip.
   it("is null when there is no param", () => {

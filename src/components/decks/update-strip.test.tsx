@@ -54,6 +54,17 @@ describe("UpdateStrip", () => {
     expect(screen.getByText(copy.updated("19", "6"))).toBeInTheDocument();
   });
 
+  // The App Router can keep the strip mounted across a navigation, so component
+  // state alone would carry a dismissal into the next update — silencing it the
+  // way a persisted dismissal would, arrived at by a different route.
+  it("shows again when the next update carries different figures", () => {
+    const { rerender } = render(<UpdateStrip arrival={{ in: 19, out: 6, kept: 0 }} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.dismiss }));
+    expect(screen.queryByText(copy.updated("19", "6"))).not.toBeInTheDocument();
+    rerender(<UpdateStrip arrival={{ in: 3, out: 1, kept: 0 }} />);
+    expect(screen.getByText(copy.updated("3", "1"))).toBeInTheDocument();
+  });
+
   // State 20. The param said an update happened but carried nothing to print, so
   // the strip states the fact rather than rendering NaN.
   it("drops the figures when the arrival is countless", () => {

@@ -59,5 +59,11 @@ export function readUpdateArrival(
   if (typeof value !== "string") return "countless";
   const match = /^(\d+)-(\d+)(?:-(\d+))?$/.exec(value);
   if (!match) return "countless";
-  return { in: Number(match[1]), out: Number(match[2]), kept: Number(match[3] ?? 0) };
+  const counts = { in: Number(match[1]), out: Number(match[2]), kept: Number(match[3] ?? 0) };
+  // Digits alone are not a number this app could have written: enough of them
+  // and `Number` returns Infinity, or an integer past 2^53 that prints in
+  // exponent notation. Both land in the countless strip with every other value
+  // the app did not write.
+  if (!Object.values(counts).every(Number.isSafeInteger)) return "countless";
+  return counts;
 }

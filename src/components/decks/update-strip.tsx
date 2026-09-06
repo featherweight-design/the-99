@@ -17,6 +17,23 @@ const copy = deckImportCopy.update.arrival;
 
 export function UpdateStrip({ arrival }: { arrival: UpdateArrivalState }) {
   const [dismissed, setDismissed] = useState(false);
+
+  // The App Router can keep this mounted across a navigation, so component state
+  // alone would carry a dismissal into the next update — the thing the comment
+  // above promises it does not do. Reset when the figures change, which is
+  // React's own pattern for deriving state from a prop.
+  //
+  // Two consecutive updates with identical figures share a token and the second
+  // stays dismissed. That is the resolution the `?updated=` param itself has:
+  // it carries counts and no nonce, so the two arrivals are not distinguishable
+  // from anything on the page.
+  const token = arrival === "countless" ? "countless" : `${arrival.in}-${arrival.out}-${arrival.kept}`;
+  const [shown, setShown] = useState(token);
+  if (shown !== token) {
+    setShown(token);
+    setDismissed(false);
+  }
+
   if (dismissed) return null;
 
   // State 20: the param said an update happened but carried no figures we wrote,
