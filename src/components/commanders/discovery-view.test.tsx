@@ -8,9 +8,13 @@ import { DiscoveryView } from "./discovery-view";
 // Every control on this surface navigates: the scope flip swaps which list the
 // route renders, and the sort and availability flips change what the server
 // ranks. None of them is a client-side re-sort, so the router is the whole API.
+// The colour filter is the exception, and it is not a navigation: it narrows a
+// list the server already ranked, so it is read from and mirrored to the live
+// URL rather than routed.
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
 const list = (over: Partial<DiscoveryList> = {}): DiscoveryList => ({
@@ -72,6 +76,25 @@ describe("DiscoveryView", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
     expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
+  });
+
+  // The scope flip carries `?c=` across, so this list has to read it — otherwise
+  // the URL says Golgari and the pips say nothing.
+  it("opens with the colours the incoming URL names", () => {
+    window.history.replaceState(null, "", "/commanders?c=BG&scope=play");
+    const items = [
+      { oracleId: "a", colorIdentity: ["B", "G"] },
+      { oracleId: "b", colorIdentity: ["U"] },
+    ] as unknown as DiscoveryList["items"];
+    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
+    expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
+  });
+
+  it("mirrors a colour choice into the URL without dropping the server's params", () => {
+    render(<DiscoveryView discovery={list()} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(window.location.search).toBe("?scope=play&c=G");
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("announces a re-rank on its own live region once the new ordering lands", () => {

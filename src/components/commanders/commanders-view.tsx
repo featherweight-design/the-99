@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import type { CommanderListItem } from "../../lib/recs/recommend";
-import { filterByColors } from "../../lib/commanders/filter";
+import { filterByColors, parseColors } from "../../lib/commanders/filter";
 import { rankMap } from "../../lib/commanders/rank-maps";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -31,11 +31,6 @@ export type AvailMode = "all" | "free";
 // and the fallback for the degraded read, where the page has no counts at all:
 // zero claims renders the receipt's first clause alone, which stays true.
 const NO_CLAIMS: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };
-
-function parseColors(param: string | null): string[] {
-  if (!param) return [];
-  return [...new Set(param.toUpperCase().split("").filter((c) => "WUBRG".includes(c)))];
-}
 
 function serializeParams(colors: string[], avail: AvailMode): string {
   const p = new URLSearchParams();

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { filterByColors } from "../../lib/commanders/filter";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { filterByColors, parseColors } from "../../lib/commanders/filter";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 // Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
 // reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is unset
@@ -33,7 +34,11 @@ export function DiscoveryView({
   discovery: DiscoveryList;
   avail: "all" | "free";
 }) {
-  const [colors, setColors] = useState<string[]>([]);
+  // Seeded from the URL, because the scope flip carries `?c=` across: a player
+  // who filtered to Golgari under the owned scope arrives here with those pips
+  // still lit rather than with a param the list ignores.
+  const search = useSearchParams();
+  const [colors, setColors] = useState<string[]>(() => parseColors(search.get("c")));
   // The reveal band mounts in a later phase; until then the window is the first
   // step and nothing moves it.
   const [shown] = useState(REVEAL_STEP);
@@ -73,6 +78,19 @@ export function DiscoveryView({
     setColors((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
   }, []);
   const clearColors = useCallback(() => setColors([]), []);
+
+  // A colour filter is a client-side narrowing, so it is mirrored with
+  // `replaceState` rather than routed — routing would re-run the server rank for
+  // a change the server does not make. Every other param is read back off the
+  // live URL rather than rebuilt, because `scope`, `sort` and `avail` belong to
+  // the server and this effect must not be the thing that drops one.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (colors.length > 0) params.set("c", colors.join(""));
+    else params.delete("c");
+    const s = params.toString();
+    window.history.replaceState(null, "", `/commanders${s ? `?${s}` : ""}`);
+  }, [colors]);
 
   const menu = (
     <SortMenu sort={discovery.sort} hasDecks={discovery.hasDecks} onChange={setSort} />
