@@ -1,6 +1,9 @@
 // Throwaway: what does a set-and-number card URL (buy_url's shape) show versus
 // a bare name-slug URL? Specifically — does either list every printing, or does
 // the set/number one pin you to one?
+//
+// Run by hand: `node scripts/probe-manapool-card-page.mjs`. Not part of `pnpm test`
+// — it needs a browser and reaches Mana Pool over the network.
 import { chromium } from "playwright";
 
 const urls = [

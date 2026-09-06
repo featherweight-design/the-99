@@ -1,6 +1,9 @@
 // Throwaway: can we reach the all-printings grid without guessing a name slug?
 // Tries search URL shapes, and checks whether a single-printing page links back
 // to the grid.
+//
+// Run by hand: `node scripts/probe-manapool-search.mjs`. Not part of `pnpm test`
+// — it needs a browser and reaches Mana Pool over the network.
 import { chromium } from "playwright";
 
 const names = ["Ovika, Enigma Goliath", "Atraxa, Praetors' Voice", "Fire // Ice", "Æther Vial", "Jötun Grunt"];

@@ -1,6 +1,9 @@
 // Throwaway: does ?deck=<base64> actually populate Mana Pool's Mass Entry in a
 // real browser, or only at the HTTP level? Loads the URL, reads the textarea's
 // value, and reports what the right-hand panel says.
+//
+// Run by hand: `node scripts/probe-manapool-add-deck.mjs`. Not part of `pnpm test`
+// — it needs a browser and reaches Mana Pool over the network.
 import { chromium } from "playwright";
 
 const cards = [
