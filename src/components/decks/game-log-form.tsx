@@ -23,6 +23,11 @@ export interface GameLogFormProps {
   /** Called when an axis moves columns, for the live region. */
   onAnnounce: (message: string) => void;
   isFirstGame: boolean;
+  /** Overrides the collapsed button's label. Defaults to `gameLogCopy.form.open`. */
+  ctaLabel?: string;
+  /** Brass-solid collapsed button. True only in the empty state, where the CTA
+   *  is the tab and there is nothing else on the screen to outrank it. */
+  ctaSolid?: boolean;
 }
 
 const POD_SIZES = [2, 3, 4, 5, 6, 7, 8];
@@ -34,7 +39,14 @@ const RESULTS: { value: GameResult; label: string }[] = [
   { value: "draw", label: gameLogCopy.form.draw },
 ];
 
-export function GameLogForm({ deckId, onSaved, onAnnounce, isFirstGame }: GameLogFormProps) {
+export function GameLogForm({
+  deckId,
+  onSaved,
+  onAnnounce,
+  isFirstGame,
+  ctaLabel,
+  ctaSolid = false,
+}: GameLogFormProps) {
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<GameResult | null>(null);
   const [podSize, setPodSize] = useState(4);
@@ -124,15 +136,19 @@ export function GameLogForm({ deckId, onSaved, onAnnounce, isFirstGame }: GameLo
 
   if (!open) {
     // State 1. Brass OUTLINE, never solid — `Build this deck` owns solid brass
-    // and logging a game is not the app's goal.
+    // and logging a game is not the app's goal. The one exception is the empty
+    // state, where the CTA is the whole tab and has nothing to outrank.
     return (
       <button
         ref={openButton}
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full md:w-auto min-h-[44px] rounded-[8px] px-[18px] py-[10px] text-[13.5px] font-semibold border border-[color:var(--accent)] text-[color:var(--accent)] bg-transparent cursor-pointer"
+        className={
+          "w-full md:w-auto min-h-[44px] rounded-[8px] px-[18px] py-[10px] text-[13.5px] font-semibold border border-accent cursor-pointer " +
+          (ctaSolid ? "bg-accent text-bg hover:bg-accent-hover" : "bg-transparent text-accent")
+        }
       >
-        {gameLogCopy.form.open}
+        {ctaLabel ?? gameLogCopy.form.open}
       </button>
     );
   }

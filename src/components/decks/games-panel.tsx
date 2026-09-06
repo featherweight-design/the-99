@@ -84,6 +84,55 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
 
+  // §8.4. The empty state replaces the panel rather than sitting above it: an
+  // aggregate of nothing and a history of nothing are two more empty boxes,
+  // and the pitch is the third game, not the act of logging one.
+  if (games.length === 0) {
+    return (
+      <section className="px-[16px] py-[24px] md:px-[30px] md:py-[40px] text-center">
+        <CardFanMark className="mx-auto w-[96px] md:w-[150px]" />
+        <h3 className="font-display text-[21px] md:text-[26px] mt-[16px] text-[color:var(--fg)]">
+          {gameLogCopy.empty.heading}
+        </h3>
+        <p className="mt-[10px] text-[14.5px] leading-[1.55] text-[color:var(--fg-body)]">
+          {gameLogCopy.empty.body} <i>{gameLogCopy.empty.bodyQuote}</i>
+          {gameLogCopy.empty.bodyAfter}
+        </p>
+        <p className="mt-[8px] text-[14.5px] leading-[1.55] text-[color:var(--fg-body)]">
+          {gameLogCopy.empty.cost}
+        </p>
+        <div className="mt-[18px]">
+          <GameLogForm
+            deckId={deckId}
+            isFirstGame
+            onAnnounce={setAnnouncement}
+            onSaved={() => setAnnouncement(gameLogCopy.announce.savedFirst)}
+            ctaLabel={gameLogCopy.empty.cta}
+            ctaSolid
+          />
+        </div>
+        <p className="mt-[8px] font-mono text-[10.5px] text-[color:var(--fg-locked)]">
+          {gameLogCopy.empty.ctaNote}
+        </p>
+        {/* Scope note in the shipped provenance shape — see provenance-line.tsx. */}
+        <div className="flex items-start gap-[11px] mt-[24px] text-left rounded-[9px] px-[15px] py-[11px] bg-surface-sunken border border-border border-l-[3px] border-l-accent">
+          <span
+            aria-hidden
+            className="flex-none flex items-center justify-center w-[20px] h-[20px] rounded-full font-display font-bold text-[12px] border-[1.5px] border-accent text-accent"
+          >
+            i
+          </span>
+          <p className="text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+            {gameLogCopy.empty.scope}
+          </p>
+        </div>
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </span>
+      </section>
+    );
+  }
+
   return (
     <section className="px-[16px] py-[14px] md:px-[30px] md:py-[20px]">
       {headline && (
@@ -190,5 +239,43 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
         ))}
       </ul>
     </section>
+  );
+}
+
+// The brand sheet's secondary mark — three cards fanned at -18°, 0° and +18°,
+// the front one carrying the numerals. Decoration only: the heading carries the
+// meaning, so it is hidden from the accessibility tree. Drawn from tokens
+// rather than the sheet's hexes so it follows all six themes.
+function CardFanMark({ className }: { className?: string }) {
+  const card = { width: 34, height: 52, rx: 6, x: 31, y: 22, strokeWidth: 1.5 };
+  return (
+    <svg viewBox="0 0 96 96" className={className} aria-hidden focusable="false">
+      <rect
+        {...card}
+        fill="var(--elevated)"
+        stroke="var(--border-strong)"
+        transform="rotate(-18 48 48) translate(-13 0)"
+      />
+      <rect {...card} fill="var(--surface-raised)" stroke="var(--border-strong)" />
+      <rect
+        {...card}
+        fill="var(--surface-raised)"
+        stroke="var(--accent)"
+        transform="rotate(18 48 48) translate(13 0)"
+      />
+      <text
+        x="48"
+        y="48"
+        transform="rotate(18 48 48) translate(13 0)"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fill="var(--accent)"
+        className="font-display"
+        fontSize="17"
+        fontWeight="800"
+      >
+        99
+      </text>
+    </svg>
   );
 }

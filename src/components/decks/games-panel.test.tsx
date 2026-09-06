@@ -92,3 +92,24 @@ describe("GamesPanel — low N", () => {
     expect(text.indexOf("Mana")).toBeLessThan(text.indexOf("The deck’s plan"));
   });
 });
+
+describe("GamesPanel — empty", () => {
+  it("replaces the whole panel, headline and history included", () => {
+    mount([]);
+    expect(screen.getByText(gameLogCopy.empty.heading)).toBeInTheDocument();
+    expect(screen.queryByText(gameLogCopy.history.heading)).toBeNull();
+    expect(screen.queryByText(gameLogCopy.buckets.fix)).toBeNull();
+  });
+
+  it("still offers the form", () => {
+    mount([]);
+    expect(screen.getByRole("button", { name: gameLogCopy.empty.cta })).toBeInTheDocument();
+  });
+
+  // §8.4: the pitch is the third game. Selling "log a game" sells the chore.
+  it("pitches the pattern rather than the first game", () => {
+    mount([]);
+    expect(screen.getByText(gameLogCopy.empty.cost)).toBeInTheDocument();
+    expect(screen.getByText(gameLogCopy.empty.scope)).toBeInTheDocument();
+  });
+});
