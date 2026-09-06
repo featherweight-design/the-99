@@ -109,7 +109,13 @@ export function DiscoveryView({
         scope="play"
         onScopeChange={setScope}
         sort={discovery.sort}
-        candidateCount={discovery.candidateCount}
+        // The ranked count, not `candidateCount`, for the same reason the
+        // announcements use it: the subtitle and the live region speak one
+        // sentence between them, and under `sort="new"` the floor's exclusions
+        // move `items.length` while the candidate count stays put. It is also
+        // what the bar's own "showing N of M" counts against two lines below,
+        // and what the owned scope already passes here.
+        candidateCount={rankedCount}
       />
 
       {/* The shipped bar, shared with the owned scope. Only the `Order` slot

@@ -90,6 +90,23 @@ describe("DiscoveryView", () => {
     expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
   });
 
+  it("heads the page with the ranked count, not the pre-exclusion candidate count", () => {
+    const items = [
+      { oracleId: "a", colorIdentity: ["B", "G"] },
+      { oracleId: "b", colorIdentity: ["U"] },
+    ] as unknown as DiscoveryList["items"];
+    render(
+      <DiscoveryView
+        discovery={list({ items, candidateCount: 40, sort: "new", floorExcluded: 38 })}
+        avail="free"
+      />,
+    );
+    const subtitle = `${discoveryCopy.scope.subtitlePlay(2, 2805, "new")} · ${
+      discoveryCopy.scope.subtitleFree
+    }`;
+    expect(screen.getAllByText(subtitle).length).toBeGreaterThan(0);
+  });
+
   it("mirrors a colour choice into the URL without dropping the server's params", () => {
     render(<DiscoveryView discovery={list()} avail="free" />);
     fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
