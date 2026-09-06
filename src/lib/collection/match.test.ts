@@ -22,6 +22,28 @@ describe("matchRows", () => {
     const { matched } = matchRows([row("Fable of the Mirror-Breaker")], catalog);
     expect(matched[0].oracleId).toBe("o-2");
   });
+  it("matches a split card written with a single slash", () => {
+    const { matched } = matchRows(
+      [row("Fable of the Mirror-Breaker / Reflection of Kiki-Jiki")],
+      catalog,
+    );
+    expect(matched[0].oracleId).toBe("o-2");
+  });
+  it("matches a split card written with no spaces around the slash", () => {
+    const { matched } = matchRows(
+      [row("Fable of the Mirror-Breaker/Reflection of Kiki-Jiki")],
+      catalog,
+    );
+    expect(matched[0].oracleId).toBe("o-2");
+  });
+  it("matches a split card whose catalog name is itself single-slashed", () => {
+    // Defensive: the catalog is Scryfall's and always double-slashes, but the index
+    // key and the incoming name must normalise identically or the symmetry breaks.
+    const { matched } = matchRows([row("Fire // Ice")], [
+      { oracleId: "o-3", scryfallId: "s-3", name: "Fire / Ice" },
+    ]);
+    expect(matched[0].oracleId).toBe("o-3");
+  });
   it("reports unmatched rows with their original line number", () => {
     const { matched, unmatched } = matchRows([row("Not A Card", null, 7)], catalog);
     expect(matched).toHaveLength(0);

@@ -31,6 +31,16 @@ export type MatchResult = {
   unmatched: CollectionRow[];
 };
 
+/**
+ * Scryfall separates a split card's faces with ` // `, but Moxfield, Archidekt and
+ * hand-typed pastes all use a bare `/`, with or without spaces. Normalising both the
+ * index key and the incoming name to one spelling is what keeps those rows out of
+ * `unmatched` — and doing both sides keeps the match symmetric whatever the source.
+ */
+function normalizeName(name: string): string {
+  return name.toLowerCase().replace(/\s*\/+\s*/g, " // ").trim();
+}
+
 export function matchRows(
   rows: CollectionRow[],
   catalog: CatalogCard[],
@@ -46,7 +56,7 @@ export function matchRows(
 
   const byName = new Map<string, string>();
   for (const c of catalog) {
-    const lower = c.name.toLowerCase();
+    const lower = normalizeName(c.name);
     byName.set(lower, c.oracleId);
     const front = lower.split(" // ")[0];
     if (!byName.has(front)) byName.set(front, c.oracleId);
@@ -61,7 +71,7 @@ export function matchRows(
     // Checked before the name fallback: a known token id is definitively a token, and
     // importing it as a same-named real card would be worse than reporting it skipped.
     if (row.scryfallId && skippedIds.has(row.scryfallId)) { skipped.push(row); continue; }
-    const byNameId = byName.get(row.name.toLowerCase());
+    const byNameId = byName.get(normalizeName(row.name));
     if (byNameId) matched.push({ row, oracleId: byNameId });
     else unmatched.push(row);
   }
