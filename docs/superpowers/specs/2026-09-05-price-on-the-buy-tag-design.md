@@ -35,9 +35,12 @@ card** (`DeckDetailCard.oracleId`). A row's price is therefore drawn from **one 
 that oracle's printings — a join through `printings.oracle_id`, not a lookup — live and cheapest
 where such a printing exists, and the reason `soldOut` is expressible at all where none does.
 
-"Live" is the table's own rule, not a clock. From `src/db/schema.ts:81-92`: every row from one
-ingest run shares a timestamp, the ingest upserts and never deletes, and a printing that sells out
-keeps its last row with a frozen `as_of`.
+"Live" is the table's own rule, not a clock, and it rests on two documented properties. From
+`src/db/schema.ts:81-88`: the ingest upserts and never deletes, so a printing that sells out keeps
+its last row with a frozen `as_of`, and a reader needing "stocked now" compares that `as_of` to the
+newest one in the table. From `src/lib/manapool/seed-prices.ts:74-79`: a run is one transaction, so
+every row it writes shares a timestamp — a half-finished run would leave the table split across two
+`as_of` values and make every surviving row read as sold out.
 
 ```
 live     = row.as_of === max(as_of)                      ← over the whole table, one comparison
