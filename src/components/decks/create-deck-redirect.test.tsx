@@ -41,14 +41,42 @@ function typeName(value: string) {
   }
 }
 
+// Matched by prefix on both carriers: Next has moved the target between the
+// message and the `digest` across versions, and `src/app/decks/actions.test.ts`
+// already sees the `NEXT_REDIRECT;<target>` form. An exact-equality check would
+// stop swallowing on the next move and fail the file for the wrong reason.
+function isRedirect(value: unknown) {
+  if (!(value instanceof Error)) return false;
+  const digest = (value as { digest?: unknown }).digest;
+  return (
+    value.message.startsWith("NEXT_REDIRECT") ||
+    (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT"))
+  );
+}
+
 // Rethrowing is the fix, and the rethrow escapes the transition: in the app
 // Next's router catches it and navigates, but nothing here does, so jsdom
-// reports it as an uncaught error and vitest fails the file. Swallow it —
-// the assertions below are about what the component painted, not about who
+// reports it as an uncaught error and vitest fails the file. Swallow it — the
+// assertions below are about what the component painted, not about who
 // eventually catches the redirect.
 function swallowRedirect(event: ErrorEvent | PromiseRejectionEvent) {
   const value = "reason" in event ? event.reason : event.error;
-  if (value instanceof Error && value.message === "NEXT_REDIRECT") event.preventDefault();
+  if (isRedirect(value)) event.preventDefault();
+}
+
+// `createDeck` is shared across the file, so its call history is not a per-test
+// signal: `toHaveBeenCalled` would be satisfied by the test before this one.
+// The flag is scoped to one test and cannot be. Clearing the shared mock
+// between tests is the obvious alternative and is not safe here — dropping its
+// recorded results detaches the rejected promise a redirecting run leaves
+// behind, and it resurfaces as an unhandled rejection that fails the file.
+function redirectingRun(target: string) {
+  const state = { called: false };
+  createDeck.mockImplementation(async () => {
+    state.called = true;
+    return redirect(target);
+  });
+  return state;
 }
 
 describe("create surfaces — a redirecting action is not a failure", () => {
@@ -62,14 +90,14 @@ describe("create surfaces — a redirecting action is not a failure", () => {
   });
 
   it("picker: shows no error when the action redirects", async () => {
-    createDeck.mockImplementation(async () => redirect("/decks/new-id"));
+    const run = redirectingRun("/decks/new-id");
     render(<CreatePicker legalCommanders={commanders} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Greta/ }));
     typeName("Greta goes to town");
     fireEvent.click(screen.getAllByRole("button", { name: /create deck/i })[0]);
 
-    await waitFor(() => expect(createDeck).toHaveBeenCalled());
+    await waitFor(() => expect(run.called).toBe(true));
     expect(screen.queryByText(FAILED)).toBeNull();
   });
 
@@ -87,7 +115,7 @@ describe("create surfaces — a redirecting action is not a failure", () => {
   });
 
   it("pre-filled: shows no error when the action redirects", async () => {
-    createDeck.mockImplementation(async () => redirect("/decks/new-id"));
+    const run = redirectingRun("/decks/new-id");
     render(
       <CreatePreFilled
         oracleId="oracle-1"
@@ -101,7 +129,7 @@ describe("create surfaces — a redirecting action is not a failure", () => {
     typeName("Greta goes to town");
     fireEvent.click(screen.getAllByRole("button", { name: /create deck/i })[0]);
 
-    await waitFor(() => expect(createDeck).toHaveBeenCalled());
+    await waitFor(() => expect(run.called).toBe(true));
     expect(screen.queryByText(FAILED)).toBeNull();
   });
 
