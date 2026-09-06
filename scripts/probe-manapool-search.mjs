@@ -29,11 +29,14 @@ console.log("  card links on page:", [...new Set(hrefs.filter((h) => h.includes(
 console.log("\n== the working search shape, every awkward name");
 for (const n of names) {
   const url = `https://manapool.com/cards?q=${encodeURIComponent(n)}`;
-  await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 }).catch(() => {});
+  const res = await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 }).catch((e) => e);
+  const status = res?.status?.() ?? `NAV FAILED: ${res?.message ?? "unknown"}`;
   await page.waitForTimeout(2500);
   const body = await page.locator("body").innerText().catch(() => "");
-  const bare = n.split(/[,/]/)[0].trim();
-  console.log(`  ${n}\n      names it: ${body.includes(bare)}   final: ${page.url()}`);
+  // Every segment must appear, so `Fire // Ice` cannot pass on the word `Fire` alone.
+  const parts = n.split("//").map((p) => p.trim());
+  const namesIt = parts.every((p) => body.includes(p));
+  console.log(`  ${n}\n      ${status}  names it: ${namesIt}   final: ${page.url()}`);
 }
 
 await page.screenshot({ path: "/tmp/mp-search.png" });

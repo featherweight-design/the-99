@@ -231,7 +231,7 @@ with **Copy** and **Download .txt**. The list link is a third action on the Shop
 the two that exist.
 
 Three shipped facts constrain how it is placed. Both buttons render at **both** breakpoints — the
-second is labelled `.txt` on mobile and `Download .txt` on desktop (`export-dialog.tsx:502`) — so
+second is labelled `.txt` on mobile and `Download .txt` on desktop (`export-dialog.tsx:514`) — so
 neither footer has a full-width button. The footer already carries `borderTop: 1px solid var(--border)`
 (`:493`), so any rule drawn above the link is the dialog's second. And the mobile sheet is a fixed
 `height: 590` (`:123`), so a new row costs list rows rather than growing the sheet.
