@@ -1,8 +1,13 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { GamesPanel } from "./games-panel";
 import { summarizeGames, type DeckGame } from "../../lib/decks/games";
 import { gameLogCopy } from "../../lib/copy/game-log";
+
+vi.mock("../../app/decks/actions", () => ({
+  logGame: async () => ({ ok: true }),
+  deleteGame: async () => ({ ok: true }),
+}));
 
 // The class tokens the panel inks a pattern with. Asserting on `--success`
 // would pass on any markup at all — the components name the theme tokens
@@ -74,6 +79,29 @@ describe("GamesPanel — the aggregate", () => {
     const mixed = screen.getByText(gameLogCopy.buckets.mixed);
     expect(mixed).toBeInTheDocument();
     expect(within(mixed.parentElement!).queryByRole("meter")).toBeNull();
+  });
+});
+
+describe("GamesPanel — the live region", () => {
+  // The summary is the pre-mutation one until the route revalidates, so a
+  // second game logged before that would otherwise be announced with the first
+  // game's record — the same sentence twice, for two different games.
+  async function logAWin() {
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.open }));
+    fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.save }));
+  }
+
+  it("counts each game logged before the route catches up", async () => {
+    mount(MOCK); // 2–1 on the server.
+    await logAWin();
+    await waitFor(() =>
+      expect(screen.getByText(gameLogCopy.announce.saved("3–1"))).toBeInTheDocument(),
+    );
+    await logAWin();
+    await waitFor(() =>
+      expect(screen.getByText(gameLogCopy.announce.saved("4–1"))).toBeInTheDocument(),
+    );
   });
 });
 

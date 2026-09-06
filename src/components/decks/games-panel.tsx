@@ -17,17 +17,30 @@ export interface GamesPanelProps {
   summary: GameSummary;
 }
 
+type Record = GameSummary["record"];
+
 // The record a mutation just produced. The summary in hand is the pre-mutation
 // one until the route revalidates, so the announcement counts the game itself
 // rather than reading a figure that has not caught up yet.
-function recordShifted(record: GameSummary["record"], result: GameResult, delta: 1 | -1): string {
-  const wins = record.wins + (result === "win" ? delta : 0);
-  const losses = record.losses + (result === "loss" ? delta : 0);
-  const draws = record.draws + (result === "draw" ? delta : 0);
-  return draws > 0
-    ? gameLogCopy.headline.recordWithDraws(String(wins), String(losses), String(draws))
-    : gameLogCopy.headline.record(String(wins), String(losses));
+function recordShifted(record: Record, result: GameResult, delta: 1 | -1): Record {
+  return {
+    wins: record.wins + (result === "win" ? delta : 0),
+    losses: record.losses + (result === "loss" ? delta : 0),
+    draws: record.draws + (result === "draw" ? delta : 0),
+  };
 }
+
+function recordSaid(record: Record): string {
+  return record.draws > 0
+    ? gameLogCopy.headline.recordWithDraws(
+        String(record.wins),
+        String(record.losses),
+        String(record.draws),
+      )
+    : gameLogCopy.headline.record(String(record.wins), String(record.losses));
+}
+
+const recordKey = (record: Record) => `${record.wins}-${record.losses}-${record.draws}`;
 
 const BUCKET_HEADING = "font-mono uppercase text-[10px] tracking-[0.14em]";
 const CELL_STRIP = "flex flex-col md:flex-row md:flex-wrap gap-[6px] md:gap-[12px]";
@@ -116,6 +129,23 @@ function mixedSentence(mixed: AxisTally[]): string {
 export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
+
+  // Each mutation shifts this rather than the prop, so a player who logs two
+  // games before the route revalidates hears the second one counted too. The
+  // server's figure wins whenever it changes: revalidation is what settles the
+  // record, and an optimistic count that outlived it would drift.
+  const [record, setRecord] = useState(summary.record);
+  const [settled, setSettled] = useState(recordKey(summary.record));
+  if (settled !== recordKey(summary.record)) {
+    setSettled(recordKey(summary.record));
+    setRecord(summary.record);
+  }
+
+  function announceShift(result: GameResult, delta: 1 | -1, say: (record: string) => string) {
+    const next = recordShifted(record, result, delta);
+    setRecord(next);
+    setAnnouncement(say(recordSaid(next)));
+  }
 
   // §8.4. The empty state replaces the panel rather than sitting above it: an
   // aggregate of nothing and a history of nothing are two more empty boxes,
@@ -210,11 +240,9 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
         isFirstGame={games.length === 0}
         onAnnounce={setAnnouncement}
         onSaved={(isFirst, result) =>
-          setAnnouncement(
-            isFirst
-              ? gameLogCopy.announce.savedFirst
-              : gameLogCopy.announce.saved(recordShifted(summary.record, result, 1)),
-          )
+          isFirst
+            ? setAnnouncement(gameLogCopy.announce.savedFirst)
+            : announceShift(result, 1, gameLogCopy.announce.saved)
         }
       />
       <span className="sr-only" aria-live="polite" aria-atomic="true">
@@ -291,11 +319,9 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
             game={g}
             isLast={games.length === 1}
             onDeleted={(wasLast) =>
-              setAnnouncement(
-                wasLast
-                  ? gameLogCopy.announce.deletedLast
-                  : gameLogCopy.announce.deleted(recordShifted(summary.record, g.result, -1)),
-              )
+              wasLast
+                ? setAnnouncement(gameLogCopy.announce.deletedLast)
+                : announceShift(g.result, -1, gameLogCopy.announce.deleted)
             }
           />
         ))}

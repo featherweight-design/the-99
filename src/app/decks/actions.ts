@@ -892,7 +892,10 @@ export async function logGame(
       // Drizzle rejects an empty values array, and no marks is a valid log.
       if (marks.length > 0) await tx.insert(deckGameAxes).values(marks);
     });
-  } catch {
+  } catch (err) {
+    // The player sees one generic refusal by design, so the underlying failure
+    // has nowhere else to surface.
+    console.error("logGame failed", err);
     return refuse;
   }
 
@@ -930,7 +933,8 @@ export async function deleteGame(
         and(eq(deckGames.id, gameId), eq(deckGames.deckId, deckId), eq(deckGames.userId, userId)),
       )
       .returning({ id: deckGames.id });
-  } catch {
+  } catch (err) {
+    console.error("deleteGame failed", err);
     return refuse;
   }
   if (deleted.length === 0) return refuse;
