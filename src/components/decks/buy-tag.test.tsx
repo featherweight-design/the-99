@@ -1,0 +1,214 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { BuyTag } from "./buy-tag";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { priceCopy } from "../../lib/copy/price";
+import type { PriceFact, ProvenanceForm } from "../../lib/decks/price";
+
+const NEWEST = new Date("2026-09-01T09:00:00Z");
+const OLDER = new Date("2026-08-25T09:00:00Z");
+
+const fact = (over: Partial<PriceFact> = {}): PriceFact => ({
+  cents: null,
+  foilCents: null,
+  etchedCents: null,
+  asOf: NEWEST,
+  ...over,
+});
+
+const PRICED = fact({ cents: 210 });
+const FOIL_ONLY = fact({ foilCents: 940 });
+const ETCHED_ONLY = fact({ etchedCents: 1250 });
+const SOLD_OUT = fact({ cents: 210, asOf: OLDER });
+
+const provenance: ProvenanceForm = { behind: false, when: "Monday" };
+const behind: ProvenanceForm = { behind: true, when: "12 August" };
+
+const VARIANTS = ["row", "tile"] as const;
+
+describe("BuyTag tails", () => {
+  for (const variant of VARIANTS) {
+    describe(`variant ${variant}`, () => {
+      it("priced appends the figure", () => {
+        render(<BuyTag variant={variant} price={PRICED} newestAsOf={NEWEST} />);
+        expect(screen.getByText("$2.10")).toBeInTheDocument();
+      });
+
+      it("foil-only appends the foil figure and its qualifier", () => {
+        render(<BuyTag variant={variant} price={FOIL_ONLY} newestAsOf={NEWEST} />);
+        expect(screen.getByText("$9.40")).toBeInTheDocument();
+        expect(screen.getByText(priceCopy.tag.foil)).toBeInTheDocument();
+      });
+
+      it("etched-only qualifies as etched, not foil", () => {
+        render(<BuyTag variant={variant} price={ETCHED_ONLY} newestAsOf={NEWEST} />);
+        expect(screen.getByText("$12.50")).toBeInTheDocument();
+        expect(screen.getByText(priceCopy.tag.etched)).toBeInTheDocument();
+        expect(screen.queryByText(priceCopy.tag.foil)).toBeNull();
+      });
+
+      it("a row older than the newest reads sold out, with no figure", () => {
+        render(<BuyTag variant={variant} price={SOLD_OUT} newestAsOf={NEWEST} />);
+        expect(screen.getByText(priceCopy.tag.soldOut)).toBeInTheDocument();
+        expect(screen.queryByText("$2.10")).toBeNull();
+      });
+
+      // Silence is the state. A dash or a zero would be a claim the feed never
+      // made — the bare tag already says everything true about the card.
+      it("absent renders the bare tag and no tail", () => {
+        const { container } = render(
+          <BuyTag variant={variant} price={null} newestAsOf={NEWEST} />,
+        );
+        expect(container.textContent).toBe(addPanelCopy.unowned.tag);
+      });
+
+      it("a fact with no price columns at all also renders bare", () => {
+        const { container } = render(
+          <BuyTag variant={variant} price={fact()} newestAsOf={NEWEST} />,
+        );
+        expect(container.textContent).toBe(addPanelCopy.unowned.tag);
+      });
+
+      // Liveness is a comparison against the table's newest row. With no newest
+      // row there is nothing to compare against, so no state can be asserted.
+      it("renders bare when the table has no newest row", () => {
+        const { container } = render(
+          <BuyTag variant={variant} price={PRICED} newestAsOf={null} />,
+        );
+        expect(container.textContent).toBe(addPanelCopy.unowned.tag);
+      });
+    });
+  }
+
+  // State 4 of the design table: the tag as it shipped, byte for byte. A price
+  // pass that changed the unpriced tag would be changing a surface it has
+  // nothing to say about.
+  it("the unpriced tag is byte-identical to the tag without the price props", () => {
+    const before = render(<BuyTag variant="row" />).container.innerHTML;
+    const after = render(
+      <BuyTag variant="row" price={null} newestAsOf={NEWEST} provenance={provenance} />,
+    ).container.innerHTML;
+    expect(after).toBe(before);
+  });
+});
+
+describe("BuyTag accessible name", () => {
+  // The row passes no label: `buy` already sits in the row's reading order, and
+  // a second utterance there would double-announce the card.
+  it("unlabelled speaks only the word, whatever the price", () => {
+    const { container } = render(
+      <BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} provenance={provenance} />,
+    );
+    expect(container.querySelector(".sr-only")).toBeNull();
+    expect(container.textContent).toContain("$2.10");
+  });
+
+  it("labelled appends the figure and its provenance to the shipped sentence", () => {
+    const { container } = render(
+      <BuyTag
+        variant="tile"
+        label="Sol Ring, not owned"
+        price={PRICED}
+        newestAsOf={NEWEST}
+        provenance={provenance}
+      />,
+    );
+    expect(container.querySelector(".sr-only")).toHaveTextContent(
+      `Sol Ring, not owned. ${priceCopy.aria.priced("$2.10", "Monday")}`,
+    );
+  });
+
+  it("labelled uses the behind sentence when the table is behind", () => {
+    const { container } = render(
+      <BuyTag
+        variant="tile"
+        label="Sol Ring, not owned"
+        price={PRICED}
+        newestAsOf={NEWEST}
+        provenance={behind}
+      />,
+    );
+    expect(container.querySelector(".sr-only")).toHaveTextContent(
+      `Sol Ring, not owned. ${priceCopy.aria.pricedBehind("$2.10", "12 August")}`,
+    );
+  });
+
+  // One utterance per price: where the sentence carries the figure, the visible
+  // tail is hidden from the reader rather than read out a second time.
+  it("hides the tail from readers only when the sentence already carries it", () => {
+    const { container } = render(
+      <BuyTag
+        variant="tile"
+        label="Sol Ring, not owned"
+        price={PRICED}
+        newestAsOf={NEWEST}
+        provenance={provenance}
+      />,
+    );
+    expect(screen.getByText("$2.10").closest("[aria-hidden='true']")).not.toBeNull();
+    expect(container.querySelector(".sr-only")).not.toBeNull();
+  });
+
+  // `sold out` is never in the spoken sentence, so hiding its tail would leave
+  // a sold-out card silent to a screen reader.
+  it("leaves the sold out tail readable", () => {
+    render(
+      <BuyTag
+        variant="tile"
+        label="Sol Ring, not owned"
+        price={SOLD_OUT}
+        newestAsOf={NEWEST}
+        provenance={provenance}
+      />,
+    );
+    const tail = screen.getByText(priceCopy.tag.soldOut);
+    expect(tail.closest("[aria-hidden='true']")).toBeNull();
+  });
+
+  it("speaks the bare label when there is no price to append", () => {
+    const { container } = render(
+      <BuyTag
+        variant="tile"
+        label="Sol Ring, not owned"
+        price={null}
+        newestAsOf={NEWEST}
+        provenance={provenance}
+      />,
+    );
+    expect(container.querySelector(".sr-only")).toHaveTextContent("Sol Ring, not owned");
+  });
+});
+
+describe("BuyTag is not a control", () => {
+  for (const variant of VARIANTS) {
+    it(`${variant} renders no button, link or click handler`, () => {
+      const { container } = render(
+        <BuyTag
+          variant={variant}
+          label="Sol Ring, not owned"
+          price={PRICED}
+          newestAsOf={NEWEST}
+          provenance={provenance}
+        />,
+      );
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(screen.queryByRole("link")).toBeNull();
+      expect(container.querySelector("a,button,[href],[role='button']")).toBeNull();
+      expect(container.querySelector("[onclick]")).toBeNull();
+    });
+  }
+});
+
+describe("BuyTag figure slot", () => {
+  // The 58px slot belongs to the Shopping list, not to the tag: under `All` the
+  // figure hugs the word instead of holding a column open.
+  it("reserves the column only when asked", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} reserveSlot />);
+    expect(screen.getByText("$2.10")).toHaveStyle({ minWidth: "58px" });
+  });
+
+  it("does not reserve it by default", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} />);
+    expect(screen.getByText("$2.10")).not.toHaveStyle({ minWidth: "58px" });
+  });
+});
