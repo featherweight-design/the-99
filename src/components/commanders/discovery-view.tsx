@@ -68,6 +68,10 @@ export function DiscoveryView({
   }, []);
   const clearColors = useCallback(() => setColors([]), []);
 
+  const menu = (
+    <SortMenu sort={discovery.sort} hasDecks={discovery.hasDecks} onChange={setSort} />
+  );
+
   // Ranks come from the server, over every item this list carries, so filtering
   // never renumbers — the same invariant CommandersView holds, reached differently.
   return (
@@ -95,19 +99,10 @@ export function DiscoveryView({
         shown={Math.min(shown, filtered.length)}
         filteredTotal={filtered.length}
         activeTotal={discovery.items.length}
-        order={{
-          desktop: (
-            <SortMenu sort={discovery.sort} hasDecks={discovery.hasDecks} onChange={setSort} />
-          ),
-          mobile: (
-            <SortMenu
-              sort={discovery.sort}
-              hasDecks={discovery.hasDecks}
-              onChange={setSort}
-              size="mobile"
-            />
-          ),
-        }}
+        // The same menu in both slots, not two variants: the bar's own subtree
+        // split decides which one is displayed, and the menu carries its own
+        // breakpoint for the two pixels that differ between them.
+        order={{ desktop: menu, mobile: menu }}
       />
 
       {/* No rows yet. `RecCard`'s discovery arm renders nothing until the row

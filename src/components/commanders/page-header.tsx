@@ -66,7 +66,7 @@ export function PageHeader({
       className={[
         "flex flex-col gap-3 border-b border-[color:var(--border)]",
         "px-[18px] pt-5 pb-3",
-        "sm:flex-row sm:items-end sm:justify-between sm:gap-4",
+        "sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6",
         "sm:border-b-0 sm:px-[34px] sm:pt-7 sm:pb-0",
       ].join(" ")}
     >

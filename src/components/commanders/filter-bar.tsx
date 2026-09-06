@@ -310,7 +310,8 @@ export function FilterBar({
             className="font-mono"
             style={{ fontSize: 11, color: "var(--fg-faint)" }}
           >
-            Showing {filteredTotal} of {activeTotal}
+            Showing {filteredTotal.toLocaleString("en-US")} of{" "}
+            {activeTotal.toLocaleString("en-US")}
           </span>
         </div>
 
@@ -372,7 +373,7 @@ export function FilterBar({
             className="font-mono"
             style={{ fontSize: 10.5, color: "var(--fg-faint)", marginLeft: "auto" }}
           >
-            {filteredTotal}/{activeTotal}
+            {filteredTotal.toLocaleString("en-US")}/{activeTotal.toLocaleString("en-US")}
           </span>
         </div>
 

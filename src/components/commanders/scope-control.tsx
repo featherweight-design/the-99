@@ -52,55 +52,70 @@ export function ScopeControl({
   };
 
   return (
-    <div
-      role="radiogroup"
-      aria-label={discoveryCopy.scope.label}
-      className="flex gap-[3px] rounded-lg p-[3px] w-full sm:w-auto"
-      style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-strong)" }}
-    >
-      {SEGMENTS.map((s, i) => {
-        const active = s.scope === scope;
-        return (
-          <button
-            key={s.scope}
-            ref={(node) => {
-              refs.current[i] = node;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            aria-label={s.aria}
-            tabIndex={active ? 0 : -1}
-            onClick={() => onChange(s.scope)}
-            onKeyDown={(e) => {
-              const dir =
-                e.key === "ArrowRight" || e.key === "ArrowDown"
-                  ? 1
-                  : e.key === "ArrowLeft" || e.key === "ArrowUp"
-                    ? -1
-                    : 0;
-              if (dir === 0) return;
-              e.preventDefault();
-              step(i, dir);
-            }}
-            className={[
-              "flex items-center justify-center rounded-md border-0 cursor-pointer",
-              "flex-1 h-[38px] px-[10px] text-[13px]",
-              "sm:flex-none sm:h-8 sm:px-[13px] sm:text-[12.5px]",
-              active
-                ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)]"
-                : "font-medium bg-transparent text-[color:var(--fg-body)]",
-            ].join(" ")}
-            style={{ whiteSpace: "nowrap" }}
-          >
-            {/* Both labels ship; the breakpoint picks one. The long pair is the
+    <div className="flex items-center gap-[10px]">
+      {/* Desktop only: at 390px the segments sit directly under the subtitle,
+          which already says which population is showing. The radiogroup keeps
+          the same word as its accessible name at both widths, so this span is
+          hidden from the tree rather than being the group's label. */}
+      <span
+        aria-hidden
+        className="hidden sm:inline font-mono text-[10px] tracking-[0.12em] uppercase text-[color:var(--fg-faint)]"
+      >
+        {discoveryCopy.scope.label}
+      </span>
+      <div
+        role="radiogroup"
+        aria-label={discoveryCopy.scope.label}
+        className="flex gap-[3px] rounded-lg p-[3px] w-full sm:w-auto"
+        style={{
+          background: "var(--surface-sunken)",
+          border: "1px solid var(--border-strong)",
+        }}
+      >
+        {SEGMENTS.map((s, i) => {
+          const active = s.scope === scope;
+          return (
+            <button
+              key={s.scope}
+              ref={(node) => {
+                refs.current[i] = node;
+              }}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              aria-label={s.aria}
+              tabIndex={active ? 0 : -1}
+              onClick={() => onChange(s.scope)}
+              onKeyDown={(e) => {
+                const dir =
+                  e.key === "ArrowRight" || e.key === "ArrowDown"
+                    ? 1
+                    : e.key === "ArrowLeft" || e.key === "ArrowUp"
+                      ? -1
+                      : 0;
+                if (dir === 0) return;
+                e.preventDefault();
+                step(i, dir);
+              }}
+              className={[
+                "flex items-center justify-center rounded-md border-0 cursor-pointer",
+                "flex-1 h-[38px] px-[10px] text-[13px]",
+                "sm:flex-none sm:h-8 sm:px-[13px] sm:text-[12.5px]",
+                active
+                  ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)]"
+                  : "font-medium bg-transparent text-[color:var(--fg-body)]",
+              ].join(" ")}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              {/* Both labels ship; the breakpoint picks one. The long pair is the
                 meaning, and the phone buys the short pair back with the
                 subtitle immediately beneath it. */}
-            <span className="sm:hidden">{s.short}</span>
-            <span className="hidden sm:inline">{s.label}</span>
-          </button>
-        );
-      })}
+              <span className="sm:hidden">{s.short}</span>
+              <span className="hidden sm:inline">{s.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
