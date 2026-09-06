@@ -2,14 +2,20 @@
 // keyboard contract is load-bearing rather than decorative. Both halves of the
 // roving-tabindex pattern are asserted: the inactive tab leaves the tab order,
 // and the arrows are what put it back within reach.
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { BuilderTabs } from "./builder-tabs";
+import { BuilderTabs, type BuilderTabSpec, type BuilderView } from "./builder-tabs";
 
-function mount(view: "deck" | "consider" = "deck", onViewChange = vi.fn()) {
-  render(
-    <BuilderTabs view={view} onViewChange={onViewChange} deckCount={12} considerCount={30} />,
-  );
+const DECK_TAB = { id: "deck" as const, label: "In deck", count: 12, accessibleName: "In deck, 12 cards" };
+const CONSIDER_TAB = { id: "consider" as const, label: "Consider", count: 30, accessibleName: "Consider, 30 cards" };
+const GAMES_TAB = { id: "games" as const, label: "Games", count: 3, accessibleName: "Games, 3 logged" };
+
+function mount(
+  view: BuilderView = "deck",
+  onViewChange = vi.fn(),
+  tabs: readonly BuilderTabSpec[] = [DECK_TAB, CONSIDER_TAB],
+) {
+  render(<BuilderTabs tabs={tabs} view={view} onViewChange={onViewChange} />);
   return onViewChange;
 }
 
@@ -36,8 +42,11 @@ describe("BuilderTabs — keyboard contract", () => {
     expect(onViewChange).toHaveBeenCalledWith("consider");
 
     onViewChange.mockClear();
+    // Wraps rather than clamping: with the tab list now variable-length, the
+    // arrows are index arithmetic modulo the list, which is also what the ARIA
+    // pattern specifies. This assertion read "deck" while the handler clamped.
     fireEvent.keyDown(tabs()[0], { key: "ArrowLeft" });
-    expect(onViewChange).toHaveBeenCalledWith("deck");
+    expect(onViewChange).toHaveBeenCalledWith("consider");
   });
 
   it("jumps to either end with Home and End", () => {
@@ -63,7 +72,7 @@ describe("BuilderTabs — keyboard contract", () => {
   it("ignores arrow keys from the toolbar sharing its row", () => {
     const onViewChange = vi.fn();
     render(
-      <BuilderTabs view="deck" onViewChange={onViewChange} deckCount={12} considerCount={30}>
+      <BuilderTabs tabs={[DECK_TAB, CONSIDER_TAB]} view="deck" onViewChange={onViewChange}>
         <select aria-label="Sort">
           <option>Best fit</option>
           <option>Cheapest</option>
@@ -72,5 +81,48 @@ describe("BuilderTabs — keyboard contract", () => {
     );
     fireEvent.keyDown(screen.getByRole("combobox", { name: "Sort" }), { key: "ArrowDown" });
     expect(onViewChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("BuilderTabs — three tabs", () => {
+  const three = [DECK_TAB, CONSIDER_TAB, GAMES_TAB];
+
+  it("steps one tab at a time rather than jumping to an end", () => {
+    const onViewChange = mount("consider", vi.fn(), three);
+    fireEvent.keyDown(tabs()[1], { key: "ArrowRight" });
+    expect(onViewChange).toHaveBeenCalledWith("games");
+  });
+
+  it("wraps at both ends", () => {
+    const onViewChange = mount("deck", vi.fn(), three);
+    fireEvent.keyDown(tabs()[0], { key: "ArrowLeft" });
+    expect(onViewChange).toHaveBeenCalledWith("games");
+
+    // A second render in the same test would leave both tablists in the
+    // document and `tabs()` would index into the first one.
+    cleanup();
+    const second = mount("games", vi.fn(), three);
+    fireEvent.keyDown(tabs()[2], { key: "ArrowRight" });
+    expect(second).toHaveBeenCalledWith("deck");
+  });
+
+  it("puts End on the last tab, not on Consider", () => {
+    const onViewChange = mount("deck", vi.fn(), three);
+    fireEvent.keyDown(tabs()[0], { key: "End" });
+    expect(onViewChange).toHaveBeenCalledWith("games");
+  });
+
+  // Decision 8: the Games tab never disappears, and at zero it is a bare label
+  // rather than "Games · 0" — a zero beside a label reads as a failure state.
+  it("renders no count element when count is omitted", () => {
+    render(
+      <BuilderTabs
+        tabs={[DECK_TAB, { id: "games", label: "Games", accessibleName: "Games, none logged" }]}
+        view="deck"
+        onViewChange={vi.fn()}
+      />,
+    );
+    expect(tabs()[1]).toHaveAccessibleName("Games, none logged");
+    expect(tabs()[1].textContent).toBe("Games");
   });
 });

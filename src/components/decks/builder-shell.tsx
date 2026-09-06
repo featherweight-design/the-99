@@ -748,10 +748,22 @@ export function BuilderShell({
             {/* The decklist and Consider as peer tabs. The desktop toolbar rides
                 this row; at phone width Consider draws its own toolbar row. */}
             <BuilderTabs
+              tabs={[
+                {
+                  id: "deck",
+                  label: addPanelCopy.tabs.deck,
+                  count: built,
+                  accessibleName: addPanelCopy.tabs.deckAria(built),
+                },
+                {
+                  id: "consider",
+                  label: addPanelCopy.tabs.consider,
+                  count: suggestions.length,
+                  accessibleName: addPanelCopy.tabs.considerAria(suggestions.length),
+                },
+              ]}
               view={view}
               onViewChange={setView}
-              deckCount={built}
-              considerCount={suggestions.length}
             >
               {view === "consider" && suggestions.length > 0 && (
                 <ConsiderToolbar

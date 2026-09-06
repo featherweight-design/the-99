@@ -1,20 +1,25 @@
 "use client";
-// BuilderTabs — the decklist and Consider as peers, per design table §1.
+// BuilderTabs — the decklist, Consider and Games as peers, per design table §1.
 //
 // Sits in the main column, not a rail: the whole point of the overhaul is that
 // discovery is a room you walk into rather than a drawer beside the deck. The
 // counts live in the accessible names as well as the text, because "99" beside
 // "Consider" is only a number until you know what it counts.
 
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+export type BuilderView = "deck" | "consider" | "games";
 
-export type BuilderView = "deck" | "consider";
+export interface BuilderTabSpec {
+  id: BuilderView;
+  label: string;
+  /** Omitted when there is nothing to count. A bare label renders instead. */
+  count?: number;
+  accessibleName: string;
+}
 
 interface BuilderTabsProps {
+  tabs: readonly BuilderTabSpec[];
   view: BuilderView;
   onViewChange: (view: BuilderView) => void;
-  deckCount: number;
-  considerCount: number;
   /** The desktop toolbar rides the same row, pushed right. Mobile draws it below. */
   children?: React.ReactNode;
 }
@@ -25,7 +30,7 @@ function Tab({
   id: string;
   panelId: string;
   label: string;
-  count: number;
+  count?: number;
   selected: boolean;
   onSelect: () => void;
   accessibleName: string;
@@ -36,7 +41,7 @@ function Tab({
       role="tab"
       id={id}
       aria-selected={selected}
-      // Only the selected tab names a panel. The other panel is unmounted while
+      // Only the selected tab names a panel. The other panels are unmounted while
       // this one is up, so a standing aria-controls would point every inactive
       // tab at an element that is not in the document.
       aria-controls={selected ? panelId : undefined}
@@ -59,23 +64,23 @@ function Tab({
       >
         {label}
       </span>
-      <span
-        aria-hidden
-        className={`font-mono text-[11px] md:text-[12px] tabular-nums ${
-          // A zero count is never accent, even on the active tab: accent is the
-          // colour of something worth walking over to.
-          selected && count > 0 ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"
-        }`}
-      >
-        {count}
-      </span>
+      {typeof count === "number" && (
+        <span
+          aria-hidden
+          className={`font-mono text-[11px] md:text-[12px] tabular-nums ${
+            // A zero count is never accent, even on the active tab: accent is the
+            // colour of something worth walking over to.
+            selected && count > 0 ? "text-[color:var(--accent)]" : "text-[color:var(--fg-faint)]"
+          }`}
+        >
+          {count}
+        </span>
+      )}
     </button>
   );
 }
 
-export function BuilderTabs({
-  view, onViewChange, deckCount, considerCount, children,
-}: BuilderTabsProps) {
+export function BuilderTabs({ tabs, view, onViewChange, children }: BuilderTabsProps) {
   return (
     <div
       className="px-[16px] pt-[10px] md:px-[30px] md:pt-[12px]"
@@ -84,47 +89,39 @@ export function BuilderTabs({
       <div
         className="flex items-baseline gap-[16px] md:gap-[22px]"
         role="tablist"
-        // Selection follows focus, which is the pattern's default for two
-        // panels that are both cheap to render.
+        // Selection follows focus, which is the pattern's default for panels
+        // that are all cheap to render.
         onKeyDown={(e) => {
           // The desktop toolbar rides this row, so its sort <select> is a
           // descendant and its own arrow/Home/End keys bubble through here.
           // Only a tab's keys are the tablist's to act on.
           if ((e.target as HTMLElement).getAttribute("role") !== "tab") return;
-          const next =
-            e.key === "ArrowRight" || e.key === "ArrowDown"
-              ? "consider"
-              : e.key === "ArrowLeft" || e.key === "ArrowUp"
-                ? "deck"
-                : e.key === "Home"
-                  ? "deck"
-                  : e.key === "End"
-                    ? "consider"
-                    : null;
-          if (!next) return;
+          const current = tabs.findIndex((t) => t.id === view);
+          let next: number;
+          if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (current + 1) % tabs.length;
+          else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (current - 1 + tabs.length) % tabs.length;
+          else if (e.key === "Home") next = 0;
+          else if (e.key === "End") next = tabs.length - 1;
+          else return;
+
           e.preventDefault();
-          onViewChange(next);
-          document.getElementById(`tab-${next}`)?.focus();
+          const id = tabs[next].id;
+          onViewChange(id);
+          document.getElementById(`tab-${id}`)?.focus();
         }}
       >
-        <Tab
-          id="tab-deck"
-          panelId="panel-deck"
-          label={addPanelCopy.tabs.deck}
-          count={deckCount}
-          selected={view === "deck"}
-          onSelect={() => onViewChange("deck")}
-          accessibleName={addPanelCopy.tabs.deckAria(deckCount)}
-        />
-        <Tab
-          id="tab-consider"
-          panelId="panel-consider"
-          label={addPanelCopy.tabs.consider}
-          count={considerCount}
-          selected={view === "consider"}
-          onSelect={() => onViewChange("consider")}
-          accessibleName={addPanelCopy.tabs.considerAria(considerCount)}
-        />
+        {tabs.map((tab) => (
+          <Tab
+            key={tab.id}
+            id={`tab-${tab.id}`}
+            panelId={`panel-${tab.id}`}
+            label={tab.label}
+            count={tab.count}
+            selected={view === tab.id}
+            onSelect={() => onViewChange(tab.id)}
+            accessibleName={tab.accessibleName}
+          />
+        ))}
         {/* Desktop only: the toolbar shares the tab row, pushed right. At phone
             width it draws as its own row inside the panel body instead. */}
         {children && <div className="hidden md:flex ml-auto items-center gap-[12px] pb-[8px]">{children}</div>}
