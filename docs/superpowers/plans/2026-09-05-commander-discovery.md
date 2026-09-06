@@ -495,15 +495,24 @@ describe("shapeCandidate", () => {
     expect(shapeCandidate(row({ edhrecTotal: null })).edhrecTotal).toBeNull();
   });
 
-  it("carries an empty tag array through as untagged", () => {
-    expect(shapeCandidate(row({ tags: [] })).tags).toEqual([]);
-  });
-
-  it("reports zero overlap for a commander sharing nothing with the collection", () => {
-    expect(shapeCandidate(row({ ownedSupport: 0 })).ownedSupport).toBe(0);
+  it("distinguishes an untagged commander from one with no owned overlap", () => {
+    const untagged = shapeCandidate(row({ tags: [] }));
+    const noOverlap = shapeCandidate(row({ ownedSupport: 0 }));
+    expect(untagged.tags).toEqual([]);
+    expect(untagged.ownedSupport).toBe(40);
+    expect(noOverlap.ownedSupport).toBe(0);
+    expect(noOverlap.tags).toHaveLength(1);
   });
 });
 ```
+
+These assertions are thin by design, and it is worth being honest about why:
+`shapeCandidate` is a spread, so what they pin is the **contract**, not an
+algorithm. Each one is a regression guard against someone later adding a `?? 0`
+or a `?? []` — the defaults that would erase the difference between "EDHREC does
+not index this commander" and "the index says zero". If a future edit gives the
+shaper real logic, these grow with it. Step 5's `EXPLAIN ANALYZE` and the
+by-hand row count are what actually test the query.
 
 - [ ] **Step 2: Run it and watch it fail**
 
@@ -607,20 +616,33 @@ export async function loadCandidates(
 
 **Performance:** `oracle_id = any($1::uuid[])` inside a join condition is not
 hashable, so Postgres nested-loops it — ~2,805 owned ids scanned per support row,
-over a table with a row per (commander, card). If step 5 shows that plan, replace
-the array predicate with a join against the unnested array so the planner can hash
-it:
+over a table with a row per (commander, card). If step 5 shows that plan, move the
+owned-id match into a derived table that is inner-joined to the unnested array,
+and left-join *that*:
 
 ```ts
-    .innerJoin(
-      sql`unnest(${owned}::uuid[]) as owned(oracle_id)`,
-      sql`owned.oracle_id = ${commanderSupportCards.oracleId}`,
+      ownedSupport: sql<number>`count(osc.oracle_id)::int`.as("owned_support"),
+```
+```ts
+    .leftJoin(
+      sql`(select csc.commander_oracle_id, csc.oracle_id
+             from commander_support_cards csc
+             join unnest(${owned}::uuid[]) as owned(oracle_id)
+               on owned.oracle_id = csc.oracle_id) as osc`,
+      sql`osc.commander_oracle_id = ${commanderSupport.commanderOracleId}`,
     )
 ```
 
-The commander-level left join must stay a left join either way, so the unnest
-attaches to `commander_support_cards`, not to `commander_support`. Measure before
-changing it: the simpler form is correct, and correctness that is fast enough wins.
+Do **not** add the `unnest` as a further `.innerJoin` on the outer query. Drizzle
+emits joins in call order, so an inner join written after the left join filters
+the left join's NULL rows back out — every commander with zero owned support would
+vanish, which is precisely the invariant the left join exists to hold. Keeping the
+unnest inside the derived table is what makes the outer join stay outer. Whichever
+form ships, step 5's row count over an empty owned array is the check: it must
+still be ~3,300 with `ownedSupport` `0` everywhere, not ~0 rows.
+
+Measure before changing it: the simpler form is correct, and correctness that is
+fast enough wins.
 
 - [ ] **Step 4: Run it and watch it pass**
 
@@ -1850,6 +1872,17 @@ This task builds the skeleton so Phase 8 leaves `main` green; Phases 9–11 fill
 ```tsx
 "use client";
 
+import { useMemo, useState } from "react";
+import { filterByColors } from "../../lib/commanders/filter";
+// `import type` is required, not stylistic: `src/lib/discovery/list.ts` imports
+// `src/db/index.ts`, whose module body throws when DATABASE_URL is unset and
+// pulls `ws` and the neon driver in with it. A type-only import is erased at
+// compile time, so none of that reaches the client bundle.
+import type { DiscoveryList } from "../../lib/discovery/list";
+import { RecCard } from "./rec-card";
+
+const REVEAL_STEP = 24;
+
 export function DiscoveryView({
   discovery,
   avail,
@@ -1857,8 +1890,11 @@ export function DiscoveryView({
   discovery: DiscoveryList;
   avail: "all" | "free";
 }) {
-  const [colors, setColors] = useState<string[]>([]);
-  const [shown, setShown] = useState(REVEAL_STEP);
+  // Setters are deliberately unread until Phases 9 and 11 mount the colour
+  // filter and the reveal band. Declaring only the values keeps lint green
+  // without a disable comment; those phases widen these two lines.
+  const [colors] = useState<string[]>([]);
+  const [shown] = useState(REVEAL_STEP);
   const filtered = useMemo(
     () => filterByColors(discovery.items, colors),
     [discovery.items, colors],
@@ -1871,14 +1907,26 @@ export function DiscoveryView({
       {/* Phase 11 mounts the empty states and the reveal band here. */}
       <ul>
         {filtered.slice(0, shown).map((item) => (
-          <RecCard key={item.oracleId} discovery={item} sort={discovery.sort}
-                   rank={item.rank} avail={avail} counts={item.counts} delta={null} />
+          <li key={item.oracleId}>
+            <RecCard discovery={item} sort={discovery.sort}
+                     rank={item.rank} avail={avail} counts={item.counts} />
+          </li>
         ))}
       </ul>
+      {/* The live region. `CommandersView` has its own at commanders-view.tsx:342,
+          but discovery does not render that component, so the scope announce
+          (Task 15) and the sort announce (Task 16) would both target a region
+          that is not in the tree. This is theirs. */}
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {/* Phases 9 and 11 set this from their own announce state. */}
+      </span>
     </>
   );
 }
 ```
+
+`RecCard` is wrapped in an `<li>` rather than rendering one itself — the same
+shape `commanders-view.tsx:706` uses, so the two lists stay structurally alike.
 
 `RecCard`'s discovery props land in Task 17 — until then this file passes
 `discovery`/`sort` to a `RecCard` that does not yet accept them, which does not
@@ -1915,10 +1963,14 @@ After the collection-empty guard and before `getRankedList`:
 ```bash
 pnpm dev
 ```
+The skeleton renders unstyled rows: `RecCard`'s discovery arm returns null until
+Task 17, so what you are checking here is the branch and the row **count**, not
+the rendering. Count `<li>` elements in the inspector.
+
 - `/commanders` — unchanged from today. Compare the first five rows against `main`.
-- `/commanders?scope=play` — a much longer list, none of whose commanders has a deck.
-- `/commanders?scope=play&sort=new` — a shorter list than `&sort=fit`.
-- `/commanders?scope=play&sort=new` **signed in as a fixture account with no decks** — falls back to the fit list rather than rendering empty.
+- `/commanders?scope=play` — roughly 3,300 `<li>`s minus the built commanders, against ~242 on the owned scope. If the two counts are close, the branch did not take.
+- `/commanders?scope=play&sort=new` — strictly fewer `<li>`s than `&sort=fit`, because the floor removes rows the fit list keeps. Equal counts means the floor is not applied.
+- `/commanders?scope=play&sort=new` **signed in as a fixture account with no decks** — the same count as `&sort=fit`, i.e. it fell back to the fit list rather than rendering empty.
 
 - [ ] **Step 4: Pre-push gate and commit**
 
@@ -1994,9 +2046,13 @@ No pending styling on the list: the handoff forbids either control animating it.
 - [ ] **Step 4: Announce the flip**
 
 A scope flip changes the whole population, so it announces like the sort flip
-does — `discoveryCopy.scope.announce(scope, count, sort)` on the page's
-**existing** live region. One region carries all three messages (scope, sort,
-reveal); a second would make two of them inaudible.
+does — `discoveryCopy.scope.announce(scope, count, sort)` on **`DiscoveryView`'s
+own live region**, the `sr-only aria-live="polite"` span Task 14 added. Not
+`commanders-view.tsx:342`: that region belongs to `CommandersView`, which the
+discovery branch does not render, so a message sent there is announced to nobody.
+Hold the message in a `useState<string>` in `DiscoveryView` and pass the setter
+down. One region carries all three messages (scope, sort, reveal); a second would
+make two of them inaudible.
 
 `count` is the post-flip `candidateCount`, so the announcement is written after
 the server round-trip resolves, not optimistically at click time.
@@ -2042,7 +2098,7 @@ When `hasDecks === false`, option 2 gets `aria-disabled` (**not** `disabled`), l
 
 - [ ] **Step 4: Navigate and announce**
 
-Same `router.replace(..., { scroll: false })` transition as Task 15, setting/deleting `sort`. Announce `discoveryCopy.sort.announce(sort, count)` on the page's **existing** live region — one region, three messages (scope, sort, reveal). Do not add a second.
+Same `router.replace(..., { scroll: false })` transition as Task 15, setting/deleting `sort`. Announce `discoveryCopy.sort.announce(sort, count)` on **`DiscoveryView`'s own** live region — the span Task 14 added, through the same state Task 15 set up. One region, three messages (scope, sort, reveal). Do not add a second, and do not reach for `commanders-view.tsx:342`, which is not in this tree.
 
 - [ ] **Step 5: Verify**
 
@@ -2075,7 +2131,7 @@ One PR. Design-review skill before `gh pr create`.
 - Consumes: `DiscoveryItem`, `discoveryCopy.justify`.
 - Produces: `RecCardProps` becomes a union — the owned arm keeps `commander: CommanderListItem`, the discovery arm takes `discovery: DiscoveryItem` and `sort`.
 
-- [ ] **Step 0: The prop union (done in Task 14, restated here because it is this task's premise)**
+- [ ] **Step 0: The prop union and the signature rewrite (done in Task 14, restated here because it is this task's premise)**
 
 Today `RecCardProps` requires `commander: CommanderListItem` and the body calls
 `fitSegments(c)` unconditionally at `rec-card.tsx:112`. `DiscoveryItem` has no
@@ -2096,10 +2152,26 @@ type RecCardProps =
                        delta?: null; commander?: undefined });
 ```
 
-Every existing read of `c` — `fitSegments`, the score display, the two synergy
-notes — moves inside `if (props.commander)`. The discriminant is the presence of
-`discovery`, so TypeScript narrows both arms without a runtime flag, and the owned
-scope's call sites are unchanged.
+This is a **signature rewrite, not just a type change.** `rec-card.tsx:110`
+destructures in the parameter list — `export function RecCard({ commander: c, … })`
+— which is exactly what a union cannot survive: `c` would be `CommanderListItem |
+undefined` for the whole body. Take the props object whole and narrow first:
+
+```ts
+export function RecCard(props: RecCardProps) {
+  if (!props.commander) return null; // Task 17 step 1 replaces this with the discovery arm.
+  const { commander: c, rank, avail, counts, delta } = props;
+  const gradient = commanderGradient(c.colorIdentity);
+  // … the rest of today's body, unchanged.
+}
+```
+
+The early return is what makes Task 14 compile: the discovery arm renders nothing
+until this task's steps 1–2 fill it in, and Task 14's hand-verification counts
+`<li>` wrappers rather than reading rows for exactly that reason. Steps 1 and 2
+below replace `return null` with the discovery rendering. The discriminant is the
+presence of `commander`, so TypeScript narrows both arms without a runtime flag,
+and the owned scope's call sites are unchanged.
 
 - [ ] **Step 1: One slot, contents chosen by the sort key**
 
@@ -2211,6 +2283,12 @@ const matching = filterByColors(
 
 `identity` is the filter's own label, built from `colors` by the shipped `COLOR_LABELS` map — not the deck's identity, which may be wider.
 
+**Note for Design to ratify, not a blocker:** because the predicate is superset,
+a five-colour deck counts as matching a Golgari filter, so the clause can say
+"1 of your 4 decks is Golgari" about a deck the player thinks of as WUBRG. Matching
+the list is the right call — the clause explains *this* filtered list — but the
+wording may want to soften from "is" to "fits". Raise it in the Phase 11 PR body.
+
 - [ ] **Step 4: Verify all three**
 
 - No decks: sign in as a fixture account with none. The list is full and the banner sits above it.
@@ -2288,7 +2366,22 @@ discriminated union); and `empty.filteredBuiltClause` needed deck colour
 identities and a deck total nothing loaded (`DeckTagSet` now carries
 `colorIdentity`, `DiscoveryList` carries `deckIdentities`). It also took the
 `candidates.ts` array join off trust: step 5 now reads the query plan and the
-timing, not the row count, and carries the `unnest` form to fall back to.
+timing, not the row count, and carries an `unnest` form to fall back to.
+
+A second review round, against those fixes, found four more — all verified against
+the code before being applied. The `unnest` fallback as first written was wrong:
+drizzle emits joins in call order, so an `.innerJoin` after the `.leftJoin` would
+have filtered out exactly the zero-support commanders the left join exists to
+keep. It is now a derived table that inner-joins the unnest internally, with the
+outer join left outer, and step 5 checks the row count over an empty owned array
+as the proof. `rec-card.tsx:110` destructures in the parameter list, so the union
+is a signature rewrite, not a type swap — Task 17 step 0 now shows the narrow-first
+body and the discovery arm's `return null`, which is also what makes Task 14
+compile and why Task 14's hand-verification counts `<li>`s rather than reading
+rows. The live region at `commanders-view.tsx:342` sits inside a component the
+discovery branch does not render, so `DiscoveryView` now has its own and Tasks 15
+and 16 target it. And `DiscoveryList` must be a type-only import in a client
+component: `src/db/index.ts:9` throws at module scope on a missing `DATABASE_URL`.
 
 - [x] **Spec coverage.** Walk `README.md`'s "Notes for engineering" list line by line and point at the task that implements each: two URL-mirrored state pieces (13, 14), scope changes the candidate set server-side (14), a sort flip is allowed to be a fetch (16), flips reset `shown` (20), `rankMap` over the full pre-filter set (11), floor and tag distance server-side (5, 6, 7, 11), untagged excluded by absence of `tags` (11), the deck tag set aggregated once per request (6), `RecCard` takes a `sort` prop (17), `ScoreDelta` null (17), `edhrec_total` non-null wherever N is printed (17 step 3), price joined on `scryfall_id` and never in an `ORDER BY` (5, 18), `Showing N of M` gains `toLocaleString` (20).
 - [x] **Copy coverage.** Every key in `discoveryCopy` is referenced by some task. An unreferenced key means a surface was missed.
