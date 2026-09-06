@@ -6,7 +6,7 @@
 // Each option names its own sort key on a sub-line. Ruling 3 forbids a blend, so
 // the two keys are genuinely different questions and the menu says which.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 
 const { sort: copy } = discoveryCopy;
@@ -31,6 +31,10 @@ export function SortMenu({
   const [active, setActive] = useState(0);
   const items = useRef<(HTMLButtonElement | null)[]>([]);
   const trigger = useRef<HTMLButtonElement>(null);
+  // Generated rather than a literal: the bar renders its desktop and mobile
+  // subtrees at once, so this component mounts twice and a fixed id would put
+  // two of them in the document.
+  const menuId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -113,6 +117,10 @@ export function SortMenu({
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
+        // Only while open, matching `AccountMenu`: the menu is unmounted when
+        // closed, and pointing at an absent id is a broken relationship rather
+        // than an empty one.
+        aria-controls={open ? menuId : undefined}
         aria-label={copy.triggerAria(currentLabel)}
         onClick={() => setOpen((v) => !v)}
         className={[
@@ -129,6 +137,7 @@ export function SortMenu({
 
       {open && (
         <div
+          id={menuId}
           role="menu"
           aria-label={copy.label}
           className={[

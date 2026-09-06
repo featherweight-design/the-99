@@ -166,6 +166,9 @@ export function FilterPanel({
 
   const uid = useId();
   const listId = `${uid}-list`;
+  // The dialog the trigger opens, at either width. Only one of the two panels
+  // is mounted at a time, so both can carry the same id.
+  const panelId = `${uid}-panel`;
   const optionDomId = (code: string) => `${listId}-${code}`;
 
   const matches = useMemo(() => rankSetOptions(options, query), [options, query]);
@@ -807,6 +810,10 @@ export function FilterPanel({
         disabled={disabled}
         aria-haspopup="dialog"
         aria-expanded={open}
+        // Only while open: the panel is unmounted when closed, and pointing at
+        // an absent id is a broken relationship rather than an empty one — the
+        // same guard the search input applies to `listId` above.
+        aria-controls={open ? panelId : undefined}
         aria-label={triggerAria}
         onClick={() => (open ? close() : openPanel(false))}
         onKeyDown={(e) => {
@@ -852,6 +859,7 @@ export function FilterPanel({
         (isDesktop ? (
           <div
             ref={panelRef}
+            id={panelId}
             role="dialog"
             // Focusable only programmatically: a non-searchable panel has no input
             // to take focus, so the dialog itself has to be able to receive it.
@@ -877,6 +885,7 @@ export function FilterPanel({
             />
             <div
               ref={panelRef}
+              id={panelId}
               role="dialog"
               aria-modal="true"
               tabIndex={-1}
