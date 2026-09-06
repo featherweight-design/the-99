@@ -33,7 +33,8 @@ export const decksBuilderCopy = {
 // block; the count strings below follow it. Applied by eng where the handoff
 // pluralised unconditionally — flagged to Design for ratification, since a
 // deck of one card reads "1 cards" otherwise.
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const plural = (n: number, one: string, many: string) =>
+  `${n} ${n === 1 ? one : many}`;
 
 export const addPanelCopy = {
   // ── Tabs (replaces the Suggestions | Search tab bar) ──────────────────
@@ -41,7 +42,8 @@ export const addPanelCopy = {
     deck: "Your deck",
     consider: "Consider",
     deckAria: (n: number) => `Your deck, ${plural(n, "card", "cards")}`,
-    considerAria: (n: number) => `Cards to consider, ${plural(n, "suggestion", "suggestions")}`,
+    considerAria: (n: number) =>
+      `Cards to consider, ${plural(n, "suggestion", "suggestions")}`,
     // No `panelAria`: each tabpanel is named by its tab through
     // aria-labelledby, which wins over aria-label, so a panel-side name would
     // never reach a screen reader.
@@ -109,7 +111,8 @@ export const addPanelCopy = {
     rationaleBodies: {
       ramp: "— you want your commander out a turn early, every game.",
       draw: "— a four-player table runs you out of cards before it runs you out of life.",
-      removalWipes: "— three opponents means three threats you did not plan for.",
+      removalWipes:
+        "— three opponents means three threats you did not plan for.",
       land: "— advisory: a cheap curve wants fewer, a heavy one wants more.",
     },
   },
@@ -130,7 +133,8 @@ export const addPanelCopy = {
       // Replaces role "other". The `role` value on the payload is unchanged.
       other: "Threats & synergy",
       // The EDHREC-sourced shelf, when suggestions are not coverage-driven.
-      edhrec: (commanderShortName: string) => `Top picks for ${commanderShortName}`,
+      edhrec: (commanderShortName: string) =>
+        `Top picks for ${commanderShortName}`,
     },
   },
 
@@ -297,9 +301,9 @@ export const addPanelCopy = {
     actionAria: (name: string) => `Undo removing ${name}`,
     // Read on the builder's existing live region, after the removal itself.
     announceRemoved: (name: string, built: number) =>
-      `${name} removed · ${built} of 99 · undo available`,
+      `${name} removed · ${builtFragment(built)} · undo available`,
     announceUndone: (name: string, built: number) =>
-      `${name} back in the deck · ${built} of 99`,
+      `${name} back in the deck · ${builtFragment(built)}`,
     // The undo row is the only thing standing between a mis-tap and a lost
     // card, so a failed undo says so where the row is, not in a banner.
     failed: "Couldn’t put that back. Try adding it again.",
@@ -312,9 +316,15 @@ export const addPanelCopy = {
   // visible match count is already a `role="status"`, so a second region
   // saying the same thing would double-announce every keystroke.
   announce: {
-    added: (name: string, built: number, role: string, have: number, target: number) =>
-      `${name} added · ${built} of 99 · ${role} ${have} of ${target}`,
-    addedNoRole: (name: string, built: number) => `${name} added · ${built} of 99`,
+    added: (
+      name: string,
+      built: number,
+      role: string,
+      have: number,
+      target: number,
+    ) => `${name} added · ${builtFragment(built)} · ${role} ${have} of ${target}`,
+    addedNoRole: (name: string, built: number) =>
+      `${name} added · ${builtFragment(built)}`,
   },
 
   // ── /decks/new — the Create button becomes the route's dock (#177) ─────
@@ -322,7 +332,108 @@ export const addPanelCopy = {
   // line above it is new, because a docked button covers the selection it is
   // about to act on.
   createPicker: {
-    dockSummary: (commander: string, identity: string) => `${commander} · ${identity}`,
+    dockSummary: (commander: string, identity: string) =>
+      `${commander} · ${identity}`,
     dockSummaryEmpty: "Pick a commander to start",
   },
 } as const;
+
+// ── Over the ninety-nine (#280) ─────────────────────────────────────────
+// Transcribed from design/design_handoff_the99_amendments/over-99 · copy
+// strings.ts. Over is a working state, so the copy never apologises and never
+// warns — it states the arithmetic and names the way out.
+export const overCopy = {
+  // The fifth pill value. One word, like the other four, and it names the
+  // deck's state rather than the player's activity.
+  pill: "Over",
+
+  figure: {
+    // The denominator never becomes the total: 99 is a rule of the format, not
+    // a target the deck outgrew. Callers pass both figures pre-formatted.
+    over: (built: string) => built,
+    denominator: " / 99",
+    // A second figure, not a recolour — a lone amber 104 beside a 99 asks the
+    // player to do the subtraction.
+    delta: (n: string) => `+${n}`,
+  },
+
+  // The deck card's line, in the unresolved marker's slot. Terse because it
+  // sits in a card the player is scanning past, and the spine says it properly.
+  toCut: (n: string) => (n === "1" ? "1 to cut" : `${n} to cut`),
+
+  // The spine's trim line. Three clauses, and the third is load-bearing: it is
+  // the sentence that tells a first-time overfiller they have not broken
+  // anything. Words, not digits, because the figure above already printed the
+  // number twice.
+  trim: {
+    lead: (words: string) => `${words} over the ninety-nine.`,
+    body: (n: string) =>
+      n === "1"
+        ? "Cut one and it is legal. Building long and trimming back is a normal way to get there."
+        : `Cut ${n} and it is legal. Building long and trimming back is a normal way to get there.`,
+    // 390px drops the trailing clause — the same shortening RollupBands
+    // applies when it stacks two lines.
+    bodyShort: (n: string) =>
+      n === "1" ? "Cut one and it is legal." : `Cut ${n} and it is legal.`,
+    // Spelled out to nineteen, then digits. Deliberately small: past twenty
+    // the player has pasted something wholesale and "Thirty-eight" is more
+    // precious than useful.
+    words: [
+      "Zero",
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten",
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
+    ],
+  },
+
+  // Stating a fact where the list leaves the app. Not a warning, not a blocker
+  // — the player is very likely exporting it in order to cut somewhere else.
+  // `total` is the whole list, commander included — the same figure the preview
+  // header prints — while `n` is measured off the ninety-nine. Both are true of
+  // the same list: a Commander deck holds a hundred cards.
+  exportNote: (total: string, n: string) =>
+    n === "1"
+      ? `This list is ${total} cards. One over what a Commander deck can hold.`
+      : `This list is ${total} cards. ${n} over what a Commander deck can hold.`,
+
+  aria: {
+    // Replaces `${built} of 99 cards built` on the progressbar when over.
+    // aria-valuemax moves to Math.max(99, built) in the same edit: a valuenow
+    // of 104 against a max of 99 is an invalid range and some readers clamp it
+    // to 100%, which is the one reading this amendment exists to stop.
+    progress: (built: string, n: string) =>
+      n === "1"
+        ? `${built} cards, 1 over the 99`
+        : `${built} cards, ${n} over the 99`,
+  },
+} as const;
+
+/** Spelled out to nineteen, digits past it — see `overCopy.trim.words`. */
+export function overWord(n: number): string {
+  return overCopy.trim.words[n] ?? String(n);
+}
+
+/** The count fragment every live region uses to say where the deck stands.
+ *  Past 99 it borrows the progressbar's phrasing rather than saying "104 of
+ *  99", which is a range a screen reader cannot make sense of — the same
+ *  reading the amber bar exists to stop, in the one place the bar is not. */
+export function builtFragment(built: number): string {
+  if (built <= 99) return `${built} of 99`;
+  return overCopy.aria.progress(String(built), String(built - 99));
+}

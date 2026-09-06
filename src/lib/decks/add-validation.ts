@@ -17,7 +17,6 @@ export type DeckContextForValidation = {
 };
 
 export type DeckAddRejection =
-  | "deck-full"
   | "not-commander-legal"
   | "off-color-identity"
   | "is-commander";
@@ -29,8 +28,13 @@ export type DeckAddRejection =
  * refusal string lives in mutation-result.ts, which both the action and the
  * rows read, so a copy change never has to be made twice.
  *
+ * This validator deliberately does not enforce the format's ninety-nine-card
+ * body limit. A deck may pass 99, which surfaces as the `Over`
+ * status rather than a refusal — building long and trimming back is a normal
+ * way to reach a legal list, and an add the player has to undo to continue is
+ * a worse outcome than a count that says what it is.
+ *
  * Rules:
- *  - Deck must be under 99 built cards.
  *  - Card must be commander_legal.
  *  - Card's color identity must be a subset of the deck commander's identity.
  *  - Card must not be the commander itself.
@@ -39,7 +43,6 @@ export function validateCardForDeck(
   card: CardForValidation,
   deck: DeckContextForValidation,
 ): DeckAddRejection | null {
-  if (deck.built >= 99) return "deck-full";
   if (!card.commanderLegal) return "not-commander-legal";
   const identitySet = new Set(deck.commanderColorIdentity);
   if (!card.colorIdentity.every((c) => identitySet.has(c))) {

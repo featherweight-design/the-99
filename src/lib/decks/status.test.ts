@@ -14,4 +14,15 @@ describe("statusPill", () => {
   // line is still unnamed, and the arithmetic alone cannot see that.
   it("Playable at 99 with all owned but an unresolved line", () =>
     expect(statusPill({ built: 99, ownedCount: 99, unresolvedCount: 1 })).toBe("Playable"));
+
+  it("Over past 99", () => {
+    expect(statusPill({ built: 100, ownedCount: 0 })).toBe("Over");
+    expect(statusPill({ built: 104, ownedCount: 50 })).toBe("Over");
+  });
+
+  // Over is tested before both the ownership test and the unresolved guard: the
+  // count is the thing standing between this deck and a legal list, so owning
+  // every card of it does not make it Complete.
+  it("Over outranks Complete when every card is owned", () =>
+    expect(statusPill({ built: 104, ownedCount: 104, unresolvedCount: 0 })).toBe("Over"));
 });

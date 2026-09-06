@@ -638,23 +638,23 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     if (rejection) throw new Error(rejection);
   }
 
-  // Locking the deck row makes the cap check and the write atomic, the same way
-  // addCardToDeck does — an Undo racing a hand-add must not slip past 99.
+  // Locking the deck row keeps the read and the write atomic, the same way
+  // addCardToDeck does — the returned count is what the Undo toast reports, and
+  // a hand-add racing it would otherwise make that number a guess.
   return await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
-    // The deck holds 99 rows at most, so reading it whole costs no more than a
-    // sum would and also answers which rows the insert is going to skip.
-    const present = await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
-      .from(deckCards).where(eq(deckCards.deckId, deckId));
-    const built = present.reduce((n, r) => n + r.quantity, 0);
-    // Only the rows that will actually land count against the cap. A card the
-    // player re-added by hand before clicking Undo is skipped by the conflict
-    // clause, and counting it would refuse a restore that fits.
+    // Only the ids being restored. The read exists to say which of them the
+    // insert's conflict clause will skip, and with the cap gone the rest of the
+    // deck is an unbounded scan answering nothing.
+    const present = await tx.select({ oracleId: deckCards.oracleId })
+      .from(deckCards)
+      .where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, ids)));
+    // A card the player re-added by hand before clicking Undo is skipped by the
+    // conflict clause, so it is not part of what this restore put back.
     const here = new Set(present.map((r) => r.oracleId));
     const restored = [...byId]
       .filter(([oracleId]) => !here.has(oracleId))
       .reduce((n, [, quantity]) => n + quantity, 0);
-    if (built + restored > 99) throw new Error("deck full");
     await tx.insert(deckCards)
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
       .onConflictDoNothing();

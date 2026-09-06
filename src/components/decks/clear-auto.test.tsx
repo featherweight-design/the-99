@@ -1,5 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { builtFragment } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 
@@ -525,7 +526,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     });
 
     expect(
-      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("2", "2")),
+      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("2", builtFragment(2))),
     ).toBeInTheDocument();
   });
 
@@ -554,7 +555,7 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
     });
 
     expect(
-      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("1", "1")),
+      screen.getByText(recommendationsCopy.auto.sweptRestoredAnnounce("1", builtFragment(1))),
     ).toBeInTheDocument();
   });
 

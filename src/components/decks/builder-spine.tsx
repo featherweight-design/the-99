@@ -12,6 +12,7 @@ import { PrimaryButton } from "@/components/ui/button";
 import { AvailabilityGlyph } from "@/components/ui/availability-marker";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { overCopy, overWord } from "../../lib/copy/decks-builder";
 
 interface BuilderSpineProps {
   deck: DeckDetail;
@@ -214,6 +215,11 @@ export function BuilderSpine({
   const { built, ownedCount, toBuyCount } = counts;
   const pct = Math.min(100, Math.round((built / 99) * 100));
   const exportDisabled = built === 0;
+  // Past 99 the bar re-scales to the total: the green segment is the legal 99
+  // and the amber remainder is drawn to the scale of the cards to cut.
+  const over = built > 99;
+  const toCut = built - 99;
+  const legalPercent = over ? (99 / built) * 100 : pct;
 
   // Commander thumb gradient (fallback when no art)
   const thumbGradient = commanderGradient(commander.colorIdentity);
@@ -321,7 +327,7 @@ export function BuilderSpine({
         <div className="flex items-baseline gap-[4px] mt-[6px] md:mt-[4px]">
           <span
             className="font-mono font-semibold text-[14px] md:text-[20px]"
-            style={{ color: "var(--fg)" }}
+            style={{ color: over ? "var(--warning)" : "var(--fg)" }}
           >
             {built}
           </span>
@@ -331,6 +337,14 @@ export function BuilderSpine({
           >
             / 99
           </span>
+          {over && (
+            <span
+              className="font-mono font-semibold text-[12px] md:text-[13px] ml-[4px] md:ml-[6px]"
+              style={{ color: "var(--warning)" }}
+            >
+              {overCopy.figure.delta(String(toCut))}
+            </span>
+          )}
         </div>
 
         {/* §Spine — progress bar track: mobile h 5, desktop h 6 */}
@@ -341,13 +355,28 @@ export function BuilderSpine({
           }}
         >
           {/* §Spine — progress bar fill: built ≥99 var(--success) / ≥55 var(--warning) / <55 var(--danger) */}
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${pct}%`,
-              background: built >= 99 ? "var(--success)" : built >= 55 ? "var(--warning)" : "var(--danger)",
-            }}
-          />
+          <div className="flex h-full">
+            <div
+              className={over ? "h-full" : "h-full rounded-full"}
+              style={{
+                width: `${legalPercent}%`,
+                background:
+                  built >= 99 ? "var(--success)" : built >= 55 ? "var(--warning)" : "var(--danger)",
+              }}
+            />
+            {over && (
+              // The hairline is the only thing separating two saturated fills
+              // that meet edge to edge.
+              <div
+                className="h-full"
+                style={{
+                  width: `${100 - legalPercent}%`,
+                  background: "var(--warning)",
+                  boxShadow: "inset 1px 0 0 var(--bg)",
+                }}
+              />
+            )}
+          </div>
         </div>
 
         {/* §Spine — "54 owned · 8 to buy" caption (desktop only). It splits the
@@ -360,6 +389,25 @@ export function BuilderSpine({
             style={{ color: "var(--fg-faint)" }}
           >
             {ownedCount} owned · {toBuyCount} to buy
+          </p>
+        )}
+
+        {/* §Spine — trim line. It sits inside the centre column under the
+            owned/to-buy caption rather than in a RollupBands band below the
+            spine: those bands are claims about the collection, and being over
+            99 is a claim about this deck's arithmetic, so it belongs beside
+            the arithmetic. The third clause is dropped at 390px, the same
+            shortening the bands apply when they stack. */}
+        {over && (
+          <p
+            className="text-[12px] md:text-[12.5px] leading-[1.5] mt-[8px] text-center md:text-left md:max-w-[520px]"
+            style={{ color: "var(--fg-body)" }}
+          >
+            <b className="font-semibold" style={{ color: "var(--warning)" }}>
+              {overCopy.trim.lead(overWord(toCut))}
+            </b>{" "}
+            <span className="md:hidden">{overCopy.trim.bodyShort(String(toCut))}</span>
+            <span className="hidden md:inline">{overCopy.trim.body(String(toCut))}</span>
           </p>
         )}
       </div>

@@ -397,18 +397,19 @@ describe("restoreAutoCards — the rows come from the client", () => {
     expect(restoredRows().map((r) => r.oracleId)).toEqual([CARD_A, CARD_B]);
   });
 
-  it("refuses a restore that would push the deck past 99", async () => {
+  // Undo puts back what the player had. Refusing it because the result is over
+  // would leave them with neither the cards nor the deletion they undid.
+  it("restores past 99 — the count says Over, the restore is not refused", async () => {
     ownDeck();
     stub.state.deckRows.push({ oracleId: CARD_B, quantity: 97 });
-    await expect(
-      restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 3 }]),
-    ).rejects.toThrow("deck full");
-    expect(restoredRows()).toEqual([]);
+    const restored = await restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 3 }]);
+    expect(restored).toBe(3);
+    expect(restoredRows().map((r) => r.oracleId)).toContain(CARD_A);
   });
 
   // A card re-added by hand before Undo is skipped by the conflict clause, so
-  // counting it against the cap would refuse a restore that fits.
-  it("ignores a row already in the deck when measuring the cap", async () => {
+  // counting it would overstate what this restore actually put back.
+  it("ignores a row already in the deck when counting what it restored", async () => {
     ownDeck();
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 99 });
     await restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 1 }]);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addPanelCopy, decksBuilderCopy, shortCommanderName } from "./decks-builder";
+import { addPanelCopy, builtFragment, decksBuilderCopy, shortCommanderName } from "./decks-builder";
 
 describe("shortCommanderName", () => {
   it("takes the name up to the first comma", () => {
@@ -71,6 +71,18 @@ describe("addPanelCopy counts at n = 1", () => {
       "Sol Ring added · 12 of 99 · Ramp 4 of 10",
     );
     expect(addPanelCopy.announce.addedNoRole("Sol Ring", 12)).toBe("Sol Ring added · 12 of 99");
+  });
+
+  // "104 of 99" is a range with no meaning, and the live region is the one
+  // place the amber bar's second figure cannot do the explaining.
+  it("stops saying 'of 99' once the deck is past it", () => {
+    expect(addPanelCopy.announce.addedNoRole("Mountain", 104)).toBe(
+      "Mountain added · 104 cards, 5 over the 99",
+    );
+    expect(addPanelCopy.undo.announceRemoved("Mountain", 100)).toBe(
+      "Mountain removed · 100 cards, 1 over the 99 · undo available",
+    );
+    expect(builtFragment(99)).toBe("99 of 99");
   });
 });
 

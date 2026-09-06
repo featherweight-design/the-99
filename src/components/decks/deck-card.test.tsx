@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { overCopy } from "../../lib/copy/decks-builder";
 import type { DeckListItem } from "../../lib/decks/read";
 import { DeckCard } from "./deck-card";
 
@@ -35,5 +36,44 @@ describe("DeckCard — unresolved badge", () => {
   it("does not introduce a new status pill", () => {
     render(<DeckCard deck={deck({ built: 99, ownedCount: 99, unresolvedCount: 1, statusPill: "Playable" })} />);
     expect(screen.getByText("Playable")).toBeInTheDocument();
+  });
+});
+
+describe("DeckCard — over 99", () => {
+  const overDeck = deck({ built: 104, ownedCount: 104, toBuyCount: 0, statusPill: "Over" });
+
+  it("says how many to cut", () => {
+    render(<DeckCard deck={overDeck} />);
+    expect(screen.getByText(overCopy.toCut("5"))).toBeInTheDocument();
+  });
+
+  // A bare amber 104 with no denominator is the reading this amendment exists
+  // to stop, so the suffix is present at phone width too — where a deck at or
+  // under 99 hides it.
+  it("keeps the / 99 denominator visible at every width", () => {
+    render(<DeckCard deck={overDeck} />);
+    const suffix = screen.getByText(overCopy.figure.denominator.trim());
+    expect(suffix.className).not.toContain("hidden");
+  });
+
+  // A valuenow of 104 against a max of 99 is an invalid range, and a reader
+  // that clamps it to 100% announces a finished deck. Holding valuenow at the
+  // legal 99 below a raised max keeps the ratio short of full, and the
+  // valuetext says the part no percentage can.
+  it("reports the legal 99 against the deck's own total as the max", () => {
+    render(<DeckCard deck={overDeck} />);
+    const bar = screen.getByRole("progressbar");
+    expect(bar).toHaveAttribute("aria-valuenow", "99");
+    expect(bar).toHaveAttribute("aria-valuemax", "104");
+    expect(bar).toHaveAttribute("aria-valuetext", overCopy.aria.progress("104", "5"));
+    // The name is the deck, not the count. A name that moved with the value
+    // would be announced alongside the valuetext that already carries it.
+    expect(bar).toHaveAccessibleName(`${overDeck.name} build progress`);
+  });
+
+  it("leaves a deck at 99 alone", () => {
+    render(<DeckCard deck={deck({ built: 99, ownedCount: 99, toBuyCount: 0, statusPill: "Complete" })} />);
+    expect(screen.queryByText(/to cut/)).not.toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "99");
   });
 });

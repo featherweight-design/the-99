@@ -6,6 +6,7 @@ import { colorLabel } from "../../lib/decks/format";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { GhostButton } from "@/components/ui/button";
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { overCopy } from "../../lib/copy/decks-builder";
 
 /** Progress bar fill color by built bucket. §Deck card — progress bar fill */
 function progressFillColor(built: number): string {
@@ -18,6 +19,7 @@ function progressFillColor(built: number): string {
 function pillStyles(status: DeckListItem["statusPill"]): { color: string; background: string } {
   switch (status) {
     case "Building":
+    case "Over":
       return { color: "var(--warning)", background: "color-mix(in oklab, var(--warning) 13%, transparent)" };
     case "Playable":
     case "Complete":
@@ -55,6 +57,15 @@ export function DeckCard({ deck }: DeckCardProps) {
   const pill = pillStyles(deck.statusPill);
   const fillColor = progressFillColor(deck.built);
   const fillPercent = Math.min(100, Math.round((deck.built / 99) * 100));
+  // Past 99 the bar re-scales to the total instead of pinning at 100%: the
+  // green segment is the legal 99 and the amber remainder *is* the number of
+  // cards to cut, drawn to scale.
+  const over = deck.built > 99;
+  const toCut = deck.built - 99;
+  const legalPercent = over ? (99 / deck.built) * 100 : fillPercent;
+  const progressLabel = over
+    ? overCopy.aria.progress(String(deck.built), String(toCut))
+    : `${deck.built} of 99 cards built`;
   const artGradient = commanderGradient(deck.commanderColorIdentity);
 
   return (
@@ -156,11 +167,29 @@ export function DeckCard({ deck }: DeckCardProps) {
           {/* §Deck card — built figure: IBM Plex Mono 600 13/15px var(--fg) */}
           <span
             className="font-mono font-semibold text-[13px] md:text-[15px]"
-            style={{ color: "var(--fg)" }}
+            style={{ color: over ? "var(--warning)" : "var(--fg)" }}
           >
             {deck.built}
-            {/* §Deck card — "/ 99" suffix (desktop only): var(--fg-faint) weight 400 */}
-            <span className="hidden md:inline font-normal" style={{ color: "var(--fg-faint)" }}> / 99</span>
+            {/* §Deck card — "/ 99" suffix: var(--fg-faint) weight 400. Desktop
+                only at or below 99, but an over deck shows it at every width —
+                a bare amber 104 with no denominator is the one reading this
+                amendment exists to stop. */}
+            <span
+              className={over ? "font-normal" : "hidden md:inline font-normal"}
+              style={{ color: "var(--fg-faint)" }}
+            >
+              {overCopy.figure.denominator}
+            </span>
+            {/* §Deck card — "+n" delta (desktop only): the 390px card lets the
+                `n to cut` line carry the same figure instead. */}
+            {over && (
+              <span
+                className="hidden md:inline ml-[6px]"
+                style={{ color: "var(--warning)" }}
+              >
+                {overCopy.figure.delta(String(toCut))}
+              </span>
+            )}
           </span>
 
           {/* §Deck card — owned · to-buy caption: IBM Plex Mono 11/12px var(--fg-muted) */}
@@ -179,20 +208,57 @@ export function DeckCard({ deck }: DeckCardProps) {
             background: "var(--elevated)",
           }}
           role="progressbar"
-          aria-valuenow={deck.built}
+          // Held at 99 past the limit. Reported as its own max, the bar computes
+          // to exactly 100% and readers announce a finished deck — the reading
+          // the amber second segment exists to prevent.
+          aria-valuenow={Math.min(deck.built, 99)}
           aria-valuemin={0}
-          aria-valuemax={99}
-          aria-label={`${deck.built} of 99 cards built`}
+          // A valuenow of 104 against a max of 99 is an invalid range, and some
+          // readers clamp it to 100% — which reads as a finished deck.
+          aria-valuemax={Math.max(99, deck.built)}
+          // The percentage is what a reader falls back on when there is no
+          // valuetext, and no percentage can say "five over". This replaces it
+          // outright rather than sitting beside it.
+          aria-valuetext={progressLabel}
+          // Stable, and about the deck rather than the count. A name that
+          // changed with the value would be announced alongside the valuetext
+          // that already carries it, so the reader would hear the count twice.
+          aria-label={`${deck.name} build progress`}
         >
           {/* §Deck card — progress bar fill: h 100%, br 999px, color by built bucket */}
-          <div
-            className="h-full rounded-[999px]"
-            style={{
-              width: `${fillPercent}%`,
-              background: fillColor,
-            }}
-          />
+          <div className="flex h-full">
+            <div
+              className={over ? "h-full" : "h-full rounded-[999px]"}
+              style={{
+                width: `${legalPercent}%`,
+                background: fillColor,
+              }}
+            />
+            {over && (
+              // The hairline is the only thing separating two saturated fills
+              // that meet edge to edge.
+              <div
+                className="h-full"
+                style={{
+                  width: `${100 - legalPercent}%`,
+                  background: "var(--warning)",
+                  boxShadow: "inset 1px 0 0 var(--bg)",
+                }}
+              />
+            )}
+          </div>
         </div>
+
+        {/* §Deck card — "n to cut" line, in the unresolved marker's slot and
+            above it when both render. Terse because the spine says it properly. */}
+        {over && (
+          <p
+            className="font-mono text-[10px] md:text-[10.5px] mt-[6px] md:mt-[7px] m-0"
+            style={{ color: "var(--warning)" }}
+          >
+            {overCopy.toCut(String(toCut))}
+          </p>
+        )}
 
         {/* §Deck with unresolved rows on /decks — an additive count marker, not
             a new status. The status vocabulary is unchanged: threading a fifth
