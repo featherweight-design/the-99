@@ -89,7 +89,7 @@ describe("GameLogForm", () => {
   it("caps the date at today", () => {
     mount();
     open();
-    fireEvent.click(screen.getByText(gameLogCopy.form.playedToday));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.playedToday }));
     const date = screen.getByLabelText(gameLogCopy.form.playedToday) as HTMLInputElement;
     expect(date.max).toBe(new Date().toISOString().slice(0, 10));
   });
@@ -98,12 +98,31 @@ describe("GameLogForm", () => {
     mount();
     open();
     fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
-    fireEvent.click(screen.getByText(gameLogCopy.form.playedToday));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.playedToday }));
     const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
     fireEvent.change(screen.getByLabelText(gameLogCopy.form.playedToday), {
       target: { value: tomorrow },
     });
     expect(screen.getByRole("button", { name: gameLogCopy.form.save })).toBeDisabled();
+  });
+
+  // States 2, 11 and 13. The collapsed button is unmounted while the form is
+  // open, so the focus return has to outlive it.
+  it("moves focus into the form on open and back to the row on cancel", () => {
+    mount();
+    open();
+    expect(screen.getByRole("radio", { name: gameLogCopy.form.won })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.cancel }));
+    expect(screen.getByRole("button", { name: gameLogCopy.form.open })).toHaveFocus();
+  });
+
+  // The gloss describes the axis; it must not be read as part of its name.
+  it("keeps the gloss out of the checkbox's name", () => {
+    mount();
+    open();
+    const [worked] = mana();
+    expect(worked).toHaveAccessibleName(axisCopy.mana.label);
+    expect(worked).toHaveAccessibleDescription(axisCopy.mana.worked);
   });
 
   // State 12. There is no edit action, so a refusal that cleared the form would

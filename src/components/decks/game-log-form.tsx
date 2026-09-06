@@ -39,6 +39,14 @@ const RESULTS: { value: GameResult; label: string }[] = [
   { value: "draw", label: gameLogCopy.form.draw },
 ];
 
+// `played tonight` / `played 12 Aug` — the prefix takes faint ink and the date
+// word body ink. Split on the first space rather than on a duplicated literal,
+// so the wording of both strings stays in the copy module.
+function dateParts(text: string): [string, string] {
+  const at = text.indexOf(" ");
+  return at < 0 ? [text, ""] : [text.slice(0, at + 1), text.slice(at + 1)];
+}
+
 const FIELD_LABEL =
   "block font-mono uppercase text-[9.5px] md:text-[10px] tracking-[0.14em] text-fg-faint mb-[8px] md:mb-[9px]";
 
@@ -139,6 +147,10 @@ export function GameLogForm({
   // rule is enforced here as well as in the action.
   const futureDate = playedAt > today();
 
+  const [prefix, dateWord] = dateParts(
+    playedAt === today() ? gameLogCopy.form.playedToday : gameLogCopy.form.played(playedAt),
+  );
+
   function submit() {
     if (!result || isPending || futureDate) return;
     startTransition(async () => {
@@ -208,11 +220,10 @@ export function GameLogForm({
             onClick={() => setDateOpen(true)}
             className="font-mono text-[10px] md:text-[11px] text-fg-faint border-b border-dashed border-border-dashed cursor-pointer"
           >
-            {playedAt === today() ? (
-              gameLogCopy.form.playedToday
-            ) : (
-              <span className="text-fg-body">{gameLogCopy.form.played(playedAt)}</span>
-            )}
+            {/* The prefix is a bare text node: wrapping it too would strip the
+                space between the two from the accessible name. */}
+            {prefix}
+            <span className="text-fg-body">{dateWord}</span>
           </button>
         )}
       </div>
@@ -377,6 +388,7 @@ function AxisColumn({
           // rather than that something happened here.
           const vacated = moved !== null && moved.key === key && moved.to !== column;
           const glossId = `axis-${column}-${key}-gloss`;
+          const labelId = `axis-${column}-${key}-label`;
           return (
             <label
               key={key}
@@ -397,6 +409,10 @@ function AxisColumn({
                 className="sr-only"
                 checked={on}
                 disabled={disabled}
+                // The wrapping label is the hit area, so without this the
+                // gloss would land inside the accessible name as well as in
+                // the description.
+                aria-labelledby={labelId}
                 aria-describedby={glossId}
                 onChange={() => onToggle(key, column)}
               />
@@ -414,7 +430,10 @@ function AxisColumn({
                 {on ? "✓" : ""}
               </span>
               <span className="flex-1 min-w-0 flex flex-col gap-[2px]">
-                <span className={"text-[13.5px] " + (vacated ? "text-fg-faint" : "text-fg")}>
+                <span
+                  id={labelId}
+                  className={"text-[13.5px] " + (vacated ? "text-fg-faint" : "text-fg")}
+                >
                   {axisCopy[key].label}
                 </span>
                 <span
