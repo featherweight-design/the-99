@@ -23,9 +23,12 @@ import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 //
 // Was 12 (#352). The cap was always applied — `scripts/probe-consider-shelves.mjs`
 // found no shelf drawing more than the cap at either width — but eight shelves
-// of twelve is a panel 14,546px tall on a phone, with the last shelf's heading
-// 10,904px below the top. At six it is 9,393px and 6,941px. A shelf is a sample
+// of twelve is a panel 14,546px tall on a phone, with the Top picks heading
+// 13,328px below the top. At six it is 9,393px and 8,175px. A shelf is a sample
 // to browse, not the role group in full; `Show all N` is right there for the rest.
+//
+// Six does not on its own make Top picks easy to find, and nothing at this level
+// could: eight shelves is the length. That part of #352 is structural and open.
 export const SHELF_CAP = 6;
 
 // The shelf heading's meta text, which the unowned shelf prints in two colours.

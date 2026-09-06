@@ -87,10 +87,12 @@ async function readShelves(page) {
             .find((t) => t && /Show all/.test(t)) ?? null,
         };
       }),
-      // The heading's distance below the top of the panel, which is the "pushed
-      // far below the fold" half of the report.
+      // The "Top picks" heading's distance below the top of the panel, which is
+      // the "pushed far below the fold" half of the report. By id: the heading
+      // reads "Top picks for <commander>", so any text match is a match against
+      // copy, and the anchor ids are what the coverage strip already scrolls to.
       topPicksOffset: (() => {
-        const h = [...panel.querySelectorAll("h3")].find((n) => /Synergy ·/.test(n.textContent ?? ""));
+        const h = panel.querySelector("#shelf-unowned");
         if (!h) return null;
         return Math.round(h.getBoundingClientRect().top - panel.getBoundingClientRect().top);
       })(),
@@ -128,7 +130,7 @@ for (const viewport of VIEWPORTS) {
       console.log(`    meta: ${s.meta}`);
     }
     console.log(`  panel height: ${result.panelHeight}px`);
-    console.log(`  synergy heading offset from panel top: ${result.topPicksOffset ?? "—"}px`);
+    console.log(`  Top picks heading offset from panel top: ${result.topPicksOffset ?? "—"}px`);
   }
   await context.close();
 }
