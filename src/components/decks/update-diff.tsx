@@ -128,6 +128,10 @@ export function UpdateDiff({
     .reduce((n, r) => n + r.quantity, 0);
   const arriving = preview.in.reduce((n, r) => n + r.quantity, 0);
   const landing = preview.built - leaving + arriving + preview.unchangedDelta;
+  // Rows, deliberately, and the CTA is the only place the choice is visible:
+  // `19 in, 6 out` restates the group headings directly above it, so counting
+  // copies here would have the button disagree with the lists it summarises.
+  // The copies figure is not missing from the screen — `landing` sits beside it.
   const inN = String(preview.in.length);
   const outN = String(removing);
 
@@ -281,7 +285,11 @@ export function UpdateDiff({
       {wholesale && (
         <div className="mt-[22px] rounded-[10px] p-[14px_16px] bg-[color:var(--elevated-hover)] [border:1px_solid_var(--border-strong)] [border-left:3px_solid_var(--warning)]">
           <p className="m-0 text-[13px] md:text-[14px] leading-[1.6] text-[color:var(--fg-body)]">
-            {copy.wholesaleNote(inN, outN)}
+            {/* Copies, not the rows the CTA counts. This is the one sentence on
+                the screen about magnitude rather than about the groups, and it
+                says "cards" — feeding it rows would have it disagree with the
+                threshold that raised it, which is a share of `built`. */}
+            {copy.wholesaleNote(String(arriving), String(outCopies))}
           </p>
           <GhostButton
             onClick={onImportAsNew}

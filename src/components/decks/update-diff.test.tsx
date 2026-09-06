@@ -205,6 +205,15 @@ describe("UpdateDiff state 14", () => {
     expect(screen.getByRole("button", { name: copy.importAsNew })).toBeInTheDocument();
   });
 
+  // The note is the one sentence about magnitude rather than about the groups,
+  // and it says "cards". Counted in rows it would read "1 out" of a deck of
+  // twenty — and disagree with the threshold that raised it, which is a share
+  // of `built` and so a share of copies.
+  it("states the note's figures in copies", () => {
+    renderDiff({ built: 20, out: [row("out-1", { quantity: 16 })] });
+    expect(screen.getByText(copy.wholesaleNote("1", "16"))).toBeInTheDocument();
+  });
+
   // What the note says is that the list looks like a different deck, which is
   // true of the paste however many rows the player rescues from it.
   it("does not withdraw the note as removals are kept", () => {
