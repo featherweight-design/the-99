@@ -49,6 +49,18 @@ describe("assembleDiscovery", () => {
     expect(got.floorExcluded).toBe(1);
   });
 
+  // The parser yields tags from a page whose card list can be missing, so a
+  // tagged commander with no denominator is real. It has no distance to measure,
+  // which is the untagged failure and not the floor's.
+  it("does not count an unmeasurable floor as a floor exclusion", () => {
+    const noDenominator = { ...base, candidates: [candidate({ edhrecTotal: null,
+      tags: [{ slug: "counters", label: "Counters", count: 1 }] })] };
+    const got = assembleDiscovery({ ...noDenominator, sort: "new" });
+    expect(got.items).toEqual([]);
+    expect(got.floorExcluded).toBe(0);
+    expect(got.bestPct).toBeNull();
+  });
+
   it("counts the population before the floor, so the subtitle is not the sort's count", () => {
     expect(assembleDiscovery({ ...base, sort: "new" }).candidateCount).toBe(3);
   });

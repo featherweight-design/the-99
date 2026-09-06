@@ -50,10 +50,10 @@ export type DiscoveryList = {
       `empty.floorBody` needs so 30% does not read as arbitrary. Null when the
       floor excluded nothing, or when no candidate had a denominator. */
   bestPct: number | null;
-  /** How many tagged candidates the floor removed. An empty `items` under
-      `new` means "everything is untagged" when this is 0 and "the floor took
-      them all" when it is not — the empty states render a different thing for
-      each, and `bestPct` alone cannot tell them apart. */
+  /** How many candidates the floor measured and removed. An empty `items` under
+      `new` means "nothing had a distance to measure" when this is 0 and "the
+      floor took them all" when it is not — the empty states render a different
+      thing for each, and `bestPct` alone cannot tell them apart. */
   floorExcluded: number;
   hasDecks: boolean;
   /** False when the availability read failed. The ranking still stands, but under
@@ -101,19 +101,29 @@ export function assembleDiscovery(input: {
     };
   });
 
-  // The novelty sort has two exclusions and they are different failures:
-  // an untagged commander has no distance to measure (ruling 5), and a
-  // commander below the floor has a distance the player could not act on
-  // (ruling 4). Both leave the list; only the second feeds `bestPct`.
+  // The novelty sort excludes on two different failures: a commander with no
+  // distance to measure (ruling 5), and one whose distance the player could not
+  // act on (ruling 4). Both leave the list; only the second feeds `bestPct`.
+  //
+  // A tagged commander with no EDHREC denominator is the first kind, not the
+  // second — the parser yields tags from a page whose card list can be missing,
+  // and a floor that cannot be measured was never cleared or missed. Counting it
+  // as floor-excluded would leave `floorExcluded > 0` with a null `bestPct`, and
+  // the floor empty state would promise a nearest miss it cannot name.
+  const measurable = (c: { tagTotal: number; floorPct: number | null }) =>
+    c.tagTotal > 0 && c.floorPct != null;
+
   const active =
     input.sort === "new"
-      ? enriched.filter((c) => c.tagTotal > 0 && clearsFloor(c))
+      ? enriched.filter((c) => measurable(c) && clearsFloor(c))
       : enriched;
 
   const excluded =
     input.sort === "new"
-      ? enriched.filter((c) => c.tagTotal > 0 && !clearsFloor(c))
+      ? enriched.filter((c) => measurable(c) && !clearsFloor(c))
       : [];
+  // Every member has a `floorPct` by construction; the null branch is the
+  // narrowing, not a case.
   const bestPct = excluded.reduce<number | null>(
     (best, c) =>
       c.floorPct == null ? best : best == null ? c.floorPct : Math.max(best, c.floorPct),
