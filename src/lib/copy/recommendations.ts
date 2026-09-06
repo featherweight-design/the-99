@@ -152,7 +152,7 @@ export const recommendationsCopy = {
   // leaves when the last auto card does.
   fill: {
     provenance: (filled: string, bought: string, open: string) =>
-      `We filled the roles and the mana base — ${filled} cards, ${bought} of them from outside your collection. The other ${open} are yours: that is where this commander actually happens, and it is where we are worst.`,
+      `We filled the roles and the mana base — ${filled} cards, ${bought} of them from outside your collection. The other ${open} are yours: that is where this commander actually happens.`,
     provenanceMobile: (filled: string, bought: string, open: string) =>
       `We filled the roles and the mana base — ${filled} cards, ${bought} from outside your collection. The other ${open} are yours.`,
     // Every baseline was covered from the collection, so nothing was bought.
@@ -161,7 +161,7 @@ export const recommendationsCopy = {
     // State 13 — a baseline the fill could not reach. Names the shortfall
     // rather than quietly reporting a smaller number.
     provenanceShort: (filled: string, role: string, open: string) =>
-      `We filled ${filled} of 99. ${role} came up short — you own what you own, EDHREC knows what it knows, and that is everything we have. The other ${open} are yours.`,
+      `We filled ${filled} of 99. ${role} came up short — your collection and EDHREC between them had nothing more to place. The other ${open} are yours.`,
     // In-flight (state 14). One announcement on settle, never per row.
     filling: (n: string) => `Filling ${n} of 99…`,
     fillingRows: (n: string) => `Sleeving ${n} cards…`,
@@ -169,8 +169,8 @@ export const recommendationsCopy = {
       `Deck filled. ${filled} of 99, ${bought} to buy.`,
     // State 15 — the deck exists, the fill did not land.
     failedHeading: 'The deck is here, the cards aren’t.',
-    failedBody:
-      'We made the deck but couldn’t fill it. Nothing is lost — your commander is saved and the slots are empty.',
+    // "the slots are empty" was the heading's second clause said again, plainly.
+    failedBody: 'We made the deck but couldn’t fill it. Nothing is lost.',
     failedRetry: 'Try filling again',
     failedRetryAria: 'Try filling this deck again',
   },
@@ -178,7 +178,7 @@ export const recommendationsCopy = {
   // ── Surface B · Shopping filled by the fill ───────────────────────────
   shopping: {
     intro: (n: string) =>
-      `${n} cards we reached past your collection for, to get each role to its baseline. Nothing here is a wildcard — every one is closing a specific gap.`,
+      `${n} cards we reached past your collection for, to get each role to its baseline.`,
     // This surface was drawn for a list the fill produced, and the intro above
     // says so. A deck built by hand, or one the player has added unowned cards
     // to on top of the fill, holds rows nobody reached past the collection for

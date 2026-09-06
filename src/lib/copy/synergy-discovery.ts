@@ -175,7 +175,7 @@ export const synergyCopy = {
     // about the 68-card fill. Expressive moment: it is the one line here that
     // is allowed a voice, and it earns it by being honest about a shortfall.
     short: (total: string, n: string) =>
-      `${total} of 99. Your collection ran out ${n} short — you own what you own, EDHREC knows what it knows, and that is everything we have.`,
+      `${total} of 99. Your collection ran out ${n} short — there was nothing left in it that EDHREC ranks for this commander.`,
 
     filledAnnounce: (added: string, total: string) =>
       `${added} cards added. ${total} of 99.`,

@@ -431,8 +431,7 @@ export function BuilderSpine({
             owned/to-buy caption rather than in a RollupBands band below the
             spine: those bands are claims about the collection, and being over
             99 is a claim about this deck's arithmetic, so it belongs beside
-            the arithmetic. The third clause is dropped at 390px, the same
-            shortening the bands apply when they stack. */}
+            the arithmetic. */}
         {over && (
           <p
             className="text-[12px] md:text-[12.5px] leading-[1.5] mt-[8px] text-center md:text-left md:max-w-[520px]"
@@ -441,8 +440,7 @@ export function BuilderSpine({
             <b className="font-semibold" style={{ color: "var(--warning)" }}>
               {overCopy.trim.lead(overWord(toCut))}
             </b>{" "}
-            <span className="md:hidden">{overCopy.trim.bodyShort(String(toCut))}</span>
-            <span className="hidden md:inline">{overCopy.trim.body(String(toCut))}</span>
+            {overCopy.trim.body(String(toCut))}
           </p>
         )}
       </div>

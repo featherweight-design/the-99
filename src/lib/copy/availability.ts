@@ -111,8 +111,11 @@ export const availabilityCopy = {
     // Shown only in the `free` state, under the control.
     freeNote:
       "Cards sleeved into a finished deck don’t count toward these scores.",
+    // The long form's second sentence repeats the first's subject and verb, so
+    // the contrast lands on the one word that changed. The drawn version
+    // ("Unfinished brews still do.") made the reader go back for its subject.
     freeNoteLong:
-      "Cards sleeved into a finished deck don’t count toward these scores. Unfinished brews still do.",
+      "Cards sleeved into a finished deck don’t count toward these scores. Cards in an unfinished brew still do.",
     subtitleAll: "ranked by fit",
     subtitleFree: "ranked by what’s free",
     // Announced on the list’s existing live region when the toggle flips.

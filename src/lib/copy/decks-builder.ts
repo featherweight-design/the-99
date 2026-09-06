@@ -184,7 +184,10 @@ export const addPanelCopy = {
   considerEmpty: {
     heading: "We’re out of ideas, and that’s a compliment",
     body: (commanderShortName: string) =>
-      `Every card in your collection that fits ${commanderShortName} is already in this deck. Add more to the pile and we’ll have more to say.`,
+      `Every card in your collection that fits ${commanderShortName} is already in this deck.`,
+    // The second sentence this body used to carry ("Add more to the pile and
+    // we'll have more to say") was the CTA rendered directly beneath it, said
+    // twice — and a second joke under a heading that already made one.
     cta: "Add to your collection",
   },
 
@@ -192,7 +195,7 @@ export const addPanelCopy = {
   degraded: {
     heading: "EDHREC isn’t answering right now.",
     body: (commanderShortName: string) =>
-      `These are ranked by what your deck is short of, not by what other ${commanderShortName} decks run. The shelves are honest and the percentages are missing.`,
+      `These are ranked by what your deck is short of, not by what other ${commanderShortName} decks run. The percentages are missing until it answers.`,
     retry: "Try again",
   },
 
@@ -361,19 +364,16 @@ export const overCopy = {
   // sits in a card the player is scanning past, and the spine says it properly.
   toCut: (n: string) => (n === "1" ? "1 to cut" : `${n} to cut`),
 
-  // The spine's trim line. Three clauses, and the third is load-bearing: it is
-  // the sentence that tells a first-time overfiller they have not broken
-  // anything. Words, not digits, because the figure above already printed the
-  // number twice.
+  // The spine's trim line. Words, not digits, because the figure above already
+  // printed the number twice.
+  //
+  // ONE body at both widths. The drawn version carried a third clause
+  // ("Building long and trimming back is a normal way to get there") that said
+  // nothing about this deck, and the phone dropped it — so the phone's line was
+  // already the whole message.
   trim: {
     lead: (words: string) => `${words} over the ninety-nine.`,
     body: (n: string) =>
-      n === "1"
-        ? "Cut one and it is legal. Building long and trimming back is a normal way to get there."
-        : `Cut ${n} and it is legal. Building long and trimming back is a normal way to get there.`,
-    // 390px drops the trailing clause — the same shortening RollupBands
-    // applies when it stacks two lines.
-    bodyShort: (n: string) =>
       n === "1" ? "Cut one and it is legal." : `Cut ${n} and it is legal.`,
     // Spelled out to nineteen, then digits. Deliberately small: past twenty
     // the player has pasted something wholesale and "Thirty-eight" is more

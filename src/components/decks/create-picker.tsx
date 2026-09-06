@@ -225,7 +225,9 @@ export function CreatePicker(props: CreatePickerProps) {
             </>
           ) : (
             <>
-              <span className="md:hidden">Choose a commander you own.</span>
+              {/* The mobile title above is already "Pick a commander", so the sub
+                  carries only the scope the title cannot. */}
+              <span className="md:hidden">From your collection.</span>
               <span className="hidden md:inline" style={{ color: "var(--fg-muted)" }}>
                 Choose a commander from your collection.
               </span>

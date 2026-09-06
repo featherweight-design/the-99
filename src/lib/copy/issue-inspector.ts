@@ -43,18 +43,21 @@ export const issueInspectorCopy = {
   emptyFilter: {
     title: (query: string) => `No names match “${query}”`,
     body: (total: number) =>
-      `None of the ${total.toLocaleString()} unmatched names contain that text. Check the spelling, or clear the filter to see the full list.`,
+      `None of the ${total.toLocaleString()} unmatched names contain that text. Check the spelling.`,
+    // The escape hatch these two used to spell out ("or clear the filter to see
+    // the full list") is the button rendered directly beneath them.
     action: "Clear filter",
   },
   emptyFilterErrors: {
     body: (total: number) =>
-      `None of the ${total.toLocaleString()} errors match that text. Check the spelling, or clear the filter to see the full list.`,
+      `None of the ${total.toLocaleString()} errors match that text. Check the spelling.`,
   },
+  // The note sits directly above the tab strip, where the empty tab is already
+  // visibly disabled and printing its 0. It states the good news once and does
+  // not narrate the control underneath it.
   zeroState: {
-    noParseErrors:
-      "No parse errors — every row parsed cleanly. The Parse errors tab is disabled.",
-    noUnmatched:
-      "No unmatched names — every card matched the Oracle database. The Unmatched tab is disabled.",
+    noParseErrors: "Every row parsed cleanly.",
+    noUnmatched: "Every card matched the Oracle database.",
   },
   // Richness pass §Non-safety-critical error moment — the copy gets to be funny
   // here because nothing was lost. Transcribed from Surfaces v2 §Collection.
