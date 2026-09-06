@@ -15,8 +15,11 @@
 // `CrownDiamonds` is the one drawing of the crown in the app. Both this
 // component and the `Crowned99` wordmark render it, so the three diamonds have
 // one set of proportions everywhere they appear rather than one per call site.
-// The ratios are the brand sheet's (§The crowned numeral: 8/11, 15/20, 5/7),
-// which are wider and flatter than the pre-consolidation 8/12 and 13/19.
+// The two pairs encoded below are the brand sheet's (§The crowned numeral):
+// 8/11 for quiet and page, 15/20 for loud, each with a gap of roughly 0.6× the
+// small side. Both are wider and flatter than the pre-consolidation 8/12 and
+// 13/19. The sheet's smaller pairs belong to the wordmark, which passes its own
+// per-variant geometry in rather than choosing a tone.
 
 /** Side lengths, in px, of the three squares that become diamonds when rotated. */
 export type CrownGeometry = { small: number; large: number; gap: number };

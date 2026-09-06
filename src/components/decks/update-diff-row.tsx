@@ -44,12 +44,14 @@ function OwnedDot({ owned }: { owned: boolean }) {
  *  something the data cannot support — Product ruled it out on 2026-09-05. */
 function Marker({ auto }: { auto: boolean }) {
   // Keeps its box when there is no tag, so the type line beside it does not
-  // shift between an app-placed row and a player's own.
+  // shift between an app-placed row and a player's own. The border stays in both
+  // states because its width is part of that box.
   return (
     <span
       className={[
         "hidden md:inline font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none",
-        auto ? "text-[color:var(--fg-faint)] [border:1px_solid_var(--border)]" : "invisible",
+        "text-[color:var(--fg-faint)] [border:1px_solid_var(--border)]",
+        auto ? "" : "invisible",
       ].join(" ")}
     >
       auto
@@ -121,9 +123,8 @@ export function DiffRowIn({ card, sourceLine }: { card: DiffRowCard; sourceLine:
       <span
         className={[
           "font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none",
-          card.owned
-            ? "invisible"
-            : "text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]",
+          "text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]",
+          card.owned ? "invisible" : "",
         ].join(" ")}
       >
         buy
