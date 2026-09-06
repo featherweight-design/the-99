@@ -67,6 +67,25 @@ rather than by looking at the rendered page. Every layout claim in this report i
 claim. The feature's behaviour is covered by 2751 passing unit tests, but a visual check on
 a real viewport has not happened.
 
+## Corrected after the report, during PR review
+
+The design gaps closed above are still closed, but Copilot review of PR #332 found six
+behavioural defects this pass did not look for, because none of them are properties on the
+table. They are recorded here so the next reader does not take "0 gaps remain" as a claim
+about behaviour:
+
+- The delete path issued two statements where one sufficed, and a successfully deleted row
+  stayed in its confirming state until the route revalidated.
+- Neither of the form's radiogroups answered the keyboard the role promises; both now use
+  the repo's roving-tabindex pattern.
+- The date field's accessible name said "today" whatever day it held.
+- Clearing the date field left Save enabled and submitted an Invalid Date.
+- `logGame` walked `worked` and `hurt` in full before refusing, though the vocabulary is
+  eight axes and the action is a public endpoint.
+- The form read the local day four separate times, so a midnight rollover could leave the
+  gate, the label and the submitted instant disagreeing.
+
 ## Verdict
 
-0 gaps remain.
+0 gaps remain against the property table. Behavioural defects found later in review are
+listed in the section above.
