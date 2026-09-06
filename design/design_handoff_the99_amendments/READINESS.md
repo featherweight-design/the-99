@@ -59,7 +59,7 @@ between the four.
 six themes, no per-theme toning; Phyrexia's `--g` exception does not generalise, and this value
 sits ΔE 0.115 from the nearest of the six accents against a 0.100 floor · **`#8E7792` passes that
 floor at exactly 0.100 and is rejected on headroom**, not looks — the two cannot be told apart at
-9px · the *accent* gate is the binding one; `#7C7671`
+9px · `#98748F` is minimum-passing on the *accent* gate, which is the binding one; `#7C7671`
 clears 3:1 on every ground and still fails the glyph at 4.17, and a 305° violet at R1's pre-lift
 lightness fails three gates — hue does not buy contrast · the 4.5 floor is applied to a 12px pip
 glyph deliberately.
