@@ -10,4 +10,12 @@ export const themeCopy = {
   optionLabel: (name: string, plane: string) => `${name} — ${plane}`,
   // Live-region announcement after a selection. There is no Save, so this is the receipt.
   applied: (name: string) => `${name} applied.`,
+  // Shown once to a user whose persisted theme no longer exists, per MIGRATION.md.
+  // Naming the move matters: a silent switch reads as a bug.
+  retired: {
+    headline: (was: string) => `${was} has been retired.`,
+    body: (nowCalled: string) =>
+      `You're on ${nowCalled}, the closest theme to it. Have a look at Canopy and Witching Hour while you're here.`,
+    dismiss: "Dismiss",
+  },
 } as const;

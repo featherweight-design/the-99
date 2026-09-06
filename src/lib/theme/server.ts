@@ -3,7 +3,7 @@
 // in a client component, so the guard would add a dependency to restate a rule
 // the import below enforces on its own.
 import { cookies } from "next/headers";
-import { DEFAULT_THEME, isThemeKey, THEME_COOKIE, type ThemeKey } from "./themes";
+import { THEME_COOKIE, themeFor, type ThemeKey } from "./themes";
 
 /**
  * The theme in force for this request. Reading a cookie opts the caller into
@@ -11,6 +11,5 @@ import { DEFAULT_THEME, isThemeKey, THEME_COOKIE, type ThemeKey } from "./themes
  * nothing here.
  */
 export async function resolveTheme(): Promise<ThemeKey> {
-  const stored = (await cookies()).get(THEME_COOKIE)?.value;
-  return isThemeKey(stored) ? stored : DEFAULT_THEME;
+  return themeFor((await cookies()).get(THEME_COOKIE)?.value);
 }

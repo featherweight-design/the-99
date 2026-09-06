@@ -6,7 +6,7 @@ import { DEFAULT_THEME } from "./themes";
 // has to be able to see that they still are.
 
 // A selector list, not a single selector: the default theme is declared on
-// `:root, [data-theme="amonkhet"]` at once, so a chip can preview Gilded Stone
+// `:root, [data-theme="amonkhet"]` at once, so a chip can preview Low Sun
 // while another theme is in force. Both spellings name the same theme.
 const SELECTOR = /:root|\[data-theme="[a-z]+"\]/;
 const BLOCK = new RegExp(

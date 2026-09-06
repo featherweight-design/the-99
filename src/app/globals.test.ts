@@ -77,7 +77,7 @@ describe("display-face fallback metrics", () => {
     ).map((entry) => entry.familyName),
   );
 
-  /** `--font-big-shoulders` → `Big Shoulders`, the family `next/font` declares. */
+  /** `--font-chakra-petch` → `Chakra Petch`, the family `next/font` declares. */
   function familyOf(variable: string): string {
     return variable
       .replace(/^--font-/, "")

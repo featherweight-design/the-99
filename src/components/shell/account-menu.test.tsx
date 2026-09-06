@@ -129,6 +129,15 @@ describe("AccountMenu popover", () => {
     expect(screen.getByRole("menu")).toBeTruthy();
   });
 
+  // Named rather than left to DOM order: the picker's retirement notice puts a
+  // ✕ above the chips, and the first-focusable fallback would open the menu one
+  // Enter away from dismissing a notice the user had not read.
+  it("opens with the checked theme focused", () => {
+    render(<AccountMenu panel="popover" theme="kaldheim" />);
+    fireEvent.click(trigger());
+    expect(screen.getByRole("radio", { name: "First Frost — Kaldheim" })).toHaveFocus();
+  });
+
   it("closes on Escape and returns focus to the trigger", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     press(trigger());
@@ -215,7 +224,7 @@ describe("AccountMenu items", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     press(trigger());
     expect(document.activeElement).toBe(
-      screen.getByRole("radio", { name: "Gilded Stone — Amonkhet" }),
+      screen.getByRole("radio", { name: "Low Sun — Amonkhet" }),
     );
     const [manage, signOutItem] = screen.getAllByRole("menuitem");
     expect(manage).toHaveAttribute("tabindex", "0");

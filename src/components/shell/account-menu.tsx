@@ -112,7 +112,8 @@ type PanelProps = MenuItemsProps & {
 /** Desktop popover (S5). No backdrop and no scroll lock — a menu, not a modal. */
 function AccountPopover(props: PanelProps) {
   const ref = useRef<HTMLDivElement | null>(null);
-  useDialogA11y(ref, props.onClose, { lockScroll: false });
+  const chipRef = useRef<HTMLElement | null>(null);
+  useDialogA11y(ref, props.onClose, { lockScroll: false, initialFocusRef: chipRef });
 
   return (
     <div
@@ -157,7 +158,7 @@ function AccountPopover(props: PanelProps) {
           outside role="menu" rather than as foreign content inside it — the same
           split the sheet makes with its dialog wrapper. A radiogroup in
           particular cannot legally live inside a menu. */}
-      <ThemePicker current={props.theme} panel="popover" />
+      <ThemePicker current={props.theme} panel="popover" selectedChipRef={chipRef} />
       <div
         id={props.panelId}
         role="menu"
@@ -174,7 +175,8 @@ function AccountPopover(props: PanelProps) {
 /** Mobile bottom sheet (S8) + its backdrop (S9). */
 function AccountSheet(props: PanelProps) {
   const ref = useRef<HTMLDivElement | null>(null);
-  useDialogA11y(ref, props.onClose);
+  const chipRef = useRef<HTMLElement | null>(null);
+  useDialogA11y(ref, props.onClose, { initialFocusRef: chipRef });
 
   return (
     <>
@@ -237,7 +239,7 @@ function AccountSheet(props: PanelProps) {
             )}
           </div>
         </div>
-        <ThemePicker current={props.theme} panel="sheet" />
+        <ThemePicker current={props.theme} panel="sheet" selectedChipRef={chipRef} />
         <div
           role="menu"
           aria-labelledby={props.nameId}

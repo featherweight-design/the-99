@@ -26,7 +26,7 @@ const ALLOWED = new Set([
 ]);
 
 // A theme-aware colour written as rgba() is invisible to a hex scan and stays
-// Gilded Stone under every theme, so the scan looks for both spellings.
+// Low Sun under every theme, so the scan looks for both spellings.
 const HEX = /#[0-9A-Fa-f]{6}\b/;
 
 // Derived from globals.css rather than listed here. Hand-written triples went
