@@ -14,7 +14,9 @@ import {
 } from "../../lib/decks/export-helpers";
 import { ExportCopyButton } from "./export-copy-button";
 import { GhostButton } from "@/components/ui/button";
-import { overCopy } from "../../lib/copy/decks-builder";
+import { ExternalLink } from "../ui/external-link";
+import { manapoolAddDeckUrl } from "../../lib/manapool/links";
+import { exportLinkOutCopy, overCopy } from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
 
 type Tab = "decklist" | "shopping";
@@ -177,6 +179,8 @@ function DialogContent({
   onClose,
   isMobile,
 }: DialogContentProps) {
+  const shoppingUrl = manapoolAddDeckUrl(shoppingCards);
+
   return (
     <>
       {/* Header: border-bottom mobile only */}
@@ -485,13 +489,12 @@ function DialogContent({
         )}
       </div>
 
-      {/* Footer */}
+      {/* Footer — one hairline serves both rows; the link row adds no second
+          divider of its own. */}
+      <div style={{ borderTop: "1px solid var(--border)" }}>
       <div
         className="flex items-center gap-[8px]"
-        style={{
-          padding: isMobile ? "14px 18px" : "16px 24px",
-          borderTop: "1px solid var(--border)",
-        }}
+        style={{ padding: isMobile ? "14px 18px" : "16px 24px" }}
       >
         {/* Copy to clipboard — primary */}
         <ExportCopyButton
@@ -524,6 +527,21 @@ function DialogContent({
             Moxfield · Archidekt ready
           </span>
         )}
+      </div>
+
+      {/* Buy the shopping list at Mana Pool. Absent — not disabled — on the
+          Decklist tab and when there is nothing left to buy. */}
+      {shoppingUrl && tab === "shopping" && (
+        <div
+          className="flex items-center"
+          style={{
+            minHeight: isMobile ? 44 : undefined,
+            padding: isMobile ? "2px 18px 10px" : "13px 24px 18px",
+          }}
+        >
+          <ExternalLink href={shoppingUrl} label={exportLinkOutCopy.shopping} />
+        </div>
+      )}
       </div>
     </>
   );
