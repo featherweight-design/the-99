@@ -7,7 +7,15 @@ import { ClearAutoButton } from "./clear-auto";
 import { PriceStrip } from "./price-strip";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 
-interface GroupToggleProps {
+/**
+ * One prop, not two handlers. The cluster renders only when both answers are
+ * available, so as separate optional props a caller passing just the sweep
+ * would drop the whole cluster with neither a type error nor a runtime signal.
+ * Bundled, the pair cannot be half-supplied.
+ */
+export type AutoControls = { onClear: () => void; onKeepAll: () => void };
+
+type GroupToggleProps = {
   allCount: number;
   shoppingCount: number;
   filter: "all" | "shopping";
@@ -19,13 +27,15 @@ interface GroupToggleProps {
   /** Number of non-auto cards — kept fill cards and player additions alike. */
   keptCount?: number;
   sweepPending?: boolean;
-  onClearAuto?: () => void;
+  keepAllPending?: boolean;
+  /** Absent on surfaces with no fill to answer for. */
+  autoControls?: AutoControls;
   /** Summed over the same cards the Shopping pill counts — one fact, two
       renderings, so they can never disagree on screen. */
   priceSummary?: PriceSummary | null;
   /** Server-built. Null renders no strip at all. */
   provenance?: ProvenanceForm | null;
-}
+};
 
 export function GroupToggle({
   allCount,
@@ -37,7 +47,8 @@ export function GroupToggle({
   autoCount = 0,
   keptCount = 0,
   sweepPending = false,
-  onClearAuto,
+  keepAllPending = false,
+  autoControls,
   priceSummary = null,
   provenance = null,
 }: GroupToggleProps) {
@@ -49,7 +60,11 @@ export function GroupToggle({
        column — left on the outer element they would centre the pills and turn
        the 7/10px pill gap into the gap above the strip. */
     <div className="flex flex-col px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-[color:var(--border)] md:border-b-0">
-      <div className="flex items-center gap-[7px] md:gap-[10px]">
+      {/* `flex-wrap`: at 390px the row carries two filter pills, two bulk auto
+          controls and two grouping pills, and without it the last of them is
+          pushed off the edge. The auto cluster is one flex child, so it wraps
+          whole rather than splitting the pair across two lines. */}
+      <div className="flex flex-wrap items-center gap-[7px] md:gap-[10px]">
         {/* "All N" filter pill — active: accent bg dark text | idle: muted with border */}
         <button
           type="button"
@@ -81,15 +96,18 @@ export function GroupToggle({
         {/* Spacer: pushes group pills to the right on both breakpoints */}
         <span className="flex-1" aria-hidden />
 
-        {/* Clear all auto — absent at zero, disabled only while its sweep runs.
-            Not gated on autoCount here: state 7 keeps the kept-note after the
-            last auto card goes, and the component decides its own absence. */}
-        {onClearAuto && (
+        {/* The auto-lifecycle cluster — the kept note, Keep all, Clear all auto.
+            Absent at zero, disabled only while one of its own writes runs. Not
+            gated on autoCount here: state 7 keeps the kept-note after the last
+            auto card goes, and the component decides its own absence. */}
+        {autoControls && (
           <ClearAutoButton
             count={autoCount}
             keptCount={keptCount}
-            onClear={onClearAuto}
+            onClear={autoControls.onClear}
             pending={sweepPending}
+            onKeepAll={autoControls.onKeepAll}
+            keepAllPending={keepAllPending}
           />
         )}
 

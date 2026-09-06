@@ -4,15 +4,17 @@ import { builtFragment } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 
-const { clearAutoCards, restoreAutoCards } = vi.hoisted(() => ({
+const { clearAutoCards, restoreAutoCards, keepAllAutoCards } = vi.hoisted(() => ({
   clearAutoCards: vi.fn(),
   restoreAutoCards: vi.fn(),
+  keepAllAutoCards: vi.fn(),
 }));
 const { ClearAutoButton, SweepReceipt } = await import("./clear-auto");
 
 afterEach(() => {
   clearAutoCards.mockReset();
   restoreAutoCards.mockReset();
+  keepAllAutoCards.mockReset();
 });
 
 // ── Fixture cards ──────────────────────────────────────────────────────────────
@@ -47,6 +49,8 @@ describe("ClearAutoButton", () => {
         keptCount={0}
         onClear={vi.fn()}
         pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
       />,
     );
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
@@ -59,6 +63,8 @@ describe("ClearAutoButton", () => {
         keptCount={0}
         onClear={vi.fn()}
         pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
       />,
     );
     // The desktop span carries the full clearAll label
@@ -74,6 +80,8 @@ describe("ClearAutoButton", () => {
         keptCount={0}
         onClear={vi.fn()}
         pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
       />,
     );
     expect(
@@ -86,6 +94,8 @@ describe("ClearAutoButton", () => {
         keptCount={3}
         onClear={vi.fn()}
         pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
       />,
     );
     expect(
@@ -103,6 +113,8 @@ describe("ClearAutoButton", () => {
         keptCount={4}
         onClear={vi.fn()}
         pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
       />,
     );
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
@@ -118,9 +130,116 @@ describe("ClearAutoButton", () => {
         keptCount={0}
         onClear={vi.fn()}
         pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
       />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+
+  // The same emptiness one breakpoint down: at a count of 0 the kept note is the
+  // only content, and it is desktop-only, so on a phone the wrapper would sit in
+  // the toolbar's flex row spacing it for something nobody can see.
+  it("keeps the wrapper out of the mobile toolbar when only the note remains", () => {
+    const { container } = render(
+      <ClearAutoButton
+        count={0}
+        keptCount={4}
+        onClear={vi.fn()}
+        pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
+      />,
+    );
+    expect(container.firstElementChild).toHaveClass("hidden", "md:flex");
+  });
+
+  // Both bulk controls read the same count, so a toolbar showing one and not
+  // the other would say that count means two things.
+  it("offers Keep all beside the sweep, and neither at a count of 0", () => {
+    const { rerender } = render(
+      <ClearAutoButton
+        count={5}
+        keptCount={2}
+        onClear={vi.fn()}
+        pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
+      />,
+    );
+    expect(screen.getByText(recommendationsCopy.auto.keepAll("5"))).toBeInTheDocument();
+
+    rerender(
+      <ClearAutoButton
+        count={0}
+        keptCount={2}
+        onClear={vi.fn()}
+        pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
+      />,
+    );
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  // Keep leads, so the cluster reads from the safe answer to the destructive
+  // one and the sweep is not the first bulk control the eye lands on.
+  it("puts Keep all left of the sweep", () => {
+    render(
+      <ClearAutoButton
+        count={5}
+        keptCount={0}
+        onClear={vi.fn()}
+        pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
+      />,
+    );
+
+    const [first, second] = screen.getAllByRole("button");
+    expect(first).toHaveAccessibleName(recommendationsCopy.auto.keepAllAria("5"));
+    expect(second).toHaveAccessibleName(recommendationsCopy.auto.clearAllAria("5"));
+  });
+
+  // Either write in flight disables both: they act on the same rows, so the
+  // second one clicked would decide the fate of cards the first has claimed.
+  it.each([
+    ["the sweep", { pending: true, keepAllPending: false }],
+    ["the keep", { pending: false, keepAllPending: true }],
+  ])("disables both controls while %s is in flight", (_name, flags) => {
+    render(
+      <ClearAutoButton
+        count={5}
+        keptCount={0}
+        onClear={vi.fn()}
+        onKeepAll={vi.fn()}
+        {...flags}
+      />,
+    );
+
+    for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled();
+  });
+
+  it("calls onKeepAll once when clicked", async () => {
+    const onKeepAll = vi.fn();
+    render(
+      <ClearAutoButton
+        count={3}
+        keptCount={0}
+        onClear={vi.fn()}
+        pending={false}
+        onKeepAll={onKeepAll}
+        keepAllPending={false}
+      />,
+    );
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("3") })
+        .click();
+    });
+
+    expect(onKeepAll).toHaveBeenCalledOnce();
   });
 
   it("calls onClear once when clicked", async () => {
@@ -131,11 +250,15 @@ describe("ClearAutoButton", () => {
         keptCount={0}
         onClear={onClear}
         pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
       />,
     );
 
     await act(async () => {
-      screen.getByRole("button").click();
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.clearAllAria("3") })
+        .click();
     });
 
     expect(onClear).toHaveBeenCalledOnce();
@@ -212,6 +335,7 @@ import type { DeckDetail } from "../../lib/decks/read";
 vi.mock("../../app/decks/actions", () => ({
   clearAutoCards,
   restoreAutoCards,
+  keepAllAutoCards,
   keepAutoCard: vi.fn(),
   addCardToDeck: vi.fn(),
   removeCardFromDeck: vi.fn(),
@@ -618,6 +742,76 @@ describe("sweep + undo lifecycle (through BuilderShell)", () => {
 
   // The receipt stays up after a refused Undo so the player can try again. If
   // the refusal outlived the retry, a restored deck would still read as broken.
+  // A keep takes no card, so there is no receipt strip and no Undo — an Undo
+  // would have to write `auto = true` back across the rows the player has just
+  // declared theirs. The receipts are the tags leaving, the controls going
+  // absent, the kept note, and one spoken line.
+  it("keeps every auto card and offers no way back", async () => {
+    keepAllAutoCards.mockResolvedValue(2);
+
+    const { revalidate } = renderBuilder([card1, card2]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("2") })
+        .click();
+    });
+
+    expect(keepAllAutoCards).toHaveBeenCalledOnce();
+    expect(keepAllAutoCards).toHaveBeenCalledWith("deck-sweep");
+    expect(screen.getByText("Sol Ring")).toBeInTheDocument();
+    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.auto.swept("2"))).toBeNull();
+
+    await revalidate([keptCard("sol-ring", "Sol Ring"), keptCard("arcane-signet", "Arcane Signet")]);
+
+    // The toolbar goes quiet: both controls absent, the kept note the survivor.
+    expect(screen.queryByRole("button", { name: /Keep all/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Clear all/ })).not.toBeInTheDocument();
+    expect(screen.getByText(recommendationsCopy.auto.keptNote("2"))).toBeInTheDocument();
+  });
+
+  it("announces the keep once, counting the whole deck as the player's", async () => {
+    keepAllAutoCards.mockResolvedValue(2);
+
+    renderBuilder([card1, card2, card3]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("2") })
+        .click();
+    });
+
+    // Two kept here, one kept already — the note's own sentence, word for word.
+    const spoken = screen.getAllByText(
+      recommendationsCopy.auto.keptAllAnnounce("2", "3"),
+    );
+    expect(spoken).toHaveLength(1);
+  });
+
+  // The player told us to keep these cards. A refusal that said "the deck is
+  // unchanged" would answer a question nobody asked: what they need to know is
+  // that the tags are back.
+  it("a failed keep says the cards are still marked auto", async () => {
+    keepAllAutoCards.mockRejectedValue(new Error("network error"));
+
+    renderBuilder([card1, card2]);
+
+    await act(async () => {
+      screen
+        .getByRole("button", { name: recommendationsCopy.auto.keepAllAria("2") })
+        .click();
+    });
+
+    expect(screen.getByText(recommendationsCopy.auto.keepAllFailed)).toBeInTheDocument();
+    expect(screen.queryByText(recommendationsCopy.auto.sweepFailed)).toBeNull();
+    // The transition ended, so React dropped the prediction: the sweep is on
+    // offer again at its original count.
+    expect(
+      screen.getByRole("button", { name: recommendationsCopy.auto.clearAllAria("2") }),
+    ).toBeInTheDocument();
+  });
+
   it("a retried Undo that succeeds drops the earlier refusal", async () => {
     const sweptRows = [
       { oracleId: "sol-ring", quantity: 1 },

@@ -10,7 +10,7 @@ import { computeRoleCounts } from "../../lib/decks/mix";
 import { availabilityState } from "../../lib/decks/availability";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { GroupToggle } from "./group-toggle";
+import { GroupToggle, type AutoControls } from "./group-toggle";
 import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
@@ -62,7 +62,7 @@ function isSpokenFor(c: DeckDetailCard): boolean {
   return c.owned && isShoppingCard(c);
 }
 
-interface DecklistProps {
+type DecklistProps = {
   deckId: string;
   cards: DeckDetailCard[];
   unresolvedRows: DeckUnresolvedRow[];
@@ -91,11 +91,15 @@ interface DecklistProps {
   keptCount?: number;
   /** Whether a sweep is in-flight. */
   sweepPending?: boolean;
+  keepAllPending?: boolean;
   /** The swept rows held for Undo. Null = no pending undo. */
   sweptRows?: SweptRow[] | null;
-  /** Error string from a failed sweep. */
-  sweepError?: string | null;
-  onClearAuto?: () => void;
+  /** Error string from a failed sweep, keep-all or undo. One line for the whole
+      auto lifecycle: the three are mutually exclusive on screen, and each
+      message names its own write. */
+  autoError?: string | null;
+  /** Forwarded whole to GroupToggle, which owns why the pair is one prop. */
+  autoControls?: AutoControls;
   onRestoreAuto?: () => void;
   /**
    * EDHREC inclusion % for each unowned card in the deck, keyed by oracleId.
@@ -110,7 +114,7 @@ interface DecklistProps {
   newestAsOf?: Date | null;
   /** Built on the server; see BuilderShell. */
   provenance?: ProvenanceForm | null;
-}
+};
 
 export function Decklist({
   deckId,
@@ -129,9 +133,10 @@ export function Decklist({
   autoCount = 0,
   keptCount = 0,
   sweepPending = false,
+  keepAllPending = false,
   sweptRows = null,
-  sweepError = null,
-  onClearAuto,
+  autoError = null,
+  autoControls,
   onRestoreAuto,
   shoppingFigures = {},
   newestAsOf = null,
@@ -266,15 +271,16 @@ export function Decklist({
     // slots are "the fun part", and a negative count of them is nonsense.
     const openSlots = Math.max(0, 99 - built);
 
-    // The sweep's refusal and its receipt. Shared by both branches below: a
-    // sweep usually empties this tab (bought cards are the fill's), so leaving
-    // the receipt out of the empty state would strand Undo behind a tab switch
-    // at exactly the moment the player is most likely to want it.
-    const sweepBanner = (
+    // The auto lifecycle's refusals — a sweep, a keep-all or an undo — and the
+    // sweep's receipt. Shared by both branches below: a sweep usually empties
+    // this tab (bought cards are the fill's), so leaving the receipt out of the
+    // empty state would strand Undo behind a tab switch at exactly the moment
+    // the player is most likely to want it.
+    const autoBanner = (
       <>
-        {sweepError && (
+        {autoError && (
           <p role="alert" className="font-mono text-[11px] mb-[10px] text-fg-locked">
-            {sweepError}
+            {autoError}
           </p>
         )}
         {sweptRows && sweptRows.length > 0 && onRestoreAuto && (
@@ -304,10 +310,11 @@ export function Decklist({
             autoCount={autoCount}
             keptCount={keptCount}
             sweepPending={sweepPending}
-            onClearAuto={onClearAuto}
+            keepAllPending={keepAllPending}
+            autoControls={autoControls}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-            {sweepBanner}
+            {autoBanner}
           </div>
           {filled ? (
             /* Design: centered, padding 24px 14px 28px, heading Cinzel 18px
@@ -362,13 +369,14 @@ export function Decklist({
           autoCount={autoCount}
           keptCount={keptCount}
           sweepPending={sweepPending}
-          onClearAuto={onClearAuto}
+          keepAllPending={keepAllPending}
+          autoControls={autoControls}
           priceSummary={priceSummary}
           provenance={provenance}
         />
 
         <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
-          {sweepBanner}
+          {autoBanner}
 
           {/* Intro line — sans (default family), 12.5px phone / 13.5px desktop,
               --fg-body per design §Shopping intro. font-mono was wrong. */}
@@ -535,20 +543,22 @@ export function Decklist({
         autoCount={autoCount}
         keptCount={keptCount}
         sweepPending={sweepPending}
-        onClearAuto={onClearAuto}
+        keepAllPending={keepAllPending}
+        autoControls={autoControls}
         priceSummary={priceSummary}
         provenance={provenance}
       />
 
       {/* Grouped card rows */}
       <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
-        {/* Sweep error — a failed sweep, deck unchanged. */}
-        {sweepError && (
+        {/* A refused sweep, keep-all or undo. Each message names its own write:
+            the sweep and the keep leave the deck as it was, an undo does not. */}
+        {autoError && (
           <p
             role="alert"
             className="font-mono text-[11px] mb-[10px] text-fg-locked"
           >
-            {sweepError}
+            {autoError}
           </p>
         )}
         {/* Sweep receipt — one strip above the first group. */}

@@ -99,6 +99,27 @@ export const recommendationsCopy = {
     clearAll: (n: string) => `Clear all auto · ${n}`,
     clearAllMobile: (n: string) => `Clear auto · ${n}`,
     clearAllAria: (n: string) => `Clear all ${n} untouched auto cards`,
+    // The bulk keep, left of the sweep so the cluster reads from the safe
+    // answer to the destructive one. Same words as the re-import diff's own
+    // `keepAll` and a deliberately separate key: there it rescues removals,
+    // here it accepts the fill's picks.
+    keepAll: (n: string) => `Keep all ${n}`,
+    // The phone drops "all" — the 390px toolbar already carries four pills and
+    // the sweep. `clearAllMobile` is not reworded to match.
+    keepAllMobile: (n: string) => `Keep ${n}`,
+    // Says "auto cards" out loud, the way clearAllAria does: the visible
+    // label's noun is carried by the tags on screen, and a reader has none.
+    keepAllAria: (n: string) => `Keep all ${n} auto cards in this deck`,
+    // One message per settle, into the live region that carries sweptAnnounce.
+    // Its second clause is keptNote's sentence, so the spoken receipt and the
+    // written one agree word for word. Deck size did not change, so it is not
+    // quoted here — that would imply it had.
+    keptAllAnnounce: (kept: string, yours: string) =>
+      `${kept} cards kept. ${yours} cards are yours now.`,
+    // Never "the deck is unchanged" — that is sweepFailed's sentence. Here the
+    // deck is also unchanged, which is why saying so would be useless: what the
+    // player needs to know is that the tags are back.
+    keepAllFailed: 'We couldn’t keep those. They are still marked auto.',
     // Beside the sweep once some cards have been kept.
     keptNote: (n: string) => `${n} cards are yours now`,
     // One receipt for the whole sweep — not one per row. Lifetime is decklist
