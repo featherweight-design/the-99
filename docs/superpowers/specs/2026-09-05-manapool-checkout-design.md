@@ -70,7 +70,7 @@ into a page titled *Mass Entry*:
 |---|---|
 | A 3-line partial list, not a legal deck | Renders all three lines. Legality is not required. |
 | 99 lines (2,108-char encoded parameter) | Renders. Well inside any browser or CDN URL ceiling. |
-| `Fire // Ice`, `Atraxa, Praetors' Voice`, `Jötun Grunt`, `Æther Vial` | All five render byte-exact. |
+| `Fire // Ice`, `Atraxa, Praetors' Voice`, `Jötun Grunt`, `Æther Vial` | All four render byte-exact. |
 | Bare names with no leading count | Accepted; no count rendered. |
 | `N Name` with an explicit count | Count rendered beside the name. |
 | A base64 payload containing `+` and `/`, percent-encoded | Round-trips exactly. |
@@ -83,9 +83,9 @@ example uses, it is the format `buildDecklistText` already emits, and it is unam
 parser ever changes its default.
 
 **We percent-encode the base64.** Standard base64 can contain `+` and `/`, and a raw `+` in a query
-string is a space to most parsers. `encodeURIComponent` is the whole fix and the last row of the
-table is its proof. Do not switch to base64url: the parameter is theirs, and the only encoding
-observed to work is standard base64, percent-escaped.
+string is a space to most parsers. `encodeURIComponent` is the whole fix, and the table's
+`+`-and-`/` row is its proof. Do not switch to base64url: the parameter is theirs, and the only
+encoding observed to work is standard base64, percent-escaped.
 
 **We do not resolve availability ourselves.** An unmatchable or out-of-stock line is Mana Pool's
 Mass Entry page to explain, and it explains it better than we could — it has live inventory and we
@@ -201,7 +201,9 @@ buy tag that priced it — row, then link — and zero new surfaces.
 
 ### 4.3 The outbound-link convention
 
-This is the app's **first outbound link**; a grep for `target=` returns nothing. Rather than let two
+This is the app's **first outbound link**: `grep -r 'target="_blank"' src/` returns zero hits. (A
+bare `target=` grep is not the check — `role-counter-strip.tsx:100` passes an unrelated `target`
+prop.) Rather than let two
 call sites each invent one, a single `ExternalLink` sets it:
 `target="_blank"`, `rel="noopener noreferrer"`, and an accessible name that says where it goes and
 that it leaves the app. Both call sites use it. Its visual treatment is a design question, not an
@@ -251,8 +253,9 @@ handoff:
    the shipped **Copy** and **Download .txt**. What weight does a link-out carry next to two local
    actions, and does it read as peer, primary, or quieter than both? It is the only control in the
    app that hands the player to another company.
-2. **The shared card modal** — a per-card link, at all six breakpoint/theme combinations the modal
-   already ships. The modal's existing chrome has no actions row.
+2. **The shared card modal** — a per-card link. The modal's existing chrome has no actions row, so
+   where one goes is part of the ask. Mobile and desktop, across the six shipped themes
+   (`src/lib/theme/themes.ts`).
 
 Both need the app's first outbound-link treatment: whether an external-link glyph is drawn, whether
 "Mana Pool" is named in the label, and what the visited/hover/focus states are. Engineering has
