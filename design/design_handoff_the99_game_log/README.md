@@ -8,12 +8,12 @@ convention, same copy-export shape, same READINESS format.
 **Where the reuse was read from.** The brief points at `src/components/decks/builder-tabs.tsx` and
 `src/components/decks/role-counter-strip.tsx`. Neither exists in this design project — `src/` here
 holds only `shell/nav.tsx` — so the pill row and the counter cell were traced from
-`design_handoff_the99_decks/The 99 - Decks.dc.html` (the shipped builder as that handoff drew it,
+`design/design_handoff_the99_decks/The 99 - Decks.dc.html` (the shipped builder as that handoff drew it,
 lines 509–538) plus the copied brand sheet. If the component files disagree with the canvas, the
 component files win and the geometry table below is what to correct.
 
 File: `The 99 - Game Log.dc.html` (canvas — pan/zoom). Read
-`design_handoff_the99_richness/README.md` for the locked voice before auditing the copy,
+`design/design_handoff_the99_richness/README.md` for the locked voice before auditing the copy,
 `STATES-log-form.md` for the form matrix (§6's form, all states including the conflict), and
 `LOW-N-summary.md` for the §8.5 ladder in full.
 
@@ -264,7 +264,7 @@ state, no modal, no toast, no tray.**
 | **Record line** | Cinzel 26px `--fg` headline (20px phone), body 13.5px `--fg-body` beneath, record itself mono 13px `--accent` tabular inside that body line. |
 | **`Log a game` — collapsed** | Brass-outline button, `1px --accent`, label 13.5px 600 `--accent`, radius 8px, `10px 18px`; 44px full-width at phone. Never brass-solid: `Build this deck` owns solid brass, and logging is not the app's goal. |
 | **Form container** | `--surface` on `1px --border-strong`, radius 12px, padding 20px. Replaces the collapsed row in place. |
-| **Result group** | Three 40px segments (44px phone), radius 8px. Won selected: `--success` fill, `--base` label. Lost / Draw selected: `1px --accent`, label `--fg`, no fill. Unselected: `1px --border`, label `--fg-body`. Radio group, no default. |
+| **Result group** | Three 40px segments (44px phone), radius 8px. Won selected: `--success` fill, `--bg` label. Lost / Draw selected: `1px --accent`, label `--fg`, no fill. Unselected: `1px --border`, label `--fg-body`. Radio group, no default. |
 | **Pod group** | Seven 40px squares (44px phone), radius 8px, mono 14px 600. Selected `1px --accent` + `--accent` label + `color-mix(--accent 12%, transparent)`. Default 4. Radio group. |
 | **Axis column** | `fieldset` + `legend`. Legend mono 10px uppercase `letter-spacing .14em` — `--success` for worked, `--warning` for hurt — with a mono 10px `{n} marked` counter beside it in `--fg-locked`. |
 | **Axis row** | `label` wrapping a checkbox. min-height 46px (48px phone), `--surface` on `1px --border`, radius 8px, padding `5px 12px`, gap 11px. Label 13.5px `--fg`; gloss mono 10px **`--fg-faint`** (`#8E8269` on `--surface` = 4.57:1 — **not** `--fg-locked`, which measures 2.84:1 and is the one string in this design that cannot afford to be hard to read). Checked: fill `--elevated-hover`, border `--accent-shadow`, gloss `--fg-muted` (6.19:1). |

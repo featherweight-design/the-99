@@ -64,11 +64,6 @@ the glosses must not become extra columns of the database vocabulary.
     surface step up because it nests inside a panel rather than sitting on the builder's ground.
     Extracting a shared cell component is fine; the role strip must not gain a split-bar mode it
     does not use.
-14. **The reuse was traced from the decks handoff canvas, not the component files.**
-    `builder-tabs.tsx` and `role-counter-strip.tsx` do not exist in this design project, so the
-    pill row and the counter cell come from `design_handoff_the99_decks/The 99 - Decks.dc.html`
-    (lines 509–538). If the shipped components disagree, they win and the component table in
-    `README.md` is what to correct.
 11. **Delete revalidates through `deckSurfaces()`** exactly as the log does (§4). The record line on
     the deck list and the home page both move when a game is deleted.
 12. **One live-region message per settle** — the move, the save, the delete. Never one per tick;
@@ -76,6 +71,11 @@ the glosses must not become extra columns of the database vocabulary.
     two rows changed and the player touched one.
 13. **The empty state's CTA opens the same inline form, expanded.** One form, two entry points, no
     second surface for the first log.
+14. **The reuse was traced from the decks handoff canvas, not the component files.**
+    `builder-tabs.tsx` and `role-counter-strip.tsx` do not exist in this design project, so the
+    pill row and the counter cell come from `design/design_handoff_the99_decks/The 99 - Decks.dc.html`
+    (lines 509–538). If the shipped components disagree, they win and the component table in
+    `README.md` is what to correct.
 
 ## Not blocking
 
@@ -131,9 +131,10 @@ validation rules, no change to the axis keys.
    table is what to correct. **No redraw:** the tab row is chrome around this surface and nothing
    inside the tab is affected.
 
-2. **`--base` is not a token.** The Result group's "Won selected: `--success` fill, `--base` label"
-   should be `--bg`. One occurrence, in `README.md` only; the canvas never uses it. The shipped
-   precedent for a label on an accent fill is `text-[color:var(--bg)]`
+2. **`--base` is not a token.** The Result group read "Won selected: `--success` fill, `--base`
+   label"; it should be `--bg`. One occurrence, in `README.md` only — the canvas never used it —
+   **and it is corrected in place in this PR**, so the component table no longer names a token that
+   does not exist. The shipped precedent for a label on an accent fill is `text-[color:var(--bg)]`
    (`src/components/ui/filter-panel.tsx:484`).
 
 3. **The N=1 ordering reads two ways, and eng resolves it.** `LOW-N-summary.md` puts the N=1 marks
