@@ -400,6 +400,12 @@ export function rollupFor(
   }
   // `commanderPool` excludes the commander itself, and a commander the player
   // owns is in the collection — so it is in a bucket and has to come back out.
+  // The subtraction is unconditionally safe: the commander's bucket is keyed by
+  // the commander's own identity, which is trivially a subset of itself, so that
+  // bucket is always one of the ≤32 just summed. No subset guard is needed here
+  // and one would be dead code — the invariant is proved by construction, and
+  // Phase 2's equivalence test against `commanderPool` is what would catch it
+  // breaking.
   const self = rollup.byOracleId.get(commander.oracleId);
   if (self) add(total, self, -1);
 
@@ -448,7 +454,8 @@ One PR. The fit half of #213: how much of each commander's EDHREC support the pl
 export type CandidateRow = {
   oracleId: string;
   name: string;
-  typeLine: string;
+  // No typeLine: every row in `commander_support` is already a commander, so the
+  // type line answers nothing discovery asks and nothing discovery renders.
   colorIdentity: string[];
   imageUri: string | null;
   edhrecTotal: number | null;
@@ -471,7 +478,7 @@ import { describe, expect, it } from "vitest";
 import { shapeCandidate, type CandidateSqlRow } from "./candidates";
 
 const row = (over: Partial<CandidateSqlRow>): CandidateSqlRow => ({
-  oracleId: "a", name: "Atraxa", typeLine: "Legendary Creature — Angel",
+  oracleId: "a", name: "Atraxa",
   colorIdentity: ["W", "U", "B", "G"], imageUri: null,
   edhrecTotal: 99, tags: [{ slug: "counters", label: "Counters", count: 5 }],
   ownedSupport: 40, ...over,
@@ -488,11 +495,11 @@ describe("shapeCandidate", () => {
     expect(shapeCandidate(row({ edhrecTotal: null })).edhrecTotal).toBeNull();
   });
 
-  it("treats a missing tags array as untagged, not as an error", () => {
+  it("carries an empty tag array through as untagged", () => {
     expect(shapeCandidate(row({ tags: [] })).tags).toEqual([]);
   });
 
-  it("never reports negative overlap", () => {
+  it("reports zero overlap for a commander sharing nothing with the collection", () => {
     expect(shapeCandidate(row({ ownedSupport: 0 })).ownedSupport).toBe(0);
   });
 });
@@ -514,7 +521,8 @@ import type { EdhrecTag } from "../edhrec/parse";
 export type CandidateSqlRow = {
   oracleId: string;
   name: string;
-  typeLine: string;
+  // No typeLine: every row in `commander_support` is already a commander, so the
+  // type line answers nothing discovery asks and nothing discovery renders.
   colorIdentity: string[];
   imageUri: string | null;
   edhrecTotal: number | null;
@@ -524,9 +532,16 @@ export type CandidateSqlRow = {
 
 export type CandidateRow = CandidateSqlRow;
 
-/** Pure row shaping, so the assertions live away from the drizzle builder. */
+/**
+ * Pure row shaping, so the assertions live away from the drizzle builder.
+ *
+ * Nothing is defaulted: `commanderSupport.tags` is `jsonb().notNull()` and
+ * `count(...)` cannot be negative, so a `?? []` or a `Math.max(0, ...)` here
+ * would be a guard against a state the schema forbids — and would quietly
+ * absorb a real regression if the column ever became nullable.
+ */
 export function shapeCandidate(r: CandidateSqlRow): CandidateRow {
-  return { ...r, tags: r.tags ?? [], ownedSupport: Math.max(0, r.ownedSupport) };
+  return { ...r };
 }
 
 /**
@@ -556,7 +571,6 @@ export async function loadCandidates(
     .select({
       oracleId: commanderSupport.commanderOracleId,
       name: cards.name,
-      typeLine: cards.typeLine,
       colorIdentity: cards.colorIdentity,
       imageUri: cards.imageUri,
       edhrecTotal: commanderSupport.edhrecTotal,
@@ -580,7 +594,7 @@ export async function loadCandidates(
       ),
     )
     .groupBy(
-      commanderSupport.commanderOracleId, cards.name, cards.typeLine,
+      commanderSupport.commanderOracleId, cards.name,
       cards.colorIdentity, cards.imageUri, commanderSupport.edhrecTotal,
       commanderSupport.tags,
     );
@@ -589,14 +603,36 @@ export async function loadCandidates(
 }
 ```
 
-`sql.param` is required for the array — a bare template array expands to a parenthesised param list, which is a syntax error, not an array. `availability-query.ts:47-51` documents the same trap.
+`sql.param` is required for the array — a bare template array expands to a parenthesised param list, which is a syntax error, not an array. `availability-query.ts:47-51` documents the same trap. Note the precedent there is a raw `db.execute`, not the query builder, so step 5 checks the generated SQL rather than trusting the analogy.
+
+**Performance:** `oracle_id = any($1::uuid[])` inside a join condition is not
+hashable, so Postgres nested-loops it — ~2,805 owned ids scanned per support row,
+over a table with a row per (commander, card). If step 5 shows that plan, replace
+the array predicate with a join against the unnested array so the planner can hash
+it:
+
+```ts
+    .innerJoin(
+      sql`unnest(${owned}::uuid[]) as owned(oracle_id)`,
+      sql`owned.oracle_id = ${commanderSupportCards.oracleId}`,
+    )
+```
+
+The commander-level left join must stay a left join either way, so the unnest
+attaches to `commander_support_cards`, not to `commander_support`. Measure before
+changing it: the simpler form is correct, and correctness that is fast enough wins.
 
 - [ ] **Step 4: Run it and watch it pass**
 
 Run: `pnpm vitest run src/lib/discovery/candidates.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Verify the query against the real database once**
+- [ ] **Step 5: Verify the query against the real database once — plan and timing, not just row counts**
+
+`EXPLAIN ANALYZE` it with a real owned-id array. Record the total time in the PR
+body. Anything over ~400ms on the local database means take the `unnest` form
+above; `/commanders` is a server-rendered page and this query is on its critical
+path.
 
 The unit test proves the shaping, not the SQL. Run it once by hand before committing:
 
@@ -806,13 +842,20 @@ One PR. #214's half: distance from what the player has already played, with buil
 ```ts
 export const NOVELTY_FLOOR = 0.3;
 
-export type DeckTagSet = { deckName: string; slugs: Set<string> };
+/** `colorIdentity` is the deck's commander's identity — `decks` has no such
+    column, so it comes from a `cards` join inside `loadPlayedTags`. Task 19's
+    `empty.filteredBuiltClause` needs it and must not add a second query. */
+export type DeckTagSet = { deckName: string; colorIdentity: string[]; slugs: Set<string> };
 
 export function floorPct(c: Pick<CandidateRow, "ownedSupport" | "edhrecTotal">): number | null;
 export function clearsFloor(c: Pick<CandidateRow, "ownedSupport" | "edhrecTotal">): boolean;
 export function unplayedTags(tags: EdhrecTag[], played: Set<string>): EdhrecTag[];
-export function nearestDeck(tags: EdhrecTag[], decks: DeckTagSet[]):
-  { deckName: string; shared: string } | null;
+// Narrower than DeckTagSet deliberately: distance is a question about tags, and
+// widening DeckTagSet must not force every caller and fixture to supply colours.
+export function nearestDeck(
+  tags: EdhrecTag[],
+  decks: readonly { deckName: string; slugs: Set<string> }[],
+): { deckName: string; shared: string } | null;
 export function loadPlayedTags(userId: string): Promise<DeckTagSet[]>;
 ```
 
@@ -906,14 +949,14 @@ Expected: FAIL — "Failed to resolve import ./novelty".
 ```ts
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { commanderSupport, decks } from "../../db/schema";
+import { cards, commanderSupport, decks } from "../../db/schema";
 import type { EdhrecTag } from "../edhrec/parse";
 import type { CandidateRow } from "./candidates";
 
 /** Ruling 4: buildability is a floor, never a term in the sort. */
 export const NOVELTY_FLOOR = 0.3;
 
-export type DeckTagSet = { deckName: string; slugs: Set<string> };
+export type DeckTagSet = { deckName: string; colorIdentity: string[]; slugs: Set<string> };
 
 type Overlap = Pick<CandidateRow, "ownedSupport" | "edhrecTotal">;
 
@@ -943,7 +986,7 @@ export function unplayedTags(tags: EdhrecTag[], played: Set<string>): EdhrecTag[
  */
 export function nearestDeck(
   tags: EdhrecTag[],
-  deckSets: DeckTagSet[],
+  deckSets: readonly { deckName: string; slugs: Set<string> }[],
 ): { deckName: string; shared: string } | null {
   let best: { deckName: string; labels: string[] } | null = null;
   for (const d of [...deckSets].sort((a, b) => a.deckName.localeCompare(b.deckName))) {
@@ -973,9 +1016,16 @@ export function nearestDeck(
  * being dropped, so it can still be the nearest deck for nothing.
  */
 export async function loadPlayedTags(userId: string): Promise<DeckTagSet[]> {
+  // The `cards` join is what carries each deck's colour identity: `decks` stores
+  // only the commander's oracle id, and Task 19's built clause needs the colours.
   const built = await db
-    .select({ name: decks.name, oracleId: decks.commanderOracleId })
+    .select({
+      name: decks.name,
+      oracleId: decks.commanderOracleId,
+      colorIdentity: cards.colorIdentity,
+    })
     .from(decks)
+    .innerJoin(cards, eq(cards.oracleId, decks.commanderOracleId))
     .where(eq(decks.userId, userId));
   if (built.length === 0) return [];
 
@@ -984,9 +1034,11 @@ export async function loadPlayedTags(userId: string): Promise<DeckTagSet[]> {
     .from(commanderSupport)
     .where(inArray(commanderSupport.commanderOracleId, built.map((d) => d.oracleId)));
 
-  const byOracleId = new Map(support.map((s) => [s.oracleId, s.tags ?? []]));
+  // `commanderSupport.tags` is `jsonb().notNull()`, so no `?? []` on the value.
+  const byOracleId = new Map(support.map((s) => [s.oracleId, s.tags]));
   return built.map((d) => ({
     deckName: d.name,
+    colorIdentity: d.colorIdentity,
     slugs: new Set((byOracleId.get(d.oracleId) ?? []).map((t) => t.slug)),
   }));
 }
@@ -1196,7 +1248,14 @@ git commit -m "feat(discovery): oracle-id-keyed slug assignment"
 
 **Files:**
 - Modify: `src/lib/recs/recommend.ts:201-221`
-- Test: `src/lib/recs/recommend.test.ts` (append; create if absent)
+- Create: `src/lib/recs/recommend-detail.test.ts`
+
+**A new test file, not an append.** `recommend.test.ts:4` already does
+`vi.mock("../../db", () => ({ db: {} }))` — a bare object with no `select`. This
+test needs a chained `select().from()...` for both `loadCollectionPool` and
+`loadPoolCard`, and widening the shared mock would put every existing case in
+that file at risk for no gain. Vitest module mocks are per-file, so a second file
+gets its own `db` without touching the first.
 
 **Interfaces:**
 - Consumes: `loadCollectionPool`, `scoreCommander`, `PoolCard`.
@@ -1207,24 +1266,66 @@ git commit -m "feat(discovery): oracle-id-keyed slug assignment"
 Mock the db chain per `synergy-read.test.ts`. The behaviour under test is the fallback branch, so the assertion is on the returned commander's identity and on a zeroed pool, not on scoring maths.
 
 ```ts
-it("scores a commander that is not in the collection", async () => {
-  // collection: one card, not the commander
-  // cards table: the commander row
-  const got = await scoreOneCommander("user", "unowned-oracle-id", "atraxa");
-  expect(got).not.toBeNull();
-  expect(got!.name).toBe("Atraxa, Praetors' Voice");
-  // The commander is not in the pool, so nothing is subtracted for it.
-  expect(got!.colorPoolSize).toBe(1);
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// Two queries, two shapes. `loadCollectionPool` ends at `.orderBy`,
+// `loadPoolCard` at `.limit` — the mock returns a chain that answers both and
+// hands back whichever array the test armed.
+const pool = vi.hoisted(() => ({ collection: [] as unknown[], card: [] as unknown[] }));
+
+vi.mock("../../db", () => ({
+  db: {
+    selectDistinctOn: () => ({
+      from: () => ({
+        innerJoin: () => ({ where: () => ({ orderBy: () => Promise.resolve(pool.collection) }) }),
+      }),
+    }),
+    select: () => ({
+      from: () => ({ where: () => ({ limit: () => Promise.resolve(pool.card) }) }),
+    }),
+  },
+}));
+
+vi.mock("../edhrec/client", () => ({
+  readEdhrecCache: vi.fn(async () => new Map()),
+  resolveEdhrecData: vi.fn(async () => ({ data: null, unreachable: false })),
+}));
+
+import { scoreOneCommander } from "./recommend";
+
+const card = (over: Record<string, unknown>) => ({
+  oracleId: "x", name: "X", typeLine: "Legendary Creature — Angel",
+  oracleText: null, keywords: [], colorIdentity: ["W"], commanderLegal: true,
+  imageUri: null, manaCost: "{3}{W}", ...over,
 });
 
-it("still returns null for an oracle id that is in no table", async () => {
-  expect(await scoreOneCommander("user", "nonsense", "nonsense")).toBeNull();
+beforeEach(() => {
+  pool.collection = [];
+  pool.card = [];
+});
+
+describe("scoreOneCommander", () => {
+  it("scores a commander that is not in the collection", async () => {
+    pool.collection = [card({ oracleId: "owned-1", name: "Owned" })];
+    pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
+
+    const got = await scoreOneCommander("user", "unowned", "atraxa");
+    expect(got).not.toBeNull();
+    expect(got!.name).toBe("Atraxa, Praetors' Voice");
+    // The one owned card is colour-legal and is not the commander, so the pool
+    // is 1: nothing is subtracted for a commander that was never in it.
+    expect(got!.colorPoolSize).toBe(1);
+  });
+
+  it("still returns null for an oracle id that is in no table", async () => {
+    expect(await scoreOneCommander("user", "nonsense", "nonsense")).toBeNull();
+  });
 });
 ```
 
 - [ ] **Step 2: Run it and watch it fail**
 
-Run: `pnpm vitest run src/lib/recs/recommend.test.ts`
+Run: `pnpm vitest run src/lib/recs/recommend-detail.test.ts`
 Expected: FAIL — the first case returns `null`.
 
 - [ ] **Step 3: Implement the fallback**
@@ -1263,13 +1364,13 @@ async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
 
 - [ ] **Step 4: Run it and watch it pass**
 
-Run: `pnpm vitest run src/lib/recs/recommend.test.ts`
+Run: `pnpm vitest run src/lib/recs/recommend-detail.test.ts`
 Expected: PASS, both cases.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/lib/recs/recommend.ts src/lib/recs/recommend.test.ts
+git add src/lib/recs/recommend.ts src/lib/recs/recommend-detail.test.ts
 git commit -m "fix(commanders): score a commander outside the collection"
 ```
 
@@ -1373,7 +1474,15 @@ export type DiscoveryList = {
       `empty.floorBody` needs so 30% does not read as arbitrary. Null when the
       floor excluded nothing, or when no candidate had a denominator. */
   bestPct: number | null;
+  /** How many tagged candidates the floor removed. An empty `items` under
+      `new` means "everything is untagged" when this is 0 and "the floor took
+      them all" when it is not — Task 19 renders a different state for each,
+      and `bestPct` alone cannot tell them apart. */
+  floorExcluded: number;
   hasDecks: boolean;
+  /** One entry per built deck, its commander's colour identity. Task 19's
+      `empty.filteredBuiltClause` counts against it; nothing else reads it. */
+  deckIdentities: string[][];
   sort: "fit" | "new";
 };
 
@@ -1391,10 +1500,11 @@ Extract the assembly from the reads so it can be tested without a database.
 
 ```ts
 import { describe, expect, it } from "vitest";
+import { buildPoolRollup } from "../recs/pool-rollup";
 import { assembleDiscovery } from "./list";
 
 const candidate = (over: Partial<Parameters<typeof assembleDiscovery>[0]["candidates"][0]>) => ({
-  oracleId: "a", name: "A", typeLine: "Legendary Creature",
+  oracleId: "a", name: "A",
   colorIdentity: ["G"], imageUri: null, edhrecTotal: 100, tags: [], ownedSupport: 50,
   ...over,
 });
@@ -1409,9 +1519,11 @@ describe("assembleDiscovery", () => {
                   tags: [{ slug: "blink", label: "Blink", count: 2 }] }),
     ],
     ownedOracleIds: new Set(["a"]),
-    playedTags: [{ deckName: "Zur", slugs: new Set(["blink"]) }],
+    playedTags: [{ deckName: "Zur", colorIdentity: ["W", "U", "B"], slugs: new Set(["blink"]) }],
     prices: new Map(),
-    rollup: undefined as never, // replaced below with a real rollup
+    // A real rollup, empty: this suite is about assembly, and Phase 2's own test
+    // is what proves the rollup correct. `undefined` here throws in `rollupFor`.
+    rollup: buildPoolRollup([], new Map()),
     cardsRead: 2805,
   };
 
@@ -1448,7 +1560,7 @@ describe("assembleDiscovery", () => {
 });
 ```
 
-Build a real `PoolRollup` for `base.rollup` with `buildPoolRollup([], new Map())` — an empty collection is enough here, because the rollup's own correctness is Phase 2's test, not this one.
+`list.test.ts` imports `buildPoolRollup` rather than mocking it: `pool-rollup.ts` is pure and touches no database, so the real one is both cheaper and truer than a stub.
 
 - [ ] **Step 2: Run it and watch it fail**
 
@@ -1516,7 +1628,9 @@ export function assembleDiscovery(input: {
     candidateCount: input.candidates.length,
     cardsRead: input.cardsRead,
     bestPct,
+    floorExcluded: excluded.length,
     hasDecks: input.playedTags.length > 0,
+    deckIdentities: input.playedTags.map((d) => d.colorIdentity),
     sort: input.sort,
   };
 }
@@ -1611,6 +1725,11 @@ git commit -m "feat(discovery): discovery list orchestrator"
 Task 10 built the discovery ranking by hand because `list.ts` did not exist yet. Swap it for the real thing so one function decides both the row's rank and the detail page's:
 
 ```ts
+      // The detail page's rank is always the FREE-pool fit rank. The detail
+      // route carries no `avail` and no `sort` — it is one URL per commander,
+      // and a rank that changed with how the visitor arrived would make the
+      // same page say two different things. `free` matches `/commanders`'
+      // own default, so the two agree for every visitor who did not opt out.
       const discovery = await loadDiscovery(userId, { sort: "fit", avail: "free" });
       const at = discovery.items.findIndex((i) => i.slug === slug);
       if (at === -1) notFound();
@@ -1622,7 +1741,7 @@ Task 10 built the discovery ranking by hand because `list.ts` did not exist yet.
 ```bash
 pnpm dev
 ```
-Open the same `/commanders/<unowned-slug>` URL from Task 10. Expected: renders, same rank as its row shows on `/commanders?scope=play`.
+Open the same `/commanders/<unowned-slug>` URL from Task 10. Expected: renders, and its rank matches the row's on `/commanders?scope=play` (the default, `avail=free`). Under `?avail=all` the row's rank and the detail page's legitimately differ — `ownedSupport` is counted against a different pool — and that is the cost of one URL per commander, not a bug.
 
 - [ ] **Step 3: Pre-push gate and commit**
 
@@ -1709,9 +1828,65 @@ git commit -m "feat(discovery): scope and sort param parsing"
 ### Task 14: Branch the page on scope
 
 **Files:**
+- Create: `src/components/commanders/discovery-view.tsx`
 - Modify: `src/app/commanders/page.tsx`
 
-- [ ] **Step 1: Add the discovery branch**
+**Interfaces:**
+- Consumes: `DiscoveryList` from `src/lib/discovery/list`, `parseScope`/`parseSort` from `./params`.
+- Produces: `DiscoveryView({ discovery, avail }: { discovery: DiscoveryList; avail: "all" | "free" })`.
+
+- [ ] **Step 1: Create `DiscoveryView` as a real component, not an adapter**
+
+The discovery list is a **separate client component** from `CommandersView`. It does
+not reuse it and does not adapt to it: `CommandersView` takes `CommanderListItem[]`
+and holds the owned scope's two client-side rankings and its `ScoreDelta` state,
+none of which discovery has. Fabricating a `CommanderListItem` — inventing a
+`score`, a `synergyState`, a `receipts` string — would put made-up numbers one
+prop away from a surface whose entire premise is that every figure prints its
+denominator.
+
+This task builds the skeleton so Phase 8 leaves `main` green; Phases 9–11 fill it in.
+
+```tsx
+"use client";
+
+export function DiscoveryView({
+  discovery,
+  avail,
+}: {
+  discovery: DiscoveryList;
+  avail: "all" | "free";
+}) {
+  const [colors, setColors] = useState<string[]>([]);
+  const [shown, setShown] = useState(REVEAL_STEP);
+  const filtered = useMemo(
+    () => filterByColors(discovery.items, colors),
+    [discovery.items, colors],
+  );
+  // Ranks come from the server, over the full pre-filter set, so filtering never
+  // renumbers — the same invariant CommandersView holds, reached differently.
+  return (
+    <>
+      {/* Phase 9 mounts the scope control and sort menu here. */}
+      {/* Phase 11 mounts the empty states and the reveal band here. */}
+      <ul>
+        {filtered.slice(0, shown).map((item) => (
+          <RecCard key={item.oracleId} discovery={item} sort={discovery.sort}
+                   rank={item.rank} avail={avail} counts={item.counts} delta={null} />
+        ))}
+      </ul>
+    </>
+  );
+}
+```
+
+`RecCard`'s discovery props land in Task 17 — until then this file passes
+`discovery`/`sort` to a `RecCard` that does not yet accept them, which does not
+compile. So **Task 14 also does Task 17 step 0** (the prop union below) and
+nothing else of Task 17. The alternative — a placeholder row component deleted in
+Phase 10 — is two throwaway commits for one type change.
+
+- [ ] **Step 2: Add the discovery branch to the page**
 
 After the collection-empty guard and before `getRankedList`:
 
@@ -1729,15 +1904,13 @@ After the collection-empty guard and before `getRankedList`:
     const discovery = await loadDiscovery(userId, { sort, avail });
     return (
       <section className="flex flex-col min-h-screen">
-        <DiscoveryView discovery={discovery} avail={avail} scope="play" />
+        <DiscoveryView discovery={discovery} avail={avail} />
       </section>
     );
   }
 ```
 
-`DiscoveryView` is built in Phase 9. For this task, render `CommandersView`'s existing shell with a temporary adapter so the branch is exercisable — the commit message says so, and Phase 9 replaces it.
-
-- [ ] **Step 2: Verify both scopes by hand**
+- [ ] **Step 3: Verify both scopes by hand**
 
 ```bash
 pnpm dev
@@ -1747,12 +1920,12 @@ pnpm dev
 - `/commanders?scope=play&sort=new` — a shorter list than `&sort=fit`.
 - `/commanders?scope=play&sort=new` **signed in as a fixture account with no decks** — falls back to the fit list rather than rendering empty.
 
-- [ ] **Step 3: Pre-push gate and commit**
+- [ ] **Step 4: Pre-push gate and commit**
 
 ```bash
 pnpm typecheck && pnpm lint && pnpm test
 DATABASE_URL="postgres://stub:stub@localhost/stub" pnpm build
-git add src/app/commanders/page.tsx
+git add src/app/commanders/page.tsx src/components/commanders/discovery-view.tsx src/components/commanders/rec-card.tsx
 git commit -m "feat(discovery): branch /commanders on scope"
 ```
 
@@ -1784,11 +1957,23 @@ One element with responsive classes, not two subtrees — a duplicated subtree p
 
 - [ ] **Step 2: Wire the subtitle**
 
-`PageHeader` currently renders `${uniqueCardsRead.toLocaleString()} cards scanned · …`. Add props `scope`, `sort`, `candidateCount`, `cardsRead`, and choose:
+`PageHeader` today renders `${uniqueCardsRead.toLocaleString("en-US")} cards scanned` plus, when `avail` is set, `availabilityCopy.ranking.subtitleFree` / `subtitleAll` (`page-header.tsx:21-29`). Add props `scope`, `sort`, `candidateCount`, `cardsRead`, and choose:
 - `scope === "owned"` → `discoveryCopy.scope.subtitleOwned(candidateCount, cardsRead)`
 - `scope === "play"` → `discoveryCopy.scope.subtitlePlay(candidateCount, cardsRead, sort)`
 
-Mono 12px `--fg-faint`, 10.5px on phone. Do not add a `toLocaleString` call here — the copy module already formats.
+**Keep the availability clause.** The handoff's two subtitle strings do not
+include it, but dropping it would silently remove the only place `/commanders`
+says whether it ranked against the free pool or everything owned — a regression
+on a shipped surface, and one this feature has no reason to cause. Append it as
+today, so the line reads `… · read against N cards · <availability clause>`. Note
+it in the PR body for Design to ratify; do not open a round-trip over it.
+
+**Keep the no-props branch.** `PageHeader` is also rendered from the
+`candidateCount === 0` and collection-empty paths with `uniqueCardsRead` alone.
+All four new props stay optional, and with `scope` absent the header renders
+exactly today's line.
+
+Mono 12px `--fg-faint`, 10.5px on phone. Do not add a `toLocaleString` call for the copy module's own figures — it already formats them.
 
 - [ ] **Step 3: Navigate on change**
 
@@ -1806,14 +1991,24 @@ function setScope(next: "owned" | "play") {
 
 No pending styling on the list: the handoff forbids either control animating it. Do not add `opacity`, a skeleton, or a spinner to the rows.
 
-- [ ] **Step 4: Verify both widths**
+- [ ] **Step 4: Announce the flip**
+
+A scope flip changes the whole population, so it announces like the sort flip
+does — `discoveryCopy.scope.announce(scope, count, sort)` on the page's
+**existing** live region. One region carries all three messages (scope, sort,
+reveal); a second would make two of them inaudible.
+
+`count` is the post-flip `candidateCount`, so the announcement is written after
+the server round-trip resolves, not optimistically at click time.
+
+- [ ] **Step 5: Verify both widths**
 
 ```bash
 pnpm dev
 ```
 At 1280px and at 390px: the segments render, flipping changes the URL and the subtitle, the list does not animate, and the header does not become sticky.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add src/components/commanders/scope-control.tsx src/components/commanders/page-header.tsx
@@ -1878,7 +2073,33 @@ One PR. Design-review skill before `gh pr create`.
 
 **Interfaces:**
 - Consumes: `DiscoveryItem`, `discoveryCopy.justify`.
-- Produces: `RecCardProps` gains `sort?: "fit" | "new"` and `discovery?: DiscoveryItem`.
+- Produces: `RecCardProps` becomes a union — the owned arm keeps `commander: CommanderListItem`, the discovery arm takes `discovery: DiscoveryItem` and `sort`.
+
+- [ ] **Step 0: The prop union (done in Task 14, restated here because it is this task's premise)**
+
+Today `RecCardProps` requires `commander: CommanderListItem` and the body calls
+`fitSegments(c)` unconditionally at `rec-card.tsx:112`. `DiscoveryItem` has no
+`score`, `fitPool`/`fitRoles`/`fitSynergy`, `synergyState`, `edhrecOwnedCount` or
+`receipts`, so an optional prop would leave `fitSegments` reading `undefined`.
+
+```ts
+type RecCardCommon = {
+  rank: number;
+  avail: "all" | "free";
+  counts: ReceiptCounts;
+};
+
+type RecCardProps =
+  | (RecCardCommon & { commander: CommanderListItem; delta: ScoreDelta | null;
+                       discovery?: undefined; sort?: undefined })
+  | (RecCardCommon & { discovery: DiscoveryItem; sort: "fit" | "new";
+                       delta?: null; commander?: undefined });
+```
+
+Every existing read of `c` — `fitSegments`, the score display, the two synergy
+notes — moves inside `if (props.commander)`. The discriminant is the presence of
+`discovery`, so TypeScript narrows both arms without a runtime flag, and the owned
+scope's call sites are unchanged.
 
 - [ ] **Step 1: One slot, contents chosen by the sort key**
 
@@ -1964,17 +2185,31 @@ Home: the sort **menu** (the row's reason) plus a banner. The list beneath is **
 
 - [ ] **Step 2: The floor excludes everything**
 
-Home: the list region. The list beneath is **empty**. Heading `empty.floorHeading`; body `empty.floorBody(30, candidateCount, cardsRead, bestPct)`. CTA `empty.floorCta` switching to `?sort=` (fit), with `empty.floorCtaNote(candidateCount)` beneath it.
+Home: the list region. The list beneath is **empty**. Heading `empty.floorHeading`; body `empty.floorBody(NOVELTY_FLOOR * 100, candidateCount, cardsRead, bestPct)`. CTA `empty.floorCta` switching to `?sort=` (fit), with `empty.floorCtaNote(candidateCount)` beneath it.
 
 Offer the other sort, **never a looser floor**. There is no "show them anyway" control.
 
-When `bestPct` is null the floor excluded nothing with a denominator, so this state cannot be reached — assert it rather than rendering the copy with a blank.
+Render this state only when `floorExcluded > 0 && bestPct != null`. An empty `items` under `new` with `floorExcluded === 0` is a different fact — every candidate is untagged — and rendering the floor copy there would name a floor that excluded nobody. Fall back to the shipped no-results state in that case; a player whose entire candidate set is untagged does not exist at 3,334 indexed commanders, so it needs no copy of its own, but it must not crash or print a blank percentage.
 
 - [ ] **Step 3: Filtered to zero inside discovery**
 
 The shipped `FilteredEmpty` plus one clause and one link. Heading `empty.filteredHeading`, body `empty.filteredBody(colors, candidateCount)`, CTA `empty.filteredCta`, and `empty.filteredScopeLink` as a text link back to `?scope=` (owned).
 
-`empty.filteredBuiltClause(matching, total, identity)` renders **only when at least one built deck matches the filtered identity** — it is the one genuinely new reason this state has under discovery, and with no matching deck it is false. Compute `matching` from the decks already read for `hasDecks`; do not add a query.
+`empty.filteredBuiltClause(matching, total, identity)` renders **only when at least one built deck matches the filtered identity** — it is the one genuinely new reason this state has under discovery, and with no matching deck it is false. Both figures come from `DiscoveryList.deckIdentities`, which `loadPlayedTags` already carries; do not add a query.
+
+```ts
+const total = discovery.deckIdentities.length;
+// The SAME predicate the list's colour filter uses — `selected ⊆ colorIdentity`,
+// not equality (`src/lib/commanders/filter.ts`). The clause claims these decks
+// would have been in this filtered list had they been unbuilt, so a hand-written
+// equality here would make that claim false for every multicolour deck.
+const matching = filterByColors(
+  discovery.deckIdentities.map((colorIdentity) => ({ colorIdentity })),
+  colors,
+).length;
+```
+
+`identity` is the filter's own label, built from `colors` by the shipped `COLOR_LABELS` map — not the deck's identity, which may be wider.
 
 - [ ] **Step 4: Verify all three**
 
@@ -2044,6 +2279,16 @@ Recorded so a reviewer does not read them as gaps. Each is a handoff gap-report 
 Run before the first PR opens. All four passed on 2026-09-05; `overlapShort`,
 `ownedShort`/`unownedShort` and `distanceAria` were unreferenced and were named
 inline in Tasks 17 and 18.
+
+A subagent code review the same day found three blockers, since fixed:
+`DiscoveryView` was rendered by Task 14 and created by no task (Task 14 now builds
+it, and takes Task 17's prop-union step with it); `RecCard` required a
+`CommanderListItem` that a `DiscoveryItem` cannot satisfy (Task 17 step 0 is the
+discriminated union); and `empty.filteredBuiltClause` needed deck colour
+identities and a deck total nothing loaded (`DeckTagSet` now carries
+`colorIdentity`, `DiscoveryList` carries `deckIdentities`). It also took the
+`candidates.ts` array join off trust: step 5 now reads the query plan and the
+timing, not the row count, and carries the `unnest` form to fall back to.
 
 - [x] **Spec coverage.** Walk `README.md`'s "Notes for engineering" list line by line and point at the task that implements each: two URL-mirrored state pieces (13, 14), scope changes the candidate set server-side (14), a sort flip is allowed to be a fetch (16), flips reset `shown` (20), `rankMap` over the full pre-filter set (11), floor and tag distance server-side (5, 6, 7, 11), untagged excluded by absence of `tags` (11), the deck tag set aggregated once per request (6), `RecCard` takes a `sort` prop (17), `ScoreDelta` null (17), `edhrec_total` non-null wherever N is printed (17 step 3), price joined on `scryfall_id` and never in an `ORDER BY` (5, 18), `Showing N of M` gains `toLocaleString` (20).
 - [x] **Copy coverage.** Every key in `discoveryCopy` is referenced by some task. An unreferenced key means a surface was missed.
