@@ -23,7 +23,7 @@ export type DeckSuggestion = {
   role: DeckDetailCard["role"];
   imageUri: string | null;
   // Scryfall's cost string ("{2}{G}{G}") and its numeric value. Both are drawn:
-  // the pips come from the string, the "cheapest first" sort from the number,
+  // the pips come from the string, the "cheapest to cast" sort from the number,
   // and parsing one out of the other on the client would guess at hybrid and
   // Phyrexian symbols the string spells out exactly.
   manaCost: string | null;

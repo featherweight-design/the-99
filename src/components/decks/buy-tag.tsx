@@ -47,6 +47,16 @@ const FIGURE_INK: Record<BuyTagVariant, string> = {
 };
 
 /**
+ * `foil` / `etched` name which printing the figure belongs to, so the figure is
+ * incomplete without it — the spoken sentence carries it too, not just the
+ * drawn tail.
+ */
+function qualifierOf(fact: PriceFact, state: PriceState): string | null {
+  if (state !== "foilOnly") return null;
+  return fact.foilCents !== null ? priceCopy.tag.foil : priceCopy.tag.etched;
+}
+
+/**
  * The tail's two spans. `soldOut` takes the figure's own ink and the figure's
  * own slot — it is the same class of fact, told apart by being a word where the
  * others are a number. `absent` returns null: silence is the state, and a dash
@@ -69,12 +79,7 @@ function Tail({
   if (state === "absent") return null;
 
   const cents = priceOf(fact, state);
-  const qualifier =
-    state === "foilOnly"
-      ? fact.foilCents !== null
-        ? priceCopy.tag.foil
-        : priceCopy.tag.etched
-      : null;
+  const qualifier = qualifierOf(fact, state);
 
   return (
     <span aria-hidden={silent ? "true" : undefined}>
@@ -131,12 +136,15 @@ export function BuyTag({
   // provenance to the shipped ownership sentence rather than adding a second
   // one; every other state leaves that sentence exactly as it shipped.
   const speaksPrice = Boolean(label) && cents !== null && provenance !== null;
+  const qualifier = price ? qualifierOf(price, state) : null;
+  const spokenFigure =
+    cents === null ? null : qualifier ? `${formatCents(cents)} ${qualifier}` : formatCents(cents);
   const spoken =
-    speaksPrice && provenance && cents !== null
+    speaksPrice && provenance && spokenFigure
       ? `${label}. ${
           provenance.behind
-            ? priceCopy.aria.pricedBehind(formatCents(cents), provenance.when)
-            : priceCopy.aria.priced(formatCents(cents), provenance.when)
+            ? priceCopy.aria.pricedBehind(spokenFigure, provenance.when)
+            : priceCopy.aria.priced(spokenFigure, provenance.when)
         }`
       : label;
 

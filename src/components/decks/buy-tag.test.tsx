@@ -118,6 +118,23 @@ describe("BuyTag accessible name", () => {
     );
   });
 
+  // The qualifier names which printing the figure belongs to, so a sentence
+  // that drops it quotes a foil price as if it were the card's.
+  it("carries the foil qualifier into the spoken figure", () => {
+    const { container } = render(
+      <BuyTag
+        variant="tile"
+        label="Sol Ring, not owned"
+        price={FOIL_ONLY}
+        newestAsOf={NEWEST}
+        provenance={provenance}
+      />,
+    );
+    expect(container.querySelector(".sr-only")).toHaveTextContent(
+      `Sol Ring, not owned. ${priceCopy.aria.priced(`$9.40 ${priceCopy.tag.foil}`, "Monday")}`,
+    );
+  });
+
   it("labelled uses the behind sentence when the table is behind", () => {
     const { container } = render(
       <BuyTag
