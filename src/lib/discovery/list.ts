@@ -29,7 +29,10 @@ export type DiscoveryItem = {
   edhrecTotal: number | null;
   colorPoolSize: number;
   roleCounts: Record<RoleName, number>;
-  counts: ReceiptCounts;
+  /** Null when the availability read failed. The rollup would report zeros in
+      that case, and a zero here is a claim — "nothing you own is committed" —
+      that a failed read cannot support. */
+  counts: ReceiptCounts | null;
   price: PriceSlot;
   tagTotal: number;
   unplayedLabels: string[];
@@ -85,8 +88,14 @@ export function assembleDiscovery(input: {
   const enriched = withSlugs.map((c) => {
     const unplayed = unplayedTags(c.tags, played);
     const owned = input.ownedOracleIds.has(c.oracleId);
+    const rollup = rollupFor(input.rollup, c);
     return {
-      ...rollupFor(input.rollup, c),
+      ...rollup,
+      // The rollup counts an empty availability map as zero committed cards,
+      // which is the right answer when the read succeeded and the wrong one when
+      // it failed. The pool size and role counts do not depend on availability
+      // and stand either way; only the receipt counts are unknown.
+      counts: input.availOk ? rollup.counts : null,
       oracleId: c.oracleId, slug: c.slug, name: c.name,
       colorIdentity: c.colorIdentity, imageUri: c.imageUri,
       owned,

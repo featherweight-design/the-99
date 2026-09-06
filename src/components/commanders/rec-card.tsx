@@ -41,7 +41,7 @@ function ReceiptLine({
   fontSize,
 }: {
   fits: number;
-  counts: ReceiptCounts;
+  counts: ReceiptCounts | null;
   avail: "all" | "free";
   fontSize: number;
 }) {
@@ -49,8 +49,12 @@ function ReceiptLine({
   // Glyph follows the clause: solid accent for a finished deck's claim, hollow
   // for a brew's, exactly as the marker draws them elsewhere. Decorative in both
   // cases — the words beside it already say the whole fact.
-  const clause =
-    counts.inUse > 0
+  // Null counts are unknown, not zero: the availability read failed, so the
+  // clause is dropped rather than drawn as "nothing is committed", which is a
+  // claim this render has no basis for.
+  const clause = !counts
+    ? null
+    : counts.inUse > 0
       ? {
           text: receipt.inUse(counts.inUse),
           color: "var(--avail-hard-fg)",
@@ -96,8 +100,10 @@ type RecCardProps = {
   commander: CommanderListItem;
   rank: number;
   avail: "all" | "free";
-  /** The receipt's second clause, by severity. Counted server-side. */
-  counts: ReceiptCounts;
+  /** The receipt's second clause, by severity. Counted server-side. Null when
+      the availability read failed, which drops the clause rather than printing
+      a zero the reader would take for a fact. */
+  counts: ReceiptCounts | null;
   /**
    * How far this commander's score fell against the free pool, and what it was.
    * Null under `Everything I own`, and null where the score did not move: the
