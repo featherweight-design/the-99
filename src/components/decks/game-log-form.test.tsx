@@ -123,6 +123,19 @@ describe("GameLogForm", () => {
     expect(screen.getByRole("button", { name: gameLogCopy.form.save })).toBeDisabled();
   });
 
+  // Clearing the field is not a request to log today's game. Sending it would
+  // build an Invalid Date and buy a refusal the form could have avoided.
+  it("refuses to save once the date has been cleared", () => {
+    mount();
+    open();
+    fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.playedToday }));
+    fireEvent.change(screen.getByLabelText(gameLogCopy.form.playedToday), {
+      target: { value: "" },
+    });
+    expect(screen.getByRole("button", { name: gameLogCopy.form.save })).toBeDisabled();
+  });
+
   // The field's name is a sentence about the value, so it cannot go on saying
   // "today" once the player has picked a different day.
   it("names the date field after the day it holds", () => {

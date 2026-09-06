@@ -9,9 +9,12 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 // through Tailwind utilities, never through the variable.
 const PATTERN_INK = /\b(?:text|bg|border)-(?:success|warning)\b/;
 
+// The ids only have to be distinct — React keys the history rows by them — so a
+// counter serves, and a failure names the same game every run.
+let nextId = 0;
 function game(over: Partial<DeckGame> = {}): DeckGame {
   return {
-    id: Math.random().toString(),
+    id: `game_${(nextId += 1)}`,
     result: "win",
     podSize: 4,
     playedAt: new Date("2026-09-01"),

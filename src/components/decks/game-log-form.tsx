@@ -179,15 +179,17 @@ export function GameLogForm({
   }
 
   // State 9. `max` stops the picker, not a typed or pasted value, so the same
-  // rule is enforced here as well as in the action.
-  const futureDate = playedAt > today();
+  // rule is enforced here as well as in the action. An emptied field is caught
+  // by the same gate: clearing the input is not a request to log today's game,
+  // and sending it would build an Invalid Date for the action to refuse.
+  const dateUnusable = playedAt === "" || playedAt > today();
 
   const dateLabel =
     playedAt === today() ? gameLogCopy.form.playedToday : gameLogCopy.form.played(playedAt);
   const [prefix, dateWord] = dateParts(dateLabel);
 
   function submit() {
-    if (!result || isPending || futureDate) return;
+    if (!result || isPending || dateUnusable) return;
     startTransition(async () => {
       setError(null);
       const outcome = await logGame(deckId, {
@@ -377,7 +379,7 @@ export function GameLogForm({
         <button
           type="button"
           onClick={submit}
-          disabled={!result || isPending || futureDate}
+          disabled={!result || isPending || dateUnusable}
           className="w-full md:w-auto h-[48px] md:h-auto md:px-[20px] md:py-[11px] rounded-[8px] text-[14.5px] md:text-[14px] font-semibold cursor-pointer bg-accent text-bg hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPending ? gameLogCopy.form.saving : gameLogCopy.form.save}
