@@ -5,11 +5,12 @@
 // Whole card links to /commanders/${slug}.
 
 import Link from "next/link";
-import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
+import { CommanderThumb, CommanderTile } from "./commander-art";
+import { DiscoveryRow } from "./discovery-row";
 import { FitBar } from "./fit-bar";
+import { ReceiptLine } from "./receipt-line";
 import { RoleChips } from "./role-chips";
 import { availabilityCopy } from "../../lib/copy/availability";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
@@ -19,85 +20,6 @@ import type { CommanderListItem } from "../../lib/recs/recommend";
 // pulls the neon driver in with it. A type-only clause is erased at compile
 // time, so none of that reaches the client bundle.
 import type { DiscoveryItem } from "../../lib/discovery/list";
-
-/**
- * The receipt line (§8). It ALWAYS renders, in both ranking modes; only the
- * second clause is a suffix, so row height never changes between two players
- * looking at the same commander. The canvas draws Lathril with the whole line
- * absent, but the README and the copy module both rule the line unconditional
- * and the README wins by this epic's stated precedence.
- *
- * The second clause is not derived from the two rankings. Counting it off the
- * availability map instead is what lets it render under `Everything I own`,
- * where no free ranking exists — and Design drew it that way (canvas state A,
- * "Everything I own (default)", already reads `34 of your cards fit · 12
- * already in use`).
- *
- * ONE clause, chosen by severity: §8 calls it "the second clause", singular, and
- * no canvas row draws both. Hard outranks soft for the same reason it does in
- * the deck roll-up — a card sleeved into a finished deck is the harder fact. A
- * pool holding both therefore says nothing about its soft claims; that is
- * flagged to Design rather than improvised into a third clause.
- */
-function ReceiptLine({
-  fits,
-  counts,
-  avail,
-  fontSize,
-}: {
-  fits: number;
-  counts: ReceiptCounts | null;
-  avail: "all" | "free";
-  fontSize: number;
-}) {
-  const { receipt } = availabilityCopy;
-  // Glyph follows the clause: solid accent for a finished deck's claim, hollow
-  // for a brew's, exactly as the marker draws them elsewhere. Decorative in both
-  // cases — the words beside it already say the whole fact.
-  // Null counts are unknown, not zero: the availability read failed, so the
-  // clause is dropped rather than drawn as "nothing is committed", which is a
-  // claim this render has no basis for.
-  const clause = !counts
-    ? null
-    : counts.inUse > 0
-      ? {
-          text: receipt.inUse(counts.inUse),
-          color: "var(--avail-hard-fg)",
-          glyph: { background: "var(--accent)" },
-        }
-      : counts.wantedByBrew > 0
-        ? {
-            text: receipt.wantedByBrew(counts.wantedByBrew),
-            color: "var(--fg-body)",
-            glyph: { border: "1.5px solid var(--fg-muted)" },
-          }
-        : null;
-
-  return (
-    <p
-      className="m-0 font-mono flex items-center gap-[6px] flex-wrap"
-      style={{ fontSize, color: "var(--fg-faint)" }}
-    >
-      {avail === "free" ? receipt.fitFree(fits) : receipt.fit(fits)}
-      {clause && (
-        <>
-          <span style={{ color: "var(--border-strong)" }}>·</span>
-          <span
-            aria-hidden="true"
-            className="block shrink-0"
-            style={{
-              width: 6,
-              height: 6,
-              transform: "rotate(45deg)",
-              ...clause.glyph,
-            }}
-          />
-          <span style={{ color: clause.color }}>{clause.text}</span>
-        </>
-      )}
-    </p>
-  );
-}
 
 export type ScoreDelta = { drop: number; was: number };
 
@@ -137,12 +59,21 @@ type RecCardProps =
     });
 
 export function RecCard(props: RecCardProps) {
-  // The discovery arm renders nothing until Phase 10 fills it in. Narrowed on
-  // the arm's own required prop: the forbidden keys are typed `never`, so a call
-  // site cannot pass `discovery={undefined}` into the owned arm and land here.
-  if (props.commander === undefined) return null;
+  // Narrowed on the arm's own required prop: the forbidden keys are typed
+  // `never`, so a call site cannot pass `discovery={undefined}` into the owned
+  // arm and land here.
+  if (props.commander === undefined) {
+    return (
+      <DiscoveryRow
+        item={props.discovery}
+        rank={props.rank}
+        sort={props.sort}
+        avail={props.avail}
+        counts={props.counts}
+      />
+    );
+  }
   const { commander: c, rank, avail, counts, delta } = props;
-  const gradient = commanderGradient(c.colorIdentity);
   const fit = fitSegments(c);
   const scoreDisplay = Math.round(fit.pct);
 
@@ -182,21 +113,7 @@ export function RecCard(props: RecCardProps) {
       >
         {/* Mobile top row: art + name/info + fit score */}
         <div className="flex gap-[10px] items-start">
-          {/* Art thumbnail — mobile 36×50px. Image when available; gradient
-              is the fallback (per the pattern used across grid-view, card
-              modal, builder-spine, etc.). */}
-          <div
-            className="shrink-0 rounded-[6px]"
-            style={{
-              width: 36,
-              height: 50,
-              background: c.imageUri ? undefined : gradient,
-              backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
-            }}
-          />
+          <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} />
 
           {/* Name + type line */}
           <div className="flex-1 min-w-0">
@@ -356,42 +273,7 @@ export function RecCard(props: RecCardProps) {
           />
         </div>
 
-        {/* Art thumbnail — desktop aspect 63/88. Image when available;
-            gradient is the fallback (matches grid-view / card-modal /
-            builder-spine pattern). */}
-        <div
-          className="rounded-[8px] relative"
-          style={{
-            aspectRatio: "63/88",
-            background: c.imageUri ? undefined : gradient,
-            backgroundImage: c.imageUri ? cssUrl(c.imageUri) : undefined,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            boxShadow:
-              "inset 0 -30px 34px -26px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(0,0,0,0.28)",
-          }}
-        >
-          {/* WUBRG identity pips — absolute bottom */}
-          {c.colorIdentity.length > 0 && (
-            <div
-              className="absolute flex gap-[3px]"
-              style={{ left: 6, right: 6, bottom: 6 }}
-            >
-              {c.colorIdentity.map((color) => (
-                <span
-                  key={color}
-                  className="block rounded-full shrink-0"
-                  style={{
-                    width: 11,
-                    height: 11,
-                    background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
-                    boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)",
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        <CommanderTile imageUri={c.imageUri} colorIdentity={c.colorIdentity} />
 
         {/* Evidence column */}
         <div className="flex flex-col gap-[13px]" style={{ minWidth: 0 }}>

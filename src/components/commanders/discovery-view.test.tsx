@@ -30,6 +30,28 @@ const list = (over: Partial<DiscoveryList> = {}): DiscoveryList => ({
   ...over,
 });
 
+const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["items"][number] => ({
+  oracleId: "a",
+  slug: "a",
+  name: "A Commander",
+  colorIdentity: ["G"],
+  imageUri: null,
+  rank: 1,
+  owned: false,
+  ownedSupport: 12,
+  edhrecTotal: 40,
+  colorPoolSize: 34,
+  roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
+  counts: null,
+  price: { kind: "absent" },
+  tagTotal: 4,
+  unplayedLabels: [],
+  unplayedCount: 0,
+  nearestDeck: null,
+  floorPct: null,
+  ...over,
+});
+
 describe("DiscoveryView", () => {
   beforeEach(() => {
     replace.mockClear();
@@ -68,9 +90,9 @@ describe("DiscoveryView", () => {
   // shows is the one the server ranked, not a client-side subtraction.
   it("counts the items it carries, and filters them by colour", () => {
     const items = [
-      { oracleId: "a", colorIdentity: ["G"] },
-      { oracleId: "b", colorIdentity: ["U"] },
-    ] as unknown as DiscoveryList["items"];
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["U"], rank: 2 }),
+    ];
     render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
     expect(screen.getAllByText("Showing 2 of 2").length).toBeGreaterThan(0);
 
