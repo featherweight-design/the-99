@@ -69,14 +69,14 @@ describe("DiscoveryRow", () => {
   });
 
   it("says what the nearest deck shares when one overlaps", () => {
-    row(
+    const { container } = row(
       { nearestDeck: { deckName: "Meren", sharedLabels: ["tokens", "aristocrats"], extraShared: 0 } },
       "new",
     );
     const shared = discoveryCopy.justify.sharedList(["tokens", "aristocrats"], 0);
-    expect(
-      screen.getAllByText(new RegExp(discoveryCopy.justify.distanceNear("Meren", shared))).length,
-    ).toBeGreaterThan(0);
+    // A substring, not a `RegExp` built from the copy: the clause ends in a full
+    // stop, and a deck name is whatever the player typed.
+    expect(container.textContent).toContain(discoveryCopy.justify.distanceNear("Meren", shared));
   });
 
   // A commander whose every archetype the player has already built still ranks,
@@ -101,8 +101,16 @@ describe("DiscoveryRow", () => {
     const label = link.getAttribute("aria-label") ?? "";
     expect(label.indexOf(discoveryCopy.ownership.ownedAria)).toBeGreaterThan(-1);
     expect(label.indexOf(discoveryCopy.ownership.ownedAria)).toBeLessThan(
-      label.indexOf(discoveryCopy.justify.overlapAria(126, 264, "Lathril, Blade of the Elves")),
+      label.indexOf(discoveryCopy.justify.overlap(126, 264)),
     );
+  });
+
+  // The label opens on the name, so the overlap clause says "this commander"
+  // rather than naming it a second time.
+  it("names the commander once in the row's accessible name", () => {
+    row({ owned: true });
+    const label = screen.getByRole("link").getAttribute("aria-label") ?? "";
+    expect(label.split("Lathril, Blade of the Elves").length - 1).toBe(1);
   });
 
   it("renders the price with its provenance, and speaks it", () => {

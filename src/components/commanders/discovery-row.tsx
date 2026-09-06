@@ -249,7 +249,10 @@ export function DiscoveryRow({
   const justifyAria = !hasFigure
     ? null
     : fit
-      ? justify.overlapAria(item.ownedSupport, total, item.name)
+      ? // The name-carrying `overlapAria` would repeat it: `rowLabel` already
+        // opens on `item.name`, so the variant that says "this commander"
+        // reads correctly there and says the name once.
+        justify.overlap(item.ownedSupport, total)
       : justify.distanceAria(item.unplayedCount, item.tagTotal);
 
   const lead = (mobile: boolean): ReceiptClause => ({

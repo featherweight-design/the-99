@@ -9,7 +9,7 @@ const behind: ProvenanceForm = { behind: true, when: "12 August" };
 
 describe("PriceStrip provenance line", () => {
   it("names the source and the day it was checked", () => {
-    render(
+    const { container } = render(
       <PriceStrip
         summary={{ totalCents: 1240, pricedCopies: 6, totalCopies: 8 }}
         provenance={fresh}
@@ -18,7 +18,9 @@ describe("PriceStrip provenance line", () => {
     expect(screen.getByText(/prices from ManaPool/)).toHaveTextContent(
       `${priceCopy.strip.provenance} · ${priceCopy.strip.lastChecked("Monday")}`,
     );
-    expect(screen.queryByText(new RegExp(priceCopy.strip.behind))).toBeNull();
+    // A substring, not a `RegExp` built from the copy: the clause carries
+    // punctuation, which a regex would read as syntax.
+    expect(container.textContent).not.toContain(priceCopy.strip.behind);
   });
 
   it("adds the behind clause when the table is behind", () => {
