@@ -32,13 +32,21 @@ const stub = vi.hoisted(() => {
 
   // Lift the bound value out of a drizzle `eq(column, value)` condition so a
   // delete can be asserted on what it targeted, not merely that it happened.
-  const paramValue = (condition: unknown): string | null => {
-    const chunks = (condition as { queryChunks?: unknown[] } | undefined)?.queryChunks ?? [];
-    for (const chunk of chunks) {
-      const value = (chunk as { value?: unknown } | undefined)?.value;
-      if (typeof value === "string") return value;
-    }
-    return null;
+  const paramValue = (condition: unknown): string | null => paramValues(condition)[0] ?? null;
+
+  // Every bound value in the condition, depth-first, so a stub can model a
+  // multi-column predicate rather than only the first `eq()` in it.
+  const paramValues = (condition: unknown): string[] => {
+    const found: string[] = [];
+    const walk = (node: unknown) => {
+      const value = (node as { value?: unknown } | undefined)?.value;
+      if (typeof value === "string") found.push(value);
+      for (const chunk of (node as { queryChunks?: unknown[] } | undefined)?.queryChunks ?? []) {
+        walk(chunk);
+      }
+    };
+    walk(condition);
+    return found;
   };
 
   // A per-test fake for db.select chains
@@ -135,8 +143,23 @@ const stub = vi.hoisted(() => {
     selectDistinctOn: () => makeSelectBuilder(),
     insert: (table: unknown) => makeInsertBuilder(table),
     delete: (table: unknown) => ({
-      where: async (condition: unknown) => {
-        state.deleteCalls.push({ table: nameOf(table), id: paramValue(condition) });
+      // Thenable as well as chainable, because most deletes are awaited
+      // directly and deleteGame reads back what it removed.
+      where: (condition: unknown) => {
+        const tableName = nameOf(table);
+        const id = paramValue(condition);
+        state.deleteCalls.push({ table: tableName, id });
+        const bound = paramValues(condition);
+        const rows =
+          tableName === "deck_games"
+            ? state.deckGames
+                .filter((g) => bound.includes(g.id) && bound.includes(g.deckId))
+                .map((g) => ({ id: g.id }))
+            : [];
+        return {
+          returning: async () => rows,
+          then: (resolve: (v: unknown) => unknown) => Promise.resolve(undefined).then(resolve),
+        };
       },
     }),
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
@@ -674,19 +697,22 @@ describe("deleteGame", () => {
   });
 
   // requireDeck proves the caller owns deck_1; it says nothing about whether
-  // game_1 belongs to deck_1. Without the second check, a player could delete
-  // another player's game by naming their own deck.
+  // game_1 belongs to deck_1. The pairing is in the delete's own predicate, so
+  // naming your own deck over someone else's game removes nothing.
   it("refuses a game that belongs to a different deck", async () => {
     stub.state.deckGames = [{ id: "game_1", deckId: "deck_other" }];
     const result = await deleteGame("deck_1", "game_1");
     expect(result.ok).toBe(false);
-    expect(stub.state.deleteCalls).toHaveLength(0);
+    expect(stub.state.revalidated).toHaveLength(0);
   });
 
+  // A second tab can delete the same game first. The row count is what decides
+  // the answer, so the loser of that race is told so rather than shown a
+  // success for work it did not do.
   it("refuses a game that does not exist", async () => {
     stub.state.deckGames = [];
     const result = await deleteGame("deck_1", "game_1");
     expect(result.ok).toBe(false);
-    expect(stub.state.deleteCalls).toHaveLength(0);
+    expect(stub.state.revalidated).toHaveLength(0);
   });
 });

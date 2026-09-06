@@ -911,19 +911,22 @@ export async function deleteGame(
   const refuse = { ok: false as const, message: gameLogCopy.history.deleteRefused };
 
   // requireDeck above proves the caller owns this deck. It does not prove this
-  // game is on it, and the delete is keyed by game id alone — so confirm the
-  // pairing before touching anything.
-  const [game] = await db
-    .select({ id: deckGames.id, deckId: deckGames.deckId })
-    .from(deckGames)
-    .where(eq(deckGames.id, gameId));
-  if (!game || game.deckId !== deckId) return refuse;
-
+  // game is on it, so the pairing is part of the delete's own predicate rather
+  // than a separate read: a check-then-delete would report success for a row
+  // another tab removed in between, and the player would watch a game they
+  // thought they had just deleted stay on the page.
+  let deleted: { id: string }[];
   try {
-    await db.delete(deckGames).where(eq(deckGames.id, gameId));
+    deleted = await db
+      .delete(deckGames)
+      .where(
+        and(eq(deckGames.id, gameId), eq(deckGames.deckId, deckId), eq(deckGames.userId, userId)),
+      )
+      .returning({ id: deckGames.id });
   } catch {
     return refuse;
   }
+  if (deleted.length === 0) return refuse;
 
   for (const path of deckSurfaces(deckId)) revalidatePath(path);
   return { ok: true };

@@ -4,6 +4,11 @@ import { GamesPanel } from "./games-panel";
 import { summarizeGames, type DeckGame } from "../../lib/decks/games";
 import { gameLogCopy } from "../../lib/copy/game-log";
 
+// The class tokens the panel inks a pattern with. Asserting on `--success`
+// would pass on any markup at all — the components name the theme tokens
+// through Tailwind utilities, never through the variable.
+const PATTERN_INK = /\b(?:text|bg|border)-(?:success|warning)\b/;
+
 function game(over: Partial<DeckGame> = {}): DeckGame {
   return {
     id: Math.random().toString(),
@@ -52,6 +57,14 @@ describe("GamesPanel — the aggregate", () => {
     expect(container.textContent).not.toMatch(/[−-]\d/);
   });
 
+  // The positive control for the low-N tests below: the same tokens they
+  // forbid must actually appear once there is a pattern to claim.
+  it("inks the buckets once the log is long enough to mean something", () => {
+    mount(MOCK);
+    expect(screen.getByText(gameLogCopy.buckets.fix).className).toMatch(PATTERN_INK);
+    expect(screen.getByText(gameLogCopy.buckets.keep).className).toMatch(PATTERN_INK);
+  });
+
   // Mixed is one line, not a third column of cells — mana is net zero here.
   it("states Mixed on a line rather than drawing cells for it", () => {
     mount(MOCK);
@@ -70,19 +83,22 @@ describe("GamesPanel — low N", () => {
   });
 
   // Colour is the claim that a pattern exists. One game is not a pattern.
+  // Scoped to the summary: the history row below it inks a win green whatever
+  // N is, and that is a fact about one game rather than a claim about the deck.
   it("uses no success or warning ink at one game", () => {
-    const { container } = mount([game({ worked: ["board"], hurt: ["mana"] })]);
-    expect(container.innerHTML).not.toContain("--success");
-    expect(container.innerHTML).not.toContain("--warning");
+    mount([game({ worked: ["board"], hurt: ["mana"] })]);
+    const summary = screen.getByText(gameLogCopy.buckets.oneGameHeading).closest("section")!;
+    expect(summary.innerHTML).not.toMatch(PATTERN_INK);
   });
 
   it("names both buckets at two games but still withholds the ink", () => {
-    const { container } = mount([
-      game({ hurt: ["mana"] }),
-      game({ hurt: ["mana"], worked: ["board"] }),
-    ]);
-    expect(screen.getByText(gameLogCopy.buckets.fix)).toBeInTheDocument();
-    expect(container.innerHTML).not.toContain("--success");
+    mount([game({ hurt: ["mana"] }), game({ hurt: ["mana"], worked: ["board"] })]);
+    const fix = screen.getByText(gameLogCopy.buckets.fix);
+    const keep = screen.getByText(gameLogCopy.buckets.keep);
+    expect(fix.className).not.toMatch(PATTERN_INK);
+    expect(keep.className).not.toMatch(PATTERN_INK);
+    expect(fix.closest("section")!.innerHTML).not.toMatch(PATTERN_INK);
+    expect(keep.closest("section")!.innerHTML).not.toMatch(PATTERN_INK);
   });
 
   // "1 up" is the N=1 voice. Everywhere else a single mark still carries its
