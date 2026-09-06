@@ -55,6 +55,14 @@ interface DecklistRowProps {
    * `number`    — Shopping view; prints rowFigure(pct). Never 0 as a stand-in for absent.
    */
   shoppingFigure?: number | null;
+  /**
+   * The Shopping list is drawing this row. Separate from `shoppingFigure`
+   * because that answers a different question: with EDHREC unreachable every
+   * figure is `undefined`, which is also the All view's value, and a row that
+   * inferred the view from it would drop the `2nd copy` plate from exactly the
+   * rows amendment 5 adds — at the moment the list is least explicable.
+   */
+  inShopping?: boolean;
   /** The newest `as_of` in `printing_prices`; the tag's liveness comparison. */
   newestAsOf?: Date | null;
 }
@@ -65,6 +73,7 @@ export function DecklistRow({
   siblings,
   spent = false,
   shoppingFigure,
+  inShopping = false,
   newestAsOf = null,
 }: DecklistRowProps) {
   // The name is a flex item of its own block, not of the row: `flex-auto` on
@@ -129,7 +138,10 @@ export function DecklistRow({
   // A card the Shopping list holds because its copies are spoken for, rather
   // than because the player does not own it (amendment 5, #281). Only in
   // Shopping: in the All view an over-committed row is not a purchase.
-  const spokenFor = hasShoppingMeta && card.owned && availState === "over";
+  // Basics are excluded for the filter's own reason, not the meta line's: the
+  // fill never buys them, so an owned basic is never a purchase.
+  const spokenFor =
+    inShopping && !isBasicLand(card.typeLine) && card.owned && availState === "over";
 
   function handleRemove() {
     // Outside `run`: the slot and its announcement are ordinary state, which

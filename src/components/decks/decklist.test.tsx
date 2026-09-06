@@ -487,6 +487,18 @@ describe("Shopping's predicate: unowned, or owned and over-committed", () => {
       screen.getByText(recommendationsCopy.shopping.footerOnlySpokenFor("2")),
     ).toBeInTheDocument();
   });
+
+  // With EDHREC unreachable every figure is `undefined`, which is also the All
+  // view's value. A row that read the view off the figure would drop the plate
+  // from the one kind of row whose presence on this list is not self-evident:
+  // the player owns the card, so without the plate the row looks like a mistake.
+  it("still marks a second copy when EDHREC is unreachable", () => {
+    renderDecklist([rampUnowned, rampSpokenFor], { shoppingFigures: null });
+
+    expect(
+      screen.getByText(recommendationsCopy.shopping.rowSecondCopyTag),
+    ).toBeInTheDocument();
+  });
 });
 
 // The regression the amendment's safety rests on. Not "an equivalent sentence"

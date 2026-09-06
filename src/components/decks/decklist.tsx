@@ -415,6 +415,7 @@ export function Decklist({
                       siblings={shoppingOrderedIds}
                       spent={card.oracleId === spentCard?.oracleId}
                       shoppingFigure={shoppingFigure}
+                      inShopping
                       newestAsOf={newestAsOf}
                     />
                   );
@@ -444,6 +445,7 @@ export function Decklist({
                       siblings={shoppingOrderedIds}
                       spent={card.oracleId === spentCard?.oracleId}
                       shoppingFigure={shoppingFigure}
+                      inShopping
                       newestAsOf={newestAsOf}
                     />
                   );
@@ -473,6 +475,7 @@ export function Decklist({
                     siblings={shoppingOrderedIds}
                     spent={card.oracleId === spentCard?.oracleId}
                     shoppingFigure={figureFor(card.oracleId)}
+                    inShopping
                     newestAsOf={newestAsOf}
                   />
                 ))}
