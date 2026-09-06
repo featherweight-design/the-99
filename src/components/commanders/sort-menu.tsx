@@ -17,12 +17,10 @@ export function SortMenu({
   sort,
   hasDecks,
   onChange,
-  size = "desktop",
 }: {
   sort: SortKey;
   hasDecks: boolean;
   onChange: (next: SortKey) => void;
-  size?: "mobile" | "desktop";
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -59,7 +57,16 @@ export function SortMenu({
   ];
 
   return (
-    <div ref={root} className="relative">
+    <div ref={root} className="relative flex items-center gap-[8px]">
+      {/* Desktop only: on the phone the trigger shares its row with the window
+          count and there is no room for a caption. The button's `aria-label`
+          names the control at both widths, so this span stays out of the tree. */}
+      <span
+        aria-hidden
+        className="hidden sm:inline font-mono text-[10px] tracking-[0.12em] uppercase text-[color:var(--fg-faint)]"
+      >
+        {copy.label}
+      </span>
       <button
         type="button"
         aria-haspopup="menu"
@@ -67,13 +74,14 @@ export function SortMenu({
         aria-label={copy.triggerAria(currentLabel)}
         onClick={() => setOpen((v) => !v)}
         className={[
-          "font-mono inline-flex items-center gap-[6px] cursor-pointer rounded-lg px-[11px]",
+          "font-mono inline-flex items-center cursor-pointer rounded-lg px-[12px]",
           "bg-[color:var(--surface-sunken)] border border-[color:var(--border-strong)]",
-          "text-[11.5px] text-[color:var(--fg-body)]",
-          size === "mobile" ? "h-[38px]" : "h-[30px]",
+          "text-[color:var(--fg)]",
+          "gap-[7px] h-[38px] text-[11.5px]",
+          "sm:gap-[8px] sm:h-[30px] sm:text-[12px]",
         ].join(" ")}
       >
-        {copy.label}: {currentLabel}
+        {currentLabel}
         <span aria-hidden className="text-[color:var(--accent)]">▾</span>
       </button>
 
@@ -104,25 +112,27 @@ export function SortMenu({
                   onChange(o.key);
                 }}
                 className={[
-                  "flex w-full flex-col items-start gap-[3px] rounded-[7px] border-0 px-[12px] py-[11px] text-left",
+                  "flex w-full items-center gap-[10px] rounded-[7px] border-0 px-[12px] py-[11px] text-left",
                   o.off ? "cursor-not-allowed" : "cursor-pointer",
                   selected ? "bg-[color:var(--elevated-hover)]" : "bg-transparent",
                 ].join(" ")}
               >
-                <span className="flex items-center gap-[8px]">
-                  {/* Selection diamond — filled on the active key. */}
+                {/* Selection diamond — filled on the active key. */}
+                <span
+                  aria-hidden
+                  className={[
+                    "block h-[6px] w-[6px] rotate-45 shrink-0",
+                    selected
+                      ? "bg-[color:var(--accent)]"
+                      : "border-[1.5px] border-[color:var(--border-strong)]",
+                  ].join(" ")}
+                />
+                {/* The label and its sub-line share one column, so the reason
+                    starts under the label rather than under the diamond. */}
+                <span className="min-w-0 flex-1">
                   <span
-                    aria-hidden
                     className={[
-                      "block h-[6px] w-[6px] rotate-45 shrink-0",
-                      selected
-                        ? "bg-[color:var(--accent)]"
-                        : "border-[1.5px] border-[color:var(--border-strong)]",
-                    ].join(" ")}
-                  />
-                  <span
-                    className={[
-                      "text-[13.5px] font-semibold",
+                      "block text-[13.5px] font-semibold",
                       o.off
                         ? "text-[color:var(--fg-locked)] line-through"
                         : "text-[color:var(--fg)]",
@@ -130,11 +140,12 @@ export function SortMenu({
                   >
                     {o.label}
                   </span>
-                </span>
-                {/* The reason keeps full contrast even when the label is struck:
-                    it is the one part of a disabled row that must stay readable. */}
-                <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-                  {o.sub}
+                  {/* The reason keeps full contrast even when the label is
+                      struck: it is the one part of a disabled row that must stay
+                      readable, and at this width it wraps. */}
+                  <span className="block font-mono text-[10.5px] leading-[1.5] mt-[2px] text-[color:var(--fg-faint)]">
+                    {o.sub}
+                  </span>
                 </span>
               </button>
             );
