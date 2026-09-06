@@ -22,21 +22,21 @@ describe("matchRows", () => {
     const { matched } = matchRows([row("Fable of the Mirror-Breaker")], catalog);
     expect(matched[0].oracleId).toBe("o-2");
   });
-  it("matches a split card written with a single slash", () => {
+  it("matches a multi-faced card written with a single slash", () => {
     const { matched } = matchRows(
       [row("Fable of the Mirror-Breaker / Reflection of Kiki-Jiki")],
       catalog,
     );
     expect(matched[0].oracleId).toBe("o-2");
   });
-  it("matches a split card written with no spaces around the slash", () => {
+  it("matches a multi-faced card written with no spaces around the slash", () => {
     const { matched } = matchRows(
       [row("Fable of the Mirror-Breaker/Reflection of Kiki-Jiki")],
       catalog,
     );
     expect(matched[0].oracleId).toBe("o-2");
   });
-  it("matches a split card whose catalog name is itself single-slashed", () => {
+  it("matches a multi-faced card whose catalog name is itself single-slashed", () => {
     // Defensive: the catalog is Scryfall's and always double-slashes, but the index
     // key and the incoming name must normalise identically or the symmetry breaks.
     const { matched } = matchRows([row("Fire // Ice")], [

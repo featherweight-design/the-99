@@ -32,8 +32,9 @@ export type MatchResult = {
 };
 
 /**
- * Scryfall separates a split card's faces with ` // `, but Moxfield, Archidekt and
- * hand-typed pastes all use a bare `/`, with or without spaces. Normalising both the
+ * Scryfall joins the faces of every multi-faced card with ` // ` — split cards, adventures,
+ * transforming and modal double-faced cards alike — but Moxfield, Archidekt and hand-typed
+ * pastes all use a bare `/`, with or without spaces. Normalising both the
  * index key and the incoming name to one spelling is what keeps those rows out of
  * `unmatched` — and doing both sides keeps the match symmetric whatever the source.
  */
