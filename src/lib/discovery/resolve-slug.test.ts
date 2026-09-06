@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findScoredCommander, getRankedList, loadCollectionPool, loadCandidateSlugRows } =
+const { findScoredCommander, getRankedList, loadDiscoveryPool, loadCandidateSlugRows } =
   vi.hoisted(() => ({
     findScoredCommander: vi.fn(),
     getRankedList: vi.fn(),
-    loadCollectionPool: vi.fn(),
+    loadDiscoveryPool: vi.fn(),
     loadCandidateSlugRows: vi.fn(),
   }));
 
 vi.mock("../recs/store", () => ({ findScoredCommander }));
 vi.mock("../recs/ranked-list", () => ({ getRankedList }));
-vi.mock("../recs/recommend", () => ({ loadCollectionPool }));
+vi.mock("./list", () => ({ loadDiscoveryPool }));
 vi.mock("./candidates", () => ({ loadCandidateSlugRows }));
 
 const { resolveCommanderSlug } = await import("./resolve-slug");
@@ -18,7 +18,7 @@ const { resolveCommanderSlug } = await import("./resolve-slug");
 beforeEach(() => {
   findScoredCommander.mockReset().mockResolvedValue(null);
   getRankedList.mockReset().mockResolvedValue({ items: [] });
-  loadCollectionPool.mockReset().mockResolvedValue({ collection: [] });
+  loadDiscoveryPool.mockReset().mockResolvedValue({ collection: [], scored: [] });
   loadCandidateSlugRows.mockReset().mockResolvedValue([]);
 });
 
@@ -44,6 +44,15 @@ describe("resolveCommanderSlug", () => {
     ]);
     expect(await resolveCommanderSlug("user", "low"))
       .toEqual({ oracleId: "low", rank: 2, anyDegraded: false });
+  });
+
+  it("ranks against the free pool, so the rank matches the row it was reached from", async () => {
+    // The detail route carries no `avail`, and `/commanders` defaults to free.
+    loadDiscoveryPool.mockResolvedValue({ collection: [], scored: [{ oracleId: "owned-free" }] });
+    loadCandidateSlugRows.mockResolvedValue([{ oracleId: "x", name: "X", ownedSupport: 1 }]);
+    await resolveCommanderSlug("user", "x");
+    expect(loadDiscoveryPool).toHaveBeenCalledWith("user", "free");
+    expect(loadCandidateSlugRows).toHaveBeenCalledWith("user", ["owned-free"]);
   });
 
   it("is null when all three miss, so the caller owns the 404", async () => {
