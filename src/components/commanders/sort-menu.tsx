@@ -24,6 +24,13 @@ export function SortMenu({
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  // Roving focus, matching `AccountMenu`: exactly one option is tabbable and
+  // ↑/↓ move between them with wrap. A disabled option is still reachable —
+  // `aria-disabled` rather than `disabled` precisely so the reason it carries
+  // can be read.
+  const [active, setActive] = useState(0);
+  const items = useRef<(HTMLButtonElement | null)[]>([]);
+  const trigger = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -31,7 +38,12 @@ export function SortMenu({
       if (!root.current?.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      // Focus is inside the menu by then, so dismissing without handing it back
+      // would drop the reader at the top of the document.
+      if (e.key === "Escape") {
+        setOpen(false);
+        trigger.current?.focus();
+      }
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -40,6 +52,32 @@ export function SortMenu({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  // Opening lands on the active sort rather than the first row, so ↓ from the
+  // trigger moves to the option the reader would actually be choosing next.
+  // `active` follows from the option's own `onFocus`, which fires on this
+  // programmatic focus too — the effect never sets it directly.
+  const selectedIndex = sort === "new" ? 1 : 0;
+  useEffect(() => {
+    if (!open) return;
+    items.current[selectedIndex]?.focus();
+  }, [open, selectedIndex]);
+
+  function move(delta: number) {
+    const next = (active + delta + options.length) % options.length;
+    setActive(next);
+    items.current[next]?.focus();
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      move(1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      move(-1);
+    }
+  }
 
   const currentLabel = sort === "new" ? copy.new : copy.fit;
 
@@ -68,6 +106,7 @@ export function SortMenu({
         {copy.label}
       </span>
       <button
+        ref={trigger}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -94,16 +133,22 @@ export function SortMenu({
             "bg-[color:var(--surface-rail)] border border-[color:var(--border-strong)]",
           ].join(" ")}
         >
-          {options.map((o) => {
+          {options.map((o, i) => {
             const selected = o.key === sort;
             return (
               <button
                 key={o.key}
+                ref={(el) => {
+                  items.current[i] = el;
+                }}
                 type="button"
                 role="menuitemradio"
                 aria-checked={selected}
                 aria-disabled={o.off || undefined}
                 aria-label={o.aria}
+                tabIndex={active === i ? 0 : -1}
+                onFocus={() => setActive(i)}
+                onKeyDown={onKeyDown}
                 onClick={() => {
                   // A disabled option neither acts nor closes the menu: the
                   // reason it gives is the thing worth staying open for.

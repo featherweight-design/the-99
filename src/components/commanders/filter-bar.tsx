@@ -301,9 +301,11 @@ export function FilterBar({
           )}
 
           {/* Order slot (desktop, §Order label) */}
-          <span style={{ marginLeft: wasWindowed ? undefined : "auto" }}>
+          {/* A div, not a span: the discovery scope fills this slot with a menu
+              whose root is a block element. */}
+          <div style={{ marginLeft: wasWindowed ? undefined : "auto" }}>
             {order.desktop}
-          </span>
+          </div>
 
           {/* "Showing N of 24" count — right-aligned amber label */}
           <span

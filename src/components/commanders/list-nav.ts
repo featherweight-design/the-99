@@ -12,6 +12,14 @@ import { discoveryCopy } from "../../lib/copy/commander-discovery";
 // whichever list mounts under it reads it back once and clears it.
 const PENDING_KEY = "commanders:scope-announce";
 
+// Both defaults serialise as absences, so clearing the last parameter empties the
+// string — and `?` alone is a URL the reader would see in their address bar and
+// could paste back in. The bare path is the same page and says nothing extra.
+function href(params: URLSearchParams) {
+  const query = params.toString();
+  return query ? `?${query}` : window.location.pathname;
+}
+
 /**
  * Flip the scope through the URL, so the two lists stay server-rendered and a
  * shared link opens on the scope it names.
@@ -29,7 +37,7 @@ export function useScopeNav() {
       // so a `sort` surviving the flip would be unreachable and invisible.
       params.delete("sort");
       sessionStorage.setItem(PENDING_KEY, next);
-      startTransition(() => router.replace(`?${params}`, { scroll: false }));
+      startTransition(() => router.replace(href(params), { scroll: false }));
     },
     [router],
   );
@@ -52,7 +60,7 @@ function useParamNav<T extends string>(key: string, nonDefault: T) {
       const params = new URLSearchParams(window.location.search);
       if (next === nonDefault) params.set(key, next);
       else params.delete(key);
-      startTransition(() => router.replace(`?${params}`, { scroll: false }));
+      startTransition(() => router.replace(href(params), { scroll: false }));
     },
     [router, key, nonDefault],
   );
