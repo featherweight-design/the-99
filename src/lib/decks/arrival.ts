@@ -24,3 +24,37 @@ export function arrivedFromImport(value: string | string[] | undefined): boolean
 export function arrivalDismissKey(deckId: string): string {
   return `the99:import-arrival-dismissed:${deckId}`;
 }
+
+/** Name of the query param — `?updated=19-6-1` — that an applied update appends.
+ *  Separate from `imported` because the two strips state different facts, and a
+ *  deck can be freshly imported once and freshly updated many times after. */
+export const UPDATED_PARAM = "updated";
+
+/** The counts an update strip prints: cards in, cards out, removals kept. */
+export type UpdateArrival = { in: number; out: number; kept: number };
+
+/** What the strip has to say. `"countless"` is state 20: the param is present,
+ *  so an update is what brought the player here, but its value is not one this
+ *  app wrote and there are no figures to print. */
+export type UpdateArrivalState = UpdateArrival | "countless";
+
+/** Reads the `?updated=` value. Null when there is no param at all — the strip
+ *  is then absent, as it is on any ordinary visit.
+ *
+ *  The counts are parsed strictly, and a value that does not match falls back to
+ *  the countless strip rather than one printing NaN.
+ *
+ *  There is deliberately no dismissal key to match `arrivalDismissKey`. Unlike a
+ *  first import's strip, an update's shows again on the next update, so its
+ *  dismissal lives in component state and is never persisted. */
+export function readUpdateArrival(
+  value: string | string[] | undefined,
+): UpdateArrivalState | null {
+  if (value === undefined || value === "") return null;
+  // A repeated param is present but carries no single value to read, so it lands
+  // in the countless case with every other value this app did not write.
+  if (typeof value !== "string") return "countless";
+  const match = /^(\d+)-(\d+)(?:-(\d+))?$/.exec(value);
+  if (!match) return "countless";
+  return { in: Number(match[1]), out: Number(match[2]), kept: Number(match[3] ?? 0) };
+}

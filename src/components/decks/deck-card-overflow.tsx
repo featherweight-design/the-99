@@ -1,12 +1,17 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { deleteDeck } from "../../app/decks/actions";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { RenameForm } from "./rename-form";
 
 interface DeckCardOverflowProps {
   deckId: string;
   deckName: string;
+  /** Cards in the deck. At zero there is nothing to diff, so the update entry
+   *  is absent rather than disabled — #277 state 3. */
+  built: number;
 }
 
 /**
@@ -15,7 +20,7 @@ interface DeckCardOverflowProps {
  * Rendered as a `relative z-10` sibling to the absolute-inset Link overlay
  * so clicks here do NOT navigate.
  */
-export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
+export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"menu" | "rename">("menu");
   const [isPending, startTransition] = useTransition();
@@ -85,6 +90,15 @@ export function DeckCardOverflow({ deckId, deckName }: DeckCardOverflowProps) {
         >
           {mode === "menu" ? (
             <div className="p-[8px] flex flex-col gap-[4px]">
+              {built > 0 && (
+                <Link
+                  href={`/decks/${deckId}/import`}
+                  aria-label={deckImportCopy.update.entryAria(deckName)}
+                  className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors no-underline hover:bg-[color:var(--elevated)] text-[color:var(--fg)]"
+                >
+                  {deckImportCopy.update.entryLabel}
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={handleRename}

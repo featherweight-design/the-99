@@ -16,6 +16,8 @@ import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { RoleCounterStrip } from "./role-counter-strip";
 import { ArrivalStrip } from "./arrival-strip";
+import { UpdateStrip } from "./update-strip";
+import type { UpdateArrivalState } from "../../lib/decks/arrival";
 import { UnresolvedBanner } from "./unresolved-banner";
 import { GuidedBanner } from "./guided-banner";
 import { CardFan } from "../marks";
@@ -69,6 +71,9 @@ interface BuilderShellProps {
   commanderIdentity: string[];
   /** True only on the navigation the import itself made — see src/lib/decks/arrival.ts. */
   arrivedFromImport: boolean;
+  /** Counts from the navigation an applied update made, or null on every other
+   *  arrival. Like `arrivedFromImport`, true of one trip rather than of the deck. */
+  updateArrival?: UpdateArrivalState | null;
   /** EDHREC inclusion % for each unowned card in the deck, keyed by oracleId.
       Cards with no EDHREC figure are absent from the map — never stored as 0.
       Null when EDHREC was unreachable, which is not the same claim. */
@@ -88,6 +93,7 @@ export function BuilderShell({
   firstRun,
   commanderIdentity,
   arrivedFromImport,
+  updateArrival = null,
   shoppingFigures = {},
   ownedCandidates = 0,
   unownedCandidates = 0,
@@ -644,6 +650,11 @@ export function BuilderShell({
                  player makes while the strip is still up must not revise. */
               <ArrivalStrip deckId={deck.id} importedLineCount={deck.cards.length} />
             )}
+
+            {/* An update's own strip. Not gated on the unresolved banner the way
+                the import's is: an update's sentence is about what moved, which
+                unresolved lines do not contradict. */}
+            {updateArrival && <UpdateStrip arrival={updateArrival} />}
 
             {/* Above the coverage strip and the tabs, because what it says is
                 that both of them are short by this many lines. Not gated on

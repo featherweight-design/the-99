@@ -330,4 +330,174 @@ export const deckImportCopy = {
         ? "One line asked for more than one copy of a card that only takes one. We brought over a single copy."
         : `${n} lines asked for more than one copy of a card that only takes one. We brought over a single copy of each.`,
   },
+
+  // ---- Updating a deck from a list (#277) ---------------------------------
+  // Transcribed from design/design_handoff_the99_amendments/deck-reimport ·
+  // copy strings.ts. A sibling of `arrival`, `entry` and `failures` rather than
+  // an edit of them: a first import and an update state different facts, and
+  // every string those blocks own is reused verbatim by this flow.
+  //
+  // Two rules specific to it: nothing apologises and nothing warns twice — the
+  // screen is about a decision, not a hazard — and every sentence about
+  // deletion says what the player can do about it in the same breath.
+  update: {
+    // One string, both entry points. "from a list" rather than "from a
+    // decklist": the surface it opens takes a paste or a file, and the deck
+    // card's menu has no room to say so.
+    entryLabel: "Update from a list",
+    entryAria: (deckName: string) => `Update ${deckName} from a list`,
+
+    list: {
+      heading: (deckName: string) => `Update ${deckName}`,
+      sub: "Paste the list as it stands now. We will show you what changes before anything is saved.",
+      subMobile: "Paste it. We show you what changes first.",
+      // Promises a comparison, not a creation.
+      submit: "Compare with this deck",
+      reassure: "Nothing is saved yet.",
+      reassureMobile: "Nothing is saved until you say so on the next screen.",
+      aboutHeading: "What we do with it",
+      about:
+        "The list becomes the deck. Cards in it that you do not have here get added; cards here that it does not name get removed — and you can keep any of those on the next screen.",
+      aboutKeepsHeading: "What stays put",
+      aboutKeeps:
+        "The deck's name and its commander. A list naming a different commander is a different deck, and we will say so rather than swap it.",
+    },
+
+    diff: {
+      heading: "What this list changes",
+      // "lines" not "cards" — one line can carry many copies, the distinction
+      // the shipped arrival strip is also careful about.
+      provenance: (lines: string, deckName: string, built: string) =>
+        `${lines} lines read from your paste, matched against the ${built} cards in ${deckName}. Nothing is saved until you apply it.`,
+      provenanceMobile: (lines: string, built: string) =>
+        `${lines} lines · matched against ${built} cards`,
+
+      // Lowercase because they are units under a figure, the treatment the
+      // facet strip gives its counts.
+      chipOut: "out",
+      chipIn: "in",
+      chipUnnamed: "we cannot name",
+      chipUnnamedMobile: "unnamed",
+      chipUnchanged: "unchanged",
+      chipUnchangedMobile: "same",
+      landing: (from: string, to: string) => `${from} → ${to} / 99`,
+
+      outHeading: (n: string) => `Coming out · ${n}`,
+      outBody: "Your list does not name these.",
+      outBodyHandAdded: (n: string) =>
+        n === "1"
+          ? "Your list does not name these. One of them you added by hand — keep anything you meant to keep."
+          : `Your list does not name these. ${n} of them you added by hand — keep anything you meant to keep.`,
+      outBodyMobileHandAdded: (n: string) =>
+        n === "1" ? "One you added by hand." : `${n} you added by hand.`,
+      keepAll: (n: string) => `Keep all ${n}`,
+
+      inHeading: (n: string) => `Going in · ${n}`,
+      // The shipped ownership vocabulary — new cards can cost money, and this
+      // is how the app already says so.
+      inMeta: (owned: string, toBuy: string) => `${owned} owned · ${toBuy} to buy`,
+
+      unnamedHeading: (n: string) => `We cannot name these · ${n}`,
+      // Says the replacement out loud: it is the one write in this flow a
+      // player could not have predicted from the group headings.
+      unnamedBody: (existing: string) =>
+        existing === "0"
+          ? "They come across as lines you can resolve on the deck, exactly as an import's do."
+          : existing === "1"
+            ? "They come across as lines you can resolve on the deck, exactly as an import's do — and they replace the 1 unresolved line this deck is carrying now."
+            : `They come across as lines you can resolve on the deck, exactly as an import's do — and they replace the ${existing} unresolved lines this deck is carrying now.`,
+
+      unchangedDisclosure: (n: string) => `Show the ${n} that do not change`,
+      // "the other N" rather than "N more": the group header already printed
+      // the total, so this names the remainder.
+      showMore: (n: string) => `Show the other ${n}`,
+      showFewer: "Show fewer",
+
+      keep: "Keep",
+      kept: "Kept ✓",
+      keptMobile: "✓",
+      keepAria: (name: string) => `Keep ${name} in the deck`,
+      // The inverse of the shipped `auto` tag, and deliberately NOT "you added
+      // this by hand": the signal is `auto === false`, which is also true of a
+      // card a previous import brought in. A previous import was still the
+      // player's list, so "you added this" is defensible where "by hand" is not.
+      handAdded: "you added this",
+      rowAria: (name: string, marker: string) => (marker ? `${name}. ${marker}.` : name),
+      ariaHandAdded: "You added this card",
+      ariaAuto: "Added automatically",
+      sourceLine: (n: string) => `line ${n}`,
+
+      // States what it will do, recomputed on every Keep. Never "Apply" and
+      // never "Confirm": it is the last thing read before the only
+      // irreversible click in the flow.
+      apply: (inN: string, outN: string) => `Update the deck — ${inN} in, ${outN} out`,
+      applyMobile: (inN: string, outN: string) => `Update — ${inN} in, ${outN} out`,
+      applyAria: (inN: string, outN: string, deckName: string) =>
+        `Update ${deckName}: add ${inN} cards, remove ${outN}`,
+      cancel: "Cancel",
+      summary: (kept: string, to: string) =>
+        kept === "0"
+          ? `lands at ${to} / 99`
+          : kept === "1"
+            ? `1 kept · lands at ${to} / 99`
+            : `${kept} kept · lands at ${to} / 99`,
+      // One message per settle, debounced — six fast toggles is one
+      // announcement, the contract the synergy selection already uses.
+      liveKept: (kept: string, inN: string, outN: string) =>
+        `${kept} kept. This update will add ${inN} and remove ${outN}.`,
+
+      wholesaleNote: (inN: string, outN: string) =>
+        `This replaces the whole deck. ${inN} cards in, ${outN} out. If that is not what you meant, the list you pasted is probably a different deck — import it as its own instead.`,
+      importAsNew: "Import as new instead",
+    },
+
+    // Not an error and not a success: a null result with two ways out. Fires
+    // also when every difference is an unresolved line the deck already carries.
+    noChange: {
+      heading: "This list is the deck you already have",
+      body: (built: string) =>
+        `All ${built} cards match, nothing to add, nothing to take out. We have changed nothing.`,
+      back: "Back to the deck",
+      retry: "Try a different list",
+    },
+
+    // The shipped failure-banner shape. Never --danger: the player pasted the
+    // wrong list, which is not a fault.
+    conflict: {
+      heading: (listCommander: string) => `That list is a ${listCommander} deck`,
+      body: (deckCommander: string) =>
+        `This deck is built around ${deckCommander}. Changing the commander re-decides the colours and the legality of all ninety-nine, so we will not swap it out from under you.`,
+      primary: "Import it as a new deck",
+      cancel: "Cancel",
+    },
+
+    applying: {
+      heading: "Updating the deck…",
+      // The transaction is the promise this sentence is making.
+      body: "One transaction. The whole update lands or none of it does.",
+      live: "Updating the deck.",
+    },
+    refused: {
+      heading: "That did not go through",
+      body: "Your deck is exactly as it was. Your list is still here — try again.",
+      action: "Try again",
+    },
+
+    // A sibling of `arrival`, not an edit of it. A first import's only fact is
+    // how much arrived; an update's only interesting fact is what moved.
+    arrival: {
+      updated: (inN: string, outN: string) =>
+        `Updated from your list — ${inN} in, ${outN} out.`,
+      updatedWithKept: (inN: string, outN: string, kept: string) =>
+        kept === "1"
+          ? `Updated from your list — ${inN} in, ${outN} out, 1 you kept.`
+          : `Updated from your list — ${inN} in, ${outN} out, ${kept} you kept.`,
+      updatedMobile: (inN: string, outN: string) => `Updated — ${inN} in, ${outN} out`,
+      // State 20. A `?updated=` value that is not ours still says an update
+      // brought the player here, so the strip states the fact and drops the
+      // figures rather than printing NaN.
+      updatedNoCounts: "Updated from your list.",
+      dismiss: "Dismiss",
+    },
+  },
 } as const;

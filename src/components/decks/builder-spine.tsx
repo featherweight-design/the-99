@@ -8,7 +8,8 @@ import type { DeckDetail } from "../../lib/decks/read";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { colorLabel } from "../../lib/decks/format";
-import { PrimaryButton } from "@/components/ui/button";
+import { GhostButton, PrimaryButton } from "@/components/ui/button";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { AvailabilityGlyph } from "@/components/ui/availability-marker";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
@@ -412,8 +413,22 @@ export function BuilderSpine({
         )}
       </div>
 
-      {/* Export button */}
+      {/* Update from a list — ghost against Export's brass, and absent on an
+          empty deck for the same reason Export is disabled there: nothing to
+          diff. #277 states 2 and 3. */}
       <div className="mt-[10px] md:mt-0 md:ml-auto flex-none">
+        {built > 0 && (
+          <GhostButton
+            href={`/decks/${deck.id}/import`}
+            className="flex items-center font-mono text-[11px] md:font-sans md:text-[13px] px-[9px] md:px-[18px] py-[6px] md:py-[11px] min-h-[44px] md:min-h-0"
+          >
+            {deckImportCopy.update.entryLabel}
+          </GhostButton>
+        )}
+      </div>
+
+      {/* Export button */}
+      <div className="mt-[10px] md:mt-0 flex-none">
         {exportDisabled ? (
           /* §Spine — Export button (disabled, empty deck) — desktop */
           <button
