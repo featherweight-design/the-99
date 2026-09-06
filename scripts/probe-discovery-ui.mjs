@@ -203,7 +203,10 @@ try {
     }
 
     await page.screenshot({
-      path: `${SHOTS}/discovery-${vp.width}.png`,
+      // Tagged with the path, because the scratch levers above work by probing
+      // the same widths at a different `PROBE_PATH` — an untagged name would
+      // leave the last state's reel standing in for every state before it.
+      path: `${SHOTS}/discovery-${PATH.replace(/\W+/g, "_")}-${vp.width}.png`,
       fullPage: true,
     });
     await context.close();
