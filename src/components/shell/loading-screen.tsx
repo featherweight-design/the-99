@@ -22,12 +22,6 @@ export function LoadingScreen({ copy }: { copy: LoadingCopy }) {
       <p className="font-mono text-[12px] md:text-[13px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
         {copy.status}
       </p>
-      <p
-        className="text-[13.5px] md:text-[15px] max-w-[380px] mt-[10px] mb-0 leading-[1.6]"
-        style={{ color: "var(--fg-body)" }}
-      >
-        {copy.caption}
-      </p>
     </div>
   );
 }

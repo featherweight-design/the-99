@@ -121,7 +121,7 @@ export const deckImportCopy = {
       heading: "That deck is empty",
       bodyMobile: "It read fine — there just aren't any cards in it yet.",
       body:
-        "It read fine — there just aren’t any cards in it yet. Nothing to bring over. Add some where you built it and we’ll be here.",
+        "It read fine — there just aren’t any cards in it yet. Add some where you built it and bring it back.",
       action: "Try a different deck",
       retry: false,
     },
@@ -165,7 +165,7 @@ export const deckImportCopy = {
     heading: "Which one's the commander?",
     subMobile: "The list doesn't say, so you tell us.",
     sub:
-      "This list doesn't say. Pick the one you're building around — it sets the colours, anchors the recommendations, and gives the deck its face.",
+      "This list doesn't say. Pick the one you're building around — it sets the colours and anchors everything we suggest.",
     // A list with exactly one unmarked legendary still opens the picker — only a
     // list with none is the dead end — so the singular is reachable, not
     // theoretical.
@@ -469,8 +469,9 @@ export const deckImportCopy = {
 
     applying: {
       heading: "Updating the deck…",
-      // The transaction is the promise this sentence is making.
-      body: "One transaction. The whole update lands or none of it does.",
+      // The promise, without the mechanism that makes it true — "one
+      // transaction" is our word for it, not the player's.
+      body: "The whole update lands or none of it does.",
       live: "Updating the deck.",
     },
     refused: {

@@ -109,7 +109,7 @@ export function CreatePreFilled({
             Commander selected
           </p>
           <p className="font-sans hidden md:block text-[14px]" style={{ color: "var(--fg-muted)", marginBottom: 26 }}>
-            Name your deck to get started.
+            Name your deck.
           </p>
         </div>
       </div>

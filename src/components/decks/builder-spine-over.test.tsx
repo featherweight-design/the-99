@@ -54,7 +54,6 @@ describe("BuilderSpine over 99", () => {
     mount(104);
     expect(screen.getByText(overCopy.trim.lead(overWord(5)))).toBeInTheDocument();
     expect(screen.getByText(overCopy.trim.body("5"))).toBeInTheDocument();
-    expect(screen.getByText(overCopy.trim.bodyShort("5"))).toBeInTheDocument();
   });
 
   // Reading the optimistic count, not the server's 62 — the assertion the spec
@@ -68,7 +67,7 @@ describe("BuilderSpine over 99", () => {
   it("says one, not 1, at a single card over", () => {
     mount(100);
     expect(screen.getByText(overCopy.trim.lead("One"))).toBeInTheDocument();
-    expect(screen.getByText(overCopy.trim.bodyShort("1"))).toHaveTextContent(
+    expect(screen.getByText(overCopy.trim.body("1"))).toHaveTextContent(
       "Cut one and it is legal.",
     );
   });
