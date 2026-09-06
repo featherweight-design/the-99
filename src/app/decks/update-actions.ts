@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
@@ -220,7 +220,7 @@ export async function updateDeckFromList(
     throw new Error(deckImportTooLargeMessage(input.source));
   }
 
-  const { deck, rows } = await loadDeck(userId, input.deckId);
+  const { deck } = await loadDeck(userId, input.deckId);
   const { catalog, indexes } = await loadMatchInputs([], { detailed: true });
   const parsed = buildDeckImport({ text: input.text, catalog, indexes });
 
@@ -235,20 +235,39 @@ export async function updateDeckFromList(
     throw new Error("no line in the list matched a card");
   }
 
-  const plan = planDeckUpdate({
-    parsed,
-    deckCards: rows,
-    commanderOracleId: deck.commanderOracleId,
-    // The apply path draws nothing, so the names it would look up are unused.
-    cardFor: () => ({ name: "", typeLine: "" }),
-  });
-  if ("listCommander" in plan) throw new Error("list names a different commander");
-
   const keep = new Set(input.keep);
-  const removing = plan.out.filter((r) => !keep.has(r.oracleId));
-  const kept = plan.out.length - removing.length;
 
-  await db.transaction(async (tx) => {
+  const { plan, removing, kept } = await db.transaction(async (tx) => {
+    // Lock the deck row and plan inside it, the way every other deck mutation
+    // in this file's neighbour does. The plan is a statement about the deck as
+    // it stands, and its `out` group is a delete list: a card added by hand in
+    // another tab between the read and the write is a card the list cannot have
+    // named, so an unlocked plan would delete a card nobody was shown.
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${input.deckId} for update`);
+    const rows = await tx
+      .select({
+        oracleId: deckCards.oracleId,
+        quantity: deckCards.quantity,
+        auto: deckCards.auto,
+        name: cards.name,
+        typeLine: cards.typeLine,
+      })
+      .from(deckCards)
+      .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
+      .where(eq(deckCards.deckId, input.deckId));
+
+    const plan = planDeckUpdate({
+      parsed,
+      deckCards: rows,
+      commanderOracleId: deck.commanderOracleId,
+      // The apply path draws nothing, so the names it would look up are unused.
+      cardFor: () => ({ name: "", typeLine: "" }),
+    });
+    if ("listCommander" in plan) throw new Error("list names a different commander");
+
+    const removing = plan.out.filter((r) => !keep.has(r.oracleId));
+    const kept = plan.out.length - removing.length;
+
     if (removing.length > 0) {
       await tx.delete(deckCards).where(
         and(
@@ -311,6 +330,8 @@ export async function updateDeckFromList(
         })),
       );
     }
+
+    return { plan, removing, kept };
   });
 
   for (const path of claimSurfaces(input.deckId)) revalidatePath(path);
