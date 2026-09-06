@@ -30,11 +30,9 @@ so it waits too.
 
 | # | Change | Files |
 |---|---|---|
-| # | Change | Files |
-|---|---|---|
 | 1 | `manapoolAddDeckUrl()` + `manapoolCardUrl()` — pure URL builders | new `src/lib/manapool/links.ts` |
-| 2 | A **Buy at Mana Pool** action on the export dialog's Shopping tab | `src/components/decks/export-dialog.tsx` |
-| 3 | A **Buy at Mana Pool** link in the shared card modal | `src/components/cards/card-modal.tsx` |
+| 2 | A buy-at-Mana-Pool action on the export dialog's Shopping tab | `src/components/decks/export-dialog.tsx` |
+| 3 | A buy-at-Mana-Pool link in the shared card modal | `src/components/cards/card-modal.tsx` |
 | 4 | Copy keys for both | `src/lib/copy/decks-builder.ts`, `src/lib/copy/collection-browse.ts` |
 | 5 | The app's first outbound-link convention | `src/components/ui/external-link.tsx` (new) |
 
@@ -232,6 +230,12 @@ named: a modal on desktop and a bottom sheet on mobile, two tabs (Decklist / Sho
 with **Copy** and **Download .txt**. The list link is a third action on the Shopping tab, beside
 the two that exist.
 
+Three shipped facts constrain how it is placed. Both buttons render at **both** breakpoints — the
+second is labelled `.txt` on mobile and `Download .txt` on desktop (`export-dialog.tsx:502`) — so
+neither footer has a full-width button. The footer already carries `borderTop: 1px solid var(--border)`
+(`:493`), so any rule drawn above the link is the dialog's second. And the mobile sheet is a fixed
+`height: 590` (`:123`), so a new row costs list rows rather than growing the sheet.
+
 It is a link (`<a href>`), not a button — the destination is a URL, it should be middle-clickable
 and copyable, and dressing a navigation as a button is the thing that makes `target="_blank"`
 surprising.
@@ -329,8 +333,11 @@ handoff:
    the shipped **Copy** and **Download .txt**. What weight does a link-out carry next to two local
    actions, and does it read as peer, primary, or quieter than both? It is the only control in the
    app that hands the player to another company.
-2. **The shared card modal** — a per-card link, drawn once and unconditional per §4.2. The modal's
-   existing chrome has no actions row, so where one goes is part of the ask. Mobile and desktop,
+2. **The shared card modal** — a per-card link, drawn once and unconditional per §4.2. Where it goes
+   is part of the ask, and the two breakpoints are not symmetric: on mobile the content column simply
+   ends, but on desktop `card-modal.tsx:513` already pins a `‹ Prev · N of M · Next ›` row outside
+   the scrolling column, under its own `1px solid var(--border)` top rule. A link placed last in the
+   scroll column would sit above a second hairline and scroll away from it. Mobile and desktop,
    across the six shipped themes (`src/lib/theme/themes.ts`). It lands on Mana Pool's all-printings
    grid, not on one printing (§2.2), which is worth knowing when the label is written: the player is
    being sent somewhere to choose, not to a pre-chosen listing.
