@@ -306,8 +306,10 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
 
 // The brand sheet's secondary mark — three cards fanned at -18°, 0° and +18°,
 // the front one carrying the numerals. Decoration only: the heading carries the
-// meaning, so it is hidden from the accessibility tree. The three fills are the
-// mark's own values from the brand sheet, not tokens.
+// meaning, so it is hidden from the accessibility tree. The brand sheet gives
+// the three fills as literal hexes; they ship as the nearest surface tokens
+// because six themes redefine the palette and a component naming a hex fails
+// the repo's own test.
 function CardFanMark() {
   const card =
     "absolute w-[38px] h-[58px] md:w-[56px] md:h-[84px] rounded-[6px] md:rounded-[8px] border-[1.5px]";

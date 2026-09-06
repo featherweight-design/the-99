@@ -60,6 +60,9 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
         setConfirming(false);
         return;
       }
+      // The row lives until the route revalidates. Leaving it confirming would
+      // show the question again, re-enabled, for as long as that takes.
+      setConfirming(false);
       onDeleted(isLast);
     });
   }

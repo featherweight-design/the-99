@@ -80,6 +80,17 @@ describe("GameHistoryRow", () => {
     expect(screen.getByRole("button", { name: gameLogCopy.history.delete })).toBeInTheDocument();
   });
 
+  // The row is not unmounted by its own delete — it lives until the route
+  // revalidates, and a row still asking "sure?" after saying yes reads as a
+  // question that went unheard.
+  it("drops the confirm once the delete succeeds", async () => {
+    const { onDeleted } = mount();
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.delete }));
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.history.confirmYes }));
+    await waitFor(() => expect(onDeleted).toHaveBeenCalled());
+    expect(screen.queryByText(gameLogCopy.history.confirm)).toBeNull();
+  });
+
   it("renders the refusal in the row and keeps the game", async () => {
     deleteGame.mockResolvedValueOnce({ ok: false, message: gameLogCopy.history.deleteRefused });
     mount();
