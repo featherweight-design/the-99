@@ -2,14 +2,21 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { parseAsOf, type PriceFact } from "./price";
 
+// Timestamps are driver-dependent: the neon serverless driver parses
+// `timestamp` to a Date, others hand back the raw string. `parseAsOf` takes
+// both.
+type Timestamp = string | Date;
+
+// One shape for both halves of the answer. The newest timestamp rides on every
+// row because it comes from the same statement (see 3 below); the card columns
+// are null on the one row that carries nothing but that timestamp.
 type Row = {
-  oracle_id: string;
+  newest_as_of: Timestamp | null;
+  oracle_id: string | null;
   price_cents: number | null;
   price_cents_foil: number | null;
   price_cents_etched: number | null;
-  // Driver-dependent: the neon serverless driver parses `timestamp` to a Date,
-  // others hand back the raw string. `parseAsOf` takes both.
-  as_of: string | Date;
+  as_of: Timestamp | null;
 };
 
 export type PriceRead = {
@@ -35,15 +42,16 @@ export type PriceRead = {
  *    back the winning row's other columns, and per-column `min()` would mix
  *    figures from different printings into one price that no printing has.
  *
- * 3. `newestAsOf` IS ITS OWN SCALAR, READ FIRST AND THEN PASSED IN. Taken from
- *    this join it would be null whenever no passed oracle id matched — which is
- *    exactly the none-priced deck, the case where the strip's provenance line
- *    still has to render. It cannot run alongside the join either: a `max(as_of)`
- *    subquery inside the `order by` would be evaluated against whatever the table
- *    held at that moment, so a weekly ingest landing between the two statements
- *    would leave the caller comparing rows to a DIFFERENT newest than the one
- *    that ordered them, and cards would read `sold out` on a race. One read,
- *    reused for both, makes the two answers agree by construction.
+ * 3. ONE STATEMENT, BECAUSE THE TWO HALVES MUST SHARE A SNAPSHOT. `newestAsOf`
+ *    cannot be taken from the join — it would be null whenever no passed oracle
+ *    id matched, which is exactly the none-priced deck, the case where the
+ *    strip's provenance line still has to render. But it cannot be a second
+ *    statement either, in either order: an ingest committing between the two
+ *    leaves the caller comparing rows from one snapshot against a newest from
+ *    another, and `priceState` reads that mismatch as `sold out` for every card
+ *    at once. A single statement runs in one snapshot, so `newest` is computed
+ *    once and every row is measured against the same value the caller gets.
+ *    `left join … on true` is what keeps that row when nothing matched.
  *
  * The `order by` is four clauses and every one is load-bearing: live before
  * stale (see 1); real non-foil stock before foil-only AT ANY PRICE, so a $50
@@ -65,37 +73,45 @@ export async function loadPrices(oracleIds: string[]): Promise<PriceRead> {
   // placeholder so the driver serialises it as a Postgres array literal.
   const only = sql.param(oracleIds);
 
-  const newest = await db.execute<{ as_of: string | Date | null }>(
-    sql`select max(as_of) as as_of from printing_prices`,
-  );
-  const newestRaw = newest.rows[0]?.as_of ?? null;
-  const newestAsOf = newestRaw ? parseAsOf(newestRaw) : null;
-
-  // A null here means the table is empty, so the join below returns nothing and
-  // the comparison is never reached. `= null` yields null rather than false,
-  // which sorts with the stale rows — the harmless side.
-  const live = sql.param(newestRaw);
-
+  // An empty table makes `newest.as_of` null, and `pp.as_of = null` yields null
+  // rather than false — which sorts with the stale rows, the harmless side. The
+  // join returns nothing in that case anyway.
   const rows = await db.execute<Row>(sql`
-    select distinct on (p.oracle_id)
-      p.oracle_id,
-      pp.price_cents,
-      pp.price_cents_foil,
-      pp.price_cents_etched,
-      pp.as_of
-    from printings p
-    join printing_prices pp on pp.scryfall_id = p.scryfall_id
-    where p.oracle_id = any(${only}::uuid[])
-    order by
-      p.oracle_id,
-      (pp.as_of = ${live}::timestamp) desc,
-      (pp.price_cents is null),
-      coalesce(pp.price_cents, pp.price_cents_foil, pp.price_cents_etched) asc,
-      pp.scryfall_id
+    with newest as (
+      select max(as_of) as as_of from printing_prices
+    ),
+    chosen as (
+      select distinct on (p.oracle_id)
+        p.oracle_id,
+        pp.price_cents,
+        pp.price_cents_foil,
+        pp.price_cents_etched,
+        pp.as_of
+      from printings p
+      join printing_prices pp on pp.scryfall_id = p.scryfall_id
+      where p.oracle_id = any(${only}::uuid[])
+      order by
+        p.oracle_id,
+        (pp.as_of = (select as_of from newest)) desc,
+        (pp.price_cents is null),
+        coalesce(pp.price_cents, pp.price_cents_foil, pp.price_cents_etched) asc,
+        pp.scryfall_id
+    )
+    select
+      newest.as_of as newest_as_of,
+      chosen.oracle_id,
+      chosen.price_cents,
+      chosen.price_cents_foil,
+      chosen.price_cents_etched,
+      chosen.as_of
+    from newest
+    left join chosen on true
   `);
 
   const prices = new Map<string, PriceFact>();
   for (const row of rows.rows) {
+    // The placeholder row of a none-priced deck: a newest timestamp and no card.
+    if (row.oracle_id === null || row.as_of === null) continue;
     prices.set(row.oracle_id, {
       cents: row.price_cents,
       foilCents: row.price_cents_foil,
@@ -104,5 +120,6 @@ export async function loadPrices(oracleIds: string[]): Promise<PriceRead> {
     });
   }
 
-  return { prices, newestAsOf };
+  const newestRaw = rows.rows[0]?.newest_as_of ?? null;
+  return { prices, newestAsOf: newestRaw ? parseAsOf(newestRaw) : null };
 }
