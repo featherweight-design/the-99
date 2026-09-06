@@ -117,6 +117,24 @@ function tagSentence(item: DiscoveryItem) {
   return { bold, overflow, tail };
 }
 
+/** The names, then the nearest-deck clause. A commander every one of whose
+    archetypes the player has already built has no names to lead with, so the
+    separator belongs to them — printed unconditionally it opens the sentence on
+    a stray period. Shared by both widths so the two cannot diverge on it. */
+function TagSentence({ tags }: { tags: ReturnType<typeof tagSentence> }) {
+  return (
+    <>
+      {tags.bold ? (
+        <>
+          <b style={{ color: "var(--accent)", fontWeight: 600 }}>{tags.bold}</b>
+          {tags.overflow}.{" "}
+        </>
+      ) : null}
+      {tags.tail}
+    </>
+  );
+}
+
 function UntaggedNote() {
   return (
     <div
@@ -359,8 +377,7 @@ export function DiscoveryRow({
                 className="m-0"
                 style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--fg-body)" }}
               >
-                <b style={{ color: "var(--accent)", fontWeight: 600 }}>{tags.bold}</b>
-                {tags.overflow}. {tags.tail}
+                <TagSentence tags={tags} />
               </p>
             )
           ))}
@@ -465,8 +482,7 @@ export function DiscoveryRow({
                     {justify.distanceLabel}
                   </span>
                   <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--fg-body)" }}>
-                    <b style={{ color: "var(--accent)", fontWeight: 600 }}>{tags.bold}</b>
-                    {tags.overflow}. {tags.tail}
+                    <TagSentence tags={tags} />
                   </span>
                 </div>
               )

@@ -79,6 +79,22 @@ describe("DiscoveryRow", () => {
     ).toBeGreaterThan(0);
   });
 
+  // A commander whose every archetype the player has already built still ranks,
+  // it just has no names to lead the sentence with. The separator goes with them.
+  it("opens on the nearest-deck clause when there is no unplayed tag to name", () => {
+    const { container } = row(
+      {
+        unplayedLabels: [],
+        unplayedCount: 0,
+        nearestDeck: { deckName: "Meren", sharedLabels: ["tokens", "aristocrats"], extraShared: 0 },
+      },
+      "new",
+    );
+    const shared = discoveryCopy.justify.sharedList(["tokens", "aristocrats"], 0);
+    expect(container.textContent).toContain(discoveryCopy.justify.distanceNear("Meren", shared));
+    expect(container.textContent).not.toContain(". Closest");
+  });
+
   it("leads the row's accessible name with ownership, before any figure", () => {
     row({ owned: true });
     const link = screen.getByRole("link");
