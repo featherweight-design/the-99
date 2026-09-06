@@ -3,7 +3,7 @@
 // rule that governs rows and tiles stops here — and the claiming deck's status
 // pill is deliberately absent rather than guessed.
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -149,6 +149,22 @@ describe("CardModal allocation receipt", () => {
     expect(screen.getByText(c.detailClaimHolds(1))).toBeInTheDocument();
     expect(screen.getByText(c.detailClaimHolds(2))).toBeInTheDocument();
     // 3 in use + 1 free = the ×4 above it.
+    expect(screen.getByText(c.detailSplit(3, 1))).toBeInTheDocument();
+  });
+
+  // `quantity` and `availability` reach a BrowseCard from different queries, so
+  // they can disagree. The receipt's whole claim is that its rows add up to its
+  // total, which only holds while the total comes from the same query the split
+  // does.
+  it("takes the total from the availability query, not the card's own count", () => {
+    mount({
+      ...card,
+      quantity: 9,
+      availability: withClaims(4, [claim("d1", "Atraxa", 3, true)]),
+    });
+    const receipt = screen.getByText(c.detailHeading).parentElement!;
+    expect(within(receipt).getByText("×4")).toBeInTheDocument();
+    expect(within(receipt).queryByText("×9")).toBeNull();
     expect(screen.getByText(c.detailSplit(3, 1))).toBeInTheDocument();
   });
 

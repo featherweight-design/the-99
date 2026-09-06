@@ -145,7 +145,11 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
         className="mt-[8px] flex items-center gap-[8px] text-[13px]"
         style={{ color: "var(--fg-body)" }}
       >
-        <span className="font-mono" style={{ color: "var(--accent)" }}>×{card.quantity}</span>
+        {/* `a.owned`, not `card.quantity`: the two arrive from different
+            queries, and the split below is `a.hard + a.free`. A total taken
+            from anywhere but the availability query is how a receipt stops
+            adding up. */}
+        <span className="font-mono" style={{ color: "var(--accent)" }}>×{a.owned}</span>
         {state !== "free" && (
           <>
             <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
