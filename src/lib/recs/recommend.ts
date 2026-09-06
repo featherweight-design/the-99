@@ -149,7 +149,13 @@ async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
     // non-legal oracle id must read as "no such commander" rather than score.
     .where(and(eq(cards.oracleId, oracleId), eq(cards.commanderLegal, true)))
     .limit(1);
-  return row ?? null;
+  // Two different questions, and both have to be asked. `commanderLegal` is
+  // format legality — an Instant carries it — while `isCommanderCandidate` is
+  // whether the card can be the commander at all. A crafted URL naming a legal
+  // non-commander would otherwise render as one, and spend an EDHREC resolve
+  // finding that out.
+  if (!row || !isCommanderCandidate(row)) return null;
+  return row;
 }
 
 export async function recommendCommanders(

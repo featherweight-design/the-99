@@ -34,9 +34,10 @@ export default async function CommanderDetailPage({
       found = { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };
     } else {
       // Third and last: the discovery ranking. A commander the player has not
-      // built has no persisted score and no place in the owned list, but its
-      // row on /commanders?scope=play links here — resolving it anywhere else
-      // would 404 roughly 3,100 rows.
+      // built has no persisted score and no place in the owned list, but the
+      // discovery list links here all the same — resolving it anywhere else
+      // would 404 roughly 3,100 rows. The list that mints those links is not
+      // mounted yet; this route answers for them first so it never lags it.
       const { collection } = await loadCollectionPool(userId);
       // `unplayedCount` is `byFit`'s required input and never read by it, so it
       // is filled once per row here rather than in the comparator, which would

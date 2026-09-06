@@ -52,6 +52,13 @@ describe("scoreOneCommander", () => {
     expect(got!.colorPoolSize).toBe(1);
   });
 
+  it("returns null for a commander-legal card that cannot be a commander", async () => {
+    // Format legality is not commander candidacy: an Instant carries the first
+    // and fails the second, and a crafted URL is the only way to ask for one.
+    pool.card = [card({ oracleId: "bolt", name: "Lightning Bolt", typeLine: "Instant" })];
+    expect(await scoreOneCommander("user-instant", "bolt", "lightning-bolt")).toBeNull();
+  });
+
   it("still returns null for an oracle id that is in no table", async () => {
     expect(await scoreOneCommander("user-missing", "nonsense", "nonsense")).toBeNull();
   });
