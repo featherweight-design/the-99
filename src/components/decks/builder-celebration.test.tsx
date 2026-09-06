@@ -91,7 +91,7 @@ describe("BuilderShell — 99/99 celebration", () => {
     expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
   });
 
-  it("does not fire for a 99/99 deck with unowned cards (Playable, not Complete)", async () => {
+  it("does not fire for a 99/99 deck with unowned cards (To buy, not Complete)", async () => {
     await act(async () => {
       renderBuilder(makeDeck({ ownedCount: 98, toBuyCount: 1 }));
     });

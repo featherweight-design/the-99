@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
@@ -265,7 +265,12 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
     .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))
     .groupBy(decks.id, decks.name, decks.createdAt, cards.name, cards.colorIdentity, cards.imageUri)
-    .orderBy(desc(decks.createdAt));
+    // `lower()` rather than the bare column: the ordering a player sees must not
+    // depend on the database's collation, which puts every capitalised name
+    // ahead of every lowercase one under C and interleaves them under en_US.
+    // The id is the tiebreak, not decoration — deck names are not unique, and
+    // two decks sharing one would otherwise swap places between requests.
+    .orderBy(asc(sql`lower(${decks.name})`), asc(decks.id));
 
   return rows.map((row) => {
     const pill = statusPill({

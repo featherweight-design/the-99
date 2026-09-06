@@ -99,7 +99,7 @@ describe("CardModal availability detail", () => {
   // derived from `hard > 0` — a guess that reads as fact.
   it("does not invent the claiming deck's status pill", () => {
     mount({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
-    expect(screen.queryByText(/Complete|Playable|Building|Draft/)).toBeNull();
+    expect(screen.queryByText(/Complete|Building|Draft|Over|Unresolved|To buy/)).toBeNull();
   });
 });
 

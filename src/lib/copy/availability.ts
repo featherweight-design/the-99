@@ -270,7 +270,7 @@ export const availabilityCopy = {
   // never sorted by count). The counts are disjoint — a card is either
   // over-committed or softly claimed, never both — so when the soft line
   // follows the red one it says "more", which is the arithmetic done for the
-  // player. Soft line is pre-99 only; at Playable/Complete the deck's own
+  // player. Soft line is pre-99 only; at 99 and above the deck's own
   // claims go hard and any real conflict has already promoted itself.
   // Renders only when a count is above zero. A deck with neither has NO region.
   deckRollup: {
