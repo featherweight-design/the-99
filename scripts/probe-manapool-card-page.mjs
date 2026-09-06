@@ -14,18 +14,26 @@ const urls = [
 ];
 
 const browser = await chromium.launch();
-for (const [label, url] of urls) {
-  const page = await browser.newPage({ viewport: { width: 1400, height: 1200 } });
-  const res = await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 }).catch((e) => e);
-  const status = res?.status?.() ?? `ERR ${res}`;
-  await page.waitForTimeout(2000);
-  const body = await page.locator("body").innerText().catch(() => "");
-  console.log(`\n=== ${label}  ${url}\n    status: ${status}`);
-  console.log(`    final url: ${page.url()}`);
-  for (const probe of ["Printings", "printing", "Other versions", "All versions", "Set", "Condition", "Add to cart", "in stock"]) {
-    if (body.toLowerCase().includes(probe.toLowerCase())) console.log(`    mentions: ${probe}`);
-  }
-  await page.screenshot({ path: `/tmp/mp-${label.replace(/\W+/g, "-")}.png`, fullPage: false });
-  await page.close();
+try {
+  await run(browser);
+} finally {
+  // Without this, a throw anywhere above orphans a Chromium process.
+  await browser.close();
 }
-await browser.close();
+
+async function run(browser) {
+  for (const [label, url] of urls) {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 1200 } });
+    const res = await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 }).catch((e) => e);
+    const status = res?.status?.() ?? `ERR ${res}`;
+    await page.waitForTimeout(2000);
+    const body = await page.locator("body").innerText().catch(() => "");
+    console.log(`\n=== ${label}  ${url}\n    status: ${status}`);
+    console.log(`    final url: ${page.url()}`);
+    for (const probe of ["Printings", "printing", "Other versions", "All versions", "Set", "Condition", "Add to cart", "in stock"]) {
+      if (body.toLowerCase().includes(probe.toLowerCase())) console.log(`    mentions: ${probe}`);
+    }
+    await page.screenshot({ path: `/tmp/mp-${label.replace(/\W+/g, "-")}.png`, fullPage: false });
+    await page.close();
+  }
+}

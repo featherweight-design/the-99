@@ -21,28 +21,36 @@ console.log("base64:", b64);
 console.log("url:", url, "\n");
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 });
-await page.waitForTimeout(3000);
-
-const textarea = await page.locator("textarea").first().inputValue().catch(() => "<no textarea>");
-console.log("textarea value:\n" + textarea + "\n");
-
-// Mana Pool renders `Æther Vial` as `Aether Vial`, so a literal comparison would
-// report a false negative on exactly the names this probe exists to test.
-const fold = (s) =>
-  s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036F]/g, "")
-    .replace(/æ/gi, "ae")
-    .toLowerCase();
-
-const body = fold(await page.locator("body").innerText());
-console.log("empty-state present:", body.includes(fold("Your decklist is empty")));
-for (const c of cards) {
-  console.log(`  panel names ${c.name}:`, body.includes(fold(c.name)));
+try {
+  await run(browser);
+} finally {
+  // Without this, a throw anywhere above orphans a Chromium process.
+  await browser.close();
 }
 
-await page.screenshot({ path: "/tmp/manapool-add-deck.png", fullPage: false });
-console.log("\nscreenshot: /tmp/manapool-add-deck.png");
-await browser.close();
+async function run(browser) {
+  const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+  await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 });
+  await page.waitForTimeout(3000);
+
+  const textarea = await page.locator("textarea").first().inputValue().catch(() => "<no textarea>");
+  console.log("textarea value:\n" + textarea + "\n");
+
+  // Mana Pool renders `Æther Vial` as `Aether Vial`, so a literal comparison would
+  // report a false negative on exactly the names this probe exists to test.
+  const fold = (s) =>
+    s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036F]/g, "")
+      .replace(/æ/gi, "ae")
+      .toLowerCase();
+
+  const body = fold(await page.locator("body").innerText());
+  console.log("empty-state present:", body.includes(fold("Your decklist is empty")));
+  for (const c of cards) {
+    console.log(`  panel names ${c.name}:`, body.includes(fold(c.name)));
+  }
+
+  await page.screenshot({ path: "/tmp/manapool-add-deck.png", fullPage: false });
+  console.log("\nscreenshot: /tmp/manapool-add-deck.png");
+}

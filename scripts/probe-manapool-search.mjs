@@ -14,13 +14,27 @@ const shapes = [
 ];
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1400, height: 1200 } });
+try {
+  await run(browser);
+} finally {
+  // Without this, a throw anywhere above orphans a Chromium process.
+  await browser.close();
+}
 
-console.log("== search URL shapes, one card");
-for (const shape of shapes) {
-  const url = shape(names[0]);
-  const res = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60_000 }).catch((e) => e);
-  console.log(`  ${res?.status?.() ?? "ERR"}  ${url}\n        final: ${page.url()}`);
+async function run(browser) {
+  const page = await browser.newPage({ viewport: { width: 1400, height: 1200 } });
+
+  console.log("== search URL shapes, one card");
+  for (const shape of shapes) {
+    const url = shape(names[0]);
+    const res = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60_000 }).catch((e) => e);
+    // On a failed goto, page.url() still points at the last successful navigation,
+    // so the final URL is only meaningful when the navigation succeeded.
+    if (typeof res?.status !== "function") {
+      console.log(`  NAV FAILED  ${url}\n        ${res?.message ?? "unknown"}`);
+      continue;
+    }
+    console.log(`  ${res.status()}  ${url}\n        final: ${page.url()}`);
 }
 
 console.log("\n== does a single-printing page link to the grid?");
@@ -63,4 +77,4 @@ for (const n of names) {
 }
 
 await page.screenshot({ path: "/tmp/mp-search.png" });
-await browser.close();
+}
