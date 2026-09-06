@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
-import { scoreOneCommander } from "../../../lib/recs/recommend";
+import { loadCollectionPool, scoreOneCommander } from "../../../lib/recs/recommend";
+import { loadCandidates } from "../../../lib/discovery/candidates";
+import { assignDiscoverySlugs } from "../../../lib/discovery/slugs";
+import { byFit } from "../../../lib/discovery/novelty";
 import { getRankedList } from "../../../lib/recs/ranked-list";
 import { findScoredCommander } from "../../../lib/recs/store";
 import { CommanderDetail } from "../../../components/commanders/detail";
@@ -27,8 +30,25 @@ export default async function CommanderDetailPage({
     // perfectly well in memory.
     const { items } = await getRankedList(userId);
     const idx = items.findIndex((i) => i.slug === slug);
-    if (idx === -1) notFound();
-    found = { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };
+    if (idx !== -1) {
+      found = { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };
+    } else {
+      // Third and last: the discovery ranking. A commander the player has not
+      // built has no persisted score and no place in the owned list, but its
+      // row on /commanders?scope=play links here — resolving it anywhere else
+      // would 404 roughly 3,100 rows.
+      const { collection } = await loadCollectionPool(userId);
+      const rows = assignDiscoverySlugs(
+        await loadCandidates(userId, collection.map((c) => c.oracleId)),
+      ).sort((a, b) => byFit(
+        { ...a, unplayedCount: 0 }, { ...b, unplayedCount: 0 },
+      ));
+      const at = rows.findIndex((r) => r.slug === slug);
+      if (at === -1) notFound();
+      // The rank the row itself showed: position in the fit ranking, which is
+      // discovery's default and the only ordering this page can name.
+      found = { oracleId: rows[at].oracleId, rank: at + 1, anyDegraded: false };
+    }
   } else if (found.anyDegraded) {
     // The persisted ranks came from an outage-era compute, so the rank shown beside
     // a freshly-scored commander would disagree with the list. Refresh the rank

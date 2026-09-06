@@ -134,6 +134,21 @@ export const loadCollectionPool = cache(async function loadCollectionPool(
   return { collection: owned.filter((c) => c.commanderLegal), uniqueCardsRead: owned.length };
 });
 
+/** One card as a `PoolCard`, for a commander outside the player's collection. */
+async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
+  const [row] = await db
+    .select({
+      oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
+      oracleText: cards.oracleText, keywords: cards.keywords,
+      colorIdentity: cards.colorIdentity, imageUri: cards.imageUri,
+      manaCost: cards.manaCost,
+    })
+    .from(cards)
+    .where(eq(cards.oracleId, oracleId))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function recommendCommanders(
   userId: string,
 ): Promise<RecommendResult> {
@@ -196,7 +211,7 @@ export async function recommendCommanders(
 /**
  * Full score for a single commander, for the detail page. Costs one collection
  * query plus one EDHREC resolve instead of the ~196 the fanout would do.
- * Returns null when the commander is no longer in the user's collection.
+ * Returns null when the oracle id names no card at all.
  */
 export async function scoreOneCommander(
   userId: string,
@@ -204,7 +219,12 @@ export async function scoreOneCommander(
   slug: string,
 ): Promise<RankedCommander | null> {
   const { collection } = await loadCollectionPool(userId);
-  const commander = collection.find((c) => c.oracleId === oracleId);
+  // A discovery commander is by definition one the player may not own, so a
+  // collection miss is an ordinary case here rather than a 404. The pool and the
+  // role logic are unaffected: `commanderPool` already excludes the commander
+  // itself, and a commander outside the collection was never in the pool.
+  const commander =
+    collection.find((c) => c.oracleId === oracleId) ?? (await loadPoolCard(oracleId));
   if (!commander) return null;
 
   const cache = await readEdhrecCache([oracleId]);
