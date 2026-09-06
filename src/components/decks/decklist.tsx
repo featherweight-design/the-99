@@ -10,6 +10,7 @@ import { computeRoleCounts } from "../../lib/decks/mix";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { GroupToggle } from "./group-toggle";
+import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
@@ -73,6 +74,11 @@ interface DecklistProps {
    * Threaded from getDeckSuggestions via BuilderShell.
    */
   shoppingFigures?: Record<string, number> | null;
+  /** The newest `as_of` in `printing_prices` — the one scalar every price's
+      liveness is compared against. Null leaves every tag bare. */
+  newestAsOf?: Date | null;
+  /** Built on the server; see BuilderShell. */
+  provenance?: ProvenanceForm | null;
 }
 
 export function Decklist({
@@ -97,6 +103,8 @@ export function Decklist({
   onClearAuto,
   onRestoreAuto,
   shoppingFigures = {},
+  newestAsOf = null,
+  provenance = null,
 }: DecklistProps) {
   // undefined = no figure line on the row. That is the All view's answer, and
   // also the outage's: with EDHREC unreachable we know nothing about any of
@@ -122,6 +130,11 @@ export function Decklist({
   // reason: they all describe one purchase, so they have to move together if the
   // multi-copy exception ever widens past basics.
   const shoppingCount = cardCopies(shoppingCards);
+
+  // Summed over the same list the pill counts, and by COPIES for the same
+  // reason: the strip's denominator and the `Shopping N` pill are one fact
+  // rendered twice on the same screen.
+  const priceSummary = summarisePrices(shoppingCards, newestAsOf);
 
   // The receipt counts cards, not rows: a swept basic-land row carries its
   // whole stack in `quantity`, and undo puts every copy back.
@@ -294,6 +307,8 @@ export function Decklist({
           keptCount={keptCount}
           sweepPending={sweepPending}
           onClearAuto={onClearAuto}
+          priceSummary={priceSummary}
+          provenance={provenance}
         />
 
         <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
@@ -327,6 +342,7 @@ export function Decklist({
                       card={card}
                       siblings={shoppingOrderedIds}
                       shoppingFigure={shoppingFigure}
+                      newestAsOf={newestAsOf}
                     />
                   );
                 })}
@@ -351,6 +367,7 @@ export function Decklist({
                       card={card}
                       siblings={shoppingOrderedIds}
                       shoppingFigure={shoppingFigure}
+                      newestAsOf={newestAsOf}
                     />
                   );
                 })}
@@ -386,6 +403,8 @@ export function Decklist({
         keptCount={keptCount}
         sweepPending={sweepPending}
         onClearAuto={onClearAuto}
+        priceSummary={priceSummary}
+        provenance={provenance}
       />
 
       {/* Grouped card rows */}
@@ -422,6 +441,7 @@ export function Decklist({
             cards={groupCards}
             spentOracleId={spentCard?.oracleId}
             siblings={orderedIds}
+            newestAsOf={newestAsOf}
           />
         ))}
 

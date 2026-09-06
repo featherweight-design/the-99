@@ -14,6 +14,7 @@ import { shelfRoleOf, type DeckSuggestion } from "../../lib/decks/suggest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
+import type { ProvenanceForm } from "../../lib/decks/price";
 import { SuggestionTile } from "./suggestion-tile";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 
@@ -133,6 +134,7 @@ function CardFan() {
 
 function ShelfSection({
   shelf, deckId, inDeckIds, selfClaimedIds, commanderShortName, first,
+  newestAsOf, provenance,
 }: {
   shelf: Shelf;
   deckId: string;
@@ -143,6 +145,8 @@ function ShelfSection({
   commanderShortName: string;
   /** The 16px mobile gap sits between shelves, so the first one does not take it. */
   first: boolean;
+  newestAsOf: Date | null;
+  provenance: ProvenanceForm | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const headingId = `shelf-${shelf.key}`;
@@ -225,6 +229,8 @@ function ShelfSection({
             siblings={siblings}
             commanderShortName={commanderShortName}
             showNoSynergy={isSynergyShelf}
+            newestAsOf={newestAsOf}
+            provenance={provenance}
           />
         ))}
       </ul>
@@ -254,11 +260,15 @@ interface ConsiderPanelProps {
   /** Owned by the shell: the desktop toolbar rides the tab row, outside this panel. */
   sort: SortKey;
   onSortChange: (sort: SortKey) => void;
+  /** The newest `as_of` in `printing_prices`; the tags' liveness comparison. */
+  newestAsOf?: Date | null;
+  /** Server-built provenance, spoken in each priced tile's accessible name. */
+  provenance?: ProvenanceForm | null;
 }
 
 export function ConsiderPanel({
   deckId, suggestions, deckCards, deckOracleIds, commanderOracleId, commanderShortName, degraded,
-  sort, onSortChange,
+  sort, onSortChange, newestAsOf = null, provenance = null,
 }: ConsiderPanelProps) {
   const router = useRouter();
   const inDeckIds = useMemo(() => new Set(deckOracleIds), [deckOracleIds]);
@@ -367,6 +377,8 @@ export function ConsiderPanel({
               inDeckIds={inDeckIds}
               selfClaimedIds={selfClaimedIds}
               commanderShortName={commanderShortName}
+              newestAsOf={newestAsOf}
+              provenance={provenance}
             />
           ))}
         </>

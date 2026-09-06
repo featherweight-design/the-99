@@ -65,7 +65,7 @@ export const addPanelCopy = {
     sortLabel: "Sort",
     sortGaps: "Coverage gaps first",
     sortEdhrec: "EDHREC first",
-    sortCheapest: "Cheapest first",
+    sortCheapest: "Cheapest to cast",
     sortAria: "Sort suggestions",
 
     showAll: (n: number) => `Show all ${n}`,

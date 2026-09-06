@@ -17,6 +17,7 @@ import { shelfRoleOf } from "../../lib/decks/suggest";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
 import { BuyTag } from "./buy-tag";
+import type { ProvenanceForm } from "../../lib/decks/price";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
@@ -175,10 +176,15 @@ interface SuggestionTileProps {
       label instead of staying silent, so players know a null is no data, not
       last rank. Absent on all other shelves. */
   showNoSynergy?: boolean;
+  /** The newest `as_of` in `printing_prices`; the tag's liveness comparison. */
+  newestAsOf?: Date | null;
+  /** Server-built provenance, spoken in the tile's accessible name. */
+  provenance?: ProvenanceForm | null;
 }
 
 export function SuggestionTile({
   suggestion, deckId, inDeck, selfClaimed, siblings, commanderShortName, showNoSynergy,
+  newestAsOf = null, provenance = null,
 }: SuggestionTileProps) {
   const { applied, isPending, error, run } = useDeckMutation(inDeck, DECK_ADD_FALLBACK_MESSAGE);
   const addOptimisticCard = useAddOptimisticCard();
@@ -257,7 +263,13 @@ export function SuggestionTile({
             style={{ background: "var(--success)", boxShadow: "0 0 0 2px color-mix(in oklab, var(--bg) 70%, transparent)" }}
           />
         ) : (
-          <BuyTag variant="tile" label={addPanelCopy.unowned.tagAria(suggestion.name)} />
+          <BuyTag
+            variant="tile"
+            label={addPanelCopy.unowned.tagAria(suggestion.name)}
+            price={suggestion.price}
+            newestAsOf={newestAsOf}
+            provenance={provenance}
+          />
         ))}
         <CardDetailTrigger
           oracleId={suggestion.oracleId}

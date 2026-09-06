@@ -15,6 +15,7 @@ import {
 import { ExportCopyButton } from "./export-copy-button";
 import { GhostButton } from "@/components/ui/button";
 import { overCopy } from "../../lib/copy/decks-builder";
+import { priceCopy } from "../../lib/copy/price";
 
 type Tab = "decklist" | "shopping";
 
@@ -394,7 +395,7 @@ function DialogContent({
                 className="font-mono"
                 style={{ fontSize: 11, color: "var(--fg-faint)" }}
               >
-                Names only. Pricing is a planned add — see release notes.
+                {priceCopy.export.pricingNote}
               </span>
             </div>}
 
@@ -422,7 +423,7 @@ function DialogContent({
                   margin: 0,
                 }}
               >
-                names only · pricing planned
+                {priceCopy.export.pricingNote}
               </p>
             )}
 

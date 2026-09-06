@@ -3,6 +3,7 @@
 
 import { addPanelCopy } from "../copy/decks-builder";
 import type { Availability } from "./availability";
+import type { PriceFact } from "./price";
 
 export type CardTypeGroup =
   | "Creatures" | "Instants" | "Sorceries"
@@ -24,6 +25,9 @@ export type DeckDetailCard = {
    * rather than to an error surface.
    */
   availability?: Availability | null;
+  /** Optional for the same reason `availability` is, and degrading the same
+   * way: absent and null both mean the bare `buy` tag. */
+  price?: PriceFact | null;
 };
 
 /**
