@@ -59,9 +59,13 @@ async function signIn(page) {
           : await signIn.create({ identifier: email, password });
         if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
           const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === "email_code");
+          if (!factor) {
+            const offered = (attempt.supportedFirstFactors ?? []).map((f) => f.strategy);
+            return `no email_code factor at ${attempt.status}; offered: ${offered.join(", ") || "none"}`;
+          }
           await signIn.prepareFirstFactor({
             strategy: "email_code",
-            emailAddressId: factor?.emailAddressId,
+            emailAddressId: factor.emailAddressId,
           });
           attempt = await signIn.attemptFirstFactor({ strategy: "email_code", code: "424242" });
         }
@@ -140,7 +144,10 @@ async function read(page) {
       listGap: list ? getComputedStyle(list).rowGap : null,
       reveal: reveal
         ? {
-            insideList: !!reveal.closest("ul"),
+            // Against the list `rows` was read from, not any `<ul>`: the claim is
+            // that the control shares the discovery list's row gap, which a
+            // different list containing it would satisfy while meaning nothing.
+            insideList: reveal.closest("ul") === list,
             aria: reveal.getAttribute("aria-label"),
             band: visibleText(reveal),
             gapAbove: revealGap,
