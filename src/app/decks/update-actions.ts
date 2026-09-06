@@ -58,10 +58,10 @@ export type DeckUpdateResult =
   /** State 9, likewise. */
   | { ok: false; reason: "noneMatched"; lineCount: number; notes: ImportNote[] };
 
-/** The deck, as both the preview and the apply need it. Throws rather than
- *  returning a reason: a deck the caller does not own is not a state the flow
- *  draws, it is a request that should never have been made. */
-async function loadDeck(userId: string, deckId: string) {
+/** The deck row itself, and the ownership check. Throws rather than returning a
+ *  reason: a deck the caller does not own is not a state the flow draws, it is a
+ *  request that should never have been made. */
+async function loadDeckMeta(userId: string, deckId: string) {
   const [deck] = await db
     .select({
       id: decks.id,
@@ -71,6 +71,14 @@ async function loadDeck(userId: string, deckId: string) {
     .from(decks)
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   if (!deck) throw new Error("deck not found");
+  return deck;
+}
+
+/** The deck and its cards, as the preview needs them. The apply path calls
+ *  `loadDeckMeta` alone: it re-reads the cards inside the transaction under the
+ *  row lock, so a read out here would be a join it throws away. */
+async function loadDeck(userId: string, deckId: string) {
+  const deck = await loadDeckMeta(userId, deckId);
 
   const rows = await db
     .select({
@@ -218,7 +226,7 @@ export async function updateDeckFromList(
     throw new Error(deckImportTooLargeMessage(input.source));
   }
 
-  const { deck } = await loadDeck(userId, input.deckId);
+  const deck = await loadDeckMeta(userId, input.deckId);
   const { catalog, indexes } = await loadMatchInputs([], { detailed: true });
   const parsed = buildDeckImport({ text: input.text, catalog, indexes });
 
