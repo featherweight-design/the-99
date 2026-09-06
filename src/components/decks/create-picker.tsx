@@ -15,6 +15,7 @@
 
 import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { CSSProperties } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
@@ -174,7 +175,12 @@ export function CreatePicker(props: CreatePickerProps) {
     startTransition(async () => {
       try {
         await createDeck(selected.oracleId, trimmed);
-      } catch {
+      } catch (err) {
+        // `createDeck` ends in `redirect()`, which signals by throwing, and the
+        // throw reaches this catch before the router navigates — so every
+        // successful create painted "Failed to create deck" for the frame or
+        // two the navigation took.
+        unstable_rethrow(err);
         setError("Failed to create deck. Try again.");
         // Released only on failure: success navigates away, and reopening the
         // door mid-navigation is what this guard exists to prevent.

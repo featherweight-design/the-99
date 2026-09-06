@@ -5,6 +5,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
@@ -58,7 +59,10 @@ export function CreatePreFilled({
     startTransition(async () => {
       try {
         await createDeck(oracleId, trimmed, selectedOracleIds);
-      } catch {
+      } catch (err) {
+        // See create-picker.tsx: the action's closing `redirect()` throws, and
+        // without this the success path paints a failure on its way out.
+        unstable_rethrow(err);
         setError("Failed to create deck. Try again.");
       }
     });
