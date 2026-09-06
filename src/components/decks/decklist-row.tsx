@@ -288,6 +288,10 @@ export function DecklistRow({
           <BuyTag
             variant="row"
             word={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTag : undefined}
+            // `buy` reads as the act it is, so the row passes no label for it.
+            // `2nd copy` does not: alone it names a thing rather than asking for
+            // one, so this one word gets the sentence.
+            label={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTagAria : undefined}
             price={card.price}
             newestAsOf={newestAsOf}
             reserveSlot={hasShoppingMeta}

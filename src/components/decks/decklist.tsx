@@ -214,15 +214,22 @@ export function Decklist({
     // one, in a clause the player can check against the role strip on the same
     // screen. So the role groups keep exactly the cards they hold today, and the
     // contested rows get a group of their own with no arithmetic in it.
-    const spokenForCards = shoppingCards.filter(isSpokenFor);
-    const missingCards = shoppingCards.filter((c) => !c.owned);
+    //
+    // Membership comes from `listedCards`, which carries the spent slot; every
+    // count below comes from `shoppingCards`, which does not. That split is what
+    // lets a removed row keep its place in its own group — where the undo receipt
+    // has to appear — without the group promising a card that is no longer in the
+    // deck. `notSpent` is the one place the difference is spelled.
+    const notSpent = (c: DeckDetailCard) => c.oracleId !== spentCard?.oracleId;
+    const spokenForCards = listedCards.filter(isSpokenFor);
+    const missingCards = listedCards.filter((c) => !c.owned);
 
     // Build shopping groups: only roles that have ROLE_TARGETS (no land or other).
     const shoppingGroups = SHOPPING_ROLE_ORDER.flatMap((role) => {
       const roleCards = missingCards.filter((c) => c.role === role);
       if (roleCards.length === 0) return [];
       const from = roleCounts[role];
-      const n = cardCopies(roleCards);
+      const n = cardCopies(roleCards.filter(notSpent));
       // Where the deck lands if the player buys this group, not the baseline.
       // For a group the fill built they are the same number — the fill buys a
       // role up to its target and no further, so from + n is the target. They
@@ -251,8 +258,8 @@ export function Decklist({
     const allAuto = autoN === n;
     // Copies, like every other figure on this surface: they all describe one
     // purchase, so they move together.
-    const spokenForN = cardCopies(spokenForCards);
-    const missingN = cardCopies(missingCards);
+    const spokenForN = cardCopies(spokenForCards.filter(notSpent));
+    const missingN = cardCopies(missingCards.filter(notSpent));
 
     // The open slots the player kept for themselves (not filled by auto).
     // Clamped because a deck past 99 has none: the copy this feeds says the
@@ -281,7 +288,10 @@ export function Decklist({
     // a deck the fill actually ran on. A deck the player built by hand that
     // happens to own everything it lists must not be congratulated on a fill
     // that never ran.
-    if (n === 0) {
+    // `!spentCard` for the same reason `builder-shell.tsx` guards its own empty
+    // state on it: swapping the list for an empty state would take the undo row
+    // with it, and the player has nowhere else to undo from.
+    if (n === 0 && !spentCard) {
       return (
         <div className="flex flex-col">
           <GroupToggle
@@ -338,7 +348,7 @@ export function Decklist({
       ...shoppingGroups.flatMap((g) => g.cards.map((c) => c.oracleId)),
       ...otherShoppingCards.map((c) => c.oracleId),
       ...spokenForCards.map((c) => c.oracleId),
-    ];
+    ].filter((id) => id !== spentCard?.oracleId);
 
     return (
       <div className="flex flex-col">
@@ -386,7 +396,11 @@ export function Decklist({
           {/* Role groups */}
           {shoppingGroups.map(({ role, label, cards: groupCards, gapClause }) => (
             <div key={role} className="mb-[16px] md:mb-[20px]">
-              <DecklistGroupHeader label={label} count={cardCopies(groupCards)} gapClause={gapClause} />
+              <DecklistGroupHeader
+                label={label}
+                count={cardCopies(groupCards.filter(notSpent))}
+                gapClause={gapClause}
+              />
               <div
                 className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
                 style={{ gridTemplateColumns: "1fr 1fr" }}
@@ -399,6 +413,7 @@ export function Decklist({
                       deckId={deckId}
                       card={card}
                       siblings={shoppingOrderedIds}
+                      spent={card.oracleId === spentCard?.oracleId}
                       shoppingFigure={shoppingFigure}
                       newestAsOf={newestAsOf}
                     />
@@ -411,7 +426,10 @@ export function Decklist({
           {/* Other/non-targeted roles (e.g. "other") */}
           {otherShoppingCards.length > 0 && (
             <div className="mb-[16px] md:mb-[20px]">
-              <DecklistGroupHeader label="Other" count={cardCopies(otherShoppingCards)} />
+              <DecklistGroupHeader
+                label="Other"
+                count={cardCopies(otherShoppingCards.filter(notSpent))}
+              />
               <div
                 className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
                 style={{ gridTemplateColumns: "1fr 1fr" }}
@@ -424,6 +442,7 @@ export function Decklist({
                       deckId={deckId}
                       card={card}
                       siblings={shoppingOrderedIds}
+                      spent={card.oracleId === spentCard?.oracleId}
                       shoppingFigure={shoppingFigure}
                       newestAsOf={newestAsOf}
                     />
@@ -452,6 +471,7 @@ export function Decklist({
                     deckId={deckId}
                     card={card}
                     siblings={shoppingOrderedIds}
+                    spent={card.oracleId === spentCard?.oracleId}
                     shoppingFigure={figureFor(card.oracleId)}
                     newestAsOf={newestAsOf}
                   />

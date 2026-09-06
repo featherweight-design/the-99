@@ -6,6 +6,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
@@ -63,6 +64,7 @@ function renderDecklist(
     shoppingFigures?: Record<string, number> | null;
     filled?: boolean;
     fetchCard?: (oracleId: string) => Promise<unknown>;
+    spentSlot?: DeckDetailCard | null;
   } = {},
 ) {
   const deckEdits = {
@@ -89,6 +91,7 @@ function renderDecklist(
           deckOracleIds={cards.map((c) => c.oracleId)}
           built={cards.reduce((s, c) => s + c.quantity, 0)}
           filled={opts.filled ?? false}
+          spentSlot={opts.spentSlot ?? null}
           filter="shopping"
           grouping="role"
           onFilterChange={vi.fn()}
@@ -518,5 +521,49 @@ describe("A deck with nothing contested renders today's Shopping list", () => {
     expect(
       screen.getByText(recommendationsCopy.shopping.groupGap("1", "2", "3")),
     ).toBeInTheDocument();
+  });
+});
+
+describe("Removing a card from Shopping leaves its undo row in place", () => {
+  it("keeps a spoken-for row mounted after its slot is spent", () => {
+    // A spoken-for card is owned, so the pre-amendment `!spentSlot.owned` test
+    // would have dropped it from the list outright and taken the only undo
+    // affordance with it. #185 exists to stop exactly that.
+    renderDecklist([rampUnowned, drawSpokenFor], { spentSlot: rampSpokenFor });
+
+    expect(
+      screen.getByText(addPanelCopy.undo.removed(rampSpokenFor.name)),
+    ).toBeInTheDocument();
+  });
+
+  it("counts the deck as it now stands, not as the undo row makes it look", () => {
+    renderDecklist([rampOwned, rampUnowned, drawSpokenFor], {
+      spentSlot: rampSpokenFor,
+    });
+
+    // One unowned card and one spoken-for card remain on the list. The spent row
+    // is drawn among them but is out of the deck already, so every figure on the
+    // surface has to read as though it were gone — including `Spoken for`'s own
+    // clause, which the row drawn inside it would otherwise inflate to two.
+    expect(
+      screen.getByText(recommendationsCopy.shopping.introSplit("2", "1", "1")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(recommendationsCopy.shopping.spokenForGroupClause("1")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(recommendationsCopy.shopping.groupGap("1", "1", "2")),
+    ).toBeInTheDocument();
+  });
+
+  it("holds the list open when the spent card was the last thing to buy", () => {
+    renderDecklist([], { spentSlot: rampUnowned, filled: true });
+
+    expect(
+      screen.getByText(addPanelCopy.undo.removed(rampUnowned.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.emptyCoveredHeading),
+    ).not.toBeInTheDocument();
   });
 });

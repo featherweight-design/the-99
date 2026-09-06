@@ -549,9 +549,9 @@ export function BuilderShell({
               onExport={openExport}
               {...commitments}
               // No link while the Shopping list is what the player is looking
-              // at: it would point at the screen they are already on. From
-              // Consider it has two switches to make rather than one, like
-              // `seeUnresolved` above — the list is not on screen there.
+              // at: it would point at the screen they are already on. Called
+              // from Consider, it makes two switches rather than one — like
+              // `seeUnresolved` above — because the list is not on screen there.
               onShowShopping={
                 view === "deck" && filter === "shopping"
                   ? undefined
