@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { CollectionRow } from "../manabox/parse";
-import { buildDeckImport, type ImportCatalogCard } from "./import";
+import { buildDeckImport, type DeckImport, type ImportCatalogCard } from "./import";
+
+/** Drops the source line. These cases are about which card a line *shape*
+ *  resolves to; the line number each row carries is asserted in update.test.ts,
+ *  which is where it means something. */
+const shape = (cards: DeckImport["cards"]) =>
+  cards.map(({ oracleId, quantity }) => ({ oracleId, quantity }));
 
 const ROW: CollectionRow = {
   name: "", setCode: "", collectorNumber: "", quantity: 1,
@@ -43,24 +49,24 @@ const build = (text: string, catalog: ImportCatalogCard[] = CATALOG) =>
 
 describe("buildDeckImport — line shapes", () => {
   it("reads '1x Sol Ring' and '1 Sol Ring' identically", () => {
-    expect(build("1x Sol Ring").cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
-    expect(build("1 Sol Ring").cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(build("1x Sol Ring").cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(build("1 Sol Ring").cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 
   it("ignores a trailing set code and collector number", () => {
-    expect(build("1 Sol Ring (LTC) 284").cards).toEqual([
+    expect(shape(build("1 Sol Ring (LTC) 284").cards)).toEqual([
       { oracleId: SOL_RING.oracleId, quantity: 1 },
     ]);
   });
 
   it("ignores Moxfield's trailing annotations such as *F*", () => {
-    expect(build("1 Sol Ring (C21) 263 *F*").cards).toEqual([
+    expect(shape(build("1 Sol Ring (C21) 263 *F*").cards)).toEqual([
       { oracleId: SOL_RING.oracleId, quantity: 1 },
     ]);
   });
 
   it("matches a double-faced card written by its front face only", () => {
-    expect(build("1 Delver of Secrets").cards).toEqual([
+    expect(shape(build("1 Delver of Secrets").cards)).toEqual([
       { oracleId: DELVER.oracleId, quantity: 1 },
     ]);
   });
@@ -68,12 +74,12 @@ describe("buildDeckImport — line shapes", () => {
   it("merges two lines of the same card into one deck_cards row", () => {
     // deck_cards is keyed (deck_id, oracle_id); two rows would raise 23505.
     const result = build("5 Forest (M21) 274\n4 Forest (ZNR) 280");
-    expect(result.cards).toEqual([{ oracleId: FOREST.oracleId, quantity: 9 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: FOREST.oracleId, quantity: 9 }]);
   });
 
   it("returns nothing at all for an empty source", () => {
     const result = build("   \n\n");
-    expect(result.cards).toEqual([]);
+    expect(shape(result.cards)).toEqual([]);
     expect(result.unresolved).toEqual([]);
     expect(result.notes).toEqual([]);
   });
@@ -82,39 +88,39 @@ describe("buildDeckImport — line shapes", () => {
 describe("buildDeckImport — locked decision: sideboard and maybeboard are not imported", () => {
   it("drops every line after a SIDEBOARD marker and notes the count", () => {
     const result = build("1 Sol Ring\n\nSIDEBOARD:\n1 Forest\n1 Tymna the Weaver");
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
     expect(result.notes).toEqual([{ kind: "sectionSkipped", section: "sideboard", lineCount: 2 }]);
   });
 
   it("drops a maybeboard section under its own note", () => {
     const result = build("1 Sol Ring\nMaybeboard\n1 Forest");
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
     expect(result.notes).toEqual([{ kind: "sectionSkipped", section: "maybeboard", lineCount: 1 }]);
   });
 
   it("resumes importing when a Deck marker follows a sideboard section", () => {
     const result = build("SIDEBOARD:\n1 Tymna the Weaver\n\nDeck\n1 Sol Ring");
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 
   it("reads a header that carries its own count, as real exports write them", () => {
     // "Sideboard (14)" undetected is the expensive miss: fourteen skipped lines
     // become fourteen cards in the deck.
     const result = build("Deck (99)\n1 Sol Ring\n\nSideboard (2):\n1 Forest\n1 Tymna the Weaver");
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
     expect(result.notes).toEqual([{ kind: "sectionSkipped", section: "sideboard", lineCount: 2 }]);
   });
 
   it("reads a Commander header that carries its own count", () => {
     const result = build("Commander (1)\n1 Atraxa, Praetors' Voice\n\nDeck (1)\n1 Sol Ring");
     expect(result.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 
   it("does not treat a card whose name starts with a marker word as a section header", () => {
     const sideboardish = card({ name: "Sideboard Shenanigans" });
     const result = build("1 Sideboard Shenanigans", [...CATALOG, sideboardish]);
-    expect(result.cards).toEqual([{ oracleId: sideboardish.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: sideboardish.oracleId, quantity: 1 }]);
     expect(result.notes).toEqual([]);
   });
 });
@@ -122,7 +128,7 @@ describe("buildDeckImport — locked decision: sideboard and maybeboard are not 
 describe("buildDeckImport — locked decision: quantity > 1 on a non-basic imports at 1", () => {
   it("clamps a non-basic to quantity 1 and raises a note", () => {
     const result = build("3 Sol Ring");
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
     expect(result.notes).toEqual([
       { kind: "quantityClamped", name: "Sol Ring", requested: 3, sourceLine: 1 },
     ]);
@@ -130,7 +136,7 @@ describe("buildDeckImport — locked decision: quantity > 1 on a non-basic impor
 
   it("leaves a basic land's quantity alone", () => {
     const result = build("10 Forest");
-    expect(result.cards).toEqual([{ oracleId: FOREST.oracleId, quantity: 10 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: FOREST.oracleId, quantity: 10 }]);
     expect(result.notes).toEqual([]);
   });
 });
@@ -143,14 +149,14 @@ describe("buildDeckImport — locked decision: a commander also in the 99 is ded
       name: ATRAXA.name,
       sourceLine: 1,
     });
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
     expect(result.notes).toEqual([]);
   });
 
   it("reads a Commander section header as the declaration too", () => {
     const result = build("Commander\n1 Atraxa, Praetors' Voice\n\nDeck\n1 Sol Ring");
     expect(result.declaredCommander?.oracleId).toBe(ATRAXA.oracleId);
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
   });
 
   it("notes a Partner pair's second commander rather than importing it into the 99", () => {
@@ -158,7 +164,7 @@ describe("buildDeckImport — locked decision: a commander also in the 99 is ded
     // would change the deck's colour identity and its legality without saying so.
     const result = build("1 Tymna the Weaver *CMDR*\n1 Atraxa, Praetors' Voice *CMDR*\n1 Sol Ring");
     expect(result.declaredCommander?.oracleId).toBe(TYMNA.oracleId);
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
     expect(result.notes).toEqual([
       { kind: "extraCommanderDeclared", name: ATRAXA.name, sourceLine: 2 },
     ]);
@@ -208,7 +214,7 @@ describe("buildDeckImport — match outcomes", () => {
       catalog: CATALOG,
       indexes: { skippedScryfallIds: [tokenId] },
     });
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
     expect(result.unresolved).toEqual([]);
   });
 
@@ -217,7 +223,7 @@ describe("buildDeckImport — match outcomes", () => {
       rows: [{ ...ROW, name: "Sol Ring", quantity: 4, line: 7 }],
       catalog: CATALOG,
     });
-    expect(result.cards).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
+    expect(shape(result.cards)).toEqual([{ oracleId: SOL_RING.oracleId, quantity: 1 }]);
     expect(result.notes).toEqual([
       { kind: "quantityClamped", name: "Sol Ring", requested: 4, sourceLine: 7 },
     ]);
@@ -277,7 +283,7 @@ describe("buildDeckImport — legendary candidates", () => {
     });
     const result = build("1 Golos, Tireless Pilgrim\n1 Tymna the Weaver", [...CATALOG, banned]);
     expect(result.legendaryCandidates.map((c) => c.name)).toEqual([TYMNA.name]);
-    expect(result.cards).toContainEqual({ oracleId: banned.oracleId, quantity: 1 });
+    expect(shape(result.cards)).toContainEqual({ oracleId: banned.oracleId, quantity: 1 });
   });
 
   it("is empty when no legendary creature was imported", () => {

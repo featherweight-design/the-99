@@ -155,7 +155,7 @@ export function DeckCard({ deck }: DeckCardProps) {
         </div>
 
         {/* §Deck card — "⋯" overflow button — client component, relative z-10 */}
-        <DeckCardOverflow deckId={deck.id} deckName={deck.name} />
+        <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={deck.built} />
       </div>
 
       {/* ── Progress section ── */}

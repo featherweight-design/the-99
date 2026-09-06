@@ -5,7 +5,12 @@ import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { getDeckSuggestions } from "../actions";
 import { BuilderShell } from "../../../components/decks/builder-shell";
-import { arrivedFromImport, IMPORTED_PARAM } from "../../../lib/decks/arrival";
+import {
+  arrivedFromImport,
+  IMPORTED_PARAM,
+  readUpdateArrival,
+  UPDATED_PARAM,
+} from "../../../lib/decks/arrival";
 import { readSynergyCards } from "../../commanders/[slug]/synergy-read";
 import { planLastSlots, countLastSlotsUnowned } from "../../../lib/decks/last-slots";
 
@@ -75,6 +80,10 @@ export default async function DeckBuilderPage({
       // per deck so a dismissed strip stays dismissed; and a bookmarked URL can
       // only be reopened by the deck's owner, who sees one dismissible line.
       arrivedFromImport={arrivedFromImport(query[IMPORTED_PARAM])}
+      // Left in the URL for the same reason. Its strip is dismissible too, but
+      // the dismissal is component state rather than storage: an update happens
+      // many times, and persisting it would silence every one after the first.
+      updateArrival={readUpdateArrival(query[UPDATED_PARAM])}
     />
   );
 }

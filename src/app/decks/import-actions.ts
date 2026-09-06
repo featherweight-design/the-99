@@ -101,8 +101,10 @@ async function withOwnership(
  * Parses a decklist and creates the deck it describes, unresolved lines included.
  *
  * There is deliberately **no dedupe**: importing the same list twice creates two
- * decks. Updating in place is sync — a different and much larger feature — and
- * quietly becoming it is the failure mode this comment guards against.
+ * decks. Updating a deck in place is `updateDeckFromList` (src/app/decks/update-actions.ts),
+ * reached from the deck itself and never from here — it shows a diff and writes
+ * nothing until the player applies it. This action always creates. An import that
+ * silently updated an existing deck would delete cards nobody was shown.
  */
 export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResult> {
   const userId = await requireUserId();

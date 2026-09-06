@@ -32,7 +32,9 @@ export type ImportNote =
   | { kind: "extraCommanderDeclared"; name: string; sourceLine: number };
 
 export type DeckImport = {
-  cards: { oracleId: string; quantity: number }[];
+  /** `sourceLine` is the first line that named the card — the figure the update
+   *  diff prints beside each addition, and the same one `quantityClamped` blames. */
+  cards: { oracleId: string; quantity: number; sourceLine: number }[];
   unresolved: { rawName: string; quantity: number; sourceLine: number }[];
   /**
    * Carries sourceLine because the commander picker's rows show `line N` — two
@@ -259,9 +261,9 @@ export function buildDeckImport(input: DeckImportInput): DeckImport {
         requested: quantity,
         sourceLine: firstLine,
       });
-      cards.push({ oracleId, quantity: 1 });
+      cards.push({ oracleId, quantity: 1, sourceLine: firstLine });
     } else {
-      cards.push({ oracleId, quantity });
+      cards.push({ oracleId, quantity, sourceLine: firstLine });
     }
   }
 

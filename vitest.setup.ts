@@ -8,6 +8,16 @@ import { afterEach } from "vitest";
 // across tests and role queries fail with "multiple elements found".
 afterEach(cleanup);
 
+// jsdom's localStorage is shared by every test in a file, so a component that
+// persists a dismissal leaves its key behind for whatever runs next. Several
+// test files already cleared it themselves; clearing it here is what lets a
+// test assert the *absence* of a key without depending on its neighbours.
+// Guarded because `scripts/**/*.test.mts` runs in the node environment, which
+// has no localStorage at all.
+afterEach(() => {
+  if (typeof localStorage !== "undefined") localStorage.clear();
+});
+
 // Client components import server actions directly (the pattern throughout src/components),
 // and `src/db` throws at module load without a connection string. No test opens a connection;
 // this is the same stub the production build uses to typecheck without a database.
