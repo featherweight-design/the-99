@@ -156,7 +156,11 @@ describe("ConsiderPanel — shelves", () => {
     mount({ suggestions: many });
 
     expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP);
-    fireEvent.click(screen.getByRole("button", { name: /show all 15 ramp suggestions/i }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: new RegExp(`show all ${SHELF_CAP + 3} ramp suggestions`, "i"),
+      }),
+    );
     expect(screen.getAllByRole("listitem")).toHaveLength(SHELF_CAP + 3);
 
     fireEvent.click(screen.getByRole("button", { name: /show fewer/i }));
