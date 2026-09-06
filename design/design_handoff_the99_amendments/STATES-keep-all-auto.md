@@ -3,7 +3,7 @@
 Amendment 6 · R1 · one control, two widths. Fixture: a filled deck at **68 / 99** — 40 untouched
 `auto` rows, 28 already the player's (kept by hand or added by hand). `n` in a label is always the
 untouched-auto count; `keptNote`'s `n` is always the non-auto count. Both are already computed off
-the optimistic list (`builder-shell.tsx:298-299`).
+the optimistic list — `autoCount` and `keptCount` in `builder-shell.tsx`.
 
 ## The seven states
 
@@ -33,8 +33,9 @@ the same wiring `gap-report-synergy-discovery.md` logs as missing between the la
 the sweep. Optimistically the tags are already gone, so the list under the toolbar is state 4's
 list with state 3's toolbar.
 
-**4.** Terminal, and not reversible: there is no write that re-marks a card `auto`, deliberately.
-The three receipts are the vanished tags, the vanished controls and the one announcement; the note
+**4.** Terminal for Keep all, and not reversible from this control, deliberately: Keep all ships no
+undo, and nothing else re-marks *these* rows `auto`. The sweep's own undo, `restoreAutoCards`, does
+re-insert rows with `auto: true` — but only rows it swept, which these are not. The three receipts are the vanished tags, the vanished controls and the one announcement; the note
 is the only persistent one, and it is desktop-only.
 
 **5.** React drops the optimistic edit with no explicit revert, so the forty tags return on their
