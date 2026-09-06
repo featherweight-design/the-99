@@ -114,9 +114,9 @@ describe("DiscoveryView", () => {
 
   it("heads the page with the ranked count, not the pre-exclusion candidate count", () => {
     const items = [
-      { oracleId: "a", colorIdentity: ["B", "G"] },
-      { oracleId: "b", colorIdentity: ["U"] },
-    ] as unknown as DiscoveryList["items"];
+      item({ oracleId: "a", slug: "a", colorIdentity: ["B", "G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["U"] }),
+    ];
     render(
       <DiscoveryView
         discovery={list({ items, candidateCount: 40, sort: "new", floorExcluded: 38 })}
