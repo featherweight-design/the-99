@@ -8,7 +8,7 @@
 // replaces the list, because the floor really did take everything.
 
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import { AccentGhostButton } from "../ui/button";
+import { GhostButton } from "../ui/button";
 
 const { empty: copy } = discoveryCopy;
 
@@ -83,12 +83,12 @@ export function FloorEmpty({
           note are one line at 1280px and two at 390px, where no phone frame was
           drawn. Wrapping is the only reading that does not overflow. */}
       <span className="inline-flex flex-wrap items-center justify-center gap-[10px]">
-        <AccentGhostButton
+        <GhostButton
           onClick={onRankByFit}
           className="inline-flex items-center h-[40px] px-[18px] text-[13.5px]"
         >
           {copy.floorCta}
-        </AccentGhostButton>
+        </GhostButton>
         <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">
           {copy.floorCtaNote(candidateCount)}
         </span>
