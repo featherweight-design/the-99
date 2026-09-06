@@ -28,7 +28,8 @@ export type DeckAddRejection =
  * refusal string lives in mutation-result.ts, which both the action and the
  * rows read, so a copy change never has to be made twice.
  *
- * There is no size rule. A deck may pass 99, which surfaces as the `Over`
+ * This validator deliberately does not enforce the format's ninety-nine-card
+ * body limit. A deck may pass 99, which surfaces as the `Over`
  * status rather than a refusal — building long and trimming back is a normal
  * way to reach a legal list, and an add the player has to undo to continue is
  * a worse outcome than a count that says what it is.
