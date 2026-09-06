@@ -111,7 +111,12 @@ export function Crown({
       viewBox={`0 0 ${width} ${height}`}
       width={width}
       height={height}
-      className={className}
+      // `block` because the crown it replaced was a flex row — a block box.
+      // An inline `<svg>` sits on the text baseline, so in a plain block
+      // container (`first-run.tsx`) it would gain a few pixels of descender
+      // leading under the `mb-*` every caller sets. Callers in flex parents
+      // are blockified anyway, so this changes nothing for them.
+      className={className ? `block ${className}` : "block"}
     >
       <CrownDiamonds geometry={geometry} fill={color} pulse={pulse} />
     </svg>
