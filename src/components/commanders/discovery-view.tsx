@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { filterByColors } from "../../lib/commanders/filter";
-import { availabilityCopy } from "../../lib/copy/availability";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 // Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
 // reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is unset
@@ -57,7 +56,7 @@ export function DiscoveryView({
     [filtered.length],
   );
   const availMessage = useCallback(
-    (a: "all" | "free") => availabilityCopy.ranking.announce(a, filtered.length),
+    (a: "all" | "free") => discoveryCopy.avail.announce(a, filtered.length),
     [filtered.length],
   );
   useRerankAnnouncement(discovery.sort, sortMessage, setAnnouncement);

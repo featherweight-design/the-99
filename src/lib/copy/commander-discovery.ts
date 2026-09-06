@@ -87,6 +87,19 @@ export const discoveryCopy = {
         : `Re-ranked by best fit · ${n(count)} commanders`,
   },
 
+  // ── Availability (§7.6) — the shared toggle, spoken on this surface ────
+  // The wording is `availabilityCopy.ranking.announce`'s, restated rather than
+  // reused: that one interpolates the count raw, which is right for the 242-row
+  // owned list and wrong here, where the same figure reaches four digits.
+  avail: {
+    announce: (mode: "all" | "free", count: number) =>
+      `${
+        mode === "free"
+          ? "Re-ranked by what’s free"
+          : "Re-ranked by everything you own"
+      } · ${count === 1 ? "1 commander" : `${n(count)} commanders`}`,
+  },
+
   // ── The justification slot (§7.1) ─────────────────────────────────────
   // ONE slot, contents chosen by the sort key. The accent marks the sort key and
   // nothing else, so `overlap` brasses its bar and `distance` brasses its tags.
