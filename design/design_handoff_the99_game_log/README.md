@@ -314,10 +314,11 @@ state, no modal, no toast, no tray.**
   measurement being taken.
 - **Copy** lives in `src/lib/copy/` — see `game-log · copy strings.ts`. It is a new `gameLogCopy`
   block and **edits nothing**. The eight labels and sixteen glosses live there, not in
-  `src/lib/decks/game-axes.ts`: the constant keeps `{ key, label }` as §3 specifies, and the gloss
-  pair is copy. If eng prefers all label strings in the constant, that is a one-line move and
-  Design has no objection — but the glosses must not become a fifth and sixth column of the
-  database vocabulary.
+  `src/lib/decks/game-axes.ts`. Design offered eng the choice of keeping the label string in the
+  constant; **eng took the other branch**, so the constant is keys and order only and every display
+  string — label and both glosses — lives in the copy module, bound by a `Record<GameAxisKey, …>`
+  so a missing entry fails to compile. The glosses were never going to be columns of the database
+  vocabulary, and now neither is the label.
 - **Mock data:** the Gisa Zombies deck from §1, deliberately, so the canvas and the spec tell one
   story. 2–1 across three games; `card_flow` marked against in 3 of 3; `board` and `engine` at
   2 of 3 for; `mana` 1 up 1 down as the Mixed case; `interaction` at 1 of 3 against. Every figure

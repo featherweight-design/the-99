@@ -14,10 +14,12 @@ column, no new action, no change to `summarizeGames`' return shape, no change to
 rules, no change to the keys.
 
 The one thing Design put somewhere the spec left open: **the eight labels and their sixteen glosses
-live in `src/lib/copy/game-log.ts`**, not in `src/lib/decks/game-axes.ts`. The constant keeps its
-`{ key, label }` shape and stays the source of truth for which axes exist and in what order. If eng
-prefers the label string in the constant, that is a one-line move and Design has no objection — but
-the glosses must not become extra columns of the database vocabulary.
+live in `src/lib/copy/game-log.ts`**, not in `src/lib/decks/game-axes.ts`. Design offered eng the
+choice of keeping the label string in the constant instead; **eng took the other branch**, so
+`game-axes.ts` is keys and order only — no `label` field, no gloss — and the copy module is the
+single source of every display string. The binding is a `Record<GameAxisKey, …>` in the copy module,
+so an axis added to the vocabulary without copy is a compile error rather than a blank label. See
+`docs/superpowers/plans/2026-09-05-deck-game-log.md`, tasks 1 and 6.
 
 ## The five §8 calls, all called
 
