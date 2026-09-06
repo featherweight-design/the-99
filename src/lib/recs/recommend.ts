@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, decks } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
@@ -144,7 +144,10 @@ async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
       manaCost: cards.manaCost,
     })
     .from(cards)
-    .where(eq(cards.oracleId, oracleId))
+    // Commander legality is part of the lookup, not a later check: the pool this
+    // card joins is already filtered to commander-legal cards, so a banned or
+    // non-legal oracle id must read as "no such commander" rather than score.
+    .where(and(eq(cards.oracleId, oracleId), eq(cards.commanderLegal, true)))
     .limit(1);
   return row ?? null;
 }

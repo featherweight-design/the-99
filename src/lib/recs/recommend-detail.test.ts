@@ -41,7 +41,10 @@ describe("scoreOneCommander", () => {
     pool.collection = [card({ oracleId: "owned-1", name: "Owned" })];
     pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
 
-    const got = await scoreOneCommander("user", "unowned", "atraxa");
+    // A distinct userId per case: `loadCollectionPool` is wrapped in `cache`,
+    // which memoizes on that argument, so a shared id would let the first case's
+    // collection answer the second one.
+    const got = await scoreOneCommander("user-unowned", "unowned", "atraxa");
     expect(got).not.toBeNull();
     expect(got!.name).toBe("Atraxa, Praetors' Voice");
     // The one owned card is colour-legal and is not the commander, so the pool
@@ -50,6 +53,6 @@ describe("scoreOneCommander", () => {
   });
 
   it("still returns null for an oracle id that is in no table", async () => {
-    expect(await scoreOneCommander("user", "nonsense", "nonsense")).toBeNull();
+    expect(await scoreOneCommander("user-missing", "nonsense", "nonsense")).toBeNull();
   });
 });

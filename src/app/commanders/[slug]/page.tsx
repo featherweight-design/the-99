@@ -38,10 +38,14 @@ export default async function CommanderDetailPage({
       // row on /commanders?scope=play links here — resolving it anywhere else
       // would 404 roughly 3,100 rows.
       const { collection } = await loadCollectionPool(userId);
+      // `unplayedCount` is a required field of `byFit`'s input but never read by
+      // it, so the comparator is handed two small literals rather than copies of
+      // rows carrying each commander's whole `tags` array.
       const rows = assignDiscoverySlugs(
         await loadCandidates(userId, collection.map((c) => c.oracleId)),
       ).sort((a, b) => byFit(
-        { ...a, unplayedCount: 0 }, { ...b, unplayedCount: 0 },
+        { oracleId: a.oracleId, ownedSupport: a.ownedSupport, unplayedCount: 0 },
+        { oracleId: b.oracleId, ownedSupport: b.ownedSupport, unplayedCount: 0 },
       ));
       const at = rows.findIndex((r) => r.slug === slug);
       if (at === -1) notFound();
