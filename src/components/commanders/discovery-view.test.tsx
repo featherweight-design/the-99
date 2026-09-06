@@ -156,6 +156,9 @@ describe("DiscoveryView", () => {
   });
 
   it("explains an empty novelty ranking with the floor that emptied it", () => {
+    // The URL is what put the list on `sort=new`, so the CTA's flip back to the
+    // default is a real change rather than the active option re-chosen.
+    window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
     render(
       <DiscoveryView
         discovery={list({ sort: "new", candidateCount: 3334, floorExcluded: 3334, bestPct: 18 })}
