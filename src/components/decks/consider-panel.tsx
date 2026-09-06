@@ -18,9 +18,15 @@ import type { ProvenanceForm } from "../../lib/decks/price";
 import { SuggestionTile } from "./suggestion-tile";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 
-// Two desktop rows, six phone rows. Named once so the cap, the `Show all N`
+// One desktop row, three phone rows. Named once so the cap, the `Show all N`
 // count and the tests cannot drift apart.
-export const SHELF_CAP = 12;
+//
+// Was 12 (#352). The cap was always applied — `scripts/probe-consider-shelves.mjs`
+// found no shelf drawing more than the cap at either width — but eight shelves
+// of twelve is a panel 14,546px tall on a phone, with the last shelf's heading
+// 10,904px below the top. At six it is 9,393px and 6,941px. A shelf is a sample
+// to browse, not the role group in full; `Show all N` is right there for the rest.
+export const SHELF_CAP = 6;
 
 // The shelf heading's meta text, which the unowned shelf prints in two colours.
 const META = "font-mono text-[10px] md:text-[11px]";
