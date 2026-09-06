@@ -86,8 +86,18 @@ describe("CardModal availability detail", () => {
   });
 
   it("picks the note off the state rather than off the hard count", () => {
-    mount({ ...card, quantity: 2, availability: avail(2, 1, 1) });
-    expect(screen.getByText(availabilityCopy.collection.detailSoftNote)).toBeInTheDocument();
+    mount({
+      ...card,
+      quantity: 2,
+      availability: {
+        owned: 2, hard: 1, soft: 1, free: 1,
+        claims: [
+          { id: "d1", name: "Atraxa", quantity: 1, mature: true },
+          { id: "d2", name: "Sketchbook", quantity: 1, mature: false },
+        ],
+      },
+    });
+    expect(screen.getByText(availabilityCopy.collection.detailSoftNote(1))).toBeInTheDocument();
   });
 
   it("reads an over-commitment as a shopping decision", () => {
@@ -100,6 +110,116 @@ describe("CardModal availability detail", () => {
   it("does not invent the claiming deck's status pill", () => {
     mount({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
     expect(screen.queryByText(/Complete|Building|Draft|Over|Unresolved|To buy/)).toBeNull();
+  });
+});
+
+// #353/#355: the block used to print a total and a state with nothing between
+// them, so a player owning seventeen and seeing "1 in a brew" had no way to
+// learn where the other sixteen went. These assert the receipt reconciles.
+describe("CardModal allocation receipt", () => {
+  const claim = (id: string, name: string, quantity: number, mature: boolean) => ({
+    id, name, quantity, mature,
+  });
+  // Built term by term rather than through `avail`, because the whole point of
+  // these cases is claims whose quantities are not 1 and whose maturity is
+  // mixed — the shapes the old fixture could not express.
+  const withClaims = (
+    owned: number,
+    claims: ReturnType<typeof claim>[],
+  ): Availability => {
+    const hard = claims.filter((c) => c.mature).reduce((n, c) => n + c.quantity, 0);
+    const soft = claims.filter((c) => !c.mature).reduce((n, c) => n + c.quantity, 0);
+    return { owned, hard, soft, free: owned - hard, claims };
+  };
+
+  const c = availabilityCopy.collection;
+
+  it("names every claiming deck with its own count, and the counts reconcile", () => {
+    mount({
+      ...card,
+      quantity: 4,
+      availability: withClaims(4, [
+        claim("d1", "Atraxa", 1, true),
+        claim("d2", "Kykar", 2, true),
+      ]),
+    });
+    expect(screen.getByText(c.detailClaimsHeading)).toBeInTheDocument();
+    expect(screen.getByText("Atraxa")).toBeInTheDocument();
+    expect(screen.getByText("Kykar")).toBeInTheDocument();
+    expect(screen.getByText(c.detailClaimHolds(1))).toBeInTheDocument();
+    expect(screen.getByText(c.detailClaimHolds(2))).toBeInTheDocument();
+    // 3 in use + 1 free = the ×4 above it.
+    expect(screen.getByText(c.detailSplit(3, 1))).toBeInTheDocument();
+  });
+
+  it("links every named deck, not just the first", () => {
+    mount({
+      ...card,
+      quantity: 4,
+      availability: withClaims(4, [
+        claim("d1", "Atraxa", 1, true),
+        claim("d2", "Kykar", 2, true),
+      ]),
+    });
+    expect(screen.getByRole("link", { name: c.detailDeckLinkAria("Atraxa") }))
+      .toHaveAttribute("href", "/decks/d1");
+    expect(screen.getByRole("link", { name: c.detailDeckLinkAria("Kykar") }))
+      .toHaveAttribute("href", "/decks/d2");
+  });
+
+  // The case the issue was filed on: a finished list holds a copy, spare copies
+  // remain, so `availabilityState` says `free` and the old block drew nothing.
+  it("draws the receipt for a claimed card that still has copies to spare", () => {
+    mount({
+      ...card,
+      quantity: 5,
+      availability: withClaims(5, [claim("d1", "Atraxa", 1, true)]),
+    });
+    expect(screen.getByText(c.detailHeading)).toBeInTheDocument();
+    expect(screen.getByText("Atraxa")).toBeInTheDocument();
+    expect(screen.getByText(c.detailSplit(1, 4))).toBeInTheDocument();
+    // No state note: nothing is wrong, and every note asserts a problem.
+    expect(screen.queryByText(c.detailHardNote)).toBeNull();
+    expect(screen.queryByText(c.detailSoftNote(1))).toBeNull();
+  });
+
+  // Finished lists HOLD, unfinished lists WANT. The verbs are the model.
+  it("separates what a finished list holds from what a brew wants", () => {
+    mount({
+      ...card,
+      quantity: 2,
+      availability: withClaims(2, [
+        claim("d1", "Atraxa", 1, true),
+        claim("d2", "Sketchbook", 1, false),
+      ]),
+    });
+    expect(screen.getByText(c.detailClaimHolds(1))).toBeInTheDocument();
+    expect(screen.getByText(c.detailClaimWants(1))).toBeInTheDocument();
+  });
+
+  it("states an over-commitment as a comparison rather than a negative", () => {
+    mount({
+      ...card,
+      quantity: 1,
+      availability: withClaims(1, [
+        claim("d1", "Atraxa", 1, true),
+        claim("d2", "Kykar", 1, true),
+      ]),
+    });
+    expect(screen.getByText(c.detailSplitOver(2, 1))).toBeInTheDocument();
+    expect(screen.queryByText(/-1 free/)).toBeNull();
+  });
+
+  // The rows name every claimant; a marker naming one of them would duplicate a
+  // link and make "first by name" look like a meaningful choice.
+  it("leaves the naming to the rows, so the summary marker names no deck", () => {
+    mount({
+      ...card,
+      quantity: 1,
+      availability: withClaims(1, [claim("d1", "Atraxa", 1, true)]),
+    });
+    expect(screen.getByText(availabilityCopy.marker.hard)).toBeInTheDocument();
+    expect(screen.queryByText(availabilityCopy.marker.hardIn("Atraxa"))).toBeNull();
   });
 });
 
