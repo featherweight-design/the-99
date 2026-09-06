@@ -69,7 +69,11 @@ export async function loadCandidates(
       imageUri: cards.imageUri,
       edhrecTotal: commanderSupport.edhrecTotal,
       tags: commanderSupport.tags,
-      ownedSupport: sql<number>`count(osc.oracle_id)::int`.as("owned_support"),
+      // `distinct` so the count is a property of the data rather than of how the
+      // caller built its array: `collection_items` carries one row per printing
+      // and finish, so a caller that maps that table without de-duplicating
+      // would otherwise count one owned support card several times.
+      ownedSupport: sql<number>`count(distinct osc.oracle_id)::int`.as("owned_support"),
     })
     .from(commanderSupport)
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
