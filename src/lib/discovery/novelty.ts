@@ -30,17 +30,32 @@ export function unplayedTags(tags: EdhrecTag[], played: Set<string>): EdhrecTag[
 }
 
 /**
+ * Deck sets in the order `nearestDeck` reads them: by name, so a tie between
+ * two decks sharing the same number of tags resolves the same way on every row.
+ *
+ * Sorted by the caller rather than inside `nearestDeck`, which runs once per
+ * candidate — over ~3,300 of them, sorting there is the same order re-derived
+ * 3,300 times.
+ */
+export function orderDeckSets<T extends { deckName: string }>(deckSets: readonly T[]): T[] {
+  return [...deckSets].sort((a, b) => a.deckName.localeCompare(b.deckName));
+}
+
+/**
  * The single nearest built deck, by count of shared tags. One deck and never a
  * count of decks — severity, not inventory, the same rule the availability
- * receipt follows. Ties break on deck name so the clause does not move between
- * two renders of the same data.
+ * receipt follows.
+ *
+ * `deckSets` must already be in `orderDeckSets` order: a tie keeps the first
+ * deck seen, so that ordering is what stops the clause moving between two
+ * renders of the same data.
  */
 export function nearestDeck(
   tags: EdhrecTag[],
   deckSets: readonly { deckName: string; slugs: Set<string> }[],
 ): { deckName: string; sharedLabels: string[]; extraShared: number } | null {
   let best: { deckName: string; labels: string[] } | null = null;
-  for (const d of [...deckSets].sort((a, b) => a.deckName.localeCompare(b.deckName))) {
+  for (const d of deckSets) {
     const labels = tags
       .filter((t) => d.slugs.has(t.slug))
       .sort((a, b) => a.label.localeCompare(b.label))

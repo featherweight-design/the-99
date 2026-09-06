@@ -24,6 +24,7 @@ describe("assembleDiscovery", () => {
     // is what proves the rollup correct. `undefined` here throws in `rollupFor`.
     rollup: buildPoolRollup([], new Map()),
     cardsRead: 2805,
+    availOk: true,
   };
 
   it("ranks every item it carries, so rank survives colour filtering", () => {
@@ -50,6 +51,14 @@ describe("assembleDiscovery", () => {
 
   it("counts the population before the floor, so the subtitle is not the sort's count", () => {
     expect(assembleDiscovery({ ...base, sort: "new" }).candidateCount).toBe(3);
+  });
+
+  // `freePool` keeps ids the availability map is missing, so a failed read under
+  // `avail: "free"` ranks the whole collection and looks like a fully free pool.
+  // This flag is the only thing that tells the two apart.
+  it("carries the availability read's outcome through to the list", () => {
+    expect(assembleDiscovery({ ...base, sort: "fit" }).availOk).toBe(true);
+    expect(assembleDiscovery({ ...base, sort: "fit", availOk: false }).availOk).toBe(false);
   });
 
   it("marks a candidate the player owns", () => {

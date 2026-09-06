@@ -9,8 +9,8 @@ import { loadCandidates, type CandidateRow } from "./candidates";
 import { loadPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
 import { assignDiscoverySlugs } from "./slugs";
 import {
-  byFit, byNovelty, clearsFloor, floorPct, loadPlayedTags, nearestDeck, unplayedTags,
-  type DeckTagSet,
+  byFit, byNovelty, clearsFloor, floorPct, loadPlayedTags, nearestDeck, orderDeckSets,
+  unplayedTags, type DeckTagSet,
 } from "./novelty";
 
 export type DiscoveryItem = {
@@ -56,6 +56,11 @@ export type DiscoveryList = {
       each, and `bestPct` alone cannot tell them apart. */
   floorExcluded: number;
   hasDecks: boolean;
+  /** False when the availability read failed. The ranking still stands, but under
+      `avail: "free"` it scored the whole collection: `freePool` keeps ids the map
+      is missing, so a failed read is indistinguishable from a fully free pool
+      unless this flag is read alongside it. */
+  availOk: boolean;
   /** One entry per built deck, its commander's colour identity. The filtered
       built clause counts against it; nothing else reads it. */
   deckIdentities: string[][];
@@ -70,8 +75,10 @@ export function assembleDiscovery(input: {
   rollup: PoolRollup;
   cardsRead: number;
   sort: "fit" | "new";
+  availOk: boolean;
 }): DiscoveryList {
   const played = new Set(input.playedTags.flatMap((d) => [...d.slugs]));
+  const orderedDecks = orderDeckSets(input.playedTags);
 
   const withSlugs = assignDiscoverySlugs(input.candidates);
 
@@ -89,7 +96,7 @@ export function assembleDiscovery(input: {
       tagTotal: c.tags.length,
       unplayedLabels: unplayed.map((t) => t.label),
       unplayedCount: unplayed.length,
-      nearestDeck: nearestDeck(c.tags, input.playedTags),
+      nearestDeck: nearestDeck(c.tags, orderedDecks),
       floorPct: floorPct(c),
     };
   });
@@ -122,6 +129,7 @@ export function assembleDiscovery(input: {
     bestPct,
     floorExcluded: excluded.length,
     hasDecks: input.playedTags.length > 0,
+    availOk: input.availOk,
     deckIdentities: input.playedTags.map((d) => d.colorIdentity),
     sort: input.sort,
   };
@@ -138,18 +146,21 @@ export async function loadDiscoveryPool(userId: string, avail: "all" | "free") {
   const { collection } = await loadCollectionPool(userId);
 
   let availability = new Map<string, Availability>();
+  let availOk = true;
   try {
     availability = await loadAvailability(userId, {
       oracleIds: collection.map((c) => c.oracleId),
     });
   } catch {
     // Fail soft, exactly as the owned scope does: the clause and `What's free`
-    // are lost, the ranking is not. The caller reads `availOk` from its own
-    // attempt; discovery just scores against the whole collection.
+    // are lost, the ranking is not. `availOk` is what stops the loss being
+    // silent — `freePool` keeps ids the map is missing, so an empty map under
+    // `avail: "free"` ranks the whole collection while looking like a free pool.
+    availOk = false;
   }
 
   const scored = avail === "free" ? freePool(collection, availability) : collection;
-  return { collection, availability, scored };
+  return { collection, availability, scored, availOk };
 }
 
 /**
@@ -167,7 +178,8 @@ export async function loadDiscovery(
   userId: string,
   opts: { sort: "fit" | "new"; avail: "all" | "free" },
 ): Promise<DiscoveryList> {
-  const { collection, availability, scored } = await loadDiscoveryPool(userId, opts.avail);
+  const { collection, availability, scored, availOk } =
+    await loadDiscoveryPool(userId, opts.avail);
   const candidates = await loadCandidates(userId, scored.map((c) => c.oracleId));
 
   const [prices, playedTags] = await Promise.all([
@@ -176,6 +188,7 @@ export async function loadDiscovery(
   ]);
 
   return assembleDiscovery({
+    availOk,
     candidates,
     ownedOracleIds: new Set(collection.map((c) => c.oracleId)),
     playedTags,

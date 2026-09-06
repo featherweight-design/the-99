@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { discoveryCopy } from "../copy/commander-discovery";
-import { byFit, byNovelty, clearsFloor, floorPct, nearestDeck, unplayedTags } from "./novelty";
+import {
+  byFit, byNovelty, clearsFloor, floorPct, nearestDeck, orderDeckSets, unplayedTags,
+} from "./novelty";
 
 const tag = (slug: string, count = 1) => ({ slug, label: slug.toUpperCase(), count });
 
@@ -66,18 +68,28 @@ describe("nearestDeck", () => {
     expect(nearestDeck([tag("landfall")], decks)).toBeNull();
   });
 
+  // The tiebreak lives in `orderDeckSets`, not here: `nearestDeck` runs once per
+  // candidate, so the order is derived once by the caller and only read here.
   it("breaks a tie on deck name, so the clause is stable across renders", () => {
     const tied = [
       { deckName: "Zur", slugs: new Set(["blink"]) },
       { deckName: "Brago", slugs: new Set(["blink"]) },
     ];
-    expect(nearestDeck([tag("blink")], tied)?.deckName).toBe("Brago");
+    expect(nearestDeck([tag("blink")], orderDeckSets(tied))?.deckName).toBe("Brago");
   });
 
   it("counts the rest rather than listing every shared tag", () => {
     const wide = [{ deckName: "Atraxa", slugs: new Set(["a", "b", "c", "d"]) }];
     expect(nearestDeck([tag("a"), tag("b"), tag("c"), tag("d")], wide))
       .toEqual({ deckName: "Atraxa", sharedLabels: ["A", "B"], extraShared: 2 });
+  });
+});
+
+describe("orderDeckSets", () => {
+  it("orders by deck name and leaves the caller's array alone", () => {
+    const decks = [{ deckName: "Zur" }, { deckName: "Brago" }];
+    expect(orderDeckSets(decks).map((d) => d.deckName)).toEqual(["Brago", "Zur"]);
+    expect(decks.map((d) => d.deckName)).toEqual(["Zur", "Brago"]);
   });
 });
 
