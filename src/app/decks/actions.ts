@@ -4,7 +4,7 @@ import { and, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, decks } from "../../db/schema";
+import { cards, collectionItems, deckCards, deckGameAxes, deckGames, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { withinColorIdentity } from "../../lib/cards/identity-where";
@@ -23,6 +23,8 @@ import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { planLastSlots } from "../../lib/decks/last-slots";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
+import { gameLogCopy } from "../../lib/copy/game-log";
 
 export type LastSlotsFillResult =
   | { ok: true; added: number; total: number; shortfall: number }
@@ -815,4 +817,138 @@ export async function fillLastSlotsUnowned(deckId: string): Promise<LastSlotsTop
     console.error("fillLastSlotsUnowned failed", err);
     return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
   }
+}
+
+export type LogGameInput = {
+  result: "win" | "loss" | "draw";
+  podSize: number;
+  /** When the game was played. Defaults to now. Never in the future. */
+  playedAt?: Date;
+  worked: string[];
+  hurt: string[];
+};
+
+const GAME_RESULTS: readonly string[] = ["win", "loss", "draw"];
+
+/** How far ahead of the server a player's clock may run before a log is refused. */
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+/**
+ * Record one game against a deck.
+ *
+ * Every refusal the form can act on is returned as { ok: false, message }
+ * rather than thrown: the form renders it through the shipped MutationError and
+ * keeps every value the player typed, which a thrown error would destroy along
+ * with the form. Auth and ownership still throw, from requireUserId and
+ * requireDeck — a player who cannot reach the deck has no form to preserve.
+ *
+ * There is no `for update` here, unlike addCardToDeck. That lock exists to keep
+ * two concurrent adds from both seeing 98 cards and pushing the deck to 100.
+ * A game log has no such ceiling — two concurrent logs are simply two games.
+ */
+export async function logGame(
+  deckId: string,
+  input: LogGameInput,
+): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+
+  const refuse = { ok: false as const, message: gameLogCopy.form.refused };
+
+  // A server action is a public endpoint, so the input's declared type is a
+  // claim and not a guarantee. Everything below is shape-checked before it is
+  // used, or a crafted payload would throw where the contract promises a refusal.
+  if (!input || typeof input !== "object") return refuse;
+  if (!GAME_RESULTS.includes(input.result)) return refuse;
+  if (!Number.isInteger(input.podSize) || input.podSize < 2 || input.podSize > 8) return refuse;
+
+  const sent = input.playedAt ?? new Date();
+  if (!(sent instanceof Date) || Number.isNaN(sent.getTime())) return refuse;
+  // The instant comes off the player's own clock, which routinely runs a little
+  // ahead of the server's. A game logged tonight would then be refused as a
+  // future one, so the skew window is tolerated and then clamped away: what is
+  // stored never runs ahead of the server, and a genuinely future date — the
+  // only thing this rule exists to refuse — is still refused.
+  const now = Date.now();
+  if (sent.getTime() > now + CLOCK_SKEW_MS) return refuse;
+  const playedAt = new Date(Math.min(sent.getTime(), now));
+
+  // The vocabulary is eight axes, so any longer list is a crafted payload rather
+  // than a game. Length is checked before the keys are, or a public endpoint
+  // would walk an arbitrarily long array to reach the same refusal.
+  const marksFit = (marks: unknown): marks is GameAxisKey[] =>
+    Array.isArray(marks) && marks.length <= GAME_AXIS_KEYS.length && marks.every(isGameAxisKey);
+  if (!marksFit(input.worked)) return refuse;
+  if (!marksFit(input.hurt)) return refuse;
+
+  // Dedupe within a list before checking across them, so ['mana','mana'] is a
+  // single mark rather than a primary-key collision, while ['mana'] on both
+  // sides is still the contradiction the composite key exists to forbid.
+  const worked = [...new Set(input.worked)] as GameAxisKey[];
+  const hurt = [...new Set(input.hurt)] as GameAxisKey[];
+  if (worked.some((key) => hurt.includes(key))) return refuse;
+
+  try {
+    await db.transaction(async (tx) => {
+      const [game] = await tx
+        .insert(deckGames)
+        .values({ deckId, userId, result: input.result, podSize: input.podSize, playedAt })
+        .returning({ id: deckGames.id });
+
+      const marks = [
+        ...worked.map((axis) => ({ gameId: game.id, axis, polarity: "worked" })),
+        ...hurt.map((axis) => ({ gameId: game.id, axis, polarity: "hurt" })),
+      ];
+      // Drizzle rejects an empty values array, and no marks is a valid log.
+      if (marks.length > 0) await tx.insert(deckGameAxes).values(marks);
+    });
+  } catch (err) {
+    // The player sees one generic refusal by design, so the underlying failure
+    // has nowhere else to surface.
+    console.error("logGame failed", err);
+    return refuse;
+  }
+
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  return { ok: true };
+}
+
+/**
+ * Remove one logged game. The axis rows follow through ON DELETE CASCADE.
+ *
+ * There is no edit action by design, so this is the whole correction path: a
+ * game logged wrong is deleted and logged again. That is why the history row's
+ * confirm is inline and one step rather than a dialog — it is a routine
+ * operation, not an exceptional one.
+ */
+export async function deleteGame(
+  deckId: string,
+  gameId: string,
+): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+
+  const refuse = { ok: false as const, message: gameLogCopy.history.deleteRefused };
+
+  // requireDeck above proves the caller owns this deck. It does not prove this
+  // game is on it, so the pairing is part of the delete's own predicate rather
+  // than a separate read: a check-then-delete would report success for a row
+  // another tab removed in between, and the player would watch a game they
+  // thought they had just deleted stay on the page.
+  let deleted: { id: string }[];
+  try {
+    deleted = await db
+      .delete(deckGames)
+      .where(
+        and(eq(deckGames.id, gameId), eq(deckGames.deckId, deckId), eq(deckGames.userId, userId)),
+      )
+      .returning({ id: deckGames.id });
+  } catch (err) {
+    console.error("deleteGame failed", err);
+    return refuse;
+  }
+  if (deleted.length === 0) return refuse;
+
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  return { ok: true };
 }

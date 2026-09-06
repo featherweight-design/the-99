@@ -187,6 +187,55 @@ export const deckCards = pgTable("deck_cards", {
 }, (t) => [primaryKey({ columns: [t.deckId, t.oracleId] })]);
 
 /**
+ * One logged Commander game against one deck.
+ *
+ * user_id is denormalised off decks so the read path can filter by owner
+ * without a join. It is written from the session, never from the caller, and
+ * the action still loads the deck through requireDeck first — the column is a
+ * query convenience, not the authorisation boundary.
+ *
+ * played_at is when the game happened and is what the history sorts on;
+ * created_at is when the row was written and exists only to break ties between
+ * two games logged for the same day.
+ */
+export const deckGames = pgTable("deck_games", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  result: text("result").notNull(),
+  podSize: integer("pod_size").notNull(),
+  playedAt: timestamp("played_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("deck_games_result_check", sql`${t.result} in ('win', 'loss', 'draw')`),
+  check("deck_games_pod_size_check", sql`${t.podSize} between 2 and 8`),
+  index("deck_games_deck_played_idx").on(t.deckId, t.playedAt),
+]);
+
+/**
+ * What worked and what hurt in one game.
+ *
+ * The composite primary key on (game_id, axis) is the whole point of the
+ * table: it makes "mana worked AND mana hurt in the same game" unrepresentable
+ * in the database rather than something the aggregation has to reconcile. The
+ * form enforces the same rule as a move — ticking an axis on one side unticks
+ * it on the other — so a violation reaching Postgres means someone called the
+ * action directly.
+ *
+ * axis is intentionally unconstrained by a check(). Retiring an axis from the
+ * vocabulary must not invalidate the games that used it; src/lib/decks/game-axes.ts
+ * is the vocabulary, and the action validates against it.
+ */
+export const deckGameAxes = pgTable("deck_game_axes", {
+  gameId: uuid("game_id").notNull().references(() => deckGames.id, { onDelete: "cascade" }),
+  axis: text("axis").notNull(),
+  polarity: text("polarity").notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.gameId, t.axis] }),
+  check("deck_game_axes_polarity_check", sql`${t.polarity} in ('worked', 'hurt')`),
+]);
+
+/**
  * Lines an import could not match to a card, kept alongside the deck they came from.
  *
  * There is deliberately NO foreign key to cards — the whole point of a row here is that no
