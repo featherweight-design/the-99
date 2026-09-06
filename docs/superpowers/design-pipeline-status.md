@@ -230,7 +230,7 @@ The gap is structural, not a one-off. The tracker is the answer to "what is read
 
 | Component | Source | Status | Why unplaced |
 |---|---|---|---|
-| **ManaPool price ingest** (Component C of the recommendation foundation) | `docs/superpowers/specs/2026-08-29-recommendation-foundation-design.md` §5 · plan tasks 8–10 | Issue **#288** filed 2026-09-05; built on PR **#291** | Ships no UI, so no handoff and no `type: design` ticket ever existed. It was the one component of the five-part foundation left out of PR #244. **It has since acquired a UI surface after all:** `design/design_handoff_the99_decks/ADDENDUM-*` — price on the `buy` tag, audited 🟢 Green at R1, landed as PR **#302**. Zero new marks; the ingest's four states become four tails on the shipped tag. That addendum still has no `type: design` ticket and no eng ticket, so it is unplaced for the same reason its parent is |
+| **ManaPool price ingest** (Component C of the recommendation foundation) | `docs/superpowers/specs/2026-08-29-recommendation-foundation-design.md` §5 · plan tasks 8–10 | Issue **#288** filed 2026-09-05; built on PR **#291** | Ships no UI, so no handoff and no `type: design` ticket ever existed. It was the one component of the five-part foundation left out of PR #244 |
 
 ---
 

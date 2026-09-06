@@ -144,6 +144,10 @@ export const discoveryCopy = {
   // future edit cannot accidentally give absence a label. Same for an owned
   // commander: the slot unmounts rather than saying why.
   price: {
+    // Lower-case on purpose, and not a typo for the brand name: §7.4 draws provenance as a mono
+    // 10px stamp in `--fg-locked`, the same register as a field label, because a price with no
+    // source is a claim the product cannot stand behind but the source is not the point of the
+    // row. The brand capitalisation appears where it is spoken — see `aria` below.
     source: "manapool",
     notStocked: "not stocked",
     aria: (formatted: string) => `${formatted}, in stock at ManaPool`,

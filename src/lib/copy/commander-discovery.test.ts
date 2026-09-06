@@ -38,6 +38,10 @@ describe("discoveryCopy", () => {
     const floor = discoveryCopy.empty.floorBody(30, 1234, 5678, 29);
     expect(floor).toContain("30%");
     expect(floor).toContain("29%");
+    // The same string carries both kinds of number, so it is the one place the two rules can be
+    // seen not to contradict: its counts separate, its percentages do not.
+    expect(floor).toContain("1,234");
+    expect(floor).toContain("5,678");
   });
 
   it("prints a denominator with every figure", () => {
