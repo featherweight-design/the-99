@@ -12,6 +12,12 @@
 //   card-detail-provider.tsx  cardDetailCopy.triggerAria
 //   buy-tag / addPanelCopy.unowned.tag  `buy`
 
+/** The noun every spoken-for clause counts, agreeing with its own figure.
+ *  Callers pass pre-formatted strings, so the test is on the string. */
+function secondCopies(n: string): string {
+  return n === '1' ? 'second copy' : 'second copies';
+}
+
 export const recommendationsCopy = {
   // ── Surface A · Role Coverage ─────────────────────────────────────────
   coverage: {
@@ -192,6 +198,65 @@ export const recommendationsCopy = {
     // observation. Matches the original shipped string before the fill branch
     // was added.
     emptyUncovered: 'No cards to buy.',
+
+    // ── Amendment 5 (#281) — a card you own but cannot spare ──────────────
+    // "spare" is the player's word for `free` in the one place `free` cannot be
+    // said: `free` is a property of a copy, and here we speak of the player's
+    // ability to sleeve one. If availability ever renames `free`, this travels
+    // with it.
+    //
+    // Every string below is reached only when something on the list is `over`.
+    // At zero contested cards the strings above render byte-for-byte as they
+    // ship — that is the assertion the amendment's safety rests on.
+
+    // Replaces the word inside BuyTag on a contested row. Same plate, size and
+    // colour: the trip to the shop is the same trip, and the severity is
+    // already carried by the marker beside it.
+    rowSecondCopyTag: '2nd copy',
+    rowSecondCopyTagAria: 'a second copy to buy',
+
+    // The group, pinned after `Other`. Its clause slot says why there is no
+    // arithmetic: the card is already inside the role's own baseline, so buying
+    // a second copy closes nothing.
+    spokenForGroupLabel: 'Spoken for',
+    spokenForGroupClause: (n: string) => `${n} · already in the deck`,
+
+    // "can’t cover" rather than "does not have": the collection does have these
+    // cards. What it cannot do is cover two lists with one copy.
+    introSplit: (n: string, missing: string, spokenFor: string) =>
+      `${n} cards this deck wants that your collection can’t cover — ${missing} you don’t own, and ${
+        spokenFor === '1' ? '1 you own but can’t spare' : `${spokenFor} you own but can’t spare`
+      }.`,
+    // Nothing unowned, something contested. A sentence of its own rather than
+    // the split one with a zero in it: "0 you don't own" is a clause about
+    // nothing.
+    introOnlySpokenFor: (n: string) =>
+      n === '1'
+        ? 'One card here is already yours — and already sleeved into a finished list. A second copy is the only way to have both.'
+        : `${n} cards here are already yours — and already sleeved into finished lists. A second copy of each is the only way to have both.`,
+
+    // The leading figure stops being "cards to buy" the moment the list holds
+    // two kinds of purchase, so it becomes the plain size of the list.
+    // The middle clause agrees with its own count — `2 a 2nd copy` is not a
+    // phrase — and borrows `footerOnlySpokenFor`'s spelled-out noun rather than
+    // the plate's `2nd`, which cannot take a plural without reading as a date.
+    footerSplit: (n: string, missing: string, spokenFor: string, auto: string) =>
+      `${n} cards · ${missing} to buy · ${spokenFor} ${secondCopies(spokenFor)} · ${auto} auto`,
+    // 390px cannot hold four clauses on one mono line. The auto clause drops:
+    // it describes provenance, and the other three describe the trip.
+    footerSplitShort: (n: string, missing: string, spokenFor: string) =>
+      `${n} cards · ${missing} to buy · ${spokenFor} ${secondCopies(spokenFor)}`,
+    // Nothing unowned. `{n} cards to buy` would be wrong about all of them.
+    footerOnlySpokenFor: (n: string) =>
+      `${n} ${secondCopies(n)} · already in the deck`,
+
+    // The over-committed band's one new control, in the builder only — the deck
+    // card on /decks has no Shopping list to open, so it takes no link.
+    summaryLink: 'See them in Shopping',
+    summaryLinkAria: (n: string) =>
+      n === '1'
+        ? 'Show the 1 spoken-for card in the Shopping list'
+        : `Show the ${n} spoken-for cards in the Shopping list`,
   },
 
   // ── Surface B · swept back to the commander (expressive moment 3) ─────

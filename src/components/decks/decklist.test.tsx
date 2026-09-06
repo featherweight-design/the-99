@@ -6,6 +6,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
 
@@ -63,6 +64,7 @@ function renderDecklist(
     shoppingFigures?: Record<string, number> | null;
     filled?: boolean;
     fetchCard?: (oracleId: string) => Promise<unknown>;
+    spentSlot?: DeckDetailCard | null;
   } = {},
 ) {
   const deckEdits = {
@@ -89,6 +91,7 @@ function renderDecklist(
           deckOracleIds={cards.map((c) => c.oracleId)}
           built={cards.reduce((s, c) => s + c.quantity, 0)}
           filled={opts.filled ?? false}
+          spentSlot={opts.spentSlot ?? null}
           filter="shopping"
           grouping="role"
           onFilterChange={vi.fn()}
@@ -395,5 +398,196 @@ describe("Shopping row figure rendering differs by width", () => {
     expect(screen.getByText(recommendationsCopy.shopping.rowFigure("67"))).toBeInTheDocument();
     expect(screen.getByText(recommendationsCopy.shopping.rowFigureDesktop("67"))).toBeInTheDocument();
     expect(screen.queryByText(recommendationsCopy.shopping.rowNoFigure)).not.toBeInTheDocument();
+  });
+});
+
+// ── Amendment 5 (#281) — a card you own but cannot spare ─────────────────────
+// The whole amendment rests on one claim: a deck with no contested card renders
+// exactly what it renders today. Everything else is additive.
+
+/** Owned, and every copy already sleeved into a finished list elsewhere.
+ *  `free < 0` is what `availabilityState(..., { selfExcluded: true })` reads as
+ *  `over`; it is NOT recomputable from `owned - hard` on a deck's own list. */
+function spokenForCard(overrides: Partial<DeckDetailCard> & { oracleId: string; name: string }) {
+  return makeCard({
+    owned: true,
+    availability: { owned: 1, hard: 2, soft: 0, free: -1, hardDecks: [{ id: "d2", name: "Atraxa" }] },
+    ...overrides,
+  });
+}
+
+/** Owned with a spare copy — free > 0 reads `free`, so this stays off Shopping. */
+const rampOwnedSpare = makeCard({
+  oracleId: "mana-crypt",
+  name: "Mana Crypt",
+  role: "ramp",
+  owned: true,
+  availability: { owned: 3, hard: 1, soft: 0, free: 2, hardDecks: [] },
+});
+
+const rampSpokenFor = spokenForCard({ oracleId: "smothering-tithe", name: "Smothering Tithe", role: "ramp" });
+const drawSpokenFor = spokenForCard({ oracleId: "esper-sentinel", name: "Esper Sentinel", role: "draw" });
+
+describe("Shopping's predicate: unowned, or owned and over-committed", () => {
+  it("lists an owned card whose every copy is spoken for elsewhere", () => {
+    renderDecklist([rampOwned, rampSpokenFor]);
+
+    expect(screen.getByText("Smothering Tithe")).toBeInTheDocument();
+    // An owned card with no availability read is untouched by the amendment.
+    expect(screen.queryByText("Sol Ring")).not.toBeInTheDocument();
+  });
+
+  it("leaves an owned card with a spare copy off the list", () => {
+    renderDecklist([rampOwnedSpare, rampUnowned]);
+
+    expect(screen.queryByText("Mana Crypt")).not.toBeInTheDocument();
+    expect(screen.getByText("Arcane Signet")).toBeInTheDocument();
+  });
+
+  it("never lists a basic land, contested or not", () => {
+    const contestedBasic = makeCard({
+      ...basicLand,
+      owned: true,
+      availability: { owned: 1, hard: 2, soft: 0, free: -1, hardDecks: [] },
+    });
+    renderDecklist([contestedBasic, rampUnowned]);
+
+    expect(screen.queryByText("Forest")).not.toBeInTheDocument();
+  });
+
+  // `availabilityState`'s first guard is `owned <= 0 -> free`, so an unowned
+  // card can never read `over`. The two halves of the list are disjoint by
+  // construction, and a card is counted once.
+  it("counts a card in exactly one half of the split", () => {
+    renderDecklist([rampUnowned, rampSpokenFor, drawSpokenFor]);
+
+    expect(
+      screen.getByText(recommendationsCopy.shopping.introSplit("3", "1", "2")),
+    ).toBeInTheDocument();
+  });
+
+  it("pins the spoken-for group after the role groups, with no gap arithmetic", () => {
+    renderDecklist([rampUnowned, rampSpokenFor]);
+
+    expect(
+      screen.getByText(recommendationsCopy.shopping.spokenForGroupLabel),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(recommendationsCopy.shopping.spokenForGroupClause("1")),
+    ).toBeInTheDocument();
+  });
+
+  it("speaks only of second copies when nothing on the list is unowned", () => {
+    renderDecklist([rampOwned, rampSpokenFor, drawSpokenFor]);
+
+    expect(
+      screen.getByText(recommendationsCopy.shopping.introOnlySpokenFor("2")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(recommendationsCopy.shopping.footerOnlySpokenFor("2")),
+    ).toBeInTheDocument();
+  });
+
+  // With EDHREC unreachable every figure is `undefined`, which is also the All
+  // view's value. A row that read the view off the figure would drop the plate
+  // from the one kind of row whose presence on this list is not self-evident:
+  // the player owns the card, so without the plate the row looks like a mistake.
+  it("still marks a second copy when EDHREC is unreachable", () => {
+    renderDecklist([rampUnowned, rampSpokenFor], { shoppingFigures: null });
+
+    expect(
+      screen.getByText(recommendationsCopy.shopping.rowSecondCopyTag),
+    ).toBeInTheDocument();
+  });
+
+  // Count-only is the list's own ruling, not a side effect of having a figure to
+  // sit beside. A claiming deck's name surfacing only during an EDHREC outage
+  // would make the ruling look like a rendering accident.
+  it.each([
+    ["with figures", { "smothering-tithe": 42 }],
+    ["with EDHREC unreachable", null],
+  ] as const)("never names the claiming deck on a row, %s", (_label, shoppingFigures) => {
+    renderDecklist([rampUnowned, rampSpokenFor], { shoppingFigures });
+
+    expect(screen.queryByText(/Atraxa/)).not.toBeInTheDocument();
+  });
+});
+
+// The regression the amendment's safety rests on. Not "an equivalent sentence"
+// — the shipped strings, unchanged, whenever no card is contested.
+describe("A deck with nothing contested renders today's Shopping list", () => {
+  it("keeps the shipped intro and footer byte-for-byte", () => {
+    renderDecklist([rampOwned, rampUnowned, drawUnowned]);
+
+    expect(screen.getByText(recommendationsCopy.shopping.intro("2"))).toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.spokenForGroupLabel),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/2nd copy/)).not.toBeInTheDocument();
+
+    // Not merely "no split sentence": no string this amendment introduced.
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.introSplit("2", "2", "0")),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.introOnlySpokenFor("0")),
+    ).not.toBeInTheDocument();
+  });
+
+  it("leaves the role group's gap arithmetic untouched by a contested card", () => {
+    renderDecklist([rampOwned, rampUnowned, rampSpokenFor]);
+
+    // Two owned ramp cards are the baseline and the one unowned card is the
+    // gap, so `Ramp` closes 2→3 — exactly what it drew before the contested
+    // card was listed. `from` already counts that card, because it is an owned
+    // card in this deck; pinning it to its own group is what stops `n` from
+    // counting it a second time and over-shooting `to`.
+    expect(
+      screen.getByText(recommendationsCopy.shopping.groupGap("1", "2", "3")),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("Removing a card from Shopping leaves its undo row in place", () => {
+  it("keeps a spoken-for row mounted after its slot is spent", () => {
+    // A spoken-for card is owned, so the pre-amendment `!spentSlot.owned` test
+    // would have dropped it from the list outright and taken the only undo
+    // affordance with it. #185 exists to stop exactly that.
+    renderDecklist([rampUnowned, drawSpokenFor], { spentSlot: rampSpokenFor });
+
+    expect(
+      screen.getByText(addPanelCopy.undo.removed(rampSpokenFor.name)),
+    ).toBeInTheDocument();
+  });
+
+  it("counts the deck as it now stands, not as the undo row makes it look", () => {
+    renderDecklist([rampOwned, rampUnowned, drawSpokenFor], {
+      spentSlot: rampSpokenFor,
+    });
+
+    // One unowned card and one spoken-for card remain on the list. The spent row
+    // is drawn among them but is out of the deck already, so every figure on the
+    // surface has to read as though it were gone — including `Spoken for`'s own
+    // clause, which the row drawn inside it would otherwise inflate to two.
+    expect(
+      screen.getByText(recommendationsCopy.shopping.introSplit("2", "1", "1")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(recommendationsCopy.shopping.spokenForGroupClause("1")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(recommendationsCopy.shopping.groupGap("1", "1", "2")),
+    ).toBeInTheDocument();
+  });
+
+  it("holds the list open when the spent card was the last thing to buy", () => {
+    renderDecklist([], { spentSlot: rampUnowned, filled: true });
+
+    expect(
+      screen.getByText(addPanelCopy.undo.removed(rampUnowned.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.emptyCoveredHeading),
+    ).not.toBeInTheDocument();
   });
 });

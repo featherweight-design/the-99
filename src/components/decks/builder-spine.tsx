@@ -11,6 +11,7 @@ import { colorLabel } from "../../lib/decks/format";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { AvailabilityGlyph } from "@/components/ui/availability-marker";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { overCopy, overWord } from "../../lib/copy/decks-builder";
@@ -39,6 +40,12 @@ interface BuilderSpineProps {
    * one the copy has its own plural form rather than a lead name and a "+2".
    */
   overCommittedCard?: { name: string; deckCount: number; ownedQty: number } | null;
+  /**
+   * Opens the Shopping list from the over-committed band (amendment 5, #281).
+   * Absent when the filter is already Shopping — a link to the screen you are
+   * on is furniture — and absent entirely outside the builder.
+   */
+  onShowShopping?: () => void;
 }
 
 // The seam in the doubled glyph is the colour of whatever sits behind it, and
@@ -58,7 +65,11 @@ function RollupBands({
   overCommitted,
   softClaimed,
   overCommittedCard,
-}: Pick<BuilderSpineProps, "overCommitted" | "softClaimed" | "overCommittedCard">) {
+  onShowShopping,
+}: Pick<
+  BuilderSpineProps,
+  "overCommitted" | "softClaimed" | "overCommittedCard" | "onShowShopping"
+>) {
   const rollup = availabilityCopy.deckRollup;
   const { deckSummary } = availabilityCopy;
 
@@ -89,6 +100,24 @@ function RollupBands({
   // LONG body, and the desktop both-lines mock (A2CV:558) runs it too. Only the
   // phone stacking two lines drops the trailing clause.
   const softPhoneBody = overCommitted > 0 ? rollup.softBodyShort : rollup.softBody;
+
+  // The band is the index: it is the only thing that names WHICH card and why,
+  // and it is read by players who never open the Shopping tab. The link is what
+  // gets the tab opened. It flips the decklist's filter and does not scroll —
+  // the list is directly below, and the `Shopping N` pill going active is the
+  // receipt. No callback means no link, which is what leaves the deck card's
+  // copy of this band untouched.
+  const shoppingLink = onShowShopping ? (
+    <button
+      type="button"
+      onClick={onShowShopping}
+      aria-label={recommendationsCopy.shopping.summaryLinkAria(String(overCommitted))}
+      className="font-mono text-[11.5px] bg-transparent border-0 p-0 text-left cursor-pointer
+        text-[color:var(--accent)] hover:text-[color:var(--accent-hover)]"
+    >
+      {recommendationsCopy.shopping.summaryLink}
+    </button>
+  ) : null;
 
   return (
     <section aria-label={rollup.regionAria} style={{ borderBottom: "1px solid var(--border)" }}>
@@ -122,6 +151,8 @@ function RollupBands({
                   {overBody}
                 </div>
               )}
+              {/* Its own line under the body at 390px. */}
+              {shoppingLink && <div className="mt-[4px]">{shoppingLink}</div>}
             </div>
           </div>
         )}
@@ -177,6 +208,8 @@ function RollupBands({
                 {overBody}
               </div>
             )}
+            {/* Trailing the body on desktop. */}
+            {shoppingLink}
           </div>
         )}
         {softClaimed > 0 && (
@@ -209,6 +242,7 @@ export function BuilderSpine({
   overCommitted,
   softClaimed,
   overCommittedCard,
+  onShowShopping,
 }: BuilderSpineProps) {
   const [renaming, setRenaming] = useState(false);
 
@@ -487,6 +521,7 @@ export function BuilderSpine({
         overCommitted={overCommitted}
         softClaimed={softClaimed}
         overCommittedCard={overCommittedCard}
+        onShowShopping={onShowShopping}
       />
     )}
     </>

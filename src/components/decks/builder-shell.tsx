@@ -543,7 +543,24 @@ export function BuilderShell({
             {/* Builder Spine — unchanged by an import. No extra figure, no
                 second bar, no "97 + 2": the deck's number is what's built, and
                 the exception lives in the prose below it. */}
-            <BuilderSpine deck={deck} counts={counts} onExport={openExport} {...commitments} />
+            <BuilderSpine
+              deck={deck}
+              counts={counts}
+              onExport={openExport}
+              {...commitments}
+              // No link while the Shopping list is what the player is looking
+              // at: it would point at the screen they are already on. Called
+              // from Consider, it makes two switches rather than one — like
+              // `seeUnresolved` above — because the list is not on screen there.
+              onShowShopping={
+                view === "deck" && filter === "shopping"
+                  ? undefined
+                  : () => {
+                      setView("deck");
+                      setFilter("shopping");
+                    }
+              }
+            />
 
             {/* Fill provenance line — tells the player where the auto cards
                 came from. Leaves when the last auto card does (autoCount

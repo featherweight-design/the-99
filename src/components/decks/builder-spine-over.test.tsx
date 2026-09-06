@@ -2,11 +2,12 @@
 // so it carries the sentence that says what being over means; the deck card and
 // the export preview only carry the figure.
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetail } from "../../lib/decks/read";
 import { overCopy, overWord } from "../../lib/copy/decks-builder";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { BuilderSpine } from "./builder-spine";
 
@@ -85,5 +86,58 @@ describe("BuilderSpine over 99", () => {
     const buttons = screen.getAllByRole("button", { name: /export/i });
     expect(buttons.length).toBeGreaterThan(0);
     for (const button of buttons) expect(button).toBeEnabled();
+  });
+});
+
+// ── Amendment 5 (#281) — the over-committed band's link to Shopping ──────────
+// The band already names the contested cards; the link is the one control that
+// takes the player to them. It is keyed on the callback rather than on a route,
+// because /decks renders the same figure on a card with no Shopping list to
+// open — there the callback is simply absent and no link renders.
+
+function mountOver(opts: { onShowShopping?: () => void } = {}) {
+  const fetchCard = vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null);
+  render(
+    <CardDetailProvider fetchCard={fetchCard}>
+      <BuilderSpine
+        deck={deck}
+        counts={{ built: 62, ownedCount: 54, toBuyCount: 8 }}
+        onExport={vi.fn()}
+        overCommitted={2}
+        softClaimed={0}
+        onShowShopping={opts.onShowShopping}
+      />
+    </CardDetailProvider>,
+  );
+}
+
+describe("The over-committed band's link to the Shopping list", () => {
+  it("draws no link when the surface has no Shopping list to open", () => {
+    mountOver();
+    expect(
+      screen.queryByText(recommendationsCopy.shopping.summaryLink),
+    ).not.toBeInTheDocument();
+  });
+
+  it("draws the link on both breakpoints when the callback is given", () => {
+    mountOver({ onShowShopping: vi.fn() });
+    // Phone and desktop each render one — both are in the DOM, one CSS-hidden.
+    expect(
+      screen.getAllByRole("button", {
+        name: recommendationsCopy.shopping.summaryLinkAria("2"),
+      }),
+    ).toHaveLength(2);
+  });
+
+  it("calls back rather than navigating", () => {
+    const onShowShopping = vi.fn();
+    mountOver({ onShowShopping });
+
+    fireEvent.click(
+      screen.getAllByRole("button", {
+        name: recommendationsCopy.shopping.summaryLinkAria("2"),
+      })[0],
+    );
+    expect(onShowShopping).toHaveBeenCalledTimes(1);
   });
 });

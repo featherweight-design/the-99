@@ -55,6 +55,14 @@ interface DecklistRowProps {
    * `number`    — Shopping view; prints rowFigure(pct). Never 0 as a stand-in for absent.
    */
   shoppingFigure?: number | null;
+  /**
+   * The Shopping list is drawing this row. Separate from `shoppingFigure`
+   * because that answers a different question: with EDHREC unreachable every
+   * figure is `undefined`, which is also the All view's value, and a row that
+   * inferred the view from it would drop the `2nd copy` plate from exactly the
+   * rows amendment 5 adds — at the moment the list is least explicable.
+   */
+  inShopping?: boolean;
   /** The newest `as_of` in `printing_prices`; the tag's liveness comparison. */
   newestAsOf?: Date | null;
 }
@@ -65,6 +73,7 @@ export function DecklistRow({
   siblings,
   spent = false,
   shoppingFigure,
+  inShopping = false,
   newestAsOf = null,
 }: DecklistRowProps) {
   // The name is a flex item of its own block, not of the row: `flex-auto` on
@@ -126,6 +135,13 @@ export function DecklistRow({
   const availState = card.availability
     ? availabilityState(card.availability, { selfExcluded: true })
     : "free";
+  // A card the Shopping list holds because its copies are spoken for, rather
+  // than because the player does not own it (amendment 5, #281). Only in
+  // Shopping: in the All view an over-committed row is not a purchase.
+  // Basics are excluded for the filter's own reason, not the meta line's: the
+  // fill never buys them, so an owned basic is never a purchase.
+  const spokenFor =
+    inShopping && !isBasicLand(card.typeLine) && card.owned && availState === "over";
 
   function handleRemove() {
     // Outside `run`: the slot and its announcement are ordinary state, which
@@ -249,6 +265,19 @@ export function DecklistRow({
             // into — the name is its own button — so the marker speaks for
             // itself. Design 17.5 is written for this surface specifically.
             spoken
+            // Count-only in Shopping: a bare `short 1`, not
+            // `short 1 — also in Atraxa`. The clause's prefix is ~120px and
+            // never truncates by contract, and this row also carries the EDHREC
+            // figure, the tag and a 44px ✕ — at 390px, and inside the 2-up
+            // desktop grid, there is no width left for a name that would still
+            // read as a name. The All-view row one tab away states it, and the
+            // summary band above names the claiming lists.
+            //
+            // The view, not the figure: with EDHREC unreachable the row loses
+            // its meta line but is still the Shopping list, and a deck name
+            // appearing there only during an outage would make the ruling look
+            // like a rendering accident.
+            nameless={inShopping}
             // The component sets no size or family of its own (design 3.4: the
             // label inherits the meta line's mono size), and this row has no
             // meta line to inherit — it would otherwise render in the page's
@@ -265,13 +294,21 @@ export function DecklistRow({
           />
         )}
 
-        {/* Buy tag — unowned only */}
-        {!card.owned && (
-          /* The 58px figure slot is the Shopping list's, so it rides the same
-             flag the shopping meta line does rather than a second notion of
-             which filter is open. */
+        {/* Buy tag — a card you don't own, or one the Shopping list is showing
+            because your copies are already sleeved elsewhere. One word differs:
+            the act is the same act, and the severity is already carried by the
+            marker a few pixels to the left. */}
+        {(!card.owned || spokenFor) && (
+          /* The figure's own flag, not `inShopping`: the 58px slot exists to
+             align the tag with the meta line, so with no meta line to align to
+             there is nothing to reserve. */
           <BuyTag
             variant="row"
+            word={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTag : undefined}
+            // `buy` reads as the act it is, so the row passes no label for it.
+            // `2nd copy` does not: alone it names a thing rather than asking for
+            // one, so this one word gets the sentence.
+            label={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTagAria : undefined}
             price={card.price}
             newestAsOf={newestAsOf}
             reserveSlot={hasShoppingMeta}
