@@ -52,60 +52,13 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | **#280** A deck can pass 99 cards with nothing on screen saying so | same handoff | 🟢 Green | Amendment 3. Fifth `statusPill` value `Over`, two-segment bar, trim line. **Must land before #277** |
 | **#287** Commanders detail: "Full card" opens the bare lightbox | same handoff | 🟢 Green | Amendment 4. Deletes `lightbox.tsx` (282 lines) + its test; `full-card-trigger.tsx` calls the already-mounted `CardDetailProvider`. `Full card` → `Card details` |
 | **#277** A deck cannot be updated by re-importing its list | same handoff | 🟡 Yellow | Amendment 2, and the only real build — one route, three components, 24 states. Yellow on build order alone: **blocked behind #280**, because `add-validation.ts:42` would silently drop cards past 99. Both Product questions were answered on 2026-09-05 (no undo; the "added by hand" marker is deleted) |
-| **#220** Design: commander discovery — one ranked list, two sorts (covers **#213** + **#214**) | `design/design_handoff_the99_discovery/` (R1) | 🟢 Green | Audited 2026-09-05. All eight brief rulings satisfied by the drawing. The one ruling Design asked for is taken eng-side in Design's favour — `Score against` re-ranks under discovery rather than switching off — and four corrections are recorded below rather than sent back, because none of them changes what is drawn. **Handoff merged as PR #298; implementation began the same day** against `docs/superpowers/plans/2026-09-05-commander-discovery.md`, eleven phases, one PR each, starting with PR #301 |
 
 Spec: `docs/superpowers/specs/2026-09-05-four-amendments-design.md`. All four of the amendments
 came out of the eleven-item batch triaged on 2026-09-05, whose five code-side fixes shipped in
-PR #289. #220's source of truth is `docs/superpowers/design-briefs/2026-09-05-commander-discovery.md`.
+PR #289.
 
-### #220 — the ruling Design asked for, and four corrections carried eng-side
-
-**The ruling.** `READINESS.md` item 1 asks whether `Score against` stays available under the
-discovery scope, since the free re-rank works today only because both rankings arrive in one
-render over 242 commanders. **It re-ranks** — the flip becomes a fetch, exactly as the sort flip
-already is. A control that silently switches off when you change scope makes the two scopes feel
-like two pages, which ruling 1 spent its whole argument avoiding, and the canvas already draws it
-available, so this costs no redraw. Its companion, gap 2, is taken as drawn: **the `↓N from M`
-delta is suppressed under discovery.** The delta is a statement about a 0–100 score, and the
-discovery fit column prints `127 of 264` instead — reusing the shipped string there would annotate
-one figure with a change in a different one. A delta expressed in card counts is a follow-up, not
-a gate.
-
-**Correction 1 — the discovery population is 3,334, not 3,100.** Ruling 2 sets the universe to
-every indexed commander minus the ones already built: 3,342 − 8. The canvas labels it `3,100
-commanders you have not built`, which is the count of commanders the player does not *own* — a
-different figure. Ruling 2 is unambiguous and the canvas is internally inconsistent with 3,100
-anyway, since frame A2 draws an **owned** row under Something new, which a strictly-unowned
-population could never contain. The copy module is already correct (`subtitlePlay` takes the count
-as an argument); only the illustrative figure is wrong. **Nothing hard-codes 3,100.**
-
-**Correction 2 — price is keyed by printing, not by oracle id, and #288 has landed.** The handoff
-was written with the ManaPool ingest in flight and expects "read from #288's table by oracle id,
-left-joined" with "stock is a boolean". `printing_prices` is keyed on `scryfall_id`
-(`src/db/schema.ts:94-112`) and carries no boolean. A commander's figure is the cheapest live
-printing, and "live" is defined by the table's own rule: compare the row's `as_of` to the newest
-`as_of` in the table.
-
-**Correction 3 — that rule makes every drawn price state reachable, and closes gap 7.** The feed
-omits out-of-stock cards rather than zeroing them, and the ingest upserts and never deletes, so a
-row at the newest mark always has stock and a sold-out printing lingers with a frozen `as_of`.
-Therefore: absent from the table → state 4, the slot and its hairline do not render; present but
-behind the mark → **state 3, `not stocked`**, hollow dot, no figure; at the mark → states 1/2. The
-weekly cadence gap 7 asked about is 09:00 UTC Monday, and no stale figure is ever printed, so the
-slot needs no as-of word after all. No new state, no redraw.
-
-**Correction 4 — there is no "finished" deck.** `decks` carries `filled`, not a completion flag
-(`src/db/schema.ts:165-177`), and ruling 8 turns on having built anything at all. The novelty sort
-unlocks on the first deck; the copy strings saying "a finished deck" want "a deck". A copy edit,
-run through `/copy-review` rather than back to Design.
-
-Everything else the handoff claims about shipped code was verified against `src/`: `REVEAL_STEP`
-is 25, the inert `Order: Fit ↓ · fixed` label sits where the sort control wants to go
-(`commanders-view.tsx:507-512`, mobile `:629`), `Showing {filtered.length} of {active.length}` is
-indeed the one string missing `toLocaleString` (`:520`), `RecCard`'s grid is `40px 100px 1fr 236px`
-with a decorative `--border-strong` diamond under the rank numeral (`rec-card.tsx:298`, `:319`),
-the `absent` note ships without a Retry (`:460-474`), and `createDeck` validates legality without
-requiring ownership (`actions.ts:181-192`), so discovery's ending is already live.
+_#220 was the fifth row here until 2026-09-06, when its eleventh and last planned PR merged and it
+moved to ✅ Shipped, taking the ruling and the four corrections recorded under it._
 
 ---
 
@@ -140,7 +93,7 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 | 1 | _none — see note_ | [`specs/2026-09-05-manapool-checkout-design.md`](specs/2026-09-05-manapool-checkout-design.md) (PR #324) | Addendum to `design/design_handoff_the99_decks/`, which already owns both surfaces and audited 🟢 Green — neither the export-dialog Buy action nor the card-modal buy link is drawn in it | Both link mechanisms are established against the live endpoint and the pure module is fully specified; only the two placements and the app's first outbound-link treatment are undrawn |
 
 **#220 left this queue on 2026-09-05**, the same day it entered it — its handoff landed and audited
-🟢 Green at R1, so it now sits in 🟢 above.
+🟢 Green at R1, and the build ran through to 2026-09-06, so it now sits in ✅ Shipped below.
 
 **The Mana Pool checkout row has no ticket, and that is recorded rather than resolved.** The feature
 was scoped from a direct request with no GitHub issue behind it, and filing one unilaterally is not
@@ -264,3 +217,53 @@ The first six shipped against the pre-richness baseline; **#51** then applied br
 | **#130** + **#131** Recommendations you can act on — pre-populate a deck from recommendations · make Role Coverage explanatory and inspectable | `design/design_handoff_the99_recommendations/` | 2026-09-02 (PRs #249, #263) — audited 🟡 Yellow at R3 (PR #237). The §0 blocker recorded on this row cleared when the recommendation-engine foundation merged as PR #244, and the vertical shipped the same week. Hugh's live feedback on the shipped build is what produced the synergy-discovery brief (PR #270) now sitting in 🟢 above, and the 37-copies-of-one-basic mana base the fill produced (PR #272) |
 | **Synergy discovery, and the last 31** (from live feedback on the shipped #130/#131 build; no ticket filed) | `design/design_handoff_the99_synergy_discovery/` | 2026-09-03 (PR #275, single-PR build off the plan at `docs/superpowers/plans/2026-09-03-synergy-discovery-plan.md`) — audited **🟢 Green at R1** the same day (PR #274). The EDHREC Synergy panel is now a synergy ranking with a type-facet strip and an uncapped disclosure; rows are selectable on both the commander and deck surfaces and ride into the build on `?select=`; and the deck builder gained the last-31 strip — an owned-only fill beside an explicitly-labelled buying top-up, both placing `auto` cards. **The one ruling Design requested was taken eng-side in Design's favour:** the 99/99 completion reveal is suppressed when the last card was placed by a fill, and only when that fill actually placed a card. Copilot ran 18 rounds; the three findings that would have shipped broken were the fill claiming a 99 another tab had reached, the outage sentence speaking for a commander EDHREC simply does not index, and the toolbar gate that hid the kept-note along with the sweep button. Gap report: `docs/superpowers/gap-report-synergy-discovery.md`; property table: `docs/superpowers/design-tables/synergy-discovery.md` |
 | **#288** Price on the buy tag | `design/design_handoff_the99_decks/` (R3) | 2026-09-06 (PR #308 · PR #312) |
+| **#220** Commander discovery — one ranked list, two sorts (covers **#213** + **#214**) | `design/design_handoff_the99_discovery/` (R1) | 2026-09-06 (PRs #293, #298, #301, #304, #305, #306, #307, #309, #310, #313, #316, #322, #326, #327) — eleven planned phases plus the brief, the handoff and two performance PRs the build forced. `/commanders` gained a scope control: **Score my collection** keeps the shipped 242-commander ranking, **Something new** opens a population of every indexed commander the player has not built — a shade over 3,300 — ranked either by fit or by distance from what they have already played. Novelty is a distance sort with buildability as a floor, never a term — `NOVELTY_FLOOR` is 0.3 and lives in its own module (`src/lib/discovery/floor.ts`) because both the ranking and the empty state have to print the same number. Detail pages work for commanders the player does not own, and all four discovery states — the reveal window, the floor empty, the no-decks banner and the filtered empty — were driven in a real browser at 390px and 1300px rather than read off the source. Plan: `docs/superpowers/plans/2026-09-05-commander-discovery.md`; property tables and gap reports are split three ways, `discovery-controls`, `discovery-rows` and `discovery-empties`, one per design-reviewed phase. **Three items go back to Design as ratifications**, all raised in PR #327: the `FilteredEmpty` canvas predates Surfaces v2 while state 3c forbids moving the shipped geometry; superset colour matching means a five-colour deck reads as "is Green" under a Green filter, where "fits" may be the truer word; and M-7 draws the ghost outline in `--accent` where the shipped `GhostButton` uses `--border-strong` until hover |
+
+### #220 — the ruling Design asked for, and four corrections carried eng-side
+
+**The ruling.** `READINESS.md` item 1 asks whether `Score against` stays available under the
+discovery scope, since the free re-rank works today only because both rankings arrive in one
+render over 242 commanders. **It re-ranks** — the flip becomes a fetch, exactly as the sort flip
+already is. A control that silently switches off when you change scope makes the two scopes feel
+like two pages, which ruling 1 spent its whole argument avoiding, and the canvas already draws it
+available, so this costs no redraw. Its companion, gap 2, is taken as drawn: **the `↓N from M`
+delta is suppressed under discovery.** The delta is a statement about a 0–100 score, and the
+discovery fit column prints `127 of 264` instead — reusing the shipped string there would annotate
+one figure with a change in a different one. A delta expressed in card counts is a follow-up, not
+a gate.
+
+**Correction 1 — the discovery population is 3,334, not 3,100.** Ruling 2 sets the universe to
+every indexed commander minus the ones already built: 3,342 − 8. The canvas labels it `3,100
+commanders you have not built`, which is the count of commanders the player does not *own* — a
+different figure. Ruling 2 is unambiguous and the canvas is internally inconsistent with 3,100
+anyway, since frame A2 draws an **owned** row under Something new, which a strictly-unowned
+population could never contain. The copy module is already correct (`subtitlePlay` takes the count
+as an argument); only the illustrative figure is wrong. **Nothing hard-codes 3,100.**
+
+**Correction 2 — price is keyed by printing, not by oracle id, and #288 has landed.** The handoff
+was written with the ManaPool ingest in flight and expects "read from #288's table by oracle id,
+left-joined" with "stock is a boolean". `printing_prices` is keyed on `scryfall_id`
+(`src/db/schema.ts:94-112`) and carries no boolean. A commander's figure is the cheapest live
+printing, and "live" is defined by the table's own rule: compare the row's `as_of` to the newest
+`as_of` in the table.
+
+**Correction 3 — that rule makes every drawn price state reachable, and closes gap 7.** The feed
+omits out-of-stock cards rather than zeroing them, and the ingest upserts and never deletes, so a
+row at the newest mark always has stock and a sold-out printing lingers with a frozen `as_of`.
+Therefore: absent from the table → state 4, the slot and its hairline do not render; present but
+behind the mark → **state 3, `not stocked`**, hollow dot, no figure; at the mark → states 1/2. The
+weekly cadence gap 7 asked about is 09:00 UTC Monday, and no stale figure is ever printed, so the
+slot needs no as-of word after all. No new state, no redraw.
+
+**Correction 4 — there is no "finished" deck.** `decks` carries `filled`, not a completion flag
+(`src/db/schema.ts:165-177`), and ruling 8 turns on having built anything at all. The novelty sort
+unlocks on the first deck; the copy strings saying "a finished deck" want "a deck". A copy edit,
+run through `/copy-review` rather than back to Design.
+
+Everything else the handoff claims about shipped code was verified against `src/`: `REVEAL_STEP`
+is 25, the inert `Order: Fit ↓ · fixed` label sits where the sort control wants to go
+(`commanders-view.tsx:507-512`, mobile `:629`), `Showing {filtered.length} of {active.length}` is
+indeed the one string missing `toLocaleString` (`:520`), `RecCard`'s grid is `40px 100px 1fr 236px`
+with a decorative `--border-strong` diamond under the rank numeral (`rec-card.tsx:298`, `:319`),
+the `absent` note ships without a Retry (`:460-474`), and `createDeck` validates legality without
+requiring ownership (`actions.ts:181-192`), so discovery's ending is already live.
