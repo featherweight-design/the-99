@@ -116,10 +116,13 @@ requiring forty clicks to reach.
 - `recommendations.ts` — the five keys in `keep-all-auto · copy strings.ts`, into the existing
   `auto` block. **Nothing deleted, nothing re-worded.**
 - `actions.ts` — `keepAllAutoCards(deckId)`: one `update deck_cards set auto = false where
-  deck_id = ? and auto`, returning the row count for the announcement, under the same `for update`
-  lock and `claimSurfaces(deckId)` revalidation the sweep uses. **The identical write already
-  ships** at `update-actions.ts:307`, where applying a re-import clears `auto` on every card the
-  list names — this is the deck-wide case of a statement the codebase has already made.
+  deck_id = ? and auto`, returning the cleared rows for the announcement. **The identical write
+  already ships** at `update-actions.ts:307`, where applying a re-import clears `auto` on every card
+  the list names — this is the deck-wide case of a statement the codebase has already made.
+  *(Eng correction, applied at build: **no lock** — `clearAutoCards` takes none either, and its
+  comment gives the reason; and **`revalidatePath('/decks/{id}')` alone**, not `claimSurfaces` —
+  `auto` is provenance, not a claim, so no availability surface changes. `keepAutoCard` is the
+  precedent for both.)*
 - `optimistic-deck.tsx` — a `keepAll` edit: `map(c => c.auto ? { ...c, auto: false } : c)`. Its own
   edit rather than a loop of `keep`, for the reason the sweep's own comment gives.
 - `clear-auto.tsx` — the button inside the existing wrapper span, above the sweep. The file already
