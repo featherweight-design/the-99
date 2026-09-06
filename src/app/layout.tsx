@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import {
-  Big_Shoulders,
   Chakra_Petch,
   Cinzel,
+  Cormorant_Garamond,
   IBM_Plex_Mono,
   IBM_Plex_Sans,
   Metamorphous,
-  Spectral,
   Syncopate,
+  Trirong,
 } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import Shell from "../components/shell/shell";
@@ -37,9 +37,9 @@ const chakraPetch = Chakra_Petch({
   preload: false,
 });
 
-const spectral = Spectral({
-  variable: "--font-spectral",
-  weight: ["500", "600", "700", "800"],
+const trirong = Trirong({
+  variable: "--font-trirong",
+  weight: ["600", "700"],
   subsets: ["latin"],
   display: "swap",
   preload: false,
@@ -53,25 +53,19 @@ const syncopate = Syncopate({
   preload: false,
 });
 
-// The handoff names this face "Big Shoulders Display". Google merged that family
-// into "Big Shoulders" in 2024, and this Next version exports only
-// `Big_Shoulders` — `Big_Shoulders_Display` does not typecheck. It is a variable
-// font, so omitting `weight` is correct and gives the full axis.
-//
-// That same rename is why this is the one face with no automatic fallback:
-// Next's metrics table still keys the font under the old name, so the lookup
-// misses and every build logs `Failed to find font override values for font
-// 'Big Shoulders'`. globals.css supplies the fallback face by hand. The log line
-// is unavoidable noise — `adjustFontFallback: false` does not suppress it,
-// because Turbopack's font loader runs the lookup either way.
-const bigShoulders = Big_Shoulders({
-  variable: "--font-big-shoulders",
+// The lightest display face in the set. 400 is deliberately not loaded: the
+// handoff rules it out at heading sizes, and omitting it means a display site
+// that asks for 400 anyway resolves to the real 600 rather than to a stem that
+// vanishes.
+const cormorantGaramond = Cormorant_Garamond({
+  variable: "--font-cormorant-garamond",
+  weight: ["600", "700"],
   subsets: ["latin"],
   display: "swap",
   preload: false,
 });
 
-// Metamorphous ships exactly one static weight, 400. See the Rune Frost rule in
+// Metamorphous ships exactly one static weight, 400. See the First Frost rule in
 // globals.css for what that means for `font-bold`.
 const metamorphous = Metamorphous({
   variable: "--font-metamorphous",
@@ -113,7 +107,7 @@ export default async function RootLayout({
       <html
         lang="en"
         data-theme={theme}
-        className={`${cinzel.variable} ${chakraPetch.variable} ${spectral.variable} ${syncopate.variable} ${bigShoulders.variable} ${metamorphous.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
+        className={`${cinzel.variable} ${chakraPetch.variable} ${trirong.variable} ${syncopate.variable} ${cormorantGaramond.variable} ${metamorphous.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
       >
         {/* Signed-out routes render without the shell, so the stretch chain has
             to start here or a full-height child has nothing to grow into. */}

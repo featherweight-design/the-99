@@ -31,9 +31,10 @@ const CONTRACT = [
 const FONTS = new Set(["font-display-face"]);
 
 // A face is the `next/font` variable, optionally followed by a hand-authored
-// fallback family. Duskmourn needs that tail: Next cannot metric-match Big
-// Shoulders, so globals.css declares the fallback itself. The variable stays
-// anchored at the start so a face that is *only* a fallback still fails.
+// fallback family. No theme needs that tail today, but Next's capsize table
+// misses families it has not caught up with — see the fallback branch in
+// globals.test.ts. The variable stays anchored at the start so a face that is
+// *only* a fallback still fails.
 const FACE = /^var\(--font-[a-z-]+\)(, "[A-Za-z ]+ Fallback")?$/;
 
 const ALIASES: Record<string, string> = {
@@ -61,7 +62,7 @@ const PIPS = ["w", "u", "b", "r", "g"];
 const SEMANTICS = ["success", "warning", "danger"];
 
 const EXPECTED_THEMES = [
-  "amonkhet", "kamigawa", "innistrad", "phyrexia", "duskmourn", "kaldheim",
+  "amonkhet", "kamigawa", "ixalan", "phyrexia", "eldraine", "kaldheim",
 ];
 
 const entries = [...THEMES.entries()];
@@ -92,15 +93,6 @@ describe("theme contract", () => {
 
     it("gives every key its own value, bar the ramp and a settled accent", () => {
       const twin = new Map(INTENTIONAL_TWINS.flatMap(([a, b]) => [[a, b], [b, a]]));
-      // --avail-hard-fg is the accent lifted until it clears the 7:1 floor
-      // asserted below. Innistrad's accent already clears it, so lifting would
-      // move the marker off the accent for nothing. Named as well as gated on
-      // the contrast: were the gate alone, a later tweak that pushed some other
-      // theme's accent over 7:1 would quietly license the same duplication.
-      if (name === "innistrad" && contrast(hex("accent"), hex("surface")) >= 7) {
-        twin.set("avail-hard-fg", "accent");
-        twin.set("accent", "avail-hard-fg");
-      }
       const seen = new Map<string, string>();
       for (const key of CONTRACT) {
         if (key in ALIASES || FONTS.has(key)) continue;

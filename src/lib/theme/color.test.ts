@@ -30,7 +30,7 @@ describe("contrast", () => {
     expect(contrast("#CF8745", "#CF8745")).toBeCloseTo(1, 6);
   });
 
-  it("reproduces the audited Gilded Stone fg-on-bg figure", () => {
+  it("reproduces the audited Low Sun fg-on-bg figure", () => {
     expect(contrast("#EDE6D8", "#14110E")).toBeCloseTo(15.15, 1);
   });
 });
@@ -41,7 +41,7 @@ describe("chroma", () => {
     expect(chroma("#808080")).toBeCloseTo(0, 6);
   });
 
-  it("reproduces the audited Gilded Stone accent chroma", () => {
+  it("reproduces the audited Low Sun accent chroma", () => {
     expect(chroma("#CF8745")).toBeCloseTo(0.1203, 3);
   });
 });
@@ -62,7 +62,7 @@ describe("deltaEOk", () => {
     expect(deltaEOk("#E0913C", "#CF8745")).toBeLessThan(0.05);
   });
 
-  it("separates the Gilded Stone warning from its accent", () => {
+  it("separates the Low Sun warning from its accent", () => {
     expect(deltaEOk("#DEAA29", "#CF8745")).toBeCloseTo(0.1009, 3);
   });
 });

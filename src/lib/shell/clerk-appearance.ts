@@ -21,7 +21,7 @@ type Appearance = NonNullable<ComponentProps<typeof ClerkProvider>["appearance"]
  * The `variables` map cannot use `var()`: Clerk derives its hover and disabled
  * shades from these values arithmetically, so it needs real colours. They
  * therefore mirror the `:root` (amonkhet) block of globals.css by hand, and the
- * modal stays Gilded Stone under all six themes. Any change to an amonkhet token
+ * modal stays Low Sun under all six themes. Any change to an amonkhet token
  * has to be copied here or the modal drifts away from the app around it. The
  * `elements` map has no such limit and resolves through tokens, so it themes for
  * free.

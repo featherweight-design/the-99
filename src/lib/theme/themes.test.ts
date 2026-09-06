@@ -3,7 +3,15 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseThemeBlocks } from "./parse-css";
-import { DEFAULT_THEME, isThemeKey, THEME_COOKIE, THEME_COOKIE_MAX_AGE, THEMES } from "./themes";
+import {
+  DEFAULT_THEME,
+  isThemeKey,
+  RETIRED_THEMES,
+  THEME_COOKIE,
+  THEME_COOKIE_MAX_AGE,
+  THEMES,
+  themeFor,
+} from "./themes";
 
 const CSS = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app", "globals.css"),
@@ -15,9 +23,9 @@ describe("theme registry", () => {
     expect(THEMES.map((t) => t.key)).toEqual([
       "amonkhet",
       "kamigawa",
-      "innistrad",
+      "ixalan",
       "phyrexia",
-      "duskmourn",
+      "eldraine",
       "kaldheim",
     ]);
     expect(DEFAULT_THEME).toBe("amonkhet");
@@ -25,12 +33,12 @@ describe("theme registry", () => {
 
   it("carries the handoff's names verbatim", () => {
     expect(THEMES.map((t) => t.name)).toEqual([
-      "Gilded Stone",
+      "Low Sun",
       "Neon Rain",
-      "Moonlit",
-      "Oil and Iron",
-      "Screen Glow",
-      "Rune Frost",
+      "Canopy",
+      "Oil Haze",
+      "Witching Hour",
+      "First Frost",
     ]);
   });
 
@@ -41,7 +49,7 @@ describe("theme registry", () => {
   });
 
   // The default is declared on `:root, [data-theme="amonkhet"]` together, so a
-  // picker chip can preview Gilded Stone under another theme. What matters is
+  // picker chip can preview Low Sun under another theme. What matters is
   // that :root is one of the two: an unrecognised data-theme has to land on a
   // complete theme rather than on bare tokens, and only :root guarantees that.
   it("keeps the default on :root, so an unknown theme degrades to a whole one", () => {
@@ -53,6 +61,43 @@ describe("theme registry", () => {
     expect(isThemeKey("ravnica")).toBe(false);
     expect(isThemeKey(undefined)).toBe(false);
     expect(isThemeKey("")).toBe(false);
+  });
+
+  it("moves a retired id to its nearest survivor, not to the default", () => {
+    expect(themeFor("innistrad")).toBe("phyrexia");
+    expect(themeFor("duskmourn")).toBe("kaldheim");
+  });
+
+  it("keeps a live id and falls back to the default for anything else", () => {
+    expect(themeFor("kaldheim")).toBe("kaldheim");
+    expect(themeFor("ravnica")).toBe(DEFAULT_THEME);
+    expect(themeFor(undefined)).toBe(DEFAULT_THEME);
+  });
+
+  // The id arrives from a cookie, so it can name anything Object.prototype has.
+  // A membership test that walks the prototype chain resolves those to a member
+  // with no survivor on it, and the caller paints `undefined` or throws.
+  it.each(["toString", "__proto__", "constructor", "hasOwnProperty"])(
+    "treats %s as an unknown id, not a retired one",
+    (key) => {
+      expect(themeFor(key)).toBe(DEFAULT_THEME);
+    },
+  );
+
+  // A retired id whose survivor was itself retired would resolve to a block that
+  // no longer exists — the unstyled shell the fallback is there to prevent.
+  it("points every retired id at a theme that still exists", () => {
+    for (const { survivor } of Object.values(RETIRED_THEMES)) {
+      expect(isThemeKey(survivor)).toBe(true);
+    }
+  });
+
+  // The two sets have to stay disjoint: a key in both would make `themeFor`
+  // order-dependent and the picker's notice fire for a theme still on offer.
+  it("retires no id that the picker still lists", () => {
+    for (const key of Object.keys(RETIRED_THEMES)) {
+      expect(THEMES.some((t) => t.key === key)).toBe(false);
+    }
   });
 
   it("names the cookie and keeps it for a year", () => {

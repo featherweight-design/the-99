@@ -6,12 +6,12 @@
  * ------------------------------------------------------------------ */
 :root,
 [data-theme="amonkhet"] {
-  /* Theme: amonkhet — "Gilded Stone". The default, and the fallback for an
+  /* Theme: amonkhet — "Low Sun". The default, and the fallback for an
      unrecognised data-theme: a complete theme rather than unstyled tokens —
      which is why it is declared on :root and not only on its own attribute.
 
      It carries the attribute selector as well so that a nested element can ask
-     for Gilded Stone while some other theme is in force. The picker's
+     for Low Sun while some other theme is in force. The picker's
      miniatures do exactly that: each chip sets data-theme to the theme it
      previews, and without this the Amonkhet chip would inherit whatever theme
      the app is currently wearing and preview the wrong palette. */
@@ -113,41 +113,38 @@
   --font-display-face: var(--font-chakra-petch);
 }
 
-/* Theme: innistrad — "Moonlit". Gothic horror; near-achromatic by design, and
-   the only theme whose --avail-hard-fg equals its --accent. That is correct,
-   not a copy-paste: this accent already clears 7:1 on --surface. */
-[data-theme="innistrad"] {
-  --bg: #101314;
-  --surface: #191D1E;
-  --surface-raised: #1C2021;
-  --surface-rail: #15191A;
-  --surface-sunken: #131718;
-  --surface-inset: #161A1B;
-  --elevated: #242829;
-  --elevated-hover: #1B1F20;
-  --border: #1C2224;
-  --border-strong: #2B3133;
-  --border-dashed: #3A4042;
-  --fg: #DDE3E1;
-  --fg-body: #B3BDBB;
-  --fg-muted: #96A19E;
-  --fg-faint: #737D7B;
-  --fg-locked: #606A68;
-  --accent: #8AAFA1;
-  --accent-hover: #9ABEB0;
-  --accent-strong: #729186;
-  --accent-shadow: #4E6059;
-  --accent-dim: #4E6059;
-  --accent-mid: #729186;
-  /* Deepened from the shared #6FA368: the accent was floored to chroma 0.045
-     per the brief's §9.5 ruling, which pulled success inside the 0.10 ΔE
-     separation floor. */
-  --success: #679F5F;
+/* Theme: ixalan — "Canopy". Jungle daylight; the yellow-green accent is the
+   third green in its own palette, so --success and --g are the two tokens with
+   the least room here. Both clear the 0.10 ΔE floor, but only just. */
+[data-theme="ixalan"] {
+  --bg: #0E1310;
+  --surface: #171E19;
+  --surface-raised: #1A221C;
+  --surface-rail: #121814;
+  --surface-sunken: #101512;
+  --surface-inset: #141B16;
+  --elevated: #212A23;
+  --elevated-hover: #18201A;
+  --border: #1D2620;
+  --border-strong: #2C3830;
+  --border-dashed: #3B4A3F;
+  --fg: #E0E7DE;
+  --fg-body: #B6C2B3;
+  --fg-muted: #98A695;
+  --fg-faint: #808C7C;
+  --fg-locked: #626E5E;
+  --accent: #A3C445;
+  --accent-hover: #B2D257;
+  --accent-strong: #85A22F;
+  --accent-shadow: #3E5220;
+  --accent-dim: #3E5220;
+  --accent-mid: #85A22F;
+  --success: #6FA368;
   --warning: #E0913C;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
-  --avail-hard-fg: #8AAFA1;
+  --avail-hard-fg: #ABCB5B;
   --avail-over-fg: #C56A58;
   --avail-over-border: #752619;
   --w: #F4E9C4;
@@ -156,11 +153,11 @@
   --r: #C05A3E;
   --g: #4B7A46;
 
-  /* Display face (1) */
-  --font-display-face: var(--font-spectral);
+  /* Display face (1). Trirong at 600. */
+  --font-display-face: var(--font-trirong);
 }
 
-/* Theme: phyrexia — "Oil and Iron". Biomechanical; the only theme in which a
+/* Theme: phyrexia — "Oil Haze". Biomechanical; the only theme in which a
    WUBRG pip moves, because the oil-teal accent sat ΔE 0.09 from green. */
 [data-theme="phyrexia"] {
   --bg: #0D0B0E;
@@ -204,37 +201,39 @@
   --font-display-face: var(--font-syncopate);
 }
 
-/* Theme: duskmourn — "Screen Glow". Analog horror; the bright one. */
-[data-theme="duskmourn"] {
-  --bg: #100E15;
-  --surface: #1A1822;
-  --surface-raised: #1E1C26;
-  --surface-rail: #15131C;
-  --surface-sunken: #13111A;
-  --surface-inset: #17151F;
-  --elevated: #26242E;
-  --elevated-hover: #1C1A24;
-  --border: #1F2933;
-  --border-strong: #2F3A44;
-  --border-dashed: #3F4B55;
-  --fg: #D8DBE0;
-  --fg-body: #AFB8C8;
-  --fg-muted: #929CAE;
-  --fg-faint: #646D7E;
-  --fg-locked: #5D6676;
-  --accent: #49A9DC;
-  --accent-hover: #5DB9EB;
-  --accent-strong: #3B8BB6;
-  --accent-shadow: #2F5A73;
-  --accent-dim: #2F5A73;
-  --accent-mid: #3B8BB6;
+/* Theme: eldraine — "Witching Hour". Dusk-violet; the whole ground sits on one
+   hue, which leaves its surfaces the most saturated of the six at chroma
+   0.0193 — inside the 0.02 cap, but with the least headroom of any theme. */
+[data-theme="eldraine"] {
+  --bg: #120E17;
+  --surface: #1B1821;
+  --surface-raised: #1F1C25;
+  --surface-rail: #15121B;
+  --surface-sunken: #131018;
+  --surface-inset: #17141D;
+  --elevated: #26232C;
+  --elevated-hover: #1D1A23;
+  --border: #241D30;
+  --border-strong: #342C41;
+  --border-dashed: #443C52;
+  --fg: #E4DEEE;
+  --fg-body: #B9B2C5;
+  --fg-muted: #9C95A8;
+  --fg-faint: #898395;
+  --fg-locked: #6A6475;
+  --accent: #AE88E6;
+  --accent-hover: #BC9BEE;
+  --accent-strong: #8E6AC4;
+  --accent-shadow: #4A3568;
+  --accent-dim: #4A3568;
+  --accent-mid: #8E6AC4;
   --success: #6FA368;
   --warning: #E0913C;
   --danger: #C6533F;
   --avail-soft: var(--fg-muted);
   --avail-hard: var(--accent);
-  --avail-hard-fg: #54ADDD;
-  --avail-over-fg: #C36756;
+  --avail-hard-fg: #B795EA;
+  --avail-over-fg: #C56A58;
   --avail-over-border: #752619;
   --w: #F4E9C4;
   --u: #3A6AA5;
@@ -242,39 +241,12 @@
   --r: #C05A3E;
   --g: #4B7A46;
 
-  /* Display face (1). The fallback is named explicitly because `next/font`
-     cannot build one for this family — see the @font-face below. */
-  --font-display-face: var(--font-big-shoulders), "Big Shoulders Fallback";
+  /* Display face (1). Cormorant Garamond at 600 and never 400 — it is the
+     lightest display face in the set, and 400 disappears at heading sizes. */
+  --font-display-face: var(--font-cormorant-garamond);
 }
 
-/* The one display face `next/font` cannot metric-match on its own. Google merged
-   "Big Shoulders Display" into "Big Shoulders" in 2024; Next's bundled capsize
-   table still keys the metrics under the old name, so the lookup misses and the
-   build prints `Failed to find font override values for font 'Big Shoulders'`.
-   Duskmourn's headings then swap from unadjusted Arial, which is about 49%
-   wider, and visibly snap on first paint.
-
-   These four values are not tuned by eye: they are Next's own formula applied to
-   its own table, keyed on `bigShouldersDisplay` against `arial`. Running the
-   same arithmetic on Cinzel reproduces the `Cinzel Fallback` face Next emits,
-   digit for digit. Delete this block once Next's table learns the new family
-   name — the build warning is the signal that it has not yet.
-
-   No font-weight descriptor, matching what Next emits for the other five. Face
-   selection picks the nearest weight within a family and never rejects the
-   family, so this face applies to bold headings too. Declaring 100 900 would
-   claim non-variable Arial covers the range and suppress synthetic bold, so
-   bold headings would swap in at regular weight. */
-@font-face {
-  font-family: "Big Shoulders Fallback";
-  src: local(Arial);
-  size-adjust: 67.07%;
-  ascent-override: 146.71%;
-  descent-override: 31.76%;
-  line-gap-override: 0%;
-}
-
-/* Theme: kaldheim — "Rune Frost". Norse; the lightest chrome of the six. */
+/* Theme: kaldheim — "First Frost". Norse; the lightest chrome of the six. */
 [data-theme="kaldheim"] {
   --bg: #121217;
   --surface: #1E1F26;
@@ -446,7 +418,7 @@ html { --tabbar-h: 64px; }
      to 400 — the browser fakes bold by dilating every stroke uniformly, which is
      precisely wrong for a high-contrast decorative face and does its worst work
      at the 15–18px where most of those sites sit. Pinned to the real 400.
-     The visible consequence is that Rune Frost headings sit a little lighter
+     The visible consequence is that First Frost headings sit a little lighter
      than the other five themes'; that is the trade, and it was taken
      deliberately. Delete this rule to reverse it — nothing else moves. */
   [data-theme="kaldheim"] .font-display {

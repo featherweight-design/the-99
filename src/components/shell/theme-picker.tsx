@@ -16,12 +16,14 @@
 // "this one" in a colour is unreadable to exactly the people most likely to be
 // choosing a theme deliberately.
 
-import { useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { themeCopy } from "../../lib/copy/theme";
 import {
+  RETIRED_THEMES,
   THEME_COOKIE,
   THEME_COOKIE_MAX_AGE,
   THEMES,
+  isRetiredThemeKey,
   isThemeKey,
   type ThemeKey,
 } from "../../lib/theme/themes";
@@ -92,6 +94,28 @@ function applyTheme(key: ThemeKey) {
 }
 
 /**
+ * The retirement notice, or nothing. Read from the cookie rather than threaded
+ * down from the layout: the persisted value is the only thing that distinguishes
+ * an affected user, and `theme` is already five components deep.
+ *
+ * Writing the survivor over the retired id is what dismisses this permanently —
+ * so is choosing any theme, since both go through `applyTheme`. That is the
+ * whole of "persist the dismissal": no second key, and no way for the two to
+ * disagree.
+ */
+function retirementNotice() {
+  if (typeof document === "undefined") return null;
+  const persisted = document.cookie
+    .split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${THEME_COOKIE}=`))
+    ?.slice(THEME_COOKIE.length + 1);
+  if (!isRetiredThemeKey(persisted)) return null;
+  const { was, survivor } = RETIRED_THEMES[persisted];
+  return { was, survivor, nowCalled: THEMES.find((t) => t.key === survivor)!.name };
+}
+
+/**
  * What the app is wearing right now, which is not always what the server said.
  * The account menu unmounts the picker when it closes, so a second opening
  * remounts it against a `current` prop that was resolved on the last navigation
@@ -107,18 +131,43 @@ function themeInForce(fallback: ThemeKey): ThemeKey {
 export function ThemePicker({
   current,
   panel = "popover",
+  selectedChipRef,
 }: {
   current: ThemeKey;
   panel?: PanelKind;
+  /**
+   * The checked chip, handed back to the hosting panel so it can be the panel's
+   * initial focus. Without it the panel falls back to the first focusable in DOM
+   * order, which the retirement notice's ✕ would otherwise become — a menu that
+   * opens with "Dismiss" selected, one Enter away from a user losing the notice
+   * they had not read yet.
+   */
+  selectedChipRef?: RefObject<HTMLElement | null>;
 }) {
   const [selected, setSelected] = useState<ThemeKey>(() => themeInForce(current));
   const [announcement, setAnnouncement] = useState("");
+  // Read at mount rather than in an effect. The account menu renders this only
+  // once `open` is true, which is client state starting false — so the picker
+  // never appears in server output and there is no hydration pass to mismatch.
+  const [notice, setNotice] = useState(retirementNotice);
+  const ownChipRef = useRef<HTMLElement | null>(null);
+  const chipRef = selectedChipRef ?? ownChipRef;
   const compact = panel === "sheet";
 
   function choose(key: ThemeKey, name: string) {
     setSelected(key);
     applyTheme(key);
+    setNotice(null);
     setAnnouncement(themeCopy.applied(name));
+  }
+
+  function dismissNotice(survivor: ThemeKey) {
+    applyTheme(survivor);
+    setNotice(null);
+    // The button that ran this unmounts with the notice. Hand focus to the
+    // checked chip rather than let it fall to the body, which would drop the
+    // user out of the panel's focus trap mid-Tab.
+    chipRef.current?.focus();
   }
 
   // Roving tabindex, per the picker rules: arrows move focus and select in one
@@ -145,16 +194,45 @@ export function ThemePicker({
       <p className="m-0 px-1 pb-[6px] pt-[10px] font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--fg-faint)]">
         {themeCopy.label}
       </p>
+      {notice && (
+        <div className="mx-1 mb-2 flex items-start gap-2 rounded-[8px] bg-[color:var(--surface-raised)] p-[10px] text-[11.5px] leading-[1.35] text-[color:var(--fg-body)]">
+          <p className="m-0 min-w-0 flex-1">
+            <strong className="font-semibold text-[color:var(--fg)]">
+              {themeCopy.retired.headline(notice.was)}
+            </strong>{" "}
+            {themeCopy.retired.body(notice.nowCalled)}
+          </p>
+          <button
+            type="button"
+            aria-label={themeCopy.retired.dismiss}
+            onClick={() => dismissNotice(notice.survivor)}
+            // Negative margin so a 44px touch target does not force the line
+            // taller than its text: the hit area grows, the footprint does not.
+            className={`flex shrink-0 items-center justify-center rounded-[6px] leading-none text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] ${
+              compact ? "-m-[10px] h-[44px] w-[44px]" : "-m-[5px] h-[26px] w-[26px]"
+            }`}
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <div
         role="radiogroup"
         aria-label={themeCopy.groupLabel}
         className={`grid ${compact ? "grid-cols-2 gap-[10px]" : "grid-cols-3 gap-2"}`}
       >
-        {THEMES.map(({ key, name, plane }, i) => {
+        {THEMES.map(({ key, name, plane, short }, i) => {
           const isSelected = key === selected;
           return (
             <button
               key={key}
+              ref={
+                isSelected
+                  ? (el) => {
+                      chipRef.current = el;
+                    }
+                  : undefined
+              }
               type="button"
               role="radio"
               aria-checked={isSelected}
@@ -182,9 +260,6 @@ export function ThemePicker({
                 >
                   {name}
                 </span>
-                {/* The plane before its colon. "Kamigawa: Neon Dynasty" does not
-                    fit a 90px chip, and the full name is still what the option
-                    is announced as. */}
                 <span
                   // The canvas paints this --fg-locked, which is a 3:1 token
                   // meant for struck-through chrome. At 8.5px that is not
@@ -192,7 +267,7 @@ export function ThemePicker({
                   className="truncate font-mono leading-[1.2] tracking-[0.04em] text-[color:var(--fg-muted)]"
                   style={{ fontSize: compact ? 9 : 8.5 }}
                 >
-                  {plane.split(":")[0]}
+                  {short}
                 </span>
               </span>
             </button>
