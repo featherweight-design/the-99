@@ -30,14 +30,19 @@ so it waits too.
 
 | # | Change | Files |
 |---|---|---|
+| # | Change | Files |
+|---|---|---|
 | 1 | `manapoolAddDeckUrl()` + `manapoolCardUrl()` — pure URL builders | new `src/lib/manapool/links.ts` |
-| 2 | `buyUrl` joins `PriceFact`; the price query selects `printing_prices.buy_url` | `src/lib/decks/price-query.ts`, `src/lib/decks/price.ts` |
-| 3 | A **Buy at Mana Pool** action on the export dialog's Shopping tab | `src/components/decks/export-dialog.tsx` |
-| 4 | A **Buy at Mana Pool** link in the shared card modal | `src/components/cards/card-modal.tsx` |
-| 5 | Copy keys for both | `src/lib/copy/decks-builder.ts`, `src/lib/copy/collection-browse.ts` |
-| 6 | The app's first outbound-link convention | `src/components/ui/external-link.tsx` (new) |
+| 2 | A **Buy at Mana Pool** action on the export dialog's Shopping tab | `src/components/decks/export-dialog.tsx` |
+| 3 | A **Buy at Mana Pool** link in the shared card modal | `src/components/cards/card-modal.tsx` |
+| 4 | Copy keys for both | `src/lib/copy/decks-builder.ts`, `src/lib/copy/collection-browse.ts` |
+| 5 | The app's first outbound-link convention | `src/components/ui/external-link.tsx` (new) |
 
-No new dependency, no new network call at request time, no new table, no new column.
+No new dependency, no new network call at request time, no new table, no new column — **and, after
+the 2026-09-06 ruling in §2.2, no change to the price layer either.** An earlier draft of this table
+carried a sixth row joining `buy_url` onto `PriceFact` and selecting it in `price-query.ts`. The card
+link no longer reads a price row at all, so `src/lib/decks/price-query.ts` and
+`src/lib/decks/price.ts` are untouched by this pass and the #288 work is left exactly as it shipped.
 
 ---
 
@@ -78,7 +83,18 @@ into a page titled *Mass Entry*:
 | A base64 payload containing `+` and `/`, percent-encoded | Round-trips exactly. |
 | An unmatchable name (`Zzzznotacard Fakename`) | Line still renders; Mana Pool owns the mismatch in its own UI. |
 
-Two rulings follow from that table.
+**Confirmed in a real browser on 2026-09-06**, signed out, by
+`scripts/probe-manapool-add-deck.mjs`. The table above is an HTTP-level read of the response body;
+this is the page as a player meets it. The paste textarea arrives pre-filled, the right-hand panel
+lists every card with its art, and the header reads **(5/5 in stock)** — `2 Æther Vial` becomes a
+`2x` row rather than two rows, `Fire // Ice` resolves with no special handling, and `Æther Vial`
+matches as *Aether Vial* because their own matcher folds the ligature. That last one is the reason
+we send names exactly as our catalog holds them and normalise nothing.
+
+**So no clipboard fallback is needed.** A "copy the list, then paste it yourself" path would only be
+warranted if the deep link could not pre-populate; it does.
+
+Three rulings follow.
 
 **We send explicit counts, not bare names.** Bare names work, but `N Name` is the format their own
 example uses, it is the format `buildDecklistText` already emits, and it is unambiguous if their
@@ -94,30 +110,58 @@ Mass Entry page to explain, and it explains it better than we could — it has l
 have a weekly snapshot. This is the same honesty rule the buy tag ships under: absence is not free,
 presence is not stocked now.
 
-### 2.2 The card link — `printing_prices.buy_url`, with `/add-deck` behind it
-
-The price ingest already stores a per-card page URL, and it is fully populated: in local dev,
-`select count(*), count(buy_url) from printing_prices` returns **96,194 / 96,194**. Sample:
-`https://manapool.com/card/unh/116/ach-hans-run`. The query in `src/lib/decks/price-query.ts` simply
-does not select the column today.
-
-So a card link needs no new data — but it is only available for a card we hold a price row for, and
-**production has never been priced** (only staging and local dev; carried over unresolved from the
-#288 run). A card link that exists only where a price exists would be a link that never appears in
-production.
-
-The fallback closes that: a single-card `/add-deck` URL with one line. Same mechanism as §2.1, one
-element in the list.
+### 2.2 The card link — `/cards?q=<name>`, the all-printings grid
 
 ```
-manapoolCardUrl(card) = card.price?.buyUrl ?? manapoolAddDeckUrl([{ name, quantity: 1 }])
+manapoolCardUrl(name) = `https://manapool.com/cards?q=${encodeURIComponent(name)}`
 ```
 
-**Rejected: deriving `https://manapool.com/card/<name-slug>`.** It works — `sol-ring`,
-`atraxa-praetors-voice`, `jotun-grunt`, `fire-ice` and `aether-vial` all return 200, and a bad slug
-honestly 404s. But every one of those is a *guess* at their slug rules (accents folded, `//`
-collapsed, apostrophes dropped, `Æ` → `ae`), inferred from five samples of a rule we have never been
-shown. `buy_url` is exact and `/add-deck` is documented; neither requires us to invent anything.
+**Ruled 2026-09-06, replacing an earlier `buy_url` design.** Mana Pool has two card surfaces, and
+they answer different questions. Probed in a browser by `scripts/probe-manapool-card-page.mjs`:
+
+| URL shape | What the page is |
+|---|---|
+| `/cards?q=<name>` | **Every printing of the card**, one tile each with its own low price, over filters for Set, Foil, Condition, Artist, Seller and Availability, and a Price sort |
+| `/card/<set>/<num>/<slug>` (`buy_url`'s shape) | **One printing**, listing that printing's sellers with conditions and Add-to-cart |
+| `/card/<name-slug>` | The same all-printings grid as the first row, reached by a slug we would have to guess |
+
+The grid is the right destination **because a recommendation in this app is an oracle card, not a
+printing.** `src/lib/decks/price-query.ts:29` says so outright — a decklist row is an oracle card,
+and the query joins through `printings.oracle_id` and picks one printing only to have a number to
+show. Linking to that printing would present an internal tie-break (live before stale, real
+non-foil before foil-only, then cheapest, then `scryfall_id`) as though it were a recommendation,
+when what the player wants is to pick the printing they like or the cheapest one themselves.
+
+The buy tag's price is unaffected and keeps naming the printing it actually measured. The tag says
+what the cheapest live printing costs; the link opens the shelf that number came off.
+
+**This removes work rather than adding it.** `buy_url` is fully populated (96,194 / 96,194 in local
+dev) but is now never read, so `price-query.ts` and `price.ts` are untouched, and the single-card
+`/add-deck` fallback that existed only to cover an unpriced production database is deleted along
+with the reason for it. The card link no longer depends on `printing_prices` having any rows at all.
+
+**Still rejected: deriving `/card/<name-slug>`.** It reaches the same grid, and `sol-ring`,
+`atraxa-praetors-voice`, `jotun-grunt`, `fire-ice` and `aether-vial` all return 200 — but each is a
+*guess* at slug rules (accents folded, `//` collapsed, apostrophes dropped, `Æ` → `ae`) inferred
+from five samples of a rule we have never been shown. `?q=` takes the name exactly as our catalog
+holds it and needs no rule.
+
+**The evidence that guessing a card URL fails silently.** Probing a *constructed* printing URL,
+`https://manapool.com/card/vow/238/ovika-enigma-goliath` returned **HTTP 200 serving Grolnok, the
+Omnivore**. The slug segment is decorative; the set and collector number decide the card. A wrong
+guess does not 404 — it shows a different card at full confidence, which is the worst failure mode
+available and the reason no URL in this spec is constructed from anything but an exact string.
+
+**What `?q=` costs.** It is a search, so a name that is a substring of other card names brings extra
+tiles along, and the exact printing the tag priced is one click in rather than zero. Both were
+accepted: an extra tile is legible, and the click is the browsing the player asked for. Verified
+against `Ovika, Enigma Goliath`, `Atraxa, Praetors' Voice`, `Fire // Ice`, `Jötun Grunt` and
+`Æther Vial` — all five land on the card, the last displayed as *Aether Vial* because Mana Pool's
+matcher folds the ligature, exactly as Mass Entry does.
+
+**No sort parameter is sent.** The grid's Best Selling / Popular / Release date / Price / Name
+controls carry no `href`, so there is no documented sort parameter to set, and inventing one would
+repeat the slug mistake. Price is one click on their page.
 
 ---
 
@@ -128,6 +172,16 @@ reason (`src/db/index.ts` throws at import time when `DATABASE_URL` is unset).
 
 ```ts
 export const MANAPOOL_ADD_DECK_URL = "https://manapool.com/add-deck";
+export const MANAPOOL_CARDS_URL = "https://manapool.com/cards";
+
+/**
+ * The all-printings grid for one card, by name — §2.2. Takes a name and nothing
+ * else: the app recommends an oracle card, not a printing, and Mana Pool's own
+ * search folds `Æ` and resolves `//` names, so nothing is normalised here.
+ */
+export function manapoolCardUrl(name: string): string {
+  return `${MANAPOOL_CARDS_URL}?q=${encodeURIComponent(name)}`;
+}
 
 /** One `N Name` line per card, joined by newlines — the format Mana Pool's own
  *  `deckCreateResponse.buy_url` example uses. */
@@ -160,7 +214,12 @@ non-Latin-1 in UTF-8. Do not reach for `btoa(text)` directly.
 **Tests** (`links.test.ts`): the documented example reproduces byte-for-byte from
 `1 Fireball / 1 Lightning Bolt / 7 Forest`; a name with `//`, an apostrophe and a diaeresis
 round-trips through `decodeURIComponent` + base64-decode; an empty list returns `null`; a 99-card
-list produces a URL under 4 KB.
+list produces a URL under 4 KB. For `manapoolCardUrl`: a plain name; `Fire // Ice` (the slashes
+escape rather than becoming path segments); `Æther Vial` (the ligature is percent-encoded, not
+folded to `Ae` by us).
+
+`manapoolCardUrl` is pure string work with no `Buffer`, so unlike the list link it is safe to call
+from a client component.
 
 ---
 
@@ -186,11 +245,11 @@ Ruled out on 2026-09-06 (§8) — rejected, not deferred.
 ### 4.2 The card link — the shared card modal
 
 `CardModal` (`src/components/cards/card-modal.tsx`) is already the app's one per-card detail
-surface, and the deck builder already wraps its whole tree in `CardDetailProvider`
-(`src/components/decks/builder-shell.tsx:514`) — so does `/collection`
-(`src/components/collection/browser.tsx:450`) and the commander detail page
-(`src/components/commanders/detail.tsx:240`). One insertion point serves every surface in the app
-that shows a card.
+surface, reached two ways: the deck builder and the commander detail page wrap their trees in
+`CardDetailProvider` (`src/components/decks/builder-shell.tsx:552`,
+`src/components/commanders/detail.tsx:240`), while `/collection` mounts `CardModal` directly
+(`src/components/collection/browser.tsx:446`). Both routes end at the same component, so one
+insertion point still serves every surface in the app that shows a card.
 
 That is also the only correct place. The buy tag cannot be it: the shipped spec forbids it, and the
 reason is sound — the tag is 9px, sits under `pointer-events: none` over card art, and the tile
@@ -198,14 +257,16 @@ variant renders over a 92% scrim where a link's focus ring has nowhere to go. Th
 cannot be it either: rows already open the modal on click, and a nested link inside a
 `role="button"` row is invalid, which `card-modal.tsx:93` records as an existing constraint.
 
-The modal is reachable from the decklist row, so "buy this specific card" is two clicks from the
-buy tag that priced it — row, then link — and zero new surfaces.
+The modal is reachable from the decklist row, so "buy this card" is two clicks from the buy tag that
+priced it — row, then link — and zero new surfaces. The link takes the card's name and nothing else
+(§2.2), so it renders identically whether or not that card has a price row, which is what lets it be
+unconditional.
 
 **The link renders for every card, owned or not** (ruled 2026-09-06). It is a per-card fact — this
 card is purchasable at Mana Pool — not a shopping-list fact, so it carries no ownership condition
 and Design draws one state, not two. The alternative was to mirror the buy tag's visibility rule and
 show it only for shopping-list cards, which was rejected because the modal opens from three places
-(`builder-shell.tsx:514`, `browser.tsx:450`, `detail.tsx:240`) and `/collection` holds nothing but
+(`builder-shell.tsx:552`, `browser.tsx:446`, `detail.tsx:240`) and `/collection` holds nothing but
 owned cards: the condition would make the same modal grow and lose an actions row depending on which
 surface opened it, with no explanation visible to the player.
 
@@ -223,10 +284,10 @@ engineering one — §7.
 
 ## 5. What the links carry
 
-| Surface | Cards sent | Quantity sent |
+| Surface | Destination | What is sent |
 |---|---|---|
-| Export dialog, Shopping tab | `shoppingCards` — exactly the list the tab already previews and the price strip already sums | `card.quantity` |
-| Card modal | the one card | `1` |
+| Export dialog, Shopping tab | `/add-deck?deck=` | `shoppingCards` — exactly the list the tab already previews and the price strip already sums — each as `${card.quantity} ${card.name}` |
+| Card modal | `/cards?q=` | the card's name alone; no quantity, no set, no price |
 
 The Shopping list is defined at `src/components/decks/decklist.tsx:51` — unowned, or owned but
 over-committed, and never a basic land. The export dialog already receives that same array as
@@ -249,7 +310,12 @@ shopping line is `1 Name` in practice — but the code sends `card.quantity` rat
   UI, its staleness, and its failure modes. Out of scope, and probably out of scope permanently —
   Mass Entry already does this job on Mana Pool's side, with their live inventory.
 - **No price shown on the link.** The buy tag and the price strip already say what things cost.
-- **No new ingest, no schema change.** `buy_url` is already a column and already populated.
+- **No new ingest, no schema change, and no price-layer change at all.** Neither link reads a
+  price: the list link carries names and quantities, the card link carries a name. `price-query.ts`
+  and `price.ts` are untouched, and the feed's `buy_url` is not surfaced — §2.2 explains why the
+  grid beats the single printing it points at.
+- **Nothing is normalised before it is sent.** Mana Pool's own matcher folds `Æ` and resolves `//`
+  names (§2.1, §2.2), so a name-cleaning step here could only make matching worse.
 - **No affiliate code, no referral parameter.** None was asked for and none exists.
 
 ---
@@ -265,7 +331,9 @@ handoff:
    app that hands the player to another company.
 2. **The shared card modal** — a per-card link, drawn once and unconditional per §4.2. The modal's
    existing chrome has no actions row, so where one goes is part of the ask. Mobile and desktop,
-   across the six shipped themes (`src/lib/theme/themes.ts`).
+   across the six shipped themes (`src/lib/theme/themes.ts`). It lands on Mana Pool's all-printings
+   grid, not on one printing (§2.2), which is worth knowing when the label is written: the player is
+   being sent somewhere to choose, not to a pre-chosen listing.
 
 Both need the app's first outbound-link treatment: whether an external-link glyph is drawn, whether
 "Mana Pool" is named in the label, and what the visited/hover/focus states are. Engineering has
@@ -280,14 +348,18 @@ letter to Design, not a versioned artifact. The handoff it asks for is an addend
 
 ## 8. Questions, answered 2026-09-06
 
-All three were put to Hugh and closed. Nothing here is open.
+All four were put to Hugh and closed. Nothing here is open.
 
 1. **Buy the whole deck as well? No — rejected, not deferred.** §4.1 scopes the link to the
    Shopping tab and the Decklist tab does not get one; its audience already owns the deck.
 2. **Does the card link show for cards you already own? Yes, always** — §4.2 carries the reasoning.
-3. **Production pricing: Monday's scheduled run, deliberately not pulled forward.**
-   `printing_prices` is empty in production, so the card link takes the `/add-deck` fallback there
-   and every price surface from #288 renders bare. `PRICE_REFRESH_ENABLED` is already `true` and
+3. **Where does the card link land? On the all-printings grid** — `/cards?q=<name>`, not a single
+   printing. §2.2 carries the reasoning and the evidence; it also removes work, since no price row
+   is read to build the link.
+4. **Production pricing: Monday's scheduled run, deliberately not pulled forward.**
+   `printing_prices` is empty in production, so every price surface from #288 renders bare there.
+   Neither link in this spec is affected — both are built from names — but the buy tag beside them
+   is. `PRICE_REFRESH_ENABLED` is already `true` and
    the scheduled run targets production by default (`github.event.inputs.target || 'production'`),
    so the next 09:00 UTC Monday fills it with no intervention. A manual dispatch was offered and
    declined: the scheduled run is wanted *as* the test of the production path, and staging carries
