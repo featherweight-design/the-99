@@ -140,7 +140,11 @@ async function read(page) {
 
     return {
       leaves,
-      rowCount: rows.length,
+      // Commander rows, so the reveal's own row is subtracted when it is in the
+      // list — which is the case this probe exists to confirm. Counting list
+      // children instead reports one more than the page says it is showing, and
+      // the reveal's whole claim is about a specific count.
+      rowCount: rows.length - (revealIndex >= 0 ? 1 : 0),
       listGap: list ? getComputedStyle(list).rowGap : null,
       reveal: reveal
         ? {
@@ -166,7 +170,7 @@ async function read(page) {
 
 function report(label, seen) {
   console.log(`\n--- ${label}`);
-  console.log(`  rows in list: ${seen.rowCount} · list row-gap ${seen.listGap}`);
+  console.log(`  commander rows: ${seen.rowCount} · list row-gap ${seen.listGap}`);
   if (seen.reveal) {
     console.log(`  reveal: insideList=${seen.reveal.insideList} gapAbove=${seen.reveal.gapAbove}px`);
     console.log(`  reveal aria: ${seen.reveal.aria}`);
