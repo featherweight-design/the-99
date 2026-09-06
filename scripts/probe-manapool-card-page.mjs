@@ -25,7 +25,14 @@ async function run(browser) {
   for (const [label, url] of urls) {
     const page = await browser.newPage({ viewport: { width: 1400, height: 1200 } });
     const res = await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 }).catch((e) => e);
-    const status = res?.status?.() ?? `ERR ${res}`;
+    // A failed goto leaves page.url() on the previous navigation and the body
+    // empty, so reporting either below would describe the wrong page.
+    if (typeof res?.status !== "function") {
+      console.log(`\n=== ${label}  ${url}\n    NAV FAILED: ${res?.message ?? "unknown"}`);
+      await page.close();
+      continue;
+    }
+    const status = res.status();
     await page.waitForTimeout(2000);
     const body = await page.locator("body").innerText().catch(() => "");
     console.log(`\n=== ${label}  ${url}\n    status: ${status}`);
