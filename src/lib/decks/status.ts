@@ -12,7 +12,7 @@
  *
  * | Value        | When                             | Means                          | Next action     |
  * | ------------ | -------------------------------- | ------------------------------ | --------------- |
- * | `Draft`      | 0 cards                          | A commander and nothing else   | Add cards       |
+ * | `Draft`      | 0 cards                          | Not started, unresolved or not | Add cards       |
  * | `Building`   | 1–98 cards                       | Short of a legal list          | Add the rest    |
  * | `Over`       | 100+ cards                       | Past a legal list              | Cut the excess  |
  * | `Unresolved` | 99, some line unnamed            | Carrying lines we cannot name  | Resolve or drop |
