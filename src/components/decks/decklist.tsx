@@ -271,11 +271,12 @@ export function Decklist({
     // slots are "the fun part", and a negative count of them is nonsense.
     const openSlots = Math.max(0, 99 - built);
 
-    // The sweep's refusal and its receipt. Shared by both branches below: a
-    // sweep usually empties this tab (bought cards are the fill's), so leaving
-    // the receipt out of the empty state would strand Undo behind a tab switch
-    // at exactly the moment the player is most likely to want it.
-    const sweepBanner = (
+    // The auto lifecycle's refusals — a sweep, a keep-all or an undo — and the
+    // sweep's receipt. Shared by both branches below: a sweep usually empties
+    // this tab (bought cards are the fill's), so leaving the receipt out of the
+    // empty state would strand Undo behind a tab switch at exactly the moment
+    // the player is most likely to want it.
+    const autoBanner = (
       <>
         {autoError && (
           <p role="alert" className="font-mono text-[11px] mb-[10px] text-fg-locked">
@@ -313,7 +314,7 @@ export function Decklist({
             autoControls={autoControls}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
-            {sweepBanner}
+            {autoBanner}
           </div>
           {filled ? (
             /* Design: centered, padding 24px 14px 28px, heading Cinzel 18px
@@ -375,7 +376,7 @@ export function Decklist({
         />
 
         <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
-          {sweepBanner}
+          {autoBanner}
 
           {/* Intro line — sans (default family), 12.5px phone / 13.5px desktop,
               --fg-body per design §Shopping intro. font-mono was wrong. */}
@@ -550,7 +551,8 @@ export function Decklist({
 
       {/* Grouped card rows */}
       <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
-        {/* Sweep error — a failed sweep, deck unchanged. */}
+        {/* A refused sweep, keep-all or undo. Each message names its own write:
+            the sweep and the keep leave the deck as it was, an undo does not. */}
         {autoError && (
           <p
             role="alert"
