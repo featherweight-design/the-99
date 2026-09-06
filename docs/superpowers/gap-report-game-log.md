@@ -69,7 +69,7 @@ a real viewport has not happened.
 
 ## Corrected after the report, during PR review
 
-The design gaps closed above are still closed, but Copilot review of PR #332 found six
+The design gaps closed above are still closed, but Copilot review of PR #332 found eight
 behavioural defects this pass did not look for, because none of them are properties on the
 table. They are recorded here so the next reader does not take "0 gaps remain" as a claim
 about behaviour:
@@ -84,6 +84,10 @@ about behaviour:
   eight axes and the action is a public endpoint.
 - The form read the local day four separate times, so a midnight rollover could leave the
   gate, the label and the submitted instant disagreeing.
+- Two games logged before the route revalidated were announced with the same record, because
+  the live region read a server figure that had not caught up.
+- `logGame` refused any instant past the server's now, so a browser clock running seconds
+  ahead turned a legitimate "played tonight" log into a refusal.
 
 ## Verdict
 
