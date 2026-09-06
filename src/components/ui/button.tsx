@@ -34,18 +34,6 @@ const GHOST =
   "hover:[border-color:var(--accent)] hover:[color:var(--accent-hover)] " +
   "disabled:hover:[border-color:var(--border-strong)] disabled:hover:[color:var(--fg)]";
 
-// The same ghost contract with the outline already lit. Two empty-state CTAs are
-// drawn this way (discovery's floor empty and the filtered empty's secondary
-// pairing), and the resting accent outline is open item M-7 against Design. It
-// is a variant rather than a call-site override because the border and text
-// colour are two of the nine properties these primitives own: overriding them
-// outside would leave GHOST's disabled: rules restoring --border-strong on a
-// button whose resting border is --accent.
-const GHOST_ACCENT =
-  "bg-transparent text-[color:var(--accent)] [border:1px_solid_var(--accent)] " +
-  "hover:[color:var(--accent-hover)] " +
-  "disabled:hover:[border-color:var(--accent)] disabled:hover:[color:var(--accent)]";
-
 type SharedProps = {
   className?: string;
   children: React.ReactNode;
@@ -102,8 +90,4 @@ export function PrimaryButton(props: ButtonProps) {
 
 export function GhostButton(props: ButtonProps) {
   return renderButton(GHOST, props);
-}
-
-export function AccentGhostButton(props: ButtonProps) {
-  return renderButton(GHOST_ACCENT, props);
 }

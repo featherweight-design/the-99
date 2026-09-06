@@ -112,14 +112,12 @@ export const discoveryCopy = {
   // ONE slot, contents chosen by the sort key. The accent marks the sort key and
   // nothing else, so `overlap` brasses its bar and `distance` brasses its tags.
   justify: {
-    // §5's correction, at three lengths. All three print M.
+    // §5's correction, at two lengths. Both print M.
     overlapLabel: "Overlap",
     overlap: (owned: number, total: number) =>
       `you own ${n(owned)} of the ${n(total)} cards EDHREC lists for this commander`,
     overlapShort: (owned: number, total: number) =>
       `own ${n(owned)} of ${n(total)} EDHREC lists`,
-    overlapAria: (owned: number, total: number, name: string) =>
-      `you own ${n(owned)} of the ${n(total)} cards EDHREC lists for ${name}`,
 
     // Column label + figure unit. "Support" is a noun for the list, not a claim.
     figureLabelFit: "Support owned",

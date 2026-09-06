@@ -8,7 +8,7 @@
 // player chose to keep, and that list is the only thing the client contributes —
 // the server re-derives the rest from the same paste.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import type { DeckUpdatePreview } from "../../app/decks/update-actions";
 import { GhostButton, PrimaryButton } from "../ui/button";
@@ -47,6 +47,7 @@ function Group({
   children: (shown: number) => React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const rowsId = useId();
   const shown = expanded ? total : Math.min(ROW_CAP, total);
   return (
     <section className="mt-[22px] md:mt-[28px]">
@@ -68,12 +69,17 @@ function Group({
           )}
         </p>
       )}
-      <div className="mt-[10px] md:mt-[12px] flex flex-col gap-[6px]">{children(shown)}</div>
+      <div id={rowsId} className="mt-[10px] md:mt-[12px] flex flex-col gap-[6px]">
+        {children(shown)}
+      </div>
       {total > ROW_CAP && (
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
           aria-expanded={expanded}
+          // Named unconditionally, unlike the menus: this container holds the
+          // first four rows at rest, so it is on the page in both states.
+          aria-controls={rowsId}
           className="mt-[10px] font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
         >
           {expanded ? copy.showFewer : copy.showMore(String(total - ROW_CAP))}
@@ -334,18 +340,22 @@ export function UpdateDiff({
  *  nothing at rest, so the control names the whole set rather than a remainder. */
 function UnchangedGroup({ rows }: { rows: DeckUpdatePreview["unchanged"] }) {
   const [expanded, setExpanded] = useState(false);
+  const rowsId = useId();
   return (
     <section className="mt-[22px] md:mt-[28px]">
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
         aria-expanded={expanded}
+        // Omitted while collapsed: this group renders nothing at rest, so the
+        // id it would name does not exist yet.
+        aria-controls={expanded ? rowsId : undefined}
         className="font-mono text-[11.5px] min-h-[44px] md:min-h-0 md:py-[6px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--fg-faint)] md:hover:text-[color:var(--accent)] transition-colors"
       >
         {expanded ? copy.showFewer : copy.unchangedDisclosure(String(rows.length))}
       </button>
       {expanded && (
-        <div className="mt-[10px] flex flex-col gap-[6px]">
+        <div id={rowsId} className="mt-[10px] flex flex-col gap-[6px]">
           {rows.map((row) => (
             <DiffRowUnchanged key={row.oracleId} card={row} />
           ))}
