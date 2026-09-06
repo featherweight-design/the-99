@@ -9,7 +9,7 @@ import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { guildLabel, colorWords } from "../../lib/copy/color-labels";
 import { commandersCopy } from "../../lib/copy/commanders";
 import { Crown } from "../ui/crown";
-import { GhostButton } from "../ui/button";
+import { AccentGhostButton, GhostButton } from "../ui/button";
 
 type FilteredEmptyProps = {
   colors: string[];
@@ -118,12 +118,12 @@ export function FilteredEmpty({
           pairing: M-9 resolves the canvas's 12px here as drafting drift. */}
       {secondary ? (
         <span className="mt-[16px] inline-flex flex-wrap items-center justify-center gap-[10px]">
-          <GhostButton
+          <AccentGhostButton
             onClick={onClear}
-            className="inline-flex items-center h-[40px] px-[18px] text-[13.5px] [border:1px_solid_var(--accent)] text-[color:var(--accent)]"
+            className="inline-flex items-center h-[40px] px-[18px] text-[13.5px]"
           >
             {cta ?? commandersCopy.filteredEmpty.cta}
-          </GhostButton>
+          </AccentGhostButton>
           {secondary}
         </span>
       ) : (
