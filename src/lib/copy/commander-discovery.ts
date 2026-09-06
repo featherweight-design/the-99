@@ -108,6 +108,15 @@ export const discoveryCopy = {
     distanceLabel: "New to you",
     tagList: (tags: string[], extra: number) =>
       extra > 0 ? `${tags.join(" · ")} — and ${n(extra)} more` : tags.join(" · "),
+    // What the nearest deck shares, from the labels and the count of the rest.
+    // Two names then a number, for the same reason `tagList` stops at three: a
+    // third name reads as a list and the clause is a summary.
+    sharedList: (labels: string[], extra: number) =>
+      extra > 0
+        ? `${labels[0]}, ${labels[1]} and ${n(extra)} more`
+        : labels.length === 2
+          ? `${labels[0]} and ${labels[1]}`
+          : labels[0],
     // Nothing built plays any of them. Plain, and it does not congratulate.
     distanceNone: "Nothing you have built plays these.",
     // Partial: name the nearest deck, and say what it shares. One deck, never a
