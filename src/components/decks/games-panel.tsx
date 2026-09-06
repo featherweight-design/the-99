@@ -17,12 +17,12 @@ export interface GamesPanelProps {
   summary: GameSummary;
 }
 
-type Record = GameSummary["record"];
+type GameRecord = GameSummary["record"];
 
 // The record a mutation just produced. The summary in hand is the pre-mutation
 // one until the route revalidates, so the announcement counts the game itself
 // rather than reading a figure that has not caught up yet.
-function recordShifted(record: Record, result: GameResult, delta: 1 | -1): Record {
+function recordShifted(record: GameRecord, result: GameResult, delta: 1 | -1): GameRecord {
   return {
     wins: record.wins + (result === "win" ? delta : 0),
     losses: record.losses + (result === "loss" ? delta : 0),
@@ -30,7 +30,7 @@ function recordShifted(record: Record, result: GameResult, delta: 1 | -1): Recor
   };
 }
 
-function recordSaid(record: Record): string {
+function recordSaid(record: GameRecord): string {
   return record.draws > 0
     ? gameLogCopy.headline.recordWithDraws(
         String(record.wins),
@@ -40,7 +40,7 @@ function recordSaid(record: Record): string {
     : gameLogCopy.headline.record(String(record.wins), String(record.losses));
 }
 
-const recordKey = (record: Record) => `${record.wins}-${record.losses}-${record.draws}`;
+const recordKey = (record: GameRecord) => `${record.wins}-${record.losses}-${record.draws}`;
 
 const BUCKET_HEADING = "font-mono uppercase text-[10px] tracking-[0.14em]";
 const CELL_STRIP = "flex flex-col md:flex-row md:flex-wrap gap-[6px] md:gap-[12px]";

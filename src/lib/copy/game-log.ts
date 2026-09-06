@@ -7,7 +7,8 @@
 // This block ADDS ONLY. It edits nothing and duplicates nothing:
 //   decksBuilderCopy.tabs.*          Decklist / Consider — untouched; 'Games' is a third entry
 //   decksBuilderCopy.roleCounter.*   the role strip's own strings — not reused, not changed
-//   REJECTION_MESSAGES              §4's returned rejections live there, not here
+//   REJECTION_MESSAGES               the deck-add rejections — untouched. The game
+//                                    log's own refusals are defined here, below
 //
 // One rule governs this whole file, and it is checkable: NO STRING HERE PRINTS A
 // PERCENTAGE, AND NO STRING HERE PRINTS `net`. Every count carries its own
@@ -227,8 +228,8 @@ export const gameLogCopy = {
     // Says the quiet part out loud: two empty columns otherwise read as a
     // required field whose requirement you cannot see.
     optionalNote: 'marks are optional \u2014 a result on its own is a game',
-    // Returned by logGame, rendered in the shipped MutationError. Kept in
-    // REJECTION_MESSAGES; quoted here so Design's wording is on the record.
+    // Returned by logGame, rendered in the shipped MutationError. Defined here
+    // rather than in REJECTION_MESSAGES, which holds the deck-add rejections.
     refused: 'We couldn\u2019t save that game. Nothing has been logged.',
   },
 
