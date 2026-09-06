@@ -84,4 +84,4 @@ One live-region message per settle, on the existing region — never one per tic
 | Save refused | the refusal string, once |
 
 Twelve fast ticks is silence — individual checkbox state is already spoken by the checkbox. Only
-the **move** is announced, because there two rows changed and the player touched one.
+the **move** is announced, because two rows changed and the player touched one.
