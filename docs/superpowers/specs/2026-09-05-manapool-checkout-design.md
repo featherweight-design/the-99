@@ -17,7 +17,9 @@ This spec is that pass. It honours the ruling — the tag still is not a link �
 per-card half the ruling did not anticipate.
 
 **Status.** Engineering scope only. The two link-out affordances are UI, so per `AGENTS.md` they are
-gated on a design handoff that does not exist yet. §7 carries the handoff prompt. Nothing in §1–§5
+gated on a design handoff. `design/design_handoff_the99_decks/` already owns both surfaces and is
+audited Green, but neither affordance is drawn in it — what is missing is an addendum, not a
+handoff. §7 says what that addendum has to cover. Nothing in §1–§5
 may be built before that handoff has a READINESS verdict; §3 (the pure link module) is the one part
 with no drawn surface and could land ahead of it, but shipping a helper with no caller is dead code,
 so it waits too.
