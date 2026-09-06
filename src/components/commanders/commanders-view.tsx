@@ -10,7 +10,8 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import type { CommanderListItem } from "../../lib/recs/recommend";
-import { filterByColors, parseColors } from "../../lib/commanders/filter";
+import { filterByColors } from "../../lib/commanders/filter";
+import { parseColors } from "../../lib/color-param";
 import { rankMap } from "../../lib/commanders/rank-maps";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { availabilityCopy } from "../../lib/copy/availability";

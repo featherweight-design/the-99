@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { filterByColors, parseColors } from "../../lib/commanders/filter";
+import { filterByColors } from "../../lib/commanders/filter";
+import { parseColors } from "../../lib/color-param";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 // Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
 // reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is unset
