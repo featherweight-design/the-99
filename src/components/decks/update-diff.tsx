@@ -205,16 +205,8 @@ export function UpdateDiff({
       {preview.out.length > 0 && (
         <Group
           heading={copy.outHeading(String(preview.out.length))}
-          body={
-            preview.handAddedOut > 0
-              ? copy.outBodyHandAdded(String(preview.handAddedOut))
-              : copy.outBody
-          }
-          bodyMobile={
-            preview.handAddedOut > 0
-              ? copy.outBodyMobileHandAdded(String(preview.handAddedOut))
-              : copy.outBody
-          }
+          body={copy.outBody}
+          bodyMobile={copy.outBody}
           action={
             <GhostButton
               onClick={() => setKept(new Set(preview.out.map((r) => r.oracleId)))}

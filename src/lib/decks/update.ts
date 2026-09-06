@@ -49,9 +49,6 @@ export type DeckUpdatePlan = {
    *  wholesale rather than merging — the list is the deck now, and a line the
    *  new list does not carry is not a line the deck is still missing. */
   unresolved: DeckImport["unresolved"];
-  /** How many of `out` the player added themselves. Drives the one clause in the
-   *  group's sentence that explains why the group is first. */
-  handAddedOut: number;
   /** True when the plan would write nothing at all. */
   noChange: boolean;
 };
@@ -126,8 +123,6 @@ export function planDeckUpdate(args: {
     going.push({ oracleId, ...cardFor(oracleId), sourceLine, quantity, auto: false });
   }
 
-  const handAddedOut = out.filter((r) => !r.auto).length;
-
   // Unnamed lines alone are not a change: they replace rows that say the same
   // thing. This is the second way the "nothing changed" screen is reached.
   //
@@ -138,5 +133,5 @@ export function planDeckUpdate(args: {
   const quantityMoved = unchanged.some((r) => here.get(r.oracleId)?.quantity !== r.quantity);
   const noChange = out.length === 0 && going.length === 0 && !quantityMoved;
 
-  return { out, in: going, unchanged, unresolved: parsed.unresolved, handAddedOut, noChange };
+  return { out, in: going, unchanged, unresolved: parsed.unresolved, noChange };
 }

@@ -69,19 +69,6 @@ describe("planDeckUpdate", () => {
     expect(result.in[0].name).toBe("Swords to Plowshares");
   });
 
-  // The group is first on the screen because of this number, and the sentence
-  // that explains why only appears when it is above zero.
-  it("counts how many removals the player added themselves", () => {
-    const result = plan({
-      parsed: parsed(),
-      deckCards: [card("o-sol-ring", { auto: false }), card("o-tithe"), card("o-swords", { auto: false })],
-      commanderOracleId: KORVOLD,
-      cardFor,
-    });
-    expect(result.out).toHaveLength(3);
-    expect(result.handAddedOut).toBe(2);
-  });
-
   // A real list only changes the count of basics, and a diff announcing "your
   // Islands went 12 → 9" would bury the cards that actually left the deck.
   it("reconciles a quantity change silently, as unchanged", () => {

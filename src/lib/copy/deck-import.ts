@@ -383,13 +383,11 @@ export const deckImportCopy = {
       landing: (from: string, to: string) => `${from} → ${to} / 99`,
 
       outHeading: (n: string) => `Coming out · ${n}`,
+      // One sentence, with no hand-added variant. Nothing records who placed a
+      // card — `auto` is false for a hand-add and for a previous import's rows
+      // alike — so no removal can honestly be labelled differently from any
+      // other. Product ruled the variants out on 2026-09-05.
       outBody: "Your list does not name these.",
-      outBodyHandAdded: (n: string) =>
-        n === "1"
-          ? "Your list does not name these. One of them you added by hand — keep anything you meant to keep."
-          : `Your list does not name these. ${n} of them you added by hand — keep anything you meant to keep.`,
-      outBodyMobileHandAdded: (n: string) =>
-        n === "1" ? "One you added by hand." : `${n} you added by hand.`,
       keepAll: (n: string) => `Keep all ${n}`,
 
       inHeading: (n: string) => `Going in · ${n}`,
@@ -417,13 +415,11 @@ export const deckImportCopy = {
       kept: "Kept ✓",
       keptMobile: "✓",
       keepAria: (name: string) => `Keep ${name} in the deck`,
-      // The inverse of the shipped `auto` tag, and deliberately NOT "you added
-      // this by hand": the signal is `auto === false`, which is also true of a
-      // card a previous import brought in. A previous import was still the
-      // player's list, so "you added this" is defensible where "by hand" is not.
-      handAdded: "you added this",
+      // Carries the `auto` marker and nothing else. There is no hand-added
+      // counterpart for the same reason `outBody` has no variant: `auto ===
+      // false` says only that the app did not place the card, which is as true
+      // of a previous import's rows as of a hand-add.
       rowAria: (name: string, marker: string) => (marker ? `${name}. ${marker}.` : name),
-      ariaHandAdded: "You added this card",
       ariaAuto: "Added automatically",
       sourceLine: (n: string) => `line ${n}`,
 

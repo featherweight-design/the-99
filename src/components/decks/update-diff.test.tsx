@@ -38,7 +38,6 @@ function preview(over: Partial<DeckUpdatePreview> = {}): DeckUpdatePreview {
     unchanged: [row("same-1")],
     unchangedDelta: 0,
     unresolved: [],
-    handAddedOut: 0,
     noChange: false,
     ...over,
   };
@@ -168,9 +167,14 @@ describe("UpdateDiff groups", () => {
     expect(screen.getByText("Card same-1")).toBeInTheDocument();
   });
 
-  it("names how many removals the player added by hand", () => {
-    renderDiff({ handAddedOut: 1 });
-    expect(screen.getByText(copy.outBodyHandAdded("1"))).toBeInTheDocument();
+  // Product's 2026-09-05 ruling. `auto === false` is as true of a previous
+  // import's rows as of a hand-add, so a removal the app did not place gets the
+  // same sentence and no marker of its own — the group cannot claim the player
+  // put a card there when nothing records who did.
+  it("says the same thing about a removal the app did not place", () => {
+    renderDiff({ out: [row("out-1", { auto: false })] });
+    expect(screen.getAllByText(copy.outBody).length).toBeGreaterThan(0);
+    expect(screen.queryByText("you added this")).not.toBeInTheDocument();
   });
 
   it("splits the going-in group by what the player owns", () => {

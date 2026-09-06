@@ -39,7 +39,6 @@ const preview = {
   unchanged: [],
   unchangedDelta: 0,
   unresolved: [],
-  handAddedOut: 0,
   noChange: false,
 };
 

@@ -17,8 +17,8 @@ export type DiffRowCard = {
   oracleId: string;
   name: string;
   typeLine: string;
-  /** False for a hand-add *and* for a previous import's rows, which is why the
-   *  marker reads "you added this" rather than "by hand". */
+  /** True only of a card the app placed. False covers a hand-add and a previous
+   *  import's rows alike, so it carries no marker of its own. */
   auto: boolean;
   owned: boolean;
 };
@@ -39,17 +39,14 @@ function OwnedDot({ owned }: { owned: boolean }) {
   );
 }
 
+/** The shipped `auto` tag, and nothing in its place when the card is not the
+ *  app's. No column records who placed a card, so a second marker would assert
+ *  something the data cannot support — Product ruled it out on 2026-09-05. */
 function Marker({ auto }: { auto: boolean }) {
-  if (auto) {
-    return (
-      <span className="hidden md:inline font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none text-[color:var(--fg-faint)] [border:1px_solid_var(--border)]">
-        auto
-      </span>
-    );
-  }
+  if (!auto) return null;
   return (
-    <span className="font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]">
-      {copy.handAdded}
+    <span className="hidden md:inline font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none text-[color:var(--fg-faint)] [border:1px_solid_var(--border)]">
+      auto
     </span>
   );
 }

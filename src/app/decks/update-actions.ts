@@ -46,7 +46,6 @@ export type DeckUpdatePreview = {
    *  group counts stay row counts, which is what the diff's chips report. */
   unchangedDelta: number;
   unresolved: DeckUpdatePlan["unresolved"];
-  handAddedOut: number;
   noChange: boolean;
 };
 
@@ -160,7 +159,6 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     unchanged: plan.unchanged,
     unchangedDelta: quantityDelta(rows, plan.unchanged),
     unresolved: plan.unresolved,
-    handAddedOut: plan.handAddedOut,
     noChange: plan.noChange,
   };
 }
