@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { discoveryCopy } from "../copy/commander-discovery";
 import { byFit, byNovelty, clearsFloor, floorPct, nearestDeck, unplayedTags } from "./novelty";
 
 const tag = (slug: string, count = 1) => ({ slug, label: slug.toUpperCase(), count });
@@ -53,12 +54,12 @@ describe("nearestDeck", () => {
 
   it("picks the deck sharing the most tags", () => {
     expect(nearestDeck([tag("counters"), tag("blink"), tag("sacrifice")], decks))
-      .toEqual({ deckName: "Atraxa", shared: "BLINK and COUNTERS" });
+      .toEqual({ deckName: "Atraxa", sharedLabels: ["BLINK", "COUNTERS"], extraShared: 0 });
   });
 
-  it("names one shared tag without a conjunction", () => {
+  it("names one shared tag on its own", () => {
     expect(nearestDeck([tag("sacrifice")], decks))
-      .toEqual({ deckName: "Meren", shared: "SACRIFICE" });
+      .toEqual({ deckName: "Meren", sharedLabels: ["SACRIFICE"], extraShared: 0 });
   });
 
   it("is null when no deck shares anything", () => {
@@ -75,9 +76,22 @@ describe("nearestDeck", () => {
 
   it("counts the rest rather than listing every shared tag", () => {
     const wide = [{ deckName: "Atraxa", slugs: new Set(["a", "b", "c", "d"]) }];
-    expect(nearestDeck([tag("a"), tag("b"), tag("c"), tag("d")], wide)?.shared)
-      .toBe("A, B and 2 more");
+    expect(nearestDeck([tag("a"), tag("b"), tag("c"), tag("d")], wide))
+      .toEqual({ deckName: "Atraxa", sharedLabels: ["A", "B"], extraShared: 2 });
   });
+});
+
+describe("discoveryCopy.justify.sharedList", () => {
+  const { sharedList } = discoveryCopy.justify;
+
+  it("reads two names with a conjunction", () =>
+    expect(sharedList(["Blink", "Counters"], 0)).toBe("Blink and Counters"));
+
+  it("reads one name alone", () =>
+    expect(sharedList(["Sacrifice"], 0)).toBe("Sacrifice"));
+
+  it("counts the rest past two", () =>
+    expect(sharedList(["A", "B"], 2)).toBe("A, B and 2 more"));
 });
 
 const r = (oracleId: string, ownedSupport: number, unplayedCount: number) =>

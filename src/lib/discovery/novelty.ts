@@ -38,7 +38,7 @@ export function unplayedTags(tags: EdhrecTag[], played: Set<string>): EdhrecTag[
 export function nearestDeck(
   tags: EdhrecTag[],
   deckSets: readonly { deckName: string; slugs: Set<string> }[],
-): { deckName: string; shared: string } | null {
+): { deckName: string; sharedLabels: string[]; extraShared: number } | null {
   let best: { deckName: string; labels: string[] } | null = null;
   for (const d of [...deckSets].sort((a, b) => a.deckName.localeCompare(b.deckName))) {
     const labels = tags
@@ -50,12 +50,13 @@ export function nearestDeck(
     }
   }
   if (!best) return null;
-  const [a, b, ...rest] = best.labels;
-  const shared =
-    rest.length > 0 ? `${a}, ${b} and ${rest.length} more`
-      : b ? `${a} and ${b}`
-      : a;
-  return { deckName: best.deckName, shared };
+  // Structured, never a sentence: the wording lives in the copy module, which is
+  // the one place the clause can be kept consistent with `tagList` beside it.
+  return {
+    deckName: best.deckName,
+    sharedLabels: best.labels.slice(0, 2),
+    extraShared: Math.max(0, best.labels.length - 2),
+  };
 }
 
 type Ordered = { ownedSupport: number; unplayedCount: number; oracleId: string };
@@ -83,8 +84,10 @@ export function byNovelty(a: Ordered, b: Ordered): number {
  *
  * Two decks sharing an archetype count once, which is deliberate (gap 6): you
  * have played it or you have not, so the sort cannot express "a little".
- * A deck whose commander is not indexed contributes an empty set rather than
- * being dropped, so it can still be the nearest deck for nothing.
+ * A deck whose commander is not indexed contributes an empty tag set rather
+ * than being dropped: it can never be the nearest deck, since `nearestDeck`
+ * requires a shared tag, but it keeps its name and colour identity in the list
+ * that the built clause counts against.
  */
 export async function loadPlayedTags(userId: string): Promise<DeckTagSet[]> {
   // The `cards` join is what carries each deck's colour identity: `decks` stores
