@@ -9,7 +9,12 @@ import { describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 vi.mock("../../app/decks/actions", () => ({ createDeck: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+// Partial, not a bare stub: the component imports `unstable_rethrow` from this
+// module, and a stub that omits it hands the catch path an undefined to call.
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 const { CreatePicker } = await import("./create-picker");
 
