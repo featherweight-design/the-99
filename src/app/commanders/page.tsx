@@ -12,6 +12,9 @@ import {
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
+import { DiscoveryView } from "../../components/commanders/discovery-view";
+import { loadDiscovery } from "../../lib/discovery/list";
+import { parseScope, parseSort } from "../../lib/discovery/params";
 import { PageHeader } from "../../components/commanders/page-header";
 import { retryRecs } from "./actions";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
@@ -31,8 +34,8 @@ export default async function CommandersPage({
   // committed to a deck recommends commanders the player cannot build without
   // taking one apart. `?avail=all` is the opt-out, so a shared link that predates
   // this still opens on the mode it names.
-  const avail =
-    (await searchParams).avail === "all" ? ("all" as const) : ("free" as const);
+  const sp = await searchParams;
+  const avail = sp.avail === "all" ? ("all" as const) : ("free" as const);
   const stats = await getCollectionStats(userId);
 
   if (stats.uniqueCards === 0) {
@@ -58,6 +61,21 @@ export default async function CommandersPage({
           Upload collection
         </PrimaryButton>
       </EmptyState>
+    );
+  }
+
+  if (parseScope(sp.scope) === "play") {
+    // Discovery does NOT call getRankedList, rankFree or receiptCountsByCommander:
+    // all three are shaped for the owned scope's few hundred rows, and two of them
+    // walk the collection once per commander. `loadDiscovery` answers the same
+    // questions from the offline index in one pass over ~3,300 candidates.
+    const decksBuilt = await listRecentDecks(userId, 1);
+    const sort = parseSort(sp.sort, decksBuilt.length > 0);
+    const discovery = await loadDiscovery(userId, { sort, avail });
+    return (
+      <section className="flex flex-col min-h-screen">
+        <DiscoveryView discovery={discovery} avail={avail} />
+      </section>
     );
   }
 

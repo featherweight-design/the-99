@@ -14,6 +14,11 @@ import { RoleChips } from "./role-chips";
 import { availabilityCopy } from "../../lib/copy/availability";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import type { CommanderListItem } from "../../lib/recs/recommend";
+// Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
+// reaches `src/db/index.ts`, whose module body throws without DATABASE_URL and
+// pulls the neon driver in with it. A type-only clause is erased at compile
+// time, so none of that reaches the client bundle.
+import type { DiscoveryItem } from "../../lib/discovery/list";
 
 /**
  * The receipt line (§8). It ALWAYS renders, in both ranking modes; only the
@@ -96,24 +101,45 @@ function ReceiptLine({
 
 export type ScoreDelta = { drop: number; was: number };
 
-type RecCardProps = {
-  commander: CommanderListItem;
+type RecCardCommon = {
   rank: number;
   avail: "all" | "free";
   /** The receipt's second clause, by severity. Counted server-side. Null when
       the availability read failed, which drops the clause rather than printing
       a zero the reader would take for a fact. */
   counts: ReceiptCounts | null;
-  /**
-   * How far this commander's score fell against the free pool, and what it was.
-   * Null under `Everything I own`, and null where the score did not move: the
-   * delta is a statement about a re-rank and has nothing to say before one has
-   * happened, or when one changed nothing.
-   */
-  delta: ScoreDelta | null;
 };
 
-export function RecCard({ commander: c, rank, avail, counts, delta }: RecCardProps) {
+/**
+ * A union rather than optional props: `DiscoveryItem` has no `score`, no fit
+ * segments, no `synergyState` and no `receipts`, so an optional `commander`
+ * would leave `fitSegments` reading `undefined`. The discriminant is the
+ * presence of `commander`, which leaves every owned-scope call site unchanged.
+ */
+type RecCardProps =
+  | (RecCardCommon & {
+      commander: CommanderListItem;
+      /**
+       * How far this commander's score fell against the free pool, and what it
+       * was. Null under `Everything I own`, and null where the score did not
+       * move: the delta is a statement about a re-rank and has nothing to say
+       * before one has happened, or when one changed nothing.
+       */
+      delta: ScoreDelta | null;
+      discovery?: undefined;
+      sort?: undefined;
+    })
+  | (RecCardCommon & {
+      discovery: DiscoveryItem;
+      sort: "fit" | "new";
+      delta?: null;
+      commander?: undefined;
+    });
+
+export function RecCard(props: RecCardProps) {
+  // The discovery arm renders nothing until Phase 10 fills it in.
+  if (!props.commander) return null;
+  const { commander: c, rank, avail, counts, delta } = props;
   const gradient = commanderGradient(c.colorIdentity);
   const fit = fitSegments(c);
   const scoreDisplay = Math.round(fit.pct);
