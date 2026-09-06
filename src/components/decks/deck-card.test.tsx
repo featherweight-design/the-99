@@ -66,7 +66,9 @@ describe("DeckCard — over 99", () => {
     expect(bar).toHaveAttribute("aria-valuenow", "99");
     expect(bar).toHaveAttribute("aria-valuemax", "104");
     expect(bar).toHaveAttribute("aria-valuetext", overCopy.aria.progress("104", "5"));
-    expect(bar).toHaveAccessibleName(overCopy.aria.progress("104", "5"));
+    // The name is the deck, not the count. A name that moved with the value
+    // would be announced alongside the valuetext that already carries it.
+    expect(bar).toHaveAccessibleName(`${overDeck.name} build progress`);
   });
 
   it("leaves a deck at 99 alone", () => {

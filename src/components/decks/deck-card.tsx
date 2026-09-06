@@ -220,7 +220,10 @@ export function DeckCard({ deck }: DeckCardProps) {
           // valuetext, and no percentage can say "five over". This replaces it
           // outright rather than sitting beside it.
           aria-valuetext={progressLabel}
-          aria-label={progressLabel}
+          // Stable, and about the deck rather than the count. A name that
+          // changed with the value would be announced alongside the valuetext
+          // that already carries it, so the reader would hear the count twice.
+          aria-label={`${deck.name} build progress`}
         >
           {/* §Deck card — progress bar fill: h 100%, br 999px, color by built bucket */}
           <div className="flex h-full">
