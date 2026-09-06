@@ -4,7 +4,7 @@ import { and, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, decks } from "../../db/schema";
+import { cards, collectionItems, deckCards, deckGameAxes, deckGames, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { withinColorIdentity } from "../../lib/cards/identity-where";
@@ -23,6 +23,8 @@ import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { planLastSlots } from "../../lib/decks/last-slots";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
+import { gameLogCopy } from "../../lib/copy/game-log";
 
 export type LastSlotsFillResult =
   | { ok: true; added: number; total: number; shortfall: number }
@@ -815,4 +817,109 @@ export async function fillLastSlotsUnowned(deckId: string): Promise<LastSlotsTop
     console.error("fillLastSlotsUnowned failed", err);
     return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
   }
+}
+
+export type LogGameInput = {
+  result: "win" | "loss" | "draw";
+  podSize: number;
+  /** When the game was played. Defaults to now. Never in the future. */
+  playedAt?: Date;
+  worked: string[];
+  hurt: string[];
+};
+
+const GAME_RESULTS: readonly string[] = ["win", "loss", "draw"];
+
+/**
+ * Record one game against a deck.
+ *
+ * Every rejection is returned as { ok: false, message } rather than thrown:
+ * the form renders it through the shipped MutationError and keeps every value
+ * the player typed, which a thrown error would destroy along with the form.
+ *
+ * There is no `for update` here, unlike addCardToDeck. That lock exists to keep
+ * two concurrent adds from both seeing 98 cards and pushing the deck to 100.
+ * A game log has no such ceiling — two concurrent logs are simply two games.
+ */
+export async function logGame(
+  deckId: string,
+  input: LogGameInput,
+): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+
+  const refuse = { ok: false as const, message: gameLogCopy.form.refused };
+
+  if (!GAME_RESULTS.includes(input.result)) return refuse;
+  if (!Number.isInteger(input.podSize) || input.podSize < 2 || input.podSize > 8) return refuse;
+
+  const playedAt = input.playedAt ?? new Date();
+  if (playedAt.getTime() > Date.now()) return refuse;
+
+  if (!input.worked.every(isGameAxisKey)) return refuse;
+  if (!input.hurt.every(isGameAxisKey)) return refuse;
+
+  // Dedupe within a list before checking across them, so ['mana','mana'] is a
+  // single mark rather than a primary-key collision, while ['mana'] on both
+  // sides is still the contradiction the composite key exists to forbid.
+  const worked = [...new Set(input.worked)] as GameAxisKey[];
+  const hurt = [...new Set(input.hurt)] as GameAxisKey[];
+  if (worked.some((key) => hurt.includes(key))) return refuse;
+
+  try {
+    await db.transaction(async (tx) => {
+      const [game] = await tx
+        .insert(deckGames)
+        .values({ deckId, userId, result: input.result, podSize: input.podSize, playedAt })
+        .returning({ id: deckGames.id });
+
+      const marks = [
+        ...worked.map((axis) => ({ gameId: game.id, axis, polarity: "worked" })),
+        ...hurt.map((axis) => ({ gameId: game.id, axis, polarity: "hurt" })),
+      ];
+      // Drizzle rejects an empty values array, and no marks is a valid log.
+      if (marks.length > 0) await tx.insert(deckGameAxes).values(marks);
+    });
+  } catch {
+    return refuse;
+  }
+
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  return { ok: true };
+}
+
+/**
+ * Remove one logged game. The axis rows follow through ON DELETE CASCADE.
+ *
+ * There is no edit action by design, so this is the whole correction path: a
+ * game logged wrong is deleted and logged again. That is why the history row's
+ * confirm is inline and one step rather than a dialog — it is a routine
+ * operation, not an exceptional one.
+ */
+export async function deleteGame(
+  deckId: string,
+  gameId: string,
+): Promise<DeckMutationResult> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+
+  const refuse = { ok: false as const, message: gameLogCopy.history.deleteRefused };
+
+  // requireDeck above proves the caller owns this deck. It does not prove this
+  // game is on it, and the delete is keyed by game id alone — so confirm the
+  // pairing before touching anything.
+  const [game] = await db
+    .select({ id: deckGames.id, deckId: deckGames.deckId })
+    .from(deckGames)
+    .where(eq(deckGames.id, gameId));
+  if (!game || game.deckId !== deckId) return refuse;
+
+  try {
+    await db.delete(deckGames).where(eq(deckGames.id, gameId));
+  } catch {
+    return refuse;
+  }
+
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  return { ok: true };
 }

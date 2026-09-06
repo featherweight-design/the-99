@@ -22,6 +22,23 @@ const stub = vi.hoisted(() => {
     edhrecError: null as Error | null,
     // redirect target captured
     redirectTarget: null as string | null,
+    // Rows returned when querying `deck_games` (used by deleteGame's pairing check)
+    deckGames: [] as { id: string; deckId: string }[],
+    // Delete calls tracked as { table, id } — the id lifted out of the eq() condition
+    deleteCalls: [] as { table: string; id: string | null }[],
+    // Every path passed to revalidatePath, in order
+    revalidated: [] as string[],
+  };
+
+  // Lift the bound value out of a drizzle `eq(column, value)` condition so a
+  // delete can be asserted on what it targeted, not merely that it happened.
+  const paramValue = (condition: unknown): string | null => {
+    const chunks = (condition as { queryChunks?: unknown[] } | undefined)?.queryChunks ?? [];
+    for (const chunk of chunks) {
+      const value = (chunk as { value?: unknown } | undefined)?.value;
+      if (typeof value === "string") return value;
+    }
+    return null;
   };
 
   // A per-test fake for db.select chains
@@ -44,6 +61,7 @@ const stub = vi.hoisted(() => {
           where: async () => {
             if (tableName === "cards") return state.cards;
             if (tableName === "decks") return state.decks;
+            if (tableName === "deck_games") return state.deckGames;
             return state.collectionItems;
           },
           innerJoin: () => {
@@ -91,6 +109,9 @@ const stub = vi.hoisted(() => {
         if (tableName === "decks") {
           returning.push({ id: "deck-new-uuid" });
         }
+        if (tableName === "deck_games") {
+          returning.push({ id: "game-new-uuid" });
+        }
         state.insertCalls.push({ table: tableName, values, returning: returning.length ? returning : null });
         return {
           returning: async () => returning,
@@ -113,6 +134,11 @@ const stub = vi.hoisted(() => {
     select: () => makeSelectBuilder(),
     selectDistinctOn: () => makeSelectBuilder(),
     insert: (table: unknown) => makeInsertBuilder(table),
+    delete: (table: unknown) => ({
+      where: async (condition: unknown) => {
+        state.deleteCalls.push({ table: nameOf(table), id: paramValue(condition) });
+      },
+    }),
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
       if (state.transactionError) throw state.transactionError;
       return fn(tx);
@@ -124,7 +150,9 @@ const stub = vi.hoisted(() => {
 
 vi.mock("../../db", () => ({ db: stub.db }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+vi.mock("next/cache", () => ({
+  revalidatePath: (path: string) => { stub.state.revalidated.push(path); },
+}));
 vi.mock("next/navigation", () => ({
   redirect: (target: string) => {
     stub.state.redirectTarget = target;
@@ -150,7 +178,7 @@ vi.mock("../commanders/[slug]/synergy-read", () => ({
   readSynergyCards: async () => [],
 }));
 
-import { createDeck, fillLastSlotsOwned, fillLastSlotsUnowned, restoreAutoCards } from "./actions";
+import { createDeck, deleteGame, fillLastSlotsOwned, fillLastSlotsUnowned, logGame, restoreAutoCards } from "./actions";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -524,5 +552,134 @@ describe("fillLastSlotsUnowned — authorization", () => {
 
     expect(result.ok).toBe(false);
     expect(stub.state.insertCalls).toEqual([]);
+  });
+});
+
+// requireDeck reads the `decks` table, so state.decks — not state.deckRows,
+// which is the in-transaction deck_cards read — is what proves ownership here.
+const OWNED_DECK = { id: "deck_1", userId: "user_1" };
+
+describe("logGame", () => {
+  beforeEach(() => {
+    stub.state.insertCalls.length = 0;
+    stub.state.revalidated.length = 0;
+    stub.state.decks = [OWNED_DECK];
+  });
+
+  it("writes the game and one row per mark", async () => {
+    const result = await logGame("deck_1", {
+      result: "win",
+      podSize: 4,
+      worked: ["mana", "board"],
+      hurt: ["card_flow"],
+    });
+
+    expect(result).toEqual({ ok: true });
+
+    const games = stub.state.insertCalls.filter((c) => c.table === "deck_games");
+    expect(games).toHaveLength(1);
+    expect(games[0].values).toMatchObject({
+      deckId: "deck_1",
+      userId: "user_1",
+      result: "win",
+      podSize: 4,
+    });
+
+    const axes = stub.state.insertCalls.filter((c) => c.table === "deck_game_axes");
+    expect(axes[0].values).toEqual([
+      { gameId: expect.any(String), axis: "mana", polarity: "worked" },
+      { gameId: expect.any(String), axis: "board", polarity: "worked" },
+      { gameId: expect.any(String), axis: "card_flow", polarity: "hurt" },
+    ]);
+  });
+
+  // No marks at all is the fifteen-second log, and it is valid. The axis
+  // insert must be skipped entirely rather than called with an empty array,
+  // which Drizzle rejects.
+  it("writes no axis rows when nothing is marked", async () => {
+    const result = await logGame("deck_1", {
+      result: "loss", podSize: 4, worked: [], hurt: [],
+    });
+    expect(result).toEqual({ ok: true });
+    expect(stub.state.insertCalls.filter((c) => c.table === "deck_game_axes")).toHaveLength(0);
+  });
+
+  // A crafted duplicate would otherwise collide with the (game_id, axis)
+  // primary key and surface as a 500 rather than a refusal.
+  it("deduplicates a repeated key within one list", async () => {
+    await logGame("deck_1", {
+      result: "win", podSize: 4, worked: ["mana", "mana"], hurt: [],
+    });
+    const axes = stub.state.insertCalls.filter((c) => c.table === "deck_game_axes");
+    expect(axes[0].values).toHaveLength(1);
+  });
+
+  it.each([
+    ["an unknown result", { result: "forfeit", podSize: 4, worked: [], hurt: [] }],
+    ["a pod below two", { result: "win", podSize: 1, worked: [], hurt: [] }],
+    ["a pod above eight", { result: "win", podSize: 9, worked: [], hurt: [] }],
+    ["a fractional pod", { result: "win", podSize: 4.5, worked: [], hurt: [] }],
+    ["an axis outside the vocabulary", { result: "win", podSize: 4, worked: ["tempo"], hurt: [] }],
+    ["an axis on both sides", { result: "win", podSize: 4, worked: ["mana"], hurt: ["mana"] }],
+  ])("refuses %s without throwing", async (_label, input) => {
+    const result = await logGame("deck_1", input as never);
+    expect(result.ok).toBe(false);
+    expect(stub.state.insertCalls).toHaveLength(0);
+  });
+
+  it("refuses a game played in the future", async () => {
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const result = await logGame("deck_1", {
+      result: "win", podSize: 4, playedAt: tomorrow, worked: [], hurt: [],
+    });
+    expect(result.ok).toBe(false);
+    expect(stub.state.insertCalls).toHaveLength(0);
+  });
+
+  // Neither action changes deck membership, so the collection and commander
+  // surfaces must not be revalidated.
+  it("revalidates only the deck surfaces", async () => {
+    await logGame("deck_1", { result: "draw", podSize: 3, worked: [], hurt: [] });
+    expect(stub.state.revalidated).toEqual(["/decks/deck_1", "/decks", "/"]);
+  });
+});
+
+describe("deleteGame", () => {
+  beforeEach(() => {
+    stub.state.decks = [OWNED_DECK];
+    stub.state.deckGames = [{ id: "game_1", deckId: "deck_1" }];
+    stub.state.deleteCalls.length = 0;
+    stub.state.revalidated.length = 0;
+  });
+
+  it("deletes the game and revalidates the deck surfaces", async () => {
+    const result = await deleteGame("deck_1", "game_1");
+    expect(result).toEqual({ ok: true });
+    expect(stub.state.deleteCalls).toEqual([{ table: "deck_games", id: "game_1" }]);
+    expect(stub.state.revalidated).toEqual(["/decks/deck_1", "/decks", "/"]);
+  });
+
+  // The axis rows go with it through ON DELETE CASCADE. An explicit delete of
+  // deck_game_axes here would be a second source of truth for the same rule.
+  it("does not delete the axis rows itself", async () => {
+    await deleteGame("deck_1", "game_1");
+    expect(stub.state.deleteCalls.some((c) => c.table === "deck_game_axes")).toBe(false);
+  });
+
+  // requireDeck proves the caller owns deck_1; it says nothing about whether
+  // game_1 belongs to deck_1. Without the second check, a player could delete
+  // another player's game by naming their own deck.
+  it("refuses a game that belongs to a different deck", async () => {
+    stub.state.deckGames = [{ id: "game_1", deckId: "deck_other" }];
+    const result = await deleteGame("deck_1", "game_1");
+    expect(result.ok).toBe(false);
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  it("refuses a game that does not exist", async () => {
+    stub.state.deckGames = [];
+    const result = await deleteGame("deck_1", "game_1");
+    expect(result.ok).toBe(false);
+    expect(stub.state.deleteCalls).toHaveLength(0);
   });
 });
