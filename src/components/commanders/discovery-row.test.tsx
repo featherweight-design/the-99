@@ -41,6 +41,15 @@ describe("DiscoveryRow", () => {
     ).toBeGreaterThan(0);
   });
 
+  // Both figures are emphasised by searching the finished sentence for them, so
+  // the case where they are the same string is the one that could lose the
+  // second match.
+  it("emphasises both figures even when the whole support list is owned", () => {
+    const { container } = row({ ownedSupport: 264, edhrecTotal: 264 });
+    const bolded = [...container.querySelectorAll("strong")].map((el) => el.textContent);
+    expect(bolded.filter((t) => t === "264").length).toBeGreaterThanOrEqual(2);
+  });
+
   // The denominator is `edhrec_total`, and nothing substitutes for it — not 99,
   // not the pool size.
   it("prints neither figure when the denominator is missing", () => {

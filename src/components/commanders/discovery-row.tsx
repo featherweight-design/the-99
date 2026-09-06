@@ -507,7 +507,6 @@ export function DiscoveryRow({
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
                     color: "var(--accent)",
-                    marginLeft: 2,
                   }}
                 >
                   {fit ? justify.figureLabelFit : justify.figureLabelNew}
