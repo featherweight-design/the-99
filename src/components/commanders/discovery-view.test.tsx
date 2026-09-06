@@ -105,9 +105,9 @@ describe("DiscoveryView", () => {
   it("opens with the colours the incoming URL names", () => {
     window.history.replaceState(null, "", "/commanders?c=BG&scope=play");
     const items = [
-      { oracleId: "a", colorIdentity: ["B", "G"] },
-      { oracleId: "b", colorIdentity: ["U"] },
-    ] as unknown as DiscoveryList["items"];
+      item({ oracleId: "a", slug: "a", colorIdentity: ["B", "G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["U"], rank: 2 }),
+    ];
     render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
     expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
   });
