@@ -26,15 +26,25 @@ await page.waitForTimeout(2000);
 const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")).filter(Boolean));
 console.log("  card links on page:", [...new Set(hrefs.filter((h) => h.includes("/card")))].slice(0, 10));
 
+// Mana Pool renders `Æther Vial` as `Aether Vial` and `Jötun` as `Jotun`, so a
+// literal comparison would report a false negative on exactly the names this
+// probe exists to test.
+const fold = (s) =>
+  s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/æ/gi, "ae")
+    .toLowerCase();
+
 console.log("\n== the working search shape, every awkward name");
 for (const n of names) {
   const url = `https://manapool.com/cards?q=${encodeURIComponent(n)}`;
   const res = await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 }).catch((e) => e);
   const status = res?.status?.() ?? `NAV FAILED: ${res?.message ?? "unknown"}`;
   await page.waitForTimeout(2500);
-  const body = await page.locator("body").innerText().catch(() => "");
+  const body = fold(await page.locator("body").innerText().catch(() => ""));
   // Every segment must appear, so `Fire // Ice` cannot pass on the word `Fire` alone.
-  const parts = n.split("//").map((p) => p.trim());
+  const parts = n.split("//").map((p) => fold(p.trim()));
   const namesIt = parts.every((p) => body.includes(p));
   console.log(`  ${n}\n      ${status}  names it: ${namesIt}   final: ${page.url()}`);
 }

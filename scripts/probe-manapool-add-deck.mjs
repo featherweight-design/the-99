@@ -25,10 +25,19 @@ await page.waitForTimeout(3000);
 const textarea = await page.locator("textarea").first().inputValue().catch(() => "<no textarea>");
 console.log("textarea value:\n" + textarea + "\n");
 
-const body = await page.locator("body").innerText();
-console.log("empty-state present:", body.includes("Your decklist is empty"));
+// Mana Pool renders `Æther Vial` as `Aether Vial`, so a literal comparison would
+// report a false negative on exactly the names this probe exists to test.
+const fold = (s) =>
+  s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/æ/gi, "ae")
+    .toLowerCase();
+
+const body = fold(await page.locator("body").innerText());
+console.log("empty-state present:", body.includes(fold("Your decklist is empty")));
 for (const c of cards) {
-  console.log(`  panel names ${c.name}:`, body.includes(c.name));
+  console.log(`  panel names ${c.name}:`, body.includes(fold(c.name)));
 }
 
 await page.screenshot({ path: "/tmp/manapool-add-deck.png", fullPage: false });
