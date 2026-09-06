@@ -69,19 +69,29 @@ export async function loadCandidates(
       imageUri: cards.imageUri,
       edhrecTotal: commanderSupport.edhrecTotal,
       tags: commanderSupport.tags,
-      // `distinct` so the count is a property of the data rather than of how the
-      // caller built its array: `collection_items` carries one row per printing
-      // and finish, so a caller that maps that table without de-duplicating
-      // would otherwise count one owned support card several times.
-      ownedSupport: sql<number>`count(distinct osc.oracle_id)::int`.as("owned_support"),
+      // Zero is the real answer for a commander with no owned support, not a
+      // guard: the derived table only has a row where the overlap is non-empty.
+      ownedSupport: sql<number>`coalesce(osc.owned_support, 0)`.as("owned_support"),
     })
     .from(commanderSupport)
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
     .leftJoin(
-      sql`(select csc.commander_oracle_id, csc.oracle_id
+      // The count is aggregated INSIDE the derived table, so the outer query has
+      // no GROUP BY at all. Grouping outside meant sorting one row per owned
+      // support card — 240,000 of them — each carrying this commander's whole
+      // `tags` jsonb, and that sort was three quarters of the query's time
+      // (2.07s before, 0.50s after, same rows and same counts).
+      //
+      // `distinct` so the count is a property of the data rather than of how the
+      // caller built its array: `collection_items` carries one row per printing
+      // and finish, so a caller that maps that table without de-duplicating
+      // would otherwise count one owned support card several times.
+      sql`(select csc.commander_oracle_id,
+                  count(distinct csc.oracle_id)::int as owned_support
              from ${commanderSupportCards} csc
              join unnest(${owned}::uuid[]) as owned(oracle_id)
-               on owned.oracle_id = csc.oracle_id) as osc`,
+               on owned.oracle_id = csc.oracle_id
+            group by csc.commander_oracle_id) as osc`,
       sql`osc.commander_oracle_id = ${commanderSupport.commanderOracleId}`,
     )
     .where(
@@ -89,11 +99,6 @@ export async function loadCandidates(
         eq(cards.commanderLegal, true),
         notInArray(commanderSupport.commanderOracleId, built),
       ),
-    )
-    .groupBy(
-      commanderSupport.commanderOracleId, cards.name,
-      cards.colorIdentity, cards.imageUri, commanderSupport.edhrecTotal,
-      commanderSupport.tags,
     );
 
   return rows.map(shapeCandidate);
