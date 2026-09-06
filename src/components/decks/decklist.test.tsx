@@ -499,6 +499,18 @@ describe("Shopping's predicate: unowned, or owned and over-committed", () => {
       screen.getByText(recommendationsCopy.shopping.rowSecondCopyTag),
     ).toBeInTheDocument();
   });
+
+  // Count-only is the list's own ruling, not a side effect of having a figure to
+  // sit beside. A claiming deck's name surfacing only during an EDHREC outage
+  // would make the ruling look like a rendering accident.
+  it.each([
+    ["with figures", { "smothering-tithe": 42 }],
+    ["with EDHREC unreachable", null],
+  ] as const)("never names the claiming deck on a row, %s", (_label, shoppingFigures) => {
+    renderDecklist([rampUnowned, rampSpokenFor], { shoppingFigures });
+
+    expect(screen.queryByText(/Atraxa/)).not.toBeInTheDocument();
+  });
 });
 
 // The regression the amendment's safety rests on. Not "an equivalent sentence"

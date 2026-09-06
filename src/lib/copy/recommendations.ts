@@ -12,6 +12,12 @@
 //   card-detail-provider.tsx  cardDetailCopy.triggerAria
 //   buy-tag / addPanelCopy.unowned.tag  `buy`
 
+/** The noun every spoken-for clause counts, agreeing with its own figure.
+ *  Callers pass pre-formatted strings, so the test is on the string. */
+function secondCopies(n: string): string {
+  return n === '1' ? 'second copy' : 'second copies';
+}
+
 export const recommendationsCopy = {
   // ── Surface A · Role Coverage ─────────────────────────────────────────
   coverage: {
@@ -231,15 +237,18 @@ export const recommendationsCopy = {
 
     // The leading figure stops being "cards to buy" the moment the list holds
     // two kinds of purchase, so it becomes the plain size of the list.
+    // The middle clause agrees with its own count — `2 a 2nd copy` is not a
+    // phrase — and borrows `footerOnlySpokenFor`'s spelled-out noun rather than
+    // the plate's `2nd`, which cannot take a plural without reading as a date.
     footerSplit: (n: string, missing: string, spokenFor: string, auto: string) =>
-      `${n} cards · ${missing} to buy · ${spokenFor} a 2nd copy · ${auto} auto`,
+      `${n} cards · ${missing} to buy · ${spokenFor} ${secondCopies(spokenFor)} · ${auto} auto`,
     // 390px cannot hold four clauses on one mono line. The auto clause drops:
     // it describes provenance, and the other three describe the trip.
     footerSplitShort: (n: string, missing: string, spokenFor: string) =>
-      `${n} cards · ${missing} to buy · ${spokenFor} a 2nd copy`,
+      `${n} cards · ${missing} to buy · ${spokenFor} ${secondCopies(spokenFor)}`,
     // Nothing unowned. `{n} cards to buy` would be wrong about all of them.
     footerOnlySpokenFor: (n: string) =>
-      n === '1' ? '1 second copy · already in the deck' : `${n} second copies · already in the deck`,
+      `${n} ${secondCopies(n)} · already in the deck`,
 
     // The over-committed band's one new control, in the builder only — the deck
     // card on /decks has no Shopping list to open, so it takes no link.

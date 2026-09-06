@@ -272,7 +272,12 @@ export function DecklistRow({
             // desktop grid, there is no width left for a name that would still
             // read as a name. The All-view row one tab away states it, and the
             // summary band above names the claiming lists.
-            nameless={hasShoppingMeta}
+            //
+            // The view, not the figure: with EDHREC unreachable the row loses
+            // its meta line but is still the Shopping list, and a deck name
+            // appearing there only during an outage would make the ruling look
+            // like a rendering accident.
+            nameless={inShopping}
             // The component sets no size or family of its own (design 3.4: the
             // label inherits the meta line's mono size), and this row has no
             // meta line to inherit — it would otherwise render in the page's
@@ -294,9 +299,9 @@ export function DecklistRow({
             the act is the same act, and the severity is already carried by the
             marker a few pixels to the left. */}
         {(!card.owned || spokenFor) && (
-          /* The 58px figure slot is the Shopping list's, so it rides the same
-             flag the shopping meta line does rather than a second notion of
-             which filter is open. */
+          /* The figure's own flag, not `inShopping`: the 58px slot exists to
+             align the tag with the meta line, so with no meta line to align to
+             there is nothing to reserve. */
           <BuyTag
             variant="row"
             word={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTag : undefined}
