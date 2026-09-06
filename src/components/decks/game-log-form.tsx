@@ -5,7 +5,7 @@
 // because the only rule the form enforces is that the two mark columns stay
 // disjoint, and that rule is one function.
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type KeyboardEvent } from "react";
 import { logGame } from "../../app/decks/actions";
 import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
@@ -45,6 +45,7 @@ const RESULTS: { value: GameResult; label: string }[] = [
   { value: "loss", label: gameLogCopy.form.lost },
   { value: "draw", label: gameLogCopy.form.draw },
 ];
+const RESULT_VALUES = RESULTS.map((r) => r.value);
 
 // `played tonight` / `played 12 Aug` — the prefix takes faint ink and the date
 // word body ink. Split on the first space rather than on a duplicated literal,
@@ -52,6 +53,29 @@ const RESULTS: { value: GameResult; label: string }[] = [
 function dateParts(text: string): [string, string] {
   const at = text.indexOf(" ");
   return at < 0 ? [text, ""] : [text.slice(0, at + 1), text.slice(at + 1)];
+}
+
+/**
+ * A radiogroup is one tab stop with arrows moving inside it, and selection
+ * follows focus — the same pattern `ScopeControl` ships, so every radiogroup in
+ * the app answers the keyboard the same way.
+ */
+function useRoving<T>(values: readonly T[], onChange: (next: T) => void) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const onKeyDown = (from: number) => (event: KeyboardEvent) => {
+    const dir =
+      event.key === "ArrowRight" || event.key === "ArrowDown"
+        ? 1
+        : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (dir === 0) return;
+    event.preventDefault();
+    const next = (from + dir + values.length) % values.length;
+    refs.current[next]?.focus();
+    onChange(values[next]);
+  };
+  return { refs, onKeyDown };
 }
 
 const FIELD_LABEL =
@@ -76,8 +100,9 @@ export function GameLogForm({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const openButton = useRef<HTMLButtonElement>(null);
-  const firstResult = useRef<HTMLButtonElement>(null);
   const movedTimer = useRef<number | null>(null);
+  const resultRoving = useRoving(RESULT_VALUES, setResult);
+  const podRoving = useRoving(POD_SIZES, setPodSize);
   // The collapsed button is unmounted while the form is open, so a `.focus()`
   // inside `collapse()` would land on nothing. The intent is recorded here and
   // spent once the button is back on the page.
@@ -91,14 +116,17 @@ export function GameLogForm({
   // to the row the player came from.
   useEffect(() => {
     if (open) {
-      firstResult.current?.focus();
+      // Nothing is chosen when the form opens, so the group's single tab stop
+      // is its first option.
+      resultRoving.refs.current[0]?.focus();
       return;
     }
     if (wantsOpenFocus.current) {
       wantsOpenFocus.current = false;
       openButton.current?.focus();
     }
-  }, [open]);
+    // The ref object is stable across renders, so naming it costs no extra run.
+  }, [open, resultRoving.refs]);
 
   // State 14: reopening starts from nothing. The reset lives here rather than
   // on close so a refusal (state 12) cannot reach it — the form stays mounted
@@ -154,9 +182,9 @@ export function GameLogForm({
   // rule is enforced here as well as in the action.
   const futureDate = playedAt > today();
 
-  const [prefix, dateWord] = dateParts(
-    playedAt === today() ? gameLogCopy.form.playedToday : gameLogCopy.form.played(playedAt),
-  );
+  const dateLabel =
+    playedAt === today() ? gameLogCopy.form.playedToday : gameLogCopy.form.played(playedAt);
+  const [prefix, dateWord] = dateParts(dateLabel);
 
   function submit() {
     if (!result || isPending || futureDate) return;
@@ -220,7 +248,9 @@ export function GameLogForm({
             value={playedAt}
             max={today()}
             disabled={isPending}
-            aria-label={gameLogCopy.form.playedToday}
+            // The same sentence the button shows, so the field's name follows
+            // the value rather than claiming every date is today's.
+            aria-label={dateLabel}
             onChange={(e) => setPlayedAt(e.target.value)}
             className="min-h-[44px] md:min-h-0 rounded-[8px] px-[10px] font-mono text-[11px] bg-transparent border border-border text-fg-body"
           />
@@ -252,11 +282,18 @@ export function GameLogForm({
               return (
                 <button
                   key={r.value}
-                  ref={i === 0 ? firstResult : undefined}
+                  ref={(node) => {
+                    resultRoving.refs.current[i] = node;
+                  }}
                   type="button"
                   role="radio"
                   aria-checked={on}
+                  // Until something is chosen the first option carries the tab
+                  // stop, because a group where every option is skipped would
+                  // have none.
+                  tabIndex={on || (result === null && i === 0) ? 0 : -1}
                   disabled={isPending}
+                  onKeyDown={resultRoving.onKeyDown(i)}
                   onClick={() => setResult(r.value)}
                   className={
                     "flex-1 md:flex-none h-[44px] md:h-[40px] md:px-[20px] rounded-[8px] text-[13.5px] cursor-pointer " +
@@ -284,15 +321,20 @@ export function GameLogForm({
             </span>
           </span>
           <div role="radiogroup" aria-labelledby="game-pod-label" className="flex gap-[5px] md:gap-[6px]">
-            {POD_SIZES.map((n) => {
+            {POD_SIZES.map((n, i) => {
               const on = podSize === n;
               return (
                 <button
                   key={n}
+                  ref={(node) => {
+                    podRoving.refs.current[i] = node;
+                  }}
                   type="button"
                   role="radio"
                   aria-checked={on}
+                  tabIndex={on ? 0 : -1}
                   disabled={isPending}
+                  onKeyDown={podRoving.onKeyDown(i)}
                   onClick={() => setPodSize(n)}
                   className={
                     "flex-1 md:flex-none md:w-[40px] h-[44px] md:h-[40px] rounded-[8px] font-mono " +

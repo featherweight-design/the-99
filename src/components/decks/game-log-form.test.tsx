@@ -123,6 +123,60 @@ describe("GameLogForm", () => {
     expect(screen.getByRole("button", { name: gameLogCopy.form.save })).toBeDisabled();
   });
 
+  // The field's name is a sentence about the value, so it cannot go on saying
+  // "today" once the player has picked a different day.
+  it("names the date field after the day it holds", () => {
+    mount();
+    open();
+    fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.playedToday }));
+    fireEvent.change(screen.getByLabelText(gameLogCopy.form.playedToday), {
+      target: { value: "2026-08-12" },
+    });
+    expect(screen.getByLabelText(gameLogCopy.form.played("2026-08-12"))).toBeInTheDocument();
+    expect(screen.queryByLabelText(gameLogCopy.form.playedToday)).toBeNull();
+  });
+
+  // A radiogroup is one tab stop with arrows moving inside it, and selection
+  // follows focus — the same pattern the rest of the app's radiogroups ship.
+  it("gives each radiogroup a single tab stop", () => {
+    mount();
+    open();
+    // Nothing is chosen in Result, so its first option holds the stop.
+    expect(screen.getByRole("radio", { name: gameLogCopy.form.won })).toHaveAttribute(
+      "tabindex",
+      "0",
+    );
+    expect(screen.getByRole("radio", { name: gameLogCopy.form.lost })).toHaveAttribute(
+      "tabindex",
+      "-1",
+    );
+    // Pod size defaults to 4, so the stop is on the chosen option.
+    expect(screen.getByRole("radio", { name: "4" })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("radio", { name: "3" })).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("moves selection and focus with the arrow keys", () => {
+    mount();
+    open();
+    fireEvent.keyDown(screen.getByRole("radio", { name: gameLogCopy.form.won }), {
+      key: "ArrowRight",
+    });
+    const lost = screen.getByRole("radio", { name: gameLogCopy.form.lost });
+    expect(lost).toBeChecked();
+    expect(lost).toHaveFocus();
+  });
+
+  // The ends wrap, so the group is a ring rather than a line with dead ends.
+  it("wraps from the first option to the last", () => {
+    mount();
+    open();
+    fireEvent.keyDown(screen.getByRole("radio", { name: "4" }), { key: "ArrowLeft" });
+    expect(screen.getByRole("radio", { name: "3" })).toBeChecked();
+    fireEvent.keyDown(screen.getByRole("radio", { name: "3" }), { key: "ArrowLeft" });
+    fireEvent.keyDown(screen.getByRole("radio", { name: "2" }), { key: "ArrowLeft" });
+    expect(screen.getByRole("radio", { name: "8" })).toBeChecked();
+  });
+
   // States 2, 11 and 13. The collapsed button is unmounted while the form is
   // open, so the focus return has to outlive it.
   it("moves focus into the form on open and back to the row on cancel", () => {
