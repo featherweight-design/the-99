@@ -130,10 +130,12 @@ export function DiffRowIn({ card, sourceLine }: { card: DiffRowCard; sourceLine:
         buy
       </span>
       <span
-        // `whitespace-nowrap` because the reserved width is fixed and the string
-        // has a space in it: a four-digit line would otherwise wrap and take the
-        // row's height with it. The sibling slots get it from `truncate`.
-        className="hidden md:inline font-mono text-[11px] w-[54px] flex-none text-right tabular-nums whitespace-nowrap text-[color:var(--fg-faint)]"
+        // `whitespace-nowrap` because the string has a space in it: a long line
+        // number would otherwise wrap and take the row's height with it. The
+        // sibling slots get it from `truncate`. `min-w` rather than `w` so the
+        // slot holds its place on short numbers but grows past four digits
+        // instead of colliding with the type line — nothing caps import length.
+        className="hidden md:inline font-mono text-[11px] min-w-[54px] flex-none text-right tabular-nums whitespace-nowrap text-[color:var(--fg-faint)]"
       >
         {sourceLine !== null ? copy.sourceLine(String(sourceLine)) : ""}
       </span>
