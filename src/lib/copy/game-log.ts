@@ -172,9 +172,12 @@ export const gameLogCopy = {
     keepNote: 'marked for you more often than against',
     // §8.2 — shown, always, as one line under a rule. Never a third group.
     mixed: 'Mixed',
-    mixedLine: (axis: string, up: string, down: string) =>
-      `${axis} \u2014 ${up} up, ${down} down. Cut both ways so far.`,
-    mixedLineMulti: (clauses: string) => `${clauses} Cut both ways so far.`,
+    // One clause per mixed axis, and the sentence they are joined into. Split
+    // this way so a clause's whole wording lives here, rather than half here and
+    // half in whichever component does the joining.
+    mixedClause: (axis: string, up: string, down: string) =>
+      `${axis} \u2014 ${up} up, ${down} down.`,
+    mixedLine: (clauses: string) => `${clauses} Cut both ways so far.`,
 
     // N = 1 only. A true title for a panel that is not a finding.
     oneGameHeading: 'What that one game said',

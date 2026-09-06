@@ -116,14 +116,12 @@ function Bucket({
 // closes with. Each clause carries its own two counts, so a run of three mixed
 // axes still reads as three separate readings rather than one blurred one.
 function mixedSentence(mixed: AxisTally[]): string {
-  if (mixed.length === 1) {
-    const t = mixed[0];
-    return gameLogCopy.buckets.mixedLine(axisCopy[t.key].label, String(t.worked), String(t.hurt));
-  }
   const clauses = mixed
-    .map((t) => `${axisCopy[t.key].label} — ${t.worked} up, ${t.hurt} down.`)
+    .map((t) =>
+      gameLogCopy.buckets.mixedClause(axisCopy[t.key].label, String(t.worked), String(t.hurt)),
+    )
     .join(" ");
-  return gameLogCopy.buckets.mixedLineMulti(clauses);
+  return gameLogCopy.buckets.mixedLine(clauses);
 }
 
 export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
