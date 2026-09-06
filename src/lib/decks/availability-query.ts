@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { MATURE_DECK_SIZE, type Availability, type HardDeck } from "./availability";
+import { MATURE_DECK_SIZE, type Availability, type DeckClaim } from "./availability";
 
 type Row = {
   oracle_id: string;
@@ -8,7 +8,7 @@ type Row = {
   hard: number;
   soft: number;
   free: number;
-  hard_decks: HardDeck[] | null;
+  claims: DeckClaim[] | null;
 };
 
 /**
@@ -79,49 +79,51 @@ export async function loadAvailability(
       where ${skip}::uuid is not null and ac.deck_id = ${skip}::uuid
       group by ac.oracle_id
     ),
-    -- One row per (oracle, claiming deck). select distinct is what makes the
-    -- claimant list right: a deck whose commander is also on its own list appears
-    -- twice in all_claims, and two decks that share a name are still two rows
-    -- because deck_id is in the key. Quantities are NOT summed here.
+    -- One row per (oracle, claiming deck), carrying that deck's whole ask.
+    -- Grouping rather than select distinct is what folds a deck whose
+    -- commander is also on its own list into a single claim of 1 + listQty:
+    -- it appears twice in all_claims and must read as one claimant wanting two.
+    -- Two decks sharing a name stay two rows because deck_id is in the key.
+    --
+    -- Self-exclusion (Addendum 2 §6) is applied HERE, once, and every figure
+    -- below inherits it: the current deck never claims against itself.
     claim_decks as (
-      select distinct ac.oracle_id, ac.deck_id, d.name, coalesce(dt.cards, 0) as cards
+      select
+        ac.oracle_id,
+        ac.deck_id,
+        d.name,
+        -- LEFT: a deck whose only card is its commander has no deck_cards rows
+        -- and therefore no deck_totals row. An inner join would drop that claim
+        -- entirely. No rows means no cards means brewing, hence coalesce to 0.
+        coalesce(dt.cards, 0) >= ${MATURE_DECK_SIZE} as mature,
+        sum(ac.quantity)::int as quantity
       from all_claims ac
-      -- LEFT: a deck whose only card is its commander has no deck_cards rows
-      -- and therefore no deck_totals row. An inner join would drop that claim
-      -- entirely. No rows means no cards means brewing, hence coalesce to 0.
       left join deck_totals dt on dt.deck_id = ac.deck_id
       join decks d on d.id = ac.deck_id
+      where ${skip}::uuid is null or ac.deck_id <> ${skip}::uuid
+      group by ac.oracle_id, ac.deck_id, d.name, coalesce(dt.cards, 0)
     ),
     claims as (
       select
-        ac.oracle_id,
-        sum(case when coalesce(dt.cards, 0) >= ${MATURE_DECK_SIZE} then ac.quantity else 0 end)::int as hard,
-        sum(case when coalesce(dt.cards, 0) <  ${MATURE_DECK_SIZE} then ac.quantity else 0 end)::int as soft
-      from all_claims ac
-      left join deck_totals dt on dt.deck_id = ac.deck_id
-      -- Self-exclusion (Addendum 2 §6): the current deck never claims against
-      -- itself, so hard/soft come back already net of its own claim.
-      where ${skip}::uuid is null or ac.deck_id <> ${skip}::uuid
-      group by ac.oracle_id
-    ),
-    hard_claimants as (
-      select
         cd.oracle_id,
+        sum(case when cd.mature then cd.quantity else 0 end)::int as hard,
+        sum(case when cd.mature then 0 else cd.quantity end)::int as soft,
         -- json, not a composite array: the pg driver hands a Postgres array of
         -- records back as an unparsed "(uuid,name)" string, and a name with a
         -- comma or a quote in it is then unrecoverable. jsonb_agg arrives as a
         -- real array of objects.
         -- deck_id breaks the tie because names are NOT unique, which is the very
         -- premise this CTE keys on. Without it two decks sharing a name order
-        -- arbitrarily, and the first entry is the deck the card-detail link
-        -- points at — so the link would wander between reads.
+        -- arbitrarily, and the first mature entry is the deck the card-detail
+        -- marker links at — so the link would wander between reads.
         jsonb_agg(
-          jsonb_build_object('id', cd.deck_id, 'name', cd.name)
+          jsonb_build_object(
+            'id', cd.deck_id, 'name', cd.name,
+            'quantity', cd.quantity, 'mature', cd.mature
+          )
           order by cd.name, cd.deck_id
-        ) as hard_decks
+        ) as claims
       from claim_decks cd
-      where cd.cards >= ${MATURE_DECK_SIZE}
-        and (${skip}::uuid is null or cd.deck_id <> ${skip}::uuid)
       group by cd.oracle_id
     ),
     owned as (
@@ -142,10 +144,9 @@ export async function loadAvailability(
       -- (owned − ownClaim) − (hard − ownHardClaim). The right-hand subtraction
       -- already happened in the claims CTE; this applies the supply half.
       (o.owned - coalesce(oc.own_claim, 0) - coalesce(c.hard, 0))::int as free,
-      n.hard_decks
+      c.claims
     from owned o
     left join claims c on c.oracle_id = o.oracle_id
-    left join hard_claimants n on n.oracle_id = o.oracle_id
     left join own_claims oc on oc.oracle_id = o.oracle_id
     where ${only}::uuid[] is null or o.oracle_id = any(${only}::uuid[])
   `);
@@ -160,7 +161,7 @@ export async function loadAvailability(
       // that is right only when excludeDeckId is unset, and silently wrong on
       // a deck's own decklist, where supply is self-excluded too.
       free: r.free,
-      hardDecks: r.hard_decks ?? [],
+      claims: r.claims ?? [],
     });
   }
   return out;

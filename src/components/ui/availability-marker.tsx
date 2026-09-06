@@ -16,6 +16,7 @@ import { twMerge } from "tailwind-merge";
 import { availabilityCopy } from "../../lib/copy/availability";
 import {
   availabilityState,
+  hardDecks,
   type Availability,
   type AvailabilityState,
   type HardDeck,
@@ -32,6 +33,7 @@ export type MarkerOpts = {
 /** Prose for the accessible name, or null when the card is free. */
 export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
   const c = availabilityCopy.marker;
+  const hard = hardDecks(a);
 
   // Addendum 2 Accessibility: "Count-only in the label too — collection never
   // speaks the deck name." Both count-only forms used to be sliced out of the
@@ -49,14 +51,14 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
       // return counts without them. Counting to zero out loud ("on 0 of your
       // finished lists") is worse than the base form the copy file ships for
       // exactly this case.
-      if (opts?.nameless || a.hardDecks.length === 0) return c.hardAriaCountOnly;
-      return a.hardDecks.length === 1
-        ? c.hardAria(a.hardDecks[0].name)
-        : c.hardMultiAria(a.hardDecks.length);
+      if (opts?.nameless || hard.length === 0) return c.hardAriaCountOnly;
+      return hard.length === 1
+        ? c.hardAria(hard[0].name)
+        : c.hardMultiAria(hard.length);
     case "over":
       // Self-excluded and exactly one other claimant: name it, don't count it.
-      if (!opts?.nameless && opts?.selfExcluded && a.hardDecks.length === 1) {
-        return c.overAlsoInAria(a.hardDecks[0].name);
+      if (!opts?.nameless && opts?.selfExcluded && hard.length === 1) {
+        return c.overAlsoInAria(hard[0].name);
       }
       // Two ways to lose the count, and the same answer to both — which is why
       // this guard is shaped exactly like the hard branch's. `nameless` is
@@ -66,10 +68,10 @@ export function markerAria(a: Availability, opts?: MarkerOpts): string | null {
       // (a degraded read) the shortfall is still true where the count is not,
       // since `overAria(n, 0)` would say "0 of your finished lists include this
       // card". Both drop to the count-free shortfall the label already shows.
-      if (opts?.nameless || a.hardDecks.length === 0) {
+      if (opts?.nameless || hard.length === 0) {
         return c.overAriaCountOnly(-a.free);
       }
-      return c.overAria(-a.free, a.hardDecks.length);
+      return c.overAria(-a.free, hard.length);
   }
 }
 
@@ -90,6 +92,7 @@ function label(
   opts: MarkerOpts,
 ): { prefix: string; deck?: HardDeck } | null {
   const c = availabilityCopy.marker;
+  const hard = hardDecks(a);
   const withName = (full: string, deck: HardDeck) => ({
     prefix: full.slice(0, full.length - deck.name.length),
     deck,
@@ -104,26 +107,26 @@ function label(
       // Addendum 2 §3: collection never renders hardIn or hardMulti. A hard
       // state with no names lands here too — `none free — across 0 decks` is the
       // alternative, and `marker.hard` is the base form the copy file ships.
-      if (opts.nameless || a.hardDecks.length === 0) return { prefix: c.hard };
-      return a.hardDecks.length === 1
-        ? withName(c.hardIn(a.hardDecks[0].name), a.hardDecks[0])
-        : { prefix: c.hardMulti(a.hardDecks.length) };
+      if (opts.nameless || hard.length === 0) return { prefix: c.hard };
+      return hard.length === 1
+        ? withName(c.hardIn(hard[0].name), hard[0])
+        : { prefix: c.hardMulti(hard.length) };
     case "over":
       // Collection is count-only here too — the canvas draws a bare `short 1`.
       if (opts.nameless) return { prefix: c.over(-a.free) };
       // Self-excluded: hardDecks already omits the current deck, so a lone
       // remaining entry is the OTHER claimant. "also in 2 decks" would count
       // the deck the player is standing in.
-      if (opts.selfExcluded && a.hardDecks.length === 1) {
-        return withName(c.overAlsoIn(-a.free, a.hardDecks[0].name), a.hardDecks[0]);
+      if (opts.selfExcluded && hard.length === 1) {
+        return withName(c.overAlsoIn(-a.free, hard[0].name), hard[0]);
       }
       // One deck CAN be the whole demand — "any number" cards (Relentless
       // Rats, Nazgûl) let a single list claim nine copies of something you own
       // four of. `overWithDemand` ships a singular branch for precisely that,
       // so the threshold is one deck, not two; below it there is no name and
       // nothing to count, and the bare `short N` is all that is true.
-      return a.hardDecks.length >= 1
-        ? { prefix: c.overWithDemand(-a.free, a.hardDecks.length) }
+      return hard.length >= 1
+        ? { prefix: c.overWithDemand(-a.free, hard.length) }
         : { prefix: c.over(-a.free) };
   }
 }

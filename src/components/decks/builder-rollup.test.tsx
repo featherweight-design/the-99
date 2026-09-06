@@ -27,12 +27,12 @@ const OVER: Avail = {
   hard: 2,
   soft: 0,
   free: -1,
-  hardDecks: [
-    { id: "d1", name: "Atraxa" },
-    { id: "d2", name: "Kykar" },
+  claims: [
+    { id: "d1", name: "Atraxa", quantity: 1, mature: true },
+    { id: "d2", name: "Kykar", quantity: 1, mature: true },
   ],
 };
-const SOFT: Avail = { owned: 2, hard: 0, soft: 2, free: 2, hardDecks: [] };
+const SOFT: Avail = { owned: 2, hard: 0, soft: 2, free: 2, claims: [] };
 // `free === 0` off a self-excluded query means "exactly enough for everyone,
 // this deck included". Read without the vantage it would present as `hard`.
 const SELF: Avail = {
@@ -40,7 +40,7 @@ const SELF: Avail = {
   hard: 1,
   soft: 0,
   free: 0,
-  hardDecks: [{ id: "d1", name: "This deck" }],
+  claims: [{ id: "d1", name: "This deck", quantity: 1, mature: true }],
 };
 
 function makeDeck(size: number, availabilities: (Avail | undefined)[] = []): DeckDetail {
@@ -130,7 +130,7 @@ describe("BuilderShell — commitments roll-up derivation", () => {
   // The named body counts finished lists out loud, so an empty name array would
   // have it say "on 0 finished lists". The heading carries the line alone.
   it("drops the body rather than naming nobody", async () => {
-    await mount(makeDeck(2, [{ ...OVER, hardDecks: [] }, undefined]));
+    await mount(makeDeck(2, [{ ...OVER, claims: [] }, undefined]));
     expect(screen.getAllByText(availabilityCopy.deckRollup.overHeading(1))).toHaveLength(2);
     // Ungated, the name array's length would be interpolated straight in, and
     // the sentence would count zero finished lists out loud.

@@ -36,7 +36,7 @@ const avail = (
   hard,
   soft,
   free: owned - hard,
-  hardDecks: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n })),
+  claims: hardDeckNames.map((n, i) => ({ id: `d${i + 1}`, name: n, quantity: 1, mature: true })),
 });
 
 function renderRows(c: BrowseCard) {
