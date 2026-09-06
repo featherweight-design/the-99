@@ -559,10 +559,11 @@ export async function keepAutoCard(deckId: string, oracleId: string): Promise<vo
     then finds no row, so a sweep landing mid-keep simply takes those cards and
     this write reports what survived it.
 
-    Only the deck path is revalidated, not `claimSurfaces`. `auto` is provenance,
-    not a claim: the availability surfaces read who holds a card and nothing
-    about who put it there, and no card moves here. `keepAutoCard` revalidates
-    the same one path for the same reason. */
+    Only the deck path is revalidated, not `claimSurfaces`. The marker says who
+    put a card here; an availability claim says who holds a copy. Those are
+    different facts, this writes only the first, and no card moves — so the
+    availability surfaces have nothing to re-read. `keepAutoCard` revalidates the
+    same one path for the same reason. */
 export async function keepAllAutoCards(deckId: string): Promise<number> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);

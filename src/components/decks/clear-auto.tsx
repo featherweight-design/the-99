@@ -57,7 +57,15 @@ export function ClearAutoButton({
   const busy = pending || keepAllPending;
 
   return (
-    <span className="flex items-center gap-[8px]">
+    /* At a count of 0 the only thing left to render is the kept note, which is
+       desktop-only — so below md the wrapper would be an empty flex child
+       collecting the toolbar's gap, spacing the row for content nobody can see.
+       The wrapper takes the note's own breakpoint rather than the note taking
+       the wrapper's: the note is hidden on phones because the toolbar has no
+       room for it, and that is still true after a keep. */
+    <span
+      className={`${count === 0 ? "hidden md:flex" : "flex"} items-center gap-[8px]`}
+    >
       {keptCount >= 1 && (
         <span className="font-mono text-[11px] text-fg-locked hidden md:inline">
           {recommendationsCopy.auto.keptNote(String(keptCount))}

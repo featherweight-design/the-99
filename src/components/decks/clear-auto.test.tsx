@@ -137,6 +137,23 @@ describe("ClearAutoButton", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  // The same emptiness one breakpoint down: at a count of 0 the kept note is the
+  // only content, and it is desktop-only, so on a phone the wrapper would sit in
+  // the toolbar's flex row spacing it for something nobody can see.
+  it("keeps the wrapper out of the mobile toolbar when only the note remains", () => {
+    const { container } = render(
+      <ClearAutoButton
+        count={0}
+        keptCount={4}
+        onClear={vi.fn()}
+        pending={false}
+        onKeepAll={vi.fn()}
+        keepAllPending={false}
+      />,
+    );
+    expect(container.firstElementChild).toHaveClass("hidden", "md:flex");
+  });
+
   // Both bulk controls read the same count, so a toolbar showing one and not
   // the other would say that count means two things.
   it("offers Keep all beside the sweep, and neither at a count of 0", () => {
