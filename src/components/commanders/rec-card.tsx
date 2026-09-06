@@ -137,8 +137,11 @@ type RecCardProps =
     });
 
 export function RecCard(props: RecCardProps) {
-  // The discovery arm renders nothing until Phase 10 fills it in.
-  if (!props.commander) return null;
+  // The discovery arm renders nothing until Phase 10 fills it in. Narrowed on
+  // the presence of the `discovery` key rather than the absence of `commander`,
+  // so a call site that passes `commander: undefined` fails the type check
+  // instead of silently rendering an empty row.
+  if ("discovery" in props) return null;
   const { commander: c, rank, avail, counts, delta } = props;
   const gradient = commanderGradient(c.colorIdentity);
   const fit = fitSegments(c);
