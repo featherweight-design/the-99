@@ -15,6 +15,7 @@ import { readSynergyCards } from "../../commanders/[slug]/synergy-read";
 import { planLastSlots, countLastSlotsUnowned } from "../../../lib/decks/last-slots";
 import { loadPrices } from "../../../lib/decks/price-query";
 import { provenanceForm } from "../../../lib/decks/price";
+import { listDeckGames, summarizeGames } from "../../../lib/decks/games";
 
 export default async function DeckBuilderPage({
   params,
@@ -32,7 +33,7 @@ export default async function DeckBuilderPage({
 
   const openSlots = 99 - detail.built;
 
-  const [{ suggestions, degraded, shoppingFigures }, allDecks, ranked] = await Promise.all([
+  const [{ suggestions, degraded, shoppingFigures }, allDecks, ranked, games] = await Promise.all([
     getDeckSuggestions(id),
     listDecksWithStats(userId),
     // Read the ranked support list only when the strip can render. A completed
@@ -42,7 +43,13 @@ export default async function DeckBuilderPage({
     // detail.cards as coveredOracleIds would exclude unowned in-deck cards,
     // over-counting B's figure and breaking state 12.
     openSlots > 0 ? readSynergyCards(userId, detail.commander.oracleId, []) : [],
+    listDeckGames(id, userId),
   ]);
+
+  // Summarised here rather than in the panel: the function is pure and this is
+  // already a server component, so aggregating on the client would ship the
+  // work to the browser for nothing.
+  const gameSummary = summarizeGames(games);
 
   // Sequential, not part of the Promise.all above: the suggestion oracle ids
   // come out of that call, so there is nothing to price until it resolves.
@@ -100,6 +107,8 @@ export default async function DeckBuilderPage({
       commanderIdentity={detail.commander.colorIdentity}
       ownedCandidates={ownedCandidates}
       unownedCandidates={unownedCandidates}
+      games={games}
+      gameSummary={gameSummary}
       // Left in the URL rather than swept with a router.replace. Stripping it
       // would clear `arrivedFromImport` on the very next render, un-suppressing
       // the 99/99 reveal on a deck the player did not build — the one thing the

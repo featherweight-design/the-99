@@ -33,6 +33,11 @@ import {
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
+import { GamesPanel } from "./games-panel";
+import { gameLogCopy } from "../../lib/copy/game-log";
+// Types only: `games.ts` reaches for the database, and a value import from a
+// "use client" module would drag drizzle into the browser bundle.
+import type { DeckGame, GameSummary } from "../../lib/decks/games";
 import { ConsiderToolbar, type SortKey } from "./consider-toolbar";
 import { QuickAddBar } from "./quick-add-bar";
 import { ExportDialog } from "./export-dialog";
@@ -98,7 +103,23 @@ interface BuilderShellProps {
   /** Unowned synergy cards planLastSlots would add beyond the owned ones.
       Zero means the top-up control is absent. */
   unownedCandidates?: number;
+  /** Every game logged against this deck, newest first. */
+  games?: DeckGame[];
+  /** Aggregated on the server — `summarizeGames` is pure, so running it here
+      would only ship the work to the browser. */
+  gameSummary?: GameSummary;
 }
+
+// The Games tab's default: a deck nobody has logged against. Hoisted so the
+// default parameter is one object rather than a fresh one per render.
+const NO_GAMES: GameSummary = {
+  count: 0,
+  record: { wins: 0, losses: 0, draws: 0 },
+  axes: [],
+  keep: [],
+  fix: [],
+  mixed: [],
+};
 
 export function BuilderShell({
   deck,
@@ -113,6 +134,8 @@ export function BuilderShell({
   provenance = null,
   ownedCandidates = 0,
   unownedCandidates = 0,
+  games = [],
+  gameSummary = NO_GAMES,
 }: BuilderShellProps) {
   // UI state
   const [filter, setFilter] = useState<"all" | "shopping">("all");
@@ -761,6 +784,17 @@ export function BuilderShell({
                   count: suggestions.length,
                   accessibleName: addPanelCopy.tabs.considerAria(suggestions.length),
                 },
+                {
+                  id: "games",
+                  label: gameLogCopy.tab.label,
+                  // Omitted rather than zero: a tab reading "Games · 0"
+                  // advertises its own emptiness.
+                  count: games.length > 0 ? games.length : undefined,
+                  accessibleName:
+                    games.length > 0
+                      ? gameLogCopy.tab.aria(String(games.length))
+                      : gameLogCopy.tab.ariaNone,
+                },
               ]}
               view={view}
               onViewChange={setView}
@@ -776,7 +810,11 @@ export function BuilderShell({
               )}
             </BuilderTabs>
 
-            {view === "consider" ? (
+            {view === "games" ? (
+              <div id="panel-games" role="tabpanel" aria-labelledby="tab-games">
+                <GamesPanel deckId={deck.id} games={games} summary={gameSummary} />
+              </div>
+            ) : view === "consider" ? (
               <ConsiderPanel
                 deckId={deck.id}
                 suggestions={suggestions}

@@ -88,6 +88,11 @@ export const gameLogCopy = {
     // 'Games · 0' advertises its own emptiness, and hiding it hides the feature
     // from everyone who has not used it.
     label: 'Games',
+    // The count beside the label is aria-hidden, so the tab's whole accessible
+    // name is composed here. At zero it says so in words rather than reading a
+    // number the sighted tab deliberately does not draw.
+    aria: (n: string) => `Games, ${n} logged`,
+    ariaNone: 'Games, none logged',
     labelWithCount: (n: string) => `Games \u00b7 ${n}`,
   },
 
