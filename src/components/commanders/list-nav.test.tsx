@@ -21,7 +21,7 @@ describe("list-nav", () => {
 
   describe("useScopeNav", () => {
     it("writes the non-default scope and drops any sort the owned list cannot show", () => {
-      window.history.replaceState(null, "", "/commanders?sort=new&c=BG");
+      window.history.replaceState(null, "", "/commanders?scope=play&sort=new&c=BG");
       const { result } = renderHook(() => useScopeNav());
       act(() => result.current("owned"));
       expect(replace).toHaveBeenCalledWith("?c=BG", { scroll: false });
@@ -32,6 +32,16 @@ describe("list-nav", () => {
       const { result } = renderHook(() => useScopeNav());
       act(() => result.current("play"));
       expect(replace).toHaveBeenCalledWith("?scope=play", { scroll: false });
+    });
+
+    // The segmented control fires on its active segment too, and that click is
+    // not a flip: routing on it would clear a sort the reader had chosen.
+    it("does nothing when the scope showing is already the one asked for", () => {
+      window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
+      const { result } = renderHook(() => useScopeNav());
+      act(() => result.current("play"));
+      expect(replace).not.toHaveBeenCalled();
+      expect(sessionStorage.getItem("commanders:scope-announce")).toBeNull();
     });
 
     // A bare `?` is a URL the reader would see in their address bar, so the last
@@ -54,6 +64,17 @@ describe("list-nav", () => {
       window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
       act(() => sort.result.current("fit"));
       expect(replace).toHaveBeenLastCalledWith("?scope=play", { scroll: false });
+    });
+
+    // Same guard as the scope flip's: these two are server round-trips, and
+    // re-choosing the active option would fetch a ranking that did not change.
+    it("does nothing when the value asked for is already the active one", () => {
+      window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
+      const sort = renderHook(() => useSortNav());
+      act(() => sort.result.current("new"));
+      const avail = renderHook(() => useAvailNav());
+      act(() => avail.result.current("free"));
+      expect(replace).not.toHaveBeenCalled();
     });
 
     it("leaves every parameter it does not own alone", () => {

@@ -53,6 +53,12 @@ export function useScopeNav() {
   return useCallback(
     (next: "owned" | "play") => {
       const params = new URLSearchParams(window.location.search);
+      // Reselecting the scope already showing is not a flip. The segmented
+      // control fires on any segment, including the active one, and without
+      // this that click would clear a `sort` the reader had chosen, navigate
+      // for a list that did not change, and park an announcement for it.
+      const current = params.get("scope") === "play" ? "play" : "owned";
+      if (next === current) return;
       if (next === "play") params.set("scope", "play");
       else params.delete("scope");
       // A scope flip cannot carry a sort: the owned scope has no control for one,
@@ -80,6 +86,10 @@ function useParamNav<T extends string>(key: string, nonDefault: T) {
   return useCallback(
     (next: T) => {
       const params = new URLSearchParams(window.location.search);
+      // Same guard as the scope flip's: both controls fire on their active
+      // option too, and a round-trip that re-ranks nothing is still a fetch.
+      // Only two values, so "is it the non-default one" identifies both.
+      if ((params.get(key) === nonDefault) === (next === nonDefault)) return;
       if (next === nonDefault) params.set(key, next);
       else params.delete(key);
       startTransition(() => router.replace(href(params), { scroll: false }));
