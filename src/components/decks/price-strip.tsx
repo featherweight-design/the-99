@@ -38,7 +38,7 @@ export function PriceStrip({
     // subtree — two branches would pass a width-by-width review while being
     // two components that can drift.
     <div
-      className="flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] py-[10px] md:flex-row-reverse md:items-baseline md:justify-between md:gap-[14px] md:px-[15px] md:py-[11px]"
+      className="mt-[10px] flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] py-[10px] md:flex-row-reverse md:items-baseline md:justify-between md:gap-[14px] md:px-[15px] md:py-[11px]"
       style={{ background: "var(--surface-sunken)" }}
     >
       {showFigure || showClause ? (

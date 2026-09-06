@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   PRICE_STALE_AFTER_DAYS,
   formatCents,
+  parseAsOf,
   priceState,
   provenanceForm,
   summarisePrices,
@@ -127,5 +128,30 @@ describe("provenanceForm", () => {
 
   it("switches to a date and gains the clause at the same threshold", () => {
     expect(provenanceForm(NEWEST, at(11))).toEqual({ behind: true, when: "1 September" });
+  });
+});
+
+// `timestamp` without time zone holds a UTC instant, but a driver that hands
+// back the raw string hands back one with no zone marker on it. Read in the
+// runtime's zone, an evening row in Denver dates to the following day in UTC —
+// which is the day the provenance line then names.
+describe("parseAsOf", () => {
+  it("reads a zone-less Postgres string as UTC, not as local time", () => {
+    expect(parseAsOf("2026-09-01 09:00:00").toISOString()).toBe("2026-09-01T09:00:00.000Z");
+  });
+
+  it("keeps microseconds and an explicit zone when the driver supplies one", () => {
+    expect(parseAsOf("2026-09-01 09:00:00.156").toISOString()).toBe("2026-09-01T09:00:00.156Z");
+    expect(parseAsOf("2026-09-01T09:00:00+00:00").toISOString()).toBe("2026-09-01T09:00:00.000Z");
+  });
+
+  it("passes through a Date the driver already parsed", () => {
+    expect(parseAsOf(NEWEST)).toEqual(NEWEST);
+  });
+
+  // An Invalid Date fails every comparison, including its own: `NaN !== NaN`
+  // would read a whole deck as sold out rather than as unreadable.
+  it("throws rather than returning an Invalid Date", () => {
+    expect(() => parseAsOf("not a timestamp")).toThrow(/not a readable timestamp/);
   });
 });

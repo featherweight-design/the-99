@@ -76,7 +76,7 @@ R3's structural correction: the price facts belong to the **Shopping filter**, w
 | 2.6 | Plate | Own surface plate: sunken background, 1px `--border`, ~9px radius | R3C:61, R3C:94 |
 | 2.7 | Phone arrangement | Two lines: figure line above, provenance line below, left-aligned | R3C:61–64, R3RM:55–57 |
 | 2.8 | Desktop arrangement | One line: **provenance at the left, figure at the right**, baseline-aligned, space between | R3C:94–96 |
-| 2.9 | Gap above the strip | ~10px below the pill row | R3C:60, R3C:94 |
+| 2.9 | Gap above the strip | ~10px below the pill row. Carried by the strip's own root rather than a wrapper at the call site — a wrapper holds the gap open under the pills when the strip declines to render (rows 2.5, 2.5a) | R3C:60, R3C:94 |
 
 ### Line 1 — the figure
 

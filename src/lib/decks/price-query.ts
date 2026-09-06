@@ -1,34 +1,21 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import type { PriceFact } from "./price";
+import { parseAsOf, type PriceFact } from "./price";
 
 type Row = {
   oracle_id: string;
   price_cents: number | null;
   price_cents_foil: number | null;
   price_cents_etched: number | null;
-  as_of: string;
+  // Driver-dependent: the neon serverless driver parses `timestamp` to a Date,
+  // others hand back the raw string. `parseAsOf` takes both.
+  as_of: string | Date;
 };
 
 export type PriceRead = {
   prices: Map<string, PriceFact>;
   newestAsOf: Date | null;
 };
-
-/**
- * `as_of` arrives as a driver string, and `new Date` answers an unparseable one
- * with an Invalid Date rather than an error. That failure is silent and it
- * inverts: `NaN !== NaN` makes every card fail the liveness comparison, so a
- * whole deck would read `sold out` on a timestamp we simply could not read.
- * Throwing hands the caller's `.catch` a clean absence instead.
- */
-function parseAsOf(value: string): Date {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`printing_prices.as_of is not a readable timestamp: ${value}`);
-  }
-  return parsed;
-}
 
 /**
  * One chosen printing per oracle card. Price is keyed by PRINTING
@@ -78,7 +65,7 @@ export async function loadPrices(oracleIds: string[]): Promise<PriceRead> {
   // placeholder so the driver serialises it as a Postgres array literal.
   const only = sql.param(oracleIds);
 
-  const newest = await db.execute<{ as_of: string | null }>(
+  const newest = await db.execute<{ as_of: string | Date | null }>(
     sql`select max(as_of) as as_of from printing_prices`,
   );
   const newestRaw = newest.rows[0]?.as_of ?? null;

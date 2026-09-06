@@ -45,6 +45,34 @@ export const PRICE_STALE_AFTER_DAYS = 10;
 const DAY_MS = 86_400_000;
 
 /**
+ * `as_of` is a `timestamp` WITHOUT time zone holding the feed's `meta.as_of`,
+ * which is a UTC instant. Drivers hand that back either already parsed or as
+ * `YYYY-MM-DD HH:MM:SS[.ffffff]` — a string `new Date` reads in the RUNTIME's
+ * zone, so the same row would date to a different day in Denver than in CI.
+ * Only the string form needs the marker; a Date the driver already built is
+ * passed through untouched.
+ */
+export function toUtcInstant(value: string): string {
+  if (/([zZ]|[+-]\d{2}:?\d{2})$/.test(value)) return value;
+  return `${value.replace(" ", "T")}Z`;
+}
+
+/**
+ * `new Date` answers an unparseable value with an Invalid Date rather than an
+ * error. That failure is silent and it inverts: `NaN !== NaN` makes every card
+ * fail the liveness comparison, so a whole deck would read `sold out` on a
+ * timestamp we simply could not read. Throwing hands the caller's `.catch` a
+ * clean absence instead.
+ */
+export function parseAsOf(value: string | Date): Date {
+  const parsed = value instanceof Date ? value : new Date(toUtcInstant(value));
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`printing_prices.as_of is not a readable timestamp: ${value}`);
+  }
+  return parsed;
+}
+
+/**
  * `absent` is the DEFAULT BRANCH, not a condition — reached by a missing fact
  * and by a live row whose three price columns are all null. A future price
  * column cannot fall through it.

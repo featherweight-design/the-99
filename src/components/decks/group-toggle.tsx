@@ -132,10 +132,12 @@ export function GroupToggle({
 
       {/* Scoped to the filter it sits under: the sum of what Shopping is
           showing, and nothing when another filter is open. */}
+      {/* No spacer wrapper: the strip declines to render on an empty list or an
+          unreadable table, and a wrapper carrying the 10px gap would leave that
+          gap under the pills with nothing in it. The strip owns its own top
+          margin so the decision and the space it occupies stay together. */}
       {filter === "shopping" && priceSummary && (
-        <div className="mt-[10px]">
-          <PriceStrip summary={priceSummary} provenance={provenance} />
-        </div>
+        <PriceStrip summary={priceSummary} provenance={provenance} />
       )}
     </div>
   );
