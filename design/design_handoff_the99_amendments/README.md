@@ -125,7 +125,7 @@ on purpose.
 |---|---|
 | Entry point | **Both, at both widths** — the deck card's `⋯` menu (first, above Rename) and a `GhostButton` beside Export in the spine. One route, `/decks/[id]/import`, reachable only from a deck. |
 | Diff first? | **Always.** The product's first confirm step, earned because this is its first destructive action. A **page**, not a dialog. |
-| Removals | **Listed, not counted**, first on the screen. Per-row `Keep` (`aria-pressed`, row changes not just the glyph), `Keep all N` in the header, and `you added this` in `--warning` on hand-placed cards — the inverse of the shipped `auto` tag. Default is remove: the list is the source of truth. No strikethrough, no red. |
+| Removals | **Listed, not counted**, first on the screen. Per-row `Keep` (`aria-pressed`, row changes not just the glyph) and `Keep all N` in the header. Default is remove: the list is the source of truth. No strikethrough, no red. **Corrected at amendment 6 R1: the `you added this` marker is deleted** — see the note at the foot of this file. |
 | Arrival | The shipped strip's geometry with **delta copy instead of total copy**, its own `?updated=19-6` param parsed strictly, and **a dismissal that is not persisted** — reusing `arrivalDismissKey(deckId)` would mean the strip never shows on any deck that was ever imported. |
 | Celebration | **Suppressed, with no new flag** — the update param is read into the existing `arrivedFromImport` argument. `celebration.ts` untouched. |
 
@@ -166,8 +166,8 @@ unchanged. **The one shipped edit in this amendment is `importDeck`'s doc commen
 wrong and is load-bearing documentation.
 
 **Gaps:** no undo of an applied update (the ruling above) · a basic land's quantity change is
-invisible · `you added this` is a proxy — `auto = false` is also true of a previous import's
-cards, which is why the copy is not "by hand" · the hard dependency on §3 · no stored source or
+invisible · ~~`you added this` is a proxy — `auto = false` is also true of a previous import's
+cards~~ **closed at amendment 6 R1 by deleting the marker** · the hard dependency on §3 · no stored source or
 import history, deliberately · a 400-line paste expands to a 300-row group with no windowing ·
 the 75% threshold is a judgement · the diff cannot show what a card *does*.
 
@@ -307,10 +307,19 @@ lightbox had one.
 - `support.js` — runtime for the HTML reference; not production code.
 
 **Amendment 5 (#281) — Shopping reads availability — was added to this folder on 2026-09-05 as
-new files plus a row in this ledger and in `READINESS.md`, and nothing above is reopened by it:** `The 99 - Shopping Availability (R1).dc.html`,
+new files plus this paragraph, and nothing above is reopened by it:** `The 99 - Shopping Availability (R1).dc.html`,
 `AMENDMENT-5-README.md`, `AMENDMENT-5-READINESS.md`, `STATES-shopping-availability.md`,
 `shopping-availability · copy strings.ts`. It is independent of all four above; on an over-99
 deck it and §3 both render and neither mentions the other.
+
+**Amendment 6 (#292) — Keep all auto — was added to this folder on 2026-09-06** as
+`The 99 - Keep All Auto (R1).dc.html`, `AMENDMENT-6-README.md`, `AMENDMENT-6-READINESS.md`,
+`STATES-keep-all-auto.md`, `keep-all-auto · copy strings.ts`. One control in the decklist group
+toolbar: `Keep all {n}` beside `Clear all auto · {n}`, so that agreeing with the fill has an
+affordance and the `auto` tag can finally clear. **It reopens exactly one thing above** — §2's
+`you added this` marker, whose four copy keys (`handAdded`, `ariaHandAdded`, `outBodyHandAdded`,
+`outBodyMobileHandAdded`) are deleted from `deck-reimport · copy strings.ts`, closing §2's gap 3
+by deletion rather than by wording. No frame in the R3 canvas is redrawn.
 
 The four per-amendment folders (`design_handoff_the99_black_pip/`, `…_deck_reimport/`,
 `…_over_99/`, `…_full_card/`) remain as the sources this package was assembled from; nothing in

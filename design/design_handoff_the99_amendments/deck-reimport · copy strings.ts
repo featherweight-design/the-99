@@ -84,10 +84,12 @@ export const updateCopy = {
 
     // ── Coming out — the group with the decision in it ────────────────
     outHeading: (n: string) => `Coming out · ${n}`,
-    // One sentence. The hand-added variants were removed by the Product ruling
-    // of 2026-09-05: no column records who placed a card, so no removal row can
-    // be labelled differently from any other. See spec §Amendment 2, ruling 2.
+    // One sentence at both widths: the fact, and the per-row `Keep` beside it is
+    // what to do about it. R1 of amendment 6 removed the hand-added variants —
+    // see the deletion note at the foot of this file.
     outBody: "Your list does not name these.",
+    // Same words as recommendationsCopy.auto.keepAll, and a different subject:
+    // there it accepts the fill's picks, here it rescues removals. Two keys.
     keepAll: (n: string) => `Keep all ${n}`,
 
     // ── Going in — a list, not a decision ─────────────────────────────
@@ -120,9 +122,9 @@ export const updateCopy = {
     kept: "Kept ✓",
     keptMobile: "✓",
     keepAria: (name: string) => `Keep ${name} in the deck`,
-    // The row's accessible name carries the `auto` marker, which is a visual
-    // pill beside the name. The hand-added marker was removed by the Product
-    // ruling of 2026-09-05 — see `outBody` above.
+    // The row's accessible name carries its marker when it has one. The optional
+    // argument stays after the hand-added deletion: `auto` is still a visual pill
+    // beside a name, and it is now the only one.
     rowAria: (name: string, marker: string) => (marker ? `${name}. ${marker}.` : name),
     ariaAuto: "Added automatically",
     sourceLine: (n: string) => `line ${n}`,
@@ -224,3 +226,18 @@ export const updateCopy = {
 //
 //   No celebration copy. The 99/99 reveal is suppressed for an update on the
 //   same rule that suppresses it for a first import and for a fill.
+
+// ── DELETED at amendment 6 R1 — the hand-added marker ──────────────────────
+//
+//   handAdded / ariaHandAdded / outBodyHandAdded / outBodyMobileHandAdded are
+//   removed, reaffirming the ruling this file's own comment already conceded:
+//   the only signal available is `auto = false`, which is equally true of a
+//   previous import's rows, and no column records who placed a card. The marker
+//   therefore claimed a fact the data cannot support, on the one screen where a
+//   wrong claim costs the player a card.
+//
+//   What replaces it: nothing. `outBody` states the removal in one sentence at
+//   both widths, the per-row `Keep` and the header's `Keep all {n}` are the
+//   answer, and the group is still first on the screen for the same reason —
+//   it is the only group with a decision in it. README §2 gap 3, which existed
+//   to excuse the proxy, is closed by deletion rather than by wording.
