@@ -137,9 +137,15 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
+| 1 | _none — see note_ | [`specs/2026-09-05-manapool-checkout-design.md`](specs/2026-09-05-manapool-checkout-design.md) (PR #324) | Addendum to `design/design_handoff_the99_decks/`, which already owns both surfaces and audited 🟢 Green — neither the export-dialog Buy action nor the card-modal buy link is drawn in it | Both link mechanisms are established against the live endpoint and the pure module is fully specified; only the two placements and the app's first outbound-link treatment are undrawn |
 
-_Currently empty — **#220 left this queue on 2026-09-05**, the same day it entered it. Its handoff
-landed and audited 🟢 Green at R1, so it now sits in 🟢 above._
+**#220 left this queue on 2026-09-05**, the same day it entered it — its handoff landed and audited
+🟢 Green at R1, so it now sits in 🟢 above.
+
+**The Mana Pool checkout row has no ticket, and that is recorded rather than resolved.** The feature
+was scoped from a direct request with no GitHub issue behind it, and filing one unilaterally is not
+mine to do. The row is real work with a merged spec; the Ticket column stays `_none_` until Hugh
+decides whether this feature should have an issue at all.
 
 ---
 
