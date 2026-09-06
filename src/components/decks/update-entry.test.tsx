@@ -83,7 +83,10 @@ describe("the list step", () => {
   it("promises a comparison rather than a write", () => {
     renderEntry();
     expect(screen.getByRole("button", { name: copy.list.submit })).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(copy.list.reassure))).toBeInTheDocument();
+    // Substring matching rather than a regex built from the copy: the sentence
+    // ends in a full stop, and every other metacharacter a copy edit might add
+    // would quietly widen the match instead of failing.
+    expect(screen.getByText(copy.list.reassure, { exact: false })).toBeInTheDocument();
   });
 
   it("cannot be submitted empty", () => {
