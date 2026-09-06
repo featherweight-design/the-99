@@ -1,11 +1,8 @@
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
-import { loadCollectionPool, scoreOneCommander } from "../../../lib/recs/recommend";
-import { loadCandidateSlugRows } from "../../../lib/discovery/candidates";
-import { assignDiscoverySlugs } from "../../../lib/discovery/slugs";
-import { byFit } from "../../../lib/discovery/novelty";
+import { scoreOneCommander } from "../../../lib/recs/recommend";
+import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
 import { getRankedList } from "../../../lib/recs/ranked-list";
-import { findScoredCommander } from "../../../lib/recs/store";
 import { CommanderDetail } from "../../../components/commanders/detail";
 import { readSynergyCards } from "./synergy-read";
 
@@ -17,42 +14,11 @@ export default async function CommanderDetailPage({
   const { slug } = await params;
   const userId = await requireUserId();
 
-  // Resolving the slug is one query returning one row, and only the requested
-  // commander is scored — the page used to rank the whole candidate set to
-  // render one.
-  // Matching on the persisted slug also keeps this URL valid across a re-rank,
-  // which a freshly-derived slug would not (dedup suffixes follow rank order).
-  let found = await findScoredCommander(userId, slug);
-  if (!found) {
-    // No persisted row — first visit, or arriving here before /commanders. Resolve
-    // from the computed ranking rather than re-reading the store: persistScores is
-    // best-effort, so a second store miss would 404 a commander that ranks
-    // perfectly well in memory.
-    const { items } = await getRankedList(userId);
-    const idx = items.findIndex((i) => i.slug === slug);
-    if (idx !== -1) {
-      found = { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };
-    } else {
-      // Third and last: the discovery ranking. A commander the player has not
-      // built has no persisted score and no place in the owned list, but the
-      // discovery list links here all the same — resolving it anywhere else
-      // would 404 roughly 3,100 rows. The list that mints those links is not
-      // mounted yet; this route answers for them first so it never lags it.
-      const { collection } = await loadCollectionPool(userId);
-      // `unplayedCount` is `byFit`'s required input and never read by it, so it
-      // is filled once per row here rather than in the comparator, which would
-      // otherwise allocate two objects per comparison.
-      const rows = assignDiscoverySlugs(
-        (await loadCandidateSlugRows(userId, collection.map((c) => c.oracleId)))
-          .map((r) => ({ ...r, unplayedCount: 0 })),
-      ).sort(byFit);
-      const at = rows.findIndex((r) => r.slug === slug);
-      if (at === -1) notFound();
-      // The rank the row itself showed: position in the fit ranking, which is
-      // discovery's default and the only ordering this page can name.
-      found = { oracleId: rows[at].oracleId, rank: at + 1, anyDegraded: false };
-    }
-  } else if (found.anyDegraded) {
+  // Only the requested commander is scored — the page used to rank the whole
+  // candidate set to render one.
+  let found = await resolveCommanderSlug(userId, slug);
+  if (!found) notFound();
+  if (found.anyDegraded) {
     // The persisted ranks came from an outage-era compute, so the rank shown beside
     // a freshly-scored commander would disagree with the list. Refresh the rank
     // only — matched by oracleId, because a recompute can reassign this slug to a
