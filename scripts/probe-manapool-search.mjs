@@ -24,7 +24,12 @@ console.log("\n== does a single-printing page link to the grid?");
 await page.goto("https://manapool.com/card/unh/116/ach-hans-run", { waitUntil: "networkidle", timeout: 60_000 });
 await page.waitForTimeout(2000);
 const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")).filter(Boolean));
-console.log("  card links on page:", [...new Set(hrefs.filter((h) => h.includes("/card")))].slice(0, 10));
+const unique = [...new Set(hrefs)];
+// `/cards` is the grid and `/card/…` a single printing, and the question here is
+// whether the page offers the former — so a substring match on `/card` would
+// answer it by conflating the two.
+console.log("  grid links:", unique.filter((h) => /\/cards(\?|$)/.test(h)).slice(0, 10));
+console.log("  printing links:", unique.filter((h) => h.includes("/card/")).slice(0, 10));
 
 // Mana Pool renders `Æther Vial` as `Aether Vial` and `Jötun` as `Jotun`, so a
 // literal comparison would report a false negative on exactly the names this
