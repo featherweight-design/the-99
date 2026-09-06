@@ -133,7 +133,7 @@ export function GroupToggle({
       {/* Scoped to the filter it sits under: the sum of what Shopping is
           showing, and nothing when another filter is open. */}
       {filter === "shopping" && priceSummary && (
-        <div className="mt-[8px]">
+        <div className="mt-[10px]">
           <PriceStrip summary={priceSummary} provenance={provenance} />
         </div>
       )}

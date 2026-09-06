@@ -47,6 +47,36 @@ describe("PriceStrip provenance line", () => {
   });
 });
 
+// The phone stacks the figure over the provenance; desktop puts the provenance
+// first on the line with the figure at its end. One subtree reaches both — a
+// width-branched pair would render each fact twice and still pass a
+// column-by-column review.
+describe("PriceStrip responsive arrangement", () => {
+  it("renders each fact exactly once, reordering rather than duplicating", () => {
+    render(
+      <PriceStrip
+        summary={{ totalCents: 1240, pricedCopies: 6, totalCopies: 8 }}
+        provenance={fresh}
+      />,
+    );
+    expect(screen.getAllByText("$12.40")).toHaveLength(1);
+    expect(screen.getAllByText(/prices from ManaPool/)).toHaveLength(1);
+  });
+
+  it("reverses the row at desktop so the figure ends the line", () => {
+    const { container } = render(
+      <PriceStrip
+        summary={{ totalCents: 1240, pricedCopies: 6, totalCopies: 8 }}
+        provenance={fresh}
+      />,
+    );
+    const plate = container.firstElementChild!;
+    expect(plate).toHaveClass("flex-col", "md:flex-row-reverse", "md:justify-between");
+    // DOM order is figure then provenance, which is also the reading order.
+    expect(plate.firstElementChild).toHaveTextContent("$12.40");
+  });
+});
+
 describe("PriceStrip figure line", () => {
   it("shows the total and the priced clause when some copies are unpriced", () => {
     render(

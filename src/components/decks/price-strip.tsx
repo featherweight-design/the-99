@@ -26,15 +26,27 @@ export function PriceStrip({
   const showClause = summary.pricedCopies < summary.totalCopies;
 
   return (
-    <div className="font-mono text-[10.5px] md:text-[11px] leading-[1.5]">
+    // One DOM order, two arrangements. The phone stacks figure over provenance;
+    // desktop puts the provenance first on the line and the figure at its end,
+    // which `flex-row-reverse` + `justify-between` reach without a second
+    // subtree — two branches would pass a width-by-width review while being
+    // two components that can drift.
+    <div
+      className="flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] py-[10px] md:flex-row-reverse md:items-baseline md:justify-between md:gap-[14px] md:px-[15px] md:py-[11px]"
+      style={{ background: "var(--surface-sunken)" }}
+    >
       {showFigure || showClause ? (
-        <p className="m-0" style={{ color: "var(--fg)" }}>
-          {showFigure ? formatCents(summary.totalCents) : null}
-          {showFigure && showClause ? (
-            <span style={{ color: "var(--fg-faint)" }}>{" · "}</span>
+        <p className="m-0 flex items-baseline gap-[7px] font-mono">
+          {showFigure ? (
+            <span className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>
+              {formatCents(summary.totalCents)}
+            </span>
           ) : null}
           {showClause ? (
-            <span style={{ color: "var(--fg-faint)" }}>
+            <span className="text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
+              {showFigure ? (
+                <span aria-hidden="true">{"· "}</span>
+              ) : null}
               {priceCopy.strip.pricedClause(summary.pricedCopies, summary.totalCopies)}
             </span>
           ) : null}
@@ -43,7 +55,7 @@ export function PriceStrip({
       {/* --fg-locked in both forms. Old prices are our operational problem, not
           the player's error, and amber would spend the surface's loudest ink
           on something nothing here can act on. */}
-      <p className="m-0" style={{ color: "var(--fg-locked)" }}>
+      <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>
         {[
           priceCopy.strip.provenance,
           priceCopy.strip.lastChecked(provenance.when),
