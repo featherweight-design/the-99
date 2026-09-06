@@ -47,7 +47,8 @@ const RESULTS: { value: GameResult; label: string }[] = [
 ];
 const RESULT_VALUES = RESULTS.map((r) => r.value);
 
-// `played tonight` / `played 12 Aug` — the prefix takes faint ink and the date
+// `played tonight` / `played 2026-08-12` — the date word is the input's own
+// value, which is why it is unformatted. The prefix takes faint ink and the date
 // word body ink. Split on the first space rather than on a duplicated literal,
 // so the wording of both strings stays in the copy module.
 function dateParts(text: string): [string, string] {
