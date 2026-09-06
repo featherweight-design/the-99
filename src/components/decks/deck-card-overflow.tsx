@@ -65,12 +65,13 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
         type="button"
         onClick={handleToggle}
         aria-label="Deck options"
-        // "true", not "menu": `menu` promises role="menu" with menuitem
-        // children and arrow-key navigation, which `sort-menu` and
-        // `account-menu` both provide and this panel does not. It is a generic
-        // popover, and its second mode is a rename form rather than a list of
-        // actions at all.
-        aria-haspopup="true"
+        // No aria-haspopup at all. Every value it takes names a pattern this
+        // panel does not implement — ARIA defines "true" as equivalent to
+        // "menu", and a menu means role="menu" with menuitem children and
+        // arrow-key navigation, which `sort-menu` and `account-menu` provide
+        // and this does not. Its second mode is a rename form, so it is not a
+        // menu under any reading. aria-expanded plus aria-controls state the
+        // relationship truthfully and claim nothing further.
         aria-expanded={open}
         // Omitted while closed: the panel is unmounted at rest, and a reference
         // to an absent id is worse than no reference at all.
@@ -97,8 +98,12 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
             background: "var(--surface)",
             border: "1px solid var(--border-strong)",
           }}
-          // stop click propagation so the Link overlay beneath doesn't fire
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          // Propagation only: the deck-card Link overlay beneath fires on
+          // bubbling, so stopping the bubble is the whole fix. preventDefault
+          // here would also cancel the browser default for clicks inside the
+          // panel, which is what cmd/ctrl- and middle-clicking the Update link
+          // rely on to open a new tab.
+          onClick={(e) => e.stopPropagation()}
         >
           {mode === "menu" ? (
             <div className="p-[8px] flex flex-col gap-[4px]">
