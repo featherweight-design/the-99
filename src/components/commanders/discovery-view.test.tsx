@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { DiscoveryList } from "../../lib/discovery/list";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { revealAnnouncement } from "./reveal-control";
 import { DiscoveryView } from "./discovery-view";
 
 // Every control on this surface navigates: the scope flip swaps which list the
@@ -204,6 +205,40 @@ describe("DiscoveryView", () => {
     expect(screen.getByText(empty.filteredBody("green", 1))).toBeTruthy();
   });
 
+  // The floor is a server-side exclusion the pips played no part in, so a
+  // colour that matches nothing must not be answered with "none of the 3,334
+  // candidates cleared the floor".
+  it("blames the colours, not the floor, when the pips are what emptied the list", () => {
+    const items = [item({ colorIdentity: ["U"] })];
+    render(
+      <DiscoveryView
+        discovery={list({
+          items,
+          sort: "new",
+          candidateCount: 3334,
+          floorExcluded: 3333,
+          bestPct: 18,
+        })}
+        avail="free"
+      />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.queryByText(empty.floorHeading)).toBeNull();
+    expect(screen.getByText(empty.filteredHeading)).toBeTruthy();
+  });
+
+  // The one genuinely new reason this state has under discovery, so the design
+  // marks the whole clause rather than a phrase inside it.
+  it("emphasises the built clause", () => {
+    const items = [item({ colorIdentity: ["U"] })];
+    render(
+      <DiscoveryView discovery={list({ items, deckIdentities: [["G"]] })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    const clause = screen.getByText(empty.filteredBuiltClause(1, 1, "Green"));
+    expect(clause.tagName).toBe("STRONG");
+  });
+
   // ── The window ────────────────────────────────────────────────────────
   const many = (n: number) =>
     Array.from({ length: n }, (_, i) =>
@@ -218,6 +253,30 @@ describe("DiscoveryView", () => {
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
     expect(screen.getByText(discoveryCopy.window.revealBand(51, 60, 60))).toBeTruthy();
+  });
+
+  // The count line and the reveal band are one feature: a windowed list says
+  // how much of itself is showing, and the reveal says what it just added.
+  it("counts the window in the bar, and speaks each reveal on the live region", () => {
+    // The count's figures are their own `<b>` elements, so this reads the
+    // sentence they sit in rather than looking for one text node.
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />,
+    );
+    expect(container.textContent).toContain("25 shown · 35 more below");
+
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    expect(container.textContent).toContain("50 shown · 10 more below");
+    expect(screen.getByText(revealAnnouncement(50, 60, 25))).toBeTruthy();
+  });
+
+  // A list too short to have been windowed has no window to count, and its rows
+  // never receive the reveal's focus move, so they are not tab stops.
+  it("leaves an unwindowed list's rows out of the tab order", () => {
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: many(10), candidateCount: 10 })} avail="free" />,
+    );
+    expect(container.querySelectorAll("li[tabindex]").length).toBe(0);
   });
 
   it("rules off a list that was windowed once it is fully revealed", () => {
