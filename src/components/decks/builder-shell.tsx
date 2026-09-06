@@ -575,18 +575,22 @@ export function BuilderShell({
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
     <CardDetailProvider>
       <AddOptimisticCardProvider value={deckEdits}>
-        {/* One column at both widths now that the rail is gone. Desktop still
-            makes the viewport the frame so the quick-add bar can sit against the
-            bottom edge rather than at the end of a long page scroll. */}
+        {/* One column at both widths now that the rail is gone. The document is
+            the only scrollport at both widths: desktop used to frame the column
+            in the viewport (`h-screen` + `overflow-hidden` here, `overflow-y-auto`
+            below) so the quick-add bar could sit against the bottom edge, but
+            that box's edges cut across empty space whenever the content was
+            shorter than the screen. The bar is `sticky`, so it pins to whichever
+            scrollport contains it — the document serves that just as well. */}
         <div
-          className="flex flex-col min-h-screen md:h-screen md:min-h-0 md:overflow-hidden"
+          className="flex flex-col min-h-screen"
           style={{ background: "var(--bg)" }}
         >
           <span className="sr-only" aria-live="polite" aria-atomic="true">
             {announcement}
           </span>
 
-          <div className="flex-1 flex flex-col min-w-0 md:min-h-0 md:overflow-y-auto">
+          <div className="flex-1 flex flex-col min-w-0">
             {/* The 99/99 reveal — one-shot, above the builder body */}
             {revealOpen && (
               <CompletionReveal
