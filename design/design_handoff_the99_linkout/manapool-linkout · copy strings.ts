@@ -1,5 +1,5 @@
 // manapool-linkout · copy strings — #330, R3
-// design/design_handoff_the99_decks/
+// design/design_handoff_the99_linkout/
 //
 // Labels are unchanged from R2 and are final. Do not ship R1's:
 //   `Buy on Mana Pool`      → stale. A checkout's promise on a shelf's destination.
