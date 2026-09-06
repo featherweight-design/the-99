@@ -12,6 +12,7 @@ import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import type { DiscoveryList } from "../../lib/discovery/list";
 import { FilterBar } from "./filter-bar";
 import { PageHeader } from "./page-header";
+import { RecCard } from "./rec-card";
 import { SortMenu } from "./sort-menu";
 import {
   useAvailNav,
@@ -142,11 +143,22 @@ export function DiscoveryView({
         order={{ desktop: menu, mobile: menu }}
       />
 
-      {/* No rows yet. `RecCard`'s discovery arm renders nothing until the row
-          lands, so mapping the items here would emit one empty `<li>` per
-          candidate — a list that announces its length to a screen reader and
-          has nothing readable in it. The controls above are this phase; the
-          rows are the next one. */}
+      <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
+        {filtered.slice(0, shown).map((item) => (
+          <li key={item.slug}>
+            {/* `item.rank`, not the map index: the server ranked every item this
+                list carries, so a colour filter narrows what is shown without
+                renumbering what it leaves behind. */}
+            <RecCard
+              discovery={item}
+              rank={item.rank}
+              sort={discovery.sort}
+              avail={avail}
+              counts={item.counts}
+            />
+          </li>
+        ))}
+      </ul>
 
       {/* This list's own live region. `CommandersView` has one, but discovery
           does not render that component, so an announcement routed there would

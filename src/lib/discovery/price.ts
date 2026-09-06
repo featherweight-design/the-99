@@ -8,6 +8,14 @@ export type PriceAggRow = {
   liveCents: number | null;
   /** True when some printing has ever carried a non-null `price_cents`. */
   everPriced: boolean;
+  /**
+   * True when some printing sits at the newest `as_of`. Separate from
+   * `liveCents` because the two disagree exactly in the case the states matrix
+   * calls "live but priceless": the printing is in this run's feed but carries
+   * no non-foil `price_cents`, which is not the same claim as a sold-out
+   * printing whose last row is frozen at an older `as_of`.
+   */
+  live: boolean;
 };
 
 export type PriceSlot =
@@ -27,6 +35,10 @@ export function slotFor(row: PriceAggRow | undefined, ownedCommander: boolean): 
   if (ownedCommander) return { kind: "absent" };
   if (!row) return { kind: "absent" };
   if (row.liveCents != null) return { kind: "priced", cents: row.liveCents };
+  // Row 6 before row 3: a printing in this run's feed with no non-foil figure
+  // has not sold out, so "not stocked" would be a false claim. Saying nothing
+  // is the handoff's answer whenever there is no figure to print.
+  if (row.live) return { kind: "absent" };
   return row.everPriced ? { kind: "notStocked" } : { kind: "absent" };
 }
 
@@ -49,6 +61,7 @@ export async function loadPrices(oracleIds: string[]): Promise<Map<string, Price
                   and ${printingPrices.priceCents} is not null)`.as("live_cents"),
       everPriced: sql<boolean>`bool_or(${printingPrices.priceCents} is not null)`
         .as("ever_priced"),
+      live: sql<boolean>`bool_or(${printingPrices.asOf} = ${newest})`.as("live"),
     })
     .from(printings)
     .innerJoin(printingPrices, eq(printingPrices.scryfallId, printings.scryfallId))
