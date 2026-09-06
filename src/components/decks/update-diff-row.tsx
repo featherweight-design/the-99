@@ -43,9 +43,15 @@ function OwnedDot({ owned }: { owned: boolean }) {
  *  app's. No column records who placed a card, so a second marker would assert
  *  something the data cannot support — Product ruled it out on 2026-09-05. */
 function Marker({ auto }: { auto: boolean }) {
-  if (!auto) return null;
+  // Keeps its box when there is no tag, so the type line beside it does not
+  // shift between an app-placed row and a player's own.
   return (
-    <span className="hidden md:inline font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none text-[color:var(--fg-faint)] [border:1px_solid_var(--border)]">
+    <span
+      className={[
+        "hidden md:inline font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none",
+        auto ? "text-[color:var(--fg-faint)] [border:1px_solid_var(--border)]" : "invisible",
+      ].join(" ")}
+    >
       auto
     </span>
   );
@@ -109,16 +115,24 @@ export function DiffRowIn({ card, sourceLine }: { card: DiffRowCard; sourceLine:
       <span className="hidden md:block font-mono text-[10px] w-[150px] flex-none truncate text-[color:var(--fg-locked)]">
         {card.typeLine}
       </span>
-      {!card.owned && (
-        <span className="font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]">
-          buy
-        </span>
-      )}
-      {sourceLine !== null && (
-        <span className="hidden md:inline font-mono text-[11px] flex-none text-[color:var(--fg-faint)]">
-          {copy.sourceLine(String(sourceLine))}
-        </span>
-      )}
+      {/* Both trailing slots keep their width when empty, and the line number is
+          tabular, so the type line lands in the same place on every row whether
+          or not the card is owned and however many digits its source line has. */}
+      <span
+        className={[
+          "font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none",
+          card.owned
+            ? "invisible"
+            : "text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]",
+        ].join(" ")}
+      >
+        buy
+      </span>
+      <span
+        className="hidden md:inline font-mono text-[11px] w-[54px] flex-none text-right tabular-nums text-[color:var(--fg-faint)]"
+      >
+        {sourceLine !== null ? copy.sourceLine(String(sourceLine)) : ""}
+      </span>
     </div>
   );
 }

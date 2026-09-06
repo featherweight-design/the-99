@@ -9,6 +9,8 @@
 // Colors reference brand tokens via CSS custom properties where possible;
 // some design-table values (e.g. card-fan fill layers) are raw hex by spec.
 
+import { CrownDiamonds, crownBox } from "./ui/crown";
+
 // ---------------------------------------------------------------------------
 // Crowned99
 // ---------------------------------------------------------------------------
@@ -77,15 +79,12 @@ export function Crowned99({
   const spec = CROWNED99_SPECS[variant];
   const { smallDiamond: s, largeDiamond: l, numeralSize, fontWeight, gap, translateX } = spec;
 
-  // Crown row: three diamonds (s, l, s) with pixel-exact sizes.
-  // The diamonds are rotated 45°; their visual width is side * sqrt(2).
-  // Crown row total width = s*sqrt2 + gap + l*sqrt2 + gap + s*sqrt2
-  // We build the SVG viewBox to match the actual pixel dimensions.
-  const sqrt2 = Math.SQRT2;
-  const sVis = s * sqrt2; // visual diagonal extent of small diamond
-  const lVis = l * sqrt2; // visual diagonal extent of large diamond
-  const crownWidth = sVis + gap + lVis + gap + sVis;
-  const crownHeight = lVis; // tallest diamond sets height
+  // The crown row itself is drawn by CrownDiamonds — the app's one drawing of
+  // the mark — so the wordmark and the standalone Crown cannot drift apart.
+  // This file still owns the per-variant pixel geometry, because those values
+  // come from the design table and the numeral has to sit under them.
+  const geometry = { small: s, large: l, gap };
+  const { width: crownWidth, height: crownHeight } = crownBox(geometry);
 
   // Numeral "99": approximate width at the given font-size (Cinzel is slightly
   // condensed; 1.15× factor gives a reasonable bounding box for the SVG width).
@@ -97,17 +96,8 @@ export function Crowned99({
   // Add 4px padding at bottom.
   const totalHeight = crownHeight + 6 + numeralSize + 4; // 6px gap between crown and numeral top
 
-  // Crown row center-x: center of SVG, adjusted by translateX
-  const crownCenterX = totalWidth / 2 + translateX;
-  // Crown diamonds are centered at y = crownHeight / 2 (vertically centered in crown band)
-  const crownCenterY = crownHeight / 2;
-
-  // Diamond centers (x): starting from left edge of crown row
-  // Crown row left edge relative to SVG center:
-  const crownRowLeft = crownCenterX - crownWidth / 2;
-  const d1cx = crownRowLeft + sVis / 2;
-  const d2cx = d1cx + sVis / 2 + gap + lVis / 2;
-  const d3cx = d2cx + lVis / 2 + gap + sVis / 2;
+  // Crown row left edge: centred in the SVG, adjusted by translateX.
+  const crownRowLeft = totalWidth / 2 + translateX - crownWidth / 2;
 
   // Text baseline y: crown band + 6px gap + numeralSize (font-size = cap height approx)
   const textY = crownHeight + 6 + numeralSize;
@@ -123,36 +113,7 @@ export function Crowned99({
       className={className}
       style={{ overflow: "visible" }}
     >
-      {/* Crown row: s / l / s diamonds, each rotated 45°, filled accent */}
-      <g>
-        {/* Small diamond 1 */}
-        <rect
-          x={d1cx - s / 2}
-          y={crownCenterY - s / 2}
-          width={s}
-          height={s}
-          transform={`rotate(45, ${d1cx}, ${crownCenterY})`}
-          fill="var(--accent)"
-        />
-        {/* Large diamond */}
-        <rect
-          x={d2cx - l / 2}
-          y={crownCenterY - l / 2}
-          width={l}
-          height={l}
-          transform={`rotate(45, ${d2cx}, ${crownCenterY})`}
-          fill="var(--accent)"
-        />
-        {/* Small diamond 2 */}
-        <rect
-          x={d3cx - s / 2}
-          y={crownCenterY - s / 2}
-          width={s}
-          height={s}
-          transform={`rotate(45, ${d3cx}, ${crownCenterY})`}
-          fill="var(--accent)"
-        />
-      </g>
+      <CrownDiamonds geometry={geometry} fill="var(--accent)" offsetX={crownRowLeft} />
       {/* Numeral "99" */}
       <text
         x={textX}

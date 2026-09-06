@@ -414,17 +414,17 @@ function Terminal({
   children: React.ReactNode;
 }) {
   return (
-    <div className="p-[16px_18px_24px] md:max-w-[760px] md:p-[44px_48px] text-center md:text-left">
-      {crown && (
-        <Crown className="mx-auto md:mx-0 mb-[14px] w-[34px] h-[34px] text-[color:var(--fg-locked)]" />
-      )}
+    <div className="flex-1 flex flex-col items-center justify-center text-center p-[16px_18px_24px] md:p-[44px_48px]">
+      {crown && <Crown tone="quiet" className="mb-[14px]" />}
       <h2 className="font-display font-bold text-[20px] md:text-[26px] m-0 text-[color:var(--fg)]">
         {heading}
       </h2>
-      <p className="mt-[8px] text-[13.5px] md:text-[15px] leading-[1.6] text-[color:var(--fg-body)]">
+      <p className="mt-[8px] md:max-w-[520px] text-[13.5px] md:text-[15px] leading-[1.6] text-[color:var(--fg-body)]">
         {body}
       </p>
-      <div className="mt-[20px] flex flex-col md:flex-row gap-[10px] md:gap-[12px]">{children}</div>
+      <div className="mt-[20px] flex flex-col md:flex-row justify-center gap-[10px] md:gap-[12px]">
+        {children}
+      </div>
     </div>
   );
 }
@@ -447,17 +447,8 @@ function ApplyingBlock() {
 
 function Dots({ heading, body, live }: { heading: string; body?: string; live: string }) {
   return (
-    <div className="p-[16px_18px_24px] md:max-w-[760px] md:p-[34px_48px] text-center md:text-left">
-      <div className="mt-[28px] md:mt-0 mb-[18px] md:mb-[12px] flex gap-[6px] justify-center md:justify-start">
-        {[0, 0.2, 0.4].map((delay) => (
-          <span
-            key={delay}
-            aria-hidden
-            className="anim-dots rounded-full w-[7px] h-[7px] md:w-[8px] md:h-[8px] bg-[color:var(--accent)]"
-            style={{ animationDelay: `${delay}s` }}
-          />
-        ))}
-      </div>
+    <div className="flex-1 flex flex-col items-center justify-center text-center p-[16px_18px_24px] md:p-[34px_48px]">
+      <Crown tone="page" pulse className="mb-[18px] md:mb-[12px]" />
       <h2 className="font-display font-bold text-[17px] md:text-[19px] m-0 text-[color:var(--fg)]">
         {heading}
       </h2>

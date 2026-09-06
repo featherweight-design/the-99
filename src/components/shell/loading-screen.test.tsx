@@ -7,7 +7,9 @@ const copy = { heading: "Loading decks", status: "fetching", caption: "One momen
 describe("LoadingScreen", () => {
   it("ships no illustration — the crown is the whole mark", () => {
     const { container } = render(<LoadingScreen copy={copy} />);
-    expect(container.querySelector("svg")).toBeNull();
+    const svgs = container.querySelectorAll("svg");
+    expect(svgs).toHaveLength(1);
+    expect(svgs[0]).toHaveAttribute("aria-hidden");
     expect(container.querySelectorAll(".anim-dots")).toHaveLength(3);
   });
 });

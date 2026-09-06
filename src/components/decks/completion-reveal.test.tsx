@@ -63,18 +63,15 @@ describe("CompletionReveal", () => {
     const { container } = render(
       <CompletionReveal commanderShortName="Korvold" onDismiss={vi.fn()} onExport={vi.fn()} />,
     );
-    expect(container.querySelector("svg")).toBeNull();
-    const diamonds = Array.from(container.querySelectorAll("[aria-hidden] > span"));
+    const svgs = container.querySelectorAll("svg");
+    expect(svgs).toHaveLength(1);
+    const diamonds = Array.from(svgs[0].querySelectorAll("rect"));
     expect(diamonds).toHaveLength(3);
     for (const d of diamonds) {
-      expect((d as HTMLElement).style.background).toBe("var(--accent)");
+      expect(d.getAttribute("fill")).toBe("var(--accent)");
     }
-    // Loud is the enlarged geometry — 13/19/13 against the quiet 8/12/8.
-    expect(diamonds.map((d) => d.className)).toEqual([
-      expect.stringContaining("w-[13px]"),
-      expect.stringContaining("w-[19px]"),
-      expect.stringContaining("w-[13px]"),
-    ]);
+    // Loud is the enlarged geometry — 15/20/15 against the quiet 8/11/8.
+    expect(diamonds.map((d) => d.getAttribute("width"))).toEqual(["15", "20", "15"]);
   });
 
   // Reduced motion is handled entirely in globals.css, which zeroes the

@@ -61,12 +61,11 @@ describe("NoResults", () => {
 
   it("carries a quiet crown and no illustration", () => {
     const { container } = renderNoResults("counterspell", ["R"]);
-    expect(container.querySelector("svg")).toBeNull();
-    const diamonds = container.querySelectorAll("[aria-hidden] > span");
+    const svgs = container.querySelectorAll("svg");
+    expect(svgs).toHaveLength(1);
+    const diamonds = svgs[0].querySelectorAll("rect");
     expect(diamonds).toHaveLength(3);
-    expect((diamonds[0] as HTMLElement).style.background).toBe(
-      "var(--border-strong)",
-    );
+    expect(diamonds[0].getAttribute("fill")).toBe("var(--border-strong)");
     expect(container.textContent).not.toContain("?");
   });
 
