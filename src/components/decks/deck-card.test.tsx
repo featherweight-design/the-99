@@ -45,9 +45,12 @@ describe("DeckCard — unresolved badge", () => {
 // pill may carry it. The retired `Playable` took the same green as `Complete`
 // while the caption beneath it read "15 to buy".
 describe("DeckCard — status pill tone", () => {
+  // Read off `style.color` rather than getComputedStyle: the component sets the
+  // tone inline, and a computed read routes the answer through jsdom's own
+  // handling of custom properties, which is not what ships.
   const toneOf = (status: DeckListItem["statusPill"]) => {
     const { unmount } = render(<DeckCard deck={deck({ statusPill: status })} />);
-    const tone = getComputedStyle(screen.getByText(status)).color;
+    const tone = (screen.getByText(status) as HTMLElement).style.color;
     unmount();
     return tone;
   };

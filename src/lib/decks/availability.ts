@@ -1,8 +1,12 @@
 /**
- * A deck at 99 cards is finished enough that its cards are physically sleeved,
- * so its claims are hard. Below 99 it is a brew and its claims are soft. This
- * is the brief's proxy for deck maturity and it reuses statusPill()'s own
- * threshold — Unresolved/To buy/Complete sit at 99, Draft/Building below it.
+ * A deck at 99 cards or more is finished enough that its cards are physically
+ * sleeved, so its claims are hard. Below 99 it is a brew and its claims are
+ * soft. This is the brief's proxy for deck maturity and it shares statusPill()'s
+ * threshold without matching its partition: Unresolved/To buy/Complete sit at
+ * exactly 99 and Over sits above it, so all four are mature, while
+ * Draft/Building fall below. The comparison is `>=`, never `=` — an overfull
+ * deck is sleeved too, and README decision 8 of the amendments handoff locks
+ * that against being narrowed for symmetry with the pill.
  */
 export const MATURE_DECK_SIZE = 99;
 
