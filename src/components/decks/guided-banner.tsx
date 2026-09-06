@@ -77,8 +77,7 @@ export function GuidedBanner({ commanderName }: GuidedBannerProps) {
           className="text-[12.5px] md:text-[14px] leading-[1.5] md:leading-[1.55] mt-[3px] md:mt-[4px] md:max-w-[640px]"
           style={{ color: "var(--fg-body)" }}
         >
-          Search cards or pick from your suggestions below — every card you add is counted
-          toward your 99.
+          Search cards or pick from your suggestions below.
         </p>
       </div>
 

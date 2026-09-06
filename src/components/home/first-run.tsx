@@ -32,17 +32,12 @@ export function FirstRunChecklist({ name }: { name: string | null }) {
 
       {/* §Page subhead:
           Mobile:  13px fg-body, margin 8px 0 20px, line-height 1.5
-                   content "Three steps to your first recommendations."
-          Desktop: 15px fg-body, margin 10px 0 28px
-                   content "Three steps to your first recommendations. Start by handing us your cards." */}
+          Desktop: 15px fg-body, margin 10px 0 28px */}
       <p
         className="text-[13px] md:text-[15px] mt-[8px] md:mt-[10px] mb-[20px] md:mb-[28px] leading-[1.5]"
         style={{ color: "var(--fg-body)" }}
       >
-        <span className="md:hidden">Three steps to your first recommendations.</span>
-        <span className="hidden md:inline">
-          Three steps to your first recommendations. Start by handing us your cards.
-        </span>
+        Three steps to your first recommendations.
       </p>
 
       {/* Step 1 — Active

@@ -194,7 +194,10 @@ export const deckImportCopy = {
       `Every Commander deck needs a legendary creature to lead it, and none of these ${total} lines is one. If yours is in there under a name we couldn't read, that's the line to fix before you bring it over.`,
     noneCta: "Start from a commander instead →",
     noneBack: "Back to the list",
-    noneReassurance: "Nothing was created · your list is still in the box",
+    // "still here", the phrasing `failures.unexpected` already uses for the same
+    // fact. The drawn line said "in the box", which is a metaphor for a surface
+    // the player is looking at.
+    noneReassurance: "Nothing was created · your list is still here",
   },
 
   // ---- Arrival on /decks/[id] ---------------------------------------------
@@ -203,7 +206,7 @@ export const deckImportCopy = {
   arrival: {
     cleanMobile: (n: string) => `All ${n} came over · from your list, just now`,
     clean: (n: string) =>
-      `All ${n} lines came over clean. Imported from your list a moment ago — nothing needs your attention.`,
+      `All ${n} lines came over clean. Imported from your list a moment ago.`,
     dismiss: "Dismiss",
   },
 

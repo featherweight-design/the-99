@@ -310,8 +310,7 @@ export function CreatePreFilled({
               className="mt-[20px] text-[12.5px] md:text-[13px] leading-[1.55] md:leading-[1.6] md:border-t md:border-[color:var(--border)] md:pt-[16px]"
               style={{ color: "var(--fg-faint)" }}
             >
-              Color identity is locked to your commander. Cards outside this
-              identity won&apos;t be suggested.
+              Cards outside your commander&apos;s color identity won&apos;t be suggested.
             </p>
           </form>
         </div>

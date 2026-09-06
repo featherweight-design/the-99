@@ -339,7 +339,7 @@ describe("state 12 — no legendary creature", () => {
 
     await screen.findByRole("button", { name: "Back to the list" });
     fireEvent.click(screen.getByRole("button", { name: "Back to the list" }));
-    // The list is still in the box, exactly as the reassurance line says.
+    // The list is still here, exactly as the reassurance line says.
     expect((pasteBox() as HTMLTextAreaElement).value).toContain("Sol Ring");
 
     submit();

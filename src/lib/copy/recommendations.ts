@@ -169,8 +169,8 @@ export const recommendationsCopy = {
       `Deck filled. ${filled} of 99, ${bought} to buy.`,
     // State 15 — the deck exists, the fill did not land.
     failedHeading: 'The deck is here, the cards aren’t.',
-    failedBody:
-      'We made the deck but couldn’t fill it. Nothing is lost — your commander is saved and the slots are empty.',
+    // "the slots are empty" was the heading's second clause said again, plainly.
+    failedBody: 'We made the deck but couldn’t fill it. Nothing is lost.',
     failedRetry: 'Try filling again',
     failedRetryAria: 'Try filling this deck again',
   },

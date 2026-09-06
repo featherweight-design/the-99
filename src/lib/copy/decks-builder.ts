@@ -184,7 +184,10 @@ export const addPanelCopy = {
   considerEmpty: {
     heading: "We’re out of ideas, and that’s a compliment",
     body: (commanderShortName: string) =>
-      `Every card in your collection that fits ${commanderShortName} is already in this deck. Add more to the pile and we’ll have more to say.`,
+      `Every card in your collection that fits ${commanderShortName} is already in this deck.`,
+    // The second sentence this body used to carry ("Add more to the pile and
+    // we'll have more to say") was the CTA rendered directly beneath it, said
+    // twice — and a second joke under a heading that already made one.
     cta: "Add to your collection",
   },
 
@@ -192,7 +195,7 @@ export const addPanelCopy = {
   degraded: {
     heading: "EDHREC isn’t answering right now.",
     body: (commanderShortName: string) =>
-      `These are ranked by what your deck is short of, not by what other ${commanderShortName} decks run. The shelves are honest and the percentages are missing.`,
+      `These are ranked by what your deck is short of, not by what other ${commanderShortName} decks run. The percentages are missing until it answers.`,
     retry: "Try again",
   },
 
