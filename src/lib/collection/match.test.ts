@@ -44,6 +44,16 @@ describe("matchRows", () => {
     ]);
     expect(matched[0].oracleId).toBe("o-3");
   });
+  it("keeps a many-faced name matchable by its full spelling", () => {
+    // "Who // What // When // Where // Why" is a real five-face card. Normalising
+    // slashes must not disturb the full-name key, whatever the alias does with the
+    // first face.
+    const many = [
+      { oracleId: "o-4", scryfallId: "s-4", name: "Who // What // When // Where // Why" },
+    ];
+    expect(matchRows([row("Who / What / When / Where / Why")], many).matched[0].oracleId).toBe("o-4");
+    expect(matchRows([row("What")], many).unmatched).toHaveLength(1);
+  });
   it("reports unmatched rows with their original line number", () => {
     const { matched, unmatched } = matchRows([row("Not A Card", null, 7)], catalog);
     expect(matched).toHaveLength(0);
