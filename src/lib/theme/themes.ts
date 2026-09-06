@@ -52,7 +52,10 @@ export const RETIRED_THEMES = {
 export type RetiredThemeKey = keyof typeof RETIRED_THEMES;
 
 export function isRetiredThemeKey(value: string | undefined): value is RetiredThemeKey {
-  return !!value && value in RETIRED_THEMES;
+  // Own properties only. The value comes from a cookie, and `in` would accept
+  // `toString` or `__proto__` — which then resolve to a prototype member with no
+  // `survivor` on it, so the caller paints `undefined` or throws.
+  return !!value && Object.hasOwn(RETIRED_THEMES, value);
 }
 
 /** The theme to paint for a persisted value, retired ids included. */

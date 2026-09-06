@@ -106,7 +106,8 @@ function applyTheme(key: ThemeKey) {
 function retirementNotice() {
   if (typeof document === "undefined") return null;
   const persisted = document.cookie
-    .split("; ")
+    .split(";")
+    .map((c) => c.trim())
     .find((c) => c.startsWith(`${THEME_COOKIE}=`))
     ?.slice(THEME_COOKIE.length + 1);
   if (!isRetiredThemeKey(persisted)) return null;

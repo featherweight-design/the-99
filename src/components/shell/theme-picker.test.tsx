@@ -159,6 +159,20 @@ describe("ThemePicker retirement notice", () => {
     expect(screen.getByText(/You're on Oil Haze/)).toBeInTheDocument();
   });
 
+  // The theme cookie is rarely the only one. jsdom always joins with "; ", so
+  // this cannot exercise a tighter separator — the parser trims for that, and
+  // what this holds is that the notice still finds its own cookie in a crowd.
+  it("finds its cookie among the others", () => {
+    document.cookie = "session=abc; path=/";
+    document.cookie = "the99_theme=innistrad; path=/";
+    document.cookie = "locale=en-GB; path=/";
+    document.documentElement.dataset.theme = "phyrexia";
+    render(<ThemePicker current="phyrexia" />);
+    expect(screen.getByText(/Moonlit has been retired\./)).toBeInTheDocument();
+    document.cookie = "session=; path=/; max-age=0";
+    document.cookie = "locale=; path=/; max-age=0";
+  });
+
   it("stays hidden for a theme that still exists", () => {
     document.cookie = "the99_theme=kaldheim; path=/";
     render(<ThemePicker current="kaldheim" />);

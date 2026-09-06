@@ -74,6 +74,16 @@ describe("theme registry", () => {
     expect(themeFor(undefined)).toBe(DEFAULT_THEME);
   });
 
+  // The id arrives from a cookie, so it can name anything Object.prototype has.
+  // A membership test that walks the prototype chain resolves those to a member
+  // with no survivor on it, and the caller paints `undefined` or throws.
+  it.each(["toString", "__proto__", "constructor", "hasOwnProperty"])(
+    "treats %s as an unknown id, not a retired one",
+    (key) => {
+      expect(themeFor(key)).toBe(DEFAULT_THEME);
+    },
+  );
+
   // A retired id whose survivor was itself retired would resolve to a block that
   // no longer exists — the unstyled shell the fallback is there to prevent.
   it("points every retired id at a theme that still exists", () => {
