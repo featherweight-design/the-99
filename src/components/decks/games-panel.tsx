@@ -7,6 +7,7 @@ import { useState } from "react";
 import type { AxisTally, DeckGame, GameSummary } from "../../lib/decks/games";
 import { deriveHeadline } from "../../lib/decks/game-headline";
 import { GameAxisCell } from "./game-axis-cell";
+import { GameHistoryRow } from "./game-history-row";
 import { GameLogForm, type GameResult } from "./game-log-form";
 import { PATTERN_MIN, axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 
@@ -16,13 +17,13 @@ export interface GamesPanelProps {
   summary: GameSummary;
 }
 
-// The record the save just produced. The summary in hand is the pre-save one
-// until the route revalidates, so the announcement counts the new game itself
+// The record a mutation just produced. The summary in hand is the pre-mutation
+// one until the route revalidates, so the announcement counts the game itself
 // rather than reading a figure that has not caught up yet.
-function recordAfter(record: GameSummary["record"], result: GameResult): string {
-  const wins = record.wins + (result === "win" ? 1 : 0);
-  const losses = record.losses + (result === "loss" ? 1 : 0);
-  const draws = record.draws + (result === "draw" ? 1 : 0);
+function recordShifted(record: GameSummary["record"], result: GameResult, delta: 1 | -1): string {
+  const wins = record.wins + (result === "win" ? delta : 0);
+  const losses = record.losses + (result === "loss" ? delta : 0);
+  const draws = record.draws + (result === "draw" ? delta : 0);
   return draws > 0
     ? gameLogCopy.headline.recordWithDraws(String(wins), String(losses), String(draws))
     : gameLogCopy.headline.record(String(wins), String(losses));
@@ -157,7 +158,7 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
           setAnnouncement(
             isFirst
               ? gameLogCopy.announce.savedFirst
-              : gameLogCopy.announce.saved(recordAfter(summary.record, result)),
+              : gameLogCopy.announce.saved(recordShifted(summary.record, result, 1)),
           )
         }
       />
@@ -168,9 +169,24 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
       <h2 className="mt-[18px] md:mt-[24px] font-mono uppercase text-[9px] md:text-[11px] tracking-[0.1em] md:tracking-[0.12em] text-[color:var(--fg-faint)]">
         {gameLogCopy.history.heading}
       </h2>
-      <ul>
+      {/* The row deletes through the server action; deckSurfaces() revalidates,
+          so the shortened list comes back from the server rather than being
+          spliced out here. */}
+      <ul className="flex flex-col gap-[6px] md:gap-[8px] mt-[10px]">
         {games.map((g) => (
-          <li key={g.id}>{g.result}</li>
+          <GameHistoryRow
+            key={g.id}
+            deckId={deckId}
+            game={g}
+            isLast={games.length === 1}
+            onDeleted={(wasLast) =>
+              setAnnouncement(
+                wasLast
+                  ? gameLogCopy.announce.deletedLast
+                  : gameLogCopy.announce.deleted(recordShifted(summary.record, g.result, -1)),
+              )
+            }
+          />
         ))}
       </ul>
     </section>
