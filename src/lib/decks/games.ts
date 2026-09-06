@@ -29,6 +29,11 @@ export type GameSummary = {
    */
   marked: number;
   record: { wins: number; losses: number; draws: number };
+  /**
+   * Every marked axis in vocabulary order. The buckets below rank by strength;
+   * this list is the flat one the N=1 panel draws, where ranking would be a
+   * claim about a single game.
+   */
   axes: AxisTally[];
   keep: AxisTally[];
   fix: AxisTally[];
@@ -118,7 +123,7 @@ export function summarizeGames(games: DeckGame[]): GameSummary {
     count: games.length,
     marked,
     record,
-    axes: sortAxes(axes),
+    axes: [...axes].sort((a, b) => GAME_AXIS_KEYS.indexOf(a.key) - GAME_AXIS_KEYS.indexOf(b.key)),
     keep: sortAxes(axes.filter((a) => a.net > 0)),
     fix: sortAxes(axes.filter((a) => a.net < 0)),
     mixed: sortAxes(axes.filter((a) => a.net === 0)),

@@ -850,14 +850,19 @@ export async function logGame(
 
   const refuse = { ok: false as const, message: gameLogCopy.form.refused };
 
+  // A server action is a public endpoint, so the input's declared type is a
+  // claim and not a guarantee. Everything below is shape-checked before it is
+  // used, or a crafted payload would throw where the contract promises a refusal.
+  if (!input || typeof input !== "object") return refuse;
   if (!GAME_RESULTS.includes(input.result)) return refuse;
   if (!Number.isInteger(input.podSize) || input.podSize < 2 || input.podSize > 8) return refuse;
 
   const playedAt = input.playedAt ?? new Date();
+  if (!(playedAt instanceof Date) || Number.isNaN(playedAt.getTime())) return refuse;
   if (playedAt.getTime() > Date.now()) return refuse;
 
-  if (!input.worked.every(isGameAxisKey)) return refuse;
-  if (!input.hurt.every(isGameAxisKey)) return refuse;
+  if (!Array.isArray(input.worked) || !input.worked.every(isGameAxisKey)) return refuse;
+  if (!Array.isArray(input.hurt) || !input.hurt.every(isGameAxisKey)) return refuse;
 
   // Dedupe within a list before checking across them, so ['mana','mana'] is a
   // single mark rather than a primary-key collision, while ['mana'] on both

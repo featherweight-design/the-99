@@ -79,6 +79,18 @@ describe("summarizeGames", () => {
     expect(tied.fix.map((a) => a.key)).toEqual(["mana", "board"]);
   });
 
+  // The buckets rank; the flat list does not. It is what the N=1 panel draws,
+  // where an ordering would be a claim about a single game.
+  it("keeps the flat axis list in vocabulary order whatever the strengths", () => {
+    const s = summarizeGames([
+      game({ hurt: ["card_flow", "speed"] }),
+      game({ hurt: ["card_flow"] }),
+    ]);
+    // speed precedes card_flow in GAME_AXIS_KEYS, though card_flow is stronger.
+    expect(s.axes.map((a) => a.key)).toEqual(["speed", "card_flow"]);
+    expect(s.fix.map((a) => a.key)).toEqual(["card_flow", "speed"]);
+  });
+
   it("carries both counts so the cell can print a denominator", () => {
     const s = summarizeGames([
       game({ worked: ["mana"] }),

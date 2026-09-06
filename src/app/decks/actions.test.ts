@@ -621,6 +621,13 @@ describe("logGame", () => {
     ["a fractional pod", { result: "win", podSize: 4.5, worked: [], hurt: [] }],
     ["an axis outside the vocabulary", { result: "win", podSize: 4, worked: ["tempo"], hurt: [] }],
     ["an axis on both sides", { result: "win", podSize: 4, worked: ["mana"], hurt: ["mana"] }],
+    // A server action is a public endpoint: the declared input type does not
+    // constrain what a crafted request can send.
+    ["a date sent as a string", { result: "win", podSize: 4, playedAt: "2026-09-01", worked: [], hurt: [] }],
+    ["an unparseable date", { result: "win", podSize: 4, playedAt: new Date("not a date"), worked: [], hurt: [] }],
+    ["marks that are not a list", { result: "win", podSize: 4, worked: "mana", hurt: [] }],
+    ["hurt marks that are not a list", { result: "win", podSize: 4, worked: [], hurt: 7 }],
+    ["no input at all", null],
   ])("refuses %s without throwing", async (_label, input) => {
     const result = await logGame("deck_1", input as never);
     expect(result.ok).toBe(false);
