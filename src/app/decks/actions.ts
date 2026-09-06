@@ -549,6 +549,32 @@ export async function keepAutoCard(deckId: string, oracleId: string): Promise<vo
   revalidatePath(`/decks/${deckId}`);
 }
 
+/** The same claim as `keepAutoCard`, made once for every row the fill placed.
+    Returns how many cards it cleared, for the one spoken receipt.
+
+    One statement, like the sweep: forty rows must not be forty round trips, and
+    a partial pass would leave the toolbar counting one thing and the tags
+    another. No lock, for the sweep's reason — under Read Committed an UPDATE
+    that meets a row a concurrent DELETE holds waits for that transaction and
+    then finds no row, so a sweep landing mid-keep simply takes those cards and
+    this write reports what survived it.
+
+    Only the deck path is revalidated, not `claimSurfaces`. `auto` is provenance,
+    not a claim: the availability surfaces read who holds a card and nothing
+    about who put it there, and no card moves here. `keepAutoCard` revalidates
+    the same one path for the same reason. */
+export async function keepAllAutoCards(deckId: string): Promise<number> {
+  const userId = await requireUserId();
+  await requireDeck(deckId, userId);
+  const kept = await db.update(deckCards).set({ auto: false })
+    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
+    .returning({ quantity: deckCards.quantity });
+  revalidatePath(`/decks/${deckId}`);
+  // Cards, not rows — a stacked basic is one row and several cards, and the
+  // count in the button's own label is summed the same way.
+  return kept.reduce((n, r) => n + r.quantity, 0);
+}
+
 export async function renameDeck(deckId: string, name: string): Promise<void> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);

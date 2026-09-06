@@ -24,7 +24,12 @@ import { CardFan } from "../marks";
 import { Crown } from "../ui/crown";
 import { addPanelCopy, builtFragment, shortCommanderName } from "../../lib/copy/decks-builder";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
-import { clearAutoCards, restoreAutoCards, type SweptRow } from "../../app/decks/actions";
+import {
+  clearAutoCards,
+  keepAllAutoCards,
+  restoreAutoCards,
+  type SweptRow,
+} from "../../app/decks/actions";
 import { Decklist } from "./decklist";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { ConsiderPanel, rolesWithShelves } from "./consider-panel";
@@ -139,6 +144,7 @@ export function BuilderShell({
     deleteOptimisticRow,
     keepOptimisticCard,
     sweepOptimisticAuto,
+    keepAllOptimisticAuto,
   } = useOptimisticDeckCards(deck.cards, deck.unresolvedRows);
   const counts = deckCounts(cards, unresolvedCount);
   const { built } = counts;
@@ -238,6 +244,10 @@ export function BuilderShell({
   // React discards it, so the pending flag is the transition's rather than
   // hand-rolled state.
   const [sweepPending, startSweep] = useTransition();
+  // Its own transition rather than the sweep's: the two are mutually exclusive
+  // on screen, but sharing one would leave the failed control unable to say
+  // which write the message belongs to.
+  const [keepAllPending, startKeepAll] = useTransition();
   const [sweepError, setSweepError] = useState<string | null>(null);
 
   // Unresolved rows keep the builder out of the empty state: a deck whose every
@@ -376,6 +386,29 @@ export function BuilderShell({
       }
     });
   }, [sweepPending, cards, deck.id, sweepOptimisticAuto, clearCompletedByFill]);
+
+  // No receipt strip and no undo: a keep takes nothing, so there is nothing for
+  // a receipt to hold open, and an undo would have to write `auto = true` back
+  // across forty rows — the app re-claiming as its own the cards the player has
+  // just declared theirs. The receipts are the tags leaving, the controls going
+  // absent, the kept note, and one spoken line.
+  const handleKeepAllAuto = useCallback(() => {
+    if (keepAllPending) return;
+    startKeepAll(async () => {
+      setSweepError(null);
+      keepAllOptimisticAuto();
+      try {
+        const kept = await keepAllAutoCards(deck.id);
+        // `keptCount` is the pre-keep figure, so the deck-wide total is the sum.
+        // Both come from the same quantity-summed list the label counts.
+        setAnnouncement(
+          recommendationsCopy.auto.keptAllAnnounce(String(kept), String(keptCount + kept)),
+        );
+      } catch {
+        setSweepError(recommendationsCopy.auto.keepAllFailed);
+      }
+    });
+  }, [keepAllPending, keptCount, deck.id, keepAllOptimisticAuto]);
 
   const handleRestoreAuto = useCallback(async () => {
     if (!sweptRows) return;
@@ -900,9 +933,11 @@ export function BuilderShell({
                 autoCount={autoCount}
                 keptCount={keptCount}
                 sweepPending={sweepPending || fillInflight}
+                keepAllPending={keepAllPending || fillInflight}
                 sweptRows={sweptRows}
                 sweepError={sweepError}
                 onClearAuto={handleClearAuto}
+                onKeepAllAuto={handleKeepAllAuto}
                 onRestoreAuto={handleRestoreAuto}
                 shoppingFigures={shoppingFigures}
                 newestAsOf={newestAsOf}

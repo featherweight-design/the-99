@@ -91,11 +91,13 @@ interface DecklistProps {
   keptCount?: number;
   /** Whether a sweep is in-flight. */
   sweepPending?: boolean;
+  keepAllPending?: boolean;
   /** The swept rows held for Undo. Null = no pending undo. */
   sweptRows?: SweptRow[] | null;
   /** Error string from a failed sweep. */
   sweepError?: string | null;
   onClearAuto?: () => void;
+  onKeepAllAuto?: () => void;
   onRestoreAuto?: () => void;
   /**
    * EDHREC inclusion % for each unowned card in the deck, keyed by oracleId.
@@ -129,9 +131,11 @@ export function Decklist({
   autoCount = 0,
   keptCount = 0,
   sweepPending = false,
+  keepAllPending = false,
   sweptRows = null,
   sweepError = null,
   onClearAuto,
+  onKeepAllAuto,
   onRestoreAuto,
   shoppingFigures = {},
   newestAsOf = null,
@@ -304,7 +308,9 @@ export function Decklist({
             autoCount={autoCount}
             keptCount={keptCount}
             sweepPending={sweepPending}
+            keepAllPending={keepAllPending}
             onClearAuto={onClearAuto}
+            onKeepAllAuto={onKeepAllAuto}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {sweepBanner}
@@ -362,7 +368,9 @@ export function Decklist({
           autoCount={autoCount}
           keptCount={keptCount}
           sweepPending={sweepPending}
+          keepAllPending={keepAllPending}
           onClearAuto={onClearAuto}
+          onKeepAllAuto={onKeepAllAuto}
           priceSummary={priceSummary}
           provenance={provenance}
         />
@@ -535,7 +543,9 @@ export function Decklist({
         autoCount={autoCount}
         keptCount={keptCount}
         sweepPending={sweepPending}
+        keepAllPending={keepAllPending}
         onClearAuto={onClearAuto}
+        onKeepAllAuto={onKeepAllAuto}
         priceSummary={priceSummary}
         provenance={provenance}
       />

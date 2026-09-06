@@ -57,10 +57,18 @@ type KeepOptimisticCard = (oracleId: string) => void;
  */
 type SweepOptimisticAuto = () => void;
 
+/**
+ * "Keep all auto". Its own edit rather than a loop of `keep` for the sweep's
+ * reason: forty dispatches to say one thing, and each one a fresh scan of the
+ * list. The server's write is a single statement, and so is this.
+ */
+type KeepAllOptimisticAuto = () => void;
+
 type DeckEdit =
   | { kind: "add"; card: DeckDetailCard }
   | { kind: "remove"; oracleId: string }
   | { kind: "keep"; oracleId: string }
+  | { kind: "keepAll" }
   | { kind: "sweep" };
 
 /**
@@ -103,6 +111,8 @@ export function useOptimisticDeckCards(
     serverCards,
     (current, edit: DeckEdit) => {
       if (edit.kind === "sweep") return current.filter((c) => !c.auto);
+      if (edit.kind === "keepAll")
+        return current.map((c) => (c.auto ? { ...c, auto: false } : c));
       if (edit.kind === "keep") {
         const at = current.findIndex((c) => c.oracleId === edit.oracleId);
         if (at === -1) return current;
@@ -149,6 +159,7 @@ export function useOptimisticDeckCards(
   const deleteOptimisticRow: DeleteOptimisticRow = (rowId) => dropRow(rowId);
   const keepOptimisticCard: KeepOptimisticCard = (oracleId) =>
     applyEdit({ kind: "keep", oracleId });
+  const keepAllOptimisticAuto: KeepAllOptimisticAuto = () => applyEdit({ kind: "keepAll" });
   const sweepOptimisticAuto: SweepOptimisticAuto = () => applyEdit({ kind: "sweep" });
 
   return {
@@ -160,6 +171,7 @@ export function useOptimisticDeckCards(
     resolveOptimisticRow,
     deleteOptimisticRow,
     keepOptimisticCard,
+    keepAllOptimisticAuto,
     sweepOptimisticAuto,
   };
 }
