@@ -228,10 +228,14 @@ export const discoveryCopy = {
     filteredHeading: "No unbuilt commander matches those colours",
     filteredBody: (colors: string, candidates: number) =>
       `${colors} together leave nothing in the ${n(candidates)} you have not built.`,
+    // "cover", not "are": the count behind this clause comes from the list's own
+    // `selected ⊆ colorIdentity` test, so an Esper deck is counted under an
+    // Orzhov filter. The drawn line claimed those decks ARE Orzhov, which is
+    // false of every deck whose identity is wider than the filter.
     filteredBuiltClause: (matching: number, total: number, identity: string) =>
       `${matching === 1 ? "One" : n(matching)} of your ${n(
         total,
-      )} decks ${matching === 1 ? "is" : "are"} ${identity} — that is where those commanders went.`,
+      )} decks ${matching === 1 ? "covers" : "cover"} ${identity} — that is where those commanders went.`,
     filteredCta: "Clear the colour filter",
     filteredScopeLink: "or switch to Commanders I own",
   },
