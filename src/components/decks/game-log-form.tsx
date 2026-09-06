@@ -182,10 +182,13 @@ export function GameLogForm({
   // rule is enforced here as well as in the action. An emptied field is caught
   // by the same gate: clearing the input is not a request to log today's game,
   // and sending it would build an Invalid Date for the action to refuse.
-  const dateUnusable = playedAt === "" || playedAt > today();
+  // Read once per render: across a midnight rollover, separate calls would let
+  // the gate, the label and the submitted instant disagree about which day it is.
+  const todayKey = today();
+  const dateUnusable = playedAt === "" || playedAt > todayKey;
 
   const dateLabel =
-    playedAt === today() ? gameLogCopy.form.playedToday : gameLogCopy.form.played(playedAt);
+    playedAt === todayKey ? gameLogCopy.form.playedToday : gameLogCopy.form.played(playedAt);
   const [prefix, dateWord] = dateParts(dateLabel);
 
   function submit() {
@@ -199,7 +202,7 @@ export function GameLogForm({
         // tomorrow. Today is sent as the current instant instead: noon today is
         // still in the future for anyone logging a game before lunch, and the
         // action refuses future instants.
-        playedAt: playedAt === today() ? new Date() : new Date(`${playedAt}T12:00:00`),
+        playedAt: playedAt === todayKey ? new Date() : new Date(`${playedAt}T12:00:00`),
         worked,
         hurt,
       });
@@ -248,7 +251,7 @@ export function GameLogForm({
             type="date"
             autoFocus
             value={playedAt}
-            max={today()}
+            max={todayKey}
             disabled={isPending}
             // The same sentence the button shows, so the field's name follows
             // the value rather than claiming every date is today's.

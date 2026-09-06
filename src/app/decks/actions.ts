@@ -23,7 +23,7 @@ import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { planLastSlots } from "../../lib/decks/last-slots";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
-import { isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
+import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
 
 export type LastSlotsFillResult =
@@ -863,8 +863,13 @@ export async function logGame(
   if (!(playedAt instanceof Date) || Number.isNaN(playedAt.getTime())) return refuse;
   if (playedAt.getTime() > Date.now()) return refuse;
 
-  if (!Array.isArray(input.worked) || !input.worked.every(isGameAxisKey)) return refuse;
-  if (!Array.isArray(input.hurt) || !input.hurt.every(isGameAxisKey)) return refuse;
+  // The vocabulary is eight axes, so any longer list is a crafted payload rather
+  // than a game. Length is checked before the keys are, or a public endpoint
+  // would walk an arbitrarily long array to reach the same refusal.
+  const marksFit = (marks: unknown): marks is GameAxisKey[] =>
+    Array.isArray(marks) && marks.length <= GAME_AXIS_KEYS.length && marks.every(isGameAxisKey);
+  if (!marksFit(input.worked)) return refuse;
+  if (!marksFit(input.hurt)) return refuse;
 
   // Dedupe within a list before checking across them, so ['mana','mana'] is a
   // single mark rather than a primary-key collision, while ['mana'] on both

@@ -650,6 +650,15 @@ describe("logGame", () => {
     ["an unparseable date", { result: "win", podSize: 4, playedAt: new Date("not a date"), worked: [], hurt: [] }],
     ["marks that are not a list", { result: "win", podSize: 4, worked: "mana", hurt: [] }],
     ["hurt marks that are not a list", { result: "win", podSize: 4, worked: [], hurt: 7 }],
+    // Every value is a real axis, so only the length gives the payload away.
+    [
+      "more marks than the vocabulary has axes",
+      { result: "win", podSize: 4, worked: Array(9).fill("mana"), hurt: [] },
+    ],
+    [
+      "more hurt marks than the vocabulary has axes",
+      { result: "win", podSize: 4, worked: [], hurt: Array(9).fill("mana") },
+    ],
     ["no input at all", null],
   ])("refuses %s without throwing", async (_label, input) => {
     const result = await logGame("deck_1", input as never);
