@@ -52,7 +52,7 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | **#280** A deck can pass 99 cards with nothing on screen saying so | same handoff | 🟢 Green | Amendment 3. Fifth `statusPill` value `Over`, two-segment bar, trim line. **Must land before #277** |
 | **#287** Commanders detail: "Full card" opens the bare lightbox | same handoff | 🟢 Green | Amendment 4. Deletes `lightbox.tsx` (282 lines) + its test; `full-card-trigger.tsx` calls the already-mounted `CardDetailProvider`. `Full card` → `Card details` |
 | **#277** A deck cannot be updated by re-importing its list | same handoff | 🟡 Yellow | Amendment 2, and the only real build — one route, three components, 24 states. Yellow on build order alone: **blocked behind #280**, because `add-validation.ts:42` would silently drop cards past 99. Both Product questions were answered on 2026-09-05 (no undo; the "added by hand" marker is deleted) |
-| **#220** Design: commander discovery — one ranked list, two sorts (covers **#213** + **#214**) | `design/design_handoff_the99_discovery/` (R1) | 🟢 Green | Audited 2026-09-05. All eight brief rulings satisfied by the drawing. The one ruling Design asked for is taken eng-side in Design's favour — `Score against` re-ranks under discovery rather than switching off — and four corrections are recorded below rather than sent back, because none of them changes what is drawn |
+| **#220** Design: commander discovery — one ranked list, two sorts (covers **#213** + **#214**) | `design/design_handoff_the99_discovery/` (R1) | 🟢 Green | Audited 2026-09-05. All eight brief rulings satisfied by the drawing. The one ruling Design asked for is taken eng-side in Design's favour — `Score against` re-ranks under discovery rather than switching off — and four corrections are recorded below rather than sent back, because none of them changes what is drawn. **Handoff merged as PR #298; implementation began the same day** against `docs/superpowers/plans/2026-09-05-commander-discovery.md`, eleven phases, one PR each, starting with PR #301 |
 
 Spec: `docs/superpowers/specs/2026-09-05-four-amendments-design.md`. All four of the amendments
 came out of the eleven-item batch triaged on 2026-09-05, whose five code-side fixes shipped in
@@ -230,7 +230,7 @@ The gap is structural, not a one-off. The tracker is the answer to "what is read
 
 | Component | Source | Status | Why unplaced |
 |---|---|---|---|
-| **ManaPool price ingest** (Component C of the recommendation foundation) | `docs/superpowers/specs/2026-08-29-recommendation-foundation-design.md` §5 · plan tasks 8–10 | Issue **#288** filed 2026-09-05; built on PR **#291** | Ships no UI, so no handoff and no `type: design` ticket ever existed. It was the one component of the five-part foundation left out of PR #244 |
+| **ManaPool price ingest** (Component C of the recommendation foundation) | `docs/superpowers/specs/2026-08-29-recommendation-foundation-design.md` §5 · plan tasks 8–10 | Issue **#288** filed 2026-09-05; built on PR **#291** | Ships no UI, so no handoff and no `type: design` ticket ever existed. It was the one component of the five-part foundation left out of PR #244. **It has since acquired a UI surface after all:** `design/design_handoff_the99_decks/ADDENDUM-*` — price on the `buy` tag, audited 🟢 Green at R1, landed as PR **#302**. Zero new marks; the ingest's four states become four tails on the shipped tag. That addendum still has no `type: design` ticket and no eng ticket, so it is unplaced for the same reason its parent is |
 
 ---
 
