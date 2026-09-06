@@ -182,7 +182,7 @@ describe("UpdateDiff groups", () => {
     expect(screen.getByText(copy.inMeta("1", "1"))).toBeInTheDocument();
   });
 
-  // #278: an owned row dropped the buy pill entirely, so its type line sat where
+  // An owned row dropped the buy pill entirely, so its type line sat where
   // an unowned row's did not. The slot is reserved rather than removed.
   it("keeps the buy slot's width on a row that needs no buying", () => {
     const { container } = renderDiff({ in: [row("in-1", { owned: true })] });
