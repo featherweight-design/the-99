@@ -288,6 +288,18 @@ describe("DiscoveryView", () => {
     expect(screen.getByText(/End of ranking · 30 of 30/)).toBeTruthy();
   });
 
+  // A length that is not a multiple of the step makes the last reveal overshoot,
+  // and the live region is the one reader who would hear it: it speaks the raw
+  // window, where the count line and the band are both clamped by their callers.
+  it("stops the window at the end of the list on a final short step", () => {
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: many(30), candidateCount: 30 })} avail="free" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    expect(screen.getByText(revealAnnouncement(30, 30, 25))).toBeTruthy();
+    expect(container.textContent).toContain("all 30 shown");
+  });
+
   // A re-rank returns a differently ordered list under the same mounted
   // component, so a deep window would open it part-way down an unseen ranking.
   it("returns the window to the top when the ordering underneath it changes", () => {

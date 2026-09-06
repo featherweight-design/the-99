@@ -227,7 +227,7 @@ export function DiscoveryView({
         onAvailChange={setAvail}
         availOk={discovery.availOk}
         wasWindowed={wasWindowed}
-        shown={Math.min(shown, filtered.length)}
+        shown={shown}
         filteredTotal={filtered.length}
         activeTotal={discovery.items.length}
         // The same menu in both slots, not two variants: the bar's own subtree
@@ -314,7 +314,10 @@ export function DiscoveryView({
           {remaining > 0 ? (
             <RevealControl
               remaining={remaining}
-              onReveal={() => setShown((n) => n + REVEAL_STEP)}
+              // Clamped at the source, the way the owned list clamps it: a final
+              // step that overshoots would otherwise have the live region announce
+              // a negative "more below" and a range past the end of the list.
+              onReveal={() => setShown((n) => Math.min(n + REVEAL_STEP, filtered.length))}
               // The band names ranks in the list the reader is looking at, so it
               // counts against the filtered length rather than the server's.
               band={discoveryCopy.window.revealBand(
