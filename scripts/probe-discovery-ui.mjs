@@ -23,11 +23,15 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requireEnv([
-  "E2E_AUDIT_USER_EMAIL",
-  "E2E_AUDIT_USER_PASSWORD",
-  "CLERK_SECRET_KEY",
-]);
+// The password is required only for a real account. A `+clerk_test` address has
+// none — `signIn` below takes the email-code path for it — so asserting one
+// would fail the run over a variable it is about to ignore. CLERK_SECRET_KEY is
+// asserted but not bound: `clerkSetup()` reads it from the environment itself.
+const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const FIXTURE = EMAIL.includes("+clerk_test");
+const { E2E_AUDIT_USER_PASSWORD: PASSWORD } = FIXTURE
+  ? { E2E_AUDIT_USER_PASSWORD: null }
+  : requireEnv(["E2E_AUDIT_USER_PASSWORD"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PATH = process.env.PROBE_PATH ?? "/commanders?scope=play";
 
