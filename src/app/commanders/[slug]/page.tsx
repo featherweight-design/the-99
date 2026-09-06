@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { loadCollectionPool, scoreOneCommander } from "../../../lib/recs/recommend";
-import { loadCandidates } from "../../../lib/discovery/candidates";
+import { loadCandidateSlugRows } from "../../../lib/discovery/candidates";
 import { assignDiscoverySlugs } from "../../../lib/discovery/slugs";
 import { byFit } from "../../../lib/discovery/novelty";
 import { getRankedList } from "../../../lib/recs/ranked-list";
@@ -38,15 +38,13 @@ export default async function CommanderDetailPage({
       // row on /commanders?scope=play links here — resolving it anywhere else
       // would 404 roughly 3,100 rows.
       const { collection } = await loadCollectionPool(userId);
-      // `unplayedCount` is a required field of `byFit`'s input but never read by
-      // it, so the comparator is handed two small literals rather than copies of
-      // rows carrying each commander's whole `tags` array.
+      // `unplayedCount` is `byFit`'s required input and never read by it, so it
+      // is filled once per row here rather than in the comparator, which would
+      // otherwise allocate two objects per comparison.
       const rows = assignDiscoverySlugs(
-        await loadCandidates(userId, collection.map((c) => c.oracleId)),
-      ).sort((a, b) => byFit(
-        { oracleId: a.oracleId, ownedSupport: a.ownedSupport, unplayedCount: 0 },
-        { oracleId: b.oracleId, ownedSupport: b.ownedSupport, unplayedCount: 0 },
-      ));
+        (await loadCandidateSlugRows(userId, collection.map((c) => c.oracleId)))
+          .map((r) => ({ ...r, unplayedCount: 0 })),
+      ).sort(byFit);
       const at = rows.findIndex((r) => r.slug === slug);
       if (at === -1) notFound();
       // The rank the row itself showed: position in the fit ranking, which is

@@ -214,7 +214,9 @@ export async function recommendCommanders(
 /**
  * Full score for a single commander, for the detail page. Costs one collection
  * query plus one EDHREC resolve instead of the ~196 the fanout would do.
- * Returns null when the oracle id names no card at all.
+ * Returns null when the oracle id names no commander-legal card — either
+ * because no card carries that id, or because the card it names cannot be a
+ * commander. Both are "no such commander" to this page.
  */
 export async function scoreOneCommander(
   userId: string,
