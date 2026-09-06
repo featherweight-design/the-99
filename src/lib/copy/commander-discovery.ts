@@ -54,6 +54,14 @@ export const discoveryCopy = {
         sort === "new" ? "what is new to you" : "best fit"
       } · read against ${n(cards)} cards`,
 
+    // The availability clause, appended to either subtitle above. The shipped
+    // pair names the ORDERING — "ranked by fit" — which both leads have already
+    // named for themselves, so appending it read "ranked by what is new to you ·
+    // ranked by fit". These name the POOL the figures were read against, which
+    // is the one thing the lead does not say.
+    subtitleAll: "every card you own",
+    subtitleFree: "free cards only",
+
     // Announced on the page's existing live region.
     announce: (scope: "owned" | "play", count: number, sort: "fit" | "new") =>
       scope === "owned"
@@ -85,6 +93,19 @@ export const discoveryCopy = {
       sort === "new"
         ? `Re-ranked by what is new to you · ${n(count)} commanders clear the floor`
         : `Re-ranked by best fit · ${n(count)} commanders`,
+  },
+
+  // ── Availability (§7.6) — the shared toggle, spoken on this surface ────
+  // The wording is `availabilityCopy.ranking.announce`'s, restated rather than
+  // reused: that one interpolates the count raw, which is right for the 242-row
+  // owned list and wrong here, where the same figure reaches four digits.
+  avail: {
+    announce: (mode: "all" | "free", count: number) =>
+      `${
+        mode === "free"
+          ? "Re-ranked by what’s free"
+          : "Re-ranked by everything you own"
+      } · ${count === 1 ? "1 commander" : `${n(count)} commanders`}`,
   },
 
   // ── The justification slot (§7.1) ─────────────────────────────────────

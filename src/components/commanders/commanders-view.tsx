@@ -11,21 +11,18 @@ import {
 import { useSearchParams } from "next/navigation";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { filterByColors } from "../../lib/commanders/filter";
+import { parseColors } from "../../lib/color-param";
 import { rankMap } from "../../lib/commanders/rank-maps";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { RecCard, type ScoreDelta } from "./rec-card";
+import { FilterBar } from "./filter-bar";
 import { GuidedBanner } from "./guided-banner";
 import { PageHeader } from "./page-header";
+import { useScopeAnnouncement, useScopeNav } from "./list-nav";
 import { DegradedBanner } from "./degraded-banner";
 import { FilteredEmpty } from "./filtered-empty";
-import {
-  REVEAL_STEP,
-  RevealControl,
-  EndOfRanking,
-  WindowCount,
-} from "./reveal-control";
+import { REVEAL_STEP, RevealControl, EndOfRanking } from "./reveal-control";
 
 // ── URL helpers (mirrors collection/browser.tsx pattern) ─────────────────────
 
@@ -35,11 +32,6 @@ export type AvailMode = "all" | "free";
 // and the fallback for the degraded read, where the page has no counts at all:
 // zero claims renders the receipt's first clause alone, which stays true.
 const NO_CLAIMS: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };
-
-function parseColors(param: string | null): string[] {
-  if (!param) return [];
-  return [...new Set(param.toUpperCase().split("").filter((c) => "WUBRG".includes(c)))];
-}
 
 function serializeParams(colors: string[], avail: AvailMode): string {
   const p = new URLSearchParams();
@@ -53,115 +45,6 @@ function serializeParams(colors: string[], avail: AvailMode): string {
   return s ? `?${s}` : "";
 }
 
-/**
- * `Score against` (§7). A radiogroup, not a tablist: it switches the data the
- * page is ranked on, not which panel is showing — the handoff says so in as many
- * words, and a tablist would promise a panel swap that never happens.
- *
- * The label is never shortened to "Availability". It is doing anti-collision
- * work against the builder's `Owned only`, which filters a collection and asks
- * a different question entirely.
- */
-function ScoreAgainst({
-  value,
-  onChange,
-  disabled,
-  labelId,
-  size,
-}: {
-  value: AvailMode;
-  onChange: (next: AvailMode) => void;
-  disabled: boolean;
-  labelId: string;
-  size: "mobile" | "desktop";
-}) {
-  const { ranking, degraded: degradedCopy } = availabilityCopy;
-  const height = size === "mobile" ? 38 : 30;
-  const fontSize = size === "mobile" ? 13 : 12.5;
-  const segments = [
-    { mode: "all" as const, label: ranking.all, aria: ranking.allAria },
-    { mode: "free" as const, label: ranking.free, aria: ranking.freeAria },
-  ];
-
-  // A radiogroup is one tab stop, and the arrows move within it — the pattern
-  // every screen-reader user expects the moment the role is announced. Selection
-  // follows focus, which is the shipped behaviour for a group this small and
-  // matches what a click already does.
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const step = (from: number, dir: 1 | -1) => {
-    const next = (from + dir + segments.length) % segments.length;
-    if (disabled && segments[next].mode === "free") return;
-    refs.current[next]?.focus();
-    onChange(segments[next].mode);
-  };
-
-  return (
-    <div
-      role="radiogroup"
-      aria-labelledby={labelId}
-      className="flex gap-[3px] rounded-lg p-[3px]"
-      style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-strong)" }}
-    >
-      {segments.map((s, i) => {
-        const active = s.mode === value;
-        // Only `What's free` can be unavailable: `Everything I own` needs no
-        // deck read, so it stays reachable through the whole outage.
-        const off = disabled && s.mode === "free";
-        return (
-          <button
-            key={s.mode}
-            ref={(n) => {
-              refs.current[i] = n;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            aria-disabled={off || undefined}
-            aria-label={off ? degradedCopy.segmentDisabledAria : s.aria}
-            // Roving: the checked segment is the group's single tab stop.
-            tabIndex={active ? 0 : -1}
-            onClick={() => !off && onChange(s.mode)}
-            onKeyDown={(e) => {
-              const dir =
-                e.key === "ArrowRight" || e.key === "ArrowDown"
-                  ? 1
-                  : e.key === "ArrowLeft" || e.key === "ArrowUp"
-                    ? -1
-                    : 0;
-              if (dir === 0) return;
-              e.preventDefault();
-              step(i, dir);
-            }}
-            className={[
-              "flex items-center justify-center rounded-md border-0",
-              size === "mobile" ? "flex-1 px-[10px]" : "px-[13px]",
-              off ? "cursor-not-allowed" : "cursor-pointer",
-              active
-                ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)]"
-                : `font-medium bg-transparent ${off ? "text-[color:var(--fg-locked)]" : "text-[color:var(--fg-body)]"}`,
-            ].join(" ")}
-            style={{
-              height,
-              fontSize,
-              whiteSpace: "nowrap",
-              textDecoration: off ? "line-through" : undefined,
-            }}
-          >
-            {s.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-const COLOR_LABELS: Record<string, string> = {
-  W: "White",
-  U: "Blue",
-  B: "Black",
-  R: "Red",
-  G: "Green",
-};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -208,7 +91,10 @@ export function CommandersView({
   // that neither control needs one — the server sends both rankings in the same
   // render. The URL stays shareable and `useSearchParams` still sees it.
   useEffect(() => {
-    window.history.replaceState(null, "", `/commanders${serializeParams(colors, avail)}`);
+    // The live pathname, not a literal: this rewrites the query and must leave
+    // the path exactly as it found it under a basePath or a route move.
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", `${path}${serializeParams(colors, avail)}`);
   }, [colors, avail]);
 
   // Which list is on screen. Falling back to `results` when the free ranking is
@@ -332,9 +218,21 @@ export function CommandersView({
     setAnnouncement(availabilityCopy.ranking.announce(avail, active.length));
   }, [avail, active.length]);
 
+  // A scope flip lands as a fresh mount, so its message arrives on arrival
+  // rather than at click time — and it lands on this same region, which every
+  // other announcement on this page already uses.
+  const setScope = useScopeNav();
+  useScopeAnnouncement("owned", active.length, "fit", setAnnouncement);
+
   return (
     <div>
-      <PageHeader uniqueCardsRead={uniqueCardsRead} avail={avail} />
+      <PageHeader
+        uniqueCardsRead={uniqueCardsRead}
+        avail={avail}
+        scope="owned"
+        onScopeChange={setScope}
+        candidateCount={active.length}
+      />
 
       {/* Present before the first reveal — a live region inserted at announce
           time is frequently not read. Unconditional since #43: the ranking
@@ -367,313 +265,41 @@ export function CommandersView({
         </div>
       )}
 
-      {/* ── Desktop sticky filter bar (§Filter container, desktop) ── */}
-      <div
-        className="hidden sm:block"
-        style={{
-          position: "sticky",
-          top: 0,
-          background: "var(--bg)",
-          padding: "18px 34px 14px",
-          borderBottom: "1px solid var(--border)",
-          zIndex: 2,
-        }}
-      >
-        {/* Filter row: pip wrapper + chips + Includes + Order + count */}
-        <div className="flex items-center gap-[12px] flex-wrap">
-          {/* Pip row wrapper (§Filter pip row wrapper) */}
-          <div
-            className="flex items-center gap-[8px]"
-            style={{
-              background: "var(--surface-sunken)",
-              border: "1px solid var(--border-strong)",
-              borderRadius: 8,
-              padding: "8px 12px",
-            }}
-          >
-            {/* "COLORS" label */}
+      {/* The bar itself lives in `filter-bar.tsx`, shared with the discovery
+          scope. The `Order` slot is the only part that differs between them:
+          here it stays the inert label the owned ranking has always shown,
+          because that ranking has exactly one order. */}
+      <FilterBar
+        colors={colors}
+        onToggleColor={toggleColor}
+        onClearColors={handleClearFilter}
+        avail={avail}
+        onAvailChange={setAvail}
+        availOk={availOk}
+        wasWindowed={wasWindowed}
+        shown={shown}
+        filteredTotal={filtered.length}
+        activeTotal={active.length}
+        order={{
+          desktop: (
             <span
               className="font-mono"
-              style={{
-                fontSize: 10,
-                letterSpacing: "0.12em",
-                color: "var(--fg-faint)",
-              }}
+              style={{ fontSize: 11, color: "var(--fg-faint)" }}
             >
-              COLORS
+              Order: Fit ↓ · fixed
             </span>
-            {/* Color pips */}
-            {(["W", "U", "B", "R", "G"] as const).map((c) => {
-              const active = colors.includes(c);
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  aria-pressed={active}
-                  aria-label={`Filter by ${COLOR_LABELS[c]}`}
-                  onClick={() => toggleColor(c)}
-                  className="block rounded-full cursor-pointer border-0 p-0 transition-opacity"
-                  style={{
-                    width: 16,
-                    height: 16,
-                    // eslint-disable-next-line no-restricted-syntax -- the fill is the mana colour itself, looked up per render; no class can name it
-                    background: WUBRG_COLOR[c],
-                    opacity: active ? 1 : 0.35,
-                    boxShadow: active ? "0 0 0 2px var(--accent)" : "none",
-                  }}
-                />
-              );
-            })}
-          </div>
-
-          {/* Score against (desktop, §7) — the third control in this row. */}
-          <div className="flex items-center gap-[8px]">
-            <span
-              id="score-against-desktop"
-              className="font-mono"
-              style={{
-                fontSize: 10,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: "var(--fg-faint)",
-              }}
-            >
-              {availabilityCopy.ranking.label}
-            </span>
-            <ScoreAgainst
-              value={avail}
-              onChange={setAvail}
-              disabled={!availOk}
-              labelId="score-against-desktop"
-              size="desktop"
-            />
-          </div>
-
-          {/* Active filter chips (desktop, §Active-filter chip desktop) */}
-          {colors.map((c) => (
-            <span
-              key={c}
-              className="inline-flex items-center gap-[7px]"
-              style={{
-                fontSize: 12.5,
-                color: "var(--fg)",
-                background: "var(--elevated)",
-                border: "1px solid var(--border-strong)",
-                borderRadius: 999,
-                padding: "5px 8px 5px 11px",
-              }}
-            >
-              {/* Color dot */}
-              <span
-                className="block rounded-full shrink-0"
-                style={{ width: 9, height: 9, background: WUBRG_COLOR[c] }}
-              />
-              {COLOR_LABELS[c]}
-              {/* Dismiss ✕ */}
-              <button
-                type="button"
-                aria-label={`Remove ${COLOR_LABELS[c]} filter`}
-                onClick={() => toggleColor(c)}
-                className="cursor-pointer bg-transparent border-0 p-0 leading-none text-[color:var(--fg-faint)]"
-              >
-                ✕
-              </button>
-            </span>
-          ))}
-
-          {/* Clear link (when any active) */}
-          {colors.length > 0 && (
-            <button
-              type="button"
-              onClick={handleClearFilter}
-              className="bg-transparent border-0 p-0 cursor-pointer font-mono text-[color:var(--accent)]"
-              style={{ fontSize: 12 }}
-            >
-              Clear
-            </button>
-          )}
-
-          {/* Window count (§Header window count, desktop) — sits ahead of the
-              order label. It is omitted entirely on a list short enough never to
-              window, so that surface stays byte-identical to what shipped. */}
-          {wasWindowed && (
-            <WindowCount
-              shown={shown}
-              filteredTotal={filtered.length}
-              className="font-mono text-[11px] tracking-[0.12em] uppercase ml-auto"
-            />
-          )}
-
-          {/* "Order: Fit ↓ · fixed" label (desktop, §Order label) */}
-          <span
-            className="font-mono"
-            style={{ fontSize: 11, color: "var(--fg-faint)", marginLeft: wasWindowed ? undefined : "auto" }}
-          >
-            Order: Fit ↓ · fixed
-          </span>
-
-          {/* "Showing N of 24" count — right-aligned amber label */}
-          <span
-            className="font-mono"
-            style={{ fontSize: 11, color: "var(--fg-faint)" }}
-          >
-            Showing {filtered.length} of {active.length}
-          </span>
-        </div>
-
-        {/* Note (§7.6) — free state only, under the control. */}
-        {avail === "free" && (
-          <p
-            className="font-mono m-0 mt-[8px]"
-            style={{ fontSize: 11, color: "var(--fg-faint)" }}
-          >
-            {availabilityCopy.ranking.freeNoteLong}
-          </p>
-        )}
-      </div>
-
-      {/* ── Mobile filter strip ── */}
-      <div className="sm:hidden px-[14px] pt-[12px] pb-[4px]">
-        {/* Mobile pip row wrapper */}
-        <div
-          className="inline-flex items-center gap-[8px]"
-          style={{
-            background: "var(--surface-sunken)",
-            border: "1px solid var(--border-strong)",
-            borderRadius: 8,
-            padding: "8px 11px",
-          }}
-        >
-          {/* "COLORS" label */}
-          <span
-            className="font-mono"
-            style={{ fontSize: 10, letterSpacing: "0.1em", color: "var(--fg-faint)" }}
-          >
-            COLORS
-          </span>
-          {/* Color pips (mobile 14px) */}
-          {(["W", "U", "B", "R", "G"] as const).map((c) => {
-            const active = colors.includes(c);
-            return (
-              <button
-                key={c}
-                type="button"
-                aria-pressed={active}
-                aria-label={`Filter by ${COLOR_LABELS[c]}`}
-                onClick={() => toggleColor(c)}
-                className="block rounded-full cursor-pointer border-0 p-0 transition-opacity"
-                style={{
-                  width: 14,
-                  height: 14,
-                  // eslint-disable-next-line no-restricted-syntax -- the fill is the mana colour itself, looked up per render; no class can name it
-                  background: WUBRG_COLOR[c],
-                  opacity: active ? 1 : 0.35,
-                  boxShadow: active ? "0 0 0 2px var(--accent)" : "none",
-                }}
-              />
-            );
-          })}
-
-          {/* Showing count (mobile inline, within pip row wrapper area) */}
-          <span
-            className="font-mono"
-            style={{ fontSize: 10.5, color: "var(--fg-faint)", marginLeft: "auto" }}
-          >
-            {filtered.length}/{active.length}
-          </span>
-        </div>
-
-        {/* Score against (mobile, §7) — its own block under the colour row. */}
-        <div className="mt-[10px]">
-          <p
-            id="score-against-mobile"
-            className="font-mono m-0 mb-[6px]"
-            style={{
-              fontSize: 9,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: "var(--fg-faint)",
-            }}
-          >
-            {availabilityCopy.ranking.label}
-          </p>
-          <ScoreAgainst
-            value={avail}
-            onChange={setAvail}
-            disabled={!availOk}
-            labelId="score-against-mobile"
-            size="mobile"
-          />
-          {/* Note (§7.6). The phone buys the short form — the long one's second
-              sentence costs a third line at 390px. */}
-          {avail === "free" && (
-            <p
-              className="font-mono m-0 mt-[7px]"
-              style={{ fontSize: 10.5, color: "var(--fg-faint)", lineHeight: 1.5 }}
-            >
-              {availabilityCopy.ranking.freeNote}
-            </p>
-          )}
-        </div>
-
-        {/* Window count (§Header window count, mobile) — its own row under the
-            colour filter. */}
-        {wasWindowed && (
-          <div className="flex items-center justify-between mt-[9px]">
-            <WindowCount
-              shown={shown}
-              filteredTotal={filtered.length}
-              className="font-mono text-[10.5px]"
-            />
+          ),
+          // Null below the window threshold, where this label has never rendered
+          // on a phone. It is a label rather than a control, so its absence
+          // denies the player nothing.
+          mobile: wasWindowed ? (
             <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
               Fit ↓ · fixed
             </span>
-          </div>
-        )}
+          ) : null,
+        }}
+      />
 
-        {/* Mobile active filter chips (§Active-filter chip mobile) */}
-        {colors.length > 0 && (
-          <div className="flex flex-wrap gap-[6px] mt-[8px]">
-            {colors.map((c) => (
-              <span
-                key={c}
-                className="inline-flex items-center gap-[6px]"
-                style={{
-                  fontSize: 12,
-                  color: "var(--fg)",
-                  background: "var(--elevated)",
-                  border: "1px solid var(--border-strong)",
-                  borderRadius: 999,
-                  padding: "4px 8px 4px 10px",
-                }}
-              >
-                <span
-                  className="block rounded-full shrink-0"
-                  style={{ width: 9, height: 9, background: WUBRG_COLOR[c] }}
-                />
-                {COLOR_LABELS[c]}
-                <button
-                  type="button"
-                  aria-label={`Remove ${COLOR_LABELS[c]} filter`}
-                  onClick={() => toggleColor(c)}
-                  className="cursor-pointer bg-transparent border-0 p-0 leading-none text-[color:var(--fg-faint)]"
-                >
-                  ✕
-                </button>
-              </span>
-            ))}
-            {/* Clear link (mobile) */}
-            <button
-              type="button"
-              onClick={handleClearFilter}
-              className="bg-transparent border-0 p-0 cursor-pointer font-mono text-[color:var(--accent)]"
-              style={{ fontSize: 11.5 }}
-            >
-              Clear
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* ── Main content: list (or filtered-empty) ── */}
       <div className="p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">

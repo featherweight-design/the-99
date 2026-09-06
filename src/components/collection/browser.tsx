@@ -42,13 +42,9 @@ import { RowsView } from "./rows-view";
 import { GridView } from "./grid-view";
 import { NoResults } from "./no-results";
 import { CardModal } from "../cards/card-modal";
+import { parseColors } from "../../lib/color-param";
 
 const PAGE_SIZE = 200;
-
-function parseColors(param: string | null): string[] {
-  if (!param) return [];
-  return [...new Set(param.toUpperCase().split("").filter((c) => "WUBRG".includes(c)))];
-}
 
 function serializeParams(
   filters: BrowseFilters,
