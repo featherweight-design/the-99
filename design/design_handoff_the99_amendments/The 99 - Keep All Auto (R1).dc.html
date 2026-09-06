@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+  .m { font-family: 'IBM Plex Mono', monospace; font-size: 0.92em; }
+</style>
+</helmet>
+
+<section id="cover" style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.09), transparent 70%);">
+  <div style="max-width:1180px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Amendment 6 &middot; Keep all auto</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:38px;margin:0 0 12px;color:#EDE6D8;line-height:1.15;">Agreeing with the fill needs a button too.</h1>
+    <p style="max-width:1000px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">The <span class="m">auto</span> tag is provenance, and provenance expires: it is worth reading right after a fill, while the player is deciding whether the app's guesses are theirs, and it is wallpaper once they have decided. It never actually clears, because the affordance is missing. <span class="m">keep &#10003;</span> clears one row. The only bulk control is <span class="m">Clear all auto</span>, which <b style="color:#EDE6D8;font-weight:600;">deletes the cards</b>. A player who agrees with all forty picks is offered one button to throw them all away and none to accept them all.</p>
+    <p style="max-width:1000px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Called: one more ghost button in the group toolbar, and nothing else.</b> <span class="m">Keep all {n}</span> beside <span class="m">Clear all auto &middot; {n}</span> &mdash; same geometry, same zero-state rule, no receipt strip, no confirm, no new visual language, and no change to what the tag means.</p>
+    <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#18140F;padding:16px 20px;margin:0 0 22px;max-width:1000px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8FBF87;margin-bottom:8px;">Locked, not reopened</div>
+      <div style="font-size:13px;color:#A59C89;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">No automatic expiry of the flag.</b> <span class="m">schema.ts:183-185</span> holds the hard rule &mdash; <i>&ldquo;cleared by the keep control alone &mdash; re-sorting, regrouping, or opening the card detail must leave it set&rdquo;</i> &mdash; so that looking at a card cannot silently accept it. That rule stands, and this amendment does not widen it: it adds a <i>second keep control</i>, not a second way for the flag to clear on its own.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:1000px;">
+      <a href="#s1" style="display:block;text-decoration:none;background:#1E1A15;border:1px solid #2B241B;border-left:3px solid #6FA368;border-radius:12px;padding:18px 20px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">1</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Placement and weight &mdash; keep leads, neither is primary</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;">open call 1</span>
+        </div>
+        <div style="font-size:13.5px;color:#C0B8A6;line-height:1.6;margin-top:8px;">Identical ghost treatment, constructive first in reading order, and at 390px the pair takes its own line.</div>
+      </a>
+      <a href="#s2" style="display:block;text-decoration:none;background:#1E1A15;border:1px solid #2B241B;border-left:3px solid #6FA368;border-radius:12px;padding:18px 20px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">2</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">No receipt strip. One announcement.</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;">open call 2</span>
+        </div>
+        <div style="font-size:13.5px;color:#C0B8A6;line-height:1.6;margin-top:8px;">An Undo here would have to write <span class="m">auto = true</span> &mdash; the app re-claiming cards the player has just claimed.</div>
+      </a>
+      <a href="#s3" style="display:block;text-decoration:none;background:#1E1A15;border:1px solid #2B241B;border-left:3px solid #DEAA29;border-radius:12px;padding:18px 20px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">3</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">The <span class="m">keptNote</span> earns the last word, then the toolbar goes quiet</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#DEAA29;">open call 3</span>
+        </div>
+        <div style="font-size:13.5px;color:#C0B8A6;line-height:1.6;margin-top:8px;">It stays, unedited, at <span class="m">n = every card</span> &mdash; because it is the only thing left standing that says the fill is over.</div>
+      </a>
+      <a href="#s4" style="display:block;text-decoration:none;background:#1E1A15;border:1px solid #2B241B;border-left:3px solid #8B8270;border-radius:12px;padding:18px 20px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#CF8745;border-radius:5px;padding:3px 8px;">4</span>
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">States, engineering, gaps &mdash; and one deletion in amendment 2</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">ledger</span>
+        </div>
+        <div style="font-size:13.5px;color:#C0B8A6;line-height:1.6;margin-top:8px;">Seven states, five strings, one server action, one optimistic edit. Plus the <span class="m">handAdded</span> marker, dropped as reaffirmed.</div>
+      </a>
+    </div>
+    <p style="max-width:1000px;font-size:14px;line-height:1.7;color:#8B8270;margin:26px 0 0;">Read <a href="AMENDMENT-6-README.md">AMENDMENT-6-README.md</a> for the decisions log and gap report, <a href="STATES-keep-all-auto.md">STATES-keep-all-auto.md</a> for the seven states at both widths, <a href="keep-all-auto · copy strings.ts">keep-all-auto &middot; copy strings.ts</a> for the five additions, <a href="AMENDMENT-6-READINESS.md">AMENDMENT-6-READINESS.md</a> for the verdict. Fixture: a filled deck at <b style="color:#C0B8A6;">68 / 99</b> &mdash; 40 untouched <span class="m">auto</span> rows, 28 already the player's.</p>
+  </div>
+</section>
+
+<section id="s1">
+  <div style="font-family:'IBM Plex Sans',sans-serif;padding:40px 40px 0;background:#100D0A;">
+    <div style="max-width:1180px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid #6FA368;padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 11px;">1</span>
+      <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">The control</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">group-toggle.tsx &middot; both widths</span>
+      <a href="#cover" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">&uarr; contents</a>
+    </div>
+  </div>
+  <div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:34px 40px 46px;background:#100D0A;">
+
+    <div style="max-width:1040px;margin:0 0 26px;">
+      <p style="font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Same ghost, and the constructive one reads first.</b> <span class="m">ClearAutoButton</span>'s treatment exactly &mdash; mono 12px <span class="m">--fg-body</span>, transparent ground, 1px <span class="m">--border-strong</span>, radius 8px, padding 6/12 &mdash; because these are two bulk actions on the same forty cards and the toolbar has no view on which answer is right. A filled or accent plate on either one would make the app recommend an answer it cannot know, and there is already exactly one accent plate in this row: the active filter pill.</p>
+      <p style="font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">Order is the whole distinction, and it is enough.</b> Keep sits left of Clear, so the row runs from the safe answer to the destructive one, and the sweep stops being the first bulk control the eye lands on. It keeps its shipped position &mdash; right of the spacer, left of the <span class="m">Group</span> label &mdash; and the keep button joins the same wrapper span the <span class="m">keptNote</span> already lives in, so one flex child holds the whole auto-lifecycle cluster and the toolbar's gaps are unchanged.</p>
+    </div>
+
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin:0 0 16px;border-top:1px solid #2A241D;padding-top:18px;">B1 &middot; desktop &mdash; 40 auto, 28 already the player's</div>
+    <div style="width:900px;max-width:100%;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);margin-bottom:14px;">
+      <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="margin-left:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6B6354;">the99.app/decks/korvold-sac-engine</span></div>
+      <div style="background:#14110E;padding:0 0 18px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:14px 26px 10px;">
+          <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#CF8745;border-radius:999px;padding:5px 14px;white-space:nowrap;">All 68</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#DEAA29;background:transparent;border:1px solid #4A3A24;border-radius:999px;padding:5px 14px;white-space:nowrap;">Shopping 12</span>
+          <span style="flex:1;"></span>
+          <span style="display:inline-flex;align-items:center;gap:8px;flex:none;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;white-space:nowrap;">{{ keptNote }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C0B8A6;border:1px solid #3A3229;border-radius:8px;padding:6px 12px;white-space:nowrap;">{{ keepLabel }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C0B8A6;border:1px solid #3A3229;border-radius:8px;padding:6px 12px;white-space:nowrap;">{{ clearLabel }}</span>
+          </span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8B8270;white-space:nowrap;">Group</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:5px 13px;white-space:nowrap;">By type</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12.5px;color:#8B8270;border:1px solid #2B241B;border-radius:999px;padding:5px 13px;white-space:nowrap;">By role</span>
+        </div>
+        <div style="padding:2px 26px 0;border-top:1px solid #221D17;margin-top:4px;">
+          <p style="font-size:13px;line-height:1.7;color:#A59C89;margin:14px 0 12px;max-width:760px;">We filled the roles and the mana base &mdash; 68 cards, 12 of them from outside your collection. The other 31 are yours: that is where this commander actually happens, and it is where we are worst.</p>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #2B241B;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;">Artifact</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">6 &middot; 4 auto</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;">
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 9px;min-height:34px;border-radius:7px;background:#181410;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Arcane Signet</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8B8270;border:1px solid #3A3229;border-radius:4px;padding:1px 5px;">auto</span><span style="flex:none;font-size:13px;color:#4A4033;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 9px;min-height:34px;border-radius:7px;background:#181410;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Sol Ring</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#CF8745;background:#1E1A15;border:1px solid #4A3A24;border-radius:4px;padding:1px 5px;">keep &#10003;</span><span style="flex:none;font-size:13px;color:#4A4033;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 9px;min-height:34px;border-radius:7px;background:#181410;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Skullclamp</span><span style="flex:none;font-size:13px;color:#4A4033;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 9px;min-height:34px;border-radius:7px;background:#181410;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Ashnod&rsquo;s Altar</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8B8270;border:1px solid #3A3229;border-radius:4px;padding:1px 5px;">auto</span><span style="flex:none;font-size:13px;color:#4A4033;">&#10005;</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6354;max-width:900px;margin:0 0 34px;">The hovered row shows the shipped per-row control at <span class="m">keep &#10003;</span>, for scale: the new button is that same decision, taken forty at a time.</div>
+
+    <div style="display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin:0 0 16px;">B2 &middot; 390px &mdash; the pair takes its own line</div>
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+          <div style="border-radius:34px;overflow:hidden;background:#14110E;">
+            <div style="height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6B6354;"><span>9:41</span><span>the99</span></div>
+            <div style="padding:9px 16px;border-bottom:1px solid #2B241B;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#14110E;background:#CF8745;border-radius:999px;padding:4px 11px;">All 68</span>
+                <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#DEAA29;border:1px solid #4A3A24;border-radius:999px;padding:4px 11px;">Shopping 12</span>
+                <span style="flex:1;"></span>
+                <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:11.5px;color:#8B8270;border:1px solid #2B241B;border-radius:999px;padding:4px 10px;">By type</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;border:1px solid #3A3229;border-radius:8px;padding:6px 11px;min-height:44px;display:inline-flex;align-items:center;">Keep 40</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;border:1px solid #3A3229;border-radius:8px;padding:6px 11px;min-height:44px;display:inline-flex;align-items:center;">Clear auto &middot; 40</span>
+              </div>
+            </div>
+            <div style="padding:12px 16px 18px;">
+              <p style="font-size:12.5px;line-height:1.6;color:#A59C89;margin:0 0 14px;">We filled the roles and the mana base &mdash; 68 cards, 12 from outside your collection. The other 31 are yours.</p>
+              <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;">Artifact</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">6 &middot; 4 auto</span></div>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <div style="display:flex;align-items:center;gap:9px;padding-left:8px;padding-right:4px;min-height:52px;border-radius:6px;background:#181410;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:12.5px;color:#EDE6D8;">Arcane Signet</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8B8270;border:1px solid #3A3229;border-radius:4px;padding:1px 5px;">auto</span><span style="flex:none;width:44px;text-align:center;font-size:13px;color:#4A4033;">&#10005;</span></div>
+                <div style="display:flex;align-items:center;gap:9px;padding-left:8px;padding-right:4px;min-height:52px;border-radius:6px;background:#181410;"><span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:12.5px;color:#EDE6D8;">Sol Ring</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8B8270;border:1px solid #3A3229;border-radius:4px;padding:1px 5px;">auto</span><span style="flex:none;width:44px;text-align:center;font-size:13px;color:#4A4033;">&#10005;</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:320px;max-width:520px;display:flex;flex-direction:column;gap:14px;">
+        <div style="background:#18140F;border:1px solid #2B241B;border-radius:12px;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">Why the phone wraps instead of shortening further</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">At 390px the shipped row already carries two filter pills, the sweep and two grouping pills. A second control in that row either truncates a label or pushes <span class="m">By role</span> off the edge, and both cost more than a line of height. So the toolbar container gains <span class="m">flex-wrap</span> and the auto cluster drops to its own row, full width, with two 44px targets side by side. <b style="color:#EDE6D8;font-weight:600;">The mobile keep label is <span class="m">Keep 40</span></b> &mdash; the shortest form that still names the act, and it leaves the shipped <span class="m">Clear auto &middot; 40</span> unreworded.</div>
+        </div>
+        <div style="background:#18140F;border:1px solid #2B241B;border-radius:12px;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">The zero-state rule, reused whole</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">Absent at <span class="m">count === 0</span>, never rendered disabled, and disabled only while its own write is in flight &mdash; <span class="m">ClearAutoButton</span>'s rule, verbatim, because the two controls read the same count and a toolbar where one is present and the other is not would say the count means two things. The <span class="m">keptNote</span> keeps living outside both guards, which is state 7 of the shipped design table and the reason the wrapper span exists at all.</div>
+        </div>
+        <div style="background:#1B1512;border:1px solid #5A3129;border-radius:12px;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#E9917A;margin-bottom:9px;">Rejected: a two-part split control</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">One segmented pill reading <span class="m">Keep all</span> / <span class="m">Clear all</span> puts an accept and a delete in one box, one 8px gap apart, on a phone. The mis-tap there is forty cards gone. Two separate buttons, drawn like every other toolbar control, is the answer the toolbar already gives.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s2">
+  <div style="font-family:'IBM Plex Sans',sans-serif;padding:40px 40px 0;background:#100D0A;">
+    <div style="max-width:1180px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid #6FA368;padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 11px;">2</span>
+      <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Does Keep all get a receipt?</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">no strip &middot; one announcement</span>
+      <a href="#cover" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">&uarr; contents</a>
+    </div>
+  </div>
+  <div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:34px 40px 46px;background:#100D0A;">
+    <div style="max-width:1040px;margin:0 0 24px;">
+      <p style="font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">No. <span class="m">SweepReceipt</span> exists because its rows are gone and the strip is the only route back.</b> A keep takes nothing: every card is still in the deck, at the same quantity, in the same group. There is nothing for a receipt to hold open.</p>
+      <p style="font-size:15px;line-height:1.7;color:#C0B8A6;margin:0;">And an Undo would have to write <span class="m">auto = true</span> across forty rows &mdash; the app re-marking as its own the cards the player has just declared theirs. That is the write <span class="m">schema.ts</span>'s comment is standing in front of. <b style="color:#EDE6D8;font-weight:600;">A reversal that re-claims is worse than no reversal</b>, and the honest alternative is stated in the gaps rather than drawn.</p>
+    </div>
+
+    <div style="display:flex;gap:14px;flex-wrap:wrap;max-width:1180px;margin-bottom:26px;">
+      <div style="flex:1;min-width:250px;background:#18140F;border:1px solid #2B241B;border-radius:12px;padding:15px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:8px;">Receipt 1 &middot; forty tags leave at once</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">The list is the receipt. Forty <span class="m">auto</span> plates disappear in one optimistic pass, the group clauses drop their <span class="m">&middot; N auto</span> tails, and the fill's provenance paragraph &mdash; gated on <span class="m">autoCount &gt; 0</span> &mdash; leaves with them.</div>
+      </div>
+      <div style="flex:1;min-width:250px;background:#18140F;border:1px solid #2B241B;border-radius:12px;padding:15px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:8px;">Receipt 2 &middot; the button is not there any more</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">Both controls go absent at <span class="m">count === 0</span>. A bulk action whose own control vanishes on completion has confirmed itself in the place the player was looking.</div>
+      </div>
+      <div style="flex:1;min-width:250px;background:#1A1712;border:1px solid #3A4A33;border-radius:12px;padding:15px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8FBF87;margin-bottom:8px;">Receipt 3 &middot; one line, spoken</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">Both of those are visual. The shell's existing live region &mdash; the one carrying <span class="m">sweptAnnounce</span> and <span class="m">sweptRestoredAnnounce</span> &mdash; takes one more message: <span style="color:#C0B8A6;">&ldquo;40 cards kept. 68 cards are yours now.&rdquo;</span> One announcement per settle, never one per row.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;max-width:1180px;">
+      <div style="flex:1;min-width:340px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin:0 0 14px;">B3 &middot; what the sweep draws, for contrast</div>
+        <div style="border:1px solid #2A241D;border-radius:12px;padding:16px;background:#14110E;">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;margin-bottom:14px;background:#100D0A;border:1px dashed #3A3229;border-radius:8px;">
+            <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">40 auto cards removed</span>
+            <span style="flex:none;font-family:'IBM Plex Sans';font-size:12.5px;font-weight:600;color:#CF8745;border-bottom:1px solid #6B4526;">Undo</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6354;line-height:1.7;">A strip over the list, persisting until Undo or navigation, because forty rows are gone and nothing else on screen can give them back. Keep all draws none of this.</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:340px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin:0 0 14px;">Also not drawn</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:#18140F;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;font-size:12.5px;color:#A59C89;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">No confirm dialog.</b> The label carries the count &mdash; <span class="m">Keep all 40</span> &mdash; which is the same confirmation the sweep runs on, for a far heavier act.</div>
+          <div style="background:#18140F;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;font-size:12.5px;color:#A59C89;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">No celebration.</b> Accepting the fill is not a milestone; the deck's arithmetic did not move by one card.</div>
+          <div style="background:#18140F;border:1px solid #2B241B;border-radius:10px;padding:13px 15px;font-size:12.5px;color:#A59C89;line-height:1.65;"><b style="color:#EDE6D8;font-weight:600;">No new refusal shape.</b> A rejected write reuses the sweep's inline treatment with its own words: <i>&ldquo;We couldn't keep those. They are still marked auto.&rdquo;</i> &mdash; true, unlike &ldquo;the deck is unchanged&rdquo;, which it also is.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s3">
+  <div style="font-family:'IBM Plex Sans',sans-serif;padding:40px 40px 0;background:#100D0A;">
+    <div style="max-width:1180px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid #DEAA29;padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 11px;">3</span>
+      <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">The toolbar after</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">keptNote at n = every card</span>
+      <a href="#cover" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">&uarr; contents</a>
+    </div>
+  </div>
+  <div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:34px 40px 46px;background:#100D0A;">
+    <div style="max-width:1040px;margin:0 0 24px;">
+      <p style="font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">The note stays, unedited, and it is the only thing left.</b> <span class="m">keptNote</span> counts non-auto cards, so after a Keep all it reads <span class="m">68 cards are yours now</span> &mdash; a claim about the whole deck, which is exactly what just became true. It is not arithmetic the player has to check against anything; it is the sentence the action earned.</p>
+      <p style="font-size:15px;line-height:1.7;color:#C0B8A6;margin:0;">Everything else in the cluster leaves in the same pass: both buttons go absent, the fill's provenance paragraph unmounts, and every group clause drops its auto tail. <b style="color:#EDE6D8;font-weight:600;">That is the toolbar going quiet</b> &mdash; one mono line at 11px in <span class="m">--fg-locked</span>, desktop only, exactly as it ships. And because the note has always been the last survivor of the auto lifecycle, this amendment does not have to argue for it: it just stops being reached only by clicking forty times.</p>
+    </div>
+
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin:0 0 16px;">B4 &middot; desktop, after Keep all 40</div>
+    <div style="width:900px;max-width:100%;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);margin-bottom:26px;">
+      <div style="background:#14110E;padding:0 0 18px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 26px 10px;">
+          <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#CF8745;border-radius:999px;padding:5px 14px;">All 68</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#DEAA29;border:1px solid #4A3A24;border-radius:999px;padding:5px 14px;">Shopping 12</span>
+          <span style="flex:1;"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">68 cards are yours now</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8B8270;">Group</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:5px 13px;">By type</span>
+          <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12.5px;color:#8B8270;border:1px solid #2B241B;border-radius:999px;padding:5px 13px;">By role</span>
+        </div>
+        <div style="padding:14px 26px 0;border-top:1px solid #221D17;margin-top:4px;">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #2B241B;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;">Artifact</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">6</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;">
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 9px;min-height:34px;border-radius:7px;background:#181410;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Arcane Signet</span><span style="flex:none;font-size:13px;color:#4A4033;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 9px;min-height:34px;border-radius:7px;background:#181410;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Sol Ring</span><span style="flex:none;font-size:13px;color:#4A4033;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 9px;min-height:34px;border-radius:7px;background:#181410;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Skullclamp</span><span style="flex:none;font-size:13px;color:#4A4033;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 9px;min-height:34px;border-radius:7px;background:#181410;"><span style="width:8px;height:8px;border-radius:999px;background:#6FA368;flex:none;"></span><span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Ashnod&rsquo;s Altar</span><span style="flex:none;font-size:13px;color:#4A4033;">&#10005;</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px;flex-wrap:wrap;max-width:1180px;">
+      <div style="flex:1;min-width:280px;background:#18140F;border:1px solid #2B241B;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">Rejected: a different note after a bulk keep</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">&ldquo;All 68 cards are yours now&rdquo; is a second string for one state, and the state is not special: a player who clicked <span class="m">keep &#10003;</span> forty times lands in exactly the same place and would read the shipped sentence there. One note, one lifecycle.</div>
+      </div>
+      <div style="flex:1;min-width:280px;background:#18140F;border:1px solid #2B241B;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">Rejected: retiring the note at <span class="m">n = built</span></div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">Hiding it once every card is the player's would make the note disappear at the moment the flow completed, which reads as a failure rather than a finish &mdash; and it would take the keep's only persistent receipt with it.</div>
+      </div>
+      <div style="flex:1;min-width:280px;background:#1B1512;border:1px solid #5A3129;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#E9917A;margin-bottom:9px;">The note's own honest cost, carried forward</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">It is desktop-only (<span class="m">hidden md:inline</span>), so a phone player gets the announcement and the vanished buttons and no written receipt. Shipped behaviour, not widened here, and logged as gap 3.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s4">
+  <div style="font-family:'IBM Plex Sans',sans-serif;padding:40px 40px 0;background:#100D0A;">
+    <div style="max-width:1180px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid #8B8270;padding-top:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 11px;">4</span>
+      <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Ledger</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">states &middot; engineering &middot; gaps &middot; one deletion</span>
+      <a href="#cover" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">&uarr; contents</a>
+    </div>
+  </div>
+  <div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:34px 40px 60px;background:#100D0A;">
+
+    <div style="max-width:1180px;border:1px solid #2B241B;border-radius:12px;overflow:hidden;margin-bottom:26px;">
+      <div style="display:grid;grid-template-columns:52px 1.1fr 1.5fr 1fr;background:#1E1A15;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">
+        <div style="padding:10px 12px;">#</div><div style="padding:10px 12px;">State</div><div style="padding:10px 12px;">Toolbar</div><div style="padding:10px 12px;">Keyed on</div>
+      </div>
+      <div style="display:grid;grid-template-columns:52px 1.1fr 1.5fr 1fr;font-size:12.5px;color:#A59C89;">
+        <div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;color:#6B6354;">1</div><div style="padding:11px 12px;border-top:1px solid #221D17;color:#C0B8A6;">Filled, untouched</div><div style="padding:11px 12px;border-top:1px solid #221D17;"><span class="m">Keep all 40</span> + <span class="m">Clear all auto &middot; 40</span>, no note</div><div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;font-size:11px;">auto 40 &middot; kept 0</div>
+        <div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;color:#6B6354;">2</div><div style="padding:11px 12px;border-top:1px solid #221D17;color:#C0B8A6;">Some kept by hand</div><div style="padding:11px 12px;border-top:1px solid #221D17;">note + both buttons, counts recomputed</div><div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;font-size:11px;">auto 37 &middot; kept 31</div>
+        <div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;color:#6B6354;">3</div><div style="padding:11px 12px;border-top:1px solid #221D17;color:#C0B8A6;">Keep all in flight</div><div style="padding:11px 12px;border-top:1px solid #221D17;">keep disabled at 50% opacity, sweep <b style="color:#EDE6D8;font-weight:600;">also disabled</b>, tags already gone optimistically</div><div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;font-size:11px;">keepAllPending</div>
+        <div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;color:#6B6354;">4</div><div style="padding:11px 12px;border-top:1px solid #221D17;color:#C0B8A6;">Keep all settled</div><div style="padding:11px 12px;border-top:1px solid #221D17;">both absent, note at <span class="m">68</span>, one announcement</div><div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;font-size:11px;">auto 0 &middot; kept 68</div>
+        <div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;color:#6B6354;">5</div><div style="padding:11px 12px;border-top:1px solid #221D17;color:#C0B8A6;">Keep all refused</div><div style="padding:11px 12px;border-top:1px solid #221D17;">tags back, both buttons back, inline refusal under the cluster</div><div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;font-size:11px;">keepAllFailed</div>
+        <div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;color:#6B6354;">6</div><div style="padding:11px 12px;border-top:1px solid #221D17;color:#C0B8A6;">Sweep in flight</div><div style="padding:11px 12px;border-top:1px solid #221D17;">keep disabled too &mdash; the rows it would claim are being deleted</div><div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;font-size:11px;">sweepPending</div>
+        <div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;color:#6B6354;">7</div><div style="padding:11px 12px;border-top:1px solid #221D17;color:#C0B8A6;">Hand-built deck, never filled</div><div style="padding:11px 12px;border-top:1px solid #221D17;">neither button, no note &mdash; the wrapper leaves entirely</div><div style="padding:11px 12px;border-top:1px solid #221D17;font-family:'IBM Plex Mono',monospace;font-size:11px;">auto 0 &middot; kept 0</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:14px;flex-wrap:wrap;max-width:1180px;margin-bottom:26px;">
+      <div style="flex:1.2;min-width:340px;background:#18140F;border:1px solid #2B241B;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:10px;">Engineering &mdash; five strings, one action, one edit each side</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.8;">
+          <div><span class="m" style="color:#C0B8A6;">keep-all-auto &middot; copy strings.ts</span> &mdash; five keys into <span class="m">recommendationsCopy.auto</span>, beside the sweep's. Nothing re-worded, nothing deleted.</div>
+          <div><span class="m" style="color:#C0B8A6;">actions.ts</span> &mdash; <span class="m">keepAllAutoCards(deckId)</span>: one <span class="m">update deck_cards set auto = false where deck_id = ? and auto</span>, returning the row count for the announcement. The identical write already ships one file over, at <span class="m">update-actions.ts:307</span>, where applying a re-import clears <span class="m">auto</span> on every card the list names &mdash; so this is the deck-wide case of a statement the codebase has already made, with the same <span class="m">for update</span> lock and the same <span class="m">claimSurfaces</span> revalidation as the sweep.</div>
+          <div><span class="m" style="color:#C0B8A6;">optimistic-deck.tsx</span> &mdash; a <span class="m">keepAll</span> edit: <span class="m">map(c =&gt; c.auto ? { ...c, auto: false } : c)</span>. Its own edit, not a loop of <span class="m">keep</span>, for the reason the sweep's comment already gives about forty dispatches.</div>
+          <div><span class="m" style="color:#C0B8A6;">clear-auto.tsx</span> &mdash; the new button inside the existing wrapper span, above the sweep. The file already owns this cluster and its zero-state rule.</div>
+          <div><span class="m" style="color:#C0B8A6;">group-toggle.tsx</span> &mdash; two props (<span class="m">onKeepAllAuto</span>, <span class="m">keepAllPending</span>) threaded like <span class="m">onClearAuto</span>, and <span class="m">flex-wrap</span> on the container for 390px.</div>
+          <div><span class="m" style="color:#C0B8A6;">Tests</span> &mdash; the write clears only <span class="m">auto</span> rows and touches no quantity; absence at 0; both controls disabled during either flight; the announcement fires once.</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:300px;background:#18140F;border:1px solid #2B241B;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:10px;">Gaps</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.8;">
+          <div><b style="color:#EDE6D8;font-weight:600;">1.</b> A mis-tapped Keep all cannot be undone. It costs no cards &mdash; it costs the sweep, and the player is back to removing rows one <span class="m">&#10005;</span> at a time.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">2.</b> The same words, <span class="m">Keep all {n}</span>, now live in two copy modules: here, and in amendment 2's removal diff. Deliberate &mdash; the subjects differ &mdash; and a future reader will read it as a duplicate once.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">3.</b> The <span class="m">keptNote</span> is desktop-only, so the phone's only receipt is spoken.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">4.</b> Nothing distinguishes &ldquo;kept deliberately&rdquo; from &ldquo;kept in bulk&rdquo; afterwards, by design: no column records it, and inventing one would be the provenance this amendment is retiring.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">5.</b> A fill that runs <i>after</i> a Keep all re-populates the tag, and the player meets the pair again. Correct, and unannounced.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="max-width:1180px;background:#1B1512;border:1px solid #5A3129;border-left:3px solid #C6533F;border-radius:12px;padding:18px 20px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#E9917A;margin-bottom:9px;">Settled elsewhere, applied in this R1 &mdash; the hand-added marker is gone</div>
+      <div style="font-size:13px;color:#A59C89;line-height:1.75;"><span class="m">handAdded</span>, <span class="m">ariaHandAdded</span>, <span class="m">outBodyHandAdded</span> and <span class="m">outBodyMobileHandAdded</span> are dropped from <a href="deck-reimport · copy strings.ts">deck-reimport &middot; copy strings.ts</a>. <span class="m">auto = false</span> is equally true of a previous import's rows and no column records who placed a card, so the marker claimed a fact the data cannot support. <span class="m">outBody</span> now states the removal alone, in one sentence, at both widths; <span class="m">rowAria</span> keeps its optional marker argument for the <span class="m">auto</span> tag, which is the one marker left. Amendment 2's own gap 3 &mdash; which existed to excuse the proxy &mdash; is closed by deletion rather than wording.</div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;autoCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:40,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:68,&quot;section&quot;:&quot;Fixture&quot;},&quot;keptCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:28,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:68,&quot;section&quot;:&quot;Fixture&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const auto = this.props.autoCount ?? 40;
+    const kept = this.props.keptCount ?? 28;
+    return {
+      keepLabel: `Keep all ${auto}`,
+      clearLabel: `Clear all auto · ${auto}`,
+      keptNote: kept >= 1 ? `${kept} cards are yours now` : "",
+    };
+  }
+}
+</script>
+</body>
+</html>
