@@ -833,9 +833,11 @@ const GAME_RESULTS: readonly string[] = ["win", "loss", "draw"];
 /**
  * Record one game against a deck.
  *
- * Every rejection is returned as { ok: false, message } rather than thrown:
- * the form renders it through the shipped MutationError and keeps every value
- * the player typed, which a thrown error would destroy along with the form.
+ * Every refusal the form can act on is returned as { ok: false, message }
+ * rather than thrown: the form renders it through the shipped MutationError and
+ * keeps every value the player typed, which a thrown error would destroy along
+ * with the form. Auth and ownership still throw, from requireUserId and
+ * requireDeck — a player who cannot reach the deck has no form to preserve.
  *
  * There is no `for update` here, unlike addCardToDeck. That lock exists to keep
  * two concurrent adds from both seeing 98 cards and pushing the deck to 100.
