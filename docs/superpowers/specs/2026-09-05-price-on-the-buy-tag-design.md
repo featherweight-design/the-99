@@ -19,20 +19,21 @@ Six changes, none of which adds a mark, a hue, a token, a dependency or a motion
 
 | # | Change | Files |
 |---|---|---|
-| 1 | The `buy` tag grows a tail — four tails, one of which is today's bare tag | `buy-tag.tsx`, `decklist-row.tsx`, `suggestion-tile.tsx` |
-| 2 | A **price strip** under the `All / Shopping` pills, rendered only while Shopping is active | `group-toggle.tsx` |
-| 3 | `Cheapest first` → `Cheapest to cast` | `decks-builder.ts` |
-| 4 | `export.pricingNote` sweeps two stale claims | `export-dialog.tsx`, `decks-builder.ts` |
-| 5 | The tile tag's scrim rises 82% → 92% | `buy-tag.tsx` |
-| 6 | The price read itself | new `price.ts` + `price-query.ts`, wired at `decks/[id]/page.tsx` |
+| 1 | The `buy` tag grows a tail — four tails, one of which is today's bare tag | `src/components/decks/buy-tag.tsx`, `src/components/decks/decklist-row.tsx`, `src/components/decks/suggestion-tile.tsx` |
+| 2 | A **price strip** under the `All / Shopping` pills, rendered only while Shopping is active | `src/components/decks/group-toggle.tsx` |
+| 3 | `Cheapest first` → `Cheapest to cast` | `src/lib/copy/decks-builder.ts` |
+| 4 | `export.pricingNote` sweeps two stale claims | `src/components/decks/export-dialog.tsx`, `src/lib/copy/decks-builder.ts` |
+| 5 | The tile tag's scrim rises 82% → 92% | `src/components/decks/buy-tag.tsx` |
+| 6 | The price read itself | new `src/lib/decks/price.ts` + `src/lib/decks/price-query.ts`, wired at `src/app/decks/[id]/page.tsx` |
 
 ---
 
 ## 2. The derivation
 
 Price is keyed by **printing** (`printing_prices.scryfall_id`), and a decklist row is an **oracle
-card** (`DeckDetailCard.oracleId`). A row's price is therefore the cheapest **live** printing among
-that oracle's printings — a join through `printings.oracle_id`, not a lookup.
+card** (`DeckDetailCard.oracleId`). A row's price is therefore drawn from **one chosen printing** among
+that oracle's printings — a join through `printings.oracle_id`, not a lookup — live and cheapest
+where such a printing exists, and the reason `soldOut` is expressible at all where none does.
 
 "Live" is the table's own rule, not a clock. From `src/db/schema.ts:81-92`: every row from one
 ingest run shares a timestamp, the ingest upserts and never deletes, and a printing that sells out
@@ -45,6 +46,15 @@ foilOnly = live && cents === null && (foilCents ?? etchedCents) !== null
 soldOut  = row exists && !live
 absent   = default                                        ← the branch everything else falls to
 ```
+
+**The read picks the row; the derivation names it.** `soldOut` is `row exists && !live`, so the query
+must *not* filter to live rows — a live-only `where` clause would make the state unreachable and its
+test vacuous. The read returns one row per oracle, ordered live-first, then non-foil-stock-first,
+then cheapest, then by `scryfall_id` for determinism. That order encodes three rulings: a live
+printing always beats a stale one, so `soldOut` means no live printing exists rather than "the
+cheapest happened to be stale"; a printing with real non-foil stock beats a foil-only one **at any
+price**, so a $50 non-foil is never displaced by a $2.10 foil and `foilOnly` means the card is
+genuinely foil-only; and the tiebreaker keeps the figure from wandering between two reads.
 
 Four states, and `absent` is the **default branch** rather than a condition. A live row whose
 `price_cents`, `price_cents_foil` and `price_cents_etched` are all null tells us nothing about
@@ -111,8 +121,14 @@ Right-aligns into a 58px slot under Shopping; hugs under `All`. The slot is size
 names, and a four-figure price bends the column rather than truncating — the right failure, and
 undrawn.
 
+The slot is **new**: `min-width: 58px; text-align: right` on the figure span inside the tag, as the
+R1 canvas draws it. Nothing in `src/components/decks` reserves 58px today, and the row variant is an
+inline `flex-none` element in a row that already carries the name, the availability marker, the auto
+tag and a 44px button — so the slot takes its width out of the card name's share. Eng verifies the
+worst case at 320px.
+
 **The row's meta line is not available.** It carries an **EDHREC inclusion percentage**
-(`decklist-row.tsx:52-57`), and a dollar figure beside a percentage is two rates in one slot where
+(`src/components/decks/decklist-row.tsx:52-57`), and a dollar figure beside a percentage is two rates in one slot where
 only one of them is the player's money.
 
 ---
@@ -131,10 +147,10 @@ prices from ManaPool · last checked Monday
 what this filter is showing. Hanging it off a deck-level header makes it look like a property of the
 deck. Putting it where its scope is buys three things — the "no total on the `All` header" rule
 re-derives itself, both densities get one home instead of a per-width argument, and
-`builder-spine.tsx:391`'s deliberate desktop-only omission is preserved rather than overturned
+`src/components/decks/builder-spine.tsx:391`'s deliberate desktop-only omission is preserved rather than overturned
 sideways.
 
-`builder-spine.tsx:391` (`54 owned · 8 to buy`) **stays exactly as shipped** — same words, same
+`src/components/decks/builder-spine.tsx:391` (`54 owned · 8 to buy`) **stays exactly as shipped** — same words, same
 condition, untouched.
 
 ### The two lines
@@ -159,7 +175,13 @@ The behind clause renders when `max(as_of)` is older than the ingest cadence —
 the table already exposes. **Figures and the total stay**: the prices are real, they are just old,
 and suppressing them repeats the over-reaction one level up.
 
-**A date, not a duration.** `12 August`, not `3 weeks ago`. Past a week a weekday stops being
+**The threshold is ten days, not seven.** The ingest runs 09:00 UTC every Monday, so a healthy table
+is routinely six days and twenty-three hours old by the following Monday morning. A seven-day
+threshold would therefore announce "these are behind" every week, on a feed that had done exactly
+what it was scheduled to do — and a warning that fires on the healthy case teaches the player to
+ignore it. Ten days is one missed run plus slack.
+
+**A date, not a duration.** `12 August`, not `3 weeks ago`. Past that threshold a weekday stops being
 unambiguous, so the line switches from weekday to date at the same threshold that adds the clause.
 One constant governs both effects, deliberately, so a player never reads an ambiguous weekday on a
 table we already know is behind.
@@ -174,7 +196,7 @@ behind.`
 
 ### Placement — the one eng call this spec makes
 
-`group-toggle.tsx:38` carries `border-b border-[color:var(--border)] md:border-b-0`. A strip rendered
+`src/components/decks/group-toggle.tsx:38` carries `border-b border-[color:var(--border)] md:border-b-0`. A strip rendered
 *after* that container lands **below the divider at phone width** and reads as the list's rather than
 the filter's — the exact ambiguity `R3-READINESS.md` flags as worth one look in place.
 
@@ -187,7 +209,7 @@ not a design call — Design is invited to ratify it, and nothing waits on that.
 
 ## 5. The sort rename
 
-`consider-toolbar.tsx:57` offers `Cheapest first`; `consider-panel.tsx:109` sorts on `manaValue`. It
+`src/components/decks/consider-toolbar.tsx:57` offers `Cheapest first`; `src/components/decks/consider-panel.tsx:109` sorts on `manaValue`. It
 sits directly above the tiles this pass gives dollar figures to — one toolbar, one word, two
 currencies.
 
@@ -205,15 +227,15 @@ one-word swap because `buy` and the availability marker sit four millimetres apa
 This is that collision with the currencies reversed. One vocabulary per concept, and money already
 has this one.
 
-**Scope.** One copy key (`decks-builder.ts:68`), one call site (`consider-toolbar.tsx:57`). The
-literal `<option>Cheapest</option>` in `builder-tabs.test.tsx:69` is a test fixture and needs no
+**Scope.** One copy key (`src/lib/copy/decks-builder.ts:68`), one call site (`src/components/decks/consider-toolbar.tsx:57`). The
+literal `<option>Cheapest</option>` in `src/components/decks/builder-tabs.test.tsx:69` is a test fixture and needs no
 change.
 
 ---
 
 ## 6. The export copy
 
-Shipping this makes `export-dialog.tsx:397` false: *"Pricing is a planned add"* stops being true the
+Shipping this makes `src/components/decks/export-dialog.tsx:397` false: *"Pricing is a planned add"* stops being true the
 moment a price renders on the decklist, even though the exports themselves do not change.
 
 > **`export.pricingNote`** — `Prices show in the app · exports copy names only`
