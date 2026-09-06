@@ -231,7 +231,7 @@ export function FilterPanel({
       setOpen(false);
       setActiveCode(null);
     };
-    const onPointerDown = (e: MouseEvent) => {
+    const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Node;
       if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
       dismiss();
