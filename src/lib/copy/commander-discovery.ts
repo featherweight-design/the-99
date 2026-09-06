@@ -233,9 +233,13 @@ export const discoveryCopy = {
     // Orzhov filter. The drawn line claimed those decks ARE Orzhov, which is
     // false of every deck whose identity is wider than the filter.
     filteredBuiltClause: (matching: number, total: number, identity: string) =>
-      `${matching === 1 ? "One" : n(matching)} of your ${n(
-        total,
-      )} decks ${matching === 1 ? "covers" : "cover"} ${identity} — that is where those commanders went.`,
+      // `matching` can never exceed `total`, so a one-deck player is always the
+      // whole count and "One of your 1 decks" never needs to be said.
+      total === 1
+        ? `Your only deck covers ${identity} — that is where those commanders went.`
+        : `${matching === 1 ? "One" : n(matching)} of your ${n(
+            total,
+          )} decks ${matching === 1 ? "covers" : "cover"} ${identity} — that is where those commanders went.`,
     filteredCta: "Clear the colour filter",
     filteredScopeLink: "or switch to Commanders I own",
   },
