@@ -675,6 +675,22 @@ describe("logGame", () => {
     expect(stub.state.insertCalls).toHaveLength(0);
   });
 
+  // The instant comes off the player's own clock. A browser running a minute
+  // ahead of the server is logging tonight's game, not a future one, so it is
+  // accepted — and stored no later than the server's own now.
+  it("accepts a clock running slightly ahead and stores it clamped to server time", async () => {
+    const sentAt = Date.now();
+    const result = await logGame("deck_1", {
+      result: "win", podSize: 4, playedAt: new Date(sentAt + 60_000), worked: [], hurt: [],
+    });
+    expect(result).toEqual({ ok: true });
+
+    const games = stub.state.insertCalls.filter((c) => c.table === "deck_games");
+    const { playedAt } = games[0].values as { playedAt: Date };
+    expect(playedAt.getTime()).toBeGreaterThanOrEqual(sentAt);
+    expect(playedAt.getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
   // Neither action changes deck membership, so the collection and commander
   // surfaces must not be revalidated.
   it("revalidates only the deck surfaces", async () => {

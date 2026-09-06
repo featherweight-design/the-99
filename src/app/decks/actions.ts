@@ -830,6 +830,9 @@ export type LogGameInput = {
 
 const GAME_RESULTS: readonly string[] = ["win", "loss", "draw"];
 
+/** How far ahead of the server a player's clock may run before a log is refused. */
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
+
 /**
  * Record one game against a deck.
  *
@@ -859,9 +862,16 @@ export async function logGame(
   if (!GAME_RESULTS.includes(input.result)) return refuse;
   if (!Number.isInteger(input.podSize) || input.podSize < 2 || input.podSize > 8) return refuse;
 
-  const playedAt = input.playedAt ?? new Date();
-  if (!(playedAt instanceof Date) || Number.isNaN(playedAt.getTime())) return refuse;
-  if (playedAt.getTime() > Date.now()) return refuse;
+  const sent = input.playedAt ?? new Date();
+  if (!(sent instanceof Date) || Number.isNaN(sent.getTime())) return refuse;
+  // The instant comes off the player's own clock, which routinely runs a little
+  // ahead of the server's. A game logged tonight would then be refused as a
+  // future one, so the skew window is tolerated and then clamped away: what is
+  // stored never runs ahead of the server, and a genuinely future date — the
+  // only thing this rule exists to refuse — is still refused.
+  const now = Date.now();
+  if (sent.getTime() > now + CLOCK_SKEW_MS) return refuse;
+  const playedAt = new Date(Math.min(sent.getTime(), now));
 
   // The vocabulary is eight axes, so any longer list is a crafted payload rather
   // than a game. Length is checked before the keys are, or a public endpoint
