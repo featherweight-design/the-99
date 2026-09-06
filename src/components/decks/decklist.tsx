@@ -10,6 +10,7 @@ import { computeRoleCounts } from "../../lib/decks/mix";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { GroupToggle } from "./group-toggle";
+import type { ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
@@ -73,6 +74,11 @@ interface DecklistProps {
    * Threaded from getDeckSuggestions via BuilderShell.
    */
   shoppingFigures?: Record<string, number> | null;
+  /** The newest `as_of` in `printing_prices` — the one scalar every price's
+      liveness is compared against. Null leaves every tag bare. */
+  newestAsOf?: Date | null;
+  /** Built on the server; see BuilderShell. */
+  provenance?: ProvenanceForm | null;
 }
 
 export function Decklist({
@@ -97,6 +103,8 @@ export function Decklist({
   onClearAuto,
   onRestoreAuto,
   shoppingFigures = {},
+  newestAsOf = null,
+  provenance = null,
 }: DecklistProps) {
   // undefined = no figure line on the row. That is the All view's answer, and
   // also the outage's: with EDHREC unreachable we know nothing about any of
@@ -327,6 +335,7 @@ export function Decklist({
                       card={card}
                       siblings={shoppingOrderedIds}
                       shoppingFigure={shoppingFigure}
+                      newestAsOf={newestAsOf}
                     />
                   );
                 })}
@@ -351,6 +360,7 @@ export function Decklist({
                       card={card}
                       siblings={shoppingOrderedIds}
                       shoppingFigure={shoppingFigure}
+                      newestAsOf={newestAsOf}
                     />
                   );
                 })}
@@ -422,6 +432,7 @@ export function Decklist({
             cards={groupCards}
             spentOracleId={spentCard?.oracleId}
             siblings={orderedIds}
+            newestAsOf={newestAsOf}
           />
         ))}
 

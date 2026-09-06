@@ -55,6 +55,8 @@ interface DecklistRowProps {
    * `number`    — Shopping view; prints rowFigure(pct). Never 0 as a stand-in for absent.
    */
   shoppingFigure?: number | null;
+  /** The newest `as_of` in `printing_prices`; the tag's liveness comparison. */
+  newestAsOf?: Date | null;
 }
 
 export function DecklistRow({
@@ -63,6 +65,7 @@ export function DecklistRow({
   siblings,
   spent = false,
   shoppingFigure,
+  newestAsOf = null,
 }: DecklistRowProps) {
   // The name is a flex item of its own block, not of the row: `flex-auto` on
   // the trigger itself would grow the trigger's box past its text and strand a
@@ -263,7 +266,17 @@ export function DecklistRow({
         )}
 
         {/* Buy tag — unowned only */}
-        {!card.owned && <BuyTag variant="row" />}
+        {!card.owned && (
+          /* The 58px figure slot is the Shopping list's, so it rides the same
+             flag the shopping meta line does rather than a second notion of
+             which filter is open. */
+          <BuyTag
+            variant="row"
+            price={card.price}
+            newestAsOf={newestAsOf}
+            reserveSlot={hasShoppingMeta}
+          />
+        )}
 
         {/* Auto tag — one per stack */}
         {card.auto && <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />}

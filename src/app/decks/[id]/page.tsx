@@ -13,6 +13,8 @@ import {
 } from "../../../lib/decks/arrival";
 import { readSynergyCards } from "../../commanders/[slug]/synergy-read";
 import { planLastSlots, countLastSlotsUnowned } from "../../../lib/decks/last-slots";
+import { loadPrices } from "../../../lib/decks/price-query";
+import { provenanceForm } from "../../../lib/decks/price";
 
 export default async function DeckBuilderPage({
   params,
@@ -42,6 +44,27 @@ export default async function DeckBuilderPage({
     openSlots > 0 ? readSynergyCards(userId, detail.commander.oracleId, []) : [],
   ]);
 
+  // Sequential, not part of the Promise.all above: the suggestion oracle ids
+  // come out of that call, so there is nothing to price until it resolves.
+  // A failed price read degrades to today's bare tags rather than taking the
+  // builder down — the same treatment search-action.ts:104 gives availability.
+  const priced = await loadPrices([
+    ...new Set([
+      ...detail.cards.map((c) => c.oracleId),
+      ...suggestions.map((s) => s.oracleId),
+    ]),
+  ]).catch(() => null);
+
+  // Attached here, server-side, on lists that are being built anyway — so no
+  // component below does a map lookup during render, and BuilderShell takes one
+  // extra scalar rather than a collection across the boundary.
+  const withPrice = <T extends { oracleId: string }>(card: T) => ({
+    ...card,
+    price: priced?.prices.get(card.oracleId) ?? null,
+  });
+  const cards = detail.cards.map(withPrice);
+  const pricedSuggestions = suggestions.map(withPrice);
+
   // First-run: user's only deck and it has no cards yet.
   const firstRun = allDecks.length === 1 && detail.built === 0;
 
@@ -64,8 +87,13 @@ export default async function DeckBuilderPage({
 
   return (
     <BuilderShell
-      deck={detail}
-      suggestions={suggestions}
+      deck={{ ...detail, cards }}
+      suggestions={pricedSuggestions}
+      newestAsOf={priced?.newestAsOf ?? null}
+      // Derived here and passed as a form, never as a clock. provenanceForm
+      // compares against `now`, so calling it again in the browser could flip
+      // `behind` between the server render and hydration.
+      provenance={priced?.newestAsOf ? provenanceForm(priced.newestAsOf, new Date()) : null}
       degraded={degraded}
       shoppingFigures={shoppingFigures}
       firstRun={firstRun}

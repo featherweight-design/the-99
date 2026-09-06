@@ -16,6 +16,8 @@ interface DecklistGroupProps {
   siblings?: string[];
   /** Optional note shown right-aligned on desktop (e.g. "37 recommended"). */
   note?: string;
+  /** The newest `as_of` in `printing_prices`; each row's liveness comparison. */
+  newestAsOf?: Date | null;
 }
 
 export function DecklistGroup({
@@ -25,6 +27,7 @@ export function DecklistGroup({
   spentOracleId,
   siblings,
   note,
+  newestAsOf = null,
 }: DecklistGroupProps) {
   // The count does not wait for the undo: a spent slot is a receipt, not a
   // pending state, and a group that held its figure would be lying about its
@@ -57,6 +60,7 @@ export function DecklistGroup({
             card={card}
             spent={card.oracleId === spentOracleId}
             siblings={siblings}
+            newestAsOf={newestAsOf}
           />
         ))}
       </div>

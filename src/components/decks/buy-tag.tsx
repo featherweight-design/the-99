@@ -5,6 +5,15 @@
 // card art, where a flat wash disappears into a bright frame.
 
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { priceCopy } from "../../lib/copy/price";
+import {
+  formatCents,
+  priceOf,
+  priceState,
+  type PriceFact,
+  type PriceState,
+  type ProvenanceForm,
+} from "../../lib/decks/price";
 
 type BuyTagVariant = "row" | "tile";
 
@@ -15,7 +24,11 @@ const PLATE: Record<BuyTagVariant, React.CSSProperties> = {
     // canvas colour rather than a fixed near-black — a theme with a lighter
     // canvas wants a lighter scrim, or the tag reads as a hole punched in the
     // art.
-    background: "color-mix(in oklab, var(--bg) 82%, transparent)",
+    //
+    // 92%, not 82%, and UNCONDITIONALLY — not gated on whether a figure
+    // renders. A scrim that changed with what is written on it would be a
+    // primitive deciding how to look from its own content.
+    background: "color-mix(in oklab, var(--bg) 92%, transparent)",
     boxShadow: "inset 0 0 0 1px color-mix(in oklab, var(--warning) 50%, transparent)",
   },
 };
@@ -27,25 +40,130 @@ const PLACEMENT: Record<BuyTagVariant, string> = {
   tile: "absolute z-10 right-[6px] top-[6px] text-[9px] pointer-events-none",
 };
 
+/** The figure's ink differs by plate: the row sits on a surface, the tile on art. */
+const FIGURE_INK: Record<BuyTagVariant, string> = {
+  row: "var(--fg-body)",
+  tile: "var(--fg)",
+};
+
+/**
+ * The tail's two spans. `soldOut` takes the figure's own ink and the figure's
+ * own slot — it is the same class of fact, told apart by being a word where the
+ * others are a number. `absent` returns null: silence is the state, and a dash
+ * or a zero would be a claim the feed never made.
+ */
+function Tail({
+  fact,
+  state,
+  variant,
+  reserveSlot,
+  silent,
+}: {
+  fact: PriceFact;
+  state: PriceState;
+  variant: BuyTagVariant;
+  reserveSlot: boolean;
+  /** True where the tag already speaks the price in its own sentence. */
+  silent: boolean;
+}) {
+  if (state === "absent") return null;
+
+  const cents = priceOf(fact, state);
+  const qualifier =
+    state === "foilOnly"
+      ? fact.foilCents !== null
+        ? priceCopy.tag.foil
+        : priceCopy.tag.etched
+      : null;
+
+  return (
+    <span aria-hidden={silent ? "true" : undefined}>
+      <span aria-hidden="true" style={{ color: "var(--border-strong)" }}>
+        {" · "}
+      </span>
+      {/* The 58px slot is the Shopping list's, not the tag's own: under `All`
+          the figure hugs. Right-aligned so a column of figures lines up on the
+          decimal point rather than on the word before it. */}
+      <span
+        style={{
+          color: FIGURE_INK[variant],
+          ...(reserveSlot
+            ? { display: "inline-block", minWidth: 58, textAlign: "right" as const }
+            : null),
+        }}
+      >
+        {cents === null ? priceCopy.tag.soldOut : formatCents(cents)}
+        {qualifier ? (
+          <span style={{ color: "var(--fg-faint)" }}>{` ${qualifier}`}</span>
+        ) : null}
+      </span>
+    </span>
+  );
+}
+
 // A labelled tag swaps the word for the sentence rather than carrying an
 // `aria-label`: on a bare span the label lands on the generic role and is
 // discarded outright, and `role="img"` rescued it only by announcing a run of
 // text as an image. The row passes no label, because there the word already
 // sits in the row's own reading order.
-export function BuyTag({ variant, label }: { variant: BuyTagVariant; label?: string }) {
+export function BuyTag({
+  variant,
+  label,
+  price,
+  newestAsOf = null,
+  provenance = null,
+  reserveSlot = false,
+}: {
+  variant: BuyTagVariant;
+  label?: string;
+  price?: PriceFact | null;
+  /** Liveness is one comparison against the table's newest row, not a clock. */
+  newestAsOf?: Date | null;
+  /** Server-built; only the labelled (tile) variant speaks it. */
+  provenance?: ProvenanceForm | null;
+  /** Shopping reserves the figure a 58px slot so the column aligns. */
+  reserveSlot?: boolean;
+}) {
+  const state = priceState(price, newestAsOf);
+  const cents = price ? priceOf(price, state) : null;
+
+  // One utterance per price. A priced tile appends the figure and its
+  // provenance to the shipped ownership sentence rather than adding a second
+  // one; every other state leaves that sentence exactly as it shipped.
+  const speaksPrice = Boolean(label) && cents !== null && provenance !== null;
+  const spoken =
+    speaksPrice && provenance && cents !== null
+      ? `${label}. ${
+          provenance.behind
+            ? priceCopy.aria.pricedBehind(formatCents(cents), provenance.when)
+            : priceCopy.aria.priced(formatCents(cents), provenance.when)
+        }`
+      : label;
+
   return (
     <span
       className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]}`}
       style={{ color: "var(--warning)", ...PLATE[variant] }}
     >
-      {label ? (
+      {spoken ? (
         <>
           <span aria-hidden="true">{addPanelCopy.unowned.tag}</span>
-          <span className="sr-only">{label}</span>
+          <span className="sr-only">{spoken}</span>
         </>
       ) : (
         addPanelCopy.unowned.tag
       )}
+      {price ? (
+        <Tail
+          fact={price}
+          state={state}
+          variant={variant}
+          reserveSlot={reserveSlot}
+          // Hidden only where the sentence above already carries the figure.
+          // `sold out` is never in that sentence, so it stays readable.
+          silent={speaksPrice}
+        />
+      ) : null}
     </span>
   );
 }

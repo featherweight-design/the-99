@@ -1,5 +1,6 @@
 import type { Availability } from "./availability";
 import type { DeckDetailCard } from "./grouping";
+import type { PriceFact } from "./price";
 import { classifyRoles, ROLE_TARGETS } from "../recs/roles";
 import type { PoolCard } from "../recs/score";
 
@@ -43,6 +44,8 @@ export type DeckSuggestion = {
   synergyFigure: number | null;
   /** Absent or null renders no chip — see DeckDetailCard.availability. */
   availability?: Availability | null;
+  /** Absent or null renders the bare `buy` tag — see DeckDetailCard.price. */
+  price?: PriceFact | null;
 };
 
 export type Suggestion = { oracleId: string; reason: "edhrec" | "ramp" | "draw" | "removal" | "wipes" | "land" };

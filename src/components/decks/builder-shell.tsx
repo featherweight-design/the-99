@@ -42,6 +42,7 @@ import { LAND_TARGET } from "../../lib/decks/suggest";
 import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from "../../lib/decks/grouping";
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
+import type { ProvenanceForm } from "../../lib/decks/price";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
 // that has to switch views first — so they land identically.
@@ -78,6 +79,14 @@ interface BuilderShellProps {
       Cards with no EDHREC figure are absent from the map — never stored as 0.
       Null when EDHREC was unreachable, which is not the same claim. */
   shoppingFigures?: Record<string, number> | null;
+  /** The newest `as_of` in `printing_prices`. Every price's liveness is a
+      comparison against this one scalar, so it travels rather than a per-card
+      flag. Null when the read failed or the table is empty — every tag stays
+      bare. */
+  newestAsOf?: Date | null;
+  /** Built on the server by `provenanceForm`, never in the browser: it compares
+      against a clock, and a second call could flip `behind` at hydration. */
+  provenance?: ProvenanceForm | null;
   /** Owned synergy cards planLastSlots would place into the open slots, derived
       once by the page route. Zero means the owned fill control is absent. */
   ownedCandidates?: number;
@@ -95,6 +104,8 @@ export function BuilderShell({
   arrivedFromImport,
   updateArrival = null,
   shoppingFigures = {},
+  newestAsOf = null,
+  provenance = null,
   ownedCandidates = 0,
   unownedCandidates = 0,
 }: BuilderShellProps) {
@@ -709,6 +720,8 @@ export function BuilderShell({
                 degraded={degraded}
                 sort={sort}
                 onSortChange={setSort}
+                newestAsOf={newestAsOf}
+                provenance={provenance}
               />
             ) : (
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
@@ -875,6 +888,8 @@ export function BuilderShell({
                 onClearAuto={handleClearAuto}
                 onRestoreAuto={handleRestoreAuto}
                 shoppingFigures={shoppingFigures}
+                newestAsOf={newestAsOf}
+                provenance={provenance}
               />
             )}
             </div>
