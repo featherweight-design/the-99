@@ -149,7 +149,16 @@ export function UpdateDiff({
     onApply([...kept]);
   }
 
-  const wholesale = preview.built > 0 && preview.out.length / preview.built > WHOLESALE_SHARE;
+  // In copies against `built`, which is a copy count too. Comparing rows to it
+  // under-triggers on exactly the deck this note is for: a list that dropped
+  // twelve Islands and the rest of a mana base counts as a handful of rows.
+  //
+  // Deliberately not recomputed as removals are kept. What the note says is that
+  // the *list* looks like a different deck, which is true of the paste and stays
+  // true however many rows the player rescues from it. Moving with the Keeps
+  // would make the sentence flicker in and out while the player works.
+  const outCopies = preview.out.reduce((n, r) => n + r.quantity, 0);
+  const wholesale = preview.built > 0 && outCopies / preview.built > WHOLESALE_SHARE;
   const clamped = preview.notes.filter((n) => n.kind === "quantityClamped").length;
 
   return (

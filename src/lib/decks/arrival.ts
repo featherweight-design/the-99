@@ -50,7 +50,10 @@ export type UpdateArrivalState = UpdateArrival | "countless";
 export function readUpdateArrival(
   value: string | string[] | undefined,
 ): UpdateArrivalState | null {
-  if (value === undefined || value === "") return null;
+  // Only a missing param is an ordinary visit. `?updated=` with nothing after it
+  // is still the param, so it gets the countless strip like any other value this
+  // app did not write.
+  if (value === undefined) return null;
   // A repeated param is present but carries no single value to read, so it lands
   // in the countless case with every other value this app did not write.
   if (typeof value !== "string") return "countless";

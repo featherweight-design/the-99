@@ -52,13 +52,14 @@ describe("readUpdateArrival", () => {
     expect(readUpdateArrival("a-b")).toBe("countless");
     expect(readUpdateArrival("-1-6")).toBe("countless");
     expect(readUpdateArrival(["19-6", "19-6"])).toBe("countless");
+    // `?updated=` is still the param, however empty it is.
+    expect(readUpdateArrival("")).toBe("countless");
   });
 
   // No param at all is an ordinary visit, which is a different thing from an
   // update whose figures did not survive the trip.
   it("is null when there is no param", () => {
     expect(readUpdateArrival(undefined)).toBeNull();
-    expect(readUpdateArrival("")).toBeNull();
   });
 
   it("names the param the apply appends", () => {

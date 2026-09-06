@@ -193,6 +193,23 @@ describe("UpdateDiff state 14", () => {
     expect(onApply).toHaveBeenCalled();
   });
 
+  // `built` is a copy count, so the share has to be one too. Measured in rows,
+  // the deck this note exists for — a list that dropped a whole mana base —
+  // counts as a handful of rows and never trips the threshold.
+  it("measures the share in copies, so one multi-copy row can trip it", () => {
+    renderDiff({ built: 20, out: [row("out-1", { quantity: 16 })] });
+    expect(screen.getByRole("button", { name: copy.importAsNew })).toBeInTheDocument();
+  });
+
+  // What the note says is that the list looks like a different deck, which is
+  // true of the paste however many rows the player rescues from it.
+  it("does not withdraw the note as removals are kept", () => {
+    const many = Array.from({ length: 8 }, (_, i) => row(`out-${i}`));
+    renderDiff({ built: 10, out: many });
+    fireEvent.click(screen.getByRole("button", { name: copy.keepAll("8") }));
+    expect(screen.getByRole("button", { name: copy.importAsNew })).toBeInTheDocument();
+  });
+
   it("says nothing about wholesale replacement on an ordinary diff", () => {
     renderDiff();
     expect(screen.queryByRole("button", { name: copy.importAsNew })).not.toBeInTheDocument();
