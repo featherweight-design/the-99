@@ -1,4 +1,4 @@
-# READINESS — price on the buy tag (#291), R2
+# READINESS — price on the buy tag (#288), R2
 
 **Verdict: 🟢 Green.** All three blockers are closed, the four citations are corrected, the etched
 guard is stated and the export copy call is written. No decision is waiting on anyone.

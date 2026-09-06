@@ -1,4 +1,4 @@
-# Addendum — price on the buy tag (#291)
+# Addendum — price on the buy tag (#288)
 
 A light addendum to the shipped Decks handoff. **Nothing in it is reopened**: `The 99 - Decks.dc.html`,
 `The 99 - Decks README.md` and the R2 reviewer notes stand as written, and the add-panel addendum's

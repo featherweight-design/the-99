@@ -1,4 +1,4 @@
-# R3 — price on the buy tag (#291), the surface corrections
+# R3 — price on the buy tag (#288), the surface corrections
 
 `design/design_handoff_the99_decks/` · 2026-09-05 · **new files only**
 

@@ -1,4 +1,4 @@
-# READINESS — price on the buy tag (#291), R3
+# READINESS — price on the buy tag (#288), R3
 
 **Verdict: 🟢 Green.** Both items are closed with one structural change and one rename, the scrim
 ruling is made, and the derivation is total. No decision is waiting on anyone.

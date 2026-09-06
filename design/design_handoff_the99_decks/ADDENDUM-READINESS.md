@@ -1,4 +1,4 @@
-# READINESS — price on the buy tag (#291), R1
+# READINESS — price on the buy tag (#288), R1
 
 **Verdict: 🟢 Green.** All four ingest states are drawn at both densities, the four open questions
 are ruled, and nothing here waits on anyone. One product call is raised and it is not a blocker:

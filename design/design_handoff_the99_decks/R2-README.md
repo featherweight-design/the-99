@@ -1,4 +1,4 @@
-# R2 — price on the buy tag (#291), corrections and one new drawing
+# R2 — price on the buy tag (#288), corrections and one new drawing
 
 `design/design_handoff_the99_decks/` · 2026-09-05 · **new files only**
 

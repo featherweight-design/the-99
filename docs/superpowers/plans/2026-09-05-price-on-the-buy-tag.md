@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Put the prices already sitting in `printing_prices` on screen, in the one place the player is already told a card must be bought. `printing_prices` shipped on PR #291 and has zero readers in `src/` — every price in the database is currently invisible.
+**Goal:** Put the prices already sitting in `printing_prices` on screen, in the one place the player is already told a card must be bought. `printing_prices` shipped on PR #291; Discovery reads it through `src/lib/discovery/price.ts` (PR #306), but no Decks surface renders it — on the builder every price in the database is currently invisible.
 
 **Architecture:** One server read joins `printing_prices` to `printings` and picks **one printing per oracle card** — live before stale, non-foil stock before foil-only, then cheapest — leaving the live-versus-stale call to a pure derivation, where "live" is `as_of === max(as_of)` over the table. Those facts are attached to the card lists during the existing `/decks/[id]` page load and ride into `BuilderShell` and down to the decklist rows and suggestion tiles, where the shipped `BuyTag` grows a tail. A second, filter-scoped construct — the price strip — sums what the Shopping filter is showing and discloses the table's own freshness once. Every derivation is pure and lives in `src/lib/decks/price.ts`; the only database code is one query.
 

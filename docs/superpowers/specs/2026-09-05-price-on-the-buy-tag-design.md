@@ -2,9 +2,10 @@
 
 `design/design_handoff_the99_decks/` · R1 → R3 · audited Green 2026-09-05
 
-The UI half of the ManaPool price ingest. `printing_prices` shipped on PR #291 and has **zero
-readers in `src/`** — every price in the database is currently invisible. This spec is the contract
-between that table and the two places a player will see it.
+The UI half of the ManaPool price ingest. `printing_prices` shipped on PR #291 and **no Decks
+surface renders it** — Discovery reads the table through `src/lib/discovery/price.ts` (PR #306), but
+on the builder every price in the database is currently invisible. This spec is the contract between
+that table and the two places a player will see it.
 
 **Source of truth.** The drawings and their reasoning live in the handoff: `ADDENDUM-README.md`
 (R1), `R2-README.md`, `R3-README.md`, and the three `.dc.html` canvases. Where this spec and a
