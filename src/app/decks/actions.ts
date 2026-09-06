@@ -643,10 +643,12 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
   // a hand-add racing it would otherwise make that number a guess.
   return await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
-    // Read whole rather than summed: the rows also answer which ids the insert
-    // is going to skip, which is what the restored count has to exclude.
+    // Only the ids being restored. The read exists to say which of them the
+    // insert's conflict clause will skip, and with the cap gone the rest of the
+    // deck is an unbounded scan answering nothing.
     const present = await tx.select({ oracleId: deckCards.oracleId })
-      .from(deckCards).where(eq(deckCards.deckId, deckId));
+      .from(deckCards)
+      .where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, ids)));
     // A card the player re-added by hand before clicking Undo is skipped by the
     // conflict clause, so it is not part of what this restore put back.
     const here = new Set(present.map((r) => r.oracleId));
