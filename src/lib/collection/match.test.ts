@@ -22,6 +22,38 @@ describe("matchRows", () => {
     const { matched } = matchRows([row("Fable of the Mirror-Breaker")], catalog);
     expect(matched[0].oracleId).toBe("o-2");
   });
+  it("matches a multi-faced card written with a single slash", () => {
+    const { matched } = matchRows(
+      [row("Fable of the Mirror-Breaker / Reflection of Kiki-Jiki")],
+      catalog,
+    );
+    expect(matched[0].oracleId).toBe("o-2");
+  });
+  it("matches a multi-faced card written with no spaces around the slash", () => {
+    const { matched } = matchRows(
+      [row("Fable of the Mirror-Breaker/Reflection of Kiki-Jiki")],
+      catalog,
+    );
+    expect(matched[0].oracleId).toBe("o-2");
+  });
+  it("matches a multi-faced card whose catalog name is itself single-slashed", () => {
+    // Defensive: the catalog is Scryfall's and always double-slashes, but the index
+    // key and the incoming name must normalise identically or the symmetry breaks.
+    const { matched } = matchRows([row("Fire // Ice")], [
+      { oracleId: "o-3", scryfallId: "s-3", name: "Fire / Ice" },
+    ]);
+    expect(matched[0].oracleId).toBe("o-3");
+  });
+  it("keeps a many-faced name matchable by its full spelling", () => {
+    // "Who // What // When // Where // Why" is a real five-face card. Normalising
+    // slashes must not disturb the full-name key, whatever the alias does with the
+    // first face.
+    const many = [
+      { oracleId: "o-4", scryfallId: "s-4", name: "Who // What // When // Where // Why" },
+    ];
+    expect(matchRows([row("Who / What / When / Where / Why")], many).matched[0].oracleId).toBe("o-4");
+    expect(matchRows([row("What")], many).unmatched).toHaveLength(1);
+  });
   it("reports unmatched rows with their original line number", () => {
     const { matched, unmatched } = matchRows([row("Not A Card", null, 7)], catalog);
     expect(matched).toHaveLength(0);
