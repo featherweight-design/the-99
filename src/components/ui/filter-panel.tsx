@@ -249,10 +249,10 @@ export function FilterPanel({
       if (panelRef.current?.contains(document.activeElement)) close({ preventScroll: true });
       else dismiss();
     };
-    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("scroll", onScroll, true);
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("scroll", onScroll, true);
     };
   }, [open, isDesktop, close]);

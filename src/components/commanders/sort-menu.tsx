@@ -34,7 +34,10 @@ export function SortMenu({
 
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => {
+    // `pointerdown`, not `mousedown`: on a touch device the latter arrives only
+    // as a synthesised event after the gesture completes, so a tap outside the
+    // menu would dismiss it a beat late. `AccountMenu` already listens this way.
+    const onDown = (e: PointerEvent) => {
       if (!root.current?.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -45,10 +48,10 @@ export function SortMenu({
         trigger.current?.focus();
       }
     };
-    document.addEventListener("mousedown", onDown);
+    document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
