@@ -35,4 +35,26 @@ describe("FilteredEmpty", () => {
     renderFilteredEmpty(["W", "R"], 7);
     expect(screen.getByText("Showing 0 of 7")).toBeTruthy();
   });
+
+  // The button is styled differently with a second affordance beside it, but
+  // that is a layout branch, not two different buttons: a caller's label has to
+  // survive it either way, or the prop reads as ignored.
+  it("takes the caller's button label with or without a second affordance", () => {
+    const { unmount } = render(
+      <FilteredEmpty colors={["R"]} total={24} onClear={vi.fn()} cta="Clear the pips" />,
+    );
+    expect(screen.getByRole("button", { name: "Clear the pips" })).toBeTruthy();
+    unmount();
+
+    render(
+      <FilteredEmpty
+        colors={["R"]}
+        total={24}
+        onClear={vi.fn()}
+        cta="Clear the pips"
+        secondary={<span>or something else</span>}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Clear the pips" })).toBeTruthy();
+  });
 });

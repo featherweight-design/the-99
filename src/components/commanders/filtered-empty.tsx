@@ -132,7 +132,7 @@ export function FilteredEmpty({
           // brand focus-visible outline treatment inherited from globals.css
           className="text-[13px] p-[11px_20px] sm:p-[10px_20px] mt-[16px]"
         >
-          {commandersCopy.filteredEmpty.cta}
+          {cta ?? commandersCopy.filteredEmpty.cta}
         </GhostButton>
       )}
     </div>
