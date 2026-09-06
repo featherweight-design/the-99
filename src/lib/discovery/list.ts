@@ -19,7 +19,10 @@ export type DiscoveryItem = {
   name: string;
   colorIdentity: string[];
   imageUri: string | null;
-  /** Rank in the active ordering, over the FULL pre-filter set. */
+  /** Position in the active ordering, over every item this list carries — so a
+      client-side colour filter never renumbers what it leaves behind. It is not
+      a position in `candidateCount`: under `new`, the untagged and the
+      below-floor are already gone, and `floorExcluded` counts the second group. */
   rank: number;
   owned: boolean;
   ownedSupport: number;
@@ -37,7 +40,9 @@ export type DiscoveryItem = {
 
 export type DiscoveryList = {
   items: DiscoveryItem[];
-  /** Population under this scope, before colour filtering. */
+  /** Every candidate this scope found, counted before any exclusion — the
+      novelty sort's two, and the client's colour filter. `items.length` is the
+      same number under `fit` and a smaller one under `new`. */
   candidateCount: number;
   /** Collection size the subtitle reads against. */
   cardsRead: number;

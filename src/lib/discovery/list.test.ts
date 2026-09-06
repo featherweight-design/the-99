@@ -26,7 +26,7 @@ describe("assembleDiscovery", () => {
     cardsRead: 2805,
   };
 
-  it("ranks the full pre-filter set, so rank survives colour filtering", () => {
+  it("ranks every item it carries, so rank survives colour filtering", () => {
     const got = assembleDiscovery({ ...base, sort: "fit" });
     expect(got.items.map((i) => i.oracleId)).toEqual(["c", "a", "b"]);
     expect(got.items.map((i) => i.rank)).toEqual([1, 2, 3]);
