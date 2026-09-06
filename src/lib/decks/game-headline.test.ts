@@ -68,6 +68,10 @@ describe("deriveHeadline", () => {
   it("does not say both times when the axis was marked once", () => {
     const h = deriveHeadline(summarizeGames([game({ hurt: ["mana"] }), game()]))!;
     expect(h.heading).toBe(gameLogCopy.headline.findingNone);
+    // The plain heading is still the two-game voice, so it keeps the leaning
+    // note rather than the pattern voice's record sentence.
+    expect(h.sub).toBe(gameLogCopy.headline.twoGamesNote);
+    expect(h.subEmphasis).toBeNull();
   });
 
   it("switches to the pattern voice exactly at PATTERN_MIN", () => {

@@ -22,6 +22,10 @@ const save = () => screen.getByRole("button", { name: gameLogCopy.form.save });
 // Two columns render a row for every axis, so an axis always matches twice:
 // index 0 is "what worked", index 1 is "what let me down".
 const mana = () => screen.getAllByRole("checkbox", { name: new RegExp(axisCopy.mana.label) });
+// The form speaks in the player's calendar day, so the expectations do too —
+// `toISOString()` would name a different day in any offset past UTC.
+const localDay = (at: Date) =>
+  `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}-${String(at.getDate()).padStart(2, "0")}`;
 
 describe("GameLogForm", () => {
   // State 2 → 3. The fifteen-second log is result-then-save, and nothing else.
@@ -71,6 +75,19 @@ describe("GameLogForm", () => {
     expect(logGame.mock.calls[0][1]).toMatchObject({ worked: [], hurt: ["mana"] });
   });
 
+  // The action refuses a future instant, so a game logged before lunch must not
+  // be sent as noon today.
+  it("sends today as an instant that has already happened", async () => {
+    mount();
+    open();
+    fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+    fireEvent.click(save());
+    await waitFor(() => expect(logGame).toHaveBeenCalled());
+    const { playedAt } = logGame.mock.calls[0][1] as { playedAt: Date };
+    expect(playedAt.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(localDay(playedAt)).toBe(localDay(new Date()));
+  });
+
   // State 7. Marking everything is a legitimate thing to say about a game.
   it("puts no cap on how many axes can be marked", () => {
     mount();
@@ -91,7 +108,7 @@ describe("GameLogForm", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.playedToday }));
     const date = screen.getByLabelText(gameLogCopy.form.playedToday) as HTMLInputElement;
-    expect(date.max).toBe(new Date().toISOString().slice(0, 10));
+    expect(date.max).toBe(localDay(new Date()));
   });
 
   it("refuses to save a date typed past today", () => {
@@ -99,7 +116,7 @@ describe("GameLogForm", () => {
     open();
     fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
     fireEvent.click(screen.getByRole("button", { name: gameLogCopy.form.playedToday }));
-    const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    const tomorrow = localDay(new Date(Date.now() + 86_400_000));
     fireEvent.change(screen.getByLabelText(gameLogCopy.form.playedToday), {
       target: { value: tomorrow },
     });

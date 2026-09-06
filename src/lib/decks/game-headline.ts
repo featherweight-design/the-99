@@ -81,8 +81,11 @@ export function deriveHeadline(summary: GameSummary): Headline | null {
     if (best && best.worked === summary.count) {
       return { heading: gameLogCopy.headline.twoGamesKeep(axisCopy[best.key].label), sub: gameLogCopy.headline.twoGamesNote, record: null, subEmphasis: null };
     }
+    // Still the leaning note: the long sub-line's record and denominator take
+    // their own ink, and that emphasis is the pattern voice speaking two games
+    // early.
     return summary.axes.length > 0
-      ? { heading: gameLogCopy.headline.findingNone, sub, record: null, subEmphasis }
+      ? { heading: gameLogCopy.headline.findingNone, sub: gameLogCopy.headline.twoGamesNote, record: null, subEmphasis: null }
       : { heading: gameLogCopy.headline.recordOnly(String(summary.count), record), sub: "", record: null, subEmphasis: null };
   }
 

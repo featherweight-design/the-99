@@ -31,7 +31,14 @@ export interface GameLogFormProps {
 }
 
 const POD_SIZES = [2, 3, 4, 5, 6, 7, 8];
-const today = () => new Date().toISOString().slice(0, 10);
+// `<input type="date">` speaks in the player's own calendar day, so this is
+// built from the local fields. `toISOString()` would name yesterday or tomorrow
+// for anyone whose offset has rolled past UTC.
+const today = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 
 const RESULTS: { value: GameResult; label: string }[] = [
   { value: "win", label: gameLogCopy.form.won },
@@ -158,7 +165,11 @@ export function GameLogForm({
       const outcome = await logGame(deckId, {
         result,
         podSize,
-        playedAt: new Date(`${playedAt}T12:00:00`),
+        // A past day is pinned to local noon, which no timezone can drag into
+        // tomorrow. Today is sent as the current instant instead: noon today is
+        // still in the future for anyone logging a game before lunch, and the
+        // action refuses future instants.
+        playedAt: playedAt === today() ? new Date() : new Date(`${playedAt}T12:00:00`),
         worked,
         hurt,
       });

@@ -85,6 +85,14 @@ describe("GamesPanel — low N", () => {
     expect(container.innerHTML).not.toContain("--success");
   });
 
+  // "1 up" is the N=1 voice. Everywhere else a single mark still carries its
+  // denominator.
+  it("keeps the denominator on a single mark once there are two games", () => {
+    mount([game({ hurt: ["mana"] }), game({ hurt: ["mana"], worked: ["board"] })]);
+    expect(screen.getByText(gameLogCopy.cell.figure("1", "2"))).toBeInTheDocument();
+    expect(screen.queryByText(gameLogCopy.cell.figureOneUp)).toBeNull();
+  });
+
   it("orders one game's marks by the vocabulary, not by strength", () => {
     const { container } = mount([game({ worked: ["engine"], hurt: ["mana", "speed"] })]);
     const text = container.textContent!;

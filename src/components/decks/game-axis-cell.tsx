@@ -24,8 +24,10 @@ export function GameAxisCell({ tally, gameCount, bucket }: GameAxisCellProps) {
   const patterned = gameCount >= PATTERN_MIN;
   const oneGame = gameCount === 1;
 
+  // The direction-and-count form belongs to N=1 alone. At N≥2 a single mark is
+  // still `1 of 3`, because every figure on the panel carries its denominator.
   const figure =
-    marks === 1
+    oneGame
       ? tally.worked === 1
         ? gameLogCopy.cell.figureOneUp
         : gameLogCopy.cell.figureOneDown
