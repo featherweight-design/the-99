@@ -114,6 +114,7 @@ interface BuilderShellProps {
 // default parameter is one object rather than a fresh one per render.
 const NO_GAMES: GameSummary = {
   count: 0,
+  marked: 0,
   record: { wins: 0, losses: 0, draws: 0 },
   axes: [],
   keep: [],

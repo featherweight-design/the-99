@@ -22,6 +22,12 @@ export type AxisTally = {
 
 export type GameSummary = {
   count: number;
+  /**
+   * Games carrying at least one mark. The sub-line says "Marked in 3 of 5
+   * games", and that numerator is not derivable from the tallies: one game can
+   * contribute to several axes, so summing them would overcount.
+   */
+  marked: number;
   record: { wins: number; losses: number; draws: number };
   axes: AxisTally[];
   keep: AxisTally[];
@@ -94,12 +100,14 @@ export async function listDeckGames(deckId: string, userId: string): Promise<Dec
 export function summarizeGames(games: DeckGame[]): GameSummary {
   const record = { wins: 0, losses: 0, draws: 0 };
   const tallies = new Map<GameAxisKey, AxisTally>();
+  let marked = 0;
 
   for (const g of games) {
     if (g.result === "win") record.wins += 1;
     else if (g.result === "loss") record.losses += 1;
     else record.draws += 1;
 
+    if (g.worked.length > 0 || g.hurt.length > 0) marked += 1;
     for (const key of g.worked) tally(tallies, key).worked += 1;
     for (const key of g.hurt) tally(tallies, key).hurt += 1;
   }
@@ -108,6 +116,7 @@ export function summarizeGames(games: DeckGame[]): GameSummary {
 
   return {
     count: games.length,
+    marked,
     record,
     axes: sortAxes(axes),
     keep: sortAxes(axes.filter((a) => a.net > 0)),

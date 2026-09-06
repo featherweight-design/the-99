@@ -17,6 +17,7 @@ describe("summarizeGames", () => {
   it("returns an empty summary for no games", () => {
     const s = summarizeGames([]);
     expect(s.count).toBe(0);
+    expect(s.marked).toBe(0);
     expect(s.record).toEqual({ wins: 0, losses: 0, draws: 0 });
     expect(s.axes).toEqual([]);
     expect(s.keep).toEqual([]);
@@ -33,6 +34,17 @@ describe("summarizeGames", () => {
     ]);
     expect(s.count).toBe(4);
     expect(s.record).toEqual({ wins: 2, losses: 1, draws: 1 });
+  });
+
+  // One game can mark several axes, so the tallies cannot be summed to reach
+  // this figure — it counts games, not marks.
+  it("counts marked games once however many axes they carry", () => {
+    const s = summarizeGames([
+      game({ worked: ["mana", "board"], hurt: ["speed"] }),
+      game(),
+      game({ hurt: ["mana"] }),
+    ]);
+    expect(s.marked).toBe(2);
   });
 
   // An axis nobody has ever marked is absent, not a zero row — otherwise the

@@ -121,7 +121,14 @@ export const gameLogCopy = {
   headline: {
     // N = 1 — a description. No finding, no bucket, no colour.
     oneGame: 'One game logged.',
-    oneGameRecord: (result: string) => `1\u20130 \u00b7 ${result}`,
+    // The record travels as an argument rather than being written into the
+    // template: the handoff's example was a win, and a hardcoded `1-0` would
+    // have printed a win beside every first game that was lost or drawn.
+    oneGameRecord: (record: string, result: string) => `${record} · ${result}`,
+    // The clause after the record, in the handoff's own words.
+    wonIt: 'won it',
+    lostIt: 'lost it',
+    drewIt: 'drew it',
     oneGameNote:
       'Nothing to read into yet \u2014 it is on the record. Two more and this turns into something you can act on.',
 
