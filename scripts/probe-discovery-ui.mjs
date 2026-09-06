@@ -73,7 +73,11 @@ async function signIn(page) {
 // content alone would report the desktop copy while looking at a phone.
 async function read(page) {
   return page.evaluate(() => {
-    const visible = (n) => n.getClientRects().length > 0;
+    // `sr-only` clips to a 1px box rather than leaving the layout, so it has
+    // client rects and passes for on-screen text. The live region is reported
+    // separately below; without this it would also arrive as a leaf, reading as
+    // copy a sighted user can see.
+    const visible = (n) => n.getClientRects().length > 0 && !n.closest(".sr-only");
     const leaves = [];
     for (const node of document.querySelectorAll("main h1, main h2, main p, main span, main button")) {
       if (!visible(node) || node.children.length > 0) continue;
@@ -82,20 +86,29 @@ async function read(page) {
       leaves.push(text);
     }
 
-    const list = document.querySelector("main ul");
+    const main = document.querySelector("main");
+    const list = main?.querySelector("ul") ?? null;
     const rows = list ? [...list.querySelectorAll(":scope > li")].filter(visible) : [];
-    const reveal = [...document.querySelectorAll("button")].find(
+    const reveal = [...(main?.querySelectorAll("button") ?? [])].find(
       (b) => visible(b) && /Show \d+ more/.test(b.getAttribute("aria-label") ?? ""),
     );
 
     // The claim the review round turned on: the gap between the control and the
     // card above it is the list's own row gap, which only reaches it inside the
     // `<ul>`. Measured, not asserted from the class string.
+    //
+    // Measured from the control's own row and its predecessor, never from the
+    // last two rows: those are the same pair only while the control is in the
+    // list, so the shortcut would report a real number — the gap between two
+    // cards — in exactly the case this is here to catch.
     let revealGap = null;
-    if (reveal && rows.length >= 2) {
-      const last = rows[rows.length - 1];
-      const prev = rows[rows.length - 2];
-      revealGap = Math.round(last.getBoundingClientRect().top - prev.getBoundingClientRect().bottom);
+    const revealRow = reveal?.closest("li");
+    const revealIndex = revealRow ? rows.indexOf(revealRow) : -1;
+    if (revealIndex > 0) {
+      const prev = rows[revealIndex - 1];
+      revealGap = Math.round(
+        revealRow.getBoundingClientRect().top - prev.getBoundingClientRect().bottom,
+      );
     }
 
     return {
@@ -110,11 +123,11 @@ async function read(page) {
             gapAbove: revealGap,
           }
         : null,
-      liveRegion: document.querySelector('[aria-live="polite"]')?.textContent ?? null,
+      liveRegion: main?.querySelector('[aria-live="polite"]')?.textContent ?? null,
       // The empties mark one phrase inside their body, so the paragraph has a
       // child and never reaches `leaves` — the sentence carrying the server's
       // figures would otherwise be the one string the probe could not report.
-      paragraphs: [...document.querySelectorAll("main p")]
+      paragraphs: [...(main?.querySelectorAll("p") ?? [])]
         .filter((p) => visible(p) && p.children.length > 0)
         .map((p) => p.textContent.trim()),
     };
@@ -136,8 +149,8 @@ function report(label, seen) {
   for (const l of seen.leaves) console.log(`    · ${l}`);
 }
 
-const browser = await chromium.launch();
 await clerkSetup();
+const browser = await chromium.launch();
 try {
   for (const vp of VIEWPORTS) {
     const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
@@ -149,7 +162,7 @@ try {
 
     // The reveal's own effects: the announcement and the focus move only exist
     // after a real click, so they cannot be read off the first paint.
-    const control = page.locator('button[aria-label^="Show "]').first();
+    const control = page.locator('main button[aria-label^="Show "]').first();
     if (await control.count()) {
       await control.click();
       await page.waitForTimeout(600);
