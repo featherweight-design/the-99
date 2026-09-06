@@ -47,7 +47,7 @@ function renderDiff(over: Partial<DeckUpdatePreview> = {}, props: Partial<{ appl
   const onApply = vi.fn();
   const onCancel = vi.fn();
   const onImportAsNew = vi.fn();
-  render(
+  const { container } = render(
     <UpdateDiff
       preview={preview(over)}
       applying={props.applying ?? false}
@@ -56,7 +56,7 @@ function renderDiff(over: Partial<DeckUpdatePreview> = {}, props: Partial<{ appl
       onImportAsNew={onImportAsNew}
     />,
   );
-  return { onApply, onCancel, onImportAsNew };
+  return { onApply, onCancel, onImportAsNew, container };
 }
 
 describe("UpdateDiff", () => {
@@ -180,6 +180,26 @@ describe("UpdateDiff groups", () => {
   it("splits the going-in group by what the player owns", () => {
     renderDiff({ in: [row("in-1", { owned: true }), row("in-2", { owned: false })] });
     expect(screen.getByText(copy.inMeta("1", "1"))).toBeInTheDocument();
+  });
+
+  // An owned row dropped the buy pill entirely, so its type line sat where
+  // an unowned row's did not. The slot is reserved rather than removed.
+  it("keeps the buy slot's width on a row that needs no buying", () => {
+    const { container } = renderDiff({ in: [row("in-1", { owned: true })] });
+    const buy = Array.from(container.querySelectorAll("span")).find(
+      (s) => s.textContent === "buy",
+    );
+    expect(buy).toBeDefined();
+    expect(buy!.className).toContain("invisible");
+  });
+
+  it("keeps the auto slot's width on a removal the app did not place", () => {
+    const { container } = renderDiff({ out: [row("out-1", { auto: false })] });
+    const marker = Array.from(container.querySelectorAll("span")).find(
+      (s) => s.textContent === "auto",
+    );
+    expect(marker).toBeDefined();
+    expect(marker!.className).toContain("invisible");
   });
 });
 

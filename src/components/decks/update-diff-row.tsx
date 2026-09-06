@@ -43,9 +43,17 @@ function OwnedDot({ owned }: { owned: boolean }) {
  *  app's. No column records who placed a card, so a second marker would assert
  *  something the data cannot support — Product ruled it out on 2026-09-05. */
 function Marker({ auto }: { auto: boolean }) {
-  if (!auto) return null;
+  // Keeps its box when there is no tag, so the type line beside it does not
+  // shift between an app-placed row and a player's own. The border stays in both
+  // states because its width is part of that box.
   return (
-    <span className="hidden md:inline font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none text-[color:var(--fg-faint)] [border:1px_solid_var(--border)]">
+    <span
+      className={[
+        "hidden md:inline font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none",
+        "text-[color:var(--fg-faint)] [border:1px_solid_var(--border)]",
+        auto ? "" : "invisible",
+      ].join(" ")}
+    >
       auto
     </span>
   );
@@ -109,16 +117,28 @@ export function DiffRowIn({ card, sourceLine }: { card: DiffRowCard; sourceLine:
       <span className="hidden md:block font-mono text-[10px] w-[150px] flex-none truncate text-[color:var(--fg-locked)]">
         {card.typeLine}
       </span>
-      {!card.owned && (
-        <span className="font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]">
-          buy
-        </span>
-      )}
-      {sourceLine !== null && (
-        <span className="hidden md:inline font-mono text-[11px] flex-none text-[color:var(--fg-faint)]">
-          {copy.sourceLine(String(sourceLine))}
-        </span>
-      )}
+      {/* Both trailing slots keep their width when empty, and the line number is
+          tabular, so the type line lands in the same place on every row whether
+          or not the card is owned and however many digits its source line has. */}
+      <span
+        className={[
+          "font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none",
+          "text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]",
+          card.owned ? "invisible" : "",
+        ].join(" ")}
+      >
+        buy
+      </span>
+      <span
+        // `whitespace-nowrap` because the string has a space in it: a long line
+        // number would otherwise wrap and take the row's height with it. The
+        // sibling slots get it from `truncate`. `min-w` rather than `w` so the
+        // slot holds its place on short numbers but grows past four digits
+        // instead of colliding with the type line — nothing caps import length.
+        className="hidden md:inline font-mono text-[11px] min-w-[54px] flex-none text-right tabular-nums whitespace-nowrap text-[color:var(--fg-faint)]"
+      >
+        {sourceLine !== null ? copy.sourceLine(String(sourceLine)) : ""}
+      </span>
     </div>
   );
 }

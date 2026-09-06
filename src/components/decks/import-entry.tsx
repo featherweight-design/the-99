@@ -19,6 +19,7 @@ import {
   type DeckImportSource,
 } from "../../lib/upload-limits";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { Crown } from "../ui/crown";
 import { TextField } from "../ui/text-field";
 import { CreatePicker } from "./create-picker";
 import { ImportNoCommander } from "./import-no-commander";
@@ -406,17 +407,8 @@ function ParsingBlock() {
   // A faked bar would report a number nothing measured, so the indeterminate
   // dots stand in until a streaming API exists. Escalated to Design.
   return (
-    <div className="p-[16px_18px_24px] md:max-w-[760px] md:p-[34px_48px] text-center md:text-left">
-      <div className="mt-[28px] md:mt-0 mb-[18px] md:mb-[12px] flex gap-[6px] justify-center md:justify-start">
-        {[0, 0.2, 0.4].map((delay) => (
-          <span
-            key={delay}
-            aria-hidden
-            className="anim-dots rounded-full w-[7px] h-[7px] md:w-[8px] md:h-[8px] bg-[color:var(--accent)]"
-            style={{ animationDelay: `${delay}s` }}
-          />
-        ))}
-      </div>
+    <div className="flex-1 flex flex-col items-center justify-center text-center p-[16px_18px_24px] md:p-[34px_48px]">
+      <Crown tone="page" pulse className="mb-[18px] md:mb-[12px]" />
       <h2 className="font-display font-bold text-[17px] md:text-[19px] m-0 text-[color:var(--fg)]">
         {copy.parsing.heading}
       </h2>
