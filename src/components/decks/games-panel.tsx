@@ -3,9 +3,11 @@
 // A peer of the decklist and Consider rather than a drawer beside them, so it
 // owns its own vertical rhythm and does not inherit the decklist's.
 
+import { useState } from "react";
 import type { AxisTally, DeckGame, GameSummary } from "../../lib/decks/games";
 import { deriveHeadline } from "../../lib/decks/game-headline";
 import { GameAxisCell } from "./game-axis-cell";
+import { GameLogForm, type GameResult } from "./game-log-form";
 import { PATTERN_MIN, axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 
 export interface GamesPanelProps {
@@ -14,7 +16,19 @@ export interface GamesPanelProps {
   summary: GameSummary;
 }
 
-const BUCKET_HEADING = "font-mono uppercase text-[10px] tracking-[0.14em]";
+// The record the save just produced. The summary in hand is the pre-save one
+// until the route revalidates, so the announcement counts the new game itself
+// rather than reading a figure that has not caught up yet.
+function recordAfter(record: GameSummary["record"], result: GameResult): string {
+  const wins = record.wins + (result === "win" ? 1 : 0);
+  const losses = record.losses + (result === "loss" ? 1 : 0);
+  const draws = record.draws + (result === "draw" ? 1 : 0);
+  return draws > 0
+    ? gameLogCopy.headline.recordWithDraws(String(wins), String(losses), String(draws))
+    : gameLogCopy.headline.record(String(wins), String(losses));
+}
+
+const BUCKET_HEADING ="font-mono uppercase text-[10px] tracking-[0.14em]";
 
 function Bucket({
   heading,
@@ -65,8 +79,9 @@ function mixedSentence(mixed: AxisTally[]): string {
   return gameLogCopy.buckets.mixedLineMulti(clauses);
 }
 
-export function GamesPanel({ games, summary }: GamesPanelProps) {
+export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
+  const [announcement, setAnnouncement] = useState("");
 
   return (
     <section className="px-[16px] py-[14px] md:px-[30px] md:py-[20px]">
@@ -134,7 +149,23 @@ export function GamesPanel({ games, summary }: GamesPanelProps) {
           )}
         </>
       )}
-      <h2 className="font-mono uppercase text-[9px] md:text-[11px] tracking-[0.1em] md:tracking-[0.12em] text-[color:var(--fg-faint)]">
+      <GameLogForm
+        deckId={deckId}
+        isFirstGame={games.length === 0}
+        onAnnounce={setAnnouncement}
+        onSaved={(isFirst, result) =>
+          setAnnouncement(
+            isFirst
+              ? gameLogCopy.announce.savedFirst
+              : gameLogCopy.announce.saved(recordAfter(summary.record, result)),
+          )
+        }
+      />
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </span>
+
+      <h2 className="mt-[18px] md:mt-[24px] font-mono uppercase text-[9px] md:text-[11px] tracking-[0.1em] md:tracking-[0.12em] text-[color:var(--fg-faint)]">
         {gameLogCopy.history.heading}
       </h2>
       <ul>
