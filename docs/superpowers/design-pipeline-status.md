@@ -94,15 +94,14 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 |---|---|---|---|---|
 | 1 | [#340](https://github.com/HartiganHM/the-99/issues/340) (folds #335, #341, #343, #344) | [`design-briefs/2026-09-06-commanders-one-plane.md`](design-briefs/2026-09-06-commanders-one-plane.md) | Extends `design/design_handoff_the99_discovery/`; reopens the `discovery-controls.md` and `discovery-empties.md` property tables | Gates the whole Track 1 bug batch — #335 is conformant to a committed table, so eng cannot fix it without Design; and the six-controls-above-one-list question in §7 may restructure the bar |
 | 2 | [#342](https://github.com/HartiganHM/the-99/issues/342) (folds #345, #346, #347, #366) | [`design-briefs/2026-09-06-explaining-the-recommendation.md`](design-briefs/2026-09-06-explaining-the-recommendation.md) | Extends `design/design_handoff_the99_recommendations/`; reopens §Commander Detail Page | Second because the prose placement is settled and the paragraph's shape drives a ~3,300-commander generation run — deciding the detail and home placements apart would cost a full re-backfill |
-| 3 | **#330** Buy at Mana Pool — the shopping list, and a single card | [`specs/2026-09-05-manapool-checkout-design.md`](specs/2026-09-05-manapool-checkout-design.md) (PR #324) | Addendum to `design/design_handoff_the99_decks/`, which already owns both surfaces and audited 🟢 Green — neither the export-dialog Buy action nor the card-modal buy link is drawn in it | Both link mechanisms are established against the live endpoint and the pure module is fully specified; only the two placements and the app's first outbound-link treatment are undrawn |
 
 **#220 left this queue on 2026-09-05**, the same day it entered it — its handoff landed and audited
 🟢 Green at R1, and the build ran through to 2026-09-06, so it now sits in ✅ Shipped below.
 
-**#330 was filed on 2026-09-06, after the row already existed.** The feature was scoped from a
-direct request with no issue behind it, so the row sat here ticketless for a day rather than have
-one invented for it; Hugh then asked for the issue, and it carries the four rulings that closed the
-spec's open questions.
+**#330 left it on 2026-09-06**, the day its handoff landed and audited 🟢 Green — it now sits in 🟢
+above. The feature was scoped from a direct request with no issue behind it, so its row sat here
+ticketless for a day rather than have one invented for it; Hugh then asked for the issue, and it
+carries the four rulings that closed the spec's open questions.
 
 ---
 
