@@ -10,8 +10,12 @@ describe("shouldCelebrate", () => {
     expect(shouldCelebrate({ status: "Complete", alreadyCelebrated: true, arrivedFromImport: false, completedByFill: false })).toBe(false);
   });
 
-  it("does not fire for a playable-but-incomplete deck", () => {
-    expect(shouldCelebrate({ status: "Playable", alreadyCelebrated: false, arrivedFromImport: false, completedByFill: false })).toBe(false);
+  it("does not fire for a full 99 the player does not own", () => {
+    expect(shouldCelebrate({ status: "To buy", alreadyCelebrated: false, arrivedFromImport: false, completedByFill: false })).toBe(false);
+  });
+
+  it("does not fire for a full 99 still carrying unresolved lines", () => {
+    expect(shouldCelebrate({ status: "Unresolved", alreadyCelebrated: false, arrivedFromImport: false, completedByFill: false })).toBe(false);
   });
 
   it("does not fire while building", () => {

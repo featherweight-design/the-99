@@ -294,8 +294,9 @@ export const recommendationsCopy = {
 
 // ── NOT OURS — the status pill, named here so it is not re-declared ─────────
 //
-// The deck status pill (`Draft` / `Building` / `Playable` / `Complete`) is
-// shipped and computed from the deck's own counts. It gets NO key in this file:
+// The deck status pill (`Draft` / `Building` / `Over` / `Unresolved` /
+// `To buy` / `Complete`, enumerated in `lib/decks/status.ts`) is shipped and
+// computed from the deck's own counts. It gets NO key in this file:
 // a second live value in a second module is the defect the add-panel addendum
 // flagged when `strip.hint` was overwritten from two places. Recorded instead
 // as a mapping, so R2's "two values for one pill" is answered without a fork:

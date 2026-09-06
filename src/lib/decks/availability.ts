@@ -2,7 +2,7 @@
  * A deck at 99 cards is finished enough that its cards are physically sleeved,
  * so its claims are hard. Below 99 it is a brew and its claims are soft. This
  * is the brief's proxy for deck maturity and it reuses statusPill()'s own
- * threshold — Playable/Complete sit at 99, Draft/Building below it.
+ * threshold — Unresolved/To buy/Complete sit at 99, Draft/Building below it.
  */
 export const MATURE_DECK_SIZE = 99;
 

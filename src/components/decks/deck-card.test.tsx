@@ -31,11 +31,40 @@ describe("DeckCard — unresolved badge", () => {
     expect(screen.queryByText(/couldn't name/)).not.toBeInTheDocument();
   });
 
-  // The badge is additive: the status vocabulary is unchanged, so a 99-card
-  // deck with unresolved lines still reports one of the four shipped pills.
-  it("does not introduce a new status pill", () => {
-    render(<DeckCard deck={deck({ built: 99, ownedCount: 99, unresolvedCount: 1, statusPill: "Playable" })} />);
-    expect(screen.getByText("Playable")).toBeInTheDocument();
+  // The badge and the pill are not redundant — the pill carries the word, the
+  // badge carries the count, and below 99 the badge shows against a Building
+  // pill that says nothing about unresolved lines.
+  it("keeps the count badge beside the Unresolved pill", () => {
+    render(<DeckCard deck={deck({ built: 99, ownedCount: 99, unresolvedCount: 2, statusPill: "Unresolved" })} />);
+    expect(screen.getByText("Unresolved")).toBeInTheDocument();
+    expect(screen.getByText(deckImportCopy.unresolved.deckCardBadge(2))).toBeInTheDocument();
+  });
+});
+
+// #357. Green is the claim that the deck can be put on a table, so exactly one
+// pill may carry it. The retired `Playable` took the same green as `Complete`
+// while the caption beneath it read "15 to buy".
+describe("DeckCard — status pill tone", () => {
+  const toneOf = (status: DeckListItem["statusPill"]) => {
+    const { unmount } = render(<DeckCard deck={deck({ statusPill: status })} />);
+    const tone = getComputedStyle(screen.getByText(status)).color;
+    unmount();
+    return tone;
+  };
+
+  it("gives Complete the only success tone", () => {
+    expect(toneOf("Complete")).toBe("var(--success)");
+  });
+
+  it.each(["Building", "Over", "Unresolved", "To buy"] as const)(
+    "gives %s a warning tone, not success",
+    (status) => {
+      expect(toneOf(status)).toBe("var(--warning)");
+    },
+  );
+
+  it("leaves Draft muted", () => {
+    expect(toneOf("Draft")).toBe("var(--fg-muted)");
   });
 });
 

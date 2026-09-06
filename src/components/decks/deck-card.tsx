@@ -15,13 +15,18 @@ function progressFillColor(built: number): string {
   return "var(--danger)";
 }
 
-/** Status pill variant styles. */
+/**
+ * Status pill variant styles. Green carries one meaning — the deck can be put
+ * on a table — so `Complete` holds it alone. #357 retired `Playable`, which
+ * took the same green while the caption beneath it read "15 to buy".
+ */
 function pillStyles(status: DeckListItem["statusPill"]): { color: string; background: string } {
   switch (status) {
     case "Building":
     case "Over":
+    case "Unresolved":
+    case "To buy":
       return { color: "var(--warning)", background: "color-mix(in oklab, var(--warning) 13%, transparent)" };
-    case "Playable":
     case "Complete":
       return { color: "var(--success)", background: "color-mix(in oklab, var(--success) 13%, transparent)" };
     case "Draft":
@@ -260,11 +265,16 @@ export function DeckCard({ deck }: DeckCardProps) {
           </p>
         )}
 
-        {/* §Deck with unresolved rows on /decks — an additive count marker, not
-            a new status. The status vocabulary is unchanged: threading a fifth
-            pill value through the server list and the optimistic client list
-            would multiply the surfaces that can disagree mid-mutation. Clears
-            itself when the last line is resolved or deleted. */}
+        {/* §Deck with unresolved rows on /decks — the count behind the pill.
+            This marker used to be the only sign of unresolved lines, on the
+            reasoning that a pill value threaded through both the server list
+            and the optimistic client list would multiply the surfaces that can
+            disagree mid-mutation. #357 overturned that: the pill renders here
+            and nowhere else, and the builder — which owns the optimistic list
+            — renders no pill at all, so there is no second surface to drift.
+            The marker stays because the pill carries the word and this carries
+            the number, and it still shows below 99 where the pill reads
+            Building. Clears itself when the last line is resolved or deleted. */}
         {deck.unresolvedCount > 0 && (
           <p
             className="font-mono text-[10px] md:text-[10.5px] mt-[6px] md:mt-[7px] m-0"
