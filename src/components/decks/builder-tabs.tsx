@@ -95,8 +95,13 @@ export function BuilderTabs({ tabs, view, onViewChange, children }: BuilderTabsP
           // The desktop toolbar rides this row, so its sort <select> is a
           // descendant and its own arrow/Home/End keys bubble through here.
           // Only a tab's keys are the tablist's to act on.
-          if ((e.target as HTMLElement).getAttribute("role") !== "tab") return;
-          const current = tabs.findIndex((t) => t.id === view);
+          const tab = e.target as HTMLElement;
+          if (tab.getAttribute("role") !== "tab") return;
+          // The key came from a tab, so that tab is where the move starts —
+          // reading the index off `view` instead would leave it at -1 for any
+          // caller whose tabs do not contain the selected view.
+          const current = tabs.findIndex((t) => `tab-${t.id}` === tab.id);
+          if (current < 0) return;
           let next: number;
           if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (current + 1) % tabs.length;
           else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (current - 1 + tabs.length) % tabs.length;

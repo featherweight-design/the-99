@@ -3,7 +3,7 @@
 // A peer of the decklist and Consider rather than a drawer beside them, so it
 // owns its own vertical rhythm and does not inherit the decklist's.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { AxisTally, DeckGame, GameSummary } from "../../lib/decks/games";
 import { deriveHeadline, type Headline } from "../../lib/decks/game-headline";
 import { GameAxisCell } from "./game-axis-cell";
@@ -130,20 +130,20 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
 
-  // Each mutation shifts this rather than the prop, so a player who logs two
-  // games before the route revalidates hears the second one counted too. The
-  // server's figure wins whenever it changes: revalidation is what settles the
-  // record, and an optimistic count that outlived it would drift.
-  const [record, setRecord] = useState(summary.record);
-  const [settled, setSettled] = useState(recordKey(summary.record));
-  if (settled !== recordKey(summary.record)) {
-    setSettled(recordKey(summary.record));
-    setRecord(summary.record);
-  }
+  // Nothing on the page draws this record — only the live region says it — so it
+  // is a ref rather than state: a re-render would tell no one anything new.
+  const optimistic = useRef(summary.record);
+  const settled = useRef(recordKey(summary.record));
 
+  // Each mutation shifts the last record announced, so a player who logs two
+  // games before the route revalidates hears the second one counted too. The
+  // server's figure wins the moment it moves — revalidation is what settles the
+  // record, and an optimistic count that outlived it would drift.
   function announceShift(result: GameResult, delta: 1 | -1, say: (record: string) => string) {
-    const next = recordShifted(record, result, delta);
-    setRecord(next);
+    const key = recordKey(summary.record);
+    const next = recordShifted(key === settled.current ? optimistic.current : summary.record, result, delta);
+    optimistic.current = next;
+    settled.current = key;
     setAnnouncement(say(recordSaid(next)));
   }
 
