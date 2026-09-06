@@ -19,6 +19,7 @@
 //
 // Run by hand: `PROBE_BASE=http://localhost:3001 node scripts/probe-discovery-ui.mjs`.
 // Not part of `pnpm test`: it needs a browser and a signed-in session.
+import { mkdir } from "node:fs/promises";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
@@ -34,6 +35,9 @@ const { E2E_AUDIT_USER_PASSWORD: PASSWORD } = FIXTURE
   : requireEnv(["E2E_AUDIT_USER_PASSWORD"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PATH = process.env.PROBE_PATH ?? "/commanders?scope=play";
+// The reel the run leaves behind, named as the other probes name it. Playwright
+// will not create a missing parent, so the directory is made before the walk.
+const SHOTS = process.env.PROBE_SHOT_DIR ?? "/tmp/discovery-shots";
 
 const VIEWPORTS = [
   { label: "iPhone 13 · 390x844", width: 390, height: 844 },
@@ -82,6 +86,21 @@ async function read(page) {
     // separately below; without this it would also arrive as a leaf, reading as
     // copy a sighted user can see.
     const visible = (n) => n.getClientRects().length > 0 && !n.closest(".sr-only");
+
+    // Raw `textContent` concatenates both halves of a responsive pair. The reveal
+    // control carries a `sm:hidden` arrow and a `hidden sm:block` one, so reading
+    // it raw reports two arrows — a string that renders at neither width, in a
+    // probe whose whole claim is "what a sighted user sees here". Walk the text
+    // nodes instead and keep only those whose own parent is on screen.
+    const visibleText = (root) => {
+      const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let out = "";
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        if (n.parentElement && visible(n.parentElement)) out += n.nodeValue;
+      }
+      return out.replace(/\s+/g, " ").trim();
+    };
+
     const leaves = [];
     for (const node of document.querySelectorAll("main h1, main h2, main p, main span, main button")) {
       if (!visible(node) || node.children.length > 0) continue;
@@ -123,7 +142,7 @@ async function read(page) {
         ? {
             insideList: !!reveal.closest("ul"),
             aria: reveal.getAttribute("aria-label"),
-            band: reveal.textContent.trim(),
+            band: visibleText(reveal),
             gapAbove: revealGap,
           }
         : null,
@@ -133,7 +152,7 @@ async function read(page) {
       // figures would otherwise be the one string the probe could not report.
       paragraphs: [...(main?.querySelectorAll("p") ?? [])]
         .filter((p) => visible(p) && p.children.length > 0)
-        .map((p) => p.textContent.trim()),
+        .map(visibleText),
     };
   });
 }
@@ -154,6 +173,7 @@ function report(label, seen) {
 }
 
 await clerkSetup();
+await mkdir(SHOTS, { recursive: true });
 const browser = await chromium.launch();
 try {
   for (const vp of VIEWPORTS) {
@@ -176,7 +196,7 @@ try {
     }
 
     await page.screenshot({
-      path: `/tmp/discovery-${vp.width}.png`,
+      path: `${SHOTS}/discovery-${vp.width}.png`,
       fullPage: true,
     });
     await context.close();
