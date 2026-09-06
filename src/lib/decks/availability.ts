@@ -58,7 +58,9 @@ export type Availability = {
    * Every deck claiming this card — finished and brewing alike — minus the
    * excluded deck when one was passed, so this follows the same vantage rule as
    * `free`. Ordered by name, then by id; the id is the tiebreak, not decoration,
-   * because names collide and `hardDecks(a)[0]` is the deck card detail links to.
+   * because names collide, and without it two decks sharing a name would order
+   * arbitrarily — the receipt's rows and every `hardDecks(a)[0]` reader would
+   * then reshuffle between two reads of unchanged data.
    *
    * The id rides along because two decks can share a name — `claim_decks` keys
    * on `deck_id` for exactly that reason — so a surface wanting to link the

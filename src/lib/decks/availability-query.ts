@@ -114,8 +114,8 @@ export async function loadAvailability(
         -- real array of objects.
         -- deck_id breaks the tie because names are NOT unique, which is the very
         -- premise this CTE keys on. Without it two decks sharing a name order
-        -- arbitrarily, and the first mature entry is the deck the card-detail
-        -- marker links at — so the link would wander between reads.
+        -- arbitrarily, so the receipt's rows and every hardDecks(a)[0] reader
+        -- would reshuffle between two reads of unchanged data.
         jsonb_agg(
           jsonb_build_object(
             'id', cd.deck_id, 'name', cd.name,
