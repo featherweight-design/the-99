@@ -60,6 +60,7 @@ describe("planDeckUpdate", () => {
       }),
       deckCards: [card("o-sol-ring"), card("o-tithe")],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
 
@@ -76,6 +77,7 @@ describe("planDeckUpdate", () => {
       parsed: parsed({ cards: [{ oracleId: "o-island", quantity: 9, sourceLine: 4 }] }),
       deckCards: [card("o-island", { quantity: 12 })],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
     expect(result.out).toHaveLength(0);
@@ -92,6 +94,7 @@ describe("planDeckUpdate", () => {
       parsed: parsed({ cards: [{ oracleId: "o-island", quantity: 9, sourceLine: 4 }] }),
       deckCards: [card("o-island", { quantity: 12 })],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
     expect(result.noChange).toBe(false);
@@ -102,6 +105,7 @@ describe("planDeckUpdate", () => {
       parsed: parsed({ cards: [{ oracleId: "o-island", quantity: 12, sourceLine: 4 }] }),
       deckCards: [card("o-island", { quantity: 12 })],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
     expect(result.noChange).toBe(true);
@@ -114,6 +118,7 @@ describe("planDeckUpdate", () => {
       parsed: parsed({ cards: [{ oracleId: KORVOLD, quantity: 1, sourceLine: 5 }, { oracleId: "o-sol-ring", quantity: 1, sourceLine: 6 }] }),
       deckCards: [],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
     expect(result.in.map((r) => r.oracleId)).toEqual(["o-sol-ring"]);
@@ -124,6 +129,7 @@ describe("planDeckUpdate", () => {
       parsed: parsed({ declaredCommander: { oracleId: ATRAXA, name: "Atraxa, Praetors' Voice", sourceLine: 1 } }),
       deckCards: [card("o-sol-ring")],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
     expect(result).toEqual({ listCommander: "Atraxa, Praetors' Voice" });
@@ -141,6 +147,7 @@ describe("planDeckUpdate", () => {
       }),
       deckCards: [],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
     expect(result.in).toHaveLength(1);
@@ -154,14 +161,15 @@ describe("planDeckUpdate", () => {
       parsed: parsed({ unresolved }),
       deckCards: [],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
     expect(result.unresolved).toEqual(unresolved);
   });
 
-  // The second way the "nothing changed" screen is reached: unnamed lines alone
-  // are not a change, because they replace rows that say the same thing.
-  it("reports no change when only the unnamed lines differ", () => {
+  // The second way the "nothing changed" screen is reached — state 12's own
+  // wording: unnamed lines are not a change when the deck already carries them.
+  it("reports no change when the unnamed lines are ones the deck already carries", () => {
     const result = plan({
       parsed: parsed({
         cards: [{ oracleId: "o-sol-ring", quantity: 1, sourceLine: 8 }],
@@ -169,6 +177,40 @@ describe("planDeckUpdate", () => {
       }),
       deckCards: [card("o-sol-ring")],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [{ rawName: "Lotus Petal?", quantity: 1 }],
+      cardFor,
+    });
+    expect(result.noChange).toBe(true);
+  });
+
+  // The apply path replaces the unnamed rows wholesale, so a differing set is a
+  // real write. Calling it "nothing changed" would strand the deck holding a
+  // line no list still asks for, with no way to clear it.
+  it("does not call a differing set of unnamed lines nothing changed", () => {
+    const result = plan({
+      parsed: parsed({
+        cards: [{ oracleId: "o-sol-ring", quantity: 1, sourceLine: 8 }],
+        unresolved: [{ rawName: "Black Lotus?", quantity: 1, sourceLine: 12 }],
+      }),
+      deckCards: [card("o-sol-ring")],
+      commanderOracleId: KORVOLD,
+      deckUnresolved: [{ rawName: "Lotus Petal?", quantity: 1 }],
+      cardFor,
+    });
+    expect(result.noChange).toBe(false);
+  });
+
+  // A line that moved down the page is not a change to the deck: `sourceLine`
+  // points into a paste that no longer exists once the update is applied.
+  it("ignores the line a repeated unnamed row now sits on", () => {
+    const result = plan({
+      parsed: parsed({
+        cards: [{ oracleId: "o-sol-ring", quantity: 1, sourceLine: 8 }],
+        unresolved: [{ rawName: "Lotus Petal?", quantity: 1, sourceLine: 40 }],
+      }),
+      deckCards: [card("o-sol-ring")],
+      commanderOracleId: KORVOLD,
+      deckUnresolved: [{ rawName: "Lotus Petal?", quantity: 1 }],
       cardFor,
     });
     expect(result.noChange).toBe(true);
@@ -181,6 +223,7 @@ describe("planDeckUpdate", () => {
       parsed: parsed({ cards: [{ oracleId: "o-sol-ring", quantity: 1, sourceLine: 9 }] }),
       deckCards: [card("o-sol-ring"), card("o-tithe")],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
     expect(result.in).toHaveLength(0);
@@ -200,6 +243,7 @@ describe("planDeckUpdate", () => {
       }),
       deckCards: [],
       commanderOracleId: KORVOLD,
+      deckUnresolved: [],
       cardFor,
     });
     // First line wins: the row points at where the card first appears.

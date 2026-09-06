@@ -130,10 +130,16 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     return { ok: false, reason: "noneMatched", lineCount: parsed.lineCount, notes: parsed.notes };
   }
 
+  const existingUnresolved = await db
+    .select({ rawName: deckUnresolvedRows.rawName, quantity: deckUnresolvedRows.quantity })
+    .from(deckUnresolvedRows)
+    .where(eq(deckUnresolvedRows.deckId, input.deckId));
+
   const plan = planDeckUpdate({
     parsed,
     deckCards: rows,
     commanderOracleId: deck.commanderOracleId,
+    deckUnresolved: existingUnresolved,
     cardFor: cardLookup(catalog),
   });
 
@@ -149,11 +155,6 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
       deckCommander: commander?.name ?? "",
     };
   }
-
-  const existingUnresolved = await db
-    .select({ id: deckUnresolvedRows.id })
-    .from(deckUnresolvedRows)
-    .where(eq(deckUnresolvedRows.deckId, input.deckId));
 
   return {
     ok: true,
@@ -266,6 +267,10 @@ export async function updateDeckFromList(
       parsed,
       deckCards: rows,
       commanderOracleId: deck.commanderOracleId,
+      // Only `noChange` reads this, and the apply path does not: it replaces the
+      // unnamed rows unconditionally a few lines below. Passing nothing keeps
+      // the write off a query it would not consult.
+      deckUnresolved: [],
       // The apply path draws nothing, so the names it would look up are unused.
       cardFor: () => ({ name: "", typeLine: "" }),
     });
