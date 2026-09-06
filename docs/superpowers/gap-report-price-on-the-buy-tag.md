@@ -42,3 +42,32 @@ Three observations were raised. None was a table mismatch; all three are settled
 
 No copy-content findings. Wording is `/copy-review`'s, not this gate's. The `absent` state
 deliberately has no copy key — silence is the state.
+
+## Browser pass — 2026-09-06
+
+`scripts/probe-price-ui.mjs`, driven at 320×700, 390×844 and 1280×900 against the local-dev
+branch, whose `printing_prices` table holds 96,194 rows from a real ingest.
+
+- **The strip renders once at every width.** One provenance line, never two. Plate measured as
+  9px radius, 1px `--border`, sunken background.
+- **The two arrangements are real, and they differ in paint rather than in DOM.** Phone reports
+  `flex-direction: column` with the figure painted above the provenance; desktop reports
+  `row-reverse` + `space-between` with the *painted* order reversed — provenance left, figure
+  right — while the DOM order stays figure-then-provenance at both widths. That is exactly the
+  single-subtree claim, measured rather than asserted.
+- **Tails reach the screen.** `buy · $14.58`, `buy · $29.28`, `buy · $0.15`, `buy · $5.46`, and a
+  bare `buy` for a card the feed has never carried, all in one list. The strip totalled
+  `$61.25 · 7 of 9 priced` against a `Shopping 9` pill — the denominator and the pill agree.
+- **No horizontal overflow at 320px**, including a row whose card name is 56 characters
+  (`Tamiyo, Inquisitive Student // Tamiyo, Seasoned Scholar`).
+- Row tags measure 100px at phone widths and 102px at desktop — the 58px figure slot holding a
+  column of unequal figures to one right edge.
+
+**Two states the local data cannot reach**, held by unit tests instead:
+
+- `soldOut` needs a row whose `as_of` is behind the newest. One ingest run has ever executed
+  locally, so every row is live.
+- The **tile** variant, and with it the 92% scrim composited over real art. Tiles live on the
+  Consider tab, which on a fixture deck this size renders the fill panel rather than a tile grid.
+  The scrim's contrast is computed per theme in spec §7 and its markup is covered at both variants
+  in `buy-tag.test.tsx`.
