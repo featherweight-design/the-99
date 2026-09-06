@@ -250,8 +250,10 @@ export const availabilityCopy = {
     ) =>
       `${name}, ${typeLine}, ${qty === 1 ? "1 copy" : `${qty} copies`}, ${setAndRarity}` +
       (availability ? `, ${availability}` : ""),
-    // Card detail carries the FULL clause — the one place on this surface with
-    // room for the deck name. Describes a list, never a location.
+    // Heads the allocation receipt. Describes a list, never a location. Deck
+    // names are NOT in this block's copy: the marker inside it is `nameless` and
+    // the naming happens in the claim rows below, so there is no deck-name
+    // interpolation to look for in these keys.
     detailHeading: "In your collection",
     // The named deck is a link here, and only here. Its visible text is a bare
     // proper noun that truncates, so the link's own name has to say what it
@@ -291,10 +293,17 @@ export const availabilityCopy = {
     // Count-aware for the same reason `deckRollup.softHeading` is: the number of
     // brewing claimants is the one figure this sentence turns on, and a single
     // form has to lie about one of the two cases.
+    //
+    // Scoped to the lists that WANT it, not to the rows above. The soft state is
+    // `free > 0 && soft > 0`, which permits a finished list holding copies at the
+    // same time, so the design's "none of those lists is finished" would read as
+    // a claim about every row on screen and contradict the ones marked `holds`.
+    // `wants` is the same verb `detailClaimWants` prints, so the sentence points
+    // at its rows rather than describing them.
     detailSoftNote: (brewCount: number) =>
       brewCount === 1
-        ? "Nothing to sort out yet — that list isn’t finished. Whichever you sleeve first gets it."
-        : "Nothing to sort out yet — none of those lists is finished. Whichever you sleeve first gets them.",
+        ? "Nothing to sort out yet — the list that wants it isn’t finished. Whichever you sleeve first gets it."
+        : "Nothing to sort out yet — the lists that want it aren’t finished. Whichever you sleeve first gets them.",
     detailOverNote:
       "More finished lists want it than you own. Nothing’s broken — it’s a shopping decision.",
   },
