@@ -57,12 +57,15 @@ describe("DeckCard — over 99", () => {
   });
 
   // A valuenow of 104 against a max of 99 is an invalid range, and a reader
-  // that clamps it to 100% announces a finished deck.
-  it("raises the progressbar's max to the deck's own total", () => {
+  // that clamps it to 100% announces a finished deck. Holding valuenow at the
+  // legal 99 below a raised max keeps the ratio short of full, and the
+  // valuetext says the part no percentage can.
+  it("reports the legal 99 against the deck's own total as the max", () => {
     render(<DeckCard deck={overDeck} />);
     const bar = screen.getByRole("progressbar");
-    expect(bar).toHaveAttribute("aria-valuenow", "104");
+    expect(bar).toHaveAttribute("aria-valuenow", "99");
     expect(bar).toHaveAttribute("aria-valuemax", "104");
+    expect(bar).toHaveAttribute("aria-valuetext", overCopy.aria.progress("104", "5"));
     expect(bar).toHaveAccessibleName(overCopy.aria.progress("104", "5"));
   });
 

@@ -63,6 +63,9 @@ export function DeckCard({ deck }: DeckCardProps) {
   const over = deck.built > 99;
   const toCut = deck.built - 99;
   const legalPercent = over ? (99 / deck.built) * 100 : fillPercent;
+  const progressLabel = over
+    ? overCopy.aria.progress(String(deck.built), String(toCut))
+    : `${deck.built} of 99 cards built`;
   const artGradient = commanderGradient(deck.commanderColorIdentity);
 
   return (
@@ -205,16 +208,19 @@ export function DeckCard({ deck }: DeckCardProps) {
             background: "var(--elevated)",
           }}
           role="progressbar"
-          aria-valuenow={deck.built}
+          // Held at 99 past the limit. Reported as its own max, the bar computes
+          // to exactly 100% and readers announce a finished deck — the reading
+          // the amber second segment exists to prevent.
+          aria-valuenow={Math.min(deck.built, 99)}
           aria-valuemin={0}
           // A valuenow of 104 against a max of 99 is an invalid range, and some
           // readers clamp it to 100% — which reads as a finished deck.
           aria-valuemax={Math.max(99, deck.built)}
-          aria-label={
-            over
-              ? overCopy.aria.progress(String(deck.built), String(toCut))
-              : `${deck.built} of 99 cards built`
-          }
+          // The percentage is what a reader falls back on when there is no
+          // valuetext, and no percentage can say "five over". This replaces it
+          // outright rather than sitting beside it.
+          aria-valuetext={progressLabel}
+          aria-label={progressLabel}
         >
           {/* §Deck card — progress bar fill: h 100%, br 999px, color by built bucket */}
           <div className="flex h-full">
