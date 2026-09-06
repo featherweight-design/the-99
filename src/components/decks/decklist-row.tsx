@@ -126,6 +126,10 @@ export function DecklistRow({
   const availState = card.availability
     ? availabilityState(card.availability, { selfExcluded: true })
     : "free";
+  // A card the Shopping list holds because its copies are spoken for, rather
+  // than because the player does not own it (amendment 5, #281). Only in
+  // Shopping: in the All view an over-committed row is not a purchase.
+  const spokenFor = hasShoppingMeta && card.owned && availState === "over";
 
   function handleRemove() {
     // Outside `run`: the slot and its announcement are ordinary state, which
@@ -249,6 +253,14 @@ export function DecklistRow({
             // into — the name is its own button — so the marker speaks for
             // itself. Design 17.5 is written for this surface specifically.
             spoken
+            // Count-only in Shopping: a bare `short 1`, not
+            // `short 1 — also in Atraxa`. The clause's prefix is ~120px and
+            // never truncates by contract, and this row also carries the EDHREC
+            // figure, the tag and a 44px ✕ — at 390px, and inside the 2-up
+            // desktop grid, there is no width left for a name that would still
+            // read as a name. The All-view row one tab away states it, and the
+            // summary band above names the claiming lists.
+            nameless={hasShoppingMeta}
             // The component sets no size or family of its own (design 3.4: the
             // label inherits the meta line's mono size), and this row has no
             // meta line to inherit — it would otherwise render in the page's
@@ -265,13 +277,17 @@ export function DecklistRow({
           />
         )}
 
-        {/* Buy tag — unowned only */}
-        {!card.owned && (
+        {/* Buy tag — a card you don't own, or one the Shopping list is showing
+            because your copies are already sleeved elsewhere. One word differs:
+            the act is the same act, and the severity is already carried by the
+            marker a few pixels to the left. */}
+        {(!card.owned || spokenFor) && (
           /* The 58px figure slot is the Shopping list's, so it rides the same
              flag the shopping meta line does rather than a second notion of
              which filter is open. */
           <BuyTag
             variant="row"
+            word={spokenFor ? recommendationsCopy.shopping.rowSecondCopyTag : undefined}
             price={card.price}
             newestAsOf={newestAsOf}
             reserveSlot={hasShoppingMeta}

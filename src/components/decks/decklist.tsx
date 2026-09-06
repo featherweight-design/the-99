@@ -7,6 +7,7 @@
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole, isBasicLand } from "../../lib/decks/grouping";
 import { computeRoleCounts } from "../../lib/decks/mix";
+import { availabilityState } from "../../lib/decks/availability";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { GroupToggle } from "./group-toggle";
@@ -30,6 +31,36 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
   removal: "Removal",
   wipes: "Wipes",
 };
+
+/**
+ * What the Shopping list holds: a card you don't own, or one you own whose
+ * copies are already sleeved into finished lists — `over` from this deck's own
+ * vantage (amendment 5, #281). Both are one trip to a shop.
+ *
+ * The two halves cannot overlap: `availabilityState`'s first guard is
+ * `owned <= 0 → free`, so an unowned card is never `over`.
+ *
+ * `selfExcluded` is mandatory and `free` is read, never recomputed. The map came
+ * from a query given this deck's id, so on this list
+ * `free = (owned − ownClaim) − (hard − ownHardClaim)`; `owned − hard` is the
+ * off-decklist formula and is silently wrong here (Addendum 2 §6 / R5 §6).
+ *
+ * Basics are never in Shopping — the fill never buys them, and asserting it here
+ * means a future change to the fill fails this filter loudly.
+ */
+function isShoppingCard(c: DeckDetailCard): boolean {
+  if (isBasicLand(c.typeLine)) return false;
+  if (!c.owned) return true;
+  const a = c.availability;
+  // A missing read degrades to the free rendering, as the builder always has:
+  // the contested rows are simply absent and the list is today's list.
+  return a ? availabilityState(a, { selfExcluded: true }) === "over" : false;
+}
+
+/** A card on the Shopping list that is there because it is spoken for. */
+function isSpokenFor(c: DeckDetailCard): boolean {
+  return c.owned && isShoppingCard(c);
+}
 
 interface DecklistProps {
   deckId: string;
@@ -115,10 +146,7 @@ export function Decklist({
     return Number.isFinite(raw) ? raw : null;
   }
 
-  // Apply shopping filter: unowned cards only, excluding basic lands.
-  // Basics are never in Shopping — the fill never buys them, and asserting it
-  // here means a future change to the fill fails this filter loudly.
-  const shoppingCards = cards.filter((c) => !c.owned && !isBasicLand(c.typeLine));
+  const shoppingCards = cards.filter(isShoppingCard);
   const visibleCards = filter === "shopping" ? shoppingCards : cards;
 
   // The Shopping pill counts the list it opens, not the deck's unowned total.
@@ -150,10 +178,14 @@ export function Decklist({
   // where the card's own row was rather than at the end of the list. Any other
   // path that puts the card back — quick-add, a suggestion tile — returns it to
   // `cards` optimistically, and the slot steps aside for the live row.
+  //
+  // Under Shopping the test is the filter's own predicate rather than
+  // `!spentSlot.owned`: a spoken-for card is owned, so the old test would
+  // unmount its row with no undo receipt — the one case #185 exists to prevent.
   const spentCard =
     spentSlot &&
     !cards.some((c) => c.oracleId === spentSlot.oracleId) &&
-    (filter === "all" || !spentSlot.owned)
+    (filter === "all" || isShoppingCard(spentSlot))
       ? spentSlot
       : null;
   const listedCards = spentCard ? [...visibleCards, spentCard] : visibleCards;
@@ -176,9 +208,18 @@ export function Decklist({
     // is asking them to buy.
     const roleCounts = computeRoleCounts(cards.filter((c) => c.owned));
 
+    // A spoken-for card is already inside `from` — it is an owned card in this
+    // deck, so `computeRoleCounts` has tallied it. Dropping it into a role group
+    // would make `n` count a card `from` already counts and over-shoot `to` by
+    // one, in a clause the player can check against the role strip on the same
+    // screen. So the role groups keep exactly the cards they hold today, and the
+    // contested rows get a group of their own with no arithmetic in it.
+    const spokenForCards = shoppingCards.filter(isSpokenFor);
+    const missingCards = shoppingCards.filter((c) => !c.owned);
+
     // Build shopping groups: only roles that have ROLE_TARGETS (no land or other).
     const shoppingGroups = SHOPPING_ROLE_ORDER.flatMap((role) => {
-      const roleCards = shoppingCards.filter((c) => c.role === role);
+      const roleCards = missingCards.filter((c) => c.role === role);
       if (roleCards.length === 0) return [];
       const from = roleCounts[role];
       const n = cardCopies(roleCards);
@@ -201,13 +242,17 @@ export function Decklist({
     // the non-basic lands that still carry the "land" role. Basics never reach
     // here (shoppingCards filters them), but a fetchland the player does not own
     // is something they can go and buy, so it belongs in the list.
-    const otherShoppingCards = shoppingCards.filter(
+    const otherShoppingCards = missingCards.filter(
       (c) => !SHOPPING_ROLE_ORDER.includes(c.role as "ramp" | "draw" | "removal" | "wipes"),
     );
 
     const n = shoppingCount;
     const autoN = cardCopies(shoppingCards.filter((c) => c.auto));
     const allAuto = autoN === n;
+    // Copies, like every other figure on this surface: they all describe one
+    // purchase, so they move together.
+    const spokenForN = cardCopies(spokenForCards);
+    const missingN = cardCopies(missingCards);
 
     // The open slots the player kept for themselves (not filled by auto).
     // Clamped because a deck past 99 has none: the copy this feeds says the
@@ -292,6 +337,7 @@ export function Decklist({
     const shoppingOrderedIds = [
       ...shoppingGroups.flatMap((g) => g.cards.map((c) => c.oracleId)),
       ...otherShoppingCards.map((c) => c.oracleId),
+      ...spokenForCards.map((c) => c.oracleId),
     ];
 
     return (
@@ -320,9 +366,21 @@ export function Decklist({
             className="text-[12.5px] md:text-[13.5px] leading-[1.6] mb-[14px]"
             style={{ color: "var(--fg-body)" }}
           >
-            {allAuto
-              ? recommendationsCopy.shopping.intro(String(n))
-              : recommendationsCopy.shopping.introUnfilled(String(n))}
+            {/* The fill's expressive intro retires whenever a card is contested:
+                nobody reached past the collection for a card that is in it, and
+                the purchase closes no gap. At zero contested cards both shipped
+                strings render exactly as they ship. */}
+            {spokenForN === 0
+              ? allAuto
+                ? recommendationsCopy.shopping.intro(String(n))
+                : recommendationsCopy.shopping.introUnfilled(String(n))
+              : missingN === 0
+                ? recommendationsCopy.shopping.introOnlySpokenFor(String(spokenForN))
+                : recommendationsCopy.shopping.introSplit(
+                    String(n),
+                    String(missingN),
+                    String(spokenForN),
+                  )}
           </p>
 
           {/* Role groups */}
@@ -375,14 +433,66 @@ export function Decklist({
             </div>
           )}
 
+          {/* Spoken for — pinned last, after Other. The clause slot carries why
+              this group closes nothing instead of arithmetic it cannot honour. */}
+          {spokenForCards.length > 0 && (
+            <div className="mb-[16px] md:mb-[20px]">
+              <DecklistGroupHeader
+                label={recommendationsCopy.shopping.spokenForGroupLabel}
+                count={spokenForN}
+                gapClause={recommendationsCopy.shopping.spokenForGroupClause(String(spokenForN))}
+              />
+              <div
+                className="flex flex-col gap-[3px] md:grid md:gap-y-[4px] md:gap-x-[20px]"
+                style={{ gridTemplateColumns: "1fr 1fr" }}
+              >
+                {spokenForCards.map((card) => (
+                  <DecklistRow
+                    key={card.oracleId}
+                    deckId={deckId}
+                    card={card}
+                    siblings={shoppingOrderedIds}
+                    shoppingFigure={figureFor(card.oracleId)}
+                    newestAsOf={newestAsOf}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Footer — above a 1px --border rule */}
           <div
             className="pt-[10px] mt-[4px] font-mono text-[10.5px]"
             style={{ color: "var(--fg-faint)", borderTop: "1px solid var(--border)" }}
           >
-            {allAuto
-              ? recommendationsCopy.shopping.footer(String(n), String(autoN))
-              : recommendationsCopy.shopping.footerMixed(String(n), String(autoN))}
+            {spokenForN === 0 ? (
+              allAuto
+                ? recommendationsCopy.shopping.footer(String(n), String(autoN))
+                : recommendationsCopy.shopping.footerMixed(String(n), String(autoN))
+            ) : missingN === 0 ? (
+              recommendationsCopy.shopping.footerOnlySpokenFor(String(spokenForN))
+            ) : (
+              <>
+                {/* 390px cannot hold four clauses on one mono line, so the auto
+                    clause — the one about provenance rather than the trip —
+                    drops there. Two strings, so two spans. */}
+                <span className="md:hidden">
+                  {recommendationsCopy.shopping.footerSplitShort(
+                    String(n),
+                    String(missingN),
+                    String(spokenForN),
+                  )}
+                </span>
+                <span className="hidden md:inline">
+                  {recommendationsCopy.shopping.footerSplit(
+                    String(n),
+                    String(missingN),
+                    String(spokenForN),
+                    String(autoN),
+                  )}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -113,6 +113,7 @@ function Tail({
 // sits in the row's own reading order.
 export function BuyTag({
   variant,
+  word = addPanelCopy.unowned.tag,
   label,
   price,
   newestAsOf = null,
@@ -120,6 +121,12 @@ export function BuyTag({
   reserveSlot = false,
 }: {
   variant: BuyTagVariant;
+  /**
+   * The word on the plate. Defaults to `buy`; the Shopping list passes
+   * `2nd copy` on a row whose copies are already sleeved elsewhere. No new
+   * plate, variant or colour — the act is the same act.
+   */
+  word?: string;
   label?: string;
   price?: PriceFact | null;
   /** Liveness is one comparison against the table's newest row, not a clock. */
@@ -155,11 +162,11 @@ export function BuyTag({
     >
       {spoken ? (
         <>
-          <span aria-hidden="true">{addPanelCopy.unowned.tag}</span>
+          <span aria-hidden="true">{word}</span>
           <span className="sr-only">{spoken}</span>
         </>
       ) : (
-        addPanelCopy.unowned.tag
+        word
       )}
       {price ? (
         <Tail
