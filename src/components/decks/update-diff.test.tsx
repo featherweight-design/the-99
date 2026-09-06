@@ -153,6 +153,30 @@ describe("UpdateDiff groups", () => {
     expect(screen.queryByText("Card out-4")).not.toBeInTheDocument();
   });
 
+  it("points the group disclosure at the rows it expands", () => {
+    renderDiff({ out: Array.from({ length: 7 }, (_, i) => row(`out-${i}`)) });
+    const trigger = screen.getByRole("button", { name: copy.showMore("3") });
+    const id = trigger.getAttribute("aria-controls");
+    expect(id).toBeTruthy();
+    // The container holds the first four rows at rest, so it is named in both
+    // states rather than only while expanded.
+    expect(document.getElementById(id as string)).toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(
+      screen.getByRole("button", { name: copy.showFewer }).getAttribute("aria-controls"),
+    ).toBe(id);
+  });
+
+  it("names the unchanged rows only once they exist", () => {
+    renderDiff({ unchanged: [row("same-1"), row("same-2")] });
+    const trigger = () => screen.getByRole("button", { name: /Show/ });
+    expect(trigger()).not.toHaveAttribute("aria-controls");
+    fireEvent.click(trigger());
+    const id = trigger().getAttribute("aria-controls");
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id as string)).toBeInTheDocument();
+  });
+
   it("shows no disclosure when a group fits under the cap", () => {
     renderDiff();
     expect(screen.queryByRole("button", { name: /Show the other/ })).not.toBeInTheDocument();

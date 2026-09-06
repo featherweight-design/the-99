@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { deleteDeck } from "../../app/decks/actions";
 import { deckImportCopy } from "../../lib/copy/deck-import";
@@ -25,6 +25,8 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
   const [mode, setMode] = useState<"menu" | "rename">("menu");
   const [isPending, startTransition] = useTransition();
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // Every deck card renders one of these, so the id has to be per-instance.
+  const panelId = useId();
 
   function handleToggle(e: React.MouseEvent) {
     e.preventDefault();
@@ -63,7 +65,11 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
         type="button"
         onClick={handleToggle}
         aria-label="Deck options"
+        aria-haspopup="menu"
         aria-expanded={open}
+        // Omitted while closed: the panel is unmounted at rest, and a reference
+        // to an absent id is worse than no reference at all.
+        aria-controls={open ? panelId : undefined}
         // 44px square on phone so the control clears the touch-target floor;
         // desktop keeps the drawn 13px-tall pill, sized against the card's top
         // row rather than the desktop-only action row it used to sit in.
@@ -80,6 +86,7 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
 
       {open && (
         <div
+          id={panelId}
           className="absolute right-0 top-full mt-[6px] z-20 min-w-[180px] rounded-[10px] shadow-lg"
           style={{
             background: "var(--surface)",
