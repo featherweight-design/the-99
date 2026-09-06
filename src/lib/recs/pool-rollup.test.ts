@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildPoolRollup, identityMask, rollupFor } from "./pool-rollup";
-import { commanderPool, type PoolCard } from "./score";
-import { classifyRoles, type ROLE_TARGETS } from "./roles";
+import { commanderPool, type PoolCard, type RoleName } from "./score";
+import { classifyRoles } from "./roles";
 import { receiptCountsByCommander } from "../commanders/in-use";
 import type { Availability } from "../decks/availability";
 
@@ -71,7 +71,7 @@ describe("pool rollup", () => {
       const expected = { ramp: 0, draw: 0, removal: 0, wipes: 0 };
       for (const c of pool) {
         for (const role of classifyRoles(c)) {
-          if (role !== "land") expected[role as keyof typeof ROLE_TARGETS]++;
+          if (role !== "land") expected[role as RoleName]++;
         }
       }
       expect(got.roleCounts).toEqual(expected);
