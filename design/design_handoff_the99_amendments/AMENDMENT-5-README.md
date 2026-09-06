@@ -3,7 +3,8 @@
 `design/design_handoff_the99_amendments/` · 2026-09-05 · **R1, new files plus two ledger entries.**
 
 Extends the four-amendment package with a fifth. **Nothing in R1–R3 is reopened**, no existing
-file in this folder is edited, and no string in a shipped copy module is rewritten. Read
+file in this folder is edited beyond the amendment 5 row added to `README.md` and `READINESS.md`,
+and no string in a shipped copy module is rewritten. Read
 alongside `design_handoff_the99_availability/ADDENDUM-2-README.md` §6 and its R5 correction —
 that rule is the whole reason this amendment is a read rather than a computation.
 
@@ -18,15 +19,15 @@ tab, decision 8).
 
 ## The defect, in one line
 
-`decklist.tsx:118` builds the Shopping list as `cards.filter(c => !c.owned && !isBasicLand(...))`,
-and `grouping.ts:100` builds its count as `built − ownedCount`. **Both ask "do you own one?"
+`decklist.tsx:113` builds the Shopping list as `cards.filter(c => !c.owned && !isBasicLand(...))`,
+and `grouping.ts:99` builds its count as `built − ownedCount`. **Both ask "do you own one?"
 when the question is "have you got one to spare?"** — so a card whose single copy is sleeved
 into a finished deck is hidden from the shopping list of the deck that also wants it. The
 availability map already answers the real question, per card, on this very list.
 
 **What this amendment costs: one filter predicate, one group, one tag word, three count strings.**
 No query, no prop threading, no new token, no new component. `DeckDetailCard.availability` is
-already on every row (`grouping.ts:36`) and `decklist-row.tsx:129` already derives the state from
+already on every row (`grouping.ts:26`) and `decklist-row.tsx:124` already derives the state from
 it with `selfExcluded: true`.
 
 > **The constraint, restated as the headline it is owed** (Addendum 2 §6 / R5 §6):
@@ -60,7 +61,7 @@ So the amendment is **one predicate**: `!c.owned || availabilityState(c.availabi
 with basics excluded exactly as today.
 
 **The two halves cannot overlap, by construction.** `availabilityState`'s first guard is
-`owned <= 0 → free` (availability.ts:74), so an unowned card can never be `over`. The guard that
+`owned <= 0 → free` (availability.ts:73), so an unowned card can never be `over`. The guard that
 keeps the marker off cards you don't own is the same guard that keeps the new group disjoint from
 the old ones — no de-duplication anywhere.
 
@@ -124,7 +125,7 @@ lives in the Shopping block, because that is what it points at.
 
 ## The knock-on, ruled: **no group-header arithmetic changes at all**
 
-`decklist.tsx:150` computes `from = roleCounts[role]` over **owned cards only**, and draws
+`decklist.tsx:170` computes `from = roleCounts[role]` over **owned cards only**, and draws
 `{n} · closes {from}→{to}` where `to = from + n`. Its own comment names the failure mode this
 amendment could have caused: *"the baseline would draw arithmetic the list cannot honour: `5 ·
 closes 9→10`, or, past a role already covered, the backwards `3 · closes 12→10`."*
@@ -171,7 +172,7 @@ contested card is **not** an empty list — it renders the Spoken-for group alon
 `onlySpokenFor` copy.
 
 **5 · The degraded read fails quiet, as the builder always has.** With `availability` null or
-absent every row degrades to its free rendering (`grouping.ts:36`), so the contested rows are
+absent every row degrades to its free rendering (`grouping.ts:26`), so the contested rows are
 simply not there and the list is today's list. **No banner** — R2's rule is that a banner is owed
 only where the failure changes what a control means, and `/collection` already applies it. The
 honest cost is stated in the gaps: a player mid-outage sees 8 where the truth is 10.
@@ -182,7 +183,7 @@ warn on a cut — *"a cut releases a card — it is the one action that makes a 
 is **no "cut it instead" control** in the group, no advice line, and no `--danger`. The `✕` the
 row already carries is that exit, unlabelled and unhurried.
 
-**7 · The spent slot must follow the list (for eng, not a call).** `decklist.tsx:139` keeps a
+**7 · The spent slot must follow the list (for eng, not a call).** `decklist.tsx:143` keeps a
 removed card's undo row only when `filter === "all" || !spentSlot.owned`. A contested card is
 owned, so removing one from the Shopping view would make the row vanish with **no undo receipt**
 — the one case #185 exists to prevent. The condition becomes "the Shopping list was showing this
