@@ -288,6 +288,16 @@ describe("DiscoveryView", () => {
     expect(screen.getByText(/End of ranking · 30 of 30/)).toBeTruthy();
   });
 
+  // The only thing separating the control from the last card is the list's own
+  // row gap, so outside the `<ul>` it sits flush against the card above it.
+  it("keeps the reveal control inside the list, where the row gap reaches it", () => {
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />,
+    );
+    const control = screen.getByRole("button", { name: /Show 25 more commanders/ });
+    expect(control.closest("ul")).toBe(container.querySelector("ul"));
+  });
+
   // A length that is not a multiple of the step makes the last reveal overshoot,
   // and the live region is the one reader who would hear it: it speaks the raw
   // window, where the count line and the band are both clamped by their callers.

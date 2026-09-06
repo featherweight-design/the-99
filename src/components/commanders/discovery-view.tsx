@@ -309,23 +309,33 @@ export function DiscoveryView({
                 />
               </li>
             ))}
+
+            {/* Inside the list, as the owned scope has it: the gap between the
+                control and the last card is the list's own row gap, and outside
+                the `<ul>` there is nothing to supply it. */}
+            {remaining > 0 ? (
+              <li>
+                <RevealControl
+                  remaining={remaining}
+                  // Clamped at the source, the way the owned list clamps it: a final
+                  // step that overshoots would otherwise have the live region announce
+                  // a negative "more below" and a range past the end of the list.
+                  onReveal={() => setShown((n) => Math.min(n + REVEAL_STEP, filtered.length))}
+                  // The band names ranks in the list the reader is looking at, so it
+                  // counts against the filtered length rather than the server's.
+                  band={discoveryCopy.window.revealBand(
+                    shown + 1,
+                    Math.min(shown + REVEAL_STEP, filtered.length),
+                    filtered.length,
+                  )}
+                />
+              </li>
+            ) : null}
           </ul>
 
+          {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}
           {remaining > 0 ? (
-            <RevealControl
-              remaining={remaining}
-              // Clamped at the source, the way the owned list clamps it: a final
-              // step that overshoots would otherwise have the live region announce
-              // a negative "more below" and a range past the end of the list.
-              onReveal={() => setShown((n) => Math.min(n + REVEAL_STEP, filtered.length))}
-              // The band names ranks in the list the reader is looking at, so it
-              // counts against the filtered length rather than the server's.
-              band={discoveryCopy.window.revealBand(
-                shown + 1,
-                Math.min(shown + REVEAL_STEP, filtered.length),
-                filtered.length,
-              )}
-            />
+            <div className="h-[24px] sm:hidden" />
           ) : filtered.length > REVEAL_STEP ? (
             <EndOfRanking total={filtered.length} />
           ) : null}
