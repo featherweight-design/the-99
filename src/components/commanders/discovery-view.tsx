@@ -89,7 +89,9 @@ export function DiscoveryView({
     if (colors.length > 0) params.set("c", colors.join(""));
     else params.delete("c");
     const s = params.toString();
-    window.history.replaceState(null, "", `/commanders${s ? `?${s}` : ""}`);
+    // The live pathname, not a literal: this rewrites the query and must leave
+    // the path exactly as it found it under a basePath or a route move.
+    window.history.replaceState(null, "", `${window.location.pathname}${s ? `?${s}` : ""}`);
   }, [colors]);
 
   const menu = (

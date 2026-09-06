@@ -98,6 +98,9 @@ const windowCounts = () =>
   );
 
 beforeEach(() => {
+  // The mirror keeps whatever path it is mounted under, so the test has to
+  // stand on the real one rather than jsdom's default `/`.
+  window.history.replaceState(null, "", "/commanders");
   replaceState.mockClear();
 });
 

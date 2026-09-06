@@ -90,7 +90,10 @@ export function CommandersView({
   // that neither control needs one — the server sends both rankings in the same
   // render. The URL stays shareable and `useSearchParams` still sees it.
   useEffect(() => {
-    window.history.replaceState(null, "", `/commanders${serializeParams(colors, avail)}`);
+    // The live pathname, not a literal: this rewrites the query and must leave
+    // the path exactly as it found it under a basePath or a route move.
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", `${path}${serializeParams(colors, avail)}`);
   }, [colors, avail]);
 
   // Which list is on screen. Falling back to `results` when the free ranking is
