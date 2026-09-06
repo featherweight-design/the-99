@@ -94,8 +94,10 @@ type DecklistProps = {
   keepAllPending?: boolean;
   /** The swept rows held for Undo. Null = no pending undo. */
   sweptRows?: SweptRow[] | null;
-  /** Error string from a failed sweep. */
-  sweepError?: string | null;
+  /** Error string from a failed sweep, keep-all or undo. One line for the whole
+      auto lifecycle: the three are mutually exclusive on screen, and each
+      message names its own write. */
+  autoError?: string | null;
   /** Forwarded whole to GroupToggle, which owns why the pair is one prop. */
   autoControls?: AutoControls;
   onRestoreAuto?: () => void;
@@ -133,7 +135,7 @@ export function Decklist({
   sweepPending = false,
   keepAllPending = false,
   sweptRows = null,
-  sweepError = null,
+  autoError = null,
   autoControls,
   onRestoreAuto,
   shoppingFigures = {},
@@ -275,9 +277,9 @@ export function Decklist({
     // at exactly the moment the player is most likely to want it.
     const sweepBanner = (
       <>
-        {sweepError && (
+        {autoError && (
           <p role="alert" className="font-mono text-[11px] mb-[10px] text-fg-locked">
-            {sweepError}
+            {autoError}
           </p>
         )}
         {sweptRows && sweptRows.length > 0 && onRestoreAuto && (
@@ -549,12 +551,12 @@ export function Decklist({
       {/* Grouped card rows */}
       <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
         {/* Sweep error — a failed sweep, deck unchanged. */}
-        {sweepError && (
+        {autoError && (
           <p
             role="alert"
             className="font-mono text-[11px] mb-[10px] text-fg-locked"
           >
-            {sweepError}
+            {autoError}
           </p>
         )}
         {/* Sweep receipt — one strip above the first group. */}

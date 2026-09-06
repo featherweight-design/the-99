@@ -248,7 +248,7 @@ export function BuilderShell({
   // on screen, but sharing one would leave the failed control unable to say
   // which write the message belongs to.
   const [keepAllPending, startKeepAll] = useTransition();
-  const [sweepError, setSweepError] = useState<string | null>(null);
+  const [autoError, setAutoError] = useState<string | null>(null);
 
   // Unresolved rows keep the builder out of the empty state: a deck whose every
   // line failed to match has nothing built, but it has plenty to show and act on.
@@ -362,7 +362,7 @@ export function BuilderShell({
   const handleClearAuto = useCallback(() => {
     if (sweepPending) return;
     startSweep(async () => {
-      setSweepError(null);
+      setAutoError(null);
       // One edit, not a loop of removals: the server deletes each auto row
       // whole, while `removeOptimisticCard` takes off a single copy — which
       // would leave 36 of the fill's 37 basics on screen until revalidation.
@@ -382,7 +382,7 @@ export function BuilderShell({
       } catch {
         // No explicit rollback: the transition ends here and React drops the
         // predictions with it, putting the rows back from the server list.
-        setSweepError(recommendationsCopy.auto.sweepFailed);
+        setAutoError(recommendationsCopy.auto.sweepFailed);
       }
     });
   }, [sweepPending, cards, deck.id, sweepOptimisticAuto, clearCompletedByFill]);
@@ -395,7 +395,7 @@ export function BuilderShell({
   const handleKeepAllAuto = useCallback(() => {
     if (keepAllPending) return;
     startKeepAll(async () => {
-      setSweepError(null);
+      setAutoError(null);
       keepAllOptimisticAuto();
       try {
         const kept = await keepAllAutoCards(deck.id);
@@ -405,7 +405,7 @@ export function BuilderShell({
           recommendationsCopy.auto.keptAllAnnounce(String(kept), String(keptCount + kept)),
         );
       } catch {
-        setSweepError(recommendationsCopy.auto.keepAllFailed);
+        setAutoError(recommendationsCopy.auto.keepAllFailed);
       }
     });
   }, [keepAllPending, keptCount, deck.id, keepAllOptimisticAuto]);
@@ -420,7 +420,7 @@ export function BuilderShell({
     // A refused Undo leaves its message beside a receipt the player can click
     // again; without this the second, successful attempt restores the rows and
     // still reads as a failure.
-    setSweepError(null);
+    setAutoError(null);
     try {
       // The count comes back from the server rather than off the receipt: a
       // card the player re-added by hand between the sweep and the Undo is
@@ -436,7 +436,7 @@ export function BuilderShell({
     } catch {
       // Keep the receipt so Undo stays reachable — the rows are still gone, so
       // the sweep's "the deck is unchanged" would be the wrong action and false.
-      setSweepError(recommendationsCopy.auto.restoreFailed);
+      setAutoError(recommendationsCopy.auto.restoreFailed);
     }
   }, [sweptRows, deck.id, cards]);
 
@@ -940,7 +940,7 @@ export function BuilderShell({
                 sweepPending={sweepPending || fillInflight}
                 keepAllPending={keepAllPending || fillInflight}
                 sweptRows={sweptRows}
-                sweepError={sweepError}
+                autoError={autoError}
                 autoControls={autoControls}
                 onRestoreAuto={handleRestoreAuto}
                 shoppingFigures={shoppingFigures}
