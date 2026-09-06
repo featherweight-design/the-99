@@ -1880,8 +1880,9 @@ import { filterByColors } from "../../lib/commanders/filter";
 // compile time, so none of that reaches the client bundle.
 import type { DiscoveryList } from "../../lib/discovery/list";
 import { RecCard } from "./rec-card";
-
-const REVEAL_STEP = 24;
+// Imported, never redeclared: it is 25, and Task 20's `revealBand(1026, 1050, …)`
+// only lines up with the shipped control if both windows step by the same number.
+import { REVEAL_STEP } from "./reveal-control";
 
 export function DiscoveryView({
   discovery,
@@ -2128,7 +2129,7 @@ One PR. Design-review skill before `gh pr create`.
 - Modify: `src/components/commanders/rec-card.tsx`
 
 **Interfaces:**
-- Consumes: `DiscoveryItem`, `discoveryCopy.justify`.
+- Consumes: `DiscoveryItem` (**`import type`** — `src/lib/discovery/list.ts` reaches `src/db/index.ts`, which throws at module scope without `DATABASE_URL`; `rec-card.tsx` carries no `"use client"` of its own but only ever renders inside one), `discoveryCopy.justify`.
 - Produces: `RecCardProps` becomes a union — the owned arm keeps `commander: CommanderListItem`, the discovery arm takes `discovery: DiscoveryItem` and `sort`.
 
 - [ ] **Step 0: The prop union and the signature rewrite (done in Task 14, restated here because it is this task's premise)**
@@ -2204,6 +2205,9 @@ git commit -m "feat(discovery): justification slot and ranking figure"
 
 **Files:**
 - Modify: `src/components/commanders/rec-card.tsx`
+
+**Interfaces:**
+- Consumes: `PriceSlot` from `src/lib/discovery/price` (**`import type`**, for the same reason Task 17 gives), `discoveryCopy.ownership`/`price`/`untagged`, and the shipped `availability.ts` strings.
 
 - [ ] **Step 1: The pip**
 
