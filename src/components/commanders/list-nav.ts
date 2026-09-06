@@ -20,6 +20,28 @@ function href(params: URLSearchParams) {
   return query ? `?${query}` : window.location.pathname;
 }
 
+// `sessionStorage` throws rather than degrades when the store is unavailable —
+// Safari's private mode is the usual one. The parked scope is how a flip gets
+// announced; the flip itself, and the list that lands after it, do not depend on
+// it. So a throwing store costs the message and nothing else.
+function parkScope(scope: "owned" | "play") {
+  try {
+    sessionStorage.setItem(PENDING_KEY, scope);
+  } catch {
+    // No announcement. The navigation still happens.
+  }
+}
+
+function takeScope(): string | null {
+  try {
+    const parked = sessionStorage.getItem(PENDING_KEY);
+    if (parked !== null) sessionStorage.removeItem(PENDING_KEY);
+    return parked;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Flip the scope through the URL, so the two lists stay server-rendered and a
  * shared link opens on the scope it names.
@@ -36,7 +58,7 @@ export function useScopeNav() {
       // A scope flip cannot carry a sort: the owned scope has no control for one,
       // so a `sort` surviving the flip would be unreachable and invisible.
       params.delete("sort");
-      sessionStorage.setItem(PENDING_KEY, next);
+      parkScope(next);
       startTransition(() => router.replace(href(params), { scroll: false }));
     },
     [router],
@@ -115,8 +137,7 @@ export function useScopeAnnouncement(
   useEffect(() => {
     if (read.current) return;
     read.current = true;
-    if (sessionStorage.getItem(PENDING_KEY) !== scope) return;
-    sessionStorage.removeItem(PENDING_KEY);
+    if (takeScope() !== scope) return;
     announce(discoveryCopy.scope.announce(scope, count, sort));
   }, [scope, count, sort, announce]);
 }

@@ -37,14 +37,15 @@ describe("PageHeader subtitle", () => {
     );
     screen.getByText(
       `${discoveryCopy.scope.subtitlePlay(1704, 2805, "new")} · ${
-        availabilityCopy.ranking.subtitleFree
+        discoveryCopy.scope.subtitleFree
       }`,
     );
   });
 
   // The availability clause is not in the handoff's two subtitle strings, but it
-  // is the only place this page says which pool it ranked against.
-  it("keeps the availability clause under a scope", () => {
+  // is the only place this page says which pool it ranked against. Under a scope
+  // it names that pool rather than the ordering, which the lead already names.
+  it("keeps the availability clause under a scope, worded as a pool", () => {
     render(
       <PageHeader
         uniqueCardsRead={2805}
@@ -55,7 +56,7 @@ describe("PageHeader subtitle", () => {
       />,
     );
     screen.getByText(
-      `${discoveryCopy.scope.subtitleOwned(242, 2805)} · ${availabilityCopy.ranking.subtitleAll}`,
+      `${discoveryCopy.scope.subtitleOwned(242, 2805)} · ${discoveryCopy.scope.subtitleAll}`,
     );
   });
 });
@@ -88,6 +89,7 @@ describe("PageHeader scope control", () => {
         uniqueCardsRead={2805}
         scope="play"
         onScopeChange={() => {}}
+        sort="fit"
         candidateCount={3334}
       />,
     );

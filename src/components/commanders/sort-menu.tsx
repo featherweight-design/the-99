@@ -154,6 +154,10 @@ export function SortMenu({
                   // reason it gives is the thing worth staying open for.
                   if (o.off) return;
                   setOpen(false);
+                  // The row this click landed on unmounts with the menu, so
+                  // without this the keyboard reader is left on the document
+                  // body. Same handback as Escape.
+                  trigger.current?.focus();
                   onChange(o.key);
                 }}
                 className={[

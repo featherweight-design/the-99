@@ -18,48 +18,69 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { ScopeControl } from "./scope-control";
 
-type PageHeaderProps = {
+type PageHeaderBase = {
   uniqueCardsRead: number;
   /** Omitted where nothing is ranked, which drops the clause entirely. */
   avail?: "all" | "free";
-  /**
-   * The scope control and the subtitle that restates what it selected. Optional
-   * and absent together: the collection-empty and no-candidates pages render
-   * this header with no list beneath it, and get today's line unchanged.
-   */
-  scope?: "owned" | "play";
-  onScopeChange?: (next: "owned" | "play") => void;
-  sort?: "fit" | "new";
-  candidateCount?: number;
 };
 
-export function PageHeader({
-  uniqueCardsRead,
-  avail,
-  scope,
-  onScopeChange,
-  sort = "fit",
-  candidateCount = 0,
-}: PageHeaderProps) {
+/**
+ * Three arms rather than five optional props. The scope control and the subtitle
+ * that restates what it selected arrive together or not at all — the
+ * collection-empty and no-candidates pages render this header with no list
+ * beneath it and get today's line unchanged — and only the discovery scope has
+ * an ordering to name, so `sort` belongs to that arm alone.
+ */
+type PageHeaderProps =
+  | (PageHeaderBase & {
+      scope?: never;
+      onScopeChange?: never;
+      sort?: never;
+      candidateCount?: never;
+    })
+  | (PageHeaderBase & {
+      scope: "owned";
+      onScopeChange: (next: "owned" | "play") => void;
+      candidateCount: number;
+      sort?: never;
+    })
+  | (PageHeaderBase & {
+      scope: "play";
+      onScopeChange: (next: "owned" | "play") => void;
+      candidateCount: number;
+      sort: "fit" | "new";
+    });
+
+export function PageHeader(props: PageHeaderProps) {
+  const { uniqueCardsRead, avail } = props;
+
   // Under a scope the population and the ordering lead, and the card count moves
   // inside the copy module's own sentence — which formats its figures itself, so
   // there is no `toLocaleString` on this path.
-  const lead = scope
-    ? scope === "owned"
-      ? discoveryCopy.scope.subtitleOwned(candidateCount, uniqueCardsRead)
-      : discoveryCopy.scope.subtitlePlay(candidateCount, uniqueCardsRead, sort)
-    : `${uniqueCardsRead.toLocaleString("en-US")} cards scanned`;
+  const lead =
+    props.scope === undefined
+      ? `${uniqueCardsRead.toLocaleString("en-US")} cards scanned`
+      : props.scope === "owned"
+        ? discoveryCopy.scope.subtitleOwned(props.candidateCount, uniqueCardsRead)
+        : discoveryCopy.scope.subtitlePlay(props.candidateCount, uniqueCardsRead, props.sort);
 
   // The availability clause stays appended under every scope. It is the only
   // place `/commanders` says whether it ranked against the free pool or against
-  // everything owned, and dropping it would regress a shipped surface.
-  const subtitle = avail
-    ? `${lead} · ${
-        avail === "free"
-          ? availabilityCopy.ranking.subtitleFree
-          : availabilityCopy.ranking.subtitleAll
-      }`
-    : lead;
+  // everything owned, and dropping it would regress a shipped surface. Under a
+  // scope it names the POOL rather than the ordering: the shipped clause is
+  // "ranked by fit", which the discovery lead has already named for itself, and
+  // appending it produced "ranked by what is new to you · ranked by fit".
+  const clause = avail
+    ? props.scope === undefined
+      ? avail === "free"
+        ? availabilityCopy.ranking.subtitleFree
+        : availabilityCopy.ranking.subtitleAll
+      : avail === "free"
+        ? discoveryCopy.scope.subtitleFree
+        : discoveryCopy.scope.subtitleAll
+    : null;
+
+  const subtitle = clause ? `${lead} · ${clause}` : lead;
 
   return (
     <div
@@ -85,8 +106,8 @@ export function PageHeader({
         </p>
       </div>
 
-      {scope && onScopeChange ? (
-        <ScopeControl scope={scope} onChange={onScopeChange} />
+      {props.scope !== undefined ? (
+        <ScopeControl scope={props.scope} onChange={props.onScopeChange} />
       ) : null}
     </div>
   );

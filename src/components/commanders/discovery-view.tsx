@@ -48,16 +48,23 @@ export function DiscoveryView({
   // Empty on an ordinary load, and the flip's message on arrival from the other
   // scope — the count it names is the one the server just produced.
   const [announcement, setAnnouncement] = useState("");
-  useScopeAnnouncement("play", discovery.candidateCount, discovery.sort, setAnnouncement);
+  useScopeAnnouncement("play", discovery.items.length, discovery.sort, setAnnouncement);
   // Both re-ranks happen on the server, so each message names the count that came
-  // back with the new ordering rather than one predicted at click time.
+  // back with the new ordering rather than one predicted at click time — and the
+  // server's count, not the filtered one: a colour filter is a client-side
+  // narrowing that neither re-rank changed, so speaking its length would say the
+  // re-rank moved a number it never touched.
+  // `items.length`, not `candidateCount`: the latter counts every candidate found
+  // before the novelty sort's exclusions, and both messages name what is on the
+  // list — one of them literally says "clear the floor".
+  const rankedCount = discovery.items.length;
   const sortMessage = useCallback(
-    (s: "fit" | "new") => discoveryCopy.sort.announce(s, filtered.length),
-    [filtered.length],
+    (s: "fit" | "new") => discoveryCopy.sort.announce(s, rankedCount),
+    [rankedCount],
   );
   const availMessage = useCallback(
-    (a: "all" | "free") => discoveryCopy.avail.announce(a, filtered.length),
-    [filtered.length],
+    (a: "all" | "free") => discoveryCopy.avail.announce(a, rankedCount),
+    [rankedCount],
   );
   useRerankAnnouncement(discovery.sort, sortMessage, setAnnouncement);
   useRerankAnnouncement(avail, availMessage, setAnnouncement);

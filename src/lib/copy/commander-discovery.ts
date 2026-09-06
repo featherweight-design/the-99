@@ -54,6 +54,14 @@ export const discoveryCopy = {
         sort === "new" ? "what is new to you" : "best fit"
       } · read against ${n(cards)} cards`,
 
+    // The availability clause, appended to either subtitle above. The shipped
+    // pair names the ORDERING — "ranked by fit" — which both leads have already
+    // named for themselves, so appending it read "ranked by what is new to you ·
+    // ranked by fit". These name the POOL the figures were read against, which
+    // is the one thing the lead does not say.
+    subtitleAll: "every card you own",
+    subtitleFree: "free cards only",
+
     // Announced on the page's existing live region.
     announce: (scope: "owned" | "play", count: number, sort: "fit" | "new") =>
       scope === "owned"
