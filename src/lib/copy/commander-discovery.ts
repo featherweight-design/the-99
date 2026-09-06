@@ -28,6 +28,8 @@
 // four digits (3,342 indexed, 3,334 unbuilt, 1,704 clearing the floor), which is the whole
 // difference between this list and the 242-row one it extends. Note the unbuilt figure: ruling 2
 // excludes the 8 commanders with decks, not the 3,100 the player does not own.
+// Every COUNT below goes through `n`, including the small ones, so the rule has no exceptions to
+// remember. Percentages do not: a separator in a percentage would be a bug, not a formatting.
 
 const n = (v: number) => v.toLocaleString("en-US");
 
@@ -92,20 +94,20 @@ export const discoveryCopy = {
     // §5's correction, at three lengths. All three print M.
     overlapLabel: "Overlap",
     overlap: (owned: number, total: number) =>
-      `you own ${owned} of the ${total} cards EDHREC lists for this commander`,
+      `you own ${n(owned)} of the ${n(total)} cards EDHREC lists for this commander`,
     overlapShort: (owned: number, total: number) =>
-      `own ${owned} of ${total} EDHREC lists`,
+      `own ${n(owned)} of ${n(total)} EDHREC lists`,
     overlapAria: (owned: number, total: number, name: string) =>
-      `you own ${owned} of the ${total} cards EDHREC lists for ${name}`,
+      `you own ${n(owned)} of the ${n(total)} cards EDHREC lists for ${name}`,
 
     // Column label + figure unit. "Support" is a noun for the list, not a claim.
     figureLabelFit: "Support owned",
-    figureUnitFit: (total: number) => `of ${total}`,
+    figureUnitFit: (total: number) => `of ${n(total)}`,
 
     // Novelty. Up to three tag names, then a count — a fourth name buys nothing.
     distanceLabel: "New to you",
     tagList: (tags: string[], extra: number) =>
-      extra > 0 ? `${tags.join(" · ")} — and ${extra} more` : tags.join(" · "),
+      extra > 0 ? `${tags.join(" · ")} — and ${n(extra)} more` : tags.join(" · "),
     // Nothing built plays any of them. Plain, and it does not congratulate.
     distanceNone: "Nothing you have built plays these.",
     // Partial: name the nearest deck, and say what it shares. One deck, never a
@@ -113,10 +115,10 @@ export const discoveryCopy = {
     distanceNear: (deckName: string, shared: string) =>
       `Closest is your ${deckName} list, which shares ${shared}.`,
     distanceAria: (unplayed: number, total: number) =>
-      `${unplayed} of its ${total} archetypes are ones you have never built`,
+      `${n(unplayed)} of its ${n(total)} archetypes are ones you have never built`,
 
     figureLabelNew: "Unplayed tags",
-    figureUnitNew: (total: number) => `of ${total} tags`,
+    figureUnitNew: (total: number) => `of ${n(total)} tags`,
     // Ruling 4's floor, stated as a qualifying fact. It explains PRESENCE, never
     // position — the percentage is never added to the figure above it.
     floorNote: (pct: number) => `clears the floor — you own ${pct}% of its support list`,
@@ -188,7 +190,7 @@ export const discoveryCopy = {
     filteredBody: (colors: string, candidates: number) =>
       `${colors} together leave nothing in the ${n(candidates)} you have not built.`,
     filteredBuiltClause: (matching: number, total: number, identity: string) =>
-      `${matching === 1 ? "One" : matching} of your ${n(
+      `${matching === 1 ? "One" : n(matching)} of your ${n(
         total,
       )} decks ${matching === 1 ? "is" : "are"} ${identity} — that is where those commanders went.`,
     filteredCta: "Clear the colour filter",

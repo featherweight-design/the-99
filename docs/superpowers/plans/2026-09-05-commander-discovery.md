@@ -21,7 +21,7 @@ Every task's requirements implicitly include this section.
 
 **Design system — the handoff's five must-nots.** No new design token. No new hex value. No new motion class. No new empty-state pattern. No new component: discovery reuses `RecCard`, `RevealControl`/`EndOfRanking`/`WindowCount`, `PageHeader`, `FilteredEmpty`, and the existing filter bar.
 
-**Copy.** Every user-visible string in this feature comes from `src/lib/copy/commander-discovery.ts`, lifted **verbatim** from `design/design_handoff_the99_discovery/commander-discovery · copy strings.ts`. Do not paraphrase, re-case, or re-punctuate. Load-bearing vocabulary:
+**Copy.** Every user-visible string in this feature comes from `src/lib/copy/commander-discovery.ts`, lifted **verbatim** from `design/design_handoff_the99_discovery/commander-discovery · copy strings.ts`. Do not paraphrase, re-case, or re-punctuate. One deliberate divergence, and the only one permitted: the shipped module routes **every** count through `n()`, where the handoff file left the small ones raw — the handoff's own header declares the surface locale-formatted, so the raw ones were an oversight, not a ruling. Percentages stay raw. Load-bearing vocabulary:
 - "lists" — never "the 99" — for EDHREC's support corpus.
 - "support" appears only as a column/figure label, never as a verb.
 - "built" / "never built" for deck ownership; "in your collection" for card ownership.
