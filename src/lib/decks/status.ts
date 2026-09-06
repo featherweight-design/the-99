@@ -7,17 +7,23 @@
 /**
  * The whole deck-status vocabulary. Every value is a distinct state with one
  * meaning and one next action, and the six are exhaustive over the three facts
- * a deck has — how many cards are in it, how many of those the player owns, and
- * how many imported lines we could not put a card to.
+ * a deck has — how many cards it has matched to the catalog, how many of those
+ * the player owns, and how many imported lines we could not put a card to.
  *
- * | Value        | When                             | Means                          | Next action     |
- * | ------------ | -------------------------------- | ------------------------------ | --------------- |
- * | `Draft`      | 0 cards                          | Not started, unresolved or not | Add cards       |
- * | `Building`   | 1–98 cards                       | Short of a legal list          | Add the rest    |
- * | `Over`       | 100+ cards                       | Past a legal list              | Cut the excess  |
- * | `Unresolved` | 99, some line unnamed            | Carrying lines we cannot name  | Resolve or drop |
- * | `To buy`     | 99, all named, some card unowned | A legal list you do not own    | Buy the missing |
- * | `Complete`   | 99, all named, all owned         | Sleeve it and play it          | Play it         |
+ * `built` throughout is the matched count alone. Unresolved lines are not in it
+ * and never push a deck to 99 or over: a list of 97 matched cards and 2 lines
+ * we could not name is `Building`, not `Unresolved`. The two summed are `total`
+ * (see `DeckDetail` in read.ts), which is the deck the player asked for rather
+ * than the deck we can compute a status from.
+ *
+ * | Value        | When                                     | Means                          | Next action     |
+ * | ------------ | ---------------------------------------- | ------------------------------ | --------------- |
+ * | `Draft`      | 0 matched cards                          | Not started, unresolved or not | Add cards       |
+ * | `Building`   | 1–98 matched                             | Short of a legal list          | Add the rest    |
+ * | `Over`       | 100+ matched                             | Past a legal list              | Cut the excess  |
+ * | `Unresolved` | 99 matched, some line unresolved         | Carrying lines we cannot name  | Resolve or drop |
+ * | `To buy`     | 99 matched, no unresolved, some unowned  | A legal list you do not own    | Buy the missing |
+ * | `Complete`   | 99 matched, no unresolved, all owned     | Sleeve it and play it          | Play it         |
  *
  * `Playable` was retired by #357. It covered the last three rows at once and
  * rendered in the same green as `Complete`, so a 99-card list needing fifteen
