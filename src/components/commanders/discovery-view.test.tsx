@@ -141,4 +141,113 @@ describe("DiscoveryView", () => {
     rerender(<DiscoveryView discovery={list({ sort: "new" })} avail="free" />);
     expect(screen.getByText(discoveryCopy.sort.announce("new", 0))).toBeTruthy();
   });
+
+  // ── The three empty states ────────────────────────────────────────────
+  const empty = discoveryCopy.empty;
+
+  // State 1 sits ABOVE a full list: with no decks built the fit ranking is
+  // complete and only the novelty ordering is unavailable.
+  it("banners the no-decks reason without emptying the list", () => {
+    const items = [item({})];
+    render(<DiscoveryView discovery={list({ items, hasDecks: false })} avail="free" />);
+    expect(screen.getByText(empty.noDecksHeading)).toBeTruthy();
+    expect(screen.getAllByText("A Commander").length).toBeGreaterThan(0);
+  });
+
+  it("explains an empty novelty ranking with the floor that emptied it", () => {
+    render(
+      <DiscoveryView
+        discovery={list({ sort: "new", candidateCount: 3334, floorExcluded: 3334, bestPct: 18 })}
+        avail="free"
+      />,
+    );
+    expect(screen.getByText(empty.floorHeading)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: empty.floorCta }));
+    expect(replace).toHaveBeenCalledWith("?scope=play", { scroll: false });
+  });
+
+  // An empty list the floor did not empty is a different fact — nothing had a
+  // distance to measure — and the floor copy would name a floor that took nobody.
+  it("does not blame the floor for an empty list it never excluded from", () => {
+    render(<DiscoveryView discovery={list({ sort: "new" })} avail="free" />);
+    expect(screen.queryByText(empty.floorHeading)).toBeNull();
+  });
+
+  it("blames the colours when the filter is what emptied the list, and names the built decks", () => {
+    const items = [item({ colorIdentity: ["U"] })];
+    render(
+      <DiscoveryView
+        discovery={list({ items, deckIdentities: [["B", "G"], ["R"]] })}
+        avail="free"
+      />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.getByText(empty.filteredHeading)).toBeTruthy();
+    expect(
+      screen.getByText(
+        (_, el) =>
+          el?.tagName === "P" &&
+          el.textContent ===
+            `${empty.filteredBody("green", 1)} ${empty.filteredBuiltClause(1, 2, "Green")}`,
+      ),
+    ).toBeTruthy();
+  });
+
+  // The clause claims those decks would have been in THIS list had they been
+  // unbuilt, so with none matching there is nothing to explain the absence with.
+  it("omits the built clause when no built deck matches the filter", () => {
+    const items = [item({ colorIdentity: ["U"] })];
+    render(
+      <DiscoveryView discovery={list({ items, deckIdentities: [["R"]] })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.getByText(empty.filteredBody("green", 1))).toBeTruthy();
+  });
+
+  // ── The window ────────────────────────────────────────────────────────
+  const many = (n: number) =>
+    Array.from({ length: n }, (_, i) =>
+      item({ oracleId: `o${i}`, slug: `s${i}`, name: `Commander ${i}`, rank: i + 1 }),
+    );
+
+  it("opens on one step and reveals the next, naming the band it is about to show", () => {
+    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />);
+    expect(screen.queryByText("Commander 25")).toBeNull();
+    expect(screen.getByText(discoveryCopy.window.revealBand(26, 50, 60))).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
+    expect(screen.getByText(discoveryCopy.window.revealBand(51, 60, 60))).toBeTruthy();
+  });
+
+  it("rules off a list that was windowed once it is fully revealed", () => {
+    render(<DiscoveryView discovery={list({ items: many(30), candidateCount: 30 })} avail="free" />);
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    expect(screen.getByText(/End of ranking · 30 of 30/)).toBeTruthy();
+  });
+
+  // A re-rank returns a differently ordered list under the same mounted
+  // component, so a deep window would open it part-way down an unseen ranking.
+  it("returns the window to the top when the ordering underneath it changes", () => {
+    const items = many(60);
+    const { rerender } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 60 })} avail="free" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
+
+    rerender(
+      <DiscoveryView discovery={list({ items, candidateCount: 60, sort: "new" })} avail="free" />,
+    );
+    expect(screen.queryByText("Commander 25")).toBeNull();
+  });
+
+  it("returns the window to the top when a colour filter narrows the list", () => {
+    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />);
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.queryByText("Commander 25")).toBeNull();
+  });
 });

@@ -203,6 +203,9 @@ export const discoveryCopy = {
       `We rank “new” by how far a commander sits from the archetypes the decks you have built already play — and you have not built one yet. Best fit works from day one: it only needs your collection, and you have ${n(
         cards,
       )} cards in it.`,
+    /** The one clause the banner marks. A substring of `noDecksBody` rather than
+        a fragment the component splices in, so the sentence has one author. */
+    noDecksEmphasis: "Best fit works from day one",
 
     // 2 · The floor excludes everything. Names the floor, names the nearest miss
     // so 30% is not arbitrary, and offers THE OTHER SORT — never a looser floor.
@@ -214,6 +217,10 @@ export const discoveryCopy = {
       )} clears that against ${n(
         cards,
       )} cards, and the closest sits at ${bestPct}%. Nothing is broken; the collection is just early.`,
+    /** Likewise a substring of `floorBody` — the floor clause only, so the mark
+        lands on the rule being explained and not on the misses it caused. */
+    floorEmphasis: (floorPct: number) =>
+      `at least ${floorPct}% of their support list already in your collection`,
     floorCta: "Rank by best fit instead",
     floorCtaNote: (candidates: number) => `${n(candidates)} commanders, no floor`,
 
