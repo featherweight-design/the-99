@@ -4,8 +4,7 @@ import { cards, commanderSupport, decks } from "../../db/schema";
 import type { EdhrecTag } from "../edhrec/parse";
 import type { CandidateRow } from "./candidates";
 
-/** Ruling 4: buildability is a floor, never a term in the sort. */
-export const NOVELTY_FLOOR = 0.3;
+import { NOVELTY_FLOOR } from "./floor";
 
 export type DeckTagSet = { deckName: string; colorIdentity: string[]; slugs: Set<string> };
 

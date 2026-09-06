@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { GhostButton, PrimaryButton } from "./button";
+import { AccentGhostButton, GhostButton, PrimaryButton } from "./button";
 
 describe("PrimaryButton", () => {
   it("renders a button element when href is absent", () => {
@@ -129,5 +129,20 @@ describe("GhostButton", () => {
     expect(screen.getByRole("link", { name: "Home" }).getAttribute("href")).toBe(
       "/",
     );
+  });
+});
+
+// The variant exists so the two empty-state CTAs drawn with a lit outline do not
+// override the border and text colour at the call site: GHOST's disabled: rules
+// would then restore --border-strong on a button whose resting border is accent.
+describe("AccentGhostButton", () => {
+  it("rests on the accent outline and keeps it through a disabled hover", () => {
+    render(<AccentGhostButton disabled>Go</AccentGhostButton>);
+    const el = screen.getByRole("button", { name: "Go" });
+    expect(el.className).toContain("[border:1px_solid_var(--accent)]");
+    expect(el.className).toContain("text-[color:var(--accent)]");
+    expect(el.className).toContain("disabled:hover:[border-color:var(--accent)]");
+    expect(el.className).toContain("disabled:hover:[color:var(--accent)]");
+    expect(el.getAttribute("style")).toBeNull();
   });
 });
