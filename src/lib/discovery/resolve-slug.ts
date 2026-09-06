@@ -1,7 +1,7 @@
-import { loadCollectionPool } from "../recs/recommend";
 import { getRankedList } from "../recs/ranked-list";
 import { findScoredCommander } from "../recs/store";
 import { loadCandidateSlugRows } from "./candidates";
+import { loadDiscoveryPool } from "./list";
 import { byFit } from "./novelty";
 import { assignDiscoverySlugs } from "./slugs";
 
@@ -35,12 +35,16 @@ export async function resolveCommanderSlug(
     return { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };
   }
 
-  const { collection } = await loadCollectionPool(userId);
+  // The free pool, always: the detail route carries no `avail`, and `free` is
+  // what `/commanders` defaults to, so the rank here matches the row the visitor
+  // came from. Only the pool is shared with the list — prices, played tags and
+  // the rollup are the list's work and nothing on this path reads them.
+  const { scored } = await loadDiscoveryPool(userId, "free");
   // `unplayedCount` is `byFit`'s required input and never read by it, so it is
   // filled once per row here rather than in the comparator, which would
   // otherwise allocate two objects per comparison.
   const rows = assignDiscoverySlugs(
-    (await loadCandidateSlugRows(userId, collection.map((c) => c.oracleId)))
+    (await loadCandidateSlugRows(userId, scored.map((c) => c.oracleId)))
       .map((r) => ({ ...r, unplayedCount: 0 })),
   ).sort(byFit);
   const at = rows.findIndex((r) => r.slug === slug);
