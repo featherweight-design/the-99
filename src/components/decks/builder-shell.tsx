@@ -410,6 +410,11 @@ export function BuilderShell({
     });
   }, [keepAllPending, keptCount, deck.id, keepAllOptimisticAuto]);
 
+  const autoControls = useMemo(
+    () => ({ onClear: handleClearAuto, onKeepAll: handleKeepAllAuto }),
+    [handleClearAuto, handleKeepAllAuto],
+  );
+
   const handleRestoreAuto = useCallback(async () => {
     if (!sweptRows) return;
     // A refused Undo leaves its message beside a receipt the player can click
@@ -936,8 +941,7 @@ export function BuilderShell({
                 keepAllPending={keepAllPending || fillInflight}
                 sweptRows={sweptRows}
                 sweepError={sweepError}
-                onClearAuto={handleClearAuto}
-                onKeepAllAuto={handleKeepAllAuto}
+                autoControls={autoControls}
                 onRestoreAuto={handleRestoreAuto}
                 shoppingFigures={shoppingFigures}
                 newestAsOf={newestAsOf}

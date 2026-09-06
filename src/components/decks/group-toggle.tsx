@@ -7,7 +7,15 @@ import { ClearAutoButton } from "./clear-auto";
 import { PriceStrip } from "./price-strip";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 
-interface GroupToggleProps {
+/**
+ * One prop, not two handlers. The cluster renders only when both answers are
+ * available, so as separate optional props a caller passing just the sweep
+ * would drop the whole cluster with neither a type error nor a runtime signal.
+ * Bundled, the pair cannot be half-supplied.
+ */
+export type AutoControls = { onClear: () => void; onKeepAll: () => void };
+
+type GroupToggleProps = {
   allCount: number;
   shoppingCount: number;
   filter: "all" | "shopping";
@@ -19,15 +27,15 @@ interface GroupToggleProps {
   /** Number of non-auto cards — kept fill cards and player additions alike. */
   keptCount?: number;
   sweepPending?: boolean;
-  onClearAuto?: () => void;
   keepAllPending?: boolean;
-  onKeepAllAuto?: () => void;
+  /** Absent on surfaces with no fill to answer for. */
+  autoControls?: AutoControls;
   /** Summed over the same cards the Shopping pill counts — one fact, two
       renderings, so they can never disagree on screen. */
   priceSummary?: PriceSummary | null;
   /** Server-built. Null renders no strip at all. */
   provenance?: ProvenanceForm | null;
-}
+};
 
 export function GroupToggle({
   allCount,
@@ -39,9 +47,8 @@ export function GroupToggle({
   autoCount = 0,
   keptCount = 0,
   sweepPending = false,
-  onClearAuto,
   keepAllPending = false,
-  onKeepAllAuto,
+  autoControls,
   priceSummary = null,
   provenance = null,
 }: GroupToggleProps) {
@@ -93,13 +100,13 @@ export function GroupToggle({
             Absent at zero, disabled only while one of its own writes runs. Not
             gated on autoCount here: state 7 keeps the kept-note after the last
             auto card goes, and the component decides its own absence. */}
-        {onClearAuto && onKeepAllAuto && (
+        {autoControls && (
           <ClearAutoButton
             count={autoCount}
             keptCount={keptCount}
-            onClear={onClearAuto}
+            onClear={autoControls.onClear}
             pending={sweepPending}
-            onKeepAll={onKeepAllAuto}
+            onKeepAll={autoControls.onKeepAll}
             keepAllPending={keepAllPending}
           />
         )}

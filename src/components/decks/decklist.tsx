@@ -10,7 +10,7 @@ import { computeRoleCounts } from "../../lib/decks/mix";
 import { availabilityState } from "../../lib/decks/availability";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { GroupToggle } from "./group-toggle";
+import { GroupToggle, type AutoControls } from "./group-toggle";
 import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
@@ -62,7 +62,7 @@ function isSpokenFor(c: DeckDetailCard): boolean {
   return c.owned && isShoppingCard(c);
 }
 
-interface DecklistProps {
+type DecklistProps = {
   deckId: string;
   cards: DeckDetailCard[];
   unresolvedRows: DeckUnresolvedRow[];
@@ -96,8 +96,8 @@ interface DecklistProps {
   sweptRows?: SweptRow[] | null;
   /** Error string from a failed sweep. */
   sweepError?: string | null;
-  onClearAuto?: () => void;
-  onKeepAllAuto?: () => void;
+  /** Forwarded whole to GroupToggle, which owns why the pair is one prop. */
+  autoControls?: AutoControls;
   onRestoreAuto?: () => void;
   /**
    * EDHREC inclusion % for each unowned card in the deck, keyed by oracleId.
@@ -112,7 +112,7 @@ interface DecklistProps {
   newestAsOf?: Date | null;
   /** Built on the server; see BuilderShell. */
   provenance?: ProvenanceForm | null;
-}
+};
 
 export function Decklist({
   deckId,
@@ -134,8 +134,7 @@ export function Decklist({
   keepAllPending = false,
   sweptRows = null,
   sweepError = null,
-  onClearAuto,
-  onKeepAllAuto,
+  autoControls,
   onRestoreAuto,
   shoppingFigures = {},
   newestAsOf = null,
@@ -309,8 +308,7 @@ export function Decklist({
             keptCount={keptCount}
             sweepPending={sweepPending}
             keepAllPending={keepAllPending}
-            onClearAuto={onClearAuto}
-            onKeepAllAuto={onKeepAllAuto}
+            autoControls={autoControls}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {sweepBanner}
@@ -369,8 +367,7 @@ export function Decklist({
           keptCount={keptCount}
           sweepPending={sweepPending}
           keepAllPending={keepAllPending}
-          onClearAuto={onClearAuto}
-          onKeepAllAuto={onKeepAllAuto}
+          autoControls={autoControls}
           priceSummary={priceSummary}
           provenance={provenance}
         />
@@ -544,8 +541,7 @@ export function Decklist({
         keptCount={keptCount}
         sweepPending={sweepPending}
         keepAllPending={keepAllPending}
-        onClearAuto={onClearAuto}
-        onKeepAllAuto={onKeepAllAuto}
+        autoControls={autoControls}
         priceSummary={priceSummary}
         provenance={provenance}
       />
