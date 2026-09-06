@@ -1,4 +1,4 @@
-import { inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { printingPrices, printings } from "../../db/schema";
 
@@ -51,9 +51,12 @@ export async function loadPrices(oracleIds: string[]): Promise<Map<string, Price
         .as("ever_priced"),
     })
     .from(printings)
-    .innerJoin(printingPrices, sql`${printingPrices.scryfallId} = ${printings.scryfallId}`)
+    .innerJoin(printingPrices, eq(printingPrices.scryfallId, printings.scryfallId))
     .where(inArray(printings.oracleId, oracleIds))
     .groupBy(printings.oracleId);
 
-  return new Map(rows.map((r) => [r.oracleId, { ...r, everPriced: r.everPriced ?? false }]));
+  // No `?? false` on `everPriced`: `bool_or` over a `is not null` predicate is
+  // non-null for every group the join produced, and a coalesce here would
+  // quietly absorb a real change in the query's shape.
+  return new Map(rows.map((r) => [r.oracleId, r]));
 }
