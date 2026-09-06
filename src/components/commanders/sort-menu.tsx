@@ -1,0 +1,146 @@
+"use client";
+// Sort menu (§7.2) — the discovery scope's `Order` slot. A menu rather than the
+// segmented control the availability toggle uses, because one option can be
+// unavailable WITH A REASON (ruling 8), and a segment has nowhere to put one.
+//
+// Each option names its own sort key on a sub-line. Ruling 3 forbids a blend, so
+// the two keys are genuinely different questions and the menu says which.
+
+import { useEffect, useRef, useState } from "react";
+import { discoveryCopy } from "../../lib/copy/commander-discovery";
+
+const { sort: copy } = discoveryCopy;
+
+export type SortKey = "fit" | "new";
+
+export function SortMenu({
+  sort,
+  hasDecks,
+  onChange,
+  size = "desktop",
+}: {
+  sort: SortKey;
+  hasDecks: boolean;
+  onChange: (next: SortKey) => void;
+  size?: "mobile" | "desktop";
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const currentLabel = sort === "new" ? copy.new : copy.fit;
+
+  const options = [
+    { key: "fit" as const, label: copy.fit, sub: copy.fitKey, aria: copy.fitAria, off: false },
+    {
+      key: "new" as const,
+      label: copy.new,
+      // Ruling 8: the reason replaces the sort key, because a key you cannot
+      // choose is not the thing the row needs to explain.
+      sub: hasDecks ? copy.newKey : copy.newDisabled,
+      aria: hasDecks ? copy.newAria : copy.newDisabledAria,
+      off: !hasDecks,
+    },
+  ];
+
+  return (
+    <div ref={root} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={copy.triggerAria(currentLabel)}
+        onClick={() => setOpen((v) => !v)}
+        className={[
+          "font-mono inline-flex items-center gap-[6px] cursor-pointer rounded-lg px-[11px]",
+          "bg-[color:var(--surface-sunken)] border border-[color:var(--border-strong)]",
+          "text-[11.5px] text-[color:var(--fg-body)]",
+          size === "mobile" ? "h-[38px]" : "h-[30px]",
+        ].join(" ")}
+      >
+        {copy.label}: {currentLabel}
+        <span aria-hidden className="text-[color:var(--accent)]">▾</span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label={copy.label}
+          className={[
+            "absolute right-0 z-10 mt-[6px] w-[300px] rounded-[10px] p-[6px]",
+            "bg-[color:var(--surface-rail)] border border-[color:var(--border-strong)]",
+          ].join(" ")}
+        >
+          {options.map((o) => {
+            const selected = o.key === sort;
+            return (
+              <button
+                key={o.key}
+                type="button"
+                role="menuitemradio"
+                aria-checked={selected}
+                aria-disabled={o.off || undefined}
+                aria-label={o.aria}
+                onClick={() => {
+                  // A disabled option neither acts nor closes the menu: the
+                  // reason it gives is the thing worth staying open for.
+                  if (o.off) return;
+                  setOpen(false);
+                  onChange(o.key);
+                }}
+                className={[
+                  "flex w-full flex-col items-start gap-[3px] rounded-[7px] border-0 px-[12px] py-[11px] text-left",
+                  o.off ? "cursor-not-allowed" : "cursor-pointer",
+                  selected ? "bg-[color:var(--elevated-hover)]" : "bg-transparent",
+                ].join(" ")}
+              >
+                <span className="flex items-center gap-[8px]">
+                  {/* Selection diamond — filled on the active key. */}
+                  <span
+                    aria-hidden
+                    className={[
+                      "block h-[6px] w-[6px] rotate-45 shrink-0",
+                      selected
+                        ? "bg-[color:var(--accent)]"
+                        : "border-[1.5px] border-[color:var(--border-strong)]",
+                    ].join(" ")}
+                  />
+                  <span
+                    className={[
+                      "text-[13.5px] font-semibold",
+                      o.off
+                        ? "text-[color:var(--fg-locked)] line-through"
+                        : "text-[color:var(--fg)]",
+                    ].join(" ")}
+                  >
+                    {o.label}
+                  </span>
+                </span>
+                {/* The reason keeps full contrast even when the label is struck:
+                    it is the one part of a disabled row that must stay readable. */}
+                <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+                  {o.sub}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

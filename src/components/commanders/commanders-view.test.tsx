@@ -11,12 +11,18 @@ import { REVEAL_STEP } from "./reveal-control";
 
 const params = new URLSearchParams();
 
+// The scope control is the one thing here that navigates: a scope flip swaps
+// which list component the route renders, so it goes through the router rather
+// than the History API the other two controls use.
+const routerReplace = vi.fn();
+
 vi.mock("next/navigation", () => ({
   useSearchParams: () => params,
+  useRouter: () => ({ replace: routerReplace }),
 }));
 
-// Both controls mirror to the URL through the History API — no navigation, so
-// there is no router call left to assert on.
+// The availability and reveal controls mirror to the URL through the History
+// API — no navigation, so there is no router call left to assert on.
 const replaceState = vi.spyOn(window.history, "replaceState");
 const urls = () => replaceState.mock.calls.map((c) => c[2]);
 
