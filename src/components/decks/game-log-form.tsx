@@ -39,6 +39,9 @@ const RESULTS: { value: GameResult; label: string }[] = [
   { value: "draw", label: gameLogCopy.form.draw },
 ];
 
+const FIELD_LABEL =
+  "block font-mono uppercase text-[9.5px] md:text-[10px] tracking-[0.14em] text-fg-faint mb-[8px] md:mb-[9px]";
+
 export function GameLogForm({
   deckId,
   onSaved,
@@ -51,32 +54,52 @@ export function GameLogForm({
   const [result, setResult] = useState<GameResult | null>(null);
   const [podSize, setPodSize] = useState(4);
   const [playedAt, setPlayedAt] = useState(today);
+  const [dateOpen, setDateOpen] = useState(false);
   const [worked, setWorked] = useState<GameAxisKey[]>([]);
   const [hurt, setHurt] = useState<GameAxisKey[]>([]);
   const [moved, setMoved] = useState<{ key: GameAxisKey; to: "worked" | "hurt" } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const openButton = useRef<HTMLButtonElement>(null);
+  const firstResult = useRef<HTMLButtonElement>(null);
   const movedTimer = useRef<number | null>(null);
+  // The collapsed button is unmounted while the form is open, so a `.focus()`
+  // inside `collapse()` would land on nothing. The intent is recorded here and
+  // spent once the button is back on the page.
+  const wantsOpenFocus = useRef(false);
 
   useEffect(() => () => {
     if (movedTimer.current !== null) window.clearTimeout(movedTimer.current);
   }, []);
+
+  // State 2 opens with focus on the Result group; states 11 and 13 hand it back
+  // to the row the player came from.
+  useEffect(() => {
+    if (open) {
+      firstResult.current?.focus();
+      return;
+    }
+    if (wantsOpenFocus.current) {
+      wantsOpenFocus.current = false;
+      openButton.current?.focus();
+    }
+  }, [open]);
 
   // State 14: reopening starts from nothing. The reset lives here rather than
   // on close so a refusal (state 12) cannot reach it — the form stays mounted
   // and populated through a refusal, and only a successful save or a cancel
   // brings it back through this path.
   function collapse() {
+    wantsOpenFocus.current = true;
     setOpen(false);
     setResult(null);
     setPodSize(4);
     setPlayedAt(today());
+    setDateOpen(false);
     setWorked([]);
     setHurt([]);
     setMoved(null);
     setError(null);
-    openButton.current?.focus();
   }
 
   // State 6. Ticking an axis in one column removes it from the other, so the
@@ -112,8 +135,12 @@ export function GameLogForm({
     }
   }
 
+  // State 9. `max` stops the picker, not a typed or pasted value, so the same
+  // rule is enforced here as well as in the action.
+  const futureDate = playedAt > today();
+
   function submit() {
-    if (!result || isPending) return;
+    if (!result || isPending || futureDate) return;
     startTransition(async () => {
       setError(null);
       const outcome = await logGame(deckId, {
@@ -145,7 +172,9 @@ export function GameLogForm({
         onClick={() => setOpen(true)}
         className={
           "w-full md:w-auto min-h-[44px] rounded-[8px] px-[18px] py-[10px] text-[13.5px] font-semibold border border-accent cursor-pointer " +
-          (ctaSolid ? "bg-accent text-bg hover:bg-accent-hover" : "bg-transparent text-accent")
+          (ctaSolid
+            ? "bg-accent text-bg hover:bg-accent-hover"
+            : "bg-transparent text-accent hover:text-accent-hover hover:border-accent-hover")
         }
       >
         {ctaLabel ?? gameLogCopy.form.open}
@@ -154,102 +183,115 @@ export function GameLogForm({
   }
 
   return (
-    <div className="rounded-[12px] p-[16px] md:p-[20px] bg-[color:var(--surface)] border border-[color:var(--border-strong)]">
-      <h3 className="font-mono uppercase text-[10px] tracking-[0.14em] text-[color:var(--fg-faint)]">
-        {gameLogCopy.form.heading}
-      </h3>
-
-      {/* Result — no default. State 2 opens with nothing chosen. */}
-      <div
-        role="radiogroup"
-        aria-label={gameLogCopy.form.resultLabel}
-        className="flex gap-[8px] mt-[14px]"
-      >
-        {RESULTS.map((r) => {
-          const on = result === r.value;
-          const won = on && r.value === "win";
-          return (
-            <button
-              key={r.value}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              disabled={isPending}
-              onClick={() => setResult(r.value)}
-              className={
-                "flex-1 md:flex-none md:w-[92px] min-h-[44px] md:min-h-[40px] rounded-[8px] " +
-                "text-[13.5px] font-semibold cursor-pointer border " +
-                (won
-                  ? "border-success bg-success text-bg"
-                  : on
-                    ? "border-accent bg-transparent text-fg"
-                    : "border-border bg-transparent text-fg-body")
-              }
-            >
-              {r.label}
-            </button>
-          );
-        })}
+    <div className="rounded-[12px] p-[16px] md:p-[20px] bg-surface border border-border-strong">
+      <div className="flex items-baseline justify-between gap-[12px] pb-[14px] md:pb-[18px] border-b border-border md:border-b-0">
+        <h3 className="font-display font-bold md:font-semibold text-[17px] md:text-[19px] text-fg">
+          {gameLogCopy.form.heading}
+        </h3>
+        {/* The date is `tonight` until the player says otherwise; the field is
+            only drawn once they ask for it. */}
+        {dateOpen ? (
+          <input
+            type="date"
+            autoFocus
+            value={playedAt}
+            max={today()}
+            disabled={isPending}
+            aria-label={gameLogCopy.form.playedToday}
+            onChange={(e) => setPlayedAt(e.target.value)}
+            className="min-h-[44px] md:min-h-0 rounded-[8px] px-[10px] font-mono text-[11px] bg-transparent border border-border text-fg-body"
+          />
+        ) : (
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => setDateOpen(true)}
+            className="font-mono text-[10px] md:text-[11px] text-fg-faint border-b border-dashed border-border-dashed cursor-pointer"
+          >
+            {playedAt === today() ? (
+              gameLogCopy.form.playedToday
+            ) : (
+              <span className="text-fg-body">{gameLogCopy.form.played(playedAt)}</span>
+            )}
+          </button>
+        )}
       </div>
 
-      {/* Pod size — defaults to 4, the commander table. */}
-      <div className="flex items-baseline gap-[8px] mt-[16px]">
-        <span className="font-mono uppercase text-[10px] tracking-[0.14em] text-[color:var(--fg-faint)]">
-          {gameLogCopy.form.podLabel}
-        </span>
-        <span className="font-mono text-[10px] text-[color:var(--fg-locked)]">
-          {gameLogCopy.form.podHint}
-        </span>
-      </div>
-      <div
-        role="radiogroup"
-        aria-label={gameLogCopy.form.podLabel}
-        className="flex flex-wrap gap-[6px] mt-[8px]"
-      >
-        {POD_SIZES.map((n) => {
-          const on = podSize === n;
-          return (
-            <button
-              key={n}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              disabled={isPending}
-              onClick={() => setPodSize(n)}
-              className={
-                "w-[44px] h-[44px] md:w-[40px] md:h-[40px] rounded-[8px] font-mono " +
-                "font-semibold text-[14px] cursor-pointer border " +
-                (on
-                  ? "border-accent bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-accent"
-                  : "border-border bg-transparent text-fg-body")
-              }
-            >
-              {n}
-            </button>
-          );
-        })}
+      <div className="md:flex md:flex-wrap md:items-start md:gap-[34px] mt-[16px] md:mt-[18px] md:mb-[20px]">
+        {/* Result — no default. State 2 opens with nothing chosen. */}
+        <div className="mb-[16px] md:mb-0">
+          <span id="game-result-label" className={FIELD_LABEL}>
+            {gameLogCopy.form.resultLabel}
+          </span>
+          <div role="radiogroup" aria-labelledby="game-result-label" className="flex gap-[7px] md:gap-[8px]">
+            {RESULTS.map((r, i) => {
+              const on = result === r.value;
+              const won = on && r.value === "win";
+              return (
+                <button
+                  key={r.value}
+                  ref={i === 0 ? firstResult : undefined}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  disabled={isPending}
+                  onClick={() => setResult(r.value)}
+                  className={
+                    "flex-1 md:flex-none h-[44px] md:h-[40px] md:px-[20px] rounded-[8px] text-[13.5px] cursor-pointer " +
+                    (on ? "font-semibold " : "font-medium ") +
+                    (won
+                      ? "bg-success text-bg"
+                      : on
+                        ? "border border-accent bg-transparent text-fg"
+                        : "border border-border bg-transparent text-fg-body")
+                  }
+                >
+                  {r.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Pod size — defaults to 4, the commander table. */}
+        <div className="mb-[18px] md:mb-0">
+          <span className={FIELD_LABEL}>
+            <span id="game-pod-label">{gameLogCopy.form.podLabel}</span>
+            <span className="hidden md:inline ml-[8px] normal-case tracking-normal text-[10px] text-fg-locked">
+              {gameLogCopy.form.podHint}
+            </span>
+          </span>
+          <div role="radiogroup" aria-labelledby="game-pod-label" className="flex gap-[5px] md:gap-[6px]">
+            {POD_SIZES.map((n) => {
+              const on = podSize === n;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  disabled={isPending}
+                  onClick={() => setPodSize(n)}
+                  className={
+                    "flex-1 md:flex-none md:w-[40px] h-[44px] md:h-[40px] rounded-[8px] font-mono " +
+                    "font-semibold text-[14px] cursor-pointer border " +
+                    (on
+                      ? "border-accent bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-accent"
+                      : "border-border-strong bg-transparent text-fg-body")
+                  }
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      {/* Date — today by default, and the browser refuses the future before the
-          action has to (state 9). */}
-      <label className="block mt-[16px]">
-        <span className="font-mono uppercase text-[10px] tracking-[0.14em] text-[color:var(--fg-faint)]">
-          {playedAt === today() ? gameLogCopy.form.playedToday : gameLogCopy.form.played(playedAt)}
-        </span>
-        <input
-          type="date"
-          value={playedAt}
-          max={today()}
-          disabled={isPending}
-          onChange={(e) => setPlayedAt(e.target.value)}
-          className="block mt-[6px] min-h-[44px] rounded-[8px] px-[12px] text-[13.5px] bg-transparent border border-[color:var(--border)] text-[color:var(--fg)]"
-        />
-      </label>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px] md:gap-[16px] mt-[18px]">
+      <div className="md:grid md:grid-cols-2 md:gap-[16px]">
         <AxisColumn
           legend={gameLogCopy.form.workedLabel}
-          colour="var(--success)"
+          ink="text-success"
           column="worked"
           selected={worked}
           moved={moved}
@@ -258,7 +300,7 @@ export function GameLogForm({
         />
         <AxisColumn
           legend={gameLogCopy.form.hurtLabel}
-          colour="var(--warning)"
+          ink="text-warning"
           column="hurt"
           selected={hurt}
           moved={moved}
@@ -267,16 +309,12 @@ export function GameLogForm({
         />
       </div>
 
-      <p className="font-mono text-[10px] text-[color:var(--fg-locked)] mt-[10px]">
-        {gameLogCopy.form.optionalNote}
-      </p>
-
-      <div className="flex flex-col md:flex-row gap-[8px] mt-[14px]">
+      <div className="flex flex-col md:flex-row md:flex-wrap md:items-center items-stretch gap-[9px] md:gap-[16px] mt-[18px] md:mt-[20px] pt-[16px] md:pt-[18px] border-t border-border">
         <button
           type="button"
           onClick={submit}
-          disabled={!result || isPending}
-          className="min-h-[44px] md:min-h-[48px] rounded-[8px] px-[20px] text-[13.5px] font-semibold cursor-pointer border border-accent bg-accent text-bg hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!result || isPending || futureDate}
+          className="w-full md:w-auto h-[48px] md:h-auto md:px-[20px] md:py-[11px] rounded-[8px] text-[14.5px] md:text-[14px] font-semibold cursor-pointer bg-accent text-bg hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPending ? gameLogCopy.form.saving : gameLogCopy.form.save}
         </button>
@@ -284,10 +322,13 @@ export function GameLogForm({
           type="button"
           onClick={collapse}
           disabled={isPending}
-          className="min-h-[44px] md:min-h-[48px] rounded-[8px] px-[20px] text-[13.5px] bg-transparent border border-[color:var(--border)] text-[color:var(--fg-body)] cursor-pointer"
+          className="w-full md:w-auto h-[44px] md:h-auto md:px-[18px] md:py-[11px] rounded-[8px] text-[13.5px] font-medium bg-transparent border border-border-strong text-fg-muted cursor-pointer"
         >
           {gameLogCopy.form.cancel}
         </button>
+        <p className="hidden md:block font-mono text-[11px] text-fg-faint">
+          {gameLogCopy.form.optionalNote}
+        </p>
       </div>
 
       {error && <MutationError message={error} />}
@@ -297,7 +338,7 @@ export function GameLogForm({
 
 function AxisColumn({
   legend,
-  colour,
+  ink,
   column,
   selected,
   moved,
@@ -305,7 +346,8 @@ function AxisColumn({
   onToggle,
 }: {
   legend: string;
-  colour: string;
+  /** Tailwind ink class for the legend and the tick glyph — the column's colour. */
+  ink: string;
   column: "worked" | "hurt";
   selected: GameAxisKey[];
   moved: { key: GameAxisKey; to: "worked" | "hurt" } | null;
@@ -313,68 +355,84 @@ function AxisColumn({
   onToggle: (key: GameAxisKey, column: "worked" | "hurt") => void;
 }) {
   return (
-    <fieldset className="min-w-0">
-      <legend className="font-mono uppercase text-[10px] tracking-[0.14em]" style={{ color: colour }}>
+    <fieldset className="min-w-0 border-0 p-0 mb-[16px] md:mb-0">
+      <legend
+        className={
+          "md:flex md:items-baseline md:gap-[8px] mb-[8px] md:mb-[9px] font-mono uppercase text-[10px] tracking-[0.14em] " +
+          ink
+        }
+      >
         {legend}
         {/* Absent at zero — a counter reading '0 marked' is a column complaining. */}
         {selected.length > 0 && (
-          <span className="ml-[8px] text-[color:var(--fg-locked)] normal-case tracking-normal">
+          <span className="ml-[8px] md:ml-0 text-fg-locked normal-case tracking-normal">
             {gameLogCopy.form.marked(String(selected.length))}
           </span>
         )}
       </legend>
-      <div className="flex flex-col gap-[6px] mt-[8px]">
+      <div className="flex flex-col gap-[5px]">
         {GAME_AXIS_KEYS.map((key) => {
           const on = selected.includes(key);
           // The vacated row wears the marker, so it says where the axis went
           // rather than that something happened here.
           const vacated = moved !== null && moved.key === key && moved.to !== column;
+          const glossId = `axis-${column}-${key}-gloss`;
           return (
             <label
               key={key}
-              className="flex items-center gap-[11px] min-h-[48px] md:min-h-[46px] rounded-[8px] px-[12px] py-[5px] cursor-pointer"
-              style={{
-                background: on ? "var(--elevated-hover)" : "var(--surface)",
-                border: vacated
-                  ? "1px dashed var(--border-strong)"
+              className={
+                "flex items-center gap-[11px] min-h-[48px] md:min-h-[46px] rounded-[8px] px-[12px] py-[5px] cursor-pointer border " +
+                // The checkbox itself is visually hidden, so the ring the
+                // browser would draw on it is drawn on the row instead.
+                "has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent has-[:focus-visible]:outline-offset-2 " +
+                (vacated
+                  ? "border-dashed border-border-strong bg-surface"
                   : on
-                    ? "1px solid var(--accent-shadow)"
-                    : "1px solid var(--border)",
-              }}
+                    ? "border-accent-shadow bg-elevated-hover"
+                    : "border-border bg-surface")
+              }
             >
               <input
                 type="checkbox"
                 className="sr-only"
                 checked={on}
                 disabled={disabled}
+                aria-describedby={glossId}
                 onChange={() => onToggle(key, column)}
               />
               <span
                 aria-hidden
-                className="shrink-0 grid place-items-center w-[20px] h-[20px] md:w-[18px] md:h-[18px] rounded-[5px] text-[11px]"
-                style={{
-                  border: on ? "1px solid var(--accent)" : "1px solid var(--border-strong)",
-                  background: on ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "transparent",
-                  color: colour,
-                }}
+                className={
+                  "shrink-0 flex items-center justify-center w-[20px] h-[20px] md:w-[18px] md:h-[18px] rounded-[5px] border font-mono text-[12px] md:text-[11px] " +
+                  ink +
+                  " " +
+                  (on
+                    ? "border-accent bg-[color-mix(in_srgb,var(--accent)_12%,transparent)]"
+                    : "border-border-strong bg-transparent")
+                }
               >
                 {on ? "✓" : ""}
               </span>
-              <span className="min-w-0">
-                <span className="block text-[13.5px] text-[color:var(--fg)]">
+              <span className="flex-1 min-w-0 flex flex-col gap-[2px]">
+                <span className={"text-[13.5px] " + (vacated ? "text-fg-faint" : "text-fg")}>
                   {axisCopy[key].label}
                 </span>
                 <span
-                  className="block font-mono text-[10px]"
-                  style={{
-                    color: vacated ? "var(--fg-locked)" : on ? "var(--fg-muted)" : "var(--fg-faint)",
-                  }}
+                  id={glossId}
+                  className={
+                    "font-mono text-[10px] " +
+                    (vacated ? "text-fg-faint" : on ? "text-fg-muted" : "text-fg-faint")
+                  }
                 >
-                  {vacated
-                    ? column === "worked"
-                      ? gameLogCopy.form.movedToHurt
-                      : gameLogCopy.form.movedToWorked
-                    : axisCopy[key][column]}
+                  {vacated ? (
+                    column === "worked" ? (
+                      gameLogCopy.form.movedToHurt
+                    ) : (
+                      gameLogCopy.form.movedToWorked
+                    )
+                  ) : (
+                    axisCopy[key][column]
+                  )}
                 </span>
               </span>
             </label>

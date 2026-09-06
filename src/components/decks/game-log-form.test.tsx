@@ -84,12 +84,26 @@ describe("GameLogForm", () => {
     ).toHaveLength(8);
   });
 
-  // State 9 — the browser refuses before the action has to.
+  // State 9 — the picker refuses before the action has to, and the save button
+  // refuses the values the picker cannot reach.
   it("caps the date at today", () => {
     mount();
     open();
+    fireEvent.click(screen.getByText(gameLogCopy.form.playedToday));
     const date = screen.getByLabelText(gameLogCopy.form.playedToday) as HTMLInputElement;
     expect(date.max).toBe(new Date().toISOString().slice(0, 10));
+  });
+
+  it("refuses to save a date typed past today", () => {
+    mount();
+    open();
+    fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+    fireEvent.click(screen.getByText(gameLogCopy.form.playedToday));
+    const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    fireEvent.change(screen.getByLabelText(gameLogCopy.form.playedToday), {
+      target: { value: tomorrow },
+    });
+    expect(screen.getByRole("button", { name: gameLogCopy.form.save })).toBeDisabled();
   });
 
   // State 12. There is no edit action, so a refusal that cleared the form would

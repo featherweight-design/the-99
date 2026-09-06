@@ -8,6 +8,13 @@ export type Headline = {
   sub: string;
   /** N=1 only: the record sits beside the heading. At N≥2 it is inside `sub`. */
   record: string | null;
+  /**
+   * The two substrings of `sub` that take their own ink — the record figure and
+   * the denominator clause. They travel as substrings rather than as a
+   * pre-split sentence so the copy module stays the only place the wording of
+   * that sentence is decided.
+   */
+  subEmphasis: { record: string; denominator: string } | null;
 };
 
 /**
@@ -45,6 +52,7 @@ export function deriveHeadline(summary: GameSummary): Headline | null {
       heading: gameLogCopy.headline.oneGame,
       sub: gameLogCopy.headline.oneGameNote,
       record: gameLogCopy.headline.oneGameRecord(record, result),
+      subEmphasis: null,
     };
   }
 
@@ -55,6 +63,10 @@ export function deriveHeadline(summary: GameSummary): Headline | null {
     summary.marked === summary.count
       ? gameLogCopy.headline.subAll(String(summary.count), long)
       : gameLogCopy.headline.sub(String(summary.marked), String(summary.count), long);
+  const subEmphasis = {
+    record,
+    denominator: gameLogCopy.cell.figure(String(summary.marked), String(summary.count)),
+  };
 
   const worst: AxisTally | undefined = summary.fix[0];
   const best: AxisTally | undefined = summary.keep[0];
@@ -64,26 +76,26 @@ export function deriveHeadline(summary: GameSummary): Headline | null {
     // really was marked in every game. A one-of-two lean is a lean the copy has
     // no honest sentence for, and it falls through to the plain statement.
     if (worst && worst.hurt === summary.count) {
-      return { heading: gameLogCopy.headline.twoGames(axisCopy[worst.key].label), sub: gameLogCopy.headline.twoGamesNote, record: null };
+      return { heading: gameLogCopy.headline.twoGames(axisCopy[worst.key].label), sub: gameLogCopy.headline.twoGamesNote, record: null, subEmphasis: null };
     }
     if (best && best.worked === summary.count) {
-      return { heading: gameLogCopy.headline.twoGamesKeep(axisCopy[best.key].label), sub: gameLogCopy.headline.twoGamesNote, record: null };
+      return { heading: gameLogCopy.headline.twoGamesKeep(axisCopy[best.key].label), sub: gameLogCopy.headline.twoGamesNote, record: null, subEmphasis: null };
     }
     return summary.axes.length > 0
-      ? { heading: gameLogCopy.headline.findingNone, sub, record: null }
-      : { heading: gameLogCopy.headline.recordOnly(String(summary.count), record), sub: "", record: null };
+      ? { heading: gameLogCopy.headline.findingNone, sub, record: null, subEmphasis }
+      : { heading: gameLogCopy.headline.recordOnly(String(summary.count), record), sub: "", record: null, subEmphasis: null };
   }
 
   if (worst) {
-    return { heading: gameLogCopy.headline.finding(axisCopy[worst.key].label), sub, record: null };
+    return { heading: gameLogCopy.headline.finding(axisCopy[worst.key].label), sub, record: null, subEmphasis };
   }
   if (best) {
-    return { heading: gameLogCopy.headline.findingKeep(axisCopy[best.key].label), sub, record: null };
+    return { heading: gameLogCopy.headline.findingKeep(axisCopy[best.key].label), sub, record: null, subEmphasis };
   }
   // Every axis cancelled out, or nothing was ever marked. The two read
   // differently: one is a deck with no clear tendency, the other is a log with
   // no marks in it at all — and that one gets no aggregate panel.
   return summary.axes.length > 0
-    ? { heading: gameLogCopy.headline.findingNone, sub, record: null }
-    : { heading: gameLogCopy.headline.recordOnly(String(summary.count), record), sub: "", record: null };
+    ? { heading: gameLogCopy.headline.findingNone, sub, record: null, subEmphasis }
+    : { heading: gameLogCopy.headline.recordOnly(String(summary.count), record), sub: "", record: null, subEmphasis: null };
 }

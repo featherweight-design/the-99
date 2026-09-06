@@ -37,7 +37,8 @@ describe("GamesPanel — the aggregate", () => {
 
   it("prints every count with its denominator", () => {
     mount(MOCK);
-    expect(screen.getByText(gameLogCopy.cell.figure("3", "3"))).toBeInTheDocument();
+    // The sub-line's denominator clause and the cell figure both say it.
+    expect(screen.getAllByText(gameLogCopy.cell.figure("3", "3")).length).toBeGreaterThan(0);
     expect(screen.getAllByText(gameLogCopy.cell.figure("2", "3")).length).toBeGreaterThan(0);
   });
 

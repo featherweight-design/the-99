@@ -76,7 +76,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
         {RESULT_GLYPH[game.result]}
       </span>
 
-      <span className="flex-none w-[132px] font-mono text-[11px] tabular-nums text-fg-faint">
+      <span className="flex-none md:w-[132px] font-mono text-[11px] tabular-nums text-fg-faint">
         {gameLogCopy.history.meta(String(game.podSize), formatPlayed(game.playedAt))}
       </span>
 
@@ -109,7 +109,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
             type="button"
             disabled={isPending}
             onClick={confirm}
-            className="min-h-[30px] px-[10px] rounded-[7px] text-[11.5px] border border-border-strong text-danger bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-[44px] md:min-h-[30px] px-[14px] md:px-[10px] rounded-[7px] text-[11.5px] border border-border-strong text-danger bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
             {gameLogCopy.history.confirmYes}
           </button>
@@ -117,7 +117,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
             type="button"
             disabled={isPending}
             onClick={() => setConfirming(false)}
-            className="min-h-[30px] px-[10px] rounded-[7px] text-[11.5px] border border-border text-fg-body bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-[44px] md:min-h-[30px] px-[14px] md:px-[10px] rounded-[7px] text-[11.5px] border border-border text-fg-body bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
             {gameLogCopy.history.confirmNo}
           </button>
@@ -127,7 +127,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted }: GameHistoryR
           type="button"
           aria-label={gameLogCopy.history.delete}
           onClick={() => setConfirming(true)}
-          className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[30px] md:h-[30px] rounded-[7px] border border-border text-fg-locked hover:text-danger bg-transparent cursor-pointer"
+          className="flex-none flex items-center justify-center w-[44px] h-[44px] md:w-[30px] md:h-[30px] rounded-[7px] border border-border font-mono text-[13px] text-fg-locked hover:text-danger bg-transparent cursor-pointer"
         >
           ×
         </button>
