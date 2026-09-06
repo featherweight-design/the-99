@@ -7,6 +7,8 @@
 // disabled sort with a stated reason, not an absence of commanders. `FloorEmpty`
 // replaces the list, because the floor really did take everything.
 
+"use client";
+
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { GhostButton } from "../ui/button";
 
