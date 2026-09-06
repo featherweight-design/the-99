@@ -65,7 +65,12 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
         type="button"
         onClick={handleToggle}
         aria-label="Deck options"
-        aria-haspopup="menu"
+        // "true", not "menu": `menu` promises role="menu" with menuitem
+        // children and arrow-key navigation, which `sort-menu` and
+        // `account-menu` both provide and this panel does not. It is a generic
+        // popover, and its second mode is a rename form rather than a list of
+        // actions at all.
+        aria-haspopup="true"
         aria-expanded={open}
         // Omitted while closed: the panel is unmounted at rest, and a reference
         // to an absent id is worse than no reference at all.

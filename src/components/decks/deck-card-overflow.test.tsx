@@ -12,9 +12,11 @@ const { DeckCardOverflow } = await import("./deck-card-overflow");
 const trigger = () => screen.getByRole("button", { name: "Deck options" });
 
 describe("DeckCardOverflow", () => {
-  it("declares itself a menu trigger", () => {
+  // Generic, not "menu": that value promises menuitem semantics this panel does
+  // not implement, and its rename mode is a form rather than a list of actions.
+  it("declares a generic popup rather than a menu", () => {
     render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} />);
-    expect(trigger()).toHaveAttribute("aria-haspopup", "menu");
+    expect(trigger()).toHaveAttribute("aria-haspopup", "true");
   });
 
   it("points aria-controls at the panel only while it is open", () => {
