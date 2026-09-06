@@ -306,6 +306,12 @@ lightbox had one.
 - `brand/` — the locked brand sheet + brand README, copied in for self-containment.
 - `support.js` — runtime for the HTML reference; not production code.
 
+**Amendment 5 (#281) — Shopping reads availability — was added to this folder on 2026-09-05 as
+new files only, and nothing above is reopened by it:** `The 99 - Shopping Availability (R1).dc.html`,
+`AMENDMENT-5-README.md`, `AMENDMENT-5-READINESS.md`, `STATES-shopping-availability.md`,
+`shopping-availability · copy strings.ts`. It is independent of all four above; on an over-99
+deck it and §3 both render and neither mentions the other.
+
 The four per-amendment folders (`design_handoff_the99_black_pip/`, `…_deck_reimport/`,
 `…_over_99/`, `…_full_card/`) remain as the sources this package was assembled from; nothing in
 them is newer than what is here.
