@@ -144,8 +144,8 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 **The Mana Pool checkout row has no ticket, and that is recorded rather than resolved.** The feature
 was scoped from a direct request with no GitHub issue behind it, and filing one unilaterally is not
-mine to do. The row is real work with a merged spec; the Ticket column is simply empty until Hugh
-decides whether it wants an issue.
+mine to do. The row is real work with a merged spec; the Ticket column stays `_none_` until Hugh
+decides whether this feature should have an issue at all.
 
 ---
 
