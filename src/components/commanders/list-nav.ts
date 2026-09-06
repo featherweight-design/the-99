@@ -32,6 +32,16 @@ function parkScope(scope: "owned" | "play") {
   }
 }
 
+// What the server saw for this parameter. Next hands a repeated parameter to the
+// page as an array, and every parser there compares against a string, so
+// `?sort=new&sort=fit` renders the default. `get()` would report the first value
+// instead, and the guards below would then refuse a flip the reader can see the
+// list needs — so a repeat reads as an absence on this side too.
+function readOne(params: URLSearchParams, key: string): string | null {
+  const all = params.getAll(key);
+  return all.length === 1 ? all[0] : null;
+}
+
 function takeScope(): string | null {
   try {
     const parked = sessionStorage.getItem(PENDING_KEY);
@@ -57,7 +67,7 @@ export function useScopeNav() {
       // control fires on any segment, including the active one, and without
       // this that click would clear a `sort` the reader had chosen, navigate
       // for a list that did not change, and park an announcement for it.
-      const current = params.get("scope") === "play" ? "play" : "owned";
+      const current = readOne(params, "scope") === "play" ? "play" : "owned";
       if (next === current) return;
       if (next === "play") params.set("scope", "play");
       else params.delete("scope");
@@ -89,7 +99,7 @@ function useParamNav<T extends string>(key: string, nonDefault: T) {
       // Same guard as the scope flip's: both controls fire on their active
       // option too, and a round-trip that re-ranks nothing is still a fetch.
       // Only two values, so "is it the non-default one" identifies both.
-      if ((params.get(key) === nonDefault) === (next === nonDefault)) return;
+      if ((readOne(params, key) === nonDefault) === (next === nonDefault)) return;
       if (next === nonDefault) params.set(key, next);
       else params.delete(key);
       startTransition(() => router.replace(href(params), { scroll: false }));

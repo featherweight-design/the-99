@@ -77,6 +77,16 @@ describe("list-nav", () => {
       expect(replace).not.toHaveBeenCalled();
     });
 
+    it("reads a repeated parameter the way the server does — as an absence", () => {
+      // The page compares `sp.sort` against a string, so an array falls to the
+      // default. The guard has to agree, or it refuses the one flip that would
+      // get the reader out of the URL they arrived on.
+      window.history.replaceState(null, "", "/commanders?scope=play&sort=new&sort=fit");
+      const { result } = renderHook(() => useSortNav());
+      act(() => result.current("new"));
+      expect(replace).toHaveBeenCalledWith("?scope=play&sort=new", { scroll: false });
+    });
+
     it("leaves every parameter it does not own alone", () => {
       window.history.replaceState(null, "", "/commanders?scope=play&sort=new&c=BG");
       const { result } = renderHook(() => useAvailNav());

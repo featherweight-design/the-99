@@ -14,7 +14,11 @@ import { FilterBar } from "./filter-bar";
 import { PageHeader } from "./page-header";
 import { SortMenu } from "./sort-menu";
 import {
-  useAvailNav, useRerankAnnouncement, useScopeAnnouncement, useScopeNav, useSortNav,
+  useAvailNav,
+  useRerankAnnouncement,
+  useScopeAnnouncement,
+  useScopeNav,
+  useSortNav,
 } from "./list-nav";
 // Imported, never redeclared: it is 25, and the reveal band only lines up with
 // the shipped control if both windows step by the same number.
