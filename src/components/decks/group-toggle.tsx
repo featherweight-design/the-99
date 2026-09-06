@@ -4,6 +4,8 @@
 // §Decklist Group Toggle (design table).
 
 import { ClearAutoButton } from "./clear-auto";
+import { PriceStrip } from "./price-strip";
+import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 
 interface GroupToggleProps {
   allCount: number;
@@ -18,6 +20,11 @@ interface GroupToggleProps {
   keptCount?: number;
   sweepPending?: boolean;
   onClearAuto?: () => void;
+  /** Summed over the same cards the Shopping pill counts — one fact, two
+      renderings, so they can never disagree on screen. */
+  priceSummary?: PriceSummary | null;
+  /** Server-built. Null renders no strip at all. */
+  provenance?: ProvenanceForm | null;
 }
 
 export function GroupToggle({
@@ -31,12 +38,20 @@ export function GroupToggle({
   keptCount = 0,
   sweepPending = false,
   onClearAuto,
+  priceSummary = null,
+  provenance = null,
 }: GroupToggleProps) {
   return (
-    /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px */
+    /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px.
+       The strip sits INSIDE this container, above the bottom border, so the
+       divider closes the filter row and its strip together. The wrap is not
+       free: `items-center` and both gaps belong to the pill row, not to the
+       column — left on the outer element they would centre the pills and turn
+       the 7/10px pill gap into the gap above the strip. */
     <div
-      className="flex items-center gap-[7px] md:gap-[10px] px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-[color:var(--border)] md:border-b-0"
+      className="flex flex-col px-[16px] py-[9px] md:px-[26px] md:pt-[14px] md:pb-[10px] border-b border-[color:var(--border)] md:border-b-0"
     >
+      <div className="flex items-center gap-[7px] md:gap-[10px]">
       {/* "All N" filter pill — active: accent bg dark text | idle: muted with border */}
       <button
         type="button"
@@ -115,6 +130,15 @@ export function GroupToggle({
       >
         By role
       </button>
+      </div>
+
+      {/* Scoped to the filter it sits under: the sum of what Shopping is
+          showing, and nothing when another filter is open. */}
+      {filter === "shopping" && priceSummary && (
+        <div className="mt-[8px]">
+          <PriceStrip summary={priceSummary} provenance={provenance} />
+        </div>
+      )}
     </div>
   );
 }
