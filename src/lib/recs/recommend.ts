@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, decks } from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
@@ -134,6 +134,30 @@ export const loadCollectionPool = cache(async function loadCollectionPool(
   return { collection: owned.filter((c) => c.commanderLegal), uniqueCardsRead: owned.length };
 });
 
+/** One card as a `PoolCard`, for a commander outside the player's collection. */
+async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
+  const [row] = await db
+    .select({
+      oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
+      oracleText: cards.oracleText, keywords: cards.keywords,
+      colorIdentity: cards.colorIdentity, imageUri: cards.imageUri,
+      manaCost: cards.manaCost,
+    })
+    .from(cards)
+    // Commander legality is part of the lookup, not a later check: the pool this
+    // card joins is already filtered to commander-legal cards, so a banned or
+    // non-legal oracle id must read as "no such commander" rather than score.
+    .where(and(eq(cards.oracleId, oracleId), eq(cards.commanderLegal, true)))
+    .limit(1);
+  // Two different questions, and both have to be asked. `commanderLegal` is
+  // format legality — an Instant carries it — while `isCommanderCandidate` is
+  // whether the card can be the commander at all. A crafted URL naming a legal
+  // non-commander would otherwise render as one, and spend an EDHREC resolve
+  // finding that out.
+  if (!row || !isCommanderCandidate(row)) return null;
+  return row;
+}
+
 export async function recommendCommanders(
   userId: string,
 ): Promise<RecommendResult> {
@@ -196,7 +220,9 @@ export async function recommendCommanders(
 /**
  * Full score for a single commander, for the detail page. Costs one collection
  * query plus one EDHREC resolve instead of the ~196 the fanout would do.
- * Returns null when the commander is no longer in the user's collection.
+ * Returns null when the oracle id names no commander-legal card — either
+ * because no card carries that id, or because the card it names cannot be a
+ * commander. Both are "no such commander" to this page.
  */
 export async function scoreOneCommander(
   userId: string,
@@ -204,7 +230,12 @@ export async function scoreOneCommander(
   slug: string,
 ): Promise<RankedCommander | null> {
   const { collection } = await loadCollectionPool(userId);
-  const commander = collection.find((c) => c.oracleId === oracleId);
+  // A discovery commander is by definition one the player may not own, so a
+  // collection miss is an ordinary case here rather than a 404. The pool and the
+  // role logic are unaffected: `commanderPool` already excludes the commander
+  // itself, and a commander outside the collection was never in the pool.
+  const commander =
+    collection.find((c) => c.oracleId === oracleId) ?? (await loadPoolCard(oracleId));
   if (!commander) return null;
 
   const cache = await readEdhrecCache([oracleId]);

@@ -2,7 +2,7 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { scoreOneCommander } from "../../../lib/recs/recommend";
-import { findScoredCommander } from "../../../lib/recs/store";
+import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
 import type { RoleCard, RoleName } from "../../../lib/recs/score";
 
 /** A1: one retry for the whole section. Re-resolves EDHREC and hands back only
@@ -13,8 +13,10 @@ export async function retryCoverageFigures(
 ): Promise<Record<RoleName, RoleCard[]> | null> {
   const userId = await requireUserId();
 
-  // Resolve the commander using the same two-step path as the page.
-  const found = await findScoredCommander(userId, slug);
+  // The same resolver the page uses, so the retry reaches the commander the
+  // page rendered. Resolving through the store alone would no-op on every
+  // discovery page, which is exactly where a degraded EDHREC is retried.
+  const found = await resolveCommanderSlug(userId, slug);
   if (!found) return null;
 
   const scored = await scoreOneCommander(userId, found.oracleId, slug);

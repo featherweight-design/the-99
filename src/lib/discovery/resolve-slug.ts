@@ -1,0 +1,52 @@
+import { loadCollectionPool } from "../recs/recommend";
+import { getRankedList } from "../recs/ranked-list";
+import { findScoredCommander } from "../recs/store";
+import { loadCandidateSlugRows } from "./candidates";
+import { byFit } from "./novelty";
+import { assignDiscoverySlugs } from "./slugs";
+
+export type ResolvedCommander = { oracleId: string; rank: number; anyDegraded: boolean };
+
+/**
+ * A commander detail slug, from whichever of the three rankings owns it.
+ *
+ * 1. The persisted scores. Matching there keeps a URL valid across a re-rank,
+ *    which a freshly-derived slug would not: dedup suffixes follow rank order.
+ * 2. The computed owned ranking. `persistScores` is best-effort, so a store
+ *    miss must not 404 a commander that ranks perfectly well in memory.
+ * 3. The discovery ranking, for a commander the player has not built. It has
+ *    no persisted score and no place in the owned list, but the discovery list
+ *    links to it all the same — roughly 3,100 rows resolve nowhere else.
+ *
+ * Shared with `retryCoverageFigures` rather than inlined in the page: the retry
+ * has to reach the same commander the page rendered, and resolving through the
+ * store alone would silently no-op on every discovery-only page.
+ */
+export async function resolveCommanderSlug(
+  userId: string,
+  slug: string,
+): Promise<ResolvedCommander | null> {
+  const found = await findScoredCommander(userId, slug);
+  if (found) return found;
+
+  const { items } = await getRankedList(userId);
+  const idx = items.findIndex((i) => i.slug === slug);
+  if (idx !== -1) {
+    return { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };
+  }
+
+  const { collection } = await loadCollectionPool(userId);
+  // `unplayedCount` is `byFit`'s required input and never read by it, so it is
+  // filled once per row here rather than in the comparator, which would
+  // otherwise allocate two objects per comparison.
+  const rows = assignDiscoverySlugs(
+    (await loadCandidateSlugRows(userId, collection.map((c) => c.oracleId)))
+      .map((r) => ({ ...r, unplayedCount: 0 })),
+  ).sort(byFit);
+  const at = rows.findIndex((r) => r.slug === slug);
+  if (at === -1) return null;
+
+  // The rank the row itself showed: position in the fit ranking, which is
+  // discovery's default and the only ordering this page can name.
+  return { oracleId: rows[at].oracleId, rank: at + 1, anyDegraded: false };
+}

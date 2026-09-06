@@ -4,14 +4,14 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { RoleCard, RoleName } from "../../../lib/recs/score";
 
-const { requireUserId, findScoredCommander, scoreOneCommander } = vi.hoisted(() => ({
+const { requireUserId, resolveCommanderSlug, scoreOneCommander } = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  findScoredCommander: vi.fn(),
+  resolveCommanderSlug: vi.fn(),
   scoreOneCommander: vi.fn(),
 }));
 
 vi.mock("../../../lib/auth", () => ({ requireUserId }));
-vi.mock("../../../lib/recs/store", () => ({ findScoredCommander }));
+vi.mock("../../../lib/discovery/resolve-slug", () => ({ resolveCommanderSlug }));
 vi.mock("../../../lib/recs/recommend", () => ({ scoreOneCommander }));
 
 const { retryCoverageFigures } = await import("./coverage-action");
@@ -25,7 +25,7 @@ const roleCards: Record<RoleName, RoleCard[]> = {
 
 beforeEach(() => {
   requireUserId.mockReset().mockResolvedValue("user_1");
-  findScoredCommander.mockReset().mockResolvedValue({ oracleId: "korvold" });
+  resolveCommanderSlug.mockReset().mockResolvedValue({ oracleId: "korvold" });
   scoreOneCommander.mockReset();
 });
 
@@ -49,7 +49,7 @@ describe("retryCoverageFigures", () => {
   });
 
   it("returns null when the commander cannot be resolved", async () => {
-    findScoredCommander.mockResolvedValue(null);
+    resolveCommanderSlug.mockResolvedValue(null);
     await expect(retryCoverageFigures("nobody")).resolves.toBeNull();
     expect(scoreOneCommander).not.toHaveBeenCalled();
   });
