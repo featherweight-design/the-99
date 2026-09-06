@@ -242,6 +242,27 @@ describe("DiscoveryView", () => {
     expect(clause.tagName).toBe("STRONG");
   });
 
+  // The clause counts decks whose identity CONTAINS the filter, so it says those
+  // decks cover the colours rather than that they are them.
+  it("counts a wider deck identity, and does not call it the filtered one", () => {
+    const items = [item({ colorIdentity: ["U"] })];
+    render(
+      <DiscoveryView discovery={list({ items, deckIdentities: [["G", "W"]] })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.getByText(empty.filteredBuiltClause(1, 1, "Green"))).toBeTruthy();
+    expect(screen.queryByText(/decks is Green/)).toBeNull();
+  });
+
+  it("does not say one of your 1 decks", () => {
+    const items = [item({ colorIdentity: ["U"] })];
+    render(
+      <DiscoveryView discovery={list({ items, deckIdentities: [["G"]] })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.getByText(/^Your only deck covers Green/)).toBeTruthy();
+  });
+
   // ── The window ────────────────────────────────────────────────────────
   const many = (n: number) =>
     Array.from({ length: n }, (_, i) =>
