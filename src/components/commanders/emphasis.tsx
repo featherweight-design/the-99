@@ -38,10 +38,14 @@ export function Emphasised({
     const at = rest.indexOf(value);
     if (at === -1) return;
     nodes.push(rest.slice(0, at));
+    // A figure the drawing marks by colour alone is not emphasised, it is tinted,
+    // and `<strong>` would put a stress in a screen reader that no sighted reader
+    // hears. Only the bolded form claims importance.
+    const Tag = weight === 400 ? "span" : "strong";
     nodes.push(
-      <strong key={i} style={{ color, fontWeight: weight }}>
+      <Tag key={i} style={{ color, fontWeight: weight }}>
         {value}
-      </strong>,
+      </Tag>,
     );
     rest = rest.slice(at + value.length);
   });
