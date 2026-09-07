@@ -57,7 +57,8 @@ itself clickable, so the small target is a shortcut rather than the only route.
 
 | | Desktop | Phone |
 |---|---|---|
-| Container | 262px persistent column, `--surface-rail` | Sheet over a 74% `--bg` scrim, 22px top radius || Search | Top of the column, 34px | Top of the sheet, 44px |
+| Container | 262px persistent column, `--surface-rail` | Sheet over a 74% `--bg` scrim, 22px top radius |
+| Search | Top of the column, 34px | Top of the sheet, 44px |
 | Behaviour | Filters on tick | Filters on tap |
 | Commit | None. **Clear** only | Button dismisses; **Clear** clears |
 | Active filters | Rows highlighted in place | Removable chips under the header |

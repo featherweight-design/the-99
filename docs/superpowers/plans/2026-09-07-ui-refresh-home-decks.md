@@ -4130,11 +4130,13 @@ Run against `design/design_handoff_the99_refresh/` on 2026-09-07, after Task 19 
 | §Conformance — the four surfaces we are not redesigning | 19 |
 | §Gaps 1–3 | Findings 5, 7 and the open-questions list in the PR body |
 
-Two handoff items are deliberately **not** built, and both are recorded above rather than
-silently dropped: real mana symbols on the deck tile (scoped in the handoff's own §Gaps at
-about a day, drawn nowhere) and the deck-list *row* view behind the tile/list toggle, which
-the handoff names but does not draw. The toggle itself is not built either — a control whose
-second state has no drawing is a control that cannot be reviewed. Both are in the PR body.
+One handoff item is deliberately **not** built, and it is recorded above rather than silently
+dropped: the **view toggle** in the Decks header (`CHROME-rail-and-tabs.md:83` — "Desktop, left
+to right: view toggle, `Sort · …`, Import, New deck"). It is named in one clause of one line and
+drawn nowhere, and its second state — a deck *row* rather than a tile — has no frame at any
+breakpoint. A control whose alternate state cannot be reviewed cannot be built to a design
+review, so the header ships with sort, Import and New deck, and the toggle is in the PR body as
+an open question. Nothing else in the plan depends on it.
 
 ### 2 · Placeholder scan
 
