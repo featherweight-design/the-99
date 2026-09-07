@@ -21,12 +21,22 @@ export const CLAIM_BY = 55;
     confident-assertion failure mode, not a guarantee against one. */
 const HEDGES = /\b(tend|tends|usually|mostly|often|typically)\b/i;
 
+/** Periods that belong to a name rather than to a sentence: an honorific, or a letter
+    standing alone inside an initialism. */
+const NAME_PERIOD = /\b(?:Mr|Mrs|Ms|Dr|St|Sgt|Capt|Lt)\.|\b[A-Z]\./g;
+
 export function acceptProse(s: string): boolean {
   const t = s.trim();
   if (t.length < OK_MIN || t.length > HARD_MAX) return false;
 
   // Exactly one sentence: a second one in this slot would be half-clamped on the card.
-  const sentences = t.split(/[.!?](\s|$)/).filter((p) => p.trim().length > 0);
+  // A period inside a commander's name is not a sentence end, and the subject of every
+  // one of these strings is a commander, so a title ("Mr. Orfeo, the Boulder") or an
+  // initialism would otherwise reject every sentence written about that commander.
+  const sentences = t
+    .replace(NAME_PERIOD, (m) => m.slice(0, -1))
+    .split(/[.!?](\s|$)/)
+    .filter((p) => p.trim().length > 0);
   if (sentences.length !== 1) return false;
 
   // Front-loading. A comma-free sentence passes only if it is short end to end, which

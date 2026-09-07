@@ -36,6 +36,22 @@ describe("acceptProse", () => {
     expect(acceptProse(two)).toBe(false);
   });
 
+  // Every one of these strings names a commander, and a commander's name can carry a
+  // period. Counting those as sentence ends would leave those commanders with no prose
+  // at all, permanently, since a rejected string is never stored.
+  it("accepts a sentence whose subject is a titled commander", () => {
+    const titled =
+      "Mr. Orfeo, the Boulder tends to sit behind a wall of cheap blockers, waiting for the one sacrifice outlet that turns them into reach.";
+    expect(titled.length).toBeLessThanOrEqual(HARD_MAX);
+    expect(acceptProse(titled)).toBe(true);
+  });
+
+  it("accepts a sentence carrying an initialism", () => {
+    const initials =
+      "Kess decks tend to run the same S.O.S. package twice, leaning on cheap draw and graveyard value rather than one combo line.";
+    expect(acceptProse(initials)).toBe(true);
+  });
+
   it("rejects a claim that has not landed by the front-loading threshold", () => {
     const late =
       "Across a long game of grinding attrition and repeated value engines Kess decks tend to win by casting the same spell twice.";
