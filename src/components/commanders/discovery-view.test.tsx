@@ -721,7 +721,7 @@ describe("DiscoveryView", () => {
       <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
-    await waitFor(() => expect(findExcluded).toHaveBeenCalled());
+    await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("atraxa")));
     expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
   });
 
@@ -733,7 +733,7 @@ describe("DiscoveryView", () => {
       <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
-    await waitFor(() => expect(findExcluded).toHaveBeenCalled());
+    await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("atraxa")));
     expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
   });
 

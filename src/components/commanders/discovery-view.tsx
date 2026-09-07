@@ -395,12 +395,21 @@ export function DiscoveryView({
   // failed lookup would print one nothing ever checked. A query too short for
   // the action to answer is confirmed on arrival, since there is no lookup to
   // wait for.
-  const unconfirmed =
+  const settled = trimmedQuery === "" || settledTrimmed === trimmedQuery;
+  const answered = settledTrimmed.length < 2 || (answer?.key === lookupKey && answer.ok);
+  const unconfirmed = trimmedQuery !== "" && !(settled && answered);
+  // The lookup came back and could not answer: it failed, or the query matched
+  // more names than it classifies. The list is still empty and the reader is
+  // still owed a sentence, so one gets written about the list alone. Only once
+  // the answer is in — while it is in flight there is nothing to say yet.
+  const showUnknownEmpty =
+    !floorReplacedList &&
+    !showHeldEmpty &&
     trimmedQuery !== "" &&
-    !(
-      settledTrimmed === trimmedQuery &&
-      (settledTrimmed.length < 2 || (answer?.key === lookupKey && answer.ok))
-    );
+    filtered.length === 0 &&
+    settled &&
+    answer?.key === lookupKey &&
+    !answer.ok;
   const showSearchEmpty =
     !floorReplacedList &&
     !showHeldEmpty &&
@@ -416,6 +425,7 @@ export function DiscoveryView({
     !floorReplacedList &&
     !showHeldEmpty &&
     !showSearchEmpty &&
+    !showUnknownEmpty &&
     !unconfirmed &&
     colors.length > 0 &&
     filtered.length === 0;
@@ -595,6 +605,19 @@ export function DiscoveryView({
           emphasis={planeCopy.search.noneEmphasis(discovery.candidateCount)}
           diagnostic={planeCopy.search.announce(0, discovery.candidateCount)}
           cta={planeCopy.search.noneCta}
+        />
+      ) : showUnknownEmpty ? (
+        // The same shape again, saying less: no population figure and no
+        // diagnostic, because the count of what was searched is exactly what
+        // this state does not know.
+        <FilteredEmpty
+          colors={[]}
+          total={discovery.items.length}
+          onClear={() => setQuery("")}
+          heading={planeCopy.search.unknownHeading(trimmedQuery)}
+          body={planeCopy.search.unknownBody}
+          diagnostic={null}
+          cta={planeCopy.search.unknownCta}
         />
       ) : showFilteredEmpty ? (
         <FilteredEmpty

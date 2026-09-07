@@ -117,6 +117,15 @@ export const planeCopy = {
     noneEmphasis: (candidates: number) => `${n(candidates)} you have not built`,
     noneCta: "Clear the search",
 
+    // 1b · The same miss, with the index unchecked: the lookup failed, or it matched more
+    // names than it will classify. Scoped to the list, because the list is all this state
+    // looked at. No population figure and no emphasis: the number it would print is the
+    // one thing this state does not know.
+    unknownHeading: (query: string) => `Nothing on this list is named “${query}”`,
+    unknownBody:
+      "The rest of the index went unchecked, so a commander a filter is holding back could still be named that.",
+    unknownCta: "Clear the search",
+
     // 2 · Every match is excluded. The FULL name, because `DiscoveryItem` carries only `name`.
     // The body then opens with "It matches" rather than repeating the name three lines later.
     heldHeading: (name: string) => `${name} is here — a filter is holding it back`,
