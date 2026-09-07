@@ -1,6 +1,8 @@
 # Design Property Table — Theme Replacement
 
-Source: `design/design_handoff_the99_theme_replacement/` · **R6** · 2026-09-06
+Source: `design/design_handoff_the99_theme_replacement/` · **R6** · 2026-09-06 — removed from the
+repo once the build merged, as design assets are, so this table is the enumerated record of what
+it specified.
 Files enumerated: `README.md`, `MIGRATION.md`, `READINESS.md`, `TOKEN-TABLE.md`, `tokens.json`,
 `themes · copy strings.ts`, `The 99 - Theme Replacement Candidates.dc.html`, `support.js`.
 

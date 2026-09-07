@@ -1,6 +1,8 @@
 # Gap report — Theme Replacement (R6)
 
-Design source: `design/design_handoff_the99_theme_replacement/` (R6, 2026-09-06)
+Design source: `design/design_handoff_the99_theme_replacement/` (R6, 2026-09-06) — consumed and
+removed from the repo once the build merged, as design assets are. This report and the property
+table beside it are what survive it.
 Property table: `docs/superpowers/design-tables/theme-replacement.md`
 Method: design-review skill — enumerate (design-only) → verify (table vs. implementation).
 
