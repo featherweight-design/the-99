@@ -47,13 +47,17 @@
 // So `printed total − excluded = rows on screen` holds across the three, which is why the
 // exclusion line must name the unmeasurable group and not only the below-floor one.
 
+import { colorNames } from "./color-labels";
+
 const n = (v: number) => v.toLocaleString("en-US");
 
 /** Colour identities are joined for prose, not for the pip row: " · " reads as a list in a
     sentence and the chips already carry the swatches. Two names get "and" — a middot between
     exactly two reads as a truncation. */
-const identity = (colors: string[]) =>
-  colors.length === 2 ? `${colors[0]} and ${colors[1]}` : colors.join(" · ");
+const identity = (colors: string[]) => {
+  const named = colorNames(colors);
+  return named.length === 2 ? `${named[0]} and ${named[1]}` : named.join(" · ");
+};
 
 export const planeCopy = {
   // ── The colour join mode ──────────────────────────────────────────────

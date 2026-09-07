@@ -71,6 +71,13 @@ export function guildLabel(colors: string[]): string {
   return "5-color"; // WUBRG
 }
 
+/** The colour names in WUBRG order — ["White", "Red"]. Sentences that list an
+ *  identity join these; the pip row carries the swatches instead, which is why
+ *  the codes themselves never reach prose. */
+export function colorNames(colors: string[]): string[] {
+  return sortWubrg(colors).map((c) => MONO_NAMES[c] ?? c);
+}
+
 /** Hyphenated color words in WUBRG order — "white-red". The richness pass's
  *  commanders copy uses this register rather than the guild name.
  *  Empty input yields "" — callers must guard. The filtered-empty state that

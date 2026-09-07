@@ -146,6 +146,11 @@ function TagSentence({
               {open ? overflowCopy.fewer : overflowCopy.more(tags.extra)}
             </button>
           ) : null}
+          {/* The disclosure has to disclose something to a screen reader too. The
+              prose it expands is `aria-hidden`, so opened, the names are spoken
+              here instead — the one part of that sentence the trigger exists to
+              reveal, and nothing the row's link already said. */}
+          {tags.extra > 0 && open ? <span className="sr-only">{tags.bold}</span> : null}
           <span aria-hidden="true">. </span>
         </>
       ) : null}

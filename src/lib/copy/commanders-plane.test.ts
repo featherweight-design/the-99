@@ -87,6 +87,26 @@ describe("planeCopy", () => {
     expect(all.toLowerCase()).not.toMatch(/\bbuy\b/);
   });
 
+  // Pins the class the same way the count test does: a colour identity reaching prose must be
+  // named. The codes are the pip row's alphabet, and a sentence that prints "U and B" is one
+  // that leaked the storage format onto the screen.
+  it("names colours rather than printing their codes", () => {
+    const two = ["U", "B"];
+    const sentences = [
+      planeCopy.join.exactNote(12, 34, two), planeCopy.join.exactNoteShort(12, 34, two),
+      planeCopy.join.announce("exactly", 12, two), planeCopy.join.announce("contains", 12, two),
+      planeCopy.excluded.heldColors(two, ["R"]), planeCopy.excluded.heldJoin(two, ["R"]),
+      planeCopy.excluded.colors("Zur", two, ["R"]), planeCopy.excluded.colorsAlso("Zur", two, ["R"]),
+      planeCopy.excluded.join("Zur", two, ["R"]), planeCopy.excluded.joinAlso("Zur", two, ["R"]),
+      planeCopy.excluded.control.colors(two), planeCopy.excluded.control.join(two),
+      planeCopy.exclusion.colors(12, two), planeCopy.exclusion.join(12, two),
+    ];
+    for (const line of sentences) {
+      expect(line).toContain("Blue and Black");
+      expect(line, line).not.toMatch(/\bU\b|\bB\b|\bU · B\b/);
+    }
+  });
+
   // The in-field count was dropped: `filter-bar.tsx` already prints `{filtered}/{active}`, and
   // the match figure appears once. A `count` key reappearing here means it got printed twice.
   it("ships no in-field search count", () => {
