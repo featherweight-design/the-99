@@ -42,7 +42,7 @@ const card = (
   ...base,
   oracleId,
   quantity: owned,
-  availability: { owned, hard, soft, free, hardDecks: [] },
+  availability: { owned, hard, soft, free, claims: [] },
 });
 
 const cards: BrowseCard[] = [

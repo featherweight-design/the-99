@@ -31,7 +31,7 @@ const avail = (owned: number, hard: number) => ({
   hard,
   soft: 0,
   free: owned - hard,
-  hardDecks: [],
+  claims: [],
 });
 
 describe("freePool", () => {

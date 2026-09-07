@@ -46,8 +46,8 @@ const collection: PoolCard[] = [
 ];
 
 const avail = new Map<string, Availability>([
-  ["a", { owned: 1, hard: 1, soft: 0, free: 0, hardDecks: [] }],
-  ["b", { owned: 2, hard: 0, soft: 1, free: 1, hardDecks: [] }],
+  ["a", { owned: 1, hard: 1, soft: 0, free: 0, claims: [] }],
+  ["b", { owned: 2, hard: 0, soft: 1, free: 1, claims: [] }],
 ]);
 
 const commanders = [

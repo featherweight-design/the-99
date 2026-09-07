@@ -145,7 +145,7 @@ describe("SuggestionTile — lift line", () => {
 
 describe("SuggestionTile availability caption", () => {
   it("paints the in-use caption the hard foreground", () => {
-    mount({ owned: 1, hard: 1, soft: 0, free: 0, hardDecks: [{ id: "d1", name: "Atraxa" }] });
+    mount({ owned: 1, hard: 1, soft: 0, free: 0, claims: [{ id: "d1", name: "Atraxa", quantity: 1, mature: true }] });
 
     expect(screen.getByText(availabilityCopy.marker.tileInUse("Atraxa"))).toHaveClass(
       "text-[color:var(--avail-hard-fg)]",
@@ -155,7 +155,7 @@ describe("SuggestionTile availability caption", () => {
   // The tile names the deck but does not link it: the whole tile is already a
   // control, and card detail is the one surface where the name is a link.
   it("names the deck without linking it", () => {
-    mount({ owned: 1, hard: 1, soft: 0, free: 0, hardDecks: [{ id: "d1", name: "Atraxa" }] });
+    mount({ owned: 1, hard: 1, soft: 0, free: 0, claims: [{ id: "d1", name: "Atraxa", quantity: 1, mature: true }] });
 
     expect(screen.queryByRole("link")).toBeNull();
   });
@@ -167,9 +167,9 @@ describe("SuggestionTile availability caption", () => {
       hard: 2,
       soft: 0,
       free: -1,
-      hardDecks: [
-        { id: "d1", name: "Atraxa" },
-        { id: "d2", name: "Kykar" },
+      claims: [
+        { id: "d1", name: "Atraxa", quantity: 1, mature: true },
+        { id: "d2", name: "Kykar", quantity: 1, mature: true },
       ],
     });
 
@@ -179,7 +179,7 @@ describe("SuggestionTile availability caption", () => {
   });
 
   it("sets the caption to the marker's own type rather than the type line's", () => {
-    mount({ owned: 1, hard: 1, soft: 0, free: 0, hardDecks: [{ id: "d1", name: "Atraxa" }] });
+    mount({ owned: 1, hard: 1, soft: 0, free: 0, claims: [{ id: "d1", name: "Atraxa", quantity: 1, mature: true }] });
 
     expect(screen.getByText(availabilityCopy.marker.tileInUse("Atraxa"))).toHaveClass(
       "font-mono",
@@ -191,7 +191,7 @@ describe("SuggestionTile availability caption", () => {
   // §17. Neither detail trigger wraps the chip, so nothing above it would carry
   // the prose — and the drawn `none free` is written for the eye.
   it("speaks the chip's sentence, count-only as the chip is drawn", () => {
-    mount({ owned: 1, hard: 1, soft: 0, free: 0, hardDecks: [{ id: "d1", name: "Atraxa" }] });
+    mount({ owned: 1, hard: 1, soft: 0, free: 0, claims: [{ id: "d1", name: "Atraxa", quantity: 1, mature: true }] });
 
     expect(screen.getByText("no free copies")).toBeInTheDocument();
     expect(screen.getByText(availabilityCopy.marker.hard)).toHaveAttribute(
@@ -201,7 +201,7 @@ describe("SuggestionTile availability caption", () => {
   });
 
   it("draws nothing at all for a free card", () => {
-    mount({ owned: 3, hard: 0, soft: 0, free: 3, hardDecks: [] });
+    mount({ owned: 3, hard: 0, soft: 0, free: 3, claims: [] });
 
     expect(screen.queryByText(/free|in a brew|short|in use/)).toBeNull();
   });

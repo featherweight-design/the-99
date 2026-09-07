@@ -5,6 +5,7 @@
 // - Focus trap (READINESS #5): queries focusable children, wraps Tab/Shift+Tab
 // - Escape closes; focus returns to the previously-focused element on close
 
+import Link from "next/link";
 import React, { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import type { BrowseCard, PreferredPrinting } from "../../lib/collection/browse";
 import { cssUrl, printingCaption, resolvedPrinting, WUBRG_COLOR } from "../../lib/collection/browse";
@@ -91,25 +92,43 @@ function OracleText({ text, keywords }: { text: string; keywords: string[] }) {
 }
 
 /**
- * The one place on `/collection` that names the deck holding a card, and the one
- * place the name is a link. Rows and tiles are count-only, and both sit inside a
- * `role="button"` or an option row, where a nested link would be invalid.
+ * The one place on `/collection` that names the decks holding a card, and the
+ * one place those names are links. Rows and tiles are count-only, and both sit
+ * inside a `role="button"` or an option row, where a nested link would be
+ * invalid.
  *
- * The claiming deck's status pill is deliberately absent. Addendum 2 §3 draws
- * `×1 · ◆ none free — in Atraxa [Complete]`, but `hardDecks` carries an id and a
- * name and nothing else, and `statusPill()` needs that deck's
- * built/owned/unresolved counts. Deriving "Complete" from `hard > 0` would be a
- * guess that reads as fact, so the clause ships without it. The link is the
- * honest version of the same impulse: it takes you to the pill instead of
- * inventing one.
+ * The block is a RECEIPT and it has to add up (#353/#355). It renders the
+ * collection total, then one row per claiming deck with that deck's own ask,
+ * then the split those rows produce — `in use + free === owned`. Every figure
+ * comes from the availability query, never from arithmetic done here, so the
+ * rows and the split cannot disagree with the marker above them.
+ *
+ * The summary marker is `nameless` on purpose even though this surface has room
+ * for a name: the rows below name every claimant, and having the marker single
+ * one out would both duplicate a link and make the choice of which deck to name
+ * look meaningful when it is only "first by name".
+ *
+ * The claiming decks' status pills are deliberately absent. Addendum 2 §3 draws
+ * `×1 · ◆ none free — in Atraxa [Complete]`, but a `DeckClaim` carries maturity
+ * as one bit and `statusPill()` needs that deck's built/owned/unresolved counts.
+ * Deriving "Complete" from `mature` would be a guess that reads as fact, so the
+ * clause ships without it. The link is the honest version of the same impulse:
+ * it takes you to the pill instead of inventing one.
  */
 function AvailabilityDetail({ card }: { card: BrowseCard }) {
-  if (!card.availability) return null;
-  const state = availabilityState(card.availability);
-  if (state === "free") return null;
+  const a = card.availability;
+  if (!a) return null;
+  const state = availabilityState(a);
+  // A claim with copies to spare still reads as `free` — that is the state the
+  // marker is right to draw — but it is exactly the case #353 was filed about,
+  // so the receipt renders on claims, not on state.
+  if (state === "free" && a.claims.length === 0) return null;
   const c = availabilityCopy.collection;
   const note =
-    state === "hard" ? c.detailHardNote : state === "soft" ? c.detailSoftNote : c.detailOverNote;
+    state === "hard" ? c.detailHardNote
+    : state === "soft" ? c.detailSoftNote(a.claims.filter((cl) => !cl.mature).length)
+    : state === "over" ? c.detailOverNote
+    : null;
   return (
     // Mirrors the oracle-text block's chrome so the two read as one column.
     <div
@@ -126,22 +145,72 @@ function AvailabilityDetail({ card }: { card: BrowseCard }) {
         className="mt-[8px] flex items-center gap-[8px] text-[13px]"
         style={{ color: "var(--fg-body)" }}
       >
-        <span className="font-mono" style={{ color: "var(--accent)" }}>×{card.quantity}</span>
-        <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
-        {/* No `nameless` here — this is the ONE place on /collection that names
-            the claiming deck ("none free — in Atraxa"). Still no `selfExcluded`. */}
-        {/* Row density supplies no type of its own, and this line is not a mono
-            meta line either, so the canvas's 12px mono is set here. */}
-        <AvailabilityMarker
-          availability={card.availability}
-          density="row"
-          linkDeck
-          className="font-mono text-[12px]"
-        />
+        {/* `a.owned`, not `card.quantity`: the two arrive from different
+            queries, and the split below is `a.hard + a.free`. A total taken
+            from anywhere but the availability query is how a receipt stops
+            adding up. */}
+        <span className="font-mono" style={{ color: "var(--accent)" }}>×{a.owned}</span>
+        {state !== "free" && (
+          <>
+            <span aria-hidden style={{ color: "var(--fg-faint)" }}>·</span>
+            {/* Row density supplies no type of its own, and this line is not a
+                mono meta line either, so the canvas's 12px mono is set here. */}
+            <AvailabilityMarker
+              availability={a}
+              density="row"
+              nameless
+              className="font-mono text-[12px]"
+            />
+          </>
+        )}
       </div>
-      <p className="m-0 mt-[8px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>
-        {note}
-      </p>
+      {a.claims.length > 0 && (
+        <>
+          <div
+            id="availability-claims-heading"
+            className="mt-[14px] font-mono text-[10px] tracking-[0.1em] uppercase"
+            style={{ color: "var(--fg-faint)" }}
+          >
+            {c.detailClaimsHeading}
+          </div>
+          <ul
+            aria-labelledby="availability-claims-heading"
+            className="m-0 mt-[6px] list-none p-0"
+          >
+            {a.claims.map((claim) => (
+              <li
+                key={claim.id}
+                className="flex items-baseline justify-between gap-[12px] py-[2px] text-[13px]"
+                style={{ color: "var(--fg-body)" }}
+              >
+                <Link
+                  href={`/decks/${claim.id}`}
+                  aria-label={c.detailDeckLinkAria(claim.name)}
+                  className="truncate underline underline-offset-2 decoration-[color:var(--border-strong)] hover:decoration-current"
+                >
+                  {claim.name}
+                </Link>
+                <span className="shrink-0 font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
+                  {claim.mature
+                    ? c.detailClaimHolds(claim.quantity)
+                    : c.detailClaimWants(claim.quantity)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div
+            className="mt-[8px] font-mono text-[12px]"
+            style={{ color: "var(--fg-muted)" }}
+          >
+            {a.free < 0 ? c.detailSplitOver(a.hard, a.owned) : c.detailSplit(a.hard, a.free)}
+          </div>
+        </>
+      )}
+      {note && (
+        <p className="m-0 mt-[8px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>
+          {note}
+        </p>
+      )}
     </div>
   );
 }

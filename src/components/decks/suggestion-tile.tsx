@@ -10,7 +10,7 @@ import { addCardToDeck } from "../../app/decks/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
-import { availabilityState } from "../../lib/decks/availability";
+import { availabilityState, hardDecks } from "../../lib/decks/availability";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { shelfRoleOf } from "../../lib/decks/suggest";
@@ -199,7 +199,7 @@ export function SuggestionTile({
   // Only the two states the design draws a caption for, and only when there is
   // a name or a count to put in it. A hard claim held by several decks has no
   // shipped string — `tileInUse` takes one name — so it draws the chip alone.
-  const names = (suggestion.availability?.hardDecks ?? []).map((d) => d.name);
+  const names = suggestion.availability ? hardDecks(suggestion.availability).map((d) => d.name) : [];
   const tileCaption =
     availState === "hard" && names.length === 1
       ? availabilityCopy.marker.tileInUse(names[0])

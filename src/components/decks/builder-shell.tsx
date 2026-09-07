@@ -7,7 +7,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
-import { availabilityState } from "../../lib/decks/availability";
+import { availabilityState, hardDecks } from "../../lib/decks/availability";
 import { fillCompletedKey, shouldCelebrate } from "../../lib/decks/celebration";
 import { CompletionReveal } from "./completion-reveal";
 import { useCelebrated } from "./use-celebrated";
@@ -233,9 +233,10 @@ export function BuilderShell({
         // Only when a claiming deck is actually named. Row 12.9's sentence
         // counts finished lists out loud, and with an empty name array it would
         // say "on 0 finished lists" — the same hole `markerAria` guards.
+        const named = hardDecks(a);
         lone =
-          a.hardDecks.length > 0
-            ? { name: card.name, deckCount: a.hardDecks.length, ownedQty: a.owned }
+          named.length > 0
+            ? { name: card.name, deckCount: named.length, ownedQty: a.owned }
             : null;
       } else if (state === "soft") {
         softClaimed++;

@@ -378,11 +378,17 @@ One region, **max two lines**, **red above muted, always** — the order is fixe
 | 14.1 | Tile chip | §2 | §2 | **top-left** | hugs | four states | A2RM:51–60 |
 | 14.2 | Tile caption | shipped | shipped | — | unchanged | `C21 · uncommon` **untouched** | A2RM:51–60 |
 | 14.3 | Desktop tile grid | — | — | `repeat(5, 1fr)` | unchanged | — | A2CV:371–396 |
-| 14.4 | Card detail marker | — | per state | — | — | carries the **full** form — `hardIn` / `hardMulti` / `overWithDemand` | A2RM:62–75 |
+| 14.4 | Card detail marker | — | per state | — | — | **count-only** — renders whenever the state is not `free`, so `marker.soft`, `marker.hard` or `marker.over`. Never `hardIn`, never `hardMulti`: `nameless` short-circuits both the naming and the deck COUNT, because counting claimants is the receipt’s job below and a marker that also counted them would print the same figure twice. Superseded by 14.7 (#353): the claim list below names every deck, so the marker naming one of them duplicated a link and made "first by name" look like a choice. The row's intent — card detail is where the deck gets named — is carried by 14.7 | A2RM:62–75, superseded #353 |
 | 14.5 | Card detail status pill | — | — | — | — | **ships WITHOUT the status pill the canvas draws** — ratified R5 §3; the pill would be inferred from `hard > 0` rather than read. `hardDeckNames` stays names only, never `{ name, pill }[]` | RD2:78–84, R5RM:102–116 |
 | 14.6 | Detail copy | shipped | shipped | — | — | `collection.detailHeading`, `detailHardNote`, `detailSoftNote`, `detailOverNote` | CP:195–227 |
+| 14.7 | Card detail allocation receipt | eyebrow `font-mono 10px / 0.1em / uppercase`; rows `13px`; figures + split `font-mono 12px` | eyebrow + figures + split `var(--fg-faint)` / `var(--fg-muted)`; rows `var(--fg-body)` | claims eyebrow `mt-[14px]`; list `mt-[6px]`; row `py-[2px]`; split `mt-[8px]`; total line `mt-[8px]`, `gap-[8px]`; row gap `gap-[12px]` (arbitrary px, not the Tailwind scale) | hugs | renders whenever `claims` is non-empty — **including when the state is `free`**, which is the case #353 was filed on. One row per claiming deck: name as a link to `/decks/<id>`, then `holds N` (mature) or `wants N`. Split line reconciles to the total above: `in use · free`, or the `wanted / owned` comparison when `free < 0` | **NEW — #353/#355, not yet ratified by Design** |
 
-**Row count: 6 elements.**
+**Row count: 7 elements.**
+
+**14.4 / 14.7 are one decision.** The card-detail block was the only surface allowed to name a
+deck, and 14.4 gave that job to the marker because the marker was the only thing on the line. The
+receipt now names every claimant with its own count, so the marker went count-only and 14.7 owns
+the naming. Ratifying 14.7 and superseding 14.4 is a single ask, not two.
 
 ---
 

@@ -250,17 +250,64 @@ export const availabilityCopy = {
     ) =>
       `${name}, ${typeLine}, ${qty === 1 ? "1 copy" : `${qty} copies`}, ${setAndRarity}` +
       (availability ? `, ${availability}` : ""),
-    // Card detail carries the FULL clause — the one place on this surface with
-    // room for the deck name. Describes a list, never a location.
+    // Heads the allocation receipt. Describes a list, never a location. Deck
+    // names are NOT in this block's copy: the marker inside it is `nameless` and
+    // the naming happens in the claim rows below, so there is no deck-name
+    // interpolation to look for in these keys.
     detailHeading: "In your collection",
     // The named deck is a link here, and only here. Its visible text is a bare
     // proper noun that truncates, so the link's own name has to say what it
     // opens.
     detailDeckLinkAria: (deckName: string) => `Open the ${deckName} deck`,
+    // The allocation receipt (#353). The old block gave a total and a state and
+    // nothing between them: "×17 · 1 in a brew" left a reader to guess whether
+    // the other sixteen were spoken for. These keys are one sentence in three
+    // parts — the total above, where the copies went, and what that leaves —
+    // and the parts have to add up on screen, so every count below comes
+    // straight from the query rather than being derived here.
+    //
+    // FINISHED LISTS HOLD, UNFINISHED LISTS WANT. That is the whole model in two
+    // verbs, and it is the same distinction `receipt.wantedByBrew` draws. A
+    // finished list has the card; an unfinished one has asked for it and holds
+    // nothing yet. Do not level these to one verb: the difference between them
+    // is exactly what `free` counts.
+    detailClaimsHeading: "On your lists",
+    detailClaimHolds: (n: number) => `holds ${n}`,
+    detailClaimWants: (n: number) => `wants ${n}`,
+    // Reads under the deck rows and must reconcile with the ×N above it:
+    // `inUse + free === owned` off-decklist, which is the only place this
+    // renders. Both halves always print, zeroes included — the line is an
+    // accounting, and a dropped term makes the reader do the subtraction.
+    detailSplit: (inUse: number, free: number) => `${inUse} in use · ${free} free`,
+    // Over-committed: the split above would have to print a negative, so the
+    // arithmetic is stated as the comparison it actually is.
+    detailSplitOver: (wanted: number, owned: number) =>
+      `${wanted} wanted by finished lists · you own ${owned}`,
+    // THE NOTES DO NO ARITHMETIC (#355). The split line above them already
+    // accounts for every copy, and the note's job is the consequence. The soft
+    // note used to read "A copy is free — the other is on a list you haven't
+    // finished", which asserts a collection of exactly two and was drawn under a
+    // ×17. Nothing here may imply a count the block has not printed.
     detailHardNote:
       "You can still build with it — you’d be taking it out of something.",
-    detailSoftNote:
-      "A copy is free — the other is on a list you haven’t finished.",
+    // Count-aware for the same reason `deckRollup.softHeading` is: the number of
+    // brewing claimants is the one figure this sentence turns on, and a single
+    // form has to lie about one of the two cases.
+    //
+    // Scoped to the lists that WANT it, not to the rows above. The soft state is
+    // `free > 0 && soft > 0`, which permits a finished list holding copies at the
+    // same time, so the design's "none of those lists is finished" would read as
+    // a claim about every row on screen and contradict the ones marked `holds`.
+    // `wants` is the same verb `detailClaimWants` prints, so the sentence points
+    // at its rows rather than describing them.
+    //
+    // Both branches close on "gets it", singular. `brewCount` counts LISTS, not
+    // copies, so "gets them" would imply a number of copies the block has not
+    // printed — the same rule the note's own header states.
+    detailSoftNote: (brewCount: number) =>
+      brewCount === 1
+        ? "Nothing to sort out yet — the list that wants it isn’t finished. Whichever you sleeve first gets it."
+        : "Nothing to sort out yet — the lists that want it aren’t finished. Whichever you sleeve first gets it.",
     detailOverNote:
       "More finished lists want it than you own. Nothing’s broken — it’s a shopping decision.",
   },

@@ -411,7 +411,7 @@ describe("Shopping row figure rendering differs by width", () => {
 function spokenForCard(overrides: Partial<DeckDetailCard> & { oracleId: string; name: string }) {
   return makeCard({
     owned: true,
-    availability: { owned: 1, hard: 2, soft: 0, free: -1, hardDecks: [{ id: "d2", name: "Atraxa" }] },
+    availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: [{ id: "d2", name: "Atraxa", quantity: 1, mature: true }] },
     ...overrides,
   });
 }
@@ -422,7 +422,7 @@ const rampOwnedSpare = makeCard({
   name: "Mana Crypt",
   role: "ramp",
   owned: true,
-  availability: { owned: 3, hard: 1, soft: 0, free: 2, hardDecks: [] },
+  availability: { owned: 3, hard: 1, soft: 0, free: 2, claims: [] },
 });
 
 const rampSpokenFor = spokenForCard({ oracleId: "smothering-tithe", name: "Smothering Tithe", role: "ramp" });
@@ -448,7 +448,7 @@ describe("Shopping's predicate: unowned, or owned and over-committed", () => {
     const contestedBasic = makeCard({
       ...basicLand,
       owned: true,
-      availability: { owned: 1, hard: 2, soft: 0, free: -1, hardDecks: [] },
+      availability: { owned: 1, hard: 2, soft: 0, free: -1, claims: [] },
     });
     renderDecklist([contestedBasic, rampUnowned]);
 

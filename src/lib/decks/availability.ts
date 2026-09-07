@@ -11,12 +11,33 @@
 export const MATURE_DECK_SIZE = 99;
 
 /**
- * A deck holding a hard claim, as every surface downstream sees it. Named rather
- * than inlined because the shape already widened once — from a bare name to
- * this — and the widening had to be repeated at the SQL row, the model and the
- * marker. One definition means the next change is one edit.
+ * One deck's claim on one card: which deck, how many copies it asks for, and
+ * whether that deck is finished. Named rather than inlined because the shape has
+ * now widened twice — from a bare name, to `{id, name}`, to this — and each
+ * widening had to be repeated at the SQL row, the model and the marker. One
+ * definition means the next change is one edit.
+ *
+ * `quantity` is the deck's whole ask, commander included: a deck whose commander
+ * also sits on its own list contributes ONE claim of `1 + listQuantity`, not two.
+ *
+ * `mature` is what makes the claim hard or soft (see MATURE_DECK_SIZE). It is
+ * carried per claim rather than recomputed downstream because deck size is not
+ * on this object and never should be — a card's availability has no business
+ * knowing how big somebody's deck is beyond this one bit.
  */
+export type DeckClaim = { id: string; name: string; quantity: number; mature: boolean };
+
+/** A deck holding a hard claim. The projection every marker string reads. */
 export type HardDeck = { id: string; name: string };
+
+/**
+ * The mature claimants, in the order the query returned them. Derived rather
+ * than stored: `claims` is the whole truth and a second stored field could
+ * disagree with it.
+ */
+export function hardDecks(a: Pick<Availability, "claims">): HardDeck[] {
+  return a.claims.filter((c) => c.mature).map(({ id, name }) => ({ id, name }));
+}
 
 export type Availability = {
   owned: number;
@@ -34,15 +55,22 @@ export type Availability = {
    */
   free: number;
   /**
-   * The mature decks holding a hard claim, minus the excluded deck when one was
-   * passed. Ordered by name, then by id — the id is the tiebreak, not decoration,
-   * because names collide and `hardDecks[0]` is the deck card detail links to.
+   * Every deck claiming this card — finished and brewing alike — minus the
+   * excluded deck when one was passed, so this follows the same vantage rule as
+   * `free`. Ordered by name, then by id; the id is the tiebreak, not decoration,
+   * because names collide, and without it two decks sharing a name would order
+   * arbitrarily — the receipt's rows and every `hardDecks(a)[0]` reader would
+   * then reshuffle between two reads of unchanged data.
    *
    * The id rides along because two decks can share a name — `claim_decks` keys
    * on `deck_id` for exactly that reason — so a surface wanting to link the
    * named deck cannot recover it from the name alone.
+   *
+   * The mature quantities here sum to `hard` and the rest sum to `soft`; both
+   * come out of the same CTE, so the receipt on card detail can account for
+   * every copy without a second query and without arithmetic of its own.
    */
-  hardDecks: HardDeck[];
+  claims: DeckClaim[];
 };
 
 export type AvailabilityState = "free" | "soft" | "hard" | "over";
