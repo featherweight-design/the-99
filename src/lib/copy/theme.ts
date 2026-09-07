@@ -14,8 +14,9 @@ export const themeCopy = {
   // Naming the move matters: a silent switch reads as a bug.
   retired: {
     headline: (was: string) => `${was} has been retired.`,
-    body: (nowCalled: string) =>
-      `You're on ${nowCalled}, the closest theme to it. Have a look at Canopy and Witching Hour while you're here.`,
+    // No pointer to the two new themes: the notice sits directly above the grid
+    // that draws all six chips, so naming two of them narrates the next element.
+    body: (nowCalled: string) => `You're on ${nowCalled}, the closest theme to it.`,
     dismiss: "Dismiss",
   },
 } as const;

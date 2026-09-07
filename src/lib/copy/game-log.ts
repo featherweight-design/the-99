@@ -108,11 +108,12 @@ export const gameLogCopy = {
     // <i>, and it is the app talking.
     body: 'One game you already remember. The third one is where this tab earns its keep \u2014 it starts saying things like',
     bodyQuote: 'ran out of gas, 3 of 3 games',
-    bodyAfter: ', which is the kind of sentence you can actually act on.',
+    // The sentence closes on the quote. Telling the reader the quote is worth
+    // acting on explains a demonstration they have just read.
+    bodyAfter: '.',
     // The objection is friction, not value, so the cost is stated in seconds.
     cost: 'Logging takes about fifteen seconds: did you win, how big was the pod, and the two or three things that decided it.',
     cta: 'Log your first game',
-    ctaNote: 'nothing to fill in twice \u2014 the deck is already here',
     // The scope line, drawn in the player's favour. #9 names the weakness and
     // stops; #10 is not promised, hinted at, or dated.
     scope: 'This tab tells you what is letting the deck down. What to do about it stays your call.',
@@ -130,15 +131,17 @@ export const gameLogCopy = {
     wonIt: 'won it',
     lostIt: 'lost it',
     drewIt: 'drew it',
-    oneGameNote:
-      'Nothing to read into yet \u2014 it is on the record. Two more and this turns into something you can act on.',
+    // The record renders beside the heading, so 'it is on the record' narrates
+    // the element next to it. What is left is the only thing neither says.
+    oneGameNote: 'Two more and this turns into something you can act on.',
 
     // N = 2 — a leaning. This is the hardest line in the feature: it must not
     // overclaim and must not apologise.
     twoGames: (axis: string) => `${axis} went wrong both times.`,
     twoGamesKeep: (axis: string) => `${axis} has held up both times.`,
-    twoGamesNote:
-      'Two games. Both of them, which is worth noticing and not yet worth calling a pattern.',
+    // Not 'both of them': this same note sits under `findingNone`, where no axis
+    // was marked in both games and 'both' would be pointing at nothing.
+    twoGamesNote: 'Two games. Worth noticing, not yet a pattern.',
 
     // N >= PATTERN_MIN — a finding about the deck.
     finding: (axis: string) => `${axis} is letting this deck down.`,
@@ -181,7 +184,6 @@ export const gameLogCopy = {
 
     // N = 1 only. A true title for a panel that is not a finding.
     oneGameHeading: 'What that one game said',
-    oneGameNote: 'no Keep, no Fix, no colour \u2014 one game does not have sides yet',
   },
 
   // ── The axis cell ─────────────────────────────────────────────────────

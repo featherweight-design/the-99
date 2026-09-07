@@ -6,19 +6,22 @@ import { FloorEmpty, NoDecksBanner } from "./discovery-empty";
 const copy = discoveryCopy.empty;
 
 describe("NoDecksBanner", () => {
-  it("names the collection it can still rank against", () => {
-    render(<NoDecksBanner cardsRead={2805} />);
+  // No card figure: the page header above the banner already ends "read against
+  // N cards", so the banner naming it again printed the same count twice.
+  it("names the sort that still works, and no card count", () => {
+    render(<NoDecksBanner />);
     expect(screen.getByText(copy.noDecksHeading)).toBeTruthy();
-    expect(screen.getByText(/2,805 cards in it/)).toBeTruthy();
+    expect(screen.getByText(copy.noDecksEmphasis)).toBeTruthy();
+    expect(screen.queryByText(/cards in it/)).toBeNull();
   });
 
   // The marked clause is a substring of the body, so the emphasis has to be a
   // slice of the one sentence rather than a second copy of the words.
   it("marks the clause the copy module nominates, inside the body it came from", () => {
-    render(<NoDecksBanner cardsRead={2805} />);
+    render(<NoDecksBanner />);
     const mark = screen.getByText(copy.noDecksEmphasis);
     expect(mark.tagName).toBe("STRONG");
-    expect(mark.closest("p")?.textContent).toBe(copy.noDecksBody(2805));
+    expect(mark.closest("p")?.textContent).toBe(copy.noDecksBody);
   });
 });
 

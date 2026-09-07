@@ -163,7 +163,7 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
           <p className="mt-[9px] md:mt-[10px] md:max-w-[520px] text-[13.5px] md:text-[14.5px] leading-[1.6] md:leading-[1.65] text-fg-body">
             {gameLogCopy.empty.cost}
           </p>
-          <div className="mt-[20px] md:mt-[22px] md:flex md:flex-wrap md:items-center md:gap-[16px]">
+          <div className="mt-[20px] md:mt-[22px]">
             <GameLogForm
               deckId={deckId}
               isFirstGame
@@ -172,9 +172,6 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
               ctaLabel={gameLogCopy.empty.cta}
               ctaSolid
             />
-            <p className="hidden md:block font-mono text-[11px] text-fg-faint">
-              {gameLogCopy.empty.ctaNote}
-            </p>
           </div>
           {/* Scope note in the shipped provenance shape — see provenance-line.tsx. */}
           <div className="md:flex md:items-start md:gap-[11px] mt-[16px] md:mt-[26px] md:max-w-[560px] text-left rounded-[9px] px-[13px] py-[11px] md:px-[15px] md:py-[12px] bg-surface-sunken border border-border border-l-[3px] border-l-accent">
@@ -261,9 +258,6 @@ export function GamesPanel({ deckId, games, summary }: GamesPanelProps) {
                   <GameAxisCell key={t.key} tally={t} gameCount={summary.count} />
                 ))}
               </div>
-              <p className="hidden md:block font-mono text-[10.5px] text-fg-locked mt-[13px]">
-                {gameLogCopy.buckets.oneGameNote}
-              </p>
             </section>
           ) : (
             <>

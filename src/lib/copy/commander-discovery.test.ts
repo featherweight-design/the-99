@@ -18,8 +18,8 @@ describe("discoveryCopy", () => {
     const counts: ((...a: never[]) => string)[] = [
       discoveryCopy.justify.overlap, discoveryCopy.justify.overlapShort,
       discoveryCopy.justify.figureUnitFit, discoveryCopy.justify.distanceAria,
-      discoveryCopy.justify.figureUnitNew, discoveryCopy.empty.noDecksBody,
-      discoveryCopy.empty.floorCtaNote, discoveryCopy.window.revealBand,
+      discoveryCopy.justify.figureUnitNew, discoveryCopy.empty.floorCtaNote,
+      discoveryCopy.window.revealBand,
     ];
     for (const fn of counts) {
       const out = (fn as (...a: number[]) => string)(1234, 5678, 9012);

@@ -238,7 +238,7 @@ export function DiscoveryView({
 
       {/* State 1 sits ABOVE a full list, not in place of one: with no decks
           built the fit ranking is complete and only `Something new` is off. */}
-      {!discovery.hasDecks ? <NoDecksBanner cardsRead={discovery.cardsRead} /> : null}
+      {!discovery.hasDecks ? <NoDecksBanner /> : null}
 
       {showFloorEmpty ? (
         <FloorEmpty
