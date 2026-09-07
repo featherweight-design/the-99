@@ -96,12 +96,19 @@ function readLegends(page) {
     }
 
     // Every dot a chip or a row drew, deduplicated by paint, so the legend can
-    // be checked against the thing it explains.
+    // be checked against the thing it explains. Border travels with fill: the
+    // hollow dot is transparent, so its border is the only paint it has, and a
+    // fill-only record could not tell a hollow dot from any other.
     for (const dot of document.querySelectorAll("a span[aria-hidden], button span[aria-hidden]")) {
       if (dot.children.length > 0) continue;
       const fill = paint(dot);
-      if (!out.chipDots.some((d) => d.fill === fill)) {
-        out.chipDots.push({ fill, size: `${Math.round(dot.getBoundingClientRect().width)}px` });
+      const border = getComputedStyle(dot).borderColor;
+      if (!out.chipDots.some((d) => d.fill === fill && d.border === border)) {
+        out.chipDots.push({
+          fill,
+          border,
+          size: `${Math.round(dot.getBoundingClientRect().width)}px`,
+        });
       }
     }
     return out;
@@ -143,14 +150,23 @@ try {
         console.log(`  ${theme.padEnd(10)} no legend on screen — no visible card is committed`);
         continue;
       }
-      const legendFills = legends.flatMap((l) => l.pips.map((p) => p.fill));
-      const unmatched = legendFills.filter(
-        (fill) => fill !== "rgba(0, 0, 0, 0)" && !chipDots.some((d) => d.fill === fill),
-      );
+      // A hollow pip is transparent, so it is checked on its border — the only
+      // paint it has. Skipping it instead would leave the one state whose colour
+      // lives entirely in the border unproven.
+      const legendPips = legends.flatMap((l) => l.pips);
+      const unmatched = legendPips
+        .filter((pip) =>
+          pip.fill === "rgba(0, 0, 0, 0)"
+            ? !chipDots.some((d) => d.fill === pip.fill && d.border === pip.border)
+            : !chipDots.some((d) => d.fill === pip.fill),
+        )
+        .map((pip) => (pip.fill === "rgba(0, 0, 0, 0)" ? `hollow border ${pip.border}` : pip.fill));
       if (unmatched.length > 0) failures += unmatched.length;
       console.log(
-        `  ${theme.padEnd(10)} legends ${legends.length}  pips ${legendFills.length}  ` +
-          `dot paints on page ${chipDots.map((d) => d.fill).join(" | ")}  ` +
+        `  ${theme.padEnd(10)} legends ${legends.length}  pips ${legendPips.length}  ` +
+          `dot paints on page ${chipDots
+            .map((d) => (d.fill === "rgba(0, 0, 0, 0)" ? `hollow border ${d.border}` : d.fill))
+            .join(" | ")}  ` +
           `${unmatched.length === 0 ? "all pips match a dot" : `UNMATCHED: ${unmatched.join(", ")}`}`,
       );
       for (const legend of legends) {

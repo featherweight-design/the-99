@@ -26,10 +26,15 @@ const card = (overrides: Partial<RoleCard> = {}): RoleCard => ({
 
 const siblings = ["oracle-sol", "oracle-signet"];
 
-// The ownership dot is the trigger's first child and the only aria-hidden span
-// in the chip that carries a fill.
-const dotOf = (container: HTMLElement): HTMLElement =>
-  container.querySelector("span[aria-hidden]") as HTMLElement;
+// The figure plate and the absent dash are aria-hidden too, so the dot is found
+// by the one property only it has: it is round.
+const dotOf = (container: HTMLElement): HTMLElement => {
+  const dot = [...container.querySelectorAll<HTMLElement>("span[aria-hidden]")].find(
+    (el) => el.style.borderRadius === "50%",
+  );
+  if (!dot) throw new Error("no round aria-hidden span in the chip");
+  return dot;
+};
 
 describe("CoverageChip", () => {
   it("prints its figure and includes it in the accessible name", () => {
