@@ -107,9 +107,13 @@ export function PriceStrip({
             space, so the ring at 2px offset overlaps the gap rather than pushing
             the provenance line up.
 
-            `buyHref` is null only for an empty list, which the totalCopies guard
-            above has already returned on. The check is the type narrowing, not a
-            second condition on the link: it renders wherever the strip does. */}
+            `buyHref` is null on an empty `shoppingCards`, which is not the same
+            object the totalCopies guard above reads — the invariant that ties
+            them lives in the caller, which sums the summary over the very list
+            it passes here. So this is type narrowing rather than a second
+            condition on the link, but only as long as that holds: a caller
+            passing a summary from one list and rows from another would render a
+            strip with nothing to buy from. */}
         {buyHref ? (
           <div className="mt-[9px] flex min-h-[44px] items-center md:block md:min-h-0">
             <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />
