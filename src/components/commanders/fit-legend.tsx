@@ -38,7 +38,7 @@ export function FitLegend({ segments, score, width }: FitLegendProps) {
     <button
       type="button"
       aria-expanded={open}
-      aria-controls={panelId}
+      aria-controls={open ? panelId : undefined}
       aria-label={open ? undefined : explainedCopy.key.openAria}
       onClick={() => setOpen((v) => !v)}
       className={[

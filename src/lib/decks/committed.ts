@@ -60,7 +60,13 @@ export function committedSupport(
   };
 }
 
-/** Matches `readCommittedDecks`'s `lower(name)` ordering. */
+/**
+ * `readCommittedDecks`'s `lower(name)` ordering, as far as a name can carry it.
+ *
+ * That read breaks a tie on `decks.id`, and the map it returns holds names alone,
+ * so two decks whose names differ only in case are indistinguishable here and the
+ * earlier of the two wins. The reader cannot tell those two apart either.
+ */
 function compareDeckNames(a: string, b: string): number {
   const la = a.toLowerCase();
   const lb = b.toLowerCase();

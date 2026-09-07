@@ -156,6 +156,21 @@ describe("CommanderDetail fit hero", () => {
     expect(screen.getAllByText(/12 \+ 8 = 20\./).length).toBeGreaterThan(0);
   });
 
+  // An aria-controls pointing at an id no element carries is a broken relationship,
+  // and the panel only exists while the key is open.
+  it("names the panel it controls only while that panel exists", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    const trigger = screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0];
+    expect(trigger).not.toHaveAttribute("aria-controls");
+
+    fireEvent.click(trigger);
+    const panelId = screen
+      .getAllByRole("button", { name: "Hide" })[0]
+      .getAttribute("aria-controls");
+    expect(panelId).not.toBeNull();
+    expect(document.getElementById(panelId!)).not.toBeNull();
+  });
+
   it("closes the key again", () => {
     render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
     const trigger = screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0];
