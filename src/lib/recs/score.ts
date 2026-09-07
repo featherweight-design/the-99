@@ -32,6 +32,8 @@ export type CommanderScore = {
   fitPool: number;
   fitRoles: number;
   fitSynergy: number | null;
+  /** Out of 100, always — pool (15) + roles (25) + synergy (60). A commander with
+      no synergy data reaches 40 at most, and is not rescaled to fill the gap. */
   score: number;
 };
 
@@ -179,8 +181,15 @@ export function scoreCommander(args: {
   const fitPool = Math.round(poolFactor * 15 * 10) / 10;
   const fitRoles = Math.round(roleCoverage * 25 * 10) / 10;
   const fitSynergy = edhrecTotal == null ? null : Math.round(overlapRatio * 60 * 10) / 10;
+  // One denominator for every commander. Rescaling pool+roles from their 40-point
+  // maximum back up to 100 when synergy was missing let a commander EDHREC does not
+  // track print 100/100 — the highest figure the UI can show, awarded to the
+  // commander we know least about (#333). It also contradicted the note the card
+  // already prints beside that number: "fit comes from pool and roles alone".
+  // Unscaled, such a commander tops out at 40, which is what pool and roles alone
+  // are worth. `fitSynergy` stays null either way: the component is absent, not 0.
   const score = fitSynergy == null
-    ? Math.round(((fitPool + fitRoles) / 40) * 100 * 10) / 10
+    ? Math.round((fitPool + fitRoles) * 10) / 10
     : Math.round((fitPool + fitRoles + fitSynergy) * 10) / 10;
 
   return {

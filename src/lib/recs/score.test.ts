@@ -166,14 +166,38 @@ describe("scoreCommander", () => {
     expect(s).not.toHaveProperty("overlapMissing");
   });
 
-  // Task 2: fitNS renormalization — no synergy
-  it("fitSynergy is null when edhrecTopCards is null, score is renormalized", () => {
+  // #333: no synergy data is NOT rescaled back up to a 100-point denominator.
+  it("fitSynergy is null when edhrecTopCards is null, and the score is not rescaled", () => {
     const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
     expect(s.fitSynergy).toBeNull();
     expect(s.fitPool).toBeLessThanOrEqual(15);
     expect(s.fitRoles).toBeLessThanOrEqual(25);
-    const expected = Math.round(((s.fitPool + s.fitRoles) / 40) * 100 * 10) / 10;
+    const expected = Math.round((s.fitPool + s.fitRoles) * 10) / 10;
     expect(s.score).toBe(expected);
+    expect(s.score).toBeLessThanOrEqual(40);
+  });
+
+  // The bug this fix exists for: a commander EDHREC does not track could print the
+  // highest figure the UI can show. A perfect pool and perfect roles now reach 40.
+  it("caps a commander with no synergy data at 40 even on a pool that maxes both components", () => {
+    const big = Array.from({ length: 400 }, (_, i) =>
+      card({ ...collection[i % collection.length], oracleId: `filler-${i}` }),
+    );
+    const s = scoreCommander({ commander, collection: big, edhrecTopCards: null, inclusionByName: null });
+    expect(s.fitSynergy).toBeNull();
+    expect(s.score).toBeLessThanOrEqual(40);
+  });
+
+  // The ranking consequence the issue's acceptance criteria asks for.
+  it("ranks a measured commander above an unmeasured one with the same pool and roles", () => {
+    const unmeasured = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    const measured = scoreCommander({
+      commander,
+      collection,
+      edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"],
+      inclusionByName: null,
+    });
+    expect(measured.score).toBeGreaterThan(unmeasured.score);
   });
 
   // Task 2: with synergy present
