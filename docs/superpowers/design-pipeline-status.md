@@ -122,7 +122,7 @@ carries the four rulings that closed the spec's open questions.
 | **#340** Commander filter and search controls need an overhaul (folds #335, #341, #343, #344) | Handoff delivered (R3) — **awaiting the eng readiness audit** | `design/design_handoff_the99_commanders_plane/`. Design's own `READINESS.md` is a self-assessment, not the audit verdict, and it **declares three items it will not assert away**: whether §6's must-not 3 ("no restyling the shipped header") covers the two declared values the two-row header changes — `align-items: flex-end → center` and dropping `flex-wrap: wrap` — which is Design's reading of the §4.5 ruling the brief asked for rather than a restyle (blocker 3); `ScoreAgainst`'s lateral position, raised as Hugh's call (blocker 2); and the finding that the fit sort does not render the nearest-deck clause at all. The audit is what turns this Green |
 | **#342** Explain every commander recommendation in prose (folds #345, #346, #347, #366) | Handoff delivered (R1) — **awaiting the eng readiness audit** | `design/design_handoff_the99_commander_explained/`. Self-assessed 🟢 Green with **two rulings requested**, the first of which reaches another surface's committed table: the owned list now openly sorts across two scales, and Design prefers a list-level exclusion line (`14 of these are scored out of 40 — EDHREC doesn't index them`) over per-row denominators. Not gated on the generator — the prose-absent state is drawn as a normal state on both surfaces at both widths, so the denominator, the key, the committed mark and the sort all ship before a single paragraph exists |
 
-| **Ratification batch** — **#140**, **#148**, **#182**, **#242**, plus the unfiled availability-marker placement | Design prompt sent 2026-09-07 — **awaiting verdicts** | These held ranks 1–5 of 🕰️ until this move; the queue has since renumbered behind them, so those numbers describe where they came from and not any current row. Sent as one prompt rather than five because every item is the same ask: UI already live on `main` that needs a yes or a one-line rewrite. No handoff folder is expected back — the deliverable is verdicts. The unfiled marker item rides in #182's batch rather than being filed as its own ticket, which is what its own row proposed while it sat at the old rank 4 |
+| **Ratification batch** — **#140**, **#148**, **#182**, **#242**, plus the unfiled availability-marker placement | **Verdicts returned 2026-09-07** — applied on PR #395, three items still open | These held ranks 1–5 of 🕰️ until this move; the queue has since renumbered behind them, so those numbers describe where they came from and not any current row. Sent as one prompt rather than five because every item is the same ask: UI already live on `main` that needs a yes or a one-line rewrite. No handoff folder came back — the deliverable was verdicts, and they landed as `VERDICTS-2026-09-07`. The unfiled marker item rode in #182's batch rather than being filed as its own ticket, which is what its own row proposed while it sat at the old rank 4 |
 
 **A 2026-09-07 pass before the prompt went out found two of the five had drifted, and both ticket
 bodies were corrected on GitHub.** #140's deck-full refusal string no longer exists — a deck may
@@ -134,6 +134,20 @@ finding 8 already rules must not be "fixed", and the 44px mobile Add height is t
 table's accessibility contract being followed rather than a divergence from it — `add-panel.md`
 states the 44px minimum at `:74`, `:267`, `:385` and `:581`. Eight calls became six.
 #148 and #242 verified unchanged.
+
+**Design's verdicts came back the same day, and one of them was wrong.** §2.4 ruled that
+`commandersCopy.firstRun.directive` should be cut because the completion reveal already directs —
+but that is a `/commanders` string gated on `decks.length === 0`, while the reveal is on
+`/decks/[id]` at 99 built, so the two can never co-occur. Design accepted the correction and
+reversed to a reword, and released the six strings it had been holding. **PR #395 applies what is
+unambiguous:** three copy strings (#140's remove fallback, the commanders directive, #182's
+worked example) and two contested `card-availability.md` rows (15.10 becomes a multi-select
+listbox, 3.1 splits placement by surface). **Three verdicts are still open**, because acting on
+them would mean guessing: §3.3's "99 means three things" collapse never enumerated its three
+strings and one candidate is the completion reveal's own heading; two of #148's three add-panel
+divergences do not match the record as filed, and the third is a real visual change to the
+consider tile; and §3.4 item 4 — the quick-add row should open the shared Card Detail modal — is
+feature work Design says to file, which has not been filed.
 
 **Both handoff folders are on disk untracked and are not committed to `main`.** They arrived
 during a concurrent run, so this tracker records their arrival without claiming them; whoever runs
