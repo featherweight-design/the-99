@@ -27,8 +27,11 @@ rail's markup and say nothing about whether 38px squares fit inside 62px.
 | Tab bar height | not rendered | 74px, matching `--tabbar-h` |
 | Slot parity | same glyph in the same slot in both chromes | same |
 
-Screenshots for the design record, in both the unlocked and the locked chrome, are attached to
-the pull request.
+The probe also writes one screenshot per viewport for the design record. The locked chrome is not
+reachable from either fixture account — both have full collections, and `locked` is
+`uniqueCards === 0` — so shooting it means forcing `locked` in `shell.tsx` and running with
+`PROBE_SUFFIX=-locked`. The script's header says so, so the next reader does not conclude the
+locked state is broken.
 
 ## Deviations from the handoff
 

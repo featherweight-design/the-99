@@ -80,23 +80,22 @@ function LockGlyph() {
 // which is what a disabled <Link href="#"> would have been. Discovery is
 // covered in visible copy: the first-run checklist cards state the same unlock
 // condition on the page itself.
-function NavSlot({
-  isLocked,
-  href,
-  name,
-  active,
-  className,
-  children,
-}: {
-  isLocked: boolean;
+type NavSlotProps = {
   href: NavHref;
-  // undefined leaves the accessible name to the visible label, which is what
-  // the tab bar wants for an unlocked item.
-  name: string | undefined;
   active: boolean;
   className: string;
   children: React.ReactNode;
-}) {
+} & (
+  | // A locked slot has no visible label to fall back on in the rail, and in the
+  // tab bar its visible label omits the reason — so the name is required, and
+  // the union is what stops a future call site from dropping it.
+  { isLocked: true; name: string }
+  // Unlocked, undefined leaves the name to the visible label, which is what the
+  // tab bar wants; the rail passes its label because it shows none.
+  | { isLocked: false; name: string | undefined }
+);
+
+function NavSlot({ isLocked, href, name, active, className, children }: NavSlotProps) {
   if (isLocked) {
     return (
       <span
@@ -157,13 +156,17 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
         {ITEMS.map(({ href, label, lockable }) => {
           const isLocked = locked && lockable;
           const active = !isLocked && isActive(pathname, href);
+          // Spread rather than two props: the union needs `isLocked` narrowed to
+          // a literal before it can vouch for `name`, and a boolean prop is not.
+          const slot = isLocked
+            ? ({ isLocked: true, name: refreshCopy.firstRun.lockedItemAria(label) } as const)
+            : ({ isLocked: false, name: label } as const);
           return (
             <NavSlot
               key={href}
-              isLocked={isLocked}
+              {...slot}
               href={href}
               active={active}
-              name={isLocked ? refreshCopy.firstRun.lockedItemAria(label) : label}
               className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] transition-colors ${
                 active
                   ? "bg-elevated text-[color:var(--fg)]"
@@ -221,16 +224,18 @@ export function TabBar({ locked }: { locked: boolean }) {
       {ITEMS.map(({ href, label, lockable }) => {
         const isLocked = locked && lockable;
         const active = !isLocked && isActive(pathname, href);
+        // Unlocked, the visible label is the name; locked, it is replaced by the
+        // same label plus the reason it cannot be reached.
+        const slot = isLocked
+          ? ({ isLocked: true, name: refreshCopy.firstRun.lockedItemAria(label) } as const)
+          : ({ isLocked: false, name: undefined } as const);
 
         return (
           <NavSlot
             key={href}
-            isLocked={isLocked}
+            {...slot}
             href={href}
             active={active}
-            // Unlocked, the visible label is the name; locked, it is replaced
-            // by the same label plus the reason it cannot be reached.
-            name={isLocked ? refreshCopy.firstRun.lockedItemAria(label) : undefined}
             // The active fill is a surface, not a coloured label: locked ruling
             // 13 reserves colour for status. One `color` on the slot serves both
             // the icon (currentColor) and the label.
