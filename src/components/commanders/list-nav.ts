@@ -1,8 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+
+/**
+ * A URL flip plus the target it is currently heading for.
+ *
+ * `pending` is the value the reader asked for while the server round-trip is
+ * still in flight, and null the rest of the time. Controls render it as their
+ * selected option so a click registers on the frame it happened rather than when
+ * the response lands, and dim themselves while it is set.
+ *
+ * Only the control goes optimistic. The subtitle, the receipts and the rows all
+ * describe the list that is actually on screen, and flipping those early would
+ * print a claim about data that has not arrived.
+ */
+export type Nav<T extends string> = {
+  go: (next: T) => void;
+  pending: T | null;
+};
+
 
 // The scope a flip is heading for, parked across the navigation.
 //
@@ -56,11 +74,12 @@ function takeScope(): string | null {
  * Flip the scope through the URL, so the two lists stay server-rendered and a
  * shared link opens on the scope it names.
  */
-export function useScopeNav() {
+export function useScopeNav(): Nav<"owned" | "play"> {
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+  const [target, setTarget] = useState<"owned" | "play" | null>(null);
 
-  return useCallback(
+  const go = useCallback(
     (next: "owned" | "play") => {
       const params = new URLSearchParams(window.location.search);
       // Reselecting the scope already showing is not a flip. The segmented
@@ -75,10 +94,15 @@ export function useScopeNav() {
       // so a `sort` surviving the flip would be unreachable and invisible.
       params.delete("sort");
       parkScope(next);
+      setTarget(next);
       startTransition(() => router.replace(href(params), { scroll: false }));
     },
     [router],
   );
+
+  // Masked by `isPending` rather than cleared: the transition ending is the
+  // signal, and a state write to clear it would be a second render for nothing.
+  return { go, pending: isPending ? target : null };
 }
 
 /**
@@ -89,11 +113,12 @@ export function useScopeNav() {
  * `fit` and `free` are the defaults and are written as absences, which keeps a
  * shared link short and matches how the owned scope serialises `avail`.
  */
-function useParamNav<T extends string>(key: string, nonDefault: T) {
+function useParamNav<T extends string>(key: string, nonDefault: T): Nav<T> {
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+  const [target, setTarget] = useState<T | null>(null);
 
-  return useCallback(
+  const go = useCallback(
     (next: T) => {
       const params = new URLSearchParams(window.location.search);
       // Same guard as the scope flip's: both controls fire on their active
@@ -102,17 +127,20 @@ function useParamNav<T extends string>(key: string, nonDefault: T) {
       if ((readOne(params, key) === nonDefault) === (next === nonDefault)) return;
       if (next === nonDefault) params.set(key, next);
       else params.delete(key);
+      setTarget(next);
       startTransition(() => router.replace(href(params), { scroll: false }));
     },
     [router, key, nonDefault],
   );
+
+  return { go, pending: isPending ? target : null };
 }
 
-export function useSortNav() {
+export function useSortNav(): Nav<"fit" | "new"> {
   return useParamNav<"fit" | "new">("sort", "new");
 }
 
-export function useAvailNav() {
+export function useAvailNav(): Nav<"all" | "free"> {
   return useParamNav<"all" | "free">("avail", "all");
 }
 

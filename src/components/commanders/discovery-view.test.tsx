@@ -355,4 +355,106 @@ describe("DiscoveryView", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
     expect(screen.queryByText("Commander 25")).toBeNull();
   });
+
+  // #339. Every flip on this surface is a server round-trip, and before this a
+  // reader toggling back to a ranking they had just been looking at paid for it
+  // twice. The payloads are kept as they arrive, so the second ask is free.
+  describe("the client cache", () => {
+    const freeList = list({
+      items: [item({ name: "Free Ranked", slug: "free-ranked" })],
+      candidateCount: 1,
+    });
+    const allList = list({
+      items: [item({ name: "All Ranked", slug: "all-ranked" })],
+      candidateCount: 1,
+    });
+    const clickAvail = (aria: string) =>
+      fireEvent.click(screen.getAllByRole("radio", { name: aria })[0]);
+
+    it("routes on a pair it has not seen and serves one it has", () => {
+      const { rerender } = render(<DiscoveryView discovery={freeList} avail="free" />);
+      // Plural queries throughout: a row renders its name once per breakpoint
+      // subtree, so the singular form matches two nodes and throws.
+      expect(screen.getAllByText("Free Ranked").length).toBeGreaterThan(0);
+
+      // Miss: nothing has ever ranked `all`, so this has to be fetched.
+      clickAvail(availabilityCopy.ranking.allAria);
+      expect(replace).toHaveBeenCalledTimes(1);
+
+      // The navigation lands, and the page re-renders with the server's answer.
+      window.history.replaceState(null, "", "/commanders?scope=play&avail=all");
+      rerender(<DiscoveryView discovery={allList} avail="all" />);
+      expect(screen.getAllByText("All Ranked").length).toBeGreaterThan(0);
+
+      // Hit: the free ranking is still in hand. No second request, and the URL
+      // still names what is on screen so a copied link opens on it.
+      clickAvail(availabilityCopy.ranking.freeAria);
+      expect(replace).toHaveBeenCalledTimes(1);
+      expect(screen.getAllByText("Free Ranked").length).toBeGreaterThan(0);
+      expect(window.location.search).toBe("?scope=play");
+    });
+
+    // A cached flip writes the URL itself, so it has to write it the way the
+    // navigating path does — defaults as absences. Otherwise `list-nav`'s guards,
+    // which read the live URL, would stop telling a default from a choice.
+    it("leaves parameters it does not own alone when it serves from cache", () => {
+      window.history.replaceState(null, "", "/commanders?scope=play&c=BG");
+      const { rerender } = render(<DiscoveryView discovery={freeList} avail="free" />);
+      clickAvail(availabilityCopy.ranking.allAria);
+      window.history.replaceState(null, "", "/commanders?scope=play&c=BG&avail=all");
+      rerender(<DiscoveryView discovery={allList} avail="all" />);
+
+      clickAvail(availabilityCopy.ranking.freeAria);
+      const params = new URLSearchParams(window.location.search);
+      expect(params.get("c")).toBe("BG");
+      expect(params.get("scope")).toBe("play");
+      expect(params.has("avail")).toBe(false);
+    });
+
+    // The payload the server just produced is the truth, whatever the cache holds
+    // for that pair — an upload or a new deck re-ranks everything.
+    it("takes a fresh payload over a cached one for the same pair", () => {
+      const { rerender } = render(<DiscoveryView discovery={freeList} avail="free" />);
+      const rebuilt = list({
+        items: [item({ name: "Re-Ranked", slug: "re-ranked" })],
+        candidateCount: 1,
+      });
+      rerender(<DiscoveryView discovery={rebuilt} avail="free" />);
+      expect(screen.getAllByText("Re-Ranked").length).toBeGreaterThan(0);
+      expect(screen.queryAllByText("Free Ranked").length).toBe(0);
+    });
+
+    // The availability is half the key a payload is filed under, so it has to be
+    // watched as closely as the payload. A server render makes a new list object
+    // every time, which means these two normally move together — but that holds
+    // because of how the framework renders, not because of anything this hook
+    // enforces, and the day it stops holding the ranking would be filed under the
+    // wrong pair and the control would disagree with the list beneath it.
+    it("follows the availability even when the payload object is unchanged", () => {
+      const same = list({
+        items: [item({ name: "Same Payload", slug: "same-payload" })],
+        candidateCount: 1,
+      });
+      const { rerender } = render(<DiscoveryView discovery={same} avail="free" />);
+      rerender(<DiscoveryView discovery={same} avail="all" />);
+
+      // Watching the payload alone, the view would still be reporting `free` here
+      // while the server had moved on to `all`.
+      expect(
+        screen
+          .getAllByRole("radio", { name: availabilityCopy.ranking.allAria })[0]
+          .getAttribute("aria-checked"),
+      ).toBe("true");
+
+      // And the pair is filed under `fit:all`, not overwriting `fit:free` — the
+      // seeded entry is still there to be served without a request.
+      clickAvail(availabilityCopy.ranking.freeAria);
+      expect(replace).not.toHaveBeenCalled();
+      expect(
+        screen
+          .getAllByRole("radio", { name: availabilityCopy.ranking.freeAria })[0]
+          .getAttribute("aria-checked"),
+      ).toBe("true");
+    });
+  });
 });

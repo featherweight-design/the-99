@@ -4,6 +4,7 @@
 // already mounts for the role chips further down the page.
 
 import { useCardDetail } from "../cards/card-detail-provider";
+import { PENDING_OPACITY } from "./pending";
 
 export function FullCardTrigger({ oracleId }: { oracleId: string }) {
   const { open, pendingOracleId } = useCardDetail();
@@ -37,7 +38,7 @@ export function FullCardTrigger({ oracleId }: { oracleId: string }) {
           backdropFilter: "blur(4px)",
           padding: "6px 11px",
           cursor: "pointer",
-          opacity: pending ? 0.55 : undefined,
+          opacity: pending ? PENDING_OPACITY : undefined,
         }}
         aria-label="View card details"
         // Never `disabled` while the fetch runs, for the same reason

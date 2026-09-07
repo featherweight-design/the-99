@@ -220,7 +220,7 @@ export function CommandersView({
   // A scope flip lands as a fresh mount, so its message arrives on arrival
   // rather than at click time — and it lands on this same region, which every
   // other announcement on this page already uses.
-  const setScope = useScopeNav();
+  const scopeNav = useScopeNav();
   useScopeAnnouncement("owned", active.length, "fit", setAnnouncement);
 
   return (
@@ -229,7 +229,8 @@ export function CommandersView({
         uniqueCardsRead={uniqueCardsRead}
         avail={avail}
         scope="owned"
-        onScopeChange={setScope}
+        onScopeChange={scopeNav.go}
+        scopePending={scopeNav.pending}
         candidateCount={active.length}
       />
 

@@ -15,6 +15,7 @@ import { FilterBar } from "./filter-bar";
 import { PageHeader } from "./page-header";
 import { RecCard } from "./rec-card";
 import { SortMenu } from "./sort-menu";
+import { useDiscoveryCache } from "./discovery-cache";
 import {
   useAvailNav,
   useRerankAnnouncement,
@@ -44,12 +45,19 @@ const emptyCopy = discoveryCopy.empty;
  * figure prints its denominator.
  */
 export function DiscoveryView({
-  discovery,
-  avail,
+  discovery: served,
+  avail: servedAvail,
 }: {
   discovery: DiscoveryList;
   avail: "all" | "free";
 }) {
+  // Shadowing the two props, so everything below reads the ranking that is on
+  // screen without caring whether it arrived from the server this navigation or
+  // came back out of the cache. A pair already seen this visit is served with no
+  // request at all, which is also what makes the design table's "motion: none"
+  // true for it — there is nothing to wait for.
+  const { view, serve } = useDiscoveryCache(served, servedAvail);
+  const { list: discovery, avail } = view;
   // Seeded from the URL, because the scope flip carries `?c=` across: a player
   // who filtered to Golgari under the owned scope arrives here with those pips
   // still lit rather than with a param the list ignores.
@@ -61,9 +69,29 @@ export function DiscoveryView({
     [discovery.items, colors],
   );
 
-  const setScope = useScopeNav();
-  const setSort = useSortNav();
-  const setAvail = useAvailNav();
+  const scopeNav = useScopeNav();
+  const sortNav = useSortNav();
+  const availNav = useAvailNav();
+  const setScope = scopeNav.go;
+  // The `go` functions, not the hooks' return objects: each hook builds a fresh
+  // object every render to carry its `pending`, so depending on the object would
+  // rebuild these callbacks on every render and the memo would buy nothing.
+  const goSort = sortNav.go;
+  const goAvail = availNav.go;
+  // Cache first, server second. `serve` reports a miss rather than throwing, so
+  // the navigation is the fallback and the URL ends up the same either way.
+  const setSort = useCallback(
+    (next: "fit" | "new") => {
+      if (!serve(next, avail)) goSort(next);
+    },
+    [serve, avail, goSort],
+  );
+  const setAvail = useCallback(
+    (next: "all" | "free") => {
+      if (!serve(discovery.sort, next)) goAvail(next);
+    },
+    [serve, discovery.sort, goAvail],
+  );
   // Empty on an ordinary load, and the flip's message on arrival from the other
   // scope — the count it names is the one the server just produced.
   const [announcement, setAnnouncement] = useState("");
@@ -154,7 +182,12 @@ export function DiscoveryView({
   }, [colors]);
 
   const menu = (
-    <SortMenu sort={discovery.sort} hasDecks={discovery.hasDecks} onChange={setSort} />
+    <SortMenu
+      sort={discovery.sort}
+      pending={sortNav.pending}
+      hasDecks={discovery.hasDecks}
+      onChange={setSort}
+    />
   );
 
   const remaining = Math.max(0, filtered.length - shown);
@@ -207,6 +240,7 @@ export function DiscoveryView({
         scope="play"
         onScopeChange={setScope}
         sort={discovery.sort}
+        scopePending={scopeNav.pending}
         // The ranked count, not `candidateCount`, for the same reason the
         // announcements use it: the subtitle and the live region speak one
         // sentence between them, and under `sort="new"` the floor's exclusions
@@ -224,6 +258,7 @@ export function DiscoveryView({
         onToggleColor={toggleColor}
         onClearColors={clearColors}
         avail={avail}
+        availPending={availNav.pending}
         onAvailChange={setAvail}
         availOk={discovery.availOk}
         wasWindowed={wasWindowed}

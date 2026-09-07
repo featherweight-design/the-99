@@ -23,14 +23,14 @@ describe("list-nav", () => {
     it("writes the non-default scope and drops any sort the owned list cannot show", () => {
       window.history.replaceState(null, "", "/commanders?scope=play&sort=new&c=BG");
       const { result } = renderHook(() => useScopeNav());
-      act(() => result.current("owned"));
+      act(() => result.current.go("owned"));
       expect(replace).toHaveBeenCalledWith("?c=BG", { scroll: false });
     });
 
     it("keeps the discovery scope in the URL, still without a sort", () => {
       window.history.replaceState(null, "", "/commanders?sort=new");
       const { result } = renderHook(() => useScopeNav());
-      act(() => result.current("play"));
+      act(() => result.current.go("play"));
       expect(replace).toHaveBeenCalledWith("?scope=play", { scroll: false });
     });
 
@@ -39,7 +39,7 @@ describe("list-nav", () => {
     it("does nothing when the scope showing is already the one asked for", () => {
       window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
       const { result } = renderHook(() => useScopeNav());
-      act(() => result.current("play"));
+      act(() => result.current.go("play"));
       expect(replace).not.toHaveBeenCalled();
       expect(sessionStorage.getItem("commanders:scope-announce")).toBeNull();
     });
@@ -49,7 +49,7 @@ describe("list-nav", () => {
     it("routes to the bare path when clearing the last parameter", () => {
       window.history.replaceState(null, "", "/commanders?scope=play");
       const { result } = renderHook(() => useScopeNav());
-      act(() => result.current("owned"));
+      act(() => result.current.go("owned"));
       expect(replace).toHaveBeenCalledWith("/commanders", { scroll: false });
     });
   });
@@ -58,11 +58,11 @@ describe("list-nav", () => {
   describe("useSortNav / useAvailNav", () => {
     it("writes the non-default value and removes the default", () => {
       const sort = renderHook(() => useSortNav());
-      act(() => sort.result.current("new"));
+      act(() => sort.result.current.go("new"));
       expect(replace).toHaveBeenLastCalledWith("?sort=new", { scroll: false });
 
       window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
-      act(() => sort.result.current("fit"));
+      act(() => sort.result.current.go("fit"));
       expect(replace).toHaveBeenLastCalledWith("?scope=play", { scroll: false });
     });
 
@@ -71,9 +71,9 @@ describe("list-nav", () => {
     it("does nothing when the value asked for is already the active one", () => {
       window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
       const sort = renderHook(() => useSortNav());
-      act(() => sort.result.current("new"));
+      act(() => sort.result.current.go("new"));
       const avail = renderHook(() => useAvailNav());
-      act(() => avail.result.current("free"));
+      act(() => avail.result.current.go("free"));
       expect(replace).not.toHaveBeenCalled();
     });
 
@@ -83,14 +83,14 @@ describe("list-nav", () => {
       // get the reader out of the URL they arrived on.
       window.history.replaceState(null, "", "/commanders?scope=play&sort=new&sort=fit");
       const { result } = renderHook(() => useSortNav());
-      act(() => result.current("new"));
+      act(() => result.current.go("new"));
       expect(replace).toHaveBeenCalledWith("?scope=play&sort=new", { scroll: false });
     });
 
     it("leaves every parameter it does not own alone", () => {
       window.history.replaceState(null, "", "/commanders?scope=play&sort=new&c=BG");
       const { result } = renderHook(() => useAvailNav());
-      act(() => result.current("all"));
+      act(() => result.current.go("all"));
       expect(replace).toHaveBeenCalledWith("?scope=play&sort=new&c=BG&avail=all", {
         scroll: false,
       });
@@ -110,7 +110,7 @@ describe("list-nav", () => {
       // Park and remount: the flip writes the key, and the list that lands under
       // it reads the key back.
       const nav = renderHook(() => useScopeNav());
-      act(() => nav.result.current("play"));
+      act(() => nav.result.current.go("play"));
       const landed = renderHook(
         ({ count }: { count: number }) =>
           useScopeAnnouncement("play", count, "fit", announce),

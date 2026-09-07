@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { PENDING_OPACITY } from "./pending";
 
 type Scope = "owned" | "play";
 
@@ -36,11 +37,18 @@ const SEGMENTS = [
  */
 export function ScopeControl({
   scope,
+  pending = null,
   onChange,
 }: {
   scope: Scope;
+  /** The scope a flip is heading for, or null. See `Nav` in list-nav.ts. */
+  pending?: Scope | null;
   onChange: (next: Scope) => void;
 }) {
+  // The flip is a server round-trip that swaps one list component for the other,
+  // so without this the segment the reader clicked stays unselected until the
+  // whole ranking lands and the screen reads as frozen.
+  const shown = pending ?? scope;
   // A radiogroup is one tab stop with arrows moving inside it, and selection
   // follows focus — the same pattern `ScoreAgainst` ships, so the two controls
   // on this page behave identically.
@@ -66,14 +74,19 @@ export function ScopeControl({
       <div
         role="radiogroup"
         aria-label={discoveryCopy.scope.label}
+        // The control only, never the list: the discovery table's "no dimmed
+        // list, no skeleton" ruling is about the 3,300 rows underneath, and it
+        // says nothing about the control the reader just pressed.
+        aria-busy={pending !== null || undefined}
         className="flex gap-[3px] rounded-lg p-[3px] w-full sm:w-auto"
         style={{
           background: "var(--surface-sunken)",
           border: "1px solid var(--border-strong)",
+          opacity: pending !== null ? PENDING_OPACITY : undefined,
         }}
       >
         {SEGMENTS.map((s, i) => {
-          const active = s.scope === scope;
+          const active = s.scope === shown;
           return (
             <button
               key={s.scope}
