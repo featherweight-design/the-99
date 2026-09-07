@@ -247,11 +247,23 @@ export async function recommendCommanders(
  * Returns null when the oracle id names no commander-legal card — either
  * because no card carries that id, or because the card it names cannot be a
  * commander. Both are "no such commander" to this page.
+ *
+ * `pool` is the set of cards the commander is SCORED against, defaulting to the
+ * whole collection. The detail page passes the free pool when it was reached
+ * from a free-ranked list, so the figure it draws is the figure that list drew
+ * — the same rule `rankFree` follows, and the reason it is a parameter rather
+ * than a mode this function resolves: availability belongs to the route that
+ * read the URL, and importing it here would close a cycle back through
+ * free-ranking.
+ *
+ * Candidacy still comes from the collection, never from the pool: a commander
+ * you own but have sleeved is still a commander you could unsleeve.
  */
 export async function scoreOneCommander(
   userId: string,
   oracleId: string,
   slug: string,
+  pool?: PoolCard[],
 ): Promise<CommanderDetailScore | null> {
   const { collection } = await loadCollectionPool(userId);
   // A discovery commander is by definition one the player may not own, so a
@@ -268,7 +280,7 @@ export async function scoreOneCommander(
     readCommittedDecks(userId),
   ]);
   const scored = scoreCommander({
-    commander, collection,
+    commander, collection: pool ?? collection,
     edhrecTopCards: result.data?.topCards ?? null,
     inclusionByName: result.data?.inclusionByName ?? null,
   });

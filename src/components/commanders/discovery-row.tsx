@@ -27,6 +27,7 @@ import { CommanderThumb, CommanderTile } from "./commander-art";
 import { Emphasised, localised } from "./emphasis";
 import { ReceiptLine, type ReceiptClause } from "./receipt-line";
 import { RoleChips } from "./role-chips";
+import { commanderDetailHref } from "./list-nav";
 
 const { justify, ownership, price: priceCopy, untagged } = discoveryCopy;
 const overflowCopy = planeCopy.overflow;
@@ -314,7 +315,7 @@ export function DiscoveryRow({
       {/* Stretched link keeps the whole row clickable. Brand focus-visible
           outline inherited from globals.css. */}
       <Link
-        href={`/commanders/${item.slug}`}
+        href={commanderDetailHref(item.slug, avail)}
         aria-label={`${rowLabel} — view commander details`}
         className="absolute inset-0 z-[1] rounded-[11px] sm:rounded-[12px]"
       />

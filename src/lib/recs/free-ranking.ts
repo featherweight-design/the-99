@@ -9,6 +9,7 @@
 // of its pool, so the second score is the same function over a smaller array:
 // zero extra network calls.
 
+import { cache } from "react";
 import { readEdhrecCache } from "../edhrec/client";
 import { parseEdhrecPayload } from "../edhrec/parse";
 import { type Availability } from "../decks/availability";
@@ -44,6 +45,38 @@ export function freePool(
     return a === undefined || a.free > 0;
   });
 }
+
+/**
+ * The free pool for a whole collection, or null where the availability rollup
+ * would not read.
+ *
+ * Memoised per request because two callers want the same pool on one render:
+ * the free ranking, which needs it to order the list, and the commander detail
+ * page, which needs it to score the one commander that list linked to. Without
+ * this the rollup — the most expensive query on either path — runs twice for
+ * one page. `loadCollectionPool` is already React-cached, so the collection
+ * read is shared for free.
+ *
+ * Null rather than a throw: an unreadable rollup is not an error page, it is
+ * the free mode being unavailable, and both callers have an honest answer for
+ * that (a disabled toggle, and the canonical score).
+ */
+export const loadFreePool = cache(async function loadFreePool(
+  userId: string,
+): Promise<PoolCard[] | null> {
+  const { collection } = await loadCollectionPool(userId);
+  try {
+    // Scoped to the collection: `freePool` reads the map for nothing else, so
+    // narrowing returns strictly fewer rows for the same answer. It does not
+    // make the rollup cheaper — every CTE in that query is keyed on the user.
+    const availability = await loadAvailability(userId, {
+      oracleIds: collection.map((c) => c.oracleId),
+    });
+    return freePool(collection, availability);
+  } catch {
+    return null;
+  }
+});
 
 /**
  * Attaches each item's canonical slug, matched on oracleId.
@@ -157,20 +190,14 @@ export async function rankFree(
   // map for nothing else, so narrowing here returns strictly fewer rows for the
   // same answer. It does not make the rollup itself cheaper — every CTE in that
   // query is keyed on the user, not on this list.
-  let availability: Map<string, Availability>;
+  let pool: PoolCard[];
   if (preloaded) {
-    availability = preloaded.availability;
+    pool = freePool(collection, preloaded.availability);
   } else {
-    try {
-      availability = await loadAvailability(userId, {
-        oracleIds: collection.map((c) => c.oracleId),
-      });
-    } catch {
-      return { items: [], ok: false };
-    }
+    const loaded = await loadFreePool(userId);
+    if (loaded === null) return { items: [], ok: false };
+    pool = loaded;
   }
-
-  const pool = freePool(collection, availability);
 
   const cache = await readEdhrecCache(candidates.map((c) => c.card.oracleId));
   const scored = candidates.map(({ card: commander, canon }) => {

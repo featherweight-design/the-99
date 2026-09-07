@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import {
+  commanderDetailHref,
   useAvailNav,
   useRerankAnnouncement,
   useScopeAnnouncement,
@@ -162,4 +163,17 @@ describe("list-nav", () => {
       expect(announce).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("commanderDetailHref", () => {
+    it("carries the free mode the list ranked in", () => {
+      expect(commanderDetailHref("atraxa", "free")).toBe("/commanders/atraxa?avail=free");
+    });
+
+    // The default is an absence, the same way every other list parameter is
+    // serialised — a shared link should be the short one.
+    it("leaves the canonical mode out of the URL", () => {
+      expect(commanderDetailHref("atraxa", "all")).toBe("/commanders/atraxa");
+    });
+  });
+
 });

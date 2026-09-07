@@ -145,6 +145,18 @@ export function useAvailNav(): Nav<"all" | "free"> {
 }
 
 /**
+ * The detail link for a row, carrying the pool the list ranked against.
+ *
+ * The detail page scores the one commander it draws, so without this it scored
+ * against everything owned no matter which list the reader clicked — the same
+ * commander showing one fit in the list and another on its own page. The
+ * default is serialised as an absence, exactly as every other list parameter is.
+ */
+export function commanderDetailHref(slug: string, avail: "all" | "free"): string {
+  return avail === "free" ? `/commanders/${slug}?avail=free` : `/commanders/${slug}`;
+}
+
+/**
  * Announce a re-rank once the server's new ordering has landed. The list stays
  * mounted across a sort or availability flip, so unlike the scope message these
  * are driven off the prop changing rather than a key parked in `sessionStorage`.

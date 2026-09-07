@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 // CoverageSection refreshes the route after a recovered retry, so the whole
 // detail tree needs a router even where no test clicks Retry.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+import { availabilityCopy } from "../../lib/copy/availability";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { CommanderDetailScore } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
@@ -268,5 +269,45 @@ describe("CommanderDetail synergy panel", () => {
     const href = screen.getAllByRole("link", { name: /Build this deck/i })[0].getAttribute("href");
     expect(href).toContain(`commander=${commander().oracleId}`);
     expect(new URL(href!, "http://x").searchParams.get("select")?.split(",")).toHaveLength(2);
+  });
+});
+
+describe("CommanderDetail availability mode", () => {
+  // The page can be reached from either ranking, and the score it draws is only
+  // comparable to the list the reader came from. Naming the pool is the whole
+  // difference between the two figures.
+  it("names the free pool the score was measured against", () => {
+    render(
+      <CommanderDetail
+        commander={commander()}
+        rank={1}
+        isBestFit
+        avail="free"
+        synergyCards={noSynergyCards}
+      />,
+    );
+    expect(screen.getAllByText(availabilityCopy.ranking.freeNote).length).toBeGreaterThan(0);
+  });
+
+  it("says nothing about availability in the canonical mode", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    expect(screen.queryByText(availabilityCopy.ranking.freeNote)).toBeNull();
+  });
+
+  // Back to the list the reader was actually on. Without the parameter the link
+  // lands on the canonical ranking, which is a different order.
+  it("returns to the free-ranked list", () => {
+    render(
+      <CommanderDetail
+        commander={commander()}
+        rank={1}
+        isBestFit
+        avail="free"
+        synergyCards={noSynergyCards}
+      />,
+    );
+    for (const link of screen.getAllByRole("link", { name: /back to rankings/i })) {
+      expect(link).toHaveAttribute("href", "/commanders?avail=free");
+    }
   });
 });

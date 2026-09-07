@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { carryCanonicalSlugs, freePool, rankFree } from "./free-ranking";
+import { carryCanonicalSlugs, freePool, loadFreePool, rankFree } from "./free-ranking";
 import type { CommanderListItem } from "./recommend";
 import type { PoolCard } from "./score";
 
@@ -120,5 +120,23 @@ describe("rankFree with preloaded reads", () => {
     expect(out.items.map((i) => i.oracleId)).toEqual(["a"]);
     expect(loadCollectionPool).not.toHaveBeenCalled();
     expect(loadAvailability).not.toHaveBeenCalled();
+  });
+});
+
+describe("loadFreePool", () => {
+  it("returns the free slice of the collection", async () => {
+    loadCollectionPool.mockResolvedValue({ collection: [card("a"), card("b")] });
+    loadAvailability.mockResolvedValue(new Map([["a", avail(1, 1)]]));
+    const pool = await loadFreePool("user-free-pool");
+    expect(pool!.map((c) => c.oracleId)).toEqual(["b"]);
+  });
+
+  // Null, not a throw and not the whole collection: the detail page reads this
+  // to decide whether free mode is available at all, and a silent fallback to
+  // the canonical pool would pair a canonical score with a free rank.
+  it("returns null when the availability rollup will not read", async () => {
+    loadCollectionPool.mockResolvedValue({ collection: [card("a")] });
+    loadAvailability.mockRejectedValue(new Error("rollup down"));
+    expect(await loadFreePool("user-rollup-down")).toBeNull();
   });
 });
