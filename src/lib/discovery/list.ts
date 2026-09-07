@@ -1,6 +1,5 @@
 import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
-import { freePool } from "../recs/free-ranking";
 import { loadCollectionPool } from "../recs/recommend";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
 import type { ReceiptCounts } from "../commanders/in-use";
@@ -58,10 +57,9 @@ export type DiscoveryList = {
   candidateCount: number;
   /** Collection size the subtitle reads against. */
   cardsRead: number;
-  /** Cards in the pool this ranking actually scored. Equal to `cardsRead` under
-      `avail: "all"` and smaller under `"free"`. The pool empty state names it,
-      because "you own 3,114 cards" and "1,190 of them are free" are different
-      claims and the state is about the second. */
+  /** Cards in the pool this ranking actually scored — now always `cardsRead`,
+      because the lane scores against the whole collection. Kept as its own
+      field only while the pool empty state still reads it. */
   freePoolSize: number;
   /** Highest floor percentage among candidates the floor excluded — the number
       `empty.floorBody` needs so 30% does not read as arbitrary. Null when the
@@ -73,9 +71,8 @@ export type DiscoveryList = {
       thing for each, and `bestPct` alone cannot tell them apart. */
   floorExcluded: number;
   /** Of `floorExcluded`, how many would have cleared the floor against the whole
-      collection. Always 0 under `avail: "all"`, where the two pools are the same
-      pool. This is what makes a pool exclusion a sub-case of the floor rather
-      than a fifth tier: the sentence changes, the precedence does not. */
+      collection. Always 0: the whole collection is the only pool this lane
+      scores, so there is no narrower one for the floor to have judged them by. */
   poolExcluded: number;
   /** Candidates the floor could not measure at all — no tags, or no EDHREC
       denominator. Neither ranked nor floor-excluded, and the third term the
@@ -83,10 +80,10 @@ export type DiscoveryList = {
       unmeasured` to come to zero. Always 0 under `fit`, which excludes nothing. */
   unmeasured: number;
   hasDecks: boolean;
-  /** False when the availability read failed. The ranking still stands, but under
-      `avail: "free"` it scored the whole collection: `freePool` keeps ids the map
-      is missing, so a failed read is indistinguishable from a fully free pool
-      unless this flag is read alongside it. */
+  /** False when the availability read failed. The ranking still stands — it never
+      depended on availability — but the receipt counts do, and an empty map
+      reports them as zeros rather than as unknown unless this flag is read
+      alongside them. */
   availOk: boolean;
   /** One entry per built deck, its commander's colour identity. The filtered
       built clause counts against it; nothing else reads it. */
@@ -189,13 +186,17 @@ export function assembleDiscovery(input: {
 }
 
 /**
- * The pool a discovery ranking scores against, under one `avail`.
+ * The pool a discovery ranking scores against: the whole collection, always.
+ *
+ * The discover lane has no availability control — availability was documented as
+ * scoring-only but the novelty floor read whichever pool it selected, so the
+ * choice silently removed rows. One pool, one owner, no way to ask for another.
  *
  * Exported because slug resolution needs the same pool the list ranked against
  * but not the rest of the list's work: a rank derived from a different pool
  * would have the detail page and the row it was reached from disagree.
  */
-export async function loadDiscoveryPool(userId: string, avail: "all" | "free") {
+export async function loadDiscoveryPool(userId: string) {
   const { collection } = await loadCollectionPool(userId);
 
   let availability = new Map<string, Availability>();
@@ -205,41 +206,33 @@ export async function loadDiscoveryPool(userId: string, avail: "all" | "free") {
       oracleIds: collection.map((c) => c.oracleId),
     });
   } catch {
-    // Fail soft, exactly as the owned scope does: the clause and `What's free`
-    // are lost, the ranking is not. `availOk` is what stops the loss being
-    // silent — `freePool` keeps ids the map is missing, so an empty map under
-    // `avail: "free"` ranks the whole collection while looking like a free pool.
+    // Fail soft, exactly as the owned scope does: the receipt clause is lost,
+    // the ranking is not. `availOk` is what stops the loss being silent — an
+    // empty map counts every owned card as uncommitted, which is a claim rather
+    // than an absence of one.
     availOk = false;
   }
 
-  const scored = avail === "free" ? freePool(collection, availability) : collection;
-  return { collection, availability, scored, availOk };
+  return { collection, availability, availOk };
 }
 
 /**
- * `avail: "free"` swaps the owned oracle-id set for the free pool's and changes
- * nothing else — the free ranking is the same question asked of a smaller pool,
- * the way `rankFree` already treats it. It re-ranks and it does not annotate:
- * `ScoreDelta` has no place under discovery, because there is no `score /100`
- * for it to be a delta of.
+ * The discover ranking, scored against everything the player owns.
  *
- * Only the active (sort, avail) pair is computed. The owned scope ships both
- * rankings so its toggle is a client swap; at 3,334 rows two payloads is the
- * wrong trade, and the handoff already permits a sort flip to be a fetch.
+ * Only the active sort is computed. The owned scope ships both of its rankings
+ * so its toggle is a client swap; at 3,334 rows two payloads is the wrong trade,
+ * and the handoff already permits a sort flip to be a fetch.
  */
 export async function loadDiscovery(
   userId: string,
-  opts: { sort: "fit" | "new"; avail: "all" | "free" },
+  opts: { sort: "fit" | "new" },
 ): Promise<DiscoveryList> {
-  const { collection, availability, scored, availOk } =
-    await loadDiscoveryPool(userId, opts.avail);
-  // The whole collection is passed only when it is not the pool being ranked:
-  // under `avail: "all"` the second aggregate would re-derive a column already
-  // in the projection.
+  const { collection, availability, availOk } = await loadDiscoveryPool(userId);
+  // One oracle-id set, so the second support aggregate has nothing to add: the
+  // ranked pool and the collection are the same pool.
   const candidates = await loadCandidates(
     userId,
-    scored.map((c) => c.oracleId),
-    opts.avail === "free" ? collection.map((c) => c.oracleId) : undefined,
+    collection.map((c) => c.oracleId),
   );
 
   const [prices, playedTags] = await Promise.all([
@@ -252,9 +245,9 @@ export async function loadDiscovery(
     candidates,
     playedTags,
     prices,
-    rollup: buildPoolRollup(scored, availability),
+    rollup: buildPoolRollup(collection, availability),
     cardsRead: collection.length,
-    freePoolSize: scored.length,
+    freePoolSize: collection.length,
     // Ruling 8's gate, applied here rather than at the route: novelty measures
     // distance from what you have built, and `playedTags` is already the answer
     // to whether anything has been. Asking the route to check would mean a second

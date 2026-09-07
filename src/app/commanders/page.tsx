@@ -10,12 +10,12 @@ import {
   receiptCountsByCommander,
   type ReceiptCounts,
 } from "../../lib/commanders/in-use";
+import { permanentRedirect } from "next/navigation";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
-import { DiscoveryView } from "../../components/commanders/discovery-view";
-import { loadDiscovery } from "../../lib/discovery/list";
-import { parseScope, parseSort } from "../../lib/discovery/params";
 import { PageHeader } from "../../components/commanders/page-header";
+import { scopeRedirectTarget } from "./scope-redirect";
+import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { retryRecs } from "./actions";
 import { RetryGhost } from "../../components/commanders/retry-submit";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
@@ -31,11 +31,18 @@ export default async function CommandersPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const userId = await requireUserId();
+  const sp = await searchParams;
+  // Before any read: the `?scope=` toggle became two routes, and a bookmark that
+  // still names the other lane must land there rather than be answered here with
+  // the wrong list.
+  // It cannot loop: a target is only returned while `scope` is present, and the
+  // target never carries it — one 308 and the parameter is gone for good.
+  const target = scopeRedirectTarget(searchParamsToQuery(sp));
+  if (target) permanentRedirect(target);
   // `What's free` is the default: a ranking that ignores which cards are already
   // committed to a deck recommends commanders the player cannot build without
   // taking one apart. `?avail=all` is the opt-out, so a shared link that predates
   // this still opens on the mode it names.
-  const sp = await searchParams;
   const avail = sp.avail === "all" ? ("all" as const) : ("free" as const);
   const stats = await getCollectionStats(userId);
 
@@ -62,25 +69,6 @@ export default async function CommandersPage({
           Upload collection
         </PrimaryButton>
       </EmptyState>
-    );
-  }
-
-  if (parseScope(sp.scope) === "play") {
-    // Discovery does NOT call getRankedList, rankFree or receiptCountsByCommander:
-    // all three are shaped for the owned scope's few hundred rows, and two of them
-    // walk the collection once per commander. `loadDiscovery` answers the same
-    // questions from the offline index in one pass over ~3,300 candidates.
-    // The requested sort, not necessarily the one that comes back: `loadDiscovery`
-    // reads the played tags either way, and downgrades `new` to `fit` when there
-    // is no deck to measure distance from.
-    const discovery = await loadDiscovery(userId, {
-      sort: parseSort(sp.sort),
-      avail,
-    });
-    return (
-      <section className="flex flex-col min-h-screen">
-        <DiscoveryView discovery={discovery} avail={avail} />
-      </section>
     );
   }
 

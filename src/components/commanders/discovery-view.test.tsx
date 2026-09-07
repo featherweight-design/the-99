@@ -710,7 +710,9 @@ describe("DiscoveryView", () => {
       expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
     );
     expect(container.textContent).toContain(excluded.heldScope);
-    expect(findExcluded).toHaveBeenCalledWith("atraxa", { sort: "fit", avail: "free" });
+    // No `avail` in the ask: this lane scores the whole collection, so the
+    // lookup has only one pool it could be asking about.
+    expect(findExcluded).toHaveBeenCalledWith("atraxa", { sort: "fit" });
   });
 
   // A failed lookup is not an answer. "No commander is named that" covers the

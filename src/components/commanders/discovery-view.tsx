@@ -317,18 +317,18 @@ export function DiscoveryView({
     ok: boolean;
   } | null>(null);
   const settledTrimmed = settledQuery.trim();
-  const lookupKey = `${discovery.sort}:${avail}:${settledTrimmed}`;
+  const lookupKey = `${discovery.sort}:${settledTrimmed}`;
   useEffect(() => {
     if (settledTrimmed.length < 2) return;
     let live = true;
-    findExcludedMatches(settledTrimmed, { sort: discovery.sort, avail })
+    findExcludedMatches(settledTrimmed, { sort: discovery.sort })
       // A null answer is the action declining to classify a query that matches
       // more names than it will count. It lands in the same shape a failure
       // does, because it leaves the same thing unknown.
       .then((matches) => {
         if (live)
           setAnswer({
-            key: `${discovery.sort}:${avail}:${settledTrimmed}`,
+            key: `${discovery.sort}:${settledTrimmed}`,
             matches: matches ?? [],
             ok: matches !== null,
           });
@@ -342,12 +342,12 @@ export function DiscoveryView({
       // list and its own count.
       .catch(() => {
         if (live)
-          setAnswer({ key: `${discovery.sort}:${avail}:${settledTrimmed}`, matches: [], ok: false });
+          setAnswer({ key: `${discovery.sort}:${settledTrimmed}`, matches: [], ok: false });
       });
     return () => {
       live = false;
     };
-  }, [settledTrimmed, discovery.sort, avail]);
+  }, [settledTrimmed, discovery.sort]);
   const serverExcluded = useMemo(
     () => (answer?.key === lookupKey ? answer.matches : EMPTY_MATCHES),
     [answer, lookupKey],

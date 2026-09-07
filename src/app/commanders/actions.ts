@@ -34,8 +34,8 @@ export async function retryRecs() {
  * colour pips or the join mode removed are deliberately not its business — the
  * client holds them and can say so without asking.
  *
- * One request per SETTLED query, never per keystroke: it re-derives the free
- * pool, which is the same read the ranking does.
+ * One request per SETTLED query, never per keystroke: it re-derives the pool,
+ * which is the same read the ranking does.
  *
  * Null when the query matches more names than the lookup classifies. The caller
  * reads it as the failed round trip reads its own: an unanswered question, and
@@ -43,7 +43,7 @@ export async function retryRecs() {
  */
 export async function findExcludedMatches(
   query: string,
-  opts: { sort: "fit" | "new"; avail: "all" | "free" },
+  opts: { sort: "fit" | "new" },
 ): Promise<ExcludedMatch[] | null> {
   const userId = await requireUserId();
   const trimmed = query.trim();
@@ -51,15 +51,14 @@ export async function findExcludedMatches(
   // round trip; an empty one is not a search at all.
   if (trimmed.length < 2) return [];
 
-  const { collection, scored } = await loadDiscoveryPool(userId, opts.avail);
+  const { collection } = await loadDiscoveryPool(userId);
   const [matches, builtOracleIds] = await Promise.all([
+    // One oracle-id set and no second aggregate, exactly as `loadDiscovery`
+    // asks it: the lane scores the whole collection, so the two support counts
+    // would be the same count.
     loadNameMatches(
       trimmed,
-      scored.map((c) => c.oracleId),
-      // The whole collection only when it is not the pool being scored, exactly
-      // as `loadDiscovery` passes it: under `all` the two counts are the same
-      // count and the second aggregate would re-derive the first.
-      opts.avail === "free" ? collection.map((c) => c.oracleId) : undefined,
+      collection.map((c) => c.oracleId),
     ),
     loadBuiltCommanderIds(userId),
   ]);
