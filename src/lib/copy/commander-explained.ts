@@ -87,8 +87,10 @@ export const explainedCopy = {
       `You own ${n(owned)} of the ${n(total)} cards most played with this commander.`,
 
     /** With a deck: one sentence, not two, so the clause cannot be orphaned by a wrap.
-        `committed` is the count of owned support cards already in ANY deck; `deck` is the first
-        one, named — severity, not inventory (see gap 7 on keeping this consistent with the
+        `deck` is the deck holding the most of this commander's owned support and `committed` is
+        how many that deck holds \u2014 NOT the total across every deck, which is what this sentence
+        used to attribute to one named list. Naming one deck while counting over all of them
+        credited it with cards sitting in others. Both figures come off the same deck now, named — severity, not inventory (see gap 7 on keeping this consistent with the
         committed mark's count).
 
         `committed` goes through spellOut, not n(): it is prose, and the canvas draws "twelve".
@@ -191,16 +193,22 @@ export const explainedCopy = {
     pool: {
       label: "Pool",
       weight: (w: number) => `${w} pts`,
-      body:
-        "How much of your collection is even legal here \u2014 cards inside her colour identity that could go in the 99. Breadth, not quality.",
-      bodyMobile:
-        "Cards in your collection legal in her identity. Breadth, not quality.",
+      /* POOL NAMES ITS THRESHOLD. Without it this is the one segment a reader can read as a
+         percentage: full marks mean "at least `POOL_FULL_AT` legal cards", and a collection of
+         any depth clears that for most commanders, so a permanent 15/15 reads as "100% covered"
+         against a collection that covers nothing of the sort. Saying the number is what makes
+         the ceiling visible, and it is interpolated rather than typed so the prose cannot
+         outlive the constant it describes. */
+      body: (fullAt: number) =>
+        `How much of your collection is even legal here \u2014 cards inside this commander's color identity that could go in the 99. Full marks at ${n(fullAt)}, so a deep collection sits at the top of this one for most commanders. Breadth, not quality.`,
+      bodyMobile: (fullAt: number) =>
+        `Cards in your collection legal in this identity. Full marks at ${n(fullAt)}. Breadth, not quality.`,
     },
     roles: {
       label: "Roles",
       weight: (w: number) => `${w} pts`,
       body:
-        "Whether you own enough ramp, draw, removal and board wipes to field a deck at all. Measured against a per-role baseline, not against her.",
+        "Whether you own enough ramp, draw, removal and board wipes to field a deck at all. Measured against a per-role baseline, not against this commander.",
       bodyMobile:
         "Enough ramp, draw, removal and wipes to field a deck. Against a per-role baseline.",
     },
@@ -208,16 +216,19 @@ export const explainedCopy = {
       label: "Synergy",
       weight: (w: number) => `${w} pts`,
       body:
-        "How much of EDHREC's most-played list for this commander you already own. The largest weight, because it is the only part that is about her rather than about your shelf.",
+        "How much of EDHREC's most-played list for this commander you already own. The largest weight, because it is the only part that is about the commander rather than about your shelf.",
       bodyMobile:
-        "How much of EDHREC's most-played list for her you own. The only part about her, not your shelf.",
+        "How much of EDHREC's most-played list for this commander you own. The only part about the commander, not your shelf.",
     },
 
     /** The key's actual job, in one line. Rendered from the same points the legend prints, so
-        it cannot disagree with them. Two terms when synergy was not measured. */
+        it cannot disagree with them. Two terms when synergy was not measured.
+
+        NO GLOSS. The desktop variant used to append "The three add up to the number above \u2014
+        that is the whole claim, and nothing else on this page adds up to it", which restated the
+        equation the reader had just been shown. The arithmetic is the explanation; a sentence
+        explaining the arithmetic is a second copy of it. */
     sum: (parts: number[], total: number) => `${parts.join(" + ")} = ${total}.`,
-    sumWithGloss: (parts: number[], total: number) =>
-      `${parts.join(" + ")} = ${total}. The three add up to the number above \u2014 that is the whole claim, and nothing else on this page adds up to it.`,
   },
 
   // ── §5.2 / #346 The committed-card mark ───────────────────────────────
@@ -368,7 +379,7 @@ export const heroNoteEdits = {
     body: (max: number) =>
       `\u2014 EDHREC doesn't track this commander, so fit comes from pool and roles alone. ${n(max)} is the whole score available here, and every commander in this state is measured the same way.`,
     bodyMobile: (max: number) =>
-      `\u2014 EDHREC doesn't track her, so fit is pool and roles alone. ${n(max)} is the whole score here.`,
+      `\u2014 EDHREC doesn't track this commander, so fit is pool and roles alone. ${n(max)} is the whole score here.`,
   },
   degraded: {
     heading: "Synergy data unavailable",

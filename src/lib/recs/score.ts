@@ -66,6 +66,15 @@ export const POOL_WEIGHT = 15;
 export const ROLES_WEIGHT = 25;
 export const SYNERGY_WEIGHT = 60;
 
+/** How many legal cards in the identity fill Pool.
+ *
+ * Named for the same reason the weights are: the key now prints it. It was a bare
+ * literal, and the key described Pool without ever saying it saturates — so a player
+ * with a deep collection read a full 15/15 as "my collection covers this commander
+ * completely", a claim the segment never made. A threshold quoted in prose has to be
+ * the one the arithmetic uses. */
+export const POOL_FULL_AT = 200;
+
 /**
  * What a score is out of, given whether it has a synergy component.
  *
@@ -229,7 +238,7 @@ export function scoreCommander(args: {
     (Object.keys(ROLE_TARGETS) as (keyof typeof ROLE_TARGETS)[])
       .reduce((sum, r) => sum + Math.min(roleCounts[r], ROLE_TARGETS[r]) / ROLE_TARGETS[r], 0) /
     Object.keys(ROLE_TARGETS).length;
-  const poolFactor = Math.min(args.collection.length ? pool.length / 200 : 0, 1);
+  const poolFactor = Math.min(args.collection.length ? pool.length / POOL_FULL_AT : 0, 1);
 
   // Integers, not tenths. The hero's legend prints "Pool 12/15 · Roles 20/25 ·
   // Synergy 42/60" and the headline has to be 74 — auditable by addition. A tenth

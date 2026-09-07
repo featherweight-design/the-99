@@ -36,15 +36,27 @@ describe("committedSupport", () => {
     ["swords", "Krenko"],
   ]);
 
-  it("counts only the ids the player has already spent", () => {
-    expect(committedSupport(["sol-ring", "rhystic", "cultivate"], byCard).count).toBe(2);
+  // The regression this function exists to prevent: "Atraxa" sorts first, so the old
+  // rule named it on every commander page regardless of how little of that commander's
+  // support it actually held.
+  it("names the deck holding the most support, not the earliest one", () => {
+    expect(committedSupport(["cultivate", "sol-ring", "swords"], byCard).firstDeck).toBe("Krenko");
   });
 
-  // Whichever card came first in EDHREC's order, the sentence names the same deck the
-  // committed marks below it point at.
-  it("names the first deck by the ordering the committed read imposes", () => {
-    expect(committedSupport(["sol-ring", "cultivate"], byCard).firstDeck).toBe("Atraxa");
-    expect(committedSupport(["cultivate", "sol-ring"], byCard).firstDeck).toBe("Atraxa");
+  // The order the ids arrive in is EDHREC's, and it must not reach the answer.
+  it("names the same deck whatever order the ids arrive in", () => {
+    expect(committedSupport(["swords", "cultivate", "sol-ring"], byCard).firstDeck).toBe("Krenko");
+  });
+
+  it("counts the named deck's cards, not every committed card", () => {
+    expect(committedSupport(["cultivate", "sol-ring", "swords"], byCard).count).toBe(2);
+  });
+
+  it("ignores ids the player has not committed anywhere", () => {
+    expect(committedSupport(["sol-ring", "rhystic", "swords"], byCard)).toEqual({
+      count: 2,
+      firstDeck: "Krenko",
+    });
   });
 
   // Two names a case-insensitive sort cannot separate. The read broke that tie on

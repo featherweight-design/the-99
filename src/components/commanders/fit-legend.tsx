@@ -8,6 +8,9 @@
 
 import { useId, useState } from "react";
 import { explainedCopy } from "../../lib/copy/commander-explained";
+// Pool's paragraph quotes the threshold at which the segment fills. It comes from the
+// scoring module rather than the copy so the sentence cannot outlive the arithmetic.
+import { POOL_FULL_AT } from "../../lib/recs/score";
 
 export type FitSegmentKey = "pool" | "roles" | "synergy";
 
@@ -174,7 +177,9 @@ export function FitLegend({ segments, score, width }: FitLegendProps) {
                     textWrap: "pretty",
                   }}
                 >
-                  {isPhone ? def.bodyMobile : def.body}
+                  {seg.key === "pool"
+                    ? explainedCopy.key.pool[isPhone ? "bodyMobile" : "body"](POOL_FULL_AT)
+                    : explainedCopy.key[seg.key][isPhone ? "bodyMobile" : "body"]}
                 </p>
               </div>
             );
@@ -188,15 +193,10 @@ export function FitLegend({ segments, score, width }: FitLegendProps) {
               lineHeight: 1.5,
             }}
           >
-            {isPhone
-              ? explainedCopy.key.sum(
-                  segments.map((s) => s.points),
-                  score,
-                )
-              : explainedCopy.key.sumWithGloss(
-                  segments.map((s) => s.points),
-                  score,
-                )}
+            {explainedCopy.key.sum(
+              segments.map((s) => s.points),
+              score,
+            )}
           </p>
         </div>
       )}
