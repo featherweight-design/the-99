@@ -25,9 +25,13 @@ const BASE =
 // utilities are paired: :disabled suppresses the click but not :hover, so a
 // disabled button would otherwise still light up under the pointer and read as
 // interactive.
+// Bone, not accent: accent means "in use / to buy" everywhere else in the app,
+// so a filled CTA wearing it claims a status it does not have. --fg-body is the
+// hover because it is the only token that is a step off bone in the same family
+// across all six themes; --accent-hover would put accent back by the side door.
 const PRIMARY =
-  "bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] " +
-  "disabled:hover:bg-[color:var(--accent)]";
+  "bg-[color:var(--fg)] text-[color:var(--bg)] hover:bg-[color:var(--fg-body)] " +
+  "disabled:hover:bg-[color:var(--fg)]";
 
 const GHOST =
   "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] " +

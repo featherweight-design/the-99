@@ -341,11 +341,12 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
       {/* Open-state marker: 4px accent diamond 6px above the trigger, desktop
           only. Absolutely positioned so opening the menu doesn't shift the
           trigger (table ambiguity 8), and centred on the 38px box rather than
-          the mock's 62px wrapper (ambiguity 9 — the prose wins). */}
+          the mock's 62px wrapper (ambiguity 9 — the prose wins). 18px = the 3px
+          pad ring plus half the 30px circle. */}
       {isPopover && open && (
         <span
           aria-hidden
-          className="absolute bottom-[calc(100%+6px)] left-[22px] h-1 w-1 -translate-x-1/2 rotate-45"
+          className="absolute bottom-[calc(100%+6px)] left-[18px] h-1 w-1 -translate-x-1/2 rotate-45"
           style={{ background: "var(--accent)" }}
         />
       )}
@@ -358,19 +359,30 @@ export function AccountMenu({ panel, theme }: { panel: PanelKind; theme: ThemeKe
         aria-controls={open ? panelId : undefined}
         aria-label={label}
         onClick={() => setOpen((v) => !v)}
-        // 38px visual box inside a 3px pad ring → 44×44 hit area (X15). The
-        // ring also keeps the focus outline clear of the adjacent border.
+        // Visual box inside a 3px pad ring (X15). The ring also keeps the focus
+        // outline clear of the adjacent border.
         className="group block cursor-pointer p-[3px]"
       >
         {/* Hover and pressed are one state (N2): colour only, no scale. Open
-            wins over hover, so its classes are applied instead of alongside. */}
+            wins over hover, so its classes are applied instead of alongside.
+
+            The rail wears the 2026-09-07 refresh's 30px circle on --surface
+            over a --border-strong hairline; the mobile header keeps #35's 38px
+            accent square, which that refresh does not redraw. 30 + the 3px ring
+            is 36px, still clear of the refresh's 32px desktop target floor. */}
         <span
           // X4: the glyphs are decoration; aria-label on the button is the name.
           aria-hidden
-          className={`flex h-[38px] w-[38px] items-center justify-center rounded-[12px] border border-solid font-mono text-[13px] transition-colors duration-[120ms] ${
+          className={`flex items-center justify-center border border-solid font-mono transition-colors duration-[120ms] ${
+            isPopover
+              ? "h-[30px] w-[30px] rounded-full text-[11px]"
+              : "h-[38px] w-[38px] rounded-[12px] text-[13px]"
+          } ${
             open
               ? "bg-[color:var(--elevated)] border-[color:var(--accent-hover)] text-[color:var(--accent-hover)]"
-              : "bg-[color:var(--bg)] border-[color:var(--accent)] text-[color:var(--accent)] group-hover:bg-[color:var(--surface-raised)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
+              : isPopover
+                ? "bg-[color:var(--surface)] border-[color:var(--border-strong)] text-[color:var(--fg-muted)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
+                : "bg-[color:var(--bg)] border-[color:var(--accent)] text-[color:var(--accent)] group-hover:bg-[color:var(--surface-raised)] group-hover:border-[color:var(--accent-hover)] group-hover:text-[color:var(--accent-hover)]"
           }`}
         >
           {identity.initials}
