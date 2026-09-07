@@ -13,6 +13,7 @@ import { FitBar } from "./fit-bar";
 import { ReceiptLine } from "./receipt-line";
 import { RoleChips } from "./role-chips";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 // Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
@@ -75,7 +76,16 @@ export function RecCard(props: RecCardProps) {
   }
   const { commander: c, rank, avail, counts, delta } = props;
   const fit = fitSegments(c);
-  const scoreDisplay = Math.round(fit.pct);
+  // The score itself, not the bar's percentage. A commander whose synergy went
+  // unmeasured scores 32 of 40 and fills 80% of the track, and printing the
+  // fill here would show the reader an 80 on the list and a 32 on the detail
+  // page for the same commander. The denominator carries the difference.
+  const scoreDisplay = c.score;
+  const denominator =
+    c.fitSynergy !== null
+      ? explainedCopy.score.denominator
+      : explainedCopy.score.denominatorMeasurable(c.measurableTotal);
+  const scoreAria = explainedCopy.score.scoreAria(c.score, c.measurableTotal);
 
   // §Synergy Receipts Hidden Note / §Per-Commander Degraded Note. Split by
   // synergyState, not by a null fitSynergy: an "absent" commander is one EDHREC
@@ -140,15 +150,20 @@ export function RecCard(props: RecCardProps) {
 
           {/* Fit score pinned top-right */}
           <div className="flex flex-col items-center shrink-0">
+            {/* The tile has no room for a denominator beside the figure, so the
+                one place it cannot be dropped is the accessible name. */}
+            <span className="sr-only">{scoreAria}</span>
             <span
               className="font-mono font-[600]"
               style={{ fontSize: 20, color: "var(--fg)", lineHeight: 1 }}
+              aria-hidden
             >
               {scoreDisplay}
             </span>
             <span
               className="font-mono"
               style={{ fontSize: 9, letterSpacing: "0.12em", color: "var(--fg-faint)" }}
+              aria-hidden
             >
               FIT
             </span>
@@ -403,14 +418,20 @@ export function RecCard(props: RecCardProps) {
         >
           {/* Score + /100 + Fit label row */}
           <div className="flex items-baseline gap-[6px]">
+            <span className="sr-only">{scoreAria}</span>
             <span
               className="font-mono font-[600]"
               style={{ fontSize: 34, color: "var(--fg)", lineHeight: 1 }}
+              aria-hidden
             >
               {scoreDisplay}
             </span>
-            <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
-              /100
+            <span
+              className="font-mono"
+              style={{ fontSize: 13, color: "var(--fg-faint)" }}
+              aria-hidden
+            >
+              {denominator}
             </span>
             <span
               className="font-mono"

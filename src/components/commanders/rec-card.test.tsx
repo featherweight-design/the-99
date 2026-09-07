@@ -4,6 +4,7 @@ import type { CommanderListItem } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { RecCard, type ScoreDelta } from "./rec-card";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 
 vi.mock("../../app/commanders/actions", () => ({
   retryRecs: vi.fn(),
@@ -133,5 +134,29 @@ describe("RecCard score delta", () => {
   it("renders nothing where the score did not move", () => {
     card({ avail: "free", delta: null });
     expect(screen.queryByText(/↓/)).toBeNull();
+  });
+});
+
+describe("RecCard score and denominator", () => {
+  // The card prints the score, not the bar's fill. 32 of 40 fills 80% of the
+  // track, and an 80 here against a 32 on the detail page is the same commander
+  // wearing two numbers.
+  it("prints the score with the denominator that measured it", () => {
+    card({ commander: { ...noSynergy("absent"), score: 32 } });
+    expect(screen.getAllByText("32")).toHaveLength(2);
+    expect(screen.getByText(explainedCopy.score.denominatorMeasurable(40))).toBeInTheDocument();
+    expect(screen.queryByText("80")).toBeNull();
+  });
+
+  it("takes the full denominator where synergy was measured", () => {
+    card();
+    expect(screen.getByText(explainedCopy.score.denominator)).toBeInTheDocument();
+  });
+
+  // The mobile tile has no room to print a denominator, so both layouts carry
+  // it in the accessible name instead.
+  it("names the figure and its ceiling together at both widths", () => {
+    card({ commander: { ...noSynergy("absent"), score: 32 } });
+    expect(screen.getAllByText(explainedCopy.score.scoreAria(32, 40))).toHaveLength(2);
   });
 });
