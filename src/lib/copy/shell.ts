@@ -55,7 +55,6 @@ export const shellCopy = {
   },
   firstRun: {
     lockedHint: "unlocks after upload",
-    railLockedCaption: "Surfaces unlock once your collection is uploaded.",
   },
   accountMenu: {
     manageAccount: "Manage account",

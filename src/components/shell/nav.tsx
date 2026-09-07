@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AccountMenu } from "./account-menu";
+import { NavIcon, type NavHref } from "./nav-icons";
 import { Crowned99 } from "../marks";
-import { shellCopy } from "../../lib/copy/shell";
+import { refreshCopy } from "../../lib/copy/refresh";
 import type { ThemeKey } from "../../lib/theme/themes";
 
 // ---------------------------------------------------------------------------
@@ -12,12 +13,19 @@ import type { ThemeKey } from "../../lib/theme/themes";
 // ---------------------------------------------------------------------------
 
 type NavItem = {
-  href: "/" | "/collection" | "/commanders" | "/decks";
+  href: NavHref;
   label: string;
   lockable: boolean; // Home is never locked; Collection/Commanders/Decks are.
 };
 
-// Adjudication #1: no <Mark> icons inside rail nav items — Diamond + label ONLY.
+// Adjudication #1 (no <Mark> icons in rail nav items — Diamond + label ONLY) was
+// RETIRED by the 2026-09-07 refresh, on client instruction. The reason it
+// existed still holds where it was made: the Mark inside a nav row was a second
+// logo. A 19px stroke glyph is not the Mark, and at 62px the rail has no room
+// for labels — so the labels moved into aria-label + title instead of coming
+// out. See design/design_handoff_the99_refresh/CHROME-rail-and-tabs.md.
+// If the ruling is ever reinstated, the rail widens to hold labels and the
+// icons come out. A 62px rail with labels is not a third option.
 const ITEMS: NavItem[] = [
   { href: "/",           label: "Home",       lockable: false },
   { href: "/collection", label: "Collection", lockable: true  },
@@ -31,42 +39,28 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Diamond bullet — active/idle/locked states per §Rail Nav item rows
+// Lock glyph — the one padlock under the rail's locked items
 // ---------------------------------------------------------------------------
 
-/**
- * 6×6px rotated diamond for rail nav items (§Rail Nav item Active/Idle/Locked).
- * Active  → --accent
- * Idle    → --border-strong
- * Locked  → --border-strong
- */
-function RailDiamond({ active, locked }: { active: boolean; locked: boolean }) {
-  const bg =
-    !locked && active
-      ? "var(--accent)"        // §Rail Nav item Active: diamond color accent
-      : "var(--border-strong)"; // §Rail Nav item Idle + Locked: diamond color line
+// Decorative, because every locked item already carries the reason in words.
+function LockGlyph() {
   return (
-    <span
-      aria-hidden
-      className="inline-block h-[6px] w-[6px] shrink-0 rotate-45"
-      style={{ background: bg }}
-    />
-  );
-}
-
-/**
- * 8×8px rotated diamond for tab bar items (§Tab item Active/Idle).
- * Active  → --accent
- * Idle    → --border-dashed
- * Locked  → --border-dashed
- */
-function TabDiamond({ active }: { active: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className="inline-block h-[8px] w-[8px] shrink-0 rotate-45"
-      style={{ background: active ? "var(--accent)" : "var(--border-dashed)" }}
-    />
+    <svg
+      width="14"
+      height="16"
+      viewBox="0 0 14 16"
+      fill="none"
+      stroke="var(--fg-faint)"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      className="mt-2"
+    >
+      <rect x="2.25" y="6.75" width="9.5" height="7.5" rx="1.5" />
+      <path d="M4.5 6.75V4.75a2.5 2.5 0 0 1 5 0v2" />
+    </svg>
   );
 }
 
@@ -86,114 +80,56 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
       // collection filter bar, a rec card's overlay) paints over the open menu.
       // Below the tab bar, the menu backdrop and the modals, which all sit at
       // 40 or above.
-      className="hidden md:flex md:flex-col w-[236px] shrink-0 h-screen sticky top-0 z-30"
+      className="hidden md:flex md:flex-col w-[62px] shrink-0 h-screen sticky top-0 z-30"
       style={{
         background: "var(--surface-rail)",
-        borderRight: "1px solid var(--border-strong)",
+        borderRight: "1px solid var(--border)",
       }}
     >
-      {/* ------------------------------------------------------------------ */}
-      {/* Wordmark — §Rail: Wordmark area                                     */}
-      {/* padding: 22px 20px 20px; border-bottom: 1px solid var(--border)*/}
-      {/* ------------------------------------------------------------------ */}
-      <div
-        className="flex items-end gap-[7px] px-5 pt-[22px] pb-5"
-        style={{ borderBottom: "1px solid var(--border)" }}
-      >
-        {/* "THE" label: mono 10px, 0.42em tracking, accent, pb 5px */}
+      {/* The app mark — 26px, rotated 45°, 1.5px --accent. Once, at the top:
+          it is the mark, not a nav item (CHROME §The rail). */}
+      <div className="flex justify-center pt-4 pb-4">
         <span
-          className="pb-[5px]"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.42em",
-            color: "var(--accent)",
-          }}
-        >
-          THE
-        </span>
-        {/* Adjudication #1: variant="rail" (6/8/6px diamonds, 30px numeral) */}
-        <Crowned99 variant="rail" />
+          data-nav-diamond
+          aria-hidden
+          className="block h-[26px] w-[26px] rotate-45"
+          style={{ border: "1.5px solid var(--accent)" }}
+        />
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Nav section — §Rail: Nav section                                    */}
-      {/* padding: 16px 12px; flex-col; gap: 4px                             */}
+      {/* Nav section — icon-only, 38px squares, 4px apart                    */}
       {/* ------------------------------------------------------------------ */}
-      <nav className="flex flex-col gap-1 px-3 py-4" aria-label="Primary">
-        {/* §Rail: Nav group label ("Play") — mono 10px, 0.18em, uppercase, faint */}
-        <div
-          className="uppercase"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            color: "var(--fg-faint)",
-            padding: "6px 12px 8px",
-          }}
-        >
-          Play
-        </div>
+      <nav className="flex flex-col items-center gap-1 px-3" aria-label="Primary">
         {ITEMS.map(({ href, label, lockable }) => {
           const isLocked = locked && lockable;
           const active = !isLocked && isActive(pathname, href);
-
-          if (isLocked) {
-            // §Rail Nav item — Locked: non-interactive, color --fg-faint — lifted for AA per the richness pass
-            // Diamond + label ONLY (adjudication #1 — no Mark icon)
-            return (
-              <div
-                key={href}
-                className="flex items-center gap-[11px] rounded-lg px-3 py-[10px] text-sm cursor-default"
-                style={{ color: "var(--fg-faint)", fontWeight: 500 }}
-                // aria-disabled needs a widget role; per ARIA authoring
-                // practices, disabled items stay focusable (but inoperable)
-                // so AT users can discover them.
-                role="link"
-                aria-disabled="true"
-                tabIndex={0}
-              >
-                <RailDiamond active={false} locked={true} />
-                <span>{label}</span>
-              </div>
-            );
-          }
-
-          // §Rail Nav item — Active / Idle / Hover
-          // Active  → bg-elevated text-fg font-semibold
-          // Idle    → bg-transparent text-fg-muted font-medium hover:bg-elevated-hover hover:text-fg
-          // (--elevated-hover matches the table's Idle-hover background)
+          const name = isLocked ? refreshCopy.firstRun.lockedItemAria(label) : label;
           return (
             <Link
               key={href}
-              href={href}
-              className={`flex items-center gap-[11px] rounded-lg px-3 py-[10px] text-sm transition-colors ${
-                active
-                  ? "bg-elevated text-fg font-semibold"
-                  : "bg-transparent text-fg-muted font-medium hover:bg-elevated-hover hover:text-fg"
-              }`}
+              href={isLocked ? "#" : href}
+              title={name}
+              aria-label={name}
               aria-current={active ? "page" : undefined}
+              aria-disabled={isLocked ? "true" : undefined}
+              onClick={isLocked ? (e) => e.preventDefault() : undefined}
+              className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] transition-colors ${
+                active
+                  ? "bg-elevated text-[color:var(--fg)]"
+                  : "bg-transparent text-[color:var(--fg-faint)]"
+              } ${isLocked ? "cursor-default" : "hover:bg-elevated-hover"}`}
             >
-              <RailDiamond active={active} locked={false} />
-              <span>{label}</span>
+              <NavIcon href={href} />
             </Link>
           );
         })}
 
-        {/* §Rail: Locked surfaces caption — mono 10px, --fg-faint, 4px 12px, lh 1.5 */}
         {locked && (
-          <p
-            className="mt-1"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--fg-faint)",
-              padding: "4px 12px",
-              lineHeight: 1.5,
-            }}
-          >
-            {shellCopy.firstRun.railLockedCaption}
-          </p>
+          <>
+            <span className="mt-2 block h-px w-[34px]" style={{ background: "var(--border)" }} />
+            <LockGlyph />
+          </>
         )}
       </nav>
 
@@ -232,47 +168,31 @@ export function TabBar({ locked }: { locked: boolean }) {
       {ITEMS.map(({ href, label, lockable }) => {
         const isLocked = locked && lockable;
         const active = !isLocked && isActive(pathname, href);
-
-        if (isLocked) {
-          // §Tab item — Locked: non-interactive, no caption (TabBar has no caption)
-          return (
-            <div
-              key={href}
-              className="flex flex-1 flex-col items-center gap-[5px] cursor-default"
-              // aria-disabled needs a widget role; per ARIA authoring
-              // practices, disabled items stay focusable (but inoperable)
-              // so AT users can discover them.
-              role="link"
-              aria-disabled="true"
-              tabIndex={0}
-            >
-              <TabDiamond active={false} />
-              <span
-                style={{
-                  fontSize: 10,
-                  color: "var(--fg-faint)",
-                  fontWeight: 500,
-                }}
-              >
-                {label}
-              </span>
-            </div>
-          );
-        }
+        const name = isLocked ? refreshCopy.firstRun.lockedItemAria(label) : label;
 
         return (
           <Link
             key={href}
-            href={href}
-            className="flex flex-1 flex-col items-center gap-[5px]"
+            href={isLocked ? "#" : href}
+            aria-label={isLocked ? name : undefined}
             aria-current={active ? "page" : undefined}
+            aria-disabled={isLocked ? "true" : undefined}
+            onClick={isLocked ? (e) => e.preventDefault() : undefined}
+            // The active fill is a surface, not a coloured label: locked ruling
+            // 13 reserves colour for status.
+            className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[5px] rounded-[12px] ${
+              active ? "bg-[color:var(--surface-inset)]" : "bg-transparent"
+            } ${isLocked ? "cursor-default" : ""}`}
           >
-            <TabDiamond active={active} />
+            <span style={{ color: active ? "var(--fg)" : "var(--fg-faint)" }}>
+              <NavIcon href={href} />
+            </span>
             <span
               style={{
-                fontSize: 10,
-                color: active ? "var(--accent)" : "var(--fg-faint)",
-                fontWeight: active ? 600 : 500,
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.06em",
+                color: active ? "var(--fg)" : "var(--fg-faint)",
               }}
             >
               {label}
