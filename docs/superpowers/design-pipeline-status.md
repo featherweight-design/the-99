@@ -48,7 +48,7 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | 📐 | Brief locked, awaiting Claude Design handoff production (mocks, components) |
 | 🎨 | Design in flight (workshop / handoff iteration / audit) |
 | 🔨 | Implementation in flight — design is done and the build has started, but not every planned PR has merged |
-| 🚦 | Paused at any stage — awaiting Hugh input, an external dependency, or a deliberate decision not to build yet. **Widened 2026-09-07**: this read "paused mid-workshop", which had no room for an item whose design and plan are both merged and whose build is deliberately deferred. #10 is the first of those, and stretching 🟢 to hold it would have made "ready for implementation" mean two things — one of which is "do not pick this up" |
+| 🚦 | Paused at any stage — awaiting Hugh's input, an external dependency, or a deliberate decision not to build yet. **Widened 2026-09-07**: this read "paused mid-workshop", which had no room for an item whose design and plan are both merged and whose build is deliberately deferred. #10 is the first of those, and stretching 🟢 to hold it would have made "ready for implementation" mean two things — one of which is "do not pick this up" |
 | 🕰️ | Backlog — labelled `type: design`, design cycle not started (no workshop, no brief). Ranked; the top of this list is what Design picks up next |
 | ✅ | Fully implemented + shipped |
 
