@@ -36,7 +36,7 @@ export type HardDeck = { id: string; name: string };
  * disagree with it.
  */
 export function hardDecks(a: Pick<Availability, "claims">): HardDeck[] {
-  return a.claims.filter((c) => c.mature);
+  return a.claims.filter((c) => c.mature).map(({ id, name }) => ({ id, name }));
 }
 
 export type Availability = {
