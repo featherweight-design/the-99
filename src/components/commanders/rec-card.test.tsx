@@ -34,7 +34,9 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
 }
 
 function noSynergy(synergyState: SynergyState): CommanderListItem {
-  return item({ synergyState, fitSynergy: null, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
+  // score and rankScore move together with the denominator: the base item is
+  // 44/100, and a 44 out of 40 would be an impossible commander.
+  return item({ synergyState, fitSynergy: null, score: 24, rankScore: 60, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
 }
 
 const NO_CLAIMS: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };
@@ -143,7 +145,8 @@ describe("RecCard score and denominator", () => {
   // track, and an 80 here against a 32 on the detail page is the same commander
   // wearing two numbers.
   it("prints the score with the denominator that measured it", () => {
-    card({ commander: { ...noSynergy("absent"), score: 32 } });
+    // rankScore is deliberately the rescaled 80 this test asserts is never shown.
+    card({ commander: { ...noSynergy("absent"), score: 32, rankScore: 80 } });
     expect(screen.getAllByText("32")).toHaveLength(2);
     expect(screen.getByText(explainedCopy.score.denominatorMeasurable(40))).toBeInTheDocument();
     expect(screen.queryByText("80")).toBeNull();
@@ -157,7 +160,7 @@ describe("RecCard score and denominator", () => {
   // The mobile tile has no room to print a denominator, so both layouts carry
   // it in the accessible name instead.
   it("names the figure and its ceiling together at both widths", () => {
-    card({ commander: { ...noSynergy("absent"), score: 32 } });
+    card({ commander: { ...noSynergy("absent"), score: 32, rankScore: 80 } });
     expect(screen.getAllByText(explainedCopy.score.scoreAria(32, 40))).toHaveLength(2);
   });
 });

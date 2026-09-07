@@ -53,7 +53,9 @@ async function renderHero(items: CommanderListItem[], degraded = false, prose: s
 }
 
 function noSynergy(synergyState: SynergyState): CommanderListItem {
-  return item({ synergyState, fitSynergy: null, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
+  // 44 out of 40 would be an impossible commander — drop the score with the
+  // denominator.
+  return item({ synergyState, fitSynergy: null, score: 24, rankScore: 60, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
 }
 
 beforeEach(() => {
