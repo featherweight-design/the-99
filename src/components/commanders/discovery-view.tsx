@@ -73,19 +73,24 @@ export function DiscoveryView({
   const sortNav = useSortNav();
   const availNav = useAvailNav();
   const setScope = scopeNav.go;
+  // The `go` functions, not the hooks' return objects: each hook builds a fresh
+  // object every render to carry its `pending`, so depending on the object would
+  // rebuild these callbacks on every render and the memo would buy nothing.
+  const goSort = sortNav.go;
+  const goAvail = availNav.go;
   // Cache first, server second. `serve` reports a miss rather than throwing, so
   // the navigation is the fallback and the URL ends up the same either way.
   const setSort = useCallback(
     (next: "fit" | "new") => {
-      if (!serve(next, avail)) sortNav.go(next);
+      if (!serve(next, avail)) goSort(next);
     },
-    [serve, avail, sortNav],
+    [serve, avail, goSort],
   );
   const setAvail = useCallback(
     (next: "all" | "free") => {
-      if (!serve(discovery.sort, next)) availNav.go(next);
+      if (!serve(discovery.sort, next)) goAvail(next);
     },
-    [serve, discovery.sort, availNav],
+    [serve, discovery.sort, goAvail],
   );
   // Empty on an ordinary load, and the flip's message on arrival from the other
   // scope — the count it names is the one the server just produced.
