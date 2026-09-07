@@ -42,6 +42,11 @@ function isActive(pathname: string, href: string): boolean {
 // Lock glyph — the one padlock under the rail's locked items
 // ---------------------------------------------------------------------------
 
+// The handoff writes the locked colour as a bare Amonkhet hex, which would
+// stay Amonkhet under the other five themes. It is spent here as
+// `--fg-locked`, which every theme already defines against its own surfaces.
+// Awaiting Design's ratification; the intent is unchanged.
+
 // Decorative, because every locked item already carries the reason in words.
 function LockGlyph() {
   return (
@@ -50,16 +55,15 @@ function LockGlyph() {
       height="16"
       viewBox="0 0 14 16"
       fill="none"
-      stroke="var(--fg-faint)"
-      strokeWidth="1.25"
+      stroke="var(--fg-locked)"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
       focusable="false"
-      className="mt-2"
     >
-      <rect x="2.25" y="6.75" width="9.5" height="7.5" rx="1.5" />
-      <path d="M4.5 6.75V4.75a2.5 2.5 0 0 1 5 0v2" />
+      <rect x="1.75" y="6.5" width="10.5" height="8" rx="3" />
+      <path d="M4.5 6.5V4.5a2.5 2.5 0 0 1 5 0v2" />
     </svg>
   );
 }
@@ -68,6 +72,56 @@ function LockGlyph() {
 // NavRail — desktop only (hidden md:flex)
 // §Rail container / §Rail Wordmark area / §Rail Nav section / §Rail Account trigger
 // ---------------------------------------------------------------------------
+
+// A locked item is not a link — the handoff takes it out of the tab order in
+// both chromes, so there is nothing to point an href at. Rendering a <span>
+// with role="link" + aria-disabled keeps the name, the role and the unlock
+// reason in the accessibility tree without a focus stop or a dead navigation,
+// which is what a disabled <Link href="#"> would have been. Discovery is
+// covered in visible copy: the first-run checklist cards state the same unlock
+// condition on the page itself.
+function NavSlot({
+  isLocked,
+  href,
+  name,
+  active,
+  className,
+  children,
+}: {
+  isLocked: boolean;
+  href: NavHref;
+  // undefined leaves the accessible name to the visible label, which is what
+  // the tab bar wants for an unlocked item.
+  name: string | undefined;
+  active: boolean;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (isLocked) {
+    return (
+      <span
+        role="link"
+        title={name}
+        aria-label={name}
+        aria-disabled="true"
+        className={className}
+      >
+        {children}
+      </span>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      title={name}
+      aria-label={name}
+      aria-current={active ? "page" : undefined}
+      className={className}
+    >
+      {children}
+    </Link>
+  );
+}
 
 export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey }) {
   const pathname = usePathname();
@@ -80,65 +134,62 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
       // collection filter bar, a rec card's overlay) paints over the open menu.
       // Below the tab bar, the menu backdrop and the modals, which all sit at
       // 40 or above.
-      className="hidden md:flex md:flex-col w-[62px] shrink-0 h-screen sticky top-0 z-30"
+      className="hidden md:flex md:flex-col items-center w-[62px] shrink-0 h-screen sticky top-0 z-30 py-[14px]"
       style={{
         background: "var(--surface-rail)",
         borderRight: "1px solid var(--border)",
       }}
     >
-      {/* The app mark — 26px, rotated 45°, 1.5px --accent. Once, at the top:
-          it is the mark, not a nav item (CHROME §The rail). */}
-      <div className="flex justify-center pt-4 pb-4">
-        <span
-          data-nav-diamond
-          aria-hidden
-          className="block h-[26px] w-[26px] rotate-45"
-          style={{ border: "1.5px solid var(--accent)" }}
-        />
-      </div>
+      {/* The app mark — 26px, rotated 45°, 4px radius, 1.5px --accent, and 16px
+          of air under it. Once, at the top: it is the mark, not a nav item
+          (CHROME §The rail). */}
+      <span
+        data-nav-diamond
+        aria-hidden
+        className="block h-[26px] w-[26px] rotate-45 rounded-[4px] mb-4"
+        style={{ border: "1.5px solid var(--accent)" }}
+      />
 
       {/* ------------------------------------------------------------------ */}
       {/* Nav section — icon-only, 38px squares, 4px apart                    */}
       {/* ------------------------------------------------------------------ */}
-      <nav className="flex flex-col items-center gap-1 px-3" aria-label="Primary">
+      <nav className="flex flex-col items-center gap-1" aria-label="Primary">
         {ITEMS.map(({ href, label, lockable }) => {
           const isLocked = locked && lockable;
           const active = !isLocked && isActive(pathname, href);
-          const name = isLocked ? refreshCopy.firstRun.lockedItemAria(label) : label;
           return (
-            <Link
+            <NavSlot
               key={href}
-              href={isLocked ? "#" : href}
-              title={name}
-              aria-label={name}
-              aria-current={active ? "page" : undefined}
-              aria-disabled={isLocked ? "true" : undefined}
-              onClick={isLocked ? (e) => e.preventDefault() : undefined}
+              isLocked={isLocked}
+              href={href}
+              active={active}
+              name={isLocked ? refreshCopy.firstRun.lockedItemAria(label) : label}
               className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] transition-colors ${
                 active
                   ? "bg-elevated text-[color:var(--fg)]"
-                  : "bg-transparent text-[color:var(--fg-faint)]"
-              } ${isLocked ? "cursor-default" : "hover:bg-elevated-hover"}`}
+                  : isLocked
+                    ? "bg-transparent text-[color:var(--fg-locked)]"
+                    : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover"
+              }`}
             >
               <NavIcon href={href} />
-            </Link>
+            </NavSlot>
           );
         })}
 
         {locked && (
           <>
-            <span className="mt-2 block h-px w-[34px]" style={{ background: "var(--border)" }} />
+            {/* 8px of its own on top of the list's 4px gap, per the frame. */}
+            <span className="my-2 block h-px w-[34px]" style={{ background: "var(--border)" }} />
             <LockGlyph />
           </>
         )}
       </nav>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Account trigger — §Rail: Account trigger row                        */}
-      {/* mt-auto; outer padding 14px 12px. #35 replaced the pill with the     */}
-      {/* avatar-only trigger, so the row is now just the 38px box.           */}
+      {/* Account trigger — §Rail: 30px circle, pinned to the bottom.         */}
       {/* ------------------------------------------------------------------ */}
-      <div className="mt-auto flex py-[14px] px-3">
+      <div className="mt-auto">
         <AccountMenu panel="popover" theme={theme} />
       </div>
     </aside>
@@ -158,46 +209,42 @@ export function TabBar({ locked }: { locked: boolean }) {
       // Held to --tabbar-h rather than sized by its contents: the bar is fixed,
       // so every surface that has to sit clear of it reserves that height by
       // hand, and an intrinsic height gives them nothing exact to reserve.
-      className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-[var(--tabbar-h)] items-center px-[6px] pt-[10px] pb-[22px]"
+      // 8px all round with 14px at the bottom for the home indicator, which
+      // with the 52px item is exactly --tabbar-h.
+      className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-[var(--tabbar-h)] items-center px-2 pt-2 pb-[14px]"
       style={{
         background: "var(--surface-rail)",
-        borderTop: "1px solid var(--border-strong)",
+        borderTop: "1px solid var(--border)",
       }}
       aria-label="Primary"
     >
       {ITEMS.map(({ href, label, lockable }) => {
         const isLocked = locked && lockable;
         const active = !isLocked && isActive(pathname, href);
-        const name = isLocked ? refreshCopy.firstRun.lockedItemAria(label) : label;
 
         return (
-          <Link
+          <NavSlot
             key={href}
-            href={isLocked ? "#" : href}
-            aria-label={isLocked ? name : undefined}
-            aria-current={active ? "page" : undefined}
-            aria-disabled={isLocked ? "true" : undefined}
-            onClick={isLocked ? (e) => e.preventDefault() : undefined}
+            isLocked={isLocked}
+            href={href}
+            active={active}
+            // Unlocked, the visible label is the name; locked, it is replaced
+            // by the same label plus the reason it cannot be reached.
+            name={isLocked ? refreshCopy.firstRun.lockedItemAria(label) : undefined}
             // The active fill is a surface, not a coloured label: locked ruling
-            // 13 reserves colour for status.
-            className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[5px] rounded-[12px] ${
-              active ? "bg-[color:var(--surface-inset)]" : "bg-transparent"
-            } ${isLocked ? "cursor-default" : ""}`}
+            // 13 reserves colour for status. One `color` on the slot serves both
+            // the icon (currentColor) and the label.
+            className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
+              active
+                ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"
+                : isLocked
+                  ? "bg-transparent text-[color:var(--fg-locked)]"
+                  : "bg-transparent text-[color:var(--fg-faint)]"
+            }`}
           >
-            <span style={{ color: active ? "var(--fg)" : "var(--fg-faint)" }}>
-              <NavIcon href={href} />
-            </span>
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: "0.06em",
-                color: active ? "var(--fg)" : "var(--fg-faint)",
-              }}
-            >
-              {label}
-            </span>
-          </Link>
+            <NavIcon href={href} />
+            <span className="font-mono text-[9px] tracking-[0.06em]">{label}</span>
+          </NavSlot>
         );
       })}
     </nav>

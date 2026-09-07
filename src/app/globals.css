@@ -357,9 +357,13 @@ body { font-family: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif; }
    to this height rather than sized by its contents, so the reservation is exact
    by construction rather than an estimate that can drift.
 
+   74px = the refresh's 52px item plus its 8px top and 14px bottom padding, the
+   last of which clears the home indicator. This token moves whenever that
+   padding does, or every reserving surface goes back to guessing.
+
    Deliberately not a theme token: the theme contract is a colour contract, and
    `parseThemeBlocks` reads only `:root` and `[data-theme]` blocks. */
-html { --tabbar-h: 64px; }
+html { --tabbar-h: 74px; }
 
 /* The lift every dialog in the app sits on — the card modal, the export dialog,
    the collection's confirm and issue dialogs, and Clerk's own popover, which is

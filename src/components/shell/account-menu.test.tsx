@@ -64,6 +64,25 @@ describe("AccountMenu trigger", () => {
     expect(trigger()).toHaveAttribute("aria-expanded", "true");
   });
 
+  // The 2026-09-07 chrome refresh redraws the rail's trigger and leaves the
+  // mobile header's alone, so the two shapes have to be able to differ.
+  it("wears a 30px --surface circle in the rail", () => {
+    render(<AccountMenu panel="popover" theme="amonkhet" />);
+    const box = trigger().firstElementChild as HTMLElement;
+    expect(box.className).toContain("h-[30px]");
+    expect(box.className).toContain("rounded-full");
+    expect(box.className).toContain("bg-[color:var(--surface)]");
+    expect(box.className).toContain("border-[color:var(--border-strong)]");
+  });
+
+  it("keeps the 38px accent square in the mobile header", () => {
+    render(<AccountMenu panel="sheet" theme="amonkhet" />);
+    const box = trigger().firstElementChild as HTMLElement;
+    expect(box.className).toContain("h-[38px]");
+    expect(box.className).toContain("rounded-[12px]");
+    expect(box.className).toContain("border-[color:var(--accent)]");
+  });
+
   it("toggles closed on a second press", () => {
     render(<AccountMenu panel="popover" theme="amonkhet" />);
     fireEvent.click(trigger());

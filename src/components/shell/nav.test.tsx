@@ -64,6 +64,17 @@ describe("NavRail", () => {
     // Home is never lockable.
     expect(within(nav).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-disabled");
   });
+
+  // The handoff takes locked items out of the tab order. An <a> without an
+  // href is not focusable either, but it would still offer a dead navigation
+  // target to a pointer; a <span> offers neither and keeps the name and role.
+  it("does not leave a locked item focusable or navigable", () => {
+    render(<NavRail locked theme="amonkhet" />);
+    const item = screen.getByRole("link", { name: "Decks — unlocks once a collection is read" });
+    expect(item.tagName).toBe("SPAN");
+    expect(item).not.toHaveAttribute("href");
+    expect(item).not.toHaveAttribute("tabindex");
+  });
 });
 
 describe("TabBar", () => {
@@ -89,5 +100,40 @@ describe("TabBar", () => {
     expect(
       screen.getByRole("link", { name: "Collection — unlocks once a collection is read" }),
     ).toHaveAttribute("aria-disabled", "true");
+  });
+
+  // Only the locked slot may override the name. An unlocked tab already shows
+  // its label, so an aria-label there would be a second, competing copy of it.
+  it("leaves an unlocked tab's name to its visible label", () => {
+    render(<TabBar locked={false} />);
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    for (const item of within(nav).getAllByRole("link")) {
+      expect(item).not.toHaveAttribute("aria-label");
+    }
+  });
+});
+
+// One icon set for both chromes, so slot N cannot draw a different glyph in
+// the rail than it does in the tab bar — the transposition the handoff says
+// was caught in review once already.
+describe("Nav glyphs", () => {
+  it("draws the same shape in the same slot in both chromes", () => {
+    const rail = render(<NavRail locked={false} theme="amonkhet" />);
+    const railShapes = [...rail.container.querySelectorAll("nav a svg")].map((s) => s.innerHTML);
+    const tabs = render(<TabBar locked={false} />);
+    const tabShapes = [...tabs.container.querySelectorAll("nav a svg")].map((s) => s.innerHTML);
+    expect(railShapes).toHaveLength(4);
+    expect(tabShapes).toEqual(railShapes);
+  });
+
+  // 19px drawn on 20 units is what the handoff frames specify; reading the
+  // viewBox off the rendered size instead rescales every stroke.
+  it("renders 19px glyphs on the handoff's 20-unit viewBox", () => {
+    const { container } = render(<TabBar locked={false} />);
+    for (const svg of container.querySelectorAll("nav a svg")) {
+      expect(svg.getAttribute("width")).toBe("19");
+      expect(svg.getAttribute("viewBox")).toBe("0 0 20 20");
+      expect(svg.getAttribute("stroke-width")).toBe("1.5");
+    }
   });
 });
