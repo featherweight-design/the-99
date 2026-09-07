@@ -197,10 +197,10 @@ export const discoveryCopy = {
     // 1 · No decks built. The list beneath is FULL; this is a disabled control
     // with a stated reason, not an empty list. Expressive heading, marked.
     noDecksHeading: "Something new needs something old first",
-    noDecksBody: (cards: number) =>
-      `We rank “new” by how far a commander sits from the archetypes the decks you have built already play — and you have not built one yet. Best fit works from day one: it only needs your collection, and you have ${n(
-        cards,
-      )} cards in it.`,
+    // No card count: the page header directly above this banner already ends
+    // "read against N cards", and the figure is the same one.
+    noDecksBody:
+      "We rank “new” by how far a commander sits from the archetypes the decks you have built already play — and you have not built one yet. Best fit works from day one: it only needs your collection.",
     /** The one clause the banner marks. A substring of `noDecksBody` rather than
         a fragment the component splices in, so the sentence has one author. */
     noDecksEmphasis: "Best fit works from day one",
@@ -248,7 +248,9 @@ export const discoveryCopy = {
   // The reveal control's shipped strings are UNCHANGED. This adds one dimmer
   // second line: at 242 rows the rank band was implicit, at 3,100 it is not.
   window: {
+    // The band alone. The advice that used to follow it sat inside the reveal
+    // button, arguing against the press, and named a filter bar already on screen.
     revealBand: (from: number, to: number, total: number) =>
-      `ranks ${n(from)}–${n(to)} of ${n(total)} · narrowing by colour is faster than scrolling`,
+      `ranks ${n(from)}–${n(to)} of ${n(total)}`,
   },
 } as const;

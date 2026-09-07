@@ -22,8 +22,7 @@ const { empty: copy } = discoveryCopy;
  * explains a control the player can see is off, so it marks itself as an aside
  * to the list rather than competing with the rows for the first read.
  */
-export function NoDecksBanner({ cardsRead }: { cardsRead: number }) {
-  const body = copy.noDecksBody(cardsRead);
+export function NoDecksBanner() {
   return (
     <div
       className="block rounded-[10px] p-[16px_18px] bg-[color:var(--surface)] [border:1px_solid_var(--border)] [border-left:3px_solid_var(--accent)]"
@@ -32,7 +31,7 @@ export function NoDecksBanner({ cardsRead }: { cardsRead: number }) {
         {copy.noDecksHeading}
       </h2>
       <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-body)]">
-        <Emphasised text={body} clause={copy.noDecksEmphasis} />
+        <Emphasised text={copy.noDecksBody} clause={copy.noDecksEmphasis} />
       </p>
     </div>
   );
