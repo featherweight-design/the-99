@@ -4,6 +4,7 @@ import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
 import { getRankedList } from "../../../lib/recs/ranked-list";
 import { CommanderDetail } from "../../../components/commanders/detail";
+import { readCommanderProse } from "../../../lib/prose/read";
 import { readSynergyCards } from "./synergy-read";
 
 export default async function CommanderDetailPage({
@@ -40,7 +41,13 @@ export default async function CommanderDetailPage({
     .flat()
     .map((rc) => rc.oracleId);
 
-  const synergyCards = await readSynergyCards(userId, commander.oracleId, coveredOracleIds);
+  // One explicit primary-key lookup. Nothing this page already reads touches the
+  // commander_support header row — scoreOneCommander and readSynergyCards both go to
+  // commander_support_cards — so the paragraph does not ride along on an existing read.
+  const [synergyCards, prose] = await Promise.all([
+    readSynergyCards(userId, commander.oracleId, coveredOracleIds),
+    readCommanderProse(commander.oracleId),
+  ]);
 
   return (
     <CommanderDetail
@@ -48,6 +55,7 @@ export default async function CommanderDetailPage({
       rank={found.rank}
       isBestFit={found.rank === 1}
       synergyCards={synergyCards}
+      prose={prose}
     />
   );
 }

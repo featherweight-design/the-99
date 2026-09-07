@@ -10,6 +10,7 @@ import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score"
 import type { RankedCommander } from "../../lib/recs/recommend";
 import { explainedCopy, heroNoteEdits } from "../../lib/copy/commander-explained";
 import { FitLegend, type FitLegendSegment } from "./fit-legend";
+import { WhySection } from "./why-section";
 import { FullCardTrigger } from "./full-card-trigger";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CoverageSection } from "./coverage-section";
@@ -184,6 +185,8 @@ export type CommanderDetailProps = {
   rank: number;
   isBestFit: boolean;
   synergyCards: SynergyCard[];
+  /** The stored sentence, or null when none has been accepted for this commander. */
+  prose?: string | null;
 };
 
 export function CommanderDetail({
@@ -191,6 +194,7 @@ export function CommanderDetail({
   rank,
   isBestFit,
   synergyCards,
+  prose = null,
 }: CommanderDetailProps) {
   const gradient = commanderGradient(c.colorIdentity);
 
@@ -305,6 +309,14 @@ export function CommanderDetail({
       >
         {/* Fit Hero (mobile) */}
         <FitHero commander={c} rank={rank} isBestFit={isBestFit} width="phone" />
+
+        <WhySection
+          prose={prose}
+          edhrecOwnedCount={c.edhrecOwnedCount}
+          edhrecTotal={c.edhrecTotal}
+          roleCounts={c.roleCounts}
+          width="phone"
+        />
 
         {/* The Pool section */}
         <div>
@@ -541,6 +553,14 @@ export function CommanderDetail({
         <div className="flex flex-col gap-[32px]">
           {/* Fit Hero */}
           <FitHero commander={c} rank={rank} isBestFit={isBestFit} width="desktop" />
+
+          <WhySection
+            prose={prose}
+            edhrecOwnedCount={c.edhrecOwnedCount}
+            edhrecTotal={c.edhrecTotal}
+            roleCounts={c.roleCounts}
+            width="desktop"
+          />
 
           {/* The Pool section */}
           <div>

@@ -7,6 +7,7 @@ import { useState, useTransition, useId, type JSX } from "react";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
+import { roleAnchorId, ROLE_ANCHOR_SCROLL_MARGIN } from "./role-anchor";
 import type { RoleCard, RoleName } from "../../lib/recs/score";
 
 type RoleOrder = readonly RoleName[];
@@ -60,12 +61,14 @@ function RolePanelDesktop({
 
   return (
     <section
+      id={roleAnchorId("desktop", role)}
       aria-labelledby={`${listId}-name`}
-      className="rounded-[10px]"
+      className="rounded-[10px] target:outline target:outline-1 target:outline-[color:var(--accent-dim)]"
       style={{
         background: "var(--surface-rail)",
         border: "1px solid var(--border)",
         padding: "15px 18px",
+        scrollMarginTop: ROLE_ANCHOR_SCROLL_MARGIN,
       }}
     >
       {/* Header row */}
@@ -167,12 +170,14 @@ function RolePanelPhone({
 
   return (
     <section
+      id={roleAnchorId("phone", role)}
       aria-labelledby={`${listId}-name`}
-      className="rounded-[10px]"
+      className="rounded-[10px] target:outline target:outline-1 target:outline-[color:var(--accent-dim)]"
       style={{
         background: "var(--surface-rail)",
         border: "1px solid var(--border)",
         padding: "13px 14px",
+        scrollMarginTop: ROLE_ANCHOR_SCROLL_MARGIN,
       }}
     >
       {/* Header — the gap clause takes its own line here, because at phone width
