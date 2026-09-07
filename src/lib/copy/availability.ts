@@ -300,10 +300,14 @@ export const availabilityCopy = {
     // a claim about every row on screen and contradict the ones marked `holds`.
     // `wants` is the same verb `detailClaimWants` prints, so the sentence points
     // at its rows rather than describing them.
+    //
+    // Both branches close on "gets it", singular. `brewCount` counts LISTS, not
+    // copies, so "gets them" would imply a number of copies the block has not
+    // printed — the same rule the note's own header states.
     detailSoftNote: (brewCount: number) =>
       brewCount === 1
         ? "Nothing to sort out yet — the list that wants it isn’t finished. Whichever you sleeve first gets it."
-        : "Nothing to sort out yet — the lists that want it aren’t finished. Whichever you sleeve first gets them.",
+        : "Nothing to sort out yet — the lists that want it aren’t finished. Whichever you sleeve first gets it.",
     detailOverNote:
       "More finished lists want it than you own. Nothing’s broken — it’s a shopping decision.",
   },
