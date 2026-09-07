@@ -11,4 +11,11 @@
 -- re-persists on a miss, and `replaceCollection` already deletes the whole table
 -- unconditionally on every confirmed import. The recompute reads `edhrec_cache`,
 -- which this migration does not touch, so it makes no upstream EDHREC calls.
+--
+-- DELETE rather than TRUNCATE, deliberately. TRUNCATE is the faster whole-table
+-- clear and avoids the per-row WAL, but it takes an ACCESS EXCLUSIVE lock, and
+-- this statement runs inside the production Vercel build while the deployed app
+-- is still serving reads off this table. At a few hundred rows per collection the
+-- WAL volume and the bloat DELETE leaves are both immaterial; blocking every
+-- reader for the length of the migration would not be.
 DELETE FROM "commander_scores";

@@ -182,12 +182,18 @@ export function scoreCommander(args: {
   const fitRoles = Math.round(roleCoverage * 25 * 10) / 10;
   const fitSynergy = edhrecTotal == null ? null : Math.round(overlapRatio * 60 * 10) / 10;
   // One denominator for every commander. Rescaling pool+roles from their 40-point
-  // maximum back up to 100 when synergy was missing let a commander EDHREC does not
-  // track print 100/100 — the highest figure the UI can show, awarded to the
-  // commander we know least about (#333). It also contradicted the note the card
-  // already prints beside that number: "fit comes from pool and roles alone".
-  // Unscaled, such a commander tops out at 40, which is what pool and roles alone
-  // are worth. `fitSynergy` stays null either way: the component is absent, not 0.
+  // maximum back up to 100 whenever synergy data was unavailable let a commander
+  // with no synergy read print 100/100 — the highest figure the UI can show,
+  // awarded to the commander we know least about (#333). It also contradicted the
+  // note the card already prints beside that number: "fit comes from pool and
+  // roles alone". Unscaled, such a commander tops out at 40, which is what pool
+  // and roles alone are worth.
+  //
+  // "Unavailable", not "untracked": this branch is every reason `edhrecTotal` came
+  // back null, a live EDHREC outage included. `synergyState` is what tells those
+  // apart, and it does so for the card's note and its Retry button rather than for
+  // the arithmetic — a score is no more certain for the gap being temporary.
+  // `fitSynergy` stays null either way: the component is absent, not 0.
   const score = fitSynergy == null
     ? Math.round((fitPool + fitRoles) * 10) / 10
     : Math.round((fitPool + fitRoles + fitSynergy) * 10) / 10;
