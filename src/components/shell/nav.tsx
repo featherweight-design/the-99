@@ -194,7 +194,11 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
         {locked && (
           <>
             {/* 8px of its own on top of the list's 4px gap, per the frame. */}
-            <span className="my-2 block h-px w-[34px]" style={{ background: "var(--border)" }} />
+            <span
+              aria-hidden
+              className="my-2 block h-px w-[34px]"
+              style={{ background: "var(--border)" }}
+            />
             <LockGlyph />
           </>
         )}
