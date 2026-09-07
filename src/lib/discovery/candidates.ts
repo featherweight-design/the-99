@@ -1,4 +1,4 @@
-import { and, eq, ilike, notInArray, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderSupport, commanderSupportCards, decks } from "../../db/schema";
 import type { EdhrecTag } from "../edhrec/parse";
@@ -119,6 +119,28 @@ export async function loadNameMatches(
   ownedOracleIds: string[],
   collectionOracleIds?: string[],
 ): Promise<NameMatchRow[] | null> {
+  // Names first, and nothing else. Both support counts are aggregates over
+  // `commander_support_cards`, and running them before the name filter would
+  // grind all 240,000 rows for the couple of hundred this keeps. The matching
+  // ids are the cheapest thing that makes the aggregates proportional to the
+  // answer, and they cost an index scan the second query would have paid anyway.
+  //
+  // One row past the cap, so a set that reached it can be told from one that
+  // stopped just short of it. The extra row is never returned.
+  const matched = await db
+    .select({ oracleId: commanderSupport.commanderOracleId })
+    .from(commanderSupport)
+    .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
+    .where(and(eq(cards.commanderLegal, true), ilike(cards.name, `%${escapeLike(query)}%`)))
+    .orderBy(cards.name)
+    .limit(NAME_MATCH_LIMIT + 1);
+
+  if (matched.length > NAME_MATCH_LIMIT) return null;
+  // No second query for a query nothing is named: `= any('{}')` is a round trip
+  // whose answer is already in hand.
+  if (matched.length === 0) return [];
+  const ids = matched.map((r) => r.oracleId);
+
   const base = db
     .select({
       oracleId: commanderSupport.commanderOracleId,
@@ -130,19 +152,14 @@ export async function loadNameMatches(
     })
     .from(commanderSupport)
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
-    .leftJoin(ownedSupportTable(ownedOracleIds), OWNED_SUPPORT_ON);
+    .leftJoin(ownedSupportTable(ownedOracleIds, ids), OWNED_SUPPORT_ON);
 
-  // One row past the cap, so a set that reached it can be told from one that
-  // stopped just short of it. The extra row is never returned.
-  const rows = await (collectionOracleIds != null
-    ? base.leftJoin(collectionSupportTable(collectionOracleIds), COLLECTION_SUPPORT_ON)
+  return await (collectionOracleIds != null
+    ? base.leftJoin(collectionSupportTable(collectionOracleIds, ids), COLLECTION_SUPPORT_ON)
     : base
   )
-    .where(and(eq(cards.commanderLegal, true), ilike(cards.name, `%${escapeLike(query)}%`)))
-    .orderBy(cards.name)
-    .limit(NAME_MATCH_LIMIT + 1);
-
-  return rows.length > NAME_MATCH_LIMIT ? null : rows;
+    .where(inArray(commanderSupport.commanderOracleId, ids))
+    .orderBy(cards.name);
 }
 
 /** The commanders this player has already built around — the scope exclusion,
@@ -226,7 +243,7 @@ const COLLECTION_SUPPORT_ON = sql`csa.commander_oracle_id = ${commanderSupport.c
  * finish, so a caller that maps that table without de-duplicating would
  * otherwise count one owned support card several times.
  */
-function ownedSupportTable(ownedOracleIds: string[]) {
+function ownedSupportTable(ownedOracleIds: string[], commanderIds?: string[]) {
   // `sql.param` is required: a bare template array expands to a parenthesised
   // param list, which is a syntax error rather than an array.
   const owned = sql.param(ownedOracleIds);
@@ -235,7 +252,21 @@ function ownedSupportTable(ownedOracleIds: string[]) {
                 from ${commanderSupportCards} csc
                 join unnest(${owned}::uuid[]) as owned(oracle_id)
                   on owned.oracle_id = csc.oracle_id
+               ${commanderScope(commanderIds)}
                group by csc.commander_oracle_id) as osc`;
+}
+
+/**
+ * Narrows an aggregate to the commanders the caller will actually project.
+ *
+ * The ranking reads every candidate, so it passes nothing and pays for the whole
+ * aggregate once. A name lookup reads at most `NAME_MATCH_LIMIT` of them, and
+ * without this it would grind the same 240,000-row aggregate for the couple of
+ * hundred rows it keeps — per settled query, several times a search.
+ */
+function commanderScope(commanderIds: string[] | undefined) {
+  if (commanderIds === undefined) return sql``;
+  return sql`where csc.commander_oracle_id = any(${sql.param(commanderIds)}::uuid[])`;
 }
 
 /**
@@ -252,13 +283,14 @@ function ownedSupportTable(ownedOracleIds: string[]) {
  * SQL and the other by the ranking prints an exclusion sentence contradicting
  * the list it sits above.
  */
-function collectionSupportTable(collectionOracleIds: string[]) {
+function collectionSupportTable(collectionOracleIds: string[], commanderIds?: string[]) {
   const owned = sql.param(collectionOracleIds);
   return sql`(select csc.commander_oracle_id,
                      count(distinct csc.oracle_id)::int as collection_support
                 from ${commanderSupportCards} csc
                 join unnest(${owned}::uuid[]) as owned(oracle_id)
                   on owned.oracle_id = csc.oracle_id
+               ${commanderScope(commanderIds)}
                group by csc.commander_oracle_id) as csa`;
 }
 
