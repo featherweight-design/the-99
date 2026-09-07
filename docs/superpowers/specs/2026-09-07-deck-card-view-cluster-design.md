@@ -35,10 +35,14 @@ Two components draw mana pips. `cards/mana-pips.tsx` is shared but sized for the
 holds a private `CostPips` at **14px** with a 9px numeral that splits hybrid and
 Phyrexian correctly with a 135° gradient. The better component is the buried one.
 
-Nothing in the database can identify a double-faced card. `cards` and `printings` have
-no `layout` column, and both Scryfall transforms read `card_faces` only to pick the first
-face with an image as a fallback for the single `imageUri` — the back face is discarded
-at ingest.
+Nothing in the database identifies a double-faced card **reliably**. `cards` and
+`printings` have no `layout` column, and both Scryfall transforms keep exactly one image
+per card — `card_faces` is read only to pick the first face that has one, so the back
+face's art is discarded at ingest. Some signal survives: `toCardRow` joins a multi-face
+card's oracle text with a `//` separator, and Scryfall's `type_line` carries a `//` of its
+own. But that is a heuristic, not a contract — split and adventure cards read the same way
+and have no back to turn over — so a flip control still needs an explicit layout flag and
+back-face image storage before it can be drawn.
 
 ## Corrections to the card line item parity brief
 
