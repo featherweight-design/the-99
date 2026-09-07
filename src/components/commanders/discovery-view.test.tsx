@@ -19,6 +19,13 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
+// The one thing on this surface the client cannot answer: rows the server left
+// out of the payload. Mocked rather than stubbed at the fetch layer, because the
+// action IS the boundary — it reaches the database, and importing it for real
+// would pull the driver into a component test.
+const { findExcluded } = vi.hoisted(() => ({ findExcluded: vi.fn() }));
+vi.mock("../../app/commanders/actions", () => ({ findExcludedMatches: findExcluded }));
+
 const list = (over: Partial<DiscoveryList> = {}): DiscoveryList => ({
   items: [],
   candidateCount: 0,
@@ -60,6 +67,8 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
 describe("DiscoveryView", () => {
   beforeEach(() => {
     replace.mockClear();
+    findExcluded.mockReset();
+    findExcluded.mockResolvedValue([]);
     window.history.replaceState(null, "", "/commanders?scope=play");
   });
 
@@ -625,9 +634,13 @@ describe("DiscoveryView", () => {
     expect(screen.getAllByText("Showing 2 of 2").length).toBeGreaterThan(0);
   });
 
+  // ── The excluded match (§2) ───────────────────────────────────────────
+  const excluded = planeCopy.excluded;
+
   // A name that IS in the list and was removed by a pip is a colour exclusion,
-  // not a miss — telling the reader to check the spelling would be wrong.
-  it("keeps the colour empty state when the name exists but a pip excluded it", () => {
+  // not a miss — telling the reader to check the spelling would be wrong, and
+  // the colour empty state would not say which row went missing.
+  it("names the commander a pip excluded, and clears the filter that took it", () => {
     const items = [
       item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["U"] }),
     ];
@@ -638,6 +651,98 @@ describe("DiscoveryView", () => {
     fireEvent.change(field(), { target: { value: "yarok" } });
 
     expect(container.textContent).not.toContain(search.noneHeading("yarok"));
-    expect(container.textContent).toContain(discoveryCopy.empty.filteredHeading);
+    expect(container.textContent).not.toContain(discoveryCopy.empty.filteredHeading);
+    expect(container.textContent).toContain(search.heldHeading("Yarok, the Desecrated"));
+    expect(container.textContent).toContain(search.heldAside(1));
+
+    fireEvent.click(screen.getByRole("button", { name: excluded.colorsCta }));
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+  });
+
+  // The mode, not the pips: the row survives `Contains`, so `Clear the colour
+  // filter` would undo more than the reader needs.
+  it("names the mode when the mode is what removed the only match", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["B", "G", "U"] }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 1 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+
+    expect(container.textContent).toContain(search.heldHeading("Yarok, the Desecrated"));
+    fireEvent.click(screen.getByRole("button", { name: excluded.joinCta }));
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+  });
+
+  // The row is not in the payload at all, so only the server can say why.
+  it("reports a match the server held back, once the typing settles", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+    ]);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "atraxa" } });
+    // Before the query settles the list says only what it can see.
+    expect(container.textContent).toContain(search.noneHeading("atraxa"));
+
+    await waitFor(() =>
+      expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
+    );
+    expect(container.textContent).toContain(excluded.heldScope);
+    expect(findExcluded).toHaveBeenCalledWith("atraxa", { sort: "fit", avail: "free" });
+  });
+
+  // A one-character query matches most of the index, so it never asks.
+  it("asks the server only about a query worth a round trip", async () => {
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    fireEvent.change(field(), { target: { value: "y" } });
+    await waitFor(() => expect(window.location.search).toBe("?scope=play&q=y"));
+    expect(findExcluded).not.toHaveBeenCalled();
+  });
+
+  // Some matches survive: the report sits above them rather than replacing them.
+  it("puts the aside above a live list, and counts the group rather than naming it", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "y", name: "Meren of Clan Nel Toth", cause: "floor", pct: 12 },
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "floor", pct: 9 },
+    ]);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "the" } });
+
+    await waitFor(() =>
+      expect(container.textContent).toContain(
+        search.asideMore(2, excluded.control.floor(30)),
+      ),
+    );
+    // The rows are still on screen, and the aside is above them.
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+    expect(container.textContent).not.toContain(search.heldAside(2));
+  });
+
+  // A report is written about one query. Carrying it into the next would name a
+  // commander the reader is no longer asking about.
+  it("drops the server's answer when the query changes", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+    ]);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "atraxa" } });
+    await waitFor(() =>
+      expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
+    );
+
+    findExcluded.mockResolvedValue([]);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    await waitFor(() =>
+      expect(container.textContent).not.toContain(search.heldHeading("Atraxa, Praetors' Voice")),
+    );
   });
 });

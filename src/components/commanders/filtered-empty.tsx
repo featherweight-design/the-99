@@ -34,8 +34,9 @@ type FilteredEmptyProps = {
   emphasis?: string;
   /** Replaces the mono count line. A search miss is not "showing 0 of N" in the
       colour filter's sense — nothing was narrowed, nothing was named — so the
-      caller supplies the diagnostic its own state can defend. */
-  diagnostic?: string;
+      caller supplies the diagnostic its own state can defend. Explicit `null`
+      prints no line at all, for a state whose figures are already elsewhere. */
+  diagnostic?: string | null;
 };
 
 export function FilteredEmpty({
@@ -121,12 +122,14 @@ export function FilteredEmpty({
           character leads, the diagnostic follows. It is the only place the
           user learns the filter matched nothing rather than the list being
           empty, so it stays. */}
-      <p
-        className="m-0 font-mono text-[10.5px] sm:text-[11px]"
-        style={{ color: "var(--warning)", marginTop: 12 }}
-      >
-        {diagnostic ?? commandersCopy.filteredEmpty.count(total)}
-      </p>
+      {diagnostic !== null ? (
+        <p
+          className="m-0 font-mono text-[10.5px] sm:text-[11px]"
+          style={{ color: "var(--warning)", marginTop: 12 }}
+        >
+          {diagnostic ?? commandersCopy.filteredEmpty.count(total)}
+        </p>
+      ) : null}
 
       {/* Clear color filter button. Under discovery it gains a second
           affordance beside it, so the two sit in a wrapping group; the owned

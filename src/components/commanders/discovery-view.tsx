@@ -32,11 +32,24 @@ import {
 } from "./reveal-control";
 import { FloorEmpty, NoDecksBanner } from "./discovery-empty";
 import { FilteredEmpty } from "./filtered-empty";
+import { ExcludedMatchAside } from "./excluded-match";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
+import { findExcludedMatches } from "../../app/commanders/actions";
+// Type-only for the same reason `DiscoveryList` is: the module it comes from is
+// imported by the server action, which reaches the database.
+import type { ExcludedMatch } from "../../lib/discovery/excluded-match";
+import {
+  resolveExcludedReport,
+  type ColourExcludedMatch,
+} from "../../lib/commanders/excluded-report";
 
 // The empty-state strings, aliased once: four call sites below name them, and
 // `discoveryCopy.empty.` on each would bury the key that actually differs.
 const emptyCopy = discoveryCopy.empty;
+
+// One frozen array, so "the server has said nothing about this query" is the
+// same value every render and the report memo below does not re-run for it.
+const EMPTY_MATCHES: ExcludedMatch[] = [];
 
 /**
  * Discovery's list is its own client component rather than an adaptation of
@@ -275,12 +288,107 @@ export function DiscoveryView({
     const q = trimmedQuery.toLowerCase();
     return discovery.items.some((r) => r.name.toLowerCase().includes(q));
   }, [discovery.items, trimmedQuery]);
+  // The matches the SERVER removed, for the settled query only: one round trip
+  // per query the reader has stopped typing, and none at all until the field
+  // holds something the index can answer (the action's own floor is 2 too).
+  // Cleared before the fetch rather than after it, so a report never outlives
+  // the query it was written about.
+  // The answer is stamped with the question it answers, and read back only while
+  // the two still agree: an answer is discarded by being out of date rather than
+  // by a second setState clearing it, so no render ever pairs one query's rows
+  // with another query's report.
+  const [answer, setAnswer] = useState<{ key: string; matches: ExcludedMatch[] } | null>(null);
+  const settledTrimmed = settledQuery.trim();
+  const lookupKey = `${discovery.sort}:${avail}:${settledTrimmed}`;
+  useEffect(() => {
+    if (settledTrimmed.length < 2) return;
+    let live = true;
+    findExcludedMatches(settledTrimmed, { sort: discovery.sort, avail })
+      .then((matches) => {
+        if (live) setAnswer({ key: `${discovery.sort}:${avail}:${settledTrimmed}`, matches });
+      })
+      // A lookup that fails leaves the list saying only what it can see. The
+      // reader's own answer — the rows — is already on screen either way.
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [settledTrimmed, discovery.sort, avail]);
+  const serverExcluded = useMemo(
+    () => (answer?.key === lookupKey ? answer.matches : EMPTY_MATCHES),
+    [answer, lookupKey],
+  );
+
+  // The matches the CLIENT removed. They are in the payload, so the colour
+  // answer needs no round trip. `joinOnly` is the row the pips would have kept:
+  // it survives `contains` and not `exactly`, which is what makes the mode the
+  // cause rather than the selection.
+  const colourExcluded = useMemo<ColourExcludedMatch[]>(() => {
+    if (trimmedQuery === "" || colors.length === 0) return [];
+    const q = trimmedQuery.toLowerCase();
+    const named = discovery.items.filter((r) => r.name.toLowerCase().includes(q));
+    const kept = new Set(filterByColors(named, colors, join).map((r) => r.slug));
+    return named
+      .filter((r) => !kept.has(r.slug))
+      .map((r) => ({
+        name: r.name,
+        colorIdentity: r.colorIdentity,
+        joinOnly:
+          join === "exactly" && filterByColors([r], colors, "contains").length === 1,
+      }));
+  }, [discovery.items, trimmedQuery, colors, join]);
+
+  const report = useMemo(
+    () =>
+      resolveExcludedReport({
+        server: serverExcluded,
+        colour: colourExcluded,
+        colors,
+        freeCards: discovery.freePoolSize,
+        listHasRows: filtered.length > 0,
+      }),
+    [serverExcluded, colourExcluded, colors, discovery.freePoolSize, filtered.length],
+  );
+
+  // Every match is excluded, and the report knows which control did it. It
+  // outranks both empties below: they say what is missing, and this one says
+  // why and offers the single control that would undo it.
+  const showHeldEmpty = !showFloorEmpty && filtered.length === 0 && report !== null;
   const showSearchEmpty =
-    !showFloorEmpty && trimmedQuery !== "" && filtered.length === 0 && !nameMatchesAny;
+    !showFloorEmpty &&
+    !showHeldEmpty &&
+    trimmedQuery !== "" &&
+    filtered.length === 0 &&
+    !nameMatchesAny;
   // Only when the filter is what emptied it. Without that guard this would also
   // swallow the unfiltered no-results case, whose reason is not the colours.
   const showFilteredEmpty =
-    !showFloorEmpty && !showSearchEmpty && colors.length > 0 && filtered.length === 0;
+    !showFloorEmpty &&
+    !showHeldEmpty &&
+    !showSearchEmpty &&
+    colors.length > 0 &&
+    filtered.length === 0;
+
+  // The one control that would bring the named row back, per cause. One each,
+  // because the report names one cause: a correction that flipped two controls
+  // would undo a filter the reader still wants.
+  const correct = useCallback(() => {
+    switch (report?.cause) {
+      case "scope":
+        return setScope("owned");
+      case "colors":
+        return clearColors();
+      case "join":
+        return setJoin("contains");
+      case "pool":
+        return setAvail("all");
+      case "floor":
+      case "unmeasured":
+        return setSort("fit");
+      default:
+        return;
+    }
+  }, [report?.cause, setScope, clearColors, setAvail, setSort]);
 
   // The one reason this state has under discovery that it does not have under
   // the owned scope: the commanders are missing because they are already built.
@@ -361,6 +469,28 @@ export function DiscoveryView({
           bestPct={discovery.bestPct as number}
           onRankByFit={() => setSort("fit")}
         />
+      ) : showHeldEmpty && report ? (
+        // The held state (§2b). The empty's geometry, with every part it fills
+        // from the colour filter's vocabulary replaced: the heading names the
+        // commander, the body names the one control holding it, the count line
+        // goes (its figures are the aside beside the button), and the button
+        // undoes that control rather than clearing the pips.
+        <FilteredEmpty
+          colors={[]}
+          total={discovery.items.length}
+          onClear={correct}
+          heading={report.heading ?? planeCopy.search.noneHeading(trimmedQuery)}
+          body={report.body}
+          diagnostic={null}
+          cta={report.cta}
+          secondary={
+            report.aside ? (
+              <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">
+                {report.aside}
+              </span>
+            ) : undefined
+          }
+        />
       ) : showSearchEmpty ? (
         // The same shape as the colour miss, with three of its parts replaced:
         // no pip row (no filter to show), a diagnostic in the search's own
@@ -404,6 +534,14 @@ export function DiscoveryView({
         />
       ) : (
         <>
+          {/* §2c: a match exists that this list cannot show. Above the rows,
+              because it is about the list underneath it. */}
+          {report ? (
+            <div className="mb-[10px] sm:mb-[12px]">
+              <ExcludedMatchAside report={report} onCorrect={correct} />
+            </div>
+          ) : null}
+
           <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
             {filtered.slice(0, shown).map((item, i) => (
               // Focusable only while the list is windowed, matching the owned

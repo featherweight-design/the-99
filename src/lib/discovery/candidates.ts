@@ -1,4 +1,4 @@
-import { and, eq, notInArray, sql } from "drizzle-orm";
+import { and, eq, ilike, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderSupport, commanderSupportCards, decks } from "../../db/schema";
 import type { EdhrecTag } from "../edhrec/parse";
@@ -81,6 +81,80 @@ export async function loadCandidates(
   ).where(unbuiltCommanders(userId));
 
   return rows.map(shapeCandidate);
+}
+
+/** The most name matches one lookup will classify. A commander-name substring
+    that reaches this many rows is not a name the reader is hunting for, and the
+    aside it would feed counts matches rather than listing them. */
+const NAME_MATCH_LIMIT = 200;
+
+export type NameMatchRow = {
+  oracleId: string;
+  name: string;
+  edhrecTotal: number | null;
+  /** How many tags the index carries, rather than the tags themselves: the
+      exclusion sentences only ask whether the floor had anything to measure, and
+      the arrays are the expensive part of the candidate projection. */
+  tagTotal: number;
+  ownedSupport: number;
+  collectionSupport: number;
+};
+
+/**
+ * Every indexed commander whose name contains `query`, built or not, with the
+ * two support counts the floor is decided on.
+ *
+ * `unbuiltCommanders` is deliberately NOT applied: the whole point of the lookup
+ * is to find the row that left the list, and a commander the player has already
+ * built is one of the reasons it can be missing. The caller marks those.
+ */
+export async function loadNameMatches(
+  query: string,
+  ownedOracleIds: string[],
+  collectionOracleIds?: string[],
+): Promise<NameMatchRow[]> {
+  const base = db
+    .select({
+      oracleId: commanderSupport.commanderOracleId,
+      name: cards.name,
+      edhrecTotal: commanderSupport.edhrecTotal,
+      tagTotal: sql<number>`jsonb_array_length(${commanderSupport.tags})`,
+      ownedSupport: ownedSupportColumn(),
+      collectionSupport: collectionSupportColumn(collectionOracleIds != null),
+    })
+    .from(commanderSupport)
+    .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
+    .leftJoin(ownedSupportTable(ownedOracleIds), OWNED_SUPPORT_ON);
+
+  return (collectionOracleIds != null
+    ? base.leftJoin(collectionSupportTable(collectionOracleIds), COLLECTION_SUPPORT_ON)
+    : base
+  )
+    .where(and(eq(cards.commanderLegal, true), ilike(cards.name, `%${escapeLike(query)}%`)))
+    .orderBy(cards.name)
+    .limit(NAME_MATCH_LIMIT);
+}
+
+/** The commanders this player has already built around — the scope exclusion,
+    read as a set rather than as the `NOT IN` the candidate query applies, because
+    the lookup has to tell a built commander from a missing one. */
+export async function loadBuiltCommanderIds(userId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ oracleId: decks.commanderOracleId })
+    .from(decks)
+    .where(eq(decks.userId, userId));
+  return new Set(rows.map((r) => r.oracleId));
+}
+
+/**
+ * `%`, `_` and the escape character itself are LIKE syntax, and the query comes
+ * from a text field. Unescaped, a reader who types `Ob_Nixilis` matches names
+ * they did not ask for, and one who types `%` matches every commander in the
+ * index — a wrong answer rather than an injection, since the pattern is still a
+ * bound parameter.
+ */
+function escapeLike(value: string) {
+  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
 /**

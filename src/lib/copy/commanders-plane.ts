@@ -205,6 +205,31 @@ export const planeCopy = {
         freeCards,
       )} free cards in this pool.`,
     poolCta: "Score against everything I own",
+
+    // The floor tier's OTHER population, in the vocabulary the exclusion line already
+    // uses for it ("have no tags to measure"). Without these three keys an unmeasurable
+    // match has no sentence: `floor` prints a support percentage the row does not have,
+    // and reporting nothing would leave the list-level state claiming nothing is named
+    // that, of a commander the index carries. Same tier as the floor, so the precedence
+    // is unchanged.
+    heldUnmeasured:
+      "It matches, but Something new ranks by distance from your decks, and this one has no tags to measure.",
+    unmeasured: (name: string) =>
+      `${name} matches, but Something new ranks by distance from your decks, and this one has no tags to measure.`,
+    unmeasuredAlso: (name: string) =>
+      `${name} also matches, but Something new ranks by distance from your decks, and this one has no tags to measure.`,
+
+    /** The control named inside `search.asideMore`, when several matches share one cause and
+        the aside counts them instead of naming each. Each is the control's own words, the same
+        rule the sentences above follow. */
+    control: {
+      scope: "the decks you have already built",
+      colors: (colors: string[]) => `the ${identity(colors)} colour filter`,
+      join: (colors: string[]) => `Exactly ${identity(colors)}`,
+      floor: (floorPct: number) => `the ${floorPct}% support floor`,
+      pool: "the free pool",
+      unmeasured: "Something new",
+    },
   },
 
   // ── The exclusion line ────────────────────────────────────────────────
