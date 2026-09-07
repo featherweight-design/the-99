@@ -1,5 +1,23 @@
-import { describe, expect, it } from "vitest";
-import { catalogCard, type CatalogCardRow, type CatalogPrintingRow } from "./card-detail";
+import { describe, expect, it, vi } from "vitest";
+
+// Only the two reads are stood in for; the aggregation they feed is the real one, so a
+// change to how a collection row becomes a BrowseCard still shows up here.
+const selectCollectionRows = vi.fn();
+vi.mock("./browse", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./browse")>()),
+  selectCollectionRows: (...args: unknown[]) => selectCollectionRows(...args),
+}));
+const loadAvailability = vi.fn();
+vi.mock("../decks/availability-query", () => ({
+  loadAvailability: (...args: unknown[]) => loadAvailability(...args),
+}));
+
+import {
+  catalogCard,
+  loadCardDetail,
+  type CatalogCardRow,
+  type CatalogPrintingRow,
+} from "./card-detail";
 
 const card = (over: Partial<CatalogCardRow> = {}): CatalogCardRow => ({
   oracleId: "o-1",
@@ -104,5 +122,59 @@ describe("catalogCard", () => {
   it("coerces a rarity outside the known vocabulary to common", () => {
     expect(catalogCard(card({ rarity: "bonus" }), []).rarity).toBe("common");
     expect(catalogCard(card({ rarity: "mythic" }), []).rarity).toBe("mythic");
+  });
+});
+
+// The modal renders availability, and every surface but /collection opens it holding
+// nothing but an oracle id — so the query has to carry it or the same card shows its
+// claims in one place and hides them in another.
+describe("loadCardDetail availability", () => {
+  const row = {
+    oracleId: "o-1",
+    quantity: 2,
+    setCode: "c21",
+    collectorNumber: "263",
+    finish: "nonfoil",
+    setName: "Commander 2021",
+    releasedAt: "2021-04-23",
+    preferredSetCode: null,
+    preferredCollectorNumber: null,
+    name: "Arcane Signet",
+    typeLine: "Artifact",
+    manaCost: "{2}",
+    oracleText: null,
+    keywords: [],
+    rarity: "common",
+    colorIdentity: [],
+    cardImageUri: "https://img/oracle.jpg",
+    exactImageUri: null,
+    representativeImageUri: null,
+  };
+  const availability = {
+    owned: 2,
+    hard: 2,
+    soft: 0,
+    free: 0,
+    claims: [{ id: "d-1", name: "Atraxa", quantity: 2, mature: true }],
+  };
+
+  it("joins the owned card's availability at the default vantage", async () => {
+    selectCollectionRows.mockResolvedValue([row]);
+    loadAvailability.mockResolvedValue(new Map([["o-1", availability]]));
+    const card = await loadCardDetail("user_1", "o-1");
+    expect(card?.availability).toEqual(availability);
+    // Row 1.5: card detail is off any deck's own decklist, so no deck is excluded —
+    // passing one here would silently switch the surface to the other `free` formula.
+    expect(loadAvailability).toHaveBeenCalledWith("user_1", { oracleIds: ["o-1"] });
+  });
+
+  // /collection fails quiet on this read; the modal must too. Losing the card because
+  // its claims could not be counted is the worse failure.
+  it("keeps the card when the availability read fails", async () => {
+    selectCollectionRows.mockResolvedValue([row]);
+    loadAvailability.mockRejectedValue(new Error("down"));
+    const card = await loadCardDetail("user_1", "o-1");
+    expect(card?.name).toBe("Arcane Signet");
+    expect(card?.availability).toBeNull();
   });
 });
