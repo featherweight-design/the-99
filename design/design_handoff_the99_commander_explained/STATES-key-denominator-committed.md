@@ -116,6 +116,11 @@ the shipped 32px / 16px gap, exactly as today.
 Weakest role = `argmin(roleCounts[role] - ROLE_TARGETS[role])`, ties broken by `ROLE_ORDER`. See
 gap 2: this is *a* weakest-role rule, not a ranked cost of gaps.
 
+> **Superseded by the eng ruling.** Gap 2 asked for a ruling and got one: the weakest role is the
+> largest **proportional** shortfall, `(target − have) / target`, ties still broken by `ROLE_ORDER`.
+> The absolute-gap form above is the question, not the answer — build the proportional one. See
+> `docs/superpowers/plans/2026-09-07-commander-explained.md`, ruling 4.
+
 Target: `id` on the role `<section>`, `scroll-margin-top` for the sticky chrome, one-shot
 `:target` outline `1px --accent-dim`. Ordinary `<a href="#…">`; no `scrollIntoView`, no smooth
 scroll.

@@ -484,7 +484,9 @@ furniture already on the page.
   `PROSE-one-string-two-surfaces.md` for the exact predicates.
 - **The templated clauses need two figures the page already has** (`edhrecOwnedCount`,
   `edhrecTotal`) plus **the weakest role** — `argmin` over `roleCounts[role] - ROLE_TARGETS[role]`,
-  ties broken by `ROLE_ORDER`, no new query. **Sentence 2's committed count is the exception**: it
+  ties broken by `ROLE_ORDER`, no new query. *(Superseded: the eng ruling makes this the largest
+  **proportional** shortfall, `(target − have) / target`, ties still by `ROLE_ORDER`. Build that
+  one — see the plan's ruling 4.)* **Sentence 2's committed count is the exception**: it
   comes from decision 6b's read, the same one the mark needs, which is deliberate — one source keeps
   the sentence and the dots from disagreeing.
 - **Sentence 3 takes a subject-form role map, not `ROLE_NOUNS`.** `coverage-section.tsx:26-31` ships
@@ -535,6 +537,8 @@ furniture already on the page.
    costs you the most*. Board wipes at 2/10 and ramp at 8/10 are both short by the same 2 in a
    different reading. If eng weights the gaps differently, **the sentence and the anchor point at a
    different panel than the section's own emphasis**, and this needs a ruling.
+   *(Ruled: largest **proportional** shortfall, `(target − have) / target`, ties by `ROLE_ORDER`.
+   The `2/10` wipes baseline is also wrong — `roles.ts` sets the wipes target at 3.)*
 3. **`/40 measurable` has no answer for a future third denominator.** If any component ever becomes
    optional besides synergy, the string is still correct but the *word* stops being informative —
    two different `/40`s could mean different missing components. Fine today; worth knowing the

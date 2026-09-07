@@ -111,6 +111,10 @@ which specced the synergy dot at 1.5px two lines above prose saying it ships at 
    and the sentence is stored prose's neighbour. One line of copy either way; the ruling is which
    role the sentence names.
 
+   **Ruled (2026-09-07):** largest **proportional** shortfall, `(target − have) / target`, ties by
+   `ROLE_ORDER`. The `2/10` example is also stale — `src/lib/recs/roles.ts` sets the wipes target
+   at **3**, not 10, so wipes at 2 is a third short and ramp at 8/10 is a fifth short.
+
 ## Not blocking — §0 does not gate the prose
 
 **The brief says so in as many words.** The material is precomputed (`commander_support`: `engine`,
