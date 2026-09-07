@@ -230,17 +230,17 @@ export const planeCopy = {
     poolCta: "Score against everything I own",
 
     // The floor tier's OTHER population, in the vocabulary the exclusion line already
-    // uses for it ("have no tags to measure"). Without these three keys an unmeasurable
+    // uses for it ("have no data to measure"). Without these three keys an unmeasurable
     // match has no sentence: `floor` prints a support percentage the row does not have,
     // and reporting nothing would leave the list-level state claiming nothing is named
     // that, of a commander the index carries. Same tier as the floor, so the precedence
     // is unchanged.
     heldUnmeasured:
-      "It matches, but Something new ranks by distance from your decks, and this one has no tags to measure.",
+      "It matches, but Something new ranks by distance from your decks, and this one has no data to measure.",
     unmeasured: (name: string) =>
-      `${name} matches, but Something new ranks by distance from your decks, and this one has no tags to measure.`,
+      `${name} matches, but Something new ranks by distance from your decks, and this one has no data to measure.`,
     unmeasuredAlso: (name: string) =>
-      `${name} also matches, but Something new ranks by distance from your decks, and this one has no tags to measure.`,
+      `${name} also matches, but Something new ranks by distance from your decks, and this one has no data to measure.`,
 
     /** The control named inside `search.asideMore`, when several matches share one cause and
         the aside counts them instead of naming each. Each is the control's own words, the same
@@ -274,17 +274,21 @@ export const planeCopy = {
       `${n(excluded)} fall below the ${floorPct}% support floor for this pool`,
 
     // Under `New` TWO populations leave the list: rows measured and found below the floor, and
-    // rows with no tag data to measure at all. A line counting only the first leaves
+    // rows with nothing to measure at all. The handoff's word for the second group is "tags",
+    // and it is too narrow: `excluded-match.ts` also sends a row here when its denominator is
+    // missing, which `index-build.ts` writes whenever EDHREC could not be reached — and such a
+    // row can carry tags. "Data" covers both populations the branch actually holds.
+    // A line counting only the first leaves
     // `total - excluded` unequal to the rows on screen and names the second group nowhere. Both
     // belong to the SAME tier — the sort's own doing — so they share ONE clause with two figures
     // rather than taking two of the two available. Tier order is unaffected and the cap holds.
     floorWithUnmeasured: (below: number, unmeasured: number, floorPct: number) =>
       `${n(below)} fall below the ${floorPct}% support floor for this pool and ${n(
         unmeasured,
-      )} have no tags to measure`,
+      )} have no data to measure`,
     /** When every excluded row is unmeasurable — no floor casualties at all. */
     unmeasuredAlone: (unmeasured: number) =>
-      `${n(unmeasured)} commanders have no tags to measure against your decks`,
+      `${n(unmeasured)} commanders have no data to measure against your decks`,
 
     /** The model sentence, used when the floor is the SOLE exclusion — the clause count is what
         makes room for it. A second sentence, never a third clause. */
@@ -303,7 +307,7 @@ export const planeCopy = {
     ) =>
       `${n(below)} commanders fall below the ${floorPct}% support floor for this pool and ${n(
         unmeasured,
-      )} have no tags to measure. The closest is at ${bestPct}%.`,
+      )} have no data to measure. The closest is at ${bestPct}%.`,
 
     join2: (a: string, b: string) => `${a} · ${b}`,
   },
@@ -335,7 +339,7 @@ export const planeCopy = {
         freeCards,
       )} free cards in this pool, ${n(below)} of the ${n(candidates)} fall below that bar and ${n(
         unmeasured,
-      )} have no tags to measure. ${n(
+      )} have no data to measure. ${n(
         clearingAgainstCollection,
       )} of them would clear it against everything you own.`,
     /** Substring of `body`, so the mark lands on the rule and not on the misses it caused —

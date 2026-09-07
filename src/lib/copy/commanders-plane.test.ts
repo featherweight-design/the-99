@@ -68,7 +68,7 @@ describe("planeCopy", () => {
   // do not sum to the candidate count reads as rows that cleared after all.
   it("accounts for the whole candidate count in the pool empty state", () => {
     expect(planeCopy.floorPool.body(30, 3301, 25, 3326, 1190, 4)).toContain("3,301 of the 3,326");
-    expect(planeCopy.floorPool.body(30, 3301, 25, 3326, 1190, 4)).toContain("25 have no tags");
+    expect(planeCopy.floorPool.body(30, 3301, 25, 3326, 1190, 4)).toContain("25 have no data");
   });
 
   // "AND" is the word the reported confusion is about and "OR" is a mode the plane does not

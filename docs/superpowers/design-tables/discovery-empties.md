@@ -634,9 +634,16 @@ The diamond is the same 6px rotated square the end-of-ranking rule uses, so the 
 receipts on this page are furniture of one family.
 
 **The sort's two populations are one tier.** Under `New`, rows measured and found below
-the floor and rows with no tags to measure at all share a single clause with two
+the floor and rows with nothing to measure at all share a single clause with two
 figures, rather than taking both slots. Under `Fit` neither population exists, and no
 floor clause is printed.
+
+> Eng note: the handoff's word for the second population is **tags**, and the shipped string
+> says **data** instead. `excluded-match.ts` sends a row to that branch when its tag list is
+> empty **or** when its denominator is missing, and `index-build.ts` nulls the denominator
+> whenever EDHREC could not be reached — a row that can still carry tags. "No tags to measure"
+> is false for that half of the group, so the noun widened by one word and the clause is
+> otherwise the drawing's.
 
 ## Added state: Empty 2, pool variant (`FloorPoolEmpty`)
 
