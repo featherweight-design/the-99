@@ -22,6 +22,8 @@ Every task's requirements implicitly include this section.
 
 **Presentation rules inherited from #9 (the shipped game log). These are not negotiable and apply to model output as well as to our own strings.**
 
+Read every rule below as governing **what reaches the player** — shipped copy, the prompt, the evidence pack, and the model's own output. They do not govern the plan's own prose or its test fixtures: several tests below deliberately feed a `%` to a validator to prove it rejects one, and a rule that forbade writing the character at all would forbid testing the rule.
+
 - **No percentage anywhere.** Not in a suggestion, not in a rationale, not in a citation.
 - **No net figure anywhere.** `AxisTally.net` orders and buckets axes; it is never rendered and never enters the evidence pack as a rendered value.
 - **Every count carries its denominator.** `2 of 5 games`, never `2 games`.
@@ -80,7 +82,7 @@ Every task's requirements implicitly include this section.
 | `response-schema.ts` | The zod schema for the model's reply, and the `TuningResponse` type. |
 | `validate.ts` | The six validation rules, as pure predicates over a candidate plus the pack. |
 | `presentation.ts` | The nine `suggestionRules` checks — the sixth validation rule. |
-| `reaper.ts` | `reaperCutoff(now)` and the pure arithmetic behind the read-time reap. |
+| `reaper.ts` | `reapCutoff(now)` and the pure arithmetic behind the read-time reap. |
 | `limits.ts` | `TUNING_RUNS_PER_HOUR`, `REAPER_CUTOFF_MS`, `MODEL_TIMEOUT_MS`, `MAX_SUGGESTIONS`. |
 | `client.ts` | **Server-only.** The raw `fetch` to Anthropic, with the hard timeout and the two bounded in-run retries. |
 
@@ -390,7 +392,10 @@ export const manifestCopy = {
 } as const;
 
 export const deckTuningCopy = {
-  panel: { /* heading, belowThreshold*, ready*, generating*, stop, results*, again*, tally*, unchanged* */ },
+  // `ceiling` is the one key here Design did not draw: §5 calls the hourly cap
+  // insurance that "should never be visible in normal use", but a disabled
+  // button still owes the player a sentence. Write it in the panel's register.
+  panel: { /* heading, belowThreshold*, ready*, generating*, stop, results*, again*, tally*, unchanged*, ceiling */ },
   failure: {
     retry: "Try again",
     unavailable: { /* tag, body, kept, note */ },
@@ -657,6 +662,7 @@ Expected: FAIL — `intentRefusal` is not exported.
 ```typescript
 // src/lib/tuning/limits.ts
 import { deckTuningCopy } from "../copy/deck-tuning";
+import { gameLogCopy } from "../copy/game-log";
 
 export const MAX_SUGGESTIONS = 3;
 export const REAPER_CUTOFF_MS = 5 * 60 * 1000;
@@ -1376,6 +1382,14 @@ export function reapCutoff(now: Date): Date {
 The order matters and is the whole point. Nothing here trusts the client: **a server action is a public endpoint**, as `logGame`'s own comment at `src/app/decks/actions.ts:858` says, so every gate the panel applies is re-applied here. A stale tab or a replayed call must not spend money on unchanged inputs.
 
 ```typescript
+// 23505 is Postgres's unique_violation. Narrowed by hand rather than by
+// instanceof: the driver's error is a plain object with a `code`, and the repo
+// already reasons about this code by number in `src/lib/collection/key.ts:7`.
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "code" in err
+    && (err as { code?: unknown }).code === "23505";
+}
+
 export async function runTuning(deckId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const detail = await getDeckDetail(deckId, userId);
@@ -1402,9 +1416,12 @@ export async function runTuning(deckId: string): Promise<DeckMutationResult> {
       model: TUNING_MODEL, promptVersion: PROMPT_VERSION, status: "pending",
     }).returning({ id: deckSuggestionRuns.id });
     runId = row.id;
-  } catch {
-    // A unique violation on the partial index. Another run for this deck is
-    // already in flight — say so, rather than reporting a generic refusal.
+  } catch (err) {
+    // Only a unique violation on the partial index means "another run for this
+    // deck is already in flight". A bare `catch` here would report that same
+    // reassuring message for a dropped connection or a missing column, and the
+    // player would retry forever against a database that is not answering.
+    if (!isUniqueViolation(err)) throw err;
     return { ok: false, message: deckTuningCopy.panel.generating };
   }
 
@@ -1574,6 +1591,8 @@ git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and 
     items: TuningItem[];
     /** The newest ok run's fingerprint, or null if there has never been one. */
     lastOkFingerprint: string | null;
+    /** That same row's `createdAt`. Null exactly when lastOkFingerprint is. */
+    lastOkAt: Date | null;
     /** lastOkFingerprint !== the fingerprint passed in. */
     stale: boolean;
     runsThisHour: number;
@@ -1589,20 +1608,39 @@ git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and 
 
 ```typescript
 // src/lib/tuning/gate.test.ts
+const at = new Date("2026-09-07T10:00:00Z");
+const run = (status: string, errorClass: string | null = null) => ({
+  id: "run_1", status, errorClass, createdAt: at, droppedCount: 0,
+});
+const okRun = run("ok");
+const failedRun = run("failed", "upstream_busy");
+const cancelledRun = run("cancelled");
+// `fresh` is a deck that has never generated: no run, no ok fingerprint, so
+// every gate below is switched on by the one field the test names.
+const fresh: TuningState = {
+  run: null, items: [], lastOkFingerprint: null, lastOkAt: null,
+  stale: true, runsThisHour: 0,
+};
+// The unchanged gate needs both halves of the ok pair, which always travel
+// together — gateReason dereferences lastOkAt on exactly that branch.
+const settled: TuningState = {
+  ...fresh, run: okRun, lastOkFingerprint: "fp", lastOkAt: at, stale: false,
+};
+
 it("gates below the pattern minimum", () => {
   expect(gateReason(fresh, PATTERN_MIN - 1)?.kind).toBe("too_few_games");
 });
 
 it("gates when nothing has changed since the last successful run", () => {
-  expect(gateReason({ ...fresh, stale: false, run: okRun }, 5)?.kind).toBe("unchanged");
+  expect(gateReason(settled, 5)?.kind).toBe("unchanged");
 });
 
 it("does not gate when the last run failed", () => {
-  expect(gateReason({ ...fresh, stale: false, run: failedRun }, 5)).toBeNull();
+  expect(gateReason({ ...fresh, run: failedRun }, 5)).toBeNull();
 });
 
 it("does not gate when the last run was cancelled", () => {
-  expect(gateReason({ ...fresh, stale: false, run: cancelledRun }, 5)).toBeNull();
+  expect(gateReason({ ...fresh, run: cancelledRun }, 5)).toBeNull();
 });
 
 it("gates at the hourly ceiling", () => {
@@ -1629,7 +1667,7 @@ where deck_id = :deckId and status = 'pending' and created_at < :cutoff
 
 The spec's §6 writes this unscoped. Scoping it to the deck being read is a strict improvement and changes nothing about the contract: every deck's page read reaps its own, so no pending row outlives the cutoff, and one player opening a deck no longer writes across every other player's rows on every page load.
 
-Then it reads three things: the newest run for the deck with its items ordered by `position`, joined to `cards` for the add and cut names and type lines and to the collection and price tables for `owned` / `ownedQuantity` / `priceCents`; the newest run with `status = 'ok'` for `lastOkFingerprint`; and the user's run count in the last hour for the ceiling. `stale` is `lastOkFingerprint !== fingerprint` — deliberately not a comparison against the newest run of *any* status, because a failed or cancelled run must not consume the gate.
+Then it reads three things: the newest run for the deck with its items ordered by `position`, joined to `cards` for the add and cut names and type lines and to the collection and price tables for `owned` / `ownedQuantity` / `priceCents`; the newest run with `status = 'ok'` for `lastOkFingerprint` and `lastOkAt`, both off that one row; and the user's run count in the last hour for the ceiling. `stale` is `lastOkFingerprint !== fingerprint` — deliberately not a comparison against the newest run of *any* status, because a failed or cancelled run must not consume the gate.
 
 - [ ] **Step 3b: Write `gateReason`**
 
@@ -1644,16 +1682,20 @@ export function gateReason(state: TuningState, gameCount: number): GateReason | 
     return { kind: "too_few_games", message: deckTuningCopy.panel.belowThresholdNote(gameCount) };
   }
   if (state.runsThisHour >= TUNING_RUNS_PER_HOUR) {
-    return { kind: "ceiling", message: deckTuningCopy.panel.unchangedCta };
+    return { kind: "ceiling", message: deckTuningCopy.panel.ceiling };
   }
   if (!state.stale && state.lastOkFingerprint !== null) {
-    return { kind: "unchanged", message: deckTuningCopy.panel.unchanged(when) };
+    return { kind: "unchanged", message: deckTuningCopy.panel.unchanged(state.lastOkAt!) };
   }
   return null;
 }
 ```
 
 Each kind carries its own message, so a refusal always says which of the four happened. Returning one generic string for all of them would defeat §6's rule that the panel names the cause.
+
+Two of those four messages need care. `panel.unchangedCta` is the **button label** on the unchanged state — it is not a message and must not be reused as one. The ceiling gets its own key, `panel.ceiling`, added to Task 2's `panel` group: the spec (§5) says the ceiling "should never be visible in normal use", so Design drew no state for it, but a disabled button still owes the player a sentence. Write it in the panel's existing register and route the wording through `/copy-review` rather than back to Design.
+
+`panel.unchanged(...)` takes the time the standing suggestions were generated, which is the newest **ok** run's timestamp — not `state.run.createdAt`, which is the newest run of any status and may belong to a failure that happened afterwards. `TuningState` therefore carries `lastOkAt: Date | null`, read from the same row `lastOkFingerprint` comes from, and the two are always both null or both set. The non-null assertion above is sound for that reason: the branch has already established `lastOkFingerprint !== null`.
 
 An `ungrounded` failure leaves the gate open on unchanged inputs, which lets `Try again` re-spend on a call that will very likely fail the same way. That is the spec's rule — a failed run does not consume the gate — and it stands, because the alternative traps a deck whose inputs cannot change until it plays another game. The hourly ceiling is what bounds the cost.
 
