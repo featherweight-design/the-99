@@ -130,10 +130,13 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // Only for a card the user owns: the availability query is driven by the collection, so
   // an unowned card has no row there and nothing to report.
   if (owned.length > 0) {
-    const { loadAvailability } = await import("../decks/availability-query");
-    const availability = await loadAvailability(userId, { oracleIds: [oracleId] })
-      .then((m) => m.get(oracleId) ?? null)
-      .catch(() => null);
+    // The import is inside the guard so an unowned card never pays for it, and inside the
+    // catch because a module that fails to resolve is as quiet a failure as a query that
+    // fails to run — either way the modal omits the block rather than losing the card.
+    const availability = await (async () => {
+      const { loadAvailability } = await import("../decks/availability-query");
+      return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
+    })().catch(() => null);
     return { ...owned[0], availability };
   }
 

@@ -5,9 +5,10 @@
 // prints what each rendered, so the two can be read against each other.
 //
 // Run by hand with the dev server up:
-//   PROBE_DECK=<deck id> node scripts/probe-card-detail-availability.mjs
+//   PROBE_DECK=<deck id> PROBE_CARD="<card name>" node scripts/probe-card-detail-availability.mjs
 // Point PROBE_DECK at a deck that claims cards the signed-in account owns —
-// a brew is enough, a claim is what makes the block render. Not part of
+// a brew is enough, a claim is what makes the block render — and PROBE_CARD at
+// a card on that deck's list. Not part of
 // `pnpm test`: it needs a browser and a signed-in session.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
