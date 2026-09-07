@@ -60,12 +60,12 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
+| **UI refresh — Home, Decks and the chrome** — no ticket filed | `design/design_handoff_the99_refresh/` | 🟡 **Yellow**, audited 2026-09-07 at R2 | Scope was cut by client review from seven surfaces to two plus the navigation chrome; the other four are held to a conformance table rather than redesigned. Yellow's eight findings are all closed eng-side in the plan (`docs/superpowers/plans/2026-09-07-ui-refresh-home-decks.md`, merged with the handoff), which is what Yellow means here — none of them needed a Design round-trip. Nineteen tasks in six PRs, A–F: copy, chrome, data, Decks, Home, conformance. Three judgement calls are deliberately additions to the drawing and should be read as such — a phone footer on the deck rail, sort chips inside the phone filter sheet, and `READY_COUNT = 9`, which is inferred from the drawn frame's arithmetic rather than stated. Ticketless for the same reason as the card line-item parity brief: the work was scoped from a direct request |
 
-_Currently empty._
-
-**#10 left on 2026-09-07** — not to a build, but to 🚦 Paused below. Its design is Green, its plan
-is merged, and Hugh's call is that now is not the time to build it; nothing about the work changed.
-It was the only occupant. **#340** was the last one before it and left on 2026-09-06 when its build
+**The refresh joined on 2026-09-07**, and is the only occupant. **#10 left the same day** — not to
+a build, but to 🚦 Paused below. Its design is Green, its plan is merged, and Hugh's call is that
+now is not the time to build it; nothing about the work changed. It was the occupant before the
+refresh. **#340** was the last one before it and left on 2026-09-06 when its build
 started; it shipped on 2026-09-07 and sits in ✅ Shipped. The four amendments (**#286**, **#280**,
 **#287**, **#277**) shipped between 2026-09-05 and 2026-09-06, in the drawn build order, and sit in
 ✅ Shipped. **#220** left on 2026-09-06 when its eleventh and last planned PR merged, **#9** later
