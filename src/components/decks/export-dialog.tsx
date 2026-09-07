@@ -16,7 +16,7 @@ import { ExportCopyButton } from "./export-copy-button";
 import { GhostButton } from "@/components/ui/button";
 import { ExternalLink } from "../ui/external-link";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
-import { exportLinkOutCopy, overCopy } from "../../lib/copy/decks-builder";
+import { exportLinkOutCopy, exportShoppingCopy, overCopy } from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
 
 type Tab = "decklist" | "shopping";
@@ -413,7 +413,9 @@ function DialogContent({
                 margin: 0,
               }}
             >
-              {shoppingCards.reduce((sum, c) => sum + c.quantity, 0)} cards · unowned
+              {exportShoppingCopy.countMeta(
+                shoppingCards.reduce((sum, c) => sum + c.quantity, 0),
+              )}
             </p>
 
             {/* Mobile "names only" note */}

@@ -7,15 +7,25 @@
 // desktop-only omission sideways.
 
 import { priceCopy } from "../../lib/copy/price";
+import { exportLinkOutCopy } from "../../lib/copy/decks-builder";
 import { formatCents, type PriceSummary, type ProvenanceForm } from "../../lib/decks/price";
+import { manapoolAddDeckUrl } from "../../lib/manapool/links";
+import { ExternalLink } from "../ui/external-link";
 
 export function PriceStrip({
   summary,
   provenance,
+  shoppingCards,
 }: {
   summary: PriceSummary;
   /** Null when the table is empty or the read failed — the strip renders nothing. */
   provenance: ProvenanceForm | null;
+  /**
+   * The rows the Shopping filter is showing, which is exactly what the buy link
+   * buys — the same `isShoppingCard` list the total above it sums. Passed rather
+   * than derived so the strip stays a rendering of what is on screen.
+   */
+  shoppingCards: { name: string; quantity: number }[];
 }) {
   if (!provenance) return null;
 
@@ -28,8 +38,17 @@ export function PriceStrip({
   // Both figures drop rather than render as zero. No price at all is not
   // "$0.00", and a denominator that names nothing missing is a third copy of a
   // number the pill and the spine already carry.
+  //
+  // `0 of 8 priced` is the third case and also drops: a fraction whose numerator
+  // is nothing is an arithmetic way of saying we have no prices, and line 2 now
+  // says that in words. Before this pass it was what the strip rendered here.
   const showFigure = summary.pricedCopies > 0;
-  const showClause = summary.pricedCopies < summary.totalCopies;
+  const showClause = showFigure && summary.pricedCopies < summary.totalCopies;
+
+  // Derived on every render from the list on screen. Not memoised: the row ✕
+  // has no sync to perform, so the basket, the total and this href move
+  // together or the link buys a card the player just removed.
+  const buyHref = manapoolAddDeckUrl(shoppingCards);
 
   return (
     // One DOM order, two arrangements. The phone stacks figure over provenance;
@@ -38,7 +57,10 @@ export function PriceStrip({
     // subtree — two branches would pass a width-by-width review while being
     // two components that can drift.
     <div
-      className="mt-[10px] flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] py-[10px] md:flex-row-reverse md:items-baseline md:justify-between md:gap-[14px] md:px-[15px] md:py-[11px]"
+      // The phone's bottom padding is zero: the 44px link row below supplies it,
+      // and 10px on top of a 44px target would read as a gap rather than as the
+      // row's own height.
+      className="mt-[10px] flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[10px] pb-0 md:flex-row-reverse md:items-baseline md:justify-between md:gap-[14px] md:px-[15px] md:py-[11px]"
       style={{ background: "var(--surface-sunken)" }}
     >
       {showFigure || showClause ? (
@@ -58,16 +80,44 @@ export function PriceStrip({
           ) : null}
         </p>
       ) : null}
-      {/* --fg-locked in both forms. Old prices are our operational problem, not
-          the player's error, and amber would spend the surface's loudest ink
-          on something nothing here can act on. */}
-      <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>
-        {[
-          priceCopy.strip.provenance,
-          priceCopy.strip.lastChecked(provenance.when),
-          ...(provenance.behind ? [priceCopy.strip.behind] : []),
-        ].join(" · ")}
-      </p>
+      {/* The provenance line and the buy link are one flex child, not two. On
+          desktop `flex-row-reverse` reads the strip's children right to left, so
+          a third child would land between the figure and the provenance instead
+          of under it.
+
+          `md:mr-auto` holds this column at the leading edge. With no prices at
+          all the figure line does not render, leaving this the only child — and
+          a lone item under `row-reverse` + `justify-between` sits at main-start,
+          which is the right-hand edge. The auto margin absorbs the free space
+          instead; with two children it is what `justify-between` already does. */}
+      <div className="md:mr-auto">
+        {/* --fg-locked in both forms. Old prices are our operational problem, not
+            the player's error, and amber would spend the surface's loudest ink
+            on something nothing here can act on. */}
+        <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>
+          {[
+            showFigure ? priceCopy.strip.provenance : priceCopy.strip.provenanceUnpriced,
+            priceCopy.strip.lastChecked(provenance.when),
+            ...(provenance.behind ? [priceCopy.strip.behind] : []),
+          ].join(" · ")}
+        </p>
+        {/* The 44px target is the ROW's, never the link's — the link stays inline
+            text with no box, so a tap anywhere on this line works while the focus
+            ring still traces the words.
+
+            The 9px gap holds at both breakpoints. `outline` takes no layout
+            space, so the ring at 2px offset overlaps the gap rather than pushing
+            the provenance line up.
+
+            `buyHref` is null only for an empty list, which the totalCopies guard
+            above has already returned on. The check is the type narrowing, not a
+            second condition on the link: it renders wherever the strip does. */}
+        {buyHref ? (
+          <div className="mt-[9px] flex min-h-[44px] items-center md:block md:min-h-0">
+            <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

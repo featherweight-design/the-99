@@ -15,6 +15,7 @@ const props = {
   grouping: "type" as const,
   onFilterChange: () => {},
   onGroupingChange: () => {},
+  shoppingCards: [{ name: "Sol Ring", quantity: 1 }],
 };
 
 describe("GroupToggle price strip", () => {
@@ -37,6 +38,21 @@ describe("GroupToggle price strip", () => {
       <GroupToggle {...props} filter="all" priceSummary={summary} provenance={provenance} />,
     );
     expect(screen.queryByText("$12.40")).toBeNull();
+  });
+
+  // The strip's link is only as good as the list the toggle hands down: a
+  // dropped prop would render the strip whole and the basket empty.
+  it("hands the shopping list down to the strip's buy link", () => {
+    render(
+      <GroupToggle
+        {...props}
+        filter="shopping"
+        priceSummary={summary}
+        provenance={provenance}
+      />,
+    );
+    const href = screen.getByRole("link").getAttribute("href")!;
+    expect(atob(decodeURIComponent(new URL(href).searchParams.get("deck")!))).toBe("1 Sol Ring");
   });
 
   it("renders no strip when there is no summary", () => {
@@ -71,13 +87,16 @@ describe("GroupToggle price strip", () => {
 // "Shopping 8" would be the app disagreeing with itself.
 describe("GroupToggle denominator", () => {
   it("matches the Shopping pill in the same render", () => {
+    // One row priced, the rest not: the clause only renders when something is
+    // priced, and its denominator is still every copy on the list.
+    const asOf = new Date("2026-09-01T09:00:00Z");
     const shoppingCards = [
-      { quantity: 1, price: null },
+      { quantity: 1, price: { cents: 1240, foilCents: null, etchedCents: null, asOf } },
       { quantity: 5, price: null },
       { quantity: 2, price: null },
     ];
     const count = cardCopies(shoppingCards);
-    const derived = summarisePrices(shoppingCards, null);
+    const derived = summarisePrices(shoppingCards, asOf);
 
     render(
       <GroupToggle
@@ -91,7 +110,7 @@ describe("GroupToggle denominator", () => {
 
     expect(screen.getByRole("button", { name: `Shopping ${count}` })).toBeInTheDocument();
     expect(
-      screen.getByText(priceCopy.strip.pricedClause(0, count)),
+      screen.getByText(priceCopy.strip.pricedClause(1, count)),
     ).toBeInTheDocument();
   });
 });

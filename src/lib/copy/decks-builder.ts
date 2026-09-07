@@ -439,8 +439,18 @@ export function builtFragment(built: number): string {
   return overCopy.aria.progress(String(built), String(built - 99));
 }
 
-/** Export dialog, Shopping tab. "these" is the list rendered above the link,
- *  so it never reads as an offer to buy the whole deck. */
+/** Export dialog, Shopping tab, and the price strip under the Shopping filter.
+ *  "these" is the list rendered above the link on both surfaces, so it never
+ *  reads as an offer to buy the whole deck — and since both surfaces now render
+ *  the same list, one string across both is right rather than duplicated. */
 export const exportLinkOutCopy = {
   shopping: "Buy these at Mana Pool",
+} as const;
+
+/** The Shopping tab's count meta. It read `unowned` while that tab composed its
+ *  own `!owned` list. The tab now renders the Shopping filter's list, which
+ *  holds owned cards that are spoken for elsewhere, so `unowned` would be a
+ *  claim about every row that is false for some of them. */
+export const exportShoppingCopy = {
+  countMeta: (copies: number) => `${copies} cards · to buy`,
 } as const;

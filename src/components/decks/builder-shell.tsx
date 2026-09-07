@@ -9,6 +9,7 @@ import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
 import { fillCompletedKey, shouldCelebrate } from "../../lib/decks/celebration";
+import { isShoppingCard } from "../../lib/decks/shopping";
 import { CompletionReveal } from "./completion-reveal";
 import { useCelebrated } from "./use-celebrated";
 import { useLocalFlag } from "./use-local-flag";
@@ -1049,8 +1050,13 @@ export function BuilderShell({
               deckName={deck.name}
               commanderName={deck.commander.name}
               decklistCards={cards.map((c) => ({ name: c.name, quantity: c.quantity }))}
+              // The Shopping filter's own predicate, not a second `!owned` list.
+              // The two diverged: this one carried the unowned basics the filter
+              // refuses to show and dropped the spoken-for cards it puts front
+              // and centre, so the buy link under it bought a basket the player
+              // never saw.
               shoppingCards={cards
-                .filter((c) => !c.owned)
+                .filter(isShoppingCard)
                 .map((c) => ({ name: c.name, role: c.role, quantity: c.quantity }))}
               open={exportOpen}
               onClose={() => setExportOpen(false)}

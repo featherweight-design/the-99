@@ -5,9 +5,9 @@
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
-import { cardCopies, groupByCardType, groupByRole, isBasicLand } from "../../lib/decks/grouping";
+import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
 import { computeRoleCounts } from "../../lib/decks/mix";
-import { availabilityState } from "../../lib/decks/availability";
+import { isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { GroupToggle, type AutoControls } from "./group-toggle";
@@ -31,36 +31,6 @@ const SHOPPING_ROLE_LABELS: Record<"ramp" | "draw" | "removal" | "wipes", string
   removal: "Removal",
   wipes: "Wipes",
 };
-
-/**
- * What the Shopping list holds: a card you don't own, or one you own whose
- * copies are already sleeved into finished lists — `over` from this deck's own
- * vantage (amendment 5, #281). Both are one trip to a shop.
- *
- * The two halves cannot overlap: `availabilityState`'s first guard is
- * `owned <= 0 → free`, so an unowned card is never `over`.
- *
- * `selfExcluded` is mandatory and `free` is read, never recomputed. The map came
- * from a query given this deck's id, so on this list
- * `free = (owned − ownClaim) − (hard − ownHardClaim)`; `owned − hard` is the
- * off-decklist formula and is silently wrong here (Addendum 2 §6 / R5 §6).
- *
- * Basics are never in Shopping — the fill never buys them, and asserting it here
- * means a future change to the fill fails this filter loudly.
- */
-function isShoppingCard(c: DeckDetailCard): boolean {
-  if (isBasicLand(c.typeLine)) return false;
-  if (!c.owned) return true;
-  const a = c.availability;
-  // A missing read degrades to the free rendering, as the builder always has:
-  // the contested rows are simply absent and the list is today's list.
-  return a ? availabilityState(a, { selfExcluded: true }) === "over" : false;
-}
-
-/** A card on the Shopping list that is there because it is spoken for. */
-function isSpokenFor(c: DeckDetailCard): boolean {
-  return c.owned && isShoppingCard(c);
-}
 
 type DecklistProps = {
   deckId: string;
@@ -168,6 +138,11 @@ export function Decklist({
   // reason: the strip's denominator and the `Shopping N` pill are one fact
   // rendered twice on the same screen.
   const priceSummary = summarisePrices(shoppingCards, newestAsOf);
+
+  // What the strip's buy link buys — the same rows, in the same order, as the
+  // list on screen. Recomputed with the rest of this render, so a ✕ moves the
+  // basket and the total in one step.
+  const shoppingList = shoppingCards.map((c) => ({ name: c.name, quantity: c.quantity }));
 
   // The receipt counts cards, not rows: a swept basic-land row carries its
   // whole stack in `quantity`, and undo puts every copy back.
@@ -312,6 +287,7 @@ export function Decklist({
             sweepPending={sweepPending}
             keepAllPending={keepAllPending}
             autoControls={autoControls}
+            shoppingCards={shoppingList}
           />
           <div className="px-[16px] pt-[12px] md:px-[26px] md:pt-[14px] empty:hidden">
             {autoBanner}
@@ -373,6 +349,7 @@ export function Decklist({
           autoControls={autoControls}
           priceSummary={priceSummary}
           provenance={provenance}
+          shoppingCards={shoppingList}
         />
 
         <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
@@ -547,6 +524,7 @@ export function Decklist({
         autoControls={autoControls}
         priceSummary={priceSummary}
         provenance={provenance}
+        shoppingCards={shoppingList}
       />
 
       {/* Grouped card rows */}
