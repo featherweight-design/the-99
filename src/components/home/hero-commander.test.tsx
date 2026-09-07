@@ -5,6 +5,7 @@ import type { SynergyState } from "../../lib/recs/synergy-state";
 import type { RankedList } from "../../lib/recs/ranked-list";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { readCommanderProse } from "../../lib/prose/read";
+import { dailyPick } from "../../lib/recs/daily-pick";
 import { HeroCommander } from "./hero-commander";
 
 vi.mock("../../lib/recs/ranked-list", () => ({
@@ -66,14 +67,20 @@ describe("HeroCommander", () => {
   it("shows the day's pick rather than the top of the ranking", async () => {
     vi.useFakeTimers();
     try {
-      // 2026-09-10 seeds `user_1` to index 3 of a five-deep window.
-      vi.setSystemTime(new Date("2026-09-10T09:00:00Z"));
+      const now = new Date("2026-09-10T09:00:00Z");
+      vi.setSystemTime(now);
       const ranked = ["one", "two", "three", "four", "five"].map((n) =>
         item({ oracleId: `oracle-${n}`, slug: n, name: `Commander ${n}` }),
       );
+      // Asked of `dailyPick` rather than hardcoded, so a change to the hash does not
+      // fail this test while the wiring it covers is still correct. The guard below is
+      // what keeps that from being circular: on this date the pick is not rank 1, so a
+      // hero that went back to `items[0]` still fails here.
+      const expected = dailyPick(ranked, "user_1", now);
+      expect(expected).not.toBe(ranked[0]);
       await renderHero(ranked);
-      expect(screen.getByRole("heading", { name: "Commander four" })).toBeInTheDocument();
-      expect(screen.queryByRole("heading", { name: "Commander one" })).toBeNull();
+      expect(screen.getByRole("heading", { name: expected!.name })).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: ranked[0].name })).toBeNull();
     } finally {
       vi.useRealTimers();
     }

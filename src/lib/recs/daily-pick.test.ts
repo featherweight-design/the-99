@@ -19,7 +19,7 @@ describe("dailyPick", () => {
     expect(morning).toBe(night);
   });
 
-  it("gives two users different days their own pick", () => {
+  it("seeds on the user too, so two accounts do not share one sequence", () => {
     const list = items(20);
     const a = new Set(
       ["2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10"].map(
@@ -42,9 +42,8 @@ describe("dailyPick", () => {
   it("never picks outside the rotation window", () => {
     const list = items(50);
     const seen = new Set<string>();
-    for (let d = 1; d <= 60; d += 1) {
+    for (let d = 1; d <= 31; d += 1) {
       const iso = `2026-10-${String(d).padStart(2, "0")}T09:00:00Z`;
-      if (d > 31) continue;
       seen.add(dailyPick(list, "user-a", day(iso)) as string);
     }
     expect(seen.size).toBeGreaterThan(1);
