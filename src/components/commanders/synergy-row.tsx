@@ -13,7 +13,7 @@ import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
-import { OwnershipDot, dotState } from "./ownership-dot";
+import { AvailabilityDot, availabilityState } from "./availability-dot";
 
 // ── Figure formatters ────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ export function SynergyRow({
       }}
     >
       {/* Slot 1: ownership dot */}
-      <OwnershipDot state={dotState(card)} size={7} />
+      <AvailabilityDot state={availabilityState(card)} size={7} />
 
       {/* Slot 2: name + phone meta line — flex column gap 2px on phone */}
       <div
