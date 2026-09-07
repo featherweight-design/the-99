@@ -246,7 +246,9 @@ describe("UpdateDiff card detail", () => {
   // unmatched — so it stays plain text rather than a trigger that cannot fire.
   it("leaves an unnamed line as text", () => {
     renderDiff({ unresolved: [{ rawName: "Sol Rng", sourceLine: 12, quantity: 1 }] });
-    expect(screen.getByText("Sol Rng").tagName).not.toBe("BUTTON");
+    // `closest`, not `tagName`: the name could be wrapped in a span inside a
+    // trigger and still pass a tag check on the element the query returns.
+    expect(screen.getByText("Sol Rng").closest("button")).toBeNull();
   });
 });
 
