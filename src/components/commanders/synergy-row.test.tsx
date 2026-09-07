@@ -77,7 +77,7 @@ describe("SynergyRow", () => {
   it("paints the dot with the committed fill for a card already in a deck, and names the deck", () => {
     const { container } = mount({ card: { ...base, committedTo: "Atraxa" } });
     const dot = container.querySelector("li > span[aria-hidden]") as HTMLElement;
-    expect(dot.style.background).toBe("var(--avail-hard-fg)");
+    expect(dot.className).toContain("bg-[color:var(--avail-hard-fg)]");
     expect(dot.style.width).toBe("7px");
     expect(screen.getByRole("listitem", { name: /Already in Atraxa\./ })).toBeInTheDocument();
   });
@@ -85,17 +85,18 @@ describe("SynergyRow", () => {
   it("keeps the green dot for an owned card no deck has claimed", () => {
     const { container } = mount();
     const dot = container.querySelector("li > span[aria-hidden]") as HTMLElement;
-    expect(dot.style.background).toBe("var(--success)");
+    expect(dot.className).toContain("bg-[color:var(--success)]");
     expect(screen.queryByRole("listitem", { name: /Already in/ })).toBeNull();
   });
 
   // A card you do not own cannot sit in a deck, so the hollow dot has no third
-  // state to grow: it stays transparent with its 1px locked border.
-  it("leaves the unowned dot hollow", () => {
+  // state to grow. Dashed rather than solid: hollow is reserved for absence,
+  // and a solid ring reads as a state of something present.
+  it("leaves the unowned dot hollow and dashed", () => {
     const { container } = mount({ card: { ...base, owned: false } });
     const dot = container.querySelector("li > span[aria-hidden]") as HTMLElement;
-    expect(dot.style.background).toBe("transparent");
-    expect(dot.style.border).toBe("1px solid var(--fg-locked)");
+    expect(dot.className).toContain("bg-transparent");
+    expect(dot.className).toContain("[border:1px_dashed_var(--fg-locked)]");
   });
 
   it("toggles through an aria-pressed button", () => {

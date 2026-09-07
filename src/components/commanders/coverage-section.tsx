@@ -7,7 +7,7 @@ import { useState, useTransition, useId, type JSX } from "react";
 import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { LegendPip } from "./availability-dot";
+import { LegendPip } from "../ui/ownership-dot";
 import {
   CoverageSortMenu,
   COVERAGE_SORT_LABELS,

@@ -270,8 +270,9 @@ describe("ConsiderPanel — tiles", () => {
   it("draws colours as fill and keeps a numeral when the symbol has one", () => {
     mount({ suggestions: [suggestion({ name: "Sol Ring", manaCost: "{2}{U/B}{2/W}{G/P}" })] });
     const tile = screen.getByRole("listitem");
-    const pips = tile.querySelectorAll("span.rounded-full.w-\\[14px\\]");
+    const pips = tile.querySelectorAll<HTMLElement>("span.rounded-full.font-mono");
     expect([...pips].map((p) => p.textContent)).toEqual(["2", "", "2", ""]);
+    expect(pips[0].style.width).toBe("14px");
   });
 
   it("offers exactly three targets — art, name and Add", () => {

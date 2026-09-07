@@ -4,7 +4,7 @@
 // bar's row "verbatim"; the only differences it draws are the column widths and
 // what sits in the right-hand slot, so those are the only two props.
 
-import { CostPips } from "./suggestion-tile";
+import { CostPips } from "../ui/cost-pips";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { availabilityState } from "../../lib/decks/availability";

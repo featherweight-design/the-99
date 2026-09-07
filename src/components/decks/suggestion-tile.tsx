@@ -11,7 +11,7 @@ import { availabilityCopy } from "../../lib/copy/availability";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
-import { WUBRG_COLOR } from "../../lib/collection/browse";
+import { CostPips } from "../ui/cost-pips";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { shelfRoleOf } from "../../lib/decks/suggest";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -22,53 +22,6 @@ import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useDeckMutation } from "./use-deck-mutation";
-
-// "{2}{U}{B}" → ["2", "U", "B"]. Hybrid and Phyrexian symbols come back whole
-// ("U/B", "G/P") and CostPips draws their colours, which is why the cost is
-// carried as Scryfall's string rather than reconstructed from the mana value.
-function parseManaCost(cost: string): string[] {
-  return [...cost.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
-}
-
-export function CostPips({ cost, className }: { cost: string; className?: string }) {
-  const symbols = parseManaCost(cost);
-  if (symbols.length === 0) return null;
-  return (
-    <span
-      aria-hidden
-      className={className ?? "absolute left-[6px] bottom-[6px] flex gap-[3px]"}
-    >
-      {symbols.map((sym, i) => {
-        // "U/B" and "G/P" carry their colours in the halves, so a pip draws
-        // them rather than printing them: three characters in a 14px circle
-        // clamp to noise. Two colours split the pip and one fills it. The
-        // numeral is drawn whenever the symbol has one, so two-brid "2/W" is a
-        // white pip reading 2 rather than a white pip claiming to be free.
-        const parts = sym.split("/");
-        const colours = parts.filter((p) => /^[WUBRG]$/.test(p));
-        const numeral = parts.find((p) => /^\d+$/.test(p));
-        const background = colours.length >= 2
-          ? `linear-gradient(135deg, ${WUBRG_COLOR[colours[0]]} 50%, ${WUBRG_COLOR[colours[1]]} 50%)`
-          : colours.length === 1
-            ? WUBRG_COLOR[colours[0]]
-            : "var(--fg-faint)";
-        return (
-          <span
-            key={i}
-            className="inline-flex items-center justify-center rounded-full w-[14px] h-[14px] font-mono text-[9px] font-semibold"
-            style={{
-              background,
-              color: "var(--bg)",
-              boxShadow: "inset 0 0 0 1px rgba(0,0,0,.45)",
-            }}
-          >
-            {colours.length > 0 ? (numeral ?? "") : sym}
-          </span>
-        );
-      })}
-    </span>
-  );
-}
 
 // The bar is decoration for a figure that is always present as text, so a card
 // with no EDHREC percentage gets a sentence instead — never a 0%-wide bar,
@@ -312,7 +265,12 @@ export function SuggestionTile({
                   {addPanelCopy.tile.detailHint}
                 </span>
               )}
-              {suggestion.manaCost && <CostPips cost={suggestion.manaCost} />}
+              {suggestion.manaCost && (
+                <CostPips
+                  cost={suggestion.manaCost}
+                  className="absolute left-[6px] bottom-[6px] flex gap-[3px]"
+                />
+              )}
             </>
           )}
         </CardDetailTrigger>

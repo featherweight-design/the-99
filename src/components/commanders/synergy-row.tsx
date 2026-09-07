@@ -13,7 +13,7 @@ import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
-import { AvailabilityDot, availabilityDotState } from "./availability-dot";
+import { AvailabilityDot, availabilityDotState } from "../ui/ownership-dot";
 
 // ── Figure formatters ────────────────────────────────────────────────────────
 

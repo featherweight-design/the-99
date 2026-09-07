@@ -20,7 +20,7 @@ import type { RoleCard } from "../../lib/recs/score";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { AvailabilityDot, availabilityDotState } from "./availability-dot";
+import { AvailabilityDot, availabilityDotState } from "../ui/ownership-dot";
 import type { JSX } from "react";
 
 export const COVERAGE_CAP = { desktop: 12, phone: 6 } as const;

@@ -29,8 +29,8 @@ const siblings = ["oracle-sol", "oracle-signet"];
 // The figure plate and the absent dash are aria-hidden too, so the dot is found
 // by the one property only it has: it is round.
 const dotOf = (container: HTMLElement): HTMLElement => {
-  const dot = [...container.querySelectorAll<HTMLElement>("span[aria-hidden]")].find(
-    (el) => el.style.borderRadius === "50%",
+  const dot = [...container.querySelectorAll<HTMLElement>("span[aria-hidden]")].find((el) =>
+    el.className.includes("rounded-full"),
   );
   if (!dot) throw new Error("no round aria-hidden span in the chip");
   return dot;
@@ -85,7 +85,7 @@ describe("CoverageChip", () => {
         <CoverageChip card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />
       </CardDetailProvider>,
     );
-    expect(dotOf(container).style.background).toBe("var(--avail-hard-fg)");
+    expect(dotOf(container).className).toContain("bg-[color:var(--avail-hard-fg)]");
     expect(screen.getByRole("button", { name: /Sol Ring/i }).className).toMatch(
       /var\(--avail-hard\)/,
     );
@@ -97,7 +97,7 @@ describe("CoverageChip", () => {
         <CoverageChip card={card()} siblings={siblings} showFigures />
       </CardDetailProvider>,
     );
-    expect(dotOf(container).style.background).toBe("var(--success)");
+    expect(dotOf(container).className).toContain("bg-[color:var(--success)]");
   });
 
   // R2 rewrote this name wholesale once and lost "View details for". The deck
@@ -185,7 +185,7 @@ describe("CoverageRow", () => {
         <CoverageRow card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />
       </CardDetailProvider>,
     );
-    expect(dotOf(container).style.background).toBe("var(--avail-hard-fg)");
+    expect(dotOf(container).className).toContain("bg-[color:var(--avail-hard-fg)]");
     expect(
       screen.getByRole("button", {
         name: "View details for Sol Ring. In 82% of decks. Already in Atraxa.",
