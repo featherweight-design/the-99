@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import type { RecentDeck } from "../../lib/home/summary";
 import { COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
+import { CommanderCount, CommanderCountFallback } from "./commander-count";
 import { HeroCommander, HeroCommanderSkeleton } from "./hero-commander";
 
 /* §Deck row state color: success ≥ high, warning ≥ mid, danger below —
@@ -25,6 +26,15 @@ export function Dashboard({
   decks: RecentDeck[];
   name: string | null;
 }) {
+  // Streamed on its own so the greeting and the stats panel paint before the
+  // ranked list resolves (#14). Both stat surfaces render it, and both sit
+  // behind their own boundary — the underlying read is shared by React's cache.
+  const commanderCount = (
+    <Suspense fallback={<CommanderCountFallback />}>
+      <CommanderCount userId={userId} />
+    </Suspense>
+  );
+
   return (
     // §Signed-In Home Dashboard: Main content area — padding 20px mobile / 34px 40px 44px desktop
     <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 bg-[radial-gradient(760px_380px_at_45%_-60px,color-mix(in_oklab,var(--accent)_8%,transparent),transparent_70%)]">
@@ -49,9 +59,10 @@ export function Dashboard({
             </span>
           </h1>
           {/* §Stats sub-line:
-              Mobile:  mono 11px muted, mt 6px — "{N} commanders buildable · {M} decks"
-              Desktop: mono 13px muted, mt 8px — "{total} cards · {unique} unique · {N} commanders buildable · {M} decks"
-              (commander count not available here; omit and show card/unique/decks per available data) */}
+              Mobile:  mono 11px muted, mt 6px — "{total} cards · {N} commanders · {M} decks"
+              Desktop: mono 13px muted, mt 8px — "{total} cards · {unique} unique · {N} commanders · {M} decks"
+              The table writes the stat as "commanders buildable"; it ships as
+              "commanders", for the reason `commander-count.tsx` sets out. */}
           <p
             className="text-[11px] md:text-[13px] mt-[6px] md:mt-[8px]"
             style={{
@@ -61,13 +72,15 @@ export function Dashboard({
           >
             {/* Mobile: compact */}
             <span className="md:hidden">
-              {stats.totalCards.toLocaleString()} cards · {decks.length} deck
+              {stats.totalCards.toLocaleString()} cards · {commanderCount}{" "}
+              commanders · {decks.length} deck
               {decks.length === 1 ? "" : "s"}
             </span>
             {/* Desktop: full */}
             <span className="hidden md:inline">
               {stats.totalCards.toLocaleString()} cards ·{" "}
-              {stats.uniqueCards.toLocaleString()} unique · {decks.length} deck
+              {stats.uniqueCards.toLocaleString()} unique · {commanderCount}{" "}
+              commanders · {decks.length} deck
               {decks.length === 1 ? "" : "s"}
             </span>
           </p>
@@ -198,8 +211,12 @@ export function Dashboard({
             {[
               { label: "Total cards", value: stats.totalCards.toLocaleString() },
               { label: "Unique", value: stats.uniqueCards.toLocaleString() },
+              // §Collection stats panel gives this row the accent tint; it is the
+              // only stat that is a recommendation rather than a count of what
+              // was uploaded, and the table colours it to say so.
+              { label: "Commanders", value: commanderCount, tint: "var(--accent)" },
               { label: "Decks built", value: String(decks.length) },
-            ].map(({ label, value }, i, arr) => (
+            ].map(({ label, value, tint }, i, arr) => (
               <div
                 key={label}
                 className="flex items-center justify-between py-[14px]"
@@ -213,7 +230,7 @@ export function Dashboard({
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 15,
-                    color: "var(--fg)",
+                    color: tint ?? "var(--fg)",
                   }}
                 >
                   {value}
