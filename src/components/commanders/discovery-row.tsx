@@ -16,6 +16,7 @@ import { discoveryCopy } from "../../lib/copy/commander-discovery";
 // reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is
 // unset and pulls the neon driver in with it. A type-only clause is erased at
 // compile time, so none of that reaches the client bundle.
+import { FLOOR_PCT } from "../../lib/discovery/floor";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import type { PriceSlot } from "../../lib/discovery/price";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
@@ -398,7 +399,7 @@ export function DiscoveryRow({
             the figure above it. */}
         {!fit && item.supportPct !== null && (
           <p className="m-0 font-mono" style={{ fontSize: 10.5, color: "var(--fg-faint)" }}>
-            {justify.floorNoteShort(item.supportPct)}
+            {justify.floorNoteShort(FLOOR_PCT, item.supportPct)}
           </p>
         )}
 
@@ -539,7 +540,7 @@ export function DiscoveryRow({
                   style={{ fontSize: 11.5, lineHeight: 1.5, color: "var(--fg-faint)" }}
                 >
                   <Emphasised
-                    text={justify.floorNote(item.supportPct)}
+                    text={justify.floorNote(FLOOR_PCT, item.supportPct)}
                     values={[`${item.supportPct}%`]}
                     color="var(--fg-body)"
                   />

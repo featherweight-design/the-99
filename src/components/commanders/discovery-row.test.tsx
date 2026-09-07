@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { FLOOR_PCT } from "../../lib/discovery/floor";
 import { DiscoveryRow } from "./discovery-row";
 
 const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
@@ -130,6 +131,18 @@ describe("DiscoveryRow", () => {
         el.style.borderTop.includes("--border"),
       ),
     ).toBe(false);
+  });
+
+  // The note claims the row cleared a bar, so it has to name the bar — and name the one the
+  // ranking actually applied. Asserted against `FLOOR_PCT` rather than a literal 30, so a change
+  // to the floor cannot leave the row printing the old figure.
+  it("names the threshold the ranking applied in the floor note, at both widths", () => {
+    const { container } = row({ supportPct: 47 }, "new");
+    // `textContent` rather than `getByText`: the desktop note is emphasised, which splits the
+    // sentence across spans, and only the mobile one is a single text node.
+    expect(container.textContent).toContain(discoveryCopy.justify.floorNote(FLOOR_PCT, 47));
+    expect(screen.getAllByText(discoveryCopy.justify.floorNoteShort(FLOOR_PCT, 47)).length)
+      .toBeGreaterThan(0);
   });
 
   it("explains an untagged commander instead of offering a retry", () => {

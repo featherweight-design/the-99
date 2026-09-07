@@ -140,8 +140,15 @@ export const discoveryCopy = {
     distanceNone: "Nothing you have built plays these.",
     // Partial: name the nearest deck, and say what it shares. One deck, never a
     // count — severity, not inventory, matching the availability receipt's rule.
+    // The deck is the yardstick and the sentence ends on newness, because this
+    // clause only ever renders under the novelty sort (`discovery-row.tsx`
+    // computes `const tags = fit ? null : tagSentence(item)`), and ending on the
+    // one archetype the player already plays sold the row on its overlap.
+    // No count of "the rest": unplayed archetypes and the nearest deck's shared
+    // ones are disjoint sets, and the figure the row needs is already printed
+    // beside this sentence by `figureUnitNew`.
     distanceNear: (deckName: string, shared: string) =>
-      `Closest is your ${deckName} list, which shares ${shared}.`,
+      `Your closest build, ${deckName}, plays ${shared} — the rest are new.`,
     distanceAria: (unplayed: number, total: number) =>
       `${n(unplayed)} of its ${n(total)} archetypes are ones you have never built`,
 
@@ -149,8 +156,15 @@ export const discoveryCopy = {
     figureUnitNew: (total: number) => `of ${n(total)} tags`,
     // Ruling 4's floor, stated as a qualifying fact. It explains PRESENCE, never
     // position — the percentage is never added to the figure above it.
-    floorNote: (pct: number) => `clears the floor — you own ${pct}% of its support list`,
-    floorNoteShort: (pct: number) => `clears the floor — you own ${pct}% of its list`,
+    // Both take the threshold as well as the row's own figure: the floor is a
+    // function of the pool, so a row claiming to clear it without naming it
+    // would be a figure without its denominator. `floorNote` is the DESKTOP note
+    // (`discovery-row.tsx:542`, inside `<Emphasised>`) and `floorNoteShort` the
+    // mobile one (`:401`).
+    floorNote: (floorPct: number, pct: number) =>
+      `clears the ${floorPct}% floor — you own ${pct}% of its support list`,
+    floorNoteShort: (floorPct: number, pct: number) =>
+      `clears the ${floorPct}% floor — you own ${pct}% of its list`,
   },
 
   // ── Ownership on the row (§7.3) ───────────────────────────────────────

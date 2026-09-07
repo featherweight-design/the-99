@@ -30,7 +30,7 @@ import {
 } from "./reveal-control";
 import { FloorEmpty, NoDecksBanner } from "./discovery-empty";
 import { FilteredEmpty } from "./filtered-empty";
-import { NOVELTY_FLOOR } from "../../lib/discovery/floor";
+import { FLOOR_PCT } from "../../lib/discovery/floor";
 
 // The empty-state strings, aliased once: four call sites below name them, and
 // `discoveryCopy.empty.` on each would bury the key that actually differs.
@@ -277,7 +277,7 @@ export function DiscoveryView({
 
       {showFloorEmpty ? (
         <FloorEmpty
-          floorPct={Math.round(NOVELTY_FLOOR * 100)}
+          floorPct={FLOOR_PCT}
           candidateCount={discovery.candidateCount}
           cardsRead={discovery.cardsRead}
           bestPct={discovery.bestPct as number}
