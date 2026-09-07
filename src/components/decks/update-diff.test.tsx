@@ -234,6 +234,28 @@ describe("UpdateDiff groups", () => {
     expect(buy.compareDocumentPosition(typeLine)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
+  // The rollup was read with `excludeDeckId`, so a removal reaches `free === 0`
+  // by having its own claim subtracted and is not competed for at all. An
+  // addition is not on the deck yet, so the same figures there are a genuine
+  // claim by some other finished deck.
+  it("reads free === 0 as self-explained on a removal and hard on an addition", () => {
+    const spokenFor = {
+      owned: 1,
+      hard: 1,
+      soft: 0,
+      free: 0,
+      claims: [{ id: "d2", name: "Atraxa", quantity: 1, mature: true }],
+    };
+    const namesClaimant = (group: "out" | "in") => {
+      const { container } = renderDiff({
+        [group]: [row(`${group}-1`, { owned: true, availability: spokenFor })],
+      });
+      return container.textContent!.includes("Atraxa");
+    };
+    expect(namesClaimant("out")).toBe(false);
+    expect(namesClaimant("in")).toBe(true);
+  });
+
   it("keeps the auto slot's width on a removal the app did not place", () => {
     const { container } = renderDiff({ out: [row("out-1", { auto: false })] });
     const marker = Array.from(container.querySelectorAll("span")).find(

@@ -211,24 +211,24 @@ async function withFacts(
   deckId: string,
   groups: { out: DeckUpdateRow[]; in: DeckUpdateRow[] },
 ): Promise<{ out: DeckUpdateInRow[]; in: DeckUpdateInRow[] }> {
-  const rows = [...groups.out, ...groups.in];
-  if (rows.length === 0) return { out: [], in: [] };
+  // Distinct ids, not rows: a basic land stacks, and nothing stops a plan from
+  // naming the same card in both groups. Both reads below answer per card, so a
+  // repeat only widens the bind list.
+  const oracleIds = [...new Set([...groups.out, ...groups.in].map((r) => r.oracleId))];
+  if (oracleIds.length === 0) return { out: [], in: [] };
 
   const ownedRows = await db
     .selectDistinct({ oracleId: collectionItems.oracleId })
     .from(collectionItems)
     .where(
-      and(
-        eq(collectionItems.userId, userId),
-        inArray(collectionItems.oracleId, rows.map((r) => r.oracleId)),
-      ),
+      and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, oracleIds)),
     );
   const have = new Set(ownedRows.map((r) => r.oracleId));
 
   // Owned only: the rollup is driven by the collection and cannot return a card
   // the player does not own. A failed rollup leaves every row markerless rather
   // than failing the preview, which is the same call the decklist makes.
-  const ownedIds = rows.filter((r) => have.has(r.oracleId)).map((r) => r.oracleId);
+  const ownedIds = oracleIds.filter((id) => have.has(id));
   const availability =
     ownedIds.length > 0
       ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(

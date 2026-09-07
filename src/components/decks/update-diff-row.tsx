@@ -69,11 +69,33 @@ function Marker({ auto }: { auto: boolean }) {
  * The tag is the full `buy`, not the decklist's collapsed `$` — the collapse is
  * an All-tab affordance on a list the player is scanning, and this is a diff
  * they are reading once.
+ *
+ * `selfClaimed` is the caller's answer to the one question `selfExcluded` is
+ * allowed to mean: does THIS deck's own claim account for the shortfall? The
+ * rollup was read with `excludeDeckId`, so a removal — a card the deck holds
+ * today — reaches `free === 0` by having its own claim subtracted, and must not
+ * be called hard. An addition is not on the deck yet, so nothing of its was
+ * subtracted and a `free === 0` there is a genuine claim by another deck.
  */
-function AvailabilitySlot({ card, seam }: { card: DiffRowCard; seam: string }) {
+function AvailabilitySlot({
+  card,
+  seam,
+  selfClaimed,
+}: {
+  card: DiffRowCard;
+  seam: string;
+  selfClaimed: boolean;
+}) {
   if (!card.owned) return <BuyTag variant="row" />;
   if (!card.availability) return null;
-  return <AvailabilityMarker availability={card.availability} seam={seam} className="flex-none" />;
+  return (
+    <AvailabilityMarker
+      availability={card.availability}
+      seam={seam}
+      selfExcluded={selfClaimed}
+      className="flex-none"
+    />
+  );
 }
 
 /** The row's name, and the flow's one way into the card itself. A player
@@ -125,7 +147,7 @@ export function DiffRowOut({
       <OwnershipDot owned={card.owned} size={7} />
       <DiffRowName oracleId={card.oracleId} name={card.name} tone="var(--fg)" />
       <Marker auto={card.auto} />
-      <AvailabilitySlot card={card} seam={kept ? SEAM_KEPT : SEAM_SURFACE} />
+      <AvailabilitySlot card={card} seam={kept ? SEAM_KEPT : SEAM_SURFACE} selfClaimed />
       {/* Desktop only: the phone row has no width for it, and the name plus the
           hand-added marker are what the decision turns on. */}
       <span className="hidden md:block font-mono text-[10px] w-[120px] flex-none truncate text-[color:var(--fg-locked)]">
@@ -169,7 +191,7 @@ export function DiffRowIn({
           flexible item, so anything that can disappear has to sit on the name's
           side of the fixed columns — with the slot trailing, an owned row's type
           line landed a tag's width right of an unowned row's. */}
-      <AvailabilitySlot card={card} seam={SEAM_SURFACE} />
+      <AvailabilitySlot card={card} seam={SEAM_SURFACE} selfClaimed={false} />
       <span className="hidden md:block font-mono text-[10px] w-[150px] flex-none truncate text-[color:var(--fg-locked)]">
         {card.typeLine}
       </span>
