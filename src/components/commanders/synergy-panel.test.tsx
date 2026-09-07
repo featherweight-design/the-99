@@ -38,19 +38,28 @@ describe("SynergyPanel", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(30);
   });
 
+  // The three clauses share one paragraph with the three pips, which render no
+  // text, so the paragraph reads as the clauses joined by spaces.
+  const SYNERGY_LEGEND = [
+    explainedCopy.committed.legendSynergyFree,
+    explainedCopy.committed.legendSynergyCommitted,
+    explainedCopy.committed.legendSynergyUnowned,
+  ].join(" ");
+
   // The one surface where all three dot states can share a list, so the line
-  // names all three. Drawn only where a row on screen carries the mark, the same
-  // condition the role panels use.
-  it("names all three dot states once a visible row is committed", () => {
+  // labels all three. Drawn only where a row on screen carries the mark, the
+  // same condition the role panels use. The clauses share one paragraph with
+  // the three pips, so each is asserted rather than the line as a whole.
+  it("labels all three dot states once a visible row is committed", () => {
     const cards = make(3);
     cards[0] = { ...cards[0], committedTo: "Atraxa" };
     wrap(<SynergyPanel {...props} cards={cards} width="desktop" />);
-    expect(screen.getByText(explainedCopy.committed.legendSynergy)).toBeInTheDocument();
+    expect(screen.getByText(SYNERGY_LEGEND)).toBeInTheDocument();
   });
 
   it("draws no dot legend when nothing on screen is committed", () => {
     wrap(<SynergyPanel {...props} cards={make(3)} width="desktop" />);
-    expect(screen.queryByText(explainedCopy.committed.legendSynergy)).toBeNull();
+    expect(screen.queryByText(SYNERGY_LEGEND)).toBeNull();
   });
 
   // Resting on six rows at phone width, a card committed beyond the cap is not
@@ -59,7 +68,7 @@ describe("SynergyPanel", () => {
     const cards = make(30);
     cards[20] = { ...cards[20], committedTo: "Atraxa" };
     wrap(<SynergyPanel {...props} cards={cards} width="phone" />);
-    expect(screen.queryByText(explainedCopy.committed.legendSynergy)).toBeNull();
+    expect(screen.queryByText(SYNERGY_LEGEND)).toBeNull();
   });
 
   it("rests on six rows at phone width", () => {

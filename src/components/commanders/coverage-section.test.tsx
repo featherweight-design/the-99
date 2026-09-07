@@ -622,7 +622,7 @@ describe("the committed legend", () => {
 
   it("draws nothing when no visible chip carries the mark", () => {
     renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
-    expect(screen.queryByText(/Amber dot/)).toBeNull();
+    expect(screen.queryByText(/already in/i)).toBeNull();
   });
 
   it("takes the shorter wording at phone width", () => {

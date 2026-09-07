@@ -17,6 +17,7 @@ import type { CardFacet } from "../../lib/cards/facet";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { facetCounts } from "../../lib/commanders/synergy-cards";
 import { explainedCopy } from "../../lib/copy/commander-explained";
+import { LegendPip } from "./availability-dot";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { FacetStrip } from "./facet-strip";
 import { SynergyRow } from "./synergy-row";
@@ -240,8 +241,10 @@ export function SynergyPanel({
       </p>
 
       {/* The dot legend. This is the only surface where all three dot states can
-          appear at once, so it names all three rather than just the amber one —
-          and, like the role panels, only where a row on screen carries the mark. */}
+          appear at once, so it labels all three rather than just the committed
+          one — and, like the role panels, only where a row on screen carries the
+          mark. Each clause is preceded by the dot it describes, drawn by the same
+          component the rows use, so no clause has to name a colour. */}
       {visibleCards.some((c) => c.committedTo !== null) && (
         <p
           className="m-0 font-mono"
@@ -253,7 +256,12 @@ export function SynergyPanel({
             lineHeight: 1.4,
           }}
         >
-          {explainedCopy.committed.legendSynergy}
+          <LegendPip state="free" />
+          {explainedCopy.committed.legendSynergyFree}{" "}
+          <LegendPip state="committed" />
+          {explainedCopy.committed.legendSynergyCommitted}{" "}
+          <LegendPip state="unowned" />
+          {explainedCopy.committed.legendSynergyUnowned}
         </p>
       )}
 
