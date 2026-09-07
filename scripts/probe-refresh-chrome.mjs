@@ -88,6 +88,10 @@ async function main() {
     const context = await browser.newContext({
       viewport: { width: vp.width, height: vp.height },
       hasTouch: vp.hasTouch ?? false,
+      // Chromium's mobile emulation, which brings the mobile viewport meta with
+      // it. Without it a 390px window is a narrow desktop, and the tab bar would
+      // be measured under conditions no phone reproduces.
+      isMobile: vp.isMobile ?? false,
     });
     const page = await context.newPage();
     await signIn(page);
