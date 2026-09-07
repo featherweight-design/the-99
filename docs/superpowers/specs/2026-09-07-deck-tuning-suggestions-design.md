@@ -190,9 +190,13 @@ and coming back shows a run in progress and then its result. Nothing depends on 
 forever and the partial unique index would block the deck from ever generating again. So a pending run older
 than a few minutes is treated as interrupted, and the read path **writes it to `failed` with the
 `interrupted` class** rather than merely displaying it that way. The distinction matters: the index keys on
-the stored `status`, so a row that is only *read* as dead still blocks the deck. Reaping is idempotent and
-conditional — an `update ... where status = 'pending' and created_at < cutoff` — so a run that finishes just
-as the reaper fires loses the race harmlessly. This is a rule in the read path, not a scheduled job: no cron,
+the stored `status`, so a row that is only *read* as dead still blocks the deck. **Both sides of that race are conditional, and
+that is what makes it safe.** The reaper writes `update ... where status = 'pending' and created_at <
+cutoff`; the generation path writes its own outcome `where status = 'pending'` and treats zero rows affected
+as "I was reaped" — it discards its result rather than resurrecting a run the deck has already moved past.
+Without the second half the reaper could clobber a run that had just succeeded, which would be worse than
+the deadlock it was added to prevent: the player paid for an answer and watched it turn into an error.
+Exactly one of the two writes lands. This is a rule in the read path, not a scheduled job: no cron,
 no queue, nothing new to operate. The cost is that a deck nobody looks at keeps its dead row until someone
 does, which is exactly when it matters and not before.
 
@@ -312,6 +316,8 @@ Mobile and desktop parity throughout, per the repo's standing rule.
 - Action tests for the durability contract specifically: a pending row exists before the call, a second
   concurrent generation is refused, a failed run leaves the gate open, a successful one closes it, and a
   stale pending row is written to `interrupted` on read rather than merely displayed that way.
+- A test for both halves of the reaper race: a reaped run's late success is discarded rather than written,
+  and a run that finishes first is not overwritten by a reaper firing behind it.
 - Component tests for every state in §10, including each failure class.
 - `pnpm check:tuning` for advice quality, run deliberately rather than on every commit.
 
