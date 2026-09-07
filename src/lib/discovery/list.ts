@@ -24,7 +24,6 @@ export type DiscoveryItem = {
       a position in `candidateCount`: under `new`, the untagged and the
       below-floor are already gone, and `floorExcluded` counts the second group. */
   rank: number;
-  owned: boolean;
   ownedSupport: number;
   /** The same count over the whole collection, which is what the novelty floor
       is decided on. It rides on the item because the floor is applied here,
@@ -97,7 +96,6 @@ export type DiscoveryList = {
 
 export function assembleDiscovery(input: {
   candidates: CandidateRow[];
-  ownedOracleIds: Set<string>;
   playedTags: DeckTagSet[];
   prices: Map<string, PriceAggRow>;
   rollup: PoolRollup;
@@ -113,7 +111,6 @@ export function assembleDiscovery(input: {
 
   const enriched = withSlugs.map((c) => {
     const unplayed = unplayedTags(c.tags, played);
-    const owned = input.ownedOracleIds.has(c.oracleId);
     const rollup = rollupFor(input.rollup, c);
     return {
       ...rollup,
@@ -124,11 +121,10 @@ export function assembleDiscovery(input: {
       counts: input.availOk ? rollup.counts : null,
       oracleId: c.oracleId, slug: c.slug, name: c.name,
       colorIdentity: c.colorIdentity, imageUri: c.imageUri,
-      owned,
       ownedSupport: c.ownedSupport,
       collectionSupport: c.collectionSupport,
       edhrecTotal: c.edhrecTotal,
-      price: slotFor(input.prices.get(c.oracleId), owned),
+      price: slotFor(input.prices.get(c.oracleId)),
       tagTotal: c.tags.length,
       unplayedLabels: unplayed.map((t) => t.label),
       unplayedCount: unplayed.length,
@@ -254,7 +250,6 @@ export async function loadDiscovery(
   return assembleDiscovery({
     availOk,
     candidates,
-    ownedOracleIds: new Set(collection.map((c) => c.oracleId)),
     playedTags,
     prices,
     rollup: buildPoolRollup(scored, availability),

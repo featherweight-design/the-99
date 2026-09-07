@@ -27,12 +27,14 @@ export type PriceSlot =
  * The six-row matrix in `STATES-price-and-empties.md`, as three outcomes.
  *
  * "Absent" means the slot is not rendered — no dot, no dash, no hairline, no
- * reserved height. A never-priced printing is not free and not unknown; the
- * handoff's answer to "we have no figure" is to say nothing, and an owned
- * commander is not something the player is being priced on at all.
+ * reserved height. A never-priced printing is not free and not unknown, and the
+ * handoff's answer to "we have no figure" is to say nothing.
+ *
+ * Row 5 of that matrix — an owned commander, priced at nothing — has no case
+ * here any more: discover lists only commanders the player does not own, so
+ * there is no owned row left to reach it.
  */
-export function slotFor(row: PriceAggRow | undefined, ownedCommander: boolean): PriceSlot {
-  if (ownedCommander) return { kind: "absent" };
+export function slotFor(row: PriceAggRow | undefined): PriceSlot {
   if (!row) return { kind: "absent" };
   if (row.liveCents != null) return { kind: "priced", cents: row.liveCents };
   // Row 6 before row 3: a printing in this run's feed with no non-foil figure

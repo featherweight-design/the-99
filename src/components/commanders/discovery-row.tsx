@@ -34,8 +34,9 @@ const overflowCopy = planeCopy.overflow;
 
 /** The ownership pip. Decorative in both places it is drawn — the clause on the
     receipt line says the same fact in words, and the row's accessible name
-    leads with it. */
-function Pip({ owned }: { owned: boolean }) {
+    leads with it. One state, because every row on this lane is one the player
+    does not own: the filled variant belonged to a scope that no longer exists. */
+function Pip() {
   return (
     <span
       aria-hidden="true"
@@ -44,9 +45,7 @@ function Pip({ owned }: { owned: boolean }) {
         width: 6,
         height: 6,
         transform: "rotate(45deg)",
-        ...(owned
-          ? { background: "var(--accent)" }
-          : { border: "1.5px solid var(--fg-locked)" }),
+        border: "1.5px solid var(--fg-locked)",
       }}
     />
   );
@@ -283,28 +282,16 @@ export function DiscoveryRow({
       : justify.distanceAria(item.unplayedCount, item.tagTotal);
 
   const lead = (mobile: boolean): ReceiptClause => ({
-    text: item.owned
-      ? mobile
-        ? ownership.ownedShort
-        : ownership.owned
-      : mobile
-        ? ownership.unownedShort
-        : ownership.unowned,
-    color: item.owned ? "var(--avail-hard-fg)" : "var(--fg-faint)",
-    glyph: item.owned
-      ? { background: "var(--accent)" }
-      : { border: "1.5px solid var(--fg-locked)" },
+    text: mobile ? ownership.unownedShort : ownership.unowned,
+    color: "var(--fg-faint)",
+    glyph: { border: "1.5px solid var(--fg-locked)" },
   });
 
   // Ownership leads, before any figure, and the figures follow in the order the
   // eye reads them. The visible prose is `aria-hidden` where it would repeat
   // this, so nothing is announced twice. Controls inside that prose are not:
   // see `TagSentence`.
-  const rowLabel = [
-    item.name,
-    item.owned ? ownership.ownedAria : ownership.unownedAria,
-    justifyAria,
-  ]
+  const rowLabel = [item.name, ownership.unownedAria, justifyAria]
     .filter(Boolean)
     .join(" · ");
 
@@ -345,7 +332,7 @@ export function DiscoveryRow({
               >
                 {rank}
               </span>
-              <Pip owned={item.owned} />
+              <Pip />
               <span
                 className="font-display font-[600] truncate"
                 style={{ fontSize: 14.5, color: "var(--fg)" }}
@@ -460,7 +447,7 @@ export function DiscoveryRow({
           >
             {rank}
           </span>
-          <Pip owned={item.owned} />
+          <Pip />
         </div>
 
         <CommanderTile imageUri={item.imageUri} colorIdentity={item.colorIdentity} />

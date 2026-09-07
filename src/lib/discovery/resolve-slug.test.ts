@@ -48,11 +48,19 @@ describe("resolveCommanderSlug", () => {
 
   it("ranks against the free pool, so the rank matches the row it was reached from", async () => {
     // The detail route carries no `avail`, and `/commanders` defaults to free.
-    loadDiscoveryPool.mockResolvedValue({ collection: [], scored: [{ oracleId: "owned-free" }] });
+    loadDiscoveryPool.mockResolvedValue({
+      collection: [{ oracleId: "owned-committed" }, { oracleId: "owned-free" }],
+      scored: [{ oracleId: "owned-free" }],
+    });
     loadCandidateSlugRows.mockResolvedValue([{ oracleId: "x", name: "X", ownedSupport: 1 }]);
     await resolveCommanderSlug("user", "x");
     expect(loadDiscoveryPool).toHaveBeenCalledWith("user", "free");
-    expect(loadCandidateSlugRows).toHaveBeenCalledWith("user", ["owned-free"]);
+    // The pool ranks, the collection draws the lane: a population wider than the
+    // list's by even one owned commander would shift every slug after it.
+    expect(loadCandidateSlugRows).toHaveBeenCalledWith("user", ["owned-free"], [
+      "owned-committed",
+      "owned-free",
+    ]);
   });
 
   it("is null when all three miss, so the caller owns the 404", async () => {

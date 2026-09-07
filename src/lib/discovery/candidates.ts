@@ -35,8 +35,8 @@ export function shapeCandidate(r: CandidateSqlRow): CandidateRow {
 }
 
 /**
- * Every indexed commander the player has not built a deck around, with the
- * count of that commander's EDHREC support cards the player owns.
+ * Every indexed commander the player neither owns nor has built a deck around,
+ * with the count of that commander's EDHREC support cards the player owns.
  *
  * `ownedOracleIds` is a parameter rather than a join so that `?avail=free` is
  * this same query with the free pool's ids — the free ranking is the same
@@ -53,7 +53,10 @@ export function shapeCandidate(r: CandidateSqlRow): CandidateRow {
  * ranking is scoped to a smaller pool. Omitting it is not a degraded read: when
  * the pool *is* the collection the two counts are identical by construction, so
  * the second derived table would be a second aggregate scan of 240,000 rows to
- * re-derive a column already in the projection.
+ * re-derive a column already in the projection. The lane boundary is drawn
+ * against it rather than against `ownedOracleIds`, because a commander you own
+ * but have committed elsewhere is still one you own — narrowing the ranked pool
+ * must not put it back on a lane defined as the things you do not have.
  */
 export async function loadCandidates(
   userId: string,
@@ -78,7 +81,7 @@ export async function loadCandidates(
   const rows = await (collectionOracleIds != null
     ? base.leftJoin(collectionSupportTable(collectionOracleIds), COLLECTION_SUPPORT_ON)
     : base
-  ).where(unbuiltCommanders(userId));
+  ).where(discoverCandidates(userId, collectionOracleIds ?? ownedOracleIds));
 
   return rows.map(shapeCandidate);
 }
@@ -191,10 +194,16 @@ function escapeLike(value: string) {
  * The detail route resolves a discovery slug by re-deriving the whole ranking,
  * and the full projection would carry every candidate's `tags` jsonb across the
  * wire to do it — 3,100 tag arrays for three fields' worth of answer.
+ *
+ * "The same population" includes the lane boundary: dedup suffixes and the rank
+ * this returns both follow position, so a population one row wider than the
+ * list's would resolve a slug to a different commander than the row it was
+ * clicked from.
  */
 export async function loadCandidateSlugRows(
   userId: string,
   ownedOracleIds: string[],
+  collectionOracleIds?: string[],
 ): Promise<{ oracleId: string; name: string; ownedSupport: number }[]> {
   return db
     .select({
@@ -205,7 +214,7 @@ export async function loadCandidateSlugRows(
     .from(commanderSupport)
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
     .leftJoin(ownedSupportTable(ownedOracleIds), OWNED_SUPPORT_ON)
-    .where(unbuiltCommanders(userId));
+    .where(discoverCandidates(userId, collectionOracleIds ?? ownedOracleIds));
 }
 
 // The two queries differ only in their select list, so everything below the
@@ -292,6 +301,35 @@ function collectionSupportTable(collectionOracleIds: string[], commanderIds?: st
                   on owned.oracle_id = csc.oracle_id
                ${commanderScope(commanderIds)}
                group by csc.commander_oracle_id) as csa`;
+}
+
+/**
+ * The discover lane's population: an indexed commander the player has neither
+ * built around nor owns.
+ *
+ * Ownership is the lane's definition rather than a filter over it — the two
+ * lanes partition the index, owned-and-unbuilt on `/commanders` and the rest
+ * here — so it belongs in the WHERE beside the deck exclusion. Exported for the
+ * test, which reads the emitted SQL: whether the exclusion is in the WHERE at
+ * all is the one part of this query no database is needed to check.
+ */
+export function discoverCandidates(userId: string, collectionOracleIds: string[]) {
+  return and(unbuiltCommanders(userId), unownedCommanders(collectionOracleIds));
+}
+
+/**
+ * `<> all(...)` rather than `notInArray`: the exclusion set is the whole
+ * collection, which is one bound array here and three thousand placeholders as
+ * a `NOT IN` list — the same reason the support aggregates already unnest a
+ * param. It also makes an empty collection the harmless case it should be,
+ * where the `NOT IN ()` a bare array would emit is a syntax error.
+ *
+ * The NULL hazard `unbuiltCommanders` documents is out of reach on both sides:
+ * `commander_oracle_id` is `notNull()`, and the array is oracle ids read out of
+ * the collection rather than a subquery that could yield one.
+ */
+function unownedCommanders(collectionOracleIds: string[]) {
+  return sql`${commanderSupport.commanderOracleId} <> all(${sql.param(collectionOracleIds)}::uuid[])`;
 }
 
 function unbuiltCommanders(userId: string) {

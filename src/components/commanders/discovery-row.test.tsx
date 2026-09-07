@@ -15,7 +15,6 @@ const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
   colorIdentity: ["B", "G"],
   imageUri: null,
   rank: 1,
-  owned: false,
   ownedSupport: 126,
   collectionSupport: 126,
   edhrecTotal: 264,
@@ -141,12 +140,16 @@ describe("DiscoveryRow", () => {
     expect(trigger.className).toContain("z-[2]");
   });
 
+  // The owned wording this once asserted has no row left to render it: discover
+  // lists only commanders the player does not own. The ordering it was really
+  // about — ownership ahead of any figure — is unchanged, so it is pinned on the
+  // clause that survived.
   it("leads the row's accessible name with ownership, before any figure", () => {
-    row({ owned: true });
+    row({});
     const link = screen.getByRole("link");
     const label = link.getAttribute("aria-label") ?? "";
-    expect(label.indexOf(discoveryCopy.ownership.ownedAria)).toBeGreaterThan(-1);
-    expect(label.indexOf(discoveryCopy.ownership.ownedAria)).toBeLessThan(
+    expect(label.indexOf(discoveryCopy.ownership.unownedAria)).toBeGreaterThan(-1);
+    expect(label.indexOf(discoveryCopy.ownership.unownedAria)).toBeLessThan(
       label.indexOf(discoveryCopy.justify.overlap(126, 264)),
     );
   });
@@ -154,7 +157,7 @@ describe("DiscoveryRow", () => {
   // The label opens on the name, so the overlap clause says "this commander"
   // rather than naming it a second time.
   it("names the commander once in the row's accessible name", () => {
-    row({ owned: true });
+    row({});
     const label = screen.getByRole("link").getAttribute("aria-label") ?? "";
     expect(label.split("Lathril, Blade of the Elves").length - 1).toBe(1);
   });

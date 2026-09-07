@@ -39,13 +39,21 @@ export async function resolveCommanderSlug(
   // what `/commanders` defaults to, so the rank here matches the row the visitor
   // came from. Only the pool is shared with the list — prices, played tags and
   // the rollup are the list's work and nothing on this path reads them.
-  const { scored } = await loadDiscoveryPool(userId, "free");
+  const { collection, scored } = await loadDiscoveryPool(userId, "free");
   // `unplayedCount` is `byFit`'s required input and never read by it, so it is
   // filled once per row here rather than in the comparator, which would
   // otherwise allocate two objects per comparison.
+  // The whole collection alongside the pool: it is what the lane is drawn
+  // against, and a slug population one row wider than the list's would hand
+  // back the neighbour's commander.
   const rows = assignDiscoverySlugs(
-    (await loadCandidateSlugRows(userId, scored.map((c) => c.oracleId)))
-      .map((r) => ({ ...r, unplayedCount: 0 })),
+    (
+      await loadCandidateSlugRows(
+        userId,
+        scored.map((c) => c.oracleId),
+        collection.map((c) => c.oracleId),
+      )
+    ).map((r) => ({ ...r, unplayedCount: 0 })),
   ).sort(byFit);
   const at = rows.findIndex((r) => r.slug === slug);
   if (at === -1) return null;

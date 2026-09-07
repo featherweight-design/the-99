@@ -168,16 +168,17 @@ export const discoveryCopy = {
   },
 
   // ── Ownership on the row (§7.3) ───────────────────────────────────────
-  // BOTH clauses always render, so row height never changes between two rows or
-  // two players. The pip is the glyph; these are the words beside it. Facts, not
-  // nudges: the owned one is the row ruling 2 exists for and it stays a fact.
+  // The clause always renders, so row height never changes between two rows or
+  // two players. The pip is the glyph; these are the words beside it. A fact,
+  // not a nudge.
+  //
+  // The owned wordings ruling 2 wrote are gone: discover lists only commanders
+  // the player does not own, so the row that would have used them is on
+  // `/commanders` instead.
   ownership: {
-    owned: "in your collection, never built",
     unowned: "not in your collection",
-    ownedShort: "yours, never built",
     unownedShort: "not yours",
     // Leads the row's accessible name, before any figure.
-    ownedAria: "in your collection, no deck built around it",
     unownedAria: "not in your collection",
   },
 

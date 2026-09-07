@@ -49,7 +49,6 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   colorIdentity: ["G"],
   imageUri: null,
   rank: 1,
-  owned: false,
   ownedSupport: 12,
   collectionSupport: 12,
   edhrecTotal: 40,

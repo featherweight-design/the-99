@@ -23,7 +23,6 @@ describe("assembleDiscovery", () => {
       candidate({ oracleId: "c", name: "C", ownedSupport: 90,
                   tags: [{ slug: "blink", label: "Blink", count: 2 }] }),
     ],
-    ownedOracleIds: new Set(["a"]),
     playedTags: [{ deckName: "Zur", colorIdentity: ["W", "U", "B"], slugs: new Set(["blink"]) }],
     prices: new Map(),
     // A real rollup, empty: this suite is about assembly, and Phase 2's own test
@@ -80,10 +79,15 @@ describe("assembleDiscovery", () => {
     expect(assembleDiscovery({ ...base, sort: "fit", availOk: false }).availOk).toBe(false);
   });
 
-  it("marks a candidate the player owns", () => {
+  // Was "marks a candidate the player owns". Assembly no longer decides
+  // ownership at all — the query hands it only commanders the player does not
+  // own, which `candidates.test.ts` pins — so what is left to hold here is that
+  // assembly asks the collection nothing: every candidate it is given lands in
+  // the list.
+  it("keeps every candidate it is handed, ownership being the query's call", () => {
     const got = assembleDiscovery({ ...base, sort: "fit" });
-    expect(got.items.find((i) => i.oracleId === "a")!.owned).toBe(true);
-    expect(got.items.find((i) => i.oracleId === "c")!.owned).toBe(false);
+    expect(got.items.map((i) => i.oracleId).sort()).toEqual(["a", "b", "c"]);
+    expect(got.candidateCount).toBe(3);
   });
 
   // The exclusion line's whole claim is that the figures it prints add up. Every
