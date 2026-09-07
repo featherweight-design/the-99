@@ -7,6 +7,7 @@ import {
   scoreCommander,
   type PoolCard,
 } from "./score";
+import { ROLE_TARGETS } from "./roles";
 
 const card = (over: Partial<PoolCard> & { oracleId?: string; name?: string }): PoolCard => ({
   oracleId: over.oracleId ?? randomUUID(),
@@ -178,14 +179,25 @@ describe("scoreCommander", () => {
   });
 
   // The bug this fix exists for: a commander EDHREC does not track could print the
-  // highest figure the UI can show. A perfect pool and perfect roles now reach 40.
-  it("caps a commander with no synergy data at 40 even on a pool that maxes both components", () => {
-    const big = Array.from({ length: 400 }, (_, i) =>
-      card({ ...collection[i % collection.length], oracleId: `filler-${i}` }),
-    );
-    const s = scoreCommander({ commander, collection: big, edhrecTopCards: null, inclusionByName: null });
+  // highest figure the UI can show. The pool below is built to hit every
+  // ROLE_TARGETS figure exactly and to reach the 200 cards poolFactor saturates
+  // at, so the pre-fix formula produced 100/100 and the post-fix one produces 40.
+  it("caps a commander with no synergy data at 40 on a pool that maxes both components", () => {
+    const role = (text: string, n: number) =>
+      Array.from({ length: n }, () => card({ oracleText: text }));
+    const maxed: PoolCard[] = [
+      ...role("{t}: add {g}.", ROLE_TARGETS.ramp),
+      ...role("Draw a card.", ROLE_TARGETS.draw),
+      ...role("Destroy target creature.", ROLE_TARGETS.removal),
+      ...role("Destroy all creatures.", ROLE_TARGETS.wipes),
+    ];
+    while (maxed.length < 200) maxed.push(card({}));
+
+    const s = scoreCommander({ commander, collection: maxed, edhrecTopCards: null, inclusionByName: null });
     expect(s.fitSynergy).toBeNull();
-    expect(s.score).toBeLessThanOrEqual(40);
+    expect(s.fitPool).toBe(15);
+    expect(s.fitRoles).toBe(25);
+    expect(s.score).toBe(40);
   });
 
   // The ranking consequence the issue's acceptance criteria asks for.

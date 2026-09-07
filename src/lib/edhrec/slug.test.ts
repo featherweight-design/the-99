@@ -23,9 +23,11 @@ describe("commanderSlug", () => {
     expect(commanderSlug("U.S.S. Enterprise-D, Galaxy-Class")).toBe("uss-enterprise-d-galaxy-class");
   });
 
-  // The other half of the rule: a period already sitting next to a space must not
-  // move, or the fix would trade ten broken slugs for a different set of them.
-  it("leaves a title's period alone, because the space already earns the hyphen", () => {
+  // The other half of the rule. Every period is dropped, titles included, but a
+  // period followed by a space is output-equivalent either way: the space earns
+  // the hyphen the period would have. Without this control the fix could trade
+  // ten broken slugs for a different set of them.
+  it("leaves a title's slug unchanged, because the following space earns the hyphen", () => {
     expect(commanderSlug("Mr. Orfeo, the Boulder")).toBe("mr-orfeo-the-boulder");
     expect(commanderSlug("Mr. House, President and CEO")).toBe("mr-house-president-and-ceo");
   });
