@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { planeCopy } from "../../lib/copy/commanders-plane";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
 import { DiscoveryRow } from "./discovery-row";
+
+const name = "Lathril, Blade of the Elves";
 
 const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
   oracleId: "o1",
   slug: "lathril",
-  name: "Lathril, Blade of the Elves",
+  name,
   colorIdentity: ["B", "G"],
   imageUri: null,
   rank: 1,
@@ -94,6 +97,47 @@ describe("DiscoveryRow", () => {
     const shared = discoveryCopy.justify.sharedList(["tokens", "aristocrats"], 0);
     expect(container.textContent).toContain(discoveryCopy.justify.distanceNear("Meren", shared));
     expect(container.textContent).not.toContain(". Closest");
+  });
+
+  // ── The archetype overflow (#343) ──────────────────────────────────────
+  // The count clause IS the trigger, so a row with nothing hidden must be
+  // byte-identical to what shipped: no glyph, no chevron, no control.
+  it("leaves the sentence alone when every archetype is already named", () => {
+    row({ unplayedLabels: ["elves", "tokens", "aristocrats"], unplayedCount: 3 }, "new");
+    expect(screen.queryByRole("button", { name: /archetypes/ })).toBeNull();
+    expect(screen.getAllByText("elves · tokens · aristocrats").length).toBeGreaterThan(0);
+  });
+
+  it("grows the sentence in place, and shrinks it back", () => {
+    const { container } = row({}, "new");
+    expect(container.textContent).toContain(
+      discoveryCopy.justify.tagList(["elves", "tokens", "aristocrats"], 1),
+    );
+
+    const open = () => screen.getAllByRole("button", { name: planeCopy.overflow.moreAria(4, name) });
+    fireEvent.click(open()[0]);
+    expect(screen.getAllByText("elves · tokens · aristocrats · counters").length).toBeGreaterThan(0);
+
+    // Both widths render the sentence, and one state drives both: a phone and a
+    // desktop reading of the same row cannot disagree about what it is showing.
+    const close = screen.getAllByRole("button", { name: planeCopy.overflow.fewerAria(name) });
+    expect(close).toHaveLength(2);
+    expect(close.every((b) => b.getAttribute("aria-expanded") === "true")).toBe(true);
+
+    fireEvent.click(close[0]);
+    expect(screen.queryByText("elves · tokens · aristocrats · counters")).toBeNull();
+    expect(open()).toHaveLength(2);
+  });
+
+  // The prose around it is `aria-hidden`, and a control inside an aria-hidden
+  // subtree is one no screen reader can find.
+  it("keeps the trigger in the accessibility tree, and above the row's link", () => {
+    row({}, "new");
+    const trigger = screen.getAllByRole("button", {
+      name: planeCopy.overflow.moreAria(4, name),
+    })[0];
+    expect(trigger.closest("[aria-hidden='true']")).toBeNull();
+    expect(trigger.className).toContain("z-[2]");
   });
 
   it("leads the row's accessible name with ownership, before any figure", () => {

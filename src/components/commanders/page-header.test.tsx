@@ -61,6 +61,35 @@ describe("PageHeader subtitle", () => {
   });
 });
 
+// #335: the subtitle's length changes when the scope is clicked, so a control
+// sharing its row moved to the row below the click that moved it. Two rows fix
+// the position by taking the sentence off the control's row entirely.
+describe("PageHeader rows", () => {
+  it("takes the subtitle off the scope control's row", () => {
+    const { container } = render(
+      <PageHeader
+        uniqueCardsRead={2805}
+        scope="play"
+        onScopeChange={() => {}}
+        sort="fit"
+        candidateCount={3334}
+      />,
+    );
+    const subtitle = container.querySelector("p");
+    const group = screen.getByRole("radiogroup");
+    // Full width is what puts it on its own row under `flex-wrap`; the ordering
+    // is what keeps it readable before the control at 375px, where the stacked
+    // column has always had this layout.
+    expect(subtitle?.className).toContain("w-full");
+    expect(subtitle?.className).toContain("sm:order-3");
+    expect(group.closest("div.sm\\:order-2")).not.toBeNull();
+    // The title shares the control's row rather than a wrapper of its own.
+    expect(screen.getByRole("heading", { level: 1 }).parentElement).toBe(
+      subtitle?.parentElement,
+    );
+  });
+});
+
 describe("PageHeader scope control", () => {
   it("is absent without a scope, so the empty pages are unchanged", () => {
     render(<PageHeader uniqueCardsRead={1240} />);

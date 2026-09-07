@@ -91,33 +91,40 @@ export function PageHeader(props: PageHeaderProps) {
   return (
     <div
       className={[
-        "flex flex-col gap-3 border-b border-[color:var(--border)]",
+        "flex flex-wrap items-center border-b border-[color:var(--border)]",
         "px-[18px] pt-5 pb-3",
-        "sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6",
+        "sm:justify-between sm:gap-x-6",
         "sm:border-b-0 sm:px-[34px] sm:pt-7 sm:pb-0",
       ].join(" ")}
     >
-      <div>
-        <h1
-          className="font-display font-bold m-0 text-[22px] sm:text-[30px]"
-          style={{ color: "var(--fg)" }}
-        >
-          Commanders
-        </h1>
-        <p
-          className="font-mono m-0 mt-[2px] text-[11px] sm:mt-1 sm:text-[12px]"
-          style={{ color: "var(--fg-faint)" }}
-        >
-          {subtitle}
-        </p>
-      </div>
+      <h1
+        className="font-display font-bold m-0 order-1 w-full text-[22px] sm:w-auto sm:text-[30px]"
+        style={{ color: "var(--fg)" }}
+      >
+        Commanders
+      </h1>
+
+      {/* The subtitle is its own row rather than a sibling of the title, so the
+          scope control's position stops being a function of a sentence's length
+          (#335): the subtitle's length changes on click, and the control used to
+          move to the row below the click that changed it. Ordered around the
+          control at desktop and read before it at 375px, where the stacked
+          column already had this layout. */}
+      <p
+        className="font-mono m-0 mt-[2px] order-2 w-full text-[11px] sm:order-3 sm:mt-1 sm:text-[12px]"
+        style={{ color: "var(--fg-faint)" }}
+      >
+        {subtitle}
+      </p>
 
       {props.scope !== undefined ? (
-        <ScopeControl
-          scope={props.scope}
-          pending={props.scopePending}
-          onChange={props.onScopeChange}
-        />
+        <div className="order-3 mt-3 w-full sm:order-2 sm:mt-0 sm:w-auto">
+          <ScopeControl
+            scope={props.scope}
+            pending={props.scopePending}
+            onChange={props.onScopeChange}
+          />
+        </div>
       ) : null}
     </div>
   );
