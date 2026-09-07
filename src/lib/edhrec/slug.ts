@@ -12,6 +12,16 @@ export function commanderSlug(name: string): string {
     // initialisms move: a period followed by a space ("Mr. Orfeo, the Boulder")
     // already collapses into the one hyphen the space earns, with or without this
     // step.
+    //
+    // This is the app's own `/commanders/<slug>` URL as well, so nine commanders in
+    // the catalog change address — `m-o-d-o-k` becomes `modok`, `...-of-s-h-i-e-l-d`
+    // becomes `...-of-shield`. No legacy alias is kept for them, deliberately. Those
+    // nine are exactly the pages that were serving a commander EDHREC had refused, so
+    // an old bookmark points at the reading this change exists to correct; and the
+    // scheme never promised durable URLs anyway — dedup suffixes follow rank order,
+    // which is why `actions.ts` revalidates `/commanders/[slug]` after every recompute.
+    // A second slug rule kept alive forever to redirect nine URLs costs more than it
+    // returns.
     .replace(/\./g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");

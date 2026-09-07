@@ -1,11 +1,20 @@
 -- Data only, no schema change.
 --
--- #333 changed the fit formula: a commander with no EDHREC synergy data is no longer
--- rescaled from its 40-point maximum back up to 100. Rows written by the old formula
--- carry the inflated score, and nothing marks them stale — `getRankedList` in
--- src/lib/recs/ranked-list.ts serves the rows `loadScores` returns whenever any exist
--- and none are degraded, so an untracked commander would keep printing 100/100 for
--- every collection already scored. Emptying the cache is what makes the fix reach them.
+-- #333 left two columns of this table stale, and nothing marks either one.
+--
+-- `score`: the fit formula changed. A commander with no EDHREC synergy data is no longer
+-- rescaled from its 40-point maximum back up to 100, so rows written by the old formula
+-- carry the inflated figure. `getRankedList` in src/lib/recs/ranked-list.ts serves the
+-- rows `loadScores` returns whenever any exist and none are degraded, so a commander
+-- with no synergy read would keep printing 100/100 for every collection already scored.
+--
+-- `slug`: `commanderSlug` now drops the periods in an initialism rather than separating
+-- them, which is what makes EDHREC answer for the nine affected commanders instead of
+-- returning a 403. Persisted rows hold the old `...-a-i-m` form, and `resolveCommanderSlug`
+-- matches the store before deriving anything, so those rows would keep serving the slug
+-- whose lookup fails.
+--
+-- Emptying the cache is what makes both fixes reach collections already scored.
 --
 -- Safe to empty: `commander_scores` is derived data. `getRankedList` recomputes and
 -- re-persists on a miss, and `replaceCollection` already deletes the whole table
