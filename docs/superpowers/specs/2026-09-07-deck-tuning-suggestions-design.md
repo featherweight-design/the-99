@@ -58,7 +58,8 @@ also, conveniently, the fastest possible response: when nothing has changed ther
   deck, so the verdict and the edit are one action throughout this document — `accepted` never means
   "approved but not yet applied".
 - A **Tuning** surface on the deck page, plus changes to the #9 log form and history row.
-- An offline evaluation harness (`pnpm check:tuning`) over fixture cases.
+- An evaluation harness (`pnpm check:tuning`) over fixture cases. It calls the live API and is run
+  deliberately, never in CI on every commit — see §9.
 
 **Out of scope:**
 
@@ -185,10 +186,15 @@ generation exists as a fact the moment it starts. The call then happens and the 
 its items or `failed` with a class. Because the record is durable from the first moment, leaving the page
 and coming back shows a run in progress and then its result. Nothing depends on the client staying put.
 
-**Interrupted runs are resolved on read.** If the function dies mid-call, its row would sit `pending`
+**Interrupted runs are reaped on read.** If the function dies mid-call, its row would sit `pending`
 forever and the partial unique index would block the deck from ever generating again. So a pending run older
-than a few minutes is *read* as interrupted, and the button unlocks. This is a rule in the read path, not a
-scheduled job — no cron, no queue, nothing new to operate.
+than a few minutes is treated as interrupted, and the read path **writes it to `failed` with the
+`interrupted` class** rather than merely displaying it that way. The distinction matters: the index keys on
+the stored `status`, so a row that is only *read* as dead still blocks the deck. Reaping is idempotent and
+conditional — an `update ... where status = 'pending' and created_at < cutoff` — so a run that finishes just
+as the reaper fires loses the race harmlessly. This is a rule in the read path, not a scheduled job: no cron,
+no queue, nothing new to operate. The cost is that a deck nobody looks at keeps its dead row until someone
+does, which is exactly when it matters and not before.
 
 **Timeouts are budgeted so a failure is always recorded.** The API call carries a hard timeout comfortably
 shorter than the serverless function's own limit, leaving room to write the failure row. Being killed
@@ -202,6 +208,7 @@ mid-flight is the only case that produces an orphan, which is exactly why the re
 | `timeout` | The call exceeded its budget | Recorded; the player may retry |
 | `malformed` | The response did not satisfy the schema | One bounded automatic retry, then recorded |
 | `ungrounded` | Too little survived validation to be worth showing | Recorded; a prompt problem, not a user problem |
+| `interrupted` | The function died mid-call and never wrote its own outcome | Written by the reaper above, not by the run itself; the player may retry |
 
 The panel says which of these happened. "Something went wrong" is the message that makes a player stop
 trusting a feature.
@@ -260,7 +267,7 @@ that nine games cannot support.
 Two layers, because they answer different questions.
 
 **Deterministic validators are unit-tested with no API at all.** Fingerprint stability, evidence-pack
-assembly, catalog resolution, colour-identity checks, the citation check, and the interrupted-run read rule
+assembly, catalog resolution, colour-identity checks, the citation check, and the interrupted-run reaper
 are all pure logic and are tested as such. This is the majority of the code and none of it needs a key.
 
 **Advice quality is tested by `pnpm check:tuning`.** Fixture cases — a deck, a game log with notes, an
@@ -301,9 +308,10 @@ Mobile and desktop parity throughout, per the repo's standing rule.
 ## 11. Testing
 
 - Pure unit tests for the evidence pack, the fingerprint, all five validation rules, and the interrupted-run
-  read rule.
+  reaper's cutoff.
 - Action tests for the durability contract specifically: a pending row exists before the call, a second
-  concurrent generation is refused, a failed run leaves the gate open, a successful one closes it.
+  concurrent generation is refused, a failed run leaves the gate open, a successful one closes it, and a
+  stale pending row is written to `interrupted` on read rather than merely displayed that way.
 - Component tests for every state in §10, including each failure class.
 - `pnpm check:tuning` for advice quality, run deliberately rather than on every commit.
 
