@@ -33,8 +33,9 @@ export function readySlice<T extends { rankScore: number }>(items: readonly T[])
   //
   // Ties keep the caller's order, because Array.prototype.sort is stable and
   // this comparator returns 0 for them. That is what makes the shown pair
-  // deterministic without duplicating compareRanked's oracleId tie-break here:
-  // the ranked list arrives already broken on it.
+  // deterministic without duplicating the oracleId tie-break from
+  // byScoreThenOracleId (recommend.ts:101) here: the ranked list arrives
+  // already broken on it.
   const set = [...items].sort((a, b) => b.rankScore - a.rankScore).slice(0, READY_COUNT);
   return {
     shown: set.slice(0, READY_SHOWN),
