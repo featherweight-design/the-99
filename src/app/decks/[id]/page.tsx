@@ -110,12 +110,12 @@ export default async function DeckBuilderPage({
       games={games}
       gameSummary={gameSummary}
       // Left in the URL rather than swept with a router.replace. Stripping it
-      // would clear `arrivedFromImport` on the very next render, un-suppressing
-      // the 99/99 reveal on a deck the player did not build — the one thing the
-      // suppression exists to prevent. The costs of leaving it are small and
-      // bounded: a refresh re-renders the strip, but the dismissal is persisted
-      // per deck so a dismissed strip stays dismissed; and a bookmarked URL can
-      // only be reopened by the deck's owner, who sees one dismissible line.
+      // would clear `arrivedFromImport` on the very next render, taking the
+      // arrival strip away in the same frame it appeared. The costs of leaving
+      // it are small and bounded: a refresh re-renders the strip, but the
+      // dismissal is persisted per deck so a dismissed strip stays dismissed;
+      // and a bookmarked URL can only be reopened by the deck's owner, who sees
+      // one dismissible line.
       arrivedFromImport={arrivedFromImport(query[IMPORTED_PARAM])}
       // Left in the URL for the same reason. Its strip is dismissible too, but
       // the dismissal is component state rather than storage: an update happens

@@ -87,7 +87,7 @@ Conditional-render rules that cut across states:
 | Simultaneously expanded rows | exactly one | README:238; Canvas:907 |
 | Desktop group grid while a row is expanded | drops from 2 columns to 1 | README:237–238; Canvas:907 |
 | Arrival strip | dismissible; dismissal persists per deck; gone on next visit either way | README:311 |
-| `shouldCelebrate` on a clean 99-line import | **suppressed** when the first render follows an import (ruled 2026-08-04) | READINESS §Closed at the audit 1 |
+| `shouldCelebrate` on a clean 99-line import | ~~**suppressed** when the first render follows an import (ruled 2026-08-04)~~ — **moot**: the completion reveal and `shouldCelebrate` were removed in #362, so there is nothing left to suppress | READINESS §Closed at the audit 1 |
 | Deck with unresolved rows on `/decks` | carries a count **badge on its `DeckCard`**; no new `statusPill` value | READINESS §Two product calls |
 | `/decks/import` reachability | gated by **absence of a link** (PR 4 unlinked, PR 6 linked) | READINESS §Build order |
 
@@ -475,7 +475,7 @@ Full-width band **below the spine** (README:311).
 | figure | `99` mono 600 14px `--fg` + `/ 99` mono 14px `--fg-faint` | `99` mono 600 20px + `/ 99` mono 13px | Canvas:602, 633 |
 | progress bar | width 100%, height 5px, radius 999px, track `--elevated`, fill **`--success`** at 100% | width 170px, height 6px, fill `--success` | Canvas:603, 634 |
 | owned/buy line | — | mono 10px `--fg-faint` — `73 owned · 26 to buy` | Canvas:635 |
-| kaiju completion reveal | **suppressed** on the first render after an import | same | READINESS §Closed 1 |
+| kaiju completion reveal | **removed in #362** — it no longer renders after any import, so the suppression rule is moot | same | READINESS §Closed 1 |
 
 ---
 

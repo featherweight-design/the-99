@@ -5,10 +5,9 @@
 // stays straight; the expressive moments are marked.
 //
 // This block ADDS ONLY. It edits nothing and duplicates nothing:
-//   decksBuilderCopy.tabs.*          Decklist / Consider — untouched; 'Games' is a third entry
-//   decksBuilderCopy.roleCounter.*   the role strip's own strings — not reused, not changed
-//   REJECTION_MESSAGES               the deck-add rejections — untouched. The game
-//                                    log's own refusals are defined here, below
+//   addPanelCopy.tabs.*   Decklist / Consider — untouched; 'Games' is a third entry
+//   REJECTION_MESSAGES    the deck-add rejections — untouched. The game
+//                         log's own refusals are defined here, below
 //
 // One rule governs this whole file, and it is checkable: NO STRING HERE PRINTS A
 // PERCENTAGE, AND NO STRING HERE PRINTS `net`. Every count carries its own

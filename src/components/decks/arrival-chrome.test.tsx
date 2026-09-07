@@ -7,7 +7,6 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
 import { arrivalDismissKey } from "../../lib/decks/arrival";
-import { celebrationKey } from "../../lib/decks/celebration";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 
 vi.mock("../../app/decks/actions", () => ({
@@ -192,35 +191,6 @@ describe("Arrival strip (state 13)", () => {
     });
     expect(screen.queryByText(copy.arrival.clean("99"))).not.toBeInTheDocument();
     expect(desktopSentence(copy.unresolved.banner(2))).toBeInTheDocument();
-  });
-});
-
-describe("Celebration provenance", () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
-  const HEADING = "Ninety-nine.";
-
-  it("suppresses the 99/99 reveal on a deck that arrived from an import", async () => {
-    await act(async () => {
-      renderBuilder(makeDeck({ id: "deck-imported" }), true);
-    });
-    expect(screen.queryByRole("heading", { name: HEADING })).not.toBeInTheDocument();
-  });
-
-  // The suppression must not burn the flag: the reveal is owed to the player
-  // the first time they finish a deck themselves, and a deck they imported at
-  // 99 is one card away from being one they edited.
-  it("leaves the one-shot flag unburnt, so a later visit still celebrates", async () => {
-    const first = await act(async () => renderBuilder(makeDeck({ id: "deck-imported" }), true));
-    expect(localStorage.getItem(celebrationKey("deck-imported"))).toBeNull();
-    first.unmount();
-
-    await act(async () => {
-      renderBuilder(makeDeck({ id: "deck-imported" }), false);
-    });
-    expect(screen.getByRole("heading", { name: HEADING })).toBeInTheDocument();
   });
 });
 

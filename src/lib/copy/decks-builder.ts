@@ -7,22 +7,12 @@
 // (mock, Decks deltas). The export dialog's own chrome does draw copy from
 // here: see `overCopy.exportNote` and `exportLinkOutCopy`.
 
-/** The mock names the commander in the short register ("Korvold has a full
- *  deck"), not the full "Korvold, Fae-Cursed King" shown in the builder
- *  header. Everything up to the first comma. */
+/** The mock names the commander in the short register ("Korvold"), not the full
+ *  "Korvold, Fae-Cursed King" shown in the builder header. Everything up to the
+ *  first comma. */
 export function shortCommanderName(name: string): string {
   return name.split(",")[0].trim();
 }
-
-export const decksBuilderCopy = {
-  completion: {
-    heading: "Ninety-nine.",
-    caption: (commander: string) =>
-      `${commander} has a full deck. Sleeve it up before you change your mind.`,
-    primaryCta: "Export decklist",
-    secondaryCta: "Back to the deck",
-  },
-} as const;
 
 // Add panel overhaul (#158) — transcribed from
 // design/design_handoff_the99_add_panel/add-panel · copy strings.ts.
@@ -252,9 +242,9 @@ export const addPanelCopy = {
   },
 
   // ── Empty builder ─────────────────────────────────────────────────────
-  // Replaces decksBuilderCopy.builderEmpty, which is deleted rather than kept
-  // alongside — two copies of the same three strings is the duplicate-surface
-  // defect this overhaul exists to stop shipping.
+  // Replaces the builder's earlier empty-state strings, which were deleted
+  // rather than kept alongside — two copies of the same three strings is the
+  // duplicate-surface defect this overhaul exists to stop shipping.
   //
   // 1. `cta: "Open suggestions"` is DELETED. Its only job was opening the
   //    bottom sheet. In the finished shape the Consider tab sits 40px above the
