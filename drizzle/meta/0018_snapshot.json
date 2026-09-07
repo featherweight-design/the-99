@@ -292,7 +292,7 @@
           "type": "real",
           "primaryKey": false,
           "notNull": true,
-          "default": 0
+          "default": -1
         },
         "fit_pool": {
           "name": "fit_pool",

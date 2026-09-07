@@ -18,8 +18,13 @@
 -- inside the Vercel build, `getRankedList` re-persists on a miss, and nothing here holds a lock
 -- that blocks writes for that window. The default stays rather than being dropped here for the
 -- same reason: the old deployment keeps inserting without `rank_score` until its replacement is
--- live, and a NOT NULL column with no default would reject every one of those writes. It is
--- never read by the new code, which writes the column on every insert.
+-- live, and a NOT NULL column with no default would reject every one of those writes.
+--
+-- It is -1 rather than 0 so those rows are recognisable. `rank_score` is `round(100 * score /
+-- measurable_total)` over a non-negative score, so the new code cannot write a negative one, and
+-- a row carrying -1 is exactly a row written by a deployment that did not know the column. That
+-- matters because such a row is neither empty nor degraded, so `loadScores` would otherwise serve
+-- the whole misordered list indefinitely; it reads the sentinel as a miss instead.
 --
 -- Safe to empty, on the same grounds as 0016: `commander_scores` is derived data.
 -- `getRankedList` recomputes and re-persists on a miss, and `replaceCollection` already
@@ -30,6 +35,6 @@
 -- and this runs inside the production Vercel build while the deployed app is still
 -- serving reads off this table.
 DROP INDEX "commander_scores_rank_idx";--> statement-breakpoint
-ALTER TABLE "commander_scores" ADD COLUMN "rank_score" real DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "commander_scores" ADD COLUMN "rank_score" real DEFAULT -1 NOT NULL;--> statement-breakpoint
 CREATE INDEX "commander_scores_rank_idx" ON "commander_scores" USING btree ("user_id","rank_score" DESC NULLS LAST,"oracle_id");--> statement-breakpoint
 DELETE FROM "commander_scores";

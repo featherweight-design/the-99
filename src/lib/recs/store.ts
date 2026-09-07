@@ -167,6 +167,7 @@ export async function loadScores(
         oracleId: commanderScores.oracleId,
         slug: commanderScores.slug,
         score: commanderScores.score,
+        rankScore: commanderScores.rankScore,
         fitPool: commanderScores.fitPool,
         fitRoles: commanderScores.fitRoles,
         fitSynergy: commanderScores.fitSynergy,
@@ -184,6 +185,18 @@ export async function loadScores(
       .innerJoin(cards, eq(commanderScores.oracleId, cards.oracleId))
       .where(eq(commanderScores.userId, userId))
       .orderBy(desc(commanderScores.rankScore), commanderScores.oracleId);
+
+    // A row can only carry the sentinel if it was written between 0017 adding the column
+    // and the deployment that knows about it going live. Such a row is neither empty nor
+    // degraded — the two states `getRankedList` recomputes on — so serving it would pin
+    // the whole list in an order nothing computed, until something unrelated happened to
+    // invalidate it. Reporting no rows is a miss, and the recompute rewrites every one.
+    //
+    // One sentinel condemns the set rather than being filtered out of it, because
+    // `persistScores` writes a user's rows in a single transaction: a set with one such
+    // row was written entirely by that deployment, and the rest of it is no more current
+    // than the row that gives it away.
+    if (rows.some((r) => r.rankScore < 0)) return { items: [], degradedOracleIds: [] };
 
     return {
       items: rows.map(rowToListItem),

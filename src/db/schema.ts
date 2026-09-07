@@ -261,6 +261,14 @@ export const edhrecCache = pgTable("edhrec_cache", {
 /** Mirrors the roleCounts shape produced by src/lib/recs/score.ts. */
 export type RoleCounts = Record<"ramp" | "draw" | "removal" | "wipes", number>;
 
+/**
+ * The `rank_score` a row carries when nothing wrote one. See the column below.
+ *
+ * Migration 0017 hardcodes this value; changing it here alone would leave the two
+ * disagreeing and the sentinel unrecognisable.
+ */
+export const RANK_SCORE_UNWRITTEN = -1;
+
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
@@ -274,8 +282,10 @@ export const commanderScores = pgTable("commander_scores", {
   //
   // The default exists for the deployment window alone: 0017 adds this column while the
   // previous deployment is still inserting rows without it. Every insert from this schema
-  // writes the column, so the default is never the value that lands.
-  rankScore: real("rank_score").notNull().default(0),
+  // writes the column, so the default is never the value that lands — which is what makes
+  // it usable as a sentinel. It is negative because a computed rank score cannot be, so
+  // `loadScores` can tell a row this code wrote from one it did not.
+  rankScore: real("rank_score").notNull().default(RANK_SCORE_UNWRITTEN),
   fitPool: real("fit_pool").notNull(),
   fitRoles: real("fit_roles").notNull(),
   // Null iff synergyState !== "ok".
