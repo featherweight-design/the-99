@@ -95,12 +95,19 @@ function readLegends(page) {
       });
     }
 
-    // Every dot a chip or a row drew, deduplicated by paint, so the legend can
-    // be checked against the thing it explains. Border travels with fill: the
-    // hollow dot is transparent, so its border is the only paint it has, and a
-    // fill-only record could not tell a hollow dot from any other.
-    for (const dot of document.querySelectorAll("a span[aria-hidden], button span[aria-hidden]")) {
+    // Every round childless dot on the page bar the ones inside a legend,
+    // deduplicated by paint, so the legend can be checked against the thing it
+    // explains. Border travels with fill: the hollow dot is transparent, so its
+    // border is the only paint it has.
+    //
+    // Scoped to the whole page rather than to links and buttons, because the
+    // synergy row draws its dot as a direct child of the <li> — and those are
+    // the only rows that draw the hollow state. A legend pip must not count as
+    // its own match, hence the <p>.
+    for (const dot of document.querySelectorAll("span[aria-hidden]")) {
       if (dot.children.length > 0) continue;
+      if (getComputedStyle(dot).borderRadius !== "50%") continue;
+      if (dot.closest("p")) continue;
       const fill = paint(dot);
       const border = getComputedStyle(dot).borderColor;
       if (!out.chipDots.some((d) => d.fill === fill && d.border === border)) {
