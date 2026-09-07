@@ -5,6 +5,7 @@ import type { SynergyState } from "../../lib/recs/synergy-state";
 import type { RankedList } from "../../lib/recs/ranked-list";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { readCommanderProse } from "../../lib/prose/read";
+import { dailyPick } from "../../lib/recs/daily-pick";
 import { HeroCommander } from "./hero-commander";
 
 vi.mock("../../lib/recs/ranked-list", () => ({
@@ -60,6 +61,35 @@ beforeEach(() => {
 });
 
 describe("HeroCommander", () => {
+  // The rotation is `dailyPick`'s and tested there. What this covers is only that the
+  // hero is wired to it — the card shipped reading `items[0]`, and a regression to that
+  // is invisible in every other test here, all of which pass a one-item list.
+  it("shows the day's pick rather than the top of the ranking", async () => {
+    vi.useFakeTimers();
+    try {
+      const now = new Date("2026-09-10T09:00:00Z");
+      vi.setSystemTime(now);
+      const ranked = ["one", "two", "three", "four", "five"].map((n) =>
+        item({ oracleId: `oracle-${n}`, slug: n, name: `Commander ${n}` }),
+      );
+      // Asked of `dailyPick` rather than hardcoded, so renaming or reordering the
+      // candidates does not break a test whose subject is the wiring. The guard below
+      // is what keeps that from being circular: on this date the pick is not rank 1, so
+      // a hero that went back to `items[0]` still fails here.
+      //
+      // It does not survive a change to the hash. If one lands and this date starts
+      // resolving to rank 1, the guard fails and the fix is to pick another date — not
+      // to drop the guard, which is the only thing making the assertion mean anything.
+      const expected = dailyPick(ranked, "user_1", now);
+      expect(expected).not.toBe(ranked[0]);
+      await renderHero(ranked);
+      expect(screen.getByRole("heading", { name: expected!.name })).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: ranked[0].name })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("links the whole card to the commander's detail page", async () => {
     await renderHero([item()]);
     const link = screen.getByRole("link", { name: /Krenko, Mob Boss/ });

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cssUrl } from "../../lib/collection/browse";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { readCommanderProse } from "../../lib/prose/read";
+import { dailyPick } from "../../lib/recs/daily-pick";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { completeness, COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
 import type { SynergyState } from "../../lib/recs/synergy-state";
@@ -114,7 +115,9 @@ export function HeroCommanderSkeleton() {
  */
 export async function HeroCommander({ userId }: { userId: string }) {
   const { items, degraded } = await getRankedList(userId);
-  const top = items[0];
+  // Not `items[0]`. The hero turns over daily inside the top of the ranking, so the
+  // one surface meant to introduce the collection is not the same card forever (#345).
+  const top = dailyPick(items, userId, new Date());
 
   if (!top) {
     // No candidates — dedicated empty surface lives at /commanders.
