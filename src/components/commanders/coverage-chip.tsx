@@ -20,7 +20,7 @@ import type { RoleCard } from "../../lib/recs/score";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { AvailabilityDot, availabilityState } from "./availability-dot";
+import { AvailabilityDot, availabilityDotState } from "./availability-dot";
 import type { JSX } from "react";
 
 export const COVERAGE_CAP = { desktop: 12, phone: 6 } as const;
@@ -100,7 +100,7 @@ export function CoverageChip({
       style={{ gap: 8, padding: hasFigure ? "0 4px 0 10px" : "0 10px" }}
     >
       {/* Dot — 6px, --success when free, --avail-hard-fg when already in a deck. */}
-      <AvailabilityDot state={availabilityState(card)} size={6} />
+      <AvailabilityDot state={availabilityDotState(card)} size={6} />
       {/* Name */}
       <span className="font-mono text-[11.5px] text-fg-body group-hover:text-fg">
         {card.name}
@@ -155,7 +155,7 @@ export function CoverageRow({
       style={{ minHeight: "44px", padding: "0 12px", gap: 9 }}
     >
       {/* Dot — 7px, --success when free, --avail-hard-fg when already in a deck. */}
-      <AvailabilityDot state={availabilityState(card)} size={7} />
+      <AvailabilityDot state={availabilityDotState(card)} size={7} />
       {/* Name — ellipsed. `min-w-0` is load-bearing beside `flex-1`: a flex item's
           default min-width is its content, so without it the span refuses to
           shrink and a long name overflows the row instead of ellipsing. */}

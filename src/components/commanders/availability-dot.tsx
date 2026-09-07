@@ -10,6 +10,9 @@
 // Distinct from `ui/ownership-dot`, which knows two states and is sized by its
 // caller. This one carries the third state the commander panels turn on —
 // owned but already committed to a deck — and so cannot be that component.
+// Distinct again from `lib/decks/availability`, whose `AvailabilityState` is a
+// deck's four-way headroom and shares the member name `free` with this one:
+// hence the `Dot` in these names, so a wrong auto-import cannot typecheck.
 
 import type { JSX } from "react";
 
@@ -20,14 +23,14 @@ import type { JSX } from "react";
  * anything added beside it. `unowned` is hollow: hollow is the absence of a
  * card, and a card you do not own cannot sit in a deck.
  */
-export type AvailabilityState = "free" | "committed" | "unowned";
+export type AvailabilityDotState = "free" | "committed" | "unowned";
 
-export function availabilityState(card: { owned?: boolean; committedTo: string | null }): AvailabilityState {
+export function availabilityDotState(card: { owned?: boolean; committedTo: string | null }): AvailabilityDotState {
   if (card.owned === false) return "unowned";
   return card.committedTo === null ? "free" : "committed";
 }
 
-export function AvailabilityDot({ state, size }: { state: AvailabilityState; size: number }): JSX.Element {
+export function AvailabilityDot({ state, size }: { state: AvailabilityDotState; size: number }): JSX.Element {
   return (
     <span
       aria-hidden="true"
@@ -54,7 +57,7 @@ export function AvailabilityDot({ state, size }: { state: AvailabilityState; siz
  * visually low against 10px mono, and given its own margin so the sentence's
  * word spacing does not have to carry it.
  */
-export function LegendPip({ state }: { state: AvailabilityState }): JSX.Element {
+export function LegendPip({ state }: { state: AvailabilityDotState }): JSX.Element {
   return (
     <span
       aria-hidden="true"
