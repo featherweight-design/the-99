@@ -59,9 +59,10 @@ export function Dashboard({
             </span>
           </h1>
           {/* §Stats sub-line:
-              Mobile:  mono 11px muted, mt 6px — "{N} commanders buildable · {M} decks"
-              Desktop: mono 13px muted, mt 8px — "{total} cards · {unique} unique · {N} commanders buildable · {M} decks"
-              (commander count not available here; omit and show card/unique/decks per available data) */}
+              Mobile:  mono 11px muted, mt 6px — "{total} cards · {N} commanders · {M} decks"
+              Desktop: mono 13px muted, mt 8px — "{total} cards · {unique} unique · {N} commanders · {M} decks"
+              The table writes the stat as "commanders buildable"; it ships as
+              "commanders", for the reason `commander-count.tsx` sets out. */}
           <p
             className="text-[11px] md:text-[13px] mt-[6px] md:mt-[8px]"
             style={{
