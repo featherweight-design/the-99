@@ -17,7 +17,7 @@ import type { CardFacet } from "../../lib/cards/facet";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { facetCounts } from "../../lib/commanders/synergy-cards";
 import { explainedCopy } from "../../lib/copy/commander-explained";
-import { LegendPip } from "./availability-dot";
+import { LegendPip } from "../ui/ownership-dot";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { FacetStrip } from "./facet-strip";
 import { SynergyRow } from "./synergy-row";
