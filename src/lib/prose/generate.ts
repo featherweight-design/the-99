@@ -34,9 +34,13 @@ export type GenerateResult = {
   /** Current rows whose stored hash still matches their inputs. */
   fresh: number;
   suppressed: number;
-  /** Every attempt produced a string the contract rejected. */
+  /**
+   * At least one attempt produced a string and none of them were accepted. A commander whose
+   * attempts mixed rejections with failed calls counts here rather than under `failed`: a
+   * string came back and the contract turned it down, which is the fixable half.
+   */
   rejected: number;
-  /** The model call failed outright. */
+  /** No attempt produced a string at all — every call failed or returned nothing. */
   failed: number;
   /**
    * Rejected attempts by the rule that rejected them, counted per attempt rather than per
