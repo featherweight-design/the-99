@@ -145,6 +145,7 @@ async function main() {
   if (!args.user) {
     throw new Error("--user <clerkId> is required (a deck's games belong to exactly one user)");
   }
+  const userId = args.user;
 
   const { db } = await import("../src/db");
   const { deckGames, deckGameAxes, decks } = await import("../src/db/schema");
@@ -160,8 +161,8 @@ async function main() {
     // the plan is exactly the set of rows that run would remove. A game whose
     // user_id disagrees with its deck's owner is corrupt data this script leaves
     // alone rather than quietly reassigns.
-    .leftJoin(deckGames, and(eq(deckGames.deckId, decks.id), eq(deckGames.userId, args.user)))
-    .where(eq(decks.userId, args.user))
+    .leftJoin(deckGames, and(eq(deckGames.deckId, decks.id), eq(deckGames.userId, userId)))
+    .where(eq(decks.userId, userId))
     .groupBy(decks.id, decks.name);
 
   // Nothing stops a user owning two decks with the same name, and a Map would
@@ -178,7 +179,7 @@ async function main() {
   }
 
   console.log(`database: ${databaseHost()}`);
-  console.log(`user:     ${args.user} (${owned.length} decks)`);
+  console.log(`user:     ${userId} (${owned.length} decks)`);
   console.log("");
 
   const planned = SEED.map((deck) => ({ ...deck, match: named.get(deck.deckName)?.[0] ?? null }));
@@ -204,41 +205,47 @@ async function main() {
     return;
   }
 
-  // Delete first so a re-run replaces rather than accumulates. This removes every
-  // game this user has on these decks, not only the ones a previous run wrote —
-  // nothing marks a row as seeded — so a deck listed above with a non-zero count
-  // loses that history here. The predicate matches the count query's join, so the
-  // number printed in the plan is the number of rows removed. deck_game_axes
-  // cascades, so it needs no statement of its own.
-  const deleted = await db
-    .delete(deckGames)
-    .where(and(eq(deckGames.userId, args.user), inArray(deckGames.deckId, targets.map((d) => d.match.id))))
-    .returning({ id: deckGames.id });
+  // One transaction, because the two halves are only safe together: the delete
+  // destroys history the insert is meant to replace, and a failure between them
+  // would leave the deck emptier than it started with nothing to say so.
+  const { deleted, written } = await db.transaction(async (tx) => {
+    // Delete first so a re-run replaces rather than accumulates. This removes every
+    // game this user has on these decks, not only the ones a previous run wrote —
+    // nothing marks a row as seeded — so a deck listed above with a non-zero count
+    // loses that history here. The predicate matches the count query's join, so the
+    // number printed in the plan is the number of rows removed. deck_game_axes
+    // cascades, so it needs no statement of its own.
+    const removed = await tx
+      .delete(deckGames)
+      .where(and(eq(deckGames.userId, userId), inArray(deckGames.deckId, targets.map((d) => d.match.id))))
+      .returning({ id: deckGames.id });
 
-  let written = 0;
-  for (const deck of targets) {
-    for (const game of deck.games) {
-      const [row] = await db
-        .insert(deckGames)
-        .values({
-          deckId: deck.match.id,
-          userId: args.user,
-          result: game.result,
-          podSize: game.podSize,
-          playedAt: playedAt(game.daysAgo),
-        })
-        .returning({ id: deckGames.id });
+    let count = 0;
+    for (const deck of targets) {
+      for (const game of deck.games) {
+        const [row] = await tx
+          .insert(deckGames)
+          .values({
+            deckId: deck.match.id,
+            userId,
+            result: game.result,
+            podSize: game.podSize,
+            playedAt: playedAt(game.daysAgo),
+          })
+          .returning({ id: deckGames.id });
 
-      const marks: { gameId: string; axis: GameAxisKey; polarity: AxisPolarity }[] = [
-        ...game.worked.map((axis) => ({ gameId: row.id, axis, polarity: "worked" as const })),
-        ...game.hurt.map((axis) => ({ gameId: row.id, axis, polarity: "hurt" as const })),
-      ];
-      if (marks.length > 0) await db.insert(deckGameAxes).values(marks);
-      written++;
+        const marks: { gameId: string; axis: GameAxisKey; polarity: AxisPolarity }[] = [
+          ...game.worked.map((axis) => ({ gameId: row.id, axis, polarity: "worked" as const })),
+          ...game.hurt.map((axis) => ({ gameId: row.id, axis, polarity: "hurt" as const })),
+        ];
+        if (marks.length > 0) await tx.insert(deckGameAxes).values(marks);
+        count++;
+      }
     }
-  }
+    return { deleted: removed.length, written: count };
+  });
 
-  console.log(`deleted ${deleted.length} existing games; wrote ${written} across ${targets.length} decks.`);
+  console.log(`deleted ${deleted} existing games; wrote ${written} across ${targets.length} decks.`);
 }
 
 main()
