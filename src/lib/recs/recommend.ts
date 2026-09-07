@@ -6,10 +6,27 @@ import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { synergyStateFrom, type SynergyState } from "./synergy-state";
-import { isCommanderCandidate, scoreCommander, type CommanderScore, type PoolCard } from "./score";
+import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
+import {
+  isCommanderCandidate,
+  scoreCommander,
+  type CommanderScore,
+  type PoolCard,
+  type RoleCard,
+  type RoleName,
+} from "./score";
 import { receiptsPreview } from "./format";
 
 export type RankedCommander = CommanderScore & { slug: string; synergyState: SynergyState };
+
+/**
+ * What the detail page scores, which is a ranked commander plus the one figure
+ * only that page asks for. The list compute does not pay for it: no list surface
+ * names a deck.
+ */
+export type CommanderDetailScore = RankedCommander & {
+  committedSupport: { count: number; firstDeck: string | null };
+};
 
 /**
  * Slim payload for the client-side list view. The full RankedCommander carries
@@ -31,6 +48,7 @@ export type CommanderListItem = Pick<
   | "fitSynergy"
   | "synergyState"
   | "score"
+  | "measurableTotal"
   | "imageUri"
 > & {
   /** Preformatted receipts line — overlapOwned can be large, so only the
@@ -54,6 +72,7 @@ export function toListItem(r: RankedCommander): CommanderListItem {
     fitSynergy: r.fitSynergy,
     synergyState: r.synergyState,
     score: r.score,
+    measurableTotal: r.measurableTotal,
     imageUri: r.imageUri,
   };
 }
@@ -66,17 +85,22 @@ export type RecommendResult = {
 };
 
 /**
- * oracleId breaks score ties so the compute order matches `score desc, oracle_id`
+ * Orders by `rankScore`, not by the printed score. The two differ for a
+ * commander EDHREC does not index, whose score is out of 40 — sorting on the
+ * printed figure would put it below every commander that reached 41 on a scale
+ * two and a half times as long.
+ *
+ * oracleId breaks ties so the compute order matches `rank_score desc, oracle_id`
  * in loadScores/findScoredCommander. Without it, tied commanders (common after
  * rounding) could swap places between a fresh compute and a persisted read,
  * moving both their rank and their dedup slug suffix. Comparing the canonical
  * UUID strings matches Postgres' byte ordering — the dashes sit at fixed offsets.
  */
 export function byScoreThenOracleId(
-  a: { score: number; oracleId: string },
-  b: { score: number; oracleId: string },
+  a: { rankScore: number; oracleId: string },
+  b: { rankScore: number; oracleId: string },
 ): number {
-  if (b.score !== a.score) return b.score - a.score;
+  if (b.rankScore !== a.rankScore) return b.rankScore - a.rankScore;
   if (a.oracleId === b.oracleId) return 0;
   return a.oracleId < b.oracleId ? -1 : 1;
 }
@@ -228,7 +252,7 @@ export async function scoreOneCommander(
   userId: string,
   oracleId: string,
   slug: string,
-): Promise<RankedCommander | null> {
+): Promise<CommanderDetailScore | null> {
   const { collection } = await loadCollectionPool(userId);
   // A discovery commander is by definition one the player may not own, so a
   // collection miss is an ordinary case here rather than a 404. The pool and the
@@ -239,14 +263,27 @@ export async function scoreOneCommander(
   if (!commander) return null;
 
   const cache = await readEdhrecCache([oracleId]);
-  const result = await resolveEdhrecData(oracleId, commander.name, cache.get(oracleId));
+  const [result, committed] = await Promise.all([
+    resolveEdhrecData(oracleId, commander.name, cache.get(oracleId)),
+    readCommittedDecks(userId),
+  ]);
+  const scored = scoreCommander({
+    commander, collection,
+    edhrecTopCards: result.data?.topCards ?? null,
+    inclusionByName: result.data?.inclusionByName ?? null,
+  });
+
+  // Marked here rather than inside `scoreCommander`: this is the only caller
+  // that draws card rows, so the ranked list does not pay for the aggregate.
+  const roleCards = Object.fromEntries(
+    Object.entries(scored.roleCards).map(([role, cards]) => [role, withCommitted(cards, committed)]),
+  ) as Record<RoleName, RoleCard[]>;
+
   return {
-    ...scoreCommander({
-      commander, collection,
-      edhrecTopCards: result.data?.topCards ?? null,
-      inclusionByName: result.data?.inclusionByName ?? null,
-    }),
+    ...scored,
+    roleCards,
     slug,
     synergyState: synergyStateFrom(result),
+    committedSupport: committedSupport(scored.overlapOwnedIds, committed),
   };
 }

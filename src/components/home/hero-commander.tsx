@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { cssUrl } from "../../lib/collection/browse";
+import { explainedCopy } from "../../lib/copy/commander-explained";
+import { readCommanderProse } from "../../lib/prose/read";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { completeness, COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
 import type { SynergyState } from "../../lib/recs/synergy-state";
@@ -136,6 +138,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
   }
 
   const pct = completeness(top);
+  const prose = await readCommanderProse(top.oracleId);
 
   return (
     <div
@@ -149,7 +152,7 @@ export async function HeroCommander({ userId }: { userId: string }) {
           no interactive children, so nothing needs lifting above it. */}
       <Link
         href={`/commanders/${top.slug}`}
-        aria-label={`${top.name} — view commander details`}
+        aria-label={explainedCopy.home.cardAria(top.name)}
         className="absolute inset-0 z-[1] rounded-[14px]"
       />
 
@@ -174,6 +177,26 @@ export async function HeroCommander({ userId }: { userId: string }) {
         >
           {top.name}
         </h2>
+
+        {/* The stored sentence, clamped to two lines. The clamp is CSS only: the whole
+            string stays in the DOM, so the card's accessible name and a text search both
+            still reach it. At 375px this column holds roughly 58 characters a line, so
+            without the clamp a sentence would push the completeness row off the card. */}
+        {prose !== null && (
+          <p
+            className="mt-[10px] max-w-[420px] overflow-hidden"
+            style={{
+              fontSize: 13,
+              lineHeight: 1.55,
+              color: "var(--fg-muted)",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+            }}
+          >
+            {prose}
+          </p>
+        )}
 
         {degraded && (
           <p

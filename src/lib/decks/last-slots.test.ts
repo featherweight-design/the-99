@@ -3,7 +3,7 @@ import { planLastSlots } from "./last-slots";
 import type { SynergyCard } from "../commanders/synergy-cards";
 
 function card(id: string, synergyPts: number, owned: boolean): SynergyCard {
-  return { oracleId: id, name: id, typeLine: "Instant", facet: "spell", inclusionPct: null, synergyPts, owned };
+  return { oracleId: id, name: id, typeLine: "Instant", facet: "spell", inclusionPct: null, synergyPts, owned, committedTo: null };
 }
 
 const ranked = [

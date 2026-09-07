@@ -17,12 +17,63 @@
 //   Phone disclosure:   full-width 44px dashed row · mono 12px --accent (Show all N)
 
 import type { RoleCard } from "../../lib/recs/score";
-import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import type { JSX } from "react";
 
 export const COVERAGE_CAP = { desktop: 12, phone: 6 } as const;
 export const COVERAGE_EXPANDED_CAP = 40;
+
+// ── The committed mark ───────────────────────────────────────────────────────
+// A card already in one of the player's decks. The mark is the ownership dot's
+// fill, swapped rather than joined by anything new, so a marked chip is exactly
+// as wide as an unmarked one.
+
+/** The chip's border, which tints on both states because the chip has no other. */
+function chipBorder(committedTo: string | null): string {
+  return committedTo === null
+    ? "border-[color-mix(in_srgb,var(--success)_40%,var(--bg))]"
+    : "border-[color-mix(in_srgb,var(--avail-hard)_40%,var(--bg))]";
+}
+
+/**
+ * The row's border, which tints on one state only.
+ *
+ * A free row keeps the neutral border it ships with. The row is a full-width
+ * surface rather than a pill, so tinting it green would make ordinary ownership
+ * the loudest thing on the panel; the amber is worth the exception because it
+ * is the state the reader is looking for.
+ */
+function rowBorder(committedTo: string | null): string {
+  return committedTo === null
+    ? "border-border"
+    : "border-[color-mix(in_srgb,var(--avail-hard)_40%,var(--bg))]";
+}
+
+function dotFill(committedTo: string | null): string {
+  return committedTo === null ? "bg-success" : "bg-avail-hard-fg";
+}
+
+/**
+ * The accessible name, with the deck clause appended to whichever of the three
+ * shipped branches applies.
+ *
+ * A suffix rather than a replacement: the third branch's fallback is the only
+ * thing telling a screen-reader user the chip opens something, and the first two
+ * carry the figure. Undefined still means "use the trigger's own name" — it is
+ * only spelled out here when there is a clause to hang off it.
+ */
+function chipAria(card: RoleCard, hasFigure: boolean, showFigures: boolean): string | undefined {
+  const shipped = hasFigure
+    ? recommendationsCopy.coverage.chipAria(card.name, String(card.inclusionPct))
+    : showFigures
+      ? recommendationsCopy.coverage.chipAriaNoFigure(card.name)
+      : undefined;
+  if (card.committedTo === null) return shipped;
+  const base = shipped ?? `${cardDetailCopy.triggerAria(card.name)}.`;
+  return `${base}${explainedCopy.committed.ariaSuffix({ name: card.committedTo })}`;
+}
 
 // ── Chip ─────────────────────────────────────────────────────────────────────
 
@@ -39,11 +90,8 @@ export function CoverageChip({
   const hasFigure = showFigures && Number.isFinite(card.inclusionPct);
   const pct = String(card.inclusionPct);
 
-  const ariaLabel = hasFigure
-    ? recommendationsCopy.coverage.chipAria(card.name, pct)
-    : showFigures
-      ? recommendationsCopy.coverage.chipAriaNoFigure(card.name)
-      : undefined; // falls back to cardDetailCopy.triggerAria(name)
+  // undefined falls back to cardDetailCopy.triggerAria(name).
+  const ariaLabel = chipAria(card, hasFigure, showFigures);
 
   return (
     <CardDetailTrigger
@@ -51,13 +99,13 @@ export function CoverageChip({
       name={card.name}
       siblings={siblings}
       ariaLabel={ariaLabel}
-      className="group inline-flex items-center rounded-full h-[28px] border border-[color-mix(in_srgb,var(--success)_40%,var(--bg))] bg-surface-raised hover:border-accent"
+      className={`group inline-flex items-center rounded-full h-[28px] border ${chipBorder(card.committedTo)} bg-surface-raised hover:border-accent`}
       style={{ gap: 8, padding: hasFigure ? "0 4px 0 10px" : "0 10px" }}
     >
-      {/* Dot — 6px green, aria-hidden */}
+      {/* Dot — 6px, green when free, amber when the card is already in a deck. */}
       <span
         aria-hidden
-        className="block shrink-0 rounded-full w-[6px] h-[6px] bg-success"
+        className={`block shrink-0 rounded-full w-[6px] h-[6px] ${dotFill(card.committedTo)}`}
       />
       {/* Name */}
       <span className="font-mono text-[11.5px] text-fg-body group-hover:text-fg">
@@ -101,11 +149,7 @@ export function CoverageRow({
   const hasFigure = showFigures && Number.isFinite(card.inclusionPct);
   const pct = String(card.inclusionPct);
 
-  const ariaLabel = hasFigure
-    ? recommendationsCopy.coverage.chipAria(card.name, pct)
-    : showFigures
-      ? recommendationsCopy.coverage.chipAriaNoFigure(card.name)
-      : undefined;
+  const ariaLabel = chipAria(card, hasFigure, showFigures);
 
   return (
     <CardDetailTrigger
@@ -113,13 +157,13 @@ export function CoverageRow({
       name={card.name}
       siblings={siblings}
       ariaLabel={ariaLabel}
-      className="flex w-full items-center rounded-[8px] border border-border bg-surface"
+      className={`flex w-full items-center rounded-[8px] border ${rowBorder(card.committedTo)} bg-surface`}
       style={{ minHeight: "44px", padding: "0 12px", gap: 9 }}
     >
-      {/* Dot — 7px green, aria-hidden */}
+      {/* Dot — 7px, green when free, amber when the card is already in a deck. */}
       <span
         aria-hidden
-        className="block shrink-0 rounded-full w-[7px] h-[7px] bg-success"
+        className={`block shrink-0 rounded-full w-[7px] h-[7px] ${dotFill(card.committedTo)}`}
       />
       {/* Name — ellipsed. `min-w-0` is load-bearing beside `flex-1`: a flex item's
           default min-width is its content, so without it the span refuses to

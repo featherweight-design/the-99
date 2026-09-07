@@ -22,6 +22,7 @@ const synergyCard = (id: string): SynergyCard => ({
   inclusionPct: null,
   synergyPts: null,
   owned: true,
+  committedTo: null,
 });
 const synergyCards = (n: number): SynergyCard[] =>
   Array.from({ length: n }, (_, i) => synergyCard(`o${i}`));
@@ -142,10 +143,14 @@ describe("SynergySelection", () => {
 // announcer is placed correctly in the page tree. A test that mounts the
 // announcer directly is a tautology — it always finds exactly one because it
 // always mounts exactly one, regardless of what detail.tsx does.
-import { CommanderDetail } from "./detail";
-import type { RankedCommander } from "../../lib/recs/recommend";
+// CoverageSection refreshes the route after a recovered retry, so the whole
+// detail tree needs a router even where no test clicks Retry.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
-function detailCommander(): RankedCommander {
+import { CommanderDetail } from "./detail";
+import type { CommanderDetailScore } from "../../lib/recs/recommend";
+
+function detailCommander(): CommanderDetailScore {
   return {
     oracleId: "oracle-1",
     name: "Krenko, Mob Boss",
@@ -160,13 +165,16 @@ function detailCommander(): RankedCommander {
     roleCounts: { ramp: 4, draw: 3, removal: 5, wipes: 1 },
     roleGaps: [],
     roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
-    overlapOwned: [],
+    overlapOwned: [], overlapOwnedIds: [],
     fitPool: 12,
     fitRoles: 8,
     fitSynergy: 24,
     score: 44,
+    measurableTotal: 100,
+    rankScore: 44,
     slug: "krenko-mob-boss",
     synergyState: "ok",
+    committedSupport: { count: 0, firstDeck: null },
   };
 }
 

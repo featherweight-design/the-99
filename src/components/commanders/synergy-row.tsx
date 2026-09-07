@@ -10,6 +10,7 @@
 import type { CardFacet } from "../../lib/cards/facet";
 import { FACET_TYPE_LABEL } from "../../lib/cards/facet";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 
@@ -22,7 +23,14 @@ function formatSynergyAria(pts: number): string {
 
 // ── Ownership dot ────────────────────────────────────────────────────────────
 
-function OwnershipDot({ owned }: { owned: boolean }) {
+/**
+ * Three states in one 7px dot, and the third costs no width.
+ *
+ * A committed card is owned, so the mark is the filled dot's colour rather than
+ * anything added beside it. The unowned dot is untouched: hollow is the absence
+ * of a card, and a card you do not own cannot sit in a deck.
+ */
+function OwnershipDot({ owned, committedTo }: { owned: boolean; committedTo: string | null }) {
   return (
     <span
       aria-hidden="true"
@@ -32,7 +40,11 @@ function OwnershipDot({ owned }: { owned: boolean }) {
         width: 7,
         height: 7,
         borderRadius: "50%",
-        background: owned ? "var(--success)" : "transparent",
+        background: owned
+          ? committedTo !== null
+            ? "var(--avail-hard-fg)"
+            : "var(--success)"
+          : "transparent",
         border: owned ? undefined : "1px solid var(--fg-locked)",
       }}
     />
@@ -90,7 +102,14 @@ export function SynergyRow({
       ? synergyCopy.figure.inclusion(String(card.inclusionPct))
       : synergyCopy.figure.ariaInclusionNone;
 
-  const rowAria = synergyCopy.figure.rowAria(card.name, ownedAria, synergyAria, inclusionAria);
+  // Appended, not substituted: the shipped name carries the ownership word and
+  // both figures, and the deck is a further fact about the card rather than a
+  // different one.
+  const rowAria =
+    synergyCopy.figure.rowAria(card.name, ownedAria, synergyAria, inclusionAria) +
+    (card.committedTo !== null
+      ? explainedCopy.committed.ariaSuffix({ name: card.committedTo })
+      : "");
 
   const toggleAria = selected
     ? synergyCopy.select.removeAria(card.name)
@@ -117,7 +136,7 @@ export function SynergyRow({
       }}
     >
       {/* Slot 1: ownership dot */}
-      <OwnershipDot owned={card.owned} />
+      <OwnershipDot owned={card.owned} committedTo={card.committedTo} />
 
       {/* Slot 2: name + phone meta line — flex column gap 2px on phone */}
       <div

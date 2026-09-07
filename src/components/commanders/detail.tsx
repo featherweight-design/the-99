@@ -6,7 +6,11 @@ import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
-import type { RankedCommander } from "../../lib/recs/recommend";
+import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score";
+import type { CommanderDetailScore, RankedCommander } from "../../lib/recs/recommend";
+import { explainedCopy, heroNoteEdits } from "../../lib/copy/commander-explained";
+import { FitLegend, type FitLegendSegment } from "./fit-legend";
+import { WhySection } from "./why-section";
 import { FullCardTrigger } from "./full-card-trigger";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CoverageSection } from "./coverage-section";
@@ -28,12 +32,13 @@ type FitHeroProps = {
   commander: RankedCommander;
   rank: number;
   isBestFit: boolean;
+  width: "desktop" | "phone";
 };
 
-function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
+function FitHero({ commander: c, rank, isBestFit, width }: FitHeroProps) {
+  const isPhone = width === "phone";
   const fit = fitSegments(c);
-  const scoreDisplay = Math.round(fit.pct);
-  const hasSynergy = fit.segments.some((s) => s.key === "synergy");
+  const hasSynergy = c.fitSynergy !== null;
 
   // The same three-step ramp the fit bar draws, so it takes the same three
   // tokens. Reading these two as --accent-shadow and --accent-strong would
@@ -44,16 +49,28 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
     roles: "var(--accent-mid)",
     synergy: "var(--accent)",
   };
-  const SEGMENT_LABELS: Record<"pool" | "roles" | "synergy", string> = {
-    pool: "Pool",
-    roles: "Roles",
-    synergy: "Synergy",
-  };
+  const legendSegments: FitLegendSegment[] = [
+    { key: "pool", points: c.fitPool, weight: POOL_WEIGHT },
+    { key: "roles", points: c.fitRoles, weight: ROLES_WEIGHT },
+    ...(c.fitSynergy === null
+      ? []
+      : ([
+          { key: "synergy", points: c.fitSynergy, weight: SYNERGY_WEIGHT },
+        ] as FitLegendSegment[])),
+  ];
 
-  // Per-segment percentage labels for legend
-  const total = c.fitPool + c.fitRoles + (c.fitSynergy ?? 0);
-  const segPct = (val: number) =>
-    total > 0 ? `${Math.round((val / total) * 100)}%` : "0%";
+  const rankClause = isBestFit ? (
+    <span
+      className="font-sans font-[600]"
+      style={{ fontSize: 13, color: "var(--success)", marginLeft: isPhone ? 0 : 6 }}
+    >
+      Best in your pool
+    </span>
+  ) : (
+    <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
+      Rank #{rank}
+    </span>
+  );
 
   return (
     <div
@@ -69,39 +86,35 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
         className="m-0 font-mono uppercase"
         style={{ fontSize: 11, letterSpacing: "0.14em", color: "var(--fg-faint)" }}
       >
-        Fit for your collection
+        {explainedCopy.score.label}
       </p>
 
-      {/* Score row */}
-      <div className="flex items-baseline gap-[8px] mt-[8px]">
-        <span
-          className="font-mono font-[600]"
-          style={{ fontSize: 52, color: "var(--fg)", lineHeight: 0.9 }}
-        >
-          {scoreDisplay}
-        </span>
-        <span
-          className="font-mono"
-          style={{ fontSize: 16, color: "var(--fg-faint)" }}
-        >
-          /100
-        </span>
-        {isBestFit && (
-          <span
-            className="font-sans font-[600]"
-            style={{ fontSize: 13, color: "var(--success)", marginLeft: 6 }}
-          >
-            Best in your pool
+      {/* Score row. On phone the figure and its denominator take the full content box,
+          so the rank clause drops to its own line rather than shrinking. */}
+      <div className="mt-[8px]">
+        <div className="flex items-baseline gap-[8px]">
+          <span className="sr-only">
+            {explainedCopy.score.scoreAria(c.score, c.measurableTotal)}
           </span>
-        )}
-        {!isBestFit && (
+          <span
+            className="font-mono font-[600]"
+            style={{ fontSize: 52, color: "var(--fg)", lineHeight: 0.9 }}
+            aria-hidden
+          >
+            {c.score}
+          </span>
           <span
             className="font-mono"
-            style={{ fontSize: 13, color: "var(--fg-faint)" }}
+            style={{ fontSize: 16, color: "var(--fg-faint)" }}
+            aria-hidden
           >
-            Rank #{rank}
+            {hasSynergy
+              ? explainedCopy.score.denominator
+              : explainedCopy.score.denominatorMeasurable(c.measurableTotal)}
           </span>
-        )}
+          {!isPhone && rankClause}
+        </div>
+        {isPhone && <div style={{ marginTop: 6 }}>{rankClause}</div>}
       </div>
 
       {/* Fit bar — 12px height for detail hero */}
@@ -123,60 +136,10 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
         </div>
       </div>
 
-      {/* Legend row — desktop, 24px gap */}
-      <div
-        className="flex gap-[24px] mt-[12px]"
-      >
-        {fit.segments.map((seg) => (
-          <div key={seg.key} className="flex items-center gap-[6px]">
-            <span
-              className="block shrink-0"
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 3,
-                background: SEGMENT_COLORS[seg.key],
-              }}
-            />
-            <span
-              className="font-sans"
-              style={{ fontSize: 13, color: "var(--fg-body)" }}
-            >
-              {SEGMENT_LABELS[seg.key]}
-            </span>
-            <span
-              className="font-mono"
-              style={{ fontSize: 12, color: "var(--fg-faint)" }}
-            >
-              {seg.key === "pool"
-                ? segPct(c.fitPool)
-                : seg.key === "roles"
-                ? segPct(c.fitRoles)
-                : segPct(c.fitSynergy ?? 0)}
-            </span>
-          </div>
-        ))}
-        {/* Synergy — placeholder when degraded */}
-        {!hasSynergy && (
-          <div className="flex items-center gap-[6px]">
-            <span
-              className="block shrink-0"
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 3,
-                background: "var(--border-strong)",
-              }}
-            />
-            <span
-              className="font-mono"
-              style={{ fontSize: "9.5px", color: "var(--fg-locked)" }}
-            >
-              Synergy —
-            </span>
-          </div>
-        )}
-      </div>
+      {/* Legend, and the key that explains what the three weights are. There is no
+          placeholder Synergy entry when synergy was not measured: the denominator
+          already says the ceiling moved, so there is no missing third to explain. */}
+      <FitLegend segments={legendSegments} score={c.score} width={width} />
 
       {/* Per-commander note when there is no synergy data. "absent" is permanent
           — EDHREC does not index the commander — so it must not read as an outage. */}
@@ -192,22 +155,22 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
         >
           <span style={{ color: "var(--fg-faint)", fontSize: 13 }}>⚠</span>
           <span style={{ fontSize: 12.5, color: "var(--fg-muted)", lineHeight: 1.45 }}>
-            {c.synergyState === "degraded" ? (
-              <>
-                <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
-                  Synergy data unavailable
-                </strong>{" "}
-                — we couldn&apos;t reach EDHREC, so receipts are hidden for now.
-              </>
-            ) : (
-              <>
-                <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
-                  No synergy data
-                </strong>{" "}
-                — EDHREC doesn&apos;t track this commander, so fit comes from pool
-                and roles alone.
-              </>
-            )}
+            {(() => {
+              const note =
+                c.synergyState === "degraded"
+                  ? heroNoteEdits.degraded
+                  : heroNoteEdits.absent;
+              return (
+                <>
+                  <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
+                    {note.heading}
+                  </strong>{" "}
+                  {isPhone
+                    ? note.bodyMobile(c.measurableTotal)
+                    : note.body(c.measurableTotal)}
+                </>
+              );
+            })()}
           </span>
         </div>
       )}
@@ -218,10 +181,12 @@ function FitHero({ commander: c, rank, isBestFit }: FitHeroProps) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export type CommanderDetailProps = {
-  commander: RankedCommander;
+  commander: CommanderDetailScore;
   rank: number;
   isBestFit: boolean;
   synergyCards: SynergyCard[];
+  /** The stored sentence, or null when none has been accepted for this commander. */
+  prose?: string | null;
 };
 
 export function CommanderDetail({
@@ -229,6 +194,7 @@ export function CommanderDetail({
   rank,
   isBestFit,
   synergyCards,
+  prose = null,
 }: CommanderDetailProps) {
   const gradient = commanderGradient(c.colorIdentity);
 
@@ -342,7 +308,16 @@ export function CommanderDetail({
         style={{ flex: 1, padding: "16px 14px 0" }}
       >
         {/* Fit Hero (mobile) */}
-        <FitHero commander={c} rank={rank} isBestFit={isBestFit} />
+        <FitHero commander={c} rank={rank} isBestFit={isBestFit} width="phone" />
+
+        <WhySection
+          prose={prose}
+          edhrecOwnedCount={c.edhrecOwnedCount}
+          edhrecTotal={c.edhrecTotal}
+          roleCounts={c.roleCounts}
+          committedSupport={c.committedSupport}
+          width="phone"
+        />
 
         {/* The Pool section */}
         <div>
@@ -578,7 +553,16 @@ export function CommanderDetail({
         {/* Right column — scrolling */}
         <div className="flex flex-col gap-[32px]">
           {/* Fit Hero */}
-          <FitHero commander={c} rank={rank} isBestFit={isBestFit} />
+          <FitHero commander={c} rank={rank} isBestFit={isBestFit} width="desktop" />
+
+          <WhySection
+            prose={prose}
+            edhrecOwnedCount={c.edhrecOwnedCount}
+            edhrecTotal={c.edhrecTotal}
+            roleCounts={c.roleCounts}
+            committedSupport={c.committedSupport}
+            width="desktop"
+          />
 
           {/* The Pool section */}
           <div>

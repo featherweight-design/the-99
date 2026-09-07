@@ -2,6 +2,9 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   COMPLETENESS_THRESHOLDS,
+  POOL_WEIGHT,
+  ROLES_WEIGHT,
+  SYNERGY_WEIGHT,
   completeness,
   isCommanderCandidate,
   scoreCommander,
@@ -104,6 +107,44 @@ describe("scoreCommander", () => {
     const low = scoreCommander({ commander, collection, edhrecTopCards: ["Craterhoof Behemoth"], inclusionByName: null });
     const high = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring", "Cultivate", "Read the Bones"], inclusionByName: null });
     expect(high.score).toBeGreaterThan(low.score);
+  });
+
+  // The hero's legend prints each segment over its own weight and the headline
+  // has to be reachable by adding them. Tenths were invisible in the legend and
+  // visible in the sum, so the segments are integers and the total is their sum
+  // rather than its own rounding.
+  it("segments are integers and add up to the printed score", () => {
+    for (const topCards of [null, [], ["Sol Ring"], ["Sol Ring", "Cultivate", "Craterhoof Behemoth"]]) {
+      const s = scoreCommander({ commander, collection, edhrecTopCards: topCards, inclusionByName: null });
+      expect(Number.isInteger(s.fitPool)).toBe(true);
+      expect(Number.isInteger(s.fitRoles)).toBe(true);
+      if (s.fitSynergy !== null) expect(Number.isInteger(s.fitSynergy)).toBe(true);
+      expect(s.score).toBe(s.fitPool + s.fitRoles + (s.fitSynergy ?? 0));
+    }
+  });
+
+  it("scores a commander EDHREC does not index out of pool and roles alone", () => {
+    const s = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    expect(s.fitSynergy).toBeNull();
+    expect(s.measurableTotal).toBe(POOL_WEIGHT + ROLES_WEIGHT);
+    expect(s.score).toBeLessThanOrEqual(s.measurableTotal);
+  });
+
+  it("scores a commander with a synergy read out of the full scale", () => {
+    const s = scoreCommander({ commander, collection, edhrecTopCards: ["Sol Ring"], inclusionByName: null });
+    expect(s.measurableTotal).toBe(POOL_WEIGHT + ROLES_WEIGHT + SYNERGY_WEIGHT);
+  });
+
+  // #385 shipped the honest denominator without the ordering it was meant to
+  // survive, which demoted every unindexed commander for a gap in our data
+  // rather than a gap in their fit. rankScore is what puts the two scales back
+  // on speaking terms; it is never printed.
+  it("puts both scales on one axis for ordering", () => {
+    const unindexed = scoreCommander({ commander, collection, edhrecTopCards: null, inclusionByName: null });
+    expect(unindexed.rankScore).toBe(
+      Math.round((100 * unindexed.score) / unindexed.measurableTotal),
+    );
+    expect(unindexed.rankScore).toBeGreaterThan(unindexed.score);
   });
 
   it("passes commander colorIdentity and imageUri through onto the score", () => {
@@ -244,7 +285,11 @@ describe("roleCards", () => {
       commander, collection: [rampA],
       edhrecTopCards: null, inclusionByName: { "sol ring": 82 },
     });
-    expect(s.roleCards.ramp).toEqual([{ oracleId: "a", name: "Sol Ring", inclusionPct: 82 }]);
+    // `committedTo` is null out of scoring by design: the ranked list draws no
+    // card rows, so it does not pay for the deck-membership query.
+    expect(s.roleCards.ramp).toEqual([
+      { oracleId: "a", name: "Sol Ring", inclusionPct: 82, committedTo: null },
+    ]);
   });
 
   it("orders by inclusion descending with absent figures last", () => {

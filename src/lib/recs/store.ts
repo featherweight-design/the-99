@@ -2,6 +2,7 @@ import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderScores, csvUploads, type RoleCounts } from "../../db/schema";
 import { receiptsPreview } from "./format";
+import { measurableTotalFor } from "./score";
 import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
 
@@ -42,6 +43,7 @@ export function toScoreRow(userId: string, r: RankedCommander) {
     oracleId: r.oracleId,
     slug: r.slug,
     score: r.score,
+    rankScore: r.rankScore,
     fitPool: r.fitPool,
     fitRoles: r.fitRoles,
     fitSynergy: r.fitSynergy,
@@ -71,6 +73,7 @@ export function rowToListItem(row: ScoreRowWithCard): CommanderListItem {
     fitSynergy: row.fitSynergy,
     synergyState: row.synergyState,
     score: row.score,
+    measurableTotal: measurableTotalFor(row.fitSynergy),
     imageUri: row.imageUri,
   };
 }
@@ -138,6 +141,7 @@ export async function persistScores(
         set: {
           slug: sql`excluded.slug`,
           score: sql`excluded.score`,
+          rankScore: sql`excluded.rank_score`,
           fitPool: sql`excluded.fit_pool`,
           fitRoles: sql`excluded.fit_roles`,
           fitSynergy: sql`excluded.fit_synergy`,
@@ -163,6 +167,7 @@ export async function loadScores(
         oracleId: commanderScores.oracleId,
         slug: commanderScores.slug,
         score: commanderScores.score,
+        rankScore: commanderScores.rankScore,
         fitPool: commanderScores.fitPool,
         fitRoles: commanderScores.fitRoles,
         fitSynergy: commanderScores.fitSynergy,
@@ -179,7 +184,19 @@ export async function loadScores(
       .from(commanderScores)
       .innerJoin(cards, eq(commanderScores.oracleId, cards.oracleId))
       .where(eq(commanderScores.userId, userId))
-      .orderBy(desc(commanderScores.score), commanderScores.oracleId);
+      .orderBy(desc(commanderScores.rankScore), commanderScores.oracleId);
+
+    // A row can only carry the sentinel if it was written between 0017 adding the column
+    // and the deployment that knows about it going live. Such a row is neither empty nor
+    // degraded — the two states `getRankedList` recomputes on — so serving it would pin
+    // the whole list in an order nothing computed, until something unrelated happened to
+    // invalidate it. Reporting no rows is a miss, and the recompute rewrites every one.
+    //
+    // One sentinel condemns the set rather than being filtered out of it, because
+    // `persistScores` writes a user's rows in a single transaction: a set with one such
+    // row was written entirely by that deployment, and the rest of it is no more current
+    // than the row that gives it away.
+    if (rows.some((r) => r.rankScore < 0)) return { items: [], degradedOracleIds: [] };
 
     return {
       items: rows.map(rowToListItem),
@@ -207,7 +224,7 @@ export async function findScoredCommander(
         .select({
           oracleId: commanderScores.oracleId,
           slug: commanderScores.slug,
-          rank: sql<number>`(row_number() over (order by ${commanderScores.score} desc, ${commanderScores.oracleId}))::int`.as("rank"),
+          rank: sql<number>`(row_number() over (order by ${commanderScores.rankScore} desc, ${commanderScores.oracleId}))::int`.as("rank"),
           // Same window pass, so the caller learns whether these ranks came from an
           // outage-era compute without paying a second round trip.
           anyDegraded: sql<boolean>`bool_or(${commanderScores.synergyState} = 'degraded') over ()`.as("any_degraded"),

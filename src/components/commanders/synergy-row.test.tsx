@@ -8,7 +8,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 
 const base: SynergyCard = {
   oracleId: "a", name: "Command Tower", typeLine: "Land — Gate",
-  facet: "land", inclusionPct: 82, synergyPts: 1, owned: true,
+  facet: "land", inclusionPct: 82, synergyPts: 1, owned: true, committedTo: null,
 };
 
 type MountProps = {
@@ -71,6 +71,31 @@ describe("SynergyRow", () => {
   it("names ownership in the accessible name rather than by colour alone", () => {
     mount({ card: { ...base, owned: false } });
     expect(screen.getByRole("listitem", { name: /Not in your collection/ })).toBeInTheDocument();
+  });
+
+  // Three states in one dot, and the third must not cost the row any width.
+  it("paints the dot amber for a card already in a deck, and names the deck", () => {
+    const { container } = mount({ card: { ...base, committedTo: "Atraxa" } });
+    const dot = container.querySelector("li > span[aria-hidden]") as HTMLElement;
+    expect(dot.style.background).toBe("var(--avail-hard-fg)");
+    expect(dot.style.width).toBe("7px");
+    expect(screen.getByRole("listitem", { name: /Already in Atraxa\./ })).toBeInTheDocument();
+  });
+
+  it("keeps the green dot for an owned card no deck has claimed", () => {
+    const { container } = mount();
+    const dot = container.querySelector("li > span[aria-hidden]") as HTMLElement;
+    expect(dot.style.background).toBe("var(--success)");
+    expect(screen.queryByRole("listitem", { name: /Already in/ })).toBeNull();
+  });
+
+  // A card you do not own cannot sit in a deck, so the hollow dot has no third
+  // state to grow: it stays transparent with its 1px locked border.
+  it("leaves the unowned dot hollow", () => {
+    const { container } = mount({ card: { ...base, owned: false } });
+    const dot = container.querySelector("li > span[aria-hidden]") as HTMLElement;
+    expect(dot.style.background).toBe("transparent");
+    expect(dot.style.border).toBe("1px solid var(--fg-locked)");
   });
 
   it("toggles through an aria-pressed button", () => {

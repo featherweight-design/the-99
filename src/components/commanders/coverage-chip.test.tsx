@@ -20,6 +20,7 @@ const card = (overrides: Partial<RoleCard> = {}): RoleCard => ({
   oracleId: "oracle-sol",
   name: "Sol Ring",
   inclusionPct: 82,
+  committedTo: null,
   ...overrides,
 });
 
@@ -64,6 +65,59 @@ describe("CoverageChip", () => {
       <CoverageChip card={card({ inclusionPct: null })} siblings={siblings} showFigures={false} />,
     );
     expect(screen.queryByText("—")).toBeNull();
+  });
+
+  // The mark swaps the ownership dot's fill rather than adding anything, so a
+  // marked chip has to occupy exactly the same width as an unmarked one.
+  it("swaps the dot's fill and the border for a card already in a deck", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <CoverageChip card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />
+      </CardDetailProvider>,
+    );
+    expect(container.querySelector(".bg-avail-hard-fg")).not.toBeNull();
+    expect(container.querySelector(".bg-success")).toBeNull();
+    expect(screen.getByRole("button", { name: /Sol Ring/i }).className).toMatch(
+      /var\(--avail-hard\)/,
+    );
+  });
+
+  it("keeps the green dot for a card no deck has claimed", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <CoverageChip card={card()} siblings={siblings} showFigures />
+      </CardDetailProvider>,
+    );
+    expect(container.querySelector(".bg-success")).not.toBeNull();
+    expect(container.querySelector(".bg-avail-hard-fg")).toBeNull();
+  });
+
+  // R2 rewrote this name wholesale once and lost "View details for". The deck
+  // clause is a suffix on whichever branch the shipped name took.
+  it("appends the deck to the accessible name it already had", () => {
+    renderInProvider(
+      <CoverageChip card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />,
+    );
+    expect(
+      screen.getByRole("button", {
+        name: "View details for Sol Ring. In 82% of decks. Already in Atraxa.",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  // The one branch whose shipped name is undefined: without a synthesised base,
+  // the suffix would be the whole accessible name and say nothing about opening.
+  it("still names the trigger when figures are hidden", () => {
+    renderInProvider(
+      <CoverageChip
+        card={card({ committedTo: "Atraxa" })}
+        siblings={siblings}
+        showFigures={false}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "View details for Sol Ring. Already in Atraxa." }),
+    ).toBeInTheDocument();
   });
 
   it("clicking the chip calls open with the card's oracle id and siblings list", () => {
@@ -115,6 +169,20 @@ describe("CoverageRow", () => {
     );
     expect(screen.queryByText("82%")).toBeNull();
     expect(screen.queryByText("—")).toBeNull();
+  });
+
+  it("carries the same mark and the same deck clause as the desktop chip", () => {
+    const { container } = render(
+      <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
+        <CoverageRow card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />
+      </CardDetailProvider>,
+    );
+    expect(container.querySelector(".bg-avail-hard-fg")).not.toBeNull();
+    expect(
+      screen.getByRole("button", {
+        name: "View details for Sol Ring. In 82% of decks. Already in Atraxa.",
+      }),
+    ).toBeInTheDocument();
   });
 });
 

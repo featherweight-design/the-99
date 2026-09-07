@@ -261,11 +261,31 @@ export const edhrecCache = pgTable("edhrec_cache", {
 /** Mirrors the roleCounts shape produced by src/lib/recs/score.ts. */
 export type RoleCounts = Record<"ramp" | "draw" | "removal" | "wipes", number>;
 
+/**
+ * The `rank_score` a row carries when nothing wrote one. See the column below.
+ *
+ * Migration 0017 hardcodes this value; changing it here alone would leave the two
+ * disagreeing and the sentinel unrecognisable.
+ */
+export const RANK_SCORE_UNWRITTEN = -1;
+
 export const commanderScores = pgTable("commander_scores", {
   userId: text("user_id").notNull(),
   oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
   slug: text("slug").notNull(),
   score: real("score").notNull(),
+  // What the list sorts by, and the only thing it is for. `score` is out of 40
+  // for a commander EDHREC does not index and out of 100 for every other, so
+  // ordering by it demotes the first group for a gap in our data rather than a
+  // gap in their fit. This is that same score back on the 0–100 scale; it is
+  // never printed and never drawn.
+  //
+  // The default exists for the deployment window alone: 0017 adds this column while the
+  // previous deployment is still inserting rows without it. Every insert from this schema
+  // writes the column, so the default is never the value that lands — which is what makes
+  // it usable as a sentinel. It is negative because a computed rank score cannot be, so
+  // `loadScores` can tell a row this code wrote from one it did not.
+  rankScore: real("rank_score").notNull().default(RANK_SCORE_UNWRITTEN),
   fitPool: real("fit_pool").notNull(),
   fitRoles: real("fit_roles").notNull(),
   // Null iff synergyState !== "ok".
@@ -281,9 +301,10 @@ export const commanderScores = pgTable("commander_scores", {
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
-  // Third key matches the `score desc, oracle_id` tie-break that loadScores and the
-  // findScoredCommander rank window both use, so reads need no extra sort step.
-  index("commander_scores_rank_idx").on(t.userId, t.score.desc(), t.oracleId),
+  // Third key matches the `rank_score desc, oracle_id` tie-break that loadScores
+  // and the findScoredCommander rank window both use, so reads need no extra
+  // sort step.
+  index("commander_scores_rank_idx").on(t.userId, t.rankScore.desc(), t.oracleId),
   // The column's enum option only narrows the TypeScript type; without these the
   // database would accept any text. Both invariants are load-bearing: the Retry
   // button keys off synergyState, and an "ok" row with a null fitSynergy is a row
@@ -338,6 +359,15 @@ export const commanderSupport = pgTable("commander_support", {
   // Null when the commander has no rules text to classify.
   engine: text("engine", { enum: ["etb", "triggered", "activated", "tap", "static"] })
     .$type<CommanderEngine>(),
+  // The one accepted sentence about how this commander's decks tend to play, or null
+  // when none has been accepted. A generated string that fails the prose contract is
+  // not stored at all: a missing paragraph reads as missing, a truncated one does not.
+  prose: text("prose"),
+  // Hash of the inputs the sentence was generated from (oracle id, tag list, prompt
+  // version), so a regeneration run can tell a stale sentence from a current one
+  // without re-reading the generator.
+  proseInputHash: text("prose_input_hash"),
+  prosePromptVersion: integer("prose_prompt_version"),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // The enum options above only narrow the TypeScript type; without these the
@@ -350,6 +380,12 @@ export const commanderSupport = pgTable("commander_support", {
   check(
     "commander_support_engine_check",
     sql`${t.engine} is null or ${t.engine} in ('etb', 'triggered', 'activated', 'tap', 'static')`,
+  ),
+  // A stored sentence without its provenance cannot be regenerated or audited, and
+  // provenance without a sentence describes nothing.
+  check(
+    "commander_support_prose_check",
+    sql`(${t.prose} is null) = (${t.proseInputHash} is null) and (${t.prose} is null) = (${t.prosePromptVersion} is null)`,
   ),
 ]);
 

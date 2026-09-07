@@ -10,6 +10,7 @@ function card(oracleId: string, owned: boolean): SynergyCard {
     typeLine: "Creature",
     facet: "creature",
     inclusionPct: null,
+    committedTo: null,
     synergyPts: null,
     owned,
   };

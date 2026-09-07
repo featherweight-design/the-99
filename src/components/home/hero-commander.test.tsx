@@ -4,13 +4,19 @@ import type { CommanderListItem } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
 import type { RankedList } from "../../lib/recs/ranked-list";
 import { getRankedList } from "../../lib/recs/ranked-list";
+import { readCommanderProse } from "../../lib/prose/read";
 import { HeroCommander } from "./hero-commander";
 
 vi.mock("../../lib/recs/ranked-list", () => ({
   getRankedList: vi.fn(),
 }));
 
+vi.mock("../../lib/prose/read", () => ({
+  readCommanderProse: vi.fn(),
+}));
+
 const mockedGetRankedList = vi.mocked(getRankedList);
+const mockedReadProse = vi.mocked(readCommanderProse);
 
 function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
   return {
@@ -27,6 +33,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
     fitRoles: 8,
     fitSynergy: 24,
     score: 44,
+    measurableTotal: 100,
     imageUri: null,
     synergyState: "ok",
     ...overrides,
@@ -37,17 +44,19 @@ function list(items: CommanderListItem[], degraded = false): RankedList {
   return { items, degraded, uniqueCardsRead: 500, candidateCount: items.length };
 }
 
-async function renderHero(items: CommanderListItem[], degraded = false) {
+async function renderHero(items: CommanderListItem[], degraded = false, prose: string | null = null) {
   mockedGetRankedList.mockResolvedValue(list(items, degraded));
+  mockedReadProse.mockResolvedValue(prose);
   render(await HeroCommander({ userId: "user_1" }));
 }
 
 function noSynergy(synergyState: SynergyState): CommanderListItem {
-  return item({ synergyState, fitSynergy: null, edhrecOwnedCount: null, edhrecTotal: null });
+  return item({ synergyState, fitSynergy: null, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
 }
 
 beforeEach(() => {
   mockedGetRankedList.mockReset();
+  mockedReadProse.mockReset();
 });
 
 describe("HeroCommander", () => {
@@ -121,6 +130,24 @@ describe("HeroCommander", () => {
     expect(screen.getByTestId("hero-art").style.background).toContain(
       "repeating-linear-gradient",
     );
+  });
+
+  // The clamp is a CSS one, so the whole sentence has to survive into the DOM: a
+  // JS truncation would put an ellipsis into the card's accessible name and into
+  // any find-in-page.
+  it("prints the stored sentence whole and clamps it in CSS", async () => {
+    const sentence =
+      "Krenko decks tend to flood the board with goblin tokens and convert them into damage in one turn.";
+    await renderHero([item()], false, sentence);
+    const paragraph = screen.getByText(sentence);
+    expect(paragraph.style.getPropertyValue("-webkit-line-clamp")).toBe("2");
+    expect(paragraph).toHaveClass("overflow-hidden");
+  });
+
+  it("draws no paragraph at all when no sentence is stored", async () => {
+    await renderHero([item()], false, null);
+    expect(screen.getByRole("heading", { name: "Krenko, Mob Boss" })).toBeInTheDocument();
+    expect(document.querySelectorAll("p")).toHaveLength(0);
   });
 
   it("renders the quiet placeholder when there are no candidates", async () => {

@@ -1,7 +1,11 @@
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// CoverageSection refreshes the route after a recovered retry, so the whole
+// detail tree needs a router even where no test clicks Retry.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
-import type { RankedCommander } from "../../lib/recs/recommend";
+import type { CommanderDetailScore } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
 import { CommanderDetail } from "./detail";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
@@ -17,6 +21,7 @@ const synergyCards: SynergyCard[] = [
     inclusionPct: 31,
     synergyPts: 47,
     owned: true,
+    committedTo: null,
   },
   {
     oracleId: "oracle-skullclamp",
@@ -26,10 +31,11 @@ const synergyCards: SynergyCard[] = [
     inclusionPct: 62,
     synergyPts: null,
     owned: false,
+    committedTo: null,
   },
 ];
 
-function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
+function commander(overrides: Partial<CommanderDetailScore> = {}): CommanderDetailScore {
   return {
     oracleId: "oracle-1",
     name: "Krenko, Mob Boss",
@@ -44,21 +50,25 @@ function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
     roleCounts: { ramp: 4, draw: 3, removal: 5, wipes: 1 },
     roleGaps: [],
     roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
-    overlapOwned: [],
+    overlapOwned: [], overlapOwnedIds: [],
     fitPool: 12,
     fitRoles: 8,
     fitSynergy: 24,
     score: 44,
+    measurableTotal: 100,
+    rankScore: 44,
     slug: "krenko-mob-boss",
     synergyState: "ok",
+    committedSupport: { count: 0, firstDeck: null },
     ...overrides,
   };
 }
 
-function noSynergy(synergyState: SynergyState): RankedCommander {
+function noSynergy(synergyState: SynergyState): CommanderDetailScore {
   return commander({
     synergyState,
     fitSynergy: null,
+    measurableTotal: 40,
     edhrecOwnedCount: null,
     edhrecTotal: null,
   });
@@ -80,6 +90,94 @@ describe("CommanderDetail synergy states", () => {
     expect(screen.getAllByText(/EDHREC doesn't track this commander/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Synergy data unavailable/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();
+  });
+});
+
+describe("CommanderDetail fit hero", () => {
+  // The figure and the ceiling beside it are one claim. A commander EDHREC does not
+  // index is scored out of 40, and printing that 32 beside "/100" is the fabricated
+  // comparability the denominator exists to close.
+  it("prints the raw score over 100 when synergy was measured", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    expect(screen.getAllByText("44").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("/100").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/measurable/)).toBeNull();
+  });
+
+  it("names the shorter ceiling when synergy was not measured", () => {
+    render(
+      <CommanderDetail
+        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 50, edhrecOwnedCount: null, edhrecTotal: null })}
+        rank={3}
+        isBestFit={false}
+        synergyCards={noSynergyCards}
+      />,
+    );
+    expect(screen.getAllByText("/40 measurable").length).toBeGreaterThan(0);
+    expect(screen.queryByText("/100")).toBeNull();
+  });
+
+  // The legend used to print each segment's share of the achieved total, which always
+  // summed to 100% and taught nothing about the weights. Points over weight makes the
+  // headline auditable by addition.
+  it("prints each segment's points over its weight", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    expect(screen.getAllByLabelText("Pool, 12 of 15 points").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText("Roles, 8 of 25 points").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText("Synergy, 24 of 60 points").length).toBeGreaterThan(0);
+  });
+
+  // There is no missing third of a hundred to explain once the denominator is 40.
+  it("drops the synergy legend entry rather than drawing a placeholder", () => {
+    render(
+      <CommanderDetail
+        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 50 })}
+        rank={3}
+        isBestFit={false}
+        synergyCards={noSynergyCards}
+      />,
+    );
+    expect(screen.queryByText(/^Synergy —/)).toBeNull();
+    expect(screen.queryByLabelText(/^Synergy,/)).toBeNull();
+  });
+
+  it("explains only the segments that were measured", () => {
+    render(
+      <CommanderDetail
+        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 50 })}
+        rank={3}
+        isBestFit={false}
+        synergyCards={noSynergyCards}
+      />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0]);
+    expect(screen.getAllByText(/Breadth, not quality/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/most-played list/)).toBeNull();
+    expect(screen.getAllByText(/12 \+ 8 = 20\./).length).toBeGreaterThan(0);
+  });
+
+  // An aria-controls pointing at an id no element carries is a broken relationship,
+  // and the panel only exists while the key is open.
+  it("names the panel it controls only while that panel exists", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    const trigger = screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0];
+    expect(trigger).not.toHaveAttribute("aria-controls");
+
+    fireEvent.click(trigger);
+    const panelId = screen
+      .getAllByRole("button", { name: "Hide" })[0]
+      .getAttribute("aria-controls");
+    expect(panelId).not.toBeNull();
+    expect(document.getElementById(panelId!)).not.toBeNull();
+  });
+
+  it("closes the key again", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    const trigger = screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0];
+    fireEvent.click(trigger);
+    expect(screen.getAllByText(/12 \+ 8 \+ 24 = 44\./).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole("button", { name: "Hide" })[0]);
+    expect(screen.queryByText(/12 \+ 8 \+ 24 = 44\./)).toBeNull();
   });
 });
 

@@ -4,18 +4,25 @@
 
 import { render, screen, waitFor } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardDetailProvider } from "../cards/card-detail-provider";
-import { CoverageSection } from "./coverage-section";
+
+// A recovered retry moves the score, the legend and the hero note, none of which
+// this section owns — so it refreshes the route rather than trying to.
+const refresh = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
+const { CoverageSection } = await import("./coverage-section");
 import type { RoleCard } from "../../lib/recs/score";
 import type { RoleName } from "../../lib/recs/score";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function makeCard(n: number, pct: number | null = 50): RoleCard {
-  return { oracleId: `oracle-${n}`, name: `Card ${n}`, inclusionPct: pct };
+  return { oracleId: `oracle-${n}`, name: `Card ${n}`, inclusionPct: pct, committedTo: null };
 }
 
 function makeCards(count: number, pct: number | null = 50): RoleCard[] {
@@ -230,6 +237,8 @@ describe("absent vs degraded note rendering", () => {
 // ── Retry flow ─────────────────────────────────────────────────────────────────
 
 describe("retry flow", () => {
+  beforeEach(() => refresh.mockClear());
+
   it("calls retryCoverageFigures once on click and updates figures on success", async () => {
     const newCards: Record<RoleName, RoleCard[]> = {
       ramp: [makeCard(1, 80)],
@@ -257,6 +266,25 @@ describe("retry flow", () => {
     await waitFor(() => {
       expect(screen.getByText("80%")).toBeInTheDocument();
     });
+
+    // The rest of the page — score, denominator, legend, hero note — is server
+    // rendered from the same compute the retry just repeated, so a recovered
+    // section without this refresh sits beside a degraded headline.
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the route alone when the retry fails", async () => {
+    const retryCoverageFigures = vi
+      .fn<() => Promise<Record<RoleName, RoleCard[]> | null>>()
+      .mockResolvedValue(null);
+
+    renderSection({ synergyState: "degraded", retryCoverageFigures });
+    fireEvent.click(
+      screen.getByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria }),
+    );
+
+    await waitFor(() => expect(retryCoverageFigures).toHaveBeenCalledTimes(1));
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("retry stays available after a failure (action returns null)", async () => {
@@ -485,9 +513,9 @@ describe("degraded state preserves pool order", () => {
     // Alphabetical order: Mana Vault, Swords to Plowshares, Zombie Infestation
     // The two orderings differ, so a sort introduced by the component is detectable.
     const poolOrderedCards: RoleCard[] = [
-      { oracleId: "oracle-z", name: "Zombie Infestation", inclusionPct: null },
-      { oracleId: "oracle-m", name: "Mana Vault", inclusionPct: null },
-      { oracleId: "oracle-s", name: "Swords to Plowshares", inclusionPct: null },
+      { oracleId: "oracle-z", name: "Zombie Infestation", inclusionPct: null, committedTo: null },
+      { oracleId: "oracle-m", name: "Mana Vault", inclusionPct: null, committedTo: null },
+      { oracleId: "oracle-s", name: "Swords to Plowshares", inclusionPct: null, committedTo: null },
     ];
 
     renderSection({
@@ -572,5 +600,95 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
         screen.getByText(recommendationsCopy.coverage.beyondCap("5")),
       ).toBeInTheDocument();
     });
+  });
+});
+
+describe("the committed legend", () => {
+  const committed = (n: number, deck: string): RoleCard => ({ ...makeCard(n), committedTo: deck });
+
+  // Both figures count the chips on screen. The cap hides the rest, and a count
+  // over the role total would explain dots the reader cannot see.
+  it("counts the visible chips, not the role's total", () => {
+    const cards = [committed(1, "Atraxa"), ...makeCards(19).slice(1)];
+    renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 20 } });
+    expect(screen.getByText(explainedCopy.committed.legend(1, 12))).toBeInTheDocument();
+  });
+
+  it("says so plainly when every visible chip is marked", () => {
+    const cards = [committed(1, "Atraxa"), committed(2, "Krenko")];
+    renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 2 } });
+    expect(screen.getByText(explainedCopy.committed.legendAllTwo)).toBeInTheDocument();
+  });
+
+  it("draws nothing when no visible chip carries the mark", () => {
+    renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
+    expect(screen.queryByText(/Amber dot/)).toBeNull();
+  });
+
+  it("takes the shorter wording at phone width", () => {
+    const cards = [committed(1, "Atraxa"), ...makeCards(3).slice(1)];
+    renderSection({ width: "phone", roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
+    expect(screen.getByText(explainedCopy.committed.legendMobile(1, 3))).toBeInTheDocument();
+  });
+});
+
+describe("the Role Coverage sort", () => {
+  const committed = (n: number, deck: string): RoleCard => ({ ...makeCard(n), committedTo: deck });
+
+  const chooseAvailability = () => {
+    fireEvent.click(screen.getByRole("button", { name: explainedCopy.coverageSort.triggerAria }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /Availability/ }));
+  };
+
+  it("reorders the chips inside every panel from one control", () => {
+    const cards = [committed(1, "Atraxa"), makeCard(2)];
+    renderSection({
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards, draw: cards },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 2, draw: 2 },
+    });
+    chooseAvailability();
+    const names = screen
+      .getAllByRole("button", { name: /View details for Card/ })
+      .map((b) => b.getAttribute("aria-label")?.slice(0, 24));
+    expect(names).toEqual([
+      "View details for Card 2.",
+      "View details for Card 1.",
+      "View details for Card 2.",
+      "View details for Card 1.",
+    ]);
+  });
+
+  // The cap slices the order on screen, so sorting can pull a card into view
+  // that the shipped order had hidden — and push one out.
+  it("slices the cap after the sort, not before it", () => {
+    const cards = [...makeCards(12).map((c) => ({ ...c, committedTo: "Atraxa" })), makeCard(13)];
+    renderSection({
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 13 },
+    });
+    expect(screen.queryByRole("button", { name: /View details for Card 13/ })).toBeNull();
+    chooseAvailability();
+    expect(screen.getByRole("button", { name: /View details for Card 13/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /View details for Card 12\./ })).toBeNull();
+  });
+
+  it("leaves the owned count alone — a reorder is not a recount", () => {
+    renderSection({
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: [committed(1, "Atraxa"), makeCard(2)] },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 2 },
+    });
+    chooseAvailability();
+    expect(screen.getByText("2 owned")).toBeInTheDocument();
+  });
+
+  it("announces the new order in the section's own live region", () => {
+    renderSection({
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: [committed(1, "Atraxa"), makeCard(2)] },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 2 },
+    });
+    const region = document.querySelector('[aria-live="polite"]') as HTMLElement;
+    expect(region.textContent).toBe("");
+    chooseAvailability();
+    expect(region.textContent).toBe(explainedCopy.coverageSort.announce("Availability"));
   });
 });

@@ -16,6 +16,7 @@ import { useState, useId } from "react";
 import type { CardFacet } from "../../lib/cards/facet";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { facetCounts } from "../../lib/commanders/synergy-cards";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { FacetStrip } from "./facet-strip";
 import { SynergyRow } from "./synergy-row";
@@ -237,6 +238,24 @@ export function SynergyPanel({
         <span style={{ color: "var(--accent)" }}>{synergyCopy.panel.legendToken}</span>{" "}
         {isPhone ? synergyCopy.panel.legendRestMobile : synergyCopy.panel.legendRest}
       </p>
+
+      {/* The dot legend. This is the only surface where all three dot states can
+          appear at once, so it names all three rather than just the amber one —
+          and, like the role panels, only where a row on screen carries the mark. */}
+      {visibleCards.some((c) => c.committedTo !== null) && (
+        <p
+          className="m-0 font-mono"
+          style={{
+            fontSize: 10,
+            color: "var(--fg-locked)",
+            marginTop: 0,
+            marginBottom: isPhone ? 10 : 12,
+            lineHeight: 1.4,
+          }}
+        >
+          {explainedCopy.committed.legendSynergy}
+        </p>
+      )}
 
       {/* Column header row — desktop only; 9.5px mono uppercase 0.14em tracking */}
       {!isPhone && (

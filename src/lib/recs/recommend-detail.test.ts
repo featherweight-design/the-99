@@ -18,6 +18,14 @@ vi.mock("../../db", () => ({
   },
 }));
 
+// Deck membership is its own query, tested in `decks/committed.test.ts`. What
+// matters here is only that whatever it returns reaches the role cards.
+const committed = vi.hoisted(() => ({ value: new Map<string, string>() }));
+vi.mock("../decks/committed", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../decks/committed")>()),
+  readCommittedDecks: () => Promise.resolve(committed.value),
+}));
+
 vi.mock("../edhrec/client", () => ({
   readEdhrecCache: vi.fn(async () => new Map()),
   resolveEdhrecData: vi.fn(async () => ({ data: null, unreachable: false })),
@@ -34,6 +42,7 @@ const card = (over: Record<string, unknown>) => ({
 beforeEach(() => {
   pool.collection = [];
   pool.card = [];
+  committed.value = new Map();
 });
 
 describe("scoreOneCommander", () => {
@@ -57,6 +66,22 @@ describe("scoreOneCommander", () => {
     // and fails the second, and a crafted URL is the only way to ask for one.
     pool.card = [card({ oracleId: "bolt", name: "Lightning Bolt", typeLine: "Instant" })];
     expect(await scoreOneCommander("user-instant", "bolt", "lightning-bolt")).toBeNull();
+  });
+
+  // Marked here rather than in `scoreCommander`, so that both readers of this
+  // function — the page and the coverage-retry action — get the mark.
+  it("stamps each role card with the deck already holding it", async () => {
+    pool.collection = [
+      card({ oracleId: "sol", name: "Sol Ring", typeLine: "Artifact", oracleText: "Add {C}{C}." }),
+      card({ oracleId: "signet", name: "Arcane Signet", typeLine: "Artifact", oracleText: "Add {C}." }),
+    ];
+    pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
+    committed.value = new Map([["sol", "Krenko"]]);
+
+    const got = await scoreOneCommander("user-committed", "unowned", "atraxa");
+    const byId = new Map(got!.roleCards.ramp.map((c) => [c.oracleId, c.committedTo]));
+    expect(byId.get("sol")).toBe("Krenko");
+    expect(byId.get("signet")).toBeNull();
   });
 
   it("still returns null for an oracle id that is in no table", async () => {

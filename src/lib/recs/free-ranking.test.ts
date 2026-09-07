@@ -103,6 +103,7 @@ describe("rankFree with preloaded reads", () => {
     fitSynergy: null,
     synergyState: "absent",
     score: 10,
+    measurableTotal: 40,
     imageUri: null,
   });
 

@@ -14,6 +14,7 @@ import {
   toScoreRow,
 } from "./store";
 import type { RankedCommander } from "./recommend";
+import { RANK_SCORE_UNWRITTEN } from "../../db/schema";
 
 const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
   oracleId: "11111111-1111-1111-1111-111111111111",
@@ -29,11 +30,13 @@ const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
   roleCounts: { ramp: 10, draw: 8, removal: 9, wipes: 3 },
   roleGaps: [],
   roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
-  overlapOwned: ["Sol Ring", "Cultivate"],
+  overlapOwned: ["Sol Ring", "Cultivate"], overlapOwnedIds: ["a", "b"],
   fitPool: 15,
   fitRoles: 25,
   fitSynergy: 18,
   score: 58,
+  measurableTotal: 100,
+  rankScore: 58,
   slug: "atraxa-praetors-voice",
   synergyState: "ok",
   ...over,
@@ -209,6 +212,59 @@ describe("isSchemaLagError", () => {
   it("rejects non-errors", () => {
     expect(isSchemaLagError(null)).toBe(false);
     expect(isSchemaLagError("42P01")).toBe(false);
+  });
+});
+
+describe("loadScores and the rows a mid-deploy write left behind", () => {
+  // The one shape of row this cannot serve: written after 0017 added `rank_score` but
+  // before the deployment that fills it went live, so the column holds only its default.
+  const row = (over: Record<string, unknown> = {}) => ({
+    oracleId: "11111111-1111-1111-1111-111111111111",
+    slug: "atraxa-praetors-voice",
+    score: 58,
+    rankScore: 58,
+    fitPool: 15,
+    fitRoles: 25,
+    fitSynergy: 18,
+    synergyState: "ok",
+    edhrecOwnedCount: 30,
+    edhrecTotal: 100,
+    receipts: "Sol Ring, Cultivate",
+    colorPoolSize: 420,
+    roleCounts: { ramp: 10, draw: 8, removal: 9, wipes: 3 },
+    name: "Atraxa, Praetors' Voice",
+    colorIdentity: ["W", "U", "B", "G"],
+    imageUri: "https://x.test/a.jpg",
+    ...over,
+  });
+
+  function resolvingSelect(rows: unknown[]) {
+    const chain = { from: () => chain, innerJoin: () => chain, where: () => chain, orderBy: () => Promise.resolve(rows) };
+    return () => chain;
+  }
+
+  beforeEach(() => {
+    delete stub.db.select;
+  });
+
+  it("serves rows this code wrote", async () => {
+    stub.db.select = resolvingSelect([row()]);
+    const { items } = await loadScores("user_1");
+    expect(items).toHaveLength(1);
+  });
+
+  // Neither empty nor degraded, so nothing else would ever mark the list stale.
+  it("reads a sentinel rank score as a miss so the caller recomputes", async () => {
+    stub.db.select = resolvingSelect([row({ rankScore: RANK_SCORE_UNWRITTEN })]);
+    await expect(loadScores("user_1")).resolves.toEqual({ items: [], degradedOracleIds: [] });
+  });
+
+  // persistScores writes a user's rows in one transaction, so a set holding one such row
+  // was written whole by that deployment. Keeping the rest would serve a truncated list.
+  it("condemns the whole set rather than dropping the one row", async () => {
+    stub.db.select = resolvingSelect([row(), row({ rankScore: RANK_SCORE_UNWRITTEN })]);
+    const { items } = await loadScores("user_1");
+    expect(items).toEqual([]);
   });
 });
 
