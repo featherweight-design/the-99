@@ -18,12 +18,12 @@ import { and, eq, inArray, sql } from "drizzle-orm";
  * against a branch that has only some of them.
  *
  * IT IS DESTRUCTIVE. Re-running replaces rather than accumulates, and the way it
- * does that is to delete EVERY game on each matched deck — not only the games a
- * previous run of this script wrote. There is nothing on a row marking it as
- * seeded, so real play history on a deck that shares one of these names would go
- * with it, and the axis rows follow by cascade. The plan printed before any write
- * names each deck's current game count for that reason, and --dry-run prints the
- * same plan without touching anything.
+ * does that is to delete every game this user has on each matched deck — not only
+ * the games a previous run of this script wrote. There is nothing on a row marking
+ * it as seeded, so real play history on a deck that shares one of these names would
+ * go with it, and the axis rows follow by cascade. The plan printed before any
+ * write names each deck's current game count for that reason, and --dry-run prints
+ * the same plan without touching anything.
  *
  * Two decks can carry the same name — there is no unique index on
  * (user_id, name) — so a duplicate is refused rather than resolved, since either
@@ -156,7 +156,11 @@ async function main() {
       games: sql<number>`count(${deckGames.id})::int`,
     })
     .from(decks)
-    .leftJoin(deckGames, eq(deckGames.deckId, decks.id))
+    // Joined on the same predicate the delete below uses, so the count printed in
+    // the plan is exactly the set of rows that run would remove. A game whose
+    // user_id disagrees with its deck's owner is corrupt data this script leaves
+    // alone rather than quietly reassigns.
+    .leftJoin(deckGames, and(eq(deckGames.deckId, decks.id), eq(deckGames.userId, args.user)))
     .where(eq(decks.userId, args.user))
     .groupBy(decks.id, decks.name);
 
@@ -200,10 +204,12 @@ async function main() {
     return;
   }
 
-  // Delete first so a re-run replaces rather than accumulates. This removes EVERY
-  // game on these decks, not only the ones a previous run wrote — nothing marks a
-  // row as seeded — so a deck listed above with a non-zero count loses that
-  // history here. deck_game_axes cascades, so it needs no statement of its own.
+  // Delete first so a re-run replaces rather than accumulates. This removes every
+  // game this user has on these decks, not only the ones a previous run wrote —
+  // nothing marks a row as seeded — so a deck listed above with a non-zero count
+  // loses that history here. The predicate matches the count query's join, so the
+  // number printed in the plan is the number of rows removed. deck_game_axes
+  // cascades, so it needs no statement of its own.
   const deleted = await db
     .delete(deckGames)
     .where(and(eq(deckGames.userId, args.user), inArray(deckGames.deckId, targets.map((d) => d.match.id))))
