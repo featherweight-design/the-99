@@ -98,8 +98,16 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
+| 1 | **Card line item parity** — no ticket filed | `docs/superpowers/specs/2026-09-07-card-line-item-parity-design.md` (merged PR #404) | Design answers the four open questions; the answers land as an amendment to the existing per-surface tables rather than a new handoff folder, since every surface involved already ships | Six components draw a card row and the six disagree about what a reader is told — mana pips appear in exactly one of them, and the ownership dot is drawn by two components that disagree about what an unowned card looks like. Eng cannot separate purposeful difference from drift by reading the code, which is why this is a brief and not a refactor ticket. It sits ticketless for the same reason #330 did: the work was scoped from a direct request, and inventing an issue to hold a row is worse than the row saying it has none |
 
-_Currently empty._
+**Two questions the #94 sweep raised are folded into that brief rather than filed
+separately.** `collection/no-results.tsx` and `commanders/filtered-empty.tsx` are the same
+empty state drawn twice with different geometry and voice; folding them changes what a
+reader sees, so eng left both standing rather than pick one. And
+`decks/card-search-row.tsx` is the one card row that still cannot open the card modal: it
+is an `option` inside a `role="listbox"`, where a nested trigger conflicts with both the
+combobox's click contract and its accessibility tree. Every other named card row now opens
+the modal, and the modal shows the same availability everywhere it opens (PRs #405, #407).
 
 **#10 left on 2026-09-07**, the same day it arrived — its brief merged on PR #392, Design delivered
 all five surfaces at R2 within the day, and the handoff audited 🟢 Green, so it now sits in 🟢
@@ -146,7 +154,12 @@ them would mean guessing: §3.3's "99 means three things" collapse never enumera
 strings and one candidate is the completion reveal's own heading; two of #148's three add-panel
 divergences do not match the record as filed, and the third is a real visual change to the
 consider tile; and §3.4 item 4 — the quick-add row should open the shared Card Detail modal — is
-feature work Design says to file, which has not been filed.
+feature work Design says to file, which has not been filed. **§3.4 item 4 now has an obstacle
+rather than just an owner** (found by the #94 sweep, 2026-09-07): the quick-add row is an `option`
+inside a `role="listbox"`, so a nested modal trigger fights the combobox's own click contract and
+its accessibility tree. Every other named card row was given the modal on PRs #405 and #407; this
+one needs Design to say how a reader reaches a card's detail from inside a listbox, which is a
+different question from the one filed.
 
 **Both handoff folders are on disk untracked and are not committed to `main`.** They arrived
 during a concurrent run, so this tracker records their arrival without claiming them; whoever runs
