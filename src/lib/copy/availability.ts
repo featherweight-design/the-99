@@ -156,8 +156,6 @@ export const availabilityCopy = {
     hint: "Tap to see which — and where they went.",
     // Expressive-adjacent, but this is the sentence that must not overclaim.
     // It describes LISTS. Never "in a box", "on a shelf", "sleeved up right now".
-    expanded:
-      "These twelve are sleeved into decks you’ve finished. You can still build with them — you’d be taking them out of something.",
     expandedFor: (n: number) =>
       n === 1
         ? "This one is sleeved into a deck you’ve finished. You can still build with it — you’d be taking it out of something."

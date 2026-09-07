@@ -178,8 +178,11 @@ export default async function CommandersPage({
           >
             {/* "Add more cards" button — primary: accent on base canvas */}
             {/* Mobile: full-width, padding 12px 0; Desktop: padding 12px 22px per table */}
+            {/* The upload flow, not the collection table: this button and the ghost
+                one beside it both pointed at /collection, so the pair offered one
+                destination under two labels. */}
             <PrimaryButton
-              href="/collection"
+              href="/collection/replace"
               className="text-[14px] text-center block p-[12px_0] sm:p-[12px_22px]"
             >
               Add more cards
