@@ -2,6 +2,7 @@ import { requireUserId } from "../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
 import { getRankedList } from "../../lib/recs/ranked-list";
 import { rankFree } from "../../lib/recs/free-ranking";
+import { toFreeDelta, type FreeRankingDelta } from "../../lib/recs/free-delta";
 import { loadCollectionPool } from "../../lib/recs/recommend";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import type { Availability } from "../../lib/decks/availability";
@@ -9,7 +10,6 @@ import {
   receiptCountsByCommander,
   type ReceiptCounts,
 } from "../../lib/commanders/in-use";
-import type { CommanderListItem } from "../../lib/recs/recommend";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
 import { DiscoveryView } from "../../components/commanders/discovery-view";
@@ -17,6 +17,7 @@ import { loadDiscovery } from "../../lib/discovery/list";
 import { parseScope, parseSort } from "../../lib/discovery/params";
 import { PageHeader } from "../../components/commanders/page-header";
 import { retryRecs } from "./actions";
+import { RetryGhost } from "../../components/commanders/retry-submit";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
 import {
   EmptyState,
@@ -199,12 +200,9 @@ export default async function CommandersPage({
             {/* Retry — visible when EDHREC was degraded */}
             {degraded && (
               <form action={retryRecs} className="w-full sm:w-auto">
-                <GhostButton
-                  type="submit"
-                  className="text-[14px] w-full p-[12px_0] sm:p-[12px_22px]"
-                >
+                <RetryGhost className="text-[14px] w-full p-[12px_0] sm:p-[12px_22px]">
                   Retry
-                </GhostButton>
+                </RetryGhost>
               </form>
             )}
           </div>
@@ -242,11 +240,15 @@ export default async function CommandersPage({
   // This costs no extra query: `rankFree` re-scores the same `items` against the
   // collection and availability already read above, which also makes the receipt
   // and the free ranking describe one snapshot of the decks rather than two.
-  let freeItems: CommanderListItem[] | null = null;
+  //
+  // Shipped as a diff against `items` rather than as a second full list: the
+  // two are the same commanders, so most of a second copy is the same names,
+  // slugs and image URLs sent twice. See `free-delta.ts`.
+  let freeRanking: FreeRankingDelta | null = null;
   if (availOk && availability) {
     const free = await rankFree(userId, items, { collection, availability });
-    if (free.ok) freeItems = free.items;
-    else availOk = false;
+    freeRanking = free.ok ? toFreeDelta(items, free.items) : null;
+    if (!freeRanking) availOk = false;
   }
 
   // `?avail=free` is a request, not a promise. With no free ranking to show the
@@ -267,7 +269,7 @@ export default async function CommandersPage({
         candidateCount={candidateCount}
         firstRun={firstRun}
         avail={renderedAvail}
-        freeItems={freeItems}
+        freeRanking={freeRanking}
         availOk={availOk}
         receiptCounts={receiptCounts}
       />

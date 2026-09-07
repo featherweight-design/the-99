@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { PendingSlot } from "../ui/pending-mark";
 import { PENDING_OPACITY } from "./pending";
 
 type Scope = "owned" | "play";
@@ -111,7 +112,7 @@ export function ScopeControl({
                 step(i, dir);
               }}
               className={[
-                "flex items-center justify-center rounded-md border-0 cursor-pointer",
+                "flex items-center justify-center gap-[6px] rounded-md border-0 cursor-pointer",
                 "flex-1 h-[38px] px-[10px] text-[13px]",
                 "sm:flex-none sm:h-8 sm:px-[13px] sm:text-[12.5px]",
                 active
@@ -125,6 +126,7 @@ export function ScopeControl({
                 subtitle immediately beneath it. */}
               <span className="sm:hidden">{s.short}</span>
               <span className="hidden sm:inline">{s.label}</span>
+              {active && <PendingSlot pending={pending !== null} />}
             </button>
           );
         })}

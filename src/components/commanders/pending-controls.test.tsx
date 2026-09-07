@@ -60,6 +60,31 @@ describe("controls with a flip in flight", () => {
     expect(trigger.style.opacity).toBe(String(PENDING_OPACITY));
   });
 
+  // The dim was the whole signal until now, and a dimmed control reads as one
+  // that has been switched off rather than one that is waiting. The mark is the
+  // crown pulsing on the app's one loading animation, and it rides the selected
+  // segment — which is already the segment the reader pressed, because the
+  // control goes optimistic the moment they press it.
+  it("pulses the loading mark on the control that is waiting", () => {
+    const { rerender } = render(<ScopeControl scope="owned" pending="play" onChange={vi.fn()} />);
+    const playing = screen.getByRole("radio", { name: discoveryCopy.scope.playAria });
+    expect(playing.querySelector("[data-pending-mark]")).not.toBeNull();
+
+    rerender(bar("all"));
+    expect(
+      screen
+        .getAllByRole("radio", { name: availabilityCopy.ranking.allAria })[0]
+        .querySelector("[data-pending-mark]"),
+    ).not.toBeNull();
+
+    rerender(<SortMenu sort="fit" pending="new" hasDecks onChange={vi.fn()} />);
+    expect(
+      screen
+        .getByRole("button", { name: discoveryCopy.sort.triggerAria(discoveryCopy.sort.new) })
+        .querySelector("[data-pending-mark]"),
+    ).not.toBeNull();
+  });
+
   // The other half: a control with nothing in flight is byte-identical to what
   // shipped. `aria-busy="false"` on every idle control would be noise in the
   // accessibility tree, and the owned scope's availability flip is a client-side
@@ -74,5 +99,6 @@ describe("controls with a flip in flight", () => {
     for (const g of screen.getAllByRole("radiogroup")) {
       expect(g.getAttribute("aria-busy")).toBeNull();
     }
+    expect(document.querySelector("[data-pending-mark]")).toBeNull();
   });
 });

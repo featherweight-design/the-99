@@ -8,6 +8,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { PendingMark } from "../ui/pending-mark";
 import { PENDING_OPACITY } from "./pending";
 
 const { sort: copy } = discoveryCopy;
@@ -144,7 +145,13 @@ export function SortMenu({
         ].join(" ")}
       >
         {currentLabel}
-        <span aria-hidden className="text-[color:var(--accent)]">▾</span>
+        {/* The mark takes the chevron's place rather than sitting beside it: the
+            chevron's promise is a menu, and while a re-rank is out the menu is
+            the one thing pressing the trigger will not get you. The slot holds
+            its width so the trigger does not resize under the reader's cursor. */}
+        <span aria-hidden className="inline-flex w-[28px] justify-center text-[color:var(--accent)]">
+          {pending !== null ? <PendingMark /> : "▾"}
+        </span>
       </button>
 
       {open && (
