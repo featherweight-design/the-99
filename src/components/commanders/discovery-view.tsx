@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { filterByColors } from "../../lib/commanders/filter";
+import { filterByColors, type JoinMode } from "../../lib/commanders/filter";
 import { parseColors } from "../../lib/color-param";
+import { parseJoin } from "../../lib/discovery/params";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { planeCopy } from "../../lib/copy/commanders-plane";
 import { colorWords, guildLabel } from "../../lib/copy/color-labels";
 // Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
 // reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is unset
@@ -63,10 +65,13 @@ export function DiscoveryView({
   // still lit rather than with a param the list ignores.
   const search = useSearchParams();
   const [colors, setColors] = useState<string[]>(() => parseColors(search.get("c")));
+  // Seeded the same way, and for the same reason: `?join=exact` is part of the
+  // link a player shares, so the list it opens is the one they were looking at.
+  const [join, setJoin] = useState<JoinMode>(() => parseJoin(search.get("join")));
   const [shown, setShown] = useState(REVEAL_STEP);
   const filtered = useMemo(
-    () => filterByColors(discovery.items, colors),
-    [discovery.items, colors],
+    () => filterByColors(discovery.items, colors, join),
+    [discovery.items, colors, join],
   );
 
   const scopeNav = useScopeNav();
@@ -121,6 +126,16 @@ export function DiscoveryView({
   }, []);
   const clearColors = useCallback(() => setColors([]), []);
 
+  // The mode narrows on the client, so its message is written here rather than
+  // read back off a server round trip. It names the count the flip produced and
+  // the identity it was exact about, because "Exactly" alone says nothing about
+  // what left the list.
+  const joinMessage = useCallback(
+    (m: JoinMode) => planeCopy.join.announce(m, filtered.length, colors),
+    [filtered.length, colors],
+  );
+  useRerankAnnouncement(join, joinMessage, setAnnouncement);
+
   // The window goes back to the top whenever the list underneath it changes —
   // a sort or availability flip, both of which are server round-trips that
   // return a differently ordered list under this same mounted component, and a
@@ -132,7 +147,7 @@ export function DiscoveryView({
   // prescribes for state derived from a prop change — an effect would render
   // the deep window once before correcting it. The scope flip needs no entry
   // here at all: it unmounts this component.
-  const listKey = `${discovery.sort}:${avail}:${colors.join("")}`;
+  const listKey = `${discovery.sort}:${avail}:${colors.join("")}:${join}`;
   const [prevListKey, setPrevListKey] = useState(listKey);
   if (listKey !== prevListKey) {
     setPrevListKey(listKey);
@@ -175,11 +190,16 @@ export function DiscoveryView({
     const params = new URLSearchParams(window.location.search);
     if (colors.length > 0) params.set("c", colors.join(""));
     else params.delete("c");
+    // Written only while it can do something. With no pip lit the control is not
+    // rendered and the mode changes no row, so a `join` left in the URL would be
+    // a filter the player cannot see, cannot clear, and did not ask for.
+    if (join === "exactly" && colors.length > 0) params.set("join", "exact");
+    else params.delete("join");
     const s = params.toString();
     // The live pathname, not a literal: this rewrites the query and must leave
     // the path exactly as it found it under a basePath or a route move.
     window.history.replaceState(null, "", `${window.location.pathname}${s ? `?${s}` : ""}`);
-  }, [colors]);
+  }, [colors, join]);
 
   const menu = (
     <SortMenu
@@ -212,15 +232,17 @@ export function DiscoveryView({
 
   // The one reason this state has under discovery that it does not have under
   // the owned scope: the commanders are missing because they are already built.
-  // The predicate is the list's own — `selected ⊆ colorIdentity`, not equality —
-  // because the clause claims these decks would have been in THIS filtered list
-  // had they been unbuilt, and an equality test would make that false for every
-  // deck whose identity is wider than the filter.
+  // The predicate is the list's own, mode included: the clause claims these decks
+  // would have been in THIS filtered list had they been unbuilt, so it has to be
+  // answered by the same test the list was narrowed with. Under `exactly` a deck
+  // whose identity is wider than the selection would not have appeared, and
+  // counting it here would offer a reason that is not true.
   const builtClause = useMemo(() => {
     if (!showFilteredEmpty) return null;
     const matching = filterByColors(
       discovery.deckIdentities.map((colorIdentity) => ({ colorIdentity })),
       colors,
+      join,
     ).length;
     if (matching === 0) return null;
     return emptyCopy.filteredBuiltClause(
@@ -228,7 +250,7 @@ export function DiscoveryView({
       discovery.deckIdentities.length,
       guildLabel(colors),
     );
-  }, [showFilteredEmpty, discovery.deckIdentities, colors]);
+  }, [showFilteredEmpty, discovery.deckIdentities, colors, join]);
 
   // Ranks come from the server, over every item this list carries, so filtering
   // never renumbers — the same invariant CommandersView holds, reached differently.
@@ -269,6 +291,8 @@ export function DiscoveryView({
         // split decides which one is displayed, and the menu carries its own
         // breakpoint for the two pixels that differ between them.
         order={{ desktop: menu, mobile: menu }}
+        join={join}
+        onJoinChange={setJoin}
       />
 
       {/* State 1 sits ABOVE a full list, not in place of one: with no decks

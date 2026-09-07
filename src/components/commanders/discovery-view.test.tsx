@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { DiscoveryList } from "../../lib/discovery/list";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { planeCopy } from "../../lib/copy/commanders-plane";
 import { revealAnnouncement } from "./reveal-control";
 import { DiscoveryView } from "./discovery-view";
 
@@ -459,5 +460,96 @@ describe("DiscoveryView", () => {
           .getAttribute("aria-checked"),
       ).toBe("true");
     });
+  });
+
+  // ── The colour match mode (§7) ────────────────────────────────────────
+  const join = planeCopy.join;
+
+  // Absent, not disabled: with no pip lit there is nothing for a mode to join,
+  // and a disabled control would invite a hunt for whatever would enable it.
+  it("does not render the mode until a pip is lit", () => {
+    render(<DiscoveryView discovery={list({ items: [item({})], candidateCount: 1 })} avail="free" />);
+    expect(screen.queryByRole("radio", { name: join.exactlyAria })).toBeNull();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.getAllByRole("radio", { name: join.exactlyAria }).length).toBeGreaterThan(0);
+  });
+
+  it("narrows the list to the identities that are the selection and nothing else", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+    ];
+    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.getAllByText("Showing 2 of 2").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
+  });
+
+  // `exact` in the URL, `exactly` in the code. The param is a word the player can
+  // see and edit; the mapping lives in `parseJoin` and nowhere else.
+  it("mirrors the mode into the URL as ?join=exact, and reads it back", () => {
+    render(<DiscoveryView discovery={list()} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(window.location.search).toBe("?scope=play&c=G&join=exact");
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("opens under the mode the incoming URL names", () => {
+    window.history.replaceState(null, "", "/commanders?scope=play&c=G&join=exact");
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+    ];
+    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
+    expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
+  });
+
+  // A mode with no pip to modify changes no row, so leaving it in the URL would
+  // be a filter the player cannot see and cannot clear.
+  it("drops the mode from the URL when the last pip goes out", () => {
+    render(<DiscoveryView discovery={list()} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(window.location.search).toBe("?scope=play");
+  });
+
+  it("announces the mode with the count the flip produced", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+    ];
+    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(screen.getByText(join.announce("exactly", 1, ["G"]))).toBeTruthy();
+  });
+
+  it("says what the mode did, under the control, only while it is exact", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+    ];
+    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.queryByText(join.exactNote(2, 2, ["G"]))).toBeNull();
+
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(screen.getByText(join.exactNote(1, 2, ["G"]))).toBeTruthy();
+    expect(screen.getByText(join.exactNoteShort(1, 2, ["G"]))).toBeTruthy();
+  });
+
+  it("returns the window to the top when the mode narrows the list", () => {
+    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(screen.queryByText("Commander 25")).toBeNull();
   });
 });

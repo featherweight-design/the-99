@@ -11,8 +11,10 @@
 
 import { useRef, type ReactNode } from "react";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { planeCopy } from "../../lib/copy/commanders-plane";
 import { PENDING_OPACITY } from "./pending";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
+import type { JoinMode } from "../../lib/commanders/filter";
 import { WindowCount } from "./reveal-control";
 
 type AvailMode = "all" | "free";
@@ -130,6 +132,106 @@ function ScoreAgainst({
   );
 }
 
+/**
+ * The colour match mode (§7). A modifier of the pip row rather than a control of
+ * its own, and the geometry says so: on desktop it sits INSIDE the pip wrapper
+ * behind a hairline, at 20px against the pips' 16px.
+ *
+ * The caller renders it only while a pip is lit. With no selection there is
+ * nothing to be exact about, so it is absent rather than disabled — a disabled
+ * control still claims a place in the row and invites a player to go looking for
+ * the thing that would enable it.
+ *
+ * A radiogroup with a roving tab stop, matching `ScoreAgainst`: one control on
+ * this bar behaving differently from the other is the worse outcome.
+ */
+function JoinModeControl({
+  value,
+  onChange,
+  labelledBy,
+  size,
+}: {
+  value: JoinMode;
+  onChange: (next: JoinMode) => void;
+  labelledBy?: string;
+  size: "mobile" | "desktop";
+}) {
+  const segments = [
+    { mode: "contains" as const, label: planeCopy.join.contains, aria: planeCopy.join.containsAria },
+    { mode: "exactly" as const, label: planeCopy.join.exactly, aria: planeCopy.join.exactlyAria },
+  ];
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const step = (from: number, dir: 1 | -1) => {
+    const next = (from + dir + segments.length) % segments.length;
+    refs.current[next]?.focus();
+    onChange(segments[next].mode);
+  };
+
+  return (
+    <div
+      role="radiogroup"
+      // Desktop has no visible label: `COLORS` captions the wrapper this sits in,
+      // and a second caption inside it would be noise. The name comes from the
+      // attribute there and from the mobile row's own label element here.
+      aria-label={labelledBy ? undefined : planeCopy.join.groupAria}
+      aria-labelledby={labelledBy}
+      className={size === "mobile" ? "flex gap-[3px] rounded-lg p-[3px]" : "flex gap-[2px] p-[2px]"}
+      style={{
+        background: "var(--surface-sunken)",
+        border: "1px solid var(--border-strong)",
+        borderRadius: size === "mobile" ? undefined : 6,
+      }}
+    >
+      {segments.map((s, i) => {
+        const active = s.mode === value;
+        return (
+          <button
+            key={s.mode}
+            ref={(node) => {
+              refs.current[i] = node;
+            }}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={s.aria}
+            tabIndex={active ? 0 : -1}
+            onClick={() => onChange(s.mode)}
+            onKeyDown={(e) => {
+              const dir =
+                e.key === "ArrowRight" || e.key === "ArrowDown"
+                  ? 1
+                  : e.key === "ArrowLeft" || e.key === "ArrowUp"
+                    ? -1
+                    : 0;
+              if (dir === 0) return;
+              e.preventDefault();
+              step(i, dir);
+            }}
+            className={[
+              "flex items-center justify-center cursor-pointer border-0",
+              size === "mobile" ? "flex-1 rounded-md px-[10px]" : "font-mono rounded-[4px] px-[8px]",
+              active
+                ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)]"
+                : `font-medium bg-transparent ${
+                    size === "mobile" ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"
+                  }`,
+            ].join(" ")}
+            style={{
+              height: size === "mobile" ? 38 : 20,
+              fontSize: size === "mobile" ? 13 : 10,
+              letterSpacing: size === "mobile" ? undefined : "0.08em",
+              textTransform: size === "mobile" ? undefined : "uppercase",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {s.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 const COLOR_LABELS: Record<string, string> = {
   W: "White",
   U: "Blue",
@@ -162,6 +264,11 @@ export type FilterBarProps = {
       A null `mobile` drops the row it would sit in, which is how the owned scope
       keeps its phone layout unchanged below the window threshold. */
   order: { desktop: ReactNode; mobile: ReactNode };
+  /** The colour match mode (§7), omitted by the owned scope, which offers one
+      mode and would gain a control that never changes anything. Present or not,
+      it renders only while a pip is lit. */
+  join?: JoinMode;
+  onJoinChange?: (next: JoinMode) => void;
 };
 
 export function FilterBar({
@@ -177,7 +284,10 @@ export function FilterBar({
   filteredTotal,
   activeTotal,
   order,
+  join,
+  onJoinChange,
 }: FilterBarProps) {
+  const showJoin = join !== undefined && onJoinChange !== undefined && colors.length > 0;
   return (
     <>
       {/* ── Desktop sticky filter bar (§Filter container, desktop) ── */}
@@ -237,6 +347,25 @@ export function FilterBar({
                 />
               );
             })}
+
+            {/* Colour match (desktop, §7) — inside this wrapper, behind a
+                hairline, because it modifies the pips rather than sitting
+                beside them. */}
+            {showJoin && (
+              <>
+                <span
+                  aria-hidden
+                  className="block"
+                  style={{
+                    width: 1,
+                    height: 16,
+                    background: "var(--border-strong)",
+                    margin: "0 2px",
+                  }}
+                />
+                <JoinModeControl value={join} onChange={onJoinChange} size="desktop" />
+              </>
+            )}
           </div>
 
           {/* Score against (desktop, §7) — the third control in this row. */}
@@ -344,6 +473,19 @@ export function FilterBar({
             {availabilityCopy.ranking.freeNoteLong}
           </p>
         )}
+
+        {/* The exact note, in the same slot and register. Two notes can stack:
+            they answer different questions (which pool was ranked, and what the
+            mode did), and suppressing one would leave the other's figure
+            unexplained. */}
+        {showJoin && join === "exactly" && (
+          <p
+            className="font-mono m-0 mt-[8px]"
+            style={{ fontSize: 11, color: "var(--fg-faint)" }}
+          >
+            {planeCopy.join.exactNote(filteredTotal, activeTotal, colors)}
+          </p>
+        )}
       </div>
 
       {/* ── Mobile filter strip ── */}
@@ -396,6 +538,40 @@ export function FilterBar({
             {filteredTotal.toLocaleString("en-US")}/{activeTotal.toLocaleString("en-US")}
           </span>
         </div>
+
+        {/* Colour match (mobile, §7) — no room inside the pip row at 375px, so
+            it becomes a peer row directly under the pips it modifies, and still
+            disappears entirely when no pip is lit. */}
+        {showJoin && (
+          <div className="mt-[10px]">
+            <p
+              id="join-mode-mobile"
+              className="font-mono m-0 mb-[6px]"
+              style={{
+                fontSize: 9,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "var(--fg-faint)",
+              }}
+            >
+              {planeCopy.join.label}
+            </p>
+            <JoinModeControl
+              value={join}
+              onChange={onJoinChange}
+              labelledBy="join-mode-mobile"
+              size="mobile"
+            />
+            {join === "exactly" && (
+              <p
+                className="font-mono m-0 mt-[7px]"
+                style={{ fontSize: 10.5, color: "var(--fg-faint)", lineHeight: 1.5 }}
+              >
+                {planeCopy.join.exactNoteShort(filteredTotal, activeTotal, colors)}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Score against (mobile, §7) — its own block under the colour row. */}
         <div className="mt-[10px]">
