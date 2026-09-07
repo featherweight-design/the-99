@@ -112,7 +112,7 @@ export function WhySection({
         )}
         {weakest !== null && (
           <>
-            {explainedCopy.prose.gap(ROLE_SUBJECTS[weakest.role])}
+            {explainedCopy.prose.gap(weakest.role)}
             {explainedCopy.prose.gapJoin}
             <a
               href={`#${roleAnchorId(width, weakest.role)}`}

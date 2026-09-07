@@ -148,7 +148,9 @@ export function CoverageSortMenu({
           role="menu"
           aria-label={copy.triggerAria}
           className={[
-            "absolute right-0 z-10 mt-[6px] w-[340px] rounded-[10px] p-[6px]",
+            // 340px is the design's width. The cap only bites below a 372px viewport,
+            // where the menu would otherwise push the page sideways.
+            "absolute right-0 z-10 mt-[6px] w-[340px] max-w-[calc(100vw-32px)] rounded-[10px] p-[6px]",
             "bg-[color:var(--surface-rail)] border border-[color:var(--border-strong)]",
           ].join(" ")}
         >

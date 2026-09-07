@@ -68,6 +68,13 @@ describe("WhySection", () => {
     expect(link).toHaveTextContent("one owned against a three-source baseline");
   });
 
+  // Three of the four subjects are mass nouns. The subject map fixed "board wipe are";
+  // the verb is the half of that disagreement it could not reach.
+  it("agrees the verb with a role that is not a count noun", () => {
+    renderSection({ roleCounts: { ramp: 1, draw: 8, removal: 6, wipes: 3 } });
+    expect(screen.getByText(/Ramp is where you are thinnest/)).toBeInTheDocument();
+  });
+
   it("points the link at the panel for its own width", () => {
     renderSection({ roleCounts: { ramp: 8, draw: 8, removal: 6, wipes: 1 }, width: "phone" });
     expect(screen.getByRole("link", { name: "Jump to Board wipes" }))

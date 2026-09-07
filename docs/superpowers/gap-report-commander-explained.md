@@ -79,6 +79,18 @@ figure; a caller receiving `"12/15"` could not split it back apart. The separato
 and carries the whole figure for screen readers, which is the surface that does need one
 string.
 
+**6. `prose.gap` takes the role key, not the subject string.** The table gives the signature
+`gap(roleSubject: string)`. The subject map was added to stop "board wipe are where you are
+thinnest", but it only fixed the noun: three of the four subjects are mass nouns, so the shipped
+string still read "Ramp are where you are thinnest". The verb has to vary with the same key the
+subject does, so the key selects both and the copy module holds the copula beside the subject.
+`gapLinkAria` still takes the subject string, where no verb is involved.
+
+**7. The Role Coverage menu carries a viewport cap alongside its 340px width.** The table's width
+is unchanged and is what renders at every width the design draws. Below a 372px viewport the fixed
+width would push the page sideways, so `max-w-[calc(100vw-32px)]` bounds it. The cap is inert at
+375px and above.
+
 ## Height budget (§7)
 
 The ledger claims +355px on a 2,246px body at 375px, +16%, and says explicitly that the shape

@@ -42,11 +42,23 @@ const n = (v: number) => v.toLocaleString("en-US");
 // ("No board wipe cards in your pool") and stays as it ships. Three of the four entries are
 // identical to it; `wipes` is the one that cannot be shared, and one shared map made plural
 // would break the shipped string instead.
-export const ROLE_SUBJECTS: Record<"ramp" | "draw" | "removal" | "wipes", string> = {
+type RoleKey = "ramp" | "draw" | "removal" | "wipes";
+
+export const ROLE_SUBJECTS: Record<RoleKey, string> = {
   ramp: "Ramp",
   draw: "Card draw",
   removal: "Removal",
   wipes: "Board wipes",
+};
+
+// Three of those subjects are mass nouns and take a singular verb; only `wipes` counts.
+// The subject map alone got as far as "board wipe are where you are thinnest" and no
+// further, because the verb is where the remaining disagreement lives.
+const ROLE_COPULA: Record<RoleKey, string> = {
+  ramp: "is",
+  draw: "is",
+  removal: "is",
+  wipes: "are",
 };
 
 /** Deck names are the player's own strings and go in verbatim, never truncated in copy — the
@@ -99,7 +111,7 @@ export const explainedCopy = {
         "No board wipe cards in your pool", where the noun is attributive. Dropped into this
         sentence it produces "board wipe are where you are thinnest". This sentence takes
         ROLE_SUBJECTS below; ROLE_NOUNS is left alone. */
-    gap: (roleSubject: string) => `${roleSubject} are where you are thinnest`,
+    gap: (role: RoleKey) => `${ROLE_SUBJECTS[role]} ${ROLE_COPULA[role]} where you are thinnest`,
     /** `target` goes through spellOut for the same reason `owned` does — both are prose, and
         the canvas draws "a ten-source baseline". R1's key emitted "10-source". */
     gapFigures: (owned: number, target: number) =>
