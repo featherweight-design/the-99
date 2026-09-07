@@ -20,13 +20,21 @@ describe("floorPct", () => {
 
 describe("clearsFloor", () => {
   it("passes at exactly 30%", () => {
-    expect(clearsFloor({ ownedSupport: 30, edhrecTotal: 100 })).toBe(true);
+    expect(clearsFloor({ collectionSupport: 30, edhrecTotal: 100 })).toBe(true);
   });
   it("fails just below", () => {
-    expect(clearsFloor({ ownedSupport: 29, edhrecTotal: 100 })).toBe(false);
+    expect(clearsFloor({ collectionSupport: 29, edhrecTotal: 100 })).toBe(false);
   });
-  it("fails without a denominator rather than passing by default", () => {
-    expect(clearsFloor({ ownedSupport: 99, edhrecTotal: null })).toBe(false);
+
+  it("clears the floor on the whole collection, never on a narrowed pool", () => {
+    // 40 of 100 owned in the collection; only 5 of those are free.
+    const c = { collectionSupport: 40, edhrecTotal: 100 };
+    expect(clearsFloor(c)).toBe(true);
+  });
+
+  it("fails a commander with no EDHREC total", () => {
+    expect(clearsFloor({ collectionSupport: 40, edhrecTotal: null })).toBe(false);
+    expect(clearsFloor({ collectionSupport: 40, edhrecTotal: 0 })).toBe(false);
   });
 });
 

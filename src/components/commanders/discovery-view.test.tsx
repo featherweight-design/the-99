@@ -51,6 +51,7 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   rank: 1,
   owned: false,
   ownedSupport: 12,
+  collectionSupport: 12,
   edhrecTotal: 40,
   colorPoolSize: 34,
   roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },

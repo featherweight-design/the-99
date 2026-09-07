@@ -101,23 +101,28 @@ describe("assembleDiscovery", () => {
     expect(got.poolExcluded).toBe(0);
   });
 
-  // The pool sub-case: below the floor on the free pool, above it on everything
-  // the player owns. This is the only state the pool exclusion sentences describe.
-  it("counts a floor exclusion the whole collection would have cleared", () => {
+  // The defect this replaced: the floor read whichever pool was being scored, so
+  // narrowing the pool silently removed rows from a list the control only claims
+  // to reorder. 20 of 100 in the free pool, 60 of 100 in the collection — the
+  // floor reads the second, so the row is ranked either way.
+  it("decides the floor on the collection, so a narrowed pool removes nothing", () => {
     const pool = { ...base, candidates: [candidate({
       ownedSupport: 20, collectionSupport: 60,
       tags: [{ slug: "counters", label: "Counters", count: 1 }] })] };
     const got = assembleDiscovery({ ...pool, sort: "new" });
-    expect(got.items).toEqual([]);
-    expect(got.floorExcluded).toBe(1);
-    expect(got.poolExcluded).toBe(1);
+    expect(got.items).toHaveLength(1);
+    expect(got.floorExcluded).toBe(0);
+    expect(got.poolExcluded).toBe(0);
   });
 
-  it("does not count a floor exclusion the whole collection also misses", () => {
+  it("excludes a row the collection itself misses, and blames no pool for it", () => {
     const short = { ...base, candidates: [candidate({
       ownedSupport: 20, collectionSupport: 25,
       tags: [{ slug: "counters", label: "Counters", count: 1 }] })] };
-    expect(assembleDiscovery({ ...short, sort: "new" }).poolExcluded).toBe(0);
+    const got = assembleDiscovery({ ...short, sort: "new" });
+    expect(got.items).toEqual([]);
+    expect(got.floorExcluded).toBe(1);
+    expect(got.poolExcluded).toBe(0);
   });
 
   // Both pools run through `clearsFloor`, so the floor is inclusive on both and
@@ -155,8 +160,11 @@ describe("assembleDiscovery", () => {
       .toBe(1190);
   });
 
-  it("does not ship the collection-support count to the client", () => {
+  // It ships now, because the floor is applied over these rows and the floor
+  // reads it. The figure the item carries has to be the figure the floor used,
+  // or the two can disagree about why a row is missing.
+  it("carries the collection-support count the floor was decided on", () => {
     const got = assembleDiscovery({ ...base, sort: "fit" });
-    expect(got.items[0]).not.toHaveProperty("collectionSupport");
+    expect(got.items[0].collectionSupport).toBe(90);
   });
 });

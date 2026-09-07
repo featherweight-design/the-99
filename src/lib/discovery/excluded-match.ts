@@ -55,14 +55,12 @@ export function classifyMatches(
       out.push({ ...base, cause: "unmeasured", pct: null });
       continue;
     }
+    // The floor reads `collectionSupport`, so this is already the question the
+    // pool sub-case used to ask second: a row that fails here fails against
+    // everything the player owns, and the pool has nothing left to be blamed
+    // for. `pool` therefore has no producer, and only `floor` remains.
     if (clearsFloor(row)) continue;
-    // Tier 3's sub-case, selected by the one flag: the same predicate over the
-    // whole collection, so the two answers cannot drift apart.
-    const clearsAgainstCollection = clearsFloor({
-      ownedSupport: row.collectionSupport,
-      edhrecTotal: row.edhrecTotal,
-    });
-    out.push({ ...base, cause: clearsAgainstCollection ? "pool" : "floor", pct });
+    out.push({ ...base, cause: "floor", pct });
   }
   return out;
 }

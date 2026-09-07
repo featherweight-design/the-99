@@ -17,6 +17,7 @@ const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
   rank: 1,
   owned: false,
   ownedSupport: 126,
+  collectionSupport: 126,
   edhrecTotal: 264,
   colorPoolSize: 34,
   roleCounts: { ramp: 9, draw: 6, removal: 7, wipes: 2 },

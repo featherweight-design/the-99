@@ -17,9 +17,20 @@ export function floorPct(c: Overlap): number | null {
   return Math.round((100 * c.ownedSupport) / c.edhrecTotal);
 }
 
-export function clearsFloor(c: Overlap): boolean {
+/** The whole-collection support count, and never a pool a control can narrow.
+    Named rather than reused from `Overlap` so the floor cannot be handed the
+    pool figure by accident: the two shapes no longer fit each other. */
+export type FloorInput = { collectionSupport: number; edhrecTotal: number | null };
+
+/**
+ * The floor reads the whole collection, never a pool a control can narrow.
+ * Reading `ownedSupport` here is what let the availability toggle remove rows:
+ * `Score against` is documented as scoring-only, but the novelty sort dropped
+ * every row the narrowed pool pushed below the bar.
+ */
+export function clearsFloor(c: FloorInput): boolean {
   if (c.edhrecTotal == null || c.edhrecTotal <= 0) return false;
-  return c.ownedSupport >= NOVELTY_FLOOR * c.edhrecTotal;
+  return c.collectionSupport >= NOVELTY_FLOOR * c.edhrecTotal;
 }
 
 export function unplayedTags(tags: EdhrecTag[], played: Set<string>): EdhrecTag[] {

@@ -26,6 +26,12 @@ export type DiscoveryItem = {
   rank: number;
   owned: boolean;
   ownedSupport: number;
+  /** The same count over the whole collection, which is what the novelty floor
+      is decided on. It rides on the item because the floor is applied here,
+      over the enriched rows, and a floor that read `ownedSupport` would move
+      with whatever pool the ranking was scoped to. Equal to `ownedSupport`
+      unless the ranking is scoped to a smaller pool. */
+  collectionSupport: number;
   edhrecTotal: number | null;
   colorPoolSize: number;
   roleCounts: Record<RoleName, number>;
@@ -120,6 +126,7 @@ export function assembleDiscovery(input: {
       colorIdentity: c.colorIdentity, imageUri: c.imageUri,
       owned,
       ownedSupport: c.ownedSupport,
+      collectionSupport: c.collectionSupport,
       edhrecTotal: c.edhrecTotal,
       price: slotFor(input.prices.get(c.oracleId), owned),
       tagTotal: c.tags.length,
@@ -160,19 +167,12 @@ export function assembleDiscovery(input: {
   );
 
   // The sub-group of the floor-excluded that a full-collection ranking would
-  // have kept: they are missing from this list because the pool is the free one,
-  // not because the player lacks the cards. `clearsFloor` rather than a second
-  // comparison, so the two answers cannot drift apart.
-  //
-  // Read from the candidate rows rather than carried on the enriched ones: it is
-  // a property of the commanders that left, and putting it on the item would
-  // ship a constant to the client — every surviving row clears both pools.
-  const excludedIds = new Set(excluded.map((c) => c.oracleId));
-  const poolExcluded = input.candidates.filter(
-    (c) =>
-      excludedIds.has(c.oracleId) &&
-      clearsFloor({ ownedSupport: c.collectionSupport, edhrecTotal: c.edhrecTotal }),
-  ).length;
+  // have kept — and there can no longer be one. The floor is now decided on
+  // `collectionSupport`, so a row it excluded was excluded against everything
+  // the player owns: the narrowed pool has no rows left to take. Zero rather
+  // than a filter that can only ever return zero, so the reason is readable
+  // instead of having to be re-derived from `clearsFloor`'s argument.
+  const poolExcluded = 0;
 
   const ordered = [...active].sort(input.sort === "new" ? byNovelty : byFit);
 

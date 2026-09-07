@@ -43,13 +43,12 @@ describe("classifyMatches", () => {
     });
   });
 
-  // The pool is the floor's sub-case: the same predicate, over the collection.
-  it("names the pool when the row would clear against the whole collection", () => {
+  // The floor is decided on the collection, so a row short only on the narrowed
+  // pool is in the list and has no sentence. There is no `pool` cause left to
+  // name: the narrowed pool cannot remove a row.
+  it("says nothing about a row short on the pool but clear on the collection", () => {
     const rows = [row({ ownedSupport: 12, collectionSupport: 40 })];
-    expect(classifyMatches(rows, { sort: "new", builtOracleIds: none })[0]).toMatchObject({
-      cause: "pool",
-      pct: 12,
-    });
+    expect(classifyMatches(rows, { sort: "new", builtOracleIds: none })).toEqual([]);
   });
 
   it("separates a row with nothing to measure from one measured and short", () => {
