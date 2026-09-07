@@ -9,7 +9,7 @@ function item(over: Partial<CommanderListItem>): CommanderListItem {
     name: "A",
     colorIdentity: ["G"],
     colorPoolSize: 100,
-    roleCounts: { ramp: 1, draw: 1, removal: 1, wrath: 1, protection: 1 },
+    roleCounts: { ramp: 1, draw: 1, removal: 1, wipes: 1 },
     edhrecOwnedCount: 10,
     edhrecTotal: 100,
     receipts: "10 of 100",
@@ -21,7 +21,7 @@ function item(over: Partial<CommanderListItem>): CommanderListItem {
     measurableTotal: 100,
     imageUri: "https://cards.example/a.jpg",
     ...over,
-  } as CommanderListItem;
+  };
 }
 
 describe("free ranking delta", () => {

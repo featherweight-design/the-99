@@ -145,10 +145,11 @@ export function SortMenu({
         ].join(" ")}
       >
         {currentLabel}
-        {/* The mark takes the chevron's place rather than sitting beside it: the
-            chevron's promise is a menu, and while a re-rank is out the menu is
-            the one thing pressing the trigger will not get you. The slot holds
-            its width so the trigger does not resize under the reader's cursor. */}
+        {/* The mark takes the chevron's place rather than sitting beside it, so
+            the trigger keeps one glyph slot at both states and does not resize
+            under the reader's cursor. The trigger still opens the menu while a
+            re-rank is out — a control that stopped responding mid-wait would be
+            the worse answer. */}
         <span aria-hidden className="inline-flex w-[28px] justify-center text-[color:var(--accent)]">
           {pending !== null ? <PendingMark /> : "▾"}
         </span>
