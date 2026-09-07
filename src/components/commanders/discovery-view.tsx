@@ -308,7 +308,14 @@ export function DiscoveryView({
   // the two still agree: an answer is discarded by being out of date rather than
   // by a second setState clearing it, so no render ever pairs one query's rows
   // with another query's report.
-  const [answer, setAnswer] = useState<{ key: string; matches: ExcludedMatch[] } | null>(null);
+  const [answer, setAnswer] = useState<{
+    key: string;
+    matches: ExcludedMatch[];
+    /** False when the round trip failed. `matches: []` then means "we did not
+        find out", not "there is nothing" — and the two lead to opposite
+        sentences, so they cannot share a shape. */
+    ok: boolean;
+  } | null>(null);
   const settledTrimmed = settledQuery.trim();
   const lookupKey = `${discovery.sort}:${avail}:${settledTrimmed}`;
   useEffect(() => {
@@ -316,14 +323,19 @@ export function DiscoveryView({
     let live = true;
     findExcludedMatches(settledTrimmed, { sort: discovery.sort, avail })
       .then((matches) => {
-        if (live) setAnswer({ key: `${discovery.sort}:${avail}:${settledTrimmed}`, matches });
+        if (live)
+          setAnswer({ key: `${discovery.sort}:${avail}:${settledTrimmed}`, matches, ok: true });
       })
       // A lookup that fails leaves the list saying only what it can see. Filed
       // under its key all the same, so a failure settles the question rather
       // than hanging it: the states below wait for an answer, and one that never
-      // arrives would hold the search's own empty state off the screen forever.
+      // arrives would hold them off the screen forever. `ok: false` is what
+      // stops the settling being read as an answer — the states that make a
+      // claim about the whole index stay off, and what remains is the ranked
+      // list and its own count.
       .catch(() => {
-        if (live) setAnswer({ key: `${discovery.sort}:${avail}:${settledTrimmed}`, matches: [] });
+        if (live)
+          setAnswer({ key: `${discovery.sort}:${avail}:${settledTrimmed}`, matches: [], ok: false });
       });
     return () => {
       live = false;
@@ -370,18 +382,22 @@ export function DiscoveryView({
   // why and offers the single control that would undo it.
   const showHeldEmpty = !floorReplacedList && filtered.length === 0 && report !== null;
   // "No commander is named that" is a claim about the whole index, and only the
-  // server can make it. Until the lookup for the query ON SCREEN has come back,
-  // the state is held: rendering it early would print a sentence that the next
-  // 300ms could contradict, and the held report would replace it under the
-  // reader. A query too short for the action to answer settles on arrival, since
-  // there is no lookup to wait for.
-  const searchPending =
+  // server can make it. Until the lookup for the query ON SCREEN has come back
+  // and come back successfully, the state is held: rendering it early would
+  // print a sentence that the next 300ms could contradict, and rendering it on a
+  // failed lookup would print one nothing ever checked. A query too short for
+  // the action to answer is confirmed on arrival, since there is no lookup to
+  // wait for.
+  const unconfirmed =
     trimmedQuery !== "" &&
-    !(settledTrimmed === trimmedQuery && (settledTrimmed.length < 2 || answer?.key === lookupKey));
+    !(
+      settledTrimmed === trimmedQuery &&
+      (settledTrimmed.length < 2 || (answer?.key === lookupKey && answer.ok))
+    );
   const showSearchEmpty =
     !floorReplacedList &&
     !showHeldEmpty &&
-    !searchPending &&
+    !unconfirmed &&
     trimmedQuery !== "" &&
     filtered.length === 0 &&
     !nameMatchesAny;
@@ -393,7 +409,7 @@ export function DiscoveryView({
     !floorReplacedList &&
     !showHeldEmpty &&
     !showSearchEmpty &&
-    !searchPending &&
+    !unconfirmed &&
     colors.length > 0 &&
     filtered.length === 0;
 

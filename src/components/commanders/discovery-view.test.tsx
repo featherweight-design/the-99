@@ -713,6 +713,18 @@ describe("DiscoveryView", () => {
     expect(findExcluded).toHaveBeenCalledWith("atraxa", { sort: "fit", avail: "free" });
   });
 
+  // A failed lookup is not an answer. "No commander is named that" covers the
+  // whole index, and a round trip that never came back checked none of it.
+  it("makes no claim about the index when the lookup fails", async () => {
+    findExcluded.mockRejectedValue(new Error("down"));
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "atraxa" } });
+    await waitFor(() => expect(findExcluded).toHaveBeenCalled());
+    expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
+  });
+
   // A one-character query matches most of the index, so it never asks.
   it("asks the server only about a query worth a round trip", async () => {
     render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
