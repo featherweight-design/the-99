@@ -88,6 +88,7 @@ Amonkhet, and this app has six themes.
 | focusable | — | no — "not focusable as links" |
 | role | — | link |
 | aria-disabled | — | "true" |
+| aria-current | — | "page" on its own route — a locked route still renders |
 | accessible name | — | `firstRun.lockedItemAria(label)` — label + the unlock reason |
 
 ### Locked divider

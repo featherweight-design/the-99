@@ -65,6 +65,21 @@ describe("NavRail", () => {
     expect(within(nav).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-disabled");
   });
 
+  // /collection with no cards renders its empty state rather than redirecting,
+  // so a locked slot can be the page the reader is on. Being unfollowable and
+  // being current are separate facts, and only the first of them is locked.
+  it("still marks a locked item as the current page when it is one", () => {
+    const { container } = render(<NavRail locked theme="amonkhet" />);
+    const item = screen.getByRole("link", {
+      name: "Collection — unlocks once a collection is read",
+    });
+    expect(item).toHaveAttribute("aria-current", "page");
+    // …without taking the active fill, which would advertise a destination the
+    // reader cannot reach from here.
+    expect(item.className).toContain("bg-transparent");
+    expect(container.querySelector(".bg-elevated")).toBeNull();
+  });
+
   // The handoff takes locked items out of the tab order. An <a> without an
   // href is not focusable either, but it would still offer a dead navigation
   // target to a pointer; a <span> offers neither and keeps the name and role.

@@ -98,11 +98,16 @@ type NavSlotProps = {
 function NavSlot({ isLocked, href, name, active, className, children }: NavSlotProps) {
   if (isLocked) {
     return (
+      // A locked route is still reachable — /collection with no cards renders
+      // its empty state rather than redirecting — so a locked slot can be the
+      // current page, and saying so is orthogonal to saying it cannot be
+      // followed.
       <span
         role="link"
         title={name}
         aria-label={name}
         aria-disabled="true"
+        aria-current={active ? "page" : undefined}
         className={className}
       >
         {children}
@@ -155,7 +160,10 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
       <nav className="flex flex-col items-center gap-1" aria-label="Primary">
         {ITEMS.map(({ href, label, lockable }) => {
           const isLocked = locked && lockable;
-          const active = !isLocked && isActive(pathname, href);
+          // Read off the pathname alone. A locked slot can be the current page,
+          // and that is a fact about where the reader is, not about whether the
+          // slot can be followed; the fill below still lets locked win.
+          const active = isActive(pathname, href);
           // Spread rather than two props: the union needs `isLocked` narrowed to
           // a literal before it can vouch for `name`, and a boolean prop is not.
           const slot = isLocked
@@ -167,11 +175,14 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
               {...slot}
               href={href}
               active={active}
+              // Locked is tested first: a locked slot stays inert-looking even
+              // on its own route, or the active fill would advertise a
+              // destination the reader cannot reach from here.
               className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] transition-colors ${
-                active
-                  ? "bg-elevated text-[color:var(--fg)]"
-                  : isLocked
-                    ? "bg-transparent text-[color:var(--fg-locked)]"
+                isLocked
+                  ? "bg-transparent text-[color:var(--fg-locked)]"
+                  : active
+                    ? "bg-elevated text-[color:var(--fg)]"
                     : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover"
               }`}
             >
@@ -223,7 +234,7 @@ export function TabBar({ locked }: { locked: boolean }) {
     >
       {ITEMS.map(({ href, label, lockable }) => {
         const isLocked = locked && lockable;
-        const active = !isLocked && isActive(pathname, href);
+        const active = isActive(pathname, href);
         // Unlocked, the visible label is the name; locked, it is replaced by the
         // same label plus the reason it cannot be reached.
         const slot = isLocked
@@ -239,11 +250,12 @@ export function TabBar({ locked }: { locked: boolean }) {
             // The active fill is a surface, not a coloured label: locked ruling
             // 13 reserves colour for status. One `color` on the slot serves both
             // the icon (currentColor) and the label.
+            // Locked first, as in the rail.
             className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
-              active
-                ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"
-                : isLocked
-                  ? "bg-transparent text-[color:var(--fg-locked)]"
+              isLocked
+                ? "bg-transparent text-[color:var(--fg-locked)]"
+                : active
+                  ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"
                   : "bg-transparent text-[color:var(--fg-faint)]"
             }`}
           >
