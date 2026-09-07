@@ -108,9 +108,9 @@ reader sees, so eng left both standing rather than pick one. And
 is an `option` inside a `role="listbox"`, where a nested trigger conflicts with both the
 combobox's click contract and its accessibility tree. Every other named card row now opens
 the modal, and the modal shows the same availability everywhere it opens (PRs #405, #407).
-Both questions were left unfiled at close-out and filed on Hugh's instruction the same day,
-so #412 answers the "no ticket filed" column above only for these two — the brief itself is
-still ticketless.
+Both questions were left unfiled at the batch's close-out and ticketed later the same day
+(2026-09-07), so #412 answers the "no ticket filed" column above only for these two — the
+brief itself is still ticketless.
 
 **#10 left on 2026-09-07**, the same day it arrived — its brief merged on PR #392, Design delivered
 all five surfaces at R2 within the day, and the handoff audited 🟢 Green, so it now sits in 🟢
