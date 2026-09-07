@@ -63,6 +63,14 @@ These apply to every task. A task's requirements implicitly include this whole s
 
 Defaults serialise as absences. Writes go through `window.history.replaceState`, never `router.push`. Read every parameter you do not own back off the live URL rather than rebuilding it.
 
+**Legacy keys stay readable.** The shipped build uses `join`, `avail` and `sort`; the handoff's engineering notes specify the short keys above, so the rename is designed, not incidental. A shared `/commanders?join=exact&avail=free&sort=new` link must not silently lose its state, so `parseLaneParams` accepts the legacy key when the new one is absent, and `serializeLaneParams` writes **only** the new keys. A legacy URL therefore self-heals on the reader's first control change. `scopeRedirectTarget` carries the legacy keys across the `?scope=play` redirect for the same reason.
+
+| Legacy key | New key | Legacy values |
+|---|---|---|
+| `join` | `m` | `exact` \| `any` |
+| `avail` | `a` | `free` \| `all` |
+| `sort` | `o` on the owned lane, `s` on discover | `new` maps to `s=new`; every other value is an order |
+
 **Copy**
 
 - Copy is production-final in `design/design_handoff_the99_commanders_discover/commanders-discover · copy strings.ts` and lands verbatim in `src/lib/copy/`, with **one amendment**: per readiness decision 3 the `discoverCopy.order.colour` key is **deleted** and replaced with `recent: "Recently released"`, backed by `released_at` (`src/db/schema.ts:18`).
@@ -219,6 +227,28 @@ describe("parseLaneParams", () => {
     expect(parseLaneParams(sp("o=added"), "discover").order).toBe("popularity");
     expect(parseLaneParams(sp("o=recent"), "discover").order).toBe("recent");
   });
+
+  it("falls back to the legacy join, avail and sort keys", () => {
+    expect(parseLaneParams(sp("join=exact"), "owned").match).toBe("exactly");
+    expect(parseLaneParams(sp("avail=free"), "owned").avail).toBe("free");
+    expect(parseLaneParams(sp("sort=name"), "owned").order).toBe("name");
+  });
+
+  it("reads the legacy sort=new as the discover scope, not an order", () => {
+    const p = parseLaneParams(sp("sort=new"), "discover");
+    expect(p.scope).toBe("new");
+    expect(p.order).toBe("popularity");
+  });
+
+  it("prefers the new key when both are present", () => {
+    expect(parseLaneParams(sp("m=any&join=exact"), "owned").match).toBe("contains");
+    expect(parseLaneParams(sp("a=all&avail=free"), "owned").avail).toBe("all");
+  });
+
+  it("applies the lane rules to a legacy key as it does to a new one", () => {
+    expect(parseLaneParams(sp("avail=free"), "discover").avail).toBe("all");
+    expect(parseLaneParams(sp("sort=new"), "owned").scope).toBe("bestfit");
+  });
 });
 
 describe("serializeLaneParams", () => {
@@ -249,6 +279,11 @@ describe("serializeLaneParams", () => {
     const p = { q: "a b", colors: ["u"], match: "exactly", avail: "all", order: "recent", scope: "new" } as const;
     const qs = serializeLaneParams(p, "discover");
     expect(parseLaneParams(new URLSearchParams(qs), "discover")).toEqual(p);
+  });
+
+  it("never writes a legacy key, so a legacy URL self-heals on the first write", () => {
+    const qs = serializeLaneParams(parseLaneParams(sp("join=exact&avail=free"), "owned"), "owned");
+    expect(qs).toBe("?m=exact&a=free");
   });
 });
 
@@ -340,18 +375,28 @@ export function defaultParams(lane: Lane): LaneParams {
   };
 }
 
+// The shipped build wrote `join`, `avail` and `sort`. Reading them keeps a
+// shared link's state; nothing writes them back, so the URL self-heals.
+const LEGACY: Record<string, string> = { m: "join", a: "avail", o: "sort" };
+
+function read(sp: URLSearchParams, key: keyof typeof LEGACY): string | null {
+  return sp.get(key) ?? sp.get(LEGACY[key]);
+}
+
 export function parseLaneParams(sp: URLSearchParams, lane: Lane): LaneParams {
   const base = defaultParams(lane);
   const raw = (sp.get("c") ?? "").toLowerCase().split(",");
   const colors = WUBRG.filter((c) => raw.includes(c));
-  const order = ORDERS[lane].find((o) => o === sp.get("o")) ?? base.order;
+  const order = ORDERS[lane].find((o) => o === read(sp, "o")) ?? base.order;
+  // `sort=new` was discovery's novelty ranking, which is now the scope control.
+  const scopeRaw = sp.get("s") ?? sp.get("sort");
   return {
     q: sp.get("q") ?? "",
     colors,
-    match: sp.get("m") === "exact" ? "exactly" : "contains",
-    avail: lane === "owned" && sp.get("a") === "free" ? "free" : "all",
+    match: read(sp, "m") === "exact" ? "exactly" : "contains",
+    avail: lane === "owned" && read(sp, "a") === "free" ? "free" : "all",
     order,
-    scope: lane === "discover" && sp.get("s") === "new" ? "new" : "bestfit",
+    scope: lane === "discover" && scopeRaw === "new" ? "new" : "bestfit",
   };
 }
 
@@ -383,7 +428,7 @@ export function activeControlCount(p: LaneParams, lane: Lane): number {
 - [ ] **Step 4: Run the tests and watch them pass**
 
 Run: `pnpm vitest run src/lib/commanders/lane-params.test.ts`
-Expected: PASS, 17 tests.
+Expected: PASS, 22 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -677,6 +722,18 @@ describe("scopeRedirectTarget", () => {
   it("leaves scope=own on the owned lane", () => {
     expect(scopeRedirectTarget(new URLSearchParams("scope=own&c=b"))).toBe("/commanders?c=b");
   });
+
+  it("rewrites the legacy join and avail keys onto the owned lane", () => {
+    expect(scopeRedirectTarget(new URLSearchParams("scope=own&join=exact&avail=free"))).toBe(
+      "/commanders?m=exact&a=free",
+    );
+  });
+
+  it("drops the legacy avail on the play redirect", () => {
+    expect(scopeRedirectTarget(new URLSearchParams("scope=play&avail=free&join=exact"))).toBe(
+      "/discover?m=exact",
+    );
+  });
 });
 ```
 
@@ -693,27 +750,25 @@ Create `src/app/commanders/scope-redirect.ts`:
 import { parseLaneParams, serializeLaneParams } from "@/lib/commanders/lane-params";
 
 // The legacy `scope` toggle became two routes. A bookmark keeps its colours,
-// its search and its ranking; availability is dropped silently because the
-// discover lane no longer has that control.
+// its search, its match mode and its ranking; availability is dropped silently
+// on the play redirect because the discover lane no longer has that control.
+//
+// The legacy keys need no handling here: `parseLaneParams` reads `join`,
+// `avail` and `sort` as fallbacks, and `serializeLaneParams` writes only the
+// new ones, so the redirect emits a clean URL from a legacy one.
 export function scopeRedirectTarget(sp: URLSearchParams): string | null {
   const scope = sp.get("scope");
   if (scope !== "play" && scope !== "own") return null;
   const lane = scope === "play" ? "discover" : "owned";
-  const carried = new URLSearchParams(sp);
-  carried.delete("scope");
-  if (scope === "play" && carried.get("sort") === "new") {
-    carried.set("s", "new");
-  }
-  carried.delete("sort");
-  const params = parseLaneParams(carried, lane);
-  return `${scope === "play" ? "/discover" : "/commanders"}${serializeLaneParams(params, lane)}`;
+  const params = parseLaneParams(sp, lane);
+  return `${lane === "discover" ? "/discover" : "/commanders"}${serializeLaneParams(params, lane)}`;
 }
 ```
 
 - [ ] **Step 4: Run the tests and watch them pass**
 
 Run: `pnpm vitest run src/app/commanders/scope-redirect.test.ts`
-Expected: PASS, 5 tests.
+Expected: PASS, 7 tests.
 
 - [ ] **Step 5: Wire the redirect and split the route**
 

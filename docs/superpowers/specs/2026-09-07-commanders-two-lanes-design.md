@@ -104,12 +104,15 @@ Controls: colour pips, colour match, search, availability. One order (fit), so t
 inert `Order: Fit ↓ · fixed` label stays a label rather than becoming a menu.
 
 **`/discover` — the wide lane.**
-Population: every commander-legal card, minus the ones you have built.
+Population: every commander-legal card you do not already own. Owned commanders are
+excluded at the query, built or not, because the owned lane is where they live.
 
-Controls: colour pips, colour match, search, ranking (`Best fit` / `Something new`), and a
-new "hide ones I can already build" checkbox — the cheap facet Archidekt and BGG both
-carry, letting the wide list answer the narrow question in passing without the two screens
-pretending to be one.
+Controls: colour pips, colour match, search, ranking (`Best fit` / `Something new`).
+
+An earlier draft carried a "hide ones I can already build" checkbox here — the cheap facet
+Archidekt and BGG both offer. Excluding owned commanders outright leaves that control
+nothing to hide, so it is not built. The two lanes partition the population between them
+rather than overlapping.
 
 ### The two exclusions, separated
 
@@ -183,9 +186,14 @@ Two control labels are deliberately **not** settled here. `Score against: Everyt
 ### Migration
 
 `/commanders?scope=play` is a shareable URL that currently means Discover. It 308s to
-`/discover`, carrying `sort` and the colour params across. `avail` is dropped on that
-redirect, silently — Discover no longer has the control, and the alternative is an error
-page for a param that used to be the default.
+`/discover`, carrying the colour params, the search, the match mode and the ranking across.
+`avail` is dropped on that redirect, silently — Discover no longer has the control, and the
+alternative is an error page for a param that used to be the default.
+
+The handoff renames the parameters to one letter each (`q`, `c`, `m`, `a`, `o`, `s`). The
+shipped keys `join`, `avail` and `sort` are therefore read as fallbacks and never written,
+so a shared link keeps its state and rewrites itself to the new keys on the reader's first
+control change.
 
 ## Code movement
 
