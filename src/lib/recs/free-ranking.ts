@@ -199,12 +199,12 @@ export async function rankFree(
     pool = loaded;
   }
 
-  const cache = await readEdhrecCache(candidates.map((c) => c.card.oracleId));
+  const edhrecCache = await readEdhrecCache(candidates.map((c) => c.card.oracleId));
   const scored = candidates.map(({ card: commander, canon }) => {
     // The row holds unparsed JSON, so it has to go through parseEdhrecPayload
     // before it has topCards. An unexpected shape degrades to an empty list,
     // which scoreCommander reads as a null fitSynergy.
-    const cached = cache.get(commander.oracleId);
+    const cached = edhrecCache.get(commander.oracleId);
     const parsed = cached ? parseEdhrecPayload(cached.payload) : null;
     return {
       ...scoreCommander({

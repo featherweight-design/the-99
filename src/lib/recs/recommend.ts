@@ -206,7 +206,7 @@ export async function recommendCommanders(
 
   // One cache read for the whole fanout — a per-commander SELECT here meant
   // ~196 round-trips on every compute, warm or cold.
-  const cache = await readEdhrecCache(candidates.map((c) => c.oracleId));
+  const edhrecCache = await readEdhrecCache(candidates.map((c) => c.oracleId));
 
   // Fetch EDHREC data with bounded concurrency: sequential awaits would make
   // cold loads with dozens of candidates exceed the page's time budget.
@@ -217,7 +217,7 @@ export async function recommendCommanders(
     const scored = await Promise.all(
       candidates.slice(i, i + CONCURRENCY).map(async (commander) => {
         const result = await resolveEdhrecData(
-          commander.oracleId, commander.name, cache.get(commander.oracleId),
+          commander.oracleId, commander.name, edhrecCache.get(commander.oracleId),
         );
         // `unreachable` only flips true on real service outage (5xx/network/timeout
         // with no cache). 4xx (commander not on EDHREC) is a per-commander data
@@ -274,9 +274,9 @@ export async function scoreOneCommander(
     collection.find((c) => c.oracleId === oracleId) ?? (await loadPoolCard(oracleId));
   if (!commander) return null;
 
-  const cache = await readEdhrecCache([oracleId]);
+  const edhrecCache = await readEdhrecCache([oracleId]);
   const [result, committed] = await Promise.all([
-    resolveEdhrecData(oracleId, commander.name, cache.get(oracleId)),
+    resolveEdhrecData(oracleId, commander.name, edhrecCache.get(oracleId)),
     readCommittedDecks(userId),
   ]);
   const scored = scoreCommander({
