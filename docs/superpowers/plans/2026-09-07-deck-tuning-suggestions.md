@@ -59,7 +59,7 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 
 **Client-safety.**
 
-- **A module a `"use client"` component value-imports must never touch the database.** `src/lib/decks/read.ts` imports the Drizzle client, which throws at module init without `DATABASE_URL`. `src/lib/decks/status.ts` exists as a separate module for exactly this reason. Every `src/lib/tuning/*` module except `client.ts` is pure and client-safe; `client.ts` is server-only and is never imported by a client component.
+- **A module a `"use client"` component value-imports must never touch the database.** `src/lib/decks/read.ts` imports the Drizzle client, which throws at module init without `DATABASE_URL`. `src/lib/decks/status.ts` exists as a separate module for exactly this reason. Two of the `src/lib/tuning/*` modules are server-only and are never imported by a client component: `client.ts`, which holds the Anthropic call, and `fingerprint.ts`, which hashes through `node:crypto`. The rest are pure and client-safe. The File Structure table below marks both.
 
 **Workflow.**
 
@@ -76,14 +76,15 @@ Read every rule below as governing **what reaches the player** — shipped copy,
 | File | Responsibility |
 |---|---|
 | `prompt-version.ts` | The single `PROMPT_VERSION` integer. Nothing else. |
-| `fingerprint.ts` | `tuningFingerprint(input)` — a stable hash over decklist, games, notes, intent, and `PROMPT_VERSION`. |
+| `fingerprint.ts` | **Server-only.** `tuningFingerprint(input)` — a stable hash over decklist, games, notes, intent, and `PROMPT_VERSION`. Pure, but it hashes through `node:crypto`, so only the page and the action call it. |
 | `evidence.ts` | `buildEvidencePack(input)` — assembles the pack from already-loaded rows. Pure. |
 | `prompt.ts` | Renders the evidence pack into the system + user messages. Pure string work. |
 | `response-schema.ts` | The zod schema for the model's reply, and the `TuningResponse` type. |
 | `validate.ts` | The six validation rules, as pure predicates over a candidate plus the pack. |
 | `presentation.ts` | The nine `suggestionRules` checks — the sixth validation rule. |
+| `gate.ts` | `gateReason(state, gameCount)` and the `GateReason` type — the one answer to "why is the button disabled", shared by the panel and by `runTuning`. |
 | `reaper.ts` | `reapCutoff(now)` and the pure arithmetic behind the read-time reap. |
-| `limits.ts` | `TUNING_RUNS_PER_HOUR`, `REAPER_CUTOFF_MS`, `MODEL_TIMEOUT_MS`, `MAX_SUGGESTIONS`. |
+| `limits.ts` | `TUNING_RUNS_PER_HOUR`, `REAPER_CUTOFF_MS`, `MODEL_TIMEOUT_MS`, `MAX_SUGGESTIONS`, plus `intentRefusal(intent)` and `seededIntent(commanderName)`. |
 | `client.ts` | **Server-only.** The raw `fetch` to Anthropic, with the hard timeout and the two bounded in-run retries. |
 
 **Server shell:**
