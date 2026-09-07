@@ -138,6 +138,8 @@ export function ResolutionExpander({
           // and only a basic land carries the line's own quantity over.
           quantity: isBasicLand(result.typeLine) ? row.quantity : 1,
           auto: false,
+          manaCost: result.manaCost,
+          imageUri: result.imageUri,
         });
       },
     );

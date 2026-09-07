@@ -28,6 +28,19 @@ export type DeckDetailCard = {
   /** Optional for the same reason `availability` is, and degrading the same
    * way: absent and null both mean the bare `buy` tag. */
   price?: PriceFact | null;
+  /**
+   * The printed cost, for the row's mana pips (#350) and the card tile (#349).
+   * Optional for the same reason `availability` is — six sites build this
+   * literal and none can reach the database. Absent and null both mean no pips
+   * are drawn, which is also what a land legitimately draws.
+   */
+  manaCost?: string | null;
+  /**
+   * The card's face, for the card view's tile and the hover preview. Null is a
+   * real state the catalog produces, not only an unwidened caller: a card with
+   * no image draws the tile's empty plate rather than a broken one.
+   */
+  imageUri?: string | null;
 };
 
 /**
