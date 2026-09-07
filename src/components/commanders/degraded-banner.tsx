@@ -6,7 +6,7 @@
 
 import { retryRecs } from "../../app/commanders/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { GhostButton } from "../ui/button";
+import { RetryGhost, RetryLink } from "./retry-submit";
 
 /**
  * `synergy` is EDHREC down, `availability` the deck read, `both` the pair.
@@ -84,14 +84,7 @@ export function DegradedBanner({
           >
             {mobileBody}{" "}
             <form action={retryRecs} className="inline">
-              <button
-                type="submit"
-                // brand focus-visible outline treatment inherited from globals.css
-                className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent)]"
-                style={{ fontSize: 11.5 }}
-              >
-                {mobileRetry}
-              </button>
+              <RetryLink fontSize={11.5}>{mobileRetry}</RetryLink>
             </form>
           </div>
         </div>
@@ -138,13 +131,8 @@ export function DegradedBanner({
 
         {/* Retry button */}
         <form action={retryRecs}>
-          <GhostButton
-            type="submit"
-            // brand focus-visible outline treatment inherited from globals.css
-            className="flex-none text-[13px] p-[10px_18px]"
-          >
-            {desktopRetry}
-          </GhostButton>
+          {/* brand focus-visible outline treatment inherited from globals.css */}
+          <RetryGhost className="flex-none text-[13px] p-[10px_18px]">{desktopRetry}</RetryGhost>
         </form>
       </div>
     </>

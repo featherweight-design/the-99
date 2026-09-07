@@ -8,6 +8,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { PendingMark } from "../ui/pending-mark";
 import { PENDING_OPACITY } from "./pending";
 
 const { sort: copy } = discoveryCopy;
@@ -144,7 +145,14 @@ export function SortMenu({
         ].join(" ")}
       >
         {currentLabel}
-        <span aria-hidden className="text-[color:var(--accent)]">▾</span>
+        {/* The mark takes the chevron's place rather than sitting beside it, so
+            the trigger keeps one glyph slot at both states and does not resize
+            under the reader's cursor. The trigger still opens the menu while a
+            re-rank is out — a control that stopped responding mid-wait would be
+            the worse answer. */}
+        <span aria-hidden className="inline-flex w-[28px] justify-center text-[color:var(--accent)]">
+          {pending !== null ? <PendingMark /> : "▾"}
+        </span>
       </button>
 
       {open && (

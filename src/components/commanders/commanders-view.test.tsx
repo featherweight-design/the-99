@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
 import type { CommanderListItem } from "../../lib/recs/recommend";
+import { toFreeDelta } from "../../lib/recs/free-delta";
 import { CommandersView, type AvailMode } from "./commanders-view";
 import { REVEAL_STEP } from "./reveal-control";
 
@@ -66,7 +67,10 @@ function el(list: CommanderListItem[], over: Over = {}) {
       candidateCount={list.length}
       firstRun={false}
       avail={avail}
-      freeItems={freeItems}
+      // The tests state the free ranking as the list it is, and it reaches the
+      // view the way the server sends it — through the diff. Every free-mode
+      // assertion below therefore also asserts the round-trip.
+      freeRanking={freeItems ? toFreeDelta(list, freeItems) : null}
       availOk={availOk}
       receiptCounts={new Map()}
     />

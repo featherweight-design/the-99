@@ -14,3 +14,12 @@
  * focused element blurs it, and the reader loses their place mid-flip.
  */
 export const PENDING_OPACITY = 0.55;
+
+/**
+ * The same dim as a Tailwind utility, for the callers that cannot take a style:
+ * the CTA primitives drop `style` on purpose, since an inline background there
+ * would silently outrank their hover. Tailwind resolves arbitrary values at
+ * build time and cannot read the constant above, so the number appears twice —
+ * change both together.
+ */
+export const PENDING_OPACITY_CLASS = "opacity-[0.55]";

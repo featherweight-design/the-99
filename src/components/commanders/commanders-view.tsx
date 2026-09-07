@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import type { CommanderListItem } from "../../lib/recs/recommend";
+import { fromFreeDelta, type FreeRankingDelta } from "../../lib/recs/free-delta";
 import { filterByColors } from "../../lib/commanders/filter";
 import { parseColors } from "../../lib/color-param";
 import { rankMap } from "../../lib/commanders/rank-maps";
@@ -62,9 +63,12 @@ export type CommandersViewProps = {
    * already on the client and this component owns the mode from mount on.
    */
   avail: AvailMode;
-  /** The same commanders re-scored against the free pool. Null when unreadable. */
-  freeItems: CommanderListItem[] | null;
-  /** False when the availability read failed — `What's free` is unavailable. */
+  /** The same commanders re-scored against the free pool, as a diff against
+      `results` — the two lists share most of their bytes. Null when unreadable. */
+  freeRanking: FreeRankingDelta | null;
+  /** False when no free ranking could be produced — the availability read
+      failed, or the ranking itself came back unusable. Either way `What's free`
+      is unavailable, and `freeRanking` is null alongside it. */
   availOk: boolean;
   /** Receipt clause counts by oracleId, for both modes. */
   receiptCounts: Map<string, ReceiptCounts>;
@@ -77,11 +81,19 @@ export function CommandersView({
   candidateCount,
   firstRun,
   avail: initialAvail,
-  freeItems,
+  freeRanking,
   availOk,
   receiptCounts,
 }: CommandersViewProps) {
   const search = useSearchParams();
+
+  // Rebuilt once per payload, not per flip: everything below reads the free
+  // ranking as the plain list it was before the diff, and the toggle stays the
+  // state change the design requires it to be.
+  const freeItems = useMemo(
+    () => (freeRanking ? fromFreeDelta(results, freeRanking) : null),
+    [results, freeRanking],
+  );
 
   const [colors, setColors] = useState<string[]>(() =>
     parseColors(search.get("c")),

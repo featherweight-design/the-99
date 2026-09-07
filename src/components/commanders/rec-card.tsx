@@ -10,6 +10,7 @@ import { retryRecs } from "../../app/commanders/actions";
 import { CommanderThumb, CommanderTile } from "./commander-art";
 import { DiscoveryRow } from "./discovery-row";
 import { FitBar } from "./fit-bar";
+import { RetryLink } from "./retry-submit";
 import { ReceiptLine } from "./receipt-line";
 import { RoleChips } from "./role-chips";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -225,14 +226,7 @@ export function RecCard(props: RecCardProps) {
             <div style={{ fontSize: 12, color: "var(--fg-muted)" }}>
               Synergy data unavailable.{" "}
               <form action={retryRecs} className="inline relative z-[2]">
-                <button
-                  type="submit"
-                  // brand focus-visible outline treatment inherited from globals.css
-                  className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent)]"
-                  style={{ fontSize: 12 }}
-                >
-                  Retry
-                </button>
+                <RetryLink fontSize={12}>Retry</RetryLink>
               </form>
             </div>
           </div>
@@ -375,14 +369,7 @@ export function RecCard(props: RecCardProps) {
                 </strong>{" "}
                 for this commander.{" "}
                 <form action={retryRecs} className="inline relative z-[2]">
-                  <button
-                    type="submit"
-                    // brand focus-visible outline treatment inherited from globals.css
-                    className="underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent)]"
-                    style={{ fontSize: 12.5 }}
-                  >
-                    Retry
-                  </button>
+                  <RetryLink fontSize={12.5}>Retry</RetryLink>
                 </form>
               </div>
             </div>

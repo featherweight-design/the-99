@@ -38,6 +38,13 @@ export const shellCopy = {
       heading: "Clearing a space",
       status: "gathering candidates…",
     },
+    // The update route reads the deck before it can offer to diff anything
+    // against it, and it is reached from a deck the player is already looking
+    // at — so the status names the list being fetched, not the paste to come.
+    deckUpdate: {
+      heading: "Fetching the list",
+      status: "reading what's in the deck…",
+    },
   },
   notFound: {
     numeral: "404",
