@@ -475,7 +475,7 @@ export function DiscoveryView({
       default:
         return;
     }
-  }, [report?.cause, setScope, clearColors, setAvail, setSort]);
+  }, [report?.cause, setScope, clearColors, setJoin, setAvail, setSort]);
 
   // The one reason this state has under discovery that it does not have under
   // the owned scope: the commanders are missing because they are already built.

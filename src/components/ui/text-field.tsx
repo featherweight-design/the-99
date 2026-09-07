@@ -92,7 +92,9 @@ export function SearchField({
         containerClassName,
       )}
     >
-      {leading ?? (
+      {/* `undefined` is the absent prop; `null` is a caller asking for no leading
+          element at all, which `??` would have overruled with the magnifier. */}
+      {leading === undefined ? (
         <span
           aria-hidden
           className={twMerge(
@@ -102,6 +104,8 @@ export function SearchField({
         >
           ⌕
         </span>
+      ) : (
+        leading
       )}
       <input
         type={type}
