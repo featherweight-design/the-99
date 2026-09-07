@@ -2,8 +2,10 @@
 
 ## The problem
 
-A card line item — one row standing for one Magic card in a list — is built seven times
-in this app, and the seven do not agree about what a reader is told. Some of that
+A card line item — one row standing for one Magic card in a list — is built six times
+in this app, and the six do not agree about what a reader is told. (The export dialog's
+shopping preview draws lines too, but they are text destined for a clipboard rather than
+rows a reader interacts with, and they carry no oracle id — so they are out of scope.) Some of that
 disagreement is purposeful: a decklist row is read while shopping, a collection row while
 browsing, and they are right to lead with different things. Some of it is drift nobody
 chose. Eng cannot tell the two apart from the code, which is why this is a design brief
