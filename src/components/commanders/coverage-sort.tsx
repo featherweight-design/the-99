@@ -86,6 +86,9 @@ export function CoverageSortMenu({
   const selectedIndex = sort === "availability" ? 1 : 0;
   useEffect(() => {
     if (!open) return;
+    // `active` is not set alongside this. Each option's own `onFocus` owns it, and
+    // that fires for a programmatic focus too, so the roving tabindex follows the
+    // focus here by the same path it does for an arrow key or a tab from outside.
     items.current[selectedIndex]?.focus();
   }, [open, selectedIndex]);
 

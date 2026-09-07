@@ -101,4 +101,18 @@ describe("CoverageSortMenu", () => {
     fireEvent.keyDown(options[1], { key: "ArrowDown" });
     expect(options[0]).toHaveFocus();
   });
+
+  // Opening on the second option is the case where the roving tabindex and the focus
+  // can disagree: the focused option would carry tabIndex={-1}, and the first arrow
+  // key would step from the option above the one being looked at.
+  it("keeps the tab stop on the option it opened onto", () => {
+    mount({ sort: "availability" });
+    openMenu();
+    const options = screen.getAllByRole("menuitemradio");
+    expect(options[1]).toHaveFocus();
+    expect(options[1]).toHaveAttribute("tabindex", "0");
+    expect(options[0]).toHaveAttribute("tabindex", "-1");
+    fireEvent.keyDown(options[1], { key: "ArrowDown" });
+    expect(options[0]).toHaveFocus();
+  });
 });
