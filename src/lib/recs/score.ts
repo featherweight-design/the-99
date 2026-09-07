@@ -116,6 +116,46 @@ export function fitsIdentity(card: PoolCard, identity: Set<string>): boolean {
 }
 
 /**
+ * Which of a commander's EDHREC top cards are present in a given set of cards.
+ *
+ * Names AND oracle ids, because the two answers are asked by different readers:
+ * the receipts line prints names, and the committed-deck clause has to ask which
+ * decks hold these cards, which only ids can answer.
+ *
+ * Exported because the detail page needs this overlap over two different sets in
+ * free mode — the free pool, which is what the score is about, and the whole
+ * collection, which is what "already in a deck" is about. A card in a finished
+ * deck is by construction absent from the free pool, so asking the pool would
+ * report that no deck holds any of them.
+ *
+ * Indexes full name AND front face: EDHREC lists DFCs/MDFCs by front face while
+ * Scryfall names them "Front // Back".
+ */
+export function edhrecOverlap(
+  topCards: string[],
+  pool: PoolCard[],
+): { names: string[]; oracleIds: string[] } {
+  const byName = new Map<string, string>();
+  for (const c of pool) {
+    const lower = c.name.toLowerCase();
+    if (!byName.has(lower)) byName.set(lower, c.oracleId);
+    const front = lower.split(" // ")[0];
+    if (!byName.has(front)) byName.set(front, c.oracleId);
+  }
+
+  const names: string[] = [];
+  const oracleIds: string[] = [];
+  for (const n of topCards) {
+    const oracleId = byName.get(n.toLowerCase());
+    if (oracleId !== undefined) {
+      names.push(n);
+      oracleIds.push(oracleId);
+    }
+  }
+  return { names, oracleIds };
+}
+
+/**
  * The owned cards that could go in this commander's 99: colour-identity legal,
  * and never the commander itself.
  *
@@ -208,28 +248,10 @@ export function scoreCommander(args: {
   const overlapOwnedIds: string[] = [];
 
   if (args.edhrecTopCards && args.edhrecTopCards.length > 0) {
-    // Index full name AND front face: EDHREC lists DFCs/MDFCs by front face
-    // while Scryfall names them "Front // Back".
-    //
-    // A map rather than a set, because the overlap has to be expressible as
-    // oracle ids too: the committed-deck clause in the prose asks how many of
-    // these cards are already in a deck, and only ids can answer that.
-    const poolNames = new Map<string, string>();
-    for (const c of pool) {
-      const lower = c.name.toLowerCase();
-      if (!poolNames.has(lower)) poolNames.set(lower, c.oracleId);
-      const front = lower.split(" // ")[0];
-      if (!poolNames.has(front)) poolNames.set(front, c.oracleId);
-    }
-
+    const overlap = edhrecOverlap(args.edhrecTopCards, pool);
     edhrecTotal = args.edhrecTopCards.length;
-    for (const n of args.edhrecTopCards) {
-      const oracleId = poolNames.get(n.toLowerCase());
-      if (oracleId !== undefined) {
-        overlapOwned.push(n);
-        overlapOwnedIds.push(oracleId);
-      }
-    }
+    overlapOwned.push(...overlap.names);
+    overlapOwnedIds.push(...overlap.oracleIds);
     edhrecOwnedCount = overlapOwned.length;
   }
 

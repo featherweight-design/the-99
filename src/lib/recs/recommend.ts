@@ -8,6 +8,8 @@ import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { synergyStateFrom, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {
+  commanderPool,
+  edhrecOverlap,
   isCommanderCandidate,
   scoreCommander,
   type CommanderScore,
@@ -291,11 +293,20 @@ export async function scoreOneCommander(
     Object.entries(scored.roleCards).map(([role, cards]) => [role, withCommitted(cards, committed)]),
   ) as Record<RoleName, RoleCard[]>;
 
+  // Ownership, not availability, so this overlap is taken over the collection
+  // even in free mode. `scored.overlapOwnedIds` is the free pool's, and a card
+  // sleeved into a finished deck is exactly what that pool leaves out — asking
+  // it which decks hold these cards could only ever answer "none".
+  const ownedOverlapIds =
+    pool && result.data?.topCards
+      ? edhrecOverlap(result.data.topCards, commanderPool(commander, collection)).oracleIds
+      : scored.overlapOwnedIds;
+
   return {
     ...scored,
     roleCards,
     slug,
     synergyState: synergyStateFrom(result),
-    committedSupport: committedSupport(scored.overlapOwnedIds, committed),
+    committedSupport: committedSupport(ownedOverlapIds, committed),
   };
 }

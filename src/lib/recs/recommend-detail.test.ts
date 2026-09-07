@@ -26,9 +26,15 @@ vi.mock("../decks/committed", async (importOriginal) => ({
   readCommittedDecks: () => Promise.resolve(committed.value),
 }));
 
+const edhrec = vi.hoisted(() => ({ topCards: null as string[] | null }));
 vi.mock("../edhrec/client", () => ({
   readEdhrecCache: vi.fn(async () => new Map()),
-  resolveEdhrecData: vi.fn(async () => ({ data: null, unreachable: false })),
+  resolveEdhrecData: vi.fn(async () => ({
+    data: edhrec.topCards === null
+      ? null
+      : { topCards: edhrec.topCards, inclusionByName: new Map<string, number>() },
+    unreachable: false,
+  })),
 }));
 
 import { scoreOneCommander } from "./recommend";
@@ -44,6 +50,7 @@ beforeEach(() => {
   pool.collection = [];
   pool.card = [];
   committed.value = new Map();
+  edhrec.topCards = null;
 });
 
 describe("scoreOneCommander", () => {
@@ -115,5 +122,26 @@ describe("scoreOneCommander with an explicit pool", () => {
     const got = await scoreOneCommander("user-pool-excludes", "cmd", "atraxa", []);
     expect(got).not.toBeNull();
     expect(got!.colorPoolSize).toBe(0);
+  });
+});
+
+describe("scoreOneCommander committed-support attribution", () => {
+  // The committed clause is about ownership, not availability. In free mode the
+  // scoring pool excludes exactly the cards a finished deck holds, so deriving
+  // the clause from that pool would report that no deck holds any support at
+  // all — while the synergy panel right below marks those same cards committed.
+  it("names the deck even when the scoring pool leaves that deck's cards out", async () => {
+    const sol = card({ oracleId: "sol", name: "Sol Ring", typeLine: "Artifact", oracleText: "Add {C}{C}." });
+    const signet = card({ oracleId: "signet", name: "Arcane Signet", typeLine: "Artifact", oracleText: "Add {C}." });
+    pool.collection = [sol, signet];
+    pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
+    edhrec.topCards = ["Sol Ring", "Arcane Signet"];
+    committed.value = new Map([["sol", "Krenko"], ["signet", "Krenko"]]);
+
+    // Both support cards are sleeved, so the free pool holds neither.
+    const got = await scoreOneCommander("user-committed-free", "unowned", "atraxa", []);
+    expect(got!.committedSupport).toEqual({ count: 2, topDeck: "Krenko" });
+    // The score still speaks for the pool it was given.
+    expect(got!.edhrecOwnedCount).toBe(0);
   });
 });
