@@ -63,18 +63,16 @@ export function PriceStrip({
       className="mt-[10px] flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[10px] pb-0 md:flex-row-reverse md:items-baseline md:justify-between md:gap-[14px] md:px-[15px] md:py-[11px]"
       style={{ background: "var(--surface-sunken)" }}
     >
-      {showFigure || showClause ? (
+      {/* The clause cannot outlive the figure — it is a fraction OF it — so the
+          figure's own condition governs the whole line. */}
+      {showFigure ? (
         <p className="m-0 flex items-baseline gap-[7px] font-mono">
-          {showFigure ? (
-            <span className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>
-              {formatCents(summary.totalCents)}
-            </span>
-          ) : null}
+          <span className="text-[14px] font-semibold" style={{ color: "var(--fg)" }}>
+            {formatCents(summary.totalCents)}
+          </span>
           {showClause ? (
             <span className="text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
-              {showFigure ? (
-                <span aria-hidden="true">{"· "}</span>
-              ) : null}
+              <span aria-hidden="true">{"· "}</span>
               {priceCopy.strip.pricedClause(summary.pricedCopies, summary.totalCopies)}
             </span>
           ) : null}
