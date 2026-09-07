@@ -543,27 +543,32 @@ git commit -m "feat(tuning): carry a per-game note and the deck intent through t
 - [ ] **Step 1: Write the failing component tests**
 
 ```typescript
-// src/components/decks/game-log-form.test.tsx — add
-it("counts down only as the note approaches its cap", async () => {
-  render(<GameLogForm deckId="d1" onDone={() => {}} />);
+// src/components/decks/game-log-form.test.tsx — add inside the existing
+// `describe("GameLogForm")`. The file already mocks the actions module and
+// already owns two helpers: `mount()`, which renders with the component's real
+// required props (deckId, isFirstGame, onSaved, onAnnounce), and `open()`,
+// which clicks the collapsed CTA. Reuse both. Do not add a second `vi.mock`
+// and do not call `render` directly — GameLogForm has no injectable action and
+// no `onDone` prop, so a bespoke render will not typecheck.
+it("counts down only as the note approaches its cap", () => {
+  mount();
+  open();
   const note = screen.getByLabelText(deckTuningCopy.note.label);
-  await userEvent.type(note, "a".repeat(129));
+  fireEvent.change(note, { target: { value: "a".repeat(129) } });
   expect(screen.queryByText(/129/)).not.toBeInTheDocument();
-  await userEvent.type(note, "a");
+  fireEvent.change(note, { target: { value: "a".repeat(130) } });
   expect(screen.getByText(deckTuningCopy.note.counter(130, 140))).toBeInTheDocument();
 });
 
-// GameLogForm takes no injectable action — it imports logGame directly
-// (game-log-form.tsx:199). Mock the module, the way the file's existing tests do.
-vi.mock("../../app/decks/actions", () => ({
-  logGame: vi.fn(async () => ({ ok: false, message: "no" })),
-}));
-
 it("keeps what was typed when the save is refused", async () => {
-  render(<GameLogForm deckId="d1" onDone={() => {}} />);
+  logGame.mockResolvedValueOnce({ ok: false, message: "no" });
+  mount();
+  open();
   const note = screen.getByLabelText(deckTuningCopy.note.label);
-  await userEvent.type(note, "flooded out");
-  await userEvent.click(screen.getByRole("button", { name: gameLogCopy.form.save }));
+  fireEvent.change(note, { target: { value: "flooded out" } });
+  fireEvent.click(screen.getByRole("radio", { name: gameLogCopy.form.won }));
+  fireEvent.click(save());
+  await waitFor(() => expect(screen.getByText("no")).toBeInTheDocument());
   expect(note).toHaveValue("flooded out");
 });
 ```
@@ -1329,7 +1334,7 @@ git commit -m "feat(tuning): bounded model call with one retry per retryable cla
 - Produces:
   ```typescript
   export function runTuning(deckId: string): Promise<DeckMutationResult>;
-  export function cancelTuningRun(deckId: string): Promise<DeckMutationResult>;
+  export function cancelTuningRun(deckId: string, runId: string): Promise<DeckMutationResult>;
   export function reapCutoff(now: Date): Date;
   ```
 
