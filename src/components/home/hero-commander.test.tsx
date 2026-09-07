@@ -34,6 +34,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
     fitRoles: 8,
     fitSynergy: 24,
     score: 44,
+    rankScore: 44,
     measurableTotal: 100,
     imageUri: null,
     synergyState: "ok",
@@ -52,7 +53,9 @@ async function renderHero(items: CommanderListItem[], degraded = false, prose: s
 }
 
 function noSynergy(synergyState: SynergyState): CommanderListItem {
-  return item({ synergyState, fitSynergy: null, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
+  // Dropping fitSynergy drops the score and the denominator with it: score is
+  // exactly fitPool + fitRoles (12 + 8) per score.ts:254, out of 40.
+  return item({ synergyState, fitSynergy: null, score: 20, rankScore: 50, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
 }
 
 beforeEach(() => {

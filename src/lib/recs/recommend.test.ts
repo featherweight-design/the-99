@@ -134,7 +134,7 @@ describe("finalizeRecommendations", () => {
 
   describe("toListItem", () => {
     it("keeps list fields and drops heavy detail-only fields", () => {
-      const score = stubScore("Krenko, Mob Boss", 42);
+      const score = stubScore("Krenko, Mob Boss", 34);
       score.oracleText = "Tap: create goblins.";
       score.overlapOwned = ["Skirk Prospector"];
       const { results } = finalizeRecommendations([score], 10, 1);
@@ -153,7 +153,8 @@ describe("finalizeRecommendations", () => {
         fitRoles: 0,
         fitSynergy: null,
         synergyState: "ok",
-        score: 42,
+        score: 34,
+        rankScore: 85,
         measurableTotal: 40,
         imageUri: null,
       });
