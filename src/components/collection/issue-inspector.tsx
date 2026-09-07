@@ -129,7 +129,7 @@ export function IssueInspector({
         // --border-strong, radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7).
         // `relative` anchors the absolutely-positioned close button below.
         className="relative flex flex-col w-full h-full md:w-[660px] md:h-[640px] md:rounded-2xl bg-[color:var(--bg)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)] overflow-hidden"
-        style={{ boxShadow: "0 40px 100px rgba(0,0,0,0.7)" }}
+        style={{ boxShadow: "var(--modal-shadow)" }}
       >
         {/* Header — title + subtitle only. Close button renders at the end of
             the dialog (below) so DOM tab order goes filter → clear → tabs →

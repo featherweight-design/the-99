@@ -99,7 +99,7 @@ export function ExportDialog({
             background: "var(--surface-rail)",
             border: "1px solid var(--border-strong)",
             borderRadius: 16,
-            boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
+            boxShadow: "var(--modal-shadow)",
             overflow: "hidden",
           }}
         >

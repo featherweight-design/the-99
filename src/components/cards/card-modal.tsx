@@ -381,7 +381,7 @@ export function CardModal({
         // instead.
         className="flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"
         style={{
-          boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
+          boxShadow: "var(--modal-shadow)",
         }}
       >
         {/* MOBILE art header — §Mobile: Art Header. The band and the tile inside it

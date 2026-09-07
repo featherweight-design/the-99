@@ -60,7 +60,7 @@ export function ConfirmModal({
         className="w-full md:w-[520px] rounded-[22px_22px_34px_34px] md:rounded-2xl p-[26px_22px_30px] md:p-[32px_34px_30px] mt-auto md:mt-0 [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)]"
         style={{
           background: "var(--surface-rail)",
-          boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
+          boxShadow: "var(--modal-shadow)",
         }}
       >
         {/* Mobile drag handle — §Mobile: Sheet Drag Handle: 40×4, radius 999px, bg --border-strong, margin 0 auto 20px */}
