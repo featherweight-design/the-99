@@ -34,7 +34,7 @@ Amber on three items; all three dissolve against the repo, and the reasons are i
 3. **Discover's third order option — `Recently released`.** Backed by `released_at`. The `colour`
    key is deleted from the copy file rather than shipped dark.
 4. **Defect 2 is swept up by the rebuild, not patched separately.** The exact-identity note currently
-   prints a figure with the name search folded into it (`filter-bar.tsx:513`, `:601`, composed at
+   prints a figure with the name search folded into it (`filter-bar.tsx:514`, `:602`, composed at
    `discovery-view.tsx:96-101`). A standalone fix would edit a file the rebuild deletes. The spec
    already pins the regression test — *notes count only their own control*.
 
@@ -44,7 +44,7 @@ These are engineering findings against the handoff's prose. The frames are right
 
 1. **The engineering note names the wrong files.** README says "`facet-strip.tsx` and
    `discovery-row.tsx` are read, not edited." Both lanes render `RecCard`
-   (`commanders-view.tsx:333`, `discovery-view.tsx:702`), and `rec-card.tsx:11` delegates the
+   (`commanders-view.tsx:345`, `discovery-view.tsx:702`), and `rec-card.tsx:69` delegates the
    discovery arm to `DiscoveryRow`. The row redraw therefore edits **`rec-card.tsx` and
    `discovery-row.tsx`**; `facet-strip.tsx` is the only genuinely read-only file, and
    `rec-card.tsx` is never named in the handoff at all.
@@ -52,7 +52,7 @@ These are engineering findings against the handoff's prose. The frames are right
    entry per lane; it was not. The single shared entry still specifies a `32×45 thumb`, retired by
    the R3 thumbnail rule, and a `fit / FIT / delta` right column, retired for discover by R3's
    decision 5. **Build from frame `E6` and decision 5b**, not from that table row.
-3. **`discovery-row.tsx:357` stays.** Its comment — *"No `/100`, no FIT stack: discovery does not
+3. **`discovery-row.tsx:358` stays.** Its comment — *"No `/100`, no FIT stack: discovery does not
    blend"* — now agrees with the design rather than contradicting it, after R3 replaced the discover
    fit block with the three real counts.
 4. **Gap report numbering.** Two items are numbered `5`.

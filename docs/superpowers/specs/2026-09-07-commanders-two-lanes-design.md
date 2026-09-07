@@ -7,7 +7,7 @@
 ## Why this exists
 
 `/commanders` today is one page with a segmented toggle switching between two entirely
-separate pipelines. `page.tsx:67` branches on `parseScope(sp.scope) === "play"`: one side
+separate pipelines. `page.tsx:68` branches on `parseScope(sp.scope) === "play"`: one side
 runs `getRankedList` into `CommandersView`, the other runs `loadDiscovery` into
 `DiscoveryView`. The two sides do not share a control rack — `DiscoveryView` passes `join`
 and `query` to `FilterBar`, `CommandersView` passes neither — so the rack changes shape
@@ -16,7 +16,7 @@ when the toggle moves.
 That is the root of every reported symptom:
 
 - The colour-match control (`Contains` / `Exactly`) appears only when a colour is lit
-  **and** only on the discovery side (`filter-bar.tsx:310`), causing a vertical jump.
+  **and** only on the discovery side (`filter-bar.tsx:311`), causing a vertical jump.
 - The owned lane has no search, because search was built for the other pipeline.
 - `Score against` (`Everything I own` / `What's free`) reads as a peer of the scope toggle
   while meaning something that only makes sense on one lane.
@@ -45,7 +45,7 @@ again.
 2. **A control note counts another control's exclusions.** `filtered`
    (`discovery-view.tsx:96-101`) composes the colour filter with the name search, and the
    exact-identity note prints that combined figure as though colour alone produced it
-   (`filter-bar.tsx:513`, `601`). With `test` in the search field and one red pip lit, the
+   (`filter-bar.tsx:514`, `602`). With `test` in the search field and one red pip lit, the
    note reads "0 of 3,325 are Red and nothing else" — false; the dev database holds 330
    commander-legal rows with `color_identity = '{R}'`. The predicate itself is correct
    (`filter.ts:25-37`, uppercase WUBRG on both sides, `colorIdentity` on both sides).

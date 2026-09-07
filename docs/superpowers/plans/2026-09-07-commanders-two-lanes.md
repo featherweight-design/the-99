@@ -80,7 +80,7 @@ Defaults serialise as absences. Writes go through `window.history.replaceState`,
 
 1. The engineering note names the wrong files. The row redraw edits **`src/components/commanders/rec-card.tsx` and `src/components/commanders/discovery-row.tsx`**. `facet-strip.tsx` is the only genuinely read-only file.
 2. The `Row — phone` component note is stale on two points (a `32×45 thumb`, and a `fit / FIT / delta` right column for discover). **Build the phone row from frame `E6` and decision 5b**, not from that table row.
-3. `discovery-row.tsx:357`'s comment stays — it now agrees with the design.
+3. `discovery-row.tsx:358`'s comment stays — it now agrees with the design.
 
 **Recorded decision — discover excludes owned commanders outright**
 
@@ -1644,7 +1644,7 @@ git commit -m "feat(commanders): render the owned lane on the shared rack"
 
 ### Task 12: Wire the discover lane, and defect 2 dies with `FilterBar`
 
-Defect 2: the exact-identity note prints a figure with the name search folded into it — `filtered` is composed at `discovery-view.tsx:96-101` and printed at `filter-bar.tsx:513` and `:601`. The predicate itself (`src/lib/commanders/filter.ts:25-37`) is correct. Per readiness decision 4, the rebuild takes it: a standalone patch would edit a file this plan deletes.
+Defect 2: the exact-identity note prints a figure with the name search folded into it — `filtered` is composed at `discovery-view.tsx:96-101` and printed at `filter-bar.tsx:514` and `:602`. The predicate itself (`src/lib/commanders/filter.ts:25-37`) is correct. Per readiness decision 4, the rebuild takes it: a standalone patch would edit a file this plan deletes.
 
 **Files:**
 - Modify: `src/components/commanders/discovery-view.tsx`
@@ -1820,7 +1820,7 @@ Columns: 24px rank · content · 206px fit block · 32px `Start this deck` pill.
 
 No fit block, no delta, no split bar. A 246px stack: a mono 27px/600 support count over a mono 11px `OF TOP 236 OWNED` (from `discoverCopy.row.supportOwned`), then a single-fill `--accent` ratio bar, then `discoverCopy.row.popularity(n)` and `discoverCopy.row.novelty(n)` at mono 10.5px. The content column ends on `discoverCopy.row.notOwned`. Trailing action is `See the pool`. `Best fit` ranks on the support ratio as a sort key; it is not a displayed score.
 
-Keep the comment at `discovery-row.tsx:357` — *"No `/100`, no FIT stack: discovery does not blend"* — which now agrees with the design.
+Keep the comment at `discovery-row.tsx:358` — *"No `/100`, no FIT stack: discovery does not blend"* — which now agrees with the design.
 
 Phone: two bands, from frame `E6` and decision 5b, not a transcription of the desktop column.
 
