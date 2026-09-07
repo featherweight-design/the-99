@@ -60,12 +60,16 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-| **#340** Commanders as one plane (folds #335, #341, #343, #344) | `design/design_handoff_the99_commanders_plane/` (R6) | 🟡 Yellow | Search, colour join mode, and a list that states what it excluded and why. Audit: `R6-READINESS.md`. All nine of R6's blockers close eng-side — four against shipped source, four built as drawn and flagged for ratification in the PR body, one (the settled-query lookup) planned in full. Plan: [`plans/2026-09-06-commanders-one-plane.md`](plans/2026-09-06-commanders-one-plane.md) |
 
-_The four amendments (**#286**, **#280**, **#287**, **#277**) were the previous occupants and all
-four shipped between 2026-09-05 and 2026-09-06, in the drawn build order. They sit in ✅ Shipped
-below. **#220** left on 2026-09-06 when its eleventh and last planned PR merged, **#9** later the
-same day on PR #332, and **#330** the same day on PR #377._
+_Currently empty — **#340** was the last occupant and left on 2026-09-06 when its build started; it
+sits in 🔨 below. The four amendments (**#286**, **#280**, **#287**, **#277**) shipped between
+2026-09-05 and 2026-09-06, in the drawn build order, and sit in ✅ Shipped. **#220** left on
+2026-09-06 when its eleventh and last planned PR merged, **#9** later the same day on PR #332, and
+**#330** the same day on PR #377._
+
+**Nothing is ready for eng to pick up**, and that is a Design-capacity statement rather than a gap:
+the two handoffs that have landed are both in build, and every 🕰️ row that remains is a design
+cycle that has not started.
 
 ---
 
@@ -76,7 +80,7 @@ first implementation PR lands and reaches ✅ only when the last one does.
 
 | # / vertical | Handoff | Progress | Notes |
 |---|---|---|---|
-| _(none)_ | — | — | Nothing is mid-build. |
+| **#340** Commanders as one plane (folds #335, #341, #343, #344) | `design/design_handoff_the99_commanders_plane/` (R6) | Eight phases built, one PR open | Search, colour join mode, and a list that states what it excluded and why. Audit: `R6-READINESS.md` (🟡 Yellow). All nine of R6's blockers closed eng-side — four against shipped source, four built as drawn and flagged for ratification in the PR body, one (the settled-query lookup) built in full. Plan: [`plans/2026-09-06-commanders-one-plane.md`](plans/2026-09-06-commanders-one-plane.md). Design-review pass: 0 gaps, [`gap-report-commanders-plane.md`](gap-report-commanders-plane.md) |
 
 _#288 was the occupant until 2026-09-06, when its single planned PR (#312) merged and it moved to ✅ Shipped. The six-theme visual system completed 2026-09-02, and the Add panel addendum before it. It completed 2026-08-09 with all six planned PRs merged (#201, #202, #204, #205, #206, #207, #208) and now sits in ✅ Shipped._
 
