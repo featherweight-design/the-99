@@ -55,9 +55,16 @@ export function useDiscoveryCache(
   // render rather than in an effect, which is what React prescribes for state
   // derived from a prop change — an effect would paint the previous ranking once
   // before correcting it. The copy is over at most four entries.
-  const [prevServed, setPrevServed] = useState(served);
-  if (served !== prevServed) {
-    setPrevServed(served);
+  //
+  // Both inputs are compared, not just the payload. A server render produces a
+  // new `served` object every time, so in practice the two always move together —
+  // but that is an invariant of the framework rather than of this hook, and the
+  // availability is half of the key the payload gets filed under. Comparing only
+  // the payload would file a ranking under the wrong pair the day it stops
+  // holding, and the reader would be shown a list the control disagrees with.
+  const [prev, setPrev] = useState({ served, avail: servedAvail });
+  if (served !== prev.served || servedAvail !== prev.avail) {
+    setPrev({ served, avail: servedAvail });
     setCache((m) => new Map(m).set(cacheKey(served.sort, servedAvail), served));
     setView({ list: served, avail: servedAvail });
   }

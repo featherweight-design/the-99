@@ -8,7 +8,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import { PENDING_OPACITY } from "./list-nav";
+import { PENDING_OPACITY } from "./pending";
 
 const { sort: copy } = discoveryCopy;
 

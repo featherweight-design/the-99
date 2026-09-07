@@ -423,5 +423,38 @@ describe("DiscoveryView", () => {
       expect(screen.getAllByText("Re-Ranked").length).toBeGreaterThan(0);
       expect(screen.queryAllByText("Free Ranked").length).toBe(0);
     });
+
+    // The availability is half the key a payload is filed under, so it has to be
+    // watched as closely as the payload. A server render makes a new list object
+    // every time, which means these two normally move together — but that holds
+    // because of how the framework renders, not because of anything this hook
+    // enforces, and the day it stops holding the ranking would be filed under the
+    // wrong pair and the control would disagree with the list beneath it.
+    it("follows the availability even when the payload object is unchanged", () => {
+      const same = list({
+        items: [item({ name: "Same Payload", slug: "same-payload" })],
+        candidateCount: 1,
+      });
+      const { rerender } = render(<DiscoveryView discovery={same} avail="free" />);
+      rerender(<DiscoveryView discovery={same} avail="all" />);
+
+      // Watching the payload alone, the view would still be reporting `free` here
+      // while the server had moved on to `all`.
+      expect(
+        screen
+          .getAllByRole("radio", { name: availabilityCopy.ranking.allAria })[0]
+          .getAttribute("aria-checked"),
+      ).toBe("true");
+
+      // And the pair is filed under `fit:all`, not overwriting `fit:free` — the
+      // seeded entry is still there to be served without a request.
+      clickAvail(availabilityCopy.ranking.freeAria);
+      expect(replace).not.toHaveBeenCalled();
+      expect(
+        screen
+          .getAllByRole("radio", { name: availabilityCopy.ranking.freeAria })[0]
+          .getAttribute("aria-checked"),
+      ).toBe("true");
+    });
   });
 });

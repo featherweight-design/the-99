@@ -11,7 +11,7 @@
 
 import { useRef, type ReactNode } from "react";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { PENDING_OPACITY } from "./list-nav";
+import { PENDING_OPACITY } from "./pending";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { WindowCount } from "./reveal-control";
 

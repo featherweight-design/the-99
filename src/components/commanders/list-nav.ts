@@ -21,16 +21,6 @@ export type Nav<T extends string> = {
   pending: T | null;
 };
 
-/**
- * The dim applied to a control waiting on a request. The value is the one
- * `FullCardTrigger` already shipped for its chip while the card modal fetches,
- * lifted here so every control that means "your press registered, the answer is
- * still coming" reads from one place rather than four literals that drift.
- *
- * Never `disabled`, for FullCardTrigger's reason: disabling the focused element
- * blurs it, and the reader would lose their place mid-flip.
- */
-export const PENDING_OPACITY = 0.55;
 
 // The scope a flip is heading for, parked across the navigation.
 //

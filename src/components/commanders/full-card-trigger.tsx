@@ -4,7 +4,7 @@
 // already mounts for the role chips further down the page.
 
 import { useCardDetail } from "../cards/card-detail-provider";
-import { PENDING_OPACITY } from "./list-nav";
+import { PENDING_OPACITY } from "./pending";
 
 export function FullCardTrigger({ oracleId }: { oracleId: string }) {
   const { open, pendingOracleId } = useCardDetail();

@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { FilterBar } from "./filter-bar";
-import { PENDING_OPACITY } from "./list-nav";
+import { PENDING_OPACITY } from "./pending";
 import { ScopeControl } from "./scope-control";
 import { SortMenu } from "./sort-menu";
 

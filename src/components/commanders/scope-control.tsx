@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import { PENDING_OPACITY } from "./list-nav";
+import { PENDING_OPACITY } from "./pending";
 
 type Scope = "owned" | "play";
 
