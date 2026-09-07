@@ -18,6 +18,11 @@ describe("retry submit", () => {
   it("marks and dims itself while the action is out", () => {
     status.pending = true;
     const { rerender } = render(<RetryGhost>Retry</RetryGhost>);
+    // Named by its own text, so how `PendingLabel` hides that text decides
+    // whether the button still has a name mid-request. `visibility: hidden`
+    // would take it; `opacity-0` leaves it. jsdom loads no stylesheet, so this
+    // assertion cannot tell the two apart — the choice is documented at the
+    // component instead.
     const ghost = screen.getByRole("button", { name: "Retry" });
     expect(ghost.getAttribute("aria-busy")).toBe("true");
     expect(ghost.className).toContain(PENDING_OPACITY_CLASS);

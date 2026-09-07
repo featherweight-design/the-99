@@ -85,6 +85,16 @@ describe("controls with a flip in flight", () => {
     ).not.toBeNull();
   });
 
+  // The mark stands where the label was rather than beside it. The label keeps
+  // its box, so the segment is the same width waiting as idle — a mark that took
+  // room of its own would widen the pressed segment and shove its neighbour.
+  it("hides the waiting segment's label without giving up its box", () => {
+    render(<ScopeControl scope="owned" pending="play" onChange={vi.fn()} />);
+    const playing = screen.getByRole("radio", { name: discoveryCopy.scope.playAria });
+    expect(playing.textContent).toContain(discoveryCopy.scope.play);
+    expect(screen.getByText(discoveryCopy.scope.play).closest(".opacity-0")).not.toBeNull();
+  });
+
   // The other half: a control with nothing in flight is byte-identical to what
   // shipped. `aria-busy="false"` on every idle control would be noise in the
   // accessibility tree, and the owned scope's availability flip is a client-side

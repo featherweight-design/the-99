@@ -30,18 +30,33 @@ export function PendingMark() {
 }
 
 /**
- * The mark plus the width it occupies, held whether or not it is showing.
+ * A label that becomes the mark while it waits.
  *
- * The segmented controls put a slot on their selected segment and only there.
- * Exactly one segment is selected at any moment, so the group's width is the
- * same before, during and after a flip — a slot that appeared with the mark
- * would shove the neighbouring segment sideways for the length of the request,
- * which is the jitter the loading state exists to replace.
+ * The label keeps its box and the mark is laid over it, so the control is
+ * exactly as wide waiting as it is idle and its neighbours never move. A slot
+ * reserved beside the label holds the width too, but it is an empty gap for all
+ * the time the control is not waiting, which is nearly all of it.
+ *
+ * `opacity-0` rather than `invisible`: the Retry buttons take their accessible
+ * name from this text, and `visibility: hidden` would drop it from that
+ * computation — leaving an unnamed button for exactly as long as the request
+ * it is reporting on.
  */
-export function PendingSlot({ pending }: { pending: boolean }) {
+export function PendingLabel({
+  pending,
+  children,
+}: {
+  pending: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <span aria-hidden className="inline-flex justify-center shrink-0" style={{ width: WIDTH }}>
-      {pending && <PendingMark />}
+    <span className="relative inline-flex items-center justify-center">
+      <span className={pending ? "opacity-0" : undefined}>{children}</span>
+      {pending && (
+        <span aria-hidden className="absolute inset-0 flex items-center justify-center">
+          <PendingMark />
+        </span>
+      )}
     </span>
   );
 }
