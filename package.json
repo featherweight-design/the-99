@@ -21,6 +21,7 @@
     "db:seed:printings": "tsx scripts/seed-printings.ts",
     "db:seed:collection": "tsx scripts/seed-collection.ts",
     "db:seed:prices": "tsx scripts/seed-prices.ts",
+    "db:seed:games": "tsx scripts/seed-games.ts",
     "check:scryfall": "tsx scripts/check-scryfall-contract.ts",
     "check:manapool": "tsx scripts/check-manapool-contract.ts",
     "db:build:index": "tsx scripts/build-commander-index.ts"
