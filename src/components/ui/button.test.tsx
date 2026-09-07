@@ -17,7 +17,7 @@ describe("PrimaryButton", () => {
     render(<PrimaryButton {...props}>Go</PrimaryButton>);
     const el = screen.getByRole("button", { name: "Go" });
     expect(el.className).toContain("px-4");
-    expect(el.className).toContain("bg-[color:var(--accent)]");
+    expect(el.className).toContain("bg-[color:var(--fg)]");
   });
 
   it("still honours a spread type so submit buttons keep working", () => {
@@ -39,7 +39,7 @@ describe("PrimaryButton", () => {
   it("pins the fill through hover when disabled", () => {
     render(<PrimaryButton disabled>Go</PrimaryButton>);
     expect(screen.getByRole("button", { name: "Go" }).className).toContain(
-      "disabled:hover:bg-[color:var(--accent)]",
+      "disabled:hover:bg-[color:var(--fg)]",
     );
   });
 
@@ -58,12 +58,22 @@ describe("PrimaryButton", () => {
     );
   });
 
-  it("carries the accent fill and hover in classes, not inline style", () => {
+  it("carries the fill and hover in classes, not inline style", () => {
     render(<PrimaryButton>Go</PrimaryButton>);
     const el = screen.getByRole("button", { name: "Go" });
-    expect(el.className).toContain("bg-[color:var(--accent)]");
-    expect(el.className).toContain("hover:bg-[color:var(--accent-hover)]");
+    expect(el.className).toContain("bg-[color:var(--fg)]");
+    expect(el.className).toContain("hover:bg-[color:var(--fg-body)]");
     expect(el.getAttribute("style")).toBeNull();
+  });
+
+  // Locked ruling 14: the one filled button on a screen is bone, because accent
+  // means "in use / to buy" and a filled CTA is neither.
+  it("fills with bone, never accent", () => {
+    render(<PrimaryButton>Start this deck</PrimaryButton>);
+    const cls = screen.getByRole("button", { name: "Start this deck" }).className;
+    expect(cls).toContain("bg-[color:var(--fg)]");
+    expect(cls).toContain("text-[color:var(--bg)]");
+    expect(cls).not.toContain("var(--accent)");
   });
 
   it("appends caller classes so per-surface padding wins", () => {
