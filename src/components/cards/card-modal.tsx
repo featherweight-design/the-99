@@ -374,7 +374,7 @@ export function CardModal({
         aria-labelledby="card-modal-title"
         onClick={(e) => e.stopPropagation()}
         // Mobile: full-screen sheet (§Mobile: Full-Screen Sheet Container: bg var(--surface-sunken))
-        // Desktop: 820px centered, bg --surface-rail, border 1px --border-strong, radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7)
+        // Desktop: 820px centered, bg --surface-rail, border 1px --border-strong, radius 16px, shadow --modal-shadow
         // Desktop height is fixed rather than h-auto: oracle text runs from one
         // line to twelve, and paging Prev/Next through the collection resized
         // the dialog under the cursor on every step. The content column scrolls

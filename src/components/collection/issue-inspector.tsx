@@ -126,7 +126,7 @@ export function IssueInspector({
         // Mobile: full-screen sheet on --bg (design's var(--bg)).
         // Desktop: 660px × 640px (fixed height, not max-height — the dialog
         // must not shrink as filter results narrow), --surface-rail, 1px
-        // --border-strong, radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7).
+        // --border-strong, radius 16px, shadow --modal-shadow.
         // `relative` anchors the absolutely-positioned close button below.
         className="relative flex flex-col w-full h-full md:w-[660px] md:h-[640px] md:rounded-2xl bg-[color:var(--bg)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)] overflow-hidden"
         style={{ boxShadow: "var(--modal-shadow)" }}
