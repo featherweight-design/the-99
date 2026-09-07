@@ -318,9 +318,13 @@ export function DiscoveryView({
       .then((matches) => {
         if (live) setAnswer({ key: `${discovery.sort}:${avail}:${settledTrimmed}`, matches });
       })
-      // A lookup that fails leaves the list saying only what it can see. The
-      // reader's own answer — the rows — is already on screen either way.
-      .catch(() => {});
+      // A lookup that fails leaves the list saying only what it can see. Filed
+      // under its key all the same, so a failure settles the question rather
+      // than hanging it: the states below wait for an answer, and one that never
+      // arrives would hold the search's own empty state off the screen forever.
+      .catch(() => {
+        if (live) setAnswer({ key: `${discovery.sort}:${avail}:${settledTrimmed}`, matches: [] });
+      });
     return () => {
       live = false;
     };
@@ -365,18 +369,31 @@ export function DiscoveryView({
   // outranks both empties below: they say what is missing, and this one says
   // why and offers the single control that would undo it.
   const showHeldEmpty = !floorReplacedList && filtered.length === 0 && report !== null;
+  // "No commander is named that" is a claim about the whole index, and only the
+  // server can make it. Until the lookup for the query ON SCREEN has come back,
+  // the state is held: rendering it early would print a sentence that the next
+  // 300ms could contradict, and the held report would replace it under the
+  // reader. A query too short for the action to answer settles on arrival, since
+  // there is no lookup to wait for.
+  const searchPending =
+    trimmedQuery !== "" &&
+    !(settledTrimmed === trimmedQuery && (settledTrimmed.length < 2 || answer?.key === lookupKey));
   const showSearchEmpty =
     !floorReplacedList &&
     !showHeldEmpty &&
+    !searchPending &&
     trimmedQuery !== "" &&
     filtered.length === 0 &&
     !nameMatchesAny;
   // Only when the filter is what emptied it. Without that guard this would also
-  // swallow the unfiltered no-results case, whose reason is not the colours.
+  // swallow the unfiltered no-results case, whose reason is not the colours. It
+  // waits on the same lookup: with a query in the field, blaming the colours is
+  // one more conclusion the server has not confirmed yet.
   const showFilteredEmpty =
     !floorReplacedList &&
     !showHeldEmpty &&
     !showSearchEmpty &&
+    !searchPending &&
     colors.length > 0 &&
     filtered.length === 0;
 

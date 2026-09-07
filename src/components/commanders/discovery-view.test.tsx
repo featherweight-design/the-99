@@ -614,7 +614,7 @@ describe("DiscoveryView", () => {
   // The floor takes rows out of `items` but not out of the pool the search
   // covered, so under the novelty sort the ranked count would understate where
   // we looked.
-  it("names the whole unbuilt pool, not the ranked count, under the novelty sort", () => {
+  it("names the whole unbuilt pool, not the ranked count, under the novelty sort", async () => {
     const { container } = render(
       <DiscoveryView
         discovery={list({ items: named(), candidateCount: 40, sort: "new", floorExcluded: 38 })}
@@ -622,20 +622,20 @@ describe("DiscoveryView", () => {
       />,
     );
     fireEvent.change(field(), { target: { value: "krenko" } });
-    expect(container.textContent).toContain(search.noneEmphasis(40));
+    await waitFor(() => expect(container.textContent).toContain(search.noneEmphasis(40)));
     expect(container.textContent).toContain(search.announce(0, 40));
   });
 
   // The name is in nothing this reader can see, so the state says where we
   // looked and offers the one correction that could help.
-  it("names the query when nothing is called that, and clears the search rather than the colours", () => {
+  it("names the query when nothing is called that, and clears the search rather than the colours", async () => {
     const { container } = render(
       <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
     );
     fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
     fireEvent.change(field(), { target: { value: "krenko" } });
 
-    expect(container.textContent).toContain(search.noneHeading("krenko"));
+    await waitFor(() => expect(container.textContent).toContain(search.noneHeading("krenko")));
     expect(container.textContent).toContain(search.announce(0, 2));
 
     // The field's ✕ carries the same accessible name as the state's button, so
@@ -701,8 +701,10 @@ describe("DiscoveryView", () => {
       <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
-    // Before the query settles the list says only what it can see.
-    expect(container.textContent).toContain(search.noneHeading("atraxa"));
+    // Nothing is claimed until the server has answered: "no commander is named
+    // that" is a statement about the index, and printing it here would be a
+    // sentence the very next render contradicts.
+    expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
 
     await waitFor(() =>
       expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
