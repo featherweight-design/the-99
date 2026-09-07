@@ -41,39 +41,26 @@ export function withCommitted<T extends { oracleId: string }>(
 /**
  * How much of a commander's owned support the player has already spent.
  *
- * The deck named is the first by the ordering `readCommittedDecks` already
- * imposes, so the prose names the same deck the committed marks below it point
- * at rather than whichever card happened to come first in EDHREC's order.
+ * The scan is over the map rather than over the ids because the map already carries
+ * the answer: `readCommittedDecks` builds it from rows in deck order, so the first
+ * committed card met is in the first deck by that same ordering, `decks.id` tiebreak
+ * included. Re-sorting the names here instead would agree with the read everywhere
+ * except the one case a sort cannot see — two decks whose names differ only in case —
+ * and there it would name a different deck than the marks below the sentence point at.
  */
 export function committedSupport(
   oracleIds: string[],
   byCard: Map<string, string>,
 ): { count: number; firstDeck: string | null } {
-  const deckNames: string[] = [];
-  for (const id of oracleIds) {
-    const deck = byCard.get(id);
-    if (deck !== undefined) deckNames.push(deck);
+  const wanted = new Set(oracleIds);
+  let count = 0;
+  let firstDeck: string | null = null;
+  for (const [oracleId, deck] of byCard) {
+    if (!wanted.has(oracleId)) continue;
+    count++;
+    firstDeck ??= deck;
   }
-  return {
-    count: deckNames.length,
-    firstDeck:
-      deckNames.length === 0
-        ? null
-        : deckNames.reduce((a, b) => (compareDeckNames(a, b) <= 0 ? a : b)),
-  };
-}
-
-/**
- * `readCommittedDecks`'s `lower(name)` ordering, as far as a name can carry it.
- *
- * That read breaks a tie on `decks.id`, and the map it returns holds names alone,
- * so two decks whose names differ only in case are indistinguishable here and the
- * earlier of the two wins. The reader cannot tell those two apart either.
- */
-function compareDeckNames(a: string, b: string): number {
-  const la = a.toLowerCase();
-  const lb = b.toLowerCase();
-  return la < lb ? -1 : la > lb ? 1 : 0;
+  return { count, firstDeck };
 }
 
 /**
