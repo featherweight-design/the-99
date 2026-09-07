@@ -1,5 +1,5 @@
 import "./lib/env.mjs";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 /**
  * `pnpm db:seed:games` — give the local fixture decks a play history.
@@ -15,9 +15,19 @@ import { and, eq, inArray } from "drizzle-orm";
  * reconstructed one at a time.
  *
  * Decks are matched by name and skipped when absent, so this is safe to run
- * against a branch that has only some of them. It is idempotent: the games it
- * seeded are deleted before the new ones are written, and the axis rows go with
- * them by cascade.
+ * against a branch that has only some of them.
+ *
+ * IT IS DESTRUCTIVE. Re-running replaces rather than accumulates, and the way it
+ * does that is to delete EVERY game on each matched deck — not only the games a
+ * previous run of this script wrote. There is nothing on a row marking it as
+ * seeded, so real play history on a deck that shares one of these names would go
+ * with it, and the axis rows follow by cascade. The plan printed before any write
+ * names each deck's current game count for that reason, and --dry-run prints the
+ * same plan without touching anything.
+ *
+ * Two decks can carry the same name — there is no unique index on
+ * (user_id, name) — so a duplicate is refused rather than resolved, since either
+ * choice would be a guess about which one to overwrite.
  */
 
 import type { AxisPolarity, GameAxisKey } from "../src/lib/decks/game-axes";
@@ -140,23 +150,49 @@ async function main() {
   const { deckGames, deckGameAxes, decks } = await import("../src/db/schema");
 
   const owned = await db
-    .select({ id: decks.id, name: decks.name })
+    .select({
+      id: decks.id,
+      name: decks.name,
+      games: sql<number>`count(${deckGames.id})::int`,
+    })
     .from(decks)
-    .where(eq(decks.userId, args.user));
-  const byName = new Map(owned.map((d) => [d.name, d.id]));
+    .leftJoin(deckGames, eq(deckGames.deckId, decks.id))
+    .where(eq(decks.userId, args.user))
+    .groupBy(decks.id, decks.name);
+
+  // Nothing stops a user owning two decks with the same name, and a Map would
+  // silently keep the last one — which is a coin toss about whose history the
+  // delete below destroys. Refuse instead.
+  const named = new Map<string, typeof owned>();
+  for (const deck of owned) named.set(deck.name, [...(named.get(deck.name) ?? []), deck]);
+  const ambiguous = SEED.map((s) => s.deckName).filter((name) => (named.get(name)?.length ?? 0) > 1);
+  if (ambiguous.length > 0) {
+    throw new Error(
+      `this account owns more than one deck named ${ambiguous.map((n) => `"${n}"`).join(", ")}; ` +
+        "rename or remove the duplicate — seeding one of them would delete the other's games at random",
+    );
+  }
 
   console.log(`database: ${databaseHost()}`);
   console.log(`user:     ${args.user} (${owned.length} decks)`);
   console.log("");
 
-  const planned = SEED.map((deck) => ({ ...deck, deckId: byName.get(deck.deckName) ?? null }));
+  const planned = SEED.map((deck) => ({ ...deck, match: named.get(deck.deckName)?.[0] ?? null }));
   for (const deck of planned) {
-    const mark = deck.deckId ? "seed" : "skip";
-    console.log(`[${mark}] ${deck.deckName} — ${deck.deckId ? deck.demonstrates : "not found on this account"}`);
+    if (!deck.match) {
+      console.log(`[skip] ${deck.deckName} — not found on this account`);
+      continue;
+    }
+    // The existing count is the warning: a non-zero one is history this run destroys.
+    const existing =
+      deck.match.games === 0
+        ? "no games yet"
+        : `DELETES ${deck.match.games} existing game${deck.match.games === 1 ? "" : "s"}`;
+    console.log(`[seed] ${deck.deckName} — ${existing} — ${deck.demonstrates}`);
   }
   console.log("");
 
-  const targets = planned.filter((d): d is typeof d & { deckId: string } => d.deckId !== null);
+  const targets = planned.filter((d): d is typeof d & { match: NonNullable<typeof d.match> } => d.match !== null);
   if (targets.length === 0) throw new Error("none of the fixture decks exist on this account");
 
   if (args.dryRun) {
@@ -164,11 +200,13 @@ async function main() {
     return;
   }
 
-  // Delete first so a re-run replaces rather than accumulates. deck_game_axes
-  // cascades from deck_games, so it needs no statement of its own.
+  // Delete first so a re-run replaces rather than accumulates. This removes EVERY
+  // game on these decks, not only the ones a previous run wrote — nothing marks a
+  // row as seeded — so a deck listed above with a non-zero count loses that
+  // history here. deck_game_axes cascades, so it needs no statement of its own.
   const deleted = await db
     .delete(deckGames)
-    .where(and(eq(deckGames.userId, args.user), inArray(deckGames.deckId, targets.map((d) => d.deckId))))
+    .where(and(eq(deckGames.userId, args.user), inArray(deckGames.deckId, targets.map((d) => d.match.id))))
     .returning({ id: deckGames.id });
 
   let written = 0;
@@ -177,7 +215,7 @@ async function main() {
       const [row] = await db
         .insert(deckGames)
         .values({
-          deckId: deck.deckId,
+          deckId: deck.match.id,
           userId: args.user,
           result: game.result,
           podSize: game.podSize,
@@ -194,7 +232,7 @@ async function main() {
     }
   }
 
-  console.log(`removed ${deleted.length} existing games; wrote ${written} across ${targets.length} decks.`);
+  console.log(`deleted ${deleted.length} existing games; wrote ${written} across ${targets.length} decks.`);
 }
 
 main()
