@@ -100,11 +100,16 @@ export function FilteredEmpty({
           maxWidth: 380,
         }}
       >
-        {emphasis && body ? (
-          <Emphasised text={body} values={[emphasis]} color="var(--fg)" />
-        ) : (
-          (body ?? commandersCopy.filteredEmpty.caption(colorWords(colors), total))
-        )}
+        {(() => {
+          // The default caption is a sentence like any other, so a caller marking a
+          // substring of it should not have to restate the whole thing to be heard.
+          const resolved = body ?? commandersCopy.filteredEmpty.caption(colorWords(colors), total);
+          return emphasis ? (
+            <Emphasised text={resolved} values={[emphasis]} color="var(--fg)" />
+          ) : (
+            resolved
+          );
+        })()}
         {/* The clause is a second sentence rather than a second paragraph: it
             gives the reason the first sentence is true, and a break would read
             as a change of subject. Emphasised whole, unlike the other two
