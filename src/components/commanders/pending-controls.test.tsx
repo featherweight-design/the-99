@@ -92,7 +92,7 @@ describe("controls with a flip in flight", () => {
     render(<ScopeControl scope="owned" pending="play" onChange={vi.fn()} />);
     const playing = screen.getByRole("radio", { name: discoveryCopy.scope.playAria });
     expect(playing.textContent).toContain(discoveryCopy.scope.play);
-    expect(screen.getByText(discoveryCopy.scope.play).closest(".invisible")).not.toBeNull();
+    expect(screen.getByText(discoveryCopy.scope.play).closest(".opacity-0")).not.toBeNull();
   });
 
   // The other half: a control with nothing in flight is byte-identical to what

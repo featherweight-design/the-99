@@ -32,11 +32,15 @@ export function PendingMark() {
 /**
  * A label that becomes the mark while it waits.
  *
- * The label keeps its box — `invisible`, not unmounted — and the mark is laid
- * over it, so the control is exactly as wide waiting as it is idle and its
- * neighbours never move. A slot reserved beside the label holds the width too,
- * but it is an empty gap for all the time the control is not waiting, which is
- * nearly all of it.
+ * The label keeps its box and the mark is laid over it, so the control is
+ * exactly as wide waiting as it is idle and its neighbours never move. A slot
+ * reserved beside the label holds the width too, but it is an empty gap for all
+ * the time the control is not waiting, which is nearly all of it.
+ *
+ * `opacity-0` rather than `invisible`: the Retry buttons take their accessible
+ * name from this text, and `visibility: hidden` would drop it from that
+ * computation — leaving an unnamed button for exactly as long as the request
+ * it is reporting on.
  */
 export function PendingLabel({
   pending,
@@ -47,7 +51,7 @@ export function PendingLabel({
 }) {
   return (
     <span className="relative inline-flex items-center justify-center">
-      <span className={pending ? "invisible" : undefined}>{children}</span>
+      <span className={pending ? "opacity-0" : undefined}>{children}</span>
       {pending && (
         <span aria-hidden className="absolute inset-0 flex items-center justify-center">
           <PendingMark />
