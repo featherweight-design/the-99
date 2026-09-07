@@ -35,7 +35,7 @@ export function acceptProse(s: string): boolean {
   // initialism would otherwise reject every sentence written about that commander.
   const sentences = t
     .replace(NAME_PERIOD, (m) => m.slice(0, -1))
-    .split(/[.!?](\s|$)/)
+    .split(/[.!?](?:\s|$)/)
     .filter((p) => p.trim().length > 0);
   if (sentences.length !== 1) return false;
 

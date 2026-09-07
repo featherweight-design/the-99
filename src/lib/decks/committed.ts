@@ -49,14 +49,17 @@ export function committedSupport(
   oracleIds: string[],
   byCard: Map<string, string>,
 ): { count: number; firstDeck: string | null } {
-  const decks: string[] = [];
+  const deckNames: string[] = [];
   for (const id of oracleIds) {
     const deck = byCard.get(id);
-    if (deck !== undefined) decks.push(deck);
+    if (deck !== undefined) deckNames.push(deck);
   }
   return {
-    count: decks.length,
-    firstDeck: decks.length === 0 ? null : decks.reduce((a, b) => (compareDeckNames(a, b) <= 0 ? a : b)),
+    count: deckNames.length,
+    firstDeck:
+      deckNames.length === 0
+        ? null
+        : deckNames.reduce((a, b) => (compareDeckNames(a, b) <= 0 ? a : b)),
   };
 }
 
