@@ -214,17 +214,16 @@ describe("DecklistRow availability marker (#43)", () => {
   });
 
   // Self-exclusion makes the hard state unreachable on a deck's own list
-  // (design table row 4.9), so a genuine conflict arrives as over-committed and
-  // names the OTHER claimant.
+  // (design table row 4.9), so a genuine conflict arrives as over-committed.
+  // Count-only in both views since #354: the other claimant is named by the
+  // card modal's allocation receipt, not by this row.
   it("carries the marker when another finished list wants the same copy", () => {
     renderRow(
       <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
     );
 
-    // Two spans, so match the prefix by regex and the name by its data
-    // attribute — getByText cannot see the composed string.
-    expect(screen.getByText(/short 1 — also in/)).toBeInTheDocument();
-    expect(document.querySelector("[data-deck-name]")).toHaveTextContent("Atraxa");
+    expect(screen.getByText("short 1")).toBeInTheDocument();
+    expect(document.querySelector("[data-deck-name]")).toBeNull();
   });
 
   // The quiet-failure half of the degraded ruling.
@@ -243,9 +242,7 @@ describe("DecklistRow availability marker (#43)", () => {
     );
 
     expect(
-      screen.getByText(
-        "your Atraxa list also includes this card and you don\u2019t own enough for both",
-      ),
+      screen.getByText("you own 1 too few for the finished lists that include it"),
     ).toBeInTheDocument();
   });
 
@@ -254,8 +251,7 @@ describe("DecklistRow availability marker (#43)", () => {
       <DecklistRow deckId="d1" card={{ ...card, availability: avail(-1, ["Atraxa"]) }} />,
     );
 
-    expect(screen.getByText(/short 1 — also in/)).toHaveAttribute("aria-hidden", "true");
-    expect(document.querySelector("[data-deck-name]")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("short 1")).toHaveAttribute("aria-hidden", "true");
   });
 
   // Nothing on this surface is ever gated on availability.

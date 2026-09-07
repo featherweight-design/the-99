@@ -265,32 +265,34 @@ export function DecklistRow({
             // into — the name is its own button — so the marker speaks for
             // itself. Design 17.5 is written for this surface specifically.
             spoken
-            // Count-only in Shopping: a bare `short 1`, not
+            // Count-only in BOTH views (#354). A bare `short 1`, never
             // `short 1 — also in Atraxa`. The clause's prefix is ~120px and
-            // never truncates by contract, and this row also carries the EDHREC
-            // figure, the tag and a 44px ✕ — at 390px, and inside the 2-up
-            // desktop grid, there is no width left for a name that would still
-            // read as a name. The All-view row one tab away states it, and the
-            // summary band above names the claiming lists.
+            // never truncates by contract, but the name after it does: this row
+            // also carries the EDHREC figure, the tag and a 44px ✕, so at 390px
+            // and inside the 2-up desktop grid the name loses its tail and
+            // `also in HD Tune - Prism…` teaches nothing.
             //
-            // The view, not the figure: with EDHREC unreachable the row loses
-            // its meta line but is still the Shopping list, and a deck name
-            // appearing there only during an outage would make the ruling look
-            // like a rendering accident.
-            nameless={inShopping}
+            // The name is not withheld, it moved. The card modal's allocation
+            // receipt (#353) names every claiming deck and links each one, which
+            // is a better answer than one truncated name and is why this stopped
+            // being Shopping-only.
+            nameless
             // The component sets no size or family of its own (design 3.4: the
             // label inherits the meta line's mono size), and this row has no
             // meta line to inherit — it would otherwise render in the page's
             // sans base and grow a 34px row. The caller supplies both, a step
             // below the card name so the marker stays the quieter half.
             //
-            // `shrink-[4]` is the priority, not a width: when the row cannot
-            // hold both, the marker gives up its space before the card name
-            // gives up any — down to its own floor, which is the fixed prefix
-            // plus six characters of deck name. That is Design's ruling that
-            // the name is the most useful half, expressed as an order of
-            // yielding rather than as a fixed minimum that cannot itself yield.
-            className="shrink-[4] font-mono text-[11px] md:text-[11.5px]"
+            // `shrink-0` because the marker no longer has a flexible half to
+            // give up (#354). It used to carry `shrink-[4]`, which expressed
+            // Design's ruling that the card name is the more useful half as an
+            // order of yielding: the deck name truncated to a 6ch floor before
+            // the card name lost a character. Count-only, the whole marker is
+            // one `flex-none` run of about 50px, so a shrink budget it cannot
+            // absorb would overflow the box rather than clip inside it. The
+            // ruling cost almost nothing to give up: what the marker used to
+            // yield was the deck name, and there is no deck name left to yield.
+            className="shrink-0 font-mono text-[11px] md:text-[11.5px]"
           />
         )}
 

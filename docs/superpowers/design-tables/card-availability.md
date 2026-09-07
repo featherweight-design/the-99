@@ -83,7 +83,7 @@ Severity comes from `statusPill()` (`src/lib/decks/status.ts:15-24`, cited RM:21
 | 1.5 | Default / **off** the deck's own decklist — `/collection`, `/commanders`, commander detail, card detail | `free = owned − hard` | CV:48 callout, qualified RD2:105–110 |
 | 1.6 | **On** a deck's own decklist, and in the add panel opened from that deck | `free = (owned − ownClaim) − (hard − ownHardClaim)` | A2RM:141–172, RD2:47–76 |
 
-Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marker scores against **every deck except that one**, excluding the current deck's copies from **supply as well as claims**. Consequence to enumerate as a rule: **the `hard` state is unreachable inside a finished deck.** A genuine conflict there presents as over-committed with `marker.overAlsoIn` — `short 1 — also in Kykar` (CP:49–51). RD2:94–103 extends self-exclusion to the **add panel** via a `deckId` parameter on `searchCards`; the canvases never draw this, and it is required anyway.
+Self-exclusion (A2RM:141–172, RD2:47–76): on a deck's own decklist the marker scores against **every deck except that one**, excluding the current deck's copies from **supply as well as claims**. Consequence to enumerate as a rule: **the `hard` state is unreachable inside a finished deck.** A genuine conflict there presents as over-committed. It was drawn as `marker.overAlsoIn` — `short 1 — also in Kykar` (CP:49–51) — and on the decklist row itself is now count-only, `marker.over` (see the 4.6 / 4.10 amendment, #354); the surfaces that keep the named form are listed there. RD2:94–103 extends self-exclusion to the **add panel** via a `deckId` parameter on `searchCards`; the canvases never draw this, and it is required anyway.
 
 ### 1.2 Copy — exact strings, quoted not paraphrased
 
@@ -158,7 +158,7 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 | 4.3 | Meta line — desktop | shipped mono | shipped | same append | no height change | seam over `#100D0A` | CV:797–830 |
 | 4.4 | free row | — | — | — | — | renders exactly the shipped row, byte-identical | RM:79–84 |
 | 4.5 | over row | — | container border tints `#6B3226` | — | — | only state that touches the container | RM:98–118 |
-| 4.6 | over copy in own deck | — | `#E9917A` | — | — | `marker.overAlsoIn` — `short 1 — also in Kykar` | CP:49, A2RM:141–172 |
+| 4.6 | over copy in own deck | — | `#E9917A` | — | — | **count-only** — `marker.over`, a bare `short 1`, in BOTH the All and Shopping views. Superseded by 4.10 (#354) | CP:46, A2RM:141–172, superseded #354 |
 
 ### 4.1 Named states
 
@@ -167,10 +167,22 @@ Self-exclusion applies here (§1.1). Three of five rows in the canvas carry no m
 | 4.7 | **Silent (free)** | `(owned − ownClaim) − (hard − ownHardClaim) > 0`, no soft | nothing rendered | RM:79–84 |
 | 4.8 | Soft | a sub-99 deck other than this one claims a copy | hollow glyph + `N in a brew` | RM:85–96 |
 | 4.9 | Hard | **unreachable inside a finished deck** — self-exclusion removes this deck's own claim | — | A2RM:141–172, RD2:47–76 |
-| 4.10 | Over-committed | supply short after exclusion | doubled red glyph + `short N — also in X`, container border `#6B3226` | RM:98–118, CP:49 |
+| 4.10 | Over-committed | supply short after exclusion | doubled red glyph + `short N`, container border `#6B3226`. Spoken as `marker.overAriaCountOnly` | RM:98–118, CP:46, **amended #354** |
 | 4.11 | Not owned | `owned === 0` | nothing — the guard precedes the states | RM:221–225 |
 
 **Row count: 6 elements + 5 states.**
+
+**4.6 / 4.10 amendment (#354) — not yet ratified by Design.** The decklist row was drawn naming the
+other claimant, `short 1 — also in Kykar`. It now names nobody, in both the All and Shopping views.
+Two reasons. The prefix is fixed-width and never truncates, but the name after it does: the row also
+carries the EDHREC figure, the buy tag and a 44px ✕, so at 390px and inside the desktop 2-up grid
+`also in HD Tune - Prism…` teaches nothing. And the name is not withheld, it moved — the card
+modal's allocation receipt (14.7, #353) names every claiming deck and links each one, which is a
+better answer than one truncated name. `marker.overAlsoIn` / `overAlsoInAria` (1.17 / 1.18) are NOT
+dead: three surfaces still pass `selfExcluded` without `nameless` — the add-panel search row, the
+resolution expander and the quick-add bar. The suggestion tile is not one of them, despite passing
+`selfExcluded`: `density="chip"` forces `nameless` on every chip, which is row 14.1's rule and not
+this amendment's.
 
 ---
 
