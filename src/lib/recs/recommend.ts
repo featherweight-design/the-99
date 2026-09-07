@@ -25,7 +25,7 @@ export type RankedCommander = CommanderScore & { slug: string; synergyState: Syn
  * names a deck.
  */
 export type CommanderDetailScore = RankedCommander & {
-  committedSupport: { count: number; firstDeck: string | null };
+  committedSupport: { count: number; topDeck: string | null };
 };
 
 /**

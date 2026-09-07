@@ -174,7 +174,7 @@ function detailCommander(): CommanderDetailScore {
     rankScore: 44,
     slug: "krenko-mob-boss",
     synergyState: "ok",
-    committedSupport: { count: 0, firstDeck: null },
+    committedSupport: { count: 0, topDeck: null },
   };
 }
 

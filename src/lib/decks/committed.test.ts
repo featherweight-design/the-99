@@ -40,12 +40,12 @@ describe("committedSupport", () => {
   // rule named it on every commander page regardless of how little of that commander's
   // support it actually held.
   it("names the deck holding the most support, not the earliest one", () => {
-    expect(committedSupport(["cultivate", "sol-ring", "swords"], byCard).firstDeck).toBe("Krenko");
+    expect(committedSupport(["cultivate", "sol-ring", "swords"], byCard).topDeck).toBe("Krenko");
   });
 
   // The order the ids arrive in is EDHREC's, and it must not reach the answer.
   it("names the same deck whatever order the ids arrive in", () => {
-    expect(committedSupport(["swords", "cultivate", "sol-ring"], byCard).firstDeck).toBe("Krenko");
+    expect(committedSupport(["swords", "cultivate", "sol-ring"], byCard).topDeck).toBe("Krenko");
   });
 
   it("counts the named deck's cards, not every committed card", () => {
@@ -55,7 +55,7 @@ describe("committedSupport", () => {
   it("ignores ids the player has not committed anywhere", () => {
     expect(committedSupport(["sol-ring", "rhystic", "swords"], byCard)).toEqual({
       count: 2,
-      firstDeck: "Krenko",
+      topDeck: "Krenko",
     });
   });
 
@@ -67,10 +67,10 @@ describe("committedSupport", () => {
       ["sol-ring", "atraxa"],
       ["cultivate", "Atraxa"],
     ]);
-    expect(committedSupport(["cultivate", "sol-ring"], tied).firstDeck).toBe("atraxa");
+    expect(committedSupport(["cultivate", "sol-ring"], tied).topDeck).toBe("atraxa");
   });
 
   it("has no deck to name when none of the cards are committed", () => {
-    expect(committedSupport(["rhystic"], byCard)).toEqual({ count: 0, firstDeck: null });
+    expect(committedSupport(["rhystic"], byCard)).toEqual({ count: 0, topDeck: null });
   });
 });

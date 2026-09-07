@@ -60,23 +60,23 @@ export function withCommitted<T extends { oracleId: string }>(
 export function committedSupport(
   oracleIds: string[],
   byCard: Map<string, string>,
-): { count: number; firstDeck: string | null } {
+): { count: number; topDeck: string | null } {
   const wanted = new Set(oracleIds);
   const perDeck = new Map<string, number>();
   for (const [oracleId, deck] of byCard) {
     if (!wanted.has(oracleId)) continue;
     perDeck.set(deck, (perDeck.get(deck) ?? 0) + 1);
   }
-  let firstDeck: string | null = null;
+  let topDeck: string | null = null;
   let count = 0;
   // Strictly greater, so insertion order breaks a tie — see the note above.
   for (const [deck, n] of perDeck) {
     if (n > count) {
       count = n;
-      firstDeck = deck;
+      topDeck = deck;
     }
   }
-  return { count, firstDeck };
+  return { count, topDeck };
 }
 
 /**

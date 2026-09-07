@@ -42,9 +42,9 @@ type WhySectionProps = {
   edhrecOwnedCount: number | null;
   edhrecTotal: number | null;
   roleCounts: Record<RoleName, number>;
-  /** How many of the owned support cards are already in a deck, and the first
-      such deck. `firstDeck` null means there is no deck to name. */
-  committedSupport?: { count: number; firstDeck: string | null };
+  /** The deck holding the most of the owned support, and how many it holds —
+      both counted over that one deck. `topDeck` null means there is none. */
+  committedSupport?: { count: number; topDeck: string | null };
   width: "desktop" | "phone";
 };
 
@@ -53,14 +53,14 @@ export function WhySection({
   edhrecOwnedCount,
   edhrecTotal,
   roleCounts,
-  committedSupport = { count: 0, firstDeck: null },
+  committedSupport = { count: 0, topDeck: null },
   width,
 }: WhySectionProps): JSX.Element | null {
   // The deck clause needs both a deck to name and a count above zero: naming a
   // deck that holds none of these cards is a sentence about nothing.
   const namedDeck =
-    committedSupport.firstDeck !== null && committedSupport.count > 0
-      ? committedSupport.firstDeck
+    committedSupport.topDeck !== null && committedSupport.count > 0
+      ? committedSupport.topDeck
       : null;
   const standing =
     edhrecOwnedCount !== null && edhrecTotal !== null
