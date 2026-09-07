@@ -5,6 +5,13 @@
 
 import { useState, useTransition, useId, type JSX } from "react";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
+import { explainedCopy } from "../../lib/copy/commander-explained";
+import {
+  CoverageSortMenu,
+  COVERAGE_SORT_LABELS,
+  sortRoleCards,
+  type CoverageSortKey,
+} from "./coverage-sort";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { roleAnchorId, ROLE_ANCHOR_SCROLL_MARGIN } from "./role-anchor";
@@ -31,6 +38,32 @@ const ROLE_NOUNS: Record<RoleName, string> = {
   wipes: "board wipe",
 };
 
+// ── The committed legend ───────────────────────────────────────────────────────
+
+/**
+ * The line explaining the amber dot, or null where no visible chip carries one.
+ *
+ * Both figures count the chips that are ON SCREEN, never the role's total. A
+ * count drawn from the whole list explains dots the cap is hiding, which is the
+ * one thing the render condition exists to prevent.
+ *
+ * A fraction reads as a coincidence when it is the whole list, so an all-marked
+ * panel says so instead. One marked chip out of one takes "All of them" as well:
+ * "1 of the 1 shown" is a fraction that never had another value.
+ */
+export function committedLegend(visible: RoleCard[], isDesktop: boolean): string | null {
+  const marked = visible.filter((c) => c.committedTo !== null).length;
+  if (marked === 0) return null;
+  if (marked === visible.length) {
+    return visible.length === 2
+      ? (isDesktop ? explainedCopy.committed.legendAllTwo : explainedCopy.committed.legendAllTwoMobile)
+      : (isDesktop ? explainedCopy.committed.legendAll : explainedCopy.committed.legendAllMobile);
+  }
+  return isDesktop
+    ? explainedCopy.committed.legend(marked, visible.length)
+    : explainedCopy.committed.legendMobile(marked, visible.length);
+}
+
 // ── One role panel ─────────────────────────────────────────────────────────────
 
 function RolePanelDesktop({
@@ -54,6 +87,7 @@ function RolePanelDesktop({
   const cap = COVERAGE_CAP.desktop;
   const siblings = cards.map((c) => c.oracleId);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
+  const committedLine = committedLegend(visible, true);
   const hiddenCount = cards.length - cap; // > 0 means disclosure needed
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
     ? cards.length - COVERAGE_EXPANDED_CAP
@@ -136,6 +170,11 @@ function RolePanelDesktop({
               {recommendationsCopy.coverage.chipNoFigureLegend}
             </p>
           )}
+          {/* The amber dot's line, in the same slot and on the same principle:
+              only where a chip on screen carries the mark. */}
+          {committedLine !== null && (
+            <p className="font-mono text-[10px] text-fg-locked m-0 mt-[10px]">{committedLine}</p>
+          )}
         </>
       )}
     </section>
@@ -163,6 +202,7 @@ function RolePanelPhone({
   const cap = COVERAGE_CAP.phone;
   const siblings = cards.map((c) => c.oracleId);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
+  const committedLine = committedLegend(visible, false);
   const hiddenCount = cards.length - cap;
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
     ? cards.length - COVERAGE_EXPANDED_CAP
@@ -244,6 +284,9 @@ function RolePanelPhone({
                 {recommendationsCopy.coverage.chipNoFigureLegendMobile}
               </p>
             )}
+            {committedLine !== null && (
+              <p className="font-mono text-[10px] text-fg-locked m-0">{committedLine}</p>
+            )}
           </>
         )}
       </div>
@@ -308,6 +351,17 @@ export function CoverageSection({
   const baseId = useId();
   const listId = (role: RoleName) => `${baseId}-${role}-list`;
 
+  // Local to the visit and never mirrored into the URL: the sort is a way of
+  // reading the four panels, not a thing to link someone to.
+  const [sort, setSort] = useState<CoverageSortKey>("played");
+  // Empty until the reader sorts, so the region says nothing on arrival.
+  const [announcement, setAnnouncement] = useState("");
+
+  function chooseSort(next: CoverageSortKey) {
+    setSort(next);
+    setAnnouncement(explainedCopy.coverageSort.announce(COVERAGE_SORT_LABELS[next]));
+  }
+
   function toggleRole(role: RoleName) {
     setExpandedRoles((prev) => {
       const next = new Set(prev);
@@ -342,12 +396,31 @@ export function CoverageSection({
 
   return (
     <div>
-      {/* Heading */}
-      <h2 className="font-display font-[600] m-0" style={{ fontSize: 20, color: "var(--fg)" }}>
-        Role Coverage
-      </h2>
+      {/* Heading. Desktop hangs the sort off the right of this row; at phone
+          width it takes a full-width row of its own under the sub-caption. */}
+      <div className="flex items-center gap-[12px]">
+        <h2 className="font-display font-[600] m-0" style={{ fontSize: 20, color: "var(--fg)" }}>
+          Role Coverage
+        </h2>
+        {isDesktop && (
+          <div className="ml-auto">
+            <CoverageSortMenu sort={sort} showFigures={showFigures} isDesktop onChange={chooseSort} />
+          </div>
+        )}
+      </div>
       <p className="m-0 font-mono mt-[2px]" style={{ fontSize: 12, color: "var(--fg-faint)" }}>
         {subcaption}
+      </p>
+      {!isDesktop && (
+        <div className="mt-[10px]">
+          <CoverageSortMenu sort={sort} showFigures={showFigures} isDesktop={false} onChange={chooseSort} />
+        </div>
+      )}
+
+      {/* This section's own live region. There is no shared one on this page,
+          and the synergy panel's belongs to its pick state. */}
+      <p aria-live="polite" className="sr-only">
+        {announcement}
       </p>
 
       {/* Section-level note — absent or degraded */}
@@ -468,11 +541,16 @@ export function CoverageSection({
       <div className="flex flex-col gap-[12px] mt-[16px]">
         {ROLE_ORDER.map((role) => {
           const expanded = expandedRoles.has(role);
+          // Sorted before the panel, so the cap slices the order on screen
+          // rather than the order that arrived. `roleCounts` is untouched: the
+          // count beside a panel is how many cards the role has, and reordering
+          // a list does not change that.
+          const cards = sortRoleCards(roleCards[role], sort);
           return isDesktop ? (
             <RolePanelDesktop
               key={role}
               role={role}
-              cards={roleCards[role]}
+              cards={cards}
               count={roleCounts[role]}
               showFigures={showFigures}
               expanded={expanded}
@@ -483,7 +561,7 @@ export function CoverageSection({
             <RolePanelPhone
               key={role}
               role={role}
-              cards={roleCards[role]}
+              cards={cards}
               count={roleCounts[role]}
               showFigures={showFigures}
               expanded={expanded}

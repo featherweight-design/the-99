@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
 import { SynergyPanel } from "./synergy-panel";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { CardDetailProvider } from "../cards/card-detail-provider";
@@ -35,6 +36,30 @@ describe("SynergyPanel", () => {
       screen.getByRole("button", { name: synergyCopy.disclosure.showAllAria("30", "Creatures") }),
     );
     expect(screen.getAllByRole("listitem")).toHaveLength(30);
+  });
+
+  // The one surface where all three dot states can share a list, so the line
+  // names all three. Drawn only where a row on screen carries the mark, the same
+  // condition the role panels use.
+  it("names all three dot states once a visible row is committed", () => {
+    const cards = make(3);
+    cards[0] = { ...cards[0], committedTo: "Atraxa" };
+    wrap(<SynergyPanel {...props} cards={cards} width="desktop" />);
+    expect(screen.getByText(explainedCopy.committed.legendSynergy)).toBeInTheDocument();
+  });
+
+  it("draws no dot legend when nothing on screen is committed", () => {
+    wrap(<SynergyPanel {...props} cards={make(3)} width="desktop" />);
+    expect(screen.queryByText(explainedCopy.committed.legendSynergy)).toBeNull();
+  });
+
+  // Resting on six rows at phone width, a card committed beyond the cap is not
+  // on screen, so its legend would explain a dot the reader cannot see.
+  it("ignores a committed card the resting cap is hiding", () => {
+    const cards = make(30);
+    cards[20] = { ...cards[20], committedTo: "Atraxa" };
+    wrap(<SynergyPanel {...props} cards={cards} width="phone" />);
+    expect(screen.queryByText(explainedCopy.committed.legendSynergy)).toBeNull();
   });
 
   it("rests on six rows at phone width", () => {
