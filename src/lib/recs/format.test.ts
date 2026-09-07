@@ -62,24 +62,29 @@ describe("receiptsPreview", () => {
 });
 
 describe("fitSegments", () => {
-  it("returns pct clamped to 100 when score > 100", () => {
-    const result = fitSegments({
-      fitPool: 15,
-      fitRoles: 25,
-      fitSynergy: 60,
-      score: 105,
-    });
-    expect(result.pct).toBe(100);
-  });
-
-  it("returns pct = score when score <= 100", () => {
+  it("fills a full-scale score against 100", () => {
     const result = fitSegments({
       fitPool: 10,
       fitRoles: 20,
       fitSynergy: 40,
       score: 70,
+      measurableTotal: 100,
     });
     expect(result.pct).toBe(70);
+  });
+
+  // The bar and the figure beside it are one claim. A commander with no synergy
+  // read prints "32 / 40 measurable", so the bar has to read 80% full — against
+  // 100 it drew 32% next to a note saying 40 was all there was.
+  it("fills a no-synergy score against its own denominator", () => {
+    const result = fitSegments({
+      fitPool: 12,
+      fitRoles: 20,
+      fitSynergy: null,
+      score: 32,
+      measurableTotal: 40,
+    });
+    expect(result.pct).toBe(80);
   });
 
   it("returns 3 segments when fitSynergy is non-null", () => {
@@ -88,6 +93,7 @@ describe("fitSegments", () => {
       fitRoles: 20,
       fitSynergy: 40,
       score: 70,
+      measurableTotal: 100,
     });
     expect(result.segments).toHaveLength(3);
     expect(result.segments[0]).toEqual({ key: "pool", grow: 10 });
@@ -100,7 +106,8 @@ describe("fitSegments", () => {
       fitPool: 10,
       fitRoles: 20,
       fitSynergy: null,
-      score: 75,
+      score: 30,
+      measurableTotal: 40,
     });
     expect(result.segments).toHaveLength(2);
     expect(result.segments[0]).toEqual({ key: "pool", grow: 10 });
@@ -113,6 +120,7 @@ describe("fitSegments", () => {
       fitRoles: 0,
       fitSynergy: null,
       score: 0,
+      measurableTotal: 40,
     });
     expect(result.pct).toBe(0);
     expect(result.segments).toHaveLength(2);
@@ -124,6 +132,7 @@ describe("fitSegments", () => {
       fitRoles: 15,
       fitSynergy: 30,
       score: 50,
+      measurableTotal: 100,
     });
     expect(result.segments[0].grow).toBe(5);
     expect(result.segments[1].grow).toBe(15);

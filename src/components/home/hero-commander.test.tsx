@@ -27,6 +27,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
     fitRoles: 8,
     fitSynergy: 24,
     score: 44,
+    measurableTotal: 100,
     imageUri: null,
     synergyState: "ok",
     ...overrides,
@@ -43,7 +44,7 @@ async function renderHero(items: CommanderListItem[], degraded = false) {
 }
 
 function noSynergy(synergyState: SynergyState): CommanderListItem {
-  return item({ synergyState, fitSynergy: null, edhrecOwnedCount: null, edhrecTotal: null });
+  return item({ synergyState, fitSynergy: null, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
 }
 
 beforeEach(() => {

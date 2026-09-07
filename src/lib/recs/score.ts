@@ -32,10 +32,38 @@ export type CommanderScore = {
   fitPool: number;
   fitRoles: number;
   fitSynergy: number | null;
-  /** Out of 100, always — pool (15) + roles (25) + synergy (60). A commander with
-      no synergy data reaches 40 at most, and is not rescaled to fill the gap. */
+  /** Exactly `fitPool + fitRoles + (fitSynergy ?? 0)`. The legend prints each
+      segment over its own weight, so the headline has to be reachable by adding
+      the three figures beside it — rounding the total separately from its parts
+      put up to 1.5 points between them. */
   score: number;
+  /** What `score` is out of: 100 normally, `POOL_WEIGHT + ROLES_WEIGHT` for a
+      commander with no synergy read, whose score is not rescaled to fill the gap. */
+  measurableTotal: number;
+  /** `score` back on the 0–100 scale, for ordering only. Never printed and never
+      drawn. Without it, #385's honest denominator would also demote every
+      commander EDHREC does not index, which was never the intent: the figure was
+      wrong, the rank was not. */
+  rankScore: number;
 };
+
+/** The three segment weights. Named because the legend prints points over the
+    weight, so the same figures reach the screen and must not drift from the
+    arithmetic that produced them. */
+export const POOL_WEIGHT = 15;
+export const ROLES_WEIGHT = 25;
+export const SYNERGY_WEIGHT = 60;
+
+/**
+ * What a score is out of, given whether it has a synergy component.
+ *
+ * A function rather than a stored column: the answer is entirely determined by
+ * `fitSynergy`, and the two readers that need it — the live compute and the row
+ * loaded back out of `commander_scores` — must not be able to disagree.
+ */
+export function measurableTotalFor(fitSynergy: number | null): number {
+  return POOL_WEIGHT + ROLES_WEIGHT + (fitSynergy == null ? 0 : SYNERGY_WEIGHT);
+}
 
 export const COMPLETENESS_THRESHOLDS = { high: 90, mid: 75 } as const;
 
@@ -178,9 +206,12 @@ export function scoreCommander(args: {
     Object.keys(ROLE_TARGETS).length;
   const poolFactor = Math.min(args.collection.length ? pool.length / 200 : 0, 1);
 
-  const fitPool = Math.round(poolFactor * 15 * 10) / 10;
-  const fitRoles = Math.round(roleCoverage * 25 * 10) / 10;
-  const fitSynergy = edhrecTotal == null ? null : Math.round(overlapRatio * 60 * 10) / 10;
+  // Integers, not tenths. The hero's legend prints "Pool 12/15 · Roles 20/25 ·
+  // Synergy 42/60" and the headline has to be 74 — auditable by addition. A tenth
+  // in each segment is invisible in the legend and visible in the sum.
+  const fitPool = Math.round(poolFactor * POOL_WEIGHT);
+  const fitRoles = Math.round(roleCoverage * ROLES_WEIGHT);
+  const fitSynergy = edhrecTotal == null ? null : Math.round(overlapRatio * SYNERGY_WEIGHT);
   // One denominator for every commander. Rescaling pool+roles from their 40-point
   // maximum back up to 100 whenever synergy data was unavailable let a commander
   // with no synergy read print 100/100 — the highest figure the UI can show,
@@ -194,9 +225,13 @@ export function scoreCommander(args: {
   // apart, and it does so for the card's note and its Retry button rather than for
   // the arithmetic — a score is no more certain for the gap being temporary.
   // `fitSynergy` stays null either way: the component is absent, not 0.
-  const score = fitSynergy == null
-    ? Math.round((fitPool + fitRoles) * 10) / 10
-    : Math.round((fitPool + fitRoles + fitSynergy) * 10) / 10;
+  const measurableTotal = measurableTotalFor(fitSynergy);
+  const score = fitPool + fitRoles + (fitSynergy ?? 0);
+  // The rescale #333 removed, kept for ordering alone. Printing it was the bug —
+  // it claimed a certainty the read never had. Ordering by it is what the list
+  // always did, and a commander does not become a worse suggestion because
+  // EDHREC has no page for it.
+  const rankScore = Math.round((100 * score) / measurableTotal);
 
   return {
     oracleId: args.commander.oracleId,
@@ -210,6 +245,6 @@ export function scoreCommander(args: {
     edhrecOwnedCount, edhrecTotal,
     roleCounts, roleGaps, roleCards,
     overlapOwned,
-    fitPool, fitRoles, fitSynergy, score,
+    fitPool, fitRoles, fitSynergy, score, measurableTotal, rankScore,
   };
 }

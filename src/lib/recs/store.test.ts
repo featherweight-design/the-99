@@ -34,6 +34,8 @@ const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
   fitRoles: 25,
   fitSynergy: 18,
   score: 58,
+  measurableTotal: 100,
+  rankScore: 58,
   slug: "atraxa-praetors-voice",
   synergyState: "ok",
   ...over,

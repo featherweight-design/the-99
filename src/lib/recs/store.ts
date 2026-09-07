@@ -2,6 +2,7 @@ import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderScores, csvUploads, type RoleCounts } from "../../db/schema";
 import { receiptsPreview } from "./format";
+import { measurableTotalFor } from "./score";
 import type { CommanderListItem, RankedCommander } from "./recommend";
 import type { SynergyState } from "./synergy-state";
 
@@ -42,6 +43,7 @@ export function toScoreRow(userId: string, r: RankedCommander) {
     oracleId: r.oracleId,
     slug: r.slug,
     score: r.score,
+    rankScore: r.rankScore,
     fitPool: r.fitPool,
     fitRoles: r.fitRoles,
     fitSynergy: r.fitSynergy,
@@ -71,6 +73,7 @@ export function rowToListItem(row: ScoreRowWithCard): CommanderListItem {
     fitSynergy: row.fitSynergy,
     synergyState: row.synergyState,
     score: row.score,
+    measurableTotal: measurableTotalFor(row.fitSynergy),
     imageUri: row.imageUri,
   };
 }
@@ -138,6 +141,7 @@ export async function persistScores(
         set: {
           slug: sql`excluded.slug`,
           score: sql`excluded.score`,
+          rankScore: sql`excluded.rank_score`,
           fitPool: sql`excluded.fit_pool`,
           fitRoles: sql`excluded.fit_roles`,
           fitSynergy: sql`excluded.fit_synergy`,
@@ -179,7 +183,7 @@ export async function loadScores(
       .from(commanderScores)
       .innerJoin(cards, eq(commanderScores.oracleId, cards.oracleId))
       .where(eq(commanderScores.userId, userId))
-      .orderBy(desc(commanderScores.score), commanderScores.oracleId);
+      .orderBy(desc(commanderScores.rankScore), commanderScores.oracleId);
 
     return {
       items: rows.map(rowToListItem),
@@ -207,7 +211,7 @@ export async function findScoredCommander(
         .select({
           oracleId: commanderScores.oracleId,
           slug: commanderScores.slug,
-          rank: sql<number>`(row_number() over (order by ${commanderScores.score} desc, ${commanderScores.oracleId}))::int`.as("rank"),
+          rank: sql<number>`(row_number() over (order by ${commanderScores.rankScore} desc, ${commanderScores.oracleId}))::int`.as("rank"),
           // Same window pass, so the caller learns whether these ranks came from an
           // outage-era compute without paying a second round trip.
           anyDegraded: sql<boolean>`bool_or(${commanderScores.synergyState} = 'degraded') over ()`.as("any_degraded"),

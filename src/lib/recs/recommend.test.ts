@@ -33,21 +33,37 @@ function stubScore(name: string, score = 0): CommanderScore & { synergyState: Sy
     fitRoles: 0,
     fitSynergy: null,
     score,
+    measurableTotal: 40,
+    rankScore: Math.round((100 * score) / 40),
     synergyState: "ok",
   };
 }
 
 describe("byScoreThenOracleId", () => {
-  it("orders by descending score", () => {
-    const sorted = [{ score: 5, oracleId: "a" }, { score: 9, oracleId: "b" }].sort(byScoreThenOracleId);
+  it("orders by descending rank score", () => {
+    const sorted = [{ rankScore: 5, oracleId: "a" }, { rankScore: 9, oracleId: "b" }].sort(byScoreThenOracleId);
     expect(sorted.map((r) => r.oracleId)).toEqual(["b", "a"]);
+  });
+
+  // The printed score and the ordering key part company for a commander EDHREC
+  // does not index. 32 of 40 is the better fit and must outrank 41 of 100, which
+  // sorting on the printed figure got backwards.
+  it("ranks a no-synergy commander on its own scale, not its printed score", () => {
+    const rows = [
+      { rankScore: 41, oracleId: "indexed", score: 41 },
+      { rankScore: 80, oracleId: "unindexed", score: 32 },
+    ];
+    expect([...rows].sort(byScoreThenOracleId).map((r) => r.oracleId)).toEqual([
+      "unindexed",
+      "indexed",
+    ]);
   });
 
   it("breaks score ties by ascending oracleId regardless of input order", () => {
     const rows = [
-      { score: 7, oracleId: "00000000-0000-0000-0000-00000000000c" },
-      { score: 7, oracleId: "00000000-0000-0000-0000-00000000000a" },
-      { score: 7, oracleId: "00000000-0000-0000-0000-00000000000b" },
+      { rankScore: 7, oracleId: "00000000-0000-0000-0000-00000000000c" },
+      { rankScore: 7, oracleId: "00000000-0000-0000-0000-00000000000a" },
+      { rankScore: 7, oracleId: "00000000-0000-0000-0000-00000000000b" },
     ];
     const forward = [...rows].sort(byScoreThenOracleId).map((r) => r.oracleId);
     const reversed = [...rows].reverse().sort(byScoreThenOracleId).map((r) => r.oracleId);
@@ -138,6 +154,7 @@ describe("finalizeRecommendations", () => {
         fitSynergy: null,
         synergyState: "ok",
         score: 42,
+        measurableTotal: 40,
         imageUri: null,
       });
       expect(item).not.toHaveProperty("oracleText");

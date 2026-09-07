@@ -120,6 +120,13 @@
       "when": 1788756968052,
       "tag": "0016_drop_rescaled_commander_scores",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788761516409,
+      "tag": "0017_rank_score_commander_scores",
+      "breakpoints": true
     }
   ]
 }

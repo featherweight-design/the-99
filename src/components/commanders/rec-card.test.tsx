@@ -24,6 +24,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
     fitRoles: 8,
     fitSynergy: 24,
     score: 44,
+    measurableTotal: 100,
     imageUri: null,
     synergyState: "ok",
     ...overrides,
@@ -31,7 +32,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
 }
 
 function noSynergy(synergyState: SynergyState): CommanderListItem {
-  return item({ synergyState, fitSynergy: null, edhrecOwnedCount: null, edhrecTotal: null });
+  return item({ synergyState, fitSynergy: null, measurableTotal: 40, edhrecOwnedCount: null, edhrecTotal: null });
 }
 
 const NO_CLAIMS: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };

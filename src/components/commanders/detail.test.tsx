@@ -49,6 +49,8 @@ function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
     fitRoles: 8,
     fitSynergy: 24,
     score: 44,
+    measurableTotal: 100,
+    rankScore: 44,
     slug: "krenko-mob-boss",
     synergyState: "ok",
     ...overrides,
@@ -59,6 +61,7 @@ function noSynergy(synergyState: SynergyState): RankedCommander {
   return commander({
     synergyState,
     fitSynergy: null,
+    measurableTotal: 40,
     edhrecOwnedCount: null,
     edhrecTotal: null,
   });

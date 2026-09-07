@@ -31,6 +31,7 @@ export type CommanderListItem = Pick<
   | "fitSynergy"
   | "synergyState"
   | "score"
+  | "measurableTotal"
   | "imageUri"
 > & {
   /** Preformatted receipts line — overlapOwned can be large, so only the
@@ -54,6 +55,7 @@ export function toListItem(r: RankedCommander): CommanderListItem {
     fitSynergy: r.fitSynergy,
     synergyState: r.synergyState,
     score: r.score,
+    measurableTotal: r.measurableTotal,
     imageUri: r.imageUri,
   };
 }
@@ -66,17 +68,22 @@ export type RecommendResult = {
 };
 
 /**
- * oracleId breaks score ties so the compute order matches `score desc, oracle_id`
+ * Orders by `rankScore`, not by the printed score. The two differ for a
+ * commander EDHREC does not index, whose score is out of 40 — sorting on the
+ * printed figure would put it below every commander that reached 41 on a scale
+ * two and a half times as long.
+ *
+ * oracleId breaks ties so the compute order matches `rank_score desc, oracle_id`
  * in loadScores/findScoredCommander. Without it, tied commanders (common after
  * rounding) could swap places between a fresh compute and a persisted read,
  * moving both their rank and their dedup slug suffix. Comparing the canonical
  * UUID strings matches Postgres' byte ordering — the dashes sit at fixed offsets.
  */
 export function byScoreThenOracleId(
-  a: { score: number; oracleId: string },
-  b: { score: number; oracleId: string },
+  a: { rankScore: number; oracleId: string },
+  b: { rankScore: number; oracleId: string },
 ): number {
-  if (b.score !== a.score) return b.score - a.score;
+  if (b.rankScore !== a.rankScore) return b.rankScore - a.rankScore;
   if (a.oracleId === b.oracleId) return 0;
   return a.oracleId < b.oracleId ? -1 : 1;
 }

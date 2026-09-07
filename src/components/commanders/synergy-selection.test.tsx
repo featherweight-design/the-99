@@ -165,6 +165,8 @@ function detailCommander(): RankedCommander {
     fitRoles: 8,
     fitSynergy: 24,
     score: 44,
+    measurableTotal: 100,
+    rankScore: 44,
     slug: "krenko-mob-boss",
     synergyState: "ok",
   };
