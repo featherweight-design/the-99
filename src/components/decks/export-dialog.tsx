@@ -92,6 +92,10 @@ export function ExportDialog({
           className="hidden md:flex md:flex-col pointer-events-auto"
           style={{
             width: 560,
+            // The drawing sized the modal to a short list. A 99-card decklist or
+            // a long shopping list would otherwise grow it past both edges of
+            // the viewport, since the centring wrapper does not clip its child.
+            maxHeight: "min(85vh, 760px)",
             background: "var(--surface-rail)",
             border: "1px solid var(--border-strong)",
             borderRadius: 16,
@@ -186,7 +190,7 @@ function DialogContent({
     <>
       {/* Header: border-bottom mobile only */}
       <div
-        className="flex items-center justify-between"
+        className="flex flex-none items-center justify-between"
         style={{
           padding: isMobile ? "8px 18px 14px" : "20px 24px 16px",
           borderBottom: isMobile ? "1px solid var(--border)" : undefined,
@@ -244,7 +248,7 @@ function DialogContent({
 
       {/* Tab pills */}
       <div
-        className="flex"
+        className="flex flex-none"
         style={{
           gap: 8,
           padding: isMobile ? "14px 18px 0" : "0 24px 16px",
@@ -293,8 +297,10 @@ function DialogContent({
         </button>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Body. min-h-0 is load-bearing: a flex item's default min-height is its
+          content, so without it the body refuses to shrink and the modal's
+          max-height has nothing to give. */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {tab === "decklist" ? (
           /* Decklist tab body */
           <div style={{ margin: isMobile ? "14px 18px" : "0 24px" }}>
@@ -329,7 +335,11 @@ function DialogContent({
                 border: "1px solid var(--border)",
                 borderRadius: 10,
                 padding: isMobile ? "14px 16px" : "16px 18px",
-                height: isMobile ? undefined : 250,
+                // No fixed height. The drawing's 250px clipped a real decklist,
+                // and `overflow: auto` would not rescue it — a multi-column box
+                // with a constrained height overflows sideways into further
+                // columns, so it would scroll horizontally. Sizing to content
+                // puts the scroll on the body, where the shopping tab's is.
                 overflow: "hidden",
                 margin: 0,
                 whiteSpace: "pre-wrap",
@@ -502,7 +512,7 @@ function DialogContent({
 
       {/* Footer — one hairline serves both rows; the link row adds no second
           divider of its own. */}
-      <div style={{ borderTop: "1px solid var(--border)" }}>
+      <div className="flex-none" style={{ borderTop: "1px solid var(--border)" }}>
       <div
         className="flex items-center gap-[8px]"
         style={{ padding: isMobile ? "14px 18px" : "16px 24px" }}
