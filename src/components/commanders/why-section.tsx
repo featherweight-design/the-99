@@ -6,7 +6,7 @@
 // unmounts rather than drawing a heading over nothing.
 
 import type { JSX, ReactNode } from "react";
-import { explainedCopy, ROLE_SUBJECTS } from "../../lib/copy/commander-explained";
+import { explainedCopy, ROLE_SUBJECTS, spellOut } from "../../lib/copy/commander-explained";
 import type { RoleName } from "../../lib/recs/score";
 import { weakestRole } from "../../lib/recs/weakest-role";
 import { roleAnchorId } from "./role-anchor";
@@ -42,6 +42,9 @@ type WhySectionProps = {
   edhrecOwnedCount: number | null;
   edhrecTotal: number | null;
   roleCounts: Record<RoleName, number>;
+  /** How many of the owned support cards are already in a deck, and the first
+      such deck. `firstDeck` null means there is no deck to name. */
+  committedSupport?: { count: number; firstDeck: string | null };
   width: "desktop" | "phone";
 };
 
@@ -50,11 +53,26 @@ export function WhySection({
   edhrecOwnedCount,
   edhrecTotal,
   roleCounts,
+  committedSupport = { count: 0, firstDeck: null },
   width,
 }: WhySectionProps): JSX.Element | null {
-  const standing = edhrecOwnedCount !== null && edhrecTotal !== null
-    ? explainedCopy.prose.standing(edhrecOwnedCount, edhrecTotal)
-    : null;
+  // The deck clause needs both a deck to name and a count above zero: naming a
+  // deck that holds none of these cards is a sentence about nothing.
+  const namedDeck =
+    committedSupport.firstDeck !== null && committedSupport.count > 0
+      ? committedSupport.firstDeck
+      : null;
+  const standing =
+    edhrecOwnedCount !== null && edhrecTotal !== null
+      ? namedDeck !== null
+        ? explainedCopy.prose.standingWithDeck(
+            edhrecOwnedCount,
+            edhrecTotal,
+            committedSupport.count,
+            { name: namedDeck },
+          )
+        : explainedCopy.prose.standing(edhrecOwnedCount, edhrecTotal)
+      : null;
   const weakest = weakestRole(roleCounts);
 
   // State 4: nothing stored and nothing to template. The heading would be a promise the
@@ -86,6 +104,9 @@ export function WhySection({
             {withFigures(standing, [
               edhrecOwnedCount!.toLocaleString("en-US"),
               edhrecTotal!.toLocaleString("en-US"),
+              // The deck clause's count is spelled out in the sentence, so the
+              // figure run has to be matched in the same form the copy emitted.
+              ...(namedDeck !== null ? [spellOut(committedSupport.count)] : []),
             ])}{" "}
           </>
         )}

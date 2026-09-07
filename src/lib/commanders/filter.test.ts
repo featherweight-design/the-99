@@ -18,7 +18,7 @@ function stub(name: string, colorIdentity: string[], score = 0): RankedCommander
     roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
     roleGaps: [],
     roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
-    overlapOwned: [],
+    overlapOwned: [], overlapOwnedIds: [],
     fitPool: 0,
     fitRoles: 0,
     fitSynergy: null,

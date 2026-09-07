@@ -39,6 +39,35 @@ export function withCommitted<T extends { oracleId: string }>(
 }
 
 /**
+ * How much of a commander's owned support the player has already spent.
+ *
+ * The deck named is the first by the ordering `readCommittedDecks` already
+ * imposes, so the prose names the same deck the committed marks below it point
+ * at rather than whichever card happened to come first in EDHREC's order.
+ */
+export function committedSupport(
+  oracleIds: string[],
+  byCard: Map<string, string>,
+): { count: number; firstDeck: string | null } {
+  const decks: string[] = [];
+  for (const id of oracleIds) {
+    const deck = byCard.get(id);
+    if (deck !== undefined) decks.push(deck);
+  }
+  return {
+    count: decks.length,
+    firstDeck: decks.length === 0 ? null : decks.reduce((a, b) => (compareDeckNames(a, b) <= 0 ? a : b)),
+  };
+}
+
+/** Matches `readCommittedDecks`'s `lower(name)` ordering. */
+function compareDeckNames(a: string, b: string): number {
+  const la = a.toLowerCase();
+  const lb = b.toLowerCase();
+  return la < lb ? -1 : la > lb ? 1 : 0;
+}
+
+/**
  * One query for the whole page — every role list and the synergy panel read it.
  *
  * Request-scoped, the same way `loadCollectionPool` is: the scoring path and the

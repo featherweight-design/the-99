@@ -1,7 +1,11 @@
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// CoverageSection refreshes the route after a recovered retry, so the whole
+// detail tree needs a router even where no test clicks Retry.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
-import type { RankedCommander } from "../../lib/recs/recommend";
+import type { CommanderDetailScore } from "../../lib/recs/recommend";
 import type { SynergyState } from "../../lib/recs/synergy-state";
 import { CommanderDetail } from "./detail";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
@@ -31,7 +35,7 @@ const synergyCards: SynergyCard[] = [
   },
 ];
 
-function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
+function commander(overrides: Partial<CommanderDetailScore> = {}): CommanderDetailScore {
   return {
     oracleId: "oracle-1",
     name: "Krenko, Mob Boss",
@@ -46,7 +50,7 @@ function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
     roleCounts: { ramp: 4, draw: 3, removal: 5, wipes: 1 },
     roleGaps: [],
     roleCards: { ramp: [], draw: [], removal: [], wipes: [] },
-    overlapOwned: [],
+    overlapOwned: [], overlapOwnedIds: [],
     fitPool: 12,
     fitRoles: 8,
     fitSynergy: 24,
@@ -55,11 +59,12 @@ function commander(overrides: Partial<RankedCommander> = {}): RankedCommander {
     rankScore: 44,
     slug: "krenko-mob-boss",
     synergyState: "ok",
+    committedSupport: { count: 0, firstDeck: null },
     ...overrides,
   };
 }
 
-function noSynergy(synergyState: SynergyState): RankedCommander {
+function noSynergy(synergyState: SynergyState): CommanderDetailScore {
   return commander({
     synergyState,
     fitSynergy: null,

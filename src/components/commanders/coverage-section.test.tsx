@@ -4,10 +4,16 @@
 
 import { render, screen, waitFor } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { CardDetailProvider } from "../cards/card-detail-provider";
-import { CoverageSection } from "./coverage-section";
+
+// A recovered retry moves the score, the legend and the hero note, none of which
+// this section owns — so it refreshes the route rather than trying to.
+const refresh = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
+const { CoverageSection } = await import("./coverage-section");
 import type { RoleCard } from "../../lib/recs/score";
 import type { RoleName } from "../../lib/recs/score";
 import { explainedCopy } from "../../lib/copy/commander-explained";
@@ -231,6 +237,8 @@ describe("absent vs degraded note rendering", () => {
 // ── Retry flow ─────────────────────────────────────────────────────────────────
 
 describe("retry flow", () => {
+  beforeEach(() => refresh.mockClear());
+
   it("calls retryCoverageFigures once on click and updates figures on success", async () => {
     const newCards: Record<RoleName, RoleCard[]> = {
       ramp: [makeCard(1, 80)],
@@ -258,6 +266,25 @@ describe("retry flow", () => {
     await waitFor(() => {
       expect(screen.getByText("80%")).toBeInTheDocument();
     });
+
+    // The rest of the page — score, denominator, legend, hero note — is server
+    // rendered from the same compute the retry just repeated, so a recovered
+    // section without this refresh sits beside a degraded headline.
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the route alone when the retry fails", async () => {
+    const retryCoverageFigures = vi
+      .fn<() => Promise<Record<RoleName, RoleCard[]> | null>>()
+      .mockResolvedValue(null);
+
+    renderSection({ synergyState: "degraded", retryCoverageFigures });
+    fireEvent.click(
+      screen.getByRole("button", { name: recommendationsCopy.coverage.degradedRetryAria }),
+    );
+
+    await waitFor(() => expect(retryCoverageFigures).toHaveBeenCalledTimes(1));
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("retry stays available after a failure (action returns null)", async () => {

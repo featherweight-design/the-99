@@ -6,7 +6,7 @@ import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { synergyStateFrom, type SynergyState } from "./synergy-state";
-import { readCommittedDecks, withCommitted } from "../decks/committed";
+import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {
   isCommanderCandidate,
   scoreCommander,
@@ -18,6 +18,15 @@ import {
 import { receiptsPreview } from "./format";
 
 export type RankedCommander = CommanderScore & { slug: string; synergyState: SynergyState };
+
+/**
+ * What the detail page scores, which is a ranked commander plus the one figure
+ * only that page asks for. The list compute does not pay for it: no list surface
+ * names a deck.
+ */
+export type CommanderDetailScore = RankedCommander & {
+  committedSupport: { count: number; firstDeck: string | null };
+};
 
 /**
  * Slim payload for the client-side list view. The full RankedCommander carries
@@ -243,7 +252,7 @@ export async function scoreOneCommander(
   userId: string,
   oracleId: string,
   slug: string,
-): Promise<RankedCommander | null> {
+): Promise<CommanderDetailScore | null> {
   const { collection } = await loadCollectionPool(userId);
   // A discovery commander is by definition one the player may not own, so a
   // collection miss is an ordinary case here rather than a 404. The pool and the
@@ -270,5 +279,11 @@ export async function scoreOneCommander(
     Object.entries(scored.roleCards).map(([role, cards]) => [role, withCommitted(cards, committed)]),
   ) as Record<RoleName, RoleCard[]>;
 
-  return { ...scored, roleCards, slug, synergyState: synergyStateFrom(result) };
+  return {
+    ...scored,
+    roleCards,
+    slug,
+    synergyState: synergyStateFrom(result),
+    committedSupport: committedSupport(scored.overlapOwnedIds, committed),
+  };
 }

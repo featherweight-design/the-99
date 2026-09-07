@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { firstDeckPerCard } from "./committed";
+import { committedSupport, firstDeckPerCard } from "./committed";
 
 describe("firstDeckPerCard", () => {
   // The rows arrive in the deck list's order, so "first" is decided by the
@@ -25,5 +25,28 @@ describe("firstDeckPerCard", () => {
 
   it("is empty when the player has built nothing", () => {
     expect(firstDeckPerCard([]).size).toBe(0);
+  });
+});
+
+describe("committedSupport", () => {
+  const byCard = new Map([
+    ["sol-ring", "Krenko"],
+    ["cultivate", "Atraxa"],
+    ["swords", "Krenko"],
+  ]);
+
+  it("counts only the ids the player has already spent", () => {
+    expect(committedSupport(["sol-ring", "rhystic", "cultivate"], byCard).count).toBe(2);
+  });
+
+  // Alphabetical rather than EDHREC order, so the sentence names the same deck
+  // the committed marks below it point at whichever card came first upstream.
+  it("names the first deck by the ordering the committed read imposes", () => {
+    expect(committedSupport(["sol-ring", "cultivate"], byCard).firstDeck).toBe("Atraxa");
+    expect(committedSupport(["cultivate", "sol-ring"], byCard).firstDeck).toBe("Atraxa");
+  });
+
+  it("has no deck to name when none of the cards are committed", () => {
+    expect(committedSupport(["rhystic"], byCard)).toEqual({ count: 0, firstDeck: null });
   });
 });

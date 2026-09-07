@@ -37,6 +37,10 @@ export type CommanderScore = {
   roleGaps: RoleName[];
   roleCards: Record<RoleName, RoleCard[]>;
   overlapOwned: string[];
+  /** `overlapOwned` as oracle ids, in the same order. Not persisted: only the
+      detail page reads it, to say how many of these the player has already
+      committed to a deck. */
+  overlapOwnedIds: string[];
   fitPool: number;
   fitRoles: number;
   fitSynergy: number | null;
@@ -192,21 +196,29 @@ export function scoreCommander(args: {
   let edhrecOwnedCount: number | null = null;
   let edhrecTotal: number | null = null;
   const overlapOwned: string[] = [];
+  const overlapOwnedIds: string[] = [];
 
   if (args.edhrecTopCards && args.edhrecTopCards.length > 0) {
     // Index full name AND front face: EDHREC lists DFCs/MDFCs by front face
     // while Scryfall names them "Front // Back".
-    const poolNames = new Set<string>();
+    //
+    // A map rather than a set, because the overlap has to be expressible as
+    // oracle ids too: the committed-deck clause in the prose asks how many of
+    // these cards are already in a deck, and only ids can answer that.
+    const poolNames = new Map<string, string>();
     for (const c of pool) {
       const lower = c.name.toLowerCase();
-      poolNames.add(lower);
-      poolNames.add(lower.split(" // ")[0]);
+      if (!poolNames.has(lower)) poolNames.set(lower, c.oracleId);
+      const front = lower.split(" // ")[0];
+      if (!poolNames.has(front)) poolNames.set(front, c.oracleId);
     }
 
     edhrecTotal = args.edhrecTopCards.length;
     for (const n of args.edhrecTopCards) {
-      if (poolNames.has(n.toLowerCase())) {
+      const oracleId = poolNames.get(n.toLowerCase());
+      if (oracleId !== undefined) {
         overlapOwned.push(n);
+        overlapOwnedIds.push(oracleId);
       }
     }
     edhrecOwnedCount = overlapOwned.length;
@@ -257,7 +269,7 @@ export function scoreCommander(args: {
     colorPoolSize: pool.length,
     edhrecOwnedCount, edhrecTotal,
     roleCounts, roleGaps, roleCards,
-    overlapOwned,
+    overlapOwned, overlapOwnedIds,
     fitPool, fitRoles, fitSynergy, score, measurableTotal, rankScore,
   };
 }

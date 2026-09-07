@@ -7,7 +7,7 @@ import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
 import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score";
-import type { RankedCommander } from "../../lib/recs/recommend";
+import type { CommanderDetailScore, RankedCommander } from "../../lib/recs/recommend";
 import { explainedCopy, heroNoteEdits } from "../../lib/copy/commander-explained";
 import { FitLegend, type FitLegendSegment } from "./fit-legend";
 import { WhySection } from "./why-section";
@@ -181,7 +181,7 @@ function FitHero({ commander: c, rank, isBestFit, width }: FitHeroProps) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export type CommanderDetailProps = {
-  commander: RankedCommander;
+  commander: CommanderDetailScore;
   rank: number;
   isBestFit: boolean;
   synergyCards: SynergyCard[];
@@ -315,6 +315,7 @@ export function CommanderDetail({
           edhrecOwnedCount={c.edhrecOwnedCount}
           edhrecTotal={c.edhrecTotal}
           roleCounts={c.roleCounts}
+          committedSupport={c.committedSupport}
           width="phone"
         />
 
@@ -559,6 +560,7 @@ export function CommanderDetail({
             edhrecOwnedCount={c.edhrecOwnedCount}
             edhrecTotal={c.edhrecTotal}
             roleCounts={c.roleCounts}
+            committedSupport={c.committedSupport}
             width="desktop"
           />
 

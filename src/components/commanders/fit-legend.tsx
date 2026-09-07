@@ -64,7 +64,7 @@ export function FitLegend({ segments, score, width }: FitLegendProps) {
     <>
       <div
         className="flex flex-wrap items-center"
-        style={{ gap: isPhone ? 14 : 24, marginTop: 12 }}
+        style={{ gap: 24, marginTop: 12 }}
       >
         {segments.map((seg) => (
           <div
@@ -73,6 +73,7 @@ export function FitLegend({ segments, score, width }: FitLegendProps) {
             style={{ gap: isPhone ? 5 : 6 }}
           >
             <span
+              aria-hidden
               className="block shrink-0"
               style={{
                 width: 10,
@@ -83,13 +84,13 @@ export function FitLegend({ segments, score, width }: FitLegendProps) {
             />
             <span
               className="font-sans"
-              style={{ fontSize: isPhone ? 12.5 : 13, color: "var(--fg-body)" }}
+              style={{ fontSize: 13, color: "var(--fg-body)" }}
             >
               {explainedCopy.legend[seg.key]}
             </span>
             <span
               className="font-mono"
-              style={{ fontSize: isPhone ? 11.5 : 12, color: "var(--fg)" }}
+              style={{ fontSize: 12, color: "var(--fg)" }}
               aria-label={explainedCopy.legend.segmentAria(
                 explainedCopy.legend[seg.key],
                 seg.points,
@@ -115,7 +116,7 @@ export function FitLegend({ segments, score, width }: FitLegendProps) {
           style={
             isPhone
               ? {
-                  marginTop: 12,
+                  marginTop: 14,
                   borderTop: "1px solid var(--border)",
                   paddingTop: 14,
                   gap: 14,
@@ -138,6 +139,7 @@ export function FitLegend({ segments, score, width }: FitLegendProps) {
                   style={{ gap: 7, marginBottom: 7 }}
                 >
                   <span
+                    aria-hidden
                     className="block shrink-0"
                     style={{
                       width: 10,

@@ -161,8 +161,11 @@ export const explainedCopy = {
         today's arithmetic makes the key's closing line a false statement about the number above
         it. R2 claimed "only the string changes"; it does not. See the rounding rule in
         README decision 1b — the segments must round to integers and the score must be defined
-        as their sum. These keys assume that rule is in place. */
-    segment: (points: number, weight: number) => `${points}/${weight}`,
+        as their sum. This key assumes that rule is in place.
+
+        There is deliberately no string form of the visible figure. `{points}` and `/{weight}`
+        are drawn in different colours, so the separator lives in the one place that can
+        render both — `fit-legend.tsx` — rather than in a string no caller could use. */
     segmentAria: (label: string, points: number, weight: number) =>
       `${label}, ${points} of ${weight} points`,
   },
@@ -317,7 +320,7 @@ export const explainedCopy = {
 /** Small numbers read as words in prose and as figures in furniture. `two owned against a
     ten-source baseline` is a sentence; `2 owned` is a label. The threshold is ten, above which
     words stop being shorter. */
-function spellOut(v: number): string {
+export function spellOut(v: number): string {
   const words = [
     "zero", "one", "two", "three", "four", "five",
     "six", "seven", "eight", "nine", "ten",

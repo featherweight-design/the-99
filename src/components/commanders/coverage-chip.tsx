@@ -30,10 +30,24 @@ export const COVERAGE_EXPANDED_CAP = 40;
 // fill, swapped rather than joined by anything new, so a marked chip is exactly
 // as wide as an unmarked one.
 
-/** The chip and the row draw the same border, in the same two states. */
+/** The chip's border, which tints on both states because the chip has no other. */
 function chipBorder(committedTo: string | null): string {
   return committedTo === null
     ? "border-[color-mix(in_srgb,var(--success)_40%,var(--bg))]"
+    : "border-[color-mix(in_srgb,var(--avail-hard)_40%,var(--bg))]";
+}
+
+/**
+ * The row's border, which tints on one state only.
+ *
+ * A free row keeps the neutral border it ships with. The row is a full-width
+ * surface rather than a pill, so tinting it green would make ordinary ownership
+ * the loudest thing on the panel; the amber is worth the exception because it
+ * is the state the reader is looking for.
+ */
+function rowBorder(committedTo: string | null): string {
+  return committedTo === null
+    ? "border-border"
     : "border-[color-mix(in_srgb,var(--avail-hard)_40%,var(--bg))]";
 }
 
@@ -143,7 +157,7 @@ export function CoverageRow({
       name={card.name}
       siblings={siblings}
       ariaLabel={ariaLabel}
-      className="flex w-full items-center rounded-[8px] border border-border bg-surface"
+      className={`flex w-full items-center rounded-[8px] border ${rowBorder(card.committedTo)} bg-surface`}
       style={{ minHeight: "44px", padding: "0 12px", gap: 9 }}
     >
       {/* Dot — 7px, green when free, amber when the card is already in a deck. */}

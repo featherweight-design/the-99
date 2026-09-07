@@ -246,7 +246,7 @@ export function SynergyPanel({
         <p
           className="m-0 font-mono"
           style={{
-            fontSize: isPhone ? 9.5 : 10,
+            fontSize: 10,
             color: "var(--fg-locked)",
             marginTop: 0,
             marginBottom: isPhone ? 10 : 12,

@@ -4,6 +4,7 @@
 // One section owns the heading, sub-caption, note, retry, and all four role panels.
 
 import { useState, useTransition, useId, type JSX } from "react";
+import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import {
@@ -315,6 +316,7 @@ export function CoverageSection({
   synergyState,
   retryCoverageFigures,
 }: CoverageSectionProps): JSX.Element {
+  const router = useRouter();
   const [roleCards, setRoleCards] = useState<Record<RoleName, RoleCard[]>>(initialRoleCards);
   const [retrying, startRetry] = useTransition();
   const [expandedRoles, setExpandedRoles] = useState<Set<RoleName>>(new Set());
@@ -381,6 +383,12 @@ export function CoverageSection({
         if (result !== null) {
           setRoleCards(result);
           setHasRetryData(true);
+          // The section owns its own figures, but not the rest of the page. A
+          // recovered EDHREC read also moves the score, the denominator, the
+          // legend and the hero note, all of which are server-rendered from the
+          // same compute this retry just repeated. Without the refresh the page
+          // shows recovered chips beside a degraded headline.
+          router.refresh();
         }
         // On null: note stays, button re-enables (transition ends)
       } catch {
