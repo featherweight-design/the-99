@@ -72,10 +72,14 @@ describe("HeroCommander", () => {
       const ranked = ["one", "two", "three", "four", "five"].map((n) =>
         item({ oracleId: `oracle-${n}`, slug: n, name: `Commander ${n}` }),
       );
-      // Asked of `dailyPick` rather than hardcoded, so a change to the hash does not
-      // fail this test while the wiring it covers is still correct. The guard below is
-      // what keeps that from being circular: on this date the pick is not rank 1, so a
-      // hero that went back to `items[0]` still fails here.
+      // Asked of `dailyPick` rather than hardcoded, so renaming or reordering the
+      // candidates does not break a test whose subject is the wiring. The guard below
+      // is what keeps that from being circular: on this date the pick is not rank 1, so
+      // a hero that went back to `items[0]` still fails here.
+      //
+      // It does not survive a change to the hash. If one lands and this date starts
+      // resolving to rank 1, the guard fails and the fix is to pick another date — not
+      // to drop the guard, which is the only thing making the assertion mean anything.
       const expected = dailyPick(ranked, "user_1", now);
       expect(expected).not.toBe(ranked[0]);
       await renderHero(ranked);
