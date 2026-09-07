@@ -11,7 +11,7 @@ describe("GuidedBanner", () => {
     render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} />);
     expect(
       screen.getAllByText(
-        "1,418 cards read. 24 can lead. I ranked them — you're welcome. Pick one to build your first 99.",
+        "1,418 cards read. 24 can lead. I ranked them — you're welcome. Pick a commander to build your first 99.",
       ),
     ).toHaveLength(2);
   });
@@ -21,7 +21,7 @@ describe("GuidedBanner", () => {
   // the directive is what stops step 2 having nothing to act on.
   it("still tells a first-time user what to do next", () => {
     render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} />);
-    expect(screen.getAllByText(/Pick one to build your first 99\./)).toHaveLength(2);
+    expect(screen.getAllByText(/Pick a commander to build your first 99\./)).toHaveLength(2);
   });
 
   it("no longer renders the v1 body copy it replaced", () => {

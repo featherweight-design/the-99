@@ -135,7 +135,7 @@ Absolutely positioned over card art. **Top-left** — top-right is occupied by t
 
 | # | Element | Typography | Colour | Spacing | Size | States | Source |
 |---|---|---|---|---|---|---|---|
-| 3.1 | Placement | — | — | appended to the shipped `×${qty} owned` string, joined with ` · ` | **takes no column and no row height** | **Contested on the decklist row — awaiting Design**, not amended here: that row draws no meta line and no owned count, so there is nothing to append to, and the build places the marker inline between the card name and the buy tag. The hard constraints hold either way | RM:60–84, A2RM:33–49 |
+| 3.1 | Placement | — | — | **Off the decklist:** appended to the shipped `×${qty} owned` string, joined with ` · `. **On the decklist row:** drawn inline in the name cell, between the card name and the buy tag — no `×N owned` host and no shared meta line, because that row has neither. The marker is `flex: none` and the **name** is what truncates; the marker always precedes the buy tag | **takes no column and no row height** — no new grid column, and the 34px / 44px row heights are unchanged | Ratified by Design 2026-09-07 (#242 batch): the decklist placement above is the shipped behaviour and is now the spec. The hard constraints stand unedited | RM:60–84, A2RM:33–49, #182 |
 | 3.2 | Joiner | inherits meta line | `#3A3229` (`--border-strong`) | — | — | — | RM:60–84, CP:144–146 |
 | 3.3 | Glyph | — | per state | — | `6px`, rotated 45° | — | CV:62–135 |
 | 3.4 | Label | inherits the meta line's mono size | soft `#C6B79A` / hard `#E8CE93` / over `#E9917A` | — | — | — | CV:717–795 |
@@ -419,7 +419,7 @@ Position: **fourth on desktop, fifth on phone** (A2RM:77–109). Four checkboxes
 | 15.7 | Chip `✕` | — | — | — | **44px** target | `collection.chipRemoveAria` | A2RM:195–210, CP:195–227 |
 | 15.8 | Desktop chip seam | — | `#2A241D` | — | 1px | — | A2CV:412–419 |
 | 15.9 | URL | — | — | — | — | `?avail=inuse,over` | A2RM:77–109 |
-| 15.10 | Grouping | — | — | — | — | checkbox **group** with a group name. **Contested — awaiting Design on #242**, not amended here: the shared `FilterPanel` ships `role="listbox" aria-multiselectable`, because its search field is a `role="combobox"` and WAI-ARIA 1.2 requires a combobox popup be a listbox/tree/grid/dialog | A2RM:195–210, #242 |
+| 15.10 | Grouping | — | — | — | — | **Multi-select listbox**, not a checkbox group: `role="listbox"` with `aria-multiselectable="true"`, and `aria-selected` on every option. The search field is a `role="combobox"` and WAI-ARIA 1.2 requires a combobox popup be a listbox/tree/grid/dialog, which a checkbox group is not. Counts (15.4) belong in each option's accessible name; a zero-count option stays in the list as `aria-disabled` rather than being removed. The checkbox **visuals** may stay — the drawing was never the contested part. Ratified by Design 2026-09-07, superseding the "checkbox group with a group name" wording | A2RM:195–210, #242 |
 
 ### 15.1 Named states
 

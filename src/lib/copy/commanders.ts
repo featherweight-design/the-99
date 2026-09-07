@@ -29,6 +29,6 @@ export const commandersCopy = {
     // in the guided-setup banner, whose job is to say what to do next. The v1
     // body it replaces carried this instruction, and the mock line carries no
     // directive — dropping it would leave step 2 of 3 with nothing to act on.
-    directive: "Pick one to build your first 99.",
+    directive: "Pick a commander to build your first 99.",
   },
 } as const;

@@ -137,7 +137,7 @@ describe("optimistic deck list", () => {
     });
 
     expect(screen.getByRole("alert")).toHaveTextContent("Forest");
-    expect(screen.getByRole("alert")).toHaveTextContent("couldn't remove that card");
+    expect(screen.getByRole("alert")).toHaveTextContent("It's still in the deck");
     // And the card comes back: the override expires with the transition.
     expect(screen.getByRole("button", { name: "Remove Forest" })).toBeInTheDocument();
   });

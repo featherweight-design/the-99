@@ -84,9 +84,9 @@ export const RECOMMENDED_MIX_SOURCE_LINE = "EDHREC averages · a guide, not a ga
 // hypothetical. It used to end "you're at 8, fine for a slower build", which is
 // a second-person claim about the reader's deck made by a string that never
 // looks at one — on an empty deck it announced 8 ramp sources directly beneath
-// a RAMP cell reading 0.
+// a RAMP cell reading 0. It now names no count but the recommendation itself.
 export const RECOMMENDED_MIX_WORKED_EXAMPLE =
-  "Ramp · rec 10. Decks that cast a 4-mana commander on curve average ~10 sources. A deck sitting at 8 is fine for a slower build.";
+  "Ramp · rec 10. Decks that cast a 4-mana commander on curve average ~10 sources. Fewer is a slower build, not a broken one.";
 
 // Colour and control now answer to the same number. An advisory role used to be
 // held back from the met colours on the grounds that ~37 lands is a range rather
