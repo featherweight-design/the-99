@@ -725,6 +725,18 @@ describe("DiscoveryView", () => {
     expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
   });
 
+  // A query matching more names than the action counts comes back null, and an
+  // uncounted set is not an empty one.
+  it("makes no claim about the index when the lookup declines to answer", async () => {
+    findExcluded.mockResolvedValue(null);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "atraxa" } });
+    await waitFor(() => expect(findExcluded).toHaveBeenCalled());
+    expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
+  });
+
   // A one-character query matches most of the index, so it never asks.
   it("asks the server only about a query worth a round trip", async () => {
     render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);

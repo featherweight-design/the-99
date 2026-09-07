@@ -322,9 +322,16 @@ export function DiscoveryView({
     if (settledTrimmed.length < 2) return;
     let live = true;
     findExcludedMatches(settledTrimmed, { sort: discovery.sort, avail })
+      // A null answer is the action declining to classify a query that matches
+      // more names than it will count. It lands in the same shape a failure
+      // does, because it leaves the same thing unknown.
       .then((matches) => {
         if (live)
-          setAnswer({ key: `${discovery.sort}:${avail}:${settledTrimmed}`, matches, ok: true });
+          setAnswer({
+            key: `${discovery.sort}:${avail}:${settledTrimmed}`,
+            matches: matches ?? [],
+            ok: matches !== null,
+          });
       })
       // A lookup that fails leaves the list saying only what it can see. Filed
       // under its key all the same, so a failure settles the question rather

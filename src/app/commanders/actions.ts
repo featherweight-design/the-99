@@ -36,11 +36,15 @@ export async function retryRecs() {
  *
  * One request per SETTLED query, never per keystroke: it re-derives the free
  * pool, which is the same read the ranking does.
+ *
+ * Null when the query matches more names than the lookup classifies. The caller
+ * reads it as the failed round trip reads its own: an unanswered question, and
+ * nothing on screen may then claim to speak for the whole index.
  */
 export async function findExcludedMatches(
   query: string,
   opts: { sort: "fit" | "new"; avail: "all" | "free" },
-): Promise<ExcludedMatch[]> {
+): Promise<ExcludedMatch[] | null> {
   const userId = await requireUserId();
   const trimmed = query.trim();
   // A one-character query matches most of the index and answers nothing worth a
@@ -60,5 +64,5 @@ export async function findExcludedMatches(
     loadBuiltCommanderIds(userId),
   ]);
 
-  return classifyMatches(matches, { sort: opts.sort, builtOracleIds });
+  return matches === null ? null : classifyMatches(matches, { sort: opts.sort, builtOracleIds });
 }

@@ -85,7 +85,10 @@ export async function loadCandidates(
 
 /** The most name matches one lookup will classify. A commander-name substring
     that reaches this many rows is not a name the reader is hunting for, and the
-    aside it would feed counts matches rather than listing them. */
+    aside it would feed counts matches rather than listing them.
+    A query that goes past it is unanswered rather than answered with the first
+    200: the aside prints the count it was given, so a truncated set would have
+    it report a figure smaller than the truth. */
 const NAME_MATCH_LIMIT = 200;
 
 export type NameMatchRow = {
@@ -107,12 +110,15 @@ export type NameMatchRow = {
  * `unbuiltCommanders` is deliberately NOT applied: the whole point of the lookup
  * is to find the row that left the list, and a commander the player has already
  * built is one of the reasons it can be missing. The caller marks those.
+ *
+ * Null when more names match than the cap classifies — an unanswered question
+ * rather than a short answer.
  */
 export async function loadNameMatches(
   query: string,
   ownedOracleIds: string[],
   collectionOracleIds?: string[],
-): Promise<NameMatchRow[]> {
+): Promise<NameMatchRow[] | null> {
   const base = db
     .select({
       oracleId: commanderSupport.commanderOracleId,
@@ -126,13 +132,17 @@ export async function loadNameMatches(
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
     .leftJoin(ownedSupportTable(ownedOracleIds), OWNED_SUPPORT_ON);
 
-  return (collectionOracleIds != null
+  // One row past the cap, so a set that reached it can be told from one that
+  // stopped just short of it. The extra row is never returned.
+  const rows = await (collectionOracleIds != null
     ? base.leftJoin(collectionSupportTable(collectionOracleIds), COLLECTION_SUPPORT_ON)
     : base
   )
     .where(and(eq(cards.commanderLegal, true), ilike(cards.name, `%${escapeLike(query)}%`)))
     .orderBy(cards.name)
-    .limit(NAME_MATCH_LIMIT);
+    .limit(NAME_MATCH_LIMIT + 1);
+
+  return rows.length > NAME_MATCH_LIMIT ? null : rows;
 }
 
 /** The commanders this player has already built around — the scope exclusion,
