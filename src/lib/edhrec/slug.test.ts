@@ -21,6 +21,10 @@ describe("commanderSlug", () => {
     expect(commanderSlug("M.O.D.O.K.")).toBe("modok");
     expect(commanderSlug("H.E.R.B.I.E., Lovable Robot")).toBe("herbie-lovable-robot");
     expect(commanderSlug("U.S.S. Enterprise-D, Galaxy-Class")).toBe("uss-enterprise-d-galaxy-class");
+    // The shape with no space anywhere near the periods: the initialism runs
+    // straight into the next word, so the period is the only thing between them
+    // and dropping it joins the two. EDHREC serves `usagent-john-walker` (200).
+    expect(commanderSlug("U.S.Agent, John Walker")).toBe("usagent-john-walker");
   });
 
   // The other half of the rule. Every period is dropped, titles included, but a
