@@ -601,7 +601,7 @@ export function DiscoveryView({
             <ExclusionLine
               text={line.text}
               figures={line.figures}
-              className={`mb-[10px] sm:mb-[12px] ${report ? "hidden sm:flex" : ""}`}
+              className={`mb-[10px] sm:mb-[12px] ${report ? "hidden sm:flex" : "flex"}`}
             />
           ) : null}
 

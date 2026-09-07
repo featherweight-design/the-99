@@ -21,11 +21,15 @@ export function ExclusionLine({
       their percent sign, which is what the drawing marks and what stops a bare
       `30` matching some other figure. */
   figures: string[];
-  className?: string;
+  /** Carries the display utility, which is why the root sets none of its own: at
+      375px this line is suppressed with `hidden`, and a `flex` here would be a
+      second display utility on the same element whose winner is a question about
+      stylesheet order rather than about the markup. */
+  className: string;
 }) {
   return (
     <div
-      className={`flex items-baseline gap-[10px] px-[14px] sm:px-[34px] sm:pt-[14px] ${className ?? ""}`}
+      className={`items-baseline gap-[10px] px-[14px] sm:px-[34px] sm:pt-[14px] ${className}`}
     >
       {/* The same 6px rotated diamond the end-of-ranking rule uses, so the two
           receipts on this page are furniture of one family. */}
