@@ -2,10 +2,10 @@
 --
 -- #333 changed the fit formula: a commander with no EDHREC synergy data is no longer
 -- rescaled from its 40-point maximum back up to 100. Rows written by the old formula
--- carry the inflated score, and nothing marks them stale — `loadScores`' fast path in
--- src/lib/recs/store.ts returns stored rows whenever any exist and none are degraded,
--- so an untracked commander would keep printing 100/100 for every collection that had
--- already been scored. Emptying the cache is what makes the fix reach those users.
+-- carry the inflated score, and nothing marks them stale — `getRankedList` in
+-- src/lib/recs/ranked-list.ts serves the rows `loadScores` returns whenever any exist
+-- and none are degraded, so an untracked commander would keep printing 100/100 for
+-- every collection already scored. Emptying the cache is what makes the fix reach them.
 --
 -- Safe to empty: `commander_scores` is derived data. `getRankedList` recomputes and
 -- re-persists on a miss, and `replaceCollection` already deletes the whole table
