@@ -282,6 +282,10 @@ export type FilterBarProps = {
       the row's gap and shift the owned bar sideways. */
   query?: string;
   onQueryChange?: (next: string) => void;
+  /** The one-report rule at 375px (§4): the excluded-match report already names
+      the mode, so the mobile note would print the same fact twice about 100px
+      apart. Desktop keeps both — it has the width and no viewport problem. */
+  suppressExactNote?: boolean;
 };
 
 export function FilterBar({
@@ -301,6 +305,7 @@ export function FilterBar({
   onJoinChange,
   query,
   onQueryChange,
+  suppressExactNote = false,
 }: FilterBarProps) {
   const showJoin = join !== undefined && onJoinChange !== undefined && colors.length > 0;
   const showSearch = query !== undefined && onQueryChange !== undefined;
@@ -587,7 +592,7 @@ export function FilterBar({
               labelledBy="join-mode-mobile"
               size="mobile"
             />
-            {join === "exactly" && (
+            {join === "exactly" && !suppressExactNote && (
               <p
                 className="font-mono m-0 mt-[7px]"
                 style={{ fontSize: 10.5, color: "var(--fg-faint)", lineHeight: 1.5 }}

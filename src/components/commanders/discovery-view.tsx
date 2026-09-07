@@ -30,7 +30,9 @@ import {
 import {
   EndOfRanking, REVEAL_STEP, RevealControl, revealAnnouncement,
 } from "./reveal-control";
-import { FloorEmpty, NoDecksBanner } from "./discovery-empty";
+import { FloorEmpty, FloorPoolEmpty, NoDecksBanner } from "./discovery-empty";
+import { ExclusionLine } from "./exclusion-line";
+import { resolveExclusionLine } from "../../lib/commanders/exclusion-line";
 import { FilteredEmpty } from "./filtered-empty";
 import { ExcludedMatchAside } from "./excluded-match";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
@@ -274,6 +276,15 @@ export function DiscoveryView({
   // player who narrowed to Azorius that none of the N candidates cleared it.
   const showFloorEmpty =
     discovery.items.length === 0 && discovery.floorExcluded > 0 && discovery.bestPct != null;
+  // The pool variant takes precedence over it: when rows would have cleared
+  // against the whole collection, the pool is the control that removed them and
+  // the other sort is the wrong door to offer. It needs no nearest miss —
+  // its evidence is the count that would clear elsewhere.
+  const showPoolEmpty =
+    discovery.items.length === 0 && avail === "free" && discovery.poolExcluded > 0;
+  // Either one replaces the list outright, so every state below is about a list
+  // that is still there.
+  const floorReplacedList = showPoolEmpty || showFloorEmpty;
   // The live query, not the settled one: `filtered` narrows per keystroke, and a
   // heading naming the previous query for 350ms would quote a word the reader
   // has already finished changing. The debounce exists for the URL, the window
@@ -353,9 +364,9 @@ export function DiscoveryView({
   // Every match is excluded, and the report knows which control did it. It
   // outranks both empties below: they say what is missing, and this one says
   // why and offers the single control that would undo it.
-  const showHeldEmpty = !showFloorEmpty && filtered.length === 0 && report !== null;
+  const showHeldEmpty = !floorReplacedList && filtered.length === 0 && report !== null;
   const showSearchEmpty =
-    !showFloorEmpty &&
+    !floorReplacedList &&
     !showHeldEmpty &&
     trimmedQuery !== "" &&
     filtered.length === 0 &&
@@ -363,11 +374,30 @@ export function DiscoveryView({
   // Only when the filter is what emptied it. Without that guard this would also
   // swallow the unfiltered no-results case, whose reason is not the colours.
   const showFilteredEmpty =
-    !showFloorEmpty &&
+    !floorReplacedList &&
     !showHeldEmpty &&
     !showSearchEmpty &&
     colors.length > 0 &&
     filtered.length === 0;
+
+  // The list's own receipt. Counted against the ranked list rather than the
+  // query's narrowing: the line is about the filters, and the search has its own
+  // sentence two elements up. Under `fit` the sort excludes nothing, and the
+  // resolver drops both of its clauses rather than printing a zero.
+  const line = useMemo(
+    () =>
+      resolveExclusionLine({
+        colorExcluded:
+          discovery.items.length - filterByColors(discovery.items, colors, join).length,
+        colors,
+        join,
+        floorExcluded: discovery.floorExcluded,
+        unmeasured: discovery.unmeasured,
+        bestPct: discovery.bestPct,
+        sort: discovery.sort,
+      }),
+    [discovery, colors, join],
+  );
 
   // The one control that would bring the named row back, per cause. One each,
   // because the report names one cause: a correction that flipped two controls
@@ -455,13 +485,27 @@ export function DiscoveryView({
         onJoinChange={setJoin}
         query={query}
         onQueryChange={setQuery}
+        // The other half of the one-report rule: at 375px the note and the
+        // report would print the same fact about 100px apart, so the report
+        // keeps it — it names the row, which the note cannot.
+        suppressExactNote={report?.cause === "join"}
       />
 
       {/* State 1 sits ABOVE a full list, not in place of one: with no decks
           built the fit ranking is complete and only `Something new` is off. */}
       {!discovery.hasDecks ? <NoDecksBanner /> : null}
 
-      {showFloorEmpty ? (
+      {showPoolEmpty ? (
+        <FloorPoolEmpty
+          floorPct={FLOOR_PCT}
+          below={discovery.floorExcluded}
+          unmeasured={discovery.unmeasured}
+          candidateCount={discovery.candidateCount}
+          freeCards={discovery.freePoolSize}
+          clearingAgainstCollection={discovery.poolExcluded}
+          onScoreAgainstAll={() => setAvail("all")}
+        />
+      ) : showFloorEmpty ? (
         <FloorEmpty
           floorPct={FLOOR_PCT}
           candidateCount={discovery.candidateCount}
@@ -540,6 +584,19 @@ export function DiscoveryView({
             <div className="mb-[10px] sm:mb-[12px]">
               <ExcludedMatchAside report={report} onCorrect={correct} />
             </div>
+          ) : null}
+
+          {/* The receipt for the list itself. At 375px the aside outranks it —
+              one thing below the bar explains the list, and the aside is about
+              a row the reader just typed. Desktop renders both: it has the
+              width. One element with a responsive class rather than two
+              subtrees, so the sentence exists once in the DOM. */}
+          {line ? (
+            <ExclusionLine
+              text={line.text}
+              figures={line.figures}
+              className={`mb-[10px] sm:mb-[12px] ${report ? "hidden sm:flex" : ""}`}
+            />
           ) : null}
 
           <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">

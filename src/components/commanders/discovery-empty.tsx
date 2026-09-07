@@ -10,6 +10,7 @@
 "use client";
 
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { planeCopy } from "../../lib/copy/commanders-plane";
 import { GhostButton } from "../ui/button";
 
 const { empty: copy } = discoveryCopy;
@@ -60,7 +61,83 @@ export function FloorEmpty({
   bestPct: number;
   onRankByFit: () => void;
 }) {
-  const body = copy.floorBody(floorPct, candidateCount, cardsRead, bestPct);
+  return (
+    <FloorState
+      heading={copy.floorHeading}
+      body={copy.floorBody(floorPct, candidateCount, cardsRead, bestPct)}
+      emphasis={copy.floorEmphasis(floorPct)}
+      cta={copy.floorCta}
+      note={copy.floorCtaNote(candidateCount)}
+      onAct={onRankByFit}
+    />
+  );
+}
+
+/**
+ * State 2, when the POOL is why the floor took everything. Same state, one door
+ * further out: `FloorEmpty` offers the other sort, and this offers the other
+ * pool — the control that actually removed the rows. Still never a looser
+ * floor.
+ *
+ * `freeCards` is the size of the free pool, not the collection, and the two
+ * populations sum to `candidateCount`: a state whose premise is that nothing
+ * cleared cannot leave rows unaccounted for.
+ */
+export function FloorPoolEmpty({
+  floorPct,
+  below,
+  unmeasured,
+  candidateCount,
+  freeCards,
+  clearingAgainstCollection,
+  onScoreAgainstAll,
+}: {
+  floorPct: number;
+  below: number;
+  unmeasured: number;
+  candidateCount: number;
+  freeCards: number;
+  clearingAgainstCollection: number;
+  onScoreAgainstAll: () => void;
+}) {
+  const pool = planeCopy.floorPool;
+  return (
+    <FloorState
+      heading={pool.heading}
+      body={pool.body(
+        floorPct,
+        below,
+        unmeasured,
+        candidateCount,
+        freeCards,
+        clearingAgainstCollection,
+      )}
+      emphasis={pool.emphasis(floorPct)}
+      cta={pool.cta}
+      // No note. The count that survives in the other pool is one this pool's
+      // payload cannot know, and the CTA stands alone rather than carrying a
+      // figure the page would have to invent.
+      note={null}
+      onAct={onScoreAgainstAll}
+    />
+  );
+}
+
+function FloorState({
+  heading,
+  body,
+  emphasis,
+  cta,
+  note,
+  onAct,
+}: {
+  heading: string;
+  body: string;
+  emphasis: string;
+  cta: string;
+  note: string | null;
+  onAct: () => void;
+}) {
   return (
     <div className="block text-center p-[24px_16px] sm:p-[34px_24px]">
       <div className="flex items-center justify-center gap-[12px] mb-[16px]">
@@ -73,11 +150,11 @@ export function FloorEmpty({
       </div>
 
       <h2 className="font-display m-0 mb-[10px] text-[18px] font-semibold text-[color:var(--fg)]">
-        {copy.floorHeading}
+        {heading}
       </h2>
 
       <p className="mx-auto mt-0 mb-[16px] max-w-[430px] text-[13.5px] leading-[1.65] text-[color:var(--fg-body)]">
-        <Emphasised text={body} clause={copy.floorEmphasis(floorPct)} />
+        <Emphasised text={body} clause={emphasis} />
       </p>
 
       {/* `flex-wrap`, which the desktop drawing does not need: the CTA and its
@@ -85,14 +162,14 @@ export function FloorEmpty({
           drawn. Wrapping is the only reading that does not overflow. */}
       <span className="inline-flex flex-wrap items-center justify-center gap-[10px]">
         <GhostButton
-          onClick={onRankByFit}
+          onClick={onAct}
           className="inline-flex items-center h-[40px] px-[18px] text-[13.5px]"
         >
-          {copy.floorCta}
+          {cta}
         </GhostButton>
-        <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">
-          {copy.floorCtaNote(candidateCount)}
-        </span>
+        {note ? (
+          <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">{note}</span>
+        ) : null}
       </span>
     </div>
   );

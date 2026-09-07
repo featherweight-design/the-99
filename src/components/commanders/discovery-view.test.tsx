@@ -725,6 +725,144 @@ describe("DiscoveryView", () => {
     expect(container.textContent).not.toContain(search.heldAside(2));
   });
 
+  // ── The exclusion line (§4) ───────────────────────────────────────────
+  it("prints the list's receipt in tier order, and nothing when nothing was excluded", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["U"], rank: 2 }),
+    ];
+    const discovery = list({
+      items,
+      candidateCount: 214,
+      sort: "new",
+      floorExcluded: 1047,
+      unmeasured: 212,
+      bestPct: 22,
+    });
+    const { container, rerender } = render(<DiscoveryView discovery={discovery} avail="free" />);
+    // The floor alone, so the nearest miss has room.
+    expect(container.textContent).toContain(
+      planeCopy.exclusion.floorAloneWithUnmeasured(1047, 212, 30, 22),
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(container.textContent).toContain(
+      planeCopy.exclusion.join2(
+        planeCopy.exclusion.colors(1, ["G"]),
+        planeCopy.exclusion.floorWithUnmeasured(1047, 212, 30),
+      ),
+    );
+
+    rerender(
+      <DiscoveryView
+        discovery={list({ items, candidateCount: 2, sort: "new" })}
+        avail="free"
+      />,
+    );
+    expect(container.textContent).not.toContain("support floor");
+  });
+
+  // The one-report rule: one thing below the bar explains the list at 375px, and
+  // it is the aside. The line stays in the DOM for the widths that have room,
+  // as one element rather than a duplicated subtree.
+  it("hands the phone to the aside when both would explain the list", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "floor", pct: 9 },
+    ]);
+    const { container } = render(
+      <DiscoveryView
+        discovery={list({
+          items: named(),
+          candidateCount: 214,
+          sort: "new",
+          floorExcluded: 1047,
+          unmeasured: 212,
+          bestPct: 22,
+        })}
+        avail="free"
+      />,
+    );
+    const lineText = planeCopy.exclusion.floorAloneWithUnmeasured(1047, 212, 30, 22);
+    const lineNode = () =>
+      Array.from(container.querySelectorAll("div")).find(
+        (el) => el.textContent === lineText,
+      );
+    expect(lineNode()?.className).not.toContain("hidden");
+
+    fireEvent.change(field(), { target: { value: "the" } });
+    await waitFor(() => expect(lineNode()?.className).toContain("hidden sm:flex"));
+    // One element, not two: the sentence is in the DOM once at either width.
+    expect(
+      Array.from(container.querySelectorAll("div")).filter((el) => el.textContent === lineText),
+    ).toHaveLength(1);
+  });
+
+  // The other half of the rule: the report already names the mode, so the note
+  // under the control would print the same fact twice on one phone screen.
+  it("drops the mobile exact note when a report names the mode", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["B", "G", "U"] }),
+      item({ oracleId: "b", slug: "b", name: "Meren of Clan Nel Toth", colorIdentity: ["G"], rank: 2 }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(container.textContent).toContain(join.exactNoteShort(1, 2, ["G"]));
+
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    expect(container.textContent).not.toContain(join.exactNoteShort(0, 2, ["G"]));
+    // Desktop keeps its own note: it has the width, and no viewport problem.
+    expect(container.textContent).toContain(join.exactNote(0, 2, ["G"]));
+  });
+
+  // ── The pool floor state (§5) ─────────────────────────────────────────
+  // The floor took everything, and the pool is why: the other sort is the wrong
+  // door when the rows would clear against the whole collection.
+  it("offers the other pool, not the other sort, when the pool is the cause", () => {
+    const { container } = render(
+      <DiscoveryView
+        discovery={list({
+          items: [],
+          candidateCount: 3326,
+          sort: "new",
+          floorExcluded: 3114,
+          unmeasured: 212,
+          poolExcluded: 41,
+          bestPct: 22,
+          freePoolSize: 1190,
+        })}
+        avail="free"
+      />,
+    );
+    expect(container.textContent).toContain(planeCopy.floorPool.heading);
+    expect(container.textContent).toContain(
+      planeCopy.floorPool.body(30, 3114, 212, 3326, 1190, 41),
+    );
+    expect(container.textContent).not.toContain(discoveryCopy.empty.floorHeading);
+  });
+
+  // Nothing would clear elsewhere, so the pool is not the cause and the shipped
+  // state stands.
+  it("keeps the sort's own floor state when no row would clear against the collection", () => {
+    const { container } = render(
+      <DiscoveryView
+        discovery={list({
+          items: [],
+          candidateCount: 3326,
+          sort: "new",
+          floorExcluded: 3114,
+          poolExcluded: 0,
+          bestPct: 22,
+        })}
+        avail="free"
+      />,
+    );
+    expect(container.textContent).toContain(discoveryCopy.empty.floorHeading);
+    expect(container.textContent).not.toContain(planeCopy.floorPool.heading);
+  });
+
   // A report is written about one query. Carrying it into the next would name a
   // commander the reader is no longer asking about.
   it("drops the server's answer when the query changes", async () => {
