@@ -12,7 +12,7 @@
 import { useRef, type ReactNode } from "react";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { planeCopy } from "../../lib/copy/commanders-plane";
-import { PendingSlot } from "../ui/pending-mark";
+import { PendingLabel } from "../ui/pending-mark";
 import { PENDING_OPACITY } from "./pending";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import type { JoinMode } from "../../lib/commanders/filter";
@@ -113,7 +113,7 @@ function ScoreAgainst({
               step(i, dir);
             }}
             className={[
-              "flex items-center justify-center gap-[6px] rounded-md border-0",
+              "flex items-center justify-center rounded-md border-0",
               size === "mobile" ? "flex-1 px-[10px]" : "px-[13px]",
               off ? "cursor-not-allowed" : "cursor-pointer",
               active
@@ -127,8 +127,7 @@ function ScoreAgainst({
               textDecoration: off ? "line-through" : undefined,
             }}
           >
-            {s.label}
-            {active && <PendingSlot pending={pending !== null} />}
+            <PendingLabel pending={active && pending !== null}>{s.label}</PendingLabel>
           </button>
         );
       })}

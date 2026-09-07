@@ -13,7 +13,7 @@
 
 import { useFormStatus } from "react-dom";
 import { GhostButton } from "../ui/button";
-import { PendingMark } from "../ui/pending-mark";
+import { PendingLabel } from "../ui/pending-mark";
 import { PENDING_OPACITY, PENDING_OPACITY_CLASS } from "./pending";
 
 /** Retry as a ghost CTA. `className` carries the caller's padding and size. */
@@ -34,15 +34,14 @@ export function RetryGhost({
       // second press re-runs an action that deletes and recomputes the same
       // scores, which is the same answer arriving later, not a corrupted one.
       className={[
-        "inline-flex items-center justify-center gap-[8px]",
+        "inline-flex items-center justify-center",
         pending ? PENDING_OPACITY_CLASS : "",
         className ?? "",
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      {children}
-      {pending && <PendingMark />}
+      <PendingLabel pending={pending}>{children}</PendingLabel>
     </GhostButton>
   );
 }
@@ -61,11 +60,10 @@ export function RetryLink({
       type="submit"
       aria-busy={pending || undefined}
       // brand focus-visible outline treatment inherited from globals.css
-      className="inline-flex items-center gap-[6px] align-middle underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent)]"
+      className="inline-flex items-center align-middle underline cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[color:var(--accent)]"
       style={{ fontSize, opacity: pending ? PENDING_OPACITY : undefined }}
     >
-      {children}
-      {pending && <PendingMark />}
+      <PendingLabel pending={pending}>{children}</PendingLabel>
     </button>
   );
 }
