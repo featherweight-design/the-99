@@ -8,20 +8,28 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { PENDING_OPACITY } from "./list-nav";
 
 const { sort: copy } = discoveryCopy;
 
 export type SortKey = "fit" | "new";
 
 export function SortMenu({
-  sort,
+  sort: committed,
+  pending = null,
   hasDecks,
   onChange,
 }: {
   sort: SortKey;
+  /** The key a re-rank is heading for, or null. See `Nav` in list-nav.ts. */
+  pending?: SortKey | null;
   hasDecks: boolean;
   onChange: (next: SortKey) => void;
 }) {
+  // Only two orderings exist on the server, so a flip is a fetch. The trigger
+  // and the diamond name the key the reader chose from the moment they choose
+  // it; the subtitle and the rows still name the ordering that is on screen.
+  const sort = pending ?? committed;
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   // Roving focus, matching `AccountMenu`: exactly one option is tabbable and
@@ -122,6 +130,10 @@ export function SortMenu({
         // than an empty one.
         aria-controls={open ? menuId : undefined}
         aria-label={copy.triggerAria(currentLabel)}
+        // The trigger only. See the note on ScopeControl's radiogroup: the
+        // ruling that forbids a dimmed list is about the list.
+        aria-busy={pending !== null || undefined}
+        style={{ opacity: pending !== null ? PENDING_OPACITY : undefined }}
         onClick={() => setOpen((v) => !v)}
         className={[
           "font-mono inline-flex items-center cursor-pointer rounded-lg px-[12px]",

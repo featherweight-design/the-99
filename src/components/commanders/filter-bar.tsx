@@ -11,6 +11,7 @@
 
 import { useRef, type ReactNode } from "react";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { PENDING_OPACITY } from "./list-nav";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { WindowCount } from "./reveal-control";
 
@@ -26,18 +27,23 @@ type AvailMode = "all" | "free";
  * a different question entirely.
  */
 function ScoreAgainst({
-  value,
+  value: committed,
+  pending = null,
   onChange,
   disabled,
   labelId,
   size,
 }: {
   value: AvailMode;
+  /** The mode a flip is heading for, or null. See `Nav` in list-nav.ts. Always
+      null under the owned scope, whose flip is a client-side swap. */
+  pending?: AvailMode | null;
   onChange: (next: AvailMode) => void;
   disabled: boolean;
   labelId: string;
   size: "mobile" | "desktop";
 }) {
+  const value = pending ?? committed;
   const { ranking, degraded: degradedCopy } = availabilityCopy;
   const height = size === "mobile" ? 38 : 30;
   const fontSize = size === "mobile" ? 13 : 12.5;
@@ -62,8 +68,14 @@ function ScoreAgainst({
     <div
       role="radiogroup"
       aria-labelledby={labelId}
+      // The control only. See the note on ScopeControl's radiogroup.
+      aria-busy={pending !== null || undefined}
       className="flex gap-[3px] rounded-lg p-[3px]"
-      style={{ background: "var(--surface-sunken)", border: "1px solid var(--border-strong)" }}
+      style={{
+        background: "var(--surface-sunken)",
+        border: "1px solid var(--border-strong)",
+        opacity: pending !== null ? PENDING_OPACITY : undefined,
+      }}
     >
       {segments.map((s, i) => {
         const active = s.mode === value;
@@ -133,6 +145,10 @@ export type FilterBarProps = {
   onToggleColor: (c: string) => void;
   onClearColors: () => void;
   avail: "all" | "free";
+  /** The mode a flip is heading for, or null. Discovery pays a server round-trip
+      per flip and passes its nav's target here; the owned scope swaps two
+      rankings it already holds and leaves it unset. */
+  availPending?: "all" | "free" | null;
   onAvailChange: (v: "all" | "free") => void;
   availOk: boolean;
   /** True once the list has ever been long enough to window. The counts are
@@ -153,6 +169,7 @@ export function FilterBar({
   onToggleColor,
   onClearColors,
   avail,
+  availPending = null,
   onAvailChange,
   availOk,
   wasWindowed,
@@ -238,6 +255,7 @@ export function FilterBar({
             </span>
             <ScoreAgainst
               value={avail}
+              pending={availPending}
               onChange={onAvailChange}
               disabled={!availOk}
               labelId="score-against-desktop"
@@ -395,6 +413,7 @@ export function FilterBar({
           </p>
           <ScoreAgainst
             value={avail}
+            pending={availPending}
             onChange={onAvailChange}
             disabled={!availOk}
             labelId="score-against-mobile"

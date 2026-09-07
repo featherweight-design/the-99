@@ -35,18 +35,24 @@ type PageHeaderProps =
   | (PageHeaderBase & {
       scope?: never;
       onScopeChange?: never;
+      scopePending?: never;
       sort?: never;
       candidateCount?: never;
     })
   | (PageHeaderBase & {
       scope: "owned";
       onScopeChange: (next: "owned" | "play") => void;
+      /** The scope a flip is heading for, or null. Passed straight through to
+          the control, which is the only thing that goes optimistic — the
+          subtitle below still names the list that is on screen. */
+      scopePending?: "owned" | "play" | null;
       candidateCount: number;
       sort?: never;
     })
   | (PageHeaderBase & {
       scope: "play";
       onScopeChange: (next: "owned" | "play") => void;
+      scopePending?: "owned" | "play" | null;
       candidateCount: number;
       sort: "fit" | "new";
     });
@@ -107,7 +113,11 @@ export function PageHeader(props: PageHeaderProps) {
       </div>
 
       {props.scope !== undefined ? (
-        <ScopeControl scope={props.scope} onChange={props.onScopeChange} />
+        <ScopeControl
+          scope={props.scope}
+          pending={props.scopePending}
+          onChange={props.onScopeChange}
+        />
       ) : null}
     </div>
   );

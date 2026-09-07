@@ -45,6 +45,29 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.
 
+## Caching a list a reader flips between
+
+When a control re-fetches the same list under different parameters — a sort order, an
+availability mode — cache the payloads in the component that renders them, keyed on those
+parameters, and serve a repeat ask from that cache instead of navigating.
+`useDiscoveryCache` in `src/components/commanders/discovery-cache.ts` is the reference
+implementation; `commanders-view.tsx` shows the other valid answer, shipping every ranking
+in one payload when the set of parameters is small enough to precompute.
+
+- **Never Next's `staleTimes`.** It is a global router setting whose blast radius is every
+  route in the app, and this codebase has already shipped a bug that way. Component-held
+  state caches the one thing being cached and nothing else.
+- **A cache lives for one visit.** Leaving the route unmounts it, so a change made elsewhere
+  needs no invalidation — there is nothing left to invalidate by the time the reader returns.
+  Do not extend a cache's life past its component without an invalidation story.
+- **A fresh server payload always wins** over a cached entry for the same key, and is filed
+  on its way past. Adjust that during render, not in an effect, or the previous list paints
+  once before being corrected.
+- **A cache hit still writes the URL**, via `history.replaceState` rather than the router —
+  routing is the request being avoided. Serialise defaults as absences, exactly as the
+  navigating path does, and read every parameter you do not own back off the live URL rather
+  than rebuilding it.
+
 ## Design pipeline
 
 - UI work is gated on design handoffs in `design/design_handoff_the99_*` — no UI until the handoff exists and has a READINESS verdict. Backend/API/DB work may proceed without one.
