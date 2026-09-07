@@ -1,25 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { committedSupport, firstDeckPerCard } from "./committed";
+import { committedSupport, firstDeckPerCard, type CommittedDeck } from "./committed";
+
+const deck = (id: string, name: string): CommittedDeck => ({ id, name });
 
 describe("firstDeckPerCard", () => {
   // The rows arrive in the deck list's order, so "first" is decided by the
   // query, not re-derived here — this is the half of the rule the caller keeps.
   it("names the earliest deck for a card that sits in two", () => {
     const map = firstDeckPerCard([
-      { oracleId: "sol-ring", deckName: "atraxa" },
-      { oracleId: "sol-ring", deckName: "krenko" },
+      { oracleId: "sol-ring", deckId: "d1", deckName: "atraxa" },
+      { oracleId: "sol-ring", deckId: "d2", deckName: "krenko" },
     ]);
-    expect(map.get("sol-ring")).toBe("atraxa");
+    expect(map.get("sol-ring")).toEqual(deck("d1", "atraxa"));
   });
 
   it("keeps every card, not only the repeated ones", () => {
     const map = firstDeckPerCard([
-      { oracleId: "sol-ring", deckName: "atraxa" },
-      { oracleId: "cultivate", deckName: "atraxa" },
+      { oracleId: "sol-ring", deckId: "d1", deckName: "atraxa" },
+      { oracleId: "cultivate", deckId: "d1", deckName: "atraxa" },
     ]);
     expect([...map]).toEqual([
-      ["sol-ring", "atraxa"],
-      ["cultivate", "atraxa"],
+      ["sol-ring", deck("d1", "atraxa")],
+      ["cultivate", deck("d1", "atraxa")],
     ]);
   });
 
@@ -31,9 +33,9 @@ describe("firstDeckPerCard", () => {
 describe("committedSupport", () => {
   // The read hands back its rows in deck order, so the map is in deck order too.
   const byCard = new Map([
-    ["cultivate", "Atraxa"],
-    ["sol-ring", "Krenko"],
-    ["swords", "Krenko"],
+    ["cultivate", deck("d1", "Atraxa")],
+    ["sol-ring", deck("d2", "Krenko")],
+    ["swords", deck("d2", "Krenko")],
   ]);
 
   // The regression this function exists to prevent: "Atraxa" sorts first, so the old
@@ -64,10 +66,26 @@ describe("committedSupport", () => {
   // instead of guessing at one.
   it("keeps the read's tiebreak between two decks named the same but for case", () => {
     const tied = new Map([
-      ["sol-ring", "atraxa"],
-      ["cultivate", "Atraxa"],
+      ["sol-ring", deck("d1", "atraxa")],
+      ["cultivate", deck("d2", "Atraxa")],
     ]);
     expect(committedSupport(["cultivate", "sol-ring"], tied).topDeck).toBe("atraxa");
+  });
+
+  // `decks.name` carries no unique constraint, so two lists really can share a
+  // name. Grouping on the name would report one deck holding four cards that no
+  // single deck holds, and the player would go looking for a list that has half
+  // of them.
+  it("keeps two decks with the same name apart", () => {
+    const twins = new Map([
+      ["sol-ring", deck("d1", "Krenko")],
+      ["cultivate", deck("d2", "Krenko")],
+      ["swords", deck("d2", "Krenko")],
+    ]);
+    expect(committedSupport(["sol-ring", "cultivate", "swords"], twins)).toEqual({
+      count: 2,
+      topDeck: "Krenko",
+    });
   });
 
   it("has no deck to name when none of the cards are committed", () => {

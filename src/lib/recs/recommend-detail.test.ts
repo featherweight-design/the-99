@@ -20,7 +20,7 @@ vi.mock("../../db", () => ({
 
 // Deck membership is its own query, tested in `decks/committed.test.ts`. What
 // matters here is only that whatever it returns reaches the role cards.
-const committed = vi.hoisted(() => ({ value: new Map<string, string>() }));
+const committed = vi.hoisted(() => ({ value: new Map<string, { id: string; name: string }>() }));
 vi.mock("../decks/committed", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../decks/committed")>()),
   readCommittedDecks: () => Promise.resolve(committed.value),
@@ -84,7 +84,7 @@ describe("scoreOneCommander", () => {
       card({ oracleId: "signet", name: "Arcane Signet", typeLine: "Artifact", oracleText: "Add {C}." }),
     ];
     pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
-    committed.value = new Map([["sol", "Krenko"]]);
+    committed.value = new Map([["sol", { id: "d1", name: "Krenko" }]]);
 
     const got = await scoreOneCommander("user-committed", "unowned", "atraxa");
     const byId = new Map(got!.roleCards.ramp.map((c) => [c.oracleId, c.committedTo]));
@@ -136,7 +136,10 @@ describe("scoreOneCommander committed-support attribution", () => {
     pool.collection = [sol, signet];
     pool.card = [card({ oracleId: "unowned", name: "Atraxa, Praetors' Voice" })];
     edhrec.topCards = ["Sol Ring", "Arcane Signet"];
-    committed.value = new Map([["sol", "Krenko"], ["signet", "Krenko"]]);
+    committed.value = new Map([
+      ["sol", { id: "d1", name: "Krenko" }],
+      ["signet", { id: "d1", name: "Krenko" }],
+    ]);
 
     // Both support cards are sleeved, so the free pool holds neither.
     const got = await scoreOneCommander("user-committed-free", "unowned", "atraxa", []);
