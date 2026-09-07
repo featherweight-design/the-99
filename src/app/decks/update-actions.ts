@@ -27,10 +27,11 @@ export type UpdateDeckInput = {
   source: DeckImportSource;
 };
 
-/** A row of the `in` group, widened with the facts the pipeline cannot know.
- *  `availability` is null both for a card the player does not own and for every
- *  row when the rollup fails — and a null renders exactly as a card nothing
- *  competes for does, which is with no marker at all. */
+/** A row of either changed group — `out` as well as `in` — widened with the
+ *  facts the pipeline cannot know. `availability` is null both for a card the
+ *  player does not own and for every row when the rollup fails; in neither case
+ *  is an availability marker drawn, though an unowned row draws the buy tag in
+ *  that slot instead. */
 export type DeckUpdateInRow = DeckUpdateRow & {
   owned: boolean;
   availability: Availability | null;

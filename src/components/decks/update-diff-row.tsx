@@ -32,8 +32,10 @@ export type DiffRowCard = {
    *  import's rows alike, so it carries no marker of its own. */
   auto: boolean;
   owned: boolean;
-  /** Null for an unowned card and for a failed rollup alike; both draw no
-   *  marker, which is also what a card nothing competes for draws. */
+  /** Governs the availability marker only, never the slot's occupant. Null for
+   *  an unowned card and for a failed rollup alike, and neither draws a marker —
+   *  which is also what a card nothing competes for draws. An unowned row still
+   *  fills the slot, with the buy tag. */
   availability: Availability | null;
 };
 
