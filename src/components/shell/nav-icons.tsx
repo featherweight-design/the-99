@@ -62,5 +62,13 @@ export function NavIcon({ href }: { href: NavHref }) {
           <path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2" />
         </Svg>
       );
+    // A fifth nav slot must arrive with its glyph. Without this the switch
+    // falls off the end and renders nothing — an empty 38px square in the rail,
+    // which reads as a styling bug rather than a missing case. The `never`
+    // annotation makes that a compile error instead.
+    default: {
+      const unhandled: never = href;
+      throw new Error(`No nav glyph for ${String(unhandled)}`);
+    }
   }
 }
