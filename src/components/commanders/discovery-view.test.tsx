@@ -611,6 +611,21 @@ describe("DiscoveryView", () => {
     await waitFor(() => expect(screen.getByText(search.announce(1, 2))).toBeTruthy());
   });
 
+  // The floor takes rows out of `items` but not out of the pool the search
+  // covered, so under the novelty sort the ranked count would understate where
+  // we looked.
+  it("names the whole unbuilt pool, not the ranked count, under the novelty sort", () => {
+    const { container } = render(
+      <DiscoveryView
+        discovery={list({ items: named(), candidateCount: 40, sort: "new", floorExcluded: 38 })}
+        avail="free"
+      />,
+    );
+    fireEvent.change(field(), { target: { value: "krenko" } });
+    expect(container.textContent).toContain(search.noneEmphasis(40));
+    expect(container.textContent).toContain(search.announce(0, 40));
+  });
+
   // The name is in nothing this reader can see, so the state says where we
   // looked and offers the one correction that could help.
   it("names the query when nothing is called that, and clears the search rather than the colours", () => {

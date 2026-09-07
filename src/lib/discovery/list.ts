@@ -167,9 +167,11 @@ export function assembleDiscovery(input: {
   // Read from the candidate rows rather than carried on the enriched ones: it is
   // a property of the commanders that left, and putting it on the item would
   // ship a constant to the client — every surviving row clears both pools.
-  const collectionSupport = new Map(input.candidates.map((c) => [c.oracleId, c.collectionSupport]));
-  const poolExcluded = excluded.filter((c) =>
-    clearsFloor({ ownedSupport: collectionSupport.get(c.oracleId)!, edhrecTotal: c.edhrecTotal }),
+  const excludedIds = new Set(excluded.map((c) => c.oracleId));
+  const poolExcluded = input.candidates.filter(
+    (c) =>
+      excludedIds.has(c.oracleId) &&
+      clearsFloor({ ownedSupport: c.collectionSupport, edhrecTotal: c.edhrecTotal }),
   ).length;
 
   const ordered = [...active].sort(input.sort === "new" ? byNovelty : byFit);

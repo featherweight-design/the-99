@@ -540,14 +540,20 @@ export function DiscoveryView({
         // no pip row (no filter to show), a diagnostic in the search's own
         // vocabulary rather than the colour filter's, and a button that clears
         // what the reader actually set.
+        // The candidate count, not the ranked one, and all three figures take it:
+        // this state fires only once the server has looked past the rows on
+        // screen and found nothing either, so "the N you have not built" is the
+        // whole unbuilt pool. Under `sort="new"` the ranked count is the smaller
+        // post-floor figure, and naming it would claim we searched less than we
+        // did — and have the body and the diagnostic print different totals.
         <FilteredEmpty
           colors={[]}
-          total={discovery.items.length}
+          total={discovery.candidateCount}
           onClear={() => setQuery("")}
           heading={planeCopy.search.noneHeading(trimmedQuery)}
-          body={planeCopy.search.noneBody(discovery.items.length)}
-          emphasis={planeCopy.search.noneEmphasis(discovery.items.length)}
-          diagnostic={planeCopy.search.announce(0, discovery.items.length)}
+          body={planeCopy.search.noneBody(discovery.candidateCount)}
+          emphasis={planeCopy.search.noneEmphasis(discovery.candidateCount)}
+          diagnostic={planeCopy.search.announce(0, discovery.candidateCount)}
           cta={planeCopy.search.noneCta}
         />
       ) : showFilteredEmpty ? (
