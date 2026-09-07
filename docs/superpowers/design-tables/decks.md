@@ -1359,6 +1359,12 @@ rather than as a fixed minimum that cannot itself yield.
 | border-radius | — | 16px |
 | box-shadow | — | 0 40px 100px rgba(0,0,0,0.7) |
 | overflow | — | hidden |
+| max-height | — | min(85vh, 760px) (deviation) |
+
+Authorised deviation, 2026-09-07: the drawing gave the modal no height bound, so
+it grew to its content. The centring wrapper does not clip, so a long shopping
+list pushed the modal past both edges of the viewport with no way to reach the
+footer. The bottom sheet was never exposed to this — its 590px is fixed.
 
 ### Export dialog — header
 | Property | Mobile | Desktop |
@@ -1444,9 +1450,16 @@ rather than as a fixed minimum that cannot itself yield.
 | border | 1px solid #2A241D | 1px solid #2A241D |
 | border-radius | 10px | 10px |
 | padding | 14px 16px | 16px 18px |
-| height | — | 250px |
+| height | — | 250px → not set (deviation) |
 | overflow | hidden | hidden |
 | margin | 14px 18px | 0 24px |
+
+Authorised deviation, 2026-09-07: the desktop `height: 250px` clipped a real
+decklist — 99 lines in two columns run to roughly 600px — and the block had no
+scrollbar of its own. `overflow: auto` does not rescue it either, because a
+multi-column box with a constrained height overflows in the inline direction,
+so it would have scrolled sideways. The block now sizes to its content and the
+dialog body scrolls, which is where the shopping tab's scroll already was.
 
 ### Export text — comment line
 | Property | Mobile | Desktop |
