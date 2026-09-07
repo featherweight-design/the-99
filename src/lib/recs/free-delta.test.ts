@@ -18,6 +18,7 @@ function item(over: Partial<CommanderListItem>): CommanderListItem {
     fitSynergy: 20,
     synergyState: "ok",
     score: 60,
+    rankScore: 60,
     measurableTotal: 100,
     imageUri: "https://cards.example/a.jpg",
     ...over,

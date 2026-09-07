@@ -67,6 +67,7 @@ const item = (
   fitSynergy: null,
   synergyState: "absent",
   score: 0,
+  rankScore: 0,
   measurableTotal: 40,
   imageUri: null,
   receipts: "",

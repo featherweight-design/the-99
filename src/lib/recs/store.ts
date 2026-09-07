@@ -23,6 +23,7 @@ export type ScoreRowWithCard = {
   oracleId: string;
   slug: string;
   score: number;
+  rankScore: number;
   fitPool: number;
   fitRoles: number;
   fitSynergy: number | null;

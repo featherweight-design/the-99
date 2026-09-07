@@ -25,6 +25,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
     fitRoles: 8,
     fitSynergy: 24,
     score: 44,
+    rankScore: 44,
     measurableTotal: 100,
     imageUri: null,
     synergyState: "ok",

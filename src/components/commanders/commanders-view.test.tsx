@@ -44,6 +44,7 @@ function results(n: number, colorIdentity: string[] = ["R"]): CommanderListItem[
     fitRoles: 8,
     fitSynergy: 24,
     score: 100 - i,
+    rankScore: 100 - i,
     measurableTotal: 100,
     imageUri: null,
     synergyState: "ok" as const,

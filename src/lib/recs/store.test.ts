@@ -80,6 +80,7 @@ describe("rowToListItem", () => {
       oracleId: "11111111-1111-1111-1111-111111111111",
       slug: "atraxa-praetors-voice",
       score: 58,
+      rankScore: 58,
       fitPool: 15,
       fitRoles: 25,
       fitSynergy: 18,
@@ -102,7 +103,7 @@ describe("rowToListItem", () => {
   it("maps a degraded row to a null fitSynergy list item", () => {
     const item = rowToListItem({
       oracleId: "22222222-2222-2222-2222-222222222222",
-      slug: "x", score: 40, fitPool: 10, fitRoles: 6, fitSynergy: null,
+      slug: "x", score: 40, rankScore: 40, fitPool: 10, fitRoles: 6, fitSynergy: null,
       synergyState: "degraded", edhrecOwnedCount: null, edhrecTotal: null,
       receipts: "", colorPoolSize: 100,
       roleCounts: { ramp: 1, draw: 1, removal: 1, wipes: 0 },
