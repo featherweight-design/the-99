@@ -12,6 +12,15 @@ export const PROSE_PROMPT_VERSION = 2;
 /** How many tags the prompt is given, and how many the hash covers. */
 const TAG_LIMIT = 8;
 
+/**
+ * Flatten a string onto one line before it is interpolated into a prompt.
+ *
+ * Everything the prompt names comes from outside this repo — the commander's name from the
+ * catalog, the theme labels from EDHREC, the rejected sentence from the model — and a line
+ * break in any of them turns a quoted value into what reads as a fresh instruction.
+ */
+const oneLine = (s: string): string => s.replace(/\s+/g, " ").trim();
+
 const topTags = (tags: EdhrecTag[]): string[] =>
   [...tags]
     .sort((a, b) => b.count - a.count || a.slug.localeCompare(b.slug))
@@ -41,8 +50,9 @@ export function proseInputHash(oracleId: string, tags: EdhrecTag[]): string {
  * name back is asking for a sentence the contract cannot accept.
  */
 export function shortName(commanderName: string): string {
-  const short = commanderName.split(" // ")[0].split(",")[0].trim();
-  return short.length > 0 ? short : commanderName;
+  const full = oneLine(commanderName);
+  const short = full.split(" // ")[0].split(",")[0].trim();
+  return short.length > 0 ? short : full;
 }
 
 /** What the front-loading rule leaves for the opening claim once the subject is spent. */
@@ -67,11 +77,11 @@ function claimBudget(subject: string): number {
  * rule it cannot.
  */
 export function buildProsePrompt(commanderName: string, tags: EdhrecTag[]): string {
-  const themes = topTags(tags);
+  const themes = topTags(tags).map(oneLine);
   const subject = shortName(commanderName);
   const budget = claimBudget(subject);
   return [
-    `Write one sentence about how ${commanderName} decks tend to play.`,
+    `Write one sentence about how ${oneLine(commanderName)} decks tend to play.`,
     "",
     themes.length > 0
       ? `The themes players build around, most common first: ${themes.join(", ")}.`
@@ -124,10 +134,11 @@ export function buildProseRetryPrompt(
   reason: ProseRejection,
 ): string {
   const subject = shortName(commanderName);
+  const quoted = oneLine(previous);
   return [
     buildProsePrompt(commanderName, tags),
     "",
-    `A previous attempt was rejected: ${previous}`,
+    `A previous attempt was rejected. It was: "${quoted}"`,
     "",
     REJECTION_ADVICE[reason](subject),
     "Write a different sentence that does not repeat that mistake.",

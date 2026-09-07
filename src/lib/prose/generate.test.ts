@@ -154,7 +154,7 @@ describe("generateCommanderProse", () => {
       attempts: 2,
     });
     expect(prompts[0]).not.toContain("A previous attempt was rejected");
-    expect(prompts[1]).toContain("A previous attempt was rejected: Kess decks are good.");
+    expect(prompts[1]).toContain('A previous attempt was rejected. It was: "Kess decks are good."');
   });
 
   // Nothing came back, so there is nothing to feed back — a retry after a failed call must

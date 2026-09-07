@@ -25,6 +25,10 @@ describe("shortName", () => {
   it("leaves a name carrying neither marker alone", () => {
     expect(shortName("Urabrask the Hidden")).toBe("Urabrask the Hidden");
   });
+
+  it("flattens a name carrying a line break", () => {
+    expect(shortName("Urabrask\nthe Hidden")).toBe("Urabrask the Hidden");
+  });
 });
 
 describe("buildProsePrompt", () => {
@@ -62,6 +66,16 @@ describe("buildProsePrompt", () => {
   it("says so when there are no themes rather than listing none", () => {
     expect(buildProsePrompt("Kess, Dissident Mage", [])).toContain("No theme data is available");
   });
+
+  // Every value the prompt names comes from outside this repo — the name from the catalog,
+  // the labels from EDHREC — so a line break in any of them would read as an instruction.
+  it("flattens the commander name and the theme labels onto their own lines", () => {
+    const p = buildProsePrompt("Kess,\nDissident Mage", [
+      { slug: "spellslinger", label: "Spell\nslinger", count: 900 },
+    ]);
+    expect(p).toContain("how Kess, Dissident Mage decks tend to play");
+    expect(p).toContain("most common first: Spell slinger.");
+  });
 });
 
 describe("buildProseRetryPrompt", () => {
@@ -80,6 +94,15 @@ describe("buildProseRetryPrompt", () => {
     expect(buildProseRetryPrompt("Urabrask the Hidden", TAGS, rejected, "front-loading")).toContain(
       rejected,
     );
+  });
+
+  // The rejected string is model output. Left raw, a reply carrying newlines would read as
+  // fresh instructions rather than as the quotation it is.
+  it("flattens a multi-line rejection onto one quoted line", () => {
+    const messy = "  Kess decks grind,\n\n  leaning on the graveyard.  ";
+    const p = buildProseRetryPrompt("Kess, Dissident Mage", TAGS, messy, "length");
+    expect(p).toContain('It was: "Kess decks grind, leaning on the graveyard."');
+    expect(p).not.toContain("\n\n  leaning");
   });
 
   it("names the rule that was broken, not just that one was", () => {
