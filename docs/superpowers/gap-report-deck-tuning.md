@@ -2,7 +2,8 @@
 
 **Verdict: 🟢 Green. Ready for implementation. No Design round-trip.**
 
-Design self-assessed 🟡 Green with one open item — §6's failure-class labels, which they inferred
+Design self-assessed 🟡 Yellow — their own wording is "Green with one open item" — over §6's
+failure-class labels, which they inferred
 because `docs/superpowers/specs/2026-09-07-deck-tuning-suggestions-design.md` was still on PR #392
 when they drew. That spec has since merged, and this audit answers the open item: **the count is
 five, not four.** Design pre-authorised that correction as a string-only change, and every other

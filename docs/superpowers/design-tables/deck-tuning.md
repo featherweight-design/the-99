@@ -641,7 +641,10 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 | value color | `var(--fg-muted)` `#A89B84` | `var(--fg-muted)` `#A89B84` |
 | the three keys | `games` · `weakest axis` · `this deck is for` | same |
 
-### Slot 2 — Body (state 6: failure ×4)
+### Slot 2 — Body (state 6: failure — four classes drawn)
+
+Design drew four. The merged spec defines five; `interrupted` is undrawn and takes this same shape.
+
 
 | Property | Mobile | Desktop |
 |----------|--------|---------|
@@ -1180,6 +1183,7 @@ Fonts: `Cinzel` (serif, headings), `IBM Plex Sans` (body/buttons), `IBM Plex Mon
 | Tuning panel (S4) | 6b · Timed out | Run exceeded its budget | Tag `timed out`; sentence; kept line (previous suggestions still below, or `keptNone`); primary `Try again`; note `stopped at {done} of {total} read` | done/total reads, game count, card count, whether prior suggestions exist |
 | Tuning panel (S4) | 6c · Unusable answer | Response could not be parsed | Tag `unusable answer`; sentence; kept line; primary `Try again`; note `this one is on us` | — |
 | Tuning panel (S4) | 6d · Nothing held up | Every candidate failed post-generation validation | Tag `nothing held up`; sentence naming the classes of failure; kept line `0 of {rejected} suggestions survived checking. …`; primary `Try again`; note `log another game and there is more to go on` | commander name, rejected-candidate count |
+| Tuning panel (S4) | 6e · Interrupted (undrawn) | A pending run older than the cutoff, written to `failed` by the read-time reaper | Not drawn by Design — the merged spec's fifth class. Takes the identical failure shape: `--danger` tag, one sentence, one survived-line, one `Try again` | a fifth object in `deckTuningCopy.failure` |
 | Suggestion card (S5) | 1 · Open | Suggestion returned and passed validation, not yet acted on | Four rows: pair (cut → add, ownership, price if unowned), rationale, actions + citation chips, consequence in mono before the tap. Phone: pair over two lines, actions as two 44px halves, consequence below | cut name, add name + type line, ownership qty, price if unowned, rationale (long + short), ≥1 citation, consequence string |
 | Suggestion card (S5) | 2 · Applying | Apply pressed, mutation in flight | Card border unchanged; apply button reads `Applying…` and is non-interactive; dismiss disabled; nothing unmounts | — |
 | Suggestion card (S5) | 3 · Applied | Apply mutation succeeded | `1px --success` border, `--success` arrow and add-thumbnail border, add column relabelled `Added`, `applied` stamp, post-swap verdict in the shipped status wording, shopping clause, `Put it back` | post-swap count + status + shopping delta, returned by the mutation |
