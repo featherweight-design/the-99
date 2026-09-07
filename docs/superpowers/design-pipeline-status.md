@@ -60,16 +60,14 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
+| **#10** Deck tuning suggestions from play results | `design/design_handoff_the99_deck_tuning/` (R2) | 🟢 Green at R2, 2026-09-07 | Design self-assessed 🟡 Yellow over one open item — §6's failure-class labels, inferred because the spec was still on PR #392 when they drew. The audit answers it: **the count is five, not four.** `interrupted` was added in review, is written by the read-time reaper, and is user-visible, so it needs a fifth object in `deckTuningCopy.failure` following the shape of the other four — a string change, which Design pre-authorised. Every other finding is eng-resolvable, so nothing returned to Design. The three that matter for the plan: **the price atom exists** (`formatCents` at `src/lib/decks/price.ts:109-114` produces exactly the `$1.20` Design drew, closing their gap 2 with no redraw, and prices come from our own `printing_prices` table rather than a live call, so the manifest's four rows stand); **`Stop` is new and has no spec home**, so a cancelled run must be written under the same `where status = 'pending'` guard the reaper uses or the deck stays blocked, and must not consume the fingerprint gate; and **#9's shipped denominator strings are narrower than either document claims** and must not be "fixed" to match. Take Design's singular `deck_games.note` over the spec's plural, because `decks.notes` already exists. R2 adds one ask to model output — a short rationale alongside the full one, both obeying the counting rules. Gap report: `docs/superpowers/gap-report-deck-tuning.md`; property table: `docs/superpowers/design-tables/deck-tuning.md` |
 
-_Currently empty — **#340** was the last occupant and left on 2026-09-06 when its build started; it
-shipped on 2026-09-07 and sits in ✅ Shipped. The four amendments (**#286**, **#280**, **#287**, **#277**) shipped between
+**#10 is the only thing ready for eng**, and it is the repo's first LLM tier. **#340** was the last
+occupant before it and left on 2026-09-06 when its build started; it shipped on 2026-09-07 and sits
+in ✅ Shipped. The four amendments (**#286**, **#280**, **#287**, **#277**) shipped between
 2026-09-05 and 2026-09-06, in the drawn build order, and sit in ✅ Shipped. **#220** left on
 2026-09-06 when its eleventh and last planned PR merged, **#9** later the same day on PR #332, and
-**#330** the same day on PR #377._
-
-**Nothing is ready for eng to pick up**, and that is a Design-capacity statement rather than a gap:
-the two handoffs that have landed are both in build, and every 🕰️ row that remains is a design
-cycle that has not started.
+**#330** the same day on PR #377.
 
 ---
 
@@ -100,9 +98,12 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 
 | Rank | Ticket | Brief | Path to eng handoff | Why this rank |
 |---|---|---|---|---|
-| 1 | **#10** Design: Deck tuning suggestions from play results | `docs/superpowers/specs/2026-09-07-deck-tuning-suggestions-design.md` | Design owes five surfaces, §10 of the spec: the #9 log form gains an optional note, the #9 history row renders one, deck intent needs a home with empty/editable/app-seeded states, the tuning panel needs a state each for below threshold, ready, generating, results, nothing-changed, and every failure class in §6, and the suggestion card needs its cut/add pair with ownership label, price, rationale, cited evidence, and accepted/dismissed states | Post-v1 and the repo's first LLM tier, but every blocker is gone: #9 shipped 2026-09-06 with the data model, and the spec settles the rulings Design would otherwise have to ask about — apply-plus-verdict, anything-legal with ownership as a label, manual generation behind a fingerprint gate, and #9's no-percentage/denominator rules inherited wholesale |
 
-**#340** and **#342** left on 2026-09-06 when Design delivered their handoffs. **#342** audited
+_Currently empty._
+
+**#10 left on 2026-09-07**, the same day it arrived — its brief merged on PR #392, Design delivered
+all five surfaces at R2 within the day, and the handoff audited 🟢 Green, so it now sits in 🟢
+above. **#340** and **#342** left on 2026-09-06 when Design delivered their handoffs. **#342** audited
 🟡 Yellow at R3 on 2026-09-07, built the same day and now sits in ✅ Shipped. **#340**'s R6 handoff
 audited 🟡 Yellow and it now sits in 🟢 above with its plan.
 
