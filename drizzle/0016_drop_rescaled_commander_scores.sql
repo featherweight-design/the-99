@@ -1,0 +1,30 @@
+-- Data only, no schema change.
+--
+-- #333 left two columns of this table stale, and nothing marks either one.
+--
+-- `score`: the fit formula changed. A commander with no EDHREC synergy data is no longer
+-- rescaled from its 40-point maximum back up to 100, so rows written by the old formula
+-- carry the inflated figure. `getRankedList` in src/lib/recs/ranked-list.ts serves the
+-- rows `loadScores` returns whenever any exist and none are degraded, so a commander
+-- with no synergy read would keep printing 100/100 for every collection already scored.
+--
+-- `slug`: `commanderSlug` now drops the periods in an initialism rather than separating
+-- them, which is what makes EDHREC answer for the nine affected commanders instead of
+-- returning a 403. Persisted rows hold the old `...-a-i-m` form, and `resolveCommanderSlug`
+-- matches the store before deriving anything, so those rows would keep serving the slug
+-- whose lookup fails.
+--
+-- Emptying the cache is what makes both fixes reach collections already scored.
+--
+-- Safe to empty: `commander_scores` is derived data. `getRankedList` recomputes and
+-- re-persists on a miss, and `replaceCollection` already deletes the whole table
+-- unconditionally on every confirmed import. The recompute reads `edhrec_cache`,
+-- which this migration does not touch, so it makes no upstream EDHREC calls.
+--
+-- DELETE rather than TRUNCATE, deliberately. TRUNCATE is the faster whole-table
+-- clear and avoids the per-row WAL, but it takes an ACCESS EXCLUSIVE lock, and
+-- this statement runs inside the production Vercel build while the deployed app
+-- is still serving reads off this table. At a few hundred rows per collection the
+-- WAL volume and the bloat DELETE leaves are both immaterial; blocking every
+-- reader for the length of the migration would not be.
+DELETE FROM "commander_scores";
