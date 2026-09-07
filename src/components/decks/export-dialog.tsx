@@ -26,8 +26,9 @@ interface ExportDialogProps {
   commanderName: string;
   /** Body cards (commander excluded). */
   decklistCards: { name: string; quantity: number }[];
-  /** Unowned cards only. */
-  shoppingCards: { name: string; role?: string; quantity: number }[];
+  /** What the Shopping filter shows: cards you do not own, plus cards you own
+      whose every copy is spoken for by another deck. Never a basic land. */
+  shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
   open: boolean;
   onClose: () => void;
 }
@@ -154,7 +155,7 @@ interface DialogContentProps {
   tab: Tab;
   setTab: (t: Tab) => void;
   activeText: string;
-  shoppingCards: { name: string; role?: string; quantity: number }[];
+  shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
   commanderLine: string;
   bodyLines: string[];
   totalCards: number;
@@ -452,9 +453,17 @@ function DialogContent({
                   >
                     {card.quantity}
                   </span>
-                  {/* Unowned dot (desktop) */}
+                  {/* Ownership dot (desktop). The list is no longer unowned-only
+                      — a spoken-for row is a card you own whose copies are all
+                      claimed elsewhere — so the dot reads the row, as the
+                      decklist's does, and carries the word the dot alone
+                      cannot now imply. */}
                   {!isMobile && (
-                    <OwnershipDot owned={false} className="w-[7px] h-[7px]" />
+                    <OwnershipDot
+                      owned={card.owned}
+                      className="w-[7px] h-[7px]"
+                      label={card.owned ? "Owned" : "Not owned"}
+                    />
                   )}
                   {/* Card name */}
                   <span

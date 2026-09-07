@@ -1057,7 +1057,12 @@ export function BuilderShell({
               // never saw.
               shoppingCards={cards
                 .filter(isShoppingCard)
-                .map((c) => ({ name: c.name, role: c.role, quantity: c.quantity }))}
+                .map((c) => ({
+                  name: c.name,
+                  role: c.role,
+                  quantity: c.quantity,
+                  owned: c.owned,
+                }))}
               open={exportOpen}
               onClose={() => setExportOpen(false)}
             />
