@@ -136,6 +136,16 @@ export const planeCopy = {
     heldAside: (matches: number) =>
       matches === 1 ? "1 match, 0 shown" : `${n(matches)} matches, 0 shown`,
 
+    // 2b · The same state with more than one match. The singular heading names a commander
+    // and the body then says "It", which would be a claim about one of several — so a set
+    // counts instead, and the body names the control the same way the live-list plural does.
+    heldHeadingMany: (matches: number) =>
+      `${n(matches)} matches are here — filters are holding them back`,
+    heldMany: (excluded: number, control: string) =>
+      excluded === 1
+        ? `1 of them is excluded by ${control}.`
+        : `${n(excluded)} of them are excluded by ${control}.`,
+
     // 3 · Some matches survive: an aside above a live list. `also matches` rather than
     // `matches`, because the rows underneath are matches too.
     asideMore: (excluded: number, control: string) =>

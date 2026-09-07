@@ -60,14 +60,27 @@ export function resolveExcludedReport(input: {
   const more = (count: number, control: string) =>
     planeCopy.search.asideMore(count, control);
 
+  // With nothing on screen the singular pair names a commander and then says "It". That is a
+  // claim about one row of several, and the tier's diagnosis (an identity, a percentage) is
+  // read off the first match, so it is not merely imprecise but wrong for the rest. Above one
+  // match the state counts and names the control instead.
+  const heading = (name: string) =>
+    held
+      ? total > 1
+        ? planeCopy.search.heldHeadingMany(total)
+        : planeCopy.search.heldHeading(name)
+      : null;
+  const heldBody = (rows: number, control: string, one: string) =>
+    total > 1 ? planeCopy.search.heldMany(rows, control) : one;
+
   const scope = server.filter((m) => m.cause === "scope");
   if (scope.length > 0) {
     return {
       cause: "scope",
       name: held || scope.length > 1 ? null : scope[0].name,
-      heading: held ? planeCopy.search.heldHeading(scope[0].name) : null,
+      heading: heading(scope[0].name),
       body: held
-        ? copy.heldScope
+        ? heldBody(scope.length, copy.control.scope, copy.heldScope)
         : scope.length === 1
           ? copy.scopeAlso(scope[0].name)
           : more(scope.length, copy.control.scope),
@@ -90,11 +103,15 @@ export function resolveExcludedReport(input: {
     return {
       cause: tier2.mode ? "join" : "colors",
       name: held || tier2.rows.length > 1 ? null : first.name,
-      heading: held ? planeCopy.search.heldHeading(first.name) : null,
+      heading: heading(first.name),
       body: held
-        ? tier2.mode
-          ? copy.heldJoin(colors, first.colorIdentity)
-          : copy.heldColors(colors, first.colorIdentity)
+        ? heldBody(
+            tier2.rows.length,
+            tier2.mode ? copy.control.join(colors) : copy.control.colors(colors),
+            tier2.mode
+              ? copy.heldJoin(colors, first.colorIdentity)
+              : copy.heldColors(colors, first.colorIdentity),
+          )
         : tier2.rows.length === 1
           ? single
           : more(
@@ -114,9 +131,9 @@ export function resolveExcludedReport(input: {
     return {
       cause: "pool",
       name: held || pool.length > 1 ? null : pool[0].name,
-      heading: held ? planeCopy.search.heldHeading(pool[0].name) : null,
+      heading: heading(pool[0].name),
       body: held
-        ? copy.heldPool(freeCards)
+        ? heldBody(pool.length, copy.control.pool, copy.heldPool(freeCards))
         : pool.length === 1
           ? copy.poolAlso(pool[0].name, freeCards)
           : more(pool.length, copy.control.pool),
@@ -131,9 +148,9 @@ export function resolveExcludedReport(input: {
     return {
       cause: "floor",
       name: held || floor.length > 1 ? null : floor[0].name,
-      heading: held ? planeCopy.search.heldHeading(floor[0].name) : null,
+      heading: heading(floor[0].name),
       body: held
-        ? copy.heldFloor(pct, FLOOR_PCT)
+        ? heldBody(floor.length, copy.control.floor(FLOOR_PCT), copy.heldFloor(pct, FLOOR_PCT))
         : floor.length === 1
           ? copy.floorAlso(floor[0].name, pct, FLOOR_PCT)
           : more(floor.length, copy.control.floor(FLOOR_PCT)),
@@ -147,9 +164,9 @@ export function resolveExcludedReport(input: {
   return {
     cause: "unmeasured",
     name: held || unmeasured.length > 1 ? null : unmeasured[0].name,
-    heading: held ? planeCopy.search.heldHeading(unmeasured[0].name) : null,
+    heading: heading(unmeasured[0].name),
     body: held
-      ? copy.heldUnmeasured
+      ? heldBody(unmeasured.length, copy.control.unmeasured, copy.heldUnmeasured)
       : unmeasured.length === 1
         ? copy.unmeasuredAlso(unmeasured[0].name)
         : more(unmeasured.length, copy.control.unmeasured),

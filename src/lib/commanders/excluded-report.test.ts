@@ -95,6 +95,32 @@ describe("resolveExcludedReport", () => {
     expect(out?.body).toBe(planeCopy.excluded.heldScope);
   });
 
+  // The singular held pair names a commander and then diagnoses it from that one row's
+  // identity, which is a claim the other matches did not make.
+  it("counts rather than names when several matches are held back", () => {
+    const out = resolve({
+      colour: [colour(), colour({ name: "Muldrotha, the Gravetide" })],
+      colors: ["R"],
+      listHasRows: false,
+    });
+    expect(out?.heading).toBe(planeCopy.search.heldHeadingMany(2));
+    expect(out?.heading).not.toContain("Yarok");
+    expect(out?.body).toBe(planeCopy.search.heldMany(2, planeCopy.excluded.control.colors(["R"])));
+    expect(out?.body).not.toContain("Blue");
+    expect(out?.aside).toBe(planeCopy.search.heldAside(2));
+  });
+
+  it("names the tier's own count when a second cause is also holding a match back", () => {
+    const out = resolve({
+      server: [server({ cause: "scope", pct: null }), server({ oracleId: "b" })],
+      listHasRows: false,
+    });
+    // Two matches, one of them the outermost cause: the aside counts both, the body only
+    // the ones the named control would return.
+    expect(out?.aside).toBe(planeCopy.search.heldAside(2));
+    expect(out?.body).toBe(planeCopy.search.heldMany(1, planeCopy.excluded.control.scope));
+  });
+
   it("prints the pool's denominator, not the row's percentage", () => {
     const out = resolve({ server: [server({ cause: "pool" })], freeCards: 1190 });
     expect(out?.body).toContain("1,190");
