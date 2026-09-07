@@ -748,6 +748,19 @@ describe("DiscoveryView", () => {
     expect(container.textContent).not.toContain(search.noneHeading("z"));
   });
 
+  // Clearing the colours would surface nothing, because nothing in the list is
+  // named that. The colour state offers a control that changes the screen, so a
+  // query that empties the list on its own outranks it.
+  it("does not blame the colours for a query that matches nothing either", async () => {
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.change(field(), { target: { value: "z" } });
+    await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("z")));
+    expect(screen.queryByText(empty.filteredHeading)).toBeNull();
+  });
+
   // A one-character query matches most of the index, so it never asks.
   it("asks the server only about a query worth a round trip", async () => {
     render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);

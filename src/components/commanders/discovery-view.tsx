@@ -414,12 +414,16 @@ export function DiscoveryView({
   // waits on the same lookup: with a query in the field, blaming the colours is
   // one more conclusion the server has not confirmed yet. It outranks the
   // unchecked-index state below, because the colours are a cause this reader can
-  // act on and the unchecked index is not.
+  // act on and the unchecked index is not — but only where they ARE the cause.
+  // A query naming nothing in the list empties it whatever the pips are set to,
+  // so this state would offer a control that changes nothing, and its sentence
+  // counts a population the query has already emptied.
   const showFilteredEmpty =
     !floorReplacedList &&
     !showHeldEmpty &&
     !showSearchEmpty &&
     !pending &&
+    (trimmedQuery === "" || nameMatchesAny) &&
     colors.length > 0 &&
     filtered.length === 0;
   // The list is empty, the reader is owed a sentence, and the index cannot
