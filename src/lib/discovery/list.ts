@@ -38,7 +38,11 @@ export type DiscoveryItem = {
   unplayedLabels: string[];
   unplayedCount: number;
   nearestDeck: { deckName: string; sharedLabels: string[]; extraShared: number } | null;
-  floorPct: number | null;
+  /** This commander's own support percentage — `ownedSupport` over
+      `edhrecTotal`. Named for what it measures rather than for the threshold it
+      is measured against: `floorPct` is the threshold, and the two figures
+      appear in the same sentence. */
+  supportPct: number | null;
 };
 
 export type DiscoveryList = {
@@ -49,6 +53,11 @@ export type DiscoveryList = {
   candidateCount: number;
   /** Collection size the subtitle reads against. */
   cardsRead: number;
+  /** Cards in the pool this ranking actually scored. Equal to `cardsRead` under
+      `avail: "all"` and smaller under `"free"`. The pool empty state names it,
+      because "you own 3,114 cards" and "1,190 of them are free" are different
+      claims and the state is about the second. */
+  freePoolSize: number;
   /** Highest floor percentage among candidates the floor excluded — the number
       `empty.floorBody` needs so 30% does not read as arbitrary. Null when the
       floor excluded nothing, or when no candidate had a denominator. */
@@ -58,6 +67,16 @@ export type DiscoveryList = {
       floor took them all" when it is not — the empty states render a different
       thing for each, and `bestPct` alone cannot tell them apart. */
   floorExcluded: number;
+  /** Of `floorExcluded`, how many would have cleared the floor against the whole
+      collection. Always 0 under `avail: "all"`, where the two pools are the same
+      pool. This is what makes a pool exclusion a sub-case of the floor rather
+      than a fifth tier: the sentence changes, the precedence does not. */
+  poolExcluded: number;
+  /** Candidates the floor could not measure at all — no tags, or no EDHREC
+      denominator. Neither ranked nor floor-excluded, and the third term the
+      exclusion line needs for `candidateCount - items - floorExcluded -
+      unmeasured` to come to zero. Always 0 under `fit`, which excludes nothing. */
+  unmeasured: number;
   hasDecks: boolean;
   /** False when the availability read failed. The ranking still stands, but under
       `avail: "free"` it scored the whole collection: `freePool` keeps ids the map
@@ -77,6 +96,7 @@ export function assembleDiscovery(input: {
   prices: Map<string, PriceAggRow>;
   rollup: PoolRollup;
   cardsRead: number;
+  freePoolSize: number;
   sort: "fit" | "new";
   availOk: boolean;
 }): DiscoveryList {
@@ -106,7 +126,7 @@ export function assembleDiscovery(input: {
       unplayedLabels: unplayed.map((t) => t.label),
       unplayedCount: unplayed.length,
       nearestDeck: nearestDeck(c.tags, orderedDecks),
-      floorPct: floorPct(c),
+      supportPct: floorPct(c),
     };
   });
 
@@ -119,8 +139,8 @@ export function assembleDiscovery(input: {
   // and a floor that cannot be measured was never cleared or missed. Counting it
   // as floor-excluded would leave `floorExcluded > 0` with a null `bestPct`, and
   // the floor empty state would promise a nearest miss it cannot name.
-  const measurable = (c: { tagTotal: number; floorPct: number | null }) =>
-    c.tagTotal > 0 && c.floorPct != null;
+  const measurable = (c: { tagTotal: number; supportPct: number | null }) =>
+    c.tagTotal > 0 && c.supportPct != null;
 
   const active =
     input.sort === "new"
@@ -131,13 +151,26 @@ export function assembleDiscovery(input: {
     input.sort === "new"
       ? enriched.filter((c) => measurable(c) && !clearsFloor(c))
       : [];
-  // Every member has a `floorPct` by construction; the null branch is the
+  // Every member has a `supportPct` by construction; the null branch is the
   // narrowing, not a case.
   const bestPct = excluded.reduce<number | null>(
     (best, c) =>
-      c.floorPct == null ? best : best == null ? c.floorPct : Math.max(best, c.floorPct),
+      c.supportPct == null ? best : best == null ? c.supportPct : Math.max(best, c.supportPct),
     null,
   );
+
+  // The sub-group of the floor-excluded that a full-collection ranking would
+  // have kept: they are missing from this list because the pool is the free one,
+  // not because the player lacks the cards. `clearsFloor` rather than a second
+  // comparison, so the two answers cannot drift apart.
+  //
+  // Read from the candidate rows rather than carried on the enriched ones: it is
+  // a property of the commanders that left, and putting it on the item would
+  // ship a constant to the client — every surviving row clears both pools.
+  const collectionSupport = new Map(input.candidates.map((c) => [c.oracleId, c.collectionSupport]));
+  const poolExcluded = excluded.filter((c) =>
+    clearsFloor({ ownedSupport: collectionSupport.get(c.oracleId)!, edhrecTotal: c.edhrecTotal }),
+  ).length;
 
   const ordered = [...active].sort(input.sort === "new" ? byNovelty : byFit);
 
@@ -145,8 +178,11 @@ export function assembleDiscovery(input: {
     items: ordered.map((item, i) => ({ ...item, rank: i + 1 })),
     candidateCount: input.candidates.length,
     cardsRead: input.cardsRead,
+    freePoolSize: input.freePoolSize,
     bestPct,
     floorExcluded: excluded.length,
+    poolExcluded,
+    unmeasured: input.candidates.length - active.length - excluded.length,
     hasDecks: input.playedTags.length > 0,
     availOk: input.availOk,
     deckIdentities: input.playedTags.map((d) => d.colorIdentity),
@@ -199,7 +235,14 @@ export async function loadDiscovery(
 ): Promise<DiscoveryList> {
   const { collection, availability, scored, availOk } =
     await loadDiscoveryPool(userId, opts.avail);
-  const candidates = await loadCandidates(userId, scored.map((c) => c.oracleId));
+  // The whole collection is passed only when it is not the pool being ranked:
+  // under `avail: "all"` the second aggregate would re-derive a column already
+  // in the projection.
+  const candidates = await loadCandidates(
+    userId,
+    scored.map((c) => c.oracleId),
+    opts.avail === "free" ? collection.map((c) => c.oracleId) : undefined,
+  );
 
   const [prices, playedTags] = await Promise.all([
     loadPrices(candidates.map((c) => c.oracleId)),
@@ -214,6 +257,7 @@ export async function loadDiscovery(
     prices,
     rollup: buildPoolRollup(scored, availability),
     cardsRead: collection.length,
+    freePoolSize: scored.length,
     // Ruling 8's gate, applied here rather than at the route: novelty measures
     // distance from what you have built, and `playedTags` is already the answer
     // to whether anything has been. Asking the route to check would mean a second

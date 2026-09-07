@@ -396,9 +396,9 @@ export function DiscoveryRow({
 
         {/* The floor explains presence, never position, so it is never added to
             the figure above it. */}
-        {!fit && item.floorPct !== null && (
+        {!fit && item.supportPct !== null && (
           <p className="m-0 font-mono" style={{ fontSize: 10.5, color: "var(--fg-faint)" }}>
-            {justify.floorNoteShort(item.floorPct)}
+            {justify.floorNoteShort(item.supportPct)}
           </p>
         )}
 
@@ -533,14 +533,14 @@ export function DiscoveryRow({
 
               {fit && <OverlapTrack pct={overlapPct} width="100%" />}
 
-              {!fit && item.floorPct !== null && (
+              {!fit && item.supportPct !== null && (
                 <p
                   className="m-0 font-mono"
                   style={{ fontSize: 11.5, lineHeight: 1.5, color: "var(--fg-faint)" }}
                 >
                   <Emphasised
-                    text={justify.floorNote(item.floorPct)}
-                    values={[`${item.floorPct}%`]}
+                    text={justify.floorNote(item.supportPct)}
+                    values={[`${item.supportPct}%`]}
                     color="var(--fg-body)"
                   />
                 </p>

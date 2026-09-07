@@ -22,7 +22,7 @@ const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
   unplayedLabels: ["elves", "tokens", "aristocrats", "counters"],
   unplayedCount: 4,
   nearestDeck: null,
-  floorPct: 47,
+  supportPct: 47,
   ...over,
 });
 

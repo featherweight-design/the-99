@@ -22,8 +22,11 @@ const list = (over: Partial<DiscoveryList> = {}): DiscoveryList => ({
   items: [],
   candidateCount: 0,
   cardsRead: 2805,
+  freePoolSize: 2805,
   bestPct: null,
   floorExcluded: 0,
+  poolExcluded: 0,
+  unmeasured: 0,
   hasDecks: true,
   deckIdentities: [],
   availOk: true,
@@ -49,7 +52,7 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   unplayedLabels: [],
   unplayedCount: 0,
   nearestDeck: null,
-  floorPct: null,
+  supportPct: null,
   ...over,
 });
 

@@ -13,6 +13,11 @@ export type CandidateSqlRow = {
   edhrecTotal: number | null;
   tags: EdhrecTag[];
   ownedSupport: number;
+  /** The same count over the player's whole collection rather than over the
+      pool being ranked. Equal to `ownedSupport` unless the ranking is scoped to
+      the free pool, which is the only case where the two can differ — and the
+      only case the pool exclusion sentences describe. */
+  collectionSupport: number;
 };
 
 export type CandidateRow = CandidateSqlRow;
@@ -43,12 +48,19 @@ export function shapeCandidate(r: CandidateSqlRow): CandidateRow {
  * match therefore lives inside a derived table rather than in a second join on
  * the outer query — drizzle emits joins in call order, so an inner join written
  * after the left join would filter the left join's NULL rows back out.
+ *
+ * `collectionOracleIds` is the whole collection, and is passed only when the
+ * ranking is scoped to a smaller pool. Omitting it is not a degraded read: when
+ * the pool *is* the collection the two counts are identical by construction, so
+ * the second derived table would be a second aggregate scan of 240,000 rows to
+ * re-derive a column already in the projection.
  */
 export async function loadCandidates(
   userId: string,
   ownedOracleIds: string[],
+  collectionOracleIds?: string[],
 ): Promise<CandidateRow[]> {
-  const rows = await db
+  const base = db
     .select({
       oracleId: commanderSupport.commanderOracleId,
       name: cards.name,
@@ -57,11 +69,16 @@ export async function loadCandidates(
       edhrecTotal: commanderSupport.edhrecTotal,
       tags: commanderSupport.tags,
       ownedSupport: ownedSupportColumn(),
+      collectionSupport: collectionSupportColumn(collectionOracleIds != null),
     })
     .from(commanderSupport)
     .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
-    .leftJoin(ownedSupportTable(ownedOracleIds), OWNED_SUPPORT_ON)
-    .where(unbuiltCommanders(userId));
+    .leftJoin(ownedSupportTable(ownedOracleIds), OWNED_SUPPORT_ON);
+
+  const rows = await (collectionOracleIds != null
+    ? base.leftJoin(collectionSupportTable(collectionOracleIds), COLLECTION_SUPPORT_ON)
+    : base
+  ).where(unbuiltCommanders(userId));
 
   return rows.map(shapeCandidate);
 }
@@ -102,6 +119,17 @@ const ownedSupportColumn = () =>
 
 const OWNED_SUPPORT_ON = sql`osc.commander_oracle_id = ${commanderSupport.commanderOracleId}`;
 
+// Reads the second derived table when there is one, and the first when there is
+// not — the two counts are the same number whenever the ranked pool is the whole
+// collection, so the fallback is the answer rather than a placeholder for it.
+const collectionSupportColumn = (joined: boolean) =>
+  (joined
+    ? sql<number>`coalesce(csa.collection_support, 0)`
+    : sql<number>`coalesce(osc.owned_support, 0)`
+  ).as("collection_support");
+
+const COLLECTION_SUPPORT_ON = sql`csa.commander_oracle_id = ${commanderSupport.commanderOracleId}`;
+
 /**
  * The owned-support count, aggregated INSIDE a derived table so the outer query
  * has no GROUP BY at all. Grouping outside meant sorting one row per owned
@@ -124,6 +152,30 @@ function ownedSupportTable(ownedOracleIds: string[]) {
                 join unnest(${owned}::uuid[]) as owned(oracle_id)
                   on owned.oracle_id = csc.oracle_id
                group by csc.commander_oracle_id) as osc`;
+}
+
+/**
+ * The same aggregate over the whole collection, under its own derived-table
+ * alias so both counts arrive in one round trip. Aggregating inside keeps the
+ * outer query free of a GROUP BY, and each derived table yields at most one row
+ * per commander, so the second left join cannot multiply the result.
+ *
+ * It projects a raw count and no predicate. The floor comparison stays in
+ * `clearsFloor`, which guards two cases a SQL `>=` gets wrong: a null
+ * `edhrec_total` yields NULL rather than false, and a zero one makes `0 >= 0`
+ * true where an unmeasurable commander must clear nothing. Restating the floor
+ * here would also let the two spellings drift, and a row classified one way by
+ * SQL and the other by the ranking prints an exclusion sentence contradicting
+ * the list it sits above.
+ */
+function collectionSupportTable(collectionOracleIds: string[]) {
+  const owned = sql.param(collectionOracleIds);
+  return sql`(select csc.commander_oracle_id,
+                     count(distinct csc.oracle_id)::int as collection_support
+                from ${commanderSupportCards} csc
+                join unnest(${owned}::uuid[]) as owned(oracle_id)
+                  on owned.oracle_id = csc.oracle_id
+               group by csc.commander_oracle_id) as csa`;
 }
 
 function unbuiltCommanders(userId: string) {
