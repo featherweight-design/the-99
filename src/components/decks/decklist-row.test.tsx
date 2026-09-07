@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import type { Availability } from "../../lib/decks/availability";
@@ -7,6 +7,7 @@ import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provider";
+import { spokenManaCost } from "../../lib/copy/card-surfaces";
 
 const { addCardToDeck, removeCardFromDeck, keepAutoCard } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -532,5 +533,66 @@ describe("DecklistRow auto tag (#130)", () => {
     expect(
       screen.getAllByRole("button", { name: /Keep Sol Ring in this deck/ }),
     ).toHaveLength(1);
+  });
+});
+
+// #350 — the printed cost on the row.
+describe("DecklistRow cost pips (#350)", () => {
+  const withCost = { ...card, manaCost: "{2}{U}{B}" } as DeckDetailCard;
+  const rowShell = () => document.querySelector(".group")!;
+
+  it("draws the cost in two runs, one per width, so it is spoken once", () => {
+    renderRow(<DecklistRow deckId="d1" card={withCost} />);
+    const spoken = screen.getAllByText(spokenManaCost("{2}{U}{B}"));
+    expect(spoken).toHaveLength(2);
+    // `hidden` is display:none, so the run that is not drawn is not in the
+    // accessibility tree either — which is the whole reason two runs is one
+    // utterance rather than two.
+    const wrappers = spoken.map((el) => el.parentElement!.className);
+    expect(wrappers.some((c) => c.includes("hidden") && c.includes("md:flex"))).toBe(true);
+    expect(wrappers.some((c) => c.includes("md:hidden"))).toBe(true);
+  });
+
+  it("grows the phone row to 52px for the meta line it now carries", () => {
+    renderRow(<DecklistRow deckId="d1" card={withCost} />);
+    expect(rowShell().className).toContain("min-h-[52px]");
+  });
+
+  it("leaves a costless card at 44px", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, manaCost: null } as DeckDetailCard} />);
+    expect(rowShell().className).toContain("min-h-[44px]");
+  });
+
+  it("holds the desktop track at a fixed width whatever the cost costs", () => {
+    renderRow(<DecklistRow deckId="d1" card={withCost} />);
+    const track = document.querySelector(".hidden.md\\:flex > span")!;
+    expect(track).toHaveStyle({ width: "40px" });
+  });
+
+  it("puts the cost alone on the All tab's meta line, and before the figure in Shopping", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...withCost, owned: false }} />);
+    expect(screen.queryByText(/edhrec/)).toBeNull();
+    cleanup();
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...withCost, owned: false }} shoppingFigure={24} inShopping />,
+    );
+    const line = screen.getByText(/edhrec/).closest("span.md\\:hidden")!;
+    expect(line.textContent).toContain("edhrec");
+    expect(line.querySelector("span[aria-hidden]")).not.toBeNull();
+  });
+});
+
+// #350 — the All tab collapses the tag; Shopping keeps it whole.
+describe("DecklistRow buy tag density (#350)", () => {
+  it("collapses to $ on the All tab", () => {
+    renderRow(<DecklistRow deckId="d1" card={{ ...card, owned: false }} />);
+    expect(screen.getByText("$")).toBeInTheDocument();
+  });
+
+  it("keeps the word on the Shopping list, which is being paid from", () => {
+    renderRow(
+      <DecklistRow deckId="d1" card={{ ...card, owned: false }} shoppingFigure={24} inShopping />,
+    );
+    expect(screen.queryByText("$")).toBeNull();
   });
 });

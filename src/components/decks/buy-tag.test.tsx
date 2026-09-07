@@ -229,3 +229,32 @@ describe("BuyTag figure slot", () => {
     expect(screen.getByText("$2.10")).not.toHaveStyle({ minWidth: "58px" });
   });
 });
+
+describe("BuyTag collapsed density", () => {
+  // The All tab is a list being scanned. What collapses is the drawing only —
+  // the word and the figure are what the tag is for, and dropping either from
+  // the reading order would make the glyph mean nothing to a reader who cannot
+  // see it.
+  it("draws a bare $ and speaks the word and the figure in full", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} density="collapsed" />);
+    expect(screen.getByText("$")).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.unowned.tag)).toBeInTheDocument();
+    expect(screen.getByText("$2.10")).toBeInTheDocument();
+  });
+
+  it("still speaks the word when there is no price to speak", () => {
+    render(<BuyTag variant="row" density="collapsed" />);
+    expect(screen.getByText("$")).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.unowned.tag)).toBeInTheDocument();
+  });
+
+  it("speaks sold out, which is a fact about the shop and never collapses away", () => {
+    render(<BuyTag variant="row" price={SOLD_OUT} newestAsOf={NEWEST} density="collapsed" />);
+    expect(screen.getByText(priceCopy.tag.soldOut)).toBeInTheDocument();
+  });
+
+  it("is the full tag by default", () => {
+    render(<BuyTag variant="row" price={PRICED} newestAsOf={NEWEST} />);
+    expect(screen.queryByText("$")).toBeNull();
+  });
+});
