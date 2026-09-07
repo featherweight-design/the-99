@@ -116,6 +116,64 @@ describe("generateCommanderProse", () => {
     expect(r.fresh).toBe(1);
   });
 
+  // The summary a run prints is only actionable if it says which rule did the rejecting,
+  // and the four rules are fixed by four different changes to the prompt.
+  it("tallies rejected attempts by the rule that rejected them", async () => {
+    const r = await generateCommanderProse({
+      complete: async () => "Kess decks are good.",
+      loadCandidates: async () => [candidate()],
+      write: async () => {},
+      attempts: 2,
+    });
+    expect(r.rejectedBy).toEqual({ length: 2, sentences: 0, "front-loading": 0, hedge: 0 });
+  });
+
+  it("counts attempts, not commanders, so one commander can fill the tally", async () => {
+    const r = await generateCommanderProse({
+      complete: async () =>
+        "Urabrask the Hidden decks tend to overwhelm opponents early with haste-enabled aggro, usually backed by burn and extra combat steps to close games fast.",
+      loadCandidates: async () => [candidate()],
+      write: async () => {},
+      attempts: 3,
+    });
+    expect(r).toMatchObject({ rejected: 1 });
+    expect(r.rejectedBy["front-loading"]).toBe(3);
+  });
+
+  // Three attempts at the identical prompt returned three identical sentences in the run
+  // that prompted this, so a retry has to be told what was wrong with the last one.
+  it("carries the rejection back into the retry's prompt", async () => {
+    const prompts: string[] = [];
+    await generateCommanderProse({
+      complete: async (p) => {
+        prompts.push(p);
+        return "Kess decks are good.";
+      },
+      loadCandidates: async () => [candidate()],
+      write: async () => {},
+      attempts: 2,
+    });
+    expect(prompts[0]).not.toContain("A previous attempt was rejected");
+    expect(prompts[1]).toContain("A previous attempt was rejected: Kess decks are good.");
+  });
+
+  // Nothing came back, so there is nothing to feed back — a retry after a failed call must
+  // not quote a string the model never produced.
+  it("asks again with the first prompt when the call itself failed", async () => {
+    const prompts: string[] = [];
+    let call = 0;
+    await generateCommanderProse({
+      complete: async (p) => {
+        prompts.push(p);
+        return ++call === 1 ? null : ACCEPTED;
+      },
+      loadCandidates: async () => [candidate()],
+      write: async () => {},
+      attempts: 2,
+    });
+    expect(prompts[1]).not.toContain("A previous attempt was rejected");
+  });
+
   it("regenerates a row whose inputs have moved on", async () => {
     const r = await generateCommanderProse({
       complete: async () => ACCEPTED,

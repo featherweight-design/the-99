@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { acceptProse, CLAIM_BY, HARD_MAX, OK_MAX, OK_MIN } from "./accept";
+import { acceptProse, checkProse, CLAIM_BY, HARD_MAX, OK_MAX, OK_MIN } from "./accept";
 
 // The contract's own worked example: 120 characters, first clause boundary at 49.
 const PASSING =
@@ -80,5 +80,59 @@ describe("acceptProse", () => {
 
   it("trims before measuring", () => {
     expect(acceptProse(`  ${PASSING}\n`)).toBe(true);
+  });
+});
+
+// The reason exists so a run can report which rule rejected it. A rejection filed under the
+// wrong rule is worse than none: it sends the next prompt change at the wrong constraint.
+describe("checkProse", () => {
+  it("names no rule for a string that satisfies the contract", () => {
+    expect(checkProse(PASSING)).toBeNull();
+  });
+
+  it("names the band for a string below the floor", () => {
+    expect(checkProse("Krenko decks tend to go wide with tokens.")).toBe("length");
+  });
+
+  it("names the band for a string over the hard cap", () => {
+    expect(checkProse(`${PASSING} `.repeat(3))).toBe("length");
+  });
+
+  it("names the sentence count for two sentences", () => {
+    expect(
+      checkProse(
+        "Kess decks tend to cast the same few spells twice. They lean on cheap draw and graveyard value rather than one combo line.",
+      ),
+    ).toBe("sentences");
+  });
+
+  // The rule the shipped run actually failed, ~100 times over: an opening that spends the
+  // whole claim budget on the subject leaves the first comma far past the threshold.
+  it("names front-loading for a claim that lands after the threshold", () => {
+    const late =
+      "Urabrask the Hidden decks tend to overwhelm opponents early with haste-enabled aggro, usually backed by burn and extra combat steps to close games fast.";
+    expect(late.search(/[,;—]/)).toBeGreaterThan(CLAIM_BY);
+    expect(checkProse(late)).toBe("front-loading");
+  });
+
+  it("names front-loading for a sentence carrying no break at all", () => {
+    const unbroken =
+      "Dragonlord Kolaghan decks tend to swarm the board with flying dragons and push hasty attacks that close a game out quickly.";
+    expect(unbroken.search(/[,;—]/)).toBe(-1);
+    expect(checkProse(unbroken)).toBe("front-loading");
+  });
+
+  it("names the hedge for a confident assertion", () => {
+    expect(
+      checkProse(
+        "Kess decks will cast the same few spells twice, leaning on cheap draw and graveyard value rather than one combo line.",
+      ),
+    ).toBe("hedge");
+  });
+
+  // Four rules, first failure wins, so a string breaking two is filed under the earlier one.
+  // Pinned because the tally the run prints is only readable if that order is fixed.
+  it("reports the earlier rule when a string breaks two", () => {
+    expect(checkProse("Kess decks win.")).toBe("length");
   });
 });

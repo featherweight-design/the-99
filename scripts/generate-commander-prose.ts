@@ -45,6 +45,13 @@ generateCommanderProse({ complete })
       `Wrote ${r.written} sentences; ${r.fresh} already current, ${r.suppressed} suppressed, ` +
       `${r.rejected} rejected by the contract, ${r.failed} failed to generate.`,
     );
+    // Per attempt, not per commander, and broken out by rule. The run that prompted this
+    // rejected nearly everything it generated, and working out which of the four rules did
+    // it meant counting characters by hand off a wall of warnings.
+    const byRule = Object.entries(r.rejectedBy)
+      .map(([reason, n]) => `${reason} ${n}`)
+      .join(", ");
+    console.log(`Rejected attempts by rule: ${byRule}.`);
     // A run where the model was reachable for nobody is a broken run wearing a green tick.
     if (r.written === 0 && r.failed > 0) {
       console.error("Every generation failed — the model was unreachable.");

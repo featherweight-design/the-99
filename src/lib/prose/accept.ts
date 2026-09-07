@@ -18,16 +18,30 @@ export const HARD_MAX = 190;
 export const CLAIM_BY = 55;
 
 /** The index is a distribution, so the hedge is the honest verb. A proxy for the
-    confident-assertion failure mode, not a guarantee against one. */
-const HEDGES = /\b(tend|tends|usually|mostly|often|typically)\b/i;
+    confident-assertion failure mode, not a guarantee against one.
+ *
+ *  "tending" is here because the model reaches for it and the word is the same hedge:
+ *  rejecting "decks focus on value, tending to flood the board" costs a whole generation
+ *  to buy back a sentence that was never confident in the first place. */
+const HEDGES = /\b(tend|tends|tending|usually|mostly|often|typically)\b/i;
 
 /** Periods that belong to a name rather than to a sentence: an honorific, or a letter
     standing alone inside an initialism. */
 const NAME_PERIOD = /\b(?:Mr|Mrs|Ms|Dr|St|Sgt|Capt|Lt)\.|\b[A-Z]\./g;
 
-export function acceptProse(s: string): boolean {
+/** Which check a string failed. One per string: the first failure ends the run. */
+export type ProseRejection = "length" | "sentences" | "front-loading" | "hedge";
+
+/**
+ * The failing check, or null when the string satisfies the contract.
+ *
+ * The reason is carried out rather than collapsed to a boolean because a run that rejects
+ * most of what it generates is a fixable run only if the log says which of four rules did
+ * the rejecting — and three of the four are fixed by a different change to the prompt.
+ */
+export function checkProse(s: string): ProseRejection | null {
   const t = s.trim();
-  if (t.length < OK_MIN || t.length > HARD_MAX) return false;
+  if (t.length < OK_MIN || t.length > HARD_MAX) return "length";
 
   // Exactly one sentence: a second one in this slot would be half-clamped on the card.
   // A period inside a commander's name is not a sentence end, and the subject of every
@@ -37,14 +51,18 @@ export function acceptProse(s: string): boolean {
     .replace(NAME_PERIOD, (m) => m.slice(0, -1))
     .split(/[.!?](?:\s|$)/)
     .filter((p) => p.trim().length > 0);
-  if (sentences.length !== 1) return false;
+  if (sentences.length !== 1) return "sentences";
 
   // Front-loading. A comma-free sentence passes only if it is short end to end, which
   // in practice means it fails the floor above — the branch exists so a 115-character
   // sentence whose only break is an em dash at 50 is not rejected.
   const firstBreak = t.search(/[,;—]/);
   const claimEnd = firstBreak === -1 ? t.length - 1 : firstBreak;
-  if (claimEnd > CLAIM_BY) return false;
+  if (claimEnd > CLAIM_BY) return "front-loading";
 
-  return HEDGES.test(t);
+  return HEDGES.test(t) ? null : "hedge";
+}
+
+export function acceptProse(s: string): boolean {
+  return checkProse(s) === null;
 }

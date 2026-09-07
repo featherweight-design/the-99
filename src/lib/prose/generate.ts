@@ -2,8 +2,13 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderSupport } from "../../db/schema";
 import type { EdhrecTag } from "../edhrec/parse";
-import { acceptProse } from "./accept";
-import { buildProsePrompt, PROSE_PROMPT_VERSION, proseInputHash } from "./prompt";
+import { checkProse, type ProseRejection } from "./accept";
+import {
+  buildProsePrompt,
+  buildProseRetryPrompt,
+  PROSE_PROMPT_VERSION,
+  proseInputHash,
+} from "./prompt";
 import { isSuppressed } from "./suppressed";
 
 export type ProseCandidate = {
@@ -33,6 +38,12 @@ export type GenerateResult = {
   rejected: number;
   /** The model call failed outright. */
   failed: number;
+  /**
+   * Rejected attempts by the rule that rejected them, counted per attempt rather than per
+   * commander — a run that rejects most of what it generates is only fixable if the summary
+   * says which rule did it, and the four rules are fixed by four different changes.
+   */
+  rejectedBy: Record<ProseRejection, number>;
 };
 
 const DEFAULT_ATTEMPTS = 3;
@@ -68,7 +79,14 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
   const attempts = opts.attempts ?? DEFAULT_ATTEMPTS;
 
   const candidates = await load();
-  const r: GenerateResult = { written: 0, fresh: 0, suppressed: 0, rejected: 0, failed: 0 };
+  const r: GenerateResult = {
+    written: 0,
+    fresh: 0,
+    suppressed: 0,
+    rejected: 0,
+    failed: 0,
+    rejectedBy: { length: 0, sentences: 0, "front-loading": 0, hedge: 0 },
+  };
 
   for (const c of candidates) {
     // Consulted before generation, not after: a suppressed commander is never asked for.
@@ -77,10 +95,16 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
     const hash = proseInputHash(c.oracleId, c.tags);
     if (c.prose !== null && c.proseInputHash === hash) { r.fresh++; continue; }
 
-    const prompt = buildProsePrompt(c.name, c.tags);
     let accepted: string | null = null;
     let called = false;
+    // Carried between attempts so a retry can be told which rule it broke. Null on the
+    // first attempt and after a failed call, where there is nothing to feed back.
+    let last: { text: string; reason: ProseRejection } | null = null;
     for (let i = 0; i < attempts && accepted === null; i++) {
+      const prompt =
+        last === null
+          ? buildProsePrompt(c.name, c.tags)
+          : buildProseRetryPrompt(c.name, c.tags, last.text, last.reason);
       // A model client that throws is failing the same way the documented `null` names,
       // and one commander's timeout is not a reason to abandon the rest of the batch.
       // Narrow on purpose: only the call is guarded, so a bug in the accept contract
@@ -95,8 +119,16 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
       if (reply === null) continue;
       called = true;
       const trimmed = reply.trim();
-      if (acceptProse(trimmed)) accepted = trimmed;
-      else console.warn(`prose: rejected for ${c.name} (${trimmed.length} chars): ${trimmed}`);
+      const reason = checkProse(trimmed);
+      if (reason === null) {
+        accepted = trimmed;
+      } else {
+        r.rejectedBy[reason]++;
+        last = { text: trimmed, reason };
+        console.warn(
+          `prose: rejected for ${c.name} (${reason}, ${trimmed.length} chars): ${trimmed}`,
+        );
+      }
     }
 
     if (accepted === null) {
