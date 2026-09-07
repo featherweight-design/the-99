@@ -101,9 +101,9 @@ export function PriceStrip({
             ...(provenance.behind ? [priceCopy.strip.behind] : []),
           ].join(" · ")}
         </p>
-        {/* The 44px target is the ROW's, never the link's — the link stays inline
-            text with no box, so a tap anywhere on this line works while the focus
-            ring still traces the words.
+        {/* The 44px is the ROW's height, never the link's box — the link stays
+            inline text, so the words get a full-height target vertically while
+            the focus ring still traces them rather than a plate.
 
             The 9px gap holds at both breakpoints. `outline` takes no layout
             space, so the ring at 2px offset overlaps the gap rather than pushing
