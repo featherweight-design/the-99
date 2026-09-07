@@ -345,6 +345,15 @@ export const commanderSupport = pgTable("commander_support", {
   // Null when the commander has no rules text to classify.
   engine: text("engine", { enum: ["etb", "triggered", "activated", "tap", "static"] })
     .$type<CommanderEngine>(),
+  // The one accepted sentence about how this commander's decks tend to play, or null
+  // when none has been accepted. A generated string that fails the prose contract is
+  // not stored at all: a missing paragraph reads as missing, a truncated one does not.
+  prose: text("prose"),
+  // Hash of the inputs the sentence was generated from (oracle id, tag list, prompt
+  // version), so a regeneration run can tell a stale sentence from a current one
+  // without re-reading the generator.
+  proseInputHash: text("prose_input_hash"),
+  prosePromptVersion: integer("prose_prompt_version"),
   computedAt: timestamp("computed_at").notNull().defaultNow(),
 }, (t) => [
   // The enum options above only narrow the TypeScript type; without these the
@@ -357,6 +366,12 @@ export const commanderSupport = pgTable("commander_support", {
   check(
     "commander_support_engine_check",
     sql`${t.engine} is null or ${t.engine} in ('etb', 'triggered', 'activated', 'tap', 'static')`,
+  ),
+  // A stored sentence without its provenance cannot be regenerated or audited, and
+  // provenance without a sentence describes nothing.
+  check(
+    "commander_support_prose_check",
+    sql`(${t.prose} is null) = (${t.proseInputHash} is null) and (${t.prose} is null) = (${t.prosePromptVersion} is null)`,
   ),
 ]);
 
