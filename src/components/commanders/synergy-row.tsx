@@ -13,42 +13,13 @@ import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { OwnershipDot, dotState } from "./ownership-dot";
 
 // ── Figure formatters ────────────────────────────────────────────────────────
 
 function formatSynergyAria(pts: number): string {
   if (pts < 0) return synergyCopy.figure.ariaSynergyMinus(String(Math.abs(pts)));
   return synergyCopy.figure.ariaSynergyPlus(String(pts));
-}
-
-// ── Ownership dot ────────────────────────────────────────────────────────────
-
-/**
- * Three states in one 7px dot, and the third costs no width.
- *
- * A committed card is owned, so the mark is the filled dot's colour rather than
- * anything added beside it. The unowned dot is untouched: hollow is the absence
- * of a card, and a card you do not own cannot sit in a deck.
- */
-function OwnershipDot({ owned, committedTo }: { owned: boolean; committedTo: string | null }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        display: "block",
-        flexShrink: 0,
-        width: 7,
-        height: 7,
-        borderRadius: "50%",
-        background: owned
-          ? committedTo !== null
-            ? "var(--avail-hard-fg)"
-            : "var(--success)"
-          : "transparent",
-        border: owned ? undefined : "1px solid var(--fg-locked)",
-      }}
-    />
-  );
 }
 
 // ── The row ──────────────────────────────────────────────────────────────────
@@ -136,7 +107,7 @@ export function SynergyRow({
       }}
     >
       {/* Slot 1: ownership dot */}
-      <OwnershipDot owned={card.owned} committedTo={card.committedTo} />
+      <OwnershipDot state={dotState(card)} size={7} />
 
       {/* Slot 2: name + phone meta line — flex column gap 2px on phone */}
       <div

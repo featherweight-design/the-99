@@ -7,6 +7,7 @@ import { useState, useTransition, useId, type JSX } from "react";
 import { useRouter } from "next/navigation";
 import { CoverageChip, CoverageRow, CoverageDisclosure, COVERAGE_CAP, COVERAGE_EXPANDED_CAP } from "./coverage-chip";
 import { explainedCopy } from "../../lib/copy/commander-explained";
+import { LegendPip } from "./ownership-dot";
 import {
   CoverageSortMenu,
   COVERAGE_SORT_LABELS,
@@ -42,7 +43,10 @@ const ROLE_NOUNS: Record<RoleName, string> = {
 // ── The committed legend ───────────────────────────────────────────────────────
 
 /**
- * The line explaining the amber dot, or null where no visible chip carries one.
+ * The line explaining the committed dot, or null where no visible chip carries
+ * one. The sentence no longer names the colour — a pip rendered from the same
+ * component the chips use sits in front of it, which stays right under all six
+ * themes.
  *
  * Both figures count the chips that are ON SCREEN, never the role's total. A
  * count drawn from the whole list explains dots the cap is hiding, which is the
@@ -171,10 +175,13 @@ function RolePanelDesktop({
               {recommendationsCopy.coverage.chipNoFigureLegend}
             </p>
           )}
-          {/* The amber dot's line, in the same slot and on the same principle:
-              only where a chip on screen carries the mark. */}
+          {/* The committed dot's line, in the same slot and on the same
+              principle: only where a chip on screen carries the mark. */}
           {committedLine !== null && (
-            <p className="font-mono text-[10px] text-fg-locked m-0 mt-[10px]">{committedLine}</p>
+            <p className="font-mono text-[10px] text-fg-locked m-0 mt-[10px]">
+              <LegendPip state="committed" />
+              {committedLine}
+            </p>
           )}
         </>
       )}
@@ -286,7 +293,10 @@ function RolePanelPhone({
               </p>
             )}
             {committedLine !== null && (
-              <p className="font-mono text-[10px] text-fg-locked m-0">{committedLine}</p>
+              <p className="font-mono text-[10px] text-fg-locked m-0">
+                <LegendPip state="committed" />
+                {committedLine}
+              </p>
             )}
           </>
         )}

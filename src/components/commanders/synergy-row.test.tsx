@@ -74,7 +74,7 @@ describe("SynergyRow", () => {
   });
 
   // Three states in one dot, and the third must not cost the row any width.
-  it("paints the dot amber for a card already in a deck, and names the deck", () => {
+  it("paints the dot with the committed fill for a card already in a deck, and names the deck", () => {
     const { container } = mount({ card: { ...base, committedTo: "Atraxa" } });
     const dot = container.querySelector("li > span[aria-hidden]") as HTMLElement;
     expect(dot.style.background).toBe("var(--avail-hard-fg)");

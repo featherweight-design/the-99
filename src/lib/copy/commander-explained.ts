@@ -241,19 +241,21 @@ export const explainedCopy = {
         one marked), which explains dots the cap is hiding — the one thing the shipped render
         condition exists to prevent. "shown" is what makes the denominator unambiguous. */
     legend: (marked: number, visible: number) =>
-      `Amber dot \u2014 owned, and already in one of your decks. ${n(marked)} of the ${n(visible)} shown.`,
+      `Owned, and already in one of your decks. ${n(marked)} of the ${n(visible)} shown.`,
     legendMobile: (marked: number, visible: number) =>
-      `Amber dot \u2014 already in a deck. ${n(marked)} of the ${n(visible)} shown.`,
+      `Already in a deck. ${n(marked)} of the ${n(visible)} shown.`,
     /** When every visible card is marked, a fraction reads as a coincidence. */
-    legendAllTwo: "Amber dot \u2014 owned, and already in one of your decks. Both of them.",
-    legendAll: "Amber dot \u2014 owned, and already in one of your decks. All of them.",
-    legendAllTwoMobile: "Amber dot \u2014 already in a deck. Both of them.",
-    legendAllMobile: "Amber dot \u2014 already in a deck. All of them.",
+    legendAllTwo: "Owned, and already in one of your decks. Both of them.",
+    legendAll: "Owned, and already in one of your decks. All of them.",
+    legendAllTwoMobile: "Already in a deck. Both of them.",
+    legendAllMobile: "Already in a deck. All of them.",
 
-    /** The synergy panel is the only surface where all three dot states appear, so it names
-        all three rather than just the new one. */
-    legendSynergy:
-      "Filled green \u2014 owned and free. Amber \u2014 owned, already in a deck. Hollow \u2014 not owned.",
+    /** The synergy panel is the only surface where all three dot states appear, so it labels
+        all three rather than just the new one. One clause per pip, in the order the rows put
+        the dots in, and each clause stands alone so the line still reads without them. */
+    legendSynergyFree: "Owned and free.",
+    legendSynergyCommitted: "Owned, already in a deck.",
+    legendSynergyUnowned: "Not owned.",
 
     /** Appended to the chip's existing accessible name — NOT a replacement.
 

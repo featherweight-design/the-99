@@ -20,6 +20,7 @@ import type { RoleCard } from "../../lib/recs/score";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { explainedCopy } from "../../lib/copy/commander-explained";
+import { OwnershipDot, dotState } from "./ownership-dot";
 import type { JSX } from "react";
 
 export const COVERAGE_CAP = { desktop: 12, phone: 6 } as const;
@@ -42,17 +43,13 @@ function chipBorder(committedTo: string | null): string {
  *
  * A free row keeps the neutral border it ships with. The row is a full-width
  * surface rather than a pill, so tinting it green would make ordinary ownership
- * the loudest thing on the panel; the amber is worth the exception because it
- * is the state the reader is looking for.
+ * the loudest thing on the panel; the committed tint is worth the exception
+ * because it is the state the reader is looking for.
  */
 function rowBorder(committedTo: string | null): string {
   return committedTo === null
     ? "border-border"
     : "border-[color-mix(in_srgb,var(--avail-hard)_40%,var(--bg))]";
-}
-
-function dotFill(committedTo: string | null): string {
-  return committedTo === null ? "bg-success" : "bg-avail-hard-fg";
 }
 
 /**
@@ -102,11 +99,8 @@ export function CoverageChip({
       className={`group inline-flex items-center rounded-full h-[28px] border ${chipBorder(card.committedTo)} bg-surface-raised hover:border-accent`}
       style={{ gap: 8, padding: hasFigure ? "0 4px 0 10px" : "0 10px" }}
     >
-      {/* Dot — 6px, green when free, amber when the card is already in a deck. */}
-      <span
-        aria-hidden
-        className={`block shrink-0 rounded-full w-[6px] h-[6px] ${dotFill(card.committedTo)}`}
-      />
+      {/* Dot — 6px, --success when free, --avail-hard-fg when already in a deck. */}
+      <OwnershipDot state={dotState(card)} size={6} />
       {/* Name */}
       <span className="font-mono text-[11.5px] text-fg-body group-hover:text-fg">
         {card.name}
@@ -160,11 +154,8 @@ export function CoverageRow({
       className={`flex w-full items-center rounded-[8px] border ${rowBorder(card.committedTo)} bg-surface`}
       style={{ minHeight: "44px", padding: "0 12px", gap: 9 }}
     >
-      {/* Dot — 7px, green when free, amber when the card is already in a deck. */}
-      <span
-        aria-hidden
-        className={`block shrink-0 rounded-full w-[7px] h-[7px] ${dotFill(card.committedTo)}`}
-      />
+      {/* Dot — 7px, --success when free, --avail-hard-fg when already in a deck. */}
+      <OwnershipDot state={dotState(card)} size={7} />
       {/* Name — ellipsed. `min-w-0` is load-bearing beside `flex-1`: a flex item's
           default min-width is its content, so without it the span refuses to
           shrink and a long name overflows the row instead of ellipsing. */}

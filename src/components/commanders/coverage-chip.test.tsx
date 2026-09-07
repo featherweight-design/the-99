@@ -26,6 +26,11 @@ const card = (overrides: Partial<RoleCard> = {}): RoleCard => ({
 
 const siblings = ["oracle-sol", "oracle-signet"];
 
+// The ownership dot is the trigger's first child and the only aria-hidden span
+// in the chip that carries a fill.
+const dotOf = (container: HTMLElement): HTMLElement =>
+  container.querySelector("span[aria-hidden]") as HTMLElement;
+
 describe("CoverageChip", () => {
   it("prints its figure and includes it in the accessible name", () => {
     renderInProvider(
@@ -75,8 +80,7 @@ describe("CoverageChip", () => {
         <CoverageChip card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />
       </CardDetailProvider>,
     );
-    expect(container.querySelector(".bg-avail-hard-fg")).not.toBeNull();
-    expect(container.querySelector(".bg-success")).toBeNull();
+    expect(dotOf(container).style.background).toBe("var(--avail-hard-fg)");
     expect(screen.getByRole("button", { name: /Sol Ring/i }).className).toMatch(
       /var\(--avail-hard\)/,
     );
@@ -88,8 +92,7 @@ describe("CoverageChip", () => {
         <CoverageChip card={card()} siblings={siblings} showFigures />
       </CardDetailProvider>,
     );
-    expect(container.querySelector(".bg-success")).not.toBeNull();
-    expect(container.querySelector(".bg-avail-hard-fg")).toBeNull();
+    expect(dotOf(container).style.background).toBe("var(--success)");
   });
 
   // R2 rewrote this name wholesale once and lost "View details for". The deck
@@ -177,7 +180,7 @@ describe("CoverageRow", () => {
         <CoverageRow card={card({ committedTo: "Atraxa" })} siblings={siblings} showFigures />
       </CardDetailProvider>,
     );
-    expect(container.querySelector(".bg-avail-hard-fg")).not.toBeNull();
+    expect(dotOf(container).style.background).toBe("var(--avail-hard-fg)");
     expect(
       screen.getByRole("button", {
         name: "View details for Sol Ring. In 82% of decks. Already in Atraxa.",
