@@ -578,7 +578,11 @@ export function DiscoveryRow({
                 >
                   <Emphasised
                     text={justify.floorNote(FLOOR_PCT, item.supportPct)}
-                    values={[`${item.supportPct}%`]}
+                    // Both figures, in sentence order. `Emphasised` takes the first
+                    // occurrence of each in turn, so naming only the row's own would
+                    // mark the threshold instead whenever the two are equal — and a
+                    // row sitting exactly on the floor is the commonest way to clear it.
+                    values={[`${FLOOR_PCT}%`, `${item.supportPct}%`]}
                     color="var(--fg-body)"
                   />
                 </p>

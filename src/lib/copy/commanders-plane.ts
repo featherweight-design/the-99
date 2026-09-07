@@ -127,7 +127,7 @@ export const planeCopy = {
     // one thing this state does not know.
     unknownHeading: (query: string) => `Nothing on this list is named “${query}”`,
     unknownBody:
-      "The rest of the index went unchecked, so a commander a filter is holding back could still be named that.",
+      "The rest went unchecked, so a commander a filter is holding back could still be named that.",
     unknownCta: "Clear the search",
 
     // 2 · Every match is excluded. The FULL name, because `DiscoveryItem` carries only `name`.

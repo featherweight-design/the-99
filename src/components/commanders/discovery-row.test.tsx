@@ -189,6 +189,15 @@ describe("DiscoveryRow", () => {
       .toBeGreaterThan(0);
   });
 
+  // A row sitting exactly on the floor prints the same percentage twice, and the mark used to
+  // land on the first of them — the threshold, which the note names rather than claims.
+  it("marks both figures when a row clears the floor by nothing at all", () => {
+    const { container } = row({ supportPct: FLOOR_PCT }, "new");
+    const marked = container.querySelectorAll("strong");
+    const text = [...marked].map((el) => el.textContent);
+    expect(text.filter((t) => t === `${FLOOR_PCT}%`)).toHaveLength(2);
+  });
+
   it("explains an untagged commander instead of offering a retry", () => {
     row({ tagTotal: 0 });
     expect(screen.getAllByText(discoveryCopy.untagged.heading).length).toBeGreaterThan(0);
