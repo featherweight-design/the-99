@@ -48,6 +48,7 @@ export type CommanderListItem = Pick<
   | "fitSynergy"
   | "synergyState"
   | "score"
+  | "rankScore"
   | "measurableTotal"
   | "imageUri"
 > & {
@@ -72,6 +73,7 @@ export function toListItem(r: RankedCommander): CommanderListItem {
     fitSynergy: r.fitSynergy,
     synergyState: r.synergyState,
     score: r.score,
+    rankScore: r.rankScore,
     measurableTotal: r.measurableTotal,
     imageUri: r.imageUri,
   };

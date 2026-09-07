@@ -73,6 +73,7 @@ export function rowToListItem(row: ScoreRowWithCard): CommanderListItem {
     fitSynergy: row.fitSynergy,
     synergyState: row.synergyState,
     score: row.score,
+    rankScore: row.rankScore,
     measurableTotal: measurableTotalFor(row.fitSynergy),
     imageUri: row.imageUri,
   };
