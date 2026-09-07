@@ -41,9 +41,9 @@ describe("SynergyPanel", () => {
   // The three clauses share one paragraph with the three pips, which render no
   // text, so the paragraph reads as the clauses joined by spaces.
   const SYNERGY_LEGEND = [
-    explainedCopy.committed.legendSynergyFree,
-    explainedCopy.committed.legendSynergyCommitted,
-    explainedCopy.committed.legendSynergyUnowned,
+    explainedCopy.committed.dotFree,
+    explainedCopy.committed.dotCommitted,
+    explainedCopy.committed.dotUnowned,
   ].join(" ");
 
   // The one surface where all three dot states can share a list, so the line

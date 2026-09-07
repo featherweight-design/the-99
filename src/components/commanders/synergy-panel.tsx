@@ -257,11 +257,11 @@ export function SynergyPanel({
           }}
         >
           <LegendPip state="free" />
-          {explainedCopy.committed.legendSynergyFree}{" "}
+          {explainedCopy.committed.dotFree}{" "}
           <LegendPip state="committed" />
-          {explainedCopy.committed.legendSynergyCommitted}{" "}
+          {explainedCopy.committed.dotCommitted}{" "}
           <LegendPip state="unowned" />
-          {explainedCopy.committed.legendSynergyUnowned}
+          {explainedCopy.committed.dotUnowned}
         </p>
       )}
 

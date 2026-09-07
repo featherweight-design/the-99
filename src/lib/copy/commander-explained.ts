@@ -232,41 +232,20 @@ export const explainedCopy = {
   },
 
   // ── §5.2 / #346 The committed-card mark ───────────────────────────────
-  // The dot's fill is the channel. These strings are the other two channels: the panel legend
-  // (with its count) and the chip's accessible name. Colour is never alone.
-  //
-  // DATA NOTE — this block is the only one here with no data path today. The detail route
-  // (app/commanders/[slug]/page.tsx) reads no decks: it imports resolveCommanderSlug,
-  // getRankedList, scoreOneCommander and readSynergyCards, and the `coveredOracleIds` pass at
-  // :36-40 is over roleCards, not deck membership. RoleCard is { oracleId, name, inclusionPct }
-  // and the synergy card carries `owned` alone. Every string below needs a new read on this
-  // route plus a field on both carriers — see READINESS items 1 and 2. Landing these strings
-  // without that read renders `undefined of the 5 shown`.
+  // The dot's fill is the channel. These strings are the other two channels: the key that names
+  // each state and the chip's accessible name. Colour is never alone.
   committed: {
-    /** One line per panel, in chipNoFigureLegend's slot, on the same condition: only where a
-        VISIBLE chip carries the mark.
+    /** One clause per dot state, shared by every surface that draws the dots — the synergy
+        panel, which can show all three, and Role Coverage, which is drawn from the owned pool
+        and so only ever shows two. One vocabulary for one page: the same colour explained two
+        ways on one screen reads as two different marks.
 
-        BOTH FIGURES COUNT VISIBLE CHIPS. `marked` is the marked count among the visible chips,
-        `visible` is how many are on screen — NOT the role's total. R1 mixed the two: the note
-        said "among visible" and the frames printed the role total ("3 of 11" beside four chips,
-        one marked), which explains dots the cap is hiding — the one thing the shipped render
-        condition exists to prevent. "shown" is what makes the denominator unambiguous. */
-    legend: (marked: number, visible: number) =>
-      `Owned, and already in one of your decks. ${n(marked)} of the ${n(visible)} shown.`,
-    legendMobile: (marked: number, visible: number) =>
-      `Already in a deck. ${n(marked)} of the ${n(visible)} shown.`,
-    /** When every visible card is marked, a fraction reads as a coincidence. */
-    legendAllTwo: "Owned, and already in one of your decks. Both of them.",
-    legendAll: "Owned, and already in one of your decks. All of them.",
-    legendAllTwoMobile: "Already in a deck. Both of them.",
-    legendAllMobile: "Already in a deck. All of them.",
-
-    /** The synergy panel is the only surface where all three dot states appear, so it labels
-        all three rather than just the new one. One clause per pip, in the order the rows put
-        the dots in, and each clause stands alone so the line still reads without them. */
-    legendSynergyFree: "Owned and free.",
-    legendSynergyCommitted: "Owned, already in a deck.",
-    legendSynergyUnowned: "Not owned.",
+        NO COUNTS. These replaced a per-panel line that also carried "3 of the 5 shown", which
+        only worked as a footnote under the chips it counted. A key that sits above four panels
+        cannot count for any one of them, and a key is what this is. */
+    dotFree: "Owned and available.",
+    dotCommitted: "Owned, already in a deck.",
+    dotUnowned: "Not owned.",
 
     /** Appended to the chip's existing accessible name — NOT a replacement.
 

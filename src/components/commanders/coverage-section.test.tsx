@@ -603,32 +603,44 @@ describe("edge count: 41+ cards (beyond expansion cap)", () => {
   });
 });
 
-describe("the committed legend", () => {
+describe("the dot key", () => {
   const committed = (n: number, deck: string): RoleCard => ({ ...makeCard(n), committedTo: deck });
+  const KEY = [explainedCopy.committed.dotFree, explainedCopy.committed.dotCommitted].join(" ");
 
-  // Both figures count the chips on screen. The cap hides the rest, and a count
-  // over the role total would explain dots the reader cannot see.
-  it("counts the visible chips, not the role's total", () => {
-    const cards = [committed(1, "Atraxa"), ...makeCards(19).slice(1)];
+  // One key above four panels, not one footnote under each.
+  it("draws the key once for the whole section", () => {
+    const cards = [committed(1, "Atraxa"), ...makeCards(3).slice(1)];
+    renderSection({
+      roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards, draw: cards },
+      roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3, draw: 3 },
+    });
+    expect(screen.getAllByText(KEY)).toHaveLength(1);
+  });
+
+  // The key sits above every panel, so it reads every card rather than the ones
+  // a cap happens to be showing — otherwise expanding a panel adds a key entry.
+  it("names the committed dot for a card the resting cap is hiding", () => {
+    const cards = [...makeCards(19).slice(1), committed(20, "Atraxa")];
     renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 20 } });
-    expect(screen.getByText(explainedCopy.committed.legend(1, 12))).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /View details for Card 20/ })).toBeNull();
+    expect(screen.getByText(KEY)).toBeInTheDocument();
   });
 
-  it("says so plainly when every visible chip is marked", () => {
-    const cards = [committed(1, "Atraxa"), committed(2, "Krenko")];
-    renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 2 } });
-    expect(screen.getByText(explainedCopy.committed.legendAllTwo)).toBeInTheDocument();
-  });
-
-  it("draws nothing when no visible chip carries the mark", () => {
+  it("names only the free dot when no card is in a deck", () => {
     renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
-    expect(screen.queryByText(/already in/i)).toBeNull();
+    expect(screen.getByText(explainedCopy.committed.dotFree)).toBeInTheDocument();
+    expect(screen.queryByText(/already in a deck/i)).toBeNull();
   });
 
-  it("takes the shorter wording at phone width", () => {
+  it("draws no key at all when the section has no cards", () => {
+    renderSection({ roleCards: EMPTY_ROLE_CARDS, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 0 } });
+    expect(screen.queryByText(explainedCopy.committed.dotFree)).toBeNull();
+  });
+
+  it("draws the same key at phone width", () => {
     const cards = [committed(1, "Atraxa"), ...makeCards(3).slice(1)];
     renderSection({ width: "phone", roleCards: { ...EMPTY_ROLE_CARDS, ramp: cards }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
-    expect(screen.getByText(explainedCopy.committed.legendMobile(1, 3))).toBeInTheDocument();
+    expect(screen.getByText(KEY)).toBeInTheDocument();
   });
 });
 
