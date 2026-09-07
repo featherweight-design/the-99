@@ -439,3 +439,95 @@ Verbatim normative statements governing these four surfaces.
 - **Menu diamond hollow colour is `--border-strong`** (`#3A3229`) — deliberately *not* the row-pip's hollow `--fg-locked`.
 - **No SVG anywhere in these four surfaces.** The caret is the text glyph `▾` (U+25BE) and the option marker is a 6px `<span>` with `transform: rotate(45deg)`. There is no viewBox, path, stroke-width or stroke-linecap to match.
 - **No hover states are specified** for any of the four surfaces; the only interactive-state style the design names is the global `:focus-visible` ring.
+
+---
+
+# Amendments — R6 (`design_handoff_the99_commanders_plane`)
+
+The R6 handoff supersedes two rows of the tables above and adds two controls to the
+filter bar. Everything not named here stands as written.
+
+## Superseded: the header row wrapper (§7.2 tier 1)
+
+The scope control used to share a flex row with the title and its subtitle, so the
+subtitle's length set the control's x-position and a scope flip moved the control out
+from under the click that moved it (#335). The header is now two rows at both widths.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex, `flex-wrap: wrap` | flex, `flex-wrap: wrap` |
+| align-items | center | center |
+| justify-content | — (children are full-width) | space-between |
+| column-gap | — | 24px |
+| padding | 18px left/right, 20px top, 12px bottom | 34px left/right, 28px top, 0 bottom |
+| border-bottom | 1px solid var(--border) | — (the sticky filter bar carries it) |
+| title (h1) | order 1, `width: 100%`, 22px | order 1, `width: auto`, 30px |
+| subtitle (p) | order 2, `width: 100%`, 11px, margin-top 2px | order 3, `width: 100%`, 12px, margin-top 4px |
+| scope group | order 3, `width: 100%`, margin-top 12px | order 2, `width: auto`, margin-top 0 |
+
+Wrapping is what makes the rows: each full-width child claims a line of its own, and
+`order` puts the subtitle under the control on desktop and over it on mobile. The scope
+control's x-position is now a function of the header's padding alone.
+
+## Added: search field (§4.3) — the filter row's leading edge
+
+Discovery only. The owned scope passes no `query`, and the slot then renders **nothing**
+— not an empty wrapper, which would still contribute the row's gap and shift the owned
+bar sideways. One subtree with responsive classes, never a mobile copy and a desktop
+copy, so the input appears in the accessibility tree once.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position in the row | left child of the count/order row (row 4 of the stack) | first child of the filter row, ahead of the pip wrapper |
+| container height | 38px | 30px |
+| container width | `flex: 1`, `min-width: 0` | 280px, `flex: none` |
+| container padding-left / right | 10px / 10px | 10px / 10px |
+| container gap | 7px | 8px |
+| container background / border / radius | shared `SearchField` chrome, unchanged | same |
+| leading element | mono 10px, `0.12em`, var(--fg-faint), `aria-hidden` | same |
+| leading copy key | `planeCopy.search.caption` | same |
+| input font-size | **16px** (iOS zoom floor, #101 — the drawing says 13px) | 12.5px |
+| placeholder colour | var(--fg-locked) | var(--fg-locked) |
+| placeholder copy key | `planeCopy.search.placeholder` | same |
+| input aria-label key | `planeCopy.search.inputAria` | same |
+| clear glyph | `✕`, 11px, var(--fg-faint), rendered only while the value is non-empty | same |
+| clear aria-label key | `planeCopy.search.clearAria` | same |
+| URL mirroring | `?q=`, non-default only, through the existing `replaceState` effect | same |
+| announcement key | `planeCopy.search.announce(matched, total)`, one per settle; a cleared query announces nothing | same |
+
+**The mobile count it displaces is not lost.** Search takes the count row's left child
+rather than adding a fifth row to a stack the handoff already measures at +173px;
+`RevealControl` still prints `N shown · M more below` inside the list.
+
+## Added: colour match mode (§7) — a modifier of the pip row
+
+A radiogroup on the `ScoreAgainst` pattern (roving tab stop, selection follows focus),
+rendered **only while a pip is lit**: with no selection there is nothing to be exact
+about, so it is absent rather than disabled. Discovery only.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| placement | a peer row directly under the pip row it modifies | **inside** the pip wrapper, behind a 1px × 16px `--border-strong` hairline with 2px side margins |
+| visible label | mono 9px, `0.16em`, uppercase, var(--fg-faint), margin-bottom 6px | none — `COLORS` already captions the wrapper |
+| label copy key | `planeCopy.join.label` | — |
+| group accessible name | `aria-labelledby` the mobile label | `aria-label` = `planeCopy.join.groupAria` |
+| container background | var(--surface-sunken) | var(--bg) — a step down, so it reads as nested |
+| container border / radius / padding / gap | 1px `--border-strong` / 8px / 3px / 3px | 1px `--border-strong` / 6px / 2px / 2px |
+| segment height | 38px | 20px |
+| segment font | sans 13px | mono 10px, `0.08em`, uppercase |
+| segment padding-left / right | 10px / 10px, `flex: 1` | 8px / 8px |
+| segment radius | 6px | 4px |
+| segment — selected | 600, var(--bg) on var(--accent) | same |
+| segment — unselected | 500, var(--fg-body) on transparent | 500, **var(--fg-locked)** on transparent |
+| segment copy keys | `planeCopy.join.contains` / `.exactly` | same |
+| segment aria-label keys | `planeCopy.join.containsAria` / `.exactlyAria` | same |
+| URL mirroring | `?join=exact`, non-default only | same |
+
+### The exact note (rendered under the control while the mode is `exactly`)
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font | mono 10.5px, line-height 1.5 | mono 11px |
+| color | var(--fg-faint); the two figures lift to var(--fg-body) at 600 | same |
+| margin-top | 7px | 8px |
+| copy key | `planeCopy.join.exactNoteShort(matched, total, colors)` | `planeCopy.join.exactNote(matched, total, colors)` |
+| suppression | **suppressed** whenever an excluded-match report already names the mode (the one-report rule, §4) | never suppressed — desktop has the width, and the two sit far apart |

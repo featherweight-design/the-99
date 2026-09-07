@@ -33,7 +33,9 @@ describe("discoveryCopy", () => {
   });
 
   it("leaves percentages unseparated", () => {
-    expect(discoveryCopy.justify.floorNote(30)).toContain("30%");
+    // Two percentages in one string: the threshold and the row's own figure.
+    expect(discoveryCopy.justify.floorNote(30, 41)).toContain("30% floor");
+    expect(discoveryCopy.justify.floorNote(30, 41)).toContain("41%");
     const floor = discoveryCopy.empty.floorBody(30, 1234, 5678, 29);
     expect(floor).toContain("30%");
     expect(floor).toContain("29%");

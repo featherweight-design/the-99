@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { DiscoveryList } from "../../lib/discovery/list";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { planeCopy } from "../../lib/copy/commanders-plane";
 import { revealAnnouncement } from "./reveal-control";
 import { DiscoveryView } from "./discovery-view";
 
@@ -18,12 +19,22 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
+// The one thing on this surface the client cannot answer: rows the server left
+// out of the payload. Mocked rather than stubbed at the fetch layer, because the
+// action IS the boundary — it reaches the database, and importing it for real
+// would pull the driver into a component test.
+const { findExcluded } = vi.hoisted(() => ({ findExcluded: vi.fn() }));
+vi.mock("../../app/commanders/actions", () => ({ findExcludedMatches: findExcluded }));
+
 const list = (over: Partial<DiscoveryList> = {}): DiscoveryList => ({
   items: [],
   candidateCount: 0,
   cardsRead: 2805,
+  freePoolSize: 2805,
   bestPct: null,
   floorExcluded: 0,
+  poolExcluded: 0,
+  unmeasured: 0,
   hasDecks: true,
   deckIdentities: [],
   availOk: true,
@@ -49,13 +60,15 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   unplayedLabels: [],
   unplayedCount: 0,
   nearestDeck: null,
-  floorPct: null,
+  supportPct: null,
   ...over,
 });
 
 describe("DiscoveryView", () => {
   beforeEach(() => {
     replace.mockClear();
+    findExcluded.mockReset();
+    findExcluded.mockResolvedValue([]);
     window.history.replaceState(null, "", "/commanders?scope=play");
   });
 
@@ -456,5 +469,483 @@ describe("DiscoveryView", () => {
           .getAttribute("aria-checked"),
       ).toBe("true");
     });
+  });
+
+  // ── The colour match mode (§7) ────────────────────────────────────────
+  const join = planeCopy.join;
+
+  // Absent, not disabled: with no pip lit there is nothing for a mode to join,
+  // and a disabled control would invite a hunt for whatever would enable it.
+  it("does not render the mode until a pip is lit", () => {
+    render(<DiscoveryView discovery={list({ items: [item({})], candidateCount: 1 })} avail="free" />);
+    expect(screen.queryByRole("radio", { name: join.exactlyAria })).toBeNull();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.getAllByRole("radio", { name: join.exactlyAria }).length).toBeGreaterThan(0);
+  });
+
+  it("narrows the list to the identities that are the selection and nothing else", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+    ];
+    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(screen.getAllByText("Showing 2 of 2").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
+  });
+
+  // `exact` in the URL, `exactly` in the code. The param is a word the player can
+  // see and edit; the mapping lives in `parseJoin` and nowhere else.
+  it("mirrors the mode into the URL as ?join=exact, and reads it back", () => {
+    render(<DiscoveryView discovery={list()} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(window.location.search).toBe("?scope=play&c=G&join=exact");
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("opens under the mode the incoming URL names", () => {
+    window.history.replaceState(null, "", "/commanders?scope=play&c=G&join=exact");
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+    ];
+    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
+    expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
+  });
+
+  // A mode with no pip to modify changes no row, so leaving it in the URL would
+  // be a filter the player cannot see and cannot clear.
+  it("drops the mode from the URL when the last pip goes out", () => {
+    render(<DiscoveryView discovery={list()} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(window.location.search).toBe("?scope=play");
+  });
+
+  it("announces the mode with the count the flip produced", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+    ];
+    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(screen.getByText(join.announce("exactly", 1, ["G"]))).toBeTruthy();
+  });
+
+  // Both notes are asserted through `textContent`: the figures inside them are
+  // emphasised, so the sentence is split across spans and no single text node
+  // holds it.
+  it("says what the mode did, under the control, only while it is exact", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(container.textContent).not.toContain(join.exactNote(2, 2, ["G"]));
+
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(container.textContent).toContain(join.exactNote(1, 2, ["G"]));
+    expect(container.textContent).toContain(join.exactNoteShort(1, 2, ["G"]));
+  });
+
+  it("returns the window to the top when the mode narrows the list", () => {
+    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(screen.queryByText("Commander 25")).toBeNull();
+  });
+
+  // ── The search field (§4.3) ───────────────────────────────────────────
+  const search = planeCopy.search;
+  const field = () => screen.getAllByRole("searchbox", { name: search.inputAria })[0];
+
+  const named = () => [
+    item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated" }),
+    item({ oracleId: "b", slug: "b", name: "Meren of Clan Nel Toth", rank: 2 }),
+  ];
+
+  it("narrows the list by name as the reader types", () => {
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Meren of Clan Nel Toth")).toBeNull();
+  });
+
+  // The URL waits for the typing to settle. Mirroring per keystroke would write
+  // seven history entries for one word, and Phase 5's lookup hangs off the same
+  // settled value.
+  it("mirrors the settled query as ?q=, and drops it when the field is cleared", async () => {
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    expect(window.location.search).toBe("?scope=play");
+
+    await waitFor(() => expect(window.location.search).toBe("?scope=play&q=yarok"));
+    expect(replace).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getAllByRole("button", { name: search.clearAria })[0]);
+    await waitFor(() => expect(window.location.search).toBe("?scope=play"));
+  });
+
+  it("opens under the query the incoming URL names", () => {
+    window.history.replaceState(null, "", "/commanders?scope=play&q=meren");
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    expect(screen.getAllByText("Meren of Clan Nel Toth").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Yarok, the Desecrated")).toBeNull();
+  });
+
+  it("announces the match count once the typing settles", async () => {
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    await waitFor(() => expect(screen.getByText(search.announce(1, 2))).toBeTruthy());
+  });
+
+  // The floor takes rows out of `items` but not out of the pool the search
+  // covered, so under the novelty sort the ranked count would understate where
+  // we looked.
+  it("names the whole unbuilt pool, not the ranked count, under the novelty sort", async () => {
+    const { container } = render(
+      <DiscoveryView
+        discovery={list({ items: named(), candidateCount: 40, sort: "new", floorExcluded: 38 })}
+        avail="free"
+      />,
+    );
+    fireEvent.change(field(), { target: { value: "krenko" } });
+    await waitFor(() => expect(container.textContent).toContain(search.noneEmphasis(40)));
+    expect(container.textContent).toContain(search.announce(0, 40));
+  });
+
+  // The name is in nothing this reader can see, so the state says where we
+  // looked and offers the one correction that could help.
+  it("names the query when nothing is called that, and clears the search rather than the colours", async () => {
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.change(field(), { target: { value: "krenko" } });
+
+    await waitFor(() => expect(container.textContent).toContain(search.noneHeading("krenko")));
+    expect(container.textContent).toContain(search.announce(0, 2));
+
+    // The field's ✕ carries the same accessible name as the state's button, so
+    // the one with the visible label is the state's.
+    const cta = screen
+      .getAllByRole("button", { name: search.noneCta })
+      .find((b) => b.textContent === search.noneCta);
+    fireEvent.click(cta as HTMLElement);
+    // The pips survive: the button cleared what the reader typed, and clearing
+    // the colours too would undo a filter this state never blamed.
+    expect(screen.getAllByText("Showing 2 of 2").length).toBeGreaterThan(0);
+  });
+
+  // ── The excluded match (§2) ───────────────────────────────────────────
+  const excluded = planeCopy.excluded;
+
+  // A name that IS in the list and was removed by a pip is a colour exclusion,
+  // not a miss — telling the reader to check the spelling would be wrong, and
+  // the colour empty state would not say which row went missing.
+  it("names the commander a pip excluded, and clears the filter that took it", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["U"] }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 1 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+
+    expect(container.textContent).not.toContain(search.noneHeading("yarok"));
+    expect(container.textContent).not.toContain(discoveryCopy.empty.filteredHeading);
+    expect(container.textContent).toContain(search.heldHeading("Yarok, the Desecrated"));
+    expect(container.textContent).toContain(search.heldAside(1));
+
+    fireEvent.click(screen.getByRole("button", { name: excluded.colorsCta }));
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+  });
+
+  // The mode, not the pips: the row survives `Contains`, so `Clear the colour
+  // filter` would undo more than the reader needs.
+  it("names the mode when the mode is what removed the only match", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["B", "G", "U"] }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 1 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+
+    expect(container.textContent).toContain(search.heldHeading("Yarok, the Desecrated"));
+    fireEvent.click(screen.getByRole("button", { name: excluded.joinCta }));
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+  });
+
+  // The row is not in the payload at all, so only the server can say why.
+  it("reports a match the server held back, once the typing settles", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+    ]);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "atraxa" } });
+    // Nothing is claimed until the server has answered: "no commander is named
+    // that" is a statement about the index, and printing it here would be a
+    // sentence the very next render contradicts.
+    expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
+
+    await waitFor(() =>
+      expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
+    );
+    expect(container.textContent).toContain(excluded.heldScope);
+    expect(findExcluded).toHaveBeenCalledWith("atraxa", { sort: "fit", avail: "free" });
+  });
+
+  // A failed lookup is not an answer. "No commander is named that" covers the
+  // whole index, and a round trip that never came back checked none of it.
+  it("makes no claim about the index when the lookup fails", async () => {
+    findExcluded.mockRejectedValue(new Error("down"));
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "atraxa" } });
+    await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("atraxa")));
+    expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
+  });
+
+  // A query matching more names than the action counts comes back null, and an
+  // uncounted set is not an empty one.
+  it("makes no claim about the index when the lookup declines to answer", async () => {
+    findExcluded.mockResolvedValue(null);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "atraxa" } });
+    await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("atraxa")));
+    expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
+  });
+
+  // The action declines a one-character query, so the index is unchecked for it
+  // in exactly the way a failure leaves it unchecked.
+  it("keeps the index out of it when the query is too short to ask about", async () => {
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "z" } });
+    await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("z")));
+    expect(container.textContent).not.toContain(search.noneHeading("z"));
+  });
+
+  // Clearing the colours would surface nothing, because nothing in the list is
+  // named that. The colour state offers a control that changes the screen, so a
+  // query that empties the list on its own outranks it.
+  it("does not blame the colours for a query that matches nothing either", async () => {
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.change(field(), { target: { value: "z" } });
+    await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("z")));
+    expect(screen.queryByText(empty.filteredHeading)).toBeNull();
+  });
+
+  // A one-character query matches most of the index, so it never asks.
+  it("asks the server only about a query worth a round trip", async () => {
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    fireEvent.change(field(), { target: { value: "y" } });
+    await waitFor(() => expect(window.location.search).toBe("?scope=play&q=y"));
+    expect(findExcluded).not.toHaveBeenCalled();
+  });
+
+  // Some matches survive: the report sits above them rather than replacing them.
+  it("puts the aside above a live list, and counts the group rather than naming it", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "y", name: "Meren of Clan Nel Toth", cause: "floor", pct: 12 },
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "floor", pct: 9 },
+    ]);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "the" } });
+
+    await waitFor(() =>
+      expect(container.textContent).toContain(
+        search.asideMore(2, excluded.control.floor(30)),
+      ),
+    );
+    // The rows are still on screen, and the aside is above them.
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+    expect(container.textContent).not.toContain(search.heldAside(2));
+  });
+
+  // ── The exclusion line (§4) ───────────────────────────────────────────
+  it("prints the list's receipt in tier order, and nothing when nothing was excluded", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["U"], rank: 2 }),
+    ];
+    const discovery = list({
+      items,
+      candidateCount: 214,
+      sort: "new",
+      floorExcluded: 1047,
+      unmeasured: 212,
+      bestPct: 22,
+    });
+    const { container, rerender } = render(<DiscoveryView discovery={discovery} avail="free" />);
+    // The floor alone, so the nearest miss has room.
+    expect(container.textContent).toContain(
+      planeCopy.exclusion.floorAloneWithUnmeasured(1047, 212, 30, 22),
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    expect(container.textContent).toContain(
+      planeCopy.exclusion.join2(
+        planeCopy.exclusion.colors(1, ["G"]),
+        planeCopy.exclusion.floorWithUnmeasured(1047, 212, 30),
+      ),
+    );
+
+    rerender(
+      <DiscoveryView
+        discovery={list({ items, candidateCount: 2, sort: "new" })}
+        avail="free"
+      />,
+    );
+    expect(container.textContent).not.toContain("support floor");
+  });
+
+  // The one-report rule: one thing below the bar explains the list at 375px, and
+  // it is the aside. The line stays in the DOM for the widths that have room,
+  // as one element rather than a duplicated subtree.
+  it("hands the phone to the aside when both would explain the list", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "floor", pct: 9 },
+    ]);
+    const { container } = render(
+      <DiscoveryView
+        discovery={list({
+          items: named(),
+          candidateCount: 214,
+          sort: "new",
+          floorExcluded: 1047,
+          unmeasured: 212,
+          bestPct: 22,
+        })}
+        avail="free"
+      />,
+    );
+    const lineText = planeCopy.exclusion.floorAloneWithUnmeasured(1047, 212, 30, 22);
+    const lineNode = () =>
+      Array.from(container.querySelectorAll("div")).find(
+        (el) => el.textContent === lineText,
+      );
+    expect(lineNode()?.className).not.toContain("hidden");
+
+    fireEvent.change(field(), { target: { value: "the" } });
+    await waitFor(() => expect(lineNode()?.className).toContain("hidden sm:flex"));
+    // One element, not two: the sentence is in the DOM once at either width.
+    expect(
+      Array.from(container.querySelectorAll("div")).filter((el) => el.textContent === lineText),
+    ).toHaveLength(1);
+  });
+
+  // The other half of the rule: the report already names the mode, so the note
+  // under the control would print the same fact twice on one phone screen.
+  it("drops the mobile exact note when a report names the mode", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["B", "G", "U"] }),
+      item({ oracleId: "b", slug: "b", name: "Meren of Clan Nel Toth", colorIdentity: ["G"], rank: 2 }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    expect(container.textContent).toContain(join.exactNoteShort(1, 2, ["G"]));
+
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    expect(container.textContent).not.toContain(join.exactNoteShort(0, 2, ["G"]));
+    // Desktop keeps its own note: it has the width, and no viewport problem.
+    expect(container.textContent).toContain(join.exactNote(0, 2, ["G"]));
+  });
+
+  // ── The pool floor state (§5) ─────────────────────────────────────────
+  // The floor took everything, and the pool is why: the other sort is the wrong
+  // door when the rows would clear against the whole collection.
+  it("offers the other pool, not the other sort, when the pool is the cause", () => {
+    const { container } = render(
+      <DiscoveryView
+        discovery={list({
+          items: [],
+          candidateCount: 3326,
+          sort: "new",
+          floorExcluded: 3114,
+          unmeasured: 212,
+          poolExcluded: 41,
+          bestPct: 22,
+          freePoolSize: 1190,
+        })}
+        avail="free"
+      />,
+    );
+    expect(container.textContent).toContain(planeCopy.floorPool.heading);
+    expect(container.textContent).toContain(
+      planeCopy.floorPool.body(30, 3114, 212, 3326, 1190, 41),
+    );
+    expect(container.textContent).not.toContain(discoveryCopy.empty.floorHeading);
+  });
+
+  // Nothing would clear elsewhere, so the pool is not the cause and the shipped
+  // state stands.
+  it("keeps the sort's own floor state when no row would clear against the collection", () => {
+    const { container } = render(
+      <DiscoveryView
+        discovery={list({
+          items: [],
+          candidateCount: 3326,
+          sort: "new",
+          floorExcluded: 3114,
+          poolExcluded: 0,
+          bestPct: 22,
+        })}
+        avail="free"
+      />,
+    );
+    expect(container.textContent).toContain(discoveryCopy.empty.floorHeading);
+    expect(container.textContent).not.toContain(planeCopy.floorPool.heading);
+  });
+
+  // A report is written about one query. Carrying it into the next would name a
+  // commander the reader is no longer asking about.
+  it("drops the server's answer when the query changes", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+    ]);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "atraxa" } });
+    await waitFor(() =>
+      expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
+    );
+
+    findExcluded.mockResolvedValue([]);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    await waitFor(() =>
+      expect(container.textContent).not.toContain(search.heldHeading("Atraxa, Praetors' Voice")),
+    );
   });
 });

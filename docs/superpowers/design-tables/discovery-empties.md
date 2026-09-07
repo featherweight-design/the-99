@@ -595,3 +595,96 @@ another, it is called out for ratification in the PR body.
 | M-11 | Already the rule this table is verified under: tokens are the target, canvas hexes are never asserted against. |
 | M-12 | Built as drawn — one centred diamond, no label. Empty 2 is not an end-of-ranking rule and has no total to name, so the two flanking diamonds would be furniture with nothing between them. |
 | M-13 | Both figures are right for their own state, and the copy takes the population as an argument, so neither string changes. Empty 1 passes the full index (nothing is excluded with zero decks built); Empty 2 passes the discovery population, which its own trigger condition guarantees. |
+
+---
+
+# Amendments — R6 (`design_handoff_the99_commanders_plane`)
+
+R6 adds one element between the bar and the list, and two empty states. Everything
+above stands as written except the one row named under Empty 2 below.
+
+## Added element: the exclusion line (§4)
+
+Sits between the filter bar and the first row. **Not a live region** — the page already
+announces the re-rank, and announcing the exclusions too would report one event twice.
+**Not a control** — every correction it might offer is already a control in the bar
+above it. It renders nothing when nothing was excluded: no `0 excluded`, no reserved
+height. Missing data is omitted, never zeroed.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | baseline | baseline |
+| gap | 10px | 10px |
+| padding-left / right | 14px / 14px | 34px / 34px |
+| padding-top | 0 | 14px |
+| leading diamond | 6px × 6px, `rotate(45deg)`, `var(--border-strong)`, `aria-hidden`, margin-top 4px | same, margin-top 5px |
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10.5px | 11.5px |
+| line-height | 1.6 | 1.6 |
+| color | var(--fg-faint) | var(--fg-faint) |
+| marked figures | lifted to var(--fg-body) at **weight 400** — a colour lift, not a bolding | same |
+| which figures are marked | every count, **and** the threshold and the nearest miss, each carrying its `%` | same |
+| clause count | at most two, joined by ` · ` | same |
+| clause order | tier order, never magnitude: colour or mode first, then the sort | same |
+| nearest miss | a second **sentence**, not a third clause, so it survives the cap; present only when the sort is the sole exclusion | same |
+| copy keys | `planeCopy.exclusion.*` | same |
+
+The diamond is the same 6px rotated square the end-of-ranking rule uses, so the two
+receipts on this page are furniture of one family.
+
+**The sort's two populations are one tier.** Under `New`, rows measured and found below
+the floor and rows with nothing to measure at all share a single clause with two
+figures, rather than taking both slots. Under `Fit` neither population exists, and no
+floor clause is printed.
+
+> Eng note: the handoff's word for the second population is **tags**, and the shipped string
+> says **data** instead. `excluded-match.ts` sends a row to that branch when its tag list is
+> empty **or** when its denominator is missing, and `index-build.ts` nulls the denominator
+> whenever EDHREC could not be reached — a row that can still carry tags. "No tags to measure"
+> is false for that half of the group, so the noun widened by one word and the clause is
+> otherwise the drawing's.
+
+## Added state: Empty 2, pool variant (`FloorPoolEmpty`)
+
+The shipped floor empty blames the floor for everything it excluded. When the player is
+ranking against the free pool, the floor is not the whole cause — the pool is — and this
+variant says so. Same furniture as Empty 2 above (hairline + one diamond, Cinzel 18px
+heading, centred body, one ghost CTA); three differences:
+
+| Property | Value |
+|----------|-------|
+| body max-width | **470px**, superseding Empty 2's `430px` for this variant only — the body carries two populations and a pool size |
+| aside beside the CTA | **none.** The count that survives in the other pool is one this state's payload cannot know, and the CTA stands alone rather than carrying a figure the page would invent |
+| CTA | `planeCopy.floorPool.cta` — score against everything owned |
+| body / emphasis copy keys | `planeCopy.floorPool.body(floorPct, below, unmeasured, candidateCount, freeCards, clearingAgainstCollection)` / `.emphasis(floorPct)` |
+
+`freeCards` is the size of the free pool, not the collection, and the two populations sum
+to `candidateCount`: a state whose premise is that nothing cleared cannot leave rows
+unaccounted for.
+
+## Added state: search matched nothing on the list
+
+The colour miss's shape with three parts replaced: no pip row (there is no filter to
+show), a diagnostic in the search's own vocabulary rather than the colour filter's, and
+a button that clears the query rather than the colours.
+
+| Property | Value |
+|----------|-------|
+| heading | `planeCopy.search.noneHeading(query)` |
+| body / emphasis | `planeCopy.search.noneBody(total)` / `.noneEmphasis(total)` |
+| diagnostic | `planeCopy.search.announce(0, total)` |
+| CTA | `planeCopy.search.noneCta`, clears the query |
+| colour chip row | not rendered |
+| all other geometry | Empty 3's, unchanged |
+
+## Precedence among the list-level states
+
+One state renders, in this order, and each outranks everything under it:
+
+1. **The floor replaced the list** (`FloorEmpty` / `FloorPoolEmpty`).
+2. **The excluded-match report** — it names why the one row the player searched for is
+   missing, and offers the single control that would bring it back. The two empties
+   below only say what is absent.
+3. **Search matched nothing.**
+4. **Filtered to zero** (colour pips lit, nothing survives).

@@ -43,6 +43,12 @@ describe("SearchField", () => {
     expect(input.closest("label")).not.toBeNull();
   });
 
+  // `??` read a deliberate `null` as an absent prop and put the magnifier back.
+  it("renders no leading element when the caller asks for none", () => {
+    const { container } = render(<SearchField aria-label="Search cards" leading={null} />);
+    expect(container.textContent).not.toContain("⌕");
+  });
+
   it("renders the trailing slot inside the box", () => {
     render(<SearchField aria-label="Search cards" trailing={<button type="button">Clear</button>} />);
     const input = screen.getByLabelText("Search cards");

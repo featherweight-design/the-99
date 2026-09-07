@@ -61,15 +61,15 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
 
-_Currently empty — the four amendments (**#286**, **#280**, **#287**, **#277**) were the last
-occupants and all four shipped between 2026-09-05 and 2026-09-06, in the drawn build order. They
-sit in ✅ Shipped below. **#220** left on 2026-09-06 when its eleventh and last planned PR merged,
-**#9** later the same day on PR #332, and **#330** the same day on PR #377._
+_Currently empty — **#340** was the last occupant and left on 2026-09-06 when its build started; it
+sits in 🔨 below. The four amendments (**#286**, **#280**, **#287**, **#277**) shipped between
+2026-09-05 and 2026-09-06, in the drawn build order, and sit in ✅ Shipped. **#220** left on
+2026-09-06 when its eleventh and last planned PR merged, **#9** later the same day on PR #332, and
+**#330** the same day on PR #377._
 
-**Nothing is ready for eng to pick up.** That is the readout this section exists to give, and it
-is a Design-capacity statement rather than a gap: everything that could move is with Design. Two
-handoffs sit in 🎨 awaiting their eng readiness audit, the five ratifications joined them on
-2026-09-07 awaiting verdicts, and every 🕰️ row that remains is a design cycle that has not started.
+**Nothing is ready for eng to pick up**, and that is a Design-capacity statement rather than a gap:
+the two handoffs that have landed are both in build, and every 🕰️ row that remains is a design
+cycle that has not started.
 
 ---
 
@@ -80,7 +80,7 @@ first implementation PR lands and reaches ✅ only when the last one does.
 
 | # / vertical | Handoff | Progress | Notes |
 |---|---|---|---|
-| _(none)_ | — | — | Nothing is mid-build. |
+| **#340** Commanders as one plane (folds #335, #341, #343, #344) | `design/design_handoff_the99_commanders_plane/` (R6) | Eight phases built, one PR open | Search, colour join mode, and a list that states what it excluded and why. Audit: `R6-READINESS.md` (🟡 Yellow). All nine of R6's blockers closed eng-side — four against shipped source, four built as drawn and flagged for ratification in the PR body, one (the settled-query lookup) built in full. Plan: [`plans/2026-09-06-commanders-one-plane.md`](plans/2026-09-06-commanders-one-plane.md). Design-review pass: 0 gaps, [`gap-report-commanders-plane.md`](gap-report-commanders-plane.md) |
 
 _#288 was the occupant until 2026-09-06, when its single planned PR (#312) merged and it moved to ✅ Shipped. The six-theme visual system completed 2026-09-02, and the Add panel addendum before it. It completed 2026-08-09 with all six planned PRs merged (#201, #202, #204, #205, #206, #207, #208) and now sits in ✅ Shipped._
 
@@ -103,9 +103,9 @@ _Currently empty — #52's R1 Orange was closed by its R2 revision (✅ shipped 
 |---|---|---|---|---|
 | 1 | **#10** Design: Deck tuning suggestions from play results | `docs/superpowers/specs/2026-09-07-deck-tuning-suggestions-design.md` | Design owes five surfaces, §10 of the spec: the #9 log form gains an optional note, the #9 history row renders one, deck intent needs a home with empty/editable/app-seeded states, the tuning panel needs a state each for below threshold, ready, generating, results, nothing-changed, and every failure class in §6, and the suggestion card needs its cut/add pair with ownership label, price, rationale, cited evidence, and accepted/dismissed states | Post-v1 and the repo's first LLM tier, but every blocker is gone: #9 shipped 2026-09-06 with the data model, and the spec settles the rulings Design would otherwise have to ask about — apply-plus-verdict, anything-legal with ownership as a label, manual generation behind a fingerprint gate, and #9's no-percentage/denominator rules inherited wholesale |
 
-**#340** and **#342** left on 2026-09-06 when Design delivered their handoffs. **#340** sits in 🎨
-below, awaiting the eng readiness audit; **#342** audited 🟡 Yellow at R3 on 2026-09-07, built the
-same day and now sits in ✅ Shipped.
+**#340** and **#342** left on 2026-09-06 when Design delivered their handoffs. **#342** audited
+🟡 Yellow at R3 on 2026-09-07, built the same day and now sits in ✅ Shipped. **#340**'s R6 handoff
+audited 🟡 Yellow and it now sits in 🟢 above with its plan.
 
 **#220 left this queue on 2026-09-05**, the same day it entered it — its handoff landed and audited
 🟢 Green at R1, and the build ran through to 2026-09-06, so it now sits in ✅ Shipped below.
@@ -121,8 +121,6 @@ carries the four rulings that closed the spec's open questions.
 
 | Ticket | Stage | Notes |
 |---|---|---|
-| **#340** Commander filter and search controls need an overhaul (folds #335, #341, #343, #344) | Handoff delivered (R3) — **awaiting the eng readiness audit** | `design/design_handoff_the99_commanders_plane/`. Design's own `READINESS.md` is a self-assessment, not the audit verdict, and it **declares three items it will not assert away**: whether §6's must-not 3 ("no restyling the shipped header") covers the two declared values the two-row header changes — `align-items: flex-end → center` and dropping `flex-wrap: wrap` — which is Design's reading of the §4.5 ruling the brief asked for rather than a restyle (blocker 3); `ScoreAgainst`'s lateral position, raised as Hugh's call (blocker 2); and the finding that the fit sort does not render the nearest-deck clause at all. The audit is what turns this Green |
-
 | **Ratification batch** — **#140**, **#148**, **#182**, **#242**, plus the unfiled availability-marker placement | **Verdicts returned 2026-09-07** — applied on PR #395, three items still open | These held ranks 1–5 of 🕰️ until this move; the queue has since renumbered behind them, so those numbers describe where they came from and not any current row. Sent as one prompt rather than five because every item is the same ask: UI already live on `main` that needs a yes or a one-line rewrite. No handoff folder came back — the deliverable was verdicts, and they landed as `VERDICTS-2026-09-07`. The unfiled marker item rode in #182's batch rather than being filed as its own ticket, which is what its own row proposed while it sat at the old rank 4 |
 
 **A 2026-09-07 pass before the prompt went out found two of the five had drifted, and both ticket

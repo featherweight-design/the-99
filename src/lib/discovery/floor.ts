@@ -8,3 +8,12 @@
  * same number the ranking applied, and this is the one place it is written.
  */
 export const NOVELTY_FLOOR = 0.3;
+
+/**
+ * The same floor as a whole percentage, for the copy sites that print it.
+ *
+ * The floor appears in seven strings, and each one that rounded
+ * `NOVELTY_FLOOR * 100` for itself was a separate chance to disagree with the
+ * other six. The rounding happens once, here.
+ */
+export const FLOOR_PCT = Math.round(NOVELTY_FLOOR * 100);

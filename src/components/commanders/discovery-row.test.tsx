@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { planeCopy } from "../../lib/copy/commanders-plane";
+import { FLOOR_PCT } from "../../lib/discovery/floor";
 import { DiscoveryRow } from "./discovery-row";
+
+const name = "Lathril, Blade of the Elves";
 
 const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
   oracleId: "o1",
   slug: "lathril",
-  name: "Lathril, Blade of the Elves",
+  name,
   colorIdentity: ["B", "G"],
   imageUri: null,
   rank: 1,
@@ -22,7 +26,7 @@ const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
   unplayedLabels: ["elves", "tokens", "aristocrats", "counters"],
   unplayedCount: 4,
   nearestDeck: null,
-  floorPct: 47,
+  supportPct: 47,
   ...over,
 });
 
@@ -95,6 +99,47 @@ describe("DiscoveryRow", () => {
     expect(container.textContent).not.toContain(". Closest");
   });
 
+  // ── The archetype overflow (#343) ──────────────────────────────────────
+  // The count clause IS the trigger, so a row with nothing hidden must be
+  // byte-identical to what shipped: no glyph, no chevron, no control.
+  it("leaves the sentence alone when every archetype is already named", () => {
+    row({ unplayedLabels: ["elves", "tokens", "aristocrats"], unplayedCount: 3 }, "new");
+    expect(screen.queryByRole("button", { name: /archetypes/ })).toBeNull();
+    expect(screen.getAllByText("elves · tokens · aristocrats").length).toBeGreaterThan(0);
+  });
+
+  it("grows the sentence in place, and shrinks it back", () => {
+    const { container } = row({}, "new");
+    expect(container.textContent).toContain(
+      discoveryCopy.justify.tagList(["elves", "tokens", "aristocrats"], 1),
+    );
+
+    const open = () => screen.getAllByRole("button", { name: planeCopy.overflow.moreAria(4, name) });
+    fireEvent.click(open()[0]);
+    expect(screen.getAllByText("elves · tokens · aristocrats · counters").length).toBeGreaterThan(0);
+
+    // Both widths render the sentence, and one state drives both: a phone and a
+    // desktop reading of the same row cannot disagree about what it is showing.
+    const close = screen.getAllByRole("button", { name: planeCopy.overflow.fewerAria(name) });
+    expect(close).toHaveLength(2);
+    expect(close.every((b) => b.getAttribute("aria-expanded") === "true")).toBe(true);
+
+    fireEvent.click(close[0]);
+    expect(screen.queryByText("elves · tokens · aristocrats · counters")).toBeNull();
+    expect(open()).toHaveLength(2);
+  });
+
+  // The prose around it is `aria-hidden`, and a control inside an aria-hidden
+  // subtree is one no screen reader can find.
+  it("keeps the trigger in the accessibility tree, and above the row's link", () => {
+    row({}, "new");
+    const trigger = screen.getAllByRole("button", {
+      name: planeCopy.overflow.moreAria(4, name),
+    })[0];
+    expect(trigger.closest("[aria-hidden='true']")).toBeNull();
+    expect(trigger.className).toContain("z-[2]");
+  });
+
   it("leads the row's accessible name with ownership, before any figure", () => {
     row({ owned: true });
     const link = screen.getByRole("link");
@@ -130,6 +175,27 @@ describe("DiscoveryRow", () => {
         el.style.borderTop.includes("--border"),
       ),
     ).toBe(false);
+  });
+
+  // The note claims the row cleared a bar, so it has to name the bar — and name the one the
+  // ranking actually applied. Asserted against `FLOOR_PCT` rather than a literal 30, so a change
+  // to the floor cannot leave the row printing the old figure.
+  it("names the threshold the ranking applied in the floor note, at both widths", () => {
+    const { container } = row({ supportPct: 47 }, "new");
+    // `textContent` rather than `getByText`: the desktop note is emphasised, which splits the
+    // sentence across spans, and only the mobile one is a single text node.
+    expect(container.textContent).toContain(discoveryCopy.justify.floorNote(FLOOR_PCT, 47));
+    expect(screen.getAllByText(discoveryCopy.justify.floorNoteShort(FLOOR_PCT, 47)).length)
+      .toBeGreaterThan(0);
+  });
+
+  // A row sitting exactly on the floor prints the same percentage twice, and the mark used to
+  // land on the first of them — the threshold, which the note names rather than claims.
+  it("marks both figures when a row clears the floor by nothing at all", () => {
+    const { container } = row({ supportPct: FLOOR_PCT }, "new");
+    const marked = container.querySelectorAll("strong");
+    const text = [...marked].map((el) => el.textContent);
+    expect(text.filter((t) => t === `${FLOOR_PCT}%`)).toHaveLength(2);
   });
 
   it("explains an untagged commander instead of offering a retry", () => {

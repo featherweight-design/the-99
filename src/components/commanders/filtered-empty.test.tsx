@@ -21,6 +21,15 @@ describe("FilteredEmpty", () => {
     ).toBeTruthy();
   });
 
+  // `emphasis && body` made the mark conditional on a prop it has nothing to do with,
+  // so a caller marking a phrase of the DEFAULT caption was silently ignored.
+  it("marks a phrase of the default caption without being handed the caption", () => {
+    render(
+      <FilteredEmpty colors={["R"]} total={24} onClear={vi.fn()} emphasis="24 legal commanders" />,
+    );
+    expect(screen.getByText("24 legal commanders").tagName).toBe("STRONG");
+  });
+
   it("names the mono color for a single-color filter", () => {
     renderFilteredEmpty(["R"]);
     expect(screen.getByRole("heading").textContent).toBe("No generals in Red.");

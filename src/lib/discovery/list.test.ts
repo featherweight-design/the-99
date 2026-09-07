@@ -2,11 +2,17 @@ import { describe, expect, it } from "vitest";
 import { buildPoolRollup } from "../recs/pool-rollup";
 import { assembleDiscovery } from "./list";
 
-const candidate = (over: Partial<Parameters<typeof assembleDiscovery>[0]["candidates"][0]>) => ({
-  oracleId: "a", name: "A",
-  colorIdentity: ["G"], imageUri: null, edhrecTotal: 100, tags: [], ownedSupport: 50,
-  ...over,
-});
+// `collectionSupport` defaults to `ownedSupport` — the two are equal for every
+// ranking except a free-pool one, so a test that says nothing about the pool gets
+// the case where the distinction does not arise.
+const candidate = (over: Partial<Parameters<typeof assembleDiscovery>[0]["candidates"][0]>) => {
+  const merged = {
+    oracleId: "a", name: "A",
+    colorIdentity: ["G"], imageUri: null, edhrecTotal: 100, tags: [], ownedSupport: 50,
+    ...over,
+  };
+  return { collectionSupport: merged.ownedSupport, ...merged };
+};
 
 describe("assembleDiscovery", () => {
   const base = {
@@ -24,6 +30,7 @@ describe("assembleDiscovery", () => {
     // is what proves the rollup correct. `undefined` here throws in `rollupFor`.
     rollup: buildPoolRollup([], new Map()),
     cardsRead: 2805,
+    freePoolSize: 2805,
     availOk: true,
   };
 
@@ -77,5 +84,79 @@ describe("assembleDiscovery", () => {
     const got = assembleDiscovery({ ...base, sort: "fit" });
     expect(got.items.find((i) => i.oracleId === "a")!.owned).toBe(true);
     expect(got.items.find((i) => i.oracleId === "c")!.owned).toBe(false);
+  });
+
+  // The exclusion line's whole claim is that the figures it prints add up. Every
+  // candidate is ranked, floor-excluded, or unmeasurable, and never two of them.
+  it("partitions every candidate into exactly one of the three groups", () => {
+    const got = assembleDiscovery({ ...base, sort: "new" });
+    expect(got.items.length + got.floorExcluded + got.unmeasured).toBe(got.candidateCount);
+    expect(got.unmeasured).toBe(1);
+  });
+
+  it("excludes nothing under the fit sort, so both exclusion counts are zero", () => {
+    const got = assembleDiscovery({ ...base, sort: "fit" });
+    expect(got.floorExcluded).toBe(0);
+    expect(got.unmeasured).toBe(0);
+    expect(got.poolExcluded).toBe(0);
+  });
+
+  // The pool sub-case: below the floor on the free pool, above it on everything
+  // the player owns. This is the only state the pool exclusion sentences describe.
+  it("counts a floor exclusion the whole collection would have cleared", () => {
+    const pool = { ...base, candidates: [candidate({
+      ownedSupport: 20, collectionSupport: 60,
+      tags: [{ slug: "counters", label: "Counters", count: 1 }] })] };
+    const got = assembleDiscovery({ ...pool, sort: "new" });
+    expect(got.items).toEqual([]);
+    expect(got.floorExcluded).toBe(1);
+    expect(got.poolExcluded).toBe(1);
+  });
+
+  it("does not count a floor exclusion the whole collection also misses", () => {
+    const short = { ...base, candidates: [candidate({
+      ownedSupport: 20, collectionSupport: 25,
+      tags: [{ slug: "counters", label: "Counters", count: 1 }] })] };
+    expect(assembleDiscovery({ ...short, sort: "new" }).poolExcluded).toBe(0);
+  });
+
+  // Both pools run through `clearsFloor`, so the floor is inclusive on both and
+  // a row exactly on it is ranked rather than excluded. A SQL-side predicate for
+  // the second pool would have had to restate this, and restating it is how the
+  // sentence and the list come to disagree.
+  it("clears a row sitting exactly on the floor, on either pool", () => {
+    const onFloor = { ...base, candidates: [candidate({
+      edhrecTotal: 70, ownedSupport: 21, collectionSupport: 21,
+      tags: [{ slug: "counters", label: "Counters", count: 1 }] })] };
+    const got = assembleDiscovery({ ...onFloor, sort: "new" });
+    expect(got.items).toHaveLength(1);
+    expect(got.floorExcluded).toBe(0);
+    expect(got.poolExcluded).toBe(0);
+  });
+
+  // A zero denominator is unmeasurable, not cleared. SQL would have said
+  // `0 >= 0.3 * 0` and called it a pool exclusion; a null denominator would have
+  // yielded NULL into a boolean. `clearsFloor` guards both.
+  it("treats a zero or null denominator as unmeasurable on the collection too", () => {
+    for (const edhrecTotal of [0, null]) {
+      const bad = { ...base, candidates: [candidate({
+        edhrecTotal, ownedSupport: 0, collectionSupport: 0,
+        tags: [{ slug: "counters", label: "Counters", count: 1 }] })] };
+      const got = assembleDiscovery({ ...bad, sort: "new" });
+      expect(got.items).toEqual([]);
+      expect(got.floorExcluded).toBe(0);
+      expect(got.poolExcluded).toBe(0);
+      expect(got.unmeasured).toBe(1);
+    }
+  });
+
+  it("carries the ranked pool's size, which is not the collection's", () => {
+    expect(assembleDiscovery({ ...base, sort: "fit", freePoolSize: 1190 }).freePoolSize)
+      .toBe(1190);
+  });
+
+  it("does not ship the collection-support count to the client", () => {
+    const got = assembleDiscovery({ ...base, sort: "fit" });
+    expect(got.items[0]).not.toHaveProperty("collectionSupport");
   });
 });

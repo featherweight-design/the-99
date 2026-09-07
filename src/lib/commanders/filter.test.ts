@@ -86,4 +86,41 @@ describe("filterByColors", () => {
   it("returns empty array unchanged when input is empty", () => {
     expect(filterByColors([], ["B"])).toHaveLength(0);
   });
+
+  // The shipped behaviour is the default, so the two `FilterBar` call sites that
+  // never pass a mode keep the exact list they had before this argument existed.
+  it("matches contains by default", () => {
+    expect(filterByColors(allResults, ["U", "B"])).toEqual(
+      filterByColors(allResults, ["U", "B"], "contains"),
+    );
+  });
+
+  it("keeps only an identity that is the selection and nothing else under exactly", () => {
+    const result = filterByColors(allResults, ["U", "B", "R"], "exactly");
+    expect(result).toEqual([nekusar]);
+  });
+
+  // The difference between the modes, on one selection: Atraxa contains U and B,
+  // and is not U and B.
+  it("drops a wider identity under exactly that contains keeps", () => {
+    expect(filterByColors(allResults, ["U", "B"], "contains")).toContain(atraxa);
+    expect(filterByColors(allResults, ["U", "B"], "exactly")).not.toContain(atraxa);
+  });
+
+  it("matches a mono-colour identity exactly", () => {
+    expect(filterByColors(allResults, ["R"], "exactly")).toEqual([krenko]);
+  });
+
+  // With no pip lit there is no selection to be exact about, and the mode control
+  // is not rendered. Reading it literally would keep the colourless commanders —
+  // a filter the player never asked for, applied by a control that is not on screen.
+  it("returns everything unchanged on an empty selection under exactly too", () => {
+    expect(filterByColors(allResults, [], "exactly")).toEqual(allResults);
+  });
+
+  it("does not re-sort under exactly either", () => {
+    const twoBlue = [atraxa, nekusar, stub("Vela", ["U", "B", "R"])];
+    const result = filterByColors(twoBlue, ["U", "B", "R"], "exactly");
+    expect(result.map((r) => r.name)).toEqual(["Nekusar", "Vela"]);
+  });
 });

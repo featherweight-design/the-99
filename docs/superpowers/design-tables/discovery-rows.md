@@ -277,6 +277,11 @@
 | margin | 0 | 0 |
 | percentage — color / weight | inherits `#8B8270` / 400 (no `<b>` at 390px) | `var(--fg-body)` `#C0B8A6` / 600 |
 
+> Eng note: the note names two percentages, the threshold and the row's own, and **both** take
+> `--fg-body`. The drawing predates the threshold being printed at all; marking only the row's own
+> figure is not implementable, because a row clearing the floor exactly prints the same string
+> twice and the mark cannot tell the two apart.
+
 > README component-notes: "then the floor line: mono 11.5px `--fg-faint`, percentage in `--fg-body`." Canvas note: "the floor is stated as a qualifying fact in `--fg-faint` beneath the figure, **never added to it**. It explains presence, not position."
 
 ---
