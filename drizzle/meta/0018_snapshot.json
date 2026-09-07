@@ -291,7 +291,8 @@
           "name": "rank_score",
           "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": 0
         },
         "fit_pool": {
           "name": "fit_pool",

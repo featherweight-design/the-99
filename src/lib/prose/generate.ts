@@ -81,7 +81,17 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
     let accepted: string | null = null;
     let called = false;
     for (let i = 0; i < attempts && accepted === null; i++) {
-      const reply = await opts.complete(prompt);
+      // A model client that throws is failing the same way the documented `null` names,
+      // and one commander's timeout is not a reason to abandon the rest of the batch.
+      // Narrow on purpose: only the call is guarded, so a bug in the accept contract
+      // below still surfaces as a crash rather than a silently failed attempt.
+      let reply: string | null;
+      try {
+        reply = await opts.complete(prompt);
+      } catch (err) {
+        console.warn(`prose: request failed for ${c.name}: ${String(err)}`);
+        continue;
+      }
       if (reply === null) continue;
       called = true;
       const trimmed = reply.trim();

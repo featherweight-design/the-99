@@ -271,7 +271,11 @@ export const commanderScores = pgTable("commander_scores", {
   // ordering by it demotes the first group for a gap in our data rather than a
   // gap in their fit. This is that same score back on the 0–100 scale; it is
   // never printed and never drawn.
-  rankScore: real("rank_score").notNull(),
+  //
+  // The default exists for the deployment window alone: 0017 adds this column while the
+  // previous deployment is still inserting rows without it. Every insert from this schema
+  // writes the column, so the default is never the value that lands.
+  rankScore: real("rank_score").notNull().default(0),
   fitPool: real("fit_pool").notNull(),
   fitRoles: real("fit_roles").notNull(),
   // Null iff synergyState !== "ok".
