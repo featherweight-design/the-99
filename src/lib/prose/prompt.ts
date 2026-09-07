@@ -21,11 +21,16 @@ const TAG_LIMIT = 8;
  */
 const oneLine = (s: string): string => s.replace(/\s+/g, " ").trim();
 
+/**
+ * The labels the prompt names, most common first — flattened here rather than at the point
+ * of use, so the hash covers the same strings the prompt is built from and a label whose
+ * upstream whitespace changes shape without changing its words does not mark rows stale.
+ */
 const topTags = (tags: EdhrecTag[]): string[] =>
   [...tags]
     .sort((a, b) => b.count - a.count || a.slug.localeCompare(b.slug))
     .slice(0, TAG_LIMIT)
-    .map((t) => t.label);
+    .map((t) => oneLine(t.label));
 
 /**
  * The identity of the inputs a sentence claims to be about: the commander, the themes the
@@ -75,9 +80,14 @@ function claimBudget(subject: string): number {
  * characters to make a claim in and failed all three attempts. Doing that arithmetic here
  * and handing over the answer is the difference between a rule the model can follow and a
  * rule it cannot.
+ *
+ * It asks for a comma where `checkProse` accepts a comma, a semicolon or an em dash. That
+ * narrowing is deliberate — one punctuation mark to aim at is easier to hit than three, and
+ * anything the narrower instruction produces the wider check accepts. The advice below,
+ * which explains a rejection rather than asking for a sentence, names all three.
  */
 export function buildProsePrompt(commanderName: string, tags: EdhrecTag[]): string {
-  const themes = topTags(tags).map(oneLine);
+  const themes = topTags(tags);
   const subject = shortName(commanderName);
   const budget = claimBudget(subject);
   return [
@@ -112,10 +122,15 @@ export function buildProsePrompt(commanderName: string, tags: EdhrecTag[]): stri
 /** What each check means to a writer, as the instruction that would have avoided it. */
 const REJECTION_ADVICE: Record<ProseRejection, (subject: string) => string> = {
   length: () => `It was outside ${OK_MIN}-${HARD_MAX} characters. Count the characters.`,
-  sentences: () => "It was not exactly one sentence. One sentence, one full stop, at the end.",
+  sentences: () =>
+    'It was not exactly one sentence. Use one ".", "!" or "?", at the end and nowhere else.',
+  // The check measures the first of a comma, a semicolon or an em dash, and a sentence
+  // carrying none of the three fails it too, on its last character. Naming only the comma
+  // here told a sentence broken by a dash that its comma was late when it had no comma.
   "front-loading": (subject) =>
-    `Its first comma fell after character ${CLAIM_BY}. Put the comma earlier: about ` +
-    `${claimBudget(subject)} characters after "${subject} decks ", then elaborate.`,
+    `Its first comma, semicolon or dash fell after character ${CLAIM_BY} — or it had none ` +
+    `at all, which fails the same way. Break about ${claimBudget(subject)} characters after ` +
+    `"${subject} decks ", then elaborate.`,
   hedge: () => 'It carried no hedge. Use "tend to", "usually" or "mostly".',
 };
 

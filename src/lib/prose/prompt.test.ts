@@ -119,8 +119,16 @@ describe("buildProseRetryPrompt", () => {
 
   it("names the rule that was broken, not just that one was", () => {
     const p = buildProseRetryPrompt("Urabrask the Hidden", TAGS, rejected, "front-loading");
-    expect(p).toContain(`first comma fell after character ${CLAIM_BY}`);
+    expect(p).toContain(`first comma, semicolon or dash fell after character ${CLAIM_BY}`);
     expect(p).not.toContain("carried no hedge");
+  });
+
+  // The check measures any of a comma, a semicolon or an em dash, so advice naming only the
+  // comma told a sentence broken by a dash that its comma was late when it had none.
+  it("names every break the front-loading check measures, not just the comma", () => {
+    const p = buildProseRetryPrompt("Urabrask the Hidden", TAGS, rejected, "front-loading");
+    expect(p).toContain("semicolon or dash");
+    expect(p).toContain("or it had none at all");
   });
 
   it("gives different advice for a different rule", () => {
