@@ -188,12 +188,20 @@ and coming back shows a run in progress and then its result. Nothing depends on 
 
 **Interrupted runs are reaped on read.** If the function dies mid-call, its row would sit `pending`
 forever and the partial unique index would block the deck from ever generating again. So a pending run older
-than a few minutes is treated as interrupted, and the read path **writes it to `failed` with the
-`interrupted` class** rather than merely displaying it that way. The distinction matters: the index keys on
-the stored `status`, so a row that is only *read* as dead still blocks the deck. **Both sides of that race are conditional, and
-that is what makes it safe.** The reaper writes `update ... where status = 'pending' and created_at <
-cutoff`; the generation path writes its own outcome `where status = 'pending'` and treats zero rows affected
-as "I was reaped" — it discards its result rather than resurrecting a run the deck has already moved past.
+than a few minutes is treated as interrupted, and the read path writes it to `failed` with the
+`interrupted` class rather than merely displaying it that way. The distinction matters: the index keys on
+the stored `status`, so a row that is only *read* as dead still blocks the deck.
+
+**Both sides of that race are conditional, and that is what makes it safe.** The reaper writes:
+
+```sql
+update deck_suggestion_runs set status = 'failed', error_class = 'interrupted'
+where status = 'pending' and created_at < :cutoff
+```
+
+The generation path writes its own outcome under the same `where status = 'pending'` guard, and treats zero
+rows affected as "I was reaped" — it discards its result rather than resurrecting a run the deck has moved
+past.
 Without the second half the reaper could clobber a run that had just succeeded, which would be worse than
 the deadlock it was added to prevent: the player paid for an answer and watched it turn into an error.
 Exactly one of the two writes lands. This is a rule in the read path, not a scheduled job: no cron,
