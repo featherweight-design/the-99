@@ -56,11 +56,11 @@ export function ConfirmModal({
         aria-labelledby="confirm-title"
         onClick={(e) => e.stopPropagation()}
         // Mobile: bottom sheet (§Mobile: Bottom Sheet: bg --surface-rail, radius 22px 22px 34px 34px, padding 26px 22px 30px)
-        // Desktop: §Desktop: Modal Container: 520px, bg var(--surface-rail), border 1px var(--border-strong), radius 16px, padding 32px 34px 30px, shadow 0 40px 100px rgba(0,0,0,0.7)
+        // Desktop: §Desktop: Modal Container: 520px, bg var(--surface-rail), border 1px var(--border-strong), radius 16px, padding 32px 34px 30px, shadow --modal-shadow
         className="w-full md:w-[520px] rounded-[22px_22px_34px_34px] md:rounded-2xl p-[26px_22px_30px] md:p-[32px_34px_30px] mt-auto md:mt-0 [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)]"
         style={{
           background: "var(--surface-rail)",
-          boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
+          boxShadow: "var(--modal-shadow)",
         }}
       >
         {/* Mobile drag handle — §Mobile: Sheet Drag Handle: 40×4, radius 999px, bg --border-strong, margin 0 auto 20px */}

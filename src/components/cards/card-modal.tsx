@@ -374,14 +374,14 @@ export function CardModal({
         aria-labelledby="card-modal-title"
         onClick={(e) => e.stopPropagation()}
         // Mobile: full-screen sheet (§Mobile: Full-Screen Sheet Container: bg var(--surface-sunken))
-        // Desktop: 820px centered, bg --surface-rail, border 1px --border-strong, radius 16px, shadow 0 40px 100px rgba(0,0,0,0.7)
+        // Desktop: 820px centered, bg --surface-rail, border 1px --border-strong, radius 16px, shadow --modal-shadow
         // Desktop height is fixed rather than h-auto: oracle text runs from one
         // line to twelve, and paging Prev/Next through the collection resized
         // the dialog under the cursor on every step. The content column scrolls
         // instead.
         className="flex flex-col overflow-hidden w-full h-full md:h-[620px] md:max-h-[85vh] md:w-[820px] md:flex-row md:rounded-2xl bg-[color:var(--surface-sunken)] md:bg-[color:var(--surface-rail)] md:[border:1px_solid_var(--border-strong)]"
         style={{
-          boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
+          boxShadow: "var(--modal-shadow)",
         }}
       >
         {/* MOBILE art header — §Mobile: Art Header. The band and the tile inside it

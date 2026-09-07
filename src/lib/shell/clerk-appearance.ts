@@ -67,7 +67,7 @@ export const clerkAppearance: Appearance = {
       background: "var(--surface)",
       border: "1px solid var(--border-strong)",
       borderRadius: 16,
-      boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
+      boxShadow: "var(--modal-shadow)",
       [MOBILE]: { borderRadius: 0, border: "none" },
     },
     // cardBox owns the surface; card must not paint a second one over it. The
