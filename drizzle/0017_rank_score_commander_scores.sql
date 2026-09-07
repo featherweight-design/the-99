@@ -7,11 +7,18 @@
 -- `rank_score` is that same score back on the 0-100 scale, used only as an ORDER BY
 -- key. It is never printed and never drawn.
 --
--- The DELETE comes first and is load-bearing twice over. `rank_score` is NOT NULL with
--- no default, so the ADD COLUMN cannot succeed while rows exist. And the segment
--- arithmetic changed in the same commit — `fit_pool`/`fit_roles`/`fit_synergy` are now
--- whole points rather than tenths, so persisted rows carry figures whose legend would
--- not add up to the headline beside it. Nothing marks either staleness.
+-- The DELETE is still needed, because the segment arithmetic changed in the same commit —
+-- `fit_pool`/`fit_roles`/`fit_synergy` are now whole points rather than tenths, so persisted
+-- rows carry figures whose legend would not add up to the headline beside it, and nothing
+-- marks that staleness.
+--
+-- It comes last, and the column arrives with a default it immediately drops, so the schema
+-- change does not depend on the table being empty. Ordered the other way round, an insert
+-- from the still-live old deployment landing between the DELETE and the ALTER would fail
+-- the whole production build: this runs inside the Vercel build, `getRankedList` re-persists
+-- on a miss, and nothing here holds a lock that blocks writes for that window. The default
+-- is never read — every surviving row is deleted three statements later, and the app writes
+-- the column on every insert from here on.
 --
 -- Safe to empty, on the same grounds as 0016: `commander_scores` is derived data.
 -- `getRankedList` recomputes and re-persists on a miss, and `replaceCollection` already
@@ -21,7 +28,8 @@
 -- DELETE rather than TRUNCATE, deliberately: TRUNCATE takes an ACCESS EXCLUSIVE lock,
 -- and this runs inside the production Vercel build while the deployed app is still
 -- serving reads off this table.
-DELETE FROM "commander_scores";--> statement-breakpoint
 DROP INDEX "commander_scores_rank_idx";--> statement-breakpoint
-ALTER TABLE "commander_scores" ADD COLUMN "rank_score" real NOT NULL;--> statement-breakpoint
-CREATE INDEX "commander_scores_rank_idx" ON "commander_scores" USING btree ("user_id","rank_score" DESC NULLS LAST,"oracle_id");
+ALTER TABLE "commander_scores" ADD COLUMN "rank_score" real DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "commander_scores" ALTER COLUMN "rank_score" DROP DEFAULT;--> statement-breakpoint
+CREATE INDEX "commander_scores_rank_idx" ON "commander_scores" USING btree ("user_id","rank_score" DESC NULLS LAST,"oracle_id");--> statement-breakpoint
+DELETE FROM "commander_scores";
