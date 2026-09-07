@@ -130,8 +130,9 @@ pass 99 and reads as `Over` — so there are three refusal reasons rather than f
 remove-path fallback that was never on the ticket has appeared; the set is still five strings but
 a different five. #182 lost two more calls to self-closure: its em dashes are the quoted
 `RECOMMENDED_MIX` rationales that `docs/superpowers/design-tables/add-panel-addendum.md` §10
-finding 8 already rules must not be "fixed", and the 44px mobile Add height is the same table's
-accessibility contract being followed rather than a divergence from it. Eight calls became six.
+finding 8 already rules must not be "fixed", and the 44px mobile Add height is the *original*
+table's accessibility contract being followed rather than a divergence from it — `add-panel.md`
+states the 44px minimum at `:74`, `:267`, `:385` and `:581`. Eight calls became six.
 #148 and #242 verified unchanged.
 
 **Both handoff folders are on disk untracked and are not committed to `main`.** They arrived
