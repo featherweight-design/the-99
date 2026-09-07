@@ -31,7 +31,11 @@ describe("generateCommanderProse", () => {
       write,
     });
     expect(r.written).toBe(1);
-    expect(write).toHaveBeenCalledWith("oracle-kess", ACCEPTED, proseInputHash("oracle-kess", TAGS));
+    expect(write).toHaveBeenCalledWith(
+      "oracle-kess",
+      ACCEPTED,
+      proseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS),
+    );
   });
 
   // The whole point of the contract: a string that fails it is not stored, not shortened.
@@ -87,7 +91,11 @@ describe("generateCommanderProse", () => {
       attempts: 1,
     });
     expect(r).toMatchObject({ written: 1, rejected: 0, failed: 1 });
-    expect(write).toHaveBeenCalledWith("oracle-kess", ACCEPTED, proseInputHash("oracle-kess", TAGS));
+    expect(write).toHaveBeenCalledWith(
+      "oracle-kess",
+      ACCEPTED,
+      proseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS),
+    );
   });
 
   // Before generation, not after — a suppressed commander is never asked for.
@@ -108,7 +116,10 @@ describe("generateCommanderProse", () => {
     const r = await generateCommanderProse({
       complete,
       loadCandidates: async () => [
-        candidate({ prose: ACCEPTED, proseInputHash: proseInputHash("oracle-kess", TAGS) }),
+        candidate({
+          prose: ACCEPTED,
+          proseInputHash: proseInputHash("oracle-kess", "Kess, Dissident Mage", TAGS),
+        }),
       ],
       write: async () => {},
     });

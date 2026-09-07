@@ -92,7 +92,7 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
     // Consulted before generation, not after: a suppressed commander is never asked for.
     if (suppressed(c.oracleId)) { r.suppressed++; continue; }
 
-    const hash = proseInputHash(c.oracleId, c.tags);
+    const hash = proseInputHash(c.oracleId, c.name, c.tags);
     if (c.prose !== null && c.proseInputHash === hash) { r.fresh++; continue; }
 
     let accepted: string | null = null;

@@ -39,9 +39,23 @@ const topTags = (tags: EdhrecTag[]): string[] =>
  * A row whose stored hash differs from the hash its current inputs produce is stale. The
  * generator regenerates it; readers still serve it, because a slightly stale sentence is
  * better than no sentence.
+ *
+ * The name is in the payload as well as the oracle id, which is redundant only while the
+ * two move together. A sentence has to open with the subject the name produces, so a card
+ * renamed under its existing oracle id leaves a stored sentence naming a card that no
+ * longer exists — the one case where the oracle id alone says fresh and the string is not.
  */
-export function proseInputHash(oracleId: string, tags: EdhrecTag[]): string {
-  const payload = JSON.stringify([oracleId, topTags(tags), PROSE_PROMPT_VERSION]);
+export function proseInputHash(
+  oracleId: string,
+  commanderName: string,
+  tags: EdhrecTag[],
+): string {
+  const payload = JSON.stringify([
+    oracleId,
+    oneLine(commanderName),
+    topTags(tags),
+    PROSE_PROMPT_VERSION,
+  ]);
   return createHash("sha256").update(payload).digest("hex");
 }
 
@@ -126,9 +140,9 @@ const REJECTION_ADVICE: Record<ProseRejection, (subject: string) => string> = {
     'It was not exactly one sentence. Use one ".", "!" or "?", at the end and nowhere else.',
   // The check measures the first of a comma, a semicolon or an em dash, and a sentence
   // carrying none of the three fails it too, on its last character. Naming only the comma
-  // here told a sentence broken by a dash that its comma was late when it had no comma.
+  // here told a sentence broken by an em dash that its comma was late when it had no comma.
   "front-loading": (subject) =>
-    `Its first comma, semicolon or dash fell after character ${CLAIM_BY} — or it had none ` +
+    `Its first comma, semicolon or em dash fell after character ${CLAIM_BY} — or it had none ` +
     `at all, which fails the same way. Break about ${claimBudget(subject)} characters after ` +
     `"${subject} decks ", then elaborate.`,
   hedge: () => 'It carried no hedge. Use "tend to", "usually" or "mostly".',

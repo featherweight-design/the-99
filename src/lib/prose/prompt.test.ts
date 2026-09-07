@@ -119,15 +119,15 @@ describe("buildProseRetryPrompt", () => {
 
   it("names the rule that was broken, not just that one was", () => {
     const p = buildProseRetryPrompt("Urabrask the Hidden", TAGS, rejected, "front-loading");
-    expect(p).toContain(`first comma, semicolon or dash fell after character ${CLAIM_BY}`);
+    expect(p).toContain(`first comma, semicolon or em dash fell after character ${CLAIM_BY}`);
     expect(p).not.toContain("carried no hedge");
   });
 
   // The check measures any of a comma, a semicolon or an em dash, so advice naming only the
-  // comma told a sentence broken by a dash that its comma was late when it had none.
+  // comma told a sentence broken by an em dash that its comma was late when it had none.
   it("names every break the front-loading check measures, not just the comma", () => {
     const p = buildProseRetryPrompt("Urabrask the Hidden", TAGS, rejected, "front-loading");
-    expect(p).toContain("semicolon or dash");
+    expect(p).toContain("semicolon or em dash");
     expect(p).toContain("or it had none at all");
   });
 
@@ -144,19 +144,41 @@ describe("buildProseRetryPrompt", () => {
 });
 
 describe("proseInputHash", () => {
+  const KESS = "Kess, Dissident Mage";
+
   it("is stable for the same inputs", () => {
-    expect(proseInputHash("oracle-kess", TAGS)).toBe(proseInputHash("oracle-kess", TAGS));
+    expect(proseInputHash("oracle-kess", KESS, TAGS)).toBe(
+      proseInputHash("oracle-kess", KESS, TAGS),
+    );
   });
 
   it("ignores the order the tags arrive in, since it sorts by count", () => {
-    expect(proseInputHash("oracle-kess", [...TAGS].reverse())).toBe(
-      proseInputHash("oracle-kess", TAGS),
+    expect(proseInputHash("oracle-kess", KESS, [...TAGS].reverse())).toBe(
+      proseInputHash("oracle-kess", KESS, TAGS),
     );
   });
 
   it("moves when the tags move", () => {
-    expect(proseInputHash("oracle-kess", TAGS)).not.toBe(
-      proseInputHash("oracle-kess", [{ slug: "aristocrats", label: "Aristocrats", count: 900 }]),
+    expect(proseInputHash("oracle-kess", KESS, TAGS)).not.toBe(
+      proseInputHash("oracle-kess", KESS, [
+        { slug: "aristocrats", label: "Aristocrats", count: 900 },
+      ]),
     );
+  });
+
+  // A sentence has to open with the subject the name produces, so a card renamed under its
+  // existing oracle id leaves a stored string naming a card that no longer exists.
+  it("moves when the name moves under the same oracle id", () => {
+    expect(proseInputHash("oracle-kess", KESS, TAGS)).not.toBe(
+      proseInputHash("oracle-kess", "Kess, Dissident Magus", TAGS),
+    );
+  });
+
+  // The prompt is built from the flattened label, so a label that differs only in the shape
+  // of its whitespace is the same input and must not mark every row stale.
+  it("ignores whitespace shape in a tag label", () => {
+    expect(
+      proseInputHash("oracle-kess", KESS, [{ slug: "s", label: "Spell\nslinger", count: 9 }]),
+    ).toBe(proseInputHash("oracle-kess", KESS, [{ slug: "s", label: "Spell slinger", count: 9 }]));
   });
 });
