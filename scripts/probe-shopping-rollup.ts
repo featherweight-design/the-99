@@ -1,0 +1,77 @@
+// Gate for the shopping roll-up (`src/lib/decks/shopping-rollup.ts`), hand-run
+// like its siblings and not part of `pnpm test`.
+//
+// `sumShopping` is pure and unit-tested. `loadShoppingRollup` is a query, and
+// the repo's untested-query pattern leaves those to the type checker and a real
+// database — so this runs it against the dev data and checks the three things a
+// type cannot:
+//
+//   1. A deck whose cards are all owned is ABSENT from byDeck, not present at
+//      zero. Home has to tell "nothing to buy" apart from "no deck".
+//   2. total.copies equals the sum of every tile's toBuyCount, because the deck
+//      tile and Home's Commitments row are the same figure at two scopes.
+//   3. An unpriced copy still counts as a copy. pricedCopies <= copies, and a
+//      deck holding a card the feed has never stocked has the gap.
+//
+//   pnpm tsx scripts/probe-shopping-rollup.ts
+import "./lib/env.mjs";
+import { desc } from "drizzle-orm";
+import { db } from "../src/db";
+import { decks } from "../src/db/schema";
+import { listDecksWithStats } from "../src/lib/decks/read";
+import { loadShoppingRollup } from "../src/lib/decks/shopping-rollup";
+
+async function main() {
+  const owners = await db
+    .select({ userId: decks.userId })
+    .from(decks)
+    .orderBy(desc(decks.createdAt))
+    .limit(50);
+  const userIds = [...new Set(owners.map((o) => o.userId))];
+
+  if (userIds.length === 0) {
+    console.log("no decks in this database — cannot probe");
+    return;
+  }
+
+  for (const userId of userIds) {
+    const rollup = await loadShoppingRollup(userId);
+    const tiles = await listDecksWithStats(userId);
+    const tileTotal = tiles.reduce((n, d) => n + d.toBuyCount, 0);
+
+    const fullyOwned = tiles.filter((d) => d.toBuyCount === 0);
+    const wronglyPresent = fullyOwned.filter((d) => rollup.byDeck.has(d.id)).map((d) => d.name);
+
+    const perDeck = tiles.map((d) => ({
+      name: d.name,
+      toBuyCount: d.toBuyCount,
+      rollupCopies: rollup.byDeck.get(d.id)?.copies ?? null,
+      cents: rollup.byDeck.get(d.id)?.cents ?? null,
+      pricedCopies: rollup.byDeck.get(d.id)?.pricedCopies ?? null,
+      lastPlayedAt: d.lastPlayedAt,
+    }));
+
+    console.log(
+      JSON.stringify(
+        {
+          userId,
+          decks: tiles.length,
+          total: rollup.total,
+          tileToBuyTotal: tileTotal,
+          totalsAgree: tileTotal === rollup.total.copies,
+          fullyOwnedDecks: fullyOwned.length,
+          fullyOwnedButPresentInRollup: wronglyPresent,
+          unpricedCopies: rollup.total.copies - rollup.total.pricedCopies,
+          perDeck,
+        },
+        null,
+        2,
+      ),
+    );
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
