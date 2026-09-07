@@ -52,7 +52,9 @@ describe("GroupToggle price strip", () => {
       />,
     );
     const href = screen.getByRole("link").getAttribute("href")!;
-    expect(atob(decodeURIComponent(new URL(href).searchParams.get("deck")!))).toBe("1 Sol Ring");
+    const binary = atob(new URL(href).searchParams.get("deck")!);
+    const text = new TextDecoder().decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)));
+    expect(text).toBe("1 Sol Ring");
   });
 
   it("renders no strip when there is no summary", () => {

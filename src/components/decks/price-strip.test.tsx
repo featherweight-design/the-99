@@ -150,8 +150,12 @@ describe("PriceStrip figure line", () => {
 });
 
 describe("PriceStrip buy link", () => {
+  // Base64 of UTF-8 BYTES, as `manapoolAddDeckUrl` writes it — `atob` alone
+  // returns one char per byte, which turns any card name outside ASCII into
+  // mojibake and would let a broken payload pass.
   function hrefList(href: string): string {
-    return atob(decodeURIComponent(new URL(href).searchParams.get("deck")!));
+    const binary = atob(new URL(href).searchParams.get("deck")!);
+    return new TextDecoder().decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)));
   }
 
   it("buys the list it was passed, quantities and all", () => {
@@ -165,6 +169,19 @@ describe("PriceStrip buy link", () => {
     const link = screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) });
     expect(link).toHaveAttribute("href", expect.stringContaining("manapool.com/add-deck"));
     expect(hrefList(link.getAttribute("href")!)).toBe("1 Sol Ring\n2 Cultivate");
+  });
+
+  // Card names carry accents and Æ, and a payload built from raw char codes
+  // would hand the store a different card than the one on screen.
+  it("carries a name outside ASCII through the payload intact", () => {
+    render(
+      <PriceStrip
+        summary={{ totalCents: 1240, pricedCopies: 6, totalCopies: 8 }}
+        provenance={fresh}
+        shoppingCards={[{ name: "Æther Vial", quantity: 1 }]}
+      />,
+    );
+    expect(hrefList(screen.getByRole("link").getAttribute("href")!)).toBe("1 Æther Vial");
   });
 
   // The link buys every row on the list, priced or not — the unpriced ones are
