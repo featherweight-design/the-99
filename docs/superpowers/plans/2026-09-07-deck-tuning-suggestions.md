@@ -89,7 +89,7 @@ Every task's requirements implicitly include this section.
 | File | Responsibility |
 |---|---|
 | `src/app/decks/tuning-actions.ts` | Every server action: `runTuning`, `cancelTuningRun`, `applySuggestion`, `undoSuggestion`, `dismissSuggestion`, `restoreSuggestion`, `saveDeckIntent`, `readTuningEvidence`. |
-| `src/lib/decks/tuning-read.ts` | `readTuningState(deckId, userId)` — the newest run plus its items, reaping on the way past. |
+| `src/lib/decks/tuning-read.ts` | `readTuningState(deckId, userId, fingerprint)` — the newest run plus its items, reaping on the way past. |
 
 **Copy:**
 
@@ -112,6 +112,7 @@ Every task's requirements implicitly include this section.
 |---|---|
 | `src/db/schema.ts` | `deck_games.note`; `decks.intent` + `decks.intent_seeded`; `deck_suggestion_runs`; `deck_suggestion_items`. Adds the `uniqueIndex` import. |
 | `src/lib/decks/games.ts` | `DeckGame.note`, read by `listDeckGames`. |
+| `src/lib/decks/read.ts` | `DeckDetail.intent` and `.intentSeeded`, projected by `getDeckDetail`. |
 | `src/app/decks/actions.ts` | `logGame` accepts and stores the note. |
 | `src/app/decks/[id]/page.tsx` | Reads tuning state; exports `maxDuration`. |
 | `src/components/decks/game-log-form.tsx` | The note field. |
@@ -200,9 +201,12 @@ export const deckSuggestionRuns = pgTable("deck_suggestion_runs", {
   ),
   // The constraint that makes a second concurrent run impossible. Partial, on
   // 'pending' only — a deck may accumulate any number of finished runs.
+  // The predicate is written as raw SQL, not as `${t.status}`. Drizzle renders a
+  // column reference table-qualified, and Postgres rejects a qualified name in
+  // an index predicate.
   uniqueIndex("deck_suggestion_runs_one_pending_idx")
     .on(t.deckId)
-    .where(sql`${t.status} = 'pending'`),
+    .where(sql`status = 'pending'`),
   index("deck_suggestion_runs_deck_created_idx").on(t.deckId, t.createdAt),
   index("deck_suggestion_runs_user_created_idx").on(t.userId, t.createdAt),
 ]);
@@ -222,8 +226,10 @@ export type TuningCitation = {
 export const deckSuggestionItems = pgTable("deck_suggestion_items", {
   id: uuid("id").primaryKey().defaultRandom(),
   runId: uuid("run_id").notNull().references(() => deckSuggestionRuns.id, { onDelete: "cascade" }),
-  addOracleId: text("add_oracle_id").notNull().references(() => cards.oracleId),
-  cutOracleId: text("cut_oracle_id").references(() => cards.oracleId),
+  // uuid, not text — cards.oracleId is uuid("oracle_id") at src/db/schema.ts:25
+  // and Postgres rejects a text→uuid foreign key. Matches deckCards.oracleId.
+  addOracleId: uuid("add_oracle_id").notNull().references(() => cards.oracleId),
+  cutOracleId: uuid("cut_oracle_id").references(() => cards.oracleId),
   rationale: text("rationale").notNull(),
   rationaleShort: text("rationale_short").notNull(),
   evidence: jsonb("evidence").$type<TuningCitation[]>().notNull(),
@@ -485,24 +491,38 @@ Expected: PASS.
 
 - [ ] **Step 5: Accept the note in `logGame`**
 
-`logGame` at `src/app/decks/actions.ts:849` validates inline without zod (lines 861-889) and inserts inside a transaction. Follow that existing style rather than introducing zod here:
+`logGame` is **not** a form action. Its signature is `logGame(deckId: string, input: LogGameInput)` (`src/app/decks/actions.ts:849-851`), `LogGameInput` is declared at `:822`, and `game-log-form.tsx:199` calls it directly with an object. Do not reach for `FormData` here.
+
+Add to `LogGameInput`:
 
 ```typescript
-  const rawNote = formData.get("note");
-  const note = typeof rawNote === "string" ? rawNote.trim() : "";
-  if (note.length > deckTuningCopy.note.maxLength) {
-    return { ok: false, message: gameLogCopy.form.refused };
-  }
+  note?: string;
 ```
 
-and pass `note: note.length > 0 ? note : null` in the `deckGames` insert. A blank note stores null, not an empty string — so "has a note" is one predicate everywhere.
+and validate it in the same inline style the action already uses (lines 861-889 — no zod), remembering the action's own comment that "a server action is a public endpoint, so the input's declared type is a claim and not a guarantee":
 
-- [ ] **Step 6: Run the full suite and commit**
+```typescript
+  const note = typeof input.note === "string" ? input.note.trim() : "";
+  if (note.length > deckTuningCopy.note.maxLength) return refuse;
+```
+
+`refuse` is the existing local at line 855. Pass `note: note.length > 0 ? note : null` in the `deckGames` insert. A blank note stores null, not an empty string — so "has a note" is one predicate everywhere.
+
+- [ ] **Step 6: Project the intent onto `DeckDetail`**
+
+Tasks 5, 7, 11, and 16 all read `detail.intent`, and `getDeckDetail` does not select it today. Add both columns to the `decks` select in `src/lib/decks/read.ts` and to the `DeckDetail` type at `:74-100`:
+
+```typescript
+  intent: string | null;
+  intentSeeded: boolean;
+```
+
+- [ ] **Step 7: Run the full suite and commit**
 
 ```bash
 pnpm test && pnpm typecheck
-git add src/lib/decks/games.ts src/lib/decks/games.test.ts src/app/decks/actions.ts
-git commit -m "feat(tuning): carry a per-game note through the log and the read"
+git add src/lib/decks/games.ts src/lib/decks/games.test.ts src/lib/decks/read.ts src/app/decks/actions.ts
+git commit -m "feat(tuning): carry a per-game note and the deck intent through the reads"
 ```
 
 ---
@@ -533,8 +553,14 @@ it("counts down only as the note approaches its cap", async () => {
   expect(screen.getByText(deckTuningCopy.note.counter(130, 140))).toBeInTheDocument();
 });
 
+// GameLogForm takes no injectable action — it imports logGame directly
+// (game-log-form.tsx:199). Mock the module, the way the file's existing tests do.
+vi.mock("../../app/decks/actions", () => ({
+  logGame: vi.fn(async () => ({ ok: false, message: "no" })),
+}));
+
 it("keeps what was typed when the save is refused", async () => {
-  render(<GameLogForm deckId="d1" onDone={() => {}} action={async () => ({ ok: false, message: "no" })} />);
+  render(<GameLogForm deckId="d1" onDone={() => {}} />);
   const note = screen.getByLabelText(deckTuningCopy.note.label);
   await userEvent.type(note, "flooded out");
   await userEvent.click(screen.getByRole("button", { name: gameLogCopy.form.save }));
@@ -544,10 +570,14 @@ it("keeps what was typed when the save is refused", async () => {
 
 ```typescript
 // src/components/decks/game-history-row.test.tsx — add
+// GameHistoryRow's required props are deckId, isLast, and onDeleted
+// (game-history-row.tsx:37) — omitting them will not typecheck.
+const rowProps = { deckId: "d1", isLast: false, onDeleted: () => {} };
+
 it("renders the note when there is one and nothing when there is not", () => {
-  const { rerender } = render(<GameHistoryRow game={{ ...base, note: null }} />);
+  const { rerender } = render(<GameHistoryRow {...rowProps} game={{ ...base, note: null }} />);
   expect(screen.queryByText(/flooded/)).not.toBeInTheDocument();
-  rerender(<GameHistoryRow game={{ ...base, note: "flooded out" }} />);
+  rerender(<GameHistoryRow {...rowProps} game={{ ...base, note: "flooded out" }} />);
   expect(screen.getByText("flooded out")).toBeInTheDocument();
 });
 ```
@@ -629,7 +659,9 @@ export const MODEL_TIMEOUT_MS = 90_000;
 export const TUNING_RUNS_PER_HOUR = 5;
 
 export function intentRefusal(intent: string): string | null {
-  return intent.length > deckTuningCopy.intent.maxLength ? deckTuningCopy.card.applyRefused : null;
+  // The shipped form refusal, not a tuning-specific string — this is a form
+  // rejecting what was typed, which is the case gameLogCopy.form.refused names.
+  return intent.length > deckTuningCopy.intent.maxLength ? gameLogCopy.form.refused : null;
 }
 ```
 
@@ -649,7 +681,7 @@ export async function saveDeckIntent(deckId: string, formData: FormData): Promis
     .set({ intent: intent.length > 0 ? intent : null, intentSeeded: false })
     .where(and(eq(decks.id, deckId), eq(decks.userId, userId)))
     .returning({ id: decks.id });
-  if (updated.length === 0) return { ok: false, message: deckTuningCopy.card.applyRefused };
+  if (updated.length === 0) return { ok: false, message: gameLogCopy.form.refused };
 
   for (const path of deckSurfaces(deckId)) revalidatePath(path);
   return { ok: true };
@@ -688,11 +720,27 @@ it("keeps the typed intent when the save is refused", async () => {
 
 Four states: no intent (the ask), an intent as a chip, the chip in edit, and a seeded chip. `maxLength={deckTuningCopy.intent.maxLength}` on the field. The component stays mounted through the pending save — a chip that vanishes and returns is the mid-write unmount the global constraints forbid. `Skip` dismisses the ask for the visit without writing anything.
 
-- [ ] **Step 6: Run the tests and commit**
+- [ ] **Step 6: Seed the intent where the app builds a deck**
+
+Without a writer of `intentSeeded: true`, state 4 is dead code — nothing else in the plan ever sets it. `fillDeck` (`src/app/decks/actions.ts:511`) is the app building a deck on the player's behalf, so it is the seeder. Inside its existing transaction, when `decks.intent` is null, write a one-line intent drawn from the commander and the mix the fill chose, with `intentSeeded: true`.
+
+```typescript
+if (deck.intent === null) {
+  await tx.update(decks)
+    .set({ intent: seededIntent(commanderName), intentSeeded: true })
+    .where(eq(decks.id, deckId));
+}
+```
+
+`seededIntent` lives in `src/lib/tuning/limits.ts` beside `intentRefusal` so the two caps are enforced in one place, and it must return a string of at most `deckTuningCopy.intent.maxLength` characters. Test it at the boundary with the longest commander name in the catalog, not with a short one.
+
+Only fill seeds. A deck the player built card by card has no app-authored intent to disclose, and inventing one would put words in their mouth — which is exactly what the seeded chip exists to be honest about.
+
+- [ ] **Step 7: Run the tests and commit**
 
 ```bash
 pnpm test src/components/decks/deck-intent.test.tsx src/app/decks/tuning-actions.test.ts
-git add src/lib/tuning/limits.ts src/app/decks/tuning-actions.ts src/app/decks/tuning-actions.test.ts src/components/decks/deck-intent.tsx src/components/decks/deck-intent.test.tsx
+git add src/lib/tuning/limits.ts src/app/decks/actions.ts src/app/decks/tuning-actions.ts src/app/decks/tuning-actions.test.ts src/components/decks/deck-intent.tsx src/components/decks/deck-intent.test.tsx
 git commit -m "feat(tuning): deck intent — ask, chip, edit, and seeded provenance"
 ```
 
@@ -1219,6 +1267,17 @@ it("reports timeout when the call outruns its budget", async () => {
 });
 ```
 
+```typescript
+it("spends one deadline across both attempts, not one each", async () => {
+  // First attempt returns 529 after MODEL_TIMEOUT_MS - 1000ms. The retry must
+  // be armed at ~1000ms, not at a fresh MODEL_TIMEOUT_MS.
+  const arms: number[] = [];
+  const fake = (_u: string, init?: RequestInit) => { arms.push(remainingOn(init!.signal!)); return busy(); };
+  await callTuningModel(pack, { fetch: fake as unknown as typeof fetch });
+  expect(arms[1]).toBeLessThan(arms[0]);
+});
+```
+
 The timeout test needs fake timers advanced past `MODEL_TIMEOUT_MS`.
 
 - [ ] **Step 2: Run it to verify it fails**
@@ -1231,7 +1290,11 @@ Expected: FAIL — cannot resolve `./client`.
 
 - [ ] **Step 3: Implement**
 
-Raw `fetch` to `https://api.anthropic.com/v1/messages`, mirroring `scripts/generate-commander-prose.ts`: `"anthropic-version": "2023-06-01"`, `x-api-key` from `process.env.ANTHROPIC_API_KEY`, model `TUNING_MODEL`. An `AbortController` armed at `MODEL_TIMEOUT_MS` bounds the call. At most **two** HTTP attempts total, and only for the two retryable conditions:
+Raw `fetch` to `https://api.anthropic.com/v1/messages`, mirroring `scripts/generate-commander-prose.ts`: `"anthropic-version": "2023-06-01"`, `x-api-key` from `process.env.ANTHROPIC_API_KEY`, model `TUNING_MODEL`.
+
+**`MODEL_TIMEOUT_MS` is one deadline across both attempts, not a budget each.** Compute `deadline = now() + MODEL_TIMEOUT_MS` once, before the first attempt, and arm each attempt's `AbortController` at `deadline - now()`. A per-attempt budget plus one retry would allow ~180s against the route's `maxDuration = 120`, and the run would be killed mid-flight leaving an orphaned pending row — the one case §6 admits it cannot cover. If the deadline has already passed when a retry would start, return `timeout` without attempting it.
+
+At most **two** HTTP attempts total, and only for the two retryable conditions:
 
 - an overloaded/rate-limited upstream (`429`, `529`, `5xx`) → retry once, then `upstream_busy`
 - output that does not parse against `tuningResponseSchema` → retry once, then `malformed`
@@ -1305,20 +1368,26 @@ export function reapCutoff(now: Date): Date {
 
 - [ ] **Step 3: Write `runTuning`**
 
-The order matters and is the whole point:
+The order matters and is the whole point. Nothing here trusts the client: **a server action is a public endpoint**, as `logGame`'s own comment at `src/app/decks/actions.ts:858` says, so every gate the panel applies is re-applied here. A stale tab or a replayed call must not spend money on unchanged inputs.
 
 ```typescript
 export async function runTuning(deckId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const detail = await getDeckDetail(deckId, userId);
-  if (!detail) return { ok: false, message: deckTuningCopy.card.applyRefused };
+  if (!detail) return { ok: false, message: gameLogCopy.form.refused };
 
   const games = await listDeckGames(deckId, userId);
-  if (games.length < PATTERN_MIN) return { ok: false, message: deckTuningCopy.card.applyRefused };
-
   const fingerprint = tuningFingerprint({ cards: detail.cards, games, intent: detail.intent });
 
-  // 1. The pending row, in its own transaction, committed before any network
+  // 1. The same gate the panel shows, enforced server-side. gateReason is the
+  //    single source of that answer (Task 12) so the disabled button and the
+  //    refusal can never disagree — and so a caller bypassing the button hits
+  //    the identical rule.
+  const state = await readTuningState(deckId, userId, fingerprint);
+  const gate = gateReason(state, games.length);
+  if (gate) return { ok: false, message: gate.message };
+
+  // 2. The pending row, in its own transaction, committed before any network
   //    call. The partial unique index makes a second concurrent run impossible:
   //    the loser gets a unique violation, not a second run.
   let runId: string;
@@ -1329,48 +1398,95 @@ export async function runTuning(deckId: string): Promise<DeckMutationResult> {
     }).returning({ id: deckSuggestionRuns.id });
     runId = row.id;
   } catch {
-    return { ok: false, message: deckTuningCopy.card.applyRefused };
+    // A unique violation on the partial index. Another run for this deck is
+    // already in flight — say so, rather than reporting a generic refusal.
+    return { ok: false, message: deckTuningCopy.panel.generating };
   }
 
-  // 2. The call. Everything after this point writes conditionally.
+  // 3. The call. Everything after this point writes conditionally.
+  const staples = await readSynergyCards(
+    userId, detail.commander.oracleId, detail.cards.map((c) => c.oracleId),
+  );
   const pack = buildEvidencePack({ detail, games, summary: summarizeGames(games), staples });
   const outcome = await callTuningModel(pack);
 
-  if (!outcome.ok) return finishRun(runId, { status: "failed", errorClass: outcome.errorClass });
+  if (!outcome.ok) return finishRun(runId, deckId, { status: "failed", errorClass: outcome.errorClass });
+
+  // resolveName closes over one catalog read of every name the model returned.
+  // Injecting it is what keeps validate.ts pure and client-safe (Task 9).
+  const names = outcome.response.suggestions.flatMap((s) => [s.add, ...(s.cut ? [s.cut] : [])]);
+  const rows = names.length === 0 ? [] : await db
+    .select({ oracleId: cards.oracleId, name: cards.name, colorIdentity: cards.colorIdentity })
+    .from(cards)
+    .where(inArray(cards.name, names));
+  const byName = new Map(rows.map((r) => [r.name, r]));
+  const resolveName = (name: string) => byName.get(name) ?? null;
 
   const { kept, droppedCount } = validateSuggestions({ response: outcome.response, pack, resolveName });
   if (kept.length === 0) {
-    return finishRun(runId, { status: "failed", errorClass: "ungrounded", droppedCount });
+    return finishRun(runId, deckId, { status: "failed", errorClass: "ungrounded", droppedCount });
   }
 
-  // 3. Items and outcome in one transaction, both guarded.
-  return persistRun(runId, kept, droppedCount, deckId);
+  // 4. Items and outcome in one transaction, both guarded.
+  return persistRun(runId, deckId, kept, droppedCount);
 }
 ```
 
-`finishRun` and `persistRun` both write `where eq(id, runId) and eq(status, 'pending')` and both check `returning().length`:
+Both writers share one shape. `finishRun` writes an outcome and no items; `persistRun` writes the items and the outcome together:
 
 ```typescript
-const written = await tx.update(deckSuggestionRuns)
-  .set({ status: "ok", droppedCount })
-  .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
-  .returning({ id: deckSuggestionRuns.id });
+class RunSupersededError extends Error {}
 
-// Zero rows means the reaper or a Stop got here first. The run we were told to
-// abandon is over; throwing rolls the items back and we return quietly.
-if (written.length === 0) throw new RunSupersededError();
+async function finishRun(
+  runId: string,
+  deckId: string,
+  set: { status: "failed"; errorClass: ErrorClass; droppedCount?: number },
+): Promise<DeckMutationResult> {
+  const written = await db.update(deckSuggestionRuns)
+    .set(set)
+    .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
+    .returning({ id: deckSuggestionRuns.id });
+  // Superseded: the player has already been shown a settled state. Return
+  // quietly and do not revalidate — revalidating would yank it out from under them.
+  if (written.length === 0) return { ok: true };
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  return { ok: true };
+}
+
+async function persistRun(
+  runId: string, deckId: string, kept: ValidatedSuggestion[], droppedCount: number,
+): Promise<DeckMutationResult> {
+  try {
+    await db.transaction(async (tx) => {
+      const written = await tx.update(deckSuggestionRuns)
+        .set({ status: "ok", droppedCount })
+        .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.status, "pending")))
+        .returning({ id: deckSuggestionRuns.id });
+      // Zero rows means the reaper or a Stop got here first. Throwing rolls the
+      // items back with it, so a superseded run can never leave items behind.
+      if (written.length === 0) throw new RunSupersededError();
+      await tx.insert(deckSuggestionItems).values(kept.map((s) => ({ ...s, runId })));
+    });
+  } catch (err) {
+    if (err instanceof RunSupersededError) return { ok: true };
+    throw err;
+  }
+  for (const path of deckSurfaces(deckId)) revalidatePath(path);
+  return { ok: true };
+}
 ```
 
-Catch `RunSupersededError` outside the transaction and return `{ ok: true }` without revalidating — the player has already been shown a settled state and must not have it yanked.
+The status update comes **before** the item insert inside the transaction, not after. That ordering is what makes "items persisted but status did not" impossible: the guard is evaluated first, and if it fails nothing else in the transaction runs.
 
 - [ ] **Step 4: Write `cancelTuningRun`**
 
 ```typescript
-export async function cancelTuningRun(deckId: string): Promise<DeckMutationResult> {
+export async function cancelTuningRun(deckId: string, runId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   await db.update(deckSuggestionRuns)
     .set({ status: "cancelled" })
     .where(and(
+      eq(deckSuggestionRuns.id, runId),
       eq(deckSuggestionRuns.deckId, deckId),
       eq(deckSuggestionRuns.userId, userId),
       eq(deckSuggestionRuns.status, "pending"),
@@ -1379,6 +1495,8 @@ export async function cancelTuningRun(deckId: string): Promise<DeckMutationResul
   return { ok: true };
 }
 ```
+
+It takes the `runId` the panel was watching, not just the deck. Scoped to the deck alone, a Stop pressed late — after the watched run settled and the player started another — would cancel the second run instead of the one whose button they pressed. The panel has the id; pass it.
 
 Stop needs no new concurrency primitive — it is the reaper's mechanism fired by hand. A cancelled run is not a failure, so `failed` keeps meaning failure; and because the fingerprint gate only matches **successful** runs, a cancel does not consume the gate.
 
@@ -1424,15 +1542,41 @@ git commit -m "feat(tuning): durable run lifecycle with a reaper, a cancel, and 
 - Consumes: Tasks 1, 6, 11.
 - Produces:
   ```typescript
+  // src/lib/tuning/gate.ts — pure, client-safe
+  export type GateReason = {
+    kind: "too_few_games" | "unchanged" | "ceiling" | "in_flight";
+    /** Rendered beside the disabled button, and returned by runTuning's refusal. */
+    message: string;
+  };
+  export function gateReason(state: TuningState, gameCount: number): GateReason | null;
+
+  // src/lib/decks/tuning-read.ts — server-only
+  export type TuningItem = {
+    id: string;
+    addOracleId: string; addName: string; addTypeLine: string;
+    cutOracleId: string | null; cutName: string | null;
+    rationale: string; rationaleShort: string;
+    evidence: TuningCitation[];
+    position: number;
+    verdict: "pending" | "accepted" | "dismissed";
+    /** Facts about the collection, never a ranking. */
+    owned: boolean; ownedQuantity: number;
+    /** Cents, formatted by the card through formatCents. Null when unpriced. */
+    priceCents: number | null;
+  };
   export type TuningState = {
     run: { id: string; status: string; errorClass: string | null; createdAt: Date; droppedCount: number } | null;
     items: TuningItem[];
-    stale: boolean;          // the fingerprint has moved since the last ok run
+    /** The newest ok run's fingerprint, or null if there has never been one. */
+    lastOkFingerprint: string | null;
+    /** lastOkFingerprint !== the fingerprint passed in. */
+    stale: boolean;
     runsThisHour: number;
   };
   export function readTuningState(deckId: string, userId: string, fingerprint: string): Promise<TuningState>;
-  export function gateReason(state: TuningState, gameCount: number): GateReason | null;
   ```
+
+`readTuningState` takes three arguments everywhere, including in the File Structure table. `TuningItem` is the only shape the card renders — the card does no lookups of its own, which is why the name, type line, ownership, and price are joined here rather than passed around the component tree.
 
 - [ ] **Step 1: Write the failing gate test**
 
@@ -1471,18 +1615,56 @@ pnpm test src/lib/tuning/gate.test.ts
 
 - [ ] **Step 3: Write `readTuningState`**
 
-It reaps on the way past, in one statement, before reading:
+It reaps on the way past, in one statement, before reading — **scoped to this deck**:
 
 ```sql
 update deck_suggestion_runs set status = 'failed', error_class = 'interrupted'
-where status = 'pending' and created_at < :cutoff
+where deck_id = :deckId and status = 'pending' and created_at < :cutoff
 ```
 
-Then it reads the newest run for the deck plus that run's items ordered by `position`, and counts the user's runs in the last hour for the ceiling. `stale` is `run?.inputFingerprint !== fingerprint` for the newest **successful** run.
+The spec's §6 writes this unscoped. Scoping it to the deck being read is a strict improvement and changes nothing about the contract: every deck's page read reaps its own, so no pending row outlives the cutoff, and one player opening a deck no longer writes across every other player's rows on every page load.
+
+Then it reads three things: the newest run for the deck with its items ordered by `position`, joined to `cards` for the add and cut names and type lines and to the collection and price tables for `owned` / `ownedQuantity` / `priceCents`; the newest run with `status = 'ok'` for `lastOkFingerprint`; and the user's run count in the last hour for the ceiling. `stale` is `lastOkFingerprint !== fingerprint` — deliberately not a comparison against the newest run of *any* status, because a failed or cancelled run must not consume the gate.
+
+- [ ] **Step 3b: Write `gateReason`**
+
+Four kinds, in this order — the first that applies wins:
+
+```typescript
+export function gateReason(state: TuningState, gameCount: number): GateReason | null {
+  if (state.run?.status === "pending") {
+    return { kind: "in_flight", message: deckTuningCopy.panel.generating };
+  }
+  if (gameCount < PATTERN_MIN) {
+    return { kind: "too_few_games", message: deckTuningCopy.panel.belowThresholdNote(gameCount) };
+  }
+  if (state.runsThisHour >= TUNING_RUNS_PER_HOUR) {
+    return { kind: "ceiling", message: deckTuningCopy.panel.unchangedCta };
+  }
+  if (!state.stale && state.lastOkFingerprint !== null) {
+    return { kind: "unchanged", message: deckTuningCopy.panel.unchanged(when) };
+  }
+  return null;
+}
+```
+
+Each kind carries its own message, so a refusal always says which of the four happened. Returning one generic string for all of them would defeat §6's rule that the panel names the cause.
+
+An `ungrounded` failure leaves the gate open on unchanged inputs, which lets `Try again` re-spend on a call that will very likely fail the same way. That is the spec's rule — a failed run does not consume the gate — and it stands, because the alternative traps a deck whose inputs cannot change until it plays another game. The hourly ceiling is what bounds the cost.
 
 - [ ] **Step 4: Wire the page**
 
-In `src/app/decks/[id]/page.tsx`, add `readTuningState(id, userId, fingerprint)` to the existing `Promise.all` at line 36. The fingerprint needs `detail` and `games`, both of which resolve before it — compute it after that `Promise.all` and read the tuning state in a second, short `await`, alongside the existing sequential `loadPrices` call. Pass `tuning` into `BuilderShell`.
+In `src/app/decks/[id]/page.tsx`, the tuning read **cannot** join the existing `Promise.all` at line 36: it needs a fingerprint, and the fingerprint needs `games`, which that same `Promise.all` produces. Compute the fingerprint after it resolves, then read the tuning state in the sequential section alongside the existing `loadPrices` call:
+
+```typescript
+const fingerprint = tuningFingerprint({ cards: detail.cards, games, intent: detail.intent });
+const [priced, tuning] = await Promise.all([
+  loadPrices([...]).catch(() => null),
+  readTuningState(id, userId, fingerprint),
+]);
+```
+
+Pass `tuning` into `BuilderShell`.
 
 Add at the top of the file:
 
@@ -1780,7 +1962,7 @@ A realistic evidence pack as JSON — a five-game log with two notes, a decklist
 
 - [ ] **Step 2: Write the script**
 
-Follow the shape of `scripts/check-scryfall-contract.ts`: read the key through `scripts/lib/env.mjs`'s `requireEnv`, accumulate failures rather than throwing on the first, `console.error` the list and `process.exit(1)` if any. It asserts three things: the call returns, the reply parses against `tuningResponseSchema`, and at least one suggestion survives `validateSuggestions` against the fixture pack. It touches no database.
+Follow the shape of `scripts/check-scryfall-contract.ts`: read the key through `scripts/lib/env.mjs`'s `requireEnv`, accumulate failures rather than throwing on the first, `console.error` the list and `process.exit(1)` if any. Per spec §9 it asserts five things, not two: the reply parses against `tuningResponseSchema`; at least one suggestion survives `validateSuggestions`; the surviving suggestion cites the axis the fixture marks as hurting; its add is inside the fixture commander's colour identity; and its cut is a card the fixture decklist actually contains. A model that starts returning fluent, well-formed, ungrounded answers is exactly the drift a shape-only check would miss. It touches no database.
 
 - [ ] **Step 3: Add the script and the workflow step**
 
@@ -1840,7 +2022,20 @@ Delete `design/design_handoff_the99_deck_tuning/` in the same PR — a consumed 
 
 **Spec coverage.** §4 data model → Task 1. §5 fingerprint, gate, ceiling → Tasks 6, 12. §6 reaper, error classes, guarded writes → Tasks 10, 11, 12. §7 pipeline and evidence pack → Tasks 7, 10, 11. §8 validation → Task 9. §9 testing strategy and `check:tuning` → Tasks 9, 17. §11 testing, including both halves of the reaper race → Task 11 Step 5. The note, intent, panel, card, and manifest surfaces → Tasks 3, 4, 5, 13, 14, 15, 16.
 
-**Gaps found and closed during review.** The spec never says where `Stop` writes; Task 11 resolves it with a fourth `status` value rather than overloading `failed`. The spec's error-class table has five entries but reads as four in one place; Global Constraints and Task 2's test both pin it at five. The seeded-intent provenance needed a column the spec does not name; Task 1 adds `intent_seeded` and Task 5 explains why one column covers both states.
+**Gaps found and closed during review.** The spec never says where `Stop` writes; Task 11 resolves it with a fourth `status` value rather than overloading `failed`. The spec's error-class table has five entries but reads as four in one place; Global Constraints and Task 2's test both pin it at five. The seeded-intent provenance needed a column the spec does not name; Task 1 adds `intent_seeded`, Task 5 explains why one column covers both states, and Task 5 Step 6 gives it its only writer — without which state 4 would be unreachable.
+
+A pre-implementation code review of this plan found and closed eight further defects, each of which would have cost a task or worse:
+
+- `deck_suggestion_items` declared its card foreign keys as `text`, but `cards.oracleId` is `uuid` — the migration would not have applied. Both columns are now `uuid`.
+- `runTuning` enforced neither the fingerprint gate nor the hourly ceiling. A server action is a public endpoint, so both are now re-checked server-side through the same `gateReason` the panel uses.
+- `DeckDetail` does not carry `intent`, and four tasks read it. Task 3 Step 6 now extends `getDeckDetail`.
+- `logGame` takes `LogGameInput`, not `FormData`. Task 3 Step 5 was rewritten against the real signature.
+- `TuningItem` was used by Task 15 and defined nowhere, and nothing joined the name, ownership, or price the card renders. Task 12 now defines it and joins them.
+- `MODEL_TIMEOUT_MS` armed per attempt plus one retry could reach ~180s against a 120s route limit, orphaning the pending row. It is now one deadline across both attempts.
+- The partial index predicate used `${t.status}`, which Drizzle renders table-qualified and Postgres rejects in an index predicate. It is now raw `status = 'pending'`.
+- `cancelTuningRun` was scoped to the deck, so a late Stop could cancel a run the player never watched. It now takes the `runId`.
+
+Also corrected: the reaper is scoped to the deck being read rather than sweeping every user's rows on every page load; `gateReason` returns a distinct message per kind rather than one generic refusal; the tuning read cannot join the page's first `Promise.all` because it depends on that call's output; and `check:tuning` asserts §9's five conditions rather than shape alone.
 
 **Type consistency.** `ValidatedSuggestion.addOracleId` (Task 9) matches `deckSuggestionItems.addOracleId` (Task 1). `TuningCitation` is declared once, in `schema.ts`, and imported by `validate.ts` and the card. `ManifestStep`'s four values match `manifestCopy`'s four groups and `readTuningEvidence`'s parameter. `gateReason` returns the same `GateReason` the panel switches on.
 
