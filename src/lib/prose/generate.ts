@@ -2,8 +2,13 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, commanderSupport } from "../../db/schema";
 import type { EdhrecTag } from "../edhrec/parse";
-import { acceptProse } from "./accept";
-import { buildProsePrompt, PROSE_PROMPT_VERSION, proseInputHash } from "./prompt";
+import { checkProse, type ProseRejection } from "./accept";
+import {
+  buildProsePrompt,
+  buildProseRetryPrompt,
+  PROSE_PROMPT_VERSION,
+  proseInputHash,
+} from "./prompt";
 import { isSuppressed } from "./suppressed";
 
 export type ProseCandidate = {
@@ -29,10 +34,20 @@ export type GenerateResult = {
   /** Current rows whose stored hash still matches their inputs. */
   fresh: number;
   suppressed: number;
-  /** Every attempt produced a string the contract rejected. */
+  /**
+   * At least one attempt produced a string and none of them were accepted. A commander whose
+   * attempts mixed rejections with failed calls counts here rather than under `failed`: a
+   * string came back and the contract turned it down, which is the fixable half.
+   */
   rejected: number;
-  /** The model call failed outright. */
+  /** No attempt produced a string at all — every call failed or returned nothing. */
   failed: number;
+  /**
+   * Rejected attempts by the rule that rejected them, counted per attempt rather than per
+   * commander — a run that rejects most of what it generates is only fixable if the summary
+   * says which rule did it, and the four rules are fixed by four different changes.
+   */
+  rejectedBy: Record<ProseRejection, number>;
 };
 
 const DEFAULT_ATTEMPTS = 3;
@@ -68,19 +83,34 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
   const attempts = opts.attempts ?? DEFAULT_ATTEMPTS;
 
   const candidates = await load();
-  const r: GenerateResult = { written: 0, fresh: 0, suppressed: 0, rejected: 0, failed: 0 };
+  const r: GenerateResult = {
+    written: 0,
+    fresh: 0,
+    suppressed: 0,
+    rejected: 0,
+    failed: 0,
+    rejectedBy: { length: 0, sentences: 0, "front-loading": 0, hedge: 0 },
+  };
 
   for (const c of candidates) {
     // Consulted before generation, not after: a suppressed commander is never asked for.
     if (suppressed(c.oracleId)) { r.suppressed++; continue; }
 
-    const hash = proseInputHash(c.oracleId, c.tags);
+    const hash = proseInputHash(c.oracleId, c.name, c.tags);
     if (c.prose !== null && c.proseInputHash === hash) { r.fresh++; continue; }
 
-    const prompt = buildProsePrompt(c.name, c.tags);
     let accepted: string | null = null;
     let called = false;
+    // Carried between attempts so a retry can be told which rule it broke. Null until the
+    // first rejection, and the last real rejection then stands until a newer one replaces
+    // it — a call that returned nothing produces no sentence to feed back, and the rule the
+    // attempt before it broke is still the most useful thing to say.
+    let last: { text: string; reason: ProseRejection } | null = null;
     for (let i = 0; i < attempts && accepted === null; i++) {
+      const prompt =
+        last === null
+          ? buildProsePrompt(c.name, c.tags)
+          : buildProseRetryPrompt(c.name, c.tags, last.text, last.reason);
       // A model client that throws is failing the same way the documented `null` names,
       // and one commander's timeout is not a reason to abandon the rest of the batch.
       // Narrow on purpose: only the call is guarded, so a bug in the accept contract
@@ -95,8 +125,16 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
       if (reply === null) continue;
       called = true;
       const trimmed = reply.trim();
-      if (acceptProse(trimmed)) accepted = trimmed;
-      else console.warn(`prose: rejected for ${c.name} (${trimmed.length} chars): ${trimmed}`);
+      const reason = checkProse(trimmed);
+      if (reason === null) {
+        accepted = trimmed;
+      } else {
+        r.rejectedBy[reason]++;
+        last = { text: trimmed, reason };
+        console.warn(
+          `prose: rejected for ${c.name} (${reason}, ${trimmed.length} chars): ${trimmed}`,
+        );
+      }
     }
 
     if (accepted === null) {
