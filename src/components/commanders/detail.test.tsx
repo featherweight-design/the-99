@@ -86,6 +86,79 @@ describe("CommanderDetail synergy states", () => {
   });
 });
 
+describe("CommanderDetail fit hero", () => {
+  // The figure and the ceiling beside it are one claim. A commander EDHREC does not
+  // index is scored out of 40, and printing that 32 beside "/100" is the fabricated
+  // comparability the denominator exists to close.
+  it("prints the raw score over 100 when synergy was measured", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    expect(screen.getAllByText("44").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("/100").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/measurable/)).toBeNull();
+  });
+
+  it("names the shorter ceiling when synergy was not measured", () => {
+    render(
+      <CommanderDetail
+        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 50, edhrecOwnedCount: null, edhrecTotal: null })}
+        rank={3}
+        isBestFit={false}
+        synergyCards={noSynergyCards}
+      />,
+    );
+    expect(screen.getAllByText("/40 measurable").length).toBeGreaterThan(0);
+    expect(screen.queryByText("/100")).toBeNull();
+  });
+
+  // The legend used to print each segment's share of the achieved total, which always
+  // summed to 100% and taught nothing about the weights. Points over weight makes the
+  // headline auditable by addition.
+  it("prints each segment's points over its weight", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    expect(screen.getAllByLabelText("Pool, 12 of 15 points").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText("Roles, 8 of 25 points").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText("Synergy, 24 of 60 points").length).toBeGreaterThan(0);
+  });
+
+  // There is no missing third of a hundred to explain once the denominator is 40.
+  it("drops the synergy legend entry rather than drawing a placeholder", () => {
+    render(
+      <CommanderDetail
+        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 50 })}
+        rank={3}
+        isBestFit={false}
+        synergyCards={noSynergyCards}
+      />,
+    );
+    expect(screen.queryByText(/^Synergy —/)).toBeNull();
+    expect(screen.queryByLabelText(/^Synergy,/)).toBeNull();
+  });
+
+  it("explains only the segments that were measured", () => {
+    render(
+      <CommanderDetail
+        commander={commander({ synergyState: "absent", fitSynergy: null, score: 20, measurableTotal: 40, rankScore: 50 })}
+        rank={3}
+        isBestFit={false}
+        synergyCards={noSynergyCards}
+      />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0]);
+    expect(screen.getAllByText(/Breadth, not quality/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/most-played list/)).toBeNull();
+    expect(screen.getAllByText(/12 \+ 8 = 20\./).length).toBeGreaterThan(0);
+  });
+
+  it("closes the key again", () => {
+    render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
+    const trigger = screen.getAllByRole("button", { name: /What Pool, Roles and Synergy mean/i })[0];
+    fireEvent.click(trigger);
+    expect(screen.getAllByText(/12 \+ 8 \+ 24 = 44\./).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole("button", { name: "Hide" })[0]);
+    expect(screen.queryByText(/12 \+ 8 \+ 24 = 44\./)).toBeNull();
+  });
+});
+
 describe("CommanderDetail hidden-receipts note", () => {
   // The note names an outage. The panel also stays down for a commander EDHREC
   // does not index and for one whose rows are all excluded, and calling either
