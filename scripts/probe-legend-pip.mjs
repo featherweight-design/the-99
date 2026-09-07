@@ -25,11 +25,13 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) {
 }
 
 // Read from the stylesheet rather than a hand-kept list, so a seventh theme is
-// walked the day it ships.
+// walked the day it ships. The name pattern is "anything but the closing quote"
+// on purpose: a theme named with a dash would be skipped by a stricter one, and
+// a skipped theme is exactly the silence this probe exists to break.
 const SHEET = new URL("../src/app/globals.css", import.meta.url);
 const THEMES = [
   ...new Set(
-    [...readFileSync(SHEET, "utf8").matchAll(/\[data-theme="([a-z]+)"\]/g)].map((m) => m[1]),
+    [...readFileSync(SHEET, "utf8").matchAll(/\[data-theme="([^"]+)"\]/g)].map((m) => m[1]),
   ),
 ];
 if (THEMES.length < 2) throw new Error(`Read no [data-theme] blocks from ${SHEET.pathname}.`);
@@ -65,16 +67,24 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
-// A legend paragraph is the one that carries pips: a <p> whose only element
-// children are the aria-hidden swatch wrappers.
+// A legend paragraph is a <p> whose every element child is a pip wrapper — a
+// span holding one aria-hidden dot and nothing else. Matching any <p> that
+// merely contains an aria-hidden span would pick up unrelated prose the day
+// someone hides an icon inside one.
 function readLegends(page) {
   return page.evaluate(() => {
     const paint = (el) => getComputedStyle(el).backgroundColor;
+    const isPipWrapper = (el) =>
+      el.tagName === "SPAN" &&
+      el.childElementCount === 1 &&
+      el.firstElementChild.matches("span[aria-hidden]") &&
+      el.firstElementChild.childElementCount === 0;
     const out = { legends: [], chipDots: [] };
 
     for (const p of document.querySelectorAll("p")) {
-      const pips = [...p.querySelectorAll("span[aria-hidden]")];
-      if (pips.length === 0) continue;
+      const children = [...p.children];
+      if (children.length === 0 || !children.every(isPipWrapper)) continue;
+      const pips = children.map((wrapper) => wrapper.firstElementChild);
       out.legends.push({
         text: p.textContent.trim(),
         pips: pips.map((pip) => ({
