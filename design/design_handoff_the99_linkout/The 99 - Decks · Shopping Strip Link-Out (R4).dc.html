@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #DEAA29; color: #14110E; }
+  a { color: #DEAA29; text-decoration: none; }
+  a:hover { color: #E8BC4C; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R4</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Link-out &middot; #330 &middot; the second door</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">The strip is already the row the link-out asks for.</h1>
+    <p style="max-width:1020px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">R3&rsquo;s rule &mdash; <i>the link-out lives in its container&rsquo;s pinned bottom row, below the hairline that row already has</i> &mdash; lands this pass without inventing anything. The price strip <b style="color:#EDE6D8;font-weight:600;">is</b> the Shopping filter&rsquo;s bottom element, it already sits inside its own bordered box under the pills, and it already renders exactly when there is something to buy. The link joins it as one new line at its bottom edge: <b style="color:#EDE6D8;font-weight:600;">no hairline, no box, no button, and nothing shipped inside the strip moves a pixel.</b></p>
+    <p style="max-width:1020px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">Same element as R3, same 14px, same five states, same string as the export dialog&rsquo;s &mdash; because after decisions 2 and 3 the two doors point at the same list. This addendum adds <b style="color:#EDE6D8;font-weight:600;">one placement and zero primitives, tokens or strings.</b></p>
+    <p style="max-width:1020px;font-size:14px;line-height:1.7;color:#8B8270;margin:0;">Read <a href="LINKOUT-R4-README.md">LINKOUT-R4-README.md</a> and <a href="LINKOUT-R4-READINESS.md">LINKOUT-R4-READINESS.md</a>. R3 is untouched and still the spec for the primitive, the export footer and the card modal. Colours resolve against <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">amonkhet</span>; no hex here is normative.</p>
+  </section>
+
+  <section style="max-width:1400px;margin:0 0 34px;border:1px solid #6B482A;border-radius:14px;background:#1A1611;padding:18px 20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:10px;">What this pass was told, rather than read</div>
+    <p style="font-size:13.5px;line-height:1.7;color:#A59C89;margin:0 0 10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">src/components/decks/price-strip.tsx</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">src/components/ui/external-link.tsx</span> <b style="color:#EDE6D8;font-weight:600;">are not in this project</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">src/</span> holds one file, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">components/shell/nav.tsx</span>. The strip below is drawn from the R3 price addendum canvas and its README, which are the design of record for it; the link is drawn from R3&rsquo;s primitive spec. <b style="color:#EDE6D8;font-weight:600;">Two things need checking against the files once:</b> the strip&rsquo;s real padding and border radius, and whether <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">external-link.tsx</span>&rsquo;s shipped underline colour is the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">45%</span> mix R3 specified.</p>
+    <p style="font-size:13.5px;line-height:1.7;color:#A59C89;margin:0;">If <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">external-link.tsx</span> already ships the R3 anatomy, <b style="color:#EDE6D8;font-weight:600;">this pass is a placement and a selector, not a component</b> &mdash; which is the whole intent.</p>
+  </section>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2100px;">
+
+  <!-- ============ 1 · WHERE THE ACTION GOES ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">Item 1 &middot; <span style="color:#CF8745;">in the strip, on a line of its own, last &mdash; three placements, two rejected</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:620px;flex:none;display:flex;flex-direction:column;gap:12px;">
+
+        <div style="border:1px solid #4A2A22;border-radius:12px;background:#18140F;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:#1E1A15;border-bottom:1px solid #2B241B;flex-wrap:wrap;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;">Rejected &middot; on the total&rsquo;s line</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">the total stops being the subject</span>
+          </div>
+          <div style="padding:16px;">
+            <div style="background:#14110E;border:1px solid #2B241B;border-radius:9px;padding:11px 15px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;">prices from ManaPool &middot; last checked Monday</div>
+              <span style="display:inline-flex;align-items:baseline;gap:10px;">
+                <span style="display:inline-flex;align-items:baseline;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#EDE6D8;">$84.25</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">&middot; 6 of 8 priced</span></span>
+                <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span>
+              </span>
+            </div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:12px;">Sharing a baseline makes them <b style="color:#EDE6D8;font-weight:600;">one control</b> &mdash; a figure with a verb attached, which is a price button. It also breaks at 390px: the two clusters are ~310px of the 362px inner width with no room for the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">6 of 8 priced</span> clause, so the phone would need a different placement than the desktop. <b style="color:#EDE6D8;font-weight:600;">One home, both widths</b> is the strip&rsquo;s own founding constraint.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #4A2A22;border-radius:12px;background:#18140F;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:#1E1A15;border-bottom:1px solid #2B241B;flex-wrap:wrap;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;">Rejected &middot; beside the strip, its own row</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">two boxes under the pills, and a new hairline</span>
+          </div>
+          <div style="padding:16px;">
+            <div style="background:#14110E;border:1px solid #2B241B;border-radius:9px;padding:11px 15px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;">prices from ManaPool &middot; last checked Monday</div>
+              <span style="display:inline-flex;align-items:baseline;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#EDE6D8;">$84.25</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">&middot; 6 of 8 priced</span></span>
+            </div>
+            <div style="border-top:1px solid #2B241B;margin-top:12px;padding-top:12px;">
+              <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span>
+            </div>
+            <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:12px;">This is R3&rsquo;s rule read as a recipe instead of a rule: <b style="color:#EDE6D8;font-weight:600;">the convention adds no dividers to this app</b>, and here it would add one inside a container that already has a border and pills above it. Three stacked rules within 90px unbalances the filter row the strip is a tenant of. It also asks the reader to bind the link to a box it is outside of &mdash; the same mistake as the rejected <i>above the row</i> option in the card modal.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #6B482A;border-radius:12px;background:#1A1611;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:#1E1A15;border-bottom:1px solid #2B241B;flex-wrap:wrap;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;">Ruled &middot; the strip&rsquo;s last line</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">inside the box, under the provenance, nothing shipped moves</span>
+          </div>
+          <div style="padding:16px;">
+            <div style="background:#14110E;border:1px solid #2B241B;border-radius:9px;padding:11px 15px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;">prices from ManaPool &middot; last checked Monday</div>
+                <div style="margin-top:9px;"><span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);" style-hover="color:#EDE6D8;text-decoration-color:#EDE6D8;">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span></div>
+              </div>
+              <span style="display:inline-flex;align-items:baseline;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#EDE6D8;">$84.25</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">&middot; 6 of 8 priced</span></span>
+            </div>
+            <div style="font-size:13px;color:#A59C89;line-height:1.7;margin-top:12px;">The provenance line and the total <b style="color:#EDE6D8;font-weight:600;">keep the exact positions they ship in</b> &mdash; leading edge and trailing edge, baseline-aligned. The link is a second line in the left column, so the strip grows at its bottom edge only: <b style="color:#EDE6D8;font-weight:600;">one 20px line plus a 9px gap on desktop.</b></div>
+            <div style="font-size:13px;color:#A59C89;line-height:1.7;margin-top:10px;">And it reads as the relationship it is: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">prices from ManaPool</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Buy these at Mana&nbsp;Pool</span> directly beneath it &mdash; the provenance names the store, the next line goes there. R3&rsquo;s &sect;1b argued that pairing as a reason to name the destination; here the two sentences are eight pixels apart.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:430px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #3A3229;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:9px;">1a &middot; R3&rsquo;s rule is satisfied, not amended</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">&ldquo;<i>In its container&rsquo;s pinned bottom row, below the hairline that row already has &mdash; and where no pinned row exists, it becomes one.</i>&rdquo; The strip <b style="color:#EDE6D8;font-weight:600;">is</b> the bottom element of the filter container and it is already bounded on all four sides. There is no hairline to add and no row to invent: the link goes inside the box that is already the bottom of the container.</div>
+          <div style="height:1px;background:#2B241B;margin:13px 0;"></div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">Which makes this the third placement under one rule, and the second where the answer was <b style="color:#EDE6D8;font-weight:600;">join the row that is already there</b>. The rule has now been applied to a footer, a pinned nav row and a bordered strip without producing a divider. That is the test it was written to pass.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">1b &middot; Last, not first &mdash; the total is still the subject</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">Reading order in the strip stays <b style="color:#EDE6D8;font-weight:600;">figure &rarr; where it came from &rarr; what you can do about it</b>. The link is the only underlined mark in the container and the only 14px one, so it is found; it is also the last thing said and the smallest weight after the figure, so it does not lead. A player who came to read a number reads a number.</div>
+          <div style="height:1px;background:#2B241B;margin:13px 0;"></div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">The strip is still <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-locked</span> provenance and small mono type. <b style="color:#EDE6D8;font-weight:600;">Nothing gains a fill, a border, a radius or a hover background</b> &mdash; the one new mark on the surface is an underline.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">1c &middot; What this costs, measured</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;line-height:1.95;">desktop<span style="color:#6B6354;">&nbsp;&nbsp;40px &rarr; 69px&nbsp;&nbsp;(+29)</span><br>phone<span style="color:#6B6354;">&nbsp;&nbsp;&nbsp;&nbsp;52px &rarr; 96px&nbsp;&nbsp;(+44)</span></div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:11px;">Desktop is one line and its gap. Phone is one line in a <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">min-height:44px</span> row, per the primitive&rsquo;s target ruling &mdash; the 44px is the cost, not the type. It is still the cheapest form the action has: a secondary button in the same slot is 42px of box plus its margins, and it would be the only filled control under the pills.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 2 · IN CONTEXT ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">Item 2 &middot; <span style="color:#CF8745;">in place at both widths &mdash; same line, same order, same string</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:8px;">Phone &middot; Shopping &mdash; <span style="color:#CF8745;">the only door on this screen</span></div>
+        <div style="background:#100D0A;border:1px solid #2B241B;border-radius:16px;overflow:hidden;">
+          <div style="padding:12px 14px 10px;border-bottom:1px solid #2B241B;background:#14110E;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:30px;height:42px;border-radius:5px;background:linear-gradient(150deg,#3E2A1E,#241A14);flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+              <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#EDE6D8;">Korvold, Sacrifice Engine</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#EDE6D8;font-weight:600;margin-top:3px;">62 <span style="font-size:11px;color:#8B8270;">/ 99</span></div></div>
+            </div>
+          </div>
+          <div style="padding:11px 14px 0;background:#14110E;display:flex;gap:7px;align-items:center;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12px;color:#A59C89;border:1px solid #3A3229;border-radius:999px;padding:4px 11px;">All 62</span>
+            <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#14110E;background:#DEAA29;border-radius:999px;padding:4px 11px;">Shopping 8</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Sans';font-weight:600;font-size:11.5px;color:#EDE6D8;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:4px 10px;">Type &#9662;</span>
+          </div>
+          <div style="padding:10px 14px 12px;background:#14110E;border-bottom:1px solid #2B241B;">
+            <div style="background:#18140F;border:1px solid #2B241B;border-radius:9px;padding:10px 13px 0;">
+              <div style="display:inline-flex;align-items:baseline;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#EDE6D8;">$84.25</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">&middot; 6 of 8 priced</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;margin-top:5px;">prices from ManaPool &middot; last checked Monday</div>
+              <div style="min-height:44px;display:flex;align-items:center;"><span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);" style-hover="color:#EDE6D8;text-decoration-color:#EDE6D8;">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span></div>
+            </div>
+          </div>
+          <div style="padding:10px 12px 14px;display:flex;flex-direction:column;gap:4px;">
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dockside Extortionist</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$45.00</span></span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Grim Hireling</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">sold out</span></span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Deflecting Swat</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$2.10 <span style="color:#8B8270;">foil</span></span></span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+            <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;background:#18140F;"><span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Squirrel Nest</span><span style="flex:none;display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy</span><span style="flex:none;color:#4A4033;font-size:12px;">&#10005;</span></div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6B6354;margin-top:9px;line-height:1.6;">Export is two taps away behind a menu. This is the tap the player already made: they pressed <span style="color:#A59C89;">Shopping</span>.</div>
+      </div>
+
+      <div style="width:900px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:8px;">Desktop &middot; Shopping &mdash; the strip in the same place, one line taller</div>
+        <div style="border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 30px 80px rgba(0,0,0,0.5);">
+          <div style="height:34px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="width:9px;height:9px;border-radius:999px;background:#3A3229;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6B6354;margin-left:10px;">the99.app/decks/korvold?filter=shopping</span></div>
+          <div style="background:#14110E;">
+            <div style="padding:16px 26px;border-bottom:1px solid #2B241B;display:flex;align-items:center;gap:16px;">
+              <div style="width:34px;height:48px;border-radius:6px;background:linear-gradient(150deg,#3E2A1E,#241A14);flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+              <div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Korvold, Sacrifice Engine</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-top:3px;">Jund &middot; Building</div></div>
+              <div style="text-align:right;"><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#EDE6D8;">62 <span style="font-size:13px;color:#8B8270;">/ 99</span></div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">54 owned &middot; 8 to buy</div></div>
+              <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#CF8745;border-radius:8px;padding:10px 18px;">Export &#9662;</span>
+            </div>
+            <div style="padding:14px 26px 0;display:flex;align-items:center;gap:10px;">
+              <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:13px;color:#A59C89;border:1px solid #3A3229;border-radius:999px;padding:5px 14px;">All &middot; 62</span>
+              <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#DEAA29;border-radius:999px;padding:5px 14px;">Shopping &middot; 8</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8B8270;">Group</span>
+              <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:#EDE6D8;background:#29241F;border:1px solid #3A3229;border-radius:999px;padding:5px 13px;">By type</span>
+              <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:12.5px;color:#8B8270;padding:5px 8px;">By role</span>
+            </div>
+            <div style="margin:10px 26px 14px;background:#18140F;border:1px solid #2B241B;border-radius:9px;padding:11px 15px;display:flex;align-items:baseline;justify-content:space-between;gap:14px;">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;">prices from ManaPool &middot; last checked Monday</div>
+                <div style="margin-top:9px;"><span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);" style-hover="color:#EDE6D8;text-decoration-color:#EDE6D8;">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span></div>
+              </div>
+              <span style="display:inline-flex;align-items:baseline;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#EDE6D8;">$84.25</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">&middot; 6 of 8 priced</span></span>
+            </div>
+            <div style="padding:0 26px 22px;display:grid;grid-template-columns:1fr 1fr;gap:18px 26px;">
+              <div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin:0 4px 8px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Creatures</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">3</span></div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;background:#18140F;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Dockside Extortionist</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$45.00</span></span><span style="flex:none;color:#4A4033;font-size:12.5px;">&#10005;</span></div>
+                  <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;background:#18140F;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Mayhem Devil</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$2.85</span></span><span style="flex:none;color:#4A4033;font-size:12.5px;">&#10005;</span></div>
+                  <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;background:#18140F;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Grim Hireling</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">sold out</span></span><span style="flex:none;color:#4A4033;font-size:12.5px;">&#10005;</span></div>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin:0 4px 8px;"><span style="font-family:'Cinzel',serif;font-weight:600;font-size:13.5px;color:#EDE6D8;">Enchantments</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">2</span></div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;background:#18140F;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Fiery Emancipation</span><span style="flex:none;display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy<span style="color:#3A3229;">&middot;</span><span style="min-width:58px;text-align:right;color:#C0B8A6;">$19.60</span></span><span style="flex:none;color:#4A4033;font-size:12.5px;">&#10005;</span></div>
+                  <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;background:#18140F;"><span style="width:8px;height:8px;border-radius:999px;border:1px dashed #6B6354;flex:none;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Squirrel Nest</span><span style="flex:none;display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#DEAA29;background:rgba(222,170,41,0.13);border-radius:4px;padding:2px 5px;">buy</span><span style="flex:none;color:#4A4033;font-size:12.5px;">&#10005;</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6B6354;margin-top:9px;line-height:1.6;">The <span style="color:#A59C89;">Export &#9662;</span> button keeps its place and its dialog keeps the R3 link. Two doors, one list &mdash; item 4.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 3 · THE VARIANTS ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">Item 3 &middot; <span style="color:#CF8745;">the branches the strip already has &mdash; and the one new ruling</span></div>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:400px;flex:none;border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:11px;">Partially priced &mdash; the clause stays</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:9px;padding:11px 14px;">
+          <div style="display:inline-flex;align-items:baseline;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#EDE6D8;">$84.25</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;">&middot; 6 of 8 priced</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;margin-top:5px;">prices from ManaPool &middot; last checked Monday</div>
+          <div style="margin-top:9px;"><span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);" style-hover="color:#EDE6D8;text-decoration-color:#EDE6D8;">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span></div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:11px;">The link buys <b style="color:#EDE6D8;font-weight:600;">all eight</b>, not the six we could price. The two we couldn&rsquo;t are the reason to go: the store knows its own stock better than our last check does. <b style="color:#EDE6D8;font-weight:600;">No count in the label</b> &mdash; the pill says <i>8</i> and the clause says <i>6 of 8</i>; a third number would be arguing with them.</div>
+      </div>
+
+      <div style="width:400px;flex:none;border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:11px;">All priced &mdash; figure only, then the link</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:9px;padding:11px 14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#EDE6D8;">$129.50</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;margin-top:5px;">prices from ManaPool &middot; last checked Monday</div>
+          <div style="margin-top:9px;"><span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);" style-hover="color:#EDE6D8;text-decoration-color:#EDE6D8;">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span></div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:11px;">R3&rsquo;s ruling is untouched: the clause drops when nothing is missing. This is the strip at its <b style="color:#EDE6D8;font-weight:600;">quietest and most complete</b> &mdash; a price, its source, and the way to pay it. The link&rsquo;s presence does not depend on the clause, so nothing new branches.</div>
+      </div>
+
+      <div style="width:400px;flex:none;border:1px solid #6B482A;border-radius:12px;background:#1A1611;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:11px;">None priced &mdash; new ruling: the strip renders</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:9px;padding:11px 14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6B6354;">no prices from ManaPool for these &middot; last checked Monday</div>
+          <div style="margin-top:9px;"><span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);" style-hover="color:#EDE6D8;text-decoration-color:#EDE6D8;">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span></div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:11px;"><b style="color:#EDE6D8;font-weight:600;">Before this pass the strip had nothing to say here and did not render.</b> Now it does: <i>a total of zero cards is not a total</i>, but eight cards you can buy is still eight cards you can buy. <b style="color:#EDE6D8;font-weight:600;">This is the state that needs the door most</b> &mdash; we couldn&rsquo;t price them, the store can.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:10px;">No figure, no <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">0 of 8</span>, no error tone. <b style="color:#EDE6D8;font-weight:600;">One string changes:</b> the provenance line states the absence instead of a check we can&rsquo;t evidence &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">strip.provenanceUnpriced</span>, item 5. Rare in staging; total now regardless.</div>
+      </div>
+
+      <div style="width:400px;flex:none;border:1px solid #3A3229;border-radius:12px;background:#18140F;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:11px;">Nothing to buy &mdash; both absent, unchanged</div>
+        <div style="background:#14110E;border:1px dashed #3A3229;border-radius:9px;padding:16px 14px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6B6354;line-height:1.9;">no strip &middot; no total &middot; no provenance &middot; no link</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.65;margin-top:11px;">Two shipped rules meet and agree: the strip suppresses itself when the filter shows nothing, and the link-out is <b style="color:#EDE6D8;font-weight:600;">absent, not disabled</b>, when there is no basket. The link inherits the strip&rsquo;s own condition rather than carrying a second one &mdash; <b style="color:#EDE6D8;font-weight:600;">it cannot render where it would be wrong, structurally.</b></div>
+        <div style="height:1px;background:#2B241B;margin:13px 0;"></div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.65;">Same on the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">All</span> filter: the strip isn&rsquo;t there, so neither is the link. A player on <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">All</span> is reading a deck, not a basket.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 4 · STATES, AND LINK-NOT-BUTTON ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">Item 4 &middot; <span style="color:#CF8745;">the states on the strip&rsquo;s own ground &mdash; and why a link rather than a button</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:620px;flex:none;border:1px solid #2B241B;border-radius:14px;background:#18140F;padding:20px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">Four states, on <span style="font-family:'IBM Plex Mono',monospace;text-transform:none;letter-spacing:0;">--surface-inset</span> &mdash; the strip is darker than R3&rsquo;s table, so every ratio improves</div>
+
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:1px;background:#2B241B;border:1px solid #2B241B;border-radius:10px;overflow:hidden;">
+          <div style="background:#14110E;padding:14px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;display:flex;align-items:center;">Rest</div>
+          <div style="background:#14110E;padding:14px 16px;display:flex;align-items:center;min-height:56px;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span>
+          </div>
+
+          <div style="background:#14110E;padding:14px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;display:flex;align-items:center;">Hover</div>
+          <div style="background:#14110E;padding:14px 16px;display:flex;align-items:center;gap:14px;min-height:56px;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#EDE6D8;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:#EDE6D8;">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#EDE6D8;">&#8599;</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6B6354;">no background, no row highlight</span>
+          </div>
+
+          <div style="background:#14110E;padding:14px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;display:flex;align-items:center;">Focus-visible</div>
+          <div style="background:#14110E;padding:14px 16px;display:flex;align-items:center;gap:14px;min-height:56px;">
+            <span style="display:inline-flex;border-radius:6px;outline:2px solid #CF8745;outline-offset:2px;"><span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#DE9757;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(222,151,87,0.45);">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#A59C89;">&#8599;</span></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6B6354;">2px offset clears the strip&rsquo;s 1px border</span>
+          </div>
+
+          <div style="background:#14110E;padding:14px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;display:flex;align-items:center;">Active</div>
+          <div style="background:#14110E;padding:14px 16px;display:flex;align-items:center;gap:14px;min-height:56px;">
+            <span style="font-family:'IBM Plex Sans';font-weight:500;font-size:14px;color:#EDE6D8;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:#EDE6D8;">Buy these at Mana&nbsp;Pool&nbsp;<span style="font-size:0.85em;color:#EDE6D8;">&#8599;</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6B6354;">ink stays --fg; underline 1px&rarr;2px</span>
+          </div>
+        </div>
+
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.7;margin-top:14px;">Identical to R3&rsquo;s table, drawn on <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">#14110E</span> instead of <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">#1E1A15</span> because that is the strip&rsquo;s ground. <b style="color:#EDE6D8;font-weight:600;">Darker ground, same inks, so the two themes R3 measured at the margin get more room, not less</b> &mdash; no re-measure is required to accept this placement, though one is worth having for the ledger.</div>
+        <div style="height:1px;background:#2B241B;margin:16px 0 14px;"></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:10px;">Two things the focus ring must clear here, that it did not in the footer</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.7;">&#8226; <b style="color:#EDE6D8;font-weight:600;">The strip&rsquo;s own border,</b> 1px at <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--border</span>, 15px from the link&rsquo;s leading edge. The 2px offset ring sits well inside it and never touches, so the ring never reads as a second border on the box.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.7;margin-top:9px;">&#8226; <b style="color:#EDE6D8;font-weight:600;">The provenance line above it,</b> 9px away. An <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">outline</span> takes no layout space, so it overlaps that gap by 2px rather than pushing the line &mdash; visible, and nothing moves on focus. <b style="color:#EDE6D8;font-weight:600;">This is the reason the gap is 9px and not 6px.</b></div>
+      </div>
+
+      <div style="width:430px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #6B482A;border-radius:12px;background:#1A1611;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:9px;">4a &middot; A link, and the same one &mdash; you asked, so here is the argument</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">It navigates to another company in a new tab.</b> That is a link&rsquo;s job and a button&rsquo;s lie: a button promises the app will do something, and the honest reading of this control is <i>you are leaving</i>. Everything downstream depends on it being an <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">&lt;a href&gt;</span> &mdash; middle-click, copy link, open in background, the &#8599;, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">rel="noopener"</span>, and the sr-only new-tab promise.</div>
+          <div style="height:1px;background:#2B241B;margin:13px 0;"></div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">And a button would need a box.</b> A box in this strip is a filled control under the filter pills, inside the <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">GroupToggle</span> container &mdash; the exact footprint the brief rules out, and the thing that turns a quiet aggregate into a CTA bar. The link keeps <i>no box of its own</i>, which is why it fits at all.</div>
+          <div style="height:1px;background:#2B241B;margin:13px 0;"></div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">So: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">external-link.tsx</span> as shipped, no variant, no <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">size</span> prop, no new token. <b style="color:#EDE6D8;font-weight:600;">If it takes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">href</span> and children today, this pass adds no code to it.</b></div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">4b &middot; Two placements, one string, and no third convention</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">The strip&rsquo;s link and the export dialog&rsquo;s are <b style="color:#EDE6D8;font-weight:600;">the same string at the same href</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">linkOut.deck</span>, now with two call sites. A player who finds both does not learn two things; they learn the app has one door and put it in two doorways.</div>
+          <div style="height:1px;background:#2B241B;margin:13px 0;"></div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;"><i>these</i> resolves correctly on both surfaces because both now render the same list &mdash; item 5. Had the two lists stayed divergent, one string across both would have been the bug rather than the fix.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">4c &middot; Tab order &mdash; the link is last in the strip</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">The strip holds no other focusable, so there is no order to negotiate and no shipped keyboard path to break. Coming from the pills, focus reaches the link after the filter it belongs to and before the first card row. <b style="color:#EDE6D8;font-weight:600;">DOM order matches reading order matches visual order</b> &mdash; the one place in this ticket where all three agree for free.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 5 · THE LIST ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">Item 5 &middot; <span style="color:#CF8745;">the list you buy is the list on screen &mdash; both doors, one selector</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;border:1px solid #2B241B;border-radius:14px;background:#18140F;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:230px 110px 1fr;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;background:#14110E;border-bottom:1px solid #2B241B;">
+          <div style="padding:11px 16px;">Row on the Shopping filter</div>
+          <div style="padding:11px 14px;">In the basket</div>
+          <div style="padding:11px 14px;">Why</div>
+        </div>
+        <div style="display:grid;grid-template-columns:230px 110px 1fr;align-items:center;border-bottom:1px solid #2B241B;">
+          <div style="padding:12px 16px;font-size:13px;color:#EDE6D8;">A card you don&rsquo;t own</div>
+          <div style="padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#DE9757;">yes</div>
+          <div style="padding:12px 14px;font-size:12.5px;color:#A59C89;">The whole reason the filter exists.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:230px 110px 1fr;align-items:center;border-bottom:1px solid #2B241B;">
+          <div style="padding:12px 16px;font-size:13px;color:#EDE6D8;">Spoken for &mdash; owned, but in another deck</div>
+          <div style="padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#DE9757;">yes</div>
+          <div style="padding:12px 14px;font-size:12.5px;color:#A59C89;">It is on the screen, under the filter, with a <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;">buy</span> tag and a price in the total. <b style="color:#EDE6D8;font-weight:600;">Excluding it from the basket would make the total a figure you cannot pay.</b></div>
+        </div>
+        <div style="display:grid;grid-template-columns:230px 110px 1fr;align-items:center;border-bottom:1px solid #2B241B;">
+          <div style="padding:12px 16px;font-size:13px;color:#EDE6D8;">Basic lands</div>
+          <div style="padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">no</div>
+          <div style="padding:12px 14px;font-size:12.5px;color:#A59C89;">Not on the filter, so not in the basket. The rule is one sentence &mdash; <b style="color:#EDE6D8;font-weight:600;">the basket is the filter&rsquo;s rows</b> &mdash; and basics fall out of it rather than needing their own clause.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:230px 110px 1fr;align-items:center;border-bottom:1px solid #2B241B;">
+          <div style="padding:12px 16px;font-size:13px;color:#EDE6D8;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;">sold out</span> at last check</div>
+          <div style="padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#DE9757;">yes</div>
+          <div style="padding:12px 14px;font-size:12.5px;color:#A59C89;">Our check is hours old and the store&rsquo;s is live. Dropping the row would silently shorten the basket; <b style="color:#EDE6D8;font-weight:600;">the store is allowed to be the one that says no.</b></div>
+        </div>
+        <div style="display:grid;grid-template-columns:230px 110px 1fr;align-items:center;border-bottom:1px solid #2B241B;">
+          <div style="padding:12px 16px;font-size:13px;color:#EDE6D8;">Unpriced &mdash; bare <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;">buy</span> tag</div>
+          <div style="padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#DE9757;">yes</div>
+          <div style="padding:12px 14px;font-size:12.5px;color:#A59C89;">Counted in the denominator, absent from the sum, present in the basket. Same reason: the absence is <b style="color:#EDE6D8;font-weight:600;">ours</b>, not the store&rsquo;s.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:230px 110px 1fr;align-items:center;">
+          <div style="padding:12px 16px;font-size:13px;color:#EDE6D8;">A row the player just <span style="color:#8B8270;">&#10005;</span>&rsquo;d</div>
+          <div style="padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">no</div>
+          <div style="padding:12px 14px;font-size:12.5px;color:#A59C89;">It left the screen, so it left the basket, so it left the total &mdash; one state, three consequences, no sync. <b style="color:#EDE6D8;font-weight:600;">The href is derived at click, never cached.</b></div>
+        </div>
+      </div>
+
+      <div style="width:430px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <div style="border:1px solid #6B482A;border-radius:12px;background:#1A1611;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:9px;">5a &middot; The divergence had a design cause, not just a code one</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">The export dialog composed its own list because it was <b style="color:#EDE6D8;font-weight:600;">a different surface with a different noun</b> &mdash; a file to take away, not a filter to read. Once the buy action lives on the filter, the filter&rsquo;s rows are the only defensible definition of <i>these</i>, and both doors take it.</div>
+          <div style="height:1px;background:#2B241B;margin:13px 0;"></div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">One selector, three consumers:</b> the rows, the strip&rsquo;s total and denominator, and both <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">href</span>s. If a fourth appears, it takes the same one &mdash; and if the definition ever changes, it changes in one place and the total cannot drift from the basket again.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">5b &middot; Export keeps its link, retargeted</div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">Unchanged in every visual respect &mdash; second footer row, left-aligned, quieter than <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Copy shopping list</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">.txt</span>, R3&rsquo;s drawings still the spec. <b style="color:#EDE6D8;font-weight:600;">Only the payload moves.</b> Export is the take-this-elsewhere surface; it was never wrong there, it was only alone.</div>
+          <div style="height:1px;background:#2B241B;margin:13px 0;"></div>
+          <div style="font-size:13px;color:#A59C89;line-height:1.7;">Two doors is not redundancy here: one is <i>buy what I am looking at</i>, the other is <i>take this with me</i>. They differ in intent and share a destination, which is the same relationship <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Copy shopping list</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">.txt</span> already have.</div>
+        </div>
+        <div style="border:1px solid #2B241B;border-radius:12px;background:#18140F;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:9px;">5c &middot; What R4 does not reopen</div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.75;">The primitive and its five states &middot; the label grammar and both strings &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">:visited</span> unstyled &middot; the two URL shapes and <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">rel="noopener"</span> &middot; the card modal&rsquo;s pinned row &middot; the export footer&rsquo;s weight ruling and its two rejects &middot; the buy tag and the Decklist tab exclusions &middot; the strip&rsquo;s total derivation, its <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">of 8</span> denominator and the dropped clause &middot; the 92% scrim &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">builder-spine.tsx:391</span>.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="height:20px;"></div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

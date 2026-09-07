@@ -1,6 +1,6 @@
 # R2 — the Mana Pool link-out (#330), the §2.2 amendment
 
-`design/design_handoff_the99_linkout/` · 2026-09-06 · **new files only**
+`design/design_handoff_the99_decks/` · 2026-09-06 · **new files only**
 
 One ruling changed: the card link lands on Mana Pool's **all-printings grid**, not on a printing.
 It affects the card link's *meaning*, and therefore its label — nothing else.

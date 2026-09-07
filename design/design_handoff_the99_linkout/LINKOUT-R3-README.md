@@ -1,6 +1,6 @@
 # R3 — the Mana Pool link-out (#330), the two blockers
 
-`design/design_handoff_the99_linkout/` · 2026-09-06 · **new files only**
+`design/design_handoff_the99_decks/` · 2026-09-06 · **new files only**
 
 Canvas: `The 99 - Decks · Mana Pool Link-Out (R3).dc.html`. R1 and R2 are untouched as the record.
 
