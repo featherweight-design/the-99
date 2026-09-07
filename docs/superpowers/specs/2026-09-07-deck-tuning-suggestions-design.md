@@ -54,7 +54,9 @@ also, conveniently, the fastest possible response: when nothing has changed ther
 - Two new tables: a suggestion **run** and its **items**, plus the migration.
 - An evidence-pack builder: a pure function turning a deck, its games, and its intent into the model's input.
 - A generation server action, a validation layer, and the persistence of runs and items.
-- Apply and dismiss actions on an individual suggestion.
+- Accept and dismiss actions on an individual suggestion. Accepting is what applies the change to the
+  deck, so the verdict and the edit are one action throughout this document — `accepted` never means
+  "approved but not yet applied".
 - A **Tuning** surface on the deck page, plus changes to the #9 log form and history row.
 - An offline evaluation harness (`pnpm check:tuning`) over fixture cases.
 
@@ -130,8 +132,9 @@ keyboard session rather than an essay.
 
 Runs are **kept, not replaced**. History is nearly free at this volume and it is what #389 will want.
 
-**`deck_suggestion_items`** — one row per proposed change, cascading from its run:
+**`deck_suggestion_items`** — one row per proposed change:
 
+- `run_id` — a foreign key to `deck_suggestion_runs`, cascading on delete
 - `add_oracle_id` — a real catalog card, enforced by foreign key
 - `cut_oracle_id` — nullable, because a suggestion may be a pure addition
 - `rationale` — the model's argument, as prose
