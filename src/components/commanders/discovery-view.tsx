@@ -68,11 +68,33 @@ export function DiscoveryView({
   // Seeded the same way, and for the same reason: `?join=exact` is part of the
   // link a player shares, so the list it opens is the one they were looking at.
   const [join, setJoin] = useState<JoinMode>(() => parseJoin(search.get("join")));
+  const [query, setQuery] = useState(() => search.get("q") ?? "");
   const [shown, setShown] = useState(REVEAL_STEP);
-  const filtered = useMemo(
-    () => filterByColors(discovery.items, colors, join),
-    [discovery.items, colors, join],
-  );
+  // Search composes into the one memo the colour filter already uses, and after
+  // it: `filteredTotal` is read off this result, and it is the whole basis for
+  // the bar printing the match figure once. A second narrowing anywhere else
+  // would leave that figure counting a list nobody is looking at.
+  //
+  // Name matching only, and case-insensitive. Nothing is trimmed off the middle:
+  // a player typing "ur-dragon" has typed part of a name, and normalising
+  // punctuation here would be a second matcher disagreeing with the server's.
+  const filtered = useMemo(() => {
+    const byColor = filterByColors(discovery.items, colors, join);
+    const q = query.trim().toLowerCase();
+    if (q === "") return byColor;
+    return byColor.filter((r) => r.name.toLowerCase().includes(q));
+  }, [discovery.items, colors, join, query]);
+
+  // The query the reader has stopped typing. The list narrows on every keystroke
+  // — that feedback is the point — but the URL, the window reset and the spoken
+  // count all wait for the typing to stop: a message per keystroke would speak
+  // over itself, and a history entry per keystroke would bury the page the
+  // player arrived on. Phase 5's lookup hangs off this same value.
+  const [settledQuery, setSettledQuery] = useState(query);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettledQuery(query), 350);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const scopeNav = useScopeNav();
   const sortNav = useSortNav();
@@ -136,6 +158,17 @@ export function DiscoveryView({
   );
   useRerankAnnouncement(join, joinMessage, setAnnouncement);
 
+  // The pool the count is against is the ranked list, not the filtered one: the
+  // sentence answers "how much of what I am looking at is left", and naming the
+  // already-narrowed figure on both sides would make it "N of N" every time.
+  // A cleared query says nothing rather than announcing the whole list back.
+  const searchMessage = useCallback(
+    (q: string) =>
+      q.trim() === "" ? "" : planeCopy.search.announce(filtered.length, discovery.items.length),
+    [filtered.length, discovery.items.length],
+  );
+  useRerankAnnouncement(settledQuery, searchMessage, setAnnouncement);
+
   // The window goes back to the top whenever the list underneath it changes —
   // a sort or availability flip, both of which are server round-trips that
   // return a differently ordered list under this same mounted component, and a
@@ -147,7 +180,7 @@ export function DiscoveryView({
   // prescribes for state derived from a prop change — an effect would render
   // the deep window once before correcting it. The scope flip needs no entry
   // here at all: it unmounts this component.
-  const listKey = `${discovery.sort}:${avail}:${colors.join("")}:${join}`;
+  const listKey = `${discovery.sort}:${avail}:${colors.join("")}:${join}:${settledQuery.trim()}`;
   const [prevListKey, setPrevListKey] = useState(listKey);
   if (listKey !== prevListKey) {
     setPrevListKey(listKey);
@@ -195,11 +228,13 @@ export function DiscoveryView({
     // a filter the player cannot see, cannot clear, and did not ask for.
     if (join === "exactly" && colors.length > 0) params.set("join", "exact");
     else params.delete("join");
+    if (settledQuery.trim() !== "") params.set("q", settledQuery.trim());
+    else params.delete("q");
     const s = params.toString();
     // The live pathname, not a literal: this rewrites the query and must leave
     // the path exactly as it found it under a basePath or a route move.
     window.history.replaceState(null, "", `${window.location.pathname}${s ? `?${s}` : ""}`);
-  }, [colors, join]);
+  }, [colors, join, settledQuery]);
 
   const menu = (
     <SortMenu
@@ -226,9 +261,26 @@ export function DiscoveryView({
   // player who narrowed to Azorius that none of the N candidates cleared it.
   const showFloorEmpty =
     discovery.items.length === 0 && discovery.floorExcluded > 0 && discovery.bestPct != null;
+  // The live query, not the settled one: `filtered` narrows per keystroke, and a
+  // heading naming the previous query for 350ms would quote a word the reader
+  // has already finished changing. The debounce exists for the URL, the window
+  // and the live region, none of which the reader is looking at.
+  const trimmedQuery = query.trim();
+  // Named nothing, rather than filtered to nothing. Read against the server's
+  // list rather than `filtered`, because a name that IS in the list and was
+  // removed by a pip is a colour exclusion wearing a search miss — this state
+  // would tell the reader to check a spelling that is already correct.
+  const nameMatchesAny = useMemo(() => {
+    if (trimmedQuery === "") return false;
+    const q = trimmedQuery.toLowerCase();
+    return discovery.items.some((r) => r.name.toLowerCase().includes(q));
+  }, [discovery.items, trimmedQuery]);
+  const showSearchEmpty =
+    !showFloorEmpty && trimmedQuery !== "" && filtered.length === 0 && !nameMatchesAny;
   // Only when the filter is what emptied it. Without that guard this would also
   // swallow the unfiltered no-results case, whose reason is not the colours.
-  const showFilteredEmpty = !showFloorEmpty && colors.length > 0 && filtered.length === 0;
+  const showFilteredEmpty =
+    !showFloorEmpty && !showSearchEmpty && colors.length > 0 && filtered.length === 0;
 
   // The one reason this state has under discovery that it does not have under
   // the owned scope: the commanders are missing because they are already built.
@@ -293,6 +345,8 @@ export function DiscoveryView({
         order={{ desktop: menu, mobile: menu }}
         join={join}
         onJoinChange={setJoin}
+        query={query}
+        onQueryChange={setQuery}
       />
 
       {/* State 1 sits ABOVE a full list, not in place of one: with no decks
@@ -306,6 +360,21 @@ export function DiscoveryView({
           cardsRead={discovery.cardsRead}
           bestPct={discovery.bestPct as number}
           onRankByFit={() => setSort("fit")}
+        />
+      ) : showSearchEmpty ? (
+        // The same shape as the colour miss, with three of its parts replaced:
+        // no pip row (no filter to show), a diagnostic in the search's own
+        // vocabulary rather than the colour filter's, and a button that clears
+        // what the reader actually set.
+        <FilteredEmpty
+          colors={[]}
+          total={discovery.items.length}
+          onClear={() => setQuery("")}
+          heading={planeCopy.search.noneHeading(trimmedQuery)}
+          body={planeCopy.search.noneBody(discovery.items.length)}
+          emphasis={planeCopy.search.noneEmphasis(discovery.items.length)}
+          diagnostic={planeCopy.search.announce(0, discovery.items.length)}
+          cta={planeCopy.search.noneCta}
         />
       ) : showFilteredEmpty ? (
         <FilteredEmpty

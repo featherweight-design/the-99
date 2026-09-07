@@ -53,6 +53,12 @@ type SearchFieldProps = TextFieldProps & {
    * lands on the `<input>`, and the design tables size the glyph per surface.
    */
   iconClassName?: string;
+  /**
+   * Replaces the leading `⌕` outright. The commanders filter bar captions its
+   * field `FIND` instead, mirroring the `COLORS` caption beside it — a magnifier
+   * there would be a second vocabulary in a row that already has one.
+   */
+  leading?: React.ReactNode;
 };
 
 /**
@@ -70,6 +76,7 @@ export function SearchField({
   className,
   containerClassName,
   iconClassName,
+  leading,
   trailing,
   type = "search",
   ...rest
@@ -85,15 +92,17 @@ export function SearchField({
         containerClassName,
       )}
     >
-      <span
-        aria-hidden
-        className={twMerge(
-          "font-mono text-[15px] shrink-0 text-[color:var(--fg-faint)]",
-          iconClassName,
-        )}
-      >
-        ⌕
-      </span>
+      {leading ?? (
+        <span
+          aria-hidden
+          className={twMerge(
+            "font-mono text-[15px] shrink-0 text-[color:var(--fg-faint)]",
+            iconClassName,
+          )}
+        >
+          ⌕
+        </span>
+      )}
       <input
         type={type}
         className={twMerge(

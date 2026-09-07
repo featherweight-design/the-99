@@ -9,6 +9,7 @@ import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { guildLabel, colorWords } from "../../lib/copy/color-labels";
 import { commandersCopy } from "../../lib/copy/commanders";
 import { Crown } from "../ui/crown";
+import { Emphasised } from "./emphasis";
 import { GhostButton } from "../ui/button";
 
 type FilteredEmptyProps = {
@@ -26,6 +27,15 @@ type FilteredEmptyProps = {
       the reader to, and no built decks to explain the absence with. */
   extraClause?: string;
   secondary?: React.ReactNode;
+  /** One clause of `body` to lift, the way the other two empties mark theirs.
+      The copy module owns the whole sentence and the phrase is a substring of
+      it, so the emphasis is found inside the rendered text rather than composed
+      from fragments here. */
+  emphasis?: string;
+  /** Replaces the mono count line. A search miss is not "showing 0 of N" in the
+      colour filter's sense — nothing was narrowed, nothing was named — so the
+      caller supplies the diagnostic its own state can defend. */
+  diagnostic?: string;
 };
 
 export function FilteredEmpty({
@@ -37,6 +47,8 @@ export function FilteredEmpty({
   cta,
   extraClause,
   secondary,
+  emphasis,
+  diagnostic,
 }: FilteredEmptyProps) {
   const label = guildLabel(colors);
 
@@ -46,25 +58,28 @@ export function FilteredEmpty({
       <Crown tone="quiet" className="mb-[14px]" />
 
       {/* The dimmed pips stay: they were beside the crab, not part of it, and
-          they are the only place the active filter is visible. */}
-      <div className="flex items-center gap-[16px]">
-        <div className="flex gap-[6px]" aria-hidden="true">
-          {colors.map((c) => (
-            <span
-              key={c}
-              className="block rounded-full"
-              style={{
-                width: 16,
-                height: 16,
-                background: WUBRG_COLOR[c] ?? "var(--fg-faint)",
-                opacity: 0.5,
-                boxShadow: "0 0 0 2px var(--accent)",
-              }}
-            />
-          ))}
+          they are the only place the active filter is visible. With no pip lit
+          there is no filter to show, and the row would be an empty gap under a
+          heading that never mentioned colour. */}
+      {colors.length > 0 ? (
+        <div className="flex items-center gap-[16px]">
+          <div className="flex gap-[6px]" aria-hidden="true">
+            {colors.map((c) => (
+              <span
+                key={c}
+                className="block rounded-full"
+                style={{
+                  width: 16,
+                  height: 16,
+                  background: WUBRG_COLOR[c] ?? "var(--fg-faint)",
+                  opacity: 0.5,
+                  boxShadow: "0 0 0 2px var(--accent)",
+                }}
+              />
+            ))}
+          </div>
         </div>
-
-      </div>
+      ) : null}
 
       {/* Heading */}
       <h2
@@ -84,7 +99,11 @@ export function FilteredEmpty({
           maxWidth: 380,
         }}
       >
-        {body ?? commandersCopy.filteredEmpty.caption(colorWords(colors), total)}
+        {emphasis && body ? (
+          <Emphasised text={body} values={[emphasis]} color="var(--fg)" />
+        ) : (
+          (body ?? commandersCopy.filteredEmpty.caption(colorWords(colors), total))
+        )}
         {/* The clause is a second sentence rather than a second paragraph: it
             gives the reason the first sentence is true, and a break would read
             as a change of subject. Emphasised whole, unlike the other two
@@ -106,7 +125,7 @@ export function FilteredEmpty({
         className="m-0 font-mono text-[10.5px] sm:text-[11px]"
         style={{ color: "var(--warning)", marginTop: 12 }}
       >
-        {commandersCopy.filteredEmpty.count(total)}
+        {diagnostic ?? commandersCopy.filteredEmpty.count(total)}
       </p>
 
       {/* Clear color filter button. Under discovery it gains a second

@@ -16,6 +16,7 @@ import { PENDING_OPACITY } from "./pending";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import type { JoinMode } from "../../lib/commanders/filter";
 import { Emphasised, localised } from "./emphasis";
+import { CommanderSearchField } from "./search-field";
 import { WindowCount } from "./reveal-control";
 
 type AvailMode = "all" | "free";
@@ -275,6 +276,12 @@ export type FilterBarProps = {
       it renders only while a pip is lit. */
   join?: JoinMode;
   onJoinChange?: (next: JoinMode) => void;
+  /** The search field (§4.3), likewise discovery-only: the owned scope lists
+      what a player has built and is short enough to read. Omitted, the leading
+      slot renders NOTHING — not an empty wrapper, which would still contribute
+      the row's gap and shift the owned bar sideways. */
+  query?: string;
+  onQueryChange?: (next: string) => void;
 };
 
 export function FilterBar({
@@ -292,8 +299,11 @@ export function FilterBar({
   order,
   join,
   onJoinChange,
+  query,
+  onQueryChange,
 }: FilterBarProps) {
   const showJoin = join !== undefined && onJoinChange !== undefined && colors.length > 0;
+  const showSearch = query !== undefined && onQueryChange !== undefined;
   return (
     <>
       {/* ── Desktop sticky filter bar (§Filter container, desktop) ── */}
@@ -308,8 +318,13 @@ export function FilterBar({
           zIndex: 2,
         }}
       >
-        {/* Filter row: pip wrapper + chips + Includes + Order + count */}
+        {/* Filter row: search + pip wrapper + chips + Includes + Order + count */}
         <div className="flex items-center gap-[12px] flex-wrap">
+          {/* Search (desktop, §4.3) — the row's leading edge, ahead of the pips.
+              Nothing is rendered in its place when the scope has no search, so
+              the owned bar keeps the x-positions it shipped with. */}
+          {showSearch && <CommanderSearchField value={query} onChange={onQueryChange} />}
+
           {/* Pip row wrapper (§Filter pip row wrapper) */}
           <div
             className="flex items-center gap-[8px]"
@@ -625,21 +640,28 @@ export function FilterBar({
             under the colour filter. The count is omitted below the window
             threshold; the order slot is not, because a control the player cannot
             reach until the list grows is a control they do not have. A caller
-            with nothing to put there passes null and the row disappears. */}
-        {(wasWindowed || order.mobile) && (
+            with nothing to put there passes null and the row disappears.
+
+            Search takes this slot where it exists, rather than adding a fifth
+            row to a phone stack the handoff already measured at +173px. The
+            count it displaces is not lost: `RevealControl` prints "N shown ·
+            M more below" inside the list itself. */}
+        {(wasWindowed || order.mobile || showSearch) && (
           <div
             className={[
-              "flex items-center mt-[9px]",
-              wasWindowed ? "justify-between" : "justify-end",
+              "flex items-center mt-[9px] gap-[10px]",
+              wasWindowed || showSearch ? "justify-between" : "justify-end",
             ].join(" ")}
           >
-            {wasWindowed && (
+            {showSearch ? (
+              <CommanderSearchField value={query} onChange={onQueryChange} />
+            ) : wasWindowed ? (
               <WindowCount
                 shown={shown}
                 filteredTotal={filteredTotal}
                 className="font-mono text-[10.5px]"
               />
-            )}
+            ) : null}
             {order.mobile}
           </div>
         )}

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { DiscoveryList } from "../../lib/discovery/list";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
@@ -556,5 +556,88 @@ describe("DiscoveryView", () => {
 
     fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
     expect(screen.queryByText("Commander 25")).toBeNull();
+  });
+
+  // ── The search field (§4.3) ───────────────────────────────────────────
+  const search = planeCopy.search;
+  const field = () => screen.getAllByRole("searchbox", { name: search.inputAria })[0];
+
+  const named = () => [
+    item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated" }),
+    item({ oracleId: "b", slug: "b", name: "Meren of Clan Nel Toth", rank: 2 }),
+  ];
+
+  it("narrows the list by name as the reader types", () => {
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Meren of Clan Nel Toth")).toBeNull();
+  });
+
+  // The URL waits for the typing to settle. Mirroring per keystroke would write
+  // seven history entries for one word, and Phase 5's lookup hangs off the same
+  // settled value.
+  it("mirrors the settled query as ?q=, and drops it when the field is cleared", async () => {
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    expect(window.location.search).toBe("?scope=play");
+
+    await waitFor(() => expect(window.location.search).toBe("?scope=play&q=yarok"));
+    expect(replace).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getAllByRole("button", { name: search.clearAria })[0]);
+    await waitFor(() => expect(window.location.search).toBe("?scope=play"));
+  });
+
+  it("opens under the query the incoming URL names", () => {
+    window.history.replaceState(null, "", "/commanders?scope=play&q=meren");
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    expect(screen.getAllByText("Meren of Clan Nel Toth").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Yarok, the Desecrated")).toBeNull();
+  });
+
+  it("announces the match count once the typing settles", async () => {
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    await waitFor(() => expect(screen.getByText(search.announce(1, 2))).toBeTruthy());
+  });
+
+  // The name is in nothing this reader can see, so the state says where we
+  // looked and offers the one correction that could help.
+  it("names the query when nothing is called that, and clears the search rather than the colours", () => {
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.change(field(), { target: { value: "krenko" } });
+
+    expect(container.textContent).toContain(search.noneHeading("krenko"));
+    expect(container.textContent).toContain(search.announce(0, 2));
+
+    // The field's ✕ carries the same accessible name as the state's button, so
+    // the one with the visible label is the state's.
+    const cta = screen
+      .getAllByRole("button", { name: search.noneCta })
+      .find((b) => b.textContent === search.noneCta);
+    fireEvent.click(cta as HTMLElement);
+    // The pips survive: the button cleared what the reader typed, and clearing
+    // the colours too would undo a filter this state never blamed.
+    expect(screen.getAllByText("Showing 2 of 2").length).toBeGreaterThan(0);
+  });
+
+  // A name that IS in the list and was removed by a pip is a colour exclusion,
+  // not a miss — telling the reader to check the spelling would be wrong.
+  it("keeps the colour empty state when the name exists but a pip excluded it", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["U"] }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 1 })} avail="free" />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+
+    expect(container.textContent).not.toContain(search.noneHeading("yarok"));
+    expect(container.textContent).toContain(discoveryCopy.empty.filteredHeading);
   });
 });
