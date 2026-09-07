@@ -1925,7 +1925,6 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 | `bob` | `0%,100% { transform: translateY(0) }; 50% { transform: translateY(-5px) }` | Crab idle float |
 | `dots` | `0%,100% { opacity: 0.25 }; 50% { opacity: 1 }` | LoaderDots pulse |
 | `breathe` | `0%,100% { transform: scale(1) }; 50% { transform: scale(1.02) translateY(3px) }` | Kaiju idle (ships unused — pending #61) |
-| `rise` | `0% { transform: translateY(18px); opacity: 0 }; 100% { transform: translateY(0); opacity: 1 }` | Entry reveal |
 
 ### Animation utility classes
 
@@ -1934,13 +1933,12 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 | `.anim-bob` | `bob` | `var(--bob-duration, 4.5s)` | `ease-in-out infinite` | Yes — set per instance via CSS custom property |
 | `.anim-dots` | `dots` | `1.2s` | `ease-in-out infinite` | No |
 | `.anim-breathe` | `breathe` | `10s` | `ease-in-out infinite` | No |
-| `.anim-rise` | `rise` | `0.8s` | `ease-out both` | No |
 
 ### Reduced-motion block
 
 | Selector | Declaration |
 |----------|-------------|
-| `.anim-bob, .anim-dots, .anim-breathe, .anim-rise` (inside `@media (prefers-reduced-motion: reduce)`) | `animation: none` |
+| `.anim-bob, .anim-dots, .anim-breathe` (inside `@media (prefers-reduced-motion: reduce)`) | `animation: none` |
 
 ---
 

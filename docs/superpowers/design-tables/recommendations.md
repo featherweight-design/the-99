@@ -536,7 +536,7 @@ from the prose files; nothing is inferred from the codebase.
 | SVG icons | **none.** Every glyph is a text character: `⚠`, `✕`, `⚲`, `‹`/`›`, `→`, `✓`, `—`, `i`, `×N`, and CSS squares for the empty states | same |
 | Colour-alone | `auto` is a **word**; degraded vs. absent differ by shape rule + string + presence of a control + colour (four signals) | same |
 | Null rule | a dash renders in three places (chip figure, Shopping figure, in-flight cells); **`0%` renders nowhere** | same |
-| Celebration | none — `shouldCelebrate` fires at 99/99 and the fill stops at 68, so no new collision | same |
+| Celebration | none — and none is possible since #362 removed the completion reveal outright | same |
 | Arithmetic | 10 + 10 + 8 + 3 + 37 = 68; state 13 is 67; Shopping is 7; the pruned deck is 66 with 58 auto | same |
 
 ---

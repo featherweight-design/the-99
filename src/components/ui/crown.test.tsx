@@ -40,23 +40,13 @@ describe("Crown", () => {
     ]);
   });
 
-  it("separates the three intensities by colour", () => {
-    const colorOf = (tone: "quiet" | "page" | "loud") => {
+  it("separates the two intensities by colour", () => {
+    const colorOf = (tone: "quiet" | "page") => {
       const { container } = render(<Crown tone={tone} />);
       return rectsOf(container)[0].getAttribute("fill");
     };
     expect(colorOf("quiet")).toBe("var(--border-strong)");
     expect(colorOf("page")).toBe("var(--accent-strong)");
-    expect(colorOf("loud")).toBe("var(--accent)");
-  });
-
-  it("enlarges the geometry for the one loud crown", () => {
-    const { container } = render(<Crown tone="loud" />);
-    expect(rectsOf(container).map((d) => d.getAttribute("width"))).toEqual([
-      "15",
-      "20",
-      "15",
-    ]);
   });
 
   it("separates quiet from page by colour alone, not size", () => {

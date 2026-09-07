@@ -8,11 +8,7 @@ import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from
 import type { DeckDetail } from "../../lib/decks/read";
 import { statusPill } from "../../lib/decks/status";
 import { availabilityState, hardDecks } from "../../lib/decks/availability";
-import { fillCompletedKey, shouldCelebrate } from "../../lib/decks/celebration";
 import { isShoppingCard } from "../../lib/decks/shopping";
-import { CompletionReveal } from "./completion-reveal";
-import { useCelebrated } from "./use-celebrated";
-import { useLocalFlag } from "./use-local-flag";
 import type { DeckSuggestion } from "../../lib/decks/suggest";
 import { BuilderSpine } from "./builder-spine";
 import { RoleCounterStrip } from "./role-counter-strip";
@@ -148,9 +144,6 @@ export function BuilderShell({
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
   const isDesktop = useIsDesktop();
 
-  const [celebrated, markCelebrated, celebratedHere] = useCelebrated(deck.id);
-  const [completedByFill, markCompletedByFill, , clearCompletedByFill] = useLocalFlag(fillCompletedKey(deck.id));
-
   // True while LastSlotsStrip has a fill write in flight (A or B). Used to
   // disable control C (ClearAutoButton) during either fill per design table
   // state 3 / state 8.
@@ -175,31 +168,13 @@ export function BuilderShell({
   const { built } = counts;
 
   // The one deliberate exception. Keyed off the SERVER counts because the
-  // reveal is a one-shot that burns a persisted flag — firing it on a predicted
-  // 99th card that the server then rejects would spend the moment on a deck
-  // that never reached 99, and there is no way to give it back.
+  // commitments roll-up below states a fact about other decks' claims, and a
+  // predicted 99th card the server then rejects would zero the soft count for
+  // a deck that never reached 99.
   const serverStatus = statusPill({
     built: deck.built,
     ownedCount: deck.ownedCount,
     unresolvedCount: unresolvedCardCount(deck.unresolvedRows),
-  });
-
-  // The flag is a receipt for a deck a fill completed, and the rule it serves is
-  // that the reveal belongs to the player who placed the last card. Once the deck
-  // drops back out of Complete the fill is no longer what completed it — the same
-  // reasoning the sweep already applies — so the suppression is retired and a
-  // player who builds back to 99 by hand can earn the reveal. Left standing, it
-  // would outlive the completion it describes and silence a hand-built 99 the
-  // fill had no part in.
-  useEffect(() => {
-    if (completedByFill && serverStatus !== "Complete") clearCompletedByFill();
-  }, [completedByFill, serverStatus, clearCompletedByFill]);
-
-  const revealDue = shouldCelebrate({
-    status: serverStatus,
-    alreadyCelebrated: celebrated,
-    arrivedFromImport,
-    completedByFill,
   });
 
   // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and
@@ -396,10 +371,6 @@ export function BuilderShell({
       try {
         const removed = await clearAutoCards(deck.id);
         setSweptRows(removed);
-        // The fill-suppression flag is a receipt for a deck completed by fill.
-        // After a sweep the fill is no longer what completed it, so a player who
-        // rebuilds to 99 by hand can earn the reveal.
-        clearCompletedByFill();
         const remaining = deckCounts(cards.filter((c) => !c.auto)).built;
         const removedCount = removed.reduce((n, r) => n + r.quantity, 0);
         setAnnouncement(
@@ -411,7 +382,7 @@ export function BuilderShell({
         setAutoError(recommendationsCopy.auto.sweepFailed);
       }
     });
-  }, [sweepPending, cards, deck.id, sweepOptimisticAuto, clearCompletedByFill]);
+  }, [sweepPending, cards, deck.id, sweepOptimisticAuto]);
 
   // No receipt strip and no undo: a keep takes nothing, so there is nothing for
   // a receipt to hold open, and an undo would have to write `auto = true` back
@@ -548,30 +519,7 @@ export function BuilderShell({
     pendingUnresolved.current = false;
   }, [view, filter]);
 
-  // The one-shot is spent by the band appearing, not by the user dismissing it.
-  // Scrolling past is the commonest way to leave a page, and "Complete" is a
-  // derived status that reads true forever, so while the flag burned only on an
-  // explicit dismiss the reveal fired again on every visit to a finished deck.
-  //
-  // Burning it makes `revealDue` false in the same frame, so `celebratedHere`
-  // — "this visit is the one that spent it" — holds the band up for the rest of
-  // the visit.
-  useEffect(() => {
-    if (revealDue) markCelebrated();
-  }, [revealDue, markCelebrated]);
-
-  const [revealDismissed, setRevealDismissed] = useState(false);
-  const revealOpen = (revealDue || celebratedHere) && !revealDismissed;
-
-  // Every route into the export dialog closes the reveal, not just the one
-  // inside it — the user has acted on the moment, so leaving the band standing
-  // behind the dialog is noise. Only while it is actually showing, though: an
-  // export from a half-built deck would otherwise spend the dismissal in
-  // advance and swallow the reveal when that same visit reaches 99.
-  const openExport = () => {
-    if (revealOpen) setRevealDismissed(true);
-    setExportOpen(true);
-  };
+  const openExport = () => setExportOpen(true);
 
   return (
     // One card-detail modal for every surface below — spine, decklist, suggestions, search.
@@ -593,15 +541,6 @@ export function BuilderShell({
           </span>
 
           <div className="flex-1 flex flex-col min-w-0">
-            {/* The 99/99 reveal — one-shot, above the builder body */}
-            {revealOpen && (
-              <CompletionReveal
-                commanderShortName={commanderShortName}
-                onDismiss={() => setRevealDismissed(true)}
-                onExport={openExport}
-              />
-            )}
-
             {removeFailure && (
               <div className="px-[14px] md:px-[20px] pt-[10px]">
                 <MutationError message={removeFailure} />
@@ -697,7 +636,6 @@ export function BuilderShell({
                 unownedCandidates={unownedCandidates}
                 commanderShortName={commanderShortName}
                 onAnnounce={setAnnouncement}
-                onCompletedByFill={markCompletedByFill}
                 onInflight={setFillInflight}
               />
             )}

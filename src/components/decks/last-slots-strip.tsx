@@ -34,9 +34,6 @@ export interface LastSlotsStripProps {
   commanderShortName: string;
   /** Writes one message per settle to the live region in builder-shell.tsx. */
   onAnnounce: (message: string) => void;
-  /** Called when a fill settles at total === 99, so the shell can suppress the
-      reveal band — a two-click fill has not earned the one-shot reveal. */
-  onCompletedByFill?: () => void;
   /** Called whenever the in-flight state changes. True = a write is running;
       false = the write settled. The shell uses this to disable control C while
       either fill is in flight (design table state 3 / state 8). */
@@ -110,7 +107,6 @@ function LastSlotsStripInner({
   unownedCandidates,
   commanderShortName,
   onAnnounce,
-  onCompletedByFill,
   onInflight,
 }: LastSlotsStripProps) {
   // Which write is in flight. Null when idle.
@@ -153,10 +149,6 @@ function LastSlotsStripInner({
         setSettled(null);
         onAnnounce(synergyCopy.lastSlots.filledAnnounce(String(result.added), total));
       }
-      // Only a fill that placed something can claim the 99th slot. A run that
-      // arrives at a deck another tab already finished reports 99 having added
-      // nothing, and would otherwise suppress a reveal it did not earn.
-      if (result.added > 0 && result.total === 99) onCompletedByFill?.();
     } catch {
       // The same refusal copy the action returns: to the player a call that
       // never arrived and one that arrived and failed are the same event.
@@ -187,8 +179,6 @@ function LastSlotsStripInner({
           String(result.bought),
         ),
       );
-      // Same gate as A: a zero-add run reporting 99 is someone else's finish.
-      if (result.added > 0 && result.total === 99) onCompletedByFill?.();
     } catch {
       setUnownedError(synergyCopy.lastSlots.topUpFailed);
     } finally {

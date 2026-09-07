@@ -1858,118 +1858,25 @@ dialog body scrolls, which is where the shopping tab's scroll already was.
 
 ---
 
-## Component: Completion Reveal (v2 — the 99/99 kaiju)
+## Component: Completion Reveal — REMOVED (#362)
 
-The app's **only** kaiju appearance. Fires once per deck, the first time it
-reads `Complete` (99 cards, all owned). Implemented in
-`src/components/decks/completion-reveal.tsx`, gated by
-`src/lib/decks/celebration.ts` + `src/components/decks/use-celebrated.ts`.
+The 99/99 band ("Ninety-nine.") no longer exists. `completion-reveal.tsx`, the
+`the99:celebrated:<deckId>` and `the99:filled-by-fill:<deckId>` flags that gated
+it, and the `loud` crown tone drawn only inside it were all removed with it.
 
-### Band container
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| position | relative (in flow, above the Spine) | relative (in flow, above the Spine) |
-| height | 420px (derived) | 380px |
-| overflow | hidden | hidden |
-| background | linear-gradient(180deg, var(--celebrate-top) #171310, var(--celebrate-bottom) #110E0B) | same |
-| aria | `<section aria-labelledby>` the heading | same |
+Its property tables are dropped rather than kept as history: this file is the
+statement of what the deck surface *is*, and a table for a band that cannot
+render is a second source of truth. The drawings remain in
+`design/design_handoff_the99_richness/`.
 
-### Kaiju mark
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| component | `<Kaiju size={300}>` (derived) | `<Kaiju size={440}>` |
-| width × height | 300 × 237.5px | 440 × 348.3px |
-| position | absolute; right −70px; bottom −8px (derived) | absolute; right −60px; bottom −12px |
-| opacity | 0.94 | 0.94 |
-| filter | drop-shadow(0 0 46px rgba(0,0,0,0.6)) | same |
-| animation | `anim-breathe`, 10s | `anim-breathe`, 10s |
-| reduced motion | `animation: none` — kaiju holds at scale 1, full opacity | same |
-| aria | `aria-hidden` | `aria-hidden` |
+**Export survives the removal.** "Export decklist" was one of the band's two
+CTAs but never its only route — `BuilderSpine` carries the same action, and that
+is now the single entry to the export dialog.
 
-### Crab mark
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| component | `<Crab size={64}>` (derived) | `<Crab size={84}>` |
-| position | absolute; left 24px; bottom 28px (derived) | absolute; left 46%; bottom 32px |
-| animation | `anim-bob`, 4.5s | `anim-bob`, 4.5s |
-| reduced motion | `animation: none` | `animation: none` |
-
-### Brass horizon line
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| position | absolute; left 0; right 0; bottom 44px (derived) | absolute; left 0; right 0; bottom 52px |
-| height | 1px | 1px |
-| background | linear-gradient(90deg, transparent, rgba(201,162,75,0.4), transparent) | same |
-
-### Text block
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| position | absolute; top 32px; left 24px; right 24px (derived, no max-width) | absolute; top 56px; left 40px; max-width 330px |
-| animation | `anim-rise`, 0.8s ease-out both | same |
-| reduced motion | `animation: none` — nothing else sets opacity/transform, so the block sits at opacity 1 | same |
-
-### Text block — crown crumb (3 brass diamonds)
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | inline-flex | inline-flex |
-| gap | 7px | 7px |
-| small diamond | 9 × 9px, rotate(45deg), var(--brass) | same |
-| large diamond | 13 × 13px, rotate(45deg), var(--brass) | same |
-| margin-bottom | 12px | 12px |
-| aria | `aria-hidden` | `aria-hidden` |
-
-### Heading "The 99 is complete."
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-family | 'Cinzel', serif | 'Cinzel', serif |
-| font-weight | 800 | 800 |
-| font-size | 24px (derived) | 32px |
-| color | var(--fg) #EDE6D8 | var(--fg) #EDE6D8 |
-| margin | 0 | 0 |
-
-### Body "{Commander} is fed — 99 of 99, all owned. Try not to let it get to your head at the table."
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| font-size | 14px (derived) | 15px |
-| line-height | 1.6 | 1.6 |
-| color | var(--fg-body) #C6B79A | var(--fg-body) #C6B79A |
-| margin | 10px 0 0 | 10px 0 0 |
-
-### Button row
-| Property | Mobile | Desktop |
-|----------|--------|---------|
-| display | flex; flex-wrap: wrap | flex |
-| gap | 12px | 12px |
-| margin-top | 18px | 18px |
-| primary | `<PrimaryButton>` "Export decklist" — 13px, padding 10px 20px | same |
-| secondary | `<GhostButton>` "Back to the deck" — 13px, padding 10px 20px | same |
-
-> **Three interpretive calls, awaiting Design ratification.**
->
-> 1. **Band, not full surface.** The mock captions this "full-surface moment …
->    then dissolves to the builder". A fixed overlay on the route the user
->    reached by adding their 99th card would hide the deck they just finished
->    and needs a focus trap, a scroll lock and an escape hatch, none of which
->    the mock specifies. A 420/380px band at the top of the builder keeps the
->    reveal above the fold at both breakpoints while the deck stays reachable.
-> 2. **Dismissible only — no ~4s auto-dismiss.** The mock says "~4s or
->    dismissible"; a timer racing a reader is worse than a button, and "Back to
->    the deck" is already the mock's own dismiss affordance.
-> 3. **The mobile composition is derived, not mocked.** `kaiju.svg` is a
->    480 × 380 landscape viewBox that does not fold into portrait, so it is
->    anchored bottom-right at 300px and bled off both edges — preserving the
->    "larger than frame" read instead of shrinking into a cute full-body figure.
->    The crab moves hard left so the kaiju's gaze still crosses the diagonal.
->
-> **One-shot trigger.** `statusPill()` is a *derived* status: it reads
-> `Complete` forever once a deck is 99/99, so rendering on status alone would
-> show the kaiju on every visit and the handoff reserves it for rare wins. The
-> flag is persisted per deck in `localStorage` under `the99:celebrated:<deckId>`
-> — a cosmetic flag does not justify a migration, and the failure mode (a second
-> device shows it once more) is benign. Deck ids are `uuid().defaultRandom()`
-> primary keys and are never reused, so an entry orphaned by a deleted deck is
-> inert. The status is read from the **server-rendered** counts, never from the
-> optimistic per-row state in `use-deck-mutation.ts`.
+The three interpretive calls this section recorded (band rather than full
+surface, dismissible-only rather than a ~4s timer, and a derived mobile
+composition) are moot; they were the open half of **#148**, which still stands
+for its other items.
 
 ---
 
@@ -2021,8 +1928,7 @@ reads `Complete` (99 cards, all owned). Implemented in
 | Builder · mid-build · filter Shopping | "Shopping" pill active | Decklist filtered to unowned cards only | `filter: 'shopping'` |
 | Builder · mid-build · group By type | "By type" pill active (default) | Decklist grouped by card type (Creatures / Instants / Sorceries / Artifacts / Enchantments / Lands) | `grouping: 'type'` |
 | Builder · mid-build · group By role | "By role" pill active | Decklist grouped by role (Ramp / Card draw / Removal / Board wipes / Payoffs / Lands) | `grouping: 'role'` |
-| Builder · completion reveal | Deck reads `Complete` (99 built, all owned) **and** `the99:celebrated:<deckId>` is absent | CompletionReveal band above the Spine: kaiju, crab, brass horizon, crown crumb, two CTAs | `deck.built`, `deck.ownedCount`, `deck.commander.name`; `onDismiss`, `onExport` |
-| Builder · completion already seen | Same deck, `the99:celebrated:<deckId> === "1"` — including after dropping to 98/99 and returning to 99/99 | No band; the builder renders normally | same |
+| Builder · complete | Deck reads `Complete` (99 built, all owned) | No band and no one-shot: the builder renders as it does mid-build, with the Spine at 99/99. The completion reveal was removed in #362 | `deck.built`, `deck.ownedCount` |
 | Builder · quick-add open | User focuses the sticky quick-add bar | Bar expands to a results list beneath the input | `searchQ: string`, `search.results[]` |
 | Builder · search · min 2 chars | Query length ≥ 2 | Results list populated | `searchQ.length >= 2` |
 | Builder · search · owned-only off | Toggle turned off by the user | All results (owned + unowned) shown | `ownedOnly: false` |

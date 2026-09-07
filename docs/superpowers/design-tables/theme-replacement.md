@@ -346,7 +346,7 @@ No `[data-theme="tarkir"]` block may be added.
 |---|---|
 | Ten §3 empty-state surfaces re-rendered in `ixalan` / `eldraine` | Not in this package (README gap 3) |
 | Accent-area ~10% heuristic re-run for Canopy | Unmeasured (README gap 4) |
-| Canopy's three greens (`--accent` `#A3C445`, `--success` `#6FA368`, `--g` `#4B7A46`) at size on the deck-completion reveal | Eyes-on wanted, not blocking |
+| Canopy's three greens (`--accent` `#A3C445`, `--success` `#6FA368`, `--g` `#4B7A46`) at size on the deck-completion reveal | Moot — the reveal was removed in #362, and no remaining surface shows all three at that size |
 | Witching Hour vs First Frost ground separation | Now 0.019 chroma, not 0.038 — one side-by-side look wanted (README gap 0) |
 | Lint rule for display weight set per call site | Suggested, not specified |
 | Picker chrome (layout, sizing, states), crown, mobile pass | Inherited from `design_handoff_the99_themes/` R1/R2 — not respecified here |

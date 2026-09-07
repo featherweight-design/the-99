@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addPanelCopy, builtFragment, decksBuilderCopy, shortCommanderName } from "./decks-builder";
+import { addPanelCopy, builtFragment, shortCommanderName } from "./decks-builder";
 
 describe("shortCommanderName", () => {
   it("takes the name up to the first comma", () => {
@@ -86,14 +86,6 @@ describe("addPanelCopy counts at n = 1", () => {
   });
 });
 
-describe("decksBuilderCopy", () => {
-  it("reproduces the mock's completion caption verbatim", () => {
-    expect(decksBuilderCopy.completion.caption("Korvold")).toBe(
-      "Korvold has a full deck. Sleeve it up before you change your mind.",
-    );
-  });
-});
-
 // Named for the axis rather than for one key, because the provenance line lives
 // under `consider` and the tag under `unowned`, and they only mean anything
 // read together.
@@ -131,7 +123,7 @@ describe("addPanelCopy.tile evidence labels", () => {
 
 // The addendum's whole copy pass was removing em dashes from this surface, so
 // the invariant is worth pinning rather than re-auditing by eye. Scoped to
-// addPanelCopy: decksBuilderCopy's untouched strings keep theirs.
+// addPanelCopy: the other exports in this file keep theirs.
 describe("addPanelCopy punctuation", () => {
   const sample = (value: unknown): string[] => {
     if (typeof value === "string") return [value];

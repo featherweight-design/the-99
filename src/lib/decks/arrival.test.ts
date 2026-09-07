@@ -16,8 +16,8 @@ describe("arrivedFromImport", () => {
     expect(arrivedFromImport(undefined)).toBe(false);
   });
 
-  // A hand-typed or half-remembered param should not claim an import happened —
-  // it suppresses the 99/99 reveal, which is a moment there is no giving back.
+  // A hand-typed or half-remembered param should not claim an import happened:
+  // the arrival strip states a fact about how the player got here.
   it("is false for any other value, including a repeated param", () => {
     expect(arrivedFromImport("true")).toBe(false);
     expect(arrivedFromImport("")).toBe(false);
@@ -78,9 +78,8 @@ describe("readUpdateArrival", () => {
 describe("arrivalDismissKey", () => {
   // Deck ids are defaultRandom() uuids, so re-importing the same list after a
   // delete produces a different key and the strip shows again.
-  it("is per deck, and distinct from the celebration key", () => {
+  it("is per deck", () => {
     expect(arrivalDismissKey("a")).not.toBe(arrivalDismissKey("b"));
     expect(arrivalDismissKey("a")).toContain("a");
-    expect(arrivalDismissKey("a")).not.toContain("celebrated");
   });
 });
