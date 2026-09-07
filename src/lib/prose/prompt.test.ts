@@ -101,8 +101,20 @@ describe("buildProseRetryPrompt", () => {
   it("flattens a multi-line rejection onto one quoted line", () => {
     const messy = "  Kess decks grind,\n\n  leaning on the graveyard.  ";
     const p = buildProseRetryPrompt("Kess, Dissident Mage", TAGS, messy, "length");
-    expect(p).toContain('It was: "Kess decks grind, leaning on the graveyard."');
+    expect(p).toContain("It was:\nKess decks grind, leaning on the graveyard.");
     expect(p).not.toContain("\n\n  leaning");
+  });
+
+  // The rejected string is model output, so it can carry quotation marks of its own. Quoted
+  // inline they would close the quoting early and the rest would read as fresh instruction.
+  it("keeps a rejection carrying quotation marks on one line of its own", () => {
+    const p = buildProseRetryPrompt(
+      "Kess, Dissident Mage",
+      TAGS,
+      'Kess decks "grind", leaning on the graveyard.',
+      "length",
+    );
+    expect(p).toContain('It was:\nKess decks "grind", leaning on the graveyard.');
   });
 
   it("names the rule that was broken, not just that one was", () => {

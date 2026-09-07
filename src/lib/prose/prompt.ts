@@ -138,7 +138,11 @@ export function buildProseRetryPrompt(
   return [
     buildProsePrompt(commanderName, tags),
     "",
-    `A previous attempt was rejected. It was: "${quoted}"`,
+    // On its own line rather than in quotes: the rejected string is model output and may
+    // carry quotation marks of its own, which would close the quoting early and turn the
+    // remainder into what reads as instruction. `oneLine` guarantees the line holds.
+    "A previous attempt was rejected. It was:",
+    quoted,
     "",
     REJECTION_ADVICE[reason](subject),
     "Write a different sentence that does not repeat that mistake.",

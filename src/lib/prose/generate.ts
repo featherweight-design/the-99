@@ -97,8 +97,10 @@ export async function generateCommanderProse(opts: GenerateOptions): Promise<Gen
 
     let accepted: string | null = null;
     let called = false;
-    // Carried between attempts so a retry can be told which rule it broke. Null on the
-    // first attempt and after a failed call, where there is nothing to feed back.
+    // Carried between attempts so a retry can be told which rule it broke. Null until the
+    // first rejection, and the last real rejection then stands until a newer one replaces
+    // it — a call that returned nothing produces no sentence to feed back, and the rule the
+    // attempt before it broke is still the most useful thing to say.
     let last: { text: string; reason: ProseRejection } | null = null;
     for (let i = 0; i < attempts && accepted === null; i++) {
       const prompt =

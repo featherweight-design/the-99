@@ -154,7 +154,7 @@ describe("generateCommanderProse", () => {
       attempts: 2,
     });
     expect(prompts[0]).not.toContain("A previous attempt was rejected");
-    expect(prompts[1]).toContain('A previous attempt was rejected. It was: "Kess decks are good."');
+    expect(prompts[1]).toContain("A previous attempt was rejected. It was:\nKess decks are good.");
   });
 
   // Nothing came back, so there is nothing to feed back — a retry after a failed call must
@@ -172,6 +172,23 @@ describe("generateCommanderProse", () => {
       attempts: 2,
     });
     expect(prompts[1]).not.toContain("A previous attempt was rejected");
+  });
+
+  // A call that returned nothing produces no sentence to feed back, so the rule the attempt
+  // before it broke is still the most useful thing the next prompt can say.
+  it("keeps carrying the last real rejection past a failed call", async () => {
+    const prompts: string[] = [];
+    const replies: (string | null)[] = ["Kess decks are good.", null, ACCEPTED];
+    await generateCommanderProse({
+      complete: async (p) => {
+        prompts.push(p);
+        return replies.shift() ?? null;
+      },
+      loadCandidates: async () => [candidate()],
+      write: async () => {},
+      attempts: 3,
+    });
+    expect(prompts[2]).toContain("A previous attempt was rejected. It was:\nKess decks are good.");
   });
 
   it("regenerates a row whose inputs have moved on", async () => {
