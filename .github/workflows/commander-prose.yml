@@ -1,0 +1,81 @@
+name: Commander prose
+
+# One generated sentence per commander, for "Why this commander". ~3,300 serial
+# model calls with up to three attempts each is well past a Vercel function's
+# 300s maxDuration, so it runs here for the same reason commander-index.yml does.
+#
+# Ordering matters: the prompt and the input hash are built from
+# `commander_support.tags`, which `db:build:index` writes. Generating before the
+# index has been rebuilt spends a model call per commander to produce a sentence
+# about last month's tags, so the scheduled run chains off that workflow rather
+# than racing it on its own cron.
+on:
+  workflow_run:
+    workflows: [Commander index]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which database to write sentences to
+        type: choice
+        options: [staging, production]
+        default: staging
+
+concurrency:
+  group: commander-prose-${{ github.event.inputs.target || 'production' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prose:
+    # Two gates, and they are not the same gate.
+    #
+    # A manual dispatch always runs, against whichever target was chosen.
+    #
+    # A chained run fires ONLY off a scheduled index build. `workflow_run` cannot
+    # see the inputs of the run that triggered it, so a manually dispatched index
+    # against `staging` would otherwise chain into a production prose run and
+    # rewrite production sentences from staging's tags. Scheduled index runs take
+    # the workflow's own default, which is production, so restricting the chain to
+    # `schedule` is what makes the `|| 'production'` fallback below true rather
+    # than merely usual. Dispatch this workflow directly to generate for staging.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'schedule')
+    runs-on: ubuntu-latest
+    # Serial by design, and dominated by model latency rather than compute. A run
+    # that times out mid-batch needs no resume input: every sentence is written as
+    # it is accepted, and a re-dispatch skips each row whose stored hash still
+    # matches its inputs, so the next run picks up where this one stopped.
+    timeout-minutes: 240
+    # Reuses the catalog-* environments for the same reason the index does: same
+    # database, same secret, and a third environment holding an identical value is
+    # one more thing to keep in sync for no benefit.
+    environment: catalog-${{ github.event.inputs.target || 'production' }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Generate commander prose
+        run: |
+          {
+            echo "## Commander prose"
+            echo ""
+            echo "- Target: \`catalog-${{ github.event.inputs.target || 'production' }}\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:build:prose | tee -a "$GITHUB_STEP_SUMMARY"
