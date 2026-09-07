@@ -12,7 +12,7 @@ export type DeckMutationResult = { ok: true } | { ok: false; message: string };
 
 export const DECK_ADD_FALLBACK_MESSAGE = "We couldn't add that card just now. Give it another try in a moment.";
 
-export const DECK_REMOVE_FALLBACK_MESSAGE = "We couldn't remove that card just now. Give it another try in a moment.";
+export const DECK_REMOVE_FALLBACK_MESSAGE = "We couldn't remove that. It's still in the deck.";
 
 const REJECTION_MESSAGES: Record<DeckAddRejection, string> = {
   "not-commander-legal": "This card isn't legal in Commander, so it can't join the deck.",
