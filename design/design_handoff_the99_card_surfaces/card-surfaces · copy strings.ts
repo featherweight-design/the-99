@@ -9,6 +9,30 @@
 // ─── NEW ─────────────────────────────────────────────────────────────────────
 
 /**
+ * R2 call 1 — BuyTag's collapsed density.
+ *
+ * On the All tab the tag draws a bare `$`; on Shopping it draws the full
+ * `buy $12.40`. The VISIBLE text collapses, the accessible name does NOT: a
+ * screen reader gets the word and the price at both densities, because the
+ * collapse buys horizontal room and a reader who cannot see the chip was never
+ * spending it.
+ *
+ * The same collapsed chip is the card view tile's availability-slot occupant
+ * when the player owns no copies (R2 call 2), so `glyph` and `collapsedAria`
+ * serve the tile too. Sold-out collapses to the same `$` and the same aria
+ * without the price — accepted edge case; the chip must NOT restyle for it.
+ */
+export const buyTagCopy = {
+  glyph: "$",
+  full: (price: string) => `buy ${price}`,
+  /** Both densities speak this. `price` omitted when the card is sold out. */
+  collapsedAria: (price?: string) =>
+    price ? `not owned — buy for ${price}` : "not owned — no price available",
+  /** On the tile, where the slot's job is the floor rather than the shop. */
+  tileSlotAria: "not owned",
+} as const;
+
+/**
  * #349 — the view toggle. Adopted from collection/filter-bar.tsx:270, which
  * ships `${v === "rows" ? "Rows" : "Grid"} view`. The words change because the
  * issue's own words are list and card; the geometry and the glyphs do not.
@@ -99,14 +123,23 @@ export const twoFacedCopy = {
 //   quantity badge ......... grid-view.tsx draws `×${quantity}` inline; it is
 //                            aria-hidden and the trigger's name carries the count
 //   availability chip ...... availabilityCopy.marker.* (lib/copy/availability),
-//                            count-only by density, unchanged
+//                            count-only by density, unchanged — this is the
+//                            slot's occupant when ownedCount > 0
+//   unowned slot ........... buyTagCopy.glyph + tileSlotAria, ABOVE (R2 call 2).
+//                            The one state where the tile's slot is not the
+//                            marker's to fill, because the marker only speaks
+//                            about copies you own
 //   empty list ............. addPanelCopy.emptyList
 //   no art ................. addPanelCopy.tile.noArt
 //
 // The decklist row
-//   NO NEW VISIBLE COPY. The cost is pips; the meta line's other run is the
-//   shipped recommendationsCopy.shopping.rowFigure / rowNoFigure, and its
+//   NO NEW VISIBLE COPY, and R2 REMOVES some: the cost is pips, and on the All
+//   tab the buy tag collapses to buyTagCopy.glyph. The meta line's other run is
+//   the shipped recommendationsCopy.shopping.rowFigure / rowNoFigure, and its
 //   phone/desktop split is unchanged.
+//
+//   Scope note: the collapse is decklist-row.tsx under filter === "all" only.
+//   update-diff-row.tsx keeps the full tag.
 //
 // The control bar
 //   All / Shopping / By type / By role ... group-toggle.tsx, verbatim

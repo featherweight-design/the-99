@@ -1,7 +1,8 @@
 # STATES — card surfaces
 
 Two matrices. **Six rows × two widths × four states** carries forward from
-`design_handoff_the99_card_rows/STATES-card-rows.md`, amended only where this handoff changes a row.
+`design_handoff_the99_card_rows/STATES-card-rows.md` — now on `main`, and reconciling cleanly — amended
+only where this handoff changes a row.
 **The card view tile × four states × two sizes** is new. `—` means the slot draws nothing, which is a
 state and not an omission.
 
@@ -12,7 +13,7 @@ Unchanged from card-rows R1, and repeated because the tile now inherits them.
 | State | Data | Dot | Availability slot | Shell |
 |---|---|---|---|---|
 | **owned** | in the collection, no finished deck claims a copy | filled `--success` | — (marker returns `null` at `free`) | flat |
-| **unowned** | not in the collection | hollow, 1px dashed `--fg-locked` | `BuyTag` on a row; **nothing on a tile** (ruling 1) | flat |
+| **unowned** | not in the collection | hollow, 1px dashed `--fg-locked` | **row:** `BuyTag` — full `buy $12.40` on Shopping, collapsed to a bare `$` on All. **tile:** the same collapsed `$` chip | flat |
 | **committed** | owned; every copy claimed by a finished deck | filled `--avail-hard-fg` | marker/chip, hard — solid `--avail-hard` diamond | flat |
 | **over-committed** | demand across finished decks exceeds copies owned | filled `--avail-hard-fg` | marker/chip, over — doubled `--danger` diamonds | row: `inset 0 0 0 1px --avail-over-border` · **tile: border tint** |
 
@@ -24,7 +25,7 @@ treats it specially.
 | Row | owned | unowned | committed | over-committed | this handoff |
 |---|---|---|---|---|---|
 | `collection/rows-view.tsx` | `×1` · identity pips · name · type · set › | **impossible** — /collection lists what you own | + `none free` inline after the name | + `short 1`, inset ring | **unchanged** |
-| `decks/decklist-row.tsx` | dot · name `×2` · **cost track** · ✕ | dashed dot · **cost** · `buy` | committed dot · **cost** · `none free` | committed dot · **cost** · `short 1` · `2nd copy` · inset ring | **gains the track** |
+| `decks/decklist-row.tsx` | dot · name `×2` · **cost track** · ✕ | dashed dot · **cost** · **`$`** (All) / `buy $12.40` (Shopping) | committed dot · **cost** · `none free` | committed dot · **cost** · `short 1` · `2nd copy` · inset ring | **gains the track; buy tag collapses on All** |
 | `decks/card-search-row.tsx` | thumb · name · type · **cost (34px, shipped)** · `×1 owned` · + | `not owned` in `--warning` | + `none free — in Atraxa` desktop / `none free` phone | + `short 1` | **unchanged — the precedent** |
 | `decks/unresolved-row.tsx` | **exempt from both rulings — no oracle id.** One drawing per width | | | | radius only |
 | `decks/update-diff-row.tsx` | dot · name · `auto` · type · `Keep` | dashed dot · `BuyTag` | committed dot · `none free` | committed dot · `short 1`, inset ring | **slot yes, pips no** |
@@ -39,18 +40,30 @@ All tab only (ruling 2). Drawn at **148px** desktop (five columns of an 820px pa
 
 | State | top-left | top-right | bottom-left | caption |
 |---|---|---|---|---|
-| **owned** | — | `×2` badge (absent at one copy) | filled `--success` dot + cost pips | name · `✕` |
-| **unowned** | — | — | dashed hollow dot + cost pips | name · `✕` |
+| **owned** | — (marker returns null at `free`) | `×2` badge (absent at one copy) | filled `--success` dot + cost pips | name · `✕` |
+| **unowned** | **the collapsed `$` chip** | — | dashed hollow dot + cost pips | name · `✕` |
 | **committed** | chip, hard — `none free` | — | `--avail-hard-fg` dot + cost pips | name · `✕` |
 | **over-committed** | chip, over — `short 1` | — | `--avail-hard-fg` dot + cost pips | name · `✕` — tile border `--avail-over-border` |
 
 **Bottom-right is empty in all four states, deliberately.**
 
-**No buy tag, no price, no auto tag, no set/rarity caption** (ruling 1, plus the delta list). The
-chip and the dot stay, so the tile cannot be used to escape a shopping *fact*.
+**The top-left corner is the availability slot, and it is never empty on a card the player does not
+own.** R1 called the chip the tile's slot occupant and simultaneously drew unowned with both corners
+bare — a contradiction, because `AvailabilityMarker` only speaks about copies you *own* and ruling 1
+dropped `BuyTag`. That left unowned carried by an 8px dashed stroke alone, which card-rows' FLOOR
+doc calls a defect twice over: a zero-occupant slot, and the dot standing in for the floor.
+**R2 fills it with the collapsed `$` chip from call 1.**
 
-**The Shopping second-copy pair cannot occur on a tile**: it needs a `BuyTag`, and the tile has
-none. The tile's slot holds exactly one thing, always.
+**Owned is the one state that draws nothing there, and that is the marker's own contract** — it
+returns null at `free`, the same as on every row. Nothing to say is not the same as nothing to show.
+
+**Still no price, no word, no auto tag, no set/rarity caption** (ruling 1, plus the delta list). A
+bare `$` passes ruling 1's *facts not affordances* test where `buy $12.40` did not: it says **that**
+the card must be bought, which is a fact about the card, and not **what** it costs or **where** to
+get it, which are the shopping view's job.
+
+**The Shopping second-copy pair still cannot occur on a tile**: it needs the full `BuyTag` beside a
+marker, and card view is All-only. The tile's slot holds exactly one thing, always.
 
 ## Per-row geometry, both widths
 
@@ -96,6 +109,7 @@ grey `--fg-faint` pip, which is also the `+N` overflow pip's skin.
 | card name (modal trigger) | rides the row's height | rides the row's height |
 | `✕` remove, row | 44×44 (glyph stays 13px; the padding is the target) | inline, group-hover |
 | `✕` remove, **tile** | **44×44 in the caption** | **32×32 in the caption, tile-hover** |
+| `$` chip / `BuyTag` | **never a target** | **never a target** |
 | tile art (modal trigger) | the whole art block | the whole art block |
 | view toggle segment | **44×44** | **32×32** |
 | modal flip control | **44×44** | 34×34 |
@@ -117,7 +131,7 @@ card in card view, so it does not qualify for the tile-art exception either.
 
 | Fact | Colour | The other carrier |
 |---|---|---|
-| unowned | — (hollow) | **dashed** stroke, plus `BuyTag`'s word on a row |
+| unowned | — (hollow) | **dashed** stroke, plus a slot occupant at every width and on every surface: `buy $12.40` on Shopping, the `$` glyph on All and on the tile |
 | committed | `--avail-hard-fg` | the label `none free`, and a solid diamond where hollow means soft |
 | over-committed | `--avail-over-fg` + ring/tint | the label `short N`, and a **doubled** glyph |
 | mana cost | pip fills | the **`sr-only` cost string** (`CostPips` gains one, ruling 6) and the numeral inside generic pips |

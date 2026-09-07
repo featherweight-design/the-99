@@ -1,4 +1,4 @@
-# The 99 — Card surfaces (design handoff, R1)
+# The 99 — Card surfaces (design handoff, R2)
 
 **Two briefs, one folder, because `decks/decklist-row.tsx` is in both.** Source of truth, in the
 order the covering note gives them:
@@ -14,9 +14,9 @@ copy-export shape, same READINESS format). `design_handoff_the99_card_rows/` is 
 sibling: its four calls are carried forward here, two of them amended.
 
 File: `The 99 - Card Surfaces.dc.html` (canvas — pan/zoom). Read
-`DENSITY-four-hundred-pixels.md` for the measured budget and the one Product ask,
+`DENSITY-four-hundred-pixels.md` for the measured budget and the answered buy-tag call,
 `STATES-card-surfaces.md` for the matrix as a table, `card-surfaces · copy strings.ts` for the new
-strings, `READINESS.md` for what blocks a green.
+strings, `READINESS.md` for the one remaining dependency.
 
 **The one-line summary:** *most of #349 already ships on `/collection`, which is what frees the
 400 pixels #350 needs.*
@@ -60,9 +60,86 @@ card width — applied twice, instead of two aesthetic judgements.**
 | **4** | The phone meta line | **Pips, and whatever that view already owns. Nothing else joins.** All tab: pips alone. Shopping: `pips · edhrec 24%`. The marker stays on the primary row; the type line is refused. |
 | **5** | The hover preview | **252×352, the card image alone, no chrome.** Opens left of the row, flips right without room, bounded by the decklist pane. 240ms in / 80ms out, 0ms row-to-row while open. Does not fade in. |
 | **6** | The double-faced mark | **Not a corner glyph — a mono `//` after the name, at both row and tile.** Modal flip control on the art, bottom-right, 34/44px. Driven by the `layout` column only. |
-| **parity 1** | The floor | **Stands, and it reaches the tile.** The shipped chip is the tile's slot. |
+| **parity 1** | The floor | **Stands, and it reaches the tile.** The slot is the marker chip when you own copies and **the collapsed `$` chip when you own none** (R2 call 2) — never empty on an unowned card. |
 | **parity 2** (re-scoped) | Do pips reach `unresolved`, `update-diff`, `synergy`? | **No, to all three.** The rule: **cost pips go where the reader is choosing or paying, never where they are auditing.** |
 | **parity 3 / 4** | The dot; the metrics | **Q3 unchanged.** Q4 **amended, not overruled**: 52px stops being an exception and becomes one of two phone heights. |
+
+## R2 amendment · two calls, no re-draw
+
+Neither call re-opens any of the nine R1 rulings. **They resolve to one drawing**, because the atom
+call 1 produces is the atom call 2's hole needs.
+
+### R2 · 1 — the buy tag collapses on the All tab; it does not leave
+
+**Product said no to R1's ask, and was right.** Seeing which cards still need buying while browsing
+the whole deck is the point of the tag. **R1's reasoning had a flaw worth naming**, because it is
+the kind that recurs: R1 read the tag as a shopping *affordance* on the strength of ruling 1 calling
+it one **on the tile**, and then applied that reading to the row. But a tile is a picture of a card
+and a row is a line in a list you are working through. On the row the tag is a shopping **fact** —
+and this handoff's own test, stated in call 1, is that facts stay and affordances go.
+
+**Adopted, as counter-proposed:**
+
+> **All tab: the tag collapses to a bare `$` in the same chip skin.**
+> **Shopping: the full `buy $12.40`, unchanged.**
+
+The word and the figure both go; the chip, its `--warning` ink, its `--accent-shadow` hairline, its
+radius and its position do not. **Measured: 62px → 18px, so ~44px comes back** — more than the ~40px
+R1's ask was chasing. The signal survives the collapse because **whether** to buy is a glyph and
+**how much** is a number, and only the second one needs the width.
+
+**So the 40px pip track ships and R1's 34px fallback is withdrawn.** The desktop worst case goes
+from R1's 42–59px of card name to **~86–103px**, roughly fourteen characters at 13.5px — and the
+worst case is no longer a $1,000 card you do not own, because a four-digit price cannot appear on
+this tab any more. `DENSITY-four-hundred-pixels.md` carries the corrected ledger.
+
+**Scope, so eng does not over-apply it:** the collapse is a property of **`decklist-row.tsx` under
+`filter === "all"`**. `update-diff-row.tsx` keeps its full `BuyTag` — it is a different surface at
+desktop width with no tab, and nothing there was tight.
+
+**Sold-out is accepted as an edge case, on Product's call, and it holds up:** a card with no price
+collapses to the same `$`, so *sold out* only reads on Shopping. It is rare, and a sold-out card is
+still a card the player has to buy eventually. **One constraint on it: the chip must not restyle
+itself for that case.** A second glyph meaning *unpurchasable* would put two marks in a slot R1
+spent a whole ruling keeping to one — and it would be the app being loudest about the state the
+player can do least about.
+
+### R2 · 2 — the unowned tile's slot is filled by that same `$`
+
+**R1 shipped a contradiction, and the audit is right to call it a defect.** Call 1 of R1 says the
+floor reaches the tile and *the shipped chip is the slot*. But `AvailabilityMarker` only ever speaks
+about copies you **own** — it returns `null` when you own none — and ruling 1 dropped `BuyTag` from
+the tile. So the slot had no possible occupant in the one state where the floor matters most, and
+`STATES` said so in three places while the prose claimed otherwise. **Unowned in card view was
+carried by an 8px dashed stroke alone**, which card-rows' FLOOR doc rejects twice: zero occupants is
+a defect, and the dot is not the floor.
+
+**The collapsed `$` chip fills it**, top-left, at the shipped chip position and on the shipped
+scrim. It is the reason the two calls are one amendment rather than two.
+
+**Why it passes ruling 1 where the full tag did not.** Ruling 1 drops shopping *affordances* from
+the tile. A bare `$` says **that** the card must be bought — a fact about the card, the same class
+of fact as *you own none of these* — and says nothing about **what** it costs or **where** to get
+it, which are the shopping view's job. It is also one glyph, so it cannot grow into a shopping UI
+by accretion the way a tag with a figure in it can.
+
+**Sizing: the money chip's glyph is 10.5px against the marker's 8.5px labels.** One glyph can afford
+the size where two words cannot, and it needs it — at 8.5px a lone `$` reads as a speck rather than
+a mark. Chip box, scrim, border and radius are identical, so the two occupants are visibly the same
+slot.
+
+**Owned stays empty, and that is not the same defect.** The marker returns `null` at `free` on every
+surface in the app; nothing to say is not nothing to show. The floor is *name + one availability
+slot*, and an owned card's slot has been legitimately silent since the marker shipped.
+
+**Both widths, all four states, are redrawn on the canvas** — 148px desktop and 159px phone.
+
+### Noted for eng, no action here
+
+`design_handoff_the99_card_rows/` is on `main` and reconciles cleanly: 52px phone height, the
+over-committed inset ring, radius 7 and the dot's three states all agree. **Its Q2 — cost pips stay
+on one row — is superseded by this handoff's ruling 3**, per the card-view brief's Corrections
+section. No design change; it is a precedence note.
 
 ### 1 · The tile is a delta list, not a drawing
 
@@ -330,6 +407,15 @@ reader sees two blocks of consistent rows, not a ragged list.
   reader is looking at, and it would make the art two click targets.
 - **A fixed 5-up tile grid.** The add panel opens.
 - **A view toggle that persists.** Ruling 3, and the repo's own cache rule.
+- **Dropping the price from the All tab.** R1's ask; refused by Product, and the refusal was right —
+  the tag is a fact on a row even though it is an affordance on a tile. It collapses instead.
+- **The 34px fallback track.** Withdrawn: the collapse returns more width than the ask would have.
+- **A sold-out variant of the `$` chip.** Two marks in a one-mark slot, and loudest about the state
+  the player can do least about.
+- **Leaving the unowned tile's slot empty.** A zero-occupant slot is a defect, and a dashed 8px
+  stroke is not the floor.
+- **The full `buy $12.40` on the tile.** Still refused by ruling 1 — the `$` is what survives the
+  facts-not-affordances test.
 - **An inherited exception to the 44px floor.** R2's own exception test refuses it — see above.
 - **Diverging the two surfaces to keep `/collection` at 28×24.** That would trade one control for
   two, which is the only thing the adoption was for.
@@ -345,6 +431,9 @@ reader sees two blocks of consistent rows, not a ragged list.
 2. **`decklist-row.tsx`** gains the track between the name block and the availability slot on
    desktop, and a meta line carrying the pips on phone — reusing the `hasShoppingMeta` branch's
    own shape, with the condition widened from *Shopping* to *Shopping or has a cost*.
+2b. **`BuyTag` gains a collapsed density** — a bare `$`, same skin, no word and no figure — and
+   `decklist-row.tsx` selects it under `filter === "all"`. One prop, one call site. **This is the
+   whole of R2 call 1**, and it is also what fills the tile's slot in item 6.
 3. **`group-toggle.tsx`**: the `Group` label deletes; the `/collection` view-toggle well arrives at
    the right end, rendered only when `filter === "all"`. Two new props (`view`, `onViewChange`).
    The All/Shopping pills' active fill goes from `--accent` to bone on `--elevated` with a
@@ -356,7 +445,9 @@ reader sees two blocks of consistent rows, not a ragged list.
    grid instead of the row groups under `"card"` — grouping unchanged, so the group headers stay.
 6. **A deck card tile component**, built from `grid-view.tsx`'s tile with the three deltas. Not a
    fork of `suggestion-tile`: that one carries evidence bars, an Add button and a two-line clamped
-   name it needs for grid alignment on a shelf. Its desktop `✕` is 32×32, not 24×24.
+   name it needs for grid alignment on a shelf. Its desktop `✕` is 32×32, not 24×24. **Its top-left
+   slot renders the marker chip when `ownedCount > 0` and the collapsed `$` chip when it is zero** —
+   so the slot is never empty on an unowned card (R2 call 2). Depends on item 2b.
 7. **The hover preview**, desktop-only, one instance per decklist rather than one per row.
 8. **#363** waits on the `layout` column, back-face image storage and the re-seed, then lands the
    `//` mark and the modal flip control together.

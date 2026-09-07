@@ -1,10 +1,14 @@
-# READINESS — Card surfaces (R1)
+# READINESS — Card surfaces (R2)
 
-**Self-assessed: 🟠 Amber.** R2 reconciliation is closed — two rulings, no redraws, no new open
-questions; see `README.md` § *Reconciled with refresh R2*. All nine questions are called and nothing is waiting on a design
-decision. Amber for two reasons that are not design work: **one Product re-open** (the buy tag's
-price on the All tab) that changes a specified number rather than a specified design, and **one hard
-data dependency** (#363) that the brief already names. Take away those two and this is green.
+**Self-assessed: 🟢 Green, with one dependency.** All nine R1 questions are called, both R2 calls are
+called, and the refresh R2 reconciliation is closed. **R1's Product blocker is resolved** — the buy
+tag collapses to a bare `$` on the All tab rather than losing its price, which returns ~44px where
+the ask was chasing ~40px, so the 40px pip track ships and the 34px fallback is withdrawn. Nothing
+is waiting on a design decision.
+
+The remaining dependency is **#363's data work** (`layout` column, back-face image storage, catalog
+re-seed), which the brief already names and which needs no design gate. **#349, #350 and #351 are
+unblocked end to end.**
 
 ## Read from source, not inferred
 
@@ -31,23 +35,31 @@ image**, which settles #351's content question arithmetically. See `README.md` �
 | p2 | Do pips generalise further | **No.** Choosing or paying, never auditing — two rows of six. |
 | p3 / p4 | The dot; the metrics | **p3 unchanged. p4 amended:** 52px becomes one of two phone heights, not an exception. |
 
-## Blocking · 1 — the Product re-open
+## Resolved · the Product re-open (R2 call 1)
 
-**Design is asking Product to drop the price from the buy tag on the All tab**, keeping it on
-Shopping. The reason is ruling 1's own argument about the tile, applied to the row it came from:
-shopping affordances belong to the shopping view. It returns ~40px to the tightest 400px in the app
-and lets #350 ship costing the card name nothing.
+**Answered: no, and the refusal was right.** The price stays on the All tab — seeing which cards
+still need buying while browsing the whole deck is the point of the tag.
 
-**Amendment 5 (#281) put the price there, so this re-opens a shipped decision** — which is why it is
-an ask. **The fallback is fully specified and needs no further design**: the track narrows 40 → 34px
-(`card-search-row`'s shipped figure), pips 12 → 11px, shingle threshold three → two, cap five → four
-slots. `DENSITY-four-hundred-pixels.md` has the table.
+**R1's argument had a flaw worth recording**, because it is the kind that recurs: it read the tag as
+a shopping *affordance* on the strength of ruling 1 calling it one **on the tile**, then applied that
+reading to the row. A tile is a picture of a card; a row is a line in a list you are working through.
+On the row the tag is a shopping **fact** — and this handoff's own test says facts stay.
 
-**The cost of the fallback, stated plainly:** at four slots a five-colour cost draws three pips and a
-`+2`, which loses two of the five colours a player is checking. Everything else about the fallback
-is invisible. **Eng can start on either number — only the four constants differ.**
+**Adopted:** on the All tab the tag collapses to a bare `$` in the same chip skin; Shopping keeps the
+full `buy $12.40`. **~62px → ~18px, so ~44px comes back** — more than the ask would have returned.
 
-## Blocking · 2 — #363's data dependency, and one constraint on it
+**Consequences, all closed:** the 40px track ships; **the 34px / 11px / cap-four fallback is
+withdrawn** and recorded as rejected rather than kept warm, because a fallback nobody will take is a
+second spec to keep in sync; the desktop worst case goes from 42–59px of card name to **~86–103px**;
+and the worst case is no longer a $1,000 card, since a four-digit price cannot appear on that tab.
+
+**Scope:** the collapse belongs to `decklist-row.tsx` under `filter === "all"` only.
+`update-diff-row.tsx` keeps its full `BuyTag`.
+
+**Sold-out is accepted as an edge case** on Product's call — rare, and a sold-out card is still a
+card the player has to buy eventually. One constraint: **the chip must not restyle itself for it.**
+
+## The one dependency — #363's data work, and one constraint on it
 
 Ruling 8 already establishes that a `layout` column, back-face image storage and a full catalog
 re-seed precede any flip control, and that the work needs no design gate. This handoff adds one
@@ -85,8 +97,18 @@ Everything in #349, #350 and #351 is independent of this and can ship first.
    state. **Do not unify.** Tile radius stays 9/10.
 4. **Card view drops shopping affordances, not shopping facts.** The chip and the dot stay. A player
    cannot use the toggle to stop seeing that a card is unowned or spoken for.
-5. **The `+N` overflow pip is the one net-new drawing in the handoff.** Everything else is a shipped
-   atom moved, resized or deleted.
+4b. **The unowned tile's availability slot is filled, and R1 had it wrong.** R1 said the floor reaches
+   the tile and the chip is its slot, but `AvailabilityMarker` only speaks about copies you *own* and
+   ruling 1 dropped `BuyTag` — so the slot had no possible occupant in the state where the floor
+   matters most, and unowned was carried by an 8px dashed stroke alone. Card-rows' FLOOR doc rejects
+   that twice: zero occupants is a defect, and the dot is not the floor. **The collapsed `$` chip
+   from call 1 fills it**, which is why the two R2 calls are one drawing. **Owned stays empty and
+   that is not the same defect** — the marker returns `null` at `free` on every surface; nothing to
+   say is not nothing to show.
+5. **Two net-new drawings in the handoff, both one glyph:** the `+N` overflow pip, and the collapsed
+   `$` chip. Everything else is a shipped atom moved, resized, recoloured or deleted. The `$` chip is
+   `BuyTag` with its word and figure removed — same box, same ink, same hairline, glyph at 10.5px
+   against the marker's 8.5px labels, because one glyph can afford the size and needs it.
 6. **The spoken cost is never capped.** The pips truncate at five slots; `manaCopy.costAria` speaks
    every symbol. A reader who cannot see the pips is the one reader for whom truncation is not a
    trade.
@@ -145,8 +167,9 @@ aggregate — is untouched by this handoff.
 - **Zero net motion.** Three places this handoff could have animated and does not: the preview
   appears rather than fades, the flip swaps rather than turns, the view change re-renders in place.
 - **Copy.** Three new blocks, all in `card-surfaces · copy strings.ts`: two toggle names, the mana
-  cost's spoken form and its mapper, and the two-faced mark's three strings. **No new visible text on
-  any row** — the cost is drawn. Everything else is a reuse manifest citing the module that owns it.
+  cost's spoken form and its mapper, and the two-faced mark's three strings — plus R2's collapsed
+  `BuyTag`, whose visible text shrinks to `$` while **its accessible name keeps the word and the
+  price in full**. **No new visible text on any row** — the cost is drawn. Everything else is a reuse manifest citing the module that owns it.
 - **Six themes.** No colour is introduced, and one is now *removed*: accent leaves the builder's
   control bar entirely, which also retires the R2 gap about accent loudness varying across themes for
   this surface — a bone-on-elevated selected state reads the same on Neon Rain and Oil Haze. The pip

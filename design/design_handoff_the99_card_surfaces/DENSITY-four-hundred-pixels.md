@@ -23,51 +23,74 @@ on**, and it is why four separately-specified tickets would each have spent the 
 | row box | 400px |
 | less padding 9 + 9 | 382px |
 | furniture today | −273px |
+| **R2: buy tag collapses to `$` on All** | **+44px** |
 | pip track 40 + gap 10 | **−50px** |
 | two-faced `//` + gap, when present | −17px |
-| **left for the card name** | **42–59px** |
+| **left for the card name** | **86–103px** |
 
-Seven characters is not a card name. Two things stop that being a failure.
+**R1 landed this row at 42–59px and called it survivable. R2's collapse makes it comfortable.**
+~86–103px is roughly fourteen characters at 13.5px — not every card name, but no longer a number
+that needs defending.
 
-**First, the worst case is a $1,000 card you do not own** — a long name, a four-digit price and a
-marker at once. It is rare, and every one of those three is itself conditional.
+**And the worst case changed shape.** R1's was a $1,000 card you do not own: a long name, a
+four-digit price and a marker at once. **A four-digit price cannot appear on the All tab any more**,
+so the worst case is now a card you own two of and owe a copy of — a quantity, a marker and a `$`.
 
-**Second, `flex-auto` already handles it.** `decklist-row.tsx`'s own comment records the bug:
+**`flex-auto` is still what carries it.** `decklist-row.tsx`'s own comment records the bug:
 `flex-1` is basis-0, so the name gets only what the marker has not claimed and a 390px
 over-committed row renders `A ◆◆ short 1 — also in Atraxa Superfriends` with the card it describes
 gone. `flex-auto` bases the name on its own text, so a row too narrow for both shrinks the halves
 in proportion. **The name loses its tail; it does not vanish.** The full name still reaches the
 reader through the row's accessible name and the modal.
 
-## The one thing Design is asking Product for
+## Answered — R2 call 1: the tag collapses, it does not leave
 
-**Drop the price from the buy tag on the All tab. Keep it on Shopping, where it is the point.**
+R1 asked Product to drop the price from the buy tag on the All tab. **Product said no, and was
+right:** seeing which cards still need buying while browsing the whole deck is the point of the tag.
 
-The reason is the brief's own. Ruling 1 drops the buy tag, the price and the auto tag from the card
-view tile because *those are shopping affordances and shopping has its own view*. **That argument
-does not stop at the tile.** On the All tab the price is a number nobody is currently spending, and
-it is ~40px of the tightest 400px in the app. Dropping it returns the worst case to roughly where it
-stands today, which means #350 ships costing the name nothing.
+**Where R1's argument went wrong**, because it is the kind of mistake that recurs: R1 read the tag
+as a shopping *affordance* on the strength of ruling 1 calling it one **on the tile**, then applied
+that reading to the row. A tile is a picture of a card; a row is a line in a list you are working
+through. On the row the tag is a shopping **fact**, and this handoff's own test is that facts stay.
 
-**Amendment 5 put the price there (#281), so this is a re-open and not an oversight** — which is
-exactly why it is an ask rather than a ruling.
+**Adopted instead — the counter-proposal:**
 
-### The fallback, specified
+> **All tab: `buy $12.40` collapses to a bare `$` in the same chip skin.**
+> **Shopping: the full tag, unchanged.**
 
-If Product says no, the track narrows and nothing else changes:
-
-| | Ask granted | Fallback |
+| | Width | On |
 |---|---|---|
-| track | 40px | **34px** (`card-search-row`'s shipped figure) |
-| pip | 12px | **11px** |
-| numeral | 8px | **7.5px** |
-| shingle from | three | **two** |
-| cap | five slots | **four slots** — a five-plus-symbol cost overflows to `+N` one symbol sooner |
-| phone | unchanged | **unchanged** |
+| `buy $12.40` | ~62px | Shopping |
+| `$` | ~18px | All, and the card view tile |
+| **returned** | **~44px** | more than the ~40px the ask was chasing |
 
-The fallback is worse in one specific way worth naming: at four slots, a five-colour cost like
-`{W}{U}{B}{R}{G}` draws three pips and a `+2`, which loses two of the five colours a player is
-checking. **The ask exists to avoid exactly that**, not to save pixels in the abstract.
+The chip, its `--warning` ink, its `--accent-shadow` hairline, its radius and its position are
+untouched — only the word and the figure go. The signal survives because **whether** to buy is a
+glyph and **how much** is a number, and only the second needs the width.
+
+### The fallback is withdrawn
+
+**The 40px track ships.** R1 specified a 34px / 11px / cap-four fallback for a refusal; the collapse
+returns more width than the ask would have, so it is not needed. It is recorded as rejected in
+`README.md` rather than kept warm — **a fallback nobody is going to take is a second spec to keep in
+sync.**
+
+The cost R1 named for that fallback is worth remembering as the reason it is good news it is gone:
+at four slots a five-colour cost drew three pips and a `+2`, losing two of the five colours a player
+is checking.
+
+### Scope, so eng does not over-apply it
+
+The collapse is a property of **`decklist-row.tsx` under `filter === "all"`**. `update-diff-row.tsx`
+keeps its full `BuyTag`: different surface, desktop width, no tab, and nothing there was tight.
+
+### Sold-out
+
+Accepted as an edge case on Product's call, and it holds up — a card with no price collapses to the
+same `$`, so *sold out* only reads on Shopping. It is rare, and a sold-out card is still a card the
+player has to buy eventually. **One constraint: the chip must not restyle itself for it.** A second
+glyph meaning *unpurchasable* would put two marks in a slot R1 spent a ruling keeping to one, and it
+would make the app loudest about the state the player can do least about.
 
 ## Phone: zero horizontal cost, and the heights change only at group edges
 
@@ -106,7 +129,7 @@ on the surface where they are deciding what to cut.
 | shingle | from three, −5px | never |
 | cap | five slots, then `+N` | none |
 | what yields | **the card name**, by `flex-auto`, in proportion | **nothing** |
-| what is displaced | the buy tag's price, if Product agrees | nothing |
+| what is displaced | the buy tag's word and figure on the All tab (collapsed to `$`) | nothing |
 | meta line holds | — | pips (All) · pips + `edhrec N%` (Shopping) |
 
 ## What must not happen

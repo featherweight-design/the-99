@@ -25,13 +25,13 @@
 
   <section style="max-width:1400px;margin:0 0 26px;">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Card surfaces &middot; #349 #350 #351 #363 + parity Q1 Q2 Q3 Q4</div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Card surfaces &middot; #349 #350 #351 #363 + parity Q1&ndash;Q4 &middot; <span style="color:#C9A24B;">R2: the buy tag collapses, the unowned tile's slot is filled</span></div>
     </div>
     <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">Most of this already ships. On <span style="font-style:italic;">/collection</span>.</h1>
     <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;">The card-view brief asks Design to invent a middle-weight tile and to find a home for a third control axis. Neither is a new design: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">collection/grid-view.tsx</span> is <b style="color:#EDE6D8;font-weight:600;">already the tile</b> &mdash; 63/88 art, quantity badge top-right, availability chip top-left, name caption below &mdash; and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">collection/filter-bar.tsx:256&ndash;281</span> is <b style="color:#EDE6D8;font-weight:600;">already the toggle</b>, a two-segment sunken well with <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#8803;</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">&#9638;</span> glyphs. The brief mentions neither. So #349 is an adoption with three deltas, not a specification &mdash; and that is what frees the pixel budget for #350, which is the one thing here with no prior art.</p>
     <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The pip track is the whole design problem.</b> A 400px desktop row spending 273px cannot absorb an unbounded run of symbols, and <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">rows-view</span>'s shingling does not transfer, because colour identity has a hard ceiling of five and a mana cost does not &mdash; Progenitus is ten symbols. So the track is <b style="color:#EDE6D8;font-weight:600;">fixed at 40px and capped at five slots</b>, and the phone meta line the brief already locked turns out to be the generous width, not the cramped one.</p>
-    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> for the nine calls, <a href="DENSITY-four-hundred-pixels.md">DENSITY-four-hundred-pixels.md</a> for the measured budget and the one Product ask, <a href="STATES-card-surfaces.md">STATES-card-surfaces.md</a> for the matrix as a table, <a href="card-surfaces · copy strings.ts">card-surfaces &middot; copy strings.ts</a> for the new strings, <a href="READINESS.md">READINESS.md</a> for what blocks a green. Sibling handoff: <a href="../design_handoff_the99_card_rows/README.md">design_handoff_the99_card_rows</a>, whose four calls this one carries forward.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="README.md">README.md</a> for the nine calls, <a href="DENSITY-four-hundred-pixels.md">DENSITY-four-hundred-pixels.md</a> for the measured budget and the answered buy-tag call, <a href="STATES-card-surfaces.md">STATES-card-surfaces.md</a> for the matrix as a table, <a href="card-surfaces · copy strings.ts">card-surfaces &middot; copy strings.ts</a> for the new strings, <a href="READINESS.md">READINESS.md</a> for the one remaining dependency. Sibling handoff: <a href="../design_handoff_the99_card_rows/README.md">design_handoff_the99_card_rows</a>, now on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">main</span> and reconciling cleanly &mdash; 52px phone height, the over-committed inset ring, radius 7 and the dot's three states all agree; its Q2 is superseded by ruling 3 below, per the brief's Corrections section.</p>
   </section>
 
   <div style="border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;background:#181410;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
@@ -133,7 +133,7 @@
           </div>
         </div>
       </div>
-      <div style="margin-top:18px;padding:13px 16px;border:1px solid #3A3229;border-radius:9px;background:#1A1611;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">Noted, not ruled &mdash; two consequences for whoever takes the PR.</b> The Shopping pill's <i>idle</i> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> tint is accent's reserved meaning wearing <i>Unresolved</i>'s colour; the count beside it already carries the fact, so Design's recommendation is that it becomes the same hairline pill as its peers &mdash; but that is shipped behaviour beyond the active state, so it belongs to refresh R3 rather than this ruling. And the card view tile's desktop <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10005;</span> is 24&times;24, which fails the same 32px floor for the same reason the toggle does; 32&times;32 is the fix, and it fits the caption row without changing the tile.</div>
+      <div style="margin-top:18px;padding:13px 16px;border:1px solid #3A3229;border-radius:9px;background:#1A1611;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">Noted, not ruled &mdash; two consequences for whoever takes the PR.</b> The Shopping pill's <i>idle</i> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> tint is accent's reserved meaning wearing <i>Unresolved</i>'s colour; the count beside it already carries the fact, so Design's recommendation is that it becomes the same hairline pill as its peers &mdash; but that is shipped behaviour beyond the active state, so it belongs to refresh R3 rather than this ruling. The card view tile's desktop <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10005;</span> failed the same 32px floor for the same reason the toggle did, and <b style="color:#C6B79A;font-weight:600;">is drawn at 32&times;32 throughout this handoff</b> &mdash; it fits the caption row without changing the tile, so it needed no trade.</div>
     </div>
 
     <div style="margin-top:22px;display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
@@ -256,21 +256,24 @@
             <tr><td style="padding:7px 0;border-bottom:1px solid #241F19;color:#C6B79A;width:52%;">row box, 2-up grid</td><td style="padding:7px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;text-align:right;">400px</td></tr>
             <tr><td style="padding:7px 0;border-bottom:1px solid #241F19;color:#C6B79A;">less padding 9 + 9</td><td style="padding:7px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;text-align:right;">382px</td></tr>
             <tr><td style="padding:7px 0;border-bottom:1px solid #241F19;color:#C6B79A;">furniture today (brief's figure)</td><td style="padding:7px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C46857;text-align:right;">&minus;273px</td></tr>
+            <tr><td style="padding:7px 0;border-bottom:1px solid #241F19;color:#C6B79A;"><b style="color:#6FA368;font-weight:600;">R2:</b> buy tag collapses on All</td><td style="padding:7px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6FA368;text-align:right;">+44px</td></tr>
             <tr><td style="padding:7px 0;border-bottom:1px solid #241F19;color:#C6B79A;">pip track 40 + gap 10</td><td style="padding:7px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C46857;text-align:right;">&minus;50px</td></tr>
             <tr><td style="padding:7px 0;border-bottom:1px solid #241F19;color:#C6B79A;">two-faced <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">//</span> + gap, when present</td><td style="padding:7px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C46857;text-align:right;">&minus;17px</td></tr>
-            <tr><td style="padding:9px 0;color:#EDE6D8;font-weight:600;">left for the card name</td><td style="padding:9px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#DEAA29;text-align:right;font-weight:600;">42&ndash;59px</td></tr>
+            <tr><td style="padding:9px 0;color:#EDE6D8;font-weight:600;">left for the card name</td><td style="padding:9px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;text-align:right;font-weight:600;">86&ndash;103px</td></tr>
           </tbody>
         </table>
-        <div style="margin-top:16px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;">Seven characters is not a card name. Two things stop this being a failure. <b style="color:#C6B79A;font-weight:600;">First, the worst case is a $1,000 card you do not own</b> &mdash; a long name, a four-digit price and a marker at once &mdash; and it is rare. <b style="color:#C6B79A;font-weight:600;">Second, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-auto</span> already handles it</b>: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">decklist-row.tsx</span>'s own comment records that <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-1</span> would starve the name and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-auto</span> shrinks the halves in proportion. The name loses its tail; it does not vanish.</div>
+        <div style="margin-top:16px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">R1 landed this row at 42&ndash;59px and called it survivable; R2's collapse makes it comfortable.</b> ~86&ndash;103px is roughly fourteen characters at 13.5px &mdash; still not every card name, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-auto</span> is still what carries it: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">decklist-row.tsx</span>'s own comment records that <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-1</span> would starve the name while <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">flex-auto</span> shrinks the halves in proportion. The name loses its tail; it does not vanish. <b style="color:#EDE6D8;font-weight:600;">The worst case is now a card you own two of and owe a copy of &mdash; not a $1,000 card</b>, because the four-digit price no longer appears on this tab.</div>
       </div>
 
-      <div style="width:620px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:14px;padding:20px;">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:14px;">The one thing Design is asking Product for</div>
-        <div style="font-size:13px;color:#A89B84;line-height:1.75;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Drop the price from the buy tag on the All tab.</b> Keep it on Shopping, where it is the point. The reason is the brief's own: ruling 1 drops the buy tag, the price and the auto tag from the card view tile because <i>those are shopping affordances and shopping has its own view</i>. That argument does not stop at the tile. On the All tab the price is a number nobody is currently spending, and it is ~40px of the tightest 400px in the app.
+      <div style="width:620px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:14px;">Answered &mdash; <span style="color:#C9A24B;">R2 call 1: the tag collapses, it does not leave</span></div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.75;text-wrap:pretty;">R1 asked Product to drop the price from the All tab. <b style="color:#EDE6D8;font-weight:600;">Product said no, and was right:</b> seeing which cards still need buying while browsing the whole deck is the point of the tag. R1 had read the tag as a shopping <i>affordance</i> because ruling 1 calls it one on the tile &mdash; but a tile is a picture of a card and a row is a line in a list you are working through. On the row the tag is a shopping <b style="color:#EDE6D8;font-weight:600;">fact</b>, and this handoff's own test says facts stay.
           <div style="height:12px;"></div>
-          It returns the worst case to <b style="color:#EDE6D8;font-weight:600;">roughly where it stands today</b>, which means #350 ships costing the name nothing. <b style="color:#C6B79A;font-weight:600;">If Product says no, the fallback is drawn and specified:</b> the track narrows from 40px to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">card-search-row</span>'s shipped 34px, the pips from 12px to 11px, and the shingle threshold from three to two &mdash; four slots instead of five, so a five-plus-symbol cost overflows into <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+N</span> one symbol sooner. Nothing else changes, and the phone line is untouched either way.
+          <b style="color:#EDE6D8;font-weight:600;">The counter-proposal, adopted: on the All tab the tag collapses to a bare <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">$</span> in the same chip skin. Shopping keeps the full <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">buy&nbsp;$12.40</span>.</b> The word and the figure both go; the chip, its colour and its position do not. <b style="color:#C6B79A;font-weight:600;">Measured: 62px \u2192 18px, so ~44px comes back</b> &mdash; more than the ~40px R1's ask was chasing, and the signal survives because <i>whether</i> to buy is a glyph and <i>how much</i> is a number.
+          <div style="height:12px;"></div>
+          <b style="color:#EDE6D8;font-weight:600;">So the 40px track ships and the 34px fallback is withdrawn.</b> The desktop worst case returns to roughly where it stands today, which was the whole point of the ask.
         </div>
-        <div style="margin-top:16px;padding:12px 14px;border:1px solid #3A3229;border-radius:9px;background:#1A1611;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">Amendment 5 put the price there</b> (#281), so this is a re-open and not an oversight &mdash; which is exactly why it is an ask rather than a ruling.</div>
+        <div style="margin-top:16px;padding:12px 14px;border:1px solid #3A3229;border-radius:9px;background:#1A1611;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">Sold-out is accepted as an edge case.</b> A card with no price collapses to the same <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">$</span> on the All tab, so <i>sold out</i> only reads on Shopping. Product's call, and it holds up: it is rare, and a sold-out card is still a card the player has to buy eventually. <b style="color:#C6B79A;font-weight:600;">The chip must not restyle itself for it</b> &mdash; a second glyph meaning <i>unpurchasable</i> would put two marks in a slot that R1 spent a whole ruling keeping to one.</div>
       </div>
 
       <div style="width:620px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
@@ -446,7 +449,8 @@
 
     <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
       <div style="flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;">Four states, both sizes</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Four states, both sizes &mdash; <span style="color:#C9A24B;">R2: unowned now has a slot occupant</span></div>
+        <div style="max-width:900px;font-size:12.5px;color:#8E8269;line-height:1.7;margin-bottom:16px;text-wrap:pretty;">R1 left the unowned tile's top-left corner empty and called the chip its slot occupant, which was a contradiction: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">AvailabilityMarker</span> only speaks about copies you <i>own</i>, and ruling 1 dropped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">BuyTag</span>. So unowned in card view was carried by a dashed 8px stroke alone &mdash; and card-rows' FLOOR doc calls a zero-occupant slot a defect and separately rules the dot is not the floor. <b style="color:#EDE6D8;font-weight:600;">The collapsed <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">$</span> chip from call 1 fills it</b>, which is why the two calls are one drawing.</div>
         <div style="display:flex;gap:18px;align-items:flex-start;">
           <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="4">
             <div style="flex:none;">
@@ -467,7 +471,7 @@
                             <sc-if value="{{ t.chipHard }}" hint-placeholder-val="{{ false }}">
                               <span style="display:block;flex:none;width:6px;height:6px;transform:rotate(45deg);background:#C9A24B;"></span>
                             </sc-if>
-                            <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;letter-spacing:0.02em;color:{{ t.chipC }};">{{ t.chipT }}</span>
+                            <span style="font-family:'IBM Plex Mono',monospace;font-size:{{ t.chipFs }}px;font-weight:600;letter-spacing:0.02em;color:{{ t.chipC }};">{{ t.chipT }}</span>
                           </span>
                         </sc-if>
                         <sc-if value="{{ t.hasQty }}" hint-placeholder-val="{{ false }}">
@@ -504,13 +508,13 @@
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Where the readings sit &mdash; <span style="color:#C9A24B;">three corners, and one left empty</span></div>
         <table style="width:100%;border-collapse:collapse;font-size:12.5px;color:#A89B84;">
           <tbody>
-            <tr><td style="padding:8px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;width:34%;">top-left</td><td style="padding:8px 0;border-bottom:1px solid #241F19;">availability chip, <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#EDE6D8;">density="chip"</span>. Shipped position on both tile surfaces; it paints its own scrim, so it never depends on the art beneath it.</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;width:34%;">top-left</td><td style="padding:8px 0;border-bottom:1px solid #241F19;">the availability slot &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#EDE6D8;">AvailabilityMarker density="chip"</span> when you own copies, <b style="color:#EDE6D8;font-weight:600;">the collapsed <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">$</span> chip when you own none</b> (R2 call 2). Shipped position on both tile surfaces; it paints its own scrim, so it never depends on the art beneath it. <b style="color:#C6B79A;font-weight:600;">Never empty on a card the player does not own.</b></td></tr>
             <tr><td style="padding:8px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">top-right</td><td style="padding:8px 0;border-bottom:1px solid #241F19;">quantity badge, <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#EDE6D8;">grid-view.tsx:56</span> verbatim. Absent at one copy, which is most rows.</td></tr>
             <tr><td style="padding:8px 0;border-bottom:1px solid #241F19;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">bottom-left</td><td style="padding:8px 0;border-bottom:1px solid #241F19;"><b style="color:#EDE6D8;font-weight:600;">new:</b> ownership dot + cost pips, one run, on the shipped bottom scrim. The dot takes a 2px <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">--bg</span> ring, the same trick the suggestion tile's owned disc uses over art.</td></tr>
             <tr><td style="padding:8px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">bottom-right</td><td style="padding:8px 0;"><b style="color:#EDE6D8;font-weight:600;">empty, deliberately.</b> The only part of the art with nothing on it. Four marked corners is a frame, not a card.</td></tr>
           </tbody>
         </table>
-        <div style="margin-top:16px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10005;</span> is in the caption, not the art</b> &mdash; 44&times;44 phone, 24&times;24 desktop revealed on tile hover, matching the row's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-dashed</span> rest / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span> hover. That keeps the art a single click target for the modal, which is the suggestion tile's <i>three targets and no more</i> rule, and it keeps a 44px target off a 159px picture.</div>
+        <div style="margin-top:16px;font-size:12.5px;color:#8E8269;line-height:1.7;text-wrap:pretty;"><b style="color:#C6B79A;font-weight:600;">The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10005;</span> is in the caption, not the art</b> &mdash; 44&times;44 phone, 32&times;32 desktop revealed on tile hover, matching the row's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-dashed</span> rest / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span> hover. That keeps the art a single click target for the modal, which is the suggestion tile's <i>three targets and no more</i> rule, and it keeps a 44px target off a 159px picture.</div>
       </div>
 
       <div style="width:520px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
@@ -579,7 +583,7 @@
                   <span style="min-width:0;font-size:12px;font-weight:600;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Delver of Secrets</span>
                   <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#8B8270;">//</span>
                 </span>
-                <span style="flex:none;display:flex;align-items:center;justify-content:center;width:24px;height:24px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#494037;">&#10005;</span>
+                <span style="flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#494037;">&#10005;</span>
               </div>
             </div>
           </div>
@@ -832,7 +836,11 @@ class Component extends DCLogic {
       lab, w, na: true, drawn: false, naText: text, foot: false, footText: "",
       minH: 44, bg: "transparent", pad: "0", gap: 0, ring: "none", slots: [],
     });
-    const BUY = () => tag("buy", { c: c.warning, bd: c.accentShadow });
+    // R2 call 1: the All tab collapses `buy $12.40` to a bare `$` in the same
+    // chip skin. Shopping keeps the full tag. Same atom, two densities \u2014 and the
+    // collapsed one is what fills the unowned tile's empty slot (R2 call 2).
+    const BUY = () => tag("buy  $12.40", { c: c.warning, bd: c.accentShadow });
+    const BUY_MIN = () => tag("$", { c: c.warning, bd: c.accentShadow });
 
     // 1 · collection/rows-view.tsx — identity pips, unchanged by this handoff
     const colD = (o) => ({
@@ -862,7 +870,7 @@ class Component extends DCLogic {
         name("Smothering Tithe", { fs: 13.5, qty: o.qty }),
         cost(o.cost || ["3", "W"], 40, c.rail),
       ].concat(o.mk ? [mk(o.mk[0], o.mk[1], 11.5, c.rail)] : [])
-        .concat(o.buy ? [BUY()] : [])
+        .concat(o.buy ? [o.shopping ? BUY() : BUY_MIN()] : [])
         .concat([txt("\u2715", { fs: 13, c: c.dashed, w: 16, align: "center" })]),
     });
     const dlP = (o) => ({
@@ -873,7 +881,7 @@ class Component extends DCLogic {
           sub: { cost: o.cost || ["3", "W"], t: o.sub || "", fs: 10 },
         }),
       ].concat(o.mk ? [mk(o.mk[0], o.mk[1], 11, c.rail)] : [])
-        .concat(o.buy ? [BUY()] : [])
+        .concat(o.buy ? [o.shopping ? BUY() : BUY_MIN()] : [])
         .concat([btn("\u2715", { w: 44, h: 44, fs: 13, bd: "transparent", c: c.dashed })]),
     });
 
@@ -983,9 +991,9 @@ class Component extends DCLogic {
         ledger: "Desktop: the track costs 40px + a 10px gap = 50px, and the name yields all of it \u2014 flex-auto shrinks the halves in proportion rather than starving the name. At the worst case (long name, unowned, four-digit price) that leaves ~59px of name, which is why Design is asking Product to drop the price from the All tab's buy tag; the 34px fallback track is specified in DENSITY. Phone: NOTHING is displaced \u2014 the pips take the meta line, and the cost is 8px of height (44 \u2192 52px) on every row whose card has a mana cost. Lands have none, so they stay 44px, and lands are their own group under both groupings.",
         states: [
           { state: "owned", sub: "quantity inline\ncost on the track", draws: [draw("desktop \u00b7 400 (real)", 400, dlD({ dotMode: "owned", qty: "\u00d72", mk: null, buy: false, ring: false })), draw("phone \u00b7 375", 375, dlP({ dotMode: "owned", qty: "\u00d72", mk: null, buy: false, ring: false }))] },
-          { state: "unowned", sub: "slot holds BuyTag\ndashed dot", draws: [draw("desktop \u00b7 400 (real)", 400, dlD({ dotMode: "unowned", qty: null, cost: ["2", "U", "B"], mk: null, buy: true, ring: false })), draw("phone \u00b7 375", 375, dlP({ dotMode: "unowned", qty: null, cost: ["2", "U", "B"], mk: null, buy: true, ring: false }))] },
+          { state: "unowned", sub: "All tab: bare $\nShopping: full tag", draws: [Object.assign(draw("desktop \u00b7 400 \u00b7 All", 400, dlD({ dotMode: "unowned", qty: null, cost: ["2", "U", "B"], mk: null, buy: true, ring: false })), { foot: true, footText: "R2 call 1 \u2014 the price does not leave the All tab, it COLLAPSES. \u224844px returned, the signal kept." }), Object.assign(draw("desktop \u00b7 400 \u00b7 Shopping", 400, dlD({ dotMode: "unowned", qty: null, cost: ["2", "U", "B"], mk: null, buy: true, shopping: true, ring: false })), { foot: true, footText: "Full tag, unchanged. The tab whose whole job is the detail is the tab that keeps it." }), draw("phone \u00b7 375 \u00b7 All", 375, dlP({ dotMode: "unowned", qty: null, cost: ["2", "U", "B"], mk: null, buy: true, ring: false }))] },
           { state: "committed", sub: "self-excluded read\ncount-only label", draws: [draw("desktop \u00b7 400 (real)", 400, dlD({ dotMode: "committed", qty: null, mk: ["hard", "none free", 11.5], buy: false, ring: false })), draw("phone \u00b7 375 \u00b7 Shopping", 375, dlP({ dotMode: "committed", qty: null, sub: "edhrec 24%", mk: ["hard", "none free", 11], buy: false, ring: false }))] },
-          { state: "over-committed", sub: "glyph + tag, both true\nthe one legitimate pair", draws: [draw("desktop \u00b7 400 (real)", 400, dlD({ dotMode: "committed", qty: null, mk: ["over", "short 1", 11.5], buy: true, ring: true })), draw("phone \u00b7 375 \u00b7 Shopping", 375, dlP({ dotMode: "committed", qty: null, sub: "edhrec 24%", mk: ["over", "short 1", 11], buy: true, ring: true }))] },
+          { state: "over-committed", sub: "glyph + tag, both true\nthe one legitimate pair", draws: [draw("desktop \u00b7 400 \u00b7 All", 400, dlD({ dotMode: "committed", qty: null, mk: ["over", "short 1", 11.5], buy: true, ring: true })), draw("phone \u00b7 375 \u00b7 Shopping", 375, dlP({ dotMode: "committed", qty: null, sub: "edhrec 24%", mk: ["over", "short 1", 11], buy: true, shopping: true, ring: true }))] },
         ],
       },
       {
@@ -1048,32 +1056,36 @@ class Component extends DCLogic {
 
     // ── the card view tile, four states, two real sizes ──────────────────────
     const tileSizes = (pipSyms) => [
-      { lab: "desktop 148", w: 148, rad: 10, artH: 207, badgeIn: 8, badgeFs: 12, capPad: "13px 15px 15px", nameFs: 13, xW: 24, pips: costPips(pipSyms, { sz: 12, fs: 8, seam: "rgba(0,0,0,.5)" }) },
+      { lab: "desktop 148", w: 148, rad: 10, artH: 207, badgeIn: 8, badgeFs: 12, capPad: "13px 15px 15px", nameFs: 13, xW: 32, pips: costPips(pipSyms, { sz: 12, fs: 8, seam: "rgba(0,0,0,.5)" }) },
       { lab: "phone 159", w: 159, rad: 9, artH: 222, badgeIn: 6, badgeFs: 11, capPad: "7px 9px 9px", nameFs: 12, xW: 44, pips: costPips(pipSyms, { sz: 12, fs: 8, seam: "rgba(0,0,0,.5)" }) },
     ];
+    // The money chip reads a notch larger than the marker's count-only labels:
+    // it is one glyph where they are two words, so it can afford the size and
+    // needs it to stay a target-free mark rather than a speck.
     const tiles = [
       {
         lab: "owned", bd: c.border, hasChip: false, hasQty: true,
-        chipHard: false, chipOver: false, chipT: "", chipC: c.hardFg, chipBd: c.accent,
+        chipHard: false, chipOver: false, chipMoney: false, chipT: "", chipC: c.hardFg, chipBd: c.accent,
         dotBg: c.success, dotBd: c.success, dotStyle: "solid", sizes: tileSizes(["3", "W"]),
       },
       {
-        lab: "unowned", bd: c.border, hasChip: false, hasQty: false,
-        chipHard: false, chipOver: false, chipT: "", chipC: c.hardFg, chipBd: c.accent,
+        lab: "unowned", bd: c.border, hasChip: true, hasQty: false,
+        chipHard: false, chipOver: false, chipMoney: true, chipT: "$", chipC: c.warning, chipBd: c.accentShadow,
         dotBg: "transparent", dotBd: c.locked, dotStyle: "dashed", sizes: tileSizes(["2", "U", "B"]),
       },
       {
         lab: "committed", bd: c.border, hasChip: true, hasQty: false,
-        chipHard: true, chipOver: false, chipT: "none free", chipC: c.hardFg, chipBd: c.accent,
+        chipHard: true, chipOver: false, chipMoney: false, chipT: "none free", chipC: c.hardFg, chipBd: c.accent,
         dotBg: c.hardFg, dotBd: c.hardFg, dotStyle: "solid", sizes: tileSizes(["1", "U"]),
       },
       {
         lab: "over-committed", bd: c.overBd, hasChip: true, hasQty: false,
-        chipHard: false, chipOver: true, chipT: "short 1", chipC: c.overFg, chipBd: c.danger,
+        chipHard: false, chipOver: true, chipMoney: false, chipT: "short 1", chipC: c.overFg, chipBd: c.danger,
         dotBg: c.hardFg, dotBd: c.hardFg, dotStyle: "solid", sizes: tileSizes(["W", "U", "B", "R", "G"]),
       },
     ];
 
+    tiles.forEach((t) => { t.chipFs = t.chipMoney ? 10.5 : 8.5; });
     return { costLadder, phoneLadder, matrix, tiles };
   }
 }
