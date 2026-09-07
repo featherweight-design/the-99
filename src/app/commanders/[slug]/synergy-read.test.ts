@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const rows = vi.hoisted(() => ({ value: [] as unknown[] }));
-const committed = vi.hoisted(() => ({ value: new Map<string, string>() }));
+const committed = vi.hoisted(() => ({ value: new Map<string, { id: string; name: string }>() }));
 
 vi.mock("../../../db", () => ({
   db: {
@@ -73,7 +73,7 @@ describe("readSynergyCards", () => {
       { oracleId: "a", name: "Sol Ring", typeLine: "Artifact", inclusion: null, synergy: 0.2, ownedQuantity: 1 },
       { oracleId: "b", name: "Free", typeLine: "Artifact", inclusion: null, synergy: 0.1, ownedQuantity: 1 },
     ];
-    committed.value = new Map([["a", "Atraxa"]]);
+    committed.value = new Map([["a", { id: "d1", name: "Atraxa" }]]);
     const out = await readSynergyCards("user", "cmdr", []);
     expect(out.map((c) => c.committedTo)).toEqual(["Atraxa", null]);
   });

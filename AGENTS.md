@@ -41,6 +41,15 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   Monday, so by the 3rd a set released in the previous week has already been ingested and
   the name index can resolve it. Needs the `COMMANDER_INDEX_ENABLED` repository variable
   set to `'true'` to fire on schedule.
+- `pnpm db:build:prose` writes one generated sentence per commander into `commander_support.prose`
+  — sentence 1 of "Why this commander", and identical for every player, which is why no collection
+  change invalidates it. Needs `ANTHROPIC_API_KEY`. The `Commander prose` workflow chains off a
+  **scheduled** `Commander index` run rather than carrying its own cron, because the prompt and the
+  input hash are built from the tags that job writes; dispatch it directly to target staging. A row
+  whose stored `prose_input_hash` still matches its inputs is skipped, so a re-run costs nothing for
+  a commander whose tags have not moved, and an interrupted run resumes by being dispatched again.
+  A commander whose every attempt fails the accept contract keeps its null and renders with no
+  paragraph — the state the design draws, and never a truncated sentence nobody wrote.
 - The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC every Monday and refreshes **both** `catalog-staging` and `catalog-production`. A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.

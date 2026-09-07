@@ -71,7 +71,7 @@ export async function readSynergyCards(
     // component multiplies by 100 a second time.
     synergyPts: r.synergy == null ? null : Math.round(r.synergy * 100),
     owned: r.ownedQuantity > 0,
-    committedTo: committed.get(r.oracleId) ?? null,
+    committedTo: committed.get(r.oracleId)?.name ?? null,
   }));
 
   return orderBySynergy(excludeCoveredRoleCards(shaped, new Set(coveredOracleIds)));

@@ -11,6 +11,7 @@ import { CommanderThumb, CommanderTile } from "./commander-art";
 import { DiscoveryRow } from "./discovery-row";
 import { FitBar } from "./fit-bar";
 import { RetryLink } from "./retry-submit";
+import { commanderDetailHref } from "./list-nav";
 import { ReceiptLine } from "./receipt-line";
 import { RoleChips } from "./role-chips";
 import { availabilityCopy } from "../../lib/copy/availability";
@@ -110,7 +111,7 @@ export function RecCard(props: RecCardProps) {
           retry <form> inside an anchor (invalid HTML); the forms sit above it
           on z-[2]. Brand focus-visible outline inherited from globals.css. */}
       <Link
-        href={`/commanders/${c.slug}`}
+        href={commanderDetailHref(c.slug, avail)}
         aria-label={`${c.name} — view commander details`}
         className="absolute inset-0 z-[1] rounded-[11px] sm:rounded-[12px]"
       />

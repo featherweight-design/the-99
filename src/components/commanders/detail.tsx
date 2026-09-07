@@ -9,6 +9,7 @@ import { fitSegments } from "../../lib/recs/format";
 import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score";
 import type { CommanderDetailScore, RankedCommander } from "../../lib/recs/recommend";
 import { explainedCopy, heroNoteEdits } from "../../lib/copy/commander-explained";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { FitLegend, type FitLegendSegment } from "./fit-legend";
 import { WhySection } from "./why-section";
 import { FullCardTrigger } from "./full-card-trigger";
@@ -32,10 +33,11 @@ type FitHeroProps = {
   commander: RankedCommander;
   rank: number;
   isBestFit: boolean;
+  avail: "all" | "free";
   width: "desktop" | "phone";
 };
 
-function FitHero({ commander: c, rank, isBestFit, width }: FitHeroProps) {
+function FitHero({ commander: c, rank, isBestFit, avail, width }: FitHeroProps) {
   const isPhone = width === "phone";
   const fit = fitSegments(c);
   const hasSynergy = c.fitSynergy !== null;
@@ -88,6 +90,19 @@ function FitHero({ commander: c, rank, isBestFit, width }: FitHeroProps) {
       >
         {explainedCopy.score.label}
       </p>
+
+      {/* Which pool the figure below was scored against. Only the free mode says
+          so: the canonical one is what "your collection" in the label already
+          means, and a page that names its scope only when the scope is unusual
+          is the one where naming it carries information. */}
+      {avail === "free" && (
+        <p
+          className="m-0 font-mono"
+          style={{ fontSize: 11.5, color: "var(--fg-muted)", marginTop: 6, lineHeight: 1.45 }}
+        >
+          {availabilityCopy.ranking.freeNote}
+        </p>
+      )}
 
       {/* Score row. On phone the figure and its denominator take the full content box,
           so the rank clause drops to its own line rather than shrinking. */}
@@ -184,6 +199,8 @@ export type CommanderDetailProps = {
   commander: CommanderDetailScore;
   rank: number;
   isBestFit: boolean;
+  /** Which pool the score and the rank above were computed against. */
+  avail?: "all" | "free";
   synergyCards: SynergyCard[];
   /** The stored sentence, or null when none has been accepted for this commander. */
   prose?: string | null;
@@ -193,10 +210,15 @@ export function CommanderDetail({
   commander: c,
   rank,
   isBestFit,
+  avail = "all",
   synergyCards,
   prose = null,
 }: CommanderDetailProps) {
   const gradient = commanderGradient(c.colorIdentity);
+  // The mode rides back out on the two back links as well as in. A reader who
+  // arrived from a free-ranked list and returned to the canonical one would
+  // watch the list they came from reorder itself under them.
+  const backHref = avail === "free" ? "/commanders?avail=free" : "/commanders";
 
   return (
     // One card-detail modal for the whole page, so the role chips below open the
@@ -222,7 +244,7 @@ export function CommanderDetail({
       >
         {/* Back chevron */}
         <Link
-          href="/commanders"
+          href={backHref}
           // brand focus-visible outline treatment inherited from globals.css
           className="absolute flex items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
           style={{
@@ -308,7 +330,7 @@ export function CommanderDetail({
         style={{ flex: 1, padding: "16px 14px 0" }}
       >
         {/* Fit Hero (mobile) */}
-        <FitHero commander={c} rank={rank} isBestFit={isBestFit} width="phone" />
+        <FitHero commander={c} rank={rank} isBestFit={isBestFit} avail={avail} width="phone" />
 
         <WhySection
           prose={prose}
@@ -460,7 +482,7 @@ export function CommanderDetail({
         >
           {/* Back link */}
           <Link
-            href="/commanders"
+            href={backHref}
             // brand focus-visible outline treatment inherited from globals.css
             className="inline-flex items-center gap-[7px] font-sans text-[color:var(--fg-faint)]"
             style={{
@@ -553,7 +575,7 @@ export function CommanderDetail({
         {/* Right column — scrolling */}
         <div className="flex flex-col gap-[32px]">
           {/* Fit Hero */}
-          <FitHero commander={c} rank={rank} isBestFit={isBestFit} width="desktop" />
+          <FitHero commander={c} rank={rank} isBestFit={isBestFit} avail={avail} width="desktop" />
 
           <WhySection
             prose={prose}

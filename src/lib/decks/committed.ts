@@ -9,7 +9,15 @@ import { asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { deckCards, decks } from "../../db/schema";
 
-export type CommittedRow = { oracleId: string; deckName: string };
+export type CommittedRow = { oracleId: string; deckId: string; deckName: string };
+
+/**
+ * The deck a card is committed to. The id is carried alongside the name because
+ * `decks.name` is not unique — nothing stops a player keeping two lists called
+ * "Krenko" — and every question that groups by deck has to group by the id or
+ * it merges them. The name is what gets drawn.
+ */
+export type CommittedDeck = { id: string; name: string };
 
 /**
  * The first deck naming each card, from rows already in deck order.
@@ -17,10 +25,10 @@ export type CommittedRow = { oracleId: string; deckName: string };
  * "First" has to mean what the deck list means by it, or a card in two decks
  * would name one deck on the commander page and sit under another on /decks.
  */
-export function firstDeckPerCard(rows: CommittedRow[]): Map<string, string> {
-  const byCard = new Map<string, string>();
+export function firstDeckPerCard(rows: CommittedRow[]): Map<string, CommittedDeck> {
+  const byCard = new Map<string, CommittedDeck>();
   for (const row of rows) {
-    if (!byCard.has(row.oracleId)) byCard.set(row.oracleId, row.deckName);
+    if (!byCard.has(row.oracleId)) byCard.set(row.oracleId, { id: row.deckId, name: row.deckName });
   }
   return byCard;
 }
@@ -33,34 +41,54 @@ export function firstDeckPerCard(rows: CommittedRow[]): Map<string, string> {
  */
 export function withCommitted<T extends { oracleId: string }>(
   cards: T[],
-  byCard: Map<string, string>,
+  byCard: Map<string, CommittedDeck>,
 ): (T & { committedTo: string | null })[] {
-  return cards.map((card) => ({ ...card, committedTo: byCard.get(card.oracleId) ?? null }));
+  return cards.map((card) => ({ ...card, committedTo: byCard.get(card.oracleId)?.name ?? null }));
 }
 
 /**
- * How much of a commander's owned support the player has already spent.
+ * The deck holding the most of a commander's owned support, and how much it holds.
  *
- * The scan is over the map rather than over the ids because the map already carries
- * the answer: `readCommittedDecks` builds it from rows in deck order, so the first
- * committed card met is in the first deck by that same ordering, `decks.id` tiebreak
- * included. Re-sorting the names here instead would agree with the read everywhere
- * except the one case a sort cannot see — two decks whose names differ only in case —
- * and there it would name a different deck than the marks below the sentence point at.
+ * NOT the first deck met, which is what shipped and what named the same deck on every
+ * commander page. The map is in deck order, so the first committed card met sits in the
+ * alphabetically-first deck holding any support card at all — for a player with one
+ * large deck, that deck for all three thousand commanders. The sentence read as a
+ * finding about the commander and was an artefact of the sort.
+ *
+ * `count` is this deck's, not the total across every deck. Those two were previously
+ * mismatched — a total attributed to a single named list — so the sentence credited one
+ * deck with cards sitting in others. A figure and the deck it is attributed to have to
+ * be counted over the same deck, or the sentence is simply false.
+ *
+ * Ties go to the earlier deck in the map, which is the read's own ordering with the
+ * `decks.id` tiebreak already applied. Re-sorting names here would agree everywhere but
+ * the one case a sort cannot see — two decks differing only in case — and there it would
+ * name a deck the committed marks below do not point at.
  */
 export function committedSupport(
   oracleIds: string[],
-  byCard: Map<string, string>,
-): { count: number; firstDeck: string | null } {
+  byCard: Map<string, CommittedDeck>,
+): { count: number; topDeck: string | null } {
   const wanted = new Set(oracleIds);
-  let count = 0;
-  let firstDeck: string | null = null;
+  // Keyed on the deck id, not its name: two lists can share a name, and grouping
+  // on the name would credit one of them with the other's cards.
+  const perDeck = new Map<string, { name: string; n: number }>();
   for (const [oracleId, deck] of byCard) {
     if (!wanted.has(oracleId)) continue;
-    count++;
-    firstDeck ??= deck;
+    const seen = perDeck.get(deck.id);
+    if (seen) seen.n += 1;
+    else perDeck.set(deck.id, { name: deck.name, n: 1 });
   }
-  return { count, firstDeck };
+  let topDeck: string | null = null;
+  let count = 0;
+  // Strictly greater, so insertion order breaks a tie — see the note above.
+  for (const deck of perDeck.values()) {
+    if (deck.n > count) {
+      count = deck.n;
+      topDeck = deck.name;
+    }
+  }
+  return { count, topDeck };
 }
 
 /**
@@ -72,9 +100,9 @@ export function committedSupport(
  */
 export const readCommittedDecks = cache(async function readCommittedDecks(
   userId: string,
-): Promise<Map<string, string>> {
+): Promise<Map<string, CommittedDeck>> {
   const rows = await db
-    .select({ oracleId: deckCards.oracleId, deckName: decks.name })
+    .select({ oracleId: deckCards.oracleId, deckId: decks.id, deckName: decks.name })
     .from(deckCards)
     .innerJoin(decks, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))

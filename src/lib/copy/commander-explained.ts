@@ -87,8 +87,10 @@ export const explainedCopy = {
       `You own ${n(owned)} of the ${n(total)} cards most played with this commander.`,
 
     /** With a deck: one sentence, not two, so the clause cannot be orphaned by a wrap.
-        `committed` is the count of owned support cards already in ANY deck; `deck` is the first
-        one, named — severity, not inventory (see gap 7 on keeping this consistent with the
+        `deck` is the deck holding the most of this commander's owned support and `committed` is
+        how many that deck holds \u2014 NOT the total across every deck, which is what this sentence
+        used to attribute to one named list. Naming one deck while counting over all of them
+        credited it with cards sitting in others. Both figures come off the same deck now, named — severity, not inventory (see gap 7 on keeping this consistent with the
         committed mark's count).
 
         `committed` goes through spellOut, not n(): it is prose, and the canvas draws "twelve".
@@ -191,16 +193,22 @@ export const explainedCopy = {
     pool: {
       label: "Pool",
       weight: (w: number) => `${w} pts`,
-      body:
-        "How much of your collection is even legal here \u2014 cards inside her colour identity that could go in the 99. Breadth, not quality.",
-      bodyMobile:
-        "Cards in your collection legal in her identity. Breadth, not quality.",
+      /* POOL NAMES ITS THRESHOLD. Without it this is the one segment a reader can read as a
+         percentage: full marks mean "at least `POOL_FULL_AT` legal cards", and a collection of
+         any depth clears that for most commanders, so a permanent 15/15 reads as "100% covered"
+         against a collection that covers nothing of the sort. Saying the number is what makes
+         the ceiling visible, and it is interpolated rather than typed so the prose cannot
+         outlive the constant it describes. */
+      body: (fullAt: number) =>
+        `How much of your collection is even legal here \u2014 cards inside this commander's color identity that could go in the 99. Full marks at ${n(fullAt)}, so a deep collection sits at the top of this one for most commanders. Breadth, not quality.`,
+      bodyMobile: (fullAt: number) =>
+        `Cards in your collection legal in this identity. Full marks at ${n(fullAt)}. Breadth, not quality.`,
     },
     roles: {
       label: "Roles",
       weight: (w: number) => `${w} pts`,
       body:
-        "Whether you own enough ramp, draw, removal and board wipes to field a deck at all. Measured against a per-role baseline, not against her.",
+        "Whether you own enough ramp, draw, removal and board wipes to field a deck at all. Measured against a per-role baseline, not against this commander.",
       bodyMobile:
         "Enough ramp, draw, removal and wipes to field a deck. Against a per-role baseline.",
     },
@@ -208,54 +216,36 @@ export const explainedCopy = {
       label: "Synergy",
       weight: (w: number) => `${w} pts`,
       body:
-        "How much of EDHREC's most-played list for this commander you already own. The largest weight, because it is the only part that is about her rather than about your shelf.",
+        "How much of EDHREC's most-played list for this commander you already own. The largest weight, because it is the only part that is about the commander rather than about your shelf.",
       bodyMobile:
-        "How much of EDHREC's most-played list for her you own. The only part about her, not your shelf.",
+        "How much of EDHREC's most-played list for this commander you own. The only part about the commander, not your shelf.",
     },
 
     /** The key's actual job, in one line. Rendered from the same points the legend prints, so
-        it cannot disagree with them. Two terms when synergy was not measured. */
+        it cannot disagree with them. Two terms when synergy was not measured.
+
+        NO GLOSS. The desktop variant used to append "The three add up to the number above \u2014
+        that is the whole claim, and nothing else on this page adds up to it", which restated the
+        equation the reader had just been shown. The arithmetic is the explanation; a sentence
+        explaining the arithmetic is a second copy of it. */
     sum: (parts: number[], total: number) => `${parts.join(" + ")} = ${total}.`,
-    sumWithGloss: (parts: number[], total: number) =>
-      `${parts.join(" + ")} = ${total}. The three add up to the number above \u2014 that is the whole claim, and nothing else on this page adds up to it.`,
   },
 
   // ── §5.2 / #346 The committed-card mark ───────────────────────────────
-  // The dot's fill is the channel. These strings are the other two channels: the panel legend
-  // (with its count) and the chip's accessible name. Colour is never alone.
-  //
-  // DATA NOTE — this block is the only one here with no data path today. The detail route
-  // (app/commanders/[slug]/page.tsx) reads no decks: it imports resolveCommanderSlug,
-  // getRankedList, scoreOneCommander and readSynergyCards, and the `coveredOracleIds` pass at
-  // :36-40 is over roleCards, not deck membership. RoleCard is { oracleId, name, inclusionPct }
-  // and the synergy card carries `owned` alone. Every string below needs a new read on this
-  // route plus a field on both carriers — see READINESS items 1 and 2. Landing these strings
-  // without that read renders `undefined of the 5 shown`.
+  // The dot's fill is the channel. These strings are the other two channels: the key that names
+  // each state and the chip's accessible name. Colour is never alone.
   committed: {
-    /** One line per panel, in chipNoFigureLegend's slot, on the same condition: only where a
-        VISIBLE chip carries the mark.
+    /** One clause per dot state, shared by every surface that draws the dots — the synergy
+        panel, which can show all three, and Role Coverage, which is drawn from the owned pool
+        and so only ever shows two. One vocabulary for one page: the same colour explained two
+        ways on one screen reads as two different marks.
 
-        BOTH FIGURES COUNT VISIBLE CHIPS. `marked` is the marked count among the visible chips,
-        `visible` is how many are on screen — NOT the role's total. R1 mixed the two: the note
-        said "among visible" and the frames printed the role total ("3 of 11" beside four chips,
-        one marked), which explains dots the cap is hiding — the one thing the shipped render
-        condition exists to prevent. "shown" is what makes the denominator unambiguous. */
-    legend: (marked: number, visible: number) =>
-      `Owned, and already in one of your decks. ${n(marked)} of the ${n(visible)} shown.`,
-    legendMobile: (marked: number, visible: number) =>
-      `Already in a deck. ${n(marked)} of the ${n(visible)} shown.`,
-    /** When every visible card is marked, a fraction reads as a coincidence. */
-    legendAllTwo: "Owned, and already in one of your decks. Both of them.",
-    legendAll: "Owned, and already in one of your decks. All of them.",
-    legendAllTwoMobile: "Already in a deck. Both of them.",
-    legendAllMobile: "Already in a deck. All of them.",
-
-    /** The synergy panel is the only surface where all three dot states appear, so it labels
-        all three rather than just the new one. One clause per pip, in the order the rows put
-        the dots in, and each clause stands alone so the line still reads without them. */
-    legendSynergyFree: "Owned and free.",
-    legendSynergyCommitted: "Owned, already in a deck.",
-    legendSynergyUnowned: "Not owned.",
+        NO COUNTS. These replaced a per-panel line that also carried "3 of the 5 shown", which
+        only worked as a footnote under the chips it counted. A key that sits above four panels
+        cannot count for any one of them, and a key is what this is. */
+    dotFree: "Owned and available.",
+    dotCommitted: "Owned, already in a deck.",
+    dotUnowned: "Not owned.",
 
     /** Appended to the chip's existing accessible name — NOT a replacement.
 
@@ -368,7 +358,7 @@ export const heroNoteEdits = {
     body: (max: number) =>
       `\u2014 EDHREC doesn't track this commander, so fit comes from pool and roles alone. ${n(max)} is the whole score available here, and every commander in this state is measured the same way.`,
     bodyMobile: (max: number) =>
-      `\u2014 EDHREC doesn't track her, so fit is pool and roles alone. ${n(max)} is the whole score here.`,
+      `\u2014 EDHREC doesn't track this commander, so fit is pool and roles alone. ${n(max)} is the whole score here.`,
   },
   degraded: {
     heading: "Synergy data unavailable",

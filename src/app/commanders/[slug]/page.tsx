@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { scoreOneCommander } from "../../../lib/recs/recommend";
+import { loadFreePool, rankFree } from "../../../lib/recs/free-ranking";
+import type { PoolCard } from "../../../lib/recs/score";
 import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
 import { getRankedList } from "../../../lib/recs/ranked-list";
 import { CommanderDetail } from "../../../components/commanders/detail";
@@ -9,11 +11,18 @@ import { readSynergyCards } from "./synergy-read";
 
 export default async function CommanderDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ avail?: string }>;
 }) {
-  const { slug } = await params;
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
   const userId = await requireUserId();
+  // The list links here carrying the mode it ranked in. Without it a commander
+  // ranked against the free pool opened a page scored against everything owned,
+  // and the two screens disagreed about the same commander's fit by whatever
+  // the player has sleeved.
+  const requested = query.avail === "free" ? "free" : "all";
 
   // Only the requested commander is scored — the page used to rank the whole
   // candidate set to render one.
@@ -30,7 +39,27 @@ export default async function CommanderDetailPage({
     if (idx !== -1) found = { ...found, rank: idx + 1, anyDegraded: false };
   }
 
-  const commander = await scoreOneCommander(userId, found.oracleId, slug);
+  // Both halves of the free mode or neither. The rank and the score have to come
+  // off the same pool, so anything that stops the free ranking being computed —
+  // an unreadable availability rollup, or a canonical list that no longer names
+  // this commander — drops the whole page back to the canonical mode rather
+  // than pairing a free score with a rank from the other list.
+  let avail: "all" | "free" = "all";
+  let pool: PoolCard[] | undefined;
+  if (requested === "free") {
+    const { items } = await getRankedList(userId);
+    const free = await rankFree(userId, items);
+    const idx = free.ok ? free.items.findIndex((i) => i.oracleId === found!.oracleId) : -1;
+    // Already loaded and memoised by the ranking above, so this is a map read.
+    const freePool = idx === -1 ? null : await loadFreePool(userId);
+    if (freePool) {
+      avail = "free";
+      pool = freePool;
+      found = { ...found, rank: idx + 1 };
+    }
+  }
+
+  const commander = await scoreOneCommander(userId, found.oracleId, slug, pool);
   if (!commander) notFound();
 
   // Derive the oracle ids of owned cards that Role Coverage already covers.
@@ -54,6 +83,7 @@ export default async function CommanderDetailPage({
       commander={commander}
       rank={found.rank}
       isBestFit={found.rank === 1}
+      avail={avail}
       synergyCards={synergyCards}
       prose={prose}
     />

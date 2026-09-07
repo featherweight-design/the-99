@@ -40,33 +40,47 @@ const ROLE_NOUNS: Record<RoleName, string> = {
   wipes: "board wipe",
 };
 
-// ── The committed legend ───────────────────────────────────────────────────────
+// ── The dot key ────────────────────────────────────────────────────────────────
 
 /**
- * The line explaining the committed dot, or null where no visible chip carries
- * one. The sentence no longer names the colour — a pip rendered from the same
- * component the chips use sits in front of it, which stays right under all six
- * themes.
+ * The key for the chip dots, drawn once above all four panels rather than as a
+ * footnote under each.
  *
- * Both figures count the chips that are ON SCREEN, never the role's total. A
- * count drawn from the whole list explains dots the cap is hiding, which is the
- * one thing the render condition exists to prevent.
+ * It reads every card in every role, not the chips a cap happens to be showing:
+ * expanding a panel must not make a key appear, and a reader who scrolls past
+ * one marked chip in the fourth panel needs the key that was above the first.
  *
- * A fraction reads as a coincidence when it is the whole list, so an all-marked
- * panel says so instead. One marked chip out of one takes "All of them" as well:
- * "1 of the 1 shown" is a fraction that never had another value.
+ * Free is unconditional — every panel holding a card draws that dot, because
+ * Role Coverage is built from the owned pool. Committed is not: with no deck
+ * holding any of these cards there is no second colour on screen to explain.
  */
-export function committedLegend(visible: RoleCard[], isDesktop: boolean): string | null {
-  const marked = visible.filter((c) => c.committedTo !== null).length;
-  if (marked === 0) return null;
-  if (marked === visible.length) {
-    return visible.length === 2
-      ? (isDesktop ? explainedCopy.committed.legendAllTwo : explainedCopy.committed.legendAllTwoMobile)
-      : (isDesktop ? explainedCopy.committed.legendAll : explainedCopy.committed.legendAllMobile);
-  }
-  return isDesktop
-    ? explainedCopy.committed.legend(marked, visible.length)
-    : explainedCopy.committed.legendMobile(marked, visible.length);
+function DotKey({
+  roleCards,
+  isDesktop,
+}: {
+  roleCards: Record<RoleName, RoleCard[]>;
+  isDesktop: boolean;
+}): JSX.Element | null {
+  const all = ROLE_ORDER.flatMap((role) => roleCards[role]);
+  if (all.length === 0) return null;
+  const anyCommitted = all.some((c) => c.committedTo !== null);
+
+  return (
+    <p
+      className="font-mono text-fg-locked m-0"
+      style={{ fontSize: 10.5, marginTop: isDesktop ? 8 : 10, lineHeight: 1.4 }}
+    >
+      <LegendPip state="free" />
+      {explainedCopy.committed.dotFree}
+      {anyCommitted && (
+        <>
+          {" "}
+          <LegendPip state="committed" />
+          {explainedCopy.committed.dotCommitted}
+        </>
+      )}
+    </p>
+  );
 }
 
 // ── One role panel ─────────────────────────────────────────────────────────────
@@ -92,7 +106,6 @@ function RolePanelDesktop({
   const cap = COVERAGE_CAP.desktop;
   const siblings = cards.map((c) => c.oracleId);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
-  const committedLine = committedLegend(visible, true);
   const hiddenCount = cards.length - cap; // > 0 means disclosure needed
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
     ? cards.length - COVERAGE_EXPANDED_CAP
@@ -175,14 +188,6 @@ function RolePanelDesktop({
               {recommendationsCopy.coverage.chipNoFigureLegend}
             </p>
           )}
-          {/* The committed dot's line, in the same slot and on the same
-              principle: only where a chip on screen carries the mark. */}
-          {committedLine !== null && (
-            <p className="font-mono text-[10px] text-fg-locked m-0 mt-[10px]">
-              <LegendPip state="committed" />
-              {committedLine}
-            </p>
-          )}
         </>
       )}
     </section>
@@ -210,7 +215,6 @@ function RolePanelPhone({
   const cap = COVERAGE_CAP.phone;
   const siblings = cards.map((c) => c.oracleId);
   const visible = expanded ? cards.slice(0, COVERAGE_EXPANDED_CAP) : cards.slice(0, cap);
-  const committedLine = committedLegend(visible, false);
   const hiddenCount = cards.length - cap;
   const beyondExpanded = cards.length > COVERAGE_EXPANDED_CAP
     ? cards.length - COVERAGE_EXPANDED_CAP
@@ -290,12 +294,6 @@ function RolePanelPhone({
             {showFigures && visible.some((c) => !Number.isFinite(c.inclusionPct)) && (
               <p className="font-mono text-[10px] text-fg-locked m-0">
                 {recommendationsCopy.coverage.chipNoFigureLegendMobile}
-              </p>
-            )}
-            {committedLine !== null && (
-              <p className="font-mono text-[10px] text-fg-locked m-0">
-                <LegendPip state="committed" />
-                {committedLine}
               </p>
             )}
           </>
@@ -429,6 +427,7 @@ export function CoverageSection({
       <p className="m-0 font-mono mt-[2px]" style={{ fontSize: 12, color: "var(--fg-faint)" }}>
         {subcaption}
       </p>
+      <DotKey roleCards={roleCards} isDesktop={isDesktop} />
       {!isDesktop && (
         <div className="mt-[10px]">
           <CoverageSortMenu sort={sort} showFigures={showFigures} isDesktop={false} onChange={chooseSort} />

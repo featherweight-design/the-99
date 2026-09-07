@@ -89,7 +89,7 @@ describe("WhySection", () => {
 
 describe("WhySection committed-deck clause", () => {
   it("names the deck and spells out how many of the cards are in it", () => {
-    renderSection({ committedSupport: { count: 12, firstDeck: "Kess Storm" } });
+    renderSection({ committedSupport: { count: 12, topDeck: "Kess Storm" } });
     expect(screen.getByText(/of those are already in your Kess Storm list/)).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
   });
@@ -97,7 +97,7 @@ describe("WhySection committed-deck clause", () => {
   // Small counts read as words in prose, and the figure run has to be matched in
   // the same form the sentence used or it draws at body weight.
   it("draws the spelled-out count at figure strength", () => {
-    renderSection({ committedSupport: { count: 3, firstDeck: "Kess Storm" } });
+    renderSection({ committedSupport: { count: 3, topDeck: "Kess Storm" } });
     const figure = screen.getByText("three");
     expect(figure.tagName).toBe("STRONG");
   });
@@ -105,13 +105,13 @@ describe("WhySection committed-deck clause", () => {
   // A deck holding none of them is a sentence about nothing, so the shorter form
   // survives rather than a clause reading "and zero of those".
   it("falls back to the plain standing sentence when nothing is committed", () => {
-    renderSection({ committedSupport: { count: 0, firstDeck: "Kess Storm" } });
+    renderSection({ committedSupport: { count: 0, topDeck: "Kess Storm" } });
     expect(screen.queryByText(/already in your/)).toBeNull();
     expect(screen.getByText(/cards most played with this commander/)).toBeInTheDocument();
   });
 
   it("falls back when there is no deck to name", () => {
-    renderSection({ committedSupport: { count: 4, firstDeck: null } });
+    renderSection({ committedSupport: { count: 4, topDeck: null } });
     expect(screen.queryByText(/already in your/)).toBeNull();
   });
 });

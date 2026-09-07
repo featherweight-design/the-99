@@ -8,6 +8,8 @@ import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { synergyStateFrom, type SynergyState } from "./synergy-state";
 import { committedSupport, readCommittedDecks, withCommitted } from "../decks/committed";
 import {
+  commanderPool,
+  edhrecOverlap,
   isCommanderCandidate,
   scoreCommander,
   type CommanderScore,
@@ -25,7 +27,7 @@ export type RankedCommander = CommanderScore & { slug: string; synergyState: Syn
  * names a deck.
  */
 export type CommanderDetailScore = RankedCommander & {
-  committedSupport: { count: number; firstDeck: string | null };
+  committedSupport: { count: number; topDeck: string | null };
 };
 
 /**
@@ -208,7 +210,7 @@ export async function recommendCommanders(
 
   // One cache read for the whole fanout — a per-commander SELECT here meant
   // ~196 round-trips on every compute, warm or cold.
-  const cache = await readEdhrecCache(candidates.map((c) => c.oracleId));
+  const edhrecCache = await readEdhrecCache(candidates.map((c) => c.oracleId));
 
   // Fetch EDHREC data with bounded concurrency: sequential awaits would make
   // cold loads with dozens of candidates exceed the page's time budget.
@@ -219,7 +221,7 @@ export async function recommendCommanders(
     const scored = await Promise.all(
       candidates.slice(i, i + CONCURRENCY).map(async (commander) => {
         const result = await resolveEdhrecData(
-          commander.oracleId, commander.name, cache.get(commander.oracleId),
+          commander.oracleId, commander.name, edhrecCache.get(commander.oracleId),
         );
         // `unreachable` only flips true on real service outage (5xx/network/timeout
         // with no cache). 4xx (commander not on EDHREC) is a per-commander data
@@ -249,11 +251,23 @@ export async function recommendCommanders(
  * Returns null when the oracle id names no commander-legal card — either
  * because no card carries that id, or because the card it names cannot be a
  * commander. Both are "no such commander" to this page.
+ *
+ * `pool` is the set of cards the commander is SCORED against, defaulting to the
+ * whole collection. The detail page passes the free pool when it was reached
+ * from a free-ranked list, so the figure it draws is the figure that list drew
+ * — the same rule `rankFree` follows, and the reason it is a parameter rather
+ * than a mode this function resolves: availability belongs to the route that
+ * read the URL, and importing it here would close a cycle back through
+ * free-ranking.
+ *
+ * Candidacy still comes from the collection, never from the pool: a commander
+ * you own but have sleeved is still a commander you could unsleeve.
  */
 export async function scoreOneCommander(
   userId: string,
   oracleId: string,
   slug: string,
+  pool?: PoolCard[],
 ): Promise<CommanderDetailScore | null> {
   const { collection } = await loadCollectionPool(userId);
   // A discovery commander is by definition one the player may not own, so a
@@ -264,13 +278,13 @@ export async function scoreOneCommander(
     collection.find((c) => c.oracleId === oracleId) ?? (await loadPoolCard(oracleId));
   if (!commander) return null;
 
-  const cache = await readEdhrecCache([oracleId]);
+  const edhrecCache = await readEdhrecCache([oracleId]);
   const [result, committed] = await Promise.all([
-    resolveEdhrecData(oracleId, commander.name, cache.get(oracleId)),
+    resolveEdhrecData(oracleId, commander.name, edhrecCache.get(oracleId)),
     readCommittedDecks(userId),
   ]);
   const scored = scoreCommander({
-    commander, collection,
+    commander, collection: pool ?? collection,
     edhrecTopCards: result.data?.topCards ?? null,
     inclusionByName: result.data?.inclusionByName ?? null,
   });
@@ -281,11 +295,20 @@ export async function scoreOneCommander(
     Object.entries(scored.roleCards).map(([role, cards]) => [role, withCommitted(cards, committed)]),
   ) as Record<RoleName, RoleCard[]>;
 
+  // Ownership, not availability, so this overlap is taken over the collection
+  // even in free mode. `scored.overlapOwnedIds` is the free pool's, and a card
+  // sleeved into a finished deck is exactly what that pool leaves out — asking
+  // it which decks hold these cards could only ever answer "none".
+  const ownedOverlapIds =
+    pool && result.data?.topCards
+      ? edhrecOverlap(result.data.topCards, commanderPool(commander, collection)).oracleIds
+      : scored.overlapOwnedIds;
+
   return {
     ...scored,
     roleCards,
     slug,
     synergyState: synergyStateFrom(result),
-    committedSupport: committedSupport(scored.overlapOwnedIds, committed),
+    committedSupport: committedSupport(ownedOverlapIds, committed),
   };
 }
