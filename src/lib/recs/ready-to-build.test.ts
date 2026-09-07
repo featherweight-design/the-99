@@ -32,7 +32,7 @@ describe("readySlice", () => {
     expect(slice.floor).toBe(60);
   });
 
-  it("shows the one it has, and no floor at all, when the list is empty", () => {
+  it("shows a lone commander, and gives an empty list no floor at all", () => {
     expect(readySlice(list(80)).shown).toHaveLength(1);
     expect(readySlice(list()).shown).toEqual([]);
     expect(readySlice(list()).floor).toBeNull();
