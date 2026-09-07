@@ -17,8 +17,10 @@ export type ExcludedMatch = {
   oracleId: string;
   name: string;
   cause: ExcludedCause;
-  /** The row's own support percentage, which only the floor sentence prints.
-      Null for every other cause, and for a row with no denominator. */
+  /** The row's own support percentage. Carried by both halves of the floor tier
+      that measured one — `floor` and its `pool` sub-case — though only the floor
+      sentence prints it: the pool sentence names the pool rather than the
+      distance. Null for `scope` and `unmeasured`, which have no figure to carry. */
   pct: number | null;
 };
 

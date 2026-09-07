@@ -388,46 +388,49 @@ export function DiscoveryView({
   // outranks both empties below: they say what is missing, and this one says
   // why and offers the single control that would undo it.
   const showHeldEmpty = !floorReplacedList && filtered.length === 0 && report !== null;
-  // "No commander is named that" is a claim about the whole index, and only the
-  // server can make it. Until the lookup for the query ON SCREEN has come back
-  // and come back successfully, the state is held: rendering it early would
-  // print a sentence that the next 300ms could contradict, and rendering it on a
-  // failed lookup would print one nothing ever checked. A query too short for
-  // the action to answer is confirmed on arrival, since there is no lookup to
-  // wait for.
+  // Which of the two things the surface may say about a miss depends on one
+  // question: has the index been looked at for the query ON SCREEN?
   const settled = trimmedQuery === "" || settledTrimmed === trimmedQuery;
-  const answered = settledTrimmed.length < 2 || (answer?.key === lookupKey && answer.ok);
-  const unconfirmed = trimmedQuery !== "" && !(settled && answered);
-  // The lookup came back and could not answer: it failed, or the query matched
-  // more names than it classifies. The list is still empty and the reader is
-  // still owed a sentence, so one gets written about the list alone. Only once
-  // the answer is in — while it is in flight there is nothing to say yet.
-  const showUnknownEmpty =
-    !floorReplacedList &&
-    !showHeldEmpty &&
-    trimmedQuery !== "" &&
-    filtered.length === 0 &&
-    settled &&
-    answer?.key === lookupKey &&
-    !answer.ok;
+  const current = answer?.key === lookupKey ? answer : null;
+  // Asked, and answered. The only footing "no commander is named that" has.
+  const indexChecked = settled && current !== null && current.ok;
+  // Asked and unanswerable, or never asked at all: the action declines a query
+  // under two characters, and a query it never saw is one it never checked.
+  // A failed round trip lands here too.
+  const indexUnchecked =
+    settled && (settledTrimmed.length < 2 || (current !== null && !current.ok));
+  // Neither yet. The typing has not settled, or the round trip is in flight, and
+  // every conclusion below is one more render away.
+  const pending = trimmedQuery !== "" && !indexChecked && !indexUnchecked;
   const showSearchEmpty =
     !floorReplacedList &&
     !showHeldEmpty &&
-    !unconfirmed &&
+    indexChecked &&
     trimmedQuery !== "" &&
     filtered.length === 0 &&
     !nameMatchesAny;
   // Only when the filter is what emptied it. Without that guard this would also
   // swallow the unfiltered no-results case, whose reason is not the colours. It
   // waits on the same lookup: with a query in the field, blaming the colours is
-  // one more conclusion the server has not confirmed yet.
+  // one more conclusion the server has not confirmed yet. It outranks the
+  // unchecked-index state below, because the colours are a cause this reader can
+  // act on and the unchecked index is not.
   const showFilteredEmpty =
     !floorReplacedList &&
     !showHeldEmpty &&
     !showSearchEmpty &&
-    !showUnknownEmpty &&
-    !unconfirmed &&
+    !pending &&
     colors.length > 0 &&
+    filtered.length === 0;
+  // The list is empty, the reader is owed a sentence, and the index cannot
+  // supply one. It gets written about the list alone.
+  const showUnknownEmpty =
+    !floorReplacedList &&
+    !showHeldEmpty &&
+    !showSearchEmpty &&
+    !showFilteredEmpty &&
+    indexUnchecked &&
+    trimmedQuery !== "" &&
     filtered.length === 0;
 
   // The list's own receipt. Counted against the ranked list rather than the

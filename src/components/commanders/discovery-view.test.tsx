@@ -737,6 +737,17 @@ describe("DiscoveryView", () => {
     expect(container.textContent).not.toContain(search.noneHeading("atraxa"));
   });
 
+  // The action declines a one-character query, so the index is unchecked for it
+  // in exactly the way a failure leaves it unchecked.
+  it("keeps the index out of it when the query is too short to ask about", async () => {
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+    );
+    fireEvent.change(field(), { target: { value: "z" } });
+    await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("z")));
+    expect(container.textContent).not.toContain(search.noneHeading("z"));
+  });
+
   // A one-character query matches most of the index, so it never asks.
   it("asks the server only about a query worth a round trip", async () => {
     render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
