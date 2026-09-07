@@ -36,7 +36,7 @@ async function signIn(page) {
       try {
         const signIn = window.Clerk.client.signIn;
         let attempt = await signIn.create({ identifier: email, password });
-        if (attempt.status === "needs_client_trust") {
+        if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
           const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === "email_code");
           await signIn.prepareFirstFactor({
             strategy: "email_code",
