@@ -254,6 +254,7 @@ export const deckSuggestionItems = pgTable("deck_suggestion_items", {
 ```typescript
 // src/db/schema.test.ts
 import { describe, expect, it } from "vitest";
+import { getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { deckSuggestionRuns, deckSuggestionItems, deckGames, decks } from "./schema";
 
@@ -276,10 +277,18 @@ describe("tuning schema", () => {
     expect(unique[0].config.where).toBeDefined();
   });
 
-  it("ties every item to a catalog card", () => {
+  it("ties both of an item's card columns to the catalog", () => {
+    // Counting the foreign keys proves nothing about which columns carry them.
+    // Name the pairs: this is the constraint that makes the uuid column type
+    // load-bearing, and a text column would fail to generate against it.
     const fks = getTableConfig(deckSuggestionItems).foreignKeys;
-    const tables = fks.map((fk) => fk.reference().foreignTable);
-    expect(tables).toHaveLength(3);
+    const pairs = fks.map((fk) => {
+      const ref = fk.reference();
+      return `${ref.columns[0].name}->${getTableName(ref.foreignTable)}.${ref.foreignColumns[0].name}`;
+    });
+    expect(pairs).toContain("add_oracle_id->cards.oracle_id");
+    expect(pairs).toContain("cut_oracle_id->cards.oracle_id");
+    expect(pairs).toContain("run_id->deck_suggestion_runs.id");
   });
 });
 ```
@@ -322,9 +331,13 @@ import { describe, expect, it } from "vitest";
 import { deckTuningCopy, manifestCopy, PATTERN_MIN, axisCopy } from "./deck-tuning";
 import { gameLogCopy } from "./game-log";
 
+// Functions are included by their source, not skipped. Most of this file's
+// copy is interpolated — `counter(n, max)`, `unchanged(at)` — so a helper that
+// walked only the literals would leave the computed strings, the ones most
+// likely to reach for a percentage, entirely unguarded.
 function allStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
-  if (typeof value === "function") return [];
+  if (typeof value === "function") return [value.toString()];
   if (value && typeof value === "object") return Object.values(value).flatMap(allStrings);
   return [];
 }
