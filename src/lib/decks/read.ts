@@ -1,6 +1,13 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
+import {
+  cards,
+  collectionItems,
+  deckCards,
+  deckGames,
+  deckUnresolvedRows,
+  decks,
+} from "../../db/schema";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
@@ -13,6 +20,7 @@ import {
   type DeckUnresolvedRow,
 } from "./grouping";
 import { statusPill, type StatusPill } from "./status";
+import { DEFAULT_DECK_SORT, type DeckSort } from "./sort";
 
 // ---------------------------------------------------------------------------
 // WUBRG bitmask helpers (tested)
@@ -220,10 +228,19 @@ export type DeckListItem = {
   toBuyCount: number;
   /** Cards on lines the import could not name. Drives the deck card's badge. */
   unresolvedCount: number;
+  /**
+   * The most recent game logged against this deck, or null when none is. Drawn
+   * on the right of every tile's detail row; `never played` is the null case,
+   * and it is a real state rather than a missing figure.
+   */
+  lastPlayedAt: Date | null;
   statusPill: StatusPill;
 };
 
-export async function listDecksWithStats(userId: string): Promise<DeckListItem[]> {
+export async function listDecksWithStats(
+  userId: string,
+  sort: DeckSort = DEFAULT_DECK_SORT,
+): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
     (
       select sum(dc2.quantity)
@@ -248,6 +265,29 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
     0
   )::int`;
 
+  // Same reason as `unresolvedCount` above: a third child table joined and
+  // grouped would multiply rows against `deck_cards` and inflate `built`.
+  const lastPlayedSql = sql<Date | null>`(
+    select max(dg.played_at)
+    from ${deckGames} dg
+    where dg.deck_id = ${decks.id}
+  )`;
+
+  // `lower()` rather than the bare column: the ordering a player sees must not
+  // depend on the database's collation, which puts every capitalised name ahead
+  // of every lowercase one under C and interleaves them under en_US. The id is
+  // the tiebreak in every order, not decoration — deck names are not unique, and
+  // two decks sharing one would otherwise swap places between requests.
+  const byName = [asc(sql`lower(${decks.name})`), asc(decks.id)];
+  const order =
+    sort === "name"
+      ? byName
+      : sort === "newest"
+        ? [desc(decks.createdAt), asc(decks.id)]
+        : // NULLS LAST is explicit: Postgres sorts nulls first under DESC, which
+          // would put every never-played deck at the top of "last played".
+          [sql`${lastPlayedSql} desc nulls last`, ...byName];
+
   const rows = await db
     .select({
       id: decks.id,
@@ -259,18 +299,14 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
+      lastPlayedAt: lastPlayedSql,
     })
     .from(decks)
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
     .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))
     .groupBy(decks.id, decks.name, decks.createdAt, cards.name, cards.colorIdentity, cards.imageUri)
-    // `lower()` rather than the bare column: the ordering a player sees must not
-    // depend on the database's collation, which puts every capitalised name
-    // ahead of every lowercase one under C and interleaves them under en_US.
-    // The id is the tiebreak, not decoration — deck names are not unique, and
-    // two decks sharing one would otherwise swap places between requests.
-    .orderBy(asc(sql`lower(${decks.name})`), asc(decks.id));
+    .orderBy(...order);
 
   return rows.map((row) => {
     const pill = statusPill({
@@ -289,6 +325,7 @@ export async function listDecksWithStats(userId: string): Promise<DeckListItem[]
       ownedCount: row.ownedCount,
       toBuyCount: row.built - row.ownedCount,
       unresolvedCount: row.unresolvedCount,
+      lastPlayedAt: row.lastPlayedAt,
       statusPill: pill,
     };
   });

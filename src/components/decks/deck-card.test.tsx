@@ -16,6 +16,7 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   ownedCount: 90,
   toBuyCount: 7,
   unresolvedCount: 0,
+  lastPlayedAt: null,
   statusPill: "Building",
   ...over,
 });
