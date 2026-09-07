@@ -57,6 +57,8 @@ jobs:
     environment: catalog-${{ github.event.inputs.target || 'production' }}
     defaults:
       run:
+        # GitHub expands `shell: bash` to `bash -eo pipefail`. Without it the generate step's
+        # exit status would be `tee`'s, so a failed run would report the job as green.
         shell: bash
     env:
       DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
