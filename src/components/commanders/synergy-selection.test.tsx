@@ -22,6 +22,7 @@ const synergyCard = (id: string): SynergyCard => ({
   inclusionPct: null,
   synergyPts: null,
   owned: true,
+  committedTo: null,
 });
 const synergyCards = (n: number): SynergyCard[] =>
   Array.from({ length: n }, (_, i) => synergyCard(`o${i}`));

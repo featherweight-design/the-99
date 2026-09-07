@@ -285,7 +285,11 @@ describe("roleCards", () => {
       commander, collection: [rampA],
       edhrecTopCards: null, inclusionByName: { "sol ring": 82 },
     });
-    expect(s.roleCards.ramp).toEqual([{ oracleId: "a", name: "Sol Ring", inclusionPct: 82 }]);
+    // `committedTo` is null out of scoring by design: the ranked list draws no
+    // card rows, so it does not pay for the deck-membership query.
+    expect(s.roleCards.ramp).toEqual([
+      { oracleId: "a", name: "Sol Ring", inclusionPct: 82, committedTo: null },
+    ]);
   });
 
   it("orders by inclusion descending with absent figures last", () => {

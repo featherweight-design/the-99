@@ -6,7 +6,15 @@ import { ownedCardsWhere } from "../collection/owned-cards";
 import { commanderSlug } from "../edhrec/slug";
 import { readEdhrecCache, resolveEdhrecData } from "../edhrec/client";
 import { synergyStateFrom, type SynergyState } from "./synergy-state";
-import { isCommanderCandidate, scoreCommander, type CommanderScore, type PoolCard } from "./score";
+import { readCommittedDecks, withCommitted } from "../decks/committed";
+import {
+  isCommanderCandidate,
+  scoreCommander,
+  type CommanderScore,
+  type PoolCard,
+  type RoleCard,
+  type RoleName,
+} from "./score";
 import { receiptsPreview } from "./format";
 
 export type RankedCommander = CommanderScore & { slug: string; synergyState: SynergyState };
@@ -246,14 +254,21 @@ export async function scoreOneCommander(
   if (!commander) return null;
 
   const cache = await readEdhrecCache([oracleId]);
-  const result = await resolveEdhrecData(oracleId, commander.name, cache.get(oracleId));
-  return {
-    ...scoreCommander({
-      commander, collection,
-      edhrecTopCards: result.data?.topCards ?? null,
-      inclusionByName: result.data?.inclusionByName ?? null,
-    }),
-    slug,
-    synergyState: synergyStateFrom(result),
-  };
+  const [result, committed] = await Promise.all([
+    resolveEdhrecData(oracleId, commander.name, cache.get(oracleId)),
+    readCommittedDecks(userId),
+  ]);
+  const scored = scoreCommander({
+    commander, collection,
+    edhrecTopCards: result.data?.topCards ?? null,
+    inclusionByName: result.data?.inclusionByName ?? null,
+  });
+
+  // Marked here rather than inside `scoreCommander`: this is the only caller
+  // that draws card rows, so the ranked list does not pay for the aggregate.
+  const roleCards = Object.fromEntries(
+    Object.entries(scored.roleCards).map(([role, cards]) => [role, withCommitted(cards, committed)]),
+  ) as Record<RoleName, RoleCard[]>;
+
+  return { ...scored, roleCards, slug, synergyState: synergyStateFrom(result) };
 }

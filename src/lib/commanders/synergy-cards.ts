@@ -18,6 +18,8 @@ export type SynergyCard = {
   inclusionPct: number | null;
   synergyPts: number | null;
   owned: boolean;
+  /** The deck this card already sits in, or null. */
+  committedTo: string | null;
 };
 
 /** Synergy descending, absent last, then inclusion descending, then name.

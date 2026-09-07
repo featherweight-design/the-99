@@ -8,7 +8,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 function make(n: number, facet: SynergyCard["facet"] = "creature"): SynergyCard[] {
   return Array.from({ length: n }, (_, i) => ({
     oracleId: `id-${facet}-${i}`, name: `${facet} ${i}`, typeLine: "Creature — Human",
-    facet, inclusionPct: 50, synergyPts: 100 - i, owned: i % 2 === 0,
+    facet, inclusionPct: 50, synergyPts: 100 - i, owned: i % 2 === 0, committedTo: null,
   }));
 }
 

@@ -2,6 +2,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { cards, collectionItems, commanderSupportCards } from "../../../db/schema";
 import { cardFacet } from "../../../lib/cards/facet";
+import { readCommittedDecks } from "../../../lib/decks/committed";
 import {
   excludeCoveredRoleCards,
   orderBySynergy,
@@ -52,6 +53,8 @@ export async function readSynergyCards(
       commanderSupportCards.synergy,
     );
 
+  const committed = await readCommittedDecks(userId);
+
   const shaped: SynergyCard[] = rows.map((r) => ({
     oracleId: r.oracleId,
     name: r.name,
@@ -68,6 +71,7 @@ export async function readSynergyCards(
     // component multiplies by 100 a second time.
     synergyPts: r.synergy == null ? null : Math.round(r.synergy * 100),
     owned: r.ownedQuantity > 0,
+    committedTo: committed.get(r.oracleId) ?? null,
   }));
 
   return orderBySynergy(excludeCoveredRoleCards(shaped, new Set(coveredOracleIds)));

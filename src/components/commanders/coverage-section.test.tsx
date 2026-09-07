@@ -15,7 +15,7 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function makeCard(n: number, pct: number | null = 50): RoleCard {
-  return { oracleId: `oracle-${n}`, name: `Card ${n}`, inclusionPct: pct };
+  return { oracleId: `oracle-${n}`, name: `Card ${n}`, inclusionPct: pct, committedTo: null };
 }
 
 function makeCards(count: number, pct: number | null = 50): RoleCard[] {
@@ -485,9 +485,9 @@ describe("degraded state preserves pool order", () => {
     // Alphabetical order: Mana Vault, Swords to Plowshares, Zombie Infestation
     // The two orderings differ, so a sort introduced by the component is detectable.
     const poolOrderedCards: RoleCard[] = [
-      { oracleId: "oracle-z", name: "Zombie Infestation", inclusionPct: null },
-      { oracleId: "oracle-m", name: "Mana Vault", inclusionPct: null },
-      { oracleId: "oracle-s", name: "Swords to Plowshares", inclusionPct: null },
+      { oracleId: "oracle-z", name: "Zombie Infestation", inclusionPct: null, committedTo: null },
+      { oracleId: "oracle-m", name: "Mana Vault", inclusionPct: null, committedTo: null },
+      { oracleId: "oracle-s", name: "Swords to Plowshares", inclusionPct: null, committedTo: null },
     ];
 
     renderSection({

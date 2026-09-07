@@ -13,7 +13,15 @@ export type RoleName = "ramp" | "draw" | "removal" | "wipes";
 /** One owned card that fills a role, with its EDHREC inclusion figure.
     Missing data is encoded as null, never as 0 — 0 is a figure EDHREC really
     reports, so collapsing the two would draw a real number for no data. */
-export type RoleCard = { oracleId: string; name: string; inclusionPct: number | null };
+export type RoleCard = {
+  oracleId: string;
+  name: string;
+  inclusionPct: number | null;
+  /** The deck this card already sits in, or null. Scoring leaves it null: the
+      ranked list has no card rows to mark, and the mark costs a query. The
+      commander page fills it in through `withCommitted`. */
+  committedTo: string | null;
+};
 
 export type CommanderScore = {
   oracleId: string; name: string;
@@ -154,7 +162,12 @@ export function scoreCommander(args: {
     for (const role of classifyRoles(c)) {
       if (role !== "land") {
         roleCounts[role]++;
-        roleCards[role].push({ oracleId: c.oracleId, name: c.name, inclusionPct: inclusionOf(c.name) });
+        roleCards[role].push({
+          oracleId: c.oracleId,
+          name: c.name,
+          inclusionPct: inclusionOf(c.name),
+          committedTo: null,
+        });
       }
     }
   }

@@ -17,6 +17,7 @@ const synergyCards: SynergyCard[] = [
     inclusionPct: 31,
     synergyPts: 47,
     owned: true,
+    committedTo: null,
   },
   {
     oracleId: "oracle-skullclamp",
@@ -26,6 +27,7 @@ const synergyCards: SynergyCard[] = [
     inclusionPct: 62,
     synergyPts: null,
     owned: false,
+    committedTo: null,
   },
 ];
 

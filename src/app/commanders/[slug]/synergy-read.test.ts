@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const rows = vi.hoisted(() => ({ value: [] as unknown[] }));
+const committed = vi.hoisted(() => ({ value: new Map<string, string>() }));
 
 vi.mock("../../../db", () => ({
   db: {
@@ -16,10 +17,17 @@ vi.mock("../../../db", () => ({
   },
 }));
 
+// Deck membership has its own query and its own tests. Mocked here so this file
+// keeps describing one shape of row rather than two.
+vi.mock("../../../lib/decks/committed", () => ({
+  readCommittedDecks: () => Promise.resolve(committed.value),
+}));
+
 import { readSynergyCards } from "./synergy-read";
 
 beforeEach(() => {
   rows.value = [];
+  committed.value = new Map();
 });
 
 describe("readSynergyCards", () => {
@@ -58,5 +66,15 @@ describe("readSynergyCards", () => {
     ];
     const out = await readSynergyCards("user", "cmdr", []);
     expect(out.map((c) => c.owned)).toEqual([true, false]);
+  });
+
+  it("names the deck a card is already committed to, and null for the rest", async () => {
+    rows.value = [
+      { oracleId: "a", name: "Sol Ring", typeLine: "Artifact", inclusion: null, synergy: 0.2, ownedQuantity: 1 },
+      { oracleId: "b", name: "Free", typeLine: "Artifact", inclusion: null, synergy: 0.1, ownedQuantity: 1 },
+    ];
+    committed.value = new Map([["a", "Atraxa"]]);
+    const out = await readSynergyCards("user", "cmdr", []);
+    expect(out.map((c) => c.committedTo)).toEqual(["Atraxa", null]);
   });
 });
