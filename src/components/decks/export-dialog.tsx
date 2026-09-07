@@ -16,7 +16,7 @@ import { ExportCopyButton } from "./export-copy-button";
 import { GhostButton } from "@/components/ui/button";
 import { ExternalLink } from "../ui/external-link";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
-import { exportLinkOutCopy, overCopy } from "../../lib/copy/decks-builder";
+import { exportLinkOutCopy, exportShoppingCopy, overCopy } from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
 
 type Tab = "decklist" | "shopping";
@@ -26,8 +26,9 @@ interface ExportDialogProps {
   commanderName: string;
   /** Body cards (commander excluded). */
   decklistCards: { name: string; quantity: number }[];
-  /** Unowned cards only. */
-  shoppingCards: { name: string; role?: string; quantity: number }[];
+  /** What the Shopping filter shows: cards you do not own, plus cards you own
+      whose every copy is spoken for by another deck. Never a basic land. */
+  shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
   open: boolean;
   onClose: () => void;
 }
@@ -154,7 +155,7 @@ interface DialogContentProps {
   tab: Tab;
   setTab: (t: Tab) => void;
   activeText: string;
-  shoppingCards: { name: string; role?: string; quantity: number }[];
+  shoppingCards: { name: string; role?: string; quantity: number; owned: boolean }[];
   commanderLine: string;
   bodyLines: string[];
   totalCards: number;
@@ -413,7 +414,9 @@ function DialogContent({
                 margin: 0,
               }}
             >
-              {shoppingCards.reduce((sum, c) => sum + c.quantity, 0)} cards · unowned
+              {exportShoppingCopy.countMeta(
+                shoppingCards.reduce((sum, c) => sum + c.quantity, 0),
+              )}
             </p>
 
             {/* Mobile "names only" note */}
@@ -450,9 +453,17 @@ function DialogContent({
                   >
                     {card.quantity}
                   </span>
-                  {/* Unowned dot (desktop) */}
+                  {/* Ownership dot (desktop). The list is no longer unowned-only
+                      — a spoken-for row is a card you own whose copies are all
+                      claimed elsewhere — so the dot reads the row, as the
+                      decklist's does, and carries the word the dot alone
+                      cannot now imply. */}
                   {!isMobile && (
-                    <OwnershipDot owned={false} className="w-[7px] h-[7px]" />
+                    <OwnershipDot
+                      owned={card.owned}
+                      className="w-[7px] h-[7px]"
+                      label={card.owned ? "Owned" : "Not owned"}
+                    />
                   )}
                   {/* Card name */}
                   <span

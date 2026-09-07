@@ -12,6 +12,7 @@ import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { isBasicLand } from "../../lib/decks/grouping";
+import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
@@ -140,8 +141,7 @@ export function DecklistRow({
   // Shopping: in the All view an over-committed row is not a purchase.
   // Basics are excluded for the filter's own reason, not the meta line's: the
   // fill never buys them, so an owned basic is never a purchase.
-  const spokenFor =
-    inShopping && !isBasicLand(card.typeLine) && card.owned && availState === "over";
+  const spokenFor = inShopping && isSpokenFor(card);
 
   function handleRemove() {
     // Outside `run`: the slot and its announcement are ordinary state, which

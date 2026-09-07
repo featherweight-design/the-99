@@ -35,6 +35,10 @@ type GroupToggleProps = {
   priceSummary?: PriceSummary | null;
   /** Server-built. Null renders no strip at all. */
   provenance?: ProvenanceForm | null;
+  /** The rows the Shopping filter shows — what the strip's buy link buys.
+      Required, not defaulted: an empty list renders the strip with no link at
+      all, so a caller that forgot it would ship a silently link-less strip. */
+  shoppingCards: { name: string; quantity: number }[];
 };
 
 export function GroupToggle({
@@ -51,6 +55,7 @@ export function GroupToggle({
   autoControls,
   priceSummary = null,
   provenance = null,
+  shoppingCards,
 }: GroupToggleProps) {
   return (
     /* Toggle bar container: mobile p=9px 16px | desktop p=14px 26px 10px.
@@ -155,7 +160,7 @@ export function GroupToggle({
           gap under the pills with nothing in it. The strip owns its own top
           margin so the decision and the space it occupies stay together. */}
       {filter === "shopping" && priceSummary && (
-        <PriceStrip summary={priceSummary} provenance={provenance} />
+        <PriceStrip summary={priceSummary} provenance={provenance} shoppingCards={shoppingCards} />
       )}
     </div>
   );

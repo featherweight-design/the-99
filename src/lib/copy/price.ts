@@ -35,11 +35,21 @@ export const priceCopy = {
   strip: {
     // Line 1's second clause. Drops entirely when priced === total — the
     // filter pill and the spine already say that number twice on the same
-    // screen, and a third instance names nothing missing.
+    // screen, and a third instance names nothing missing. It also drops at
+    // priced === 0, where `provenanceUnpriced` below says the same thing in
+    // words rather than as a fraction of nothing.
     pricedClause: (priced: number, total: number) => `${priced} of ${total} priced`,
 
-    // Line 2, joined by the component with ' · '.
+    // Line 2, joined by the component with ' · '. `provenance` and
+    // `provenanceUnpriced` are alternatives for the FIRST clause only —
+    // `lastChecked` and `behind` follow either one unchanged.
     provenance: "prices from ManaPool",
+    // Replaces `provenance` when no row on the list has a price. States the
+    // absence rather than a check we cannot evidence, and keeps the same ink:
+    // the feed has never stocked these, which is our gap and not the player's
+    // error. The buy link below is why this line now has something to say —
+    // we could not price these, the store can.
+    provenanceUnpriced: "no prices from ManaPool for these",
     lastChecked: (when: string) => `last checked ${when}`,
     behind: "these are behind",
   },
