@@ -15,6 +15,7 @@ import { useRef } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import type { DeckUnresolvedRow } from "../../lib/decks/grouping";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
+import { ROW_SHELL } from "../ui/row-shell";
 import { ResolutionExpander } from "./resolution-expander";
 
 const copy = deckImportCopy.unresolved;
@@ -62,7 +63,7 @@ export function UnresolvedRow({
         aria-controls={expanded ? panelId : undefined}
         aria-label={copy.rowAria(row.rawName, row.quantity)}
         onClick={expanded ? collapse : onToggle}
-        className="flex items-center gap-[9px] md:gap-[10px] w-full text-left px-[8px] py-[6px] md:px-[9px] md:py-[7px] rounded-[6px] md:rounded-[7px] min-h-[44px] cursor-pointer bg-[color:var(--surface-rail)] border-l-2 border-[color:var(--warning)] active:bg-[color:var(--surface-raised)] md:hover:bg-[color:var(--surface-raised)]"
+        className={`${ROW_SHELL} w-full text-left px-[8px] py-[6px] md:px-[9px] md:py-[7px] min-h-[44px] cursor-pointer bg-[color:var(--surface-rail)] border-l-2 border-[color:var(--warning)] active:bg-[color:var(--surface-raised)] md:hover:bg-[color:var(--surface-raised)]`}
       >
         <span
           className="flex-none text-center w-[7px] md:w-[8px] text-[11px] md:text-[12px]"

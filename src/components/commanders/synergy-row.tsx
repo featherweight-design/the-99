@@ -14,6 +14,7 @@ import { explainedCopy } from "../../lib/copy/commander-explained";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { AvailabilityDot, availabilityDotState } from "../ui/ownership-dot";
+import { ROW_GAP_PX, ROW_RADIUS_PX } from "../ui/row-shell";
 
 // ── Figure formatters ────────────────────────────────────────────────────────
 
@@ -94,11 +95,10 @@ export function SynergyRow({
       style={{
         display: "flex",
         alignItems: "center",
-        // Phone: 9px gap; desktop: 10px gap (design table)
-        gap: isPhone ? 9 : 10,
+        gap: isPhone ? ROW_GAP_PX.phone : ROW_GAP_PX.desktop,
         padding: "0 6px 0 12px",
         minHeight: isPhone ? 52 : 44,
-        borderRadius: 8,
+        borderRadius: ROW_RADIUS_PX,
         background: selected ? "var(--elevated-hover)" : "var(--surface)",
         border: selected
           ? "1px solid var(--accent-shadow)"

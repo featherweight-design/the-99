@@ -10,6 +10,7 @@ import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
 import { OwnershipDot } from "../ui/ownership-dot";
+import { ROW_SHELL as SHARED_ROW_SHELL } from "../ui/row-shell";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { isSpokenFor } from "../../lib/decks/shopping";
@@ -29,13 +30,11 @@ import { useDeckMutation } from "./use-deck-mutation";
 // box making up the vertical padding, desktop 34px with real padding.
 // Exception: Shopping rows carry a meta line under the name (addendum A2), so
 // the phone shell grows to 52px to accommodate it.
-const ROW_SHELL =
-  "flex items-center gap-[9px] md:gap-[10px] pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]" +
-  " min-h-[44px] md:min-h-[34px] rounded-[6px] md:rounded-[7px]";
+const ROW_PADDING = "pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]";
 
-const ROW_SHELL_SHOPPING =
-  "flex items-center gap-[9px] md:gap-[10px] pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]" +
-  " min-h-[52px] md:min-h-[34px] rounded-[6px] md:rounded-[7px]";
+const ROW_SHELL = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[44px] md:min-h-[34px]`;
+
+const ROW_SHELL_SHOPPING = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] md:min-h-[34px]`;
 
 interface DecklistRowProps {
   deckId: string;
