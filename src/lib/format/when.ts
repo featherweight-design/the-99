@@ -11,9 +11,19 @@ const DAY_MS = 86_400_000;
 // "12 months ago", which the next branch already calls "last year".
 const MONTH_DAYS = 365 / 12;
 
-/** Whole elapsed days, floored, and never negative — see the clock-skew test. */
+/**
+ * Whole CALENDAR days apart, never negative — see the clock-skew test.
+ *
+ * Counted between UTC midnights rather than by flooring elapsed milliseconds:
+ * 23:59 to 00:01 is two minutes but one day, and "today" is the wrong word for
+ * it. UTC and not local time because both ends of this must agree — a local
+ * boundary would put the server and the browser on different days for any
+ * reader west of the line, which is the hydration mismatch `now` exists to
+ * avoid.
+ */
 function daysBetween(then: Date, now: Date): number {
-  return Math.max(0, Math.floor((now.getTime() - then.getTime()) / DAY_MS));
+  const midnight = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return Math.max(0, Math.round((midnight(now) - midnight(then)) / DAY_MS));
 }
 
 function plural(n: number, unit: string): string {

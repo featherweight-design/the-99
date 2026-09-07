@@ -145,7 +145,10 @@ export const refreshCopy = {
   filters: {
     searchPlaceholder: 'Search decks',
     statusHeading: 'Status',
-    colourHeading: 'Colour identity',
+    // "Color identity" is a Magic rules term and keeps Wizards' spelling, as it
+    // already does in create-pre-filled.tsx. Ordinary prose stays British —
+    // theme.ts ships "Colour theme". The key name is the handoff's.
+    colourHeading: 'Color identity',
     lastPlayedHeading: 'Last played',
     lastPlayedThisMonth: 'This month',
     lastPlayedNever: 'Never',

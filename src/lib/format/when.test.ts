@@ -32,6 +32,16 @@ describe("formatWhen", () => {
     expect(formatWhen(daysBefore(900), now)).toBe("2 years ago");
   });
 
+  it("counts calendar days, not elapsed hours, across midnight", () => {
+    // Two minutes apart, but not the same day. "today" is the wrong word.
+    const justAfterMidnight = new Date("2026-09-07T00:01:00Z");
+    expect(formatWhen(new Date("2026-09-06T23:59:00Z"), justAfterMidnight)).toBe("yesterday");
+    // And the converse: 23 hours apart inside one day is still today.
+    expect(formatWhen(new Date("2026-09-07T00:30:00Z"), new Date("2026-09-07T23:30:00Z"))).toBe(
+      "today",
+    );
+  });
+
   it("reads a future timestamp as today rather than as a negative count", () => {
     // Clock skew between the database and the renderer is real and small. It
     // must not print "-1 days ago".
