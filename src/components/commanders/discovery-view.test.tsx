@@ -529,18 +529,23 @@ describe("DiscoveryView", () => {
     expect(screen.getByText(join.announce("exactly", 1, ["G"]))).toBeTruthy();
   });
 
+  // Both notes are asserted through `textContent`: the figures inside them are
+  // emphasised, so the sentence is split across spans and no single text node
+  // holds it.
   it("says what the mode did, under the control, only while it is exact", () => {
     const items = [
       item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
       item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
     ];
-    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />,
+    );
     fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    expect(screen.queryByText(join.exactNote(2, 2, ["G"]))).toBeNull();
+    expect(container.textContent).not.toContain(join.exactNote(2, 2, ["G"]));
 
     fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
-    expect(screen.getByText(join.exactNote(1, 2, ["G"]))).toBeTruthy();
-    expect(screen.getByText(join.exactNoteShort(1, 2, ["G"]))).toBeTruthy();
+    expect(container.textContent).toContain(join.exactNote(1, 2, ["G"]));
+    expect(container.textContent).toContain(join.exactNoteShort(1, 2, ["G"]));
   });
 
   it("returns the window to the top when the mode narrows the list", () => {

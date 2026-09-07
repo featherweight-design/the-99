@@ -21,51 +21,11 @@ import type { DiscoveryItem } from "../../lib/discovery/list";
 import type { PriceSlot } from "../../lib/discovery/price";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { CommanderThumb, CommanderTile } from "./commander-art";
+import { Emphasised, localised } from "./emphasis";
 import { ReceiptLine, type ReceiptClause } from "./receipt-line";
 import { RoleChips } from "./role-chips";
 
 const { justify, ownership, price: priceCopy, untagged } = discoveryCopy;
-
-/** The copy module formats every count it interpolates through
-    `toLocaleString("en-US")`, so a figure has to be searched for in that form to
-    be found inside a rendered sentence. */
-const localised = (v: number) => v.toLocaleString("en-US");
-
-/**
- * Wraps the first occurrence of each value in an emphasised span, in order.
- *
- * The design bolds figures INSIDE finished sentences (`you own 12 of the 40
- * cards…`, `you own 30% of its support list`), and the copy module owns those
- * sentences whole. Composing them from fragments here would put half of each
- * string in a component file, which is exactly what the copy module exists to
- * prevent — so the sentence is rendered as written and the figures are found
- * within it.
- */
-function Emphasised({
-  text,
-  values,
-  color,
-}: {
-  text: string;
-  values: string[];
-  color: string;
-}) {
-  const nodes: React.ReactNode[] = [];
-  let rest = text;
-  values.forEach((value, i) => {
-    const at = rest.indexOf(value);
-    if (at === -1) return;
-    nodes.push(rest.slice(0, at));
-    nodes.push(
-      <strong key={i} style={{ color, fontWeight: 600 }}>
-        {value}
-      </strong>,
-    );
-    rest = rest.slice(at + value.length);
-  });
-  nodes.push(rest);
-  return <>{nodes}</>;
-}
 
 /** The ownership pip. Decorative in both places it is drawn — the clause on the
     receipt line says the same fact in words, and the row's accessible name

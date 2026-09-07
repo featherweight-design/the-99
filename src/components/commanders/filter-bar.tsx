@@ -15,6 +15,7 @@ import { planeCopy } from "../../lib/copy/commanders-plane";
 import { PENDING_OPACITY } from "./pending";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import type { JoinMode } from "../../lib/commanders/filter";
+import { Emphasised, localised } from "./emphasis";
 import { WindowCount } from "./reveal-control";
 
 type AvailMode = "all" | "free";
@@ -177,7 +178,10 @@ function JoinModeControl({
       aria-labelledby={labelledBy}
       className={size === "mobile" ? "flex gap-[3px] rounded-lg p-[3px]" : "flex gap-[2px] p-[2px]"}
       style={{
-        background: "var(--surface-sunken)",
+        // Desktop sits inside the pip wrapper, so it drops a step to `--bg` to
+        // read as nested rather than as a second wrapper laid on the first. The
+        // phone's row is a peer of `Score against` and takes that one's surface.
+        background: size === "mobile" ? "var(--surface-sunken)" : "var(--bg)",
         border: "1px solid var(--border-strong)",
         borderRadius: size === "mobile" ? undefined : 6,
       }}
@@ -213,7 +217,9 @@ function JoinModeControl({
               active
                 ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)]"
                 : `font-medium bg-transparent ${
-                    size === "mobile" ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"
+                    size === "mobile"
+                      ? "text-[color:var(--fg-body)]"
+                      : "text-[color:var(--fg-locked)]"
                   }`,
             ].join(" ")}
             style={{
@@ -483,7 +489,11 @@ export function FilterBar({
             className="font-mono m-0 mt-[8px]"
             style={{ fontSize: 11, color: "var(--fg-faint)" }}
           >
-            {planeCopy.join.exactNote(filteredTotal, activeTotal, colors)}
+            <Emphasised
+              text={planeCopy.join.exactNote(filteredTotal, activeTotal, colors)}
+              values={[localised(filteredTotal), localised(activeTotal)]}
+              color="var(--fg-body)"
+            />
           </p>
         )}
       </div>
@@ -567,7 +577,11 @@ export function FilterBar({
                 className="font-mono m-0 mt-[7px]"
                 style={{ fontSize: 10.5, color: "var(--fg-faint)", lineHeight: 1.5 }}
               >
-                {planeCopy.join.exactNoteShort(filteredTotal, activeTotal, colors)}
+                <Emphasised
+                  text={planeCopy.join.exactNoteShort(filteredTotal, activeTotal, colors)}
+                  values={[localised(filteredTotal), localised(activeTotal)]}
+                  color="var(--fg-body)"
+                />
               </p>
             )}
           </div>
