@@ -48,7 +48,7 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 | 📐 | Brief locked, awaiting Claude Design handoff production (mocks, components) |
 | 🎨 | Design in flight (workshop / handoff iteration / audit) |
 | 🔨 | Implementation in flight — design is done and the build has started, but not every planned PR has merged |
-| 🚦 | Paused (mid-workshop; awaiting Hugh input or external dependency) |
+| 🚦 | Paused at any stage — awaiting Hugh input, an external dependency, or a deliberate decision not to build yet. **Widened 2026-09-07**: this read "paused mid-workshop", which had no room for an item whose design and plan are both merged and whose build is deliberately deferred. #10 is the first of those, and stretching 🟢 to hold it would have made "ready for implementation" mean two things — one of which is "do not pick this up" |
 | 🕰️ | Backlog — labelled `type: design`, design cycle not started (no workshop, no brief). Ranked; the top of this list is what Design picks up next |
 | ✅ | Fully implemented + shipped |
 
@@ -60,14 +60,16 @@ The READINESS exemption is narrow: it covers only a handoff that ships no surfac
 
 | # / vertical | Handoff | Verdict | Notes |
 |---|---|---|---|
-| **#10** Deck tuning suggestions from play results | `design/design_handoff_the99_deck_tuning/` (R2) | 🟢 Green at R2, 2026-09-07 | Design self-assessed 🟡 Yellow over one open item — §6's failure-class labels, inferred because the spec was still on PR #392 when they drew. The audit answers it: **the count is five, not four.** `interrupted` was added in review, is written by the read-time reaper, and is user-visible, so it needs a fifth object in `deckTuningCopy.failure` following the shape of the other four — a string change, which Design pre-authorised. Every other finding is eng-resolvable, so nothing returned to Design. The three that matter for the plan: **the price atom exists** (`formatCents` at `src/lib/decks/price.ts:109-114` produces exactly the `$1.20` Design drew, closing their gap 2 with no redraw, and prices come from our own `printing_prices` table rather than a live call, so the manifest's four rows stand); **`Stop` is new and has no spec home**, so a cancelled run must be written under the same `where status = 'pending'` guard the reaper uses or the deck stays blocked, and must not consume the fingerprint gate; and **#9's shipped denominator strings are narrower than either document claims** and must not be "fixed" to match. Take Design's singular `deck_games.note` over the spec's plural, because `decks.notes` already exists. R2 adds one ask to model output — a short rationale alongside the full one, both obeying the counting rules. Gap report: `docs/superpowers/gap-report-deck-tuning.md`; property table: `docs/superpowers/design-tables/deck-tuning.md` |
 
-**#10 is the only thing ready for eng**, and it is the repo's first LLM tier. **#340** was the last
-occupant before it and left on 2026-09-06 when its build started; it shipped on 2026-09-07 and sits
-in ✅ Shipped. The four amendments (**#286**, **#280**, **#287**, **#277**) shipped between
-2026-09-05 and 2026-09-06, in the drawn build order, and sit in ✅ Shipped. **#220** left on
-2026-09-06 when its eleventh and last planned PR merged, **#9** later the same day on PR #332, and
-**#330** the same day on PR #377.
+_Currently empty._
+
+**#10 left on 2026-09-07** — not to a build, but to 🚦 Paused below. Its design is Green, its plan
+is merged, and Hugh's call is that now is not the time to build it; nothing about the work changed.
+It was the only occupant. **#340** was the last one before it and left on 2026-09-06 when its build
+started; it shipped on 2026-09-07 and sits in ✅ Shipped. The four amendments (**#286**, **#280**,
+**#287**, **#277**) shipped between 2026-09-05 and 2026-09-06, in the drawn build order, and sit in
+✅ Shipped. **#220** left on 2026-09-06 when its eleventh and last planned PR merged, **#9** later
+the same day on PR #332, and **#330** the same day on PR #377.
 
 ---
 
@@ -113,8 +115,9 @@ Both questions were left unfiled at the batch's close-out and ticketed later the
 brief itself is still ticketless.
 
 **#10 left on 2026-09-07**, the same day it arrived — its brief merged on PR #392, Design delivered
-all five surfaces at R2 within the day, and the handoff audited 🟢 Green, so it now sits in 🟢
-above. **#340** and **#342** left on 2026-09-06 when Design delivered their handoffs. **#342** audited
+all five surfaces at R2 within the day, and the handoff audited 🟢 Green. Its plan merged the same
+day on PR #406, and it now sits in 🚦 Paused below rather than in 🟢 — the build is deferred on
+timing, not on anything outstanding. **#340** and **#342** left on 2026-09-06 when Design delivered their handoffs. **#342** audited
 🟡 Yellow at R3 on 2026-09-07, built the same day and now sits in ✅ Shipped. **#340**'s R6 handoff
 audited 🟡 Yellow and it now sits in 🟢 above with its plan.
 
@@ -178,16 +181,25 @@ gap, and it is worth closing rather than resolving case by case.
 
 ---
 
-## 🚦 Paused (mid-workshop)
+## 🚦 Paused
 
-_Currently empty._
+| # / vertical | Where it got to | Paused | Notes |
+|---|---|---|---|
+| **#10** Deck tuning suggestions from play results | Spec, handoff and implementation plan all merged; no build PR opened | 2026-09-07, Hugh's call — "not the time to build this one, but we'll circle back" | Nothing is blocking it and nothing about it is unresolved: the brief merged on PR #392, Design delivered all five surfaces at R2 the same day, the handoff audited **🟢 Green at R2**, and the 18-task plan merged on PR #406 after four Copilot rounds. It is paused on timing alone, and it is the repo's first LLM tier, which is the reason to be deliberate about when it starts. **Everything needed to resume is on `main`**: spec `docs/superpowers/specs/2026-09-07-deck-tuning-suggestions-design.md`, plan `docs/superpowers/plans/2026-09-07-deck-tuning-suggestions.md`, gap report `docs/superpowers/gap-report-deck-tuning.md`, property table `docs/superpowers/design-tables/deck-tuning.md`, handoff `design/design_handoff_the99_deck_tuning/`. The plan's own shape when picked up again: tasks 1–2 are schema and copy, 3–5 add the two new inputs (a per-game note and a deck intent), 6–9 are the pure core (fingerprint, evidence pack, prompt, six validation rules), 10–12 hold the real risk (the model client, the durability contract, and the read/gate/ceiling), 13–16 are the surfaces, and 17–18 close out. **The three rulings most expensive to re-derive** are recorded in the plan and should not be re-litigated: a `pending` run row is committed in its own transaction before the model call and both outcome writes are guarded by `where status = 'pending'`, so zero rows affected means "I was reaped" and the result is discarded; the failure vocabulary is **five** classes, not four, because `interrupted` is written by the read-time reaper and is user-visible; and #9's presentation rules carry over whole — no percentage and no net figure ever reaches the screen, every count carries its own denominator, and `PATTERN_MIN = 3` stays a presentation threshold rather than a data gate. **#389** in 🕰️ below was filed out of this scoping and stays out of scope |
+
+**The legend's 🚦 definition was widened on 2026-09-07 to admit this row.** It previously read
+"paused mid-workshop", which described only an item Design had not finished with. #10 is the
+opposite case — everything upstream of the build is done — and the alternative was to leave it in
+🟢, where the tracker's own headline question ("what is ready for eng to pick right now?") would
+have answered with a ticket nobody should pick up. Widening the state is the honest fix; a second
+paused-at-a-different-stage state would split one idea across two rows.
 
 ---
 
 ## 🕰️ Backlog (design cycle not started)
 
 One ranked queue. **#130 + #131 left this queue on 2026-09-01** — promoted to rank 1 on 2026-08-29 when the recommendation-engine intake established #130 as a *precondition* for #213 and #214 rather than a peer (both terminate in "start a deck", and an empty deck lands them in exactly the disappointment #130 describes), workshopped the same week, and shipped on 2026-09-02 (PRs #249, #263) — it now sits in ✅ Shipped. #132 closed as already-shipped. Ranks 1–4 are v1 follow-ups against already-shipped surfaces; ranks 5–9 are post-v1 features ordered by the roadmap tracker (#44). **#220, #221 and #222 were written into the ranked rows on 2026-09-02.** The 2026-08-30 intake call below placed them "at the bottom" and assigned ranks 12–14, but the rows themselves were never added, so those numbers were left describing an older, longer list and collided with #151's. **#220 then left this queue on 2026-09-05** — workshopped, handed off and audited 🟢 Green that
-same day, and shipped on 2026-09-06 — and #221 and #222 moved up behind it. **#9 left the same way**, workshopped ahead of the queue and shipped on 2026-09-06 (PR #332); both now sit in ✅ Shipped. **#360 joined on 2026-09-06** as rank 9, and moved to rank 4 the next day when the ratification band left. **The five ratifications left this queue on 2026-09-07** — #140, #148, #182, #242 and the unfiled availability-marker placement went to Design as one prompt and now sit in 🎨. They were the whole of the old ranks 1–5, so everything behind them moved up five. **#10 then left on 2026-09-07** — workshopped ahead of the queue, and its brief now sits in 📐 above awaiting a Design handoff — and **#389 joined the same day** at the bottom, filed out of #10's scoping. The rows below carry the live ranks; prose and the intake table do not. Five former ranks left this queue on 2026-08-08 — #183, #177, #179, #185 and #184 were answered together by the Add panel addendum, which completed on 2026-08-09 and now sits in ✅ Shipped with #176. The per-surface brand + richness refresh tickets and #35 shipped ahead of everything here.
+same day, and shipped on 2026-09-06 — and #221 and #222 moved up behind it. **#9 left the same way**, workshopped ahead of the queue and shipped on 2026-09-06 (PR #332); both now sit in ✅ Shipped. **#360 joined on 2026-09-06** as rank 9, and moved to rank 4 the next day when the ratification band left. **The five ratifications left this queue on 2026-09-07** — #140, #148, #182, #242 and the unfiled availability-marker placement went to Design as one prompt and now sit in 🎨. They were the whole of the old ranks 1–5, so everything behind them moved up five. **#10 then left on 2026-09-07** — workshopped ahead of the queue; its handoff and plan both landed the same day and it now sits in 🚦 Paused above — and **#389 joined the same day** at the bottom, filed out of #10's scoping. The rows below carry the live ranks; prose and the intake table do not. Five former ranks left this queue on 2026-08-08 — #183, #177, #179, #185 and #184 were answered together by the Add panel addendum, which completed on 2026-08-09 and now sits in ✅ Shipped with #176. The per-surface brand + richness refresh tickets and #35 shipped ahead of everything here.
 
 **Audited 2026-09-05** — ledger at `docs/superpowers/backlog/audit-2026-09-05.md`, which carries the
 evidence behind every verdict and makes the next audit incremental. All 15 rows audited that day
