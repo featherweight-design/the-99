@@ -12,6 +12,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import type { DeckUpdatePreview } from "../../app/decks/update-actions";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { CardDetailProvider } from "../cards/card-detail-provider";
 import { DiffRowIn, DiffRowOut, DiffRowUnchanged, DiffRowUnnamed } from "./update-diff-row";
 
 const copy = deckImportCopy.update.diff;
@@ -172,167 +173,171 @@ export function UpdateDiff({
   const clamped = preview.notes.filter((n) => n.kind === "quantityClamped").length;
 
   return (
-    <div className="p-[16px_18px_24px] md:max-w-[860px] md:p-[44px_48px]">
-      <h2 className="font-display font-bold text-[20px] md:text-[28px] m-0 text-[color:var(--fg)]">
-        {copy.heading}
-      </h2>
-      <p className="mt-[4px] text-[12px] md:text-[13.5px] leading-[1.5] text-[color:var(--fg-muted)]">
-        <span className="md:hidden font-mono text-[10.5px]">
-          {copy.provenanceMobile(String(preview.lineCount), String(preview.built))}
-        </span>
-        <span className="hidden md:inline">
-          {copy.provenance(String(preview.lineCount), preview.deckName, String(preview.built))}
-        </span>
-      </p>
-
-      {/* The one non-fatal note the flow surfaces. Everything else the parser
-          drops — sideboard, maybeboard, a commander duplicated into the 99 — is
-          dropped in silence, the rule the import already holds to. */}
-      {clamped > 0 && (
-        <p className="mt-[8px] mb-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
-          {deckImportCopy.notes.quantityClamped(clamped)}
+    // The rows open the card modal, and the builder's provider does not reach
+    // this route — the update flow is its own page.
+    <CardDetailProvider>
+      <div className="p-[16px_18px_24px] md:max-w-[860px] md:p-[44px_48px]">
+        <h2 className="font-display font-bold text-[20px] md:text-[28px] m-0 text-[color:var(--fg)]">
+          {copy.heading}
+        </h2>
+        <p className="mt-[4px] text-[12px] md:text-[13.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+          <span className="md:hidden font-mono text-[10.5px]">
+            {copy.provenanceMobile(String(preview.lineCount), String(preview.built))}
+          </span>
+          <span className="hidden md:inline">
+            {copy.provenance(String(preview.lineCount), preview.deckName, String(preview.built))}
+          </span>
         </p>
-      )}
 
-      <div className="mt-[16px] md:mt-[20px] flex flex-wrap items-baseline gap-x-[18px] gap-y-[8px] md:gap-x-[26px] pb-[16px] [border-bottom:1px_solid_var(--border)]">
-        <Chip figure={preview.out.length} label={copy.chipOut} />
-        <Chip figure={preview.in.length} label={copy.chipIn} />
-        <Chip
-          figure={preview.unresolved.length}
-          label={copy.chipUnnamed}
-          labelMobile={copy.chipUnnamedMobile}
-        />
-        <Chip
-          figure={preview.unchanged.length}
-          label={copy.chipUnchanged}
-          labelMobile={copy.chipUnchangedMobile}
-        />
-        <span className="font-mono text-[11px] md:text-[12px] ml-auto text-[color:var(--fg-muted)]">
-          {copy.landing(String(preview.built), String(landing))}
-        </span>
-      </div>
+        {/* The one non-fatal note the flow surfaces. Everything else the parser
+            drops — sideboard, maybeboard, a commander duplicated into the 99 — is
+            dropped in silence, the rule the import already holds to. */}
+        {clamped > 0 && (
+          <p className="mt-[8px] mb-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
+            {deckImportCopy.notes.quantityClamped(clamped)}
+          </p>
+        )}
 
-      {preview.out.length > 0 && (
-        <Group
-          heading={copy.outHeading(String(preview.out.length))}
-          body={copy.outBody}
-          bodyMobile={copy.outBody}
-          action={
-            <GhostButton
-              onClick={() => setKept(new Set(preview.out.map((r) => r.oracleId)))}
-              className="flex-none font-mono text-[11.5px] px-[12px] h-[38px] md:h-[32px]"
-            >
-              {copy.keepAll(String(preview.out.length))}
-            </GhostButton>
-          }
-          total={preview.out.length}
-        >
-          {(shown) =>
-            preview.out.slice(0, shown).map((row) => (
-              <DiffRowOut
-                key={row.oracleId}
-                card={row}
-                kept={kept.has(row.oracleId)}
-                onToggle={() =>
-                  setKept((prev) => {
-                    const next = new Set(prev);
-                    if (!next.delete(row.oracleId)) next.add(row.oracleId);
-                    return next;
-                  })
-                }
-              />
-            ))
-          }
-        </Group>
-      )}
+        <div className="mt-[16px] md:mt-[20px] flex flex-wrap items-baseline gap-x-[18px] gap-y-[8px] md:gap-x-[26px] pb-[16px] [border-bottom:1px_solid_var(--border)]">
+          <Chip figure={preview.out.length} label={copy.chipOut} />
+          <Chip figure={preview.in.length} label={copy.chipIn} />
+          <Chip
+            figure={preview.unresolved.length}
+            label={copy.chipUnnamed}
+            labelMobile={copy.chipUnnamedMobile}
+          />
+          <Chip
+            figure={preview.unchanged.length}
+            label={copy.chipUnchanged}
+            labelMobile={copy.chipUnchangedMobile}
+          />
+          <span className="font-mono text-[11px] md:text-[12px] ml-auto text-[color:var(--fg-muted)]">
+            {copy.landing(String(preview.built), String(landing))}
+          </span>
+        </div>
 
-      {/* State 15: the group unmounts at zero rather than drawing an empty block. */}
-      {preview.in.length > 0 && (
-        <Group
-          heading={copy.inHeading(String(preview.in.length))}
-          body={copy.inMeta(
-            String(preview.in.filter((r) => r.owned).length),
-            String(preview.in.filter((r) => !r.owned).length),
-          )}
-          total={preview.in.length}
-        >
-          {(shown) =>
-            preview.in
-              .slice(0, shown)
-              .map((row) => <DiffRowIn key={row.oracleId} card={row} sourceLine={row.sourceLine} />)
-          }
-        </Group>
-      )}
-
-      {preview.unresolved.length > 0 && (
-        <Group
-          heading={copy.unnamedHeading(String(preview.unresolved.length))}
-          body={copy.unnamedBody(String(preview.existingUnresolvedCount))}
-          total={preview.unresolved.length}
-        >
-          {(shown) =>
-            preview.unresolved
-              .slice(0, shown)
-              .map((row) => (
-                <DiffRowUnnamed
-                  key={`${row.sourceLine}-${row.rawName}`}
-                  rawName={row.rawName}
-                  sourceLine={row.sourceLine}
+        {preview.out.length > 0 && (
+          <Group
+            heading={copy.outHeading(String(preview.out.length))}
+            body={copy.outBody}
+            bodyMobile={copy.outBody}
+            action={
+              <GhostButton
+                onClick={() => setKept(new Set(preview.out.map((r) => r.oracleId)))}
+                className="flex-none font-mono text-[11.5px] px-[12px] h-[38px] md:h-[32px]"
+              >
+                {copy.keepAll(String(preview.out.length))}
+              </GhostButton>
+            }
+            total={preview.out.length}
+          >
+            {(shown) =>
+              preview.out.slice(0, shown).map((row) => (
+                <DiffRowOut
+                  key={row.oracleId}
+                  card={row}
+                  kept={kept.has(row.oracleId)}
+                  onToggle={() =>
+                    setKept((prev) => {
+                      const next = new Set(prev);
+                      if (!next.delete(row.oracleId)) next.add(row.oracleId);
+                      return next;
+                    })
+                  }
                 />
               ))
-          }
-        </Group>
-      )}
+            }
+          </Group>
+        )}
 
-      {preview.unchanged.length > 0 && (
-        <UnchangedGroup rows={preview.unchanged} />
-      )}
-
-      {wholesale && (
-        <div className="mt-[22px] rounded-[10px] p-[14px_16px] bg-[color:var(--elevated-hover)] [border:1px_solid_var(--border-strong)] [border-left:3px_solid_var(--warning)]">
-          <p className="m-0 text-[13px] md:text-[14px] leading-[1.6] text-[color:var(--fg-body)]">
-            {/* Copies, not the rows the CTA counts. This is the one sentence on
-                the screen about magnitude rather than about the groups, and it
-                says "cards" — feeding it rows would have it disagree with the
-                threshold that raised it, which is a share of `built`. */}
-            {copy.wholesaleNote(String(arriving), String(outCopies))}
-          </p>
-          <GhostButton
-            onClick={onImportAsNew}
-            className="w-full md:w-auto mt-[12px] text-[14px] md:text-[13px] py-[12px] md:py-[10px] md:px-[20px] min-h-[44px]"
+        {/* State 15: the group unmounts at zero rather than drawing an empty block. */}
+        {preview.in.length > 0 && (
+          <Group
+            heading={copy.inHeading(String(preview.in.length))}
+            body={copy.inMeta(
+              String(preview.in.filter((r) => r.owned).length),
+              String(preview.in.filter((r) => !r.owned).length),
+            )}
+            total={preview.in.length}
           >
-            {copy.importAsNew}
+            {(shown) =>
+              preview.in
+                .slice(0, shown)
+                .map((row) => <DiffRowIn key={row.oracleId} card={row} sourceLine={row.sourceLine} />)
+            }
+          </Group>
+        )}
+
+        {preview.unresolved.length > 0 && (
+          <Group
+            heading={copy.unnamedHeading(String(preview.unresolved.length))}
+            body={copy.unnamedBody(String(preview.existingUnresolvedCount))}
+            total={preview.unresolved.length}
+          >
+            {(shown) =>
+              preview.unresolved
+                .slice(0, shown)
+                .map((row) => (
+                  <DiffRowUnnamed
+                    key={`${row.sourceLine}-${row.rawName}`}
+                    rawName={row.rawName}
+                    sourceLine={row.sourceLine}
+                  />
+                ))
+            }
+          </Group>
+        )}
+
+        {preview.unchanged.length > 0 && (
+          <UnchangedGroup rows={preview.unchanged} />
+        )}
+
+        {wholesale && (
+          <div className="mt-[22px] rounded-[10px] p-[14px_16px] bg-[color:var(--elevated-hover)] [border:1px_solid_var(--border-strong)] [border-left:3px_solid_var(--warning)]">
+            <p className="m-0 text-[13px] md:text-[14px] leading-[1.6] text-[color:var(--fg-body)]">
+              {/* Copies, not the rows the CTA counts. This is the one sentence on
+                  the screen about magnitude rather than about the groups, and it
+                  says "cards" — feeding it rows would have it disagree with the
+                  threshold that raised it, which is a share of `built`. */}
+              {copy.wholesaleNote(String(arriving), String(outCopies))}
+            </p>
+            <GhostButton
+              onClick={onImportAsNew}
+              className="w-full md:w-auto mt-[12px] text-[14px] md:text-[13px] py-[12px] md:py-[10px] md:px-[20px] min-h-[44px]"
+            >
+              {copy.importAsNew}
+            </GhostButton>
+          </div>
+        )}
+
+        <div className="mt-[26px] pt-[18px] flex flex-col md:flex-row md:items-center gap-[10px] md:gap-[14px] [border-top:1px_solid_var(--border)]">
+          <PrimaryButton
+            onClick={apply}
+            // Never disabled while applying: the button holds focus, and disabling
+            // it blurs the control the player is standing on.
+            aria-busy={applying}
+            aria-label={copy.applyAria(inN, outN, preview.deckName)}
+            className="w-full md:w-auto text-[15px] md:text-[14px] py-[13px] md:py-0 md:px-[24px] md:h-[44px] min-h-[44px] md:whitespace-nowrap"
+          >
+            <span className="md:hidden">{copy.applyMobile(inN, outN)}</span>
+            <span className="hidden md:inline">{copy.apply(inN, outN)}</span>
+          </PrimaryButton>
+          <span className="font-mono text-[11.5px] md:text-[12px] text-[color:var(--fg-muted)]">
+            {copy.summary(String(kept.size), String(landing))}
+          </span>
+          <GhostButton
+            onClick={onCancel}
+            className="w-full md:w-auto md:ml-auto text-[14px] md:text-[13px] py-[12px] md:py-[10px] md:px-[20px] min-h-[44px]"
+          >
+            {copy.cancel}
           </GhostButton>
         </div>
-      )}
 
-      <div className="mt-[26px] pt-[18px] flex flex-col md:flex-row md:items-center gap-[10px] md:gap-[14px] [border-top:1px_solid_var(--border)]">
-        <PrimaryButton
-          onClick={apply}
-          // Never disabled while applying: the button holds focus, and disabling
-          // it blurs the control the player is standing on.
-          aria-busy={applying}
-          aria-label={copy.applyAria(inN, outN, preview.deckName)}
-          className="w-full md:w-auto text-[15px] md:text-[14px] py-[13px] md:py-0 md:px-[24px] md:h-[44px] min-h-[44px] md:whitespace-nowrap"
-        >
-          <span className="md:hidden">{copy.applyMobile(inN, outN)}</span>
-          <span className="hidden md:inline">{copy.apply(inN, outN)}</span>
-        </PrimaryButton>
-        <span className="font-mono text-[11.5px] md:text-[12px] text-[color:var(--fg-muted)]">
-          {copy.summary(String(kept.size), String(landing))}
-        </span>
-        <GhostButton
-          onClick={onCancel}
-          className="w-full md:w-auto md:ml-auto text-[14px] md:text-[13px] py-[12px] md:py-[10px] md:px-[20px] min-h-[44px]"
-        >
-          {copy.cancel}
-        </GhostButton>
+        <div role="status" aria-live="polite" className="sr-only">
+          {live}
+        </div>
       </div>
-
-      <div role="status" aria-live="polite" className="sr-only">
-        {live}
-      </div>
-    </div>
+    </CardDetailProvider>
   );
 }
 

@@ -10,6 +10,7 @@
 // it, the same principle as the add panel's spent slot.
 
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 
 const copy = deckImportCopy.update.diff;
 
@@ -59,6 +60,33 @@ function Marker({ auto }: { auto: boolean }) {
   );
 }
 
+/** The row's name, and the flow's one way into the card itself. A player
+ *  deciding whether to keep a removal is exactly the person who needs to reread
+ *  what the card does, and every other deck surface already opens the modal from
+ *  the name. The plate is not a control, so the trigger nests cleanly; the Keep
+ *  button beside it stays the row's own action. */
+function DiffRowName({
+  oracleId,
+  name,
+  tone,
+}: {
+  oracleId: string;
+  name: string;
+  tone: string;
+}) {
+  return (
+    <CardDetailTrigger
+      oracleId={oracleId}
+      name={name}
+      title={name}
+      className="flex-auto min-w-0 truncate text-left text-[13.5px]"
+      style={{ color: tone }}
+    >
+      {name}
+    </CardDetailTrigger>
+  );
+}
+
 /** A row of `Coming out`. The only row in the flow with a decision on it. */
 export function DiffRowOut({
   card,
@@ -79,7 +107,7 @@ export function DiffRowOut({
       ].join(" ")}
     >
       <OwnedDot owned={card.owned} />
-      <span className="flex-auto min-w-0 text-[13.5px] text-[color:var(--fg)]">{card.name}</span>
+      <DiffRowName oracleId={card.oracleId} name={card.name} tone="var(--fg)" />
       <Marker auto={card.auto} />
       {/* Desktop only: the phone row has no width for it, and the name plus the
           hand-added marker are what the decision turns on. */}
@@ -109,11 +137,17 @@ export function DiffRowOut({
 /** A row of `Going in`. A list, not a decision: there is deliberately no
  *  per-row toggle, because refusing individual additions turns update into a
  *  curated merge, which is the quick-add bar's job. */
-export function DiffRowIn({ card, sourceLine }: { card: DiffRowCard; sourceLine: number | null }) {
+export function DiffRowIn({
+  card,
+  sourceLine,
+}: {
+  card: DiffRowCard;
+  sourceLine: number | null;
+}) {
   return (
     <div className="flex items-center gap-[10px] min-h-[44px] rounded-[8px] px-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border)]">
       <OwnedDot owned={card.owned} />
-      <span className="flex-auto min-w-0 text-[13.5px] text-[color:var(--fg)]">{card.name}</span>
+      <DiffRowName oracleId={card.oracleId} name={card.name} tone="var(--fg)" />
       <span className="hidden md:block font-mono text-[10px] w-[150px] flex-none truncate text-[color:var(--fg-locked)]">
         {card.typeLine}
       </span>
@@ -145,7 +179,13 @@ export function DiffRowIn({ card, sourceLine }: { card: DiffRowCard; sourceLine:
 
 /** A row of `We cannot name these`. The shipped unresolved plate, reused whole
  *  — an unmatched line is a resolvable row on the deck, not a failure. */
-export function DiffRowUnnamed({ rawName, sourceLine }: { rawName: string; sourceLine: number }) {
+export function DiffRowUnnamed({
+  rawName,
+  sourceLine,
+}: {
+  rawName: string;
+  sourceLine: number;
+}) {
   return (
     <div className="flex items-center gap-[10px] min-h-[44px] rounded-[8px] px-[12px] bg-[color:var(--surface-rail)] [border:1px_dashed_var(--accent-shadow)]">
       <span className="flex-auto min-w-0 font-mono text-[13px] truncate text-[color:var(--fg-body)]">
@@ -160,12 +200,18 @@ export function DiffRowUnnamed({ rawName, sourceLine }: { rawName: string; sourc
 
 /** A row of the collapsed `unchanged` group. No control and no marker: it is
  *  there to be counted, and expanding it is already the player asking. */
-export function DiffRowUnchanged({ card }: { card: { name: string; typeLine: string } }) {
+export function DiffRowUnchanged({
+  card,
+}: {
+  card: { oracleId: string; name: string; typeLine: string };
+}) {
   return (
     <div className="flex items-center gap-[10px] min-h-[44px] rounded-[8px] px-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border)]">
-      <span className="flex-auto min-w-0 text-[13.5px] text-[color:var(--fg-body)]">
-        {card.name}
-      </span>
+      <DiffRowName
+        oracleId={card.oracleId}
+        name={card.name}
+        tone="var(--fg-body)"
+      />
       <span className="hidden md:block font-mono text-[10px] w-[150px] flex-none truncate text-[color:var(--fg-locked)]">
         {card.typeLine}
       </span>

@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from "vitest";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import type { DeckUpdatePreview } from "../../app/decks/update-actions";
 import { UpdateDiff } from "./update-diff";
+import { cardDetailCopy } from "../cards/card-detail-provider";
 
 const copy = deckImportCopy.update.diff;
 
@@ -224,6 +225,28 @@ describe("UpdateDiff groups", () => {
     );
     expect(marker).toBeDefined();
     expect(marker!.className).toContain("invisible");
+  });
+});
+
+describe("UpdateDiff card detail", () => {
+  // Every other deck surface opens the modal from the card's name; the update
+  // flow is its own route, so it mounts its own provider or the rows are dead
+  // text on the one screen where the player most needs to reread a card.
+  it("opens each named row's card from its name", () => {
+    renderDiff({ unchanged: [row("same-1")] });
+    fireEvent.click(screen.getByRole("button", { name: copy.unchangedDisclosure("1") }));
+    for (const id of ["out-1", "in-1", "same-1"]) {
+      expect(
+        screen.getByRole("button", { name: cardDetailCopy.triggerAria(`Card ${id}`) }),
+      ).toBeInTheDocument();
+    }
+  });
+
+  // An unmatched line has no oracle id to open — that is what makes it
+  // unmatched — so it stays plain text rather than a trigger that cannot fire.
+  it("leaves an unnamed line as text", () => {
+    renderDiff({ unresolved: [{ rawName: "Sol Rng", sourceLine: 12, quantity: 1 }] });
+    expect(screen.getByText("Sol Rng").tagName).not.toBe("BUTTON");
   });
 });
 
