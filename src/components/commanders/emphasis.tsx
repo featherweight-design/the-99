@@ -23,10 +23,14 @@ export function Emphasised({
   text,
   values,
   color,
+  weight = 600,
 }: {
   text: string;
   values: string[];
   color: string;
+  /** 400 where the drawing marks a figure by colour alone, as the exclusion line
+      does; the default bolds, which is what every other marked sentence does. */
+  weight?: number;
 }) {
   const nodes: ReactNode[] = [];
   let rest = text;
@@ -35,7 +39,7 @@ export function Emphasised({
     if (at === -1) return;
     nodes.push(rest.slice(0, at));
     nodes.push(
-      <strong key={i} style={{ color, fontWeight: 600 }}>
+      <strong key={i} style={{ color, fontWeight: weight }}>
         {value}
       </strong>,
     );

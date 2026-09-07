@@ -38,7 +38,12 @@ describe("resolveExclusionLine", () => {
     expect(out?.text).toBe(
       copy.join2(copy.colors(12, ["G", "B"]), copy.floorWithUnmeasured(1047, 212, FLOOR_PCT)),
     );
-    expect(out?.figures).toEqual([12, 1047, 212]);
+    // Sentence order, not tier order, and already formatted: the marks are found
+    // by walking the finished sentence, so a figure out of order is one the walk
+    // has passed. The threshold carries its percent sign, which is what the
+    // drawing marks and what stops a bare `30` matching some other figure.
+    expect(out?.figures).toEqual(["12", "1,047", `${FLOOR_PCT}%`, "212"]);
+    for (const figure of out?.figures ?? []) expect(out?.text).toContain(figure);
   });
 
   it("names the mode rather than the pips when the mode is exact", () => {
@@ -64,9 +69,9 @@ describe("resolveExclusionLine", () => {
     expect(resolve({ floorExcluded: 3089, unmeasured: 212, bestPct: 22 })?.text).toBe(
       copy.floorAloneWithUnmeasured(3089, 212, FLOOR_PCT, 22),
     );
-    expect(resolve({ floorExcluded: 3089, bestPct: 22 })?.text).toBe(
-      copy.floorAlone(3089, FLOOR_PCT, 22),
-    );
+    const alone = resolve({ floorExcluded: 3089, bestPct: 22 });
+    expect(alone?.text).toBe(copy.floorAlone(3089, FLOOR_PCT, 22));
+    expect(alone?.figures).toEqual(["3,089", `${FLOOR_PCT}%`, "22%"]);
     const withColour = resolve({
       colorExcluded: 12,
       colors: ["G"],
@@ -87,7 +92,7 @@ describe("resolveExclusionLine", () => {
   it("carries the unmeasurable alone when the floor took nobody", () => {
     const out = resolve({ unmeasured: 212 });
     expect(out?.text).toBe(copy.unmeasuredAlone(212));
-    expect(out?.figures).toEqual([212]);
+    expect(out?.figures).toEqual(["212"]);
   });
 
   // The pips are lit but every match survived them: the line is about what was

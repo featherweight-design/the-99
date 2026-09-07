@@ -130,7 +130,10 @@ function TagSentence({
           </span>
           {tags.extra > 0 ? (
             // `z-[2]`, above the row's stretched link: without it the trigger is
-            // drawn but every click opens the commander instead.
+            // drawn but every click opens the commander instead. The padding
+            // grows the touch target and the equal negative margin takes that
+            // growth back out of the sentence, so the words around it sit where
+            // they did before the trigger existed.
             <button
               type="button"
               onClick={onToggle}
@@ -138,7 +141,7 @@ function TagSentence({
               aria-label={
                 open ? overflowCopy.fewerAria(name) : overflowCopy.moreAria(tags.total, name)
               }
-              className="relative z-[2] cursor-pointer -mx-[2px] px-[2px] text-[color:var(--fg-body)] [border-bottom:1px_dotted_var(--fg-faint)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+              className="relative z-[2] cursor-pointer -mx-[2px] -my-[6px] px-[2px] py-[6px] text-[color:var(--fg-body)] [border-bottom:1px_dotted_var(--fg-faint)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
             >
               {open ? overflowCopy.fewer : overflowCopy.more(tags.extra)}
             </button>

@@ -2,6 +2,10 @@ import type { JoinMode } from "./filter";
 import { planeCopy } from "../copy/commanders-plane";
 import { FLOOR_PCT } from "../discovery/floor";
 
+/** The copy module interpolates every count through this form, and a figure has
+    to be searched for in that form to be found inside a rendered sentence. */
+const localised = (v: number) => v.toLocaleString("en-US");
+
 const copy = planeCopy.exclusion;
 
 /**
@@ -28,7 +32,7 @@ export function resolveExclusionLine(input: {
   /** The nearest miss. Null when the server had no measured row to name. */
   bestPct: number | null;
   sort: "fit" | "new";
-}): { text: string; figures: number[] } | null {
+}): { text: string; figures: string[] } | null {
   const { colorExcluded, colors, join, unmeasured, bestPct, sort } = input;
   // `fit` measures nothing against a floor, so neither population exists under
   // it and a clause naming one would report an exclusion that never happened.
@@ -42,25 +46,31 @@ export function resolveExclusionLine(input: {
         : copy.colors(colorExcluded, colors)
       : null;
 
-  // Only the COUNTS are marked. The two percentages in the sentence are the
-  // rule and the nearest miss, and lifting `30` out of "the 30% support floor"
-  // would mark the threshold as though it were one of the populations.
-  const sortFigures = below > 0 && missing > 0 ? [below, missing] : below > 0 ? [below] : [missing];
+  // Sentence order, not tier order: the marks are found by searching the
+  // finished sentence for each value in turn, so a figure listed out of order is
+  // a figure the sentence has already walked past. The threshold and the nearest
+  // miss are marked with their percent sign attached, which is both what the
+  // drawing marks and what keeps `30` from matching some other row's `30`.
+  const pct = `${FLOOR_PCT}%`;
+  const floorFigures =
+    below > 0 && missing > 0 ? [localised(below), pct, localised(missing)] : [localised(below), pct];
 
   if (colorClause === null) {
     // The sort alone, which is the form that has room for the nearest miss.
     if (below === 0 && missing === 0) return null;
+    if (below === 0) return { text: copy.unmeasuredAlone(missing), figures: [localised(missing)] };
     const text =
-      below > 0 && missing > 0
+      missing > 0
         ? bestPct == null
           ? copy.floorWithUnmeasured(below, missing, FLOOR_PCT)
           : copy.floorAloneWithUnmeasured(below, missing, FLOOR_PCT, bestPct)
-        : below > 0
-          ? bestPct == null
-            ? copy.floor(below, FLOOR_PCT)
-            : copy.floorAlone(below, FLOOR_PCT, bestPct)
-          : copy.unmeasuredAlone(missing);
-    return { text, figures: sortFigures };
+        : bestPct == null
+          ? copy.floor(below, FLOOR_PCT)
+          : copy.floorAlone(below, FLOOR_PCT, bestPct);
+    return {
+      text,
+      figures: bestPct == null ? floorFigures : [...floorFigures, `${bestPct}%`],
+    };
   }
 
   const sortClause =
@@ -73,9 +83,12 @@ export function resolveExclusionLine(input: {
           : null;
 
   return sortClause === null
-    ? { text: colorClause, figures: [colorExcluded] }
+    ? { text: colorClause, figures: [localised(colorExcluded)] }
     : {
         text: copy.join2(colorClause, sortClause),
-        figures: [colorExcluded, ...sortFigures],
+        figures: [
+          localised(colorExcluded),
+          ...(below > 0 ? floorFigures : [localised(missing)]),
+        ],
       };
 }

@@ -118,6 +118,9 @@ export function FloorPoolEmpty({
       // payload cannot know, and the CTA stands alone rather than carrying a
       // figure the page would have to invent.
       note={null}
+      // Wider than the collection variant's measure: this body carries two
+      // populations and a pool size, and the drawing gives it the room.
+      bodyWidth={470}
       onAct={onScoreAgainstAll}
     />
   );
@@ -129,6 +132,7 @@ function FloorState({
   emphasis,
   cta,
   note,
+  bodyWidth = 430,
   onAct,
 }: {
   heading: string;
@@ -136,6 +140,7 @@ function FloorState({
   emphasis: string;
   cta: string;
   note: string | null;
+  bodyWidth?: number;
   onAct: () => void;
 }) {
   return (
@@ -153,7 +158,10 @@ function FloorState({
         {heading}
       </h2>
 
-      <p className="mx-auto mt-0 mb-[16px] max-w-[430px] text-[13.5px] leading-[1.65] text-[color:var(--fg-body)]">
+      <p
+        className="mx-auto mt-0 mb-[16px] text-[13.5px] leading-[1.65] text-[color:var(--fg-body)]"
+        style={{ maxWidth: bodyWidth }}
+      >
         <Emphasised text={body} clause={emphasis} />
       </p>
 
