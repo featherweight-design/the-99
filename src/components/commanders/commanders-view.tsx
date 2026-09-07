@@ -66,7 +66,9 @@ export type CommandersViewProps = {
   /** The same commanders re-scored against the free pool, as a diff against
       `results` — the two lists share most of their bytes. Null when unreadable. */
   freeRanking: FreeRankingDelta | null;
-  /** False when the availability read failed — `What's free` is unavailable. */
+  /** False when no free ranking could be produced — the availability read
+      failed, or the ranking itself came back unusable. Either way `What's free`
+      is unavailable, and `freeRanking` is null alongside it. */
   availOk: boolean;
   /** Receipt clause counts by oracleId, for both modes. */
   receiptCounts: Map<string, ReceiptCounts>;
