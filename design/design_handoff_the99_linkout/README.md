@@ -2,8 +2,10 @@
 
 `design/design_handoff_the99_linkout/` · repackaged 2026-09-06
 
-**Current round: R4 — 🟡 Yellow, two facts to confirm, no design carried.** Open
-`The 99 - Decks · Shopping Strip Link-Out (R4).dc.html` and read `LINKOUT-R4-READINESS.md` first.
+**Current round: R4 — 🟢 Green, audited, no design carried.** R4 dropped at 🟡 Yellow pending two
+facts; both are confirmed in `ENG-AUDIT-R4.md`, which supersedes `LINKOUT-R4-READINESS.md` and is
+the authority on what gets built. Open `The 99 - Decks · Shopping Strip Link-Out (R4).dc.html`, then
+read `ENG-AUDIT-R4.md`.
 
 **R4 amends where the deck-level link lives, not what it looks like:** the buy action moves onto the
 Shopping filter surface as the price strip's last line — Export keeps its link, retargeted to the
@@ -32,7 +34,9 @@ than as two one-offs. **It adds no dividers to this app:** both rules it sits un
 | File | What it is |
 |---|---|
 | `The 99 - Decks · Shopping Strip Link-Out (R4).dc.html` | **The current canvas.** The strip with the action: three placements with two rejected, both widths in place, the four price variants, the four states on the strip's own ground, the basket ledger. |
-| `LINKOUT-R4-README.md` / `LINKOUT-R4-READINESS.md` | R4's decisions and its verdict. |
+| `LINKOUT-R4-README.md` / `LINKOUT-R4-READINESS.md` | R4's decisions and its drop-time verdict. |
+| `ENG-AUDIT-R4.md` | **The authoritative resolution.** Closes R4's two confirmations, records five corrections that ride engineering-side, and raises the verdict to 🟢 Green. Where it disagrees with the canvas or the R4 docs, it wins. |
+| `ENG-AUDIT-R3.md` | The same for R3 — the primitive, the export footer and the card modal. |
 | `shopping-strip-linkout · copy strings.ts` | R4's contract: one new provenance string, one new call site for `linkOut.deck`, the shared `href` and the `shoppingList` definition. |
 | `The 99 - Decks · Mana Pool Link-Out (R3).dc.html` | **The primitive's canvas.** Primitive + five states, three weights with two rejected, the desktop modal with its pinned row, the 390px sheets, the empty state, the six-theme ink ledger, the corrections ledger. |
 | `LINKOUT-R3-README.md` | The R3 decisions and their reasons. |

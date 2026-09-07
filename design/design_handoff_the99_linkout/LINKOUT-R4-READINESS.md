@@ -2,6 +2,10 @@
 
 `design/design_handoff_the99_linkout/` · 2026-09-06
 
+> **Superseded by `ENG-AUDIT-R4.md`, which raises this to 🟢 Green.** Both facts below are confirmed
+> against the repo and both resolve in the drawing's favour. This document is the record of what
+> Design could see at drop time; the audit is the authority on what gets built.
+
 **Verdict: 🟡 Yellow — buildable now, with two facts to confirm against files this package cannot
 read.** Nothing in the three closed decisions is at risk; both items are verification, not design.
 
