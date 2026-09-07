@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { loadBuiltCommanderIds } from "../discovery/candidates";
 import { getCollectionStats } from "../home/summary";
 import { recommendCommanders, toListItem, type CommanderListItem } from "./recommend";
 import { collectionGeneration, loadScores, persistScores } from "./store";
@@ -22,6 +23,13 @@ export type RankedList = {
  *
  * getCollectionStats is React-cached, so sharing it with a caller that already
  * needed stats costs no extra query.
+ *
+ * This is the list a player picks their *next* commander from, so a commander
+ * already helming a deck is excluded. The exclusion applies to the read, after
+ * the stored and recomputed paths have converged — filtering the recompute alone
+ * would leave a warm commander_scores cache serving built commanders forever.
+ * The persisted scores stay whole for the same reason: building a deck must not
+ * invalidate the cache.
  */
 export const getRankedList = cache(async function getRankedList(
   userId: string,
@@ -35,11 +43,24 @@ export const getRankedList = cache(async function getRankedList(
     return { items: [], degraded: false, uniqueCardsRead: 0, candidateCount: 0 };
   }
 
+  const list = await assemble(userId, stored, stats.uniqueCards);
+
+  // The one exclusion both paths pass through.
+  const built = await loadBuiltCommanderIds(userId);
+  const items = list.items.filter((i) => !built.has(i.oracleId));
+  return { ...list, items, candidateCount: items.length };
+});
+
+async function assemble(
+  userId: string,
+  stored: Awaited<ReturnType<typeof loadScores>>,
+  uniqueCards: number,
+): Promise<RankedList> {
   if (stored.items.length > 0 && stored.degradedOracleIds.length === 0) {
     return {
       items: stored.items,
       degraded: false,
-      uniqueCardsRead: stats.uniqueCards,
+      uniqueCardsRead: uniqueCards,
       candidateCount: stored.items.length,
     };
   }
@@ -61,4 +82,4 @@ export const getRankedList = cache(async function getRankedList(
     uniqueCardsRead: recs.uniqueCardsRead,
     candidateCount: recs.candidateCount,
   };
-});
+}
