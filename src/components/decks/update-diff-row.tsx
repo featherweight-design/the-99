@@ -33,9 +33,11 @@ export type DiffRowCard = {
   auto: boolean;
   owned: boolean;
   /** Governs the availability marker only, never the slot's occupant. Null for
-   *  an unowned card and for a failed rollup alike, and neither draws a marker —
-   *  which is also what a card nothing competes for draws. An unowned row still
-   *  fills the slot, with the buy tag. */
+   *  an unowned card and for a failed rollup alike, and neither draws a marker.
+   *  A card nothing competes for is NOT null: it carries a real rollup that the
+   *  marker itself renders as nothing, so null and `free` reach the same drawing
+   *  by different routes and must not be collapsed into one. An unowned row
+   *  still fills the slot, with the buy tag. */
   availability: Availability | null;
 };
 

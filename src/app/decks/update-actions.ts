@@ -31,8 +31,9 @@ export type UpdateDeckInput = {
  *  facts the pipeline cannot know. `availability` is null both for a card the
  *  player does not own and for every row when the rollup fails; in neither case
  *  is an availability marker drawn, though an unowned row draws the buy tag in
- *  that slot instead. */
-export type DeckUpdateInRow = DeckUpdateRow & {
+ *  that slot instead. A card nothing competes for is a different thing again:
+ *  a real rollup, which the marker itself renders as nothing. */
+export type DeckUpdateChangedRow = DeckUpdateRow & {
   owned: boolean;
   availability: Availability | null;
 };
@@ -46,8 +47,8 @@ export type DeckUpdatePreview = {
   notes: ImportNote[];
   /** Rows this deck is carrying now, whose count the unnamed group's copy prints. */
   existingUnresolvedCount: number;
-  out: DeckUpdateInRow[];
-  in: DeckUpdateInRow[];
+  out: DeckUpdateChangedRow[];
+  in: DeckUpdateChangedRow[];
   unchanged: DeckUpdateRow[];
   /** Copies the silently-reconciled quantities add or drop, summed. Nine Islands
    *  against a deck's twelve is -3, and the landing figure has to carry it: that
@@ -211,7 +212,7 @@ async function withFacts(
   userId: string,
   deckId: string,
   groups: { out: DeckUpdateRow[]; in: DeckUpdateRow[] },
-): Promise<{ out: DeckUpdateInRow[]; in: DeckUpdateInRow[] }> {
+): Promise<{ out: DeckUpdateChangedRow[]; in: DeckUpdateChangedRow[] }> {
   // Distinct ids, not rows: a basic land stacks, and nothing stops a plan from
   // naming the same card in both groups. Both reads below answer per card, so a
   // repeat only widens the bind list.
@@ -237,7 +238,7 @@ async function withFacts(
         )
       : null;
 
-  const widen = (group: DeckUpdateRow[]): DeckUpdateInRow[] =>
+  const widen = (group: DeckUpdateRow[]): DeckUpdateChangedRow[] =>
     group.map((r) => ({
       ...r,
       owned: have.has(r.oracleId),
