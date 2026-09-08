@@ -150,14 +150,14 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
               type="button"
               onClick={() => setSheet({ open: true, focusSearch: true })}
               aria-label={refreshCopy.filters.searchPlaceholder}
-              className="flex h-[36px] w-[36px] cursor-pointer items-center justify-center rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 text-[color:var(--fg-body)] sm:hidden"
+              className="flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 text-[color:var(--fg-body)] sm:hidden"
             >
               <SearchIcon size={16} />
             </button>
             <button
               type="button"
               onClick={() => setSheet({ open: true, focusSearch: false })}
-              className={`flex h-[36px] cursor-pointer items-center gap-[7px] rounded-[10px] border border-solid bg-transparent px-[12px] text-[13px] sm:hidden ${
+              className={`flex h-[44px] cursor-pointer items-center gap-[7px] rounded-[10px] border border-solid bg-transparent px-[12px] text-[13px] sm:hidden ${
                 active > 0
                   ? "border-[color:var(--accent)] text-[color:var(--fg)]"
                   : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"

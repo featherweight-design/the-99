@@ -114,7 +114,7 @@ const showTab = async (name: RegExp) => {
 async function addSolRing() {
   await showTab(/cards to consider/i);
   await act(async () => {
-    fireEvent.click(screen.getByRole("button", { name: "Add Sol Ring to deck" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Add Sol Ring to the deck/  }));
   });
 }
 

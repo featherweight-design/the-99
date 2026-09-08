@@ -10,6 +10,7 @@ import { logGame } from "../../app/decks/actions";
 import { GAME_AXIS_KEYS, type GameAxisKey } from "../../lib/decks/game-axes";
 import { axisCopy, gameLogCopy } from "../../lib/copy/game-log";
 import { MutationError } from "./mutation-error";
+import { PRIMARY } from "../ui/button";
 
 export type GameResult = "win" | "loss" | "draw";
 
@@ -25,7 +26,7 @@ export interface GameLogFormProps {
   isFirstGame: boolean;
   /** Overrides the collapsed button's label. Defaults to `gameLogCopy.form.open`. */
   ctaLabel?: string;
-  /** Brass-solid collapsed button. True only in the empty state, where the CTA
+  /** Bone-filled collapsed button. True only in the empty state, where the CTA
    *  is the tab and there is nothing else on the screen to outrank it. */
   ctaSolid?: boolean;
 }
@@ -219,19 +220,26 @@ export function GameLogForm({
   }
 
   if (!open) {
-    // State 1. Brass OUTLINE, never solid — `Build this deck` owns solid brass
-    // and logging a game is not the app's goal. The one exception is the empty
-    // state, where the CTA is the whole tab and has nothing to outrank.
+    // State 1, and never accent in either branch: accent means "in use / to
+    // buy", so it cannot also mean "press me". R3 §1. `ctaSolid` still marks
+    // the empty state, where this CTA is the whole tab and has nothing to
+    // outrank — it now takes that screen's one bone fill instead of a solid
+    // brass one. Everywhere else it is the hairline pill.
+    //
+    // Hairline geometry spelled out at `md:` rather than merged from
+    // `HAIRLINE`, which is a `sm:` constant: this file splits at `md`.
     return (
       <button
         ref={openButton}
         type="button"
         onClick={() => setOpen(true)}
         className={
-          "w-full md:w-auto min-h-[44px] rounded-[8px] px-[18px] py-[10px] text-[13.5px] font-semibold border border-accent cursor-pointer " +
+          "w-full md:w-auto min-h-[44px] rounded-[10px] md:rounded-[8px] cursor-pointer " +
           (ctaSolid
-            ? "bg-accent text-bg hover:bg-accent-hover"
-            : "bg-transparent text-accent hover:text-accent-hover hover:border-accent-hover")
+            ? `px-[18px] py-[10px] text-[13.5px] font-semibold ${PRIMARY}`
+            : "md:min-h-0 md:h-[32px] px-[16px] md:px-[14px] py-[10px] md:py-0 " +
+              "text-[14px] md:text-[12.5px] font-medium bg-transparent " +
+              "border border-border-strong text-fg hover:border-accent hover:text-accent-hover")
         }
       >
         {ctaLabel ?? gameLogCopy.form.open}
@@ -384,7 +392,10 @@ export function GameLogForm({
           type="button"
           onClick={submit}
           disabled={!result || isPending || dateUnusable}
-          className="w-full md:w-auto h-[48px] md:h-auto md:px-[20px] md:py-[11px] rounded-[8px] text-[14.5px] md:text-[14px] font-semibold cursor-pointer bg-accent text-bg hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+          // The one filled button on this rendered screen, and bone: accent
+          // means "in use / to buy" and is not available as an action fill.
+          // R3 §1.
+          className={`w-full md:w-auto h-[48px] md:h-auto md:px-[20px] md:py-[11px] rounded-[8px] text-[14.5px] md:text-[14px] font-semibold cursor-pointer ${PRIMARY} disabled:cursor-not-allowed disabled:opacity-50`}
         >
           {isPending ? gameLogCopy.form.saving : gameLogCopy.form.save}
         </button>

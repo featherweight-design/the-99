@@ -460,7 +460,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
   // return before validation so a full deck doesn't spuriously reject it.
   // Still revalidate: the click means this page's HTML disagreed with the row
   // that exists, and without a fresh render the optimistic "✓ In deck" would
-  // flash back to "+ Add" when the transition ends.
+  // flash back to "Add" when the transition ends.
   if (existingRow && !isBasicLand(card.typeLine)) {
     for (const path of deckSurfaces(deckId)) revalidatePath(path);
     return { ok: true };

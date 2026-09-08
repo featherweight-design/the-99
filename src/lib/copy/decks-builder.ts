@@ -131,8 +131,17 @@ export const addPanelCopy = {
 
   // ── Suggestion tile ───────────────────────────────────────────────────
   tile: {
-    add: "+ Add",
-    addAria: (name: string) => `Add ${name} to deck`,
+    // Two adds, one geometry. The owned/unowned difference lives in these
+    // words and nowhere in the button's weight: two hairline pills separated
+    // by border alpha is a distinction that survives a design review and
+    // disappears in a panel of fourteen tiles being skimmed. R3.1 §4.
+    add: "Add",
+    addAria: (name: string) => `Add ${name} to the deck`,
+    addUnowned: "Add · to buy",
+    // No em dash: this surface's copy bans one, and Design's draft used one to
+    // join the two clauses. A comma says the same thing.
+    addUnownedAria: (name: string) =>
+      `Add ${name} to the deck, which you do not own, so it will be added to buy`,
     inDeck: "✓ In deck",
     inDeckAria: (name: string) => `${name} is already in this deck`,
     // The art and the name are both CardDetailTrigger; the modal owns its own

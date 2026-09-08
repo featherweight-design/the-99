@@ -34,8 +34,10 @@ type DeckFilterSheetProps = FilterChromeProps & {
   autoFocusSearch: boolean;
 };
 
+// 44px, not 36: this sheet is the phone's only filter surface, so each chip is
+// the sole route to its filter and cannot sit under the target floor. R3 §2.
 const CHIP =
-  "flex h-[36px] cursor-pointer items-center rounded-full border border-solid px-[12px] font-sans text-[13px]";
+  "flex h-[44px] cursor-pointer items-center rounded-full border border-solid px-[12px] font-sans text-[13px]";
 
 const HEADING =
   "mx-0 mt-0 mb-[9px] p-0 font-mono text-[10px] tracking-[0.14em] uppercase text-[color:var(--fg-faint)]";
