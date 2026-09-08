@@ -68,6 +68,38 @@ describe("ArtWash — left portrait", () => {
     );
     expect(sharp?.style.width).toBe("203px");
     expect(sharp?.style.backgroundSize).toBe("auto 100%");
+    expect(sharp?.style.backgroundPosition).toBe("left center");
+    expect(sharp?.style.backgroundRepeat).toBe("no-repeat");
+  });
+
+  // Layer D. The commander row prints over the whole height of its band, so the
+  // art is damped top and bottom as well as across; the resume row's type starts
+  // clear of the portrait and needs no such thing.
+  it("adds a vertical scrim at 148 and none at 72", () => {
+    const tall = render(
+      <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    const short = render(
+      <ArtWash strategy="left-portrait" band={72} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    expect(tall.container.querySelectorAll(".art-wash-scrim")).toHaveLength(2);
+    expect(tall.container.innerHTML).toContain("180deg");
+    expect(short.container.querySelectorAll(".art-wash-scrim")).toHaveLength(1);
+    expect(short.container.innerHTML).not.toContain("180deg");
+  });
+
+  // The row already draws a ground; the scrim resolves into that one, so the
+  // art fades into the row rather than into a darker patch of its own.
+  it("resolves each band's scrim into the ground that row draws", () => {
+    const tall = render(
+      <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    const short = render(
+      <ArtWash strategy="left-portrait" band={72} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    expect(tall.container.innerHTML).not.toContain("--surface-inset");
+    expect(short.container.innerHTML).toContain("--surface-inset");
+    expect(short.container.innerHTML).not.toContain("var(--bg)");
   });
 
   it("fades the art itself, as a fraction of the art", () => {
@@ -107,5 +139,16 @@ describe("ArtWash — left portrait", () => {
     );
     expect(container.querySelectorAll(".art-wash-art")).toHaveLength(2);
     expect(container.querySelector(".art-wash-scrim")).toBeTruthy();
+  });
+
+  // A flat 0.3 under `prefers-reduced-transparency` would raise the ambient copy
+  // from 0.14, answering a request for less transparency with more art.
+  it("publishes a reduced opacity that is a ceiling, never a floor", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={72} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    const layers = Array.from(container.querySelectorAll<HTMLElement>(".art-wash-art"));
+    const reduced = layers.map((l) => l.style.getPropertyValue("--art-wash-reduced-opacity"));
+    expect(reduced).toEqual(["0.14", "0.3"]);
   });
 });

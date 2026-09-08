@@ -1,32 +1,58 @@
+import type { CSSProperties } from "react";
 import { cssUrl } from "../../lib/collection/browse";
 import { commanderGradient } from "../../lib/collection/gradients";
 
-const bg = (pct: number) => `color-mix(in oklab, var(--bg) ${pct}%, transparent)`;
+const tint = (token: string, pct: number) =>
+  `color-mix(in oklab, var(${token}) ${pct}%, transparent)`;
 
 /** L3. Heavy where the labels are, thin through the middle third. The fourth
     stop is what lets the status chip sit on art without its own plate. */
-const SCRIM = `linear-gradient(180deg, ${bg(90)} 0%, ${bg(30)} 40%, ${bg(52)} 74%, ${bg(86)} 100%)`;
+const SCRIM = `linear-gradient(180deg, ${tint("--bg", 90)} 0%, ${tint("--bg", 30)} 40%, ${tint("--bg", 52)} 74%, ${tint("--bg", 86)} 100%)`;
 
 const COVER_ART_OPACITY = 0.58;
 
 const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
+
+/** A ceiling, not a value. The handoff's `.3` was written for the cover band's
+    art at `.58`; applied flat it would make a `left-portrait` row's ambient copy
+    *more* prominent under a preference that asks for less. */
+const REDUCED_ART_OPACITY = 0.3;
+
+const reducible = (opacity: number): CSSProperties =>
+  ({
+    opacity,
+    "--art-wash-reduced-opacity": Math.min(opacity, REDUCED_ART_OPACITY),
+  }) as CSSProperties;
 
 /** Keyed to the band, not to the row: `band` is the only input, so both the mask
     and the scrim travel with it at any row width. */
 const portrait = (band: 148 | 72) => {
   const width = Math.round(band * PORTRAIT_RATIO); // 203 | 99
   const maskEnd = band === 148 ? 58 : 62; // a fraction of the art
+  // The scrim resolves into the ground the row already draws, so the art fades
+  // into the row instead of into a darker patch of its own. The commander row
+  // sits on the page; the resume row draws its own inset surface.
+  const ground = band === 148 ? "--bg" : "--surface-inset";
   const stops =
     band === 148
-      ? `${bg(30)} 0px, ${bg(26)} 118px, ${bg(78)} ${width}px, var(--bg) 264px`
-      : `${bg(30)} 0px, ${bg(26)} 58px, ${bg(78)} ${width}px, var(--bg) 138px`;
+      ? `${tint(ground, 30)} 0px, ${tint(ground, 26)} 118px, ${tint(ground, 78)} ${width}px, var(${ground}) 264px`
+      : `${tint(ground, 22)} 0px, ${tint(ground, 18)} 58px, ${tint(ground, 80)} ${width}px, var(${ground}) 138px`;
   return {
     width,
+    ground,
     ambientOpacity: band === 148 ? 0.2 : 0.14,
     sharpOpacity: band === 148 ? 0.8 : 0.85,
     // Black is the opaque end of a mask's alpha, not a palette colour.
-    mask: `linear-gradient(90deg, #000 0 ${maskEnd}%, transparent)`,
+    mask: `linear-gradient(90deg, #000 0 ${maskEnd}%, transparent 100%)`,
     scrim: `linear-gradient(90deg, ${stops})`,
+    // Layer D, and only at 148: the commander row prints its rank, name and fit
+    // over the full height of the art, so the art needs damping at the top and
+    // bottom as well as across. The resume row's type starts clear of the
+    // portrait, so a vertical ramp there would darken the row for nothing.
+    verticalScrim:
+      band === 148
+        ? `linear-gradient(180deg, ${tint("--bg", 62)} 0%, ${tint("--bg", 16)} 42%, ${tint("--bg", 74)} 100%)`
+        : null,
   };
 };
 
@@ -43,27 +69,29 @@ export function ArtWash(props: ArtWashProps) {
     return (
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden bg-[color:var(--bg)]"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        style={{ background: `var(${p.ground})` }}
       >
         <div
           className="art-wash-art absolute inset-0"
           style={{
-            opacity: artCropUri ? p.ambientOpacity : 1,
+            ...reducible(artCropUri ? p.ambientOpacity : 1),
             background: artCropUri ? undefined : commanderGradient(colorIdentity),
             backgroundImage: artCropUri ? cssUrl(artCropUri) : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center top",
+            backgroundRepeat: "no-repeat",
           }}
         />
         {artCropUri ? (
           <div
             className="art-wash-art absolute inset-y-0 left-0"
             style={{
+              ...reducible(p.sharpOpacity),
               width: `${p.width}px`,
-              opacity: p.sharpOpacity,
               backgroundImage: cssUrl(artCropUri),
               backgroundSize: "auto 100%",
-              backgroundPosition: "left top",
+              backgroundPosition: "left center",
               backgroundRepeat: "no-repeat",
               maskImage: p.mask,
               WebkitMaskImage: p.mask,
@@ -71,6 +99,12 @@ export function ArtWash(props: ArtWashProps) {
           />
         ) : null}
         <div className="art-wash-scrim absolute inset-0" style={{ background: p.scrim }} />
+        {p.verticalScrim ? (
+          <div
+            className="art-wash-scrim absolute inset-0"
+            style={{ background: p.verticalScrim }}
+          />
+        ) : null}
       </div>
     );
   }
@@ -83,14 +117,18 @@ export function ArtWash(props: ArtWashProps) {
       <div
         className="art-wash-art absolute inset-0"
         style={{
-          opacity: artCropUri ? COVER_ART_OPACITY : 1,
+          ...reducible(artCropUri ? COVER_ART_OPACITY : 1),
           background: artCropUri ? undefined : commanderGradient(colorIdentity),
           backgroundImage: artCropUri ? cssUrl(artCropUri) : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center top",
+          backgroundRepeat: "no-repeat",
         }}
       />
-      <div className="art-wash-scrim absolute inset-0" style={{ background: SCRIM }} />
+      <div
+        className="art-wash-scrim art-wash-scrim-cover absolute inset-0"
+        style={{ background: SCRIM }}
+      />
     </div>
   );
 }

@@ -559,12 +559,21 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 
    `!important` is load-bearing rather than a shortcut: `<ArtWash>` sets each
    layer's opacity and gradient inline, because both are computed from the band,
-   and an inline declaration outranks any selector without it. */
+   and an inline declaration outranks any selector without it.
+
+   The art takes a *ceiling* the component publishes per layer, not a flat 0.3 —
+   a `left-portrait` row's ambient copy already sits below that, and raising it
+   would answer this preference by showing more art.
+
+   Only the `cover` scrim is re-weighted. A `left-portrait` scrim runs at 90deg
+   on stops keyed to the portrait's pixel width, so replacing it with the
+   handoff's vertical ramp would delete the fade the strategy exists for; its art
+   layers dimming is what carries the preference there. */
 @media (prefers-reduced-transparency: reduce) {
   .art-wash-art {
-    opacity: 0.3 !important;
+    opacity: var(--art-wash-reduced-opacity) !important;
   }
-  .art-wash-scrim {
+  .art-wash-scrim-cover {
     background: linear-gradient(
       180deg,
       color-mix(in oklab, var(--bg) 95%, transparent) 0%,
