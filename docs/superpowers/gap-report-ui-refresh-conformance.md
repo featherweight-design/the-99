@@ -48,11 +48,12 @@ the thing the weaker token exists to prevent.
 
 ## Departures recorded, not fixed
 
-- **Coverage-sort control is 38px tall with a sunken fill**, not the hairline. Pre-existing
-  and outside the four named surfaces.
-- **Sub-44px touch targets** survive on the coverage-sort control (38px) and the facet
-  strip (32px). Both are desktop-first controls that predate the refresh's global
-  targets table; neither is in this sweep's scope, and both want their own pass.
+- **Coverage-sort keeps a 38px phone control with a sunken fill**, not the hairline. Its
+  desktop branch takes the hairline in this sweep; the phone branch is pre-existing and
+  outside the four named surfaces.
+- **Sub-44px touch targets** survive on the facet strip, whose 32px is unprefixed and so
+  reaches the phone. It is a desktop-first control that predates the refresh's global
+  targets table, is not in this sweep's scope, and wants its own pass.
 - **Card modal (Step E) verified clean, no change.** Accent appears only as text colour
   (`Next ›`, the trigger hint), a 7px diamond marker, and meta field values, plus
   `FinishChip`'s selected-toggle state — never as a button fill. The handoff's "no

@@ -521,7 +521,8 @@ export function BuilderSpine({
               Export
             </button>
 
-            {/* Desktop: filled accent button */}
+            {/* Desktop: the one filled button on this surface, and bone —
+                accent is reserved for status and never fills an action. */}
             <PrimaryButton
               onClick={onExport}
               className="hidden md:flex items-center gap-[6px] h-[32px] px-[14px] text-[12.5px]"
