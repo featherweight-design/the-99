@@ -22,6 +22,7 @@ import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/deck
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { planLastSlots } from "../../lib/decks/last-slots";
+import { recordFillPass } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
@@ -254,6 +255,15 @@ export async function createDeck(
       }
       if (capped.length > 0) {
         await tx.insert(deckCards).values(capped).onConflictDoNothing();
+        // The seed pass — the ledger's first line, and the only one whose
+        // reversal is the sweep rather than an undo of its own. Recorded in the
+        // same transaction as the rows it describes; a deck that got its cards
+        // and not its pass would show auto rows the ledger cannot account for.
+        // openSlots is 99 because the deck did not exist a statement ago.
+        await recordFillPass(tx, {
+          deckId: deck.id, kind: "seed", openSlots: 99,
+          rows: capped.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+        });
       }
       return deck.id;
     });
@@ -535,6 +545,12 @@ export async function fillDeck(deckId: string): Promise<void> {
       await tx.insert(deckCards).values(
         plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       );
+      // The retry's fill is still the seed. openSlots is 99 because this path
+      // refuses a deck that already holds cards.
+      await recordFillPass(tx, {
+        deckId, kind: "seed", openSlots: 99,
+        rows: plan.rows.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
+      });
     }
     await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
   });

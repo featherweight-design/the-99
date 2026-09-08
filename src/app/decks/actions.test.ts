@@ -18,6 +18,7 @@ const stub = vi.hoisted(() => {
     transactionError: null as Error | null,
     // The rows already in the deck, returned by the in-transaction read
     deckRows: [] as { oracleId: string; quantity: number }[],
+    fillPasses: [] as { ordinal: number }[],
     // Whether getEdhrecData should reject
     edhrecError: null as Error | null,
     // redirect target captured
@@ -55,7 +56,9 @@ const stub = vi.hoisted(() => {
   };
   type SelectFromBuilder = {
     from?: unknown;
-    where: (condition?: unknown) => Promise<Record<string, unknown>[]>;
+    where: (condition?: unknown) => PromiseLike<Record<string, unknown>[]> & {
+      limit: (n: number) => Promise<Record<string, unknown>[]>;
+    };
     innerJoin: (table: unknown, condition: unknown) => SelectFromBuilder;
     orderBy: (...args: unknown[]) => SelectFromBuilder;
     groupBy: (...args: unknown[]) => Promise<Record<string, unknown>[]>;
@@ -65,13 +68,20 @@ const stub = vi.hoisted(() => {
     return {
       from: (table: unknown) => {
         const tableName = nameOf(table);
+        const rowsFor = () => {
+          if (tableName === "cards") return state.cards;
+          if (tableName === "decks") return state.decks;
+          if (tableName === "deck_games") return state.deckGames;
+          if (tableName === "deck_cards") return state.deckRows as Record<string, unknown>[];
+          return state.collectionItems;
+        };
         const builder: SelectFromBuilder = {
-          where: async () => {
-            if (tableName === "cards") return state.cards;
-            if (tableName === "decks") return state.decks;
-            if (tableName === "deck_games") return state.deckGames;
-            return state.collectionItems;
-          },
+          // Thenable rather than async, because `fillDeck` chains `.limit(1)`
+          // onto its emptiness check and most other callers await directly.
+          where: () => Object.assign(
+            Promise.resolve(rowsFor()),
+            { limit: async (n: number) => rowsFor().slice(0, n) },
+          ),
           innerJoin: () => {
             // After innerJoin, the result is collection_items + cards join
             return {
@@ -120,6 +130,9 @@ const stub = vi.hoisted(() => {
         if (tableName === "deck_games") {
           returning.push({ id: "game-new-uuid" });
         }
+        if (tableName === "fill_passes") {
+          returning.push({ id: "pass-new-uuid" });
+        }
         state.insertCalls.push({ table: tableName, values, returning: returning.length ? returning : null });
         return {
           returning: async () => returning,
@@ -132,9 +145,23 @@ const stub = vi.hoisted(() => {
 
   const tx = {
     insert: (table: unknown) => makeInsertBuilder(table),
+    update: () => ({ set: () => ({ where: async () => {} }) }),
     execute: async () => {},
+    // Table-aware, because `recordFillPass` reads the highest ordinal the deck
+    // has used and would otherwise be handed deck card rows. That read is an
+    // aggregate, so it always returns exactly one row.
     select: () => ({
-      from: () => ({ where: async () => state.deckRows }),
+      from: (table: unknown) => {
+        const rows = () => (nameOf(table) === "fill_passes"
+          ? [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }]
+          : state.deckRows as unknown as Record<string, unknown>[]);
+        return {
+          where: () => Object.assign(
+            Promise.resolve(rows()),
+            { limit: async (n: number) => rows().slice(0, n) },
+          ),
+        };
+      },
     }),
   };
 
@@ -201,7 +228,7 @@ vi.mock("../commanders/[slug]/synergy-read", () => ({
   readSynergyCards: async () => [],
 }));
 
-import { createDeck, deleteGame, fillLastSlotsOwned, fillLastSlotsUnowned, logGame, restoreAutoCards } from "./actions";
+import { createDeck, deleteGame, fillDeck, fillLastSlotsOwned, fillLastSlotsUnowned, logGame, restoreAutoCards } from "./actions";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -269,6 +296,7 @@ beforeEach(() => {
   stub.state.insertCalls.length = 0;
   stub.state.transactionError = null;
   stub.state.deckRows.length = 0;
+  stub.state.fillPasses.length = 0;
   stub.state.edhrecError = null;
   stub.state.redirectTarget = null;
 });
@@ -311,6 +339,67 @@ describe("createDeck — filled baseline", () => {
     expect(forestTotal).toBe(37);
     // At least the first several forests should carry quantity 4 (not 1).
     expect(forestRows.some((r) => r.quantity === 4)).toBe(true);
+  });
+
+  it("records the fill as a seed pass, with the rows it actually placed", async () => {
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(
+      ...Array.from({ length: 10 }, (_, i) => rampCard(i)),
+      ...Array.from({ length: 40 }, (_, i) => forestCard(i, 4)),
+    );
+
+    await runCreate();
+
+    const pass = stub.state.insertCalls.find((c) => c.table === "fill_passes");
+    expect(pass!.values).toMatchObject({ kind: "seed", ordinal: 1, openSlots: 99 });
+
+    // The membership record is what every ledger count is derived from, so it
+    // has to describe the same rows the deck got — including the stacked
+    // quantity, or the seed line would report a card count nobody can see.
+    const members = stub.state.insertCalls.find((c) => c.table === "fill_pass_cards")!
+      .values as Array<Record<string, unknown>>;
+    const placed = stub.state.insertCalls.find((c) => c.table === "deck_cards")!
+      .values as Array<Record<string, unknown>>;
+    expect(members).toHaveLength(placed.length);
+    expect(members.map((m) => [m.oracleId, m.quantity]))
+      .toEqual(placed.map((r) => [r.oracleId, r.quantity]));
+  });
+
+  // Gate 6, "fires once": the fill-failed banner's retry is the one path that
+  // can run a seed fill against a deck that already exists, so it is the one
+  // path that could write a second seed pass.
+  it("records a seed pass when the failed fill is retried", async () => {
+    stub.state.decks.push({ id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+
+    await fillDeck("deck-1");
+
+    const passes = stub.state.insertCalls.filter((c) => c.table === "fill_passes");
+    expect(passes).toHaveLength(1);
+    expect(passes[0].values).toMatchObject({ deckId: "deck-1", kind: "seed", ordinal: 1 });
+  });
+
+  it("records no second pass when the retry meets a deck that already holds cards", async () => {
+    stub.state.decks.push({ id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.cards.push(commanderCard());
+    stub.state.collectionItems.push(...Array.from({ length: 10 }, (_, i) => rampCard(i)));
+    stub.state.deckRows.push({ oracleId: "ramp-00000000-aaaa-aaaa-aaaa-aaaaaaaaaaaa", quantity: 1 });
+
+    await fillDeck("deck-1");
+
+    expect(stub.state.insertCalls.some((c) => c.table === "fill_passes")).toBe(false);
+  });
+
+  it("records no pass when the fill placed nothing", async () => {
+    // A collection thin enough to plan zero rows. The deck is still filled —
+    // the question `filled` answers is "did a fill run" — but a pass that
+    // placed nothing is not a pass and would render an empty ledger line.
+    stub.state.cards.push(commanderCard());
+
+    await runCreate();
+
+    expect(stub.state.insertCalls.some((c) => c.table === "fill_passes")).toBe(false);
   });
 
   it("still creates the deck when the transaction throws", async () => {
