@@ -57,6 +57,15 @@ describe("DeckCard", () => {
     expect(screen.getByText("3 unowned")).toBeInTheDocument();
   });
 
+  // A deck whose only unowned cards are basics clears the `To buy` threshold —
+  // that one counts them — and has no roll-up entry, because no Shopping
+  // surface sells them. Falling back to `toBuyCount` here would print an
+  // "unowned" figure that disagrees with every other surface in the app.
+  it("draws no figure for a To buy deck the roll-up has nothing for", () => {
+    render(<DeckCard deck={deck({ toBuyCount: 3 })} shopping={undefined} now={now} />);
+    expect(screen.queryByText(/unowned/)).toBeNull();
+  });
+
   it("has no call to action — the pill is the message and the tile is the target", () => {
     render(<DeckCard deck={deck()} shopping={undefined} now={now} />);
     // One link (the whole tile) and one button (the overflow). Nothing else.

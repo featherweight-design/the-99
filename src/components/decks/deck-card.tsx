@@ -62,15 +62,21 @@ function statusDetailFor(
     case "Unresolved":
       return c.detailUnresolved(deck.unresolvedCount);
     case "To buy": {
-      // The count comes from the roll-up, NOT from `deck.toBuyCount`. The
-      // roll-up excludes basics, as every Shopping surface does; `toBuyCount` is
-      // `built − ownedCount` and does not. Pairing them would print a cost that
+      // Every figure here comes from the roll-up, never from `deck.toBuyCount`.
+      // The roll-up excludes basics, as every Shopping surface does;
+      // `toBuyCount` is `built − ownedCount` and does not, so the two are
+      // different definitions of "unowned" and mixing them prints a cost that
       // covers fewer copies than the number beside it.
-      const copies = shopping?.copies ?? deck.toBuyCount;
+      //
+      // A deck whose only unowned cards are basics therefore has a `To buy`
+      // pill — that threshold counts them — and no roll-up entry at all. It
+      // draws no figure rather than a count of cards no Shopping surface will
+      // offer to sell; the `87 / 99` beside it already says how far along it is.
+      if (!shopping) return null;
       // No price row is not "free" — the copies still print, the cost does not.
-      return shopping && shopping.cents > 0
-        ? c.detailToBuy(copies, formatCents(shopping.cents))
-        : c.detailUnowned(copies);
+      return shopping.cents > 0
+        ? c.detailToBuy(shopping.copies, formatCents(shopping.cents))
+        : c.detailUnowned(shopping.copies);
     }
     case "Complete":
       return c.detailComplete;

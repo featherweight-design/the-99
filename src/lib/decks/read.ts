@@ -337,17 +337,6 @@ export async function listDecksWithStats(
           // would put every never-played deck at the top of "last played".
           [sql`${lastPlayedSql} desc nulls last`, ...byName];
 
-  // One unscoped availability read for the whole grid, started alongside the
-  // list. Its `claims` already name every deck holding every card, so the
-  // per-deck counts fall out of a single pass — a per-deck `excludeDeckId`
-  // query would be one round trip per tile. Tolerated rather than awaited into
-  // the page's failure path: a missing clause is not worth a 500 on the deck
-  // list, and the `.catch` here also means the promise is never unhandled on
-  // the branch below that does not await it.
-  const pendingAvailability = opts.includeInUseElsewhere
-    ? loadAvailability(userId).catch(() => null)
-    : null;
-
   const rows = await db
     .select({
       id: decks.id,
@@ -375,10 +364,25 @@ export async function listDecksWithStats(
     )
     .orderBy(...order);
 
-  // Awaited only once there is something to attribute the counts to. A player
-  // with no decks still has a collection, and the zero state should not wait on
-  // an aggregation over it to say they have no decks.
-  const availability = rows.length > 0 ? await pendingAvailability : null;
+  // One unscoped availability read for the whole grid. Its `claims` already
+  // name every deck holding every card, so the per-deck counts fall out of a
+  // single pass — a per-deck `excludeDeckId` query would be one round trip per
+  // tile.
+  //
+  // Issued after the list rather than alongside it, even though that costs a
+  // round trip, because the query is driven by the player's collection and not
+  // by their decks: a player who has uploaded a CSV and built nothing would
+  // otherwise pay a scan of the whole collection to be told they have no decks,
+  // which is exactly the zero state this page draws on a first visit. The one
+  // added trip is hidden behind `loadShoppingRollup`, which the page already
+  // runs in parallel with this whole function and which is itself two queries.
+  //
+  // Tolerated rather than awaited into the page's failure path: a missing
+  // clause is not worth a 500 on the deck list.
+  const availability =
+    opts.includeInUseElsewhere && rows.length > 0
+      ? await loadAvailability(userId).catch(() => null)
+      : null;
   const inUseElsewhere = availability
     ? inUseElsewhereByDeck(availability.values())
     : new Map<string, number>();
