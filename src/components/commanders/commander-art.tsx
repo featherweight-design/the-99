@@ -13,11 +13,15 @@ const BLEED_MASK =
 
 /** The legibility ramps, one per band width. Every stop is `--bg` at a rising
     opacity, so the art is at about three-quarters strength under the rank and
-    is flat ground by the time the figures start. */
-const DARKEN_PHONE =
-  "linear-gradient(90deg, rgba(20,17,14,.26) 0px, rgba(20,17,14,.5) 88px, rgba(20,17,14,.86) 168px, rgba(20,17,14,1) 250px)";
-const DARKEN_WIDE =
-  "linear-gradient(90deg, rgba(20,17,14,.28) 0px, rgba(20,17,14,.42) 108px, rgba(20,17,14,.78) 220px, rgba(20,17,14,.94) 336px, rgba(20,17,14,1) 452px)";
+    is flat ground by the time the figures start.
+
+    Mixed off the token rather than copied as the literal the frame draws: that
+    literal is Amonkhet's background, and under the other five themes it would
+    ramp the art down to a colour the page underneath is not. */
+const bg = (pct: number) => `color-mix(in oklab, var(--bg) ${pct}%, transparent)`;
+
+const DARKEN_PHONE = `linear-gradient(90deg, ${bg(26)} 0px, ${bg(50)} 88px, ${bg(86)} 168px, ${bg(100)} 250px)`;
+const DARKEN_WIDE = `linear-gradient(90deg, ${bg(28)} 0px, ${bg(42)} 108px, ${bg(78)} 220px, ${bg(94)} 336px, ${bg(100)} 452px)`;
 
 /**
  * Commander art bleeding in from the row's leading edge: a 268px band on the

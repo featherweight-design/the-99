@@ -1,131 +1,39 @@
-"use client";
-// Page Header — /commanders list (§Page Header — /commanders list).
-// Mobile: padding 20px 18px 12px, border-bottom 1px solid var(--border).
-// #35 dropped this header's own account avatar: the shell's MobileHeader renders
-// on every signed-in route, so below sm the page showed two account triggers.
-// Desktop: padding 28px 34px 0, no border-bottom.
-// Title: Cinzel 700, 22px mobile / 30px desktop, var(--fg).
-// Subtitle: IBM Plex Mono, 11px mobile / 12px desktop, var(--fg-faint), margin-top 2/4px.
-// Row 7.5 appends the ranking clause to the shipped `N cards scanned` line. The
-// canvas draws a commander count there instead ("24 generals · ranked by fit");
-// changing that leading noun is a separate question from the availability ask.
+// The lane header — the title bar over both /commanders and /discover.
 //
-// One subtree with responsive classes, not a mobile branch beside a desktop one.
-// The scope control is a radiogroup, and a second copy of it would put four
-// radios in the accessibility tree for a two-option control.
+// It used to carry the `I own` / `To play` scope toggle and a subtitle that
+// reported what the toggle had selected. The two-lane split retires both: the
+// scope is now the route, the nav is the switch, and the counts the subtitle
+// reported have moved onto the rack's result line, which is the one place on
+// either lane that says how many rows a filter left.
+//
+// What is left is a title and a fixed gloss on it. Desktop reads them as one
+// row (Cinzel 20px beside mono 11px, 12px apart, over a hairline); the phone
+// stacks them (22px over 10.5px, 4px apart, no rule — the rack below draws its
+// own). One subtree with responsive classes, not a mobile branch beside a
+// desktop one.
 
-import { availabilityCopy } from "../../lib/copy/availability";
-import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import { ScopeControl } from "./scope-control";
+import type { Lane } from "../../lib/commanders/lane-params";
+import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 
-type PageHeaderBase = {
-  uniqueCardsRead: number;
-  /** Omitted where nothing is ranked, which drops the clause entirely. */
-  avail?: "all" | "free";
-};
-
-/**
- * Three arms rather than five optional props. The scope control and the subtitle
- * that restates what it selected arrive together or not at all — the
- * collection-empty and no-candidates pages render this header with no list
- * beneath it and get today's line unchanged — and only the discovery scope has
- * an ordering to name, so `sort` belongs to that arm alone.
- */
-type PageHeaderProps =
-  | (PageHeaderBase & {
-      scope?: never;
-      onScopeChange?: never;
-      scopePending?: never;
-      sort?: never;
-      candidateCount?: never;
-    })
-  | (PageHeaderBase & {
-      scope: "owned";
-      onScopeChange: (next: "owned" | "play") => void;
-      /** The scope a flip is heading for, or null. Passed straight through to
-          the control, which is the only thing that goes optimistic — the
-          subtitle below still names the list that is on screen. */
-      scopePending?: "owned" | "play" | null;
-      candidateCount: number;
-      sort?: never;
-    })
-  | (PageHeaderBase & {
-      scope: "play";
-      onScopeChange: (next: "owned" | "play") => void;
-      scopePending?: "owned" | "play" | null;
-      candidateCount: number;
-      sort: "fit" | "new";
-    });
-
-export function PageHeader(props: PageHeaderProps) {
-  const { uniqueCardsRead, avail } = props;
-
-  // Under a scope the population and the ordering lead, and the card count moves
-  // inside the copy module's own sentence — which formats its figures itself, so
-  // there is no `toLocaleString` on this path.
-  const lead =
-    props.scope === undefined
-      ? `${uniqueCardsRead.toLocaleString("en-US")} cards scanned`
-      : props.scope === "owned"
-        ? discoveryCopy.scope.subtitleOwned(props.candidateCount, uniqueCardsRead)
-        : discoveryCopy.scope.subtitlePlay(props.candidateCount, uniqueCardsRead, props.sort);
-
-  // The availability clause stays appended under every scope. It is the only
-  // place `/commanders` says whether it ranked against the free pool or against
-  // everything owned, and dropping it would regress a shipped surface. Under a
-  // scope it names the POOL rather than the ordering: the shipped clause is
-  // "ranked by fit", which the discovery lead has already named for itself, and
-  // appending it produced "ranked by what is new to you · ranked by fit".
-  const clause = avail
-    ? props.scope === undefined
-      ? avail === "free"
-        ? availabilityCopy.ranking.subtitleFree
-        : availabilityCopy.ranking.subtitleAll
-      : avail === "free"
-        ? discoveryCopy.scope.subtitleFree
-        : discoveryCopy.scope.subtitleAll
-    : null;
-
-  const subtitle = clause ? `${lead} · ${clause}` : lead;
+export function PageHeader({ lane }: { lane: Lane }) {
+  const copy = lane === "owned" ? commandersCopy : discoverCopy;
 
   return (
     <div
       className={[
-        "flex flex-wrap items-center border-b border-[color:var(--border)]",
-        "px-[18px] pt-5 pb-3",
-        "sm:justify-between sm:gap-x-6",
-        "sm:border-b-0 sm:px-[34px] sm:pt-7 sm:pb-0",
+        "flex flex-col px-4 pt-3",
+        "sm:flex-row sm:items-center sm:gap-3 sm:border-b sm:border-[color:var(--border)]",
+        "sm:px-[22px] sm:py-4",
       ].join(" ")}
     >
       <h1
-        className="font-display font-bold m-0 order-1 w-full text-[22px] sm:w-auto sm:text-[30px]"
-        style={{ color: "var(--fg)" }}
+        className="font-display font-bold m-0 text-[22px] text-[color:var(--fg)] sm:text-[20px]"
       >
-        Commanders
+        {copy.title}
       </h1>
-
-      {/* The subtitle is its own row rather than a sibling of the title, so the
-          scope control's position stops being a function of a sentence's length
-          (#335): the subtitle's length changes on click, and the control used to
-          move to the row below the click that changed it. Ordered around the
-          control at desktop and read before it at 375px, where the stacked
-          column already had this layout. */}
-      <p
-        className="font-mono m-0 mt-[2px] order-2 w-full text-[11px] sm:order-3 sm:mt-1 sm:text-[12px]"
-        style={{ color: "var(--fg-faint)" }}
-      >
-        {subtitle}
+      <p className="font-mono m-0 mt-1 text-[10.5px] text-[color:var(--fg-faint)] sm:mt-0 sm:text-[11px]">
+        {copy.subtitle}
       </p>
-
-      {props.scope !== undefined ? (
-        <div className="order-3 mt-3 w-full sm:order-2 sm:mt-0 sm:w-auto">
-          <ScopeControl
-            scope={props.scope}
-            pending={props.scopePending}
-            onChange={props.onScopeChange}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -305,21 +305,22 @@ describe("DiscoveryView", () => {
     expect(pip(filterCopy.colour.names.g).getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("heads the page with the ranked count, not the pre-exclusion candidate count", () => {
+  // The header used to report the count and is now a fixed title and gloss, so
+  // the ranked count survives in exactly one place: the rack's result line. The
+  // pre-exclusion candidate count is not it — a reader counts the rows they can
+  // see, not the ones the novelty floor removed before the page was drawn.
+  it("counts the ranked rows on the result line, not the pre-exclusion candidates", () => {
     const items = [
       item({ oracleId: "a", slug: "a", colorIdentity: ["B", "G"] }),
       item({ oracleId: "b", slug: "b", colorIdentity: ["U"] }),
     ];
-    render(
+    const { container } = render(
       <DiscoveryView
         discovery={list({ items, candidateCount: 40, sort: "new", floorExcluded: 38 })}
       />,
     );
-    // No availability clause: the header is given no `avail`, because the lane
-    // has no pool to choose between.
-    expect(
-      screen.getAllByText(discoveryCopy.scope.subtitlePlay(2, 2805, "new")).length,
-    ).toBeGreaterThan(0);
+    expect(container.textContent).toContain(discoverCopy.result.rest(2));
+    expect(container.textContent).not.toContain(discoverCopy.result.rest(40));
   });
 
   it("mirrors a colour choice into the URL without routing for it", () => {

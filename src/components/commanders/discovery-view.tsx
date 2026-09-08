@@ -513,18 +513,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   // never renumbers — the same invariant CommandersView holds, reached differently.
   return (
     <>
-      <PageHeader
-        uniqueCardsRead={discovery.cardsRead}
-        scope="play"
-        onScopeChange={scopeNav.go}
-        sort={discovery.sort}
-        scopePending={scopeNav.pending}
-        // The ranked count, not `candidateCount`, for the same reason the
-        // announcements use it: the subtitle and the live region speak one
-        // sentence between them, and under `sort="new"` the floor's exclusions
-        // move `items.length` while the candidate count stays put.
-        candidateCount={rankedCount}
-      />
+      <PageHeader lane="discover" />
 
       {/* The rack, shared with the owned lane; `lane` is the whole of the
           difference. Discover mounts a scope control and no availability

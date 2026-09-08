@@ -1,131 +1,36 @@
-import { describe, it, expect, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
 import { PageHeader } from "./page-header";
-import { availabilityCopy } from "../../lib/copy/availability";
-import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 
 // One subtree, so every string appears exactly once: the header used to ship a
 // mobile branch beside a desktop one and matched twice.
-describe("PageHeader subtitle", () => {
-  it("names what the list is ranked by in each mode", () => {
-    render(<PageHeader uniqueCardsRead={1240} avail="all" />);
-    screen.getByText(`1,240 cards scanned · ${availabilityCopy.ranking.subtitleAll}`);
+describe("PageHeader", () => {
+  it("names the owned lane and glosses it", () => {
+    render(<PageHeader lane="owned" />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(commandersCopy.title);
+    screen.getByText(commandersCopy.subtitle);
   });
 
-  it("switches the clause under ?avail=free", () => {
-    render(<PageHeader uniqueCardsRead={1240} avail="free" />);
-    screen.getByText(`1,240 cards scanned · ${availabilityCopy.ranking.subtitleFree}`);
+  it("names the discover lane and glosses it", () => {
+    render(<PageHeader lane="discover" />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(discoverCopy.title);
+    screen.getByText(discoverCopy.subtitle);
   });
 
-  // The no-candidates page renders this header with nothing ranked beneath it,
-  // so the clause would be a claim about a list that isn't there.
-  it("drops the clause when no mode is given", () => {
-    render(<PageHeader uniqueCardsRead={1240} />);
-    screen.getByText("1,240 cards scanned");
-  });
-
-  it("leads with the population and the ordering once a scope is given", () => {
-    render(
-      <PageHeader
-        uniqueCardsRead={2805}
-        avail="free"
-        scope="play"
-        onScopeChange={() => {}}
-        sort="new"
-        candidateCount={1704}
-      />,
-    );
-    screen.getByText(
-      `${discoveryCopy.scope.subtitlePlay(1704, 2805, "new")} · ${
-        discoveryCopy.scope.subtitleFree
-      }`,
-    );
-  });
-
-  // The availability clause is not in the handoff's two subtitle strings, but it
-  // is the only place this page says which pool it ranked against. Under a scope
-  // it names that pool rather than the ordering, which the lead already names.
-  it("keeps the availability clause under a scope, worded as a pool", () => {
-    render(
-      <PageHeader
-        uniqueCardsRead={2805}
-        avail="all"
-        scope="owned"
-        onScopeChange={() => {}}
-        candidateCount={242}
-      />,
-    );
-    screen.getByText(
-      `${discoveryCopy.scope.subtitleOwned(242, 2805)} · ${discoveryCopy.scope.subtitleAll}`,
-    );
-  });
-});
-
-// #335: the subtitle's length changes when the scope is clicked, so a control
-// sharing its row moved to the row below the click that moved it. Two rows fix
-// the position by taking the sentence off the control's row entirely.
-describe("PageHeader rows", () => {
-  it("takes the subtitle off the scope control's row", () => {
-    const { container } = render(
-      <PageHeader
-        uniqueCardsRead={2805}
-        scope="play"
-        onScopeChange={() => {}}
-        sort="fit"
-        candidateCount={3334}
-      />,
-    );
-    const subtitle = container.querySelector("p");
-    const group = screen.getByRole("radiogroup");
-    // Full width is what puts it on its own row under `flex-wrap`; the ordering
-    // is what keeps it readable before the control at 375px, where the stacked
-    // column has always had this layout.
-    expect(subtitle?.className).toContain("w-full");
-    expect(subtitle?.className).toContain("sm:order-3");
-    expect(group.closest("div.sm\\:order-2")).not.toBeNull();
-    // The title shares the control's row rather than a wrapper of its own.
-    expect(screen.getByRole("heading", { level: 1 }).parentElement).toBe(
-      subtitle?.parentElement,
-    );
-  });
-});
-
-describe("PageHeader scope control", () => {
-  it("is absent without a scope, so the empty pages are unchanged", () => {
-    render(<PageHeader uniqueCardsRead={1240} />);
+  // The scope is the route now. A control here would be a second switch beside
+  // the nav's, and the two could disagree about which lane the reader is on.
+  it("carries no control at all", () => {
+    render(<PageHeader lane="owned" />);
     expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
-  it("reports the segment the player picked", () => {
-    const onScopeChange = vi.fn();
-    render(
-      <PageHeader
-        uniqueCardsRead={2805}
-        scope="owned"
-        onScopeChange={onScopeChange}
-        candidateCount={242}
-      />,
-    );
-    fireEvent.click(screen.getByRole("radio", { name: discoveryCopy.scope.playAria }));
-    expect(onScopeChange).toHaveBeenCalledWith("play");
-  });
-
-  // Two radios, not four: both labels ship on one button and the breakpoint
-  // hides one, so a screen reader reads a two-option group.
-  it("exposes one radio per scope", () => {
-    render(
-      <PageHeader
-        uniqueCardsRead={2805}
-        scope="play"
-        onScopeChange={() => {}}
-        sort="fit"
-        candidateCount={3334}
-      />,
-    );
-    expect(screen.getAllByRole("radio")).toHaveLength(2);
-    expect(screen.getByRole("radio", { name: discoveryCopy.scope.playAria })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
+  // The header states what the lane is, never how much of it survived a filter
+  // — that sentence is the rack's result line, and it is the page's live region.
+  it("prints no count", () => {
+    const { container } = render(<PageHeader lane="discover" />);
+    expect(container.textContent).not.toMatch(/\d/);
   });
 });

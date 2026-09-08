@@ -89,7 +89,7 @@ export default async function CommandersPage({
     return (
       <section>
         {/* Page header (mobile + desktop) */}
-        <PageHeader uniqueCardsRead={uniqueCardsRead} />
+        <PageHeader lane="owned" />
 
         {/* Empty-no-candidates state (§Empty State — No Candidates) */}
         {/* Container: padding 24px 30px mobile / 60px 40px desktop; min-height 520px desktop */}

@@ -567,7 +567,7 @@ export function DiscoveryRow({
         <div className="flex items-center justify-center">
           <Link
             href={href}
-            className="relative z-[2] flex h-[32px] items-center rounded-full border border-[color:var(--border-strong)] bg-[rgba(20,17,14,0.5)] px-[12px] font-mono whitespace-nowrap text-[color:var(--fg-body)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            className="relative z-[2] flex h-[32px] items-center rounded-full border border-[color:var(--border-strong)] bg-[color-mix(in_oklab,var(--bg)_50%,transparent)] px-[12px] font-mono whitespace-nowrap text-[color:var(--fg-body)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
             style={{ fontSize: 11 }}
           >
             {discoverCopy.row.action}

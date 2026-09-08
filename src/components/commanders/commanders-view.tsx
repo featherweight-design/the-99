@@ -25,7 +25,7 @@ import { RecCard, type ScoreDelta } from "./rec-card";
 import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
 import { PageHeader } from "./page-header";
-import { useScopeAnnouncement, useScopeNav } from "./list-nav";
+import { useScopeAnnouncement } from "./list-nav";
 import { DegradedBanner } from "./degraded-banner";
 import { FilteredEmpty } from "./filtered-empty";
 import {
@@ -270,19 +270,11 @@ export function CommandersView({
   // A scope flip lands as a fresh mount, so its message arrives on arrival
   // rather than at click time — and it lands on this same region, which every
   // other announcement on this page already uses.
-  const scopeNav = useScopeNav();
   useScopeAnnouncement("owned", active.length, "fit", setAnnouncement);
 
   return (
     <div>
-      <PageHeader
-        uniqueCardsRead={uniqueCardsRead}
-        avail={avail}
-        scope="owned"
-        onScopeChange={scopeNav.go}
-        scopePending={scopeNav.pending}
-        candidateCount={active.length}
-      />
+      <PageHeader lane="owned" />
 
       {/* Present before the first reveal — a live region inserted at announce
           time is frequently not read. Unconditional since #43: the ranking
