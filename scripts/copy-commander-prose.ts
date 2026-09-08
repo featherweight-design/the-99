@@ -88,5 +88,7 @@ copyCommanderProse({ loadSource, loadTarget, write })
     console.error(err);
     process.exitCode = 1;
   })
-  // Both pools hold open sockets that would keep the process alive past its work.
-  .finally(() => Promise.all([source.$client.end(), target.$client.end()]));
+  // Both pools hold open sockets that would keep the process alive past its work. Settled
+  // rather than all: teardown runs after the copy has already been done and reported, so a
+  // socket that refuses to close is not a reason to fail a run that succeeded.
+  .finally(() => Promise.allSettled([source.$client.end(), target.$client.end()]));
