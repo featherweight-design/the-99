@@ -1300,7 +1300,7 @@ describe("commitmentFigures", () => {
     expect(commitmentFigures([card({ owned: 3, hard: 0, soft: 3, free: 3 })]).inUse).toBe(0);
   });
 
-  it("counts a card as spoken for twice when finished decks want more than exist", () => {
+  it("counts every card whose finished decks want more copies than exist", () => {
     expect(
       commitmentFigures([
         card({ owned: 1, hard: 2, free: -1 }),
