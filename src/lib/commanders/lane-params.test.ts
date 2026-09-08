@@ -143,7 +143,10 @@ describe("activeControlCount", () => {
     ).toBe(2);
   });
 
-  it("ceilings at 4 on owned and 3 on discover", () => {
+  // Three either way, out of different controls: colours and match plus
+  // availability on owned, plus scope on discover. Search and order never count,
+  // so no lane can reach four.
+  it("ceilings at 3 on both lanes", () => {
     expect(
       activeControlCount(
         { q: "x", colors: ["b"], match: "exactly", avail: "free", order: "name", scope: "bestfit" },
