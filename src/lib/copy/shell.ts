@@ -31,11 +31,13 @@ export const shellCopy = {
       status: "ranking by what you own…",
     },
     // Not in the App Shell handoff: /discover did not exist when it was drawn.
-    // Written to the same shape — a table phrase, then a participle naming what
-    // is being fetched — and deliberately the mirror of `commanders` above,
-    // because the two lanes ask the same question of opposite shelves. Without
-    // it the route falls through to the root boundary and greets a lane of
-    // unowned commanders with "counting what you've got".
+    // Written to the same shape as `commanders` above — a table phrase, then a
+    // participle — because the two lanes ask the same question of opposite
+    // shelves. The status is not word-for-word parallel and should not be:
+    // `commanders` ranks *by* what you own, ownership being the key it sorts on,
+    // while this lane ranks the unowned cards themselves. Without the entry the
+    // route falls through to the root boundary and greets a lane of unowned
+    // commanders with "counting what you've got".
     discover: {
       heading: "Casting a wider net",
       status: "ranking what you don't own…",
