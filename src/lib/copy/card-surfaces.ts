@@ -42,6 +42,26 @@ export const viewToggleCopy = {
   collection: { rows: "Rows view", grid: "Grid view" },
 } as const;
 
+/**
+ * The card view tile. Two strings only — everything else the tile says is a
+ * string it shares with the row it replaces.
+ */
+export const cardTileCopy = {
+  /**
+   * The availability slot when the player owns no copies. The tile draws the
+   * same collapsed `$` the All row draws, but says something different: on the
+   * row the chip is the shop, here it is the floor, and a tile carries no price
+   * for the figure to belong to.
+   */
+  slotUnownedAria: "not owned",
+  /**
+   * Appended to the art trigger's name where the badge draws `×N`. The badge is
+   * aria-hidden, and the trigger is the only label a tile has, so the count has
+   * to ride it or go unsaid.
+   */
+  copiesAria: (copies: number) => `${copies} copies in deck`,
+} as const;
+
 /** "U/B" → "blue or black"; "2/W" → "2 or white"; "G/P" → "green or 2 life". */
 function speakSymbol(symbol: string): string {
   return symbol

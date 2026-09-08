@@ -574,6 +574,7 @@ export function Decklist({
             deckId={deckId}
             label={label}
             cards={groupCards}
+            view={view}
             spentOracleId={spentCard?.oracleId}
             siblings={orderedIds}
             newestAsOf={newestAsOf}
