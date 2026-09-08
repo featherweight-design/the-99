@@ -42,7 +42,21 @@ describe("status style", () => {
     for (const status of ALL) {
       const style = statusPillStyle(status);
       expect(style.background).not.toContain("transparent");
-      expect(style.border).toBe("1px solid var(--border-strong)");
+      expect(style.border).toContain("1px");
+      expect(style.border).toContain("var(--border-strong)");
+    }
+  });
+
+  // Design ratified the uniform hairline colour and weight and restored the dash
+  // on Building alone: a line style is not an alpha fade, so the rule retiring the
+  // four colour-faded edges never reached it. With colour living only in fill and
+  // label, it is the one status signal surviving greyscale and colour blindness,
+  // on the one status that differs in kind rather than in data.
+  it("dashes Building's hairline and solids the other five", () => {
+    for (const status of ALL) {
+      expect(statusPillStyle(status).border).toBe(
+        `1px ${status === "Building" ? "dashed" : "solid"} var(--border-strong)`,
+      );
     }
   });
 
@@ -57,7 +71,7 @@ describe("status style", () => {
     expect(statusPillStyle("Building")).toEqual({
       color: "var(--fg-body)",
       background: "color-mix(in srgb, var(--fg-body) 14%, var(--bg))",
-      border: "1px solid var(--border-strong)",
+      border: "1px dashed var(--border-strong)",
     });
   });
 

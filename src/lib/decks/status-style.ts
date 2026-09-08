@@ -36,9 +36,11 @@ const FILL_ALPHA = "18%";
  * statuses whose own token is a text colour, and they take a lighter fill and a
  * quieter label than the four that key off a signal colour.
  */
-const PILL_EXCEPTION: Partial<Record<StatusPill, { fillAlpha: string; label: string }>> = {
+const PILL_EXCEPTION: Partial<
+  Record<StatusPill, { fillAlpha: string; label: string; borderStyle?: string }>
+> = {
   Draft: { fillAlpha: "16%", label: "--fg-muted" },
-  Building: { fillAlpha: "14%", label: "--fg-body" },
+  Building: { fillAlpha: "14%", label: "--fg-body", borderStyle: "dashed" },
 };
 
 /**
@@ -46,8 +48,13 @@ const PILL_EXCEPTION: Partial<Record<StatusPill, { fillAlpha: string; label: str
  * to full opacity: the fill mixes into `--bg` rather than into transparency, so
  * the plate is opaque at every alpha and a bright pixel behind it cannot reach
  * the label. The status still keys the colour — only the thing it is mixed with
- * changed. The border follows, one opaque hairline for every status, because a
- * 50% fade of the status colour was the worst-reading edge in the report.
+ * changed. The border follows, one opaque hairline colour for every status,
+ * because a 50% fade of the status colour was the worst-reading edge in the
+ * report. Building's dash survives that retirement: a line style is not an
+ * alpha fade, so the readability rule never reached it, and with colour now
+ * living only in fill and label it is the one status signal that survives
+ * greyscale and colour blindness — and the one status that differs in kind
+ * (incomplete, rather than a data condition) reading as different in kind.
  */
 function plate(token: string, alpha: string): string {
   return `color-mix(in srgb, var(${token}) ${alpha}, var(--bg))`;
@@ -59,7 +66,7 @@ export function statusPillStyle(status: StatusPill): CSSProperties {
   return {
     color: `var(${exception ? exception.label : token})`,
     background: plate(token, exception ? exception.fillAlpha : FILL_ALPHA),
-    border: "1px solid var(--border-strong)",
+    border: `1px ${exception?.borderStyle ?? "solid"} var(--border-strong)`,
   };
 }
 

@@ -36,4 +36,11 @@ describe("StatusPillBadge", () => {
     expect(pill.className).not.toMatch(/text-\[color:|bg-\[|border-\[color:/);
     expect(pill.getAttribute("style")).toContain("--danger");
   });
+
+  // The dashed/solid split itself is pinned in status-style.test.ts; this only
+  // checks the token file's border reaches the DOM at all.
+  it("carries Building's dashed hairline through to the rendered style", () => {
+    const { container } = render(<StatusPillBadge status="Building" />);
+    expect(container.querySelector("span")!.getAttribute("style")).toContain("dashed");
+  });
 });

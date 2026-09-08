@@ -61,9 +61,8 @@ authoritative and the code now matches it.
 ## Deliberate deviations from the handoff
 
 Not defects. Sorted with Hugh on 2026-09-08: the first two are settled eng-side and ask Design
-nothing, the last two are visible and go back as one prompt. Both of those ship live while Design
-rules — each is the more readable of the two readings, and reverting mid-review would redraw the
-same surface twice.
+nothing, the last two were visible and went back as one prompt. Design ratified both the same
+day — one of them with a single exception, since built.
 
 **Settled eng-side, no round-trip.**
 
@@ -73,19 +72,28 @@ same surface twice.
 - **`forced-colors: active` drops the art rather than re-tuning it** — READINESS eng
   clarification 7, already flagged there as extending the handoff's intent, and audited as such.
 
-**Open with Design, shipped live.**
+**Ratified by Design, 2026-09-08.**
 
 - **The status chip's fill mixes into `var(--bg)`, not into `transparent`**, giving an opaque
-  plate at every alpha behind one uniform `1px solid var(--border-strong)`. README §3 asks for an
-  opaque fill plus a hairline. **Side effect: `Building` loses the `--border-dashed` border
-  ratified earlier**, and the four signal statuses lose their colour-faded edges. All six now
-  carry the same hairline, because a 50% fade of the status colour was the worst-reading edge in
-  the report and the wash rules ink over art to full opacity.
+  plate at every alpha behind a uniform `var(--border-strong)` hairline. README §3 asks for an
+  opaque fill plus a hairline. Side effect: the four signal statuses lost their colour-faded
+  edges, and `Building` lost the `--border-dashed` border ratified earlier, because a 50% fade of
+  the status colour was the worst-reading edge in the report and the wash rules ink over art to
+  full opacity. **Design ratified the uniform colour and weight and restored the dash on
+  `Building` only** — a line style is not an alpha fade, so the readability rule that retires the
+  other four never reached it, and it costs no colour, weight or opacity on art. It buys back the
+  one status signal that survives greyscale and colour blindness now that colour lives only in
+  fill and label, and lets the one status that differs in kind (incomplete, rather than a data
+  condition) read as different in kind. Shipped as five statuses at `1px solid
+  var(--border-strong)`, `Building` at `1px dashed var(--border-strong)`.
 - **The no-art identity gradient renders at full opacity**, not at the art layer's. README says
   "the existing colour-identity gradient at the same opacity"; the plan shipped `1`, on the
   reading that a gradient is ground rather than photography and at `0.14` would leave a
   `left-portrait` row with no identity signal at all. Same layer, same scrim, no layout shift, and
-  it holds under `prefers-reduced-transparency` too (gap 8).
+  it holds under `prefers-reduced-transparency` too (gap 8). **Design ratified as shipped** —
+  "at the same opacity" meant no layout shift and the same layer, and gap 8's generalisation
+  (art-ness decides reducibility; a gradient publishes its own opacity) stands. Design is
+  correcting the README wording rather than the code.
 
 ## Out of scope — canvas chrome this amendment does not touch
 
