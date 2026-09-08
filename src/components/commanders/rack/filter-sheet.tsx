@@ -46,6 +46,7 @@ export function FilterSheet({
   lane,
   onChange,
   shown,
+  scopePending = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -54,6 +55,8 @@ export function FilterSheet({
   onChange: (next: LaneParams) => void;
   /** Rows the current parameters would show. The footer says it, live. */
   shown: number;
+  /** Discover only: a scope flip is out with the server (#338). */
+  scopePending?: boolean;
 }) {
   // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
   const [dragY, setDragY] = useState(0);
@@ -225,6 +228,7 @@ export function FilterSheet({
                   onChange={(scope) => onChange({ ...params, scope })}
                   wide={false}
                   showGlosses
+                  pending={scopePending}
                 />
               </Section>
               {colour}

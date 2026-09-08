@@ -631,13 +631,16 @@ describe("DiscoveryView", () => {
     item({ oracleId: "b", slug: "b", name: "Meren of Clan Nel Toth", rank: 2 }),
   ];
 
-  // The field updates on every keystroke — that feedback is the point — but the
-  // list, the URL and the server lookup all wait for the typing to stop.
-  it("narrows the list by name once the typing settles", async () => {
+  // The list narrows on the keystroke, with no wait — the rows are already in
+  // memory, and that feedback is the point. Only the URL, the window reset and
+  // the server lookup wait for the typing to stop.
+  it("narrows the list on the keystroke, not on the debounce", () => {
     render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
     fireEvent.change(field(), { target: { value: "yarok" } });
-    await waitFor(() => expect(screen.queryByText("Meren of Clan Nel Toth")).toBeNull());
+    expect(screen.queryByText("Meren of Clan Nel Toth")).toBeNull();
     expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+    // The proof the two are separate: the list has moved and the URL has not.
+    expect(window.location.search).toBe("");
   });
 
   it("mirrors the settled query as ?q=, and drops it when the field is cleared", async () => {

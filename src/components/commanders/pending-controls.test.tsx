@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { discoverCopy } from "../../lib/copy/lanes";
 import { PENDING_OPACITY } from "./pending";
 import { ScopeControl } from "./scope-control";
+import { ScopeControl as RackScope } from "./rack/scope-control";
 
 // One contract (#338). Every flip on the scope toggle is a server round-trip,
 // and before this the screen was inert for its whole duration: the segment
@@ -12,9 +14,10 @@ import { ScopeControl } from "./scope-control";
 // in as many words.
 //
 // This covered three controls until the filter rack replaced two of them. The
-// availability segment and the sort menu went with `FilterBar` and `SortMenu`,
-// and the rack's own controls carry no pending affordance, so what is left is
-// the contract as the surviving control keeps it.
+// availability segment went with `FilterBar` and does not navigate any more; the
+// sort menu's half of the contract moved to the rack's scope control, which is
+// now the one control on either lane whose flip can reach the server. Everything
+// else on the rack narrows a list already in memory and has nothing to wait for.
 describe("controls with a flip in flight", () => {
   it("selects the scope being navigated to, not the one still rendered", () => {
     render(<ScopeControl scope="owned" pending="play" onChange={vi.fn()} />);
@@ -45,6 +48,32 @@ describe("controls with a flip in flight", () => {
     const playing = screen.getByRole("radio", { name: discoveryCopy.scope.playAria });
     expect(playing.textContent).toContain(discoveryCopy.scope.play);
     expect(screen.getByText(discoveryCopy.scope.play).closest(".opacity-0")).not.toBeNull();
+  });
+
+  // The rack's scope control inherits what the sort menu had, because it is the
+  // control that replaced it: the trigger dims and the mark takes the chevron's
+  // slot, so the rack keeps one glyph's width at both states.
+  it("dims the rack's scope trigger and puts the mark in the chevron's slot", () => {
+    render(<RackScope value="new" onChange={vi.fn()} wide showGlosses={false} pending />);
+    // The trigger carries no aria-label: its two glyph spans are aria-hidden,
+    // so the label it shows is the whole of its accessible name.
+    const trigger = screen.getByRole("button", { name: discoverCopy.scope.somethingNew });
+    expect(trigger.getAttribute("aria-busy")).toBe("true");
+    expect(trigger.style.opacity).toBe(String(PENDING_OPACITY));
+    expect(trigger.querySelector("[data-pending-mark]")).not.toBeNull();
+    expect(trigger.textContent).not.toContain("▾");
+  });
+
+  // The sheet renders pills rather than a trigger, so the mark rides the picked
+  // one — the same place it rides on the lane toggle above.
+  it("marks the picked pill in the sheet, not the whole group", () => {
+    render(<RackScope value="new" onChange={vi.fn()} wide={false} showGlosses pending />);
+    const group = screen.getByRole("radiogroup");
+    expect(group.getAttribute("aria-busy")).toBe("true");
+    const picked = screen.getByRole("radio", { name: discoverCopy.scope.somethingNew });
+    const other = screen.getByRole("radio", { name: discoverCopy.scope.bestFit });
+    expect(picked.querySelector("[data-pending-mark]")).not.toBeNull();
+    expect(other.querySelector("[data-pending-mark]")).toBeNull();
   });
 
   // The other half: a control with nothing in flight is byte-identical to what

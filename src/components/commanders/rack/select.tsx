@@ -9,6 +9,8 @@
 // same options in the accessibility tree (call 3).
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { PENDING_OPACITY } from "../pending";
+import { PendingLabel, PendingMark } from "../../ui/pending-mark";
 
 export type RackOption<K extends string> = {
   key: K;
@@ -29,6 +31,7 @@ export function RackSelect<K extends string>({
   triggerHeight = 32,
   rowHeight = 44,
   showGlosses = false,
+  pending = false,
 }: {
   /** Names the control for AT at both treatments. Never rendered as chrome on
       the rack — the trigger already says what it is. */
@@ -45,6 +48,12 @@ export function RackSelect<K extends string>({
   triggerHeight?: number;
   rowHeight?: number;
   showGlosses?: boolean;
+  /** A flip on this control is a server round-trip and the answer is still out.
+      The value shown is already the one being navigated to — every caller sets
+      it optimistically — so what is left to say is that the press registered
+      (#338). Never paired with `disabled`: disabling the focused element blurs
+      it and the reader loses their place mid-flip. */
+  pending?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -103,6 +112,8 @@ export function RackSelect<K extends string>({
       <div
         role="radiogroup"
         aria-label={legend}
+        aria-busy={pending || undefined}
+        style={{ opacity: pending ? PENDING_OPACITY : undefined }}
         className={showGlosses ? "flex flex-col gap-[6px]" : "flex gap-[6px]"}
       >
         {options.map((o, i) => {
@@ -153,7 +164,11 @@ export function RackSelect<K extends string>({
                 ].join(" ")}
               />
               <span className={showGlosses ? "min-w-0 flex-1" : ""}>
-                <span className="block text-[13.5px]">{o.label}</span>
+                {/* The mark rides the selected pill, which is already the one
+                    the reader pressed — selection goes optimistic on press. */}
+                <span className="block text-[13.5px]">
+                  <PendingLabel pending={pending && selected}>{o.label}</PendingLabel>
+                </span>
                 {/* The sheet is the only place the glosses render — the rack has
                     no room for a second line. */}
                 {showGlosses && o.gloss && (
@@ -181,6 +196,7 @@ export function RackSelect<K extends string>({
         // closed, and pointing at an absent id is a broken relationship rather
         // than an empty one.
         aria-controls={open ? menuId : undefined}
+        aria-busy={pending || undefined}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => {
           if (e.key !== "ArrowDown") return;
@@ -192,12 +208,19 @@ export function RackSelect<K extends string>({
           "border border-solid bg-[color:var(--surface-sunken)] text-[color:var(--fg)] text-[12px]",
           brass ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
         ].join(" ")}
-        style={{ height: triggerHeight }}
+        style={{ height: triggerHeight, opacity: pending ? PENDING_OPACITY : undefined }}
       >
         {triggerLeading}
         {triggerLabel}
-        <span aria-hidden className="text-[color:var(--accent)]">
-          ▾
+        {/* The mark takes the chevron's place rather than sitting beside it, so
+            the trigger keeps one glyph slot at both states and the rack does not
+            resize mid-wait. The trigger still opens the menu while the request
+            is out — a control that stopped responding would be the worse answer. */}
+        <span
+          aria-hidden
+          className="inline-flex w-[28px] justify-center text-[color:var(--accent)]"
+        >
+          {pending ? <PendingMark /> : "▾"}
         </span>
       </button>
 

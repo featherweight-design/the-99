@@ -26,12 +26,17 @@ export function ScopeControl({
   onChange,
   wide,
   showGlosses,
+  pending = false,
 }: {
   value: Scope;
   onChange: (s: Scope) => void;
   wide: boolean;
   /** Sheet only. */
   showGlosses: boolean;
+  /** Scope is the one control on either lane whose flip can reach the server —
+      the rest narrow a list the client already holds. #338's contract applies
+      to it and to nothing else in the rack. */
+  pending?: boolean;
 }) {
   const current = OPTIONS.find((o) => o.key === value) ?? OPTIONS[0];
   return (
@@ -56,6 +61,7 @@ export function ScopeControl({
       // gloss under its label.
       rowHeight={48}
       showGlosses={showGlosses}
+      pending={pending}
     />
   );
 }

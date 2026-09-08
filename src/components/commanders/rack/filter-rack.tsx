@@ -42,6 +42,7 @@ export function FilterRack({
   shown,
   total,
   excludedByExactly,
+  scopePending = false,
 }: {
   params: LaneParams;
   lane: Lane;
@@ -51,6 +52,9 @@ export function FilterRack({
   total: number;
   /** Null unless `Exactly` is active AND it costs rows `Any` would have shown. */
   excludedByExactly: number | null;
+  /** Discover only: a scope flip missed the payload cache and the server is
+      answering. Every other control narrows a list already in memory. */
+  scopePending?: boolean;
 }) {
   const wide = useIsWide();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -98,6 +102,7 @@ export function FilterRack({
               onChange={(scope) => onChange({ ...params, scope })}
               wide
               showGlosses={false}
+              pending={scopePending}
             />
           )}
           {search}
@@ -157,6 +162,7 @@ export function FilterRack({
           lane={lane}
           onChange={onChange}
           shown={shown}
+          scopePending={scopePending}
         />
       )}
     </div>

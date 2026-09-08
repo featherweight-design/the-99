@@ -105,7 +105,10 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   const { view: discovery, serve } = useDiscoveryCache(served);
   const search = useSearchParams();
   const router = useRouter();
-  const [, startNav] = useTransition();
+  // #338's contract: a control whose flip is a server round-trip says so for the
+  // duration. Scope is the only one left that can reach the server, and even it
+  // usually does not — a cache hit answers in memory and this never turns true.
+  const [navPending, startNav] = useTransition();
 
   // One parameter object for the whole rack, seeded off the URL — the lane flip
   // carries `?c=` and `?q=` across, so a reader who filtered to Golgari arrives
@@ -121,18 +124,19 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   }));
   const colors = useMemo(() => upper(params.colors), [params.colors]);
 
-  // The query the reader has stopped typing. The field updates on every
-  // keystroke — that feedback is the point — but the list, the URL, the window
-  // reset and the server lookup all wait for the typing to stop: a request per
-  // keystroke would ask the index seven questions for one word, and a history
-  // entry per keystroke would bury the page the player arrived on.
+  // The query the reader has stopped typing. The list narrows on every keystroke
+  // — that feedback is the point, and the rows are already in memory — but the
+  // URL, the window reset and the server lookup all wait for the typing to stop:
+  // a request per keystroke would ask the index seven questions for one word,
+  // and a history entry per keystroke would bury the page the player arrived on.
   const [settledQuery, setSettledQuery] = useState(params.q);
   useEffect(() => {
     const timer = setTimeout(() => setSettledQuery(params.q), 350);
     return () => clearTimeout(timer);
   }, [params.q]);
-  // The parameters the LIST is under, as opposed to the ones the rack is
-  // showing. They differ only in `q`, and only for the 350ms the debounce lasts.
+  // The parameters as the URL and the server see them, as opposed to the ones
+  // the rack and the list are under. They differ only in `q`, and only for the
+  // 350ms the debounce lasts.
   const settled = useMemo(
     () => ({ ...params, q: settledQuery }),
     [params, settledQuery],
@@ -184,10 +188,10 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   // part of a name, and normalising punctuation here would be a second matcher
   // disagreeing with the server's.
   const searched = useMemo(() => {
-    const q = settledQuery.trim().toLowerCase();
+    const q = params.q.trim().toLowerCase();
     if (q === "") return discovery.items;
     return discovery.items.filter((r) => r.name.toLowerCase().includes(q));
-  }, [discovery.items, settledQuery]);
+  }, [discovery.items, params.q]);
 
   const filtered = useMemo(
     () => ordered(filterByColors(searched, colors, params.match), params.order),
@@ -361,7 +365,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
   // it survives `contains` and not `exactly`, which is what makes the mode the
   // cause rather than the selection.
   const colourExcluded = useMemo<ColourExcludedMatch[]>(() => {
-    if (settledTrimmed === "" || colors.length === 0) return [];
+    if (trimmedQuery === "" || colors.length === 0) return [];
     const kept = new Set(filterByColors(searched, colors, params.match).map((r) => r.slug));
     return searched
       .filter((r) => !kept.has(r.slug))
@@ -372,7 +376,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
           params.match === "exactly" &&
           filterByColors([r], colors, "contains").length === 1,
       }));
-  }, [searched, settledTrimmed, colors, params.match]);
+  }, [searched, trimmedQuery, colors, params.match]);
 
   const report = useMemo(
     () =>
@@ -520,6 +524,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
         onChange={update}
         shown={filtered.length}
         total={discovery.items.length}
+        scopePending={navPending}
         excludedByExactly={excludedByExactly}
       />
 
