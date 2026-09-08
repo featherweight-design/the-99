@@ -80,8 +80,9 @@ export function FilterRack({
       // is on the persistent row beside `Filters`, not a row of pills. The
       // sheet's own copy of the control is the pill treatment.
       wide
-      // 44px on the phone row, where it is a touch target rather than a
+      // 44px square on the phone row, where it is a touch target rather than a
       // desktop trigger sharing a 34px rhythm with search.
+      iconOnly={!wide}
       triggerHeight={wide ? 32 : 44}
     />
   );

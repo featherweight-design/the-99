@@ -23,6 +23,7 @@ export function RackSelect<K extends string>({
   legend,
   triggerLabel,
   triggerLeading,
+  triggerIcon,
   brass,
   wide,
   value,
@@ -38,6 +39,11 @@ export function RackSelect<K extends string>({
   legend: string;
   triggerLabel: string;
   triggerLeading?: ReactNode;
+  /** Draws the trigger as a square icon button rather than a labelled one, for
+      the phone row where it shares 44px with search and `Filters`. The label is
+      not dropped: it becomes the accessible name, so the control still says
+      which order is on. */
+  triggerIcon?: ReactNode;
   /** True off the default value. The border is the state, so it does not depend
       on reading the label. */
   brass: boolean;
@@ -197,6 +203,7 @@ export function RackSelect<K extends string>({
         // than an empty one.
         aria-controls={open ? menuId : undefined}
         aria-busy={pending || undefined}
+        aria-label={triggerIcon ? triggerLabel : undefined}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => {
           if (e.key !== "ArrowDown") return;
@@ -204,24 +211,37 @@ export function RackSelect<K extends string>({
           setOpen(true);
         }}
         className={[
-          "font-mono inline-flex items-center gap-[7px] cursor-pointer rounded-lg px-[12px]",
+          "font-mono inline-flex items-center gap-[7px] cursor-pointer rounded-lg",
+          triggerIcon ? "shrink-0 justify-center px-0" : "px-[12px]",
           "border border-solid bg-[color:var(--surface-sunken)] text-[color:var(--fg)] text-[12px]",
           brass ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
         ].join(" ")}
-        style={{ height: triggerHeight, opacity: pending ? PENDING_OPACITY : undefined }}
+        style={{
+          height: triggerHeight,
+          width: triggerIcon ? triggerHeight : undefined,
+          opacity: pending ? PENDING_OPACITY : undefined,
+        }}
       >
-        {triggerLeading}
-        {triggerLabel}
-        {/* The mark takes the chevron's place rather than sitting beside it, so
-            the trigger keeps one glyph slot at both states and the rack does not
-            resize mid-wait. The trigger still opens the menu while the request
-            is out — a control that stopped responding would be the worse answer. */}
-        <span
-          aria-hidden
-          className="inline-flex w-[28px] justify-center text-[color:var(--accent)]"
-        >
-          {pending ? <PendingMark /> : "▾"}
-        </span>
+        {triggerIcon ? (
+          // One glyph slot either way, so the row does not resize mid-wait.
+          pending ? <PendingMark /> : triggerIcon
+        ) : (
+          <>
+            {triggerLeading}
+            {triggerLabel}
+            {/* The mark takes the chevron's place rather than sitting beside it,
+                so the trigger keeps one glyph slot at both states and the rack
+                does not resize mid-wait. The trigger still opens the menu while
+                the request is out — a control that stopped responding would be
+                the worse answer. */}
+            <span
+              aria-hidden
+              className="inline-flex w-[28px] justify-center text-[color:var(--accent)]"
+            >
+              {pending ? <PendingMark /> : "▾"}
+            </span>
+          </>
+        )}
       </button>
 
       {open && (

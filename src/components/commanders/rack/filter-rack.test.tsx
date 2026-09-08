@@ -57,6 +57,17 @@ describe("FilterRack", () => {
     expect(screen.getByRole("button", { name: "Order · Fit" })).toBeInTheDocument();
   });
 
+  // The phone row is search · order · `Filters` in 390px. Order gives up its
+  // label there so search keeps the width, but not its name: the trigger still
+  // announces which order is on.
+  it("draws the phone order trigger as a glyph that keeps its accessible name", () => {
+    stubWidth(false);
+    const { container } = renderRack("owned");
+    const trigger = screen.getByRole("button", { name: "Order · Fit" });
+    expect(trigger).not.toHaveTextContent(/Fit/);
+    expect(container.querySelector('path[d="M5 5h10M6.5 10h7M8.5 15h3"]')).toBeInTheDocument();
+  });
+
   it("badges the Filters trigger with the active control count, below 1024px", () => {
     stubWidth(false);
     renderRack("owned", { ...defaultParams("owned"), colors: ["b"], match: "exactly" }, 31);
