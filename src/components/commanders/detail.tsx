@@ -2,7 +2,6 @@
 // Desktop: sticky left column (63/88 card + oracle glass + build button) + scrolling right column.
 // Mobile: art header band (236px, gradient + overlay text) + sticky bottom Build bar + sections.
 
-import Link from "next/link";
 import { commanderGradient } from "../../lib/collection/gradients";
 import { WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
 import { fitSegments } from "../../lib/recs/format";
@@ -215,10 +214,10 @@ export function CommanderDetail({
   prose = null,
 }: CommanderDetailProps) {
   const gradient = commanderGradient(c.colorIdentity);
-  // The mode rides back out on the two back links as well as in. A reader who
-  // arrived from a free-ranked list and returned to the canonical one would
-  // watch the list they came from reorder itself under them.
-  const backHref = avail === "free" ? "/commanders?avail=free" : "/commanders";
+  // No back chrome here: the rail and the tab bar are the route back at both
+  // widths, and a 30px glyph over card art is the second way to do one thing
+  // that the refresh removes. `avail` still rides into the hero, which is what
+  // decides whether the free-ranked clause prints.
 
   return (
     // One card-detail modal for the whole page, so the role chips below open the
@@ -242,26 +241,6 @@ export function CommanderDetail({
           boxShadow: "inset 0 -60px 60px -30px color-mix(in oklab, var(--bg) 90%, transparent)",
         }}
       >
-        {/* Back chevron */}
-        <Link
-          href={backHref}
-          // brand focus-visible outline treatment inherited from globals.css
-          className="absolute flex items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)]"
-          style={{
-            top: 16,
-            left: 16,
-            width: 30,
-            height: 30,
-            backdropFilter: "blur(4px)",
-            fontSize: 15,
-            textDecoration: "none",
-            zIndex: 1,
-          }}
-          aria-label="Back to rankings"
-        >
-          ‹
-        </Link>
-
         {/* Mana identity pips (top-right) */}
         {c.colorIdentity.length > 0 && (
           <div
@@ -480,19 +459,6 @@ export function CommanderDetail({
           className="sticky flex flex-col gap-[16px]"
           style={{ top: 20 }}
         >
-          {/* Back link */}
-          <Link
-            href={backHref}
-            // brand focus-visible outline treatment inherited from globals.css
-            className="inline-flex items-center gap-[7px] font-sans text-[color:var(--fg-faint)]"
-            style={{
-              fontSize: 13,
-              textDecoration: "none",
-            }}
-          >
-            ‹ Back to rankings
-          </Link>
-
           {/* Commander card frame — 63/88 aspect. Image when available;
               gradient is the fallback. */}
           <div

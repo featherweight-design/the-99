@@ -38,6 +38,17 @@ const GHOST =
   "hover:[border-color:var(--accent)] hover:[color:var(--accent-hover)] " +
   "disabled:hover:[border-color:var(--border-strong)] disabled:hover:[color:var(--fg)]";
 
+// The refresh's conformance geometry: "a 32px hairline pill (--border-strong,
+// 12.5px label, 14px side padding)". Prefixed at sm: because the figure is a
+// desktop figure — below it every control that takes this is at its touch
+// height, and 32px would put it under the target floor.
+//
+// A class string rather than a variant: its callers are not all GhostButton.
+// Two are hand-rolled buttons with a menu contract and one is a field
+// container, and pulling three unrelated components through one primitive to
+// share three utilities would cost more than it saves.
+export const HAIRLINE = "sm:h-[32px] sm:px-[14px] sm:text-[12.5px]";
+
 type SharedProps = {
   className?: string;
   children: React.ReactNode;
