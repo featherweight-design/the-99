@@ -153,8 +153,10 @@ export function TopOffList({
   // read live would let the row vanish from under the cursor one beat later,
   // which is the whole of what state 17 forbids. The frozen rows are drawn from
   // the difference between this pool and the fresh list.
-  const frozen = useRef(candidates);
-  const pool = frozen.current;
+  //
+  // State with no setter rather than a ref: the pool is read on every render to
+  // decide what to draw, which is exactly what a ref may not be used for.
+  const [pool] = useState(candidates);
   const offered = new Set(candidates.map((c) => c.oracleId));
 
   // A candidate the deck gained while the list was open. Frozen rows keep their
@@ -185,6 +187,17 @@ export function TopOffList({
   const total = 99 - openSlots + tickedCount;
 
   const capLineId = `${listId}-cap`;
+
+  // The height the spacer below the rows has to reserve for the pinned bar.
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barHeight, setBarHeight] = useState(0);
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setBarHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // One message per settle. The first render is the open announcement, which
   // the strip fires; this only speaks once the player has moved something.
@@ -418,8 +431,16 @@ export function TopOffList({
         </p>
       )}
 
+      {/* The pinned bar is out of flow, so the page has no idea it is there and
+          the tail of the list can never be scrolled clear of it. The dock it
+          replaces is sticky and reserves its own height; this reserves the
+          bar's. Measured rather than guessed because the bar runs two lines or
+          three depending on whether the pass is spending money. */}
+      <div aria-hidden className="md:hidden" style={{ height: barHeight }} />
+
       {/* ── Commit row (§9) / commit bar (§10) ─────────────────────────── */}
       <div
+        ref={barRef}
         className={[
           // Phone: the one pinned element, taking the quick-add dock's slot.
           "fixed left-0 right-0 bottom-[var(--tabbar-h)] z-30 px-[12px] pt-[11px] pb-[13px]",
@@ -427,7 +448,9 @@ export function TopOffList({
           // Desktop: an ordinary row at the foot of the list, never sticky.
           "md:static md:left-auto md:right-auto md:p-0 md:mt-[14px] md:pt-[14px]",
           "md:flex-row md:items-center md:gap-[14px] md:flex-wrap",
-          "[background:var(--base)] md:[background:none]",
+          // The dock's own background, because this takes the dock's slot. A
+          // transparent pinned bar lets 191 rows scroll through its text.
+          "[background:var(--bg)] md:[background:none]",
           "[border-top:1px_solid_var(--border-strong)] md:[border-top:1px_solid_var(--border)]",
         ].join(" ")}
       >
