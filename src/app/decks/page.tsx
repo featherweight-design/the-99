@@ -34,7 +34,9 @@ export default async function DecksPage({
     // The sort has no default in the reader, so no caller's order can move
     // under it. The server hands back this order and the client re-sorts from
     // there without a request.
-    listDecksWithStats(userId, DEFAULT_DECK_SORT),
+    // This is the one caller that draws the in-use-elsewhere clause, so it is
+    // the one that pays for the availability read behind it.
+    listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeInUseElsewhere: true }),
     // The tile's To buy figure reads its copies and its cost from the same
     // roll-up, so the count and the price always cover the same cards.
     loadShoppingRollup(userId),

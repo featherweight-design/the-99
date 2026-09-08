@@ -73,7 +73,9 @@ fixed, and what was deliberately left as drawn.
     derives the whole grid's counts from one pass over that map, and
     `listDecksWithStats` runs it in parallel with the list query, tolerating
     failure (`.catch(() => null)` → zeros) because a missing clause is not
-    worth a 500 on the deck list.
+    worth a 500 on the deck list. It is opt-in — `{ includeInUseElsewhere }`,
+    passed only by `/decks` — because the builder page calls the same reader
+    for deck *names* and has no use for a whole-collection aggregation.
 
     The vocabulary is `receiptCountsByCommander`'s, deliberately: a card is
     "in use" only when a **finished** deck has sleeved it **and** the supply is

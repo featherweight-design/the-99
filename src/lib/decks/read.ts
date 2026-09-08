@@ -276,7 +276,18 @@ function toDate(value: Date | string | null): Date | null {
  * re-order every existing caller the day it changed, and the caller is always
  * the one that knows which order its page asked for.
  */
-export async function listDecksWithStats(userId: string, sort: DeckSort): Promise<DeckListItem[]> {
+export async function listDecksWithStats(
+  userId: string,
+  sort: DeckSort,
+  /**
+   * Off by default because only the deck grid draws the clause. The builder's
+   * move-card picker calls this for names alone, and the availability read
+   * aggregates the player's whole collection — a cost that page has no use for.
+   * A caller that leaves it off gets `inUseElsewhere: 0`, which is what the
+   * tile draws when nothing is spoken for anyway.
+   */
+  opts: { includeInUseElsewhere?: boolean } = {},
+): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
     (
       select sum(dc2.quantity)
@@ -358,7 +369,7 @@ export async function listDecksWithStats(userId: string, sort: DeckSort): Promis
         cards.imageUri,
       )
       .orderBy(...order),
-    loadAvailability(userId).catch(() => null),
+    opts.includeInUseElsewhere ? loadAvailability(userId).catch(() => null) : null,
   ]);
   const inUseElsewhere = availability
     ? inUseElsewhereByDeck(availability.values())
