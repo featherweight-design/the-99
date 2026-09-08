@@ -122,6 +122,10 @@ try {
         `${vpName} ${routeName}: ${washes.length} art layers — ${cropped.length} art_crop, ` +
           `${framed.length} framed, ${gradients.length} identity gradient`,
       );
+      // Every check below is a filter over `washes`, so an empty list passes them
+      // all. A class rename or a route that stopped drawing a wash is the failure
+      // this probe exists to catch, not the condition under which it goes quiet.
+      if (!washes.length) note(`  FAIL no wash layers found on ${routeName}`);
       if (framed.length) note(`  FAIL framed art still on ${routeName}: ${framed[0].url}`);
       const bands = [...new Set(washes.map((w) => w.bandHeight))].filter((h) => h);
       note(`  band heights: ${bands.sort((a, b) => a - b).join(", ")}`);
@@ -136,6 +140,9 @@ try {
     await page.waitForTimeout(800);
     const base = await page.evaluate(`(${READ_WASHES})()`);
     const baseScrims = await page.evaluate(READ_SCRIM_HEIGHTS);
+    if (!base.length || !baseScrims.length) {
+      note(`  FAIL no wash layers on /commanders — the accessibility checks measure nothing`);
+    }
 
     // Playwright's `emulateMedia` has no `prefers-reduced-transparency` option and
     // ignores one silently, so the check has to go through CDP or it passes vacuously.
