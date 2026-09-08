@@ -1041,9 +1041,17 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
       if (!live.has(row.oracleId)) continue;
       const held = placed.get(row.oracleId) ?? 0;
       if (row.quantity > held) {
+        // `auto` is re-checked in the predicate, exactly as the delete does it.
+        // `keepAutoCard` clears the flag without taking this lock, so a keep
+        // landing between the read above and this write would otherwise let an
+        // undo decrement a card the player has just claimed.
         await tx.update(deckCards)
           .set({ quantity: sql`${deckCards.quantity} - ${held}` })
-          .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, row.oracleId)));
+          .where(and(
+            eq(deckCards.deckId, deckId),
+            eq(deckCards.oracleId, row.oracleId),
+            eq(deckCards.auto, true),
+          ));
       } else {
         rowsToDelete.push(row.oracleId);
       }
