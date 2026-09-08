@@ -1253,7 +1253,9 @@ Expected: PASS.
 
 - [ ] **Step 6: Prove the query in a browser, not in a test**
 
-`pnpm dev` against the local fixture account, and add a temporary log of `loadShoppingRollup(userId)` on the decks page. Check three things: a deck whose cards are all owned is absent from `byDeck` (not present with zero); `total.copies` equals the sum of the tiles' `toBuyCount`; and a deck holding a card with no price row still counts that card in `copies` while leaving `cents` alone. Remove the log.
+`pnpm dev` against the local fixture account, and add a temporary log of `loadShoppingRollup(userId)` on the decks page. Check three things: a deck whose cards are all owned is absent from `byDeck` (not present with zero); `total.copies` never exceeds the sum of the tiles' `toBuyCount` — it may
+fall short, because the roll-up excludes basics and `toBuyCount` does not, so an unowned Forest is
+the whole of any gap; and a deck holding a card with no price row still counts that card in `copies` while leaving `cents` alone. Remove the log.
 
 - [ ] **Step 7: Commit**
 
@@ -1709,11 +1711,17 @@ function detailFor(deck: DeckListItem, shopping: DeckShopping | undefined): stri
       return c.detailOver(deck.built - MATURE_DECK_SIZE);
     case "Unresolved":
       return c.detailUnresolved(deck.unresolvedCount);
-    case "To buy":
+    case "To buy": {
+      // The count comes from the roll-up, NOT from `deck.toBuyCount`. The
+      // roll-up excludes basics, as every Shopping surface does; `toBuyCount`
+      // is `built − ownedCount` and does not. Pairing them would print a cost
+      // that covers fewer copies than the number beside it.
+      const copies = shopping?.copies ?? deck.toBuyCount;
       // No price row is not "free" — the copies still print, the cost does not.
       return shopping && shopping.cents > 0
-        ? c.detailToBuy(deck.toBuyCount, formatCents(shopping.cents))
-        : c.detailUnowned(deck.toBuyCount);
+        ? c.detailToBuy(copies, formatCents(shopping.cents))
+        : c.detailUnowned(copies);
+    }
     case "Complete":
       return c.detailComplete;
   }
@@ -3223,9 +3231,13 @@ markup and the ordering is tested as a function.
   with ellipsis; under it a `gap-[8px]` row holding `StatusPillBadge` (19px tall, `px-[7px]`, 5px
   radius, the status's tint at 16% behind its own colour) and the figure line in mono 10.5px
   `--fg-faint`.
-- The figure line is `built / 99`, then `refreshCopy.decks.detailUnowned(toBuyCount)` joined by
-  ` · ` **only when `toBuyCount > 0`**. `99 / 99 · 3 unowned` and `87 / 99` are the two frames, and
-  they are the same rule.
+- The figure line is `built / 99`, then `refreshCopy.decks.detailUnowned(copies)` joined by ` · `
+  **only when `copies > 0`**. `99 / 99 · 3 unowned` and `87 / 99` are the two frames, and they are
+  the same rule.
+- `copies` is the deck's `ShoppingRollup.byDeck` entry, `?? deck.toBuyCount` when absent — the
+  same source the deck tile reads, and for the same reason: the roll-up excludes basics and
+  `toBuyCount` does not. Home already loads the roll-up for Commitments, so pass it down rather
+  than letting two figures on one screen count different cards.
 
 **The row draws the deck name, not the commander name.** The frame prints
 `Atraxa, Praetors' Voice` in both rows because the fixture names each deck after its commander,
@@ -3399,7 +3411,8 @@ Task 13's `/decks` zero; a Home with a collection and no decks shows the heroes 
     10.5px in the status colour, then `built / 99` in mono 12px `--fg` on the right, `flex-none`.
     56px is the touch target and the reason phone earns the art.
 - The phone `status · figure` clause takes its figure from the status, using strings that already
-  exist: `To buy` → `detailUnowned(toBuyCount)`, `Unresolved` → `detailUnresolved(unresolvedCount)`,
+  exist: `To buy` → `detailUnowned(copies)` (the roll-up's, per Task 9's helper — never
+  `toBuyCount`, which counts basics), `Unresolved` → `detailUnresolved(unresolvedCount)`,
   `Over` → `detailOver(built - 99)`, `Draft` / `Building` / `Complete` → no clause. Reuse Task 9's
   detail-line helper rather than writing a second `switch`; if Task 9 left it inline in the tile,
   lift it to `src/lib/decks/status.ts` in this task and have both call it.

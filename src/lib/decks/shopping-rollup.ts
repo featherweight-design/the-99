@@ -17,10 +17,15 @@
 // listing them at zero, so `summarisePrices` counts them against the
 // denominator and not into the total — `pricedCopies` is what makes that
 // visible to a caller that wants to say "12 of 15 priced".
+//
+// Basics are excluded, as they are from every other Shopping surface
+// (`isShoppingCard`) and from the availability model. A deck's fill never buys
+// them, so counting an unowned Forest here would put a cost on this roll-up
+// that no deck's own Shopping list shows.
 
 import { and, eq, notExists, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { collectionItems, deckCards, decks } from "../../db/schema";
+import { cards, collectionItems, deckCards, decks } from "../../db/schema";
 import { summarisePrices, type PricedCard } from "./price";
 import { loadPrices } from "./price-query";
 
@@ -63,9 +68,14 @@ export async function loadShoppingRollup(userId: string): Promise<ShoppingRollup
     })
     .from(deckCards)
     .innerJoin(decks, eq(decks.id, deckCards.deckId))
+    .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
     .where(
       and(
         eq(decks.userId, userId),
+        // The SQL twin of `isBasicLand`'s `/\bBasic\b/`; `\m` and `\M` are
+        // Postgres's word-boundary escapes. Same predicate as
+        // `availability-query.ts`, so the two models exclude the same cards.
+        sql`${cards.typeLine} !~ '\\mBasic\\M'`,
         notExists(
           db
             .select({ one: sql`1` })

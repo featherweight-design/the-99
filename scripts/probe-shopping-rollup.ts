@@ -8,8 +8,11 @@
 //
 //   1. A deck whose cards are all owned is ABSENT from byDeck, not present at
 //      zero. Home has to tell "nothing to buy" apart from "no deck".
-//   2. total.copies equals the sum of every tile's toBuyCount, because the deck
-//      tile and Home's Commitments row are the same figure at two scopes.
+//   2. total.copies never EXCEEDS the sum of every tile's toBuyCount. It is
+//      allowed to fall short: the roll-up excludes basics, as every Shopping
+//      surface does, while toBuyCount is `built − ownedCount` and does not, so
+//      an unowned Forest is the whole of any gap. Exceeding would mean the
+//      roll-up counted a copy the deck does not want.
 //   3. An unpriced copy still counts as a copy. pricedCopies <= copies, and a
 //      deck holding a card the feed has never stocked has the gap.
 //
@@ -58,7 +61,9 @@ async function main() {
           decks: tiles.length,
           total: rollup.total,
           tileToBuyTotal: tileTotal,
-          totalsAgree: tileTotal === rollup.total.copies,
+          rollupWithinTileTotal: rollup.total.copies <= tileTotal,
+          /** Unowned basics, which the roll-up refuses and `toBuyCount` counts. */
+          basicsGap: tileTotal - rollup.total.copies,
           fullyOwnedDecks: fullyOwned.length,
           fullyOwnedButPresentInRollup: wronglyPresent,
           unpricedCopies: rollup.total.copies - rollup.total.pricedCopies,
