@@ -91,6 +91,9 @@ export const commandersCopy = {
     receipts: (names: string[], more: number) =>
       `receipts: ${names.join(" · ")}${more > 0 ? ` +${more}` : ""}`,
     fitDenominator: "/100 FIT",
+    // The same slot when synergy went unmeasured: the figure is out of what
+    // could be scored, and printing `/100` there would claim a reading nobody took.
+    fitDenominatorMeasurable: (max: number) => `/${n(max)} MEASURABLE FIT`,
     delta: (d: number, from: number) => `${d < 0 ? "↓" : "↑"}${Math.abs(d)} from ${from}`,
     splitLegend: ["Pool", "Roles", "Synergy"] as const,
     fit: (score: number) => `${score} /100 fit`,

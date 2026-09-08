@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
 import { DiscoveryRow } from "./discovery-row";
@@ -33,45 +34,83 @@ const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
 });
 
 function row(over: Partial<DiscoveryItem> = {}, sort: "fit" | "new" = "fit") {
-  return render(
-    <DiscoveryRow item={item(over)} rank={1} sort={sort} counts={null} />,
-  );
+  return render(<DiscoveryRow item={item(over)} rank={1} sort={sort} />);
 }
 
+/** Both breakpoints render, so every figure on this row appears twice. The
+    counts are the exception: the phone folds them onto one line and the desktop
+    stacks them, but each width prints each count once. */
+const both = 2;
+
 describe("DiscoveryRow", () => {
-  it("prints the overlap sentence under fit, at both widths", () => {
-    row();
-    expect(
-      screen.getAllByText((_, el) => el?.textContent === discoveryCopy.justify.overlap(126, 264))
-        .length,
-    ).toBeGreaterThan(0);
+  it("prints the support count over the EDHREC total", () => {
+    row({ ownedSupport: 84, edhrecTotal: 236 });
+    expect(screen.getAllByText("84")).toHaveLength(both);
+    expect(screen.getAllByText("OF TOP 236 OWNED")).toHaveLength(both);
   });
 
-  // Both figures are emphasised by searching the finished sentence for them, so
-  // the case where they are the same string is the one that could lose the
-  // second match.
-  it("emphasises both figures even when the whole support list is owned", () => {
-    const { container } = row({ ownedSupport: 264, edhrecTotal: 264 });
-    const bolded = [...container.querySelectorAll("strong")].map((el) => el.textContent);
-    expect(bolded.filter((t) => t === "264").length).toBeGreaterThanOrEqual(2);
+  // Discovery does not blend, so there is no 0–100 reading to print and no
+  // previous one to delta against.
+  it("prints no score out of 100, no FIT stack and no delta", () => {
+    const { container } = row();
+    expect(container.textContent).not.toContain("/100");
+    expect(container.textContent).not.toContain("FIT ");
+    expect(container.textContent).not.toMatch(/[↑↓]\d+ from/);
+  });
+
+  it("prints the deck count and the novelty count", () => {
+    row({ deckCount: 1209, unplayedCount: 172 });
+    expect(
+      screen.getAllByText((_, el) => el?.textContent === "1,209 decks tracked"),
+    ).not.toHaveLength(0);
+    expect(
+      screen.getAllByText((_, el) => el?.textContent === "172 of its top cards new to you"),
+    ).not.toHaveLength(0);
+  });
+
+  // Nobody has counted is not nobody has built, so an absent deck count prints
+  // no line rather than a zero.
+  it("drops the popularity line when EDHREC carried no deck count", () => {
+    const { container } = row({ deckCount: null });
+    expect(container.textContent).not.toContain("decks tracked");
   });
 
   // The denominator is `edhrec_total`, and nothing substitutes for it — not 99,
   // not the pool size.
   it("prints neither figure when the denominator is missing", () => {
-    row({ edhrecTotal: null });
-    expect(screen.queryByText(discoveryCopy.justify.overlapLabel)).toBeNull();
-    expect(screen.queryByText(discoveryCopy.justify.figureLabelFit)).toBeNull();
-    // The receipt line still stands: it is a claim about the collection, which
-    // every commander has, including the ones EDHREC does not index.
+    const { container } = row({ edhrecTotal: null });
+    expect(container.textContent).not.toContain("OF TOP");
+    // Ownership still stands: it is a claim about the collection, which every
+    // commander has, including the ones EDHREC does not index.
     expect(screen.getAllByText(discoveryCopy.ownership.unowned).length).toBeGreaterThan(0);
   });
 
-  it("names the unplayed tags under novelty, and draws no bar", () => {
-    const { container } = row({}, "new");
+  it("ends the content column on ownership, at both widths", () => {
+    row();
+    expect(screen.getAllByText(discoverCopy.row.notOwned)).toHaveLength(both);
+  });
+
+  // The row is the action, and it is this lane's action: nothing here offers to
+  // start a deck from a commander the player does not own.
+  it("offers See the pool as its only named action", () => {
+    row();
+    expect(screen.getByRole("link", { name: discoverCopy.row.action })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: commandersCopy.row.action }),
+    ).not.toBeInTheDocument();
+  });
+
+  // The art is the wash behind the row, not a printing in a box. `I3` is the
+  // only frame with a thumbnail, and it applies only if a printing is named.
+  it("shows no image at rest", () => {
+    const { container } = row({ imageUri: "https://example.test/art.jpg" });
+    expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("names the unplayed tags under novelty", () => {
+    row({}, "new");
     expect(screen.getAllByText("elves · tokens · aristocrats").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(discoveryCopy.justify.figureLabelNew).length).toBeGreaterThan(0);
-    expect(container.querySelectorAll(".rounded-full.overflow-hidden").length).toBe(0);
+    expect(screen.getAllByText(discoveryCopy.justify.distanceLabel).length).toBeGreaterThan(0);
   });
 
   it("says what the nearest deck shares when one overlaps", () => {
@@ -148,7 +187,8 @@ describe("DiscoveryRow", () => {
   // clause that survived.
   it("leads the row's accessible name with ownership, before any figure", () => {
     row({});
-    const link = screen.getByRole("link");
+    // The stretched link, not the trailing pill: the pill's name is its own.
+    const link = screen.getAllByRole("link")[0];
     const label = link.getAttribute("aria-label") ?? "";
     expect(label.indexOf(discoveryCopy.ownership.unownedAria)).toBeGreaterThan(-1);
     expect(label.indexOf(discoveryCopy.ownership.unownedAria)).toBeLessThan(
@@ -160,7 +200,7 @@ describe("DiscoveryRow", () => {
   // rather than naming it a second time.
   it("names the commander once in the row's accessible name", () => {
     row({});
-    const label = screen.getByRole("link").getAttribute("aria-label") ?? "";
+    const label = screen.getAllByRole("link")[0].getAttribute("aria-label") ?? "";
     expect(label.split("Lathril, Blade of the Elves").length - 1).toBe(1);
   });
 

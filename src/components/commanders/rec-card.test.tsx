@@ -5,6 +5,7 @@ import type { SynergyState } from "../../lib/recs/synergy-state";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { RecCard, type ScoreDelta } from "./rec-card";
 import { explainedCopy } from "../../lib/copy/commander-explained";
+import { commandersCopy } from "../../lib/copy/lanes";
 
 vi.mock("../../app/commanders/actions", () => ({
   retryRecs: vi.fn(),
@@ -86,6 +87,34 @@ describe("RecCard synergy states", () => {
   });
 });
 
+describe("RecCard row shape", () => {
+  // The art is the wash behind the row, not a printing in a box. `I3` is the
+  // only frame with a thumbnail, and it applies only if a printing is named.
+  it("shows no image at rest", () => {
+    const { container } = card({
+      commander: item({ imageUri: "https://example.test/art.jpg" }),
+    });
+    expect(container.querySelector("img")).toBeNull();
+  });
+
+  // Every figure the shipped row printed is still printed: the redraw moved
+  // them, it did not drop any.
+  it("keeps every shipped figure", () => {
+    card({ counts: { inUse: 6, wantedByBrew: 0 } });
+    expect(screen.getAllByText(commandersCopy.row.fitDenominator)).toHaveLength(2);
+    expect(screen.getAllByText("40")).not.toHaveLength(0);
+    expect(screen.getAllByText(/120 of your cards fit/)).toHaveLength(2);
+    expect(screen.getAllByText("6 already in use")).toHaveLength(2);
+  });
+
+  // No header CTA, and no second copy on the phone: the row is the action, so
+  // exactly one link names it.
+  it("names its action exactly once", () => {
+    card();
+    expect(screen.getAllByRole("link", { name: commandersCopy.row.action })).toHaveLength(1);
+  });
+});
+
 // The line renders once per layout, so every count here is 2.
 describe("RecCard receipt line", () => {
   // OPEN ITEM 7: the line always renders, so a row's height never depends on
@@ -148,13 +177,15 @@ describe("RecCard score and denominator", () => {
     // rankScore is deliberately the rescaled 80 this test asserts is never shown.
     card({ commander: { ...noSynergy("absent"), fitPool: 20, fitRoles: 12, score: 32, rankScore: 80 } });
     expect(screen.getAllByText("32")).toHaveLength(2);
-    expect(screen.getByText(explainedCopy.score.denominatorMeasurable(40))).toBeInTheDocument();
+    expect(
+      screen.getAllByText(commandersCopy.row.fitDenominatorMeasurable(40)),
+    ).toHaveLength(2);
     expect(screen.queryByText("80")).toBeNull();
   });
 
   it("takes the full denominator where synergy was measured", () => {
     card();
-    expect(screen.getByText(explainedCopy.score.denominator)).toBeInTheDocument();
+    expect(screen.getAllByText(commandersCopy.row.fitDenominator)).toHaveLength(2);
   });
 
   // The mobile tile has no room to print a denominator, so both layouts carry

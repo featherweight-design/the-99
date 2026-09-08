@@ -1,13 +1,16 @@
-// Recommendation Card (§Recommendation Card, §Fit Bar, §Role Chips, §Synergy Line,
+// The owned lane's row (§Recommendation Card, §Fit Bar, §Role Chips, §Synergy Line,
 // §Receipts Preview, §Per-Commander Degraded Note).
-// Desktop: grid 40px 100px 1fr 236px (rank · art · evidence · fit).
-// Mobile: stacked tile with Fit pinned top-right.
-// Whole card links to /commanders/${slug}.
+// Desktop: grid 24px 1fr 206px 32px (rank · evidence · fit · action).
+// Mobile: two bands with the fit figure on band one's trailing edge.
+// The art is no longer a thumbnail in a column of its own: it bleeds in from the
+// leading edge behind the whole row, so there is no card fill and no border —
+// rows are separated by a divider and told apart by the wash behind them.
+// Whole row links to /commanders/${slug}.
 
 import Link from "next/link";
 import { fitSegments } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
-import { CommanderThumb, CommanderTile } from "./commander-art";
+import { CommanderBleed, IdentityPips } from "./commander-art";
 import { DiscoveryRow } from "./discovery-row";
 import { FitBar } from "./fit-bar";
 import { RetryLink } from "./retry-submit";
@@ -15,6 +18,7 @@ import { commanderDetailHref } from "./list-nav";
 import { ReceiptLine } from "./receipt-line";
 import { RoleChips } from "./role-chips";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { commandersCopy } from "../../lib/copy/lanes";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import type { CommanderListItem } from "../../lib/recs/recommend";
@@ -28,10 +32,6 @@ export type ScoreDelta = { drop: number; was: number };
 
 type RecCardCommon = {
   rank: number;
-  /** The receipt's second clause, by severity. Counted server-side. Null when
-      the availability read failed, which drops the clause rather than printing
-      a zero the reader would take for a fact. */
-  counts: ReceiptCounts | null;
 };
 
 /**
@@ -47,6 +47,11 @@ type RecCardProps =
           link and the receipts. It sits on this arm alone: the discover lane has
           no availability control, so there is nothing there for it to describe. */
       avail: "all" | "free";
+      /** The receipt's second clause, by severity. Counted server-side. Null when
+          the availability read failed, which drops the clause rather than printing
+          a zero the reader would take for a fact. It sits on this arm alone: the
+          receipt is a claim about an availability pool discover does not have. */
+      counts: ReceiptCounts | null;
       /**
        * How far this commander's score fell against the free pool, and what it
        * was. Null under `Everything I own`, and null where the score did not
@@ -70,12 +75,7 @@ export function RecCard(props: RecCardProps) {
   // arm and land here.
   if (props.commander === undefined) {
     return (
-      <DiscoveryRow
-        item={props.discovery}
-        rank={props.rank}
-        sort={props.sort}
-        counts={props.counts}
-      />
+      <DiscoveryRow item={props.discovery} rank={props.rank} sort={props.sort} />
     );
   }
   const { commander: c, rank, avail, counts, delta } = props;
@@ -85,10 +85,13 @@ export function RecCard(props: RecCardProps) {
   // fill here would show the reader an 80 on the list and a 32 on the detail
   // page for the same commander. The denominator carries the difference.
   const scoreDisplay = c.score;
-  const denominator =
+  // The design draws one mono line under the figure, denominator and unit
+  // together. An unmeasured commander keeps its own denominator there: `/100`
+  // under a score out of 40 would be a reading nobody took.
+  const fitUnit =
     c.fitSynergy !== null
-      ? explainedCopy.score.denominator
-      : explainedCopy.score.denominatorMeasurable(c.measurableTotal);
+      ? commandersCopy.row.fitDenominator
+      : commandersCopy.row.fitDenominatorMeasurable(c.measurableTotal);
   const scoreAria = explainedCopy.score.scoreAria(c.score, c.measurableTotal);
 
   // §Synergy Receipts Hidden Note / §Per-Commander Degraded Note. Split by
@@ -108,54 +111,55 @@ export function RecCard(props: RecCardProps) {
       : 0;
 
   return (
-    <div className="relative group">
-      {/* Stretched link keeps the whole card clickable without nesting the
+    <div className="relative group transition-colors hover:bg-[color:var(--elevated-hover)]">
+      {/* Stretched link keeps the whole row clickable without nesting the
           retry <form> inside an anchor (invalid HTML); the forms sit above it
           on z-[2]. Brand focus-visible outline inherited from globals.css. */}
       <Link
         href={commanderDetailHref(c.slug, avail)}
         aria-label={`${c.name} — view commander details`}
-        className="absolute inset-0 z-[1] rounded-[11px] sm:rounded-[12px]"
+        className="absolute inset-0 z-[1]"
       />
-      {/* ── Mobile layout: stacked tile ── */}
-      <div
-        className="sm:hidden rounded-[11px] p-[12px_13px] flex flex-col gap-[9px] transition-colors group-hover:border-[color:var(--border-strong)] group-hover:bg-[color:var(--elevated-hover)]"
-        style={{
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-        }}
-      >
-        {/* Mobile top row: art + name/info + fit score */}
-        <div className="flex gap-[10px] items-start">
-          <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} />
 
-          {/* Name + type line */}
-          <div className="flex-1 min-w-0">
-            {/* Rank + name row */}
-            <div className="flex items-center gap-[6px]">
-              <span
-                className="font-display font-[800] shrink-0"
-                // minWidth, not width: 16px was measured against Cinzel, and a
-                // two-digit rank in a wider display face overflows a fixed box
-                // into the name beside it. The floor still aligns the single
-                // digits, which is what the fixed width was for.
-                style={{ fontSize: 17, color: "var(--fg-faint)", minWidth: 16, textAlign: "center" }}
-              >
-                {rank}
-              </span>
-              <span
-                className="font-display font-[600] truncate"
-                style={{ fontSize: 14.5, color: "var(--fg)" }}
-              >
-                {c.name}
-              </span>
-            </div>
+      <CommanderBleed imageUri={c.imageUri} colorIdentity={c.colorIdentity} />
+
+      {/* ── Mobile layout: two bands in 268px ── */}
+      <div
+        className="relative sm:hidden p-[12px_13px] flex flex-col gap-[9px]"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        {/* Band one: rank, name and pips, fit pinned to the trailing edge. */}
+        <div className="flex gap-[10px] items-start">
+          <span
+            className="font-mono font-[600] shrink-0"
+            // minWidth, not width: a two-digit rank in a fixed box crowds the
+            // name beside it. The floor still aligns the single digits, which
+            // is what the fixed width was for.
+            style={{
+              fontSize: 17,
+              color: rank === 1 ? "var(--accent)" : "var(--fg-faint)",
+              minWidth: 16,
+              textAlign: "center",
+              lineHeight: 1.2,
+            }}
+          >
+            {rank}
+          </span>
+
+          <div className="flex-1 min-w-0 flex items-center gap-[6px]">
+            <span
+              className="font-display font-[600] truncate"
+              style={{ fontSize: 14.5, color: "var(--fg)" }}
+            >
+              {c.name}
+            </span>
+            <IdentityPips colorIdentity={c.colorIdentity} />
           </div>
 
-          {/* Fit score pinned top-right */}
-          <div className="flex flex-col items-center shrink-0">
-            {/* The tile has no room for a denominator beside the figure, so the
-                one place it cannot be dropped is the accessible name. */}
+          {/* Fit score pinned to the trailing edge */}
+          <div className="flex flex-col items-end shrink-0">
+            {/* The band has no room for the long denominator beside the figure,
+                so the one place it cannot be dropped is the accessible name. */}
             <span className="sr-only">{scoreAria}</span>
             <span
               className="font-mono font-[600]"
@@ -166,15 +170,15 @@ export function RecCard(props: RecCardProps) {
             </span>
             <span
               className="font-mono"
-              style={{ fontSize: 9, letterSpacing: "0.12em", color: "var(--fg-faint)" }}
+              style={{ fontSize: 9, letterSpacing: "0.1em", color: "var(--fg-faint)" }}
               aria-hidden
             >
-              FIT
+              {fitUnit}
             </span>
             {delta && (
               <span
                 className="font-mono"
-                style={{ fontSize: 10, color: "var(--fg-body)", marginTop: 2 }}
+                style={{ fontSize: 10, color: "var(--fg-muted)", marginTop: 2 }}
               >
                 <span aria-hidden="true">
                   {availabilityCopy.receipt.delta(delta.drop)}
@@ -254,48 +258,53 @@ export function RecCard(props: RecCardProps) {
         )}
       </div>
 
-      {/* ── Desktop layout: grid 40px 100px 1fr 236px ── */}
+      {/* ── Desktop layout: grid 24px 1fr 206px 32px ── */}
       <div
-        className="hidden sm:grid rounded-[12px] p-[24px_26px] transition-colors group-hover:border-[color:var(--border-strong)] group-hover:bg-[color:var(--elevated-hover)]"
+        className="relative hidden sm:grid p-[24px_26px]"
         style={{
-          gridTemplateColumns: "40px 100px 1fr 236px",
+          gridTemplateColumns: "24px 1fr 206px 32px",
           gap: 20,
           alignItems: "stretch",
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
+          borderBottom: "1px solid var(--border)",
         }}
       >
-        {/* Rank column */}
+        {/* Rank column. Brass at rank 1, and the diamond below it. */}
         <div className="flex flex-col items-center justify-center gap-[7px]">
           <span
-            className="font-display font-[800]"
-            style={{ fontSize: 26, color: "var(--fg-faint)", lineHeight: 1 }}
+            className="font-mono font-[600]"
+            style={{
+              fontSize: 19,
+              color: rank === 1 ? "var(--accent)" : "var(--fg-faint)",
+              lineHeight: 1,
+            }}
           >
             {rank}
           </span>
           {/* Diamond pip below numeral */}
           <span
-            className="block"
+            aria-hidden="true"
+            className="block shrink-0"
             style={{
               width: 6,
               height: 6,
-              background: "var(--border-strong)",
               transform: "rotate(45deg)",
+              background: rank === 1 ? "var(--accent)" : "var(--border-strong)",
             }}
           />
         </div>
 
-        <CommanderTile imageUri={c.imageUri} colorIdentity={c.colorIdentity} />
-
         {/* Evidence column */}
         <div className="flex flex-col gap-[13px]" style={{ minWidth: 0 }}>
           {/* Commander name */}
-          <h3
-            className="font-display font-[600] m-0"
-            style={{ fontSize: 20, color: "var(--fg)", lineHeight: 1.1 }}
-          >
-            {c.name}
-          </h3>
+          <div className="flex items-center gap-[8px]" style={{ minWidth: 0 }}>
+            <h3
+              className="font-display font-[600] m-0 truncate"
+              style={{ fontSize: 17, color: "var(--fg)", lineHeight: 1.1 }}
+            >
+              {c.name}
+            </h3>
+            <IdentityPips colorIdentity={c.colorIdentity} />
+          </div>
 
           {/* Role chips */}
           <RoleChips roleCounts={c.roleCounts} />
@@ -317,7 +326,7 @@ export function RecCard(props: RecCardProps) {
               {/* Overlap bar track */}
               <div
                 className="overflow-hidden rounded-full"
-                style={{ width: 120, height: 6, background: "var(--elevated)" }}
+                style={{ width: 148, height: 5, background: "var(--elevated)" }}
               >
                 <div
                   className="h-full"
@@ -347,7 +356,7 @@ export function RecCard(props: RecCardProps) {
           {receipts && (
             <p
               className="m-0 font-mono overflow-hidden text-ellipsis whitespace-nowrap"
-              style={{ fontSize: 11, color: "var(--fg-locked)", lineHeight: 1.4 }}
+              style={{ fontSize: 10.5, color: "var(--fg-faint)", lineHeight: 1.4 }}
             >
               <span style={{ color: "var(--fg-faint)" }}>receipts:</span>{" "}
               {receipts}
@@ -406,41 +415,31 @@ export function RecCard(props: RecCardProps) {
           className="flex flex-col justify-center gap-[10px]"
           style={{ borderLeft: "1px solid var(--border)", paddingLeft: 20 }}
         >
-          {/* Score + /100 + Fit label row */}
-          <div className="flex items-baseline gap-[6px]">
+          {/* The figure over its denominator, as the count stack opposite it on
+              the discover lane: the unit is a line of its own, not a clause
+              trailing the number. */}
+          <div className="flex flex-col gap-[3px]">
             <span className="sr-only">{scoreAria}</span>
             <span
               className="font-mono font-[600]"
-              style={{ fontSize: 34, color: "var(--fg)", lineHeight: 1 }}
+              style={{ fontSize: 27, color: "var(--fg)", lineHeight: 1 }}
               aria-hidden
             >
               {scoreDisplay}
             </span>
             <span
               className="font-mono"
-              style={{ fontSize: 13, color: "var(--fg-faint)" }}
+              style={{ fontSize: 11, letterSpacing: "0.1em", color: "var(--fg-faint)" }}
               aria-hidden
             >
-              {denominator}
-            </span>
-            <span
-              className="font-mono"
-              style={{
-                fontSize: 10,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "var(--fg-faint)",
-                marginLeft: 2,
-              }}
-            >
-              Fit
+              {fitUnit}
             </span>
           </div>
 
           {/* Score delta (§9). Desktop buys the longer form: the bare arrow
               says how far without saying from where. */}
           {delta && (
-            <p className="m-0 font-mono" style={{ fontSize: 12, color: "var(--fg-body)" }}>
+            <p className="m-0 font-mono" style={{ fontSize: 10.5, color: "var(--fg-muted)" }}>
               <span aria-hidden="true">
                 {availabilityCopy.receipt.deltaFrom(delta.drop, delta.was)}
               </span>
@@ -452,6 +451,20 @@ export function RecCard(props: RecCardProps) {
 
           {/* Fit bar with legend */}
           <FitBar fit={fit} legend />
+        </div>
+
+        {/* Trailing action. `z-[2]` above the stretched link, which it shares a
+            destination with: the pill names the action the whole row performs.
+            Desktop only — a second link to the same place on the phone would be
+            a duplicate the band has no room for and the row does not need. */}
+        <div className="flex items-center justify-center">
+          <Link
+            href={commanderDetailHref(c.slug, avail)}
+            className="relative z-[2] flex h-[32px] items-center rounded-full border border-[color:var(--border-strong)] bg-[rgba(20,17,14,0.5)] px-[12px] font-mono whitespace-nowrap text-[color:var(--fg-body)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            style={{ fontSize: 11 }}
+          >
+            {commandersCopy.row.action}
+          </Link>
         </div>
       </div>
     </div>

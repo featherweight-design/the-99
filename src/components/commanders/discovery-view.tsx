@@ -678,12 +678,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
                 {/* `item.rank`, not the map index: the server ranked every item
                     this list carries, so a colour filter narrows what is shown
                     without renumbering what it leaves behind. */}
-                <RecCard
-                  discovery={item}
-                  rank={item.rank}
-                  sort={discovery.sort}
-                  counts={item.counts}
-                />
+                <RecCard discovery={item} rank={item.rank} sort={discovery.sort} />
               </li>
             ))}
 
