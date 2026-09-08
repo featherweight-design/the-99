@@ -14,6 +14,7 @@ const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
   name,
   colorIdentity: ["B", "G"],
   imageUri: null,
+  releasedAt: "2021-04-23",
   rank: 1,
   ownedSupport: 126,
   collectionSupport: 126,
@@ -32,7 +33,7 @@ const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
 
 function row(over: Partial<DiscoveryItem> = {}, sort: "fit" | "new" = "fit") {
   return render(
-    <DiscoveryRow item={item(over)} rank={1} sort={sort} avail="all" counts={null} />,
+    <DiscoveryRow item={item(over)} rank={1} sort={sort} counts={null} />,
   );
 }
 

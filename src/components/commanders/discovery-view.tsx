@@ -1,10 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { filterByColors, type JoinMode } from "../../lib/commanders/filter";
-import { parseColors } from "../../lib/color-param";
-import { parseJoin } from "../../lib/discovery/params";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { filterByColors } from "../../lib/commanders/filter";
+import {
+  laneQuery,
+  parseLaneParams,
+  type LaneOrder,
+  type LaneParams,
+} from "../../lib/commanders/lane-params";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { colorWords, guildLabel } from "../../lib/copy/color-labels";
@@ -12,25 +24,18 @@ import { colorWords, guildLabel } from "../../lib/copy/color-labels";
 // reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is unset
 // and pulls `ws` and the neon driver in with it. A type-only clause is erased at
 // compile time, so none of that reaches the client bundle.
-import type { DiscoveryList } from "../../lib/discovery/list";
-import { FilterBar } from "./filter-bar";
+import type { DiscoveryItem, DiscoveryList } from "../../lib/discovery/list";
+import { FilterRack } from "./rack/filter-rack";
 import { PageHeader } from "./page-header";
 import { RecCard } from "./rec-card";
-import { SortMenu } from "./sort-menu";
 import { useDiscoveryCache } from "./discovery-cache";
-import {
-  useAvailNav,
-  useRerankAnnouncement,
-  useScopeAnnouncement,
-  useScopeNav,
-  useSortNav,
-} from "./list-nav";
+import { useRerankAnnouncement, useScopeAnnouncement, useScopeNav } from "./list-nav";
 // Imported, never redeclared: it is 25, and the reveal band only lines up with
 // the shipped control if both windows step by the same number.
 import {
   EndOfRanking, REVEAL_STEP, RevealControl, revealAnnouncement,
 } from "./reveal-control";
-import { FloorEmpty, FloorPoolEmpty, NoDecksBanner } from "./discovery-empty";
+import { FloorEmpty, NoDecksBanner } from "./discovery-empty";
 import { ExclusionLine } from "./exclusion-line";
 import { resolveExclusionLine } from "../../lib/commanders/exclusion-line";
 import { FilteredEmpty } from "./filtered-empty";
@@ -53,149 +58,195 @@ const emptyCopy = discoveryCopy.empty;
 // same value every render and the report memo below does not re-run for it.
 const EMPTY_MATCHES: ExcludedMatch[] = [];
 
+// `filterByColors` matches against `colorIdentity`, which is upper-case
+// throughout the catalog; `lane-params` writes the URL in lower case. The lift
+// happens once, here, exactly as the owned lane does it.
+const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
+
+/**
+ * The lane's client-side ordering. `popularity` is the server's own order and is
+ * returned untouched, which is what keeps the rank numerals meaningful: they are
+ * built over the unfiltered list in the server's order and never renumber.
+ *
+ * `recent` sorts on `releasedAt` descending with undated sets last. It is a
+ * client-side reorder rather than a fourth server ranking because the payload
+ * already carries the date, and a round trip for a sort over rows in memory is
+ * the request this lane's cache exists to avoid.
+ */
+function ordered(rows: DiscoveryItem[], order: LaneOrder): DiscoveryItem[] {
+  if (order === "name") {
+    return [...rows].sort((a, b) => a.name.localeCompare(b.name, "en"));
+  }
+  if (order === "recent") {
+    return [...rows].sort((a, b) => (b.releasedAt ?? "").localeCompare(a.releasedAt ?? ""));
+  }
+  return rows;
+}
+
 /**
  * Discovery's list is its own client component rather than an adaptation of
  * `CommandersView`: that one takes `CommanderListItem[]` and holds the owned
- * scope's two client-side rankings and its `ScoreDelta` state, none of which
+ * lane's two client-side rankings and its `ScoreDelta` state, none of which
  * discovery has. Fabricating a score or a synergy state to fit its props would
  * put invented numbers one prop away from a surface whose premise is that every
  * figure prints its denominator.
+ *
+ * There is no availability control here, and no way to ask for one. The lane
+ * scores against the whole collection, always: the novelty floor read whichever
+ * pool was selected, so the control silently removed rows from a list it only
+ * claimed to reorder.
  */
-export function DiscoveryView({
-  discovery: served,
-  avail: servedAvail,
-}: {
-  discovery: DiscoveryList;
-  avail: "all" | "free";
-}) {
-  // Shadowing the two props, so everything below reads the ranking that is on
-  // screen without caring whether it arrived from the server this navigation or
-  // came back out of the cache. A pair already seen this visit is served with no
+export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList }) {
+  // Shadowing the prop, so everything below reads the ranking that is on screen
+  // without caring whether it arrived from the server this navigation or came
+  // back out of the cache. A scope already seen this visit is served with no
   // request at all, which is also what makes the design table's "motion: none"
   // true for it — there is nothing to wait for.
-  const { view, serve } = useDiscoveryCache(served, servedAvail);
-  const { list: discovery, avail } = view;
-  // Seeded from the URL, because the scope flip carries `?c=` across: a player
-  // who filtered to Golgari under the owned scope arrives here with those pips
-  // still lit rather than with a param the list ignores.
+  const { view: discovery, serve } = useDiscoveryCache(served);
   const search = useSearchParams();
-  const [colors, setColors] = useState<string[]>(() => parseColors(search.get("c")));
-  // Seeded the same way, and for the same reason: `?join=exact` is part of the
-  // link a player shares, so the list it opens is the one they were looking at.
-  const [join, setJoin] = useState<JoinMode>(() => parseJoin(search.get("join")));
-  const [query, setQuery] = useState(() => search.get("q") ?? "");
-  const [shown, setShown] = useState(REVEAL_STEP);
-  // Search composes into the one memo the colour filter already uses, and after
-  // it: `filteredTotal` is read off this result, and it is the whole basis for
-  // the bar printing the match figure once. A second narrowing anywhere else
-  // would leave that figure counting a list nobody is looking at.
+  const router = useRouter();
+  const [, startNav] = useTransition();
+
+  // One parameter object for the whole rack, seeded off the URL — the lane flip
+  // carries `?c=` and `?q=` across, so a reader who filtered to Golgari arrives
+  // here with those pips lit rather than with params the list ignores.
   //
-  // Name matching only, and case-insensitive. Nothing is trimmed off the middle:
-  // a player typing "ur-dragon" has typed part of a name, and normalising
-  // punctuation here would be a second matcher disagreeing with the server's.
-  const filtered = useMemo(() => {
-    const byColor = filterByColors(discovery.items, colors, join);
-    const q = query.trim().toLowerCase();
-    if (q === "") return byColor;
-    return byColor.filter((r) => r.name.toLowerCase().includes(q));
-  }, [discovery.items, colors, join, query]);
+  // `scope` is the exception: it is the one control the server ranks on, and
+  // `loadDiscovery` downgrades `new` to `bestfit` when there is no deck to
+  // measure novelty from. The ranking that actually came back wins over the one
+  // the URL asked for.
+  const [params, setParams] = useState<LaneParams>(() => ({
+    ...parseLaneParams(search, "discover"),
+    scope: served.sort === "new" ? "new" : "bestfit",
+  }));
+  const colors = useMemo(() => upper(params.colors), [params.colors]);
 
-  // The query the reader has stopped typing. The list narrows on every keystroke
-  // — that feedback is the point — but the URL, the window reset and the spoken
-  // count all wait for the typing to stop: a message per keystroke would speak
-  // over itself, and a history entry per keystroke would bury the page the
-  // player arrived on. Phase 5's lookup hangs off this same value.
-  const [settledQuery, setSettledQuery] = useState(query);
+  // The query the reader has stopped typing. The field updates on every
+  // keystroke — that feedback is the point — but the list, the URL, the window
+  // reset and the server lookup all wait for the typing to stop: a request per
+  // keystroke would ask the index seven questions for one word, and a history
+  // entry per keystroke would bury the page the player arrived on.
+  const [settledQuery, setSettledQuery] = useState(params.q);
   useEffect(() => {
-    const timer = setTimeout(() => setSettledQuery(query), 350);
+    const timer = setTimeout(() => setSettledQuery(params.q), 350);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [params.q]);
+  // The parameters the LIST is under, as opposed to the ones the rack is
+  // showing. They differ only in `q`, and only for the 350ms the debounce lasts.
+  const settled = useMemo(
+    () => ({ ...params, q: settledQuery }),
+    [params, settledQuery],
+  );
 
-  const scopeNav = useScopeNav();
-  const sortNav = useSortNav();
-  const availNav = useAvailNav();
-  const setScope = scopeNav.go;
-  // The `go` functions, not the hooks' return objects: each hook builds a fresh
-  // object every render to carry its `pending`, so depending on the object would
-  // rebuild these callbacks on every render and the memo would buy nothing.
-  const goSort = sortNav.go;
-  const goAvail = availNav.go;
-  // Cache first, server second. `serve` reports a miss rather than throwing, so
-  // the navigation is the fallback and the URL ends up the same either way.
-  const setSort = useCallback(
-    (next: "fit" | "new") => {
-      if (!serve(next, avail)) goSort(next);
+  // Mirror the rack to the URL through the History API rather than
+  // `router.replace`: a replace is a navigation, and every control here except
+  // scope narrows a list the client already holds. `laneQuery` writes defaults
+  // as absences and copies every parameter this lane does not own off the live
+  // URL, so nothing another surface left behind is dropped.
+  useEffect(() => {
+    const { pathname, search: live } = window.location;
+    const next = laneQuery(new URLSearchParams(live), settled, "discover");
+    window.history.replaceState(null, "", `${pathname}${next}`);
+  }, [settled]);
+
+  // The scope the server actually ranked on, reconciled during render rather
+  // than in an effect: an effect would paint the control on the scope that was
+  // asked for once before correcting it to the one that came back.
+  const [prevList, setPrevList] = useState(discovery);
+  if (discovery !== prevList) {
+    setPrevList(discovery);
+    const scope = discovery.sort === "new" ? "new" : "bestfit";
+    if (scope !== params.scope) setParams((p) => ({ ...p, scope }));
+  }
+
+  const [shown, setShown] = useState(REVEAL_STEP);
+
+  // Every control on the rack lands here. Only `scope` reaches the server, and
+  // even that goes to the cache first: `serve` reports a miss rather than
+  // throwing, so the navigation is the fallback and the URL ends up the same
+  // either way.
+  const update = useCallback(
+    (next: LaneParams) => {
+      setParams(next);
+      if (next.scope === params.scope) return;
+      const asked = { ...next, q: settledQuery };
+      if (serve(next.scope === "new" ? "new" : "fit", asked)) return;
+      const { pathname, search: live } = window.location;
+      const href = `${pathname}${laneQuery(new URLSearchParams(live), asked, "discover")}`;
+      startNav(() => router.replace(href, { scroll: false }));
     },
-    [serve, avail, goSort],
+    [params.scope, settledQuery, serve, router],
   );
-  const setAvail = useCallback(
-    (next: "all" | "free") => {
-      if (!serve(discovery.sort, next)) goAvail(next);
-    },
-    [serve, discovery.sort, goAvail],
+
+  // Search narrows before colour, so the colour figures below describe the list
+  // the reader is actually looking at. Name matching only, case-insensitive.
+  // Nothing is trimmed off the middle: a player typing "ur-dragon" has typed
+  // part of a name, and normalising punctuation here would be a second matcher
+  // disagreeing with the server's.
+  const searched = useMemo(() => {
+    const q = settledQuery.trim().toLowerCase();
+    if (q === "") return discovery.items;
+    return discovery.items.filter((r) => r.name.toLowerCase().includes(q));
+  }, [discovery.items, settledQuery]);
+
+  const filtered = useMemo(
+    () => ordered(filterByColors(searched, colors, params.match), params.order),
+    [searched, colors, params.match, params.order],
   );
+
+  // What `Exactly` costs against `Any`, counted over the SAME searched list on
+  // both sides so the figure answers for one control alone. The defect this
+  // replaced composed colour and search in a single memo, so the aside printed a
+  // figure with the name search folded into it. Null when the mode is off, when
+  // no pip is lit, or when the two modes agree — a "0 excluded" aside is noise.
+  const excludedByExactly = useMemo(() => {
+    if (params.match !== "exactly" || colors.length === 0) return null;
+    const loose = filterByColors(searched, colors, "contains").length;
+    const diff = loose - filterByColors(searched, colors, "exactly").length;
+    return diff > 0 ? diff : null;
+  }, [searched, colors, params.match]);
+
   // Empty on an ordinary load, and the flip's message on arrival from the other
-  // scope — the count it names is the one the server just produced.
+  // lane — the count it names is the one the server just produced.
   const [announcement, setAnnouncement] = useState("");
   useScopeAnnouncement("play", discovery.items.length, discovery.sort, setAnnouncement);
-  // Both re-ranks happen on the server, so each message names the count that came
+  // The re-rank happens on the server, so the message names the count that came
   // back with the new ordering rather than one predicted at click time — and the
   // server's count, not the filtered one: a colour filter is a client-side
-  // narrowing that neither re-rank changed, so speaking its length would say the
-  // re-rank moved a number it never touched.
+  // narrowing the re-rank never touched.
   // `items.length`, not `candidateCount`: the latter counts every candidate found
-  // before the novelty sort's exclusions, and both messages name what is on the
-  // list — one of them literally says "clear the floor".
+  // before the novelty sort's exclusions, and the message names what is on the
+  // list — it literally says "clear the floor".
+  //
+  // Nothing else announces here. The rack's result line is a live region of its
+  // own and already speaks every client-side narrowing; a second region saying
+  // the same thing would read a chorus after each keystroke.
   const rankedCount = discovery.items.length;
   const sortMessage = useCallback(
     (s: "fit" | "new") => discoveryCopy.sort.announce(s, rankedCount),
     [rankedCount],
   );
-  const availMessage = useCallback(
-    (a: "all" | "free") => discoveryCopy.avail.announce(a, rankedCount),
-    [rankedCount],
-  );
   useRerankAnnouncement(discovery.sort, sortMessage, setAnnouncement);
-  useRerankAnnouncement(avail, availMessage, setAnnouncement);
 
-  const toggleColor = useCallback((c: string) => {
-    setColors((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
-  }, []);
-  const clearColors = useCallback(() => setColors([]), []);
+  const scopeNav = useScopeNav();
 
-  // The mode narrows on the client, so its message is written here rather than
-  // read back off a server round trip. It names the count the flip produced and
-  // the identity it was exact about, because "Exactly" alone says nothing about
-  // what left the list.
-  const joinMessage = useCallback(
-    (m: JoinMode) => planeCopy.join.announce(m, filtered.length, colors),
-    [filtered.length, colors],
-  );
-  useRerankAnnouncement(join, joinMessage, setAnnouncement);
-
-  // The pool the count is against is the ranked list, not the filtered one: the
-  // sentence answers "how much of what I am looking at is left", and naming the
-  // already-narrowed figure on both sides would make it "N of N" every time.
-  // A cleared query says nothing rather than announcing the whole list back.
-  const searchMessage = useCallback(
-    (q: string) =>
-      q.trim() === "" ? "" : planeCopy.search.announce(filtered.length, discovery.items.length),
-    [filtered.length, discovery.items.length],
-  );
-  useRerankAnnouncement(settledQuery, searchMessage, setAnnouncement);
-
-  // The window goes back to the top whenever the list underneath it changes —
-  // a sort or availability flip, both of which are server round-trips that
-  // return a differently ordered list under this same mounted component, and a
-  // colour filter, which narrows one on the client. Keeping the old depth would
-  // open the list part-way down a ranking the player has not seen the top of:
-  // rank 800 under one filter is a different commander under the next.
+  // The window goes back to the top whenever the list underneath it changes — a
+  // scope flip, which is a server round-trip returning a differently ordered
+  // list under this same mounted component, and every client-side narrowing and
+  // reorder. Keeping the old depth would open the list part-way down a ranking
+  // the player has not seen the top of: rank 800 under one filter is a different
+  // commander under the next.
   //
   // Adjusted during render rather than in an effect, which is what React
-  // prescribes for state derived from a prop change — an effect would render
-  // the deep window once before correcting it. The scope flip needs no entry
-  // here at all: it unmounts this component.
-  const listKey = `${discovery.sort}:${avail}:${colors.join("")}:${join}:${settledQuery.trim()}`;
+  // prescribes for state derived from a prop change — an effect would render the
+  // deep window once before correcting it.
+  const listKey = [
+    discovery.sort,
+    colors.join(""),
+    params.match,
+    params.order,
+    settledQuery.trim(),
+  ].join(":");
   const [prevListKey, setPrevListKey] = useState(listKey);
   if (listKey !== prevListKey) {
     setPrevListKey(listKey);
@@ -206,10 +257,10 @@ export function DiscoveryView({
   // window rather than written in the click handler: the row to focus does not
   // exist yet when the handler runs, and reading `shown` there would let two
   // fast clicks announce a range that was never revealed. Same shape as the
-  // owned scope's, which is why both send `revealAnnouncement`.
+  // owned lane's, which is why both send `revealAnnouncement`.
   //
-  // A layout effect, and the two re-rank announcements above are plain effects,
-  // so a flip's message always lands after this one clears the region.
+  // A layout effect, and the re-rank announcement above is a plain effect, so a
+  // flip's message always lands after this one clears the region.
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
   const prevShown = useRef(shown);
   useLayoutEffect(() => {
@@ -229,40 +280,8 @@ export function DiscoveryView({
     itemRefs.current[before]?.focus({ preventScroll: true });
   }, [shown, filtered.length]);
 
-  // A colour filter is a client-side narrowing, so it is mirrored with
-  // `replaceState` rather than routed — routing would re-run the server rank for
-  // a change the server does not make. Every other param is read back off the
-  // live URL rather than rebuilt, because `scope`, `sort` and `avail` belong to
-  // the server and this effect must not be the thing that drops one.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (colors.length > 0) params.set("c", colors.join(""));
-    else params.delete("c");
-    // Written only while it can do something. With no pip lit the control is not
-    // rendered and the mode changes no row, so a `join` left in the URL would be
-    // a filter the player cannot see, cannot clear, and did not ask for.
-    if (join === "exactly" && colors.length > 0) params.set("join", "exact");
-    else params.delete("join");
-    if (settledQuery.trim() !== "") params.set("q", settledQuery.trim());
-    else params.delete("q");
-    const s = params.toString();
-    // The live pathname, not a literal: this rewrites the query and must leave
-    // the path exactly as it found it under a basePath or a route move.
-    window.history.replaceState(null, "", `${window.location.pathname}${s ? `?${s}` : ""}`);
-  }, [colors, join, settledQuery]);
-
-  const menu = (
-    <SortMenu
-      sort={discovery.sort}
-      pending={sortNav.pending}
-      hasDecks={discovery.hasDecks}
-      onChange={setSort}
-    />
-  );
-
   const remaining = Math.max(0, filtered.length - shown);
-  // A list too short to have ever been windowed ends on a plain spacer, and its
-  // count line says nothing about a window that never existed.
+  // A list too short to have ever been windowed ends on a plain spacer.
   const wasWindowed = filtered.length > REVEAL_STEP;
 
   // The floor state names a percentage and the nearest miss, so it renders only
@@ -272,24 +291,12 @@ export function DiscoveryView({
   //
   // The server's list, not the filtered one: the floor is a server-side
   // exclusion the colour filter played no part in, so reading `filtered.length`
-  // here would blame the floor for an emptiness the pips caused and tell a
-  // player who narrowed to Azorius that none of the N candidates cleared it.
+  // here would blame the floor for an emptiness the pips caused.
   const showFloorEmpty =
     discovery.items.length === 0 && discovery.floorExcluded > 0 && discovery.bestPct != null;
-  // The pool variant takes precedence over it: when rows would have cleared
-  // against the whole collection, the pool is the control that removed them and
-  // the other sort is the wrong door to offer. It needs no nearest miss —
-  // its evidence is the count that would clear elsewhere.
-  const showPoolEmpty =
-    discovery.items.length === 0 && avail === "free" && discovery.poolExcluded > 0;
-  // Either one replaces the list outright, so every state below is about a list
-  // that is still there.
-  const floorReplacedList = showPoolEmpty || showFloorEmpty;
-  // The live query, not the settled one: `filtered` narrows per keystroke, and a
-  // heading naming the previous query for 350ms would quote a word the reader
-  // has already finished changing. The debounce exists for the URL, the window
-  // and the live region, none of which the reader is looking at.
-  const trimmedQuery = query.trim();
+  // The live query, not the settled one: a heading naming the previous query for
+  // 350ms would quote a word the reader has already finished changing.
+  const trimmedQuery = params.q.trim();
   // Named nothing, rather than filtered to nothing. Read against the server's
   // list rather than `filtered`, because a name that IS in the list and was
   // removed by a pip is a colour exclusion wearing a search miss — this state
@@ -302,8 +309,6 @@ export function DiscoveryView({
   // The matches the SERVER removed, for the settled query only: one round trip
   // per query the reader has stopped typing, and none at all until the field
   // holds something the index can answer (the action's own floor is 2 too).
-  // Cleared before the fetch rather than after it, so a report never outlives
-  // the query it was written about.
   // The answer is stamped with the question it answers, and read back only while
   // the two still agree: an answer is discarded by being out of date rather than
   // by a second setState clearing it, so no render ever pairs one query's rows
@@ -337,9 +342,7 @@ export function DiscoveryView({
       // under its key all the same, so a failure settles the question rather
       // than hanging it: the states below wait for an answer, and one that never
       // arrives would hold them off the screen forever. `ok: false` is what
-      // stops the settling being read as an answer — the states that make a
-      // claim about the whole index stay off, and what remains is the ranked
-      // list and its own count.
+      // stops the settling being read as an answer.
       .catch(() => {
         if (live)
           setAnswer({ key: `${discovery.sort}:${settledTrimmed}`, matches: [], ok: false });
@@ -358,19 +361,18 @@ export function DiscoveryView({
   // it survives `contains` and not `exactly`, which is what makes the mode the
   // cause rather than the selection.
   const colourExcluded = useMemo<ColourExcludedMatch[]>(() => {
-    if (trimmedQuery === "" || colors.length === 0) return [];
-    const q = trimmedQuery.toLowerCase();
-    const named = discovery.items.filter((r) => r.name.toLowerCase().includes(q));
-    const kept = new Set(filterByColors(named, colors, join).map((r) => r.slug));
-    return named
+    if (settledTrimmed === "" || colors.length === 0) return [];
+    const kept = new Set(filterByColors(searched, colors, params.match).map((r) => r.slug));
+    return searched
       .filter((r) => !kept.has(r.slug))
       .map((r) => ({
         name: r.name,
         colorIdentity: r.colorIdentity,
         joinOnly:
-          join === "exactly" && filterByColors([r], colors, "contains").length === 1,
+          params.match === "exactly" &&
+          filterByColors([r], colors, "contains").length === 1,
       }));
-  }, [discovery.items, trimmedQuery, colors, join]);
+  }, [searched, settledTrimmed, colors, params.match]);
 
   const report = useMemo(
     () =>
@@ -378,32 +380,31 @@ export function DiscoveryView({
         server: serverExcluded,
         colour: colourExcluded,
         colors,
-        freeCards: discovery.freePoolSize,
         listHasRows: filtered.length > 0,
       }),
-    [serverExcluded, colourExcluded, colors, discovery.freePoolSize, filtered.length],
+    [serverExcluded, colourExcluded, colors, filtered.length],
   );
 
   // Every match is excluded, and the report knows which control did it. It
   // outranks both empties below: they say what is missing, and this one says
   // why and offers the single control that would undo it.
-  const showHeldEmpty = !floorReplacedList && filtered.length === 0 && report !== null;
+  const showHeldEmpty = !showFloorEmpty && filtered.length === 0 && report !== null;
   // Which of the two things the surface may say about a miss depends on one
   // question: has the index been looked at for the query ON SCREEN?
-  const settled = trimmedQuery === "" || settledTrimmed === trimmedQuery;
+  const settledForQuery = trimmedQuery === "" || settledTrimmed === trimmedQuery;
   const current = answer?.key === lookupKey ? answer : null;
   // Asked, and answered. The only footing "no commander is named that" has.
-  const indexChecked = settled && current !== null && current.ok;
+  const indexChecked = settledForQuery && current !== null && current.ok;
   // Asked and unanswerable, or never asked at all: the action declines a query
   // under two characters, and a query it never saw is one it never checked.
   // A failed round trip lands here too.
   const indexUnchecked =
-    settled && (settledTrimmed.length < 2 || (current !== null && !current.ok));
+    settledForQuery && (settledTrimmed.length < 2 || (current !== null && !current.ok));
   // Neither yet. The typing has not settled, or the round trip is in flight, and
   // every conclusion below is one more render away.
   const pending = trimmedQuery !== "" && !indexChecked && !indexUnchecked;
   const showSearchEmpty =
-    !floorReplacedList &&
+    !showFloorEmpty &&
     !showHeldEmpty &&
     indexChecked &&
     trimmedQuery !== "" &&
@@ -415,11 +416,8 @@ export function DiscoveryView({
   // one more conclusion the server has not confirmed yet. It outranks the
   // unchecked-index state below, because the colours are a cause this reader can
   // act on and the unchecked index is not — but only where they ARE the cause.
-  // A query naming nothing in the list empties it whatever the pips are set to,
-  // so this state would offer a control that changes nothing, and its sentence
-  // counts a population the query has already emptied.
   const showFilteredEmpty =
-    !floorReplacedList &&
+    !showFloorEmpty &&
     !showHeldEmpty &&
     !showSearchEmpty &&
     !pending &&
@@ -429,7 +427,7 @@ export function DiscoveryView({
   // The list is empty, the reader is owed a sentence, and the index cannot
   // supply one. It gets written about the list alone.
   const showUnknownEmpty =
-    !floorReplacedList &&
+    !showFloorEmpty &&
     !showHeldEmpty &&
     !showSearchEmpty &&
     !showFilteredEmpty &&
@@ -438,22 +436,23 @@ export function DiscoveryView({
     filtered.length === 0;
 
   // The list's own receipt. Counted against the ranked list rather than the
-  // query's narrowing: the line is about the filters, and the search has its own
-  // sentence two elements up. Under `fit` the sort excludes nothing, and the
-  // resolver drops both of its clauses rather than printing a zero.
+  // query's narrowing: the line is about the filters, and the rack's result line
+  // has already counted the search. Under `bestfit` the sort excludes nothing,
+  // and the resolver drops both of its clauses rather than printing a zero.
   const line = useMemo(
     () =>
       resolveExclusionLine({
         colorExcluded:
-          discovery.items.length - filterByColors(discovery.items, colors, join).length,
+          discovery.items.length -
+          filterByColors(discovery.items, colors, params.match).length,
         colors,
-        join,
+        join: params.match,
         floorExcluded: discovery.floorExcluded,
         unmeasured: discovery.unmeasured,
         bestPct: discovery.bestPct,
         sort: discovery.sort,
       }),
-    [discovery, colors, join],
+    [discovery, colors, params.match],
   );
 
   // The one control that would bring the named row back, per cause. One each,
@@ -462,34 +461,30 @@ export function DiscoveryView({
   const correct = useCallback(() => {
     switch (report?.cause) {
       case "scope":
-        return setScope("owned");
+        return scopeNav.go("owned");
       case "colors":
-        return clearColors();
+        return update({ ...params, colors: [], match: "contains" });
       case "join":
-        return setJoin("contains");
-      case "pool":
-        return setAvail("all");
+        return update({ ...params, match: "contains" });
       case "floor":
       case "unmeasured":
-        return setSort("fit");
+        return update({ ...params, scope: "bestfit" });
       default:
         return;
     }
-  }, [report?.cause, setScope, clearColors, setJoin, setAvail, setSort]);
+  }, [report?.cause, scopeNav, update, params]);
 
   // The one reason this state has under discovery that it does not have under
-  // the owned scope: the commanders are missing because they are already built.
+  // the owned lane: the commanders are missing because they are already built.
   // The predicate is the list's own, mode included: the clause claims these decks
   // would have been in THIS filtered list had they been unbuilt, so it has to be
-  // answered by the same test the list was narrowed with. Under `exactly` a deck
-  // whose identity is wider than the selection would not have appeared, and
-  // counting it here would offer a reason that is not true.
+  // answered by the same test the list was narrowed with.
   const builtClause = useMemo(() => {
     if (!showFilteredEmpty) return null;
     const matching = filterByColors(
       discovery.deckIdentities.map((colorIdentity) => ({ colorIdentity })),
       colors,
-      join,
+      params.match,
     ).length;
     if (matching === 0) return null;
     return emptyCopy.filteredBuiltClause(
@@ -497,7 +492,7 @@ export function DiscoveryView({
       discovery.deckIdentities.length,
       guildLabel(colors),
     );
-  }, [showFilteredEmpty, discovery.deckIdentities, colors, join]);
+  }, [showFilteredEmpty, discovery.deckIdentities, colors, params.match]);
 
   // Ranks come from the server, over every item this list carries, so filtering
   // never renumbers — the same invariant CommandersView holds, reached differently.
@@ -505,70 +500,40 @@ export function DiscoveryView({
     <>
       <PageHeader
         uniqueCardsRead={discovery.cardsRead}
-        avail={avail}
         scope="play"
-        onScopeChange={setScope}
+        onScopeChange={scopeNav.go}
         sort={discovery.sort}
         scopePending={scopeNav.pending}
         // The ranked count, not `candidateCount`, for the same reason the
         // announcements use it: the subtitle and the live region speak one
         // sentence between them, and under `sort="new"` the floor's exclusions
-        // move `items.length` while the candidate count stays put. It is also
-        // what the bar's own "showing N of M" counts against two lines below,
-        // and what the owned scope already passes here.
+        // move `items.length` while the candidate count stays put.
         candidateCount={rankedCount}
       />
 
-      {/* The shipped bar, shared with the owned scope. Only the `Order` slot
-          differs: discovery has two orderings to choose between, so the slot the
-          owned scope fills with an inert label is a menu here. */}
-      <FilterBar
-        colors={colors}
-        onToggleColor={toggleColor}
-        onClearColors={clearColors}
-        avail={avail}
-        availPending={availNav.pending}
-        onAvailChange={setAvail}
-        availOk={discovery.availOk}
-        wasWindowed={wasWindowed}
-        shown={shown}
-        filteredTotal={filtered.length}
-        activeTotal={discovery.items.length}
-        // The same menu in both slots, not two variants: the bar's own subtree
-        // split decides which one is displayed, and the menu carries its own
-        // breakpoint for the two pixels that differ between them.
-        order={{ desktop: menu, mobile: menu }}
-        join={join}
-        onJoinChange={setJoin}
-        query={query}
-        onQueryChange={setQuery}
-        // The other half of the one-report rule: at 375px the note and the
-        // report would print the same fact about 100px apart, so the report
-        // keeps it — it names the row, which the note cannot.
-        suppressExactNote={report?.cause === "join"}
+      {/* The rack, shared with the owned lane; `lane` is the whole of the
+          difference. Discover mounts a scope control and no availability
+          control — not a greyed stand-in for one. */}
+      <FilterRack
+        params={params}
+        lane="discover"
+        onChange={update}
+        shown={filtered.length}
+        total={discovery.items.length}
+        excludedByExactly={excludedByExactly}
       />
 
       {/* State 1 sits ABOVE a full list, not in place of one: with no decks
           built the fit ranking is complete and only `Something new` is off. */}
       {!discovery.hasDecks ? <NoDecksBanner /> : null}
 
-      {showPoolEmpty ? (
-        <FloorPoolEmpty
-          floorPct={FLOOR_PCT}
-          below={discovery.floorExcluded}
-          unmeasured={discovery.unmeasured}
-          candidateCount={discovery.candidateCount}
-          freeCards={discovery.freePoolSize}
-          clearingAgainstCollection={discovery.poolExcluded}
-          onScoreAgainstAll={() => setAvail("all")}
-        />
-      ) : showFloorEmpty ? (
+      {showFloorEmpty ? (
         <FloorEmpty
           floorPct={FLOOR_PCT}
           candidateCount={discovery.candidateCount}
           cardsRead={discovery.cardsRead}
           bestPct={discovery.bestPct as number}
-          onRankByFit={() => setSort("fit")}
+          onRankByFit={() => update({ ...params, scope: "bestfit" })}
         />
       ) : showHeldEmpty && report ? (
         // The held state (§2b). The empty's geometry, with every part it fills
@@ -600,13 +565,11 @@ export function DiscoveryView({
         // The candidate count, not the ranked one, and all three figures take it:
         // this state fires only once the server has looked past the rows on
         // screen and found nothing either, so "the N you have not built" is the
-        // whole unbuilt pool. Under `sort="new"` the ranked count is the smaller
-        // post-floor figure, and naming it would claim we searched less than we
-        // did — and have the body and the diagnostic print different totals.
+        // whole unbuilt pool.
         <FilteredEmpty
           colors={[]}
           total={discovery.candidateCount}
-          onClear={() => setQuery("")}
+          onClear={() => update({ ...params, q: "" })}
           heading={planeCopy.search.noneHeading(trimmedQuery)}
           body={planeCopy.search.noneBody(discovery.candidateCount)}
           emphasis={planeCopy.search.noneEmphasis(discovery.candidateCount)}
@@ -620,7 +583,7 @@ export function DiscoveryView({
         <FilteredEmpty
           colors={[]}
           total={discovery.items.length}
-          onClear={() => setQuery("")}
+          onClear={() => update({ ...params, q: "" })}
           heading={planeCopy.search.unknownHeading(trimmedQuery)}
           body={planeCopy.search.unknownBody}
           diagnostic={null}
@@ -630,7 +593,7 @@ export function DiscoveryView({
         <FilteredEmpty
           colors={colors}
           total={discovery.items.length}
-          onClear={clearColors}
+          onClear={() => update({ ...params, colors: [], match: "contains" })}
           heading={emptyCopy.filteredHeading}
           // The ranked count: "the N you have not built" names the list the
           // filter just emptied, and under `sort="new"` the candidate count is
@@ -645,7 +608,7 @@ export function DiscoveryView({
           secondary={
             <button
               type="button"
-              onClick={() => setScope("owned")}
+              onClick={() => scopeNav.go("owned")}
               className="font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--accent)] hover:underline"
             >
               {emptyCopy.filteredScopeLink}
@@ -663,7 +626,7 @@ export function DiscoveryView({
           ) : null}
 
           {/* The receipt for the list itself. At 375px the aside outranks it —
-              one thing below the bar explains the list, and the aside is about
+              one thing below the rack explains the list, and the aside is about
               a row the reader just typed. Desktop renders both: it has the
               width. One element with a responsive class rather than two
               subtrees, so the sentence exists once in the DOM. */}
@@ -678,7 +641,7 @@ export function DiscoveryView({
           <ul className="flex flex-col gap-[10px] sm:gap-[12px] list-none p-0 m-0">
             {filtered.slice(0, shown).map((item, i) => (
               // Focusable only while the list is windowed, matching the owned
-              // scope: a row that never receives the reveal's focus move has no
+              // lane: a row that never receives the reveal's focus move has no
               // reason to be a tab stop between every card.
               <li
                 key={item.slug}
@@ -703,13 +666,12 @@ export function DiscoveryView({
                   discovery={item}
                   rank={item.rank}
                   sort={discovery.sort}
-                  avail={avail}
                   counts={item.counts}
                 />
               </li>
             ))}
 
-            {/* Inside the list, as the owned scope has it: the gap between the
+            {/* Inside the list, as the owned lane has it: the gap between the
                 control and the last card is the list's own row gap, and outside
                 the `<ul>` there is nothing to supply it. */}
             {remaining > 0 ? (
@@ -741,9 +703,8 @@ export function DiscoveryView({
         </>
       )}
 
-      {/* This list's own live region. `CommandersView` has one, but discovery
-          does not render that component, so an announcement routed there would
-          target a region that is not in the tree. */}
+      {/* This list's own live region, for the two events the rack's result line
+          cannot describe: a re-rank, and a reveal step. */}
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}
       </span>

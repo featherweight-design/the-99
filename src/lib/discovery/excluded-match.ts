@@ -6,21 +6,16 @@ import { clearsFloor, floorPct } from "./novelty";
  * precedence table uses (§3). Only the causes the SERVER decided are here: the
  * colour pips and the join mode narrow rows the client already holds, so asking
  * the server about them would be a round trip for an answer in memory.
- *
- * `pool` is the floor's sub-case, not a fifth tier — the row fell below the
- * floor against the pool being scored and would have cleared it against the
- * whole collection, so the pool is the cause and the correction is the pool.
  */
-export type ExcludedCause = "scope" | "floor" | "pool" | "unmeasured";
+export type ExcludedCause = "scope" | "floor" | "unmeasured";
 
 export type ExcludedMatch = {
   oracleId: string;
   name: string;
   cause: ExcludedCause;
-  /** The row's own support percentage. Carried by both halves of the floor tier
-      that measured one — `floor` and its `pool` sub-case — though only the floor
-      sentence prints it: the pool sentence names the pool rather than the
-      distance. Null for `scope` and `unmeasured`, which have no figure to carry. */
+  /** The row's own support percentage, printed by the floor sentence as the
+      distance the row fell short by. Null for `scope` and `unmeasured`, which
+      have no figure to carry. */
   pct: number | null;
 };
 
@@ -55,10 +50,8 @@ export function classifyMatches(
       out.push({ ...base, cause: "unmeasured", pct: null });
       continue;
     }
-    // The floor reads `collectionSupport`, so this is already the question the
-    // pool sub-case used to ask second: a row that fails here fails against
-    // everything the player owns, and the pool has nothing left to be blamed
-    // for. `pool` therefore has no producer, and only `floor` remains.
+    // The floor reads `collectionSupport`: a row that fails here fails against
+    // everything the player owns, so the floor is the whole of this tier.
     if (clearsFloor(row)) continue;
     out.push({ ...base, cause: "floor", pct });
   }

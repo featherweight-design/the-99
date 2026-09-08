@@ -251,13 +251,11 @@ export function DiscoveryRow({
   item,
   rank,
   sort,
-  avail,
   counts,
 }: {
   item: DiscoveryItem;
   rank: number;
   sort: "fit" | "new";
-  avail: "all" | "free";
   counts: ReceiptCounts | null;
 }) {
   // `edhrec_total` is the denominator, and a row with N and no M prints neither
@@ -296,6 +294,11 @@ export function DiscoveryRow({
     .join(" · ");
 
   const showUntagged = fit && item.tagTotal === 0;
+
+  // The discover lane has no availability control, so every row here is scored
+  // and linked against the whole collection. A constant rather than a prop: a
+  // caller cannot pass anything else, and this is where that fact is stated.
+  const avail = "all" as const;
 
   return (
     <div className="relative group">

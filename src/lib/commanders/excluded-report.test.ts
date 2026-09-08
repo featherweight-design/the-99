@@ -23,7 +23,6 @@ const resolve = (input: Partial<Parameters<typeof resolveExcludedReport>[0]> = {
     server: [],
     colour: [],
     colors: [],
-    freeCards: 2805,
     listHasRows: true,
     ...input,
   });
@@ -53,10 +52,7 @@ describe("resolveExcludedReport", () => {
     expect(only?.cta).toBe(planeCopy.excluded.joinCta);
   });
 
-  it("puts the pool ahead of the floor, and the floor ahead of the unmeasurable", () => {
-    expect(
-      resolve({ server: [server(), server({ oracleId: "b", cause: "pool" })] })?.cause,
-    ).toBe("pool");
+  it("puts the floor ahead of the unmeasurable", () => {
     expect(
       resolve({ server: [server({ cause: "unmeasured", pct: null }), server({ oracleId: "b" })] })
         ?.cause,
@@ -121,10 +117,10 @@ describe("resolveExcludedReport", () => {
     expect(out?.body).toBe(planeCopy.search.heldMany(1, planeCopy.excluded.control.scope));
   });
 
-  it("prints the pool's denominator, not the row's percentage", () => {
-    const out = resolve({ server: [server({ cause: "pool" })], freeCards: 1190 });
-    expect(out?.body).toContain("1,190");
-    expect(out?.cta).toBe(planeCopy.excluded.poolCta);
+  it("prints the row's distance from the floor, and offers the sort that has none", () => {
+    const out = resolve({ server: [server({ pct: 12 })] });
+    expect(out?.body).toContain("12%");
+    expect(out?.cta).toBe(planeCopy.excluded.floorCta);
   });
 
   it("offers the fit sort to a commander with nothing to measure", () => {

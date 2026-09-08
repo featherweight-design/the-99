@@ -123,8 +123,9 @@ export const discoverCopy = {
   otherLane: "Your commanders",
 
   // Design left the third order open. Readiness decision 3 settled it as Recently released,
-  // which `cards.released_at` backs; a Colour order has no query behind it, so it is absent
-  // rather than shipped dark.
+  // which the earliest dated set a commander was printed in backs (`sets.released_at`, taken
+  // through `printings`); a Colour order has no query behind it, so it is absent rather than
+  // shipped dark.
   order: {
     popularity: "Popularity",
     name: "Name",

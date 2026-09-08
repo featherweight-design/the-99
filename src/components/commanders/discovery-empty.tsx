@@ -10,7 +10,6 @@
 "use client";
 
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import { planeCopy } from "../../lib/copy/commanders-plane";
 import { GhostButton } from "../ui/button";
 
 const { empty: copy } = discoveryCopy;
@@ -69,59 +68,6 @@ export function FloorEmpty({
       cta={copy.floorCta}
       note={copy.floorCtaNote(candidateCount)}
       onAct={onRankByFit}
-    />
-  );
-}
-
-/**
- * State 2, when the POOL is why the floor took everything. Same state, one door
- * further out: `FloorEmpty` offers the other sort, and this offers the other
- * pool — the control that actually removed the rows. Still never a looser
- * floor.
- *
- * `freeCards` is the size of the free pool, not the collection, and the two
- * populations sum to `candidateCount`: a state whose premise is that nothing
- * cleared cannot leave rows unaccounted for.
- */
-export function FloorPoolEmpty({
-  floorPct,
-  below,
-  unmeasured,
-  candidateCount,
-  freeCards,
-  clearingAgainstCollection,
-  onScoreAgainstAll,
-}: {
-  floorPct: number;
-  below: number;
-  unmeasured: number;
-  candidateCount: number;
-  freeCards: number;
-  clearingAgainstCollection: number;
-  onScoreAgainstAll: () => void;
-}) {
-  const pool = planeCopy.floorPool;
-  return (
-    <FloorState
-      heading={pool.heading}
-      body={pool.body(
-        floorPct,
-        below,
-        unmeasured,
-        candidateCount,
-        freeCards,
-        clearingAgainstCollection,
-      )}
-      emphasis={pool.emphasis(floorPct)}
-      cta={pool.cta}
-      // No note. The count that survives in the other pool is one this pool's
-      // payload cannot know, and the CTA stands alone rather than carrying a
-      // figure the page would have to invent.
-      note={null}
-      // Wider than the collection variant's measure: this body carries two
-      // populations and a pool size, and the drawing gives it the room.
-      bodyWidth={470}
-      onAct={onScoreAgainstAll}
     />
   );
 }

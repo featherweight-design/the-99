@@ -1,6 +1,13 @@
 import { and, eq, ilike, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, commanderSupport, commanderSupportCards, decks } from "../../db/schema";
+import {
+  cards,
+  commanderSupport,
+  commanderSupportCards,
+  decks,
+  printings,
+  sets,
+} from "../../db/schema";
 import type { EdhrecTag } from "../edhrec/parse";
 
 export type CandidateSqlRow = {
@@ -10,6 +17,13 @@ export type CandidateSqlRow = {
   // type line answers nothing discovery asks and nothing discovery renders.
   colorIdentity: string[];
   imageUri: string | null;
+  /** When this commander first appeared in print, `YYYY-MM-DD`. Null when every
+      set it was printed in is undated, which is a real state — promos and Secret
+      Lair carry no date. It is projected only because the discover lane offers a
+      `Recently released` order: without it that option would silently leave the
+      server's ordering in place, which is the defect class this lane's parameter
+      module refuses for `Recently added`. */
+  releasedAt: string | null;
   edhrecTotal: number | null;
   tags: EdhrecTag[];
   ownedSupport: number;
@@ -69,6 +83,7 @@ export async function loadCandidates(
       name: cards.name,
       colorIdentity: cards.colorIdentity,
       imageUri: cards.imageUri,
+      releasedAt: RELEASED_AT,
       edhrecTotal: commanderSupport.edhrecTotal,
       tags: commanderSupport.tags,
       ownedSupport: ownedSupportColumn(),
@@ -228,6 +243,26 @@ const ownedSupportColumn = () =>
   sql<number>`coalesce(osc.owned_support, 0)`.as("owned_support");
 
 const OWNED_SUPPORT_ON = sql`osc.commander_oracle_id = ${commanderSupport.commanderOracleId}`;
+
+/**
+ * The earliest dated set this commander was printed in.
+ *
+ * `cards` is oracle-level and carries no set, so the date has to come through
+ * `printings`; the MIN is what makes the figure a property of the commander
+ * rather than of whichever printing `cards` happens to hold. A reprint must not
+ * make a 1994 legend read as this year's news, which is exactly what "the set of
+ * the row in `cards`" would have done.
+ *
+ * A correlated subquery rather than another derived table: it runs once per
+ * candidate — a few thousand rows, not the 240,000 the support counts aggregate
+ * — and `printings_oracle_idx` serves it directly.
+ */
+const RELEASED_AT = sql<string | null>`(
+  select min(s.released_at)
+    from ${printings} p
+    join ${sets} s on s.code = p.set_code
+   where p.oracle_id = ${commanderSupport.commanderOracleId}
+)`.as("released_at");
 
 // Reads the second derived table when there is one, and the first when there is
 // not — the two counts are the same number whenever the ranked pool is the whole

@@ -1,32 +1,28 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { laneQuery, type LaneParams } from "../../lib/commanders/lane-params";
 // Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
 // reaches `src/db/index.ts`, whose module body throws without DATABASE_URL and
 // pulls the neon driver in with it. A type-only clause is erased at compile
 // time, so none of that reaches the client bundle.
 import type { DiscoveryList } from "../../lib/discovery/list";
 
-export type AvailMode = "all" | "free";
 export type SortKey = "fit" | "new";
-
-/** One entry per (sort, availability) pair — the two parameters the server ranks on. */
-function cacheKey(sort: SortKey, avail: AvailMode) {
-  return `${sort}:${avail}`;
-}
-
-type View = { list: DiscoveryList; avail: AvailMode };
 
 /**
  * Hold every discovery ranking this visit has already been served, so flipping
  * back to one costs nothing.
  *
- * The owned scope solves the same problem by shipping both rankings in one
+ * The sort IS the key. Availability used to be the other half of it, and is
+ * gone: the discover lane has no availability control, so the scope — best fit
+ * or something new — is the only parameter the server ranks on.
+ *
+ * The owned lane solves the same problem by shipping both rankings in one
  * payload (`commanders-view.tsx`), which discovery cannot afford: it ranks
- * thousands of rows against four (sort, availability) pairs rather than a few
- * hundred against two. So the payloads are kept as they arrive instead of being
- * computed up front — nothing extra is fetched, and a pair is free the second
- * time it is asked for.
+ * thousands of rows rather than a few hundred. So the payloads are kept as they
+ * arrive instead of being computed up front — nothing extra is fetched, and a
+ * ranking is free the second time it is asked for.
  *
  * Deliberately NOT Next's `staleTimes`. That is a global router setting whose
  * blast radius is every route in the app, and this codebase has been burned by
@@ -34,72 +30,50 @@ type View = { list: DiscoveryList; avail: AvailMode };
  * the thing being cached and nothing else.
  *
  * The cache lives for one visit to the screen. `DiscoveryView` stays mounted
- * across a sort or availability flip, because those only change search params;
- * leaving the route unmounts it and the next arrival re-fetches. That bounded
- * life is the staleness answer: a deck built elsewhere invalidates nothing here
- * because there is no "here" to invalidate by the time the reader gets back.
+ * across a scope flip, because that only changes search params; leaving the
+ * route unmounts it and the next arrival re-fetches. That bounded life is the
+ * staleness answer: a deck built elsewhere invalidates nothing here because
+ * there is no "here" to invalidate by the time the reader gets back.
  */
-export function useDiscoveryCache(
-  served: DiscoveryList,
-  servedAvail: AvailMode,
-) {
+export function useDiscoveryCache(served: DiscoveryList) {
   // State rather than a ref, so the payload is filed and shown in one pass. A
   // ref would have to be written during render to be readable by the very next
   // click, which is the thing React tells you not to do.
-  const [cache, setCache] = useState<Map<string, DiscoveryList>>(
-    () => new Map([[cacheKey(served.sort, servedAvail), served]]),
+  const [cache, setCache] = useState<Map<SortKey, DiscoveryList>>(
+    () => new Map([[served.sort, served]]),
   );
-  const [view, setView] = useState<View>({ list: served, avail: servedAvail });
+  const [view, setView] = useState<DiscoveryList>(served);
 
   // A fresh payload always wins, and is filed on its way past. Adjusted during
   // render rather than in an effect, which is what React prescribes for state
   // derived from a prop change — an effect would paint the previous ranking once
-  // before correcting it. The copy is over at most four entries.
-  //
-  // Both inputs are compared, not just the payload. A server render produces a
-  // new `served` object every time, so in practice the two always move together —
-  // but that is an invariant of the framework rather than of this hook, and the
-  // availability is half of the key the payload gets filed under. Comparing only
-  // the payload would file a ranking under the wrong pair the day it stops
-  // holding, and the reader would be shown a list the control disagrees with.
-  const [prev, setPrev] = useState({ served, avail: servedAvail });
-  if (served !== prev.served || servedAvail !== prev.avail) {
-    setPrev({ served, avail: servedAvail });
-    setCache((m) => new Map(m).set(cacheKey(served.sort, servedAvail), served));
-    setView({ list: served, avail: servedAvail });
+  // before correcting it. The copy is over at most two entries.
+  const [prev, setPrev] = useState(served);
+  if (served !== prev) {
+    setPrev(served);
+    setCache((m) => new Map(m).set(served.sort, served));
+    setView(served);
   }
 
   /**
-   * Show a pair already in hand, and report whether that was possible. A miss
+   * Show a ranking already in hand, and report whether that was possible. A miss
    * returns false and changes nothing, leaving the caller to navigate.
    *
    * `history.replaceState`, not the router: routing is the request we are
-   * avoiding. This is the same mechanism the colour filter already uses to
-   * mirror `?c=`, and it keeps the address bar honest so a reader who copies
-   * the URL gets the view they are looking at. Every other parameter is read
-   * back off the live URL rather than rebuilt, so this cannot drop one.
+   * avoiding. The URL is written by `laneQuery`, exactly as the navigating path
+   * writes it — defaults as absences, and every parameter the lane does not own
+   * copied off the live URL rather than rebuilt.
    */
   const serve = useCallback(
-    (sort: SortKey, avail: AvailMode) => {
-      const hit = cache.get(cacheKey(sort, avail));
+    (sort: SortKey, params: LaneParams) => {
+      const hit = cache.get(sort);
       if (hit === undefined) return false;
 
-      const params = new URLSearchParams(window.location.search);
-      // Both defaults serialise as absences, matching how `list-nav` writes them:
-      // the guards there compare against the URL, so a cached flip that wrote
-      // `?sort=fit` would leave them unable to tell a default from a choice.
-      if (sort === "new") params.set("sort", sort);
-      else params.delete("sort");
-      if (avail === "all") params.set("avail", avail);
-      else params.delete("avail");
-      const query = params.toString();
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${query ? `?${query}` : ""}`,
-      );
+      const { pathname, search } = window.location;
+      const next = laneQuery(new URLSearchParams(search), params, "discover");
+      window.history.replaceState(null, "", `${pathname}${next}`);
 
-      setView({ list: hit, avail });
+      setView(hit);
       return true;
     },
     [cache],

@@ -173,10 +173,6 @@ export const planeCopy = {
     heldScope: "It matches, but you have already built a deck around it.",
     heldFloor: (pct: number, floorPct: number) =>
       `It matches, but Something new only shows commanders you could build, and you own ${pct}% of its support list against the ${floorPct}% floor.`,
-    heldPool: (freeCards: number) =>
-      `It matches and would clear the floor against everything you own — but not against the ${n(
-        freeCards,
-      )} free cards in this pool.`,
 
     scope: (name: string) => `${name} matches, but you have already built a deck around it.`,
     scopeAlso: (name: string) =>
@@ -211,24 +207,6 @@ export const planeCopy = {
       `${name} also matches, but Something new only shows commanders you could build, and you own ${pct}% of its support list against the ${floorPct}% floor.`,
     floorCta: "Rank by best fit instead",
 
-    // The row falls below the floor in the ACTIVE pool but WOULD clear against the full
-    // collection — so the pool, not the row, is why it is missing.
-    //
-    // THE FLAG IS ALSO THE DISCRIMINATOR. Without it these three keys could never fire: the
-    // precedence table puts the floor above `Score against`, so the floor branch won every time
-    // and a pool exclusion was indistinguishable from a floor one. `excluded.pool` is not a
-    // fifth cause competing with the floor — it is the floor's SUB-CASE, selected when the row
-    // clears against the whole collection, and `excluded.floor` covers the rest.
-    pool: (name: string, freeCards: number) =>
-      `${name} matches and would clear the floor against everything you own — but not against the ${n(
-        freeCards,
-      )} free cards in this pool.`,
-    poolAlso: (name: string, freeCards: number) =>
-      `${name} also matches and would clear the floor against everything you own — but not against the ${n(
-        freeCards,
-      )} free cards in this pool.`,
-    poolCta: "Score against everything I own",
-
     // The floor tier's OTHER population, in the vocabulary the exclusion line already
     // uses for it ("have no data to measure"). Without these three keys an unmeasurable
     // match has no sentence: `floor` prints a support percentage the row does not have,
@@ -250,7 +228,6 @@ export const planeCopy = {
       colors: (colors: string[]) => `the ${identity(colors)} colour filter`,
       join: (colors: string[]) => `Exactly ${identity(colors)}`,
       floor: (floorPct: number) => `the ${floorPct}% support floor`,
-      pool: "the free pool",
       unmeasured: "Something new",
     },
   },

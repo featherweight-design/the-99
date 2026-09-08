@@ -28,7 +28,6 @@ export type ScoreDelta = { drop: number; was: number };
 
 type RecCardCommon = {
   rank: number;
-  avail: "all" | "free";
   /** The receipt's second clause, by severity. Counted server-side. Null when
       the availability read failed, which drops the clause rather than printing
       a zero the reader would take for a fact. */
@@ -44,6 +43,10 @@ type RecCardCommon = {
 type RecCardProps =
   | (RecCardCommon & {
       commander: CommanderListItem;
+      /** Which pool the owned lane is scoring against, carried into the detail
+          link and the receipts. It sits on this arm alone: the discover lane has
+          no availability control, so there is nothing there for it to describe. */
+      avail: "all" | "free";
       /**
        * How far this commander's score fell against the free pool, and what it
        * was. Null under `Everything I own`, and null where the score did not
@@ -71,7 +74,6 @@ export function RecCard(props: RecCardProps) {
         item={props.discovery}
         rank={props.rank}
         sort={props.sort}
-        avail={props.avail}
         counts={props.counts}
       />
     );

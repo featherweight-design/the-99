@@ -8,7 +8,8 @@ import { assembleDiscovery } from "./list";
 const candidate = (over: Partial<Parameters<typeof assembleDiscovery>[0]["candidates"][0]>) => {
   const merged = {
     oracleId: "a", name: "A",
-    colorIdentity: ["G"], imageUri: null, edhrecTotal: 100, tags: [], ownedSupport: 50,
+    colorIdentity: ["G"], imageUri: null, releasedAt: null,
+    edhrecTotal: 100, tags: [], ownedSupport: 50,
     ...over,
   };
   return { collectionSupport: merged.ownedSupport, ...merged };

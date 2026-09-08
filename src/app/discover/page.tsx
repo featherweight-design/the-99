@@ -69,9 +69,7 @@ export default async function DiscoverPage({
 
   return (
     <section className="flex flex-col min-h-screen">
-      {/* `avail` is `all` and cannot be anything else: the lane scores the whole
-          collection, and the view's own control goes when its rack is rebuilt. */}
-      <DiscoveryView discovery={discovery} avail="all" />
+      <DiscoveryView discovery={discovery} />
     </section>
   );
 }
