@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+  @keyframes pendPulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .pend { animation: none !important; opacity: 0.7 !important; }
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Re-ruling &middot; in-flight feedback for control flips that fetch &middot; unblocks the region loader</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;text-wrap:pretty;">The list stays because it is the previous answer &mdash; not because nothing is being fetched.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">Three rulings forbid animating, dimming or skeleton-ing the list on a control flip, and all three give the same reason: the flips are <i>&ldquo;state changes over data already on the client.&rdquo;</i> That is true of <b style="color:#EDE6D8;font-weight:600;">one</b> of the four controls. Scope, sort and discovery availability are server round-trips &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">list-nav.ts:110-113</span>, only the active <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">(sort, avail)</span> pair is ranked, so the other ordering does not exist until it is asked for. Measured: <b style="color:#EDE6D8;font-weight:600;">~270&thinsp;ms warm, 2,870&thinsp;ms worst case</b>.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">The prohibition stands; the reason is replaced.</b> The rows on screen are the previous answer, correctly rendered and still pressable, so replacing them with grey bars for up to 2.9&thinsp;s trades information the reader has for a progress indicator they did not ask for. Under 500&thinsp;ms the shipped in-control crown is the whole treatment. Past 500&thinsp;ms <b style="color:#EDE6D8;font-weight:600;">one line changes, and it is a line already on the page</b>: each fetching control owns exactly one clause of the header subtitle, and its clause is replaced by its own present participle.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8B8270;margin:0;">Read <a href="RULING-in-flight-feedback.md">RULING-in-flight-feedback.md</a> for the ruling in full and the three document amendments, <a href="README.md">README.md</a> for the calls and the gap report, <a href="in-flight · copy strings.ts">in-flight &middot; copy strings.ts</a> for the three strings and the subtitle assembler. <b style="color:#C0B8A6;font-weight:600;">Not gated</b> &mdash; the in-control half shipped in #411 / #416; this adds one copy state and deletes a ticket.</p>
+  </section>
+
+  <div style="border:1px solid #2B241B;border-radius:14px;background:#1A1611;padding:20px 24px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Which flips actually fetch &mdash; the premise, corrected</div>
+    <div style="display:grid;grid-template-columns:1.5fr 1fr 1.6fr 0.9fr;gap:0;font-size:13px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;padding:0 12px 8px 0;border-bottom:1px solid #2B241B;">Control</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;padding:0 12px 8px 0;border-bottom:1px solid #2B241B;">Where</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;padding:0 12px 8px 0;border-bottom:1px solid #2B241B;">Client or server</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;padding:0 0 8px 0;border-bottom:1px solid #2B241B;">Pending flag</div>
+
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#EDE6D8;font-weight:600;">Scope &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:400;color:#C0B8A6;">I own / To play</span></div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#C0B8A6;">page header</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#C0B8A6;"><b style="color:#D9975C;font-weight:600;">server</b> &mdash; a different candidate universe</div>
+      <div style="padding:11px 0;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;">true</div>
+
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#EDE6D8;font-weight:600;">Sort &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:400;color:#C0B8A6;">Best fit / Something new</span></div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#C0B8A6;">filter bar, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Order</span> slot</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#C0B8A6;"><b style="color:#D9975C;font-weight:600;">server</b> &mdash; the other ordering is not ranked yet</div>
+      <div style="padding:11px 0;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;">true</div>
+
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#EDE6D8;font-weight:600;">Availability, <i>discovery</i> scope</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#C0B8A6;">filter bar</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#C0B8A6;"><b style="color:#D9975C;font-weight:600;">server</b> &mdash; re-reads against the other collection side</div>
+      <div style="padding:11px 0;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;">true</div>
+
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#A59C89;font-weight:600;">Availability, <i>owned</i> scope</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#8B8270;">filter bar</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#8B8270;">client &mdash; 242 rows, both arrays already sent</div>
+      <div style="padding:11px 0;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;">false</div>
+
+      <div style="padding:11px 12px 0 0;color:#A59C89;font-weight:600;">Colour pips</div>
+      <div style="padding:11px 12px 0 0;color:#8B8270;">filter bar</div>
+      <div style="padding:11px 12px 0 0;color:#8B8270;">client &mdash; a pure filter</div>
+      <div style="padding:11px 0 0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;">false</div>
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;">A repeat flip served from the client cache does not navigate at all &mdash; the pending flag is already false there, so <b style="color:#C0B8A6;font-weight:600;">nothing in this document applies to it</b>. The flag the code already keeps is the whole test for &ldquo;does this need a treatment&rdquo;. Do not add a second flag.</div>
+  </div>
+
+  <div style="border:1px solid #2B241B;border-radius:14px;background:#1A1611;padding:20px 24px;margin-bottom:20px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">1 &middot; list treatment during a real fetch</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">None &mdash; and said out loud for the fetching case.</b> No skeleton, no dim, no blur, no transition, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-busy</span>, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">pointer-events:&thinsp;none</span>. A skeleton is right when there is nothing behind it. Here there is.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">2 &middot; under 500&thinsp;ms</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">The shipped in-control crown, alone.</b> A warm flip resolves in ~270&thinsp;ms and the reader never sees a second element. An element that appears and leaves inside 270&thinsp;ms is a flash, and a flash reads as a fault.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">3 &middot; past 500&thinsp;ms</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">One subtitle clause becomes its own participle.</b> Each fetching control owns exactly one of the subtitle's three clauses. It is <b style="color:#EDE6D8;font-weight:600;">replaced</b>, never appended &mdash; appending is the reflow this ruling exists to prevent.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">4 &middot; escalation</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">None, at any duration.</b> No spinner, no progress bar, no &ldquo;taking a moment&rdquo; line, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&hellip;</span> does not animate. A described wait does not also need an apology, and a third element at 2&thinsp;s lands just before the reward.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">5 &middot; announcement</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Nothing mid-flight.</b> The pending clause is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span>; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PendingLabel</span>'s accessible name is the only in-flight announcement, and the shipped live region speaks once on settle.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">6 &middot; failure</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">The outgoing sentence returns whole.</b> The route error path owns the page; the subtitle reverts to the three clauses that were true before the press. No half-sentence, no stranded participle. The subtitle describes the list &mdash; it is not a status bar.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:6px;">7 &middot; the LoadingScreen boundary</div><div style="font-size:13.5px;color:#C0B8A6;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Outgoing content, or none.</b> Content &rarr; in place. None &mdash; first paint, cold shared URL, reload &rarr; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">LoadingScreen</span>, still the only skeleton in the product. <b style="color:#EDE6D8;font-weight:600;">No third component.</b></div></div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#18140F;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Already shipped &mdash; drawn as built, not re-litigated</div>
+    <div style="font-size:13px;color:#A59C89;line-height:1.7;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PendingLabel</span> (#411, #416) stands the pulsing crown <b style="color:#EDE6D8;font-weight:600;">in place of</b> the pressed control's label rather than beside it, so the control is the same width waiting as idle &middot; the pressed control dims to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PENDING_OPACITY</span> 0.55 and is <b style="color:#EDE6D8;font-weight:600;">never disabled</b> &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">LoadingScreen</span> is the one route-level skeleton, crown plus <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shellCopy.loading</span>. Hugh's standing position &mdash; dimming alone is not sufficient feedback &mdash; is met above the list, not inside it.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2400px;">
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">A &middot; <span style="color:#CF8745;">the four controls, pressed &mdash; three carry the mark, one cannot</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:640px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">Desktop &middot; idle above, <span style="color:#CF8745;">pending below</span> &mdash; same geometry, same width</div>
+
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <div style="display:grid;grid-template-columns:118px 1fr;gap:16px;align-items:center;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Show</div>
+            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+              <div style="display:inline-flex;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;">
+                <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:6px;font-size:13px;color:#C0B8A6;">Commanders I own</span>
+                <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:6px;font-size:13px;font-weight:600;background:#CF8745;color:#14110E;">Something to play</span>
+              </div>
+              <div style="display:inline-flex;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;opacity:0.55;">
+                <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:6px;font-size:13px;color:#C0B8A6;">Commanders I own</span>
+                <span style="height:32px;min-width:139px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;background:#CF8745;">
+                  <span class="pend" style="display:inline-flex;align-items:center;gap:3px;animation:pendPulse 1200ms ease-in-out infinite;">
+                    <span style="width:4px;height:4px;background:#14110E;transform:rotate(45deg);"></span>
+                    <span style="width:6px;height:6px;background:#14110E;transform:rotate(45deg);"></span>
+                    <span style="width:4px;height:4px;background:#14110E;transform:rotate(45deg);"></span>
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:118px 1fr;gap:16px;align-items:center;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Order</div>
+            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+              <span style="height:30px;display:inline-flex;align-items:center;gap:8px;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:0 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;">Best fit <span style="color:#CF8745;">&#9662;</span></span>
+              <span style="height:30px;min-width:104px;display:inline-flex;align-items:center;justify-content:center;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:0 12px;opacity:0.55;">
+                <span class="pend" style="display:inline-flex;align-items:center;gap:3px;animation:pendPulse 1200ms ease-in-out infinite;">
+                  <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+                  <span style="width:6px;height:6px;background:#CF8745;transform:rotate(45deg);"></span>
+                  <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:118px 1fr;gap:16px;align-items:center;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Score against</div>
+            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+              <div style="display:inline-flex;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;">
+                <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:6px;font-size:13px;font-weight:600;background:#CF8745;color:#14110E;">All my cards</span>
+                <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:6px;font-size:13px;color:#C0B8A6;">What&rsquo;s free</span>
+              </div>
+              <div style="display:inline-flex;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;opacity:0.55;">
+                <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:6px;font-size:13px;color:#C0B8A6;">All my cards</span>
+                <span style="height:32px;min-width:110px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;">
+                  <span class="pend" style="display:inline-flex;align-items:center;gap:3px;animation:pendPulse 1200ms ease-in-out infinite;">
+                    <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+                    <span style="width:6px;height:6px;background:#CF8745;transform:rotate(45deg);"></span>
+                    <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:118px 1fr;gap:16px;align-items:center;padding-top:18px;border-top:1px solid #2B241B;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#6E6654;">Owned scope<br>availability</div>
+            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+              <div style="display:inline-flex;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;">
+                <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:6px;font-size:13px;font-weight:600;background:#CF8745;color:#14110E;">All my cards</span>
+                <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:6px;font-size:13px;color:#C0B8A6;">What&rsquo;s free</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6E6654;">no pending state &mdash; nothing to wait for</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;">The crown &mdash; three brass diamonds, 4&thinsp;/&thinsp;6&thinsp;/&thinsp;4&thinsp;px at <span style="font-family:'IBM Plex Mono',monospace;">rotate(45deg)</span>, 3&thinsp;px gap &mdash; stands <b style="color:#C0B8A6;font-weight:600;">where the label was</b>. On the selected segment it inverts to base-on-brass, per the brand sheet. Opacity 0.35&rarr;1&rarr;0.35 over 1,200&thinsp;ms; <span style="font-family:'IBM Plex Mono',monospace;">prefers-reduced-motion</span> holds it static at 0.7. The control keeps its width, keeps its focus, and is never disabled.</div>
+      </div>
+
+      <div style="width:390px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">390px &middot; the four stacked controls, sort pending</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;gap:6px;">
+            <span style="flex:1;height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;background:#1E1A15;border:1px solid #3A3229;font-size:13px;color:#C0B8A6;">I own</span>
+            <span style="flex:1;height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;background:#CF8745;font-size:13px;font-weight:600;color:#14110E;">To play</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="width:20px;height:20px;border-radius:999px;background:#EDE6D8;"></span>
+            <span style="width:20px;height:20px;border-radius:999px;background:#4B7A46;"></span>
+            <span style="width:20px;height:20px;border-radius:999px;background:#C05A3E;"></span>
+            <span style="width:20px;height:20px;border-radius:999px;background:#1E1B1A;box-shadow:inset 0 0 0 1px #3A3229;"></span>
+            <span style="width:20px;height:20px;border-radius:999px;background:#3E6E9E;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-left:auto;">3,100/3,100</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <span style="flex:1;height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;background:#CF8745;font-size:13px;font-weight:600;color:#14110E;">All my cards</span>
+            <span style="flex:1;height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;background:#1E1A15;border:1px solid #3A3229;font-size:13px;color:#C0B8A6;">What&rsquo;s free</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;">25 of 3,100</span>
+            <span style="height:38px;min-width:112px;display:inline-flex;align-items:center;justify-content:center;background:#1E1A15;border:1px solid #3A3229;border-radius:8px;padding:0 12px;opacity:0.55;">
+              <span class="pend" style="display:inline-flex;align-items:center;gap:3px;animation:pendPulse 1200ms ease-in-out infinite;">
+                <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+                <span style="width:6px;height:6px;background:#CF8745;transform:rotate(45deg);"></span>
+                <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+              </span>
+            </span>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;line-height:1.7;">Nothing new is sticky (&sect;7.2), so a flip can be scrolled away from. The crown goes with it; the list underneath stays exactly as it was. <b style="color:#C0B8A6;font-weight:600;">No sticky pending bar, no toast, no bottom-anchored status line</b> &mdash; a reader who scrolls away from the control has told us they are reading the list they have.</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">B &middot; <span style="color:#CF8745;">the three moments &mdash; desktop, sort flip, list region unchanged throughout</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:760px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#8B8270;border-radius:4px;padding:2px 7px;">0&thinsp;ms</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;">press &mdash; crown replaces the label, <span style="color:#CF8745;">subtitle unchanged</span></span>
+        </div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:12px;overflow:hidden;">
+          <div style="padding:18px 20px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
+            <div>
+              <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 7px;color:#EDE6D8;">Commanders</h3>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards</div>
+            </div>
+            <div style="display:inline-flex;background:#1A1611;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;flex:none;">
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:12.5px;color:#C0B8A6;">I own</span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:12.5px;font-weight:600;background:#CF8745;color:#14110E;">To play</span>
+            </div>
+          </div>
+          <div style="padding:12px 20px;border-top:1px solid #2B241B;border-bottom:1px solid #2B241B;background:#181410;display:flex;align-items:center;gap:14px;">
+            <span style="width:18px;height:18px;border-radius:999px;background:#4B7A46;"></span>
+            <span style="width:18px;height:18px;border-radius:999px;background:#1E1B1A;box-shadow:inset 0 0 0 1px #3A3229;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;">Showing 3,100 of 3,100</span>
+            <span style="height:30px;min-width:104px;display:inline-flex;align-items:center;justify-content:center;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:0 12px;margin-left:auto;opacity:0.55;">
+              <span class="pend" style="display:inline-flex;align-items:center;gap:3px;animation:pendPulse 1200ms ease-in-out infinite;">
+                <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+                <span style="width:6px;height:6px;background:#CF8745;transform:rotate(45deg);"></span>
+                <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+              </span>
+            </span>
+          </div>
+          <div style="padding:14px 20px 18px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:grid;grid-template-columns:30px 52px 1fr 108px;gap:16px;align-items:center;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+              <span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8B8270;text-align:center;">1</span>
+              <span style="aspect-ratio:63/88;border-radius:6px;background:linear-gradient(140deg,#1E1B1A,#4B7A46 60%,#C05A3E);"></span>
+              <span style="min-width:0;"><span style="display:block;font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Chatterfang, Squirrel General</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;margin-top:4px;">you own <b style="color:#EDE6D8;font-weight:600;">127</b> of the <b style="color:#EDE6D8;font-weight:600;">264</b> cards EDHREC lists</span></span>
+              <span style="text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDE6D8;">127</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-top:3px;">Support</span></span>
+            </div>
+            <div style="display:grid;grid-template-columns:30px 52px 1fr 108px;gap:16px;align-items:center;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+              <span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8B8270;text-align:center;">2</span>
+              <span style="aspect-ratio:63/88;border-radius:6px;background:linear-gradient(140deg,#C05A3E,#1E1B1A 70%);"></span>
+              <span style="min-width:0;"><span style="display:block;font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;margin-top:4px;">you own <b style="color:#EDE6D8;font-weight:600;">119</b> of the <b style="color:#EDE6D8;font-weight:600;">251</b> cards EDHREC lists</span></span>
+              <span style="text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDE6D8;">119</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-top:3px;">Support</span></span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;padding-left:4px;">&hellip; 23 more rows, untouched, every one of them still pressable</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:760px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#6FA368;border-radius:4px;padding:2px 7px;">~270&thinsp;ms</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;">warm arrival &mdash; the gate never fired, <span style="color:#CF8745;">nothing else ever appeared</span></span>
+        </div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:12px;overflow:hidden;">
+          <div style="padding:18px 20px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
+            <div>
+              <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 7px;color:#EDE6D8;">Commanders</h3>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">3,100 commanders you have not built &middot; <b style="color:#C0B8A6;font-weight:600;">ranked by what is new to you</b> &middot; read against 2,805 cards</div>
+            </div>
+            <div style="display:inline-flex;background:#1A1611;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;flex:none;">
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:12.5px;color:#C0B8A6;">I own</span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:12.5px;font-weight:600;background:#CF8745;color:#14110E;">To play</span>
+            </div>
+          </div>
+          <div style="padding:12px 20px;border-top:1px solid #2B241B;border-bottom:1px solid #2B241B;background:#181410;display:flex;align-items:center;gap:14px;">
+            <span style="width:18px;height:18px;border-radius:999px;background:#4B7A46;"></span>
+            <span style="width:18px;height:18px;border-radius:999px;background:#1E1B1A;box-shadow:inset 0 0 0 1px #3A3229;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;">Showing 1,704 of 1,704</span>
+            <span style="height:30px;display:inline-flex;align-items:center;gap:8px;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:0 12px;margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;">Something new <span style="color:#CF8745;">&#9662;</span></span>
+          </div>
+          <div style="padding:14px 20px 18px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:grid;grid-template-columns:30px 52px 1fr 108px;gap:16px;align-items:center;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+              <span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8B8270;text-align:center;">1</span>
+              <span style="aspect-ratio:63/88;border-radius:6px;background:linear-gradient(140deg,#3E6E9E,#1E1B1A 70%);"></span>
+              <span style="min-width:0;"><span style="display:block;font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Brago, King Eternal</span><span style="display:block;font-size:12.5px;color:#C0B8A6;margin-top:4px;"><b style="color:#CF8745;font-weight:600;">blink</b> &middot; <b style="color:#CF8745;font-weight:600;">flicker</b> &middot; <b style="color:#CF8745;font-weight:600;">stax</b> &mdash; nothing you have built plays these.</span></span>
+              <span style="text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDE6D8;">5</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-top:3px;">of 5 tags</span></span>
+            </div>
+            <div style="display:grid;grid-template-columns:30px 52px 1fr 108px;gap:16px;align-items:center;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+              <span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8B8270;text-align:center;">2</span>
+              <span style="aspect-ratio:63/88;border-radius:6px;background:linear-gradient(140deg,#1E1B1A,#3E6E9E 70%);"></span>
+              <span style="min-width:0;"><span style="display:block;font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Urza, Lord High Artificer</span><span style="display:block;font-size:12.5px;color:#C0B8A6;margin-top:4px;"><b style="color:#CF8745;font-weight:600;">artifacts</b> &middot; <b style="color:#CF8745;font-weight:600;">combo</b> &mdash; closest is your Chatterfang list, which shares tokens.</span></span>
+              <span style="text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDE6D8;">4</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-top:3px;">of 5 tags</span></span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;padding-left:4px;">the whole sentence rewrote at once &middot; window reset to 25 on arrival, not on press</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:760px;flex:none;background:#1A1611;border:1px solid #3A3229;border-radius:14px;padding:20px;">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:2px 7px;">500&ndash;2,870&thinsp;ms</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;">past the gate &mdash; <span style="color:#CF8745;">one clause is a participle</span>, and that is the whole addition</span>
+        </div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:12px;overflow:hidden;">
+          <div style="padding:18px 20px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
+            <div>
+              <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 7px;color:#EDE6D8;">Commanders</h3>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">3,100 commanders you have not built &middot; <span style="border-bottom:1px dashed #CF8745;padding-bottom:1px;">re-ranking&hellip;</span> &middot; read against 2,805 cards</div>
+            </div>
+            <div style="display:inline-flex;background:#1A1611;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;flex:none;">
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:12.5px;color:#C0B8A6;">I own</span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:12.5px;font-weight:600;background:#CF8745;color:#14110E;">To play</span>
+            </div>
+          </div>
+          <div style="padding:12px 20px;border-top:1px solid #2B241B;border-bottom:1px solid #2B241B;background:#181410;display:flex;align-items:center;gap:14px;">
+            <span style="width:18px;height:18px;border-radius:999px;background:#4B7A46;"></span>
+            <span style="width:18px;height:18px;border-radius:999px;background:#1E1B1A;box-shadow:inset 0 0 0 1px #3A3229;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;">Showing 3,100 of 3,100</span>
+            <span style="height:30px;min-width:104px;display:inline-flex;align-items:center;justify-content:center;background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:0 12px;margin-left:auto;opacity:0.55;">
+              <span class="pend" style="display:inline-flex;align-items:center;gap:3px;animation:pendPulse 1200ms ease-in-out infinite;">
+                <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+                <span style="width:6px;height:6px;background:#CF8745;transform:rotate(45deg);"></span>
+                <span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span>
+              </span>
+            </span>
+          </div>
+          <div style="padding:14px 20px 18px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:grid;grid-template-columns:30px 52px 1fr 108px;gap:16px;align-items:center;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+              <span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8B8270;text-align:center;">1</span>
+              <span style="aspect-ratio:63/88;border-radius:6px;background:linear-gradient(140deg,#1E1B1A,#4B7A46 60%,#C05A3E);"></span>
+              <span style="min-width:0;"><span style="display:block;font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Chatterfang, Squirrel General</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;margin-top:4px;">you own <b style="color:#EDE6D8;font-weight:600;">127</b> of the <b style="color:#EDE6D8;font-weight:600;">264</b> cards EDHREC lists</span></span>
+              <span style="text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDE6D8;">127</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-top:3px;">Support</span></span>
+            </div>
+            <div style="display:grid;grid-template-columns:30px 52px 1fr 108px;gap:16px;align-items:center;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+              <span style="font-family:'Cinzel',serif;font-weight:800;font-size:19px;color:#8B8270;text-align:center;">2</span>
+              <span style="aspect-ratio:63/88;border-radius:6px;background:linear-gradient(140deg,#C05A3E,#1E1B1A 70%);"></span>
+              <span style="min-width:0;"><span style="display:block;font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;margin-top:4px;">you own <b style="color:#EDE6D8;font-weight:600;">119</b> of the <b style="color:#EDE6D8;font-weight:600;">251</b> cards EDHREC lists</span></span>
+              <span style="text-align:right;"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:22px;color:#EDE6D8;">119</span><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-top:3px;">Support</span></span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;padding-left:4px;">still the fit ranking, still true, still pressable &mdash; no dim, no skeleton, no <span style="font-family:'IBM Plex Mono',monospace;">aria-busy</span>, no pointer trap</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;">The dashed underline is <b style="color:#C0B8A6;font-weight:600;">annotation, not design</b>: the pending clause takes no colour change, no weight change, no italics and no underline. It is the same <span style="font-family:'IBM Plex Mono',monospace;">--fg-faint</span> mono as the words either side of it, with one static <span style="font-family:'IBM Plex Mono',monospace;">&hellip;</span>. The two clauses that hold still describe the rows underneath, so the sentence and the list never disagree &mdash; which is exactly what a skeleton cannot promise.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">C &middot; <span style="color:#CF8745;">three controls, three clauses, one rule</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:760px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">The subtitle, settled and in flight &mdash; one string per control, both widths</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;margin-bottom:8px;">Settled</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards</div>
+          </div>
+          <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Scope in flight &mdash; the population clause counts</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">counting&hellip;</b> &middot; ranked by best fit &middot; read against 2,805 cards</div>
+          </div>
+          <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Sort in flight &mdash; the ordering clause ranks</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;">3,100 commanders you have not built &middot; <b style="color:#EDE6D8;font-weight:600;">re-ranking&hellip;</b> &middot; read against 2,805 cards</div>
+          </div>
+          <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Availability in flight &mdash; the collection clause reads</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;">3,100 commanders you have not built &middot; ranked by best fit &middot; <b style="color:#EDE6D8;font-weight:600;">re-reading&hellip;</b></div>
+          </div>
+        </div>
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid #2B241B;font-size:13.5px;color:#C0B8A6;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The verb is the clause's own verb</b> &mdash; the population counts, the ordering ranks, the collection reads. Parallel by construction, no new vocabulary, and the participles are <b style="color:#EDE6D8;font-weight:600;">bare</b>: the pressed control, with a crown where its label was, already names the object.</div>
+        <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;"><b style="color:#C0B8A6;font-weight:600;">The constraint that makes this safe:</b> a pending clause is never longer than the clause it replaces, at any width. <span style="color:#C0B8A6;">counting&hellip;</span> 11 chars against 35 &middot; <span style="color:#C0B8A6;">re-ranking&hellip;</span> 12 against 18 &middot; <span style="color:#C0B8A6;">re-reading&hellip;</span> 12 against 24. The wrap point can only move earlier, so the list is never pushed down. Testable, and it is why longer strings are refused.</div>
+      </div>
+
+      <div style="width:390px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">390px &middot; settled two lines, in flight one</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;margin-bottom:12px;">
+          <h4 style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;margin:0 0 6px;color:#EDE6D8;">Commanders</h4>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;line-height:1.55;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards</div>
+        </div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px;">
+          <h4 style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;margin:0 0 6px;color:#EDE6D8;">Commanders</h4>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;line-height:1.55;">3,100 commanders you have not built &middot; <b style="color:#EDE6D8;font-weight:600;">re-ranking&hellip;</b></div>
+        </div>
+        <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;line-height:1.7;">The two-line subtitle collapses to one and the list moves <b style="color:#C0B8A6;font-weight:600;">up</b> ~14px for the duration, then back. Drawn as-is: a two-line <span style="font-family:'IBM Plex Mono',monospace;">min-height</span> spends those pixels on every reader forever to avoid a shift that lasts 2&thinsp;s on one press, and &sect;7.2 already accounts for every pixel above the first row. If it reads badly on device the fix is one line of CSS at 390px only &mdash; the open item in <a href="READINESS.md">READINESS.md</a>.</div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ showRejected }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">D &middot; <span style="color:#CF8745;">rejected, drawn once so it is not re-proposed</span></div>
+
+    <div style="display:flex;gap:22px;align-items:stretch;flex-wrap:wrap;">
+
+      <div style="width:320px;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:18px;display:flex;flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;text-decoration:line-through;margin-bottom:12px;">skeleton rows in the list region</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <span style="height:44px;border-radius:8px;background:#221D18;"></span>
+          <span style="height:44px;border-radius:8px;background:#221D18;"></span>
+          <span style="height:44px;border-radius:8px;background:#1E1A15;"></span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:#C0B8A6;line-height:1.55;">Trades an answer the reader already has for a progress indicator, for up to 2.9&thinsp;s. A skeleton is right when there is nothing behind it.</div>
+      </div>
+
+      <div style="width:320px;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:18px;display:flex;flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;text-decoration:line-through;margin-bottom:12px;">dimming the list to 0.55</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;opacity:0.4;">
+          <span style="display:flex;align-items:center;gap:10px;height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 10px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:15px;color:#8B8270;">1</span><span style="font-family:'Cinzel',serif;font-size:13px;color:#EDE6D8;">Chatterfang</span></span>
+          <span style="display:flex;align-items:center;gap:10px;height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 10px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:15px;color:#8B8270;">2</span><span style="font-family:'Cinzel',serif;font-size:13px;color:#EDE6D8;">Kykar</span></span>
+          <span style="display:flex;align-items:center;gap:10px;height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 10px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:15px;color:#8B8270;">3</span><span style="font-family:'Cinzel',serif;font-size:13px;color:#EDE6D8;">Brago</span></span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:#C0B8A6;line-height:1.55;">The 0.55 dim belongs to the pressed control, whose label has been replaced by a mark. Applied to reading copy it fails contrast and says &ldquo;do not read this&rdquo; about rows that are true.</div>
+      </div>
+
+      <div style="width:320px;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:18px;display:flex;flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;text-decoration:line-through;margin-bottom:12px;">a region loader over the list</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;min-height:140px;">
+          <span style="display:inline-flex;align-items:center;gap:4px;opacity:0.6;">
+            <span style="width:6px;height:6px;background:#CF8745;transform:rotate(45deg);"></span>
+            <span style="width:9px;height:9px;background:#CF8745;transform:rotate(45deg);"></span>
+            <span style="width:6px;height:6px;background:#CF8745;transform:rotate(45deg);"></span>
+          </span>
+          <span style="font-size:12.5px;color:#6E6654;">Re-ranking 3,100 commanders&hellip;</span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:#C0B8A6;line-height:1.55;">A new component with a new placement, which invites a second caller. The region loader already exists and it is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">LoadingScreen</span> &mdash; for the case where there is nothing behind it.</div>
+      </div>
+
+      <div style="width:320px;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:18px;display:flex;flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;text-decoration:line-through;margin-bottom:12px;">a pending state on the count line</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:140px;justify-content:center;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;">Showing &mdash; of 3,100</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;">Showing &hellip; of &hellip;</span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:#C0B8A6;line-height:1.55;">Both are dashes with better manners, and the locked rule is that missing data is omitted, never zeroed or dashed. The count holds its outgoing figures and rewrites with the list.</div>
+      </div>
+
+      <div style="width:320px;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:18px;display:flex;flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;text-decoration:line-through;margin-bottom:12px;">a second tier at 2&thinsp;s</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:140px;justify-content:center;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6E6654;">3,100 commanders &middot; re-ranking&hellip;</span>
+          <span style="display:block;height:4px;border-radius:999px;background:#221D18;overflow:hidden;"><span style="display:block;width:62%;height:100%;background:#3A3229;"></span></span>
+          <span style="font-size:12.5px;color:#6E6654;">This one is taking a moment.</span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:#C0B8A6;line-height:1.55;">A described wait does not also need an apology, and a third element arriving at 2&thinsp;s lands just before the reward. Re-opens on a duration histogram, not an opinion.</div>
+      </div>
+
+      <div style="width:320px;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:18px;display:flex;flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;text-decoration:line-through;margin-bottom:12px;">a crown on the client-side toggles</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:140px;justify-content:center;">
+          <div style="display:inline-flex;background:#1A1611;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;opacity:0.55;">
+            <span style="flex:1;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-size:12.5px;color:#C0B8A6;">All my cards</span>
+            <span style="flex:1;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;">
+              <span style="display:inline-flex;align-items:center;gap:3px;opacity:0.6;"><span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span><span style="width:6px;height:6px;background:#CF8745;transform:rotate(45deg);"></span><span style="width:4px;height:4px;background:#CF8745;transform:rotate(45deg);"></span></span>
+            </span>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;">owned scope &mdash; 242 rows, already on the client</span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:#C0B8A6;line-height:1.55;">Consistency for its own sake. The pending flag is already false there; a mark that fires for 0&thinsp;ms is a flicker with a reason attached.</div>
+      </div>
+
+    </div>
+  </div>
+  </sc-if>
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">E &middot; <span style="color:#CF8745;">the boundary with LoadingScreen &mdash; a content test, not a route test</span></div>
+
+    <div style="display:flex;gap:26px;align-items:stretch;flex-wrap:wrap;">
+      <div style="width:520px;background:#1A1611;border:1px solid #3A3229;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:14px;">Outgoing content exists &rarr; in place</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">3,100 commanders you have not built &middot; <b style="color:#EDE6D8;font-weight:600;">re-ranking&hellip;</b> &middot; read against 2,805 cards</div>
+          <span style="display:flex;align-items:center;gap:10px;height:40px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 10px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:14px;color:#8B8270;">1</span><span style="font-family:'Cinzel',serif;font-size:13px;color:#EDE6D8;">Chatterfang, Squirrel General</span></span>
+          <span style="display:flex;align-items:center;gap:10px;height:40px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 10px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:14px;color:#8B8270;">2</span><span style="font-family:'Cinzel',serif;font-size:13px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</span></span>
+        </div>
+        <div style="margin-top:14px;font-size:13.5px;color:#C0B8A6;line-height:1.6;">Every control flip on a rendered <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/commanders</span> is this case. The previous answer is on screen, so it stays on screen.</div>
+      </div>
+
+      <div style="width:520px;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">No outgoing content &rarr; LoadingScreen, unchanged</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;min-height:132px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+          <span class="pend" style="display:inline-flex;align-items:center;gap:5px;animation:pendPulse 1200ms ease-in-out infinite;">
+            <span style="width:9px;height:9px;background:#CF8745;transform:rotate(45deg);"></span>
+            <span style="width:13px;height:13px;background:#CF8745;transform:rotate(45deg);"></span>
+            <span style="width:9px;height:9px;background:#CF8745;transform:rotate(45deg);"></span>
+          </span>
+          <span style="font-family:'Cinzel',serif;font-size:15px;color:#C0B8A6;">Shuffling up&hellip;</span>
+        </div>
+        <div style="margin-top:14px;font-size:13.5px;color:#C0B8A6;line-height:1.6;">First paint, a reload, a cold shared URL carrying <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?scope=play&amp;sort=new</span>. There is no previous answer to preserve, so the route-level skeleton is correct &mdash; and stays the <b style="color:#EDE6D8;font-weight:600;">only</b> skeleton in the product. Copy is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shellCopy.loading</span>, drawn from memory here.</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">F &middot; <span style="color:#CF8745;">timings, tokens, motion and a11y contract</span></div>
+
+    <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:22px 24px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px 30px;font-size:13.5px;color:#C0B8A6;line-height:1.6;">
+      <div><b style="color:#EDE6D8;font-weight:600;">One gate, one constant.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PENDING_GATE_MS = 500</span> for all three fetching controls &mdash; one <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">setTimeout</span> on the flag becoming true, cleared on settle. Per-control thresholds make the product feel different depending on which knob you touched.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Measured window.</b> ~270&thinsp;ms warm &mdash; below the gate, crown only. 2,870&thinsp;ms worst case for a full recompute &mdash; crown plus one clause, for ~2.4&thinsp;s. Cache-served repeat flips do not navigate and are not this.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">No new token, no new hex, no new motion class.</b> The pending clause is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> mono at the subtitle's own size. The crown is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span>, or base-on-brass on a selected segment.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Motion: one thing moves.</b> The crown's 1,200&thinsp;ms opacity pulse. The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&hellip;</span> is one static character. The list has no transition, and the subtitle's text swap has none either. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">prefers-reduced-motion</span> holds the crown at 0.7 and changes nothing else, because nothing else was motion.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Focus survives the flip.</b> Controls are never disabled, so the pressed control keeps focus and its 2px brass <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">:focus-visible</span> ring throughout. No focus move on arrival.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">One announcement, on settle.</b> Pending clause <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span>; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PendingLabel</span>'s accessible name covers in-flight; the shipped live region is debounced to one message per settle. Two announcements for one press is a stutter.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">The list region is not touched.</b> No wrapper, no overlay, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-busy</span>, no pointer trap. A reader who spots the row they wanted in the outgoing list may press it, and that press must work.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">Contrast.</b> The participle sits at the same <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span> as the words beside it &mdash; it is never dimmer than its own sentence. The 0.55 dim applies only to a control whose label has become a mark.</div>
+    </div>
+  </div>
+
+  <sc-if value="{{ showAmendments }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">G &middot; <span style="color:#CF8745;">the three document amendments &mdash; strike the reason, keep the prohibition</span></div>
+
+    <div style="display:flex;flex-direction:column;gap:18px;max-width:1400px;">
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;margin-bottom:14px;">1 &middot; design_handoff_the99_discovery/CONTROLS-four-above-one-list.md:114-115</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;margin-bottom:12px;font-size:13px;color:#6E6654;line-height:1.6;text-decoration:line-through;"><b style="font-weight:600;">Neither control may animate the list.</b> Both flips re-render in place. A dimmed or sliding list at 3,100 rows makes a state change look like a fetch even when it is one.</div>
+        <div style="background:#18140F;border:1px solid #3A3229;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;font-size:13px;color:#C0B8A6;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Neither control may animate the list &mdash; including when the flip is a fetch.</b> Both flips re-render in place. The rows on screen are the previous answer and stay until the new one arrives; in-flight feedback lives on the pressed control and, past 500&thinsp;ms, in the one subtitle clause that control owns. See <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">RULING-in-flight-feedback.md</span>.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;margin-bottom:14px;">2 &middot; The 99 - Commander Discovery.dc.html:588</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;margin-bottom:12px;font-size:13px;color:#6E6654;line-height:1.6;text-decoration:line-through;"><b style="font-weight:600;">Motion: none.</b> Both flips are state changes over data already on the client &mdash; no transition, no dimmed list, no skeleton. The list re-renders in place, as the shipped toggle does.</div>
+        <div style="background:#18140F;border:1px solid #3A3229;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;font-size:13px;color:#C0B8A6;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Motion: none, including while waiting.</b> Scope and sort are server round-trips; the list still re-renders in place with no transition, no dimmed list and no skeleton, because the outgoing rows are the previous answer. The pressed control carries the pulsing crown; past 500&thinsp;ms one subtitle clause becomes its participle. See <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">RULING-in-flight-feedback.md</span>.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;margin-bottom:14px;">3 &middot; design_handoff_the99_commanders_plane/CONTROLS-six-above-one-list.md:246</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;margin-bottom:12px;font-size:13px;color:#6E6654;line-height:1.6;text-decoration:line-through;"><b style="font-weight:600;">Nothing above the list may animate the list.</b> Third statement of the same rule; at 3,326 rows the reason is only stronger.</div>
+        <div style="background:#18140F;border:1px solid #3A3229;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;font-size:13px;color:#C0B8A6;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Nothing above the list may animate the list, and a fetch is not an exception.</b> Third statement of the same rule; at 3,326 rows the reason is only stronger &mdash; and the reason is that the rows are the previous answer, not that nothing is being fetched. See <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">RULING-in-flight-feedback.md</span>.</div>
+      </div>
+
+      <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#18140F;padding:16px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Ship the edits with the code</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">Without them the wrong reason is still on file in three places, and this question comes back on the next long list. The prohibition was right &mdash; only its argument needed replacing.</div>
+      </div>
+
+    </div>
+  </div>
+  </sc-if>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showRejected&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;},&quot;showAmendments&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Sections&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      showRejected: this.props.showRejected ?? true,
+      showAmendments: this.props.showAmendments ?? true,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
