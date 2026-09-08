@@ -12,6 +12,7 @@ import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability } from "./availability-query";
+import { toUtcInstant } from "./price";
 import {
   deckCounts,
   unresolvedCardCount,
@@ -237,6 +238,17 @@ export type DeckListItem = {
   statusPill: StatusPill;
 };
 
+/**
+ * A `timestamp` column read through raw SQL, which carries none of the column
+ * mapping that would hand back a Date. `toUtcInstant` marks the string form as
+ * UTC before parsing, because a bare `new Date("2026-09-05 20:00:00")` is read
+ * in the runtime's own zone.
+ */
+function toDate(value: Date | string | null): Date | null {
+  if (value === null) return null;
+  return value instanceof Date ? value : new Date(toUtcInstant(value));
+}
+
 export async function listDecksWithStats(
   userId: string,
   sort: DeckSort = DEFAULT_DECK_SORT,
@@ -267,7 +279,9 @@ export async function listDecksWithStats(
 
   // Same reason as `unresolvedCount` above: a third child table joined and
   // grouped would multiply rows against `deck_cards` and inflate `built`.
-  const lastPlayedSql = sql<Date | null>`(
+  // Typed as `Date | string` because that is what drivers actually return for a
+  // `timestamp` column reached through raw SQL; the row map below resolves it.
+  const lastPlayedSql = sql<Date | string | null>`(
     select max(dg.played_at)
     from ${deckGames} dg
     where dg.deck_id = ${decks.id}
@@ -329,8 +343,13 @@ export async function listDecksWithStats(
       // raw SQL, so it carries none of the column mapping that would hand back a
       // Date, and a timestamp string reaching a caller typed `Date | null` would
       // survive every check until something called `.getTime()` on it.
-      // `src/lib/recs/store.ts` does the same for the same reason.
-      lastPlayedAt: row.lastPlayedAt === null ? null : new Date(row.lastPlayedAt),
+      //
+      // `played_at` is `timestamp` WITHOUT time zone holding a UTC instant, so
+      // the string form goes through `toUtcInstant` rather than straight into
+      // `new Date`, which would read it in the runtime's own zone — the same row
+      // would then date to a different day in Denver than in CI, and `2 days
+      // ago` is exactly the kind of figure that shifts.
+      lastPlayedAt: toDate(row.lastPlayedAt),
       statusPill: pill,
     };
   });

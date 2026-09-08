@@ -1024,14 +1024,14 @@ In `src/lib/decks/read.ts`, add the field to `DeckListItem`:
 Add the aggregate as a scalar subquery, for the same reason the file already gives for `unresolvedCount` — joining a second child table and grouping would multiply rows against `deck_cards` and inflate `built`:
 
 ```ts
-  const lastPlayedSql = sql<Date | null>`(
+  const lastPlayedSql = sql<Date | string | null>`(
     select max(dg.played_at)
     from ${deckGames} dg
     where dg.deck_id = ${decks.id}
   )`;
 ```
 
-Select it as `lastPlayedAt: lastPlayedSql`, and carry it through the `rows.map` result object.
+Select it as `lastPlayedAt: lastPlayedSql`, then normalise it in the `rows.map` — never carry it through raw. `played_at` is a `timestamp` WITHOUT time zone holding a UTC instant, and raw SQL carries none of the column mapping that would hand back a `Date`, so the string form goes through `toUtcInstant` (`src/lib/decks/price.ts`) before `new Date`. A bare `new Date("2026-09-05 20:00:00")` is read in the runtime's own zone, which dates the row differently in Denver than in CI — and `2 days ago` is exactly the kind of figure that shifts.
 
 - [ ] **Step 6: Add the sort parameter**
 
