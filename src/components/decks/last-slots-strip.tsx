@@ -195,10 +195,12 @@ function LastSlotsStripInner({
             style={{ color: "var(--fg-faint)" }}
           >
             <span className="md:hidden">
-              {topOffCopy.strip.captionMobile(
-                String(openSlots),
-                String(candidates.length),
-              )}
+              {open
+                ? topOffCopy.strip.captionMobileOpen(String(candidates.length))
+                : topOffCopy.strip.captionMobile(
+                    String(openSlots),
+                    String(candidates.length),
+                  )}
             </span>
             <span className="hidden md:inline">
               {topOffCopy.strip.caption(String(openSlots), String(candidates.length))}
@@ -218,7 +220,7 @@ function LastSlotsStripInner({
           >
             {/* Shortened at 390px, where the strip head has one line to give.
                 One element with responsive spans, not two mounted controls. */}
-            <span className="md:hidden">Close</span>
+            <span className="md:hidden">{topOffCopy.strip.closeShort}</span>
             <span className="hidden md:inline">{topOffCopy.strip.close}</span>
           </button>
         )}

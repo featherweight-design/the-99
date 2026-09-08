@@ -25,6 +25,12 @@ export const topOffCopy = {
       `${n} slots open · ${cand} candidates ranked by synergy for this commander`,
     captionMobile: (n: string, cand: string) =>
       `${n} slots open · ${cand} candidates ranked`,
+    /** ENG-ADDED, from the canvas's open phone strip. Once the list is open the
+     *  open-slot figure is stated by the commit bar's ticked count, which
+     *  carries it as its denominator; this line drops it and picks up the
+     *  ordering instead, which is the one thing desktop says that phone has
+     *  nowhere else to put. */
+    captionMobileOpen: (cand: string) => `${cand} candidates · ranked by synergy`,
 
     /** The door. A verb that opens something, not a verb that does something —
      *  the whole of #360 scope 1 is in the difference. `Choose` also names the
@@ -32,6 +38,10 @@ export const topOffCopy = {
     open: (n: string) => `Choose the last ${n}`,
     openAria: (n: string) => `Choose the cards for the last ${n} slots`,
     close: 'Close the list',
+    /** ENG-ADDED. The canvas truncates the label to one word at 390px, where
+     *  the strip head has a single line to give. A visual truncation, not a
+     *  second control: strip.close is still the spoken name. */
+    closeShort: 'Close',
 
     /** REPLACES lastSlots.ownedNote. That string existed to explain a number on
      *  a button face; there is no such number now. This one explains a default
@@ -68,6 +78,9 @@ export const topOffCopy = {
     /** Column headers. The two figures sit under them at both widths on
      *  desktop; at phone they are labelled by the aria name instead. */
     colCard: 'Card',
+    /** ENG-ADDED. The canvas draws this header over the cost track, but the
+     *  handoff's own copy file omitted the key; the word is Design's. */
+    colCost: 'Cost',
     colSynergy: 'Synergy',
     colDecks: 'Decks',
     ordering: 'ranked · synergy, then inclusion, then name',

@@ -307,17 +307,13 @@ export function TopOffList({
     <div id={listId}>
       {/* ── Selection head (§2) ─────────────────────────────────────────── */}
       <div className="md:flex md:items-center md:gap-[12px] md:flex-wrap md:pt-[10px] md:pb-[11px] md:[border-bottom:1px_solid_var(--border)]">
-        <p className="font-mono text-[10px] md:text-[11px]">
-          <span className="md:hidden" style={{ color: "var(--fg-body)" }}>
-            {topOffCopy.list.headMobile(String(tickedCount), String(openSlots))}
-          </span>
-          <span className="hidden md:inline" style={{ color: "var(--fg-body)" }}>
-            {headLive}
-          </span>
+        {/* Desktop only. At 390px the ticked count is stated once, in the pinned
+            commit bar, where it sits beside the button that acts on it — and the
+            strip's own caption takes this slot instead. */}
+        <p className="hidden md:block font-mono text-[11px]">
+          <span style={{ color: "var(--fg-body)" }}>{headLive}</span>
           {headStatic !== null && (
-            <span className="hidden md:inline" style={{ color: "var(--fg-locked)" }}>
-              {` · ${headStatic}`}
-            </span>
+            <span style={{ color: "var(--fg-locked)" }}>{` · ${headStatic}`}</span>
           )}
         </p>
 
@@ -356,7 +352,7 @@ export function TopOffList({
         <span className="w-[18px] flex-none" />
         <span className="w-[7px] flex-none" />
         <span className="flex-auto min-w-0">{topOffCopy.list.colCard}</span>
-        <span className="w-[40px] flex-none text-right">Cost</span>
+        <span className="w-[40px] flex-none text-right">{topOffCopy.list.colCost}</span>
         <span className="w-[84px] flex-none" />
         <span className="w-[88px] flex-none text-right">{topOffCopy.list.colSynergy}</span>
         <span className="w-[52px] flex-none text-right">{topOffCopy.list.colDecks}</span>

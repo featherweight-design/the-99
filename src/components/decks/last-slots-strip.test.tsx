@@ -117,6 +117,20 @@ describe("LastSlotsStrip", () => {
     expect(onAnnounce.mock.calls[0][0]).toContain(topOffCopy.announce.opened("3", "3", "2"));
   });
 
+  // At 390px the open-slot figure is the commit bar's denominator, so the strip
+  // caption stops repeating it and picks up the ordering, which phone has
+  // nowhere else to put. Desktop keeps its one caption at both states.
+  it("swaps the phone caption for the ordering once the list is open", async () => {
+    render(<LastSlotsStrip {...base} />);
+    expect(screen.getByText(topOffCopy.strip.captionMobile("3", "3"))).toBeInTheDocument();
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    expect(screen.queryByText(topOffCopy.strip.captionMobile("3", "3"))).toBeNull();
+    expect(screen.getByText(topOffCopy.strip.captionMobileOpen("3"))).toBeInTheDocument();
+    expect(screen.getByText(topOffCopy.strip.caption("3", "3"))).toBeInTheDocument();
+  });
+
   it("caps the seeded ticks at the open slots", async () => {
     render(<LastSlotsStrip {...base} openSlots={1} />);
     await click(screen.getByRole("button", { name: doorName("1") }));
