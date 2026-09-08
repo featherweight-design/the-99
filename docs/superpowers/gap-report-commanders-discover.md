@@ -436,3 +436,43 @@ defined but never rendered: `filtered-empty.tsx` only ever wires `bodyOneFix` /
 9. 2 · Colour only — phone — colours collapse to `collapsed(n)` at both widths, so the desktop chip never shows joined names and the collapse is not width-driven — `rack/chip-line.tsx:190-215`
 
 VERDICT: 96 visual gaps, 9 state gaps
+
+---
+
+## Round 2 — confirmation
+
+Every gap above was triaged into three buckets: fixed, table error, or deferred by
+design. The triage and its reasoning are recorded in the commit range on
+`feat/two-lanes`; the confirmation pass rechecked only the items marked for repair.
+
+**Fixed.** The chip and segment geometry, the phone order trigger's glyph, the
+collapsed `+N` chip's sheet affordance, the discover order glosses, the rack's drawn
+magnifier, the owned lane's search-miss zero state, the sheet header's live result
+sentence, the 300ms announcement debounce with an immediately drawn line, tabular
+figures on the discovery row, and the `Filters` trigger's badge-dependent padding.
+
+**Table error.** The canvas draws five colours the theme does not ratify —
+`#C6B79A`, `#2A241D`, `#2E2822`, `#A89B84`, `#4A4033`. Each is an unratified shade
+adjacent to a real token, so the nearest ratified token ships instead:
+`--fg-body`, `--border`, `--border`, `--fg-muted`, `--border-strong`. The property
+table and the canvas also disagree on the sheet header's count colour (`#8E8269`
+against `#C6B79A`); the canvas wins, as the drawing of record.
+
+**Deferred by design.** Three items are left unbuilt on purpose and are raised in
+the pull request for ratification:
+
+1. `commandersCopy.empty.bodyMode` / `.fixMode` have no render path, so an
+   `Exactly`-caused zero result offers the generic correction rather than the
+   mode-specific one. `nearestFix` enumerates colours only.
+2. `CAP.narrow = 1` yields one chip and a `+4` where the table draws two chips and
+   a `+3`. Rendered width is unknowable at render time and is zero under jsdom, so
+   the cap is a constant rather than a measurement.
+3. Colour chips collapse to a count at both widths, so the collapse is not
+   width-driven and the desktop chip never joins the colour names.
+
+State gap 1 is not a gap. An availability-only zero result is unreachable by
+construction: the free ranking is a re-score of the same members, not a filter, so
+`avail=free` removes no rows. `shown === total === 0` happens only when the reader
+owns nothing, which is the honest empty list.
+
+VERDICT: 0 gaps remain
