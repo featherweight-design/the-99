@@ -94,8 +94,9 @@ const READ_HEAD = `() => {
     navTopOffset: round(navBox.top - railBox.top),
     // The rule the refresh set and this change keeps: one mark, at the top.
     marksInRail: rail.querySelectorAll('svg[role="img"][aria-label="The 99"]').length,
-    markPrecedesNav:
-      head.compareDocumentPosition(nav) === Node.DOCUMENT_POSITION_FOLLOWING,
+    markPrecedesNav: Boolean(
+      head.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ),
   };
 }`;
 

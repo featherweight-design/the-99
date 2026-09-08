@@ -67,7 +67,9 @@ describe("NavRail", () => {
     // Before the Primary landmark, so a screen reader reads the app's name and
     // then the nav, rather than meeting the name somewhere inside it.
     const nav = within(rail).getByRole("navigation", { name: "Primary" });
-    expect(marks[0].compareDocumentPosition(nav)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // A bitmask, so test the one bit — an equality check would break the day
+    // either element gains an ancestor relationship to the other.
+    expect(marks[0].compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("states the reason a locked item is locked, in its accessible name", () => {
