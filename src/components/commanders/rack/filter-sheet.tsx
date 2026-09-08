@@ -38,8 +38,10 @@ import { ScopeControl } from "./scope-control";
 /** Travel past which the handle drag dismisses rather than snapping back. */
 const DRAG_DISMISS_PX = 80;
 
-/** The lane owns its sort list; `OrderControl` knows neither. */
-const ORDER_OPTIONS: Record<Lane, readonly { key: LaneOrder; label: string }[]> = {
+/** The lane owns its sort list; `OrderControl` knows neither. Exported because
+    the rack mounts the same control on its own persistent row and the two lists
+    must not drift. */
+export const ORDER_OPTIONS: Record<Lane, readonly { key: LaneOrder; label: string }[]> = {
   owned: [
     { key: "fit", label: commandersCopy.order.fit },
     { key: "name", label: commandersCopy.order.name },

@@ -16,11 +16,16 @@ export function OrderControl({
   options,
   onChange,
   wide,
+  triggerHeight = 32,
 }: {
   value: LaneOrder;
   options: readonly { key: LaneOrder; label: string }[];
   onChange: (o: LaneOrder) => void;
   wide: boolean;
+  /** Rack treatment only. 32px inline on the desktop rack, where it shares a
+      row with 34px controls; 44px on the phone's persistent row, where the
+      trigger is a touch target. */
+  triggerHeight?: number;
 }) {
   const current = options.find((o) => o.key === value) ?? options[0];
   return (
@@ -36,7 +41,7 @@ export function OrderControl({
       value={value}
       options={options}
       onChange={onChange}
-      triggerHeight={32}
+      triggerHeight={triggerHeight}
       rowHeight={44}
     />
   );
