@@ -80,6 +80,23 @@ fixed, and what was deliberately left as drawn.
     spent. A card an unfinished brew merely lists is still in the box, and a
     card you own three of and lent out one of is not a conflict.
 
+### Found by the browser pass
+
+15. **The phone filter sheet sat under the tab bar.** The sheet's overlay was
+    `z-40`; the phone tab bar is also `z-40` and paints later, so the bar
+    covered the sheet's footer and `Clear` could not be clicked at all. Every
+    other modal surface in the repo is `z-50` — the sheet was the outlier.
+    Fixed in `deck-filter-sheet.tsx`, with a unit test on the class, because
+    only a laid-out page can show the stacking and jsdom never will.
+
+    This is what `scripts/probe-refresh-decks.mjs` is for. It signs in with
+    Playwright, reads one tile's computed grid areas at 1300 and 390, and runs
+    the filter round trip — tick, reload, clear — at both. Both legs now report
+    `?status=Draft` → 1 tile → a reload that paints filtered on the first
+    frame → an empty URL after Clear. Grid areas read
+    `"pips label count" / "bar bar bar" / "detail . played"` on desktop and
+    `"pips detail count" / "bar bar bar"` on the phone, which is the table.
+
 ---
 
 ## Deliberately not fixed

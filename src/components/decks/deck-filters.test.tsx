@@ -105,6 +105,16 @@ describe("DeckFilterSheet", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it("stacks above the phone tab bar", () => {
+    // The tab bar is `z-40` and paints after the sheet, so a sheet at the same
+    // layer loses: the bar covers the footer and Clear cannot be clicked at all.
+    // Only a laid-out page shows that, which is why the class is asserted here.
+    const { container } = render(
+      <DeckFilterSheet {...props()} open onDismiss={vi.fn()} autoFocusSearch={false} />,
+    );
+    expect(container.firstElementChild).toHaveClass("z-50");
+  });
+
   it("carries the live match count and a dismiss-only button", () => {
     const onDismiss = vi.fn();
     const onChange = vi.fn();

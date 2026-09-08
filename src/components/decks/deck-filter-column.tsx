@@ -136,7 +136,14 @@ export function DeckFilterColumn({ filters, onChange }: FilterChromeProps) {
   const c = refreshCopy.filters;
 
   return (
-    <div className="hidden w-[262px] flex-none flex-col border-0 border-r border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)] sm:flex">
+    // The hook is for the browser probe. The column and the phone sheet both
+    // exist in every DOM, so "is the column the one on screen" is a question
+    // only a laid-out page can answer, and a class list is not a selector a
+    // probe should depend on.
+    <div
+      data-filter-column
+      className="hidden w-[262px] flex-none flex-col border-0 border-r border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)] sm:flex"
+    >
       <div className="border-0 border-b border-solid border-[color:var(--border)] px-[16px] pt-[14px] pb-[12px]">
         <SearchField
           value={filters.search}
