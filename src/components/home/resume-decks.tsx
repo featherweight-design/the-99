@@ -13,12 +13,12 @@
 // draws the section and nothing around it.
 
 import Link from "next/link";
-import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { MATURE_DECK_SIZE } from "../../lib/decks/availability";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { StatusPillBadge } from "../decks/status-pill";
+import { ArtWash } from "../ui/art-wash";
 
 export const RESUME_COUNT = 2;
 
@@ -70,22 +70,23 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
       href={`/decks/${deck.id}`}
       // The whole row is the target — no per-row button, because a button would
       // be a second way to do the one thing the row already does.
-      className="flex min-w-0 flex-1 items-center gap-[11px] rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] px-[12px] py-[10px]"
+      className="relative flex min-h-[72px] min-w-0 flex-1 items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[12px]"
     >
-      {/* §ResumeRow — art spine. The stripes are the fallback for a commander
-          whose printing carries no image, the same one the tile and the hero
-          use; a second placeholder would be a second answer. */}
-      <span
-        className="h-[42px] w-[30px] flex-none rounded-[5px]"
-        aria-hidden
-        style={{
-          background: deck.commanderImageUri
-            ? `${cssUrl(deck.commanderImageUri)} center/cover`
-            : ART_STRIPES,
-        }}
+      {/* §ResumeRow — the commander's portrait, at the band's own height. It is
+          a column the type starts clear of, not a plate the type sits on: 99px
+          of portrait plus a 17px gap is where the 116px inset comes from, and
+          nothing on this row needs a text shadow as a result. */}
+      <ArtWash
+        strategy="left-portrait"
+        band={72}
+        artCropUri={deck.commanderArtCropUri}
+        colorIdentity={deck.commanderColorIdentity}
       />
 
-      <span className="flex min-w-0 flex-auto flex-col gap-[4px]">
+      <span
+        data-resume-text
+        className="relative flex min-w-0 flex-auto flex-col gap-[4px] pl-[116px]"
+      >
         {/* The DECK name, not the commander's. The frame prints the commander
             in both rows only because a new deck is named after its commander by
             default; a renamed deck must show the name its owner gave it, as the

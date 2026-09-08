@@ -73,6 +73,19 @@ describe("resumeDecks", () => {
 });
 
 describe("ResumeDecks", () => {
+  it("gives the art its own column and starts type clear of it", () => {
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
+    const row = container.querySelector("a");
+    expect(row?.className).toContain("min-h-[72px]");
+    const text = row?.querySelector("[data-resume-text]");
+    expect(text?.className).toContain("pl-[116px]");
+  });
+
+  it("needs no text shadow, because type never sits on art", () => {
+    const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
+    expect(container.innerHTML).not.toContain("text-shadow");
+  });
+
   it("prints the built count and the unowned clause together", () => {
     render(
       <ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup({ d1: 3 })} />,
