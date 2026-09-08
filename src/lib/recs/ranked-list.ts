@@ -45,7 +45,11 @@ export const getRankedList = cache(async function getRankedList(
 
   const list = await assemble(userId, stored, stats.uniqueCards);
 
-  // The one exclusion both paths pass through.
+  // The one exclusion both paths pass through. Nothing to exclude from an empty
+  // list, and a collection can hold cards without supporting a single rankable
+  // commander, so the deck read is skipped rather than asked and discarded.
+  if (list.items.length === 0) return { ...list, candidateCount: 0 };
+
   const built = await loadBuiltCommanderIds(userId);
   const items = list.items.filter((i) => !built.has(i.oracleId));
   return { ...list, items, candidateCount: items.length };
