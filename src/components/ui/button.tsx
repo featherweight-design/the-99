@@ -29,7 +29,11 @@ const BASE =
 // so a filled CTA wearing it claims a status it does not have. --fg-body is the
 // hover because it is the only token that is a step off bone in the same family
 // across all six themes; --accent-hover would put accent back by the side door.
-const PRIMARY =
+// Exported because two call sites cannot use PrimaryButton itself: they render a
+// Link through SelectableBuildButton, which owns its own href and disabled
+// logic. Sharing the string keeps one definition of the bone fill rather than a
+// second one that drifts.
+export const PRIMARY =
   "bg-[color:var(--fg)] text-[color:var(--bg)] hover:bg-[color:var(--fg-body)] " +
   "disabled:hover:bg-[color:var(--fg)]";
 

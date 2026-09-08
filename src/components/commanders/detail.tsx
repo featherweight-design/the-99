@@ -25,6 +25,7 @@ import {
   SelectableLiveAnnouncer,
 } from "./synergy-selection";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
+import { PRIMARY } from "../ui/button";
 
 // ─── Fit Hero (right column top section) ─────────────────────────────────────
 
@@ -439,7 +440,7 @@ export function CommanderDetail({
         <SelectableBuildButton
           oracleId={c.oracleId}
           // brand focus-visible outline treatment inherited from globals.css
-          className="font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] disabled:hover:bg-[color:var(--accent)] text-[14px] p-[12px_20px] text-center whitespace-nowrap"
+          className={`font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default ${PRIMARY} text-[14px] p-[12px_20px] text-center whitespace-nowrap`}
         />
       </div>
 
@@ -518,7 +519,7 @@ export function CommanderDetail({
           <SelectableBuildButton
             oracleId={c.oracleId}
             // brand focus-visible outline treatment inherited from globals.css
-            className="font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] disabled:hover:bg-[color:var(--accent)] text-[15px] p-[14px_0] text-center block w-full"
+            className={`font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default ${PRIMARY} text-[15px] p-[14px_0] text-center block w-full`}
           />
 
           {/* Seed note */}
