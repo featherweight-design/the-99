@@ -35,6 +35,16 @@ const stub = vi.hoisted(() => {
     onLock: null as (() => void) | null,
     // Paths passed to revalidatePath
     revalidated: [] as string[],
+    // fill_passes rows. Read two ways: as the highest ordinal a deck+kind has
+    // used (recordFillPass, inside the transaction) and as one pass by id
+    // (undoFillPass, outside it).
+    fillPasses: [] as { id: string; deckId: string; kind: string; ordinal: number }[],
+    // fill_pass_cards rows — the membership undoFillPass deletes against
+    fillPassMembers: [] as { passId: string; oracleId: string }[],
+    // Rows the delete's returning clause hands back
+    deleted: [] as { quantity: number }[],
+    // { table } per delete, so a delete can be asserted on what it targeted
+    deleteCalls: [] as { table: string }[],
   };
 
   function reset() {
@@ -47,6 +57,10 @@ const stub = vi.hoisted(() => {
     state.transactionError = null;
     state.onLock = null;
     state.revalidated.length = 0;
+    state.fillPasses.length = 0;
+    state.fillPassMembers.length = 0;
+    state.deleted.length = 0;
+    state.deleteCalls.length = 0;
     // Deck row so requireDeck succeeds
     state.collectionItems.push({
       id: "deck-1",
@@ -81,6 +95,15 @@ const stub = vi.hoisted(() => {
             if (tableName === "deck_cards" && isTx) return state.deckCards;
             if (tableName === "deck_cards") throw new Error("stub: deck_cards select outside tx — not exercised");
             if (tableName === "cards") return state.cards;
+            // Inside the transaction this read is recordFillPass's aggregate,
+            // which always answers with exactly one row; outside it, it is
+            // undoFillPass looking one pass up by id.
+            if (tableName === "fill_passes") {
+              return isTx
+                ? [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }]
+                : state.fillPasses;
+            }
+            if (tableName === "fill_pass_cards") return state.fillPassMembers;
             if (tableName === "collection_items") {
               state.collectionReads += 1;
               return state.ownedItems;
@@ -102,12 +125,30 @@ const stub = vi.hoisted(() => {
     return {
       values: (values: unknown) => {
         state.insertCalls.push({ table: tableName, values });
+        // A pass insert has to answer with the id recordFillPass hands its
+        // membership rows, and the row has to join the table so the next
+        // ordinal read sees it.
+        const inserted: Record<string, unknown>[] = [];
+        if (tableName === "fill_passes") {
+          const row = values as { deckId: string; kind: string; ordinal: number };
+          const id = `pass-${state.fillPasses.length + 1}`;
+          state.fillPasses.push({ id, ...row });
+          inserted.push({ id });
+        }
         return {
-          returning: async () => [],
+          returning: async () => inserted,
           onConflictDoUpdate: async () => {},
           onConflictDoNothing: async () => {},
         };
       },
+    };
+  }
+
+  function makeDeleteBuilder(table: unknown) {
+    const tableName = nameOf(table);
+    state.deleteCalls.push({ table: tableName });
+    return {
+      where: () => ({ returning: async () => state.deleted }),
     };
   }
 
@@ -123,6 +164,7 @@ const stub = vi.hoisted(() => {
     select: () => makeSelectBuilder(false),
     selectDistinctOn: () => makeSelectBuilder(false),
     insert: (table: unknown) => makeInsertBuilder(table),
+    delete: (table: unknown) => makeDeleteBuilder(table),
     transaction: async (fn: (t: typeof tx) => Promise<unknown>) => {
       if (state.transactionError) throw state.transactionError;
       return fn(tx);
@@ -201,6 +243,13 @@ function cardRow(
     colorIdentity: [],
     ...overrides,
   };
+}
+
+/** A UUID-shaped oracle id. `commitTopOff` checks the shape before it reaches
+    Postgres, so the ids the ticked list sends have to be real ones. */
+function uuid(n: number): string {
+  const tail = n.toString(16).padStart(12, "0");
+  return `00000000-0000-4000-8000-${tail}`;
 }
 
 /** A synergy card fixture. */
@@ -470,5 +519,189 @@ describe("fillLastSlotsUnowned", () => {
     expect(out).toMatchObject({ ok: false });
     // Nothing must have been inserted.
     expect(stub.state.insertCalls).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// commitTopOff
+// ---------------------------------------------------------------------------
+describe("commitTopOff", () => {
+  it("places the ticked cards as auto and records them as one pass", async () => {
+    stub.state.deckCards = rowsFor(97);
+    stub.state.cards.push(cardRow(uuid(1)), cardRow(uuid(2)));
+    const { commitTopOff } = await import("./actions");
+    const out = await commitTopOff("deck-1", [uuid(1), uuid(2)]);
+
+    expect(out).toMatchObject({ ok: true, added: 2, total: 99, passId: "pass-1" });
+    expect(stub.state.insertCalls.find((c) => c.table === "deck_cards")!.values)
+      .toEqual([
+        { deckId: "deck-1", oracleId: uuid(1), quantity: 1, auto: true },
+        { deckId: "deck-1", oracleId: uuid(2), quantity: 1, auto: true },
+      ]);
+    // openSlots is the gap the lock found, which is what the ledger line states.
+    expect(stub.state.insertCalls.find((c) => c.table === "fill_passes")!.values)
+      .toMatchObject({ kind: "top_off", openSlots: 2, ordinal: 1 });
+  });
+
+  // The list is the plan here, so an unowned card is a deliberate choice rather
+  // than a fallback — and the commit row promised a figure for exactly it.
+  it("counts only the cards this act placed toward boughtDelta", async () => {
+    const existing = rowsFor(97);
+    stub.state.deckCards = existing;
+    stub.state.cards.push(cardRow(uuid(1)), cardRow(uuid(2)));
+    stub.state.ownedItems = [{ oracleId: uuid(1), userId: "user_1", quantity: 1 }];
+    const { commitTopOff } = await import("./actions");
+    expect(await commitTopOff("deck-1", [uuid(1), uuid(2)]))
+      .toMatchObject({ ok: true, boughtDelta: 1 });
+  });
+
+  it("refuses a selection larger than the open slots rather than truncating it", async () => {
+    stub.state.deckCards = rowsFor(98); // one slot open
+    stub.state.cards.push(cardRow(uuid(1)), cardRow(uuid(2)));
+    const { commitTopOff } = await import("./actions");
+    expect(await commitTopOff("deck-1", [uuid(1), uuid(2)])).toEqual({
+      ok: false,
+      message: synergyCopy.lastSlots.topUpFailed,
+    });
+    expect(stub.state.insertCalls).toHaveLength(0);
+  });
+
+  // A hand-add in another tab spends the slot between the list being drawn and
+  // the commit arriving. The count is re-read under the lock, so the refusal is
+  // the same one a stale tick gets — never an overfilled deck.
+  it("refuses when a concurrent hand-add closes the last slot", async () => {
+    stub.state.deckCards = rowsFor(98);
+    stub.state.onLock = () => {
+      stub.state.deckCards = rowsFor(99);
+    };
+    stub.state.cards.push(cardRow(uuid(1)));
+    const { commitTopOff } = await import("./actions");
+    expect(await commitTopOff("deck-1", [uuid(1)])).toMatchObject({ ok: false });
+    expect(stub.state.insertCalls).toHaveLength(0);
+  });
+
+  // Unlike the fill, which skips one card and places the rest: the player chose
+  // these cards specifically, and placing all but one would make the receipt lie.
+  it("refuses the whole commit when one ticked card is illegal", async () => {
+    stub.state.deckCards = rowsFor(97);
+    stub.state.cards.push(cardRow(uuid(1)), cardRow(uuid(2), { colorIdentity: ["U"] }));
+    const { commitTopOff } = await import("./actions");
+    expect(await commitTopOff("deck-1", [uuid(1), uuid(2)])).toMatchObject({ ok: false });
+    expect(stub.state.insertCalls).toHaveLength(0);
+  });
+
+  it("refuses a duplicated oracle id", async () => {
+    stub.state.deckCards = rowsFor(97);
+    stub.state.cards.push(cardRow(uuid(1)));
+    const { commitTopOff } = await import("./actions");
+    expect(await commitTopOff("deck-1", [uuid(1), uuid(1)])).toMatchObject({ ok: false });
+    expect(stub.state.insertCalls).toHaveLength(0);
+  });
+
+  // The conflict clause skips it, so the pass must not claim it either — an undo
+  // would otherwise offer to take a card the player put there themselves.
+  it("leaves a card the player added by hand out of the pass", async () => {
+    stub.state.deckCards = [...rowsFor(96), { oracleId: uuid(1), quantity: 1 }];
+    stub.state.cards.push(cardRow(uuid(1)), cardRow(uuid(2)));
+    const { commitTopOff } = await import("./actions");
+    const out = await commitTopOff("deck-1", [uuid(1), uuid(2)]);
+    expect(out).toMatchObject({ ok: true, added: 1, total: 98 });
+    expect(stub.state.insertCalls.find((c) => c.table === "fill_pass_cards")!.values)
+      .toEqual([{ passId: "pass-1", oracleId: uuid(2), quantity: 1 }]);
+  });
+
+  it("refuses when the deck does not belong to the authenticated user", async () => {
+    stub.state.collectionItems = [];
+    stub.state.deckCards = rowsFor(97);
+    stub.state.cards.push(cardRow(uuid(1)));
+    const { commitTopOff } = await import("./actions");
+    expect(await commitTopOff("deck-1", [uuid(1)])).toMatchObject({ ok: false });
+    expect(stub.state.insertCalls).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// undoFillPass
+// ---------------------------------------------------------------------------
+describe("undoFillPass", () => {
+  const passId = uuid(900);
+
+  function pass(overrides: Partial<{ deckId: string; kind: string }> = {}) {
+    stub.state.fillPasses = [{ id: passId, deckId: "deck-1", kind: "top_off", ordinal: 1, ...overrides }];
+  }
+
+  it("removes the pass's live rows and reports the cards that went", async () => {
+    pass();
+    stub.state.fillPassMembers = [
+      { passId, oracleId: uuid(1) },
+      { passId, oracleId: uuid(2) },
+    ];
+    // Only one row comes back: the other card is kept, so `auto` is false and
+    // the delete's own predicate cannot reach it.
+    stub.state.deleted = [{ quantity: 1 }];
+    const { undoFillPass } = await import("./actions");
+    expect(await undoFillPass("deck-1", passId)).toBe(1);
+    expect(stub.state.deleteCalls).toEqual([{ table: "deck_cards" }]);
+  });
+
+  // The membership record is immutable, and the line goes on its own: with no
+  // live rows left the pass summarises to nothing and drops out of the ledger.
+  it("deletes neither the pass row nor its membership", async () => {
+    pass();
+    stub.state.fillPassMembers = [{ passId, oracleId: uuid(1) }];
+    stub.state.deleted = [{ quantity: 1 }];
+    const { undoFillPass } = await import("./actions");
+    await undoFillPass("deck-1", passId);
+    expect(stub.state.deleteCalls.some((c) => c.table !== "deck_cards")).toBe(false);
+  });
+
+  it("removes nothing the second time the same pass is undone", async () => {
+    pass();
+    stub.state.fillPassMembers = [{ passId, oracleId: uuid(1) }];
+    stub.state.deleted = []; // nothing live left to delete
+    const { undoFillPass } = await import("./actions");
+    expect(await undoFillPass("deck-1", passId)).toBe(0);
+  });
+
+  it("refuses a pass belonging to another deck", async () => {
+    pass({ deckId: "deck-2" });
+    stub.state.fillPassMembers = [{ passId, oracleId: uuid(1) }];
+    const { undoFillPass } = await import("./actions");
+    await expect(undoFillPass("deck-1", passId)).rejects.toThrow();
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  // The seed line names the sweep as its reversal and grows no undo of its own.
+  // The guard exists so a hand-made call cannot do what the UI declines to offer.
+  it("refuses a seed pass", async () => {
+    pass({ kind: "seed" });
+    stub.state.fillPassMembers = [{ passId, oracleId: uuid(1) }];
+    const { undoFillPass } = await import("./actions");
+    await expect(undoFillPass("deck-1", passId)).rejects.toThrow();
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  it("refuses when the deck does not belong to the authenticated user", async () => {
+    stub.state.collectionItems = [];
+    pass();
+    const { undoFillPass } = await import("./actions");
+    await expect(undoFillPass("deck-1", passId)).rejects.toThrow();
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  // Ordinals come from max(), and an undo leaves the pass row in place — so the
+  // number an undone pass was given is never handed out again, and a later pass
+  // keeps the label the ledger already showed for it.
+  it("does not renumber later passes after an undo", async () => {
+    stub.state.fillPasses = [
+      { id: uuid(901), deckId: "deck-1", kind: "top_off", ordinal: 1 },
+      { id: uuid(902), deckId: "deck-1", kind: "top_off", ordinal: 2 },
+    ];
+    stub.state.deckCards = rowsFor(97);
+    stub.state.cards.push(cardRow(uuid(1)));
+    const { commitTopOff } = await import("./actions");
+    await commitTopOff("deck-1", [uuid(1)]);
+    expect(stub.state.insertCalls.find((c) => c.table === "fill_passes")!.values)
+      .toMatchObject({ ordinal: 3 });
   });
 });
