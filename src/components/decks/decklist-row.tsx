@@ -117,8 +117,10 @@ export function DecklistRow({
 
   // Addendum A2: Shopping rows carry an EDHREC figure on a meta line below the
   // name. shoppingFigure is only threaded for unowned deck cards shown in the
-  // Shopping filter. undefined = All view (no meta). null or number = Shopping view.
-  // The row grows to 52px on phone to hold the extra line.
+  // Shopping filter. undefined = All view. null or number = Shopping view.
+  // It says whether the FIGURE is drawn, and no longer whether the line is:
+  // since #350 the cost rides that same line, so an All-view row can carry a
+  // meta line with no figure on it.
   // Basic lands are never in Shopping (the fill guarantees it), but guard anyway.
   const hasShoppingMeta = !isBasicLand(card.typeLine) && shoppingFigure !== undefined;
   // The cost joins that same line on the phone, so a row can now carry one
@@ -218,10 +220,12 @@ export function DecklistRow({
         />
 
         {/* Card name — the click target for the detail modal (#127).
-            Shopping rows: phone = two lines (name then prefixed figure below);
-            desktop = single line (name + bare figure inline). The `edhrec` prefix
-            exists only on phone because the figure is detached from the name there
-            and needs context; inline on desktop it reads fine without it. */}
+            Any row with a meta line — a Shopping row, or since #350 any row
+            outside the Lands group: phone = two lines (name, then the cost and
+            the prefixed figure below); desktop = single line (name, cost and
+            bare figure inline). The `edhrec` prefix exists only on phone
+            because the figure is detached from the name there and needs
+            context; inline on desktop it reads fine without it. */}
         {hasMetaLine ? (
           // One trigger at both widths — the layout changes, the card does not.
           // Only the figure's wording differs, so only the figure is drawn twice.
