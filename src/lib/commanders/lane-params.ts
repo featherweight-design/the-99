@@ -1,7 +1,13 @@
 import type { JoinMode } from "./filter";
+import { parseColors } from "../color-param";
 
 export type Lane = "owned" | "discover";
-export type OwnedOrder = "fit" | "name" | "added";
+// `added` is deliberately absent. The handoff's owned order reads Fit · Name ·
+// Recently added, but nothing can implement the third: `collection_items` has
+// no timestamp, and an upload deletes and re-inserts every holding, so there is
+// no acquisition date to sort on. An option that quietly falls back to Fit is
+// the same class of defect this redesign exists to remove.
+export type OwnedOrder = "fit" | "name";
 export type DiscoverOrder = "popularity" | "name" | "recent";
 export type LaneOrder = OwnedOrder | DiscoverOrder;
 export type Avail = "all" | "free";
@@ -19,7 +25,7 @@ export type LaneParams = {
 const WUBRG = ["w", "u", "b", "r", "g"] as const;
 
 const ORDERS: Record<Lane, readonly LaneOrder[]> = {
-  owned: ["fit", "name", "added"],
+  owned: ["fit", "name"],
   discover: ["popularity", "name", "recent"],
 };
 
@@ -44,8 +50,13 @@ function read(sp: URLSearchParams, key: keyof typeof LEGACY): string | null {
 
 export function parseLaneParams(sp: URLSearchParams, lane: Lane): LaneParams {
   const base = defaultParams(lane);
-  const raw = (sp.get("c") ?? "").toLowerCase().split(",");
-  const colors = WUBRG.filter((c) => raw.includes(c));
+  // `parseColors` is the app-wide reader for `?c=`, and going through it is what
+  // keeps a link portable: it takes the collection browser's letter run (`c=bg`)
+  // as readily as this lane's comma form, and drops anything that is neither.
+  // Re-ordered to WUBRG here so the chip, the URL and the pips agree whichever
+  // order the letters arrived in.
+  const raw = parseColors(sp.get("c"));
+  const colors = WUBRG.filter((c) => raw.includes(c.toUpperCase()));
   const order = ORDERS[lane].find((o) => o === read(sp, "o")) ?? base.order;
   // `sort=new` was discovery's novelty ranking, which is now the scope control.
   const scopeRaw = sp.get("s") ?? sp.get("sort");

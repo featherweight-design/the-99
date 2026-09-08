@@ -1,8 +1,10 @@
 "use client";
-// Row three of the rack: how many rows the filters left, and the lane's ONLY
-// live region. Every other count on the page — the sheet's dismiss button, the
-// empty state — is silent, because a screen reader given four live regions
-// reads a chorus after every keystroke.
+// Row three of the rack: how many rows the filters left, and the rack's ONLY
+// live region. Every other count in it — the sheet's dismiss button, the empty
+// state — is silent, because a screen reader given four live regions reads a
+// chorus after every keystroke. The lane's own announcer is the one other
+// region on the page, and it speaks only for events this line cannot describe:
+// a re-rank, and a reveal step.
 //
 // At rest the line states the lane instead of printing a ratio: `3,301 of
 // 3,301` is a fact nobody asked for. Filtered, it prints the ratio, and the

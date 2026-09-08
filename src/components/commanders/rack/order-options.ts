@@ -9,7 +9,6 @@ export const ORDER_OPTIONS: Record<Lane, readonly { key: LaneOrder; label: strin
   owned: [
     { key: "fit", label: commandersCopy.order.fit },
     { key: "name", label: commandersCopy.order.name },
-    { key: "added", label: commandersCopy.order.added },
   ],
   discover: [
     { key: "popularity", label: discoverCopy.order.popularity },

@@ -26,6 +26,13 @@ describe("parseLaneParams", () => {
     expect(parseLaneParams(sp("c=g,b"), "owned").colors).toEqual(["b", "g"]);
   });
 
+  // The collection browser writes `?c=` as an unseparated run and links carry
+  // across, so a lane that only understood the comma form would open unfiltered.
+  it("reads the collection browser's letter run, in either case", () => {
+    expect(parseLaneParams(sp("c=GB"), "owned").colors).toEqual(["b", "g"]);
+    expect(parseLaneParams(sp("c=wu"), "owned").colors).toEqual(["w", "u"]);
+  });
+
   it("drops unknown colour letters", () => {
     expect(parseLaneParams(sp("c=b,x,g"), "owned").colors).toEqual(["b", "g"]);
   });
@@ -48,7 +55,7 @@ describe("parseLaneParams", () => {
 
   it("rejects an order that does not belong to the lane", () => {
     expect(parseLaneParams(sp("o=popularity"), "owned").order).toBe("fit");
-    expect(parseLaneParams(sp("o=added"), "discover").order).toBe("popularity");
+    expect(parseLaneParams(sp("o=recent"), "owned").order).toBe("fit");
     expect(parseLaneParams(sp("o=recent"), "discover").order).toBe("recent");
   });
 

@@ -15,6 +15,7 @@ import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
 import { PageHeader } from "../../components/commanders/page-header";
 import { scopeRedirectTarget } from "./scope-redirect";
+import { parseLaneParams } from "../../lib/commanders/lane-params";
 import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { retryRecs } from "./actions";
 import { RetryGhost } from "../../components/commanders/retry-submit";
@@ -39,11 +40,13 @@ export default async function CommandersPage({
   // target never carries it — one 308 and the parameter is gone for good.
   const target = scopeRedirectTarget(searchParamsToQuery(sp));
   if (target) permanentRedirect(target);
-  // `What's free` is the default: a ranking that ignores which cards are already
-  // committed to a deck recommends commanders the player cannot build without
-  // taking one apart. `?avail=all` is the opt-out, so a shared link that predates
-  // this still opens on the mode it names.
-  const avail = sp.avail === "all" ? ("all" as const) : ("free" as const);
+  // `All my cards` is the default the lane opens on, which reverses the shipped
+  // build's `What's free`. The rack is why: `Free cards only` now counts as an
+  // active control, so defaulting to it would badge the `Filters` trigger and
+  // draw a chip on arrival, for a choice the reader never made. The parse is
+  // `lane-params`' own, so the short key, the legacy `avail` and the lane rule
+  // are read here exactly as the client reads them.
+  const avail = parseLaneParams(searchParamsToQuery(sp), "owned").avail;
   const stats = await getCollectionStats(userId);
 
   if (stats.uniqueCards === 0) {

@@ -49,11 +49,6 @@ const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
  * The lane's client-side ordering. `fit` is the server's order and is returned
  * untouched, which is also what keeps the rank numerals meaningful: they are
  * built over the unfiltered list in fit order and never renumber.
- *
- * `added` is deliberately a no-op. "Recently added" has nothing behind it —
- * `collection_items` carries no timestamp, and `replaceCollection` deletes and
- * re-inserts every holding on each upload, so there is no acquisition date to
- * sort on. Fabricating one would be an order that quietly means nothing.
  */
 function ordered<T extends { name: string }>(rows: T[], order: LaneOrder): T[] {
   if (order !== "name") return rows;

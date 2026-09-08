@@ -5,6 +5,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { defaultParams } from "@/lib/commanders/lane-params";
+import { commandersCopy } from "@/lib/copy/lanes";
 import { FilterSheet } from "./filter-sheet";
 
 describe("FilterSheet", () => {
@@ -21,6 +22,15 @@ describe("FilterSheet", () => {
       <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} />,
     );
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+  });
+
+  // The rack drops this line because the two segments sit side by side there.
+  // In the sheet the contrast has to be said, so the sheet is where it is tested.
+  it("carries the availability explainer the rack leaves out", () => {
+    render(
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} />,
+    );
+    expect(screen.getByText(commandersCopy.availability.hint)).toBeInTheDocument();
   });
 
   it("labels the footer with the live count", () => {
