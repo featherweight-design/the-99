@@ -20,12 +20,22 @@ describe("scopeRedirectTarget", () => {
     expect(scopeRedirectTarget(new URLSearchParams("scope=play&a=free"))).toBe("/discover");
   });
 
-  it("leaves scope=own on the owned lane", () => {
-    expect(scopeRedirectTarget(new URLSearchParams("scope=own&c=b"))).toBe("/commanders?c=b");
+  // The shipped control wrote `owned`, so this is the spelling real bookmarks
+  // carry. The two below it are the values a hand-edited URL can hold.
+  it("sends scope=owned to the owned lane, shedding the parameter", () => {
+    expect(scopeRedirectTarget(new URLSearchParams("scope=owned&c=b"))).toBe("/commanders?c=b");
+  });
+
+  it("reads an empty scope as the owned lane", () => {
+    expect(scopeRedirectTarget(new URLSearchParams("scope=&c=b"))).toBe("/commanders?c=b");
+  });
+
+  it("reads an unknown scope as the owned lane rather than ignoring it", () => {
+    expect(scopeRedirectTarget(new URLSearchParams("scope=nonsense"))).toBe("/commanders");
   });
 
   it("rewrites the legacy join and avail keys onto the owned lane", () => {
-    expect(scopeRedirectTarget(new URLSearchParams("scope=own&join=exact&avail=free"))).toBe(
+    expect(scopeRedirectTarget(new URLSearchParams("scope=owned&join=exact&avail=free"))).toBe(
       "/commanders?m=exact&a=free",
     );
   });

@@ -9,7 +9,12 @@ import { parseLaneParams, serializeLaneParams } from "../../lib/commanders/lane-
 // new ones, so the redirect emits a clean URL from a legacy one.
 export function scopeRedirectTarget(sp: URLSearchParams): string | null {
   const scope = sp.get("scope");
-  if (scope !== "play" && scope !== "own") return null;
+  if (scope === null) return null;
+  // Any value that is not `play` is the owned lane, which is what the parameter
+  // meant while it existed: the control wrote `play` and deleted the key for
+  // owned, so `owned`, an empty value and a hand-edited one all resolved the
+  // same way. Redirecting on the key's presence rather than on a pair of
+  // spellings is what lets every legacy URL shed it on the first visit.
   const lane = scope === "play" ? "discover" : "owned";
   const params = parseLaneParams(sp, lane);
   return `${lane === "discover" ? "/discover" : "/commanders"}${serializeLaneParams(params, lane)}`;
