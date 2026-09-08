@@ -17,8 +17,10 @@ export type ViewToggleOption<T extends string> = {
 
 /**
  * The well's size is arithmetic, not a second declaration: two segments plus
- * the 2px gap plus the well's 2px padding on each side is 94×48 on the phone
- * and 70×36 on the desktop, which is what Design specified for both surfaces.
+ * the 2px gap plus the well's 2px padding on each side is Design's 94×48 on the
+ * phone and 70×36 on the desktop. Those are content-box figures; the well's 1px
+ * border puts another 2px on each axis, so anything measuring the rendered box —
+ * a probe, a devtools readout — reads 96×50 and 72×38.
  */
 export function ViewToggle<T extends string>({
   options,
