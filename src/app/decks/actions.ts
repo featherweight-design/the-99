@@ -972,7 +972,8 @@ export async function commitTopOff(deckId: string, oracleIds: string[]): Promise
  *  the condition the legacy line turns on.
  *
  *  Returns the number of cards actually removed, which is what the announcement
- *  states: a second undo of the same pass finds nothing live and removes none. */
+ *  states: a second undo of the same pass finds nothing live and removes none,
+ *  and a card claimed between the read and the write is reported as staying. */
 export async function undoFillPass(deckId: string, passId: string): Promise<number> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
@@ -1037,37 +1038,43 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
     // the pass placed is decremented by what the pass placed and a row holding
     // exactly that is deleted.
     const rowsToDelete: string[] = [];
+    // Counted from what the writes took, not from what the read predicted.
+    // `keepAutoCard` clears the flag without this lock, so a keep landing
+    // between the read above and these writes turns one of them into a no-op —
+    // and the announcement has to say one card when one came out.
+    let removedCards = 0;
     for (const row of rows) {
       if (!live.has(row.oracleId)) continue;
       const held = placed.get(row.oracleId) ?? 0;
       if (row.quantity > held) {
-        // `auto` is re-checked in the predicate, exactly as the delete does it.
-        // `keepAutoCard` clears the flag without taking this lock, so a keep
-        // landing between the read above and this write would otherwise let an
-        // undo decrement a card the player has just claimed.
-        await tx.update(deckCards)
+        // `auto` is re-checked in the predicate, exactly as the delete does it,
+        // so a card the player has just claimed keeps all of its copies.
+        const decremented = await tx.update(deckCards)
           .set({ quantity: sql`${deckCards.quantity} - ${held}` })
           .where(and(
             eq(deckCards.deckId, deckId),
             eq(deckCards.oracleId, row.oracleId),
             eq(deckCards.auto, true),
-          ));
+          ))
+          .returning({ oracleId: deckCards.oracleId });
+        if (decremented.length > 0) removedCards += held;
       } else {
         rowsToDelete.push(row.oracleId);
       }
     }
     if (rowsToDelete.length > 0) {
-      await tx.delete(deckCards).where(and(
+      const deleted = await tx.delete(deckCards).where(and(
         eq(deckCards.deckId, deckId),
         eq(deckCards.auto, true),
         inArray(deckCards.oracleId, rowsToDelete),
-      ));
+      )).returning({ quantity: deckCards.quantity });
+      removedCards += deleted.reduce((n, r) => n + r.quantity, 0);
     }
 
     // The shopping list is derived from deck membership, so this is also what
     // gives the player their money back — nothing separate restores it.
     for (const path of claimSurfaces(deckId)) revalidatePath(path);
-    return summary.live;
+    return removedCards;
   });
 
   return removed;

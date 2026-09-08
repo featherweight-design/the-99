@@ -47,6 +47,10 @@ const stub = vi.hoisted(() => {
     deleteCalls: [] as { table: string }[],
     // { table, set } per update — the decrement path a stacked row takes
     updateCalls: [] as { table: string; set: unknown }[],
+    // Stands in for a keep landing between the undo's read and its writes: both
+    // predicates re-check `auto = true`, so they match nothing and return no
+    // rows. The stub cannot read a predicate, so the race is set here instead.
+    concurrentKeep: false,
   };
 
   function reset() {
@@ -63,6 +67,7 @@ const stub = vi.hoisted(() => {
     state.fillPassMembers.length = 0;
     state.deleteCalls.length = 0;
     state.updateCalls.length = 0;
+    state.concurrentKeep = false;
     // Deck row so requireDeck succeeds
     state.collectionItems.push({
       id: "deck-1",
@@ -159,10 +164,16 @@ const stub = vi.hoisted(() => {
   function makeDeleteBuilder(table: unknown) {
     const tableName = nameOf(table);
     state.deleteCalls.push({ table: tableName });
+    // What a `deck_cards` delete takes back. The stub cannot read the
+    // predicate, so it answers with the deck's app-owned rows — the tests that
+    // assert a count seed no app-owned row the undo leaves standing.
+    const taken = tableName === "deck_cards" && !state.concurrentKeep
+      ? state.deckCards.filter((r) => r.auto !== false).map((r) => ({ quantity: r.quantity }))
+      : [];
     return {
-      // Awaited directly by the undo and with `.returning()` by the sweep, so
+      // Awaited directly by the sweep and with `.returning()` by the undo, so
       // the result has to answer to both.
-      where: () => Object.assign(Promise.resolve([]), { returning: async () => [] }),
+      where: () => Object.assign(Promise.resolve(taken), { returning: async () => taken }),
     };
   }
 
@@ -171,7 +182,12 @@ const stub = vi.hoisted(() => {
     return {
       set: (values: unknown) => {
         state.updateCalls.push({ table: tableName, set: values });
-        return { where: async () => {} };
+        const matched = tableName === "deck_cards" && !state.concurrentKeep
+          ? state.deckCards.filter((r) => r.auto !== false).map((r) => ({ oracleId: r.oracleId }))
+          : [];
+        return {
+          where: () => Object.assign(Promise.resolve(matched), { returning: async () => matched }),
+        };
       },
     };
   }
@@ -741,6 +757,19 @@ describe("undoFillPass", () => {
     expect(await undoFillPass("deck-1", passId)).toBe(2);
     expect(stub.state.deleteCalls).toHaveLength(0);
     expect(stub.state.updateCalls).toEqual([{ table: "deck_cards", set: expect.anything() }]);
+  });
+
+  // `keepAutoCard` clears the flag without taking the deck lock, so a keep can
+  // land between the undo's read and its writes. Both predicates re-check
+  // `auto = true` and match nothing; the count has to say so rather than
+  // reporting what the read predicted.
+  it("reports nothing removed when a keep lands mid-undo", async () => {
+    pass();
+    stub.state.fillPassMembers = [{ passId, oracleId: uuid(1) }];
+    stub.state.deckCards = [{ oracleId: uuid(1), quantity: 1 }];
+    stub.state.concurrentKeep = true;
+    const { undoFillPass } = await import("./actions");
+    expect(await undoFillPass("deck-1", passId)).toBe(0);
   });
 
   it("refuses a pass belonging to another deck", async () => {
