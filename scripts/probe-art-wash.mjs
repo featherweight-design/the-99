@@ -71,6 +71,10 @@ const READ_WASHES = `() => {
   });
 }`;
 
+// The scrims outlive the art under `forced-colors`, so they are what proves the
+// band kept its height when the photograph left.
+const READ_SCRIM_HEIGHTS = `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`;
+
 const ROUTES = [
   ["home", "/"],
   ["decks", "/decks"],
@@ -124,6 +128,7 @@ try {
     await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
     await page.waitForTimeout(800);
     const base = await page.evaluate(`(${READ_WASHES})()`);
+    const baseScrims = await page.evaluate(READ_SCRIM_HEIGHTS);
 
     // Playwright's `emulateMedia` has no `prefers-reduced-transparency` option and
     // ignores one silently, so the check has to go through CDP or it passes vacuously.
@@ -137,28 +142,42 @@ try {
     await page.waitForTimeout(300);
     const reduced = await page.evaluate(`(${READ_WASHES})()`);
     await page.screenshot({ path: `/tmp/art-wash-${vpName}-reduced-transparency.png` });
-    const raised = reduced.filter((w, i) => base[i] && w.opacity > base[i].opacity + 0.001);
-    note(
-      `${vpName} reduced-transparency: ${reduced.filter((w, i) => base[i] && w.opacity < base[i].opacity).length} layers dimmed, ${raised.length} raised`,
-    );
-    if (raised.length) note(`  FAIL a layer got MORE opaque under the preference`);
-    const shiftedR = reduced.filter((w, i) => base[i] && w.bandHeight !== base[i].bandHeight);
-    if (shiftedR.length) note(`  FAIL band height changed under reduced transparency`);
-    else note(`  band heights unchanged`);
+    // Every comparison below pairs by index, so a change in how many layers are
+    // laid out has to fail here — otherwise the pairing silently slips and the
+    // per-layer checks compare unrelated elements.
+    if (reduced.length !== base.length) {
+      note(`  FAIL layer count changed under the preference: ${base.length} → ${reduced.length}`);
+    } else {
+      const raised = reduced.filter((w, i) => w.opacity > base[i].opacity + 0.001);
+      note(
+        `${vpName} reduced-transparency: ${reduced.filter((w, i) => w.opacity < base[i].opacity).length} layers dimmed, ${raised.length} raised`,
+      );
+      if (raised.length) note(`  FAIL a layer got MORE opaque under the preference`);
+      const shiftedR = reduced.filter((w, i) => w.bandHeight !== base[i].bandHeight);
+      if (shiftedR.length) note(`  FAIL band height changed under reduced transparency`);
+      else note(`  band heights unchanged`);
+    }
 
     await cdp.send("Emulation.setEmulatedMedia", { features: [] });
     await page.emulateMedia({ forcedColors: "active" });
     await page.waitForTimeout(300);
     const forced = await page.evaluate(`(${READ_WASHES})()`);
     await page.screenshot({ path: `/tmp/art-wash-${vpName}-forced-colors.png` });
-    const bandsAfter = await page.evaluate(
-      `[...document.querySelectorAll('.art-wash-scrim')].map((s) => Math.round(s.getBoundingClientRect().height))`,
-    );
+    // The art leaves, so the scrims are what still measures the band. Compare them
+    // to the same list before the rule fired rather than eyeballing the numbers.
+    const forcedScrims = await page.evaluate(READ_SCRIM_HEIGHTS);
     note(
       `${vpName} forced-colors: ${forced.length} art layers still laid out (expect 0), ` +
-        `${bandsAfter.length} scrims at ${[...new Set(bandsAfter)].join(", ")}px`,
+        `${forcedScrims.length} scrims at ${[...new Set(forcedScrims)].join(", ")}px`,
     );
     if (forced.length) note(`  FAIL art layer survived forced-colors`);
+    if (forcedScrims.length !== baseScrims.length) {
+      note(`  FAIL scrim count changed: ${baseScrims.length} → ${forcedScrims.length}`);
+    } else if (forcedScrims.some((h, i) => h !== baseScrims[i])) {
+      note(`  FAIL band height changed under forced colours`);
+    } else {
+      note(`  band heights unchanged`);
+    }
 
     await page.emulateMedia({ forcedColors: "none" });
     await context.close();
