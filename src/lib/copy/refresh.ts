@@ -151,6 +151,10 @@ export const refreshCopy = {
   filters: {
     searchPlaceholder: 'Search decks',
     statusHeading: 'Status',
+    // Phone only. The sheet is where a reader on a phone reaches the sort,
+    // which has no other home there; the desktop column has none because the
+    // header carries `decks.sort`.
+    sortHeading: 'Sort',
     // "Color identity" is a Magic rules term and keeps Wizards' spelling, as it
     // already does in create-pre-filled.tsx. Ordinary prose stays British —
     // theme.ts ships "Colour theme". The key name is the handoff's.

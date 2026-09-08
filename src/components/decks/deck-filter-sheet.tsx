@@ -1,0 +1,255 @@
+"use client";
+
+// The phone filter surface. Same `DeckFilters` in, same whole-new-value out as
+// the desktop column, through the same `toggleIn` — which is what stops the two
+// from ever disagreeing. Neither reads or writes a URL; the view does.
+//
+// The sheet carries the sort as well as the filters, because the phone header
+// has nowhere to put it (plan ruling 6). Everything else is the column's
+// vocabulary re-drawn as chips at the 44px touch floor.
+
+import { useEffect } from "react";
+import { refreshCopy } from "../../lib/copy/refresh";
+import {
+  COLOUR_ORDER,
+  EMPTY_FILTERS,
+  STATUS_ORDER,
+  activeFilterCount,
+  type PlayedWindow,
+} from "../../lib/decks/filter";
+import { DECK_SORT_LABELS, DECK_SORT_ORDER, type DeckSort } from "../../lib/decks/sort";
+import { STATUS_TOKEN } from "../../lib/decks/status-style";
+import {
+  ColourSwatch,
+  PLAYED_LABEL,
+  STATUS_COPY_KEY,
+  SearchField,
+  toggleIn,
+  type FilterChromeProps,
+} from "./deck-filter-column";
+
+type DeckFilterSheetProps = FilterChromeProps & {
+  open: boolean;
+  onDismiss: () => void;
+  autoFocusSearch: boolean;
+};
+
+const CHIP =
+  "flex h-[36px] cursor-pointer items-center rounded-full border border-solid px-[12px] font-sans text-[13px]";
+
+const HEADING =
+  "mx-0 mt-0 mb-[9px] p-0 font-mono text-[10px] tracking-[0.14em] uppercase text-[color:var(--fg-faint)]";
+
+/**
+ * A pill-shaped toggle. Its on state is the status's own token at 15% over a
+ * full-strength edge of the same token, so the chip and the tile's pill agree
+ * without a second colour table. The token rides in on a custom property: an
+ * inline colour on a button outranks any utility beside it.
+ */
+function Chip({
+  label,
+  on,
+  token,
+  onToggle,
+  role = "checkbox",
+}: {
+  label: string;
+  on: boolean;
+  /** Absent for a Sort or Last-played chip: only a status owns a colour. */
+  token?: string;
+  onToggle: () => void;
+  role?: "checkbox" | "radio";
+}) {
+  return (
+    <button
+      type="button"
+      role={role}
+      aria-checked={on}
+      onClick={onToggle}
+      style={token ? ({ "--chip": `var(${token})` } as React.CSSProperties) : undefined}
+      className={`${CHIP} ${
+        on
+          ? token
+            ? "border-[color:var(--chip)] bg-[color-mix(in_srgb,var(--chip)_15%,transparent)] text-[color:var(--fg)]"
+            : "border-[color:var(--fg)] text-[color:var(--fg)]"
+          : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function Group({ heading, children }: { heading: string; children: React.ReactNode }) {
+  return (
+    <fieldset
+      role="group"
+      aria-label={heading}
+      className="m-0 border-none p-0"
+    >
+      <legend className={HEADING}>{heading}</legend>
+      {children}
+    </fieldset>
+  );
+}
+
+export function DeckFilterSheet({
+  filters,
+  onChange,
+  sort,
+  onSortChange,
+  shown,
+  total,
+  open,
+  onDismiss,
+  autoFocusSearch,
+}: DeckFilterSheetProps) {
+  // Escape dismisses. It never restores the filters the reader arrived with:
+  // filtering already happened as they ticked, so there is nothing to undo and
+  // swiping the sheet away must lose nothing either.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDismiss();
+    };
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [open, onDismiss]);
+
+  // Absent rather than hidden: a CSS-hidden sheet keeps its controls in the tab
+  // order and its search field focusable behind the page.
+  if (!open) return null;
+
+  const c = refreshCopy.filters;
+  const active = activeFilterCount(filters);
+
+  return (
+    <div className="fixed inset-0 z-40 flex flex-col justify-end sm:hidden">
+      <div
+        aria-hidden="true"
+        onClick={onDismiss}
+        className="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={c.sheetTitle}
+        className="relative z-10 flex flex-col gap-[14px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
+      >
+        <div
+          aria-hidden="true"
+          className="h-[4px] w-[38px] self-center rounded-[2px] bg-[color:var(--border-strong)]"
+        />
+
+        <div className="flex items-baseline gap-[10px]">
+          <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
+            {c.sheetTitle}
+          </h2>
+          <span className="ml-auto font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {c.sheetMatch(shown, total)}
+          </span>
+        </div>
+
+        <SearchField
+          value={filters.search}
+          onChange={(search) => onChange({ ...filters, search })}
+          size="sheet"
+          autoFocus={autoFocusSearch}
+        />
+
+        <Group heading={c.sortHeading}>
+          <div role="radiogroup" aria-label={c.sortHeading} className="flex flex-wrap gap-[8px]">
+            {DECK_SORT_ORDER.map((option: DeckSort) => (
+              <Chip
+                key={option}
+                role="radio"
+                label={DECK_SORT_LABELS[option]}
+                on={sort === option}
+                // Radio, not checkbox: clicking the one already on leaves it on,
+                // because a list is always in some order.
+                onToggle={() => onSortChange(option)}
+              />
+            ))}
+          </div>
+        </Group>
+
+        <Group heading={c.statusHeading}>
+          <div className="flex flex-wrap gap-[8px]">
+            {STATUS_ORDER.map((status) => (
+              <Chip
+                key={status}
+                label={refreshCopy.status[STATUS_COPY_KEY[status]]}
+                on={filters.statuses.includes(status)}
+                token={STATUS_TOKEN[status]}
+                onToggle={() =>
+                  onChange({
+                    ...filters,
+                    statuses: toggleIn(STATUS_ORDER, filters.statuses, status),
+                  })
+                }
+              />
+            ))}
+          </div>
+        </Group>
+
+        <Group heading={c.colourHeading}>
+          <div className="flex gap-[8px]">
+            {COLOUR_ORDER.map((code) => (
+              <ColourSwatch
+                key={code}
+                code={code}
+                size="sheet"
+                on={filters.colours.includes(code)}
+                onToggle={() =>
+                  onChange({ ...filters, colours: toggleIn(COLOUR_ORDER, filters.colours, code) })
+                }
+              />
+            ))}
+          </div>
+        </Group>
+
+        <Group heading={c.lastPlayedHeading}>
+          <div className="flex flex-wrap gap-[8px]">
+            {(["thisMonth", "never"] as const).map((window: PlayedWindow) => (
+              <Chip
+                key={window}
+                label={PLAYED_LABEL[window]}
+                on={filters.played === window}
+                onToggle={() =>
+                  onChange({ ...filters, played: filters.played === window ? null : window })
+                }
+              />
+            ))}
+          </div>
+        </Group>
+
+        <div className="flex items-center gap-[10px]">
+          <button
+            type="button"
+            // Dismiss only. It applies nothing, because nothing is pending.
+            onClick={onDismiss}
+            className="flex h-[44px] flex-auto cursor-pointer items-center justify-center rounded-[10px] border-none bg-[color:var(--fg)] text-[14px] font-semibold text-[color:var(--bg)]"
+          >
+            {c.sheetDismiss(shown)}
+          </button>
+          {active > 0 && (
+            <button
+              type="button"
+              // Never the sort, matching the column: a reader who chose an order
+              // did not ask for it back.
+              onClick={() => onChange(EMPTY_FILTERS)}
+              className="flex h-[44px] cursor-pointer items-center border-none bg-transparent px-[14px] text-[14px] text-[color:var(--fg-muted)]"
+            >
+              {c.clear}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

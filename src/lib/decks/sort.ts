@@ -13,6 +13,9 @@ export const DECK_SORT_LABELS: Record<DeckSort, string> = {
   newest: "newest",
 };
 
+/** Render order for the phone sheet's sort chips. Default first. */
+export const DECK_SORT_ORDER: readonly DeckSort[] = ["lastPlayed", "name", "newest"];
+
 /**
  * Both absences are accepted because this parameter arrives by two routes: the
  * Decks page reads it off `searchParams` and gets `undefined`, while the filter

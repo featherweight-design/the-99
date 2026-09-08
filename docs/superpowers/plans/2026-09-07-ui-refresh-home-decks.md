@@ -2193,7 +2193,9 @@ Two presentational components over one value. Neither owns state: both take `fil
 `onChange` with a whole new `DeckFilters`. That is what makes them impossible to disagree.
 
 **Files:**
-- Modify: `src/lib/decks/status-style.ts` (add `COLOUR_SWATCH`)
+- Modify: `src/lib/copy/refresh.ts` (add `filters.sortHeading`)
+- Modify: `src/lib/decks/sort.ts` (add `DECK_SORT_ORDER`)
+- Create: `src/components/decks/search-icon.tsx`
 - Create: `src/components/decks/deck-filter-column.tsx`
 - Create: `src/components/decks/deck-filter-sheet.tsx`
 - Test: `src/components/decks/deck-filters.test.tsx`
@@ -2202,33 +2204,30 @@ Two presentational components over one value. Neither owns state: both take `fil
 - Consumes: everything from Task 11, `STATUS_TOKEN` (Task 9), `refreshCopy.filters` (Task 1),
   `DECK_SORT_LABELS` / `DeckSort` (Task 6).
 - Produces:
-  - `export const COLOUR_SWATCH: Record<ColourCode, string>` (in `status-style.ts`)
+  - `export function SearchIcon({ size }: { size: 14 | 16 })`
   - `export function DeckFilterColumn(props: FilterChromeProps)`
   - `export function DeckFilterSheet(props: FilterChromeProps & { open: boolean; onDismiss: () => void; autoFocusSearch: boolean })`
   - `export type FilterChromeProps = { filters: DeckFilters; onChange: (next: DeckFilters) => void; sort: DeckSort; onSortChange: (next: DeckSort) => void; shown: number; total: number }`
 
   `FilterChromeProps` is exported from `deck-filter-column.tsx`; the sheet imports it.
 
-- [ ] **Step 1: Add the swatch colours**
+- [x] **Step 1: Add the swatch colours — SKIPPED, superseded**
 
-Append to `src/lib/decks/status-style.ts`:
+The design table (`design-tables/ui-refresh-decks.md`, FilterColumn → Colour swatch) specifies
+`var(--w)` / `var(--u)` / `var(--b)` / `var(--r)` / `var(--g)`, not fixed hex. Those five tokens
+exist in `src/app/globals.css:64-68`, and `WUBRG_COLOR` (`src/lib/collection/browse.ts:118`)
+already maps exactly to them — it is what the deck tile's own pips render. A second table of the
+same five colours would drift from the first and would break the "no component names a colour"
+rule Task 9 established, so `COLOUR_SWATCH` was not built and `status-style.ts` was not touched.
+Both surfaces import `WUBRG_COLOR`.
 
-```ts
-import type { ColourCode } from "./filter";
+Two additions the drawing did need instead:
 
-/**
- * WUBRG pigment. Fixed hex, not theme tokens, for the same reason commander art
- * is never themed (ruling 17): a blue mana symbol that turns amber under a theme
- * is not a blue mana symbol. These are the five values the handoff draws.
- */
-export const COLOUR_SWATCH: Record<ColourCode, string> = {
-  W: "#E8E4D6",
-  U: "#4A7FB5",
-  B: "#5B5566",
-  R: "#C05A48",
-  G: "#6B9E63",
-};
-```
+- `refreshCopy.filters.sortHeading = 'Sort'` — the sheet's Sort group (ruling 6) is not in the
+  handoff's copy file, and `decks.sort(by)` prints `Sort · last played`, which is the desktop
+  trigger's label and not a heading.
+- `DECK_SORT_ORDER = ["lastPlayed", "name", "newest"]` in `sort.ts` — the render order for the
+  sheet's three radio chips, beside the labels it orders rather than in the component.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -2383,16 +2382,30 @@ Geometry, from the desktop frame:
 
 - Column: `w-[262px] flex-none border-r border-[color:var(--border)] bg-[color:var(--surface-rail)] flex flex-col`.
 - Search block: `p-[14px_16px_12px] border-b border-[color:var(--border)]`, holding a 34px
-  `SearchField` (`src/components/ui/text-field.tsx`) with `refreshCopy.filters.searchPlaceholder`,
-  8px radius, `--surface-sunken` fill, `--border-strong` hairline, 14px leading glyph.
+  search field with `refreshCopy.filters.searchPlaceholder`, 8px radius, `--surface-sunken` fill,
+  `--border-strong` hairline, and a 14px leading magnifier.
+
+  **Not `SearchField` from `src/components/ui/text-field.tsx`.** That primitive draws a `⌕` text
+  glyph, and the design table specifies an SVG with exact geometry (`viewBox 0 0 20 20`,
+  `stroke-width 1.6`, `circle cx=9 cy=9 r=5.4`, `path d="m13.2 13.2 3.3 3.3"`) at 14px in the
+  column and 16px in the sheet. Reusing the primitive would also inherit its `FIELD_CHROME`
+  `rounded-lg` and its `focus-within` accent ring, neither of which the table draws. The SVG is
+  `search-icon.tsx`; a local `SearchField`, exported from `deck-filter-column.tsx` and taking
+  `size: "column" | "sheet"`, is the one field both surfaces render.
 - Heading: `p-[13px_16px_7px]` (first) / `p-[14px_16px_7px] border-t border-[color:var(--border)] mt-[12px]`
   (subsequent), mono 10px, `0.14em`, uppercase, `--fg-faint`.
 - Status row: a `<button role="checkbox" aria-checked>` — 32px tall, `px-[16px]`, 13px, a **3px
-  left border in that status's token** (`STATUS_TOKEN[status]`), `--surface-raised` when on and
-  transparent when off, `--fg` when on and `--fg-body` when off. Label only. **No count**
-  (ruling 9).
+  left border in that status's token** (`STATUS_TOKEN[status]`), `--surface` when on (the design
+  table's value; not `--surface-raised`) and transparent when off, `--fg` when on and `--fg-body`
+  when off. Label only. **No count** (ruling 9).
+
+  The token cannot be an inline `borderLeftColor`: `eslint.config.mjs:25-36` rejects an inline
+  colour on a `button`, because it outranks the `hover:` utility beside it. Pass it as a custom
+  property — `style={{ "--keyline": \`var(${token})\` }}` — and read it back with
+  `border-l-[color:var(--keyline)]`. The 3px slot stays open when the row is off
+  (`border-l-transparent`) so ticking a row moves no text.
 - Colour pips: `px-[16px] flex gap-[6px]`, each a 28px square, 7px radius, `1px` border —
-  `--border-strong` when off, `--fg` when on — filled `COLOUR_SWATCH[code]`. Also
+  `--border-strong` when off, `--fg` when on — filled `WUBRG_COLOR[code]` (Step 1). Also
   `role="checkbox"`, `aria-checked`, and `aria-label={colorNames([code])[0]}` — `colorNames`
   (`src/lib/copy/color-labels.ts:77`) is the exported reader over that module's private
   `MONO_NAMES` and already returns `White` / `Blue` / `Black` / `Red` / `Green`. Do not retype
@@ -2427,9 +2440,12 @@ export function toggleIn<T extends string>(
 `src/components/decks/deck-filter-sheet.tsx`, `"use client"`. Returns `null` when `!open` —
 mounted or absent, never hidden with CSS, for the reason `filter-panel.tsx:11-15` gives.
 
-- Scrim: `fixed inset-0 z-40` at `rgba(16,13,10,0.74)`; clicking it calls `onDismiss`.
-- Panel: `fixed inset-x-0 bottom-0 z-50 rounded-t-[22px] border-t border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] p-[12px_16px_16px] flex flex-col gap-[14px]`,
-  `role="dialog"`, `aria-modal="true"`, labelled by the title.
+- One `fixed inset-0 z-40 flex flex-col justify-end sm:hidden` layer holds both, matching the
+  table's bottom-anchored `justify-content: flex-end` parent. The scrim is an `absolute inset-0`
+  child at `rgba(16,13,10,0.74)`; clicking it calls `onDismiss`.
+- Panel: `relative z-10 rounded-t-[22px] border-t border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px] flex flex-col gap-[14px]`,
+  `role="dialog"`, `aria-modal="true"`, labelled by the title. `--surface-inset`, not
+  `--surface-raised` — the design table's value.
 - Grab handle: a 38 × 4 `--border-strong` bar, 2px radius, `self-center`, `aria-hidden`.
 - Title row: `refreshCopy.filters.sheetTitle` in display 18px, and
   `refreshCopy.filters.sheetMatch(shown, total)` in mono 11px `--fg-faint`, `ml-auto`.
@@ -2443,9 +2459,11 @@ mounted or absent, never hidden with CSS, for the reason `filter-panel.tsx:11-15
     `border-[STATUS_TOKEN[s]]`, fill `color-mix(in srgb, TOKEN 15%, transparent)`, `--fg` text —
     so the chip and the tile's pill agree without a second colour table.
   - Colour identity renders the same swatches at **44px, 11px radius** — the phone target rule.
-- Footer row: `Show N decks` (`sheetDismiss(shown)`) as the full-width 44px bone-filled
-  `PrimaryButton`, `flex-auto`, calling **only** `onDismiss`; then `Clear` as a 44px borderless
-  text button at `--fg-body`, rendered whenever `activeFilterCount > 0`.
+- Footer row: `Show N decks` (`sheetDismiss(shown)`) as a full-width 44px `flex-auto` button,
+  10px radius, `bg-[color:var(--fg)]` on `text-[color:var(--bg)]` at 14px/600 — the bone fill
+  written inline rather than routed through `PrimaryButton`, whose padding and radius are its
+  own; then `Clear` as a 44px borderless text button at `--fg-muted` (the table's value, not
+  `--fg-body`), rendered whenever `activeFilterCount > 0`.
 - `Escape` on `document` calls `onDismiss`. Body scroll locks while open.
 
 **One filter, two renderings.** Every `onChange` in both files goes through `toggleIn`, and
@@ -2454,12 +2472,15 @@ neither file ever reads or writes a URL — Task 13 owns that.
 - [ ] **Step 6: Run the tests**
 
 Run: `pnpm test src/components/decks/deck-filters.test.tsx`
-Expected: PASS, 11 tests.
+Expected: PASS, 13 tests — the eleven above plus two that pin the shared-value claim: the column's
+`Clear` resets the filters and leaves `onSortChange` untouched, and the sheet's Status chip hands
+back the same `statuses` array the column's row does for the same tick.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/lib/decks/status-style.ts src/components/decks/deck-filter-column.tsx \
+git add src/lib/copy/refresh.ts src/lib/decks/sort.ts src/components/decks/search-icon.tsx \
+        src/components/decks/deck-filter-column.tsx \
         src/components/decks/deck-filter-sheet.tsx src/components/decks/deck-filters.test.tsx
 git commit -m "feat(decks): draw the filter column and the phone filter sheet"
 ```
