@@ -1,6 +1,6 @@
 # The 99 — UI refresh · Home, Decks, and the chrome
 
-`design/design_handoff_the99_refresh/` · R3 · 2026-09-08
+`design/design_handoff_the99_refresh/` · R3.1 · 2026-09-08
 
 ## What this package is
 
@@ -17,7 +17,7 @@ shipped layouts; §Conformance lists the only changes they take.
 | `STATES-deck-statuses.md` | The six statuses, their tokens, and what each card shows. |
 | `CHROME-rail-and-tabs.md` | Rail, tab bar, and the one shipped adjudication this retires. |
 | `refresh · copy strings.ts` | Production strings for the two refreshed surfaces. |
-| `RULINGS-R3.md` | The three calls PRs #437/#438 left open, ruled. Read with `CHROME-rail-and-tabs.md`. |
+| `RULINGS-R3.md` | The calls PRs #437/#438 left open, ruled — §1–§3 (R3) and §4–§6 (R3.1). Read with `CHROME-rail-and-tabs.md`. |
 | `READINESS.md` | What blocks a green. |
 
 ## Decisions

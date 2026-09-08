@@ -62,18 +62,38 @@ itself clickable, so the small target is a shortcut rather than the only route. 
 not generalise.** It rests on there being a second, larger route to the same action; a facet chip, a
 sort control and a submit each have no second route, so none of them may sit under the floor.
 
-## Hairline pill — the one geometry
+## Hairline pill — two variants, and only two
+
+**Default.** Every action pill in the app: header buttons, row actions, dialog secondaries,
+the `Order` and category controls, Import, Clear, Add.
 
 | Property | Desktop | Phone |
 |---|---|---|
 | height | 32px | 44px |
-| side padding | **14px** | 16px |
+| side padding | **14px** | **16px** |
 | border | 1px `--border-strong` | 1px `--border-strong` |
 | radius | 8px | 10px |
 | label | 12.5px, weight 500 | 14px, weight 500 |
 
-14px is the ratified side padding. The R2 frames drew 13px; **the frames were wrong and have been
-corrected** — the constant is not moving to match a drawing that was off by a pixel.
+**Dense chip.** The facet strip only — a horizontally scrolling row of many chips, where the
+default's side padding costs a visible chip per screen.
+
+| Property | Desktop | Phone |
+|---|---|---|
+| height | 32px | **44px** |
+| side padding | 12px | **12px** |
+| border | 1px `--border-strong` | 1px `--border-strong` |
+| radius | 8px | 10px |
+| label | 12.5px, weight 500 | **13px, weight 500** |
+
+The height floor is identical in both — that is the accessibility number and it does not flex. Only
+padding and label shrink, and only where many chips compete for one row. **A control that is not in
+a scrolling chip row uses the default; there is no third variant.** If a surface seems to need one,
+it is a signal that the surface has too many controls, not that the table is short a row.
+
+14px/16px is the ratified default padding. The R2 frames drew 13px on desktop; **the frames were
+wrong and have been corrected** — the constant does not move to match a drawing that was off by a
+pixel.
 
 ## Filter surfaces
 

@@ -23,6 +23,9 @@
 | Accent on actions — the four sites | **Closed (R3).** Three lose accent, signed-out Home keeps it as a written exception. `RULINGS-R3.md` §1. |
 | Phone touch targets | **Closed (R3).** Facet strip and coverage-sort both to 44px; the phone column of the targets table is a floor, and the tile-`…` exemption does not generalise. §2. |
 | Hairline side padding | **Closed (R3).** 14px confirmed; the R2 frames were off by a pixel and have been corrected. §3. |
+| Suggestion tile's two add branches | **Closed (R3.1).** One geometry, two labels — `Add` / `Add · to buy`; `GhostButton` retired from the tile. §4. |
+| Pill variants | **Closed (R3.1).** Two named variants only, Default and Dense chip; 44px phone height identical in both. §5. |
+| `§1` tie-breaker | **Ratified, untested (R3.1).** The log-form case turned out to be mutually exclusive states. Rule kept, premise corrected. §6. |
 
 ## Blocking a green
 
