@@ -2821,10 +2821,20 @@ git commit -m "feat(decks): filter, sort and count the deck list"
    `{ shown, moreCount, floor }`. The page uses
    `Math.min(READY_COUNT, ranked?.items.length ?? 0)` — the same set size, and not a second
    threshold.
-6. **The test drops the `next/navigation` mock and widens the fixture.** The view uses no router,
-   and `DeckListItem` requires `toBuyCount`. Both breakpoint variants render in jsdom, so the
-   filter checkbox and the two links are addressed with `getAllByRole`.
+6. **The test mocks `next/navigation` and widens the fixture.** The view never *routes* — every
+   URL write is `history.replaceState` — but it does seed its filter state from
+   `useSearchParams()`, because the alternative, `window.location.search` in a `useState` lazy
+   initializer, runs during the server render where `window` does not exist. The fixture also
+   supplies `toBuyCount` and `inUseElsewhere`, both of which `DeckListItem` requires. Both
+   breakpoint variants render in jsdom, so the filter checkbox and the two links are addressed
+   with `getAllByRole`.
 7. **No view toggle.** Table ambiguity 3 leaves it undocumented; nothing was built for it.
+8. **The in-use-elsewhere clause needed a new reader.** The design table gives `DeckTile` a
+   cross-cutting state this task never mentions, and nothing in the stack could produce the
+   number. `src/lib/decks/in-use-elsewhere.ts` derives the whole grid's counts from the one
+   unscoped `loadAvailability` the page already affords, rather than a per-deck
+   `excludeDeckId` query; `listDecksWithStats` runs it in parallel with the list query and
+   tolerates its failure. See `docs/superpowers/gap-report-ui-refresh-decks.md`.
 
 ---
 ## Task 14: The Home header, and what the page loads
