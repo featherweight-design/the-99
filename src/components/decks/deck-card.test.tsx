@@ -17,7 +17,7 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   commanderName: "Atraxa, Praetors' Voice",
   commanderColorIdentity: ["W", "U", "B", "G"],
   commanderImageUri: "https://example.test/atraxa.jpg",
-  commanderArtCropUri: null,
+  commanderArtCropUri: "https://example.test/atraxa-crop.jpg",
   built: 99,
   ownedCount: 96,
   toBuyCount: 3,
@@ -90,13 +90,18 @@ describe("DeckCard", () => {
         now={now}
       />,
     );
-    expect(container.querySelector("[data-deck-art]")).toHaveAttribute(
-      "style",
-      expect.stringContaining("atraxa.jpg"),
-    );
+    expect(container.querySelector("[data-deck-art]")?.innerHTML).toContain("atraxa-crop.jpg");
     expect(screen.getByText("0 / 99")).toBeInTheDocument();
     expect(screen.getByText("created today")).toBeInTheDocument();
     expect(screen.queryByText(/no commander/i)).toBeNull();
+  });
+
+  it("bands the art at 2.2:1 with a floor, not a fixed height", () => {
+    const { container } = render(<DeckCard deck={deck()} shopping={undefined} now={now} />);
+    const band = container.querySelector("[data-deck-art]");
+    expect(band?.className).toContain("aspect-[2.2/1]");
+    expect(band?.className).toContain("min-h-[104px]");
+    expect(band?.className).not.toContain("h-[124px]");
   });
 
   it("leaves a Draft tile's track empty and its last-played slot unrendered", () => {

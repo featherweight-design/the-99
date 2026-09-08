@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ART_STRIPES, WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { MATURE_DECK_SIZE } from "../../lib/decks/availability";
 import { colorLabel } from "../../lib/decks/format";
@@ -8,6 +8,7 @@ import type { DeckListItem } from "../../lib/decks/read";
 import type { DeckShopping } from "../../lib/decks/shopping-rollup";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import { formatWhen } from "../../lib/format/when";
+import { ArtWash } from "../ui/art-wash";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
 
@@ -139,23 +140,14 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
     >
       {/* 1 · Art header. Always present: `decks.commander_oracle_id` is NOT
           NULL, so every deck has a commander and every tile has art — Draft
-          included. The stripes are the fallback for a commander whose printing
-          carries no image, not for a deck without one. */}
-      <div
-        data-deck-art
-        className="relative h-[124px] sm:h-[118px]"
-        style={{
-          background: deck.commanderImageUri
-            ? `${cssUrl(deck.commanderImageUri)} center/cover`
-            : ART_STRIPES,
-        }}
-      >
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, color-mix(in srgb, var(--bg) 10%, transparent), color-mix(in srgb, var(--surface-inset) 96%, transparent))",
-          }}
+          included. A column runs 189px wide at 640 and 435px at 1440, so a pure
+          2.2:1 band would be 86px at the narrow end: too short for the name and
+          the chip. Hence the floor, and no ceiling — only a wider band regresses. */}
+      <div data-deck-art className="relative aspect-[2.2/1] min-h-[104px] overflow-hidden">
+        <ArtWash
+          strategy="cover"
+          artCropUri={deck.commanderArtCropUri}
+          colorIdentity={deck.commanderColorIdentity}
         />
         <StatusPillBadge status={deck.statusPill} />
         <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={deck.built} />

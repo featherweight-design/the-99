@@ -23,6 +23,10 @@ const ALLOWED = new Set([
   "lib/theme/parse-css.test.ts",
   "lib/theme/contract.test.ts",
   "lib/theme/no-hex.test.ts",
+  // The wash's contrast proof composites the brightest pixel art can contain
+  // against each theme's own tokens. `#FFFFFF` there is a worst case being
+  // measured, not a surface being painted.
+  "lib/theme/wash-contrast.test.ts",
 ]);
 
 // A theme-aware colour written as rgba() is invisible to a hex scan and stays
