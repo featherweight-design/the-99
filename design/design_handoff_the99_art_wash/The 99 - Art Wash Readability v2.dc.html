@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#14110E; font-family:'IBM Plex Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#C9A24B; }
+  a:hover { color:#E0B963; }
+</style>
+</helmet>
+
+<div style="padding:44px 40px 90px;max-width:1300px;margin:0 auto;display:flex;flex-direction:column;gap:58px;">
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#8E8269;">The 99 · Readability amendment · R2</div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:38px;color:#EDE6D8;margin:0;line-height:1.12;">Framing the wash</h1>
+    <p style="font-size:15px;color:#C6B79A;line-height:1.65;margin:0;max-width:800px;text-wrap:pretty;">R1 fixed contrast. What's left is <b style="color:#EDE6D8;font-weight:600;">framing</b> — the band is too shallow for the crop it's holding. At 2.8:1, <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">cover</code> discarded 51% of the crop's height, and the arts read as texture rather than as portraits. Widening the band is the fix; focal position is the fine-tune on top of it. Below: the geometry, a focal sweep across five arts, and per-surface numbers for Decks, Commanders and both Home treatments.</p>
+  </div>
+
+  <!-- GEOMETRY -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">The geometry problem</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;">
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#EDE6D8;">Source is 1.37:1</div>
+        <div style="font-size:13.5px;color:#A89B84;line-height:1.6;">Scryfall's <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">art_crop</code> is 626×457. Every band wider than 1.37:1 throws away height, and <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">cover</code> throws it away from <i>both</i> ends at once.</div>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-top:4px;">
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:64px;flex:none;">2.8:1</span><span style="height:16px;flex:1;background:#C05A48;border-radius:3px;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C05A48;flex:none;">R1 — 51% lost</span></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:64px;flex:none;">2.2:1</span><span style="height:16px;flex:1;background:#6B9E63;border-radius:3px;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B9E63;flex:none;">R2 — 38% lost</span></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;width:64px;flex:none;">1.37:1</span><span style="height:16px;flex:1;background:#A89B84;border-radius:3px;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;flex:none;">full crop</span></div>
+        </div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#EDE6D8;">Anchor to the top, not the centre</div>
+        <div style="font-size:13.5px;color:#A89B84;line-height:1.6;">Across the sample, the recognisable feature — face, silhouette apex, crown — lands between <b style="color:#EDE6D8;font-weight:600;">27% and 44%</b> down the crop, and the bottom fifth is nearly always foreground rubble. Anchoring to the top keeps the whole face band and lets the window's lower edge stop at 62% — <b style="color:#EDE6D8;font-weight:600;">the rubble is never sampled at all</b>. <code style="font-family:'IBM Plex Mono',monospace;color:#C05A48;font-size:12px;">center center</code> does the opposite: pulls rubble in and pushes the face up under the title.</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#A89B84;background:#100D0A;border:1px solid #2A241D;border-radius:8px;padding:12px 14px;margin-top:2px;">background-position: center top;</div>
+      </div>
+      <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#EDE6D8;">Past 4:1, stop cropping</div>
+        <div style="font-size:13.5px;color:#A89B84;line-height:1.6;">A commander row or a resume row is 6–12:1. No focal point rescues a letterbox that thin — that's why R1's rows read as texture. Those surfaces switch strategy: <b style="color:#EDE6D8;font-weight:600;">size the art by height, anchor it left, fade it out</b>, and let a soft full-bleed copy carry the colour behind it.</div>
+        <div style="font-size:13.5px;color:#A89B84;line-height:1.6;">The corollary matters just as much: once the art has its own column, <b style="color:#EDE6D8;font-weight:600;">type stops overlapping it</b>. That is what fixes the resume-row titles below, and it is why those rows need no text-shadow.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOCAL SWEEP -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">Focal sweep · five arts × eight positions, all at 2.2:1</div>
+    <div style="display:flex;flex-direction:column;gap:8px;overflow-x:auto;padding-bottom:6px;">
+      <div style="display:grid;grid-template-columns:150px repeat(8,minmax(112px,1fr));gap:8px;align-items:center;min-width:1140px;">
+        <span></span>
+        <sc-for list="{{ positions }}" as="p" hint-placeholder-count="8">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;color:{{ p.color }};text-align:center;">{{ p.label }}</span>
+        </sc-for>
+      </div>
+      <sc-for list="{{ sweep }}" as="row" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:150px repeat(8,minmax(112px,1fr));gap:8px;align-items:center;min-width:1140px;">
+          <div style="min-width:0;">
+            <div style="font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:#EDE6D8;line-height:1.2;">{{ row.short }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-top:3px;">focal {{ row.focal }}</div>
+          </div>
+          <sc-for list="{{ row.tiles }}" as="t" hint-placeholder-count="8">
+            <div style="position:relative;aspect-ratio:2.2/1;border-radius:7px;overflow:hidden;background:#0E0C09;border:1px solid {{ t.border }};">
+              <div style="position:absolute;inset:0;background-size:cover;background-repeat:no-repeat;opacity:0.78;background-image:{{ t.art }};background-position:{{ t.pos }};"></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;background:#181410;border:1px solid #2A241D;border-left:3px solid #6B9E63;border-radius:10px;padding:16px 20px;">
+      <div style="font-size:13.5px;color:#C6B79A;line-height:1.65;max-width:900px;"><b style="color:#EDE6D8;font-weight:600;">Read — and a correction to my own R2 note.</b> The sweep shows the subjects surviving in <i>every</i> column, which means <b style="color:#EDE6D8;font-weight:600;">band aspect did the heavy lifting, not focal</b>. Going 2.8:1 → 2.2:1 is what recovered the arts; focal is a fine-tune, not a rescue.<br><br>The reason 0/5/10/15% look near-identical is arithmetic: <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">background-position</code> percentages are a fraction of the <i>overflow</i>, not of the image. At 2.2:1 the window is 62.3% of the crop's height and has only <b style="color:#EDE6D8;font-weight:600;">37.7%</b> of travel, so those four columns place the window top at 0 / 1.9 / 3.8 / 5.7% — all inside the top 6%, about 9px apart and 26px of spread in total on a 457px crop. They buy nothing over each other. For scale, 0% → 34% moves the window 58px.<br><br>What separates them is <b style="color:#EDE6D8;font-weight:600;">where the focal lands relative to our labels</b>, and on this the low end wins. Our titles are top-anchored. The five annotated focals span 27–44% of the crop, so at 50% they ride up to 13–40% of the band — straight under the title — while the window's lower edge reaches 81% and drags in foreground rubble. <b style="color:#EDE6D8;font-weight:600;">At <code style="font-family:'IBM Plex Mono',monospace;color:#8FC08A;font-size:12px;">center top</code> they sit at 43–71%</b>: below the title, in the thinnest part of the vertical scrim where the art is most visible, and the window stops at 62% so the rubble is never sampled. Faces also read most accurately there — the crop's own top edge is the one boundary that can never cut a head off.<br><br>Ship one value: <code style="font-family:'IBM Plex Mono',monospace;color:#8FC08A;font-size:12px;">center top</code>. Per-card focal data isn't in the API, and hand-tuning 30k commanders isn't a plan.</div>
+    </div>
+  </div>
+
+  <!-- DECKS -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">Surface 1 · Deck card</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 13px;">band aspect 2.2/1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 13px;">cover · center top</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 13px;">art opacity .58</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 13px;">labels top · chip bottom-left</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+      <sc-for list="{{ decks }}" as="d" hint-placeholder-count="4">
+        <div style="border-radius:14px;background:#1A160F;border:1px solid #2A241D;overflow:hidden;min-width:0;">
+          <div style="position:relative;aspect-ratio:2.2/1;background:#0E0C09;overflow:hidden;">
+            <div style="position:absolute;inset:0;background-size:cover;background-repeat:no-repeat;background-position:center top;opacity:0.58;background-image:{{ d.art }};"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,12,9,0.90) 0%,rgba(14,12,9,0.30) 40%,rgba(14,12,9,0.52) 74%,rgba(14,12,9,0.86) 100%);"></div>
+            <div style="position:absolute;left:16px;top:15px;right:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+              <div style="min-width:0;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#F4EFE3;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,0.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.name }}</div>
+                <div style="font-size:12px;color:#C6B79A;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,0.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.cmd }}</div>
+              </div>
+              <div style="width:30px;height:26px;flex:none;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;color:#C6B79A;font-size:15px;letter-spacing:1px;">···</div>
+            </div>
+            <div style="position:absolute;left:16px;bottom:13px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;color:#8FC08A;background:#14110E;border:1px solid #33402F;border-radius:6px;padding:5px 9px;">{{ d.status }}</div>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:14px 16px 16px;display:flex;flex-direction:column;gap:11px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div style="display:flex;gap:5px;"><sc-for list="{{ d.pips }}" as="p" hint-placeholder-count="2"><span style="width:13px;height:13px;border-radius:3px;background:{{ p }};"></span></sc-for></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#A89B84;">{{ d.ids }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#EDE6D8;">99 / 99</span>
+            </div>
+            <div style="height:3px;border-radius:999px;background:#6B9E63;"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A89B84;"><span>{{ d.own }}</span><span>{{ d.played }}</span></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:12.5px;color:#8E8269;line-height:1.6;max-width:880px;">Three changes from R1: the band grew from 2.8:1 to 2.2:1, the focal moved from <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">center</code> — i.e. 50% — to <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">top</code>, and art opacity went .55 → .58 to pay back the extra scrim stop. R1's deck cards were the exact <code style="font-family:'IBM Plex Mono',monospace;color:#C05A48;font-size:12px;">center center</code> case the geometry card argues against; its commander rows were separately at 28%, and the two surfaces now share one focal token. The scrim also gained a fourth stop at the bottom so the status chip no longer needs its own plate to survive a bright foreground.</div>
+  </div>
+
+  <!-- COMMANDERS -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">Surface 2 · Commander row</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 13px;">band 148px — was 78px</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 13px;">portrait width = band × 1.37</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 13px;">ambient layer: cover · center top · .20</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 13px;">mask fade 58%→100% of the art</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ cmds }}" as="c" hint-placeholder-count="3">
+        <div style="border-radius:12px;border:1px solid #2A241D;background:#1A160F;overflow:hidden;">
+          <div style="position:relative;height:148px;background:#0E0C09;overflow:hidden;">
+            <div style="position:absolute;inset:0;background-size:cover;background-position:center top;background-repeat:no-repeat;opacity:0.2;background-image:{{ c.art }};"></div>
+            <div style="position:absolute;left:0;top:0;bottom:0;width:203px;background-size:auto 100%;background-position:left center;background-repeat:no-repeat;opacity:0.8;background-image:{{ c.art }};-webkit-mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(14,12,9,0.30) 0px,rgba(14,12,9,0.26) 118px,rgba(26,22,15,0.78) 203px,#1A160F 264px);"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,12,9,0.62) 0%,rgba(14,12,9,0.16) 42%,rgba(14,12,9,0.74) 100%);"></div>
+            <div style="position:relative;height:100%;display:flex;align-items:center;gap:16px;padding:0 22px;">
+              <div style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;color:#EDE6D8;flex:none;min-width:26px;text-shadow:0 1px 4px rgba(0,0,0,0.85);">{{ c.rank }}</div>
+              <div style="flex:1;min-width:0;align-self:flex-end;padding-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <span style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;color:#F4EFE3;text-shadow:0 1px 4px rgba(0,0,0,0.85);">{{ c.name }}</span>
+                  <span style="display:flex;gap:4px;"><sc-for list="{{ c.pips }}" as="p" hint-placeholder-count="3"><span style="width:12px;height:12px;border-radius:3px;background:{{ p }};box-shadow:0 0 0 1px rgba(14,12,9,0.85);"></span></sc-for></span>
+                </div>
+                <div style="font-size:12.5px;color:#C6B79A;margin-top:4px;text-shadow:0 1px 4px rgba(0,0,0,0.85);">{{ c.sub }}</div>
+              </div>
+              <div style="flex:none;align-self:flex-start;margin-top:16px;display:flex;align-items:baseline;gap:7px;background:#14110E;border:1px solid #3A3229;border-radius:9px;padding:8px 13px;">
+                <span style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;color:#EDE6D8;line-height:1;">{{ c.fit }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:#8E8269;">/100 FIT</span>
+              </div>
+            </div>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:14px 22px 16px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <sc-for list="{{ c.stats }}" as="s" hint-placeholder-count="4">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;background:#221D14;border:1px solid #2A241D;border-radius:999px;padding:6px 12px;">{{ s }}</span>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:#8E8269;flex:none;">SYNERGY</span>
+              <span style="flex:1;min-width:110px;height:4px;border-radius:999px;background:#2A241D;overflow:hidden;display:block;"><span style="display:block;height:100%;background:#4A7FB5;width:{{ c.synW }};"></span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#A89B84;flex:none;">{{ c.own }}</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;line-height:1.5;">{{ c.receipts }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-size:12.5px;color:#8E8269;line-height:1.6;max-width:900px;">The row keeps the full-bleed wash, but the <i>recognisable</i> copy of the art is sized by height and anchored left, so at a 148px band it occupies 203px of width at its true 1.37:1 — a real portrait rather than a 9:1 slice. Name and pips drop to the band's baseline where the vertical scrim is heaviest, which is also where art_crop backgrounds are quietest.</div>
+    <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:10px;padding:16px 20px;font-size:13px;color:#C6B79A;line-height:1.65;max-width:900px;"><b style="color:#EDE6D8;font-weight:600;">The fade belongs to the art, not the row.</b> The portrait's extent is derived from band height (<code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">148 × 1.37 = 203px</code>), so a percentage-of-width fade can never stay aligned with it — at a wider row you get a bare strip, at a narrower one the scrim clips the portrait. Fade the sharp layer with its own <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">mask-image</code> and keep the horizontal scrim's stops in <b style="color:#EDE6D8;font-weight:600;">px</b>. Both then travel with band height at any row width.</div>
+  </div>
+
+  <!-- HOME -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">Surface 3 · Home · two treatments</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:26px;align-items:start;">
+
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0;">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Ready to build</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-top:5px;">Inherits the deck-card treatment exactly — 2.2:1, focal <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">center top</code>, labels top. Only the footer content differs.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;">
+          <sc-for list="{{ ready }}" as="r" hint-placeholder-count="2">
+            <div style="border-radius:14px;background:#1A160F;border:1px solid #2A241D;overflow:hidden;min-width:0;">
+              <div style="position:relative;aspect-ratio:2.2/1;background:#0E0C09;overflow:hidden;">
+                <div style="position:absolute;inset:0;background-size:cover;background-repeat:no-repeat;background-position:center top;opacity:0.58;background-image:{{ r.art }};"></div>
+                <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,12,9,0.90) 0%,rgba(14,12,9,0.30) 40%,rgba(14,12,9,0.52) 74%,rgba(14,12,9,0.86) 100%);"></div>
+                <div style="position:absolute;left:14px;top:13px;right:14px;min-width:0;">
+                  <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#F4EFE3;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,0.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</div>
+                  <div style="font-size:11.5px;color:#C6B79A;margin-top:3px;text-shadow:0 1px 3px rgba(0,0,0,0.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.sub }}</div>
+                </div>
+                <div style="position:absolute;left:14px;bottom:12px;display:flex;gap:4px;"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="2"><span style="width:12px;height:12px;border-radius:3px;background:{{ p }};box-shadow:0 0 0 1px rgba(14,12,9,0.85);"></span></sc-for></div>
+                <div style="position:absolute;right:14px;bottom:12px;display:flex;align-items:baseline;gap:5px;background:#14110E;border:1px solid #3A3229;border-radius:7px;padding:5px 9px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:16px;color:#EDE6D8;line-height:1;">{{ r.fit }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;color:#8E8269;">FIT</span></div>
+              </div>
+              <div style="border-top:1px solid #2A241D;padding:12px 14px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#A89B84;">{{ r.pool }}</span>
+                <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:12px;color:#14110E;background:#C9A24B;border-radius:6px;padding:6px 12px;">Build</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0;">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">Pick up where you left off</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-top:5px;">The reference overlaps its title with the art's brightest region, which is why the names read soft in both it and my first pass. Improved below: the art gets its own 99px column and the type never touches it.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#C05A48;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C05A48;">Reference parity — title on art</span></div>
+          <sc-for list="{{ resume }}" as="v" hint-placeholder-count="3">
+            <div style="position:relative;height:72px;border-radius:11px;border:1px solid #2A241D;background:#181410;overflow:hidden;">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:46%;background-size:cover;background-position:left 30%;background-repeat:no-repeat;opacity:0.62;background-image:{{ v.art }};"></div>
+              <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(24,20,16,0.30) 0%,rgba(24,20,16,0.62) 18%,rgba(24,20,16,0.94) 32%,#181410 44%);"></div>
+              <div style="position:relative;height:100%;display:flex;align-items:center;gap:14px;padding:0 18px;">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#F4EFE3;line-height:1.2;text-shadow:0 1px 4px rgba(0,0,0,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ v.name }}</div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:4px;min-width:0;">
+                    <span style="display:flex;gap:3px;flex:none;"><sc-for list="{{ v.pips }}" as="p" hint-placeholder-count="2"><span style="width:11px;height:11px;border-radius:3px;background:{{ p }};box-shadow:0 0 0 1px rgba(14,12,9,0.9);"></span></sc-for></span>
+                    <span style="font-size:12px;color:#C6B79A;text-shadow:0 1px 4px rgba(0,0,0,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ v.sub }}</span>
+                  </div>
+                </div>
+                <div style="flex:none;text-align:right;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;color:#8E8269;">{{ v.tag }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#A89B84;margin-top:4px;">{{ v.when }}</div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:6px;">
+          <div style="display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:#6B9E63;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6B9E63;">Recommended — art gets its own column</span></div>
+          <sc-for list="{{ resume }}" as="v" hint-placeholder-count="3">
+            <div style="position:relative;height:72px;border-radius:11px;border:1px solid #2A241D;background:#181410;overflow:hidden;">
+              <div style="position:absolute;inset:0;background-size:cover;background-position:center top;background-repeat:no-repeat;opacity:0.14;background-image:{{ v.art }};"></div>
+              <div style="position:absolute;left:0;top:0;bottom:0;width:99px;background-size:auto 100%;background-position:left center;background-repeat:no-repeat;opacity:0.85;background-image:{{ v.art }};-webkit-mask-image:linear-gradient(90deg,#000 0 62%,transparent 100%);mask-image:linear-gradient(90deg,#000 0 62%,transparent 100%);"></div>
+              <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(24,20,16,0.22) 0px,rgba(24,20,16,0.18) 58px,rgba(24,20,16,0.80) 99px,#181410 138px);"></div>
+              <div style="position:relative;height:100%;display:flex;align-items:center;gap:14px;padding:0 18px 0 116px;">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#F4EFE3;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ v.name }}</div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:4px;min-width:0;">
+                    <span style="display:flex;gap:3px;flex:none;"><sc-for list="{{ v.pips }}" as="p" hint-placeholder-count="2"><span style="width:11px;height:11px;border-radius:3px;background:{{ p }};box-shadow:0 0 0 1px rgba(14,12,9,0.9);"></span></sc-for></span>
+                    <span style="font-size:12px;color:#C6B79A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ v.sub }}</span>
+                  </div>
+                </div>
+                <div style="flex:none;text-align:right;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;color:#8E8269;">{{ v.tag }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#A89B84;margin-top:4px;">{{ v.when }}</div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font-size:12.5px;color:#8E8269;line-height:1.6;">Same <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">left-portrait</code> strategy as the commander row, just at a 72px band: the sharp art is <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">72 × 1.37 = 99px</code> wide, masked out by 62%, with type starting at 116px. Note that the improved rows carry <b style="color:#EDE6D8;font-weight:600;">no text-shadow at all</b> — that's the tell. If type needs a shadow to survive, it's in the wrong place. It also drops <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">edge-signature</code> from the system: four surfaces, two strategies.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOKENS -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;border-top:1px solid #2A241D;padding-top:18px;">Per-surface numbers</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;">
+      <sc-for list="{{ tokens }}" as="t" hint-placeholder-count="4">
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:11px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;">{{ t.surface }}</div>
+          <sc-for list="{{ t.rows }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-top:1px solid #221D14;padding-top:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;color:#8E8269;flex:none;">{{ r.k }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;text-align:right;">{{ r.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C05A48;border-radius:10px;padding:16px 20px;font-size:13px;color:#C6B79A;line-height:1.65;max-width:900px;"><b style="color:#EDE6D8;font-weight:600;">Escape the apostrophe.</b> <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">encodeURIComponent</code> leaves <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">'</code> intact, which closes a single-quoted CSS string early and silently drops the art. Commander names are full of them — Yuriko, the Tiger's Shadow; K'rrik, Son of Yawgmoth; Azog, Moria's Ruin. Use double quotes inside <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">url()</code> <i>and</i> append <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">.replace(/'/g, '%27')</code>. Better still, key off the card's Scryfall <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">id</code> rather than <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">named?exact=</code> — the named endpoint is a convenience for this spec, not for production.</div>
+    <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:10px;padding:16px 20px;font-size:13px;color:#C6B79A;line-height:1.65;max-width:900px;">All four surfaces still render the one <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">&lt;ArtWash&gt;</code>. The only props that vary are <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">height</code>, <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">strategy</code> (just two now — <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">cover</code> for the card surfaces, <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">left-portrait</code> for the row surfaces) and <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">band</code>. Focal <code style="font-family:'IBM Plex Mono',monospace;color:#C9A24B;font-size:12px;">center top</code> and the L1/L2/L3 stack from R1 are constants — please don't expose them per-call.</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300}}">
+const url = n => `url("https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n).replace(/'/g, '%27')}&format=image&version=art_crop")`;
+const W='#E8E4D6',U='#4A7FB5',B='#5B5566',R='#C05A48',G='#6B9E63';
+
+const POS = [
+  { label:'0%  ✓', v:'center 0%', color:'#6B9E63' },
+  { label:'5%', v:'center 5%', color:'#8E8269' },
+  { label:'10%', v:'center 10%', color:'#8E8269' },
+  { label:'15%', v:'center 15%', color:'#8E8269' },
+  { label:'25%', v:'center 25%', color:'#8E8269' },
+  { label:'34%', v:'center 34%', color:'#8E8269' },
+  { label:'50%', v:'center 50%', color:'#8E8269' },
+  { label:'65%', v:'center 65%', color:'#8E8269' }
+];
+
+const SAMPLE = [
+  { short:'Zhulodok, Void Gorger', card:'Zhulodok, Void Gorger', focal:'31% — skull' },
+  { short:'Avatar Aang', card:'Avatar Aang', focal:'29% — face' },
+  { short:'Tovolar, Dire Overlord', card:'Tovolar, Dire Overlord', focal:'38% — silhouette' },
+  { short:'Brago, King Eternal', card:'Brago, King Eternal', focal:'27% — crown' },
+  { short:'Kotis, Sibsig Champion', card:'Kotis, Sibsig Champion', focal:'44% — head' }
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      positions: POS,
+      sweep: SAMPLE.map(s => ({
+        short: s.short, focal: s.focal,
+        tiles: POS.map(p => ({ art: url(s.card), pos: p.v, border: p.label.indexOf('\u2713') > -1 ? '#4F6B49' : '#2A241D' }))
+      })),
+      decks: [
+        { name:'HD - Avatar Aang', cmd:'Avatar Aang // Aang, Master of Elements', art:url('Avatar Aang'), pips:[W,U,B,R,G], ids:'5-color', own:'12 unowned · $13.20', played:'never played', status:'Complete' },
+        { name:'HD - Eldrazi', cmd:'Zhulodok, Void Gorger', art:url('Zhulodok, Void Gorger'), pips:[], ids:'Colorless', own:'all owned', played:'2 days ago', status:'Complete' },
+        { name:'HD - Tovolar', cmd:'Tovolar, Dire Overlord', art:url('Tovolar, Dire Overlord'), pips:[R,G], ids:'Gruul', own:'all owned', played:'7 weeks ago', status:'Complete' },
+        { name:'HD - Brago', cmd:'Brago, King Eternal', art:url('Brago, King Eternal'), pips:[W,U], ids:'Azorius', own:'all owned', played:'never played', status:'Complete' }
+      ],
+      cmds: [
+        { rank:1, name:'Preston Garvey, Minuteman', sub:'Legendary Creature — Human Soldier', art:url('Preston Garvey, Minuteman'), pips:[G,R,W], fit:73, synW:'58%', own:'own 140 of top 252',
+          stats:['RAMP 166/10','DRAW 149/10','REMOVAL 152/8','WIPES 17/3'], receipts:'receipts: Celebrate the Mountain-king · Bofur, Reliable Guardian · Key to the Side-Door +137' },
+        { rank:2, name:'Kotis, Sibsig Champion', sub:'Legendary Creature — Zombie Assassin', art:url('Kotis, Sibsig Champion'), pips:[B,G,U], fit:72, synW:'53%', own:'own 136 of top 258',
+          stats:['RAMP 158/10','DRAW 262/10','REMOVAL 159/8','WIPES 13/3'], receipts:"receipts: Most Decrepit Old Bird · Hobbit Hole · Azog, Moria's Ruin +133" },
+        { rank:3, name:'Sokka, Lateral Strategist', sub:'Legendary Creature — Human Advisor', art:url('Sokka, Lateral Strategist'), pips:[U,W], fit:71, synW:'52%', own:'own 147 of top 281',
+          stats:['RAMP 75/10','DRAW 202/10','REMOVAL 113/8','WIPES 17/3'], receipts:'receipts: Bilbo Baggins, Burglar · Well-Worn Spatula · Plunder the Trollshaws +144' }
+      ],
+      ready: [
+        { name:'Zhulodok, Void Gorger', sub:'Legendary Creature — Eldrazi', art:url('Zhulodok, Void Gorger'), pips:[], fit:78, pool:'1,240 fit' },
+        { name:'Myrel, Shield of Argive', sub:'Legendary Creature — Human Soldier', art:url('Myrel, Shield of Argive'), pips:[W], fit:74, pool:'980 fit' }
+      ],
+      resume: [
+        { name:'HD Yuriko', sub:"Yuriko, the Tiger's Shadow", art:url("Yuriko, the Tiger's Shadow"), pips:[U,B], tag:'COMMANDER', when:'17 hours ago' },
+        { name:'HD Avatar Aang', sub:'Avatar Aang // Aang, Master of Elements', art:url('Avatar Aang'), pips:[W,U,B,R,G], tag:'COMMANDER', when:'21 hours ago' },
+        { name:'HD Soldiers', sub:'Myrel, Shield of Argive', art:url('Myrel, Shield of Argive'), pips:[W], tag:'COMMANDER', when:'23 hours ago' }
+      ],
+      tokens: [
+        { surface:'Deck card', rows:[{k:'BAND',v:'aspect 2.2/1'},{k:'STRATEGY',v:'cover'},{k:'FOCAL',v:'center top (0%)'},{k:'ART OPACITY',v:'0.58'},{k:'LABELS',v:'top band'}] },
+        { surface:'Commander row', rows:[{k:'BAND',v:'148px fixed'},{k:'STRATEGY',v:'left-portrait'},{k:'PORTRAIT',v:'203px = band × 1.37'},{k:'MASK',v:'90deg #000 0 58% → 0'},{k:'AMBIENT',v:'cover top · 0.20'},{k:'SCRIM STOPS',v:'px, not %'},{k:'LABELS',v:'band baseline'}] },
+        { surface:'Home · ready to build', rows:[{k:'BAND',v:'aspect 2.2/1'},{k:'STRATEGY',v:'cover'},{k:'FOCAL',v:'center top (0%)'},{k:'ART OPACITY',v:'0.58'},{k:'LABELS',v:'top band'}] },
+        { surface:'Home · resume', rows:[{k:'BAND',v:'72px fixed'},{k:'STRATEGY',v:'left-portrait'},{k:'PORTRAIT',v:'99px = band × 1.37'},{k:'MASK',v:'90deg #000 0 62% → 0'},{k:'AMBIENT',v:'cover top · 0.14'},{k:'TYPE INSET',v:'116px'},{k:'TEXT SHADOW',v:'none'}] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
