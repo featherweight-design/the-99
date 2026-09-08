@@ -172,6 +172,8 @@ export function SuggestionTile({
         owned: suggestion.owned,
         quantity: 1,
         auto: false,
+        manaCost: suggestion.manaCost,
+        imageUri: suggestion.imageUri,
       }),
     );
   }

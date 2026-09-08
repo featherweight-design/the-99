@@ -365,6 +365,11 @@ function QuickAddRow({
           owned: result.owned,
           quantity: 1,
           auto: false,
+          // Carried, not left absent: the optimistic row draws before the
+          // revalidate lands, and a row whose pips appear a beat after the rest
+          // of it reads as the list correcting itself.
+          manaCost: result.manaCost,
+          imageUri: result.imageUri,
         }),
     );
   }, [applied, run, deckId, result, addOptimisticCard]);
