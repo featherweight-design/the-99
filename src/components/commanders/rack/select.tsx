@@ -15,7 +15,8 @@ import { PendingLabel, PendingMark } from "../../ui/pending-mark";
 export type RackOption<K extends string> = {
   key: K;
   label: string;
-  /** Sheet only, and only where the caller asks for it. */
+  /** A second line under the label. The rack menu draws it whenever the option
+      carries one; the sheet draws it only where the caller asks. */
   gloss?: string;
 };
 
@@ -250,8 +251,9 @@ export function RackSelect<K extends string>({
           role="menu"
           aria-label={legend}
           className={[
-            "absolute right-0 z-10 mt-[6px] w-[260px] rounded-[10px] p-[6px]",
+            "absolute right-0 z-10 mt-[6px] w-[280px] rounded-[10px] p-[6px]",
             "bg-[color:var(--surface-rail)] border border-solid border-[color:var(--border-strong)]",
+            "shadow-[0_16px_40px_rgba(0,0,0,0.5)]",
           ].join(" ")}
         >
           {options.map((o, i) => {
@@ -297,7 +299,17 @@ export function RackSelect<K extends string>({
                       : "border-[1.5px] border-solid border-[color:var(--border-strong)]",
                   ].join(" ")}
                 />
-                <span className="text-[13.5px] text-[color:var(--fg)]">{o.label}</span>
+                <span className="min-w-0">
+                  <span className="block text-[13.5px] text-[color:var(--fg)]">{o.label}</span>
+                  {/* Three orders that all sound plausible need one line each
+                      saying what they actually sort on. An option without a
+                      gloss draws a single-line row, as it did before. */}
+                  {o.gloss && (
+                    <span className="block font-mono text-[10px] leading-[1.5] mt-[2px] text-[color:var(--fg-faint)]">
+                      {o.gloss}
+                    </span>
+                  )}
+                </span>
               </button>
             );
           })}

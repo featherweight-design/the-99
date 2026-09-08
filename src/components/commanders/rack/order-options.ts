@@ -5,14 +5,25 @@
 import { commandersCopy, discoverCopy } from "../../../lib/copy/lanes";
 import type { Lane, LaneOrder } from "../../../lib/commanders/lane-params";
 
-export const ORDER_OPTIONS: Record<Lane, readonly { key: LaneOrder; label: string }[]> = {
+export const ORDER_OPTIONS: Record<
+  Lane,
+  readonly { key: LaneOrder; label: string; gloss?: string }[]
+> = {
   owned: [
     { key: "fit", label: commandersCopy.order.fit },
     { key: "name", label: commandersCopy.order.name },
   ],
   discover: [
-    { key: "popularity", label: discoverCopy.order.popularity },
-    { key: "name", label: discoverCopy.order.name },
-    { key: "recent", label: discoverCopy.order.recent },
+    {
+      key: "popularity",
+      label: discoverCopy.order.popularity,
+      gloss: discoverCopy.order.popularityGloss,
+    },
+    { key: "name", label: discoverCopy.order.name, gloss: discoverCopy.order.nameGloss },
+    {
+      key: "recent",
+      label: discoverCopy.order.recent,
+      gloss: discoverCopy.order.recentGloss,
+    },
   ],
 };

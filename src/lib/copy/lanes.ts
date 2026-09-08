@@ -147,10 +147,16 @@ export const discoverCopy = {
   // which the earliest dated set a commander was printed in backs (`sets.released_at`, taken
   // through `printings`); a Colour order has no query behind it, so it is absent rather than
   // shipped dark.
+  // The glosses render in the order menu, where three orders that all sound
+  // plausible need one line each saying what they actually sort on. The owned
+  // lane's two are `Fit` and `Name` and are drawn without them.
   order: {
     popularity: "Popularity",
+    popularityGloss: "most decks tracked first",
     name: "Name",
+    nameGloss: "A–Z",
     recent: "Recently released",
+    recentGloss: "newest printing first",
   },
 
   // The shipped discovery scope, kept. Glosses render in the sheet only.

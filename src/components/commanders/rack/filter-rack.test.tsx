@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultParams, type Lane, type LaneParams } from "@/lib/commanders/lane-params";
 import { FilterRack } from "./filter-rack";
@@ -66,6 +66,21 @@ describe("FilterRack", () => {
     const trigger = screen.getByRole("button", { name: "Order · Fit" });
     expect(trigger).not.toHaveTextContent(/Fit/);
     expect(container.querySelector('path[d="M5 5h10M6.5 10h7M8.5 15h3"]')).toBeInTheDocument();
+  });
+
+  // Discover's three orders all sound plausible; the glosses say what each one
+  // actually sorts on. Fit and Name need no such line and are drawn without one.
+  it("glosses the discover order menu and leaves the owned menu bare", () => {
+    stubWidth(true);
+    const { unmount } = renderRack("discover", defaultParams("discover"), 3301);
+    fireEvent.click(screen.getByRole("button", { name: "Order · Popularity" }));
+    expect(screen.getByText("most decks tracked first")).toBeInTheDocument();
+    expect(screen.getByText("newest printing first")).toBeInTheDocument();
+    unmount();
+
+    renderRack("owned");
+    fireEvent.click(screen.getByRole("button", { name: "Order · Fit" }));
+    expect(screen.getByRole("menu", { name: "Order" })).toHaveTextContent(/^FitName$/);
   });
 
   it("badges the Filters trigger with the active control count, below 1024px", () => {
