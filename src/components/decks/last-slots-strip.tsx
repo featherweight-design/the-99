@@ -145,6 +145,22 @@ function LastSlotsStripInner({
     doorRef.current?.focus();
   }, [open]);
 
+  // The strip unmounts the moment the deck fills, and a fill can land from the
+  // quick-add dock while the list is open — a path that never calls close. The
+  // flags it raised would then stay raised with nothing left to lower them, and
+  // the phone dock would stay hidden for a list that no longer exists.
+  const flags = useRef({ onOpenChange, onInflight });
+  useEffect(() => {
+    flags.current = { onOpenChange, onInflight };
+  });
+  useEffect(
+    () => () => {
+      flags.current.onOpenChange?.(false);
+      flags.current.onInflight?.(false);
+    },
+    [],
+  );
+
   function closeList(reason: "cancel" | "committed") {
     returnFocus.current = true;
     if (reason === "committed") setPassed(true);

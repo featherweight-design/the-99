@@ -73,6 +73,32 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByRole("button", { name: /top up/i })).toBeNull();
   });
 
+  // The deck can fill from somewhere else — the quick-add dock is live at
+  // desktop while the list is open — and that unmounts the strip without ever
+  // calling close. The flags have to come down anyway, or the phone dock stays
+  // hidden for a list that is gone.
+  it("lowers the open and in-flight flags when the deck fills under it", async () => {
+    const onOpenChange = vi.fn();
+    const onInflight = vi.fn();
+    const { rerender } = render(
+      <LastSlotsStrip {...base} onOpenChange={onOpenChange} onInflight={onInflight} />,
+    );
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+
+    rerender(
+      <LastSlotsStrip
+        {...base}
+        openSlots={0}
+        onOpenChange={onOpenChange}
+        onInflight={onInflight}
+      />,
+    );
+
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    expect(onInflight).toHaveBeenLastCalledWith(false);
+  });
+
   it("names the owned candidates in the door note before any pass", () => {
     render(<LastSlotsStrip {...base} />);
     expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();

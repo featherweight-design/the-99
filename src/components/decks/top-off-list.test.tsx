@@ -139,6 +139,33 @@ describe("TopOffList", () => {
     expect(screen.getByText(topOffCopy.list.headMobile("1", "3"))).toBeInTheDocument();
   });
 
+  // The two reasons a row goes illegal mean different things, and the frozen row
+  // exists to say which. A card that left the list without entering the deck
+  // left because the identity moved under it.
+  it("names the colour reason for a row that left the list without entering the deck", () => {
+    const { rerender } = render(<Harness initialTicked={["owned-1"]} />);
+    rerender(
+      <Harness
+        initialTicked={["owned-1"]}
+        candidates={candidates.filter((c) => c.oracleId !== "owned-1")}
+      />,
+    );
+
+    expect(screen.getByText(topOffCopy.list.illegalColour)).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.list.illegalInDeck)).toBeNull();
+  });
+
+  // A failed availability read draws no marker, so it must not speak a count
+  // either: "×1 in your collection" to a player holding four is worse than
+  // saying nothing about how many.
+  it("drops the owned count from the row's name when availability is missing", () => {
+    render(<Harness candidates={[candidate("owned-1", true)]} />);
+
+    const box = rowBox("owned-1");
+    expect(box).toHaveAccessibleName(/Owned\./);
+    expect(box).not.toHaveAccessibleName(/×1 in your collection/);
+  });
+
   // State 7. The decline is reversible and says so in the same breath as the
   // count it changed.
   it("declines a row, announces it, and restores it", async () => {

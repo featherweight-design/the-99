@@ -65,10 +65,14 @@ function ownershipClause(c: TopOffCandidate, newestAsOf: Date | null): string {
     const money = moneyOf(c.price, newestAsOf);
     return topOffCopy.list.unownedClause(money ?? synergyCopy.figure.synergyNone);
   }
-  const qty = String(c.availability?.owned ?? 1);
-  const committed =
-    c.availability !== null &&
-    availabilityState(c.availability) === "hard";
+  // A failed availability read is null on an owned row, and the design draws
+  // that row with no marker at all. The spoken clause matches it by dropping the
+  // count rather than defaulting to one: a player with four copies would
+  // otherwise hear a confident "×1 in your collection". `ariaOwned` is the
+  // shipped synergy row's own word for ownership with no figure behind it.
+  if (c.availability === null) return `${synergyCopy.figure.ariaOwned}.`;
+  const qty = String(c.availability.owned);
+  const committed = availabilityState(c.availability) === "hard";
   return committed
     ? topOffCopy.list.committedClause(qty)
     : topOffCopy.list.ownedClause(qty);
@@ -398,7 +402,13 @@ export function TopOffList({
       >
         {pool.map((c) => {
           if (illegal.has(c.oracleId)) {
-            return <IllegalRow key={c.oracleId} name={c.name} inDeck />;
+            return (
+              <IllegalRow
+                key={c.oracleId}
+                name={c.name}
+                inDeck={deckOracleIds.has(c.oracleId)}
+              />
+            );
           }
           if (declined.has(c.oracleId)) {
             return (
