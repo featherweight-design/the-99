@@ -35,9 +35,9 @@ export function SearchControl({
       // The placeholder is not a name — it disappears the moment anything is
       // typed, taking the field's accessible name with it.
       aria-label={copy.placeholderWide}
-      iconClassName="text-[14px]"
+      leading={<SearchGlyph size={wide ? 14 : 16} />}
       containerClassName={[
-        "gap-[8px] px-[10px]",
+        "gap-[9px] px-[10px]",
         wide ? "h-[34px] w-[300px] rounded-lg" : "h-[44px] w-full rounded-[10px]",
         filled ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]",
       ].join(" ")}
@@ -66,5 +66,28 @@ export function SearchControl({
         ) : null
       }
     />
+  );
+}
+
+// Drawn rather than the `⌕` character `SearchField` falls back to: at 14px that
+// glyph renders as a hairline in the mono face and loses its handle entirely on
+// some platforms. Local to the rack — the app's other search fields keep the
+// character, and their `iconClassName` sizing with it.
+function SearchGlyph({ size }: { size: number }) {
+  return (
+    <svg
+      aria-hidden
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      className="shrink-0 text-[color:var(--fg-faint)]"
+    >
+      <circle cx="9" cy="9" r="5.4" />
+      <path d="m13.2 13.2 3.3 3.3" />
+    </svg>
   );
 }
