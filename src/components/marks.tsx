@@ -18,11 +18,11 @@ import { CrownDiamonds, crownBox } from "./ui/crown";
 type Crowned99Variant =
   | "hero-mobile"     // 13/18/13px diamonds, 92px numeral, weight 900, 8px gap
   | "hero-desktop"    // 18/25/18px diamonds, 132px numeral, weight 900, 11px gap
-  | "rail"            // 6/8/6px diamonds, 30px numeral, weight 800, 4px gap
+  | "rail-62"         // 6/8.5/6px diamonds, 23px numeral, weight 900, 3px gap
   | "mobile-header";  // 5/7/5px diamonds, 24px numeral, weight 800, 3px gap
 
 interface Crowned99Props {
-  variant?: Crowned99Variant;
+  variant: Crowned99Variant;
   className?: string;
 }
 
@@ -34,10 +34,18 @@ const CROWNED99_SPECS: Record<
     largeDiamond: number; // l diamond side length in px
     numeralSize: number;  // font-size in px
     fontWeight: number;
-    gap: number;          // gap between diamonds in px
+    gap: number;          // air between diamond *points*, in px — see below
     translateX: number;   // crown row translateX offset in px (negative = left)
+    baselineGap: number;  // px from the crown row's bottom to the numeral baseline
+    bottomPad: number;    // px reserved under that baseline
+    letterSpacing?: string;
   }
 > = {
+  // The three hero/header variants carry `numeralSize + 6` as their baseline
+  // gap because that is what the render body hardcoded before the gap became a
+  // field: the numeral's em box sat 6px under the crown, and the baseline a
+  // further `numeralSize` down. Keeping the arithmetic as literals rather than
+  // an expression is what makes a future change to one of them visible.
   "hero-mobile": {
     smallDiamond: 13,
     largeDiamond: 18,
@@ -45,6 +53,8 @@ const CROWNED99_SPECS: Record<
     fontWeight: 900,
     gap: 8,
     translateX: -2,
+    baselineGap: 98,
+    bottomPad: 4,
   },
   "hero-desktop": {
     smallDiamond: 18,
@@ -53,14 +63,43 @@ const CROWNED99_SPECS: Record<
     fontWeight: 900,
     gap: 11,
     translateX: -3,
+    baselineGap: 138,
+    bottomPad: 4,
   },
-  rail: {
+  // The 62px rail's head (design/design_handoff_the99_rail_mark/CHROME-rail-mark.md).
+  // It replaces the *wide* rail's wordmark, which the 2026-09-07 refresh deleted
+  // along with the rail that held it — leaving the desktop app with nowhere it
+  // said its own name.
+  //
+  // The handoff writes this gap as 6px, because it draws the crown as three
+  // flex-laid boxes and a 45°-rotated square overflows its box by 0.207× a side
+  // each way: `gap = air + 0.207 × (w₁ + w₂)`. `crownBox` lays the row out from
+  // the diagonals instead, so its gap already *is* the air, and the 3px the
+  // handoff asks to see is the 3px passed here. The same conversion makes the
+  // drawn row 35px wide rather than the handoff's 32.5, which is its flex box;
+  // the height is untouched at 8.5√2 = 12, so the 39px lockup the rail's layout
+  // is measured from holds exactly.
+  //
+  // baselineGap is 22, not the 4 + 23 the handoff's "4px between them" would
+  // suggest, because the canvas sets those numerals as HTML with `line-height:
+  // 1` and an SVG has no line box to inherit that from. Cinzel reports a
+  // 22px ascent and a 9px descent at this size, so a 23px line box carries
+  // −4px of half-leading and puts the baseline 18px into a box that starts 4px
+  // under the crown: 22. Placing it at 4 + 23 instead drops the digits 5px and
+  // opens a visible trench under the crown, which is what the first build did.
+  //
+  // bottomPad then completes the 39px lockup (12 + 4 + 23) that the rail's
+  // 73px head zone is measured from: 39.02 − 12.02 − 22 ≈ 5.
+  "rail-62": {
     smallDiamond: 6,
-    largeDiamond: 8,
-    numeralSize: 30,
-    fontWeight: 800,
-    gap: 4,
-    translateX: -1,
+    largeDiamond: 8.5,
+    numeralSize: 23,
+    fontWeight: 900,
+    gap: 3,
+    translateX: 0,
+    baselineGap: 22,
+    bottomPad: 5,
+    letterSpacing: "-0.01em",
   },
   "mobile-header": {
     smallDiamond: 5,
@@ -69,15 +108,24 @@ const CROWNED99_SPECS: Record<
     fontWeight: 800,
     gap: 3,
     translateX: 0,
+    baselineGap: 30,
+    bottomPad: 4,
   },
 };
 
-export function Crowned99({
-  variant = "rail",
-  className,
-}: Crowned99Props) {
+export function Crowned99({ variant, className }: Crowned99Props) {
   const spec = CROWNED99_SPECS[variant];
-  const { smallDiamond: s, largeDiamond: l, numeralSize, fontWeight, gap, translateX } = spec;
+  const {
+    smallDiamond: s,
+    largeDiamond: l,
+    numeralSize,
+    fontWeight,
+    gap,
+    translateX,
+    baselineGap,
+    bottomPad,
+    letterSpacing,
+  } = spec;
 
   // The crown row itself is drawn by CrownDiamonds — the app's one drawing of
   // the mark — so the wordmark and the standalone Crown cannot drift apart.
@@ -92,15 +140,15 @@ export function Crowned99({
 
   // SVG total dimensions
   const totalWidth = Math.max(crownWidth, numeralApproxWidth) + 4; // 2px padding each side
-  // Crown sits above numeral. Numeral baseline: text y = numeralSize (from top).
-  // Add 4px padding at bottom.
-  const totalHeight = crownHeight + 6 + numeralSize + 4; // 6px gap between crown and numeral top
+  // The numeral is placed by its baseline, because that is the only vertical
+  // anchor an SVG `<text>` has — there is no line box, and so no half-leading
+  // to inherit from the font the way the design canvas's HTML does.
+  const textY = crownHeight + baselineGap;
+  const totalHeight = textY + bottomPad;
 
   // Crown row left edge: centred in the SVG, adjusted by translateX.
   const crownRowLeft = totalWidth / 2 + translateX - crownWidth / 2;
 
-  // Text baseline y: crown band + 6px gap + numeralSize (font-size = cap height approx)
-  const textY = crownHeight + 6 + numeralSize;
   const textX = totalWidth / 2;
 
   return (
@@ -122,6 +170,7 @@ export function Crowned99({
         fontFamily="var(--font-display), 'Cinzel', serif"
         fontWeight={fontWeight}
         fontSize={numeralSize}
+        letterSpacing={letterSpacing}
         fill="var(--fg)"
       >
         99

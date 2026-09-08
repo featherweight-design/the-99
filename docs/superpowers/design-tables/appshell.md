@@ -35,6 +35,12 @@
 
 ### Rail: Wordmark area
 
+> **Historical.** This section and the three that follow it describe the *wide* rail's wordmark —
+> "THE", the crown and the numeral in a bordered band. The 2026-09-07 refresh replaced that rail
+> with the 62px icon-only one, whose head draws the crowned numeral alone; its spec is
+> `design/design_handoff_the99_rail_mark/CHROME-rail-mark.md` and the `Rail head (62px)` row of
+> §SVG / Marks Summary. Kept as the record of what the wide rail drew.
+
 | Property | Mobile | Desktop |
 |----------|--------|---------|
 | padding | — | `22px 20px 20px` |
@@ -1798,7 +1804,8 @@ See collection empty state card-fan specs above. Mobile: 100×110px container. D
 |---------|----------------------------|--------------|-----|-------|
 | Signed-out hero (mobile) | 13/18/13px | 92px, weight 900 | 8px | translateX(-2px) |
 | Signed-out hero (desktop) | 18/25/18px | 132px, weight 900 | 11px | translateX(-3px) |
-| Rail wordmark | 6/8/6px | 30px, weight 800 | 4px | translateX(-1px) on crown row |
+| ~~Rail wordmark~~ | ~~6/8/6px~~ | ~~30px, weight 800~~ | ~~4px~~ | **Retired 2026-09-08.** The wide rail this belonged to was replaced by the 62px icon-only rail in the 2026-09-07 refresh; the variant went unrendered from that day and is deleted |
+| Rail head (62px) | 6/8.5/6px | 23px, weight 900 | 3px | `design/design_handoff_the99_rail_mark/CHROME-rail-mark.md`, ruling 1a. Painted 35.0×39.0, centred in the rail, 14px from its top and 20px before the first nav item; the handoff's 32.5 is the canvas's flex box, which rotated squares overflow. Height is `8.5√2` = 12 for the crown row, a baseline 22px under it, then 5px. The gap is the visible air between diamond points, so the handoff's 6px — its flex-box conversion — is not what `crownBox` takes. Head zone 14 + 39 + 20 = 73px, which puts the nav block 17px below where the 26px diamond left it |
 | Mobile header | 5/7/5px | 24px, weight 800 | 3px | — |
 | "THE" label with all versions | letter-spacing 0.42em (desktop rail/wordmark), 0.4em (mobile) | — | — | |
 | Mark usage reference panel | 6/8/6px | 34px | 4px | canvas only |
