@@ -9,8 +9,8 @@ Files:
 - `The 99 - Art Wash Readability.dc.html` — R1, superseded. Kept only because R2's captions cite its
   values. Do not build from it.
 
-Read `design_handoff_the99_decks/README.md` and `design_handoff_the99_commanders/README.md` first —
-this document records only what **changes**.
+Read `design_handoff_the99_decks/The 99 - Decks README.md` and
+`design_handoff_the99_commanders/README.md` first — this document records only what **changes**.
 
 ## The bug, in one line
 

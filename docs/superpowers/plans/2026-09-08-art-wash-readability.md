@@ -618,7 +618,7 @@ git commit -m "feat(decks): deck card art reads as a portrait, chip survives on 
 
 **Files:**
 - Modify: `src/components/home/hero-commander.tsx:20-26,58-72`
-- Test: `src/components/home/hero-commander.test.tsx` if present, else the nearest home test.
+- Create: `src/components/home/hero-commander.test.tsx` — this component has no test file today; `ready-to-build.test.tsx` covers its parent, not the band.
 
 **Interfaces:**
 - Consumes: `ArtWash`, `RankedCommander.artCropUri` (Task 2).
@@ -663,7 +663,7 @@ git commit -m "feat(home): the ready-to-build hero inherits the deck card's band
 
 **Files:**
 - Modify: `src/components/commanders/commander-art.tsx` (delete `CommanderBleed`, keep `IdentityPips`), `src/components/commanders/rec-card.tsx:124`, `src/components/commanders/discovery-row.tsx:328`
-- Test: `src/components/ui/art-wash.test.tsx` already covers the geometry; add a row-level assertion to whichever commanders test currently renders a row.
+- Test: `src/components/ui/art-wash.test.tsx` already covers the geometry; add a row-level assertion to `src/components/commanders/rec-card.test.tsx` and `src/components/commanders/discovery-row.test.tsx`, the two that render a row directly.
 
 **Interfaces:**
 - Consumes: `ArtWash` with `band={148}`, `RankedCommander.artCropUri` and `DiscoveryItem.artCropUri` (Task 2).
