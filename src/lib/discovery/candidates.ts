@@ -57,9 +57,10 @@ export function shapeCandidate(r: CandidateSqlRow): CandidateRow {
  * Every indexed commander the player neither owns nor has built a deck around,
  * with the count of that commander's EDHREC support cards the player owns.
  *
- * `ownedOracleIds` is a parameter rather than a join so that `?avail=free` is
- * this same query with the free pool's ids — the free ranking is the same
- * question asked of a smaller pool.
+ * `ownedOracleIds` is a parameter rather than a join so that a narrower pool is
+ * this same query with a shorter id list. No caller narrows it: the discover
+ * lane has no availability control, so every production read passes the whole
+ * collection.
  *
  * The left join is load-bearing: a commander with zero owned support still has
  * to appear, because the floor and the count line are claims about the whole
@@ -68,8 +69,10 @@ export function shapeCandidate(r: CandidateSqlRow): CandidateRow {
  * the outer query — drizzle emits joins in call order, so an inner join written
  * after the left join would filter the left join's NULL rows back out.
  *
- * `collectionOracleIds` is the whole collection, and is passed only when the
- * ranking is scoped to a smaller pool. Omitting it is not a degraded read: when
+ * `collectionOracleIds` is the whole collection, and would be passed only when
+ * the ranking is scoped to a smaller pool — which no lane now does, so it is
+ * unread until the `DiscoveryItem.counts` question is settled with Design.
+ * Omitting it is not a degraded read: when
  * the pool *is* the collection the two counts are identical by construction, so
  * the second derived table would be a second aggregate scan of 240,000 rows to
  * re-derive a column already in the projection. The lane boundary is drawn
