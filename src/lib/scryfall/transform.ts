@@ -3,7 +3,8 @@
 export type CardRow = {
   oracleId: string; scryfallId: string; name: string; manaCost: string | null;
   cmc: number; colorIdentity: string[]; typeLine: string; oracleText: string | null;
-  keywords: string[]; commanderLegal: boolean; imageUri: string | null; rarity: string;
+  keywords: string[]; commanderLegal: boolean; imageUri: string | null;
+  artCropUri: string | null; rarity: string;
   layout: string; backImageUri: string | null;
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw Scryfall bulk JSON is untyped by design; toCardRow narrows it.
@@ -19,6 +20,12 @@ export function toCardRow(raw: ScryfallCard): CardRow | null {
     (faces ? faces.map((f) => f.oracle_text ?? "").join("\n//\n") : null);
   const imageUri =
     raw.image_uris?.normal ?? faces?.find((f) => f.image_uris?.normal)?.image_uris.normal ?? null;
+  // The frame-free 626×457 crop. `imageUri` carries Magic's own printed name and
+  // type line, which collide with our labels wherever art sits behind text.
+  const artCropUri =
+    raw.image_uris?.art_crop ??
+    faces?.find((f) => f.image_uris?.art_crop)?.image_uris.art_crop ??
+    null;
   return {
     oracleId: raw.oracle_id,
     scryfallId: raw.id,
@@ -31,6 +38,7 @@ export function toCardRow(raw: ScryfallCard): CardRow | null {
     keywords: raw.keywords ?? [],
     commanderLegal: raw.legalities?.commander === "legal",
     imageUri,
+    artCropUri,
     rarity: raw.rarity ?? "unknown",
     layout: raw.layout ?? "normal",
     // The second face's own art, which is what a flip has to swap to. Asking

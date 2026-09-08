@@ -27,6 +27,7 @@ export async function seedCards(): Promise<{ upserted: number; skipped: number }
         keywords: sql`excluded.keywords`,
         commanderLegal: sql`excluded.commander_legal`,
         imageUri: sql`excluded.image_uri`,
+        artCropUri: sql`excluded.art_crop_uri`,
         rarity: sql`excluded.rarity`,
         layout: sql`excluded.layout`,
         backImageUri: sql`excluded.back_image_uri`,

@@ -34,6 +34,9 @@ export const cards = pgTable("cards", {
   keywords: text("keywords").array().notNull(),
   commanderLegal: boolean("commander_legal").notNull(),
   imageUri: text("image_uri"),
+  // The frame-free 626×457 crop. `imageUri` carries Magic's own printed name and
+  // type line, which collide with our labels wherever art sits behind text.
+  artCropUri: text("art_crop_uri"),
   rarity: text("rarity").notNull(),
   /**
    * Scryfall's own layout word — `normal`, `transform`, `modal_dfc`, `split`,
