@@ -17,6 +17,7 @@ import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
 import { DecklistRow } from "./decklist-row";
+import { HoverPreviewProvider } from "./hover-preview";
 import { UnresolvedGroup } from "./unresolved-group";
 import { SweepReceipt } from "./clear-auto";
 import type { SweptRow } from "../../app/decks/actions";
@@ -364,7 +365,7 @@ export function Decklist({
           shoppingCards={shoppingList}
         />
 
-        <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
+        <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
           {autoBanner}
 
           {/* Intro line — sans (default family), 12.5px phone / 13.5px desktop,
@@ -514,7 +515,7 @@ export function Decklist({
               </>
             )}
           </div>
-        </div>
+        </HoverPreviewProvider>
       </div>
     );
   }
@@ -542,7 +543,7 @@ export function Decklist({
       />
 
       {/* Grouped card rows */}
-      <div className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
+      <HoverPreviewProvider className="px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
         {/* A refused sweep, keep-all or undo. Each message names its own write:
             the sweep and the keep leave the deck as it was, an undo does not. */}
         {autoError && (
@@ -590,7 +591,7 @@ export function Decklist({
           commanderOracleId={commanderOracleId}
           onExpandedChange={onUnresolvedExpandedChange}
         />
-      </div>
+      </HoverPreviewProvider>
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
 import {
   useAnnounceUndo,
@@ -62,7 +63,8 @@ interface DecklistRowProps {
   spent?: boolean;
   /**
    * EDHREC inclusion % for the Shopping view's meta line (addendum A2).
-   * `undefined` — All view; no meta line is rendered (44px phone row).
+   * `undefined` — All view; no figure is rendered. Since #350 the row may
+   *               still carry a meta line, for the cost.
    * `null`      — Shopping view; card has no EDHREC figure → prints rowNoFigure.
    * `number`    — Shopping view; prints rowFigure(pct). Never 0 as a stand-in for absent.
    */
@@ -145,6 +147,11 @@ export function DecklistRow({
   const figureTextDesktop = Number.isFinite(shoppingFigure)
     ? recommendationsCopy.shopping.rowFigureDesktop(String(shoppingFigure as number))
     : recommendationsCopy.shopping.rowNoFigureDesktop;
+  // The whole row is the preview's trigger (#351), so the handlers go on the
+  // shell rather than on the name — the name is the modal's trigger, and a
+  // preview that only opened over it would be a second, smaller target for a
+  // gesture the reader is already making across the row.
+  const previewHandlers = usePreviewRow(card.imageUri);
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
@@ -208,6 +215,7 @@ export function DecklistRow({
           The over tint (design 4.5/4.10) is an inset ring rather than a border:
           a real border would add 2px to one row's height and shunt the list. */}
       <div
+        {...previewHandlers}
         className={`group ${rowShell} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]
           ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
