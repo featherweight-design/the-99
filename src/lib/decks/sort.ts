@@ -25,6 +25,6 @@ export function parseDeckSort(raw: string | undefined): DeckSort {
 }
 
 /** The default serialises as an absence, so the clean URL is the clean state. */
-export function serialiseDeckSort(sort: DeckSort): string | undefined {
+export function serializeDeckSort(sort: DeckSort): string | undefined {
   return sort === DEFAULT_DECK_SORT ? undefined : sort;
 }

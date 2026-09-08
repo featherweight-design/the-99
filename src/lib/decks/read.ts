@@ -325,7 +325,12 @@ export async function listDecksWithStats(
       ownedCount: row.ownedCount,
       toBuyCount: row.built - row.ownedCount,
       unresolvedCount: row.unresolvedCount,
-      lastPlayedAt: row.lastPlayedAt,
+      // Normalised here rather than trusted from the driver: `lastPlayedSql` is
+      // raw SQL, so it carries none of the column mapping that would hand back a
+      // Date, and a timestamp string reaching a caller typed `Date | null` would
+      // survive every check until something called `.getTime()` on it.
+      // `src/lib/recs/store.ts` does the same for the same reason.
+      lastPlayedAt: row.lastPlayedAt === null ? null : new Date(row.lastPlayedAt),
       statusPill: pill,
     };
   });

@@ -915,7 +915,7 @@ git commit -m "refactor(ui): fill the primary with bone so accent can mean in us
 - Produces:
   - `DeckListItem` gains `lastPlayedAt: Date | null`.
   - `listDecksWithStats(userId: string, sort?: DeckSort): Promise<DeckListItem[]>`.
-  - `src/lib/decks/sort.ts`: `export type DeckSort = "lastPlayed" | "name" | "newest"`, `export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed"`, `export const DECK_SORT_LABELS: Record<DeckSort, string>`, `export function parseDeckSort(raw: string | undefined): DeckSort`, `export function serialiseDeckSort(sort: DeckSort): string | undefined`.
+  - `src/lib/decks/sort.ts`: `export type DeckSort = "lastPlayed" | "name" | "newest"`, `export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed"`, `export const DECK_SORT_LABELS: Record<DeckSort, string>`, `export function parseDeckSort(raw: string | undefined): DeckSort`, `export function serializeDeckSort(sort: DeckSort): string | undefined`.
 
 This closes **finding 5** and implements **locked ruling 7**. The query itself gets no unit test — the repo's untested-query pattern (documented in `src/lib/home/summary.ts`) is that shape-shifting SQL is proved by the type checker and the browser, and pure logic is proved by Vitest. `parseDeckSort` is the pure logic.
 
@@ -927,7 +927,7 @@ import {
   DECK_SORT_LABELS,
   DEFAULT_DECK_SORT,
   parseDeckSort,
-  serialiseDeckSort,
+  serializeDeckSort,
 } from "./sort";
 
 describe("deck sort", () => {
@@ -948,8 +948,8 @@ describe("deck sort", () => {
   });
 
   it("serialises the default as an absence, so the clean URL is the clean state", () => {
-    expect(serialiseDeckSort("lastPlayed")).toBeUndefined();
-    expect(serialiseDeckSort("name")).toBe("name");
+    expect(serializeDeckSort("lastPlayed")).toBeUndefined();
+    expect(serializeDeckSort("name")).toBe("name");
   });
 
   it("labels every order in the register the trigger prints", () => {
@@ -998,7 +998,7 @@ export function parseDeckSort(raw: string | undefined): DeckSort {
 }
 
 /** The default serialises as an absence, so the clean URL is the clean state. */
-export function serialiseDeckSort(sort: DeckSort): string | undefined {
+export function serializeDeckSort(sort: DeckSort): string | undefined {
   return sort === DEFAULT_DECK_SORT ? undefined : sort;
 }
 ```
@@ -1774,7 +1774,7 @@ disagree about lives in the component; everything they must agree about lives he
 
 **Interfaces:**
 - Consumes: `StatusPill` (`src/lib/decks/status.ts:33`), `DeckSort` / `parseDeckSort` /
-  `serialiseDeckSort` (Task 6), `DeckListItem` (`src/lib/decks/read.ts`).
+  `serializeDeckSort` (Task 6), `DeckListItem` (`src/lib/decks/read.ts`).
 - Produces:
   - `export const STATUS_ORDER: readonly StatusPill[]`
   - `export const COLOUR_ORDER: readonly ColourCode[]` where
@@ -1978,7 +1978,7 @@ Expected: FAIL — `Failed to resolve import "./filter"`.
 // sheet than in the column is not possible by construction.
 
 import type { StatusPill } from "./status";
-import { DEFAULT_DECK_SORT, parseDeckSort, serialiseDeckSort, type DeckSort } from "./sort";
+import { DEFAULT_DECK_SORT, parseDeckSort, serializeDeckSort, type DeckSort } from "./sort";
 
 export type ColourCode = "W" | "U" | "B" | "R" | "G";
 export type PlayedWindow = "thisMonth" | "never";
@@ -2071,7 +2071,7 @@ export function filtersToParams(f: DeckFilters, sort: DeckSort): URLSearchParams
   if (f.played) params.set("played", f.played);
   const search = f.search.trim();
   if (search) params.set("q", search);
-  const serialised = serialiseDeckSort(sort);
+  const serialised = serializeDeckSort(sort);
   if (serialised) params.set("sort", serialised);
   return params;
 }

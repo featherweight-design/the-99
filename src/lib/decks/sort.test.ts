@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DECK_SORT_LABELS, DEFAULT_DECK_SORT, parseDeckSort, serialiseDeckSort } from "./sort";
+import { DECK_SORT_LABELS, DEFAULT_DECK_SORT, parseDeckSort, serializeDeckSort } from "./sort";
 
 describe("deck sort", () => {
   it("defaults to last played", () => {
@@ -20,9 +20,9 @@ describe("deck sort", () => {
   });
 
   it("serialises the default as an absence, so the clean URL is the clean state", () => {
-    expect(serialiseDeckSort("lastPlayed")).toBeUndefined();
-    expect(serialiseDeckSort("name")).toBe("name");
-    expect(serialiseDeckSort("newest")).toBe("newest");
+    expect(serializeDeckSort("lastPlayed")).toBeUndefined();
+    expect(serializeDeckSort("name")).toBe("name");
+    expect(serializeDeckSort("newest")).toBe("newest");
   });
 
   it("labels every order in the register the trigger prints", () => {
