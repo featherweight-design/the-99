@@ -18,10 +18,13 @@ const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
     *more* prominent under a preference that asks for less. */
 const REDUCED_ART_OPACITY = 0.3;
 
-const reducible = (opacity: number): CSSProperties =>
+/** `art: false` is the identity gradient, which is ground rather than
+    photography — it hides no text, and it is the only identity signal a
+    commander with no crop has, so it keeps its opacity under the preference. */
+const reducible = (opacity: number, art: boolean): CSSProperties =>
   ({
     opacity,
-    "--art-wash-reduced-opacity": Math.min(opacity, REDUCED_ART_OPACITY),
+    "--art-wash-reduced-opacity": art ? Math.min(opacity, REDUCED_ART_OPACITY) : opacity,
   }) as CSSProperties;
 
 /** Keyed to the band, not to the row: `band` is the only input, so both the mask
@@ -75,7 +78,7 @@ export function ArtWash(props: ArtWashProps) {
         <div
           className="art-wash-art absolute inset-0"
           style={{
-            ...reducible(artCropUri ? p.ambientOpacity : 1),
+            ...reducible(artCropUri ? p.ambientOpacity : 1, Boolean(artCropUri)),
             background: artCropUri ? undefined : commanderGradient(colorIdentity),
             backgroundImage: artCropUri ? cssUrl(artCropUri) : undefined,
             backgroundSize: "cover",
@@ -87,7 +90,7 @@ export function ArtWash(props: ArtWashProps) {
           <div
             className="art-wash-art absolute inset-y-0 left-0"
             style={{
-              ...reducible(p.sharpOpacity),
+              ...reducible(p.sharpOpacity, true),
               width: `${p.width}px`,
               backgroundImage: cssUrl(artCropUri),
               backgroundSize: "auto 100%",
@@ -117,7 +120,7 @@ export function ArtWash(props: ArtWashProps) {
       <div
         className="art-wash-art absolute inset-0"
         style={{
-          ...reducible(artCropUri ? COVER_ART_OPACITY : 1),
+          ...reducible(artCropUri ? COVER_ART_OPACITY : 1, Boolean(artCropUri)),
           background: artCropUri ? undefined : commanderGradient(colorIdentity),
           backgroundImage: artCropUri ? cssUrl(artCropUri) : undefined,
           backgroundSize: "cover",

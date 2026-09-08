@@ -47,6 +47,17 @@ authoritative and the code now matches it.
    px-keyed fade the strategy exists for. The override is now scoped to
    `.art-wash-scrim-cover`; a portrait row carries the preference through its art layers alone.
 
+## Found in Copilot review round 1 — fixed
+
+7. `src/app/globals.css` — the reduced-transparency cover scrim collapsed to three stops. READINESS
+   eng clarification 7 restates three alphas, but the base gradient has four; the design table
+   (`design-tables/art-wash.md:741-746`) keeps the `0 / 40 / 74 / 100%` positions and retains stop
+   four at `.86`. Now `95 / 60 / 85 / 86` across the original four positions.
+8. `src/components/ui/art-wash.tsx` — `--art-wash-reduced-opacity` was a ceiling on *every* layer,
+   including the no-crop identity gradient at `1`, so a reduced-transparency reader saw that
+   gradient at `0.3` — the preference muting the one identity signal the row has. `reducible` now
+   takes whether the layer is art; a gradient publishes its own opacity.
+
 ## Deliberate deviations from the handoff — for Design to ratify
 
 Not defects; recorded so they are reviewed rather than discovered.
@@ -62,7 +73,8 @@ Not defects; recorded so they are reviewed rather than discovered.
 - **The no-art identity gradient renders at full opacity**, not at the art layer's. README says
   "the existing colour-identity gradient at the same opacity"; the plan shipped `1`, on the
   reading that a gradient is ground rather than photography and at `0.14` would leave a
-  `left-portrait` row with no identity signal at all. Same layer, same scrim, no layout shift.
+  `left-portrait` row with no identity signal at all. Same layer, same scrim, no layout shift, and
+  it holds under `prefers-reduced-transparency` too (gap 8).
 
 ## Out of scope — canvas chrome this amendment does not touch
 
@@ -79,4 +91,4 @@ all four surfaces; the modal-DFC front face is asserted in the transform's tests
 fallback renders the identity gradient with the band's layer count and root class unchanged, so
 there is no layout shift.
 
-VERDICT: 6 gaps found, 6 fixed, 0 remaining.
+VERDICT: 8 gaps found, 8 fixed, 0 remaining.

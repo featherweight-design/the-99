@@ -744,6 +744,7 @@ Handoff rule (README "Notes for engineering") conflates two mechanisms; READINES
 | L3 vertical scrim stop 3 alpha | `0.85` (was `0.52`) | same |
 | L3 stop 4 | not restated by the handoff — retain `rgba(14,12,9,0.86) 100%` | same |
 | Stop positions | unchanged (`0% / 40% / 74% / 100%`) | same |
+| No-crop identity gradient | unchanged — ground, not photography; see gap report | same |
 | Layout / band height | unchanged, no shift | same |
 
 ### `@media (forced-colors: active)`

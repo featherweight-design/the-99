@@ -563,7 +563,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 
    The art takes a *ceiling* the component publishes per layer, not a flat 0.3 —
    a `left-portrait` row's ambient copy already sits below that, and raising it
-   would answer this preference by showing more art.
+   would answer this preference by showing more art. A commander with no crop
+   publishes 1: its layer draws the identity gradient, which is ground rather
+   than photography and is the only identity signal that row has.
 
    Only the `cover` scrim is re-weighted. A `left-portrait` scrim runs at 90deg
    on stops keyed to the portrait's pixel width, so replacing it with the
@@ -578,7 +580,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
       180deg,
       color-mix(in oklab, var(--bg) 95%, transparent) 0%,
       color-mix(in oklab, var(--bg) 60%, transparent) 40%,
-      color-mix(in oklab, var(--bg) 85%, transparent) 100%
+      color-mix(in oklab, var(--bg) 85%, transparent) 74%,
+      color-mix(in oklab, var(--bg) 86%, transparent) 100%
     ) !important;
   }
 }

@@ -151,4 +151,17 @@ describe("ArtWash — left portrait", () => {
     const reduced = layers.map((l) => l.style.getPropertyValue("--art-wash-reduced-opacity"));
     expect(reduced).toEqual(["0.14", "0.3"]);
   });
+
+  // The identity gradient is ground, not photography. Dimming it would answer a
+  // request for less transparency by muting the only identity signal that row has.
+  it("leaves the no-crop identity gradient at full opacity under the preference", () => {
+    for (const el of [
+      <ArtWash key="c" strategy="cover" artCropUri={null} colorIdentity={["G"]} />,
+      <ArtWash key="p" strategy="left-portrait" band={72} artCropUri={null} colorIdentity={["G"]} />,
+    ]) {
+      const { container } = render(el);
+      const layer = container.querySelector<HTMLElement>(".art-wash-art");
+      expect(layer?.style.getPropertyValue("--art-wash-reduced-opacity")).toBe("1");
+    }
+  });
 });
