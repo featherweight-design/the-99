@@ -914,8 +914,11 @@ git commit -m "refactor(ui): fill the primary with bone so accent can mean in us
 - Consumes: `deckGames` from `src/db/schema.ts`.
 - Produces:
   - `DeckListItem` gains `lastPlayedAt: Date | null`.
-  - `listDecksWithStats(userId: string, sort?: DeckSort): Promise<DeckListItem[]>`.
-  - `src/lib/decks/sort.ts`: `export type DeckSort = "lastPlayed" | "name" | "newest"`, `export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed"`, `export const DECK_SORT_LABELS: Record<DeckSort, string>`, `export function parseDeckSort(raw: string | undefined): DeckSort`, `export function serialiseDeckSort(sort: DeckSort): string | undefined`.
+  - `listDecksWithStats(userId: string, sort: DeckSort): Promise<DeckListItem[]>` — `sort` is
+    **required**. A default would silently re-order every existing caller, and the caller is
+    always the one that knows which order its page asked for. The two callers that predate the
+    refresh (`/decks` and `/decks/[id]`) pass `"name"`, the order they have always shown.
+  - `src/lib/decks/sort.ts`: `export type DeckSort = "lastPlayed" | "name" | "newest"`, `export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed"`, `export const DECK_SORT_LABELS: Record<DeckSort, string>`, `export function parseDeckSort(raw: string | null | undefined): DeckSort`, `export function serializeDeckSort(sort: DeckSort): string | undefined`.
 
 This closes **finding 5** and implements **locked ruling 7**. The query itself gets no unit test — the repo's untested-query pattern (documented in `src/lib/home/summary.ts`) is that shape-shifting SQL is proved by the type checker and the browser, and pure logic is proved by Vitest. `parseDeckSort` is the pure logic.
 
@@ -927,7 +930,7 @@ import {
   DECK_SORT_LABELS,
   DEFAULT_DECK_SORT,
   parseDeckSort,
-  serialiseDeckSort,
+  serializeDeckSort,
 } from "./sort";
 
 describe("deck sort", () => {
@@ -948,8 +951,8 @@ describe("deck sort", () => {
   });
 
   it("serialises the default as an absence, so the clean URL is the clean state", () => {
-    expect(serialiseDeckSort("lastPlayed")).toBeUndefined();
-    expect(serialiseDeckSort("name")).toBe("name");
+    expect(serializeDeckSort("lastPlayed")).toBeUndefined();
+    expect(serializeDeckSort("name")).toBe("name");
   });
 
   it("labels every order in the register the trigger prints", () => {
@@ -991,14 +994,14 @@ export const DECK_SORT_LABELS: Record<DeckSort, string> = {
  * `"__proto__"` or `"toString"` reaches the Object prototype and would otherwise
  * be accepted as a sort key.
  */
-export function parseDeckSort(raw: string | undefined): DeckSort {
-  return raw !== undefined && Object.hasOwn(DECK_SORT_LABELS, raw)
+export function parseDeckSort(raw: string | null | undefined): DeckSort {
+  return raw != null && Object.hasOwn(DECK_SORT_LABELS, raw)
     ? (raw as DeckSort)
     : DEFAULT_DECK_SORT;
 }
 
 /** The default serialises as an absence, so the clean URL is the clean state. */
-export function serialiseDeckSort(sort: DeckSort): string | undefined {
+export function serializeDeckSort(sort: DeckSort): string | undefined {
   return sort === DEFAULT_DECK_SORT ? undefined : sort;
 }
 ```
@@ -1024,24 +1027,23 @@ In `src/lib/decks/read.ts`, add the field to `DeckListItem`:
 Add the aggregate as a scalar subquery, for the same reason the file already gives for `unresolvedCount` — joining a second child table and grouping would multiply rows against `deck_cards` and inflate `built`:
 
 ```ts
-  const lastPlayedSql = sql<Date | null>`(
+  const lastPlayedSql = sql<Date | string | null>`(
     select max(dg.played_at)
     from ${deckGames} dg
     where dg.deck_id = ${decks.id}
   )`;
 ```
 
-Select it as `lastPlayedAt: lastPlayedSql`, and carry it through the `rows.map` result object.
+Select it as `lastPlayedAt: lastPlayedSql`, then normalise it in the `rows.map` — never carry it through raw. `played_at` is a `timestamp` WITHOUT time zone holding a UTC instant, and raw SQL carries none of the column mapping that would hand back a `Date`, so the string form goes through `toUtcInstant` (`src/lib/decks/price.ts`) before `new Date`. A bare `new Date("2026-09-05 20:00:00")` is read in the runtime's own zone, which dates the row differently in Denver than in CI — and `2 days ago` is exactly the kind of figure that shifts.
 
 - [ ] **Step 6: Add the sort parameter**
 
-Give `listDecksWithStats` a second parameter and replace the fixed `orderBy`:
+Give `listDecksWithStats` a required second parameter, replace the fixed `orderBy`, and update
+the two existing callers (`src/app/decks/page.tsx`, `src/app/decks/[id]/page.tsx`) to pass
+`"name"` — the order both have always shown:
 
 ```ts
-export async function listDecksWithStats(
-  userId: string,
-  sort: DeckSort = DEFAULT_DECK_SORT,
-): Promise<DeckListItem[]> {
+export async function listDecksWithStats(userId: string, sort: DeckSort): Promise<DeckListItem[]> {
 ```
 
 ```ts
@@ -1160,8 +1162,8 @@ Expected: FAIL — `Failed to resolve import "./shopping"`.
 // and not into the total — `pricedCopies` is what makes that visible.
 
 import { and, eq, notExists, sql } from "drizzle-orm";
-import { db } from "../../db/client";
-import { collectionItems, deckCards, decks } from "../../db/schema";
+import { db } from "../../db";
+import { cards, collectionItems, deckCards, decks } from "../../db/schema";
 import { summarisePrices, type PricedCard } from "./price";
 import { loadPrices } from "./price-query";
 
@@ -1172,7 +1174,12 @@ export type ShoppingRollup = {
   total: DeckShopping;
 };
 
-const EMPTY: DeckShopping = { copies: 0, cents: 0, pricedCopies: 0 };
+/**
+ * A fresh object each time. A shared constant would hand every caller with an
+ * empty roll-up the same reference, and one caller mutating its `total` would
+ * silently change what the next one reads.
+ */
+const empty = (): DeckShopping => ({ copies: 0, cents: 0, pricedCopies: 0 });
 
 export function sumShopping(values: Iterable<DeckShopping>): DeckShopping {
   let copies = 0;
@@ -1198,9 +1205,15 @@ export async function loadShoppingRollup(userId: string): Promise<ShoppingRollup
     })
     .from(deckCards)
     .innerJoin(decks, eq(decks.id, deckCards.deckId))
+    .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
     .where(
       and(
         eq(decks.userId, userId),
+        // The SQL twin of `isBasicLand`'s `/\bBasic\b/`; `\m` and `\M` are
+        // Postgres's word-boundary escapes. Same predicate as
+        // `availability-query.ts`, so the two models exclude the same cards.
+        // `deck_cards.oracle_id` is a foreign key, so the join drops nothing.
+        sql`${cards.typeLine} !~ '\\mBasic\\M'`,
         notExists(
           db
             .select({ one: sql`1` })
@@ -1215,20 +1228,20 @@ export async function loadShoppingRollup(userId: string): Promise<ShoppingRollup
       ),
     );
 
-  if (rows.length === 0) return { byDeck: new Map(), total: EMPTY };
+  if (rows.length === 0) return { byDeck: new Map(), total: empty() };
 
-  const { facts, newestAsOf } = await loadPrices([...new Set(rows.map((r) => r.oracleId))]);
+  const { prices, newestAsOf } = await loadPrices([...new Set(rows.map((r) => r.oracleId))]);
 
   const perDeck = new Map<string, PricedCard[]>();
   for (const row of rows) {
     const list = perDeck.get(row.deckId) ?? [];
-    list.push({ quantity: row.quantity, price: facts.get(row.oracleId) ?? null });
+    list.push({ quantity: row.quantity, price: prices.get(row.oracleId) ?? null });
     perDeck.set(row.deckId, list);
   }
 
   const byDeck = new Map<string, DeckShopping>();
-  for (const [deckId, cards] of perDeck) {
-    const summary = summarisePrices(cards, newestAsOf);
+  for (const [deckId, pricedCards] of perDeck) {
+    const summary = summarisePrices(pricedCards, newestAsOf);
     byDeck.set(deckId, {
       copies: summary.totalCopies,
       cents: summary.totalCents,
@@ -1251,7 +1264,9 @@ Expected: PASS.
 
 - [ ] **Step 6: Prove the query in a browser, not in a test**
 
-`pnpm dev` against the local fixture account, and add a temporary log of `loadShoppingRollup(userId)` on the decks page. Check three things: a deck whose cards are all owned is absent from `byDeck` (not present with zero); `total.copies` equals the sum of the tiles' `toBuyCount`; and a deck holding a card with no price row still counts that card in `copies` while leaving `cents` alone. Remove the log.
+`pnpm dev` against the local fixture account, and add a temporary log of `loadShoppingRollup(userId)` on the decks page. Check three things: a deck whose cards are all owned is absent from `byDeck` (not present with zero); `total.copies` never exceeds the sum of the tiles' `toBuyCount` — it may
+fall short, because the roll-up excludes basics and `toBuyCount` does not, so an unowned Forest is
+the whole of any gap; and a deck holding a card with no price row still counts that card in `copies` while leaving `cents` alone. Remove the log.
 
 - [ ] **Step 7: Commit**
 
@@ -1300,7 +1315,7 @@ describe("commitmentFigures", () => {
     expect(commitmentFigures([card({ owned: 3, hard: 0, soft: 3, free: 3 })]).inUse).toBe(0);
   });
 
-  it("counts a card as spoken for twice when finished decks want more than exist", () => {
+  it("counts every card whose finished decks want more copies than exist", () => {
     expect(
       commitmentFigures([
         card({ owned: 1, hard: 2, free: -1 }),
@@ -1351,7 +1366,9 @@ export function commitmentFigures(availability: Iterable<Availability>): Commitm
   let inUse = 0;
   let overCommitted = 0;
   for (const a of availability) {
-    inUse += a.hard;
+    // Capped at what the player actually holds: `hard` is what finished decks
+    // asked for, and `inUseValue` prints it as `n of <total owned copies>`.
+    inUse += Math.min(a.hard, a.owned);
     if (availabilityState(a) === "over") overCommitted += 1;
   }
   return { inUse, overCommitted };
@@ -1705,11 +1722,17 @@ function detailFor(deck: DeckListItem, shopping: DeckShopping | undefined): stri
       return c.detailOver(deck.built - MATURE_DECK_SIZE);
     case "Unresolved":
       return c.detailUnresolved(deck.unresolvedCount);
-    case "To buy":
+    case "To buy": {
+      // The count comes from the roll-up, NOT from `deck.toBuyCount`. The
+      // roll-up excludes basics, as every Shopping surface does; `toBuyCount`
+      // is `built − ownedCount` and does not. Pairing them would print a cost
+      // that covers fewer copies than the number beside it.
+      const copies = shopping?.copies ?? deck.toBuyCount;
       // No price row is not "free" — the copies still print, the cost does not.
       return shopping && shopping.cents > 0
-        ? c.detailToBuy(deck.toBuyCount, formatCents(shopping.cents))
-        : c.detailUnowned(deck.toBuyCount);
+        ? c.detailToBuy(copies, formatCents(shopping.cents))
+        : c.detailUnowned(copies);
+    }
     case "Complete":
       return c.detailComplete;
   }
@@ -1774,7 +1797,7 @@ disagree about lives in the component; everything they must agree about lives he
 
 **Interfaces:**
 - Consumes: `StatusPill` (`src/lib/decks/status.ts:33`), `DeckSort` / `parseDeckSort` /
-  `serialiseDeckSort` (Task 6), `DeckListItem` (`src/lib/decks/read.ts`).
+  `serializeDeckSort` (Task 6), `DeckListItem` (`src/lib/decks/read.ts`).
 - Produces:
   - `export const STATUS_ORDER: readonly StatusPill[]`
   - `export const COLOUR_ORDER: readonly ColourCode[]` where
@@ -1978,7 +2001,7 @@ Expected: FAIL — `Failed to resolve import "./filter"`.
 // sheet than in the column is not possible by construction.
 
 import type { StatusPill } from "./status";
-import { DEFAULT_DECK_SORT, parseDeckSort, serialiseDeckSort, type DeckSort } from "./sort";
+import { parseDeckSort, serializeDeckSort, type DeckSort } from "./sort";
 
 export type ColourCode = "W" | "U" | "B" | "R" | "G";
 export type PlayedWindow = "thisMonth" | "never";
@@ -2071,7 +2094,7 @@ export function filtersToParams(f: DeckFilters, sort: DeckSort): URLSearchParams
   if (f.played) params.set("played", f.played);
   const search = f.search.trim();
   if (search) params.set("q", search);
-  const serialised = serialiseDeckSort(sort);
+  const serialised = serializeDeckSort(sort);
   if (serialised) params.set("sort", serialised);
   return params;
 }
@@ -2099,7 +2122,7 @@ export function filtersFromParams(params: URLSearchParams): {
       played: PLAYED_WINDOWS.find((w) => w === played) ?? null,
       search: params.get("q")?.trim() ?? "",
     },
-    sort: parseDeckSort(params.get("sort")) ?? DEFAULT_DECK_SORT,
+    sort: parseDeckSort(params.get("sort")),
   };
 }
 ```
@@ -2654,7 +2677,7 @@ auth today and must keep doing so. Then:
 ```tsx
 const userId = await requireUserId();
 const [decks, shopping, ranked, stats] = await Promise.all([
-  listDecksWithStats(userId),
+  listDecksWithStats(userId, DEFAULT_DECK_SORT),
   loadShoppingRollup(userId),
   getRankedList(userId),
   getCollectionStats(userId),
@@ -2670,8 +2693,9 @@ return (
 );
 ```
 
-`listDecksWithStats` is called with no sort argument — the server's order is
-`DEFAULT_DECK_SORT`, and the client re-sorts from there.
+`listDecksWithStats` takes its sort explicitly — the parameter has no default, so no caller's
+order can move under it. The server hands back `DEFAULT_DECK_SORT`'s order and the client re-sorts
+from there.
 
 `getRankedList` (`src/lib/recs/ranked-list.ts:26`) returns `{ items, degraded, uniqueCardsRead,
 candidateCount }`; `readySlice` takes the `items`. `getCollectionStats`
@@ -2817,7 +2841,9 @@ if (stats.uniqueCards === 0) return <FirstRunChecklist />;
 const [lastUpdated, ranked, decks, shopping] = await Promise.all([
   getCollectionLastUpdated(userId),
   getRankedList(userId),
-  listDecksWithStats(userId),
+  // Explicit, because the parameter has no default. Home's rail is a resume
+  // rail, so last played is the order it wants on its own merits.
+  listDecksWithStats(userId, DEFAULT_DECK_SORT),
   loadShoppingRollup(userId),
 ]);
 
@@ -3216,9 +3242,13 @@ markup and the ordering is tested as a function.
   with ellipsis; under it a `gap-[8px]` row holding `StatusPillBadge` (19px tall, `px-[7px]`, 5px
   radius, the status's tint at 16% behind its own colour) and the figure line in mono 10.5px
   `--fg-faint`.
-- The figure line is `built / 99`, then `refreshCopy.decks.detailUnowned(toBuyCount)` joined by
-  ` · ` **only when `toBuyCount > 0`**. `99 / 99 · 3 unowned` and `87 / 99` are the two frames, and
-  they are the same rule.
+- The figure line is `built / 99`, then `refreshCopy.decks.detailUnowned(copies)` joined by ` · `
+  **only when `copies > 0`**. `99 / 99 · 3 unowned` and `87 / 99` are the two frames, and they are
+  the same rule.
+- `copies` is the deck's `ShoppingRollup.byDeck` entry, `?? deck.toBuyCount` when absent — the
+  same source the deck tile reads, and for the same reason: the roll-up excludes basics and
+  `toBuyCount` does not. Home already loads the roll-up for Commitments, so pass it down rather
+  than letting two figures on one screen count different cards.
 
 **The row draws the deck name, not the commander name.** The frame prints
 `Atraxa, Praetors' Voice` in both rows because the fixture names each deck after its commander,
@@ -3392,7 +3422,8 @@ Task 13's `/decks` zero; a Home with a collection and no decks shows the heroes 
     10.5px in the status colour, then `built / 99` in mono 12px `--fg` on the right, `flex-none`.
     56px is the touch target and the reason phone earns the art.
 - The phone `status · figure` clause takes its figure from the status, using strings that already
-  exist: `To buy` → `detailUnowned(toBuyCount)`, `Unresolved` → `detailUnresolved(unresolvedCount)`,
+  exist: `To buy` → `detailUnowned(copies)` (the roll-up's, per Task 9's helper — never
+  `toBuyCount`, which counts basics), `Unresolved` → `detailUnresolved(unresolvedCount)`,
   `Over` → `detailOver(built - 99)`, `Draft` / `Building` / `Complete` → no clause. Reuse Task 9's
   detail-line helper rather than writing a second `switch`; if Task 9 left it inline in the tile,
   lift it to `src/lib/decks/status.ts` in this task and have both call it.
