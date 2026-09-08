@@ -10,12 +10,13 @@ import {
   receiptCountsByCommander,
   type ReceiptCounts,
 } from "../../lib/commanders/in-use";
+import { permanentRedirect } from "next/navigation";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
-import { DiscoveryView } from "../../components/commanders/discovery-view";
-import { loadDiscovery } from "../../lib/discovery/list";
-import { parseScope, parseSort } from "../../lib/discovery/params";
 import { PageHeader } from "../../components/commanders/page-header";
+import { scopeRedirectTarget } from "./scope-redirect";
+import { parseLaneParams } from "../../lib/commanders/lane-params";
+import { searchParamsToQuery } from "../../lib/commanders/search-params";
 import { retryRecs } from "./actions";
 import { RetryGhost } from "../../components/commanders/retry-submit";
 import { GhostButton, PrimaryButton } from "../../components/ui/button";
@@ -31,12 +32,21 @@ export default async function CommandersPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const userId = await requireUserId();
-  // `What's free` is the default: a ranking that ignores which cards are already
-  // committed to a deck recommends commanders the player cannot build without
-  // taking one apart. `?avail=all` is the opt-out, so a shared link that predates
-  // this still opens on the mode it names.
   const sp = await searchParams;
-  const avail = sp.avail === "all" ? ("all" as const) : ("free" as const);
+  // Before any read: the `?scope=` toggle became two routes, and a bookmark that
+  // still names the other lane must land there rather than be answered here with
+  // the wrong list.
+  // It cannot loop: a target is only returned while `scope` is present, and the
+  // target never carries it — one 308 and the parameter is gone for good.
+  const target = scopeRedirectTarget(searchParamsToQuery(sp));
+  if (target) permanentRedirect(target);
+  // `All my cards` is the default the lane opens on, which reverses the shipped
+  // build's `What's free`. The rack is why: `Free cards only` now counts as an
+  // active control, so defaulting to it would badge the `Filters` trigger and
+  // draw a chip on arrival, for a choice the reader never made. The parse is
+  // `lane-params`' own, so the short key, the legacy `avail` and the lane rule
+  // are read here exactly as the client reads them.
+  const avail = parseLaneParams(searchParamsToQuery(sp), "owned").avail;
   const stats = await getCollectionStats(userId);
 
   if (stats.uniqueCards === 0) {
@@ -65,25 +75,6 @@ export default async function CommandersPage({
     );
   }
 
-  if (parseScope(sp.scope) === "play") {
-    // Discovery does NOT call getRankedList, rankFree or receiptCountsByCommander:
-    // all three are shaped for the owned scope's few hundred rows, and two of them
-    // walk the collection once per commander. `loadDiscovery` answers the same
-    // questions from the offline index in one pass over ~3,300 candidates.
-    // The requested sort, not necessarily the one that comes back: `loadDiscovery`
-    // reads the played tags either way, and downgrades `new` to `fit` when there
-    // is no deck to measure distance from.
-    const discovery = await loadDiscovery(userId, {
-      sort: parseSort(sp.sort),
-      avail,
-    });
-    return (
-      <section className="flex flex-col min-h-screen">
-        <DiscoveryView discovery={discovery} avail={avail} />
-      </section>
-    );
-  }
-
   // Fetch recommendations and recent decks in parallel.
   // decks is used only for the firstRun flag (no confirmed deck yet).
   const [list, decks] = await Promise.all([
@@ -98,7 +89,7 @@ export default async function CommandersPage({
     return (
       <section>
         {/* Page header (mobile + desktop) */}
-        <PageHeader uniqueCardsRead={uniqueCardsRead} />
+        <PageHeader lane="owned" />
 
         {/* Empty-no-candidates state (§Empty State — No Candidates) */}
         {/* Container: padding 24px 30px mobile / 60px 40px desktop; min-height 520px desktop */}

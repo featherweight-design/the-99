@@ -8,7 +8,7 @@ describe("planeCopy", () => {
   it("locale-formats every count, everywhere", () => {
     const counts: ((...a: never[]) => string)[] = [
       planeCopy.search.heldAside, planeCopy.search.noneBody, planeCopy.search.noneEmphasis,
-      planeCopy.excluded.heldPool, planeCopy.exclusion.unmeasuredAlone, planeCopy.overflow.more,
+      planeCopy.exclusion.unmeasuredAlone, planeCopy.overflow.more,
     ];
     for (const fn of counts) {
       const out = (fn as (...a: number[]) => string)(1234, 5678, 9012);
@@ -19,8 +19,6 @@ describe("planeCopy", () => {
     expect(planeCopy.join.announce("exactly", 1234, ["W"])).not.toMatch(/\d{4}/);
     expect(planeCopy.search.announce(1234, 5678)).not.toMatch(/\d{4}/);
     expect(planeCopy.search.asideMore(1234, "the colour filter")).not.toMatch(/\d{4}/);
-    expect(planeCopy.excluded.pool("Zur", 1234)).not.toMatch(/\d{4}/);
-    expect(planeCopy.excluded.poolAlso("Zur", 1234)).not.toMatch(/\d{4}/);
     expect(planeCopy.exclusion.colors(1234, ["W"])).not.toMatch(/\d{4}/);
     expect(planeCopy.exclusion.join(1234, ["W"])).not.toMatch(/\d{4}/);
     expect(planeCopy.overflow.moreAria(1234, "Zur")).not.toMatch(/\d{4}/);

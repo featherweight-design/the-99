@@ -3,17 +3,25 @@
 //
 // A separate FILE, not a separate component per sort: the README forbids
 // forking the row into `FitCard` / `NoveltyCard`, which would duplicate the
-// grid, the link, the chips and the receipt line. Everything below is one
+// grid, the link, the chips and the count stack. Everything below is one
 // component with one branching slot. What is split off from `rec-card.tsx` is
 // the SCOPE — the owned row prints a score, fit segments and a synergy state
 // that `DiscoveryItem` does not carry, so the two share their pieces
-// (`ReceiptLine`, `CommanderThumb`, `CommanderTile`, `RoleChips`) by import
-// rather than by an ever-widening prop union.
+// (`CommanderBleed`, `IdentityPips`, `RoleChips`) by import rather than by an
+// ever-widening prop union.
+//
+// The right column is counts, never a score: discovery does not blend, so there
+// is no 0–100 figure to print and no previous reading to delta against. What it
+// carries is the support count over the EDHREC total with a single-fill ratio
+// bar, the deck count, and the novelty count — three figures the app can
+// produce. Gone with the score: the availability receipt and the named
+// receipts, both of which are claims about a pool this lane does not score.
 
 import Link from "next/link";
 import { useState } from "react";
 import { formatCents } from "../../lib/decks/price";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { discoverCopy } from "../../lib/copy/lanes";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 // Type-only, and required rather than stylistic: `src/lib/discovery/list.ts`
 // reaches `src/db/index.ts`, whose module body throws when DATABASE_URL is
@@ -22,38 +30,17 @@ import { planeCopy } from "../../lib/copy/commanders-plane";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import type { PriceSlot } from "../../lib/discovery/price";
-import type { ReceiptCounts } from "../../lib/commanders/in-use";
-import { CommanderThumb, CommanderTile } from "./commander-art";
+import { CommanderBleed, IdentityPips } from "./commander-art";
 import { Emphasised, localised } from "./emphasis";
-import { ReceiptLine, type ReceiptClause } from "./receipt-line";
 import { RoleChips } from "./role-chips";
 import { commanderDetailHref } from "./list-nav";
 
 const { justify, ownership, price: priceCopy, untagged } = discoveryCopy;
 const overflowCopy = planeCopy.overflow;
 
-/** The ownership pip. Decorative in both places it is drawn — the clause on the
-    receipt line says the same fact in words, and the row's accessible name
-    leads with it. */
-function Pip({ owned }: { owned: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="block shrink-0"
-      style={{
-        width: 6,
-        height: 6,
-        transform: "rotate(45deg)",
-        ...(owned
-          ? { background: "var(--accent)" }
-          : { border: "1.5px solid var(--fg-locked)" }),
-      }}
-    />
-  );
-}
-
-/** The overlap track. Also the fit figure's full-width track — same element,
-    two widths, so the two bars in a row can never disagree about the fill. */
+/** The overlap track — the support count as a proportion of the EDHREC total.
+    A single fill, not the owned lane's three-segment ramp: this is two real
+    counts divided, and there is nothing here to split into contributions. */
 function OverlapTrack({ pct, width }: { pct: number; width: number | string }) {
   return (
     <span
@@ -252,21 +239,18 @@ export function DiscoveryRow({
   item,
   rank,
   sort,
-  avail,
-  counts,
 }: {
   item: DiscoveryItem;
   rank: number;
   sort: "fit" | "new";
-  avail: "all" | "free";
-  counts: ReceiptCounts | null;
 }) {
   // `edhrec_total` is the denominator, and a row with N and no M prints neither
-  // figure and falls back to the receipt line alone. Nothing is substituted for
+  // figure and falls back to the rest of the stack. Nothing is substituted for
   // it — not 99, not the pool size.
   const total = item.edhrecTotal;
   const hasFigure = total !== null && total > 0;
   const overlapPct = hasFigure ? Math.round((item.ownedSupport / total) * 100) : 0;
+  const [support, supportUnit] = discoverCopy.row.supportOwned(item.ownedSupport, total ?? 0);
 
   const fit = sort === "fit";
   // One state for both widths, so the phone and the desktop rendering of the
@@ -282,150 +266,147 @@ export function DiscoveryRow({
         justify.overlap(item.ownedSupport, total)
       : justify.distanceAria(item.unplayedCount, item.tagTotal);
 
-  const lead = (mobile: boolean): ReceiptClause => ({
-    text: item.owned
-      ? mobile
-        ? ownership.ownedShort
-        : ownership.owned
-      : mobile
-        ? ownership.unownedShort
-        : ownership.unowned,
-    color: item.owned ? "var(--avail-hard-fg)" : "var(--fg-faint)",
-    glyph: item.owned
-      ? { background: "var(--accent)" }
-      : { border: "1.5px solid var(--fg-locked)" },
-  });
-
   // Ownership leads, before any figure, and the figures follow in the order the
   // eye reads them. The visible prose is `aria-hidden` where it would repeat
   // this, so nothing is announced twice. Controls inside that prose are not:
   // see `TagSentence`.
-  const rowLabel = [
-    item.name,
-    item.owned ? ownership.ownedAria : ownership.unownedAria,
-    justifyAria,
-  ]
+  const rowLabel = [item.name, ownership.unownedAria, justifyAria]
     .filter(Boolean)
     .join(" · ");
 
   const showUntagged = fit && item.tagTotal === 0;
 
+  // The discover lane has no availability control, so every row here is scored
+  // and linked against the whole collection. A constant rather than a prop: a
+  // caller cannot pass anything else, and this is where that fact is stated.
+  const avail = "all" as const;
+  const href = commanderDetailHref(item.slug, avail);
+
+  /** The two counts that sit under the ratio bar at both widths. Shared so the
+      phone's folded line and the desktop stack cannot disagree about which
+      figures are present — an absent deck count prints no line rather than a
+      zero, because nobody has counted is not nobody has built. */
+  const counts = (fontSize: number) => (
+    <>
+      {item.deckCount !== null && (
+        <p
+          aria-hidden="true"
+          className="m-0 font-mono"
+          style={{ fontSize, lineHeight: 1.5, color: "var(--fg-body)" }}
+        >
+          <Emphasised
+            text={discoverCopy.row.popularity(item.deckCount)}
+            values={[localised(item.deckCount)]}
+            color="var(--fg)"
+          />
+        </p>
+      )}
+      <p
+        aria-hidden="true"
+        className="m-0 font-mono"
+        style={{ fontSize, lineHeight: 1.5, color: "var(--fg-body)" }}
+      >
+        <Emphasised
+          text={discoverCopy.row.novelty(item.unplayedCount)}
+          values={[localised(item.unplayedCount)]}
+          color="var(--fg)"
+        />
+      </p>
+    </>
+  );
+
   return (
-    <div className="relative group">
+    <div className="relative group transition-colors hover:bg-[color:var(--elevated-hover)]">
       {/* Stretched link keeps the whole row clickable. Brand focus-visible
           outline inherited from globals.css. */}
       <Link
-        href={commanderDetailHref(item.slug, avail)}
+        href={href}
         aria-label={`${rowLabel} — view commander details`}
-        className="absolute inset-0 z-[1] rounded-[11px] sm:rounded-[12px]"
+        className="absolute inset-0 z-[1]"
       />
 
-      {/* ── Mobile layout: stacked tile ── */}
-      <div
-        className="sm:hidden rounded-[11px] p-[12px_13px] flex flex-col gap-[9px] transition-colors group-hover:border-[color:var(--border-strong)] group-hover:bg-[color:var(--elevated-hover)]"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-      >
-        <div className="flex gap-[10px] items-start">
-          <CommanderThumb imageUri={item.imageUri} colorIdentity={item.colorIdentity} />
+      <CommanderBleed imageUri={item.imageUri} colorIdentity={item.colorIdentity} />
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-[6px]">
-              <span
-                className="font-display font-[800] shrink-0"
-                // minWidth, not width: 16px was measured against Cinzel, and a
-                // two-digit rank in a wider display face overflows a fixed box
-                // into the name beside it.
-                style={{
-                  fontSize: 17,
-                  color: "var(--fg-faint)",
-                  minWidth: 16,
-                  textAlign: "center",
-                  lineHeight: 1,
-                }}
-              >
-                {rank}
-              </span>
-              <Pip owned={item.owned} />
-              <span
-                className="font-display font-[600] truncate"
-                style={{ fontSize: 14.5, color: "var(--fg)" }}
-              >
-                {item.name}
-              </span>
-            </div>
+      {/* ── Mobile layout: two bands in 268px ── */}
+      <div
+        className="relative sm:hidden p-[12px_13px] flex flex-col gap-[9px]"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
+        {/* Band one: rank, name and pips, support pinned to the trailing edge —
+            the slot the owned lane gives its fit figure, because the support
+            count is what this lane's default rank is on. */}
+        <div className="flex gap-[10px] items-start">
+          <span
+            className="font-mono font-[600] shrink-0"
+            // minWidth, not width: a two-digit rank in a fixed box crowds the
+            // name beside it. The floor still aligns the single digits, which
+            // is what the fixed width was for.
+            style={{
+              fontSize: 17,
+              color: rank === 1 ? "var(--accent)" : "var(--fg-faint)",
+              minWidth: 16,
+              textAlign: "center",
+              lineHeight: 1.2,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {rank}
+          </span>
+
+          <div className="flex-1 min-w-0 flex items-center gap-[6px]">
+            <span
+              className="font-display font-[600] truncate"
+              style={{ fontSize: 14.5, color: "var(--fg)" }}
+            >
+              {item.name}
+            </span>
+            <IdentityPips colorIdentity={item.colorIdentity} />
           </div>
 
-          {/* The ranking figure, pinned top-right where the owned row pins its
-              score. No `/100`, no FIT stack: discovery does not blend. */}
           {hasFigure && (
-            <div aria-hidden="true" className="flex flex-col items-center shrink-0">
+            <div aria-hidden="true" className="flex flex-col items-end shrink-0">
               <span
                 className="font-mono font-[600]"
-                style={{ fontSize: 20, color: "var(--fg)", lineHeight: 1 }}
+                style={{
+                  fontSize: 20,
+                  color: "var(--fg)",
+                  lineHeight: 1,
+                  fontVariantNumeric: "tabular-nums",
+                }}
               >
-                {fit ? item.ownedSupport : item.unplayedCount}
+                {support}
               </span>
               <span
                 className="font-mono"
-                style={{
-                  fontSize: 9,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  color: "var(--fg-faint)",
-                }}
+                style={{ fontSize: 9, letterSpacing: "0.1em", color: "var(--fg-faint)" }}
               >
-                {fit ? justify.figureUnitFit(total) : justify.figureUnitNew(item.tagTotal)}
+                {supportUnit}
               </span>
             </div>
           )}
         </div>
 
-        {/* One track on the tile, not two: the header figure and the
-            justification are the same proportion, and drawing it twice at
-            390px would say it twice. Under novelty there is no bar at all — a
-            count of unplayed tags is not a proportion. */}
-        {fit && hasFigure && <OverlapTrack pct={overlapPct} width="100%" />}
+        {/* The ratio bar spans the fold between the two bands. */}
+        {hasFigure && <OverlapTrack pct={overlapPct} width="100%" />}
+
+        {/* Band two. The two counts share a line and neither is dropped: below
+            360 they drop a half point rather than one of them going. */}
+        <div className="flex flex-wrap gap-x-[12px] gap-y-[2px] text-[10px] min-[360px]:text-[10.5px]">
+          {counts(10.5)}
+        </div>
 
         <RoleChips roleCounts={item.roleCounts} />
 
-        {hasFigure &&
-          (fit ? (
-            <p
-              aria-hidden="true"
-              className="m-0 font-mono"
-              style={{ fontSize: 10.5, lineHeight: 1.55, color: "var(--fg-body)" }}
-            >
-              <Emphasised
-                text={justify.overlapShort(item.ownedSupport, total)}
-                values={[localised(item.ownedSupport), localised(total)]}
-                color="var(--fg)"
-              />
-            </p>
-          ) : (
-            tags && (
-              <p
-                className="m-0"
-                style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--fg-body)" }}
-              >
-                <TagSentence
-                  tags={tags}
-                  name={item.name}
-                  open={openTags}
-                  onToggle={() => setOpenTags((v) => !v)}
-                />
-              </p>
-            )
-          ))}
-
-        <ReceiptLine
-          fits={item.colorPoolSize}
-          counts={counts}
-          avail={avail}
-          fontSize={10.5}
-          gap={5}
-          lineHeight={1.55}
-          lead={lead(true)}
-        />
+        {tags && (
+          <p className="m-0" style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--fg-body)" }}>
+            <TagSentence
+              tags={tags}
+              name={item.name}
+              open={openTags}
+              onToggle={() => setOpenTags((v) => !v)}
+            />
+          </p>
+        )}
 
         {/* The floor explains presence, never position, so it is never added to
             the figure above it. */}
@@ -437,161 +418,172 @@ export function DiscoveryRow({
 
         {showUntagged && <UntaggedNote />}
 
+        <p
+          aria-hidden="true"
+          className="m-0 font-mono"
+          style={{ fontSize: 10.5, color: "var(--fg-faint)" }}
+        >
+          {discoverCopy.row.notOwned}
+        </p>
+
         <PriceSlot price={item.price} mobile />
       </div>
 
-      {/* ── Desktop layout: grid 40px 100px 1fr 236px ── */}
+      {/* ── Desktop layout: grid 24px 1fr 246px 32px ── */}
       <div
-        className="hidden sm:grid rounded-[12px] p-[24px_26px] transition-colors group-hover:border-[color:var(--border-strong)] group-hover:bg-[color:var(--elevated-hover)]"
+        className="relative hidden sm:grid p-[24px_26px]"
         style={{
-          gridTemplateColumns: "40px 100px 1fr 236px",
+          gridTemplateColumns: "24px 1fr 246px 32px",
           gap: 20,
           alignItems: "stretch",
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
+          borderBottom: "1px solid var(--border)",
         }}
       >
-        {/* Rank column. The ownership pip replaces the decorative diamond the
-            owned row draws here rather than sitting beside it. */}
+        {/* Rank column. Brass at rank 1, and the diamond below it. */}
         <div className="flex flex-col items-center justify-center gap-[7px]">
           <span
-            className="font-display font-[800]"
-            style={{ fontSize: 26, color: "var(--fg-faint)", lineHeight: 1 }}
+            className="font-mono font-[600]"
+            style={{
+              fontSize: 19,
+              color: rank === 1 ? "var(--accent)" : "var(--fg-faint)",
+              lineHeight: 1,
+              fontVariantNumeric: "tabular-nums",
+            }}
           >
             {rank}
           </span>
-          <Pip owned={item.owned} />
+          <span
+            aria-hidden="true"
+            className="block shrink-0"
+            style={{
+              width: 6,
+              height: 6,
+              transform: "rotate(45deg)",
+              background: rank === 1 ? "var(--accent)" : "var(--border-strong)",
+            }}
+          />
         </div>
-
-        <CommanderTile imageUri={item.imageUri} colorIdentity={item.colorIdentity} />
 
         {/* Evidence column */}
         <div className="flex flex-col gap-[13px]" style={{ minWidth: 0 }}>
-          <h3
-            className="font-display font-[600] m-0"
-            style={{ fontSize: 20, color: "var(--fg)", lineHeight: 1.1 }}
-          >
-            {item.name}
-          </h3>
+          <div className="flex items-center gap-[8px]" style={{ minWidth: 0 }}>
+            <h3
+              className="font-display font-[600] m-0 truncate"
+              style={{ fontSize: 17, color: "var(--fg)", lineHeight: 1.1 }}
+            >
+              {item.name}
+            </h3>
+            <IdentityPips colorIdentity={item.colorIdentity} />
+          </div>
 
           <RoleChips roleCounts={item.roleCounts} />
 
-          {/* The justification slot — one slot, contents chosen by the sort
-              key, on the same y and the same 13px leading as the owned row's
-              Synergy line. */}
-          {hasFigure &&
-            (fit ? (
-              <div aria-hidden="true" className="flex items-center gap-[10px]">
-                <span
-                  className="font-mono shrink-0"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    color: "var(--fg-faint)",
-                  }}
-                >
-                  {justify.overlapLabel}
-                </span>
-                <OverlapTrack pct={overlapPct} width={120} />
-                <span className="font-mono" style={{ fontSize: 12, color: "var(--fg-body)" }}>
-                  <Emphasised
-                    text={justify.overlap(item.ownedSupport, total)}
-                    values={[localised(item.ownedSupport), localised(total)]}
-                    color="var(--fg)"
-                  />
-                </span>
-              </div>
-            ) : (
-              tags && (
-                <div className="flex items-baseline gap-[10px]">
-                  <span
-                    aria-hidden="true"
-                    className="font-mono shrink-0"
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      color: "var(--fg-faint)",
-                    }}
-                  >
-                    {justify.distanceLabel}
-                  </span>
-                  <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--fg-body)" }}>
-                    <TagSentence
-                      tags={tags}
-                      name={item.name}
-                      open={openTags}
-                      onToggle={() => setOpenTags((v) => !v)}
-                    />
-                  </span>
-                </div>
-              )
-            ))}
+          {/* The justification slot. Under fit the stack beside it already
+              carries the whole argument, so nothing is restated here; under
+              novelty the archetype names are evidence the stack's count cannot
+              give, and they sit on the owned row's Synergy y. */}
+          {tags && (
+            <div className="flex items-baseline gap-[10px]">
+              <span
+                aria-hidden="true"
+                className="font-mono shrink-0"
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "var(--fg-faint)",
+                }}
+              >
+                {justify.distanceLabel}
+              </span>
+              <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--fg-body)" }}>
+                <TagSentence
+                  tags={tags}
+                  name={item.name}
+                  open={openTags}
+                  onToggle={() => setOpenTags((v) => !v)}
+                />
+              </span>
+            </div>
+          )}
 
-          <ReceiptLine
-            fits={item.colorPoolSize}
-            counts={counts}
-            avail={avail}
-            fontSize={12.5}
-            lead={lead(false)}
-          />
+          {!fit && item.supportPct !== null && (
+            <p
+              className="m-0 font-mono"
+              style={{ fontSize: 11.5, lineHeight: 1.5, color: "var(--fg-faint)" }}
+            >
+              <Emphasised
+                text={justify.floorNote(FLOOR_PCT, item.supportPct)}
+                // Both figures, in sentence order. `Emphasised` takes the first
+                // occurrence of each in turn, so naming only the row's own would
+                // mark the threshold instead whenever the two are equal — and a
+                // row sitting exactly on the floor is the commonest way to clear it.
+                values={[`${FLOOR_PCT}%`, `${item.supportPct}%`]}
+                color="var(--fg-body)"
+              />
+            </p>
+          )}
 
           {showUntagged && <UntaggedNote />}
+
+          {/* The column ends on ownership, which is what this lane is: no
+              availability receipt and no named receipts, both being claims
+              about a pool discover does not score. */}
+          <p
+            aria-hidden="true"
+            className="m-0 font-mono"
+            style={{ fontSize: 12.5, color: "var(--fg-faint)" }}
+          >
+            {discoverCopy.row.notOwned}
+          </p>
         </div>
 
-        {/* Fit column */}
+        {/* Count stack. No fit block, no delta, no split bar. */}
         <div
           className="flex flex-col justify-center gap-[10px]"
           style={{ borderLeft: "1px solid var(--border)", paddingLeft: 20 }}
         >
           {hasFigure && (
             <>
-              <div aria-hidden="true" className="flex items-baseline gap-[6px]">
+              <div aria-hidden="true" className="flex flex-col gap-[3px]">
                 <span
                   className="font-mono font-[600]"
-                  style={{ fontSize: 34, color: "var(--fg)", lineHeight: 1 }}
+                  style={{
+                    fontSize: 27,
+                    color: "var(--fg)",
+                    lineHeight: 1,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
                 >
-                  {fit ? item.ownedSupport : item.unplayedCount}
-                </span>
-                <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
-                  {fit ? justify.figureUnitFit(total) : justify.figureUnitNew(item.tagTotal)}
+                  {support}
                 </span>
                 <span
                   className="font-mono"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "0.16em",
-                    textTransform: "uppercase",
-                    color: "var(--accent)",
-                  }}
+                  style={{ fontSize: 11, letterSpacing: "0.1em", color: "var(--fg-faint)" }}
                 >
-                  {fit ? justify.figureLabelFit : justify.figureLabelNew}
+                  {supportUnit}
                 </span>
               </div>
 
-              {fit && <OverlapTrack pct={overlapPct} width="100%" />}
-
-              {!fit && item.supportPct !== null && (
-                <p
-                  className="m-0 font-mono"
-                  style={{ fontSize: 11.5, lineHeight: 1.5, color: "var(--fg-faint)" }}
-                >
-                  <Emphasised
-                    text={justify.floorNote(FLOOR_PCT, item.supportPct)}
-                    // Both figures, in sentence order. `Emphasised` takes the first
-                    // occurrence of each in turn, so naming only the row's own would
-                    // mark the threshold instead whenever the two are equal — and a
-                    // row sitting exactly on the floor is the commonest way to clear it.
-                    values={[`${FLOOR_PCT}%`, `${item.supportPct}%`]}
-                    color="var(--fg-body)"
-                  />
-                </p>
-              )}
+              <OverlapTrack pct={overlapPct} width="100%" />
             </>
           )}
 
+          {counts(10.5)}
+
           <PriceSlot price={item.price} mobile={false} />
+        </div>
+
+        {/* Trailing action. `z-[2]` above the stretched link, which it shares a
+            destination with: the pill names the action the whole row performs. */}
+        <div className="flex items-center justify-center">
+          <Link
+            href={href}
+            className="relative z-[2] flex h-[32px] items-center rounded-full border border-[color:var(--border-strong)] bg-[color-mix(in_oklab,var(--bg)_50%,transparent)] px-[12px] font-mono whitespace-nowrap text-[color:var(--fg-body)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            style={{ fontSize: 11 }}
+          >
+            {discoverCopy.row.action}
+          </Link>
         </div>
       </div>
     </div>

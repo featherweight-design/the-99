@@ -6,21 +6,16 @@ import { clearsFloor, floorPct } from "./novelty";
  * precedence table uses (§3). Only the causes the SERVER decided are here: the
  * colour pips and the join mode narrow rows the client already holds, so asking
  * the server about them would be a round trip for an answer in memory.
- *
- * `pool` is the floor's sub-case, not a fifth tier — the row fell below the
- * floor against the pool being scored and would have cleared it against the
- * whole collection, so the pool is the cause and the correction is the pool.
  */
-export type ExcludedCause = "scope" | "floor" | "pool" | "unmeasured";
+export type ExcludedCause = "scope" | "floor" | "unmeasured";
 
 export type ExcludedMatch = {
   oracleId: string;
   name: string;
   cause: ExcludedCause;
-  /** The row's own support percentage. Carried by both halves of the floor tier
-      that measured one — `floor` and its `pool` sub-case — though only the floor
-      sentence prints it: the pool sentence names the pool rather than the
-      distance. Null for `scope` and `unmeasured`, which have no figure to carry. */
+  /** The row's own support percentage, printed by the floor sentence as the
+      distance the row fell short by. Null for `scope` and `unmeasured`, which
+      have no figure to carry. */
   pct: number | null;
 };
 
@@ -55,14 +50,10 @@ export function classifyMatches(
       out.push({ ...base, cause: "unmeasured", pct: null });
       continue;
     }
+    // The floor reads `collectionSupport`: a row that fails here fails against
+    // everything the player owns, so the floor is the whole of this tier.
     if (clearsFloor(row)) continue;
-    // Tier 3's sub-case, selected by the one flag: the same predicate over the
-    // whole collection, so the two answers cannot drift apart.
-    const clearsAgainstCollection = clearsFloor({
-      ownedSupport: row.collectionSupport,
-      edhrecTotal: row.edhrecTotal,
-    });
-    out.push({ ...base, cause: clearsAgainstCollection ? "pool" : "floor", pct });
+    out.push({ ...base, cause: "floor", pct });
   }
   return out;
 }

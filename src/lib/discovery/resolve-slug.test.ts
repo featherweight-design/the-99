@@ -18,7 +18,7 @@ const { resolveCommanderSlug } = await import("./resolve-slug");
 beforeEach(() => {
   findScoredCommander.mockReset().mockResolvedValue(null);
   getRankedList.mockReset().mockResolvedValue({ items: [] });
-  loadDiscoveryPool.mockReset().mockResolvedValue({ collection: [], scored: [] });
+  loadDiscoveryPool.mockReset().mockResolvedValue({ collection: [] });
   loadCandidateSlugRows.mockReset().mockResolvedValue([]);
 });
 
@@ -46,13 +46,20 @@ describe("resolveCommanderSlug", () => {
       .toEqual({ oracleId: "low", rank: 2, anyDegraded: false });
   });
 
-  it("ranks against the free pool, so the rank matches the row it was reached from", async () => {
-    // The detail route carries no `avail`, and `/commanders` defaults to free.
-    loadDiscoveryPool.mockResolvedValue({ collection: [], scored: [{ oracleId: "owned-free" }] });
+  it("ranks against the whole collection, so the rank matches the row it was reached from", async () => {
+    // Was pinned against the free pool, which the discover lane no longer has:
+    // it scores everything owned, and a resolver scoring anything narrower
+    // renumbers the list it is resolving into.
+    loadDiscoveryPool.mockResolvedValue({
+      collection: [{ oracleId: "owned-committed" }, { oracleId: "owned-free" }],
+    });
     loadCandidateSlugRows.mockResolvedValue([{ oracleId: "x", name: "X", ownedSupport: 1 }]);
     await resolveCommanderSlug("user", "x");
-    expect(loadDiscoveryPool).toHaveBeenCalledWith("user", "free");
-    expect(loadCandidateSlugRows).toHaveBeenCalledWith("user", ["owned-free"]);
+    expect(loadDiscoveryPool).toHaveBeenCalledWith("user");
+    expect(loadCandidateSlugRows).toHaveBeenCalledWith("user", [
+      "owned-committed",
+      "owned-free",
+    ]);
   });
 
   it("is null when all three miss, so the caller owns the 404", async () => {

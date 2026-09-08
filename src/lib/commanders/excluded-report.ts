@@ -9,15 +9,14 @@ const copy = planeCopy.excluded;
  *
  * ONE control is named. A row can be excluded by three at once, and naming all
  * three turns a one-tap fix into a diagnosis, so the outermost wins: scope, then
- * the pips or the mode, then the sort's floor. The pool is the floor's sub-case
- * and the unmeasurable are the floor tier's other population; neither reorders
- * the tiers.
+ * the pips or the mode, then the sort's floor. The unmeasurable are the floor
+ * tier's other population, which does not reorder the tiers.
  *
  * `heading` is present only when no row survived — that state replaces the list
  * and needs a title; the aside sits above a live list and is one sentence.
  */
 export type ExcludedReport = {
-  cause: "scope" | "colors" | "join" | "floor" | "pool" | "unmeasured";
+  cause: "scope" | "colors" | "join" | "floor" | "unmeasured";
   heading: string | null;
   /** The commander the sentence names, so the surface can mark it inside the
       finished sentence. Null when the report counts matches instead of naming
@@ -43,12 +42,10 @@ export function resolveExcludedReport(input: {
   server: ExcludedMatch[];
   colour: ColourExcludedMatch[];
   colors: string[];
-  /** `freePoolSize` — the pool sentence's denominator. */
-  freeCards: number;
   /** Whether any match survived. Decides which of the two shapes this is. */
   listHasRows: boolean;
 }): ExcludedReport | null {
-  const { server, colour, colors, freeCards, listHasRows } = input;
+  const { server, colour, colors, listHasRows } = input;
   const total = server.length + colour.length;
   if (total === 0) return null;
 
@@ -119,25 +116,6 @@ export function resolveExcludedReport(input: {
               tier2.mode ? copy.control.join(colors) : copy.control.colors(colors),
             ),
       cta: tier2.mode ? copy.joinCta : copy.colorsCta,
-      aside,
-    };
-  }
-
-  // Tier 3, in the order the sentences discriminate: the pool before the floor,
-  // because a row that would clear against the collection has a correction the
-  // floor sentence cannot offer.
-  const pool = server.filter((m) => m.cause === "pool");
-  if (pool.length > 0) {
-    return {
-      cause: "pool",
-      name: held || pool.length > 1 ? null : pool[0].name,
-      heading: heading(pool[0].name),
-      body: held
-        ? heldBody(pool.length, copy.control.pool, copy.heldPool(freeCards))
-        : pool.length === 1
-          ? copy.poolAlso(pool[0].name, freeCards)
-          : more(pool.length, copy.control.pool),
-      cta: copy.poolCta,
       aside,
     };
   }

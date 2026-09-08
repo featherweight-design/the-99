@@ -1,10 +1,15 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NavRail, TabBar } from "./nav";
 
-const LABELS = ["Home", "Collection", "Commanders", "Decks"];
+const LABELS = ["Home", "Collection", "Commanders", "Discover", "Decks"];
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/collection" }));
+let pathname = "/collection";
+vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+
+afterEach(() => {
+  pathname = "/collection";
+});
 
 vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({
@@ -80,6 +85,18 @@ describe("NavRail", () => {
     expect(container.querySelector(".bg-elevated")).toBeNull();
   });
 
+  // The two lanes are separate routes, so each marks itself current on its own
+  // pathname and neither claims the other's.
+  it("marks Discover current on the discover route, and Commanders not", () => {
+    pathname = "/discover";
+    render(<NavRail locked={false} theme="amonkhet" />);
+    expect(screen.getByRole("link", { name: "Discover" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Commanders" })).not.toHaveAttribute("aria-current");
+  });
+
   // The handoff takes locked items out of the tab order. An <a> without an
   // href is not focusable either, but it would still offer a dead navigation
   // target to a pointer; a <span> offers neither and keeps the name and role.
@@ -101,13 +118,25 @@ describe("TabBar", () => {
     }
   });
 
-  it("renders the same four slots in the same order as the rail", () => {
+  // Discover sits after Commanders and before Decks: owned before unowned, and
+  // the two commander lanes read as one shelf.
+  it("renders the same five slots in the same order as the rail", () => {
     render(<TabBar locked={false} />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
     const hrefs = within(nav)
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"));
-    expect(hrefs).toEqual(["/", "/collection", "/commanders", "/decks"]);
+    expect(hrefs).toEqual(["/", "/collection", "/commanders", "/discover", "/decks"]);
+  });
+
+  // 320pt is the narrowest phone the bar is measured against, and `Commanders`
+  // at the shipped 9px leaves 3.4px of air there. The label drops to 8.5px and
+  // loses its tracking below 360px, which buys back 3px per label.
+  it("shrinks the label below 360px so the longest one still clears", () => {
+    render(<TabBar locked={false} />);
+    const label = screen.getByText("Commanders");
+    expect(label.className).toContain("max-[359px]:text-[8.5px]");
+    expect(label.className).toContain("max-[359px]:tracking-normal");
   });
 
   it("states the unlock reason on locked tabs too", () => {
@@ -137,7 +166,7 @@ describe("Nav glyphs", () => {
     const railShapes = [...rail.container.querySelectorAll("nav a svg")].map((s) => s.innerHTML);
     const tabs = render(<TabBar locked={false} />);
     const tabShapes = [...tabs.container.querySelectorAll("nav a svg")].map((s) => s.innerHTML);
-    expect(railShapes).toHaveLength(4);
+    expect(railShapes).toHaveLength(5);
     expect(tabShapes).toEqual(railShapes);
   });
 

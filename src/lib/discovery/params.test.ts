@@ -1,23 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseJoin, parseScope, parseSort } from "./params";
+import { parseJoin } from "./params";
 
-describe("parseScope", () => {
-  it("defaults to owned", () => {
-    expect(parseScope(undefined)).toBe("owned");
-    expect(parseScope("nonsense")).toBe("owned");
-    expect(parseScope(["play"])).toBe("owned"); // a repeated param is not a scope
-  });
-  it("reads play", () => expect(parseScope("play")).toBe("play"));
-});
-
-describe("parseSort", () => {
-  it("defaults to fit", () => {
-    expect(parseSort(undefined)).toBe("fit");
-    expect(parseSort("nonsense")).toBe("fit");
-    expect(parseSort(["new"])).toBe("fit"); // a repeated param is not a sort
-  });
-  it("reads new", () => expect(parseSort("new")).toBe("new"));
-});
+// `parseScope` and `parseSort` went with the `?scope=` toggle: the lane is now
+// the route, and `lane-params.ts` reads the ranking for both lanes. Their
+// guarantees are pinned in `lane-params.test.ts` and `scope-redirect.test.ts`.
 
 describe("parseJoin", () => {
   it("defaults to contains", () => {

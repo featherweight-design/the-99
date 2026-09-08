@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { shapeCandidate, type CandidateSqlRow } from "./candidates";
+import { db } from "../../db";
+import { commanderSupport } from "../../db/schema";
+import { discoverCandidates, shapeCandidate, type CandidateSqlRow } from "./candidates";
 
 const row = (over: Partial<CandidateSqlRow>): CandidateSqlRow => ({
   oracleId: "a", name: "Atraxa",
-  colorIdentity: ["W", "U", "B", "G"], imageUri: null,
-  edhrecTotal: 99, tags: [{ slug: "counters", label: "Counters", count: 5 }],
+  colorIdentity: ["W", "U", "B", "G"], imageUri: null, releasedAt: "2021-02-05",
+  edhrecTotal: 99, deckCount: 1209, tags: [{ slug: "counters", label: "Counters", count: 5 }],
   ownedSupport: 40, collectionSupport: 40, ...over,
 });
 
@@ -27,5 +29,32 @@ describe("shapeCandidate", () => {
     expect(untagged.ownedSupport).toBe(40);
     expect(noOverlap.ownedSupport).toBe(0);
     expect(noOverlap.tags).toHaveLength(1);
+  });
+});
+
+// Read off the emitted SQL rather than off returned rows: `loadCandidates`
+// needs a database, and the assertion that matters here is structural — that
+// the ownership exclusion reaches the WHERE, and that a player who owns nothing
+// does not get a `NOT IN ()`. What the exclusion then removes is checked by
+// hand against the real database, like the rest of this query.
+describe("discoverCandidates", () => {
+  const emitted = (collectionOracleIds: string[]) =>
+    db
+      .select({ oracleId: commanderSupport.commanderOracleId })
+      .from(commanderSupport)
+      .where(discoverCandidates("user_1", collectionOracleIds))
+      .toSQL();
+
+  it("excludes every commander the player owns", () => {
+    const q = emitted(["owned_a", "other"]);
+    expect(q.sql).toContain("<> all(");
+    expect(q.params).toContainEqual(["owned_a", "other"]);
+  });
+
+  it("asks nothing of an empty collection rather than emitting NOT IN ()", () => {
+    const q = emitted([]);
+    expect(q.sql).toContain("<> all(");
+    expect(q.sql).not.toContain("in ()");
+    expect(q.params).toContainEqual([]);
   });
 });

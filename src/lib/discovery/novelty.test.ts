@@ -7,26 +7,42 @@ import {
 const tag = (slug: string, count = 1) => ({ slug, label: slug.toUpperCase(), count });
 
 describe("floorPct", () => {
-  it("is the owned share of the support list, rounded", () => {
-    expect(floorPct({ ownedSupport: 30, edhrecTotal: 100 })).toBe(30);
-    expect(floorPct({ ownedSupport: 1, edhrecTotal: 3 })).toBe(33);
+  it("is the collection's share of the support list, rounded", () => {
+    expect(floorPct({ collectionSupport: 30, edhrecTotal: 100 })).toBe(30);
+    expect(floorPct({ collectionSupport: 1, edhrecTotal: 3 })).toBe(33);
   });
 
   it("is null without a denominator — never zero", () => {
-    expect(floorPct({ ownedSupport: 5, edhrecTotal: null })).toBeNull();
-    expect(floorPct({ ownedSupport: 0, edhrecTotal: 0 })).toBeNull();
+    expect(floorPct({ collectionSupport: 5, edhrecTotal: null })).toBeNull();
+    expect(floorPct({ collectionSupport: 0, edhrecTotal: 0 })).toBeNull();
+  });
+
+  // The sentence pairs the two, so they have to be one figure: a percentage off
+  // a narrower pool could print a row as clearing a floor that excluded it.
+  it("reads the same count the floor decides on", () => {
+    const row = { collectionSupport: 40, ownedSupport: 4, edhrecTotal: 100 };
+    expect(floorPct(row)).toBe(40);
+    expect(clearsFloor(row)).toBe(true);
   });
 });
 
 describe("clearsFloor", () => {
   it("passes at exactly 30%", () => {
-    expect(clearsFloor({ ownedSupport: 30, edhrecTotal: 100 })).toBe(true);
+    expect(clearsFloor({ collectionSupport: 30, edhrecTotal: 100 })).toBe(true);
   });
   it("fails just below", () => {
-    expect(clearsFloor({ ownedSupport: 29, edhrecTotal: 100 })).toBe(false);
+    expect(clearsFloor({ collectionSupport: 29, edhrecTotal: 100 })).toBe(false);
   });
-  it("fails without a denominator rather than passing by default", () => {
-    expect(clearsFloor({ ownedSupport: 99, edhrecTotal: null })).toBe(false);
+
+  it("clears the floor on the whole collection, never on a narrowed pool", () => {
+    // 40 of 100 owned in the collection; only 5 of those are free.
+    const c = { collectionSupport: 40, edhrecTotal: 100 };
+    expect(clearsFloor(c)).toBe(true);
+  });
+
+  it("fails a commander with no EDHREC total", () => {
+    expect(clearsFloor({ collectionSupport: 40, edhrecTotal: null })).toBe(false);
+    expect(clearsFloor({ collectionSupport: 40, edhrecTotal: 0 })).toBe(false);
   });
 });
 

@@ -1,114 +1,56 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { availabilityCopy } from "../../lib/copy/availability";
-import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import { FilterBar } from "./filter-bar";
+import { discoverCopy } from "../../lib/copy/lanes";
 import { PENDING_OPACITY } from "./pending";
-import { ScopeControl } from "./scope-control";
-import { SortMenu } from "./sort-menu";
+import { ScopeControl as RackScope } from "./rack/scope-control";
 
-// One contract, three controls (#338). Every flip on the discovery scope is a
-// server round-trip, and before this the screen was inert for its whole
-// duration: the segment stayed unselected and nothing said a request was out.
-// Each control now renders the value it is heading for as its selected one and
-// dims itself while it waits — the control alone, never the list, which the
-// discovery table rules out in as many words.
+// One contract (#338). A flip whose answer comes from the server leaves the
+// control it was made on inert for the whole round-trip unless the control says
+// otherwise: it renders the value it is heading for as its selected one and dims
+// itself while it waits — the control alone, never the list, which the discovery
+// table rules out in as many words.
+//
+// This covered three controls until the two-lane split. The availability segment
+// went with `FilterBar` and does not navigate any more; the page header's
+// `I own` / `To play` toggle went with the split itself, which made the scope a
+// route and the nav its switch. What is left is the rack's scope control, the
+// one control on either lane whose flip can still reach the server. Everything
+// else on the rack narrows a list already in memory and has nothing to wait for.
 describe("controls with a flip in flight", () => {
-  const bar = (availPending: "all" | "free" | null) => (
-    <FilterBar
-      colors={[]}
-      onToggleColor={vi.fn()}
-      onClearColors={vi.fn()}
-      avail="free"
-      availPending={availPending}
-      onAvailChange={vi.fn()}
-      availOk
-      wasWindowed={false}
-      shown={25}
-      filteredTotal={4}
-      activeTotal={4}
-      order={{ desktop: null, mobile: null }}
-    />
-  );
-
-  it("selects the scope being navigated to, not the one still rendered", () => {
-    render(<ScopeControl scope="owned" pending="play" onChange={vi.fn()} />);
-    const group = screen.getByRole("radiogroup");
-    expect(group.getAttribute("aria-busy")).toBe("true");
-    expect(group.style.opacity).toBe(String(PENDING_OPACITY));
-    expect(
-      screen.getByRole("radio", { name: discoveryCopy.scope.playAria }).getAttribute("aria-checked"),
-    ).toBe("true");
-  });
-
-  it("selects the availability mode being navigated to", () => {
-    render(bar("all"));
-    const group = screen.getAllByRole("radiogroup")[0];
-    expect(group.getAttribute("aria-busy")).toBe("true");
-    expect(
-      screen.getAllByRole("radio", { name: availabilityCopy.ranking.allAria })[0]
-        .getAttribute("aria-checked"),
-    ).toBe("true");
-  });
-
-  it("names the ordering being navigated to on the trigger", () => {
-    render(<SortMenu sort="fit" pending="new" hasDecks onChange={vi.fn()} />);
-    const trigger = screen.getByRole("button", {
-      name: discoveryCopy.sort.triggerAria(discoveryCopy.sort.new),
-    });
+  // It inherits what the sort menu had, because it is the control that replaced
+  // it: the trigger dims and the mark takes the chevron's slot, so the rack
+  // keeps one glyph's width at both states.
+  it("dims the rack's scope trigger and puts the mark in the chevron's slot", () => {
+    render(<RackScope value="new" onChange={vi.fn()} wide showGlosses={false} pending />);
+    // The trigger carries no aria-label: its two glyph spans are aria-hidden,
+    // so the label it shows is the whole of its accessible name.
+    const trigger = screen.getByRole("button", { name: discoverCopy.scope.somethingNew });
     expect(trigger.getAttribute("aria-busy")).toBe("true");
     expect(trigger.style.opacity).toBe(String(PENDING_OPACITY));
+    expect(trigger.querySelector("[data-pending-mark]")).not.toBeNull();
+    expect(trigger.textContent).not.toContain("▾");
   });
 
-  // The dim was the whole signal until now, and a dimmed control reads as one
-  // that has been switched off rather than one that is waiting. The mark is the
-  // crown pulsing on the app's one loading animation, and it rides the selected
-  // segment — which is already the segment the reader pressed, because the
-  // control goes optimistic the moment they press it.
-  it("pulses the loading mark on the control that is waiting", () => {
-    const { rerender } = render(<ScopeControl scope="owned" pending="play" onChange={vi.fn()} />);
-    const playing = screen.getByRole("radio", { name: discoveryCopy.scope.playAria });
-    expect(playing.querySelector("[data-pending-mark]")).not.toBeNull();
-
-    rerender(bar("all"));
-    expect(
-      screen
-        .getAllByRole("radio", { name: availabilityCopy.ranking.allAria })[0]
-        .querySelector("[data-pending-mark]"),
-    ).not.toBeNull();
-
-    rerender(<SortMenu sort="fit" pending="new" hasDecks onChange={vi.fn()} />);
-    expect(
-      screen
-        .getByRole("button", { name: discoveryCopy.sort.triggerAria(discoveryCopy.sort.new) })
-        .querySelector("[data-pending-mark]"),
-    ).not.toBeNull();
-  });
-
-  // The mark stands where the label was rather than beside it. The label keeps
-  // its box, so the segment is the same width waiting as idle — a mark that took
-  // room of its own would widen the pressed segment and shove its neighbour.
-  it("hides the waiting segment's label without giving up its box", () => {
-    render(<ScopeControl scope="owned" pending="play" onChange={vi.fn()} />);
-    const playing = screen.getByRole("radio", { name: discoveryCopy.scope.playAria });
-    expect(playing.textContent).toContain(discoveryCopy.scope.play);
-    expect(screen.getByText(discoveryCopy.scope.play).closest(".opacity-0")).not.toBeNull();
+  // The sheet renders pills rather than a trigger, so the mark rides the picked
+  // one.
+  it("marks the picked pill in the sheet, not the whole group", () => {
+    render(<RackScope value="new" onChange={vi.fn()} wide={false} showGlosses pending />);
+    const group = screen.getByRole("radiogroup");
+    expect(group.getAttribute("aria-busy")).toBe("true");
+    const picked = screen.getByRole("radio", { name: discoverCopy.scope.somethingNew });
+    const other = screen.getByRole("radio", { name: discoverCopy.scope.bestFit });
+    expect(picked.querySelector("[data-pending-mark]")).not.toBeNull();
+    expect(other.querySelector("[data-pending-mark]")).toBeNull();
   });
 
   // The other half: a control with nothing in flight is byte-identical to what
-  // shipped. `aria-busy="false"` on every idle control would be noise in the
-  // accessibility tree, and the owned scope's availability flip is a client-side
-  // swap that is never pending at all.
+  // shipped. `aria-busy="false"` on an idle control would be noise in the
+  // accessibility tree.
   it("is unmarked and undimmed with nothing in flight", () => {
-    const { rerender } = render(<ScopeControl scope="owned" onChange={vi.fn()} />);
-    const group = screen.getByRole("radiogroup");
-    expect(group.getAttribute("aria-busy")).toBeNull();
-    expect(group.style.opacity).toBe("");
-
-    rerender(bar(null));
-    for (const g of screen.getAllByRole("radiogroup")) {
-      expect(g.getAttribute("aria-busy")).toBeNull();
-    }
+    render(<RackScope value="new" onChange={vi.fn()} wide showGlosses={false} />);
+    const trigger = screen.getByRole("button", { name: discoverCopy.scope.somethingNew });
+    expect(trigger.getAttribute("aria-busy")).toBeNull();
+    expect(trigger.style.opacity).toBe("");
     expect(document.querySelector("[data-pending-mark]")).toBeNull();
   });
 });

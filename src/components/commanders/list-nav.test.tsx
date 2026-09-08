@@ -3,11 +3,9 @@ import { act, renderHook } from "@testing-library/react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import {
   commanderDetailHref,
-  useAvailNav,
   useRerankAnnouncement,
   useScopeAnnouncement,
   useScopeNav,
-  useSortNav,
 } from "./list-nav";
 
 const replace = vi.fn();
@@ -52,49 +50,6 @@ describe("list-nav", () => {
       const { result } = renderHook(() => useScopeNav());
       act(() => result.current.go("owned"));
       expect(replace).toHaveBeenCalledWith("/commanders", { scroll: false });
-    });
-  });
-
-  // Both defaults serialise as absences, which is what keeps a shared link short.
-  describe("useSortNav / useAvailNav", () => {
-    it("writes the non-default value and removes the default", () => {
-      const sort = renderHook(() => useSortNav());
-      act(() => sort.result.current.go("new"));
-      expect(replace).toHaveBeenLastCalledWith("?sort=new", { scroll: false });
-
-      window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
-      act(() => sort.result.current.go("fit"));
-      expect(replace).toHaveBeenLastCalledWith("?scope=play", { scroll: false });
-    });
-
-    // Same guard as the scope flip's: these two are server round-trips, and
-    // re-choosing the active option would fetch a ranking that did not change.
-    it("does nothing when the value asked for is already the active one", () => {
-      window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
-      const sort = renderHook(() => useSortNav());
-      act(() => sort.result.current.go("new"));
-      const avail = renderHook(() => useAvailNav());
-      act(() => avail.result.current.go("free"));
-      expect(replace).not.toHaveBeenCalled();
-    });
-
-    it("reads a repeated parameter the way the server does — as an absence", () => {
-      // The page compares `sp.sort` against a string, so an array falls to the
-      // default. The guard has to agree, or it refuses the one flip that would
-      // get the reader out of the URL they arrived on.
-      window.history.replaceState(null, "", "/commanders?scope=play&sort=new&sort=fit");
-      const { result } = renderHook(() => useSortNav());
-      act(() => result.current.go("new"));
-      expect(replace).toHaveBeenCalledWith("?scope=play&sort=new", { scroll: false });
-    });
-
-    it("leaves every parameter it does not own alone", () => {
-      window.history.replaceState(null, "", "/commanders?scope=play&sort=new&c=BG");
-      const { result } = renderHook(() => useAvailNav());
-      act(() => result.current.go("all"));
-      expect(replace).toHaveBeenCalledWith("?scope=play&sort=new&c=BG&avail=all", {
-        scroll: false,
-      });
     });
   });
 

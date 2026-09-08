@@ -1,18 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { DiscoveryList } from "../../lib/discovery/list";
-import { availabilityCopy } from "../../lib/copy/availability";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { planeCopy } from "../../lib/copy/commanders-plane";
+import { commandersCopy, discoverCopy, filterCopy } from "../../lib/copy/lanes";
 import { revealAnnouncement } from "./reveal-control";
 import { DiscoveryView } from "./discovery-view";
 
-// Every control on this surface navigates: the scope flip swaps which list the
-// route renders, and the sort and availability flips change what the server
-// ranks. None of them is a client-side re-sort, so the router is the whole API.
-// The colour filter is the exception, and it is not a navigation: it narrows a
-// list the server already ranked, so it is read from and mirrored to the live
-// URL rather than routed.
+// One control on this lane navigates, and only one: `Scope` picks which ranking
+// the server produces. Everything else on the rack — search, the pips, the match
+// mode, the order — narrows or reorders a list the client already holds, so it
+// is read from and mirrored to the live URL through the History API rather than
+// routed. The router mock is therefore also an assertion: a call to `replace`
+// for anything but a scope flip is the bug.
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
@@ -25,6 +25,21 @@ vi.mock("next/navigation", () => ({
 // would pull the driver into a component test.
 const { findExcluded } = vi.hoisted(() => ({ findExcluded: vi.fn() }));
 vi.mock("../../app/commanders/actions", () => ({ findExcludedMatches: findExcluded }));
+
+// The rack mounts exactly one treatment, chosen in JS off `useIsWide()`, so a
+// test that does not say which width it is at gets the phone — where the pips
+// live inside a sheet that has to be opened first. Every test here runs at the
+// rack width unless it says otherwise.
+function stubWidth(wide: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: wide,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  );
+}
 
 const list = (over: Partial<DiscoveryList> = {}): DiscoveryList => ({
   items: [],
@@ -48,9 +63,11 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   name: "A Commander",
   colorIdentity: ["G"],
   imageUri: null,
+  releasedAt: null,
+  deckCount: 1209,
   rank: 1,
-  owned: false,
   ownedSupport: 12,
+  collectionSupport: 12,
   edhrecTotal: 40,
   colorPoolSize: 34,
   roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
@@ -64,95 +81,283 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   ...over,
 });
 
+// The rack's controls, by the names they actually carry. The pips are
+// `aria-pressed` buttons labelled with the colour alone; the match mode is a
+// radiogroup whose radios announce the full phrase at either width, even where
+// the rack draws the short one.
+const pip = (name: string) => screen.getByRole("button", { name });
+const mode = (label: string) => screen.getByRole("radio", { name: label });
+const field = () => screen.getByRole("searchbox", { name: filterCopy.search.placeholderWide });
+const scopeTrigger = () => screen.getByRole("button", { name: discoverCopy.scope.bestFit });
+
 describe("DiscoveryView", () => {
   beforeEach(() => {
+    stubWidth(true);
     replace.mockClear();
     findExcluded.mockReset();
     findExcluded.mockResolvedValue([]);
-    window.history.replaceState(null, "", "/commanders?scope=play");
+    window.history.replaceState(null, "", "/discover");
   });
 
-  it("puts the sort menu in the bar's order slot", () => {
-    render(<DiscoveryView discovery={list()} avail="free" />);
+  afterEach(() => vi.unstubAllGlobals());
+
+  // ── Defect 2: one note, one control ───────────────────────────────────
+  // 40 commanders. "druid" alone matches 9. Of those 9, Any-of-BG matches 6 and
+  // Exactly-BG matches 2. The aside must say 4, never a figure that has the name
+  // search folded into it — over the whole list the same subtraction comes to
+  // 12, which is what the shipped composition printed.
+  const DRUID_IDENTITIES = [
+    ["B", "G"],
+    ["B", "G"],
+    ["B", "G", "U"],
+    ["B", "G", "R"],
+    ["B", "G", "W"],
+    ["B", "G", "U", "R"],
+    ["G"],
+    ["B"],
+    ["U"],
+  ];
+  const fixture = [
+    ...DRUID_IDENTITIES.map((colorIdentity, i) =>
+      item({ oracleId: `d${i}`, slug: `d${i}`, name: `Druid ${i}`, colorIdentity, rank: i + 1 }),
+    ),
+    // Golgari and more, but named nothing like the query: these are what a
+    // figure counted over the unsearched list would sweep in.
+    ...Array.from({ length: 8 }, (_, i) =>
+      item({
+        oracleId: `x${i}`,
+        slug: `x${i}`,
+        name: `Sultai Sage ${i}`,
+        colorIdentity: ["B", "G", "U"],
+        rank: 10 + i,
+      }),
+    ),
+    ...Array.from({ length: 23 }, (_, i) =>
+      item({
+        oracleId: `w${i}`,
+        slug: `w${i}`,
+        name: `Plains Walker ${i}`,
+        colorIdentity: ["W"],
+        rank: 18 + i,
+      }),
+    ),
+  ];
+
+  it("counts only its own control in the Exactly aside", () => {
+    window.history.replaceState(null, "", "/discover?q=druid&c=b,g&m=exact");
+    render(<DiscoveryView discovery={list({ items: fixture, candidateCount: 40 })} />);
+    // Scoped to the result line itself: a bare `textContent.includes` matcher
+    // also matches every ancestor of the line, up to `<body>`.
     expect(
-      screen.getAllByRole("button", {
-        name: discoveryCopy.sort.triggerAria(discoveryCopy.sort.fit),
-      }).length,
-    ).toBeGreaterThan(0);
+      screen.getByText(
+        (_, el) =>
+          el?.tagName === "P" &&
+          (el.textContent?.includes(filterCopy.match.excludedAside(4)) ?? false),
+      ),
+    ).toBeInTheDocument();
   });
 
-  // `fit` is the default and is written as an absence, so a link shared from the
-  // default ordering carries no `sort` at all.
-  it("navigates on a sort choice, keeping the scope it is under", () => {
-    render(<DiscoveryView discovery={list()} avail="free" />);
-    fireEvent.click(screen.getAllByRole("button", { name: /Sort:/ })[0]);
-    fireEvent.click(
-      screen.getAllByRole("menuitemradio", { name: discoveryCopy.sort.newAria })[0],
+  // The other half of the same rule: the result line's ratio counts every
+  // control, because that is the question it asks.
+  it("counts every control in the ratio the aside is appended to", () => {
+    window.history.replaceState(null, "", "/discover?q=druid&c=b,g&m=exact");
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: fixture, candidateCount: 40 })} />,
     );
-    expect(replace).toHaveBeenCalledWith("?scope=play&sort=new", { scroll: false });
+    expect(container.textContent).toContain(discoverCopy.result.filtered(2, 40));
   });
 
-  it("navigates on an availability choice rather than re-ranking on the client", () => {
-    render(<DiscoveryView discovery={list()} avail="free" />);
-    fireEvent.click(
-      screen.getAllByRole("radio", { name: availabilityCopy.ranking.allAria })[0],
+  // A "0 excluded" aside is noise, and so is one under a mode that is not on.
+  it("says nothing about Exactly when it is off, or when it costs no row", () => {
+    window.history.replaceState(null, "", "/discover?q=druid&c=b,g");
+    const { container, unmount } = render(
+      <DiscoveryView discovery={list({ items: fixture, candidateCount: 40 })} />,
     );
-    expect(replace).toHaveBeenCalledWith("?scope=play&avail=all", { scroll: false });
+    expect(container.textContent).not.toContain("Exactly excludes");
+    unmount();
+
+    // Exact, and every match is already exact: the two modes agree.
+    window.history.replaceState(null, "", "/discover?q=plains&c=w&m=exact");
+    const only = render(<DiscoveryView discovery={list({ items: fixture, candidateCount: 40 })} />);
+    expect(only.container.textContent).not.toContain("Exactly excludes");
   });
 
-  // The floor's exclusions are already gone from `items`, so the count the bar
+  // ── The rack's own controls ───────────────────────────────────────────
+  it("gives the lane its own orders, and no availability control", () => {
+    render(<DiscoveryView discovery={list()} />);
+    expect(
+      screen.getByRole("button", {
+        name: filterCopy.order.trigger(discoverCopy.order.popularity),
+      }),
+    ).toBeInTheDocument();
+    // The owned lane's control, named here only so this file can assert its absence.
+    expect(
+      screen.queryByRole("radiogroup", { name: commandersCopy.availability.legend }),
+    ).toBeNull();
+  });
+
+  // The only control here that reaches the server, and the only thing on this
+  // surface allowed to route. `bestfit` is the default and serialises as an
+  // absence, so the URL a flip writes names the ranking and nothing else.
+  it("navigates on a scope flip, and on nothing else", () => {
+    render(<DiscoveryView discovery={list()} />);
+    fireEvent.click(scopeTrigger());
+    fireEvent.click(
+      screen.getByRole("menuitemradio", { name: discoverCopy.scope.somethingNew }),
+    );
+    expect(replace).toHaveBeenCalledWith("/discover?s=new", { scroll: false });
+  });
+
+  it("reorders on the client rather than asking the server for a second ranking", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Old Legend", releasedAt: "1994-08-01" }),
+      item({ oracleId: "b", slug: "b", name: "New Legend", releasedAt: "2024-02-02", rank: 2 }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: filterCopy.order.trigger(discoverCopy.order.popularity) }),
+    );
+    fireEvent.click(screen.getByRole("menuitemradio", { name: discoverCopy.order.recent }));
+    expect(replace).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?o=recent");
+    expect(container.textContent?.indexOf("New Legend")).toBeLessThan(
+      container.textContent?.indexOf("Old Legend") ?? -1,
+    );
+  });
+
+  // `Popularity` is the lane's default order and it ranks on the deck count the
+  // row prints under that name. It is not "whatever the server sent": the server
+  // ranks on the scope's question — support, or novelty — so a pass-through here
+  // would print the label over a different ordering entirely. The fixture makes
+  // them disagree, with the server's rank 1 second on deck count.
+  it("orders by the deck count under Popularity, not by the scope's ranking", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Server First", deckCount: 12 }),
+      item({ oracleId: "b", slug: "b", name: "Most Built", deckCount: 9000, rank: 2 }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+    );
+    expect(container.textContent?.indexOf("Most Built")).toBeLessThan(
+      container.textContent?.indexOf("Server First") ?? -1,
+    );
+  });
+
+  // An uncounted commander is an absence, and ordering it as a zero would be the
+  // claim that nobody has built it. It sorts last instead, which is where the
+  // undated set sorts under `Recently released` for the same reason.
+  it("sorts an uncounted commander last rather than as a zero", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Uncounted", deckCount: null }),
+      item({ oracleId: "b", slug: "b", name: "Counted", deckCount: 1, rank: 2 }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+    );
+    expect(container.textContent?.indexOf("Counted")).toBeLessThan(
+      container.textContent?.indexOf("Uncounted") ?? -1,
+    );
+  });
+
+  // Call 1 of the handoff: with no pip lit the mode is greyed IN PLACE, never
+  // removed. The shipped bar dropped it, which made the stack jump and taught
+  // nothing about what the mode belongs to.
+  it("greys the match mode until a pip is lit, without taking it out of the tree", () => {
+    render(<DiscoveryView discovery={list({ items: [item({})], candidateCount: 1 })} />);
+    const group = () => screen.getByRole("radiogroup", { name: filterCopy.match.legend });
+    expect(group().getAttribute("aria-disabled")).toBe("true");
+
+    fireEvent.click(pip(filterCopy.colour.names.g));
+    expect(group().getAttribute("aria-disabled")).toBeNull();
+  });
+
+  // The floor's exclusions are already gone from `items`, so the count the rack
   // shows is the one the server ranked, not a client-side subtraction.
   it("counts the items it carries, and filters them by colour", () => {
     const items = [
       item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
       item({ oracleId: "b", slug: "b", colorIdentity: ["U"], rank: 2 }),
     ];
-    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
-    expect(screen.getAllByText("Showing 2 of 2").length).toBeGreaterThan(0);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+    );
+    // At rest the line states the lane rather than printing `2 of 2`.
+    expect(container.textContent).toContain(discoverCopy.result.rest(2));
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
+    fireEvent.click(pip(filterCopy.colour.names.g));
+    expect(container.textContent).toContain(discoverCopy.result.filtered(1, 2));
   });
 
-  // The scope flip carries `?c=` across, so this list has to read it — otherwise
+  // The lane flip carries `?c=` across, so this list has to read it — otherwise
   // the URL says Golgari and the pips say nothing.
   it("opens with the colours the incoming URL names", () => {
-    window.history.replaceState(null, "", "/commanders?c=BG&scope=play");
+    window.history.replaceState(null, "", "/discover?c=b,g");
     const items = [
       item({ oracleId: "a", slug: "a", colorIdentity: ["B", "G"] }),
       item({ oracleId: "b", slug: "b", colorIdentity: ["U"], rank: 2 }),
     ];
-    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
-    expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+    );
+    expect(container.textContent).toContain(discoverCopy.result.filtered(1, 2));
+    expect(pip(filterCopy.colour.names.g).getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("heads the page with the ranked count, not the pre-exclusion candidate count", () => {
+  // The header used to report the count and is now a fixed title and gloss, so
+  // the ranked count survives in exactly one place: the rack's result line. The
+  // pre-exclusion candidate count is not it — a reader counts the rows they can
+  // see, not the ones the novelty floor removed before the page was drawn.
+  it("counts the ranked rows on the result line, not the pre-exclusion candidates", () => {
     const items = [
       item({ oracleId: "a", slug: "a", colorIdentity: ["B", "G"] }),
       item({ oracleId: "b", slug: "b", colorIdentity: ["U"] }),
     ];
-    render(
+    const { container } = render(
       <DiscoveryView
         discovery={list({ items, candidateCount: 40, sort: "new", floorExcluded: 38 })}
-        avail="free"
       />,
     );
-    const subtitle = `${discoveryCopy.scope.subtitlePlay(2, 2805, "new")} · ${
-      discoveryCopy.scope.subtitleFree
-    }`;
-    expect(screen.getAllByText(subtitle).length).toBeGreaterThan(0);
+    expect(container.textContent).toContain(discoverCopy.result.rest(2));
+    expect(container.textContent).not.toContain(discoverCopy.result.rest(40));
   });
 
-  it("mirrors a colour choice into the URL without dropping the server's params", () => {
-    render(<DiscoveryView discovery={list()} avail="free" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    expect(window.location.search).toBe("?scope=play&c=G");
+  it("mirrors a colour choice into the URL without routing for it", () => {
+    render(<DiscoveryView discovery={list()} />);
+    fireEvent.click(pip(filterCopy.colour.names.g));
+    expect(window.location.search).toBe("?c=g");
     expect(replace).not.toHaveBeenCalled();
   });
 
+  // The mode outlives the pips: it is inert with none lit, but a reader who
+  // lights one again gets back the mode they chose rather than the default.
+  it("mirrors the mode into the URL, and keeps it when the last pip goes out", () => {
+    render(<DiscoveryView discovery={list()} />);
+    fireEvent.click(pip(filterCopy.colour.names.g));
+    fireEvent.click(mode(filterCopy.match.exactly));
+    expect(window.location.search).toBe("?c=g&m=exact");
+
+    fireEvent.click(pip(filterCopy.colour.names.g));
+    expect(window.location.search).toBe("?m=exact");
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("opens under the mode the incoming URL names", () => {
+    window.history.replaceState(null, "", "/discover?c=g&m=exact");
+    const items = [
+      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
+      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+    );
+    expect(container.textContent).toContain(discoverCopy.result.filtered(1, 2));
+  });
+
   it("announces a re-rank on its own live region once the new ordering lands", () => {
-    const { rerender } = render(<DiscoveryView discovery={list()} avail="free" />);
-    rerender(<DiscoveryView discovery={list({ sort: "new" })} avail="free" />);
+    const { rerender } = render(<DiscoveryView discovery={list()} />);
+    rerender(<DiscoveryView discovery={list({ sort: "new" })} />);
     expect(screen.getByText(discoveryCopy.sort.announce("new", 0))).toBeTruthy();
   });
 
@@ -162,43 +367,38 @@ describe("DiscoveryView", () => {
   // State 1 sits ABOVE a full list: with no decks built the fit ranking is
   // complete and only the novelty ordering is unavailable.
   it("banners the no-decks reason without emptying the list", () => {
-    const items = [item({})];
-    render(<DiscoveryView discovery={list({ items, hasDecks: false })} avail="free" />);
+    render(<DiscoveryView discovery={list({ items: [item({})], hasDecks: false })} />);
     expect(screen.getByText(empty.noDecksHeading)).toBeTruthy();
     expect(screen.getAllByText("A Commander").length).toBeGreaterThan(0);
   });
 
   it("explains an empty novelty ranking with the floor that emptied it", () => {
-    // The URL is what put the list on `sort=new`, so the CTA's flip back to the
-    // default is a real change rather than the active option re-chosen.
-    window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
+    window.history.replaceState(null, "", "/discover?s=new");
     render(
       <DiscoveryView
         discovery={list({ sort: "new", candidateCount: 3334, floorExcluded: 3334, bestPct: 18 })}
-        avail="free"
       />,
     );
     expect(screen.getByText(empty.floorHeading)).toBeTruthy();
+    // The CTA moves the scope back, which is a ranking this visit has not been
+    // served — so it falls through the cache to a navigation.
     fireEvent.click(screen.getByRole("button", { name: empty.floorCta }));
-    expect(replace).toHaveBeenCalledWith("?scope=play", { scroll: false });
+    expect(replace).toHaveBeenCalledWith("/discover", { scroll: false });
   });
 
   // An empty list the floor did not empty is a different fact — nothing had a
   // distance to measure — and the floor copy would name a floor that took nobody.
   it("does not blame the floor for an empty list it never excluded from", () => {
-    render(<DiscoveryView discovery={list({ sort: "new" })} avail="free" />);
+    render(<DiscoveryView discovery={list({ sort: "new" })} />);
     expect(screen.queryByText(empty.floorHeading)).toBeNull();
   });
 
   it("blames the colours when the filter is what emptied the list, and names the built decks", () => {
     const items = [item({ colorIdentity: ["U"] })];
     render(
-      <DiscoveryView
-        discovery={list({ items, deckIdentities: [["B", "G"], ["R"]] })}
-        avail="free"
-      />,
+      <DiscoveryView discovery={list({ items, deckIdentities: [["B", "G"], ["R"]] })} />,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.getByText(empty.filteredHeading)).toBeTruthy();
     expect(
       screen.getByText(
@@ -214,16 +414,14 @@ describe("DiscoveryView", () => {
   // unbuilt, so with none matching there is nothing to explain the absence with.
   it("omits the built clause when no built deck matches the filter", () => {
     const items = [item({ colorIdentity: ["U"] })];
-    render(
-      <DiscoveryView discovery={list({ items, deckIdentities: [["R"]] })} avail="free" />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    render(<DiscoveryView discovery={list({ items, deckIdentities: [["R"]] })} />);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.getByText(empty.filteredBody("green", 1))).toBeTruthy();
   });
 
-  // The floor is a server-side exclusion the pips played no part in, so a
-  // colour that matches nothing must not be answered with "none of the 3,334
-  // candidates cleared the floor".
+  // The floor is a server-side exclusion the pips played no part in, so a colour
+  // that matches nothing must not be answered with "none of the 3,334 candidates
+  // cleared the floor".
   it("blames the colours, not the floor, when the pips are what emptied the list", () => {
     const items = [item({ colorIdentity: ["U"] })];
     render(
@@ -235,10 +433,9 @@ describe("DiscoveryView", () => {
           floorExcluded: 3333,
           bestPct: 18,
         })}
-        avail="free"
       />,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.queryByText(empty.floorHeading)).toBeNull();
     expect(screen.getByText(empty.filteredHeading)).toBeTruthy();
   });
@@ -247,32 +444,25 @@ describe("DiscoveryView", () => {
   // marks the whole clause rather than a phrase inside it.
   it("emphasises the built clause", () => {
     const items = [item({ colorIdentity: ["U"] })];
-    render(
-      <DiscoveryView discovery={list({ items, deckIdentities: [["G"]] })} avail="free" />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    const clause = screen.getByText(empty.filteredBuiltClause(1, 1, "Green"));
-    expect(clause.tagName).toBe("STRONG");
+    render(<DiscoveryView discovery={list({ items, deckIdentities: [["G"]] })} />);
+    fireEvent.click(pip(filterCopy.colour.names.g));
+    expect(screen.getByText(empty.filteredBuiltClause(1, 1, "Green")).tagName).toBe("STRONG");
   });
 
   // The clause counts decks whose identity CONTAINS the filter, so it says those
   // decks cover the colours rather than that they are them.
   it("counts a wider deck identity, and does not call it the filtered one", () => {
     const items = [item({ colorIdentity: ["U"] })];
-    render(
-      <DiscoveryView discovery={list({ items, deckIdentities: [["G", "W"]] })} avail="free" />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    render(<DiscoveryView discovery={list({ items, deckIdentities: [["G", "W"]] })} />);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.getByText(empty.filteredBuiltClause(1, 1, "Green"))).toBeTruthy();
     expect(screen.queryByText(/decks is Green/)).toBeNull();
   });
 
   it("does not say one of your 1 decks", () => {
     const items = [item({ colorIdentity: ["U"] })];
-    render(
-      <DiscoveryView discovery={list({ items, deckIdentities: [["G"]] })} avail="free" />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    render(<DiscoveryView discovery={list({ items, deckIdentities: [["G"]] })} />);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.getByText(/^Your only deck covers Green/)).toBeTruthy();
   });
 
@@ -283,7 +473,7 @@ describe("DiscoveryView", () => {
     );
 
   it("opens on one step and reveals the next, naming the band it is about to show", () => {
-    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />);
+    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />);
     expect(screen.queryByText("Commander 25")).toBeNull();
     expect(screen.getByText(discoveryCopy.window.revealBand(26, 50, 60))).toBeTruthy();
 
@@ -292,18 +482,18 @@ describe("DiscoveryView", () => {
     expect(screen.getByText(discoveryCopy.window.revealBand(51, 60, 60))).toBeTruthy();
   });
 
-  // The count line and the reveal band are one feature: a windowed list says
-  // how much of itself is showing, and the reveal says what it just added.
-  it("counts the window in the bar, and speaks each reveal on the live region", () => {
-    // The count's figures are their own `<b>` elements, so this reads the
-    // sentence they sit in rather than looking for one text node.
+  // The reveal control counts the window; the rack's result line counts the
+  // filters. Two different questions, which is why the rack must not restate it,
+  // and why the header's `WindowCount` went with the bar the rack replaced.
+  it("counts the window in its own control, and speaks each reveal on the live region", () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />,
     );
-    expect(container.textContent).toContain("25 shown · 35 more below");
+    expect(container.textContent).toContain("35 remaining");
+    expect(container.textContent).not.toContain("more below");
 
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
-    expect(container.textContent).toContain("50 shown · 10 more below");
+    expect(container.textContent).toContain("10 remaining");
     expect(screen.getByText(revealAnnouncement(50, 60, 25))).toBeTruthy();
   });
 
@@ -311,13 +501,13 @@ describe("DiscoveryView", () => {
   // never receive the reveal's focus move, so they are not tab stops.
   it("leaves an unwindowed list's rows out of the tab order", () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: many(10), candidateCount: 10 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: many(10), candidateCount: 10 })} />,
     );
     expect(container.querySelectorAll("li[tabindex]").length).toBe(0);
   });
 
   it("rules off a list that was windowed once it is fully revealed", () => {
-    render(<DiscoveryView discovery={list({ items: many(30), candidateCount: 30 })} avail="free" />);
+    render(<DiscoveryView discovery={list({ items: many(30), candidateCount: 30 })} />);
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getByText(/End of ranking · 30 of 30/)).toBeTruthy();
   });
@@ -326,7 +516,7 @@ describe("DiscoveryView", () => {
   // row gap, so outside the `<ul>` it sits flush against the card above it.
   it("keeps the reveal control inside the list, where the row gap reaches it", () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />,
     );
     const control = screen.getByRole("button", { name: /Show 25 more commanders/ });
     expect(control.closest("ul")).toBe(container.querySelector("ul"));
@@ -337,11 +527,13 @@ describe("DiscoveryView", () => {
   // window, where the count line and the band are both clamped by their callers.
   it("stops the window at the end of the list on a final short step", () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: many(30), candidateCount: 30 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: many(30), candidateCount: 30 })} />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getByText(revealAnnouncement(30, 30, 25))).toBeTruthy();
-    expect(container.textContent).toContain("all 30 shown");
+    // The window overshot to 50; the list, and the rule under it, stop at 30.
+    expect(container.querySelectorAll("li").length).toBe(30);
+    expect(screen.getByText(/End of ranking · 30 of 30/)).toBeTruthy();
   });
 
   // A re-rank returns a differently ordered list under the same mounted
@@ -349,266 +541,164 @@ describe("DiscoveryView", () => {
   it("returns the window to the top when the ordering underneath it changes", () => {
     const items = many(60);
     const { rerender } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 60 })} avail="free" />,
+      <DiscoveryView discovery={list({ items, candidateCount: 60 })} />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
 
-    rerender(
-      <DiscoveryView discovery={list({ items, candidateCount: 60, sort: "new" })} avail="free" />,
-    );
+    rerender(<DiscoveryView discovery={list({ items, candidateCount: 60, sort: "new" })} />);
     expect(screen.queryByText("Commander 25")).toBeNull();
   });
 
   it("returns the window to the top when a colour filter narrows the list", () => {
-    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />);
+    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />);
     fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
     expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     expect(screen.queryByText("Commander 25")).toBeNull();
   });
 
-  // #339. Every flip on this surface is a server round-trip, and before this a
-  // reader toggling back to a ranking they had just been looking at paid for it
-  // twice. The payloads are kept as they arrive, so the second ask is free.
-  describe("the client cache", () => {
-    const freeList = list({
-      items: [item({ name: "Free Ranked", slug: "free-ranked" })],
-      candidateCount: 1,
-    });
-    const allList = list({
-      items: [item({ name: "All Ranked", slug: "all-ranked" })],
-      candidateCount: 1,
-    });
-    const clickAvail = (aria: string) =>
-      fireEvent.click(screen.getAllByRole("radio", { name: aria })[0]);
+  // The same rule as a re-rank, for the order the client owns. Asserted on the
+  // window's own figure rather than a row name: a name sort keeps every one of
+  // these 60 rows, only in a different order, so "is row N gone" says nothing.
+  it("returns the window to the top when the order changes under it", () => {
+    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} />);
+    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
+    expect(screen.getByRole("button", { name: /Show 25 more commanders, 10 remaining/ })).toBeTruthy();
 
-    it("routes on a pair it has not seen and serves one it has", () => {
-      const { rerender } = render(<DiscoveryView discovery={freeList} avail="free" />);
+    fireEvent.click(
+      screen.getByRole("button", { name: filterCopy.order.trigger(discoverCopy.order.popularity) }),
+    );
+    fireEvent.click(screen.getByRole("menuitemradio", { name: discoverCopy.order.name }));
+    expect(screen.getByRole("button", { name: /Show 25 more commanders, 35 remaining/ })).toBeTruthy();
+  });
+
+  // #339. Every scope flip is a server round-trip, and before this a reader
+  // toggling back to a ranking they had just been looking at paid for it twice.
+  // The payloads are kept as they arrive, so the second ask is free.
+  //
+  // The key used to be a (sort, availability) pair. Availability went with the
+  // control, so the scope is the whole of it — the coverage is the same contract
+  // read against the parameter that survived.
+  describe("the client cache", () => {
+    const fitList = list({
+      items: [item({ name: "Fit Ranked", slug: "fit-ranked" })],
+      candidateCount: 1,
+    });
+    const newList = list({
+      items: [item({ name: "New Ranked", slug: "new-ranked" })],
+      candidateCount: 1,
+      sort: "new",
+    });
+    const flip = (label: string) => {
+      fireEvent.click(screen.getByRole("button", { name: /^(Best fit|Something new)$/ }));
+      fireEvent.click(screen.getByRole("menuitemradio", { name: label }));
+    };
+
+    it("routes on a scope it has not seen and serves one it has", () => {
+      const { rerender } = render(<DiscoveryView discovery={fitList} />);
       // Plural queries throughout: a row renders its name once per breakpoint
       // subtree, so the singular form matches two nodes and throws.
-      expect(screen.getAllByText("Free Ranked").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Fit Ranked").length).toBeGreaterThan(0);
 
-      // Miss: nothing has ever ranked `all`, so this has to be fetched.
-      clickAvail(availabilityCopy.ranking.allAria);
+      // Miss: nothing has ranked `new` this visit, so it has to be fetched.
+      flip(discoverCopy.scope.somethingNew);
       expect(replace).toHaveBeenCalledTimes(1);
 
-      // The navigation lands, and the page re-renders with the server's answer.
-      window.history.replaceState(null, "", "/commanders?scope=play&avail=all");
-      rerender(<DiscoveryView discovery={allList} avail="all" />);
-      expect(screen.getAllByText("All Ranked").length).toBeGreaterThan(0);
+      window.history.replaceState(null, "", "/discover?s=new");
+      rerender(<DiscoveryView discovery={newList} />);
+      expect(screen.getAllByText("New Ranked").length).toBeGreaterThan(0);
 
-      // Hit: the free ranking is still in hand. No second request, and the URL
+      // Hit: the fit ranking is still in hand. No second request, and the URL
       // still names what is on screen so a copied link opens on it.
-      clickAvail(availabilityCopy.ranking.freeAria);
+      flip(discoverCopy.scope.bestFit);
       expect(replace).toHaveBeenCalledTimes(1);
-      expect(screen.getAllByText("Free Ranked").length).toBeGreaterThan(0);
-      expect(window.location.search).toBe("?scope=play");
+      expect(screen.getAllByText("Fit Ranked").length).toBeGreaterThan(0);
+      expect(window.location.search).toBe("");
     });
 
     // A cached flip writes the URL itself, so it has to write it the way the
-    // navigating path does — defaults as absences. Otherwise `list-nav`'s guards,
-    // which read the live URL, would stop telling a default from a choice.
+    // navigating path does — defaults as absences, and every parameter the lane
+    // does not own copied off the live URL rather than rebuilt.
     it("leaves parameters it does not own alone when it serves from cache", () => {
-      window.history.replaceState(null, "", "/commanders?scope=play&c=BG");
-      const { rerender } = render(<DiscoveryView discovery={freeList} avail="free" />);
-      clickAvail(availabilityCopy.ranking.allAria);
-      window.history.replaceState(null, "", "/commanders?scope=play&c=BG&avail=all");
-      rerender(<DiscoveryView discovery={allList} avail="all" />);
+      window.history.replaceState(null, "", "/discover?c=b,g&utm=x");
+      const { rerender } = render(<DiscoveryView discovery={fitList} />);
+      flip(discoverCopy.scope.somethingNew);
+      window.history.replaceState(null, "", "/discover?c=b,g&utm=x&s=new");
+      rerender(<DiscoveryView discovery={newList} />);
 
-      clickAvail(availabilityCopy.ranking.freeAria);
+      flip(discoverCopy.scope.bestFit);
       const params = new URLSearchParams(window.location.search);
-      expect(params.get("c")).toBe("BG");
-      expect(params.get("scope")).toBe("play");
-      expect(params.has("avail")).toBe(false);
+      expect(params.get("c")).toBe("b,g");
+      expect(params.get("utm")).toBe("x");
+      expect(params.has("s")).toBe(false);
     });
 
-    // The payload the server just produced is the truth, whatever the cache holds
-    // for that pair — an upload or a new deck re-ranks everything.
-    it("takes a fresh payload over a cached one for the same pair", () => {
-      const { rerender } = render(<DiscoveryView discovery={freeList} avail="free" />);
+    // The payload the server just produced is the truth, whatever the cache
+    // holds for that scope — an upload or a new deck re-ranks everything.
+    it("takes a fresh payload over a cached one for the same scope", () => {
+      const { rerender } = render(<DiscoveryView discovery={fitList} />);
       const rebuilt = list({
         items: [item({ name: "Re-Ranked", slug: "re-ranked" })],
         candidateCount: 1,
       });
-      rerender(<DiscoveryView discovery={rebuilt} avail="free" />);
+      rerender(<DiscoveryView discovery={rebuilt} />);
       expect(screen.getAllByText("Re-Ranked").length).toBeGreaterThan(0);
-      expect(screen.queryAllByText("Free Ranked").length).toBe(0);
+      expect(screen.queryAllByText("Fit Ranked").length).toBe(0);
     });
 
-    // The availability is half the key a payload is filed under, so it has to be
-    // watched as closely as the payload. A server render makes a new list object
-    // every time, which means these two normally move together — but that holds
-    // because of how the framework renders, not because of anything this hook
-    // enforces, and the day it stops holding the ranking would be filed under the
-    // wrong pair and the control would disagree with the list beneath it.
-    it("follows the availability even when the payload object is unchanged", () => {
-      const same = list({
-        items: [item({ name: "Same Payload", slug: "same-payload" })],
-        candidateCount: 1,
-      });
-      const { rerender } = render(<DiscoveryView discovery={same} avail="free" />);
-      rerender(<DiscoveryView discovery={same} avail="all" />);
-
-      // Watching the payload alone, the view would still be reporting `free` here
-      // while the server had moved on to `all`.
-      expect(
-        screen
-          .getAllByRole("radio", { name: availabilityCopy.ranking.allAria })[0]
-          .getAttribute("aria-checked"),
-      ).toBe("true");
-
-      // And the pair is filed under `fit:all`, not overwriting `fit:free` — the
-      // seeded entry is still there to be served without a request.
-      clickAvail(availabilityCopy.ranking.freeAria);
-      expect(replace).not.toHaveBeenCalled();
-      expect(
-        screen
-          .getAllByRole("radio", { name: availabilityCopy.ranking.freeAria })[0]
-          .getAttribute("aria-checked"),
-      ).toBe("true");
+    // The scope the server ranked on is reconciled during render, not in an
+    // effect: an effect would paint the control on the scope that was asked for
+    // once before correcting it to the one that came back. `loadDiscovery`
+    // downgrades `new` to fit with no decks built, so the two really can differ.
+    it("shows the scope that came back, not the one that was asked for", () => {
+      window.history.replaceState(null, "", "/discover?s=new");
+      render(<DiscoveryView discovery={list({ hasDecks: false })} />);
+      expect(screen.getByRole("button", { name: discoverCopy.scope.bestFit })).toBeInTheDocument();
     });
   });
 
-  // ── The colour match mode (§7) ────────────────────────────────────────
-  const join = planeCopy.join;
-
-  // Absent, not disabled: with no pip lit there is nothing for a mode to join,
-  // and a disabled control would invite a hunt for whatever would enable it.
-  it("does not render the mode until a pip is lit", () => {
-    render(<DiscoveryView discovery={list({ items: [item({})], candidateCount: 1 })} avail="free" />);
-    expect(screen.queryByRole("radio", { name: join.exactlyAria })).toBeNull();
-
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    expect(screen.getAllByRole("radio", { name: join.exactlyAria }).length).toBeGreaterThan(0);
-  });
-
-  it("narrows the list to the identities that are the selection and nothing else", () => {
-    const items = [
-      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
-      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
-    ];
-    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    expect(screen.getAllByText("Showing 2 of 2").length).toBeGreaterThan(0);
-
-    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
-    expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
-  });
-
-  // `exact` in the URL, `exactly` in the code. The param is a word the player can
-  // see and edit; the mapping lives in `parseJoin` and nowhere else.
-  it("mirrors the mode into the URL as ?join=exact, and reads it back", () => {
-    render(<DiscoveryView discovery={list()} avail="free" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
-    expect(window.location.search).toBe("?scope=play&c=G&join=exact");
-    expect(replace).not.toHaveBeenCalled();
-  });
-
-  it("opens under the mode the incoming URL names", () => {
-    window.history.replaceState(null, "", "/commanders?scope=play&c=G&join=exact");
-    const items = [
-      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
-      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
-    ];
-    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
-    expect(screen.getAllByText("Showing 1 of 2").length).toBeGreaterThan(0);
-  });
-
-  // A mode with no pip to modify changes no row, so leaving it in the URL would
-  // be a filter the player cannot see and cannot clear.
-  it("drops the mode from the URL when the last pip goes out", () => {
-    render(<DiscoveryView discovery={list()} avail="free" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    expect(window.location.search).toBe("?scope=play");
-  });
-
-  it("announces the mode with the count the flip produced", () => {
-    const items = [
-      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
-      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
-    ];
-    render(<DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
-    expect(screen.getByText(join.announce("exactly", 1, ["G"]))).toBeTruthy();
-  });
-
-  // Both notes are asserted through `textContent`: the figures inside them are
-  // emphasised, so the sentence is split across spans and no single text node
-  // holds it.
-  it("says what the mode did, under the control, only while it is exact", () => {
-    const items = [
-      item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
-      item({ oracleId: "b", slug: "b", colorIdentity: ["B", "G"], rank: 2 }),
-    ];
-    const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    expect(container.textContent).not.toContain(join.exactNote(2, 2, ["G"]));
-
-    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
-    expect(container.textContent).toContain(join.exactNote(1, 2, ["G"]));
-    expect(container.textContent).toContain(join.exactNoteShort(1, 2, ["G"]));
-  });
-
-  it("returns the window to the top when the mode narrows the list", () => {
-    render(<DiscoveryView discovery={list({ items: many(60), candidateCount: 60 })} avail="free" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    fireEvent.click(screen.getByRole("button", { name: /Show 25 more commanders/ }));
-    expect(screen.getAllByText("Commander 25").length).toBeGreaterThan(0);
-
-    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
-    expect(screen.queryByText("Commander 25")).toBeNull();
-  });
-
-  // ── The search field (§4.3) ───────────────────────────────────────────
+  // ── The search field ──────────────────────────────────────────────────
   const search = planeCopy.search;
-  const field = () => screen.getAllByRole("searchbox", { name: search.inputAria })[0];
 
   const named = () => [
     item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated" }),
     item({ oracleId: "b", slug: "b", name: "Meren of Clan Nel Toth", rank: 2 }),
   ];
 
-  it("narrows the list by name as the reader types", () => {
-    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+  // The list narrows on the keystroke, with no wait — the rows are already in
+  // memory, and that feedback is the point. Only the URL, the window reset and
+  // the server lookup wait for the typing to stop.
+  it("narrows the list on the keystroke, not on the debounce", () => {
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
     fireEvent.change(field(), { target: { value: "yarok" } });
-    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
     expect(screen.queryByText("Meren of Clan Nel Toth")).toBeNull();
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+    // The proof the two are separate: the list has moved and the URL has not.
+    expect(window.location.search).toBe("");
   });
 
-  // The URL waits for the typing to settle. Mirroring per keystroke would write
-  // seven history entries for one word, and Phase 5's lookup hangs off the same
-  // settled value.
   it("mirrors the settled query as ?q=, and drops it when the field is cleared", async () => {
-    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
     fireEvent.change(field(), { target: { value: "yarok" } });
-    expect(window.location.search).toBe("?scope=play");
+    expect(window.location.search).toBe("");
 
-    await waitFor(() => expect(window.location.search).toBe("?scope=play&q=yarok"));
+    await waitFor(() => expect(window.location.search).toBe("?q=yarok"));
     expect(replace).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getAllByRole("button", { name: search.clearAria })[0]);
-    await waitFor(() => expect(window.location.search).toBe("?scope=play"));
+    // The field's own clear, not the query chip's — both carry the same label,
+    // because both do the same thing to the same parameter.
+    const inField = within(field().closest("label") as HTMLElement);
+    fireEvent.click(inField.getByRole("button", { name: filterCopy.search.clear }));
+    await waitFor(() => expect(window.location.search).toBe(""));
   });
 
   it("opens under the query the incoming URL names", () => {
-    window.history.replaceState(null, "", "/commanders?scope=play&q=meren");
-    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
+    window.history.replaceState(null, "", "/discover?q=meren");
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
     expect(screen.getAllByText("Meren of Clan Nel Toth").length).toBeGreaterThan(0);
     expect(screen.queryByText("Yarok, the Desecrated")).toBeNull();
-  });
-
-  it("announces the match count once the typing settles", async () => {
-    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
-    fireEvent.change(field(), { target: { value: "yarok" } });
-    await waitFor(() => expect(screen.getByText(search.announce(1, 2))).toBeTruthy());
   });
 
   // The floor takes rows out of `items` but not out of the pool the search
@@ -618,76 +708,86 @@ describe("DiscoveryView", () => {
     const { container } = render(
       <DiscoveryView
         discovery={list({ items: named(), candidateCount: 40, sort: "new", floorExcluded: 38 })}
-        avail="free"
       />,
     );
     fireEvent.change(field(), { target: { value: "krenko" } });
-    await waitFor(() => expect(container.textContent).toContain(search.noneEmphasis(40)));
-    expect(container.textContent).toContain(search.announce(0, 40));
+    await waitFor(() =>
+      expect(container.textContent).toContain(discoverCopy.empty.body("krenko", 40)),
+    );
   });
 
   // The name is in nothing this reader can see, so the state says where we
   // looked and offers the one correction that could help.
   it("names the query when nothing is called that, and clears the search rather than the colours", async () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     fireEvent.change(field(), { target: { value: "krenko" } });
 
-    await waitFor(() => expect(container.textContent).toContain(search.noneHeading("krenko")));
-    expect(container.textContent).toContain(search.announce(0, 2));
+    await waitFor(() => expect(container.textContent).toContain(discoverCopy.empty.heading));
 
-    // The field's ✕ carries the same accessible name as the state's button, so
-    // the one with the visible label is the state's.
+    // The field's ✕ carries a different name from the state's button, so the
+    // one with the visible label is unambiguous.
     const cta = screen
-      .getAllByRole("button", { name: search.noneCta })
-      .find((b) => b.textContent === search.noneCta);
+      .getAllByRole("button", { name: discoverCopy.empty.clearSearch })
+      .find((b) => b.textContent === discoverCopy.empty.clearSearch);
     fireEvent.click(cta as HTMLElement);
     // The pips survive: the button cleared what the reader typed, and clearing
     // the colours too would undo a filter this state never blamed.
-    expect(screen.getAllByText("Showing 2 of 2").length).toBeGreaterThan(0);
+    await waitFor(() =>
+      expect(pip(filterCopy.colour.names.g).getAttribute("aria-pressed")).toBe("true"),
+    );
   });
 
-  // ── The excluded match (§2) ───────────────────────────────────────────
+  // ── The excluded match ────────────────────────────────────────────────
   const excluded = planeCopy.excluded;
 
   // A name that IS in the list and was removed by a pip is a colour exclusion,
   // not a miss — telling the reader to check the spelling would be wrong, and
   // the colour empty state would not say which row went missing.
-  it("names the commander a pip excluded, and clears the filter that took it", () => {
+  it("names the commander a pip excluded, and clears the filter that took it", async () => {
     const items = [
       item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["U"] }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 1 })} avail="free" />,
+      <DiscoveryView discovery={list({ items, candidateCount: 1 })} />,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     fireEvent.change(field(), { target: { value: "yarok" } });
 
+    await waitFor(() =>
+      expect(container.textContent).toContain(search.heldHeading("Yarok, the Desecrated")),
+    );
     expect(container.textContent).not.toContain(search.noneHeading("yarok"));
     expect(container.textContent).not.toContain(discoveryCopy.empty.filteredHeading);
-    expect(container.textContent).toContain(search.heldHeading("Yarok, the Desecrated"));
     expect(container.textContent).toContain(search.heldAside(1));
 
     fireEvent.click(screen.getByRole("button", { name: excluded.colorsCta }));
     expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
   });
 
-  // The mode, not the pips: the row survives `Contains`, so `Clear the colour
-  // filter` would undo more than the reader needs.
-  it("names the mode when the mode is what removed the only match", () => {
+  // The mode, not the pips: the row survives `Any of these`, so clearing the
+  // colour filter would undo more than the reader needs.
+  it("names the mode when the mode is what removed the only match", async () => {
     const items = [
-      item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["B", "G", "U"] }),
+      item({
+        oracleId: "a",
+        slug: "a",
+        name: "Yarok, the Desecrated",
+        colorIdentity: ["B", "G", "U"],
+      }),
     ];
     const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 1 })} avail="free" />,
+      <DiscoveryView discovery={list({ items, candidateCount: 1 })} />,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
+    fireEvent.click(pip(filterCopy.colour.names.g));
+    fireEvent.click(mode(filterCopy.match.exactly));
     fireEvent.change(field(), { target: { value: "yarok" } });
 
-    expect(container.textContent).toContain(search.heldHeading("Yarok, the Desecrated"));
+    await waitFor(() =>
+      expect(container.textContent).toContain(search.heldHeading("Yarok, the Desecrated")),
+    );
     fireEvent.click(screen.getByRole("button", { name: excluded.joinCta }));
     expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
   });
@@ -698,7 +798,7 @@ describe("DiscoveryView", () => {
       { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
     ]);
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
     // Nothing is claimed until the server has answered: "no commander is named
@@ -710,7 +810,9 @@ describe("DiscoveryView", () => {
       expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
     );
     expect(container.textContent).toContain(excluded.heldScope);
-    expect(findExcluded).toHaveBeenCalledWith("atraxa", { sort: "fit", avail: "free" });
+    // No `avail` in the ask: this lane scores the whole collection, so the
+    // lookup has only one pool it could be asking about.
+    expect(findExcluded).toHaveBeenCalledWith("atraxa", { sort: "fit" });
   });
 
   // A failed lookup is not an answer. "No commander is named that" covers the
@@ -718,7 +820,7 @@ describe("DiscoveryView", () => {
   it("makes no claim about the index when the lookup fails", async () => {
     findExcluded.mockRejectedValue(new Error("down"));
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
     await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("atraxa")));
@@ -730,7 +832,7 @@ describe("DiscoveryView", () => {
   it("makes no claim about the index when the lookup declines to answer", async () => {
     findExcluded.mockResolvedValue(null);
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "atraxa" } });
     await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("atraxa")));
@@ -741,11 +843,12 @@ describe("DiscoveryView", () => {
   // in exactly the way a failure leaves it unchecked.
   it("keeps the index out of it when the query is too short to ask about", async () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "z" } });
     await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("z")));
     expect(container.textContent).not.toContain(search.noneHeading("z"));
+    expect(findExcluded).not.toHaveBeenCalled();
   });
 
   // Clearing the colours would surface nothing, because nothing in the list is
@@ -753,20 +856,12 @@ describe("DiscoveryView", () => {
   // query that empties the list on its own outranks it.
   it("does not blame the colours for a query that matches nothing either", async () => {
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     fireEvent.change(field(), { target: { value: "z" } });
     await waitFor(() => expect(container.textContent).toContain(search.unknownHeading("z")));
     expect(screen.queryByText(empty.filteredHeading)).toBeNull();
-  });
-
-  // A one-character query matches most of the index, so it never asks.
-  it("asks the server only about a query worth a round trip", async () => {
-    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />);
-    fireEvent.change(field(), { target: { value: "y" } });
-    await waitFor(() => expect(window.location.search).toBe("?scope=play&q=y"));
-    expect(findExcluded).not.toHaveBeenCalled();
   });
 
   // Some matches survive: the report sits above them rather than replacing them.
@@ -776,21 +871,39 @@ describe("DiscoveryView", () => {
       { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "floor", pct: 9 },
     ]);
     const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
     );
     fireEvent.change(field(), { target: { value: "the" } });
 
     await waitFor(() =>
-      expect(container.textContent).toContain(
-        search.asideMore(2, excluded.control.floor(30)),
-      ),
+      expect(container.textContent).toContain(search.asideMore(2, excluded.control.floor(30))),
     );
-    // The rows are still on screen, and the aside is above them.
     expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
     expect(container.textContent).not.toContain(search.heldAside(2));
   });
 
-  // ── The exclusion line (§4) ───────────────────────────────────────────
+  // A report is written about one query. Carrying it into the next would name a
+  // commander the reader is no longer asking about.
+  it("drops the server's answer when the query changes", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+    ]);
+    const { container } = render(
+      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />,
+    );
+    fireEvent.change(field(), { target: { value: "atraxa" } });
+    await waitFor(() =>
+      expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
+    );
+
+    findExcluded.mockResolvedValue([]);
+    fireEvent.change(field(), { target: { value: "yarok" } });
+    await waitFor(() =>
+      expect(container.textContent).not.toContain(search.heldHeading("Atraxa, Praetors' Voice")),
+    );
+  });
+
+  // ── The exclusion line ────────────────────────────────────────────────
   it("prints the list's receipt in tier order, and nothing when nothing was excluded", () => {
     const items = [
       item({ oracleId: "a", slug: "a", colorIdentity: ["G"] }),
@@ -804,13 +917,13 @@ describe("DiscoveryView", () => {
       unmeasured: 212,
       bestPct: 22,
     });
-    const { container, rerender } = render(<DiscoveryView discovery={discovery} avail="free" />);
+    const { container, rerender } = render(<DiscoveryView discovery={discovery} />);
     // The floor alone, so the nearest miss has room.
     expect(container.textContent).toContain(
       planeCopy.exclusion.floorAloneWithUnmeasured(1047, 212, 30, 22),
     );
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
+    fireEvent.click(pip(filterCopy.colour.names.g));
     expect(container.textContent).toContain(
       planeCopy.exclusion.join2(
         planeCopy.exclusion.colors(1, ["G"]),
@@ -818,18 +931,13 @@ describe("DiscoveryView", () => {
       ),
     );
 
-    rerender(
-      <DiscoveryView
-        discovery={list({ items, candidateCount: 2, sort: "new" })}
-        avail="free"
-      />,
-    );
+    rerender(<DiscoveryView discovery={list({ items, candidateCount: 2, sort: "new" })} />);
     expect(container.textContent).not.toContain("support floor");
   });
 
-  // The one-report rule: one thing below the bar explains the list at 375px, and
-  // it is the aside. The line stays in the DOM for the widths that have room,
-  // as one element rather than a duplicated subtree.
+  // The one-report rule: one thing below the rack explains the list at 375px,
+  // and it is the aside. The line stays in the DOM for the widths that have
+  // room, as one element rather than a duplicated subtree.
   it("hands the phone to the aside when both would explain the list", async () => {
     findExcluded.mockResolvedValue([
       { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "floor", pct: 9 },
@@ -844,14 +952,11 @@ describe("DiscoveryView", () => {
           unmeasured: 212,
           bestPct: 22,
         })}
-        avail="free"
       />,
     );
     const lineText = planeCopy.exclusion.floorAloneWithUnmeasured(1047, 212, 30, 22);
     const lineNode = () =>
-      Array.from(container.querySelectorAll("div")).find(
-        (el) => el.textContent === lineText,
-      );
+      Array.from(container.querySelectorAll("div")).find((el) => el.textContent === lineText);
     expect(lineNode()?.className).not.toContain("hidden");
 
     fireEvent.change(field(), { target: { value: "the" } });
@@ -860,92 +965,5 @@ describe("DiscoveryView", () => {
     expect(
       Array.from(container.querySelectorAll("div")).filter((el) => el.textContent === lineText),
     ).toHaveLength(1);
-  });
-
-  // The other half of the rule: the report already names the mode, so the note
-  // under the control would print the same fact twice on one phone screen.
-  it("drops the mobile exact note when a report names the mode", () => {
-    const items = [
-      item({ oracleId: "a", slug: "a", name: "Yarok, the Desecrated", colorIdentity: ["B", "G", "U"] }),
-      item({ oracleId: "b", slug: "b", name: "Meren of Clan Nel Toth", colorIdentity: ["G"], rank: 2 }),
-    ];
-    const { container } = render(
-      <DiscoveryView discovery={list({ items, candidateCount: 2 })} avail="free" />,
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Green" })[0]);
-    fireEvent.click(screen.getAllByRole("radio", { name: join.exactlyAria })[0]);
-    expect(container.textContent).toContain(join.exactNoteShort(1, 2, ["G"]));
-
-    fireEvent.change(field(), { target: { value: "yarok" } });
-    expect(container.textContent).not.toContain(join.exactNoteShort(0, 2, ["G"]));
-    // Desktop keeps its own note: it has the width, and no viewport problem.
-    expect(container.textContent).toContain(join.exactNote(0, 2, ["G"]));
-  });
-
-  // ── The pool floor state (§5) ─────────────────────────────────────────
-  // The floor took everything, and the pool is why: the other sort is the wrong
-  // door when the rows would clear against the whole collection.
-  it("offers the other pool, not the other sort, when the pool is the cause", () => {
-    const { container } = render(
-      <DiscoveryView
-        discovery={list({
-          items: [],
-          candidateCount: 3326,
-          sort: "new",
-          floorExcluded: 3114,
-          unmeasured: 212,
-          poolExcluded: 41,
-          bestPct: 22,
-          freePoolSize: 1190,
-        })}
-        avail="free"
-      />,
-    );
-    expect(container.textContent).toContain(planeCopy.floorPool.heading);
-    expect(container.textContent).toContain(
-      planeCopy.floorPool.body(30, 3114, 212, 3326, 1190, 41),
-    );
-    expect(container.textContent).not.toContain(discoveryCopy.empty.floorHeading);
-  });
-
-  // Nothing would clear elsewhere, so the pool is not the cause and the shipped
-  // state stands.
-  it("keeps the sort's own floor state when no row would clear against the collection", () => {
-    const { container } = render(
-      <DiscoveryView
-        discovery={list({
-          items: [],
-          candidateCount: 3326,
-          sort: "new",
-          floorExcluded: 3114,
-          poolExcluded: 0,
-          bestPct: 22,
-        })}
-        avail="free"
-      />,
-    );
-    expect(container.textContent).toContain(discoveryCopy.empty.floorHeading);
-    expect(container.textContent).not.toContain(planeCopy.floorPool.heading);
-  });
-
-  // A report is written about one query. Carrying it into the next would name a
-  // commander the reader is no longer asking about.
-  it("drops the server's answer when the query changes", async () => {
-    findExcluded.mockResolvedValue([
-      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
-    ]);
-    const { container } = render(
-      <DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} avail="free" />,
-    );
-    fireEvent.change(field(), { target: { value: "atraxa" } });
-    await waitFor(() =>
-      expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
-    );
-
-    findExcluded.mockResolvedValue([]);
-    fireEvent.change(field(), { target: { value: "yarok" } });
-    await waitFor(() =>
-      expect(container.textContent).not.toContain(search.heldHeading("Atraxa, Praetors' Voice")),
-    );
   });
 });

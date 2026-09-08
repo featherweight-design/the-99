@@ -71,28 +71,27 @@ describe("loadDiscovery — wiring", () => {
     loadCandidates.mockClear();
   });
 
-  it("asks the candidate query for the free pool under avail: free", async () => {
+  // Was two tests, one per `avail`. The lane has no availability control, so
+  // there is one pool to pin: a committed card still scores, and no second
+  // oracle-id set is passed because there is no wider collection to compare to.
+  it("asks the candidate query for the whole collection, committed cards and all", async () => {
     availability = new Map([["sol-ring", committed]]);
-    await loadDiscovery("user-1", { sort: "fit", avail: "free" });
-    const [, oracleIds] = loadCandidates.mock.calls[0] as unknown as [string, string[]];
-    // The free ranking is the same question asked of a smaller pool, so the
-    // committed card is not in the pool the candidates are scored against.
-    expect(oracleIds).toEqual(["swords"]);
-  });
-
-  it("asks it for the whole collection under avail: all", async () => {
-    availability = new Map([["sol-ring", committed]]);
-    await loadDiscovery("user-1", { sort: "fit", avail: "all" });
-    const [, oracleIds] = loadCandidates.mock.calls[0] as unknown as [string, string[]];
+    await loadDiscovery("user-1", { sort: "fit" });
+    const [, oracleIds, collectionOracleIds] = loadCandidates.mock.calls[0] as unknown as [
+      string,
+      string[],
+      string[] | undefined,
+    ];
     expect(oracleIds).toEqual(["sol-ring", "swords"]);
+    expect(collectionOracleIds).toBeUndefined();
   });
 
-  // `freePool` keeps every id the map is missing, so a failed read returns the
-  // whole collection while looking like a free pool. Without this flag the two
-  // are indistinguishable downstream.
+  // An empty availability map counts every owned card as uncommitted, which is a
+  // claim the receipt cannot make on a failed read. The flag is what tells the
+  // two apart downstream.
   it("reports availOk: false when the availability read fails", async () => {
     availabilityThrows = true;
-    const got = await loadDiscovery("user-1", { sort: "fit", avail: "free" });
+    const got = await loadDiscovery("user-1", { sort: "fit" });
     expect(got.availOk).toBe(false);
     // The ranking survives — only the receipt counts are lost, and they are lost
     // as unknown rather than as zeros.
@@ -101,21 +100,21 @@ describe("loadDiscovery — wiring", () => {
   });
 
   it("carries the receipt counts when the read succeeds", async () => {
-    const got = await loadDiscovery("user-1", { sort: "fit", avail: "all" });
+    const got = await loadDiscovery("user-1", { sort: "fit" });
     expect(got.availOk).toBe(true);
     expect(got.items[0].counts).toEqual({ inUse: 0, wantedByBrew: 0 });
   });
 
-  it("reads the subtitle's collection size off the whole collection, not the pool", async () => {
+  it("reads the subtitle's collection size off the whole collection", async () => {
     availability = new Map([["sol-ring", committed]]);
-    const got = await loadDiscovery("user-1", { sort: "fit", avail: "free" });
-    // "read against N cards" names the collection. Scoping it to the free pool
-    // would make the number move when a deck is built.
+    const got = await loadDiscovery("user-1", { sort: "fit" });
+    // "read against N cards" names the collection, and building a deck out of a
+    // card does not make the player own fewer of them.
     expect(got.cardsRead).toBe(2);
   });
 
   it("scopes the availability read to the collection it will score", async () => {
-    await loadDiscoveryPool("user-1", "free");
+    await loadDiscoveryPool("user-1");
     const [userArg, opts] = loadAvailability.mock.calls[0] as unknown as [
       string,
       { oracleIds: string[] },

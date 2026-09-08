@@ -8,7 +8,8 @@ import { assembleDiscovery } from "./list";
 const candidate = (over: Partial<Parameters<typeof assembleDiscovery>[0]["candidates"][0]>) => {
   const merged = {
     oracleId: "a", name: "A",
-    colorIdentity: ["G"], imageUri: null, edhrecTotal: 100, tags: [], ownedSupport: 50,
+    colorIdentity: ["G"], imageUri: null, releasedAt: null,
+    edhrecTotal: 100, deckCount: 1209, tags: [], ownedSupport: 50,
     ...over,
   };
   return { collectionSupport: merged.ownedSupport, ...merged };
@@ -23,7 +24,6 @@ describe("assembleDiscovery", () => {
       candidate({ oracleId: "c", name: "C", ownedSupport: 90,
                   tags: [{ slug: "blink", label: "Blink", count: 2 }] }),
     ],
-    ownedOracleIds: new Set(["a"]),
     playedTags: [{ deckName: "Zur", colorIdentity: ["W", "U", "B"], slugs: new Set(["blink"]) }],
     prices: new Map(),
     // A real rollup, empty: this suite is about assembly, and Phase 2's own test
@@ -80,10 +80,15 @@ describe("assembleDiscovery", () => {
     expect(assembleDiscovery({ ...base, sort: "fit", availOk: false }).availOk).toBe(false);
   });
 
-  it("marks a candidate the player owns", () => {
+  // Was "marks a candidate the player owns". Assembly no longer decides
+  // ownership at all — the query hands it only commanders the player does not
+  // own, which `candidates.test.ts` pins — so what is left to hold here is that
+  // assembly asks the collection nothing: every candidate it is given lands in
+  // the list.
+  it("keeps every candidate it is handed, ownership being the query's call", () => {
     const got = assembleDiscovery({ ...base, sort: "fit" });
-    expect(got.items.find((i) => i.oracleId === "a")!.owned).toBe(true);
-    expect(got.items.find((i) => i.oracleId === "c")!.owned).toBe(false);
+    expect(got.items.map((i) => i.oracleId).sort()).toEqual(["a", "b", "c"]);
+    expect(got.candidateCount).toBe(3);
   });
 
   // The exclusion line's whole claim is that the figures it prints add up. Every
@@ -101,23 +106,28 @@ describe("assembleDiscovery", () => {
     expect(got.poolExcluded).toBe(0);
   });
 
-  // The pool sub-case: below the floor on the free pool, above it on everything
-  // the player owns. This is the only state the pool exclusion sentences describe.
-  it("counts a floor exclusion the whole collection would have cleared", () => {
+  // The defect this replaced: the floor read whichever pool was being scored, so
+  // narrowing the pool silently removed rows from a list the control only claims
+  // to reorder. 20 of 100 in the free pool, 60 of 100 in the collection — the
+  // floor reads the second, so the row is ranked either way.
+  it("decides the floor on the collection, so a narrowed pool removes nothing", () => {
     const pool = { ...base, candidates: [candidate({
       ownedSupport: 20, collectionSupport: 60,
       tags: [{ slug: "counters", label: "Counters", count: 1 }] })] };
     const got = assembleDiscovery({ ...pool, sort: "new" });
-    expect(got.items).toEqual([]);
-    expect(got.floorExcluded).toBe(1);
-    expect(got.poolExcluded).toBe(1);
+    expect(got.items).toHaveLength(1);
+    expect(got.floorExcluded).toBe(0);
+    expect(got.poolExcluded).toBe(0);
   });
 
-  it("does not count a floor exclusion the whole collection also misses", () => {
+  it("excludes a row the collection itself misses, and blames no pool for it", () => {
     const short = { ...base, candidates: [candidate({
       ownedSupport: 20, collectionSupport: 25,
       tags: [{ slug: "counters", label: "Counters", count: 1 }] })] };
-    expect(assembleDiscovery({ ...short, sort: "new" }).poolExcluded).toBe(0);
+    const got = assembleDiscovery({ ...short, sort: "new" });
+    expect(got.items).toEqual([]);
+    expect(got.floorExcluded).toBe(1);
+    expect(got.poolExcluded).toBe(0);
   });
 
   // Both pools run through `clearsFloor`, so the floor is inclusive on both and
@@ -155,8 +165,11 @@ describe("assembleDiscovery", () => {
       .toBe(1190);
   });
 
-  it("does not ship the collection-support count to the client", () => {
+  // It ships now, because the floor is applied over these rows and the floor
+  // reads it. The figure the item carries has to be the figure the floor used,
+  // or the two can disagree about why a row is missing.
+  it("carries the collection-support count the floor was decided on", () => {
     const got = assembleDiscovery({ ...base, sort: "fit" });
-    expect(got.items[0]).not.toHaveProperty("collectionSupport");
+    expect(got.items[0].collectionSupport).toBe(90);
   });
 });

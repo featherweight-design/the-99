@@ -35,17 +35,22 @@ export async function resolveCommanderSlug(
     return { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };
   }
 
-  // The free pool, always: the detail route carries no `avail`, and `free` is
-  // what `/commanders` defaults to, so the rank here matches the row the visitor
-  // came from. Only the pool is shared with the list — prices, played tags and
-  // the rollup are the list's work and nothing on this path reads them.
-  const { scored } = await loadDiscoveryPool(userId, "free");
+  // The whole collection, because that is what the discover list ranks against.
+  // Slugs and rank both follow list position, so a resolver scoring a different
+  // population hands back the commander next to the one that was clicked. Only
+  // the pool is shared with the list — prices, played tags and the rollup are
+  // the list's work and nothing on this path reads them.
+  const { collection } = await loadDiscoveryPool(userId);
   // `unplayedCount` is `byFit`'s required input and never read by it, so it is
   // filled once per row here rather than in the comparator, which would
   // otherwise allocate two objects per comparison.
   const rows = assignDiscoverySlugs(
-    (await loadCandidateSlugRows(userId, scored.map((c) => c.oracleId)))
-      .map((r) => ({ ...r, unplayedCount: 0 })),
+    (
+      await loadCandidateSlugRows(
+        userId,
+        collection.map((c) => c.oracleId),
+      )
+    ).map((r) => ({ ...r, unplayedCount: 0 })),
   ).sort(byFit);
   const at = rows.findIndex((r) => r.slug === slug);
   if (at === -1) return null;

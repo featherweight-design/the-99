@@ -15,7 +15,7 @@ import type { ThemeKey } from "../../lib/theme/themes";
 type NavItem = {
   href: NavHref;
   label: string;
-  lockable: boolean; // Home is never locked; Collection/Commanders/Decks are.
+  lockable: boolean; // Home is never locked; every other destination is.
 };
 
 // Adjudication #1 (no <Mark> icons in rail nav items — Diamond + label ONLY) was
@@ -26,10 +26,16 @@ type NavItem = {
 // out. See design/design_handoff_the99_refresh/CHROME-rail-and-tabs.md.
 // If the ruling is ever reinstated, the rail widens to hold labels and the
 // icons come out. A 62px rail with labels is not a third option.
+//
+// Discover sits after Commanders and before Decks: owned before unowned, so the
+// two commander lanes read as one shelf, and Decks stays last because it is the
+// destination the app is for. It locks with the rest — a lane of 3,301
+// commanders you cannot yet score against is a catalogue, not a tool.
 const ITEMS: NavItem[] = [
   { href: "/",           label: "Home",       lockable: false },
   { href: "/collection", label: "Collection", lockable: true  },
   { href: "/commanders", label: "Commanders", lockable: true  },
+  { href: "/discover",   label: "Discover",   lockable: true  },
   { href: "/decks",      label: "Decks",      lockable: true  },
 ];
 
@@ -264,7 +270,15 @@ export function TabBar({ locked }: { locked: boolean }) {
             }`}
           >
             <NavIcon href={href} />
-            <span className="font-mono text-[9px] tracking-[0.06em]">{label}</span>
+            {/* A fifth item takes the 390pt bar to 74.8px per slot, which still
+                holds `Commanders` at 9px with 10.4px of air each side. Below
+                360pt it does not: the label drops to 8.5px and gives up its
+                tracking, which buys 3px back and takes 320pt from 3.4px of
+                clearance to 4.9px. Truncation is rejected — `Commanders` and
+                `Collection` share a prefix. */}
+            <span className="font-mono text-[9px] tracking-[0.06em] max-[359px]:text-[8.5px] max-[359px]:tracking-normal">
+              {label}
+            </span>
           </NavSlot>
         );
       })}

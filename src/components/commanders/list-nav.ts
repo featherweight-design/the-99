@@ -106,45 +106,6 @@ export function useScopeNav(): Nav<"owned" | "play"> {
 }
 
 /**
- * Flip one discovery parameter through the URL. Unlike a scope flip these are
- * fetches, not client swaps: only the active (sort, avail) pair is ranked on the
- * server, so the other ordering does not exist until it is asked for.
- *
- * `fit` and `free` are the defaults and are written as absences, which keeps a
- * shared link short and matches how the owned scope serialises `avail`.
- */
-function useParamNav<T extends string>(key: string, nonDefault: T): Nav<T> {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [target, setTarget] = useState<T | null>(null);
-
-  const go = useCallback(
-    (next: T) => {
-      const params = new URLSearchParams(window.location.search);
-      // Same guard as the scope flip's: both controls fire on their active
-      // option too, and a round-trip that re-ranks nothing is still a fetch.
-      // Only two values, so "is it the non-default one" identifies both.
-      if ((readOne(params, key) === nonDefault) === (next === nonDefault)) return;
-      if (next === nonDefault) params.set(key, next);
-      else params.delete(key);
-      setTarget(next);
-      startTransition(() => router.replace(href(params), { scroll: false }));
-    },
-    [router, key, nonDefault],
-  );
-
-  return { go, pending: isPending ? target : null };
-}
-
-export function useSortNav(): Nav<"fit" | "new"> {
-  return useParamNav<"fit" | "new">("sort", "new");
-}
-
-export function useAvailNav(): Nav<"all" | "free"> {
-  return useParamNav<"all" | "free">("avail", "all");
-}
-
-/**
  * The detail link for a row, carrying the pool the list ranked against.
  *
  * The detail page scores the one commander it draws, so without this it scored

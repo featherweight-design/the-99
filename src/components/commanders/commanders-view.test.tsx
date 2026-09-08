@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { toFreeDelta } from "../../lib/recs/free-delta";
@@ -96,19 +96,30 @@ const cards = () =>
     .getAllByRole("listitem")
     .filter((li) => !li.querySelector("button[aria-label^='Show ']"));
 
-// The count interleaves <b> figures with plain text, so match on the whole span.
-const WINDOW_COUNT = /^(all [\d,]+ shown|[\d,]+ shown · [\d,]+ more below)$/;
-const windowCounts = () =>
-  screen.queryAllByText(
-    (_, el) => el?.tagName === "SPAN" && WINDOW_COUNT.test(el.textContent ?? ""),
-  );
+// The rack's result line — the lane's only live count of what the filters left.
+const resultLine = () =>
+  screen.getByText(/commanders (you own and haven't built|match)/);
 
+// The rack mounts ONE treatment, chosen in JS at 1024px — below it the colour
+// pips and `Score against` live in a closed sheet and are not in the document
+// at all. Every test here is about the list, so they all stand at the wide
+// breakpoint; the narrow treatment is `filter-rack.test.tsx`'s subject.
 beforeEach(() => {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  );
   // The mirror keeps whatever path it is mounted under, so the test has to
   // stand on the real one rather than jsdom's default `/`.
   window.history.replaceState(null, "", "/commanders");
   replaceState.mockClear();
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("CommandersView windowing", () => {
   it("renders one batch and a control naming what is left", () => {
@@ -174,35 +185,39 @@ describe("CommandersView windowing", () => {
   });
 });
 
-describe("CommandersView window count", () => {
-  it("shows the hidden remainder at both viewports, never as 'showing N of M'", () => {
+// The rack replaced the bar's two `WindowCount` copies with one result line.
+// The reveal control still owns the window's own figures, and the rack must not
+// restate them: two counts on one screen that disagree by design read as a bug.
+describe("CommandersView result line", () => {
+  it("states the lane at rest rather than printing a ratio", () => {
     view(results(214));
-    const counts = windowCounts();
-    expect(counts).toHaveLength(2);
-    for (const c of counts) expect(c).toHaveTextContent("25 shown · 189 more below");
-    // The colour filter's own count owns that phrasing; the window must not echo it.
-    expect(screen.getByText(/Showing 214 of 214/)).toBeInTheDocument();
+    expect(resultLine()).toHaveTextContent(
+      "214 commanders you own and haven't built",
+    );
+    expect(screen.queryByText(/214 of 214/)).toBeNull();
   });
 
-  it("switches to the exhausted form once everything is revealed", () => {
-    view(results(30));
-    fireEvent.click(control()!);
-    const counts = windowCounts();
-    expect(counts).toHaveLength(2);
-    for (const c of counts) expect(c).toHaveTextContent("all 30 shown");
+  it("prints the ratio once a filter narrows the lane", () => {
+    const mixed = [
+      ...results(40, ["R"]),
+      ...results(4, ["U"]).map((r, i) => ({ ...r, slug: `u-${i}`, oracleId: `u-${i}` })),
+    ];
+    view(mixed);
+    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+    expect(resultLine()).toHaveTextContent("40 of 44 commanders match");
   });
 
-  it("is omitted entirely on a short list, leaving the shipped meta line alone", () => {
-    view(results(24));
-    expect(windowCounts()).toHaveLength(0);
-    expect(screen.getByText("Order: Fit ↓ · fixed")).toBeInTheDocument();
+  it("never restates the reveal control's own window figures", () => {
+    view(results(214));
+    expect(screen.queryByText(/more below/)).toBeNull();
+    // The window's remainder is the reveal control's alone, and it is still there.
+    expect(screen.getByText("189 remaining")).toBeInTheDocument();
   });
 });
 
 describe("CommandersView windowing under the colour filter", () => {
-  function filterToRed() {
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Red" })[0]);
-  }
+  const filterToRed = () =>
+    fireEvent.click(screen.getByRole("button", { name: "Red" }));
 
   it("resets the window and recounts against the filtered length", () => {
     const mixed = [...results(40, ["R"]), ...results(40, ["U"]).map((r, i) => ({
@@ -232,13 +247,65 @@ describe("CommandersView windowing under the colour filter", () => {
   });
 });
 
+// Which zero state answers for an empty list follows which control emptied it.
+// The colour state promises a pip to drop; a query has no pip, so a search-only
+// zero used to fall through to an empty list under a rack still claiming
+// `0 of 40 commanders match` — a count with nothing under it explaining itself.
+describe("CommandersView zero states", () => {
+  const searchFor = (q: string) =>
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: q } });
+
+  // `cards()` throws on an empty list, which is the case under test.
+  const noRows = () => expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+
+  // The rack's own search field also offers `Clear search`, so the state's
+  // primary is reached through the state rather than by label alone.
+  const zeroState = () =>
+    within(screen.getByText("No commander by that name").parentElement!);
+
+  it("explains a search that matched nothing, and offers the other lane", () => {
+    view(results(40));
+    searchFor("jodah");
+    noRows();
+    expect(screen.getByText("No commander by that name")).toBeInTheDocument();
+    expect(screen.getByText(/the 40 you own/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Search Discover" })).toHaveAttribute(
+      "href",
+      "/discover?q=jodah",
+    );
+  });
+
+  it("clears the search from the state's own primary", () => {
+    view(results(40));
+    searchFor("jodah");
+    fireEvent.click(zeroState().getByRole("button", { name: "Clear search" }));
+    expect(cards()).toHaveLength(REVEAL_STEP);
+  });
+
+  it("keeps naming a pip when one is lit, since that state has a correction", () => {
+    view(results(40, ["R"]));
+    fireEvent.click(screen.getByRole("button", { name: "Blue" }));
+    noRows();
+    expect(screen.getByText("Nothing in the pile matches")).toBeInTheDocument();
+    expect(screen.queryByText("No commander by that name")).toBeNull();
+  });
+
+  it("shows no zero state when nothing narrowed the lane", () => {
+    view(results(0));
+    expect(screen.queryByText("Nothing in the pile matches")).toBeNull();
+    expect(screen.queryByText("No commander by that name")).toBeNull();
+  });
+});
+
 describe("CommandersView ranking toggle", () => {
   // The control switches the data, not a panel, so it is a radiogroup rather
   // than the tablist its shape suggests.
   // The segments are labelled by their aria strings, not their visible text.
-  const segments = (name: RegExp) => screen.getAllByRole("radio", { name });
-  const ALL = /everything you own/;
-  const FREE = /not already in a finished deck|What.s free is unavailable/;
+  // One treatment is mounted, so these are single elements — the bar's paired
+  // desktop/mobile subtrees are gone.
+  const segments = (name: string) => screen.getAllByRole("radio", { name });
+  const ALL = "All my cards";
+  const FREE = "Free cards only";
 
   it("opens on the mode the URL asked for", () => {
     view(results(3), { avail: "free", freeItems: results(3) });
@@ -254,17 +321,18 @@ describe("CommandersView ranking toggle", () => {
     fireEvent.click(segments(FREE)[0]);
     expect(cards()[0]).toHaveTextContent("General 2");
     for (const s of segments(FREE)) expect(s).toHaveAttribute("aria-checked", "true");
-    // Free is the default mode, so the free URL carries no `avail` at all.
-    expect(urls().at(-1)).toBe("/commanders");
+    // `all` is the parameter module's default, so `free` is the mode that gets
+    // written — the reverse of what the shipped bar serialised.
+    expect(urls().at(-1)).toBe("/commanders?a=free");
   });
 
-  // The mirror writes both controls together. Written from the colours alone, a
-  // pip clicked after a flip back to `all` would drop the mode from the URL.
+  // The mirror writes the whole parameter object together. Written from the
+  // colours alone, a pip clicked after a flip would drop the mode from the URL.
   it("keeps the mode in the URL when a colour lands after the flip", () => {
-    view(results(3), { avail: "free", freeItems: results(3) });
-    fireEvent.click(segments(ALL)[0]);
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Red" })[0]);
-    expect(urls().at(-1)).toBe("/commanders?c=R&avail=all");
+    view(results(3, ["R"]), { freeItems: results(3, ["R"]) });
+    fireEvent.click(segments(FREE)[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+    expect(urls().at(-1)).toBe("/commanders?c=r&a=free");
   });
 
   it("ranks against the free list once the server sends one", () => {
@@ -292,11 +360,10 @@ describe("CommandersView ranking toggle", () => {
     expect(live).toHaveTextContent("Re-ranked by what’s free · 2 commanders");
   });
 
-  it("strikes the free segment out when we cannot read the decks", () => {
+  // The rack's `Score against` has no struck-out segment — the banner below it
+  // is what says the deck read failed. The flip is still refused.
+  it("refuses the flip when we cannot read the decks", () => {
     view(results(3), { availOk: false });
-    for (const s of segments(FREE)) {
-      expect(s).toHaveAttribute("aria-disabled", "true");
-    }
     fireEvent.click(segments(FREE)[0]);
     for (const s of segments(ALL)) expect(s).toHaveAttribute("aria-checked", "true");
   });
@@ -349,13 +416,6 @@ describe("CommandersView ranking toggle", () => {
     expect(screen.getAllByText("Synergy data unavailable")).toHaveLength(2);
     expect(screen.queryByText(availabilityCopy.degraded.heading)).toBeNull();
   });
-
-  it("explains the exclusion only while the free ranking is on", () => {
-    view(results(3), { freeItems: results(3) });
-    expect(screen.queryByText(/don.t count toward these scores/)).toBeNull();
-    fireEvent.click(segments(FREE)[0]);
-    expect(screen.getAllByText(/don.t count toward these scores/).length).toBeGreaterThan(0);
-  });
 });
 
 describe("CommandersView reveal a11y", () => {
@@ -377,7 +437,7 @@ describe("CommandersView reveal a11y", () => {
     const live = container.querySelector('[aria-live="polite"]')!;
     fireEvent.click(control()!);
     expect(live).toHaveTextContent(/Ranks 26 to 50 added/);
-    fireEvent.click(screen.getAllByRole("button", { name: "Filter by Red" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Red" }));
     expect(live).toHaveTextContent("");
   });
 
@@ -385,5 +445,45 @@ describe("CommandersView reveal a11y", () => {
     view(results(214));
     fireEvent.click(control()!);
     expect(document.activeElement).toBe(cards()[REVEAL_STEP]);
+  });
+});
+
+// The rack's writes, per the URL table: every control is one parameter,
+// defaults serialise as absences, and nothing navigates.
+describe("CommandersView URL writes", () => {
+  it("writes only the parameters that are off their default", () => {
+    view(results(3, ["B"]));
+    fireEvent.click(screen.getByRole("button", { name: "Black" }));
+    expect(urls().at(-1)).toBe("/commanders?c=b");
+  });
+
+  it("writes nothing back once every control returns to its default", () => {
+    view(results(3, ["B"]));
+    fireEvent.click(screen.getByRole("button", { name: "Black" }));
+    fireEvent.click(screen.getByRole("button", { name: "Black" }));
+    expect(urls().at(-1)).toBe("/commanders");
+  });
+
+  it("writes with replaceState rather than navigating", () => {
+    view(results(3, ["B"]));
+    routerReplace.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Black" }));
+    expect(routerReplace).not.toHaveBeenCalled();
+    expect(replaceState).toHaveBeenCalled();
+  });
+
+  it("preserves parameters it does not own, read off the live URL", () => {
+    window.history.replaceState(null, "", "/commanders?ref=email");
+    view(results(3, ["B"]));
+    fireEvent.click(screen.getByRole("button", { name: "Black" }));
+    expect(urls().at(-1)).toBe("/commanders?ref=email&c=b");
+  });
+
+  it("renders the colour-match control greyed with no pip lit", () => {
+    view(results(3));
+    expect(screen.getByRole("radiogroup", { name: "Colour match" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 });

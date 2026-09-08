@@ -1,9 +1,32 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import { FloorEmpty, NoDecksBanner } from "./discovery-empty";
+import { DiscoveryEmpty, FloorEmpty, NoDecksBanner } from "./discovery-empty";
 
 const copy = discoveryCopy.empty;
+
+describe("DiscoveryEmpty", () => {
+  it("names the lane boundary rather than a spelling hint alone", () => {
+    render(<DiscoveryEmpty query="jodah" total={3301} onClearSearch={() => {}} />);
+    expect(screen.getByText("No commander by that name")).toBeTruthy();
+    expect(screen.getByText(/it's on your commanders instead/)).toBeTruthy();
+  });
+
+  it("offers the other lane, carrying the same query", () => {
+    render(<DiscoveryEmpty query="jodah" total={3301} onClearSearch={() => {}} />);
+    expect(screen.getByRole("link", { name: "Search your commanders" })).toHaveAttribute(
+      "href",
+      "/commanders?q=jodah",
+    );
+  });
+
+  it("clears the query in place rather than routing", () => {
+    const onClearSearch = vi.fn();
+    render(<DiscoveryEmpty query="jodah" total={3301} onClearSearch={onClearSearch} />);
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(onClearSearch).toHaveBeenCalledOnce();
+  });
+});
 
 describe("NoDecksBanner", () => {
   // No card figure: the page header above the banner already ends "read against
