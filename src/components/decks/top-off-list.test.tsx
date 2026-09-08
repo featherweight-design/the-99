@@ -225,11 +225,33 @@ describe("TopOffList", () => {
   // event to the player.
   it("draws the same refusal when the call itself throws", async () => {
     actions.commit.mockRejectedValue(new Error("network"));
-    render(<Harness initialTicked={["owned-1"]} />);
+    const onAnnounce = vi.fn();
+    render(<Harness initialTicked={["owned-1"]} onAnnounce={onAnnounce} />);
 
     await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("1", "97") }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(topOffCopy.commit.refused);
+    // The plate is drawn, so a reader hears it too: the two refusal paths are
+    // one event and they speak with one voice.
+    expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.commit.refused);
+  });
+
+  // The cap moves while the list is open — a quick-add of a card that is not
+  // itself a candidate takes a slot and unticks nothing. The count must follow
+  // the new cap rather than report an impossible "2 of 1".
+  it("clamps the selection when open slots shrink under it", () => {
+    const { rerender } = render(
+      <Harness openSlots={2} initialTicked={["owned-1", "owned-2"]} />,
+    );
+    expect(screen.getByText(topOffCopy.list.headMobile("2", "2"))).toBeInTheDocument();
+
+    rerender(<Harness openSlots={1} initialTicked={["owned-1", "owned-2"]} />);
+
+    expect(screen.getByText(topOffCopy.list.headMobile("1", "1"))).toBeInTheDocument();
+    expect(screen.getByText(topOffCopy.list.cap("1"))).toBeInTheDocument();
+    // The survivor is the higher-ranked row; the tick lost is the last one made.
+    expect(rowBox("owned-1")).toBeChecked();
+    expect(rowBox("owned-2")).not.toBeChecked();
   });
 
   it("holds the in-flight label and locks the row controls while writing", async () => {

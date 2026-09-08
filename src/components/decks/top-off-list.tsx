@@ -169,7 +169,20 @@ export function TopOffList({
 
   // Derived during render, never in an effect: an illegal row unticks itself,
   // and correcting that after paint would show the stale count for a frame.
-  const live = new Set([...ticked].filter((id) => !illegal.has(id) && !declined.has(id)));
+  //
+  // Clamped to the cap as well, because `openSlots` is live: quick-adding a card
+  // that is not itself a candidate takes a slot without unticking anything, and
+  // an unclamped count would then say "2 of 1 ticked" over a cap line claiming
+  // the list was full. The survivors are the first `openSlots` in pool order, so
+  // the tick a player loses is the lowest-ranked one they made.
+  const legal = [...ticked].filter((id) => !illegal.has(id) && !declined.has(id));
+  const legalSet = new Set(legal);
+  const live = new Set(
+    pool
+      .map((c) => c.oracleId)
+      .filter((id) => legalSet.has(id))
+      .slice(0, Math.max(openSlots, 0)),
+  );
   const tickedCount = live.size;
   const atCap = tickedCount >= openSlots;
 
@@ -291,8 +304,10 @@ export function TopOffList({
       onClose("committed");
     } catch {
       // A call that never arrived and one that arrived and failed are the same
-      // event to the player, and the deck is unchanged either way.
+      // event to the player, and the deck is unchanged either way — including
+      // for a reader, who has only the announcement to go on.
       setError(topOffCopy.commit.refused);
+      onAnnounce(topOffCopy.commit.refused);
     } finally {
       setInflight(false);
       onInflight(false);

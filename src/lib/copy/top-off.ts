@@ -12,6 +12,14 @@
  * it is a percentage of decks, and it is the shipped synergy row's own atom.
  */
 
+// Counts arrive already stringified from the callers, so the singular test is
+// against "1" rather than a number. Applied by eng where the handoff pluralised
+// unconditionally, and flagged to Design for ratification — the same call, and
+// the same helper shape, as `plural` in decks-builder.ts. A deck one card short
+// of full otherwise reads "Add 1 cards" and "1 slots stay open".
+const plural = (n: string, one: string, many: string) =>
+  `${n} ${n === '1' ? one : many}`;
+
 export const topOffCopy = {
   // ── The strip, closed ─────────────────────────────────────────────────
   strip: {
@@ -22,21 +30,23 @@ export const topOffCopy = {
     /** Gains the candidate count. The player is about to be shown a list, and
      *  its length is the first thing they are owed about it. */
     caption: (n: string, cand: string) =>
-      `${n} slots open · ${cand} candidates ranked by synergy for this commander`,
+      `${plural(n, 'slot', 'slots')} open · ${plural(cand, 'candidate', 'candidates')} ranked by synergy for this commander`,
     captionMobile: (n: string, cand: string) =>
-      `${n} slots open · ${cand} candidates ranked`,
+      `${plural(n, 'slot', 'slots')} open · ${plural(cand, 'candidate', 'candidates')} ranked`,
     /** ENG-ADDED, from the canvas's open phone strip. Once the list is open the
      *  open-slot figure is stated by the commit bar's ticked count, which
      *  carries it as its denominator; this line drops it and picks up the
      *  ordering instead, which is the one thing desktop says that phone has
      *  nowhere else to put. */
-    captionMobileOpen: (cand: string) => `${cand} candidates · ranked by synergy`,
+    captionMobileOpen: (cand: string) =>
+      `${plural(cand, 'candidate', 'candidates')} · ranked by synergy`,
 
     /** The door. A verb that opens something, not a verb that does something —
      *  the whole of #360 scope 1 is in the difference. `Choose` also names the
      *  player as the one choosing, which the two shipped CTAs did not. */
     open: (n: string) => `Choose the last ${n}`,
-    openAria: (n: string) => `Choose the cards for the last ${n} slots`,
+    openAria: (n: string) =>
+      `Choose the cards for the last ${plural(n, 'slot', 'slots')}`,
     close: 'Close the list',
     /** ENG-ADDED. The canvas truncates the label to one word at 390px, where
      *  the strip head has a single line to give. A visual truncation, not a
@@ -47,7 +57,9 @@ export const topOffCopy = {
      *  a button face; there is no such number now. This one explains a default
      *  and makes the safety promise the review step is for. */
     doorNote: (owned: string) =>
-      `${owned} of them are in your collection and arrive ticked. Nothing is added until you say so.`,
+      owned === '1'
+        ? '1 of them is in your collection and arrives ticked. Nothing is added until you say so.'
+        : `${owned} of them are in your collection and arrive ticked. Nothing is added until you say so.`,
     /** Reopening after a partial accept. Says what is left and that the
      *  selection survived, so closing the list is never a loss. */
     doorNoteAgain: (cand: string) =>
@@ -64,15 +76,15 @@ export const topOffCopy = {
     /** Accessible name for the checkbox group. Carries both counts, because a
      *  reader cannot see the head. */
     groupAria: (cand: string, n: string) =>
-      `${cand} candidates for the last ${n} slots`,
+      `${plural(cand, 'candidate', 'candidates')} for the last ${plural(n, 'slot', 'slots')}`,
 
     head: (ticked: string, n: string, cand: string, untouched: string) =>
-      `${ticked} of ${n} slots ticked · ${cand} candidates, ${untouched} untouched`,
+      `${ticked} of ${plural(n, 'slot', 'slots')} ticked · ${plural(cand, 'candidate', 'candidates')}, ${untouched} untouched`,
     headMobile: (ticked: string, n: string) => `${ticked} of ${n} ticked`,
 
     tickOwned: (owned: string) => `Tick the ${owned} I own`,
     tickOwnedAria: (owned: string) =>
-      `Tick all ${owned} candidates you already own`,
+      `Tick all ${plural(owned, 'candidate', 'candidates')} you already own`,
     clearTicks: 'Clear all ticks',
 
     /** Column headers. The two figures sit under them at both widths on
@@ -88,7 +100,8 @@ export const topOffCopy = {
     /** The cap. Stated as a count with its denominator, and it says what to do
      *  rather than only what is forbidden. Also the aria-describedby target of
      *  every inert tick box, so a reader who tabs into one hears why. */
-    cap: (n: string) => `${n} of ${n} slots ticked — untick one to swap another in`,
+    cap: (n: string) =>
+      `${n} of ${plural(n, 'slot', 'slots')} ticked — untick one to swap another in`,
 
     /** The row's accessible name. All four visual atoms are aria-hidden, so
      *  this is the only place the marks are spoken. */
@@ -136,10 +149,10 @@ export const topOffCopy = {
   commit: {
     /** States what it will place. At zero it loses the count rather than
      *  printing 'Add 0 cards', and goes disabled with no error. */
-    add: (ticked: string) => `Add ${ticked} cards`,
+    add: (ticked: string) => `Add ${plural(ticked, 'card', 'cards')}`,
     addEmpty: 'Add cards',
     addAria: (ticked: string, total: string) =>
-      `Add ${ticked} cards to the deck, ${total} of 99`,
+      `Add ${plural(ticked, 'card', 'cards')} to the deck, ${total} of 99`,
     cancel: 'Cancel',
 
     /** The consequence, before the tap. */
@@ -150,7 +163,9 @@ export const topOffCopy = {
     /** Printed when the selection leaves slots open. Not a warning and not a
      *  nudge — an assurance that stopping short is a choice with a way back. */
     slotsStayOpen: (n: string) =>
-      `${n} slots stay open — you can come back to them`,
+      n === '1'
+        ? '1 slot stays open — you can come back to it'
+        : `${n} slots stay open — you can come back to them`,
 
     /** Zero ticks, and the zero-owned case, which is the same state. */
     nothingTicked: 'nothing ticked — the list arrives with what you own already ticked',
@@ -160,7 +175,7 @@ export const topOffCopy = {
     /** UNCHANGED — recommendationsCopy.fill.fillingRows. A 27-row write is
      *  exactly what that string was written for; a second in-flight
      *  vocabulary for the same act would be two voices. */
-    inFlight: (ticked: string) => `Sleeving ${ticked} cards…`,
+    inFlight: (ticked: string) => `Sleeving ${plural(ticked, 'card', 'cards')}…`,
     /** UNCHANGED — synergyCopy.lastSlots.topUpFailed. */
     refused: 'We couldn’t add those. The deck is unchanged.',
   },
@@ -177,7 +192,10 @@ export const topOffCopy = {
   // Every line states a COUNT OF CARDS, never a percentage and never a bare
   // number: 'the seed' and 'top-off 2' are labels, '68 cards' is the figure.
   ledger: {
-    header: (total: string) => `Where these ${total} cards came from`,
+    header: (total: string) =>
+      total === '1'
+        ? 'Where this 1 card came from'
+        : `Where these ${total} cards came from`,
     headerMeta: (passes: string, buy: string) =>
       `${passes} passes · ${buy} to buy`,
     /** One pass, so 'passes' would be wrong and the count is not worth saying. */
@@ -190,18 +208,18 @@ export const topOffCopy = {
 
     /** The seed's sentence — the shipped provenance wording, recast as a line. */
     seedLine: (n: string, buy: string) =>
-      `${n} cards — the roles and the mana base, ${buy} to buy.`,
+      `${plural(n, 'card', 'cards')} — the roles and the mana base, ${buy} to buy.`,
     seedLineNoBuy: (n: string) =>
-      `${n} cards — the roles and the mana base.`,
+      `${plural(n, 'card', 'cards')} — the roles and the mana base.`,
     /** The seed NAMES its reversal rather than growing a button for it: the
      *  sweep is a rule and a row away in the toolbar, and duplicating it here
      *  would put two destructive controls in one box. */
     seedReversal: 'the sweep reverses it',
 
     passLine: (n: string, slots: string, buy: string) =>
-      `${n} cards you chose from the last ${slots}, ${buy} of them to buy.`,
+      `${plural(n, 'card', 'cards')} you chose from the last ${slots}, ${buy} of them to buy.`,
     passLineNoBuy: (n: string, slots: string) =>
-      `${n} cards you chose from the last ${slots}.`,
+      `${plural(n, 'card', 'cards')} you chose from the last ${slots}.`,
     /** A pass is a SET OF ROWS, not a transaction. A row leaves it two ways and
      *  the line NAMES WHICH, because they mean opposite things: 'removed' is a
      *  rejection, 'now yours' is an endorsement — the shipped keep control
@@ -213,11 +231,11 @@ export const topOffCopy = {
      *  for what it did, so the clause that hands a card over should sound like
      *  handing it over. 'kept' is the CONTROL's word and stays its own. */
     passRecounted: (placed: string, removed: string) =>
-      `${placed} cards · ${removed} removed since`,
+      `${plural(placed, 'card', 'cards')} · ${removed} removed since`,
     passRecountedKept: (placed: string, kept: string) =>
-      `${placed} cards · ${kept} now yours`,
+      `${plural(placed, 'card', 'cards')} · ${kept} now yours`,
     passRecountedBoth: (placed: string, kept: string, removed: string) =>
-      `${placed} cards · ${kept} now yours, ${removed} removed since`,
+      `${plural(placed, 'card', 'cards')} · ${kept} now yours, ${removed} removed since`,
     /** Every card kept, none removed — its own string because 'all' is the
      *  sentence a player wants confirmed just before the line disappears. */
     passRecountedAllKept: (placed: string) => `all ${placed} now yours`,
@@ -234,8 +252,12 @@ export const topOffCopy = {
     /** #359's 'before deciding'. A toggle, not a filter — it MARKS the pass's
      *  rows and hides nothing, so the word is 'show', not 'only'. */
     mark: (n: string) => `Show these ${n}`,
+    /** ENG-ADDED, mirroring Design's own `undoOne` one line down: the same
+     *  demonstrative has to agree at a count of one, and the toggle beside the
+     *  undo would otherwise read 'Show these 1'. */
+    markOne: 'Show this 1',
     markAria: (n: string, pass: string) =>
-      `Mark the ${n} cards from ${pass} in the deck below`,
+      `Mark the ${plural(n, 'card', 'cards')} from ${pass} in the deck below`,
     unmarkAria: (pass: string) => `Clear the mark on ${pass}`,
 
     /** 'these' because the line is the antecedent; the aria name says which
@@ -243,7 +265,7 @@ export const topOffCopy = {
     undo: (n: string) => `Undo these ${n}`,
     undoOne: 'Undo this 1',
     undoAria: (n: string, pass: string) =>
-      `Undo the ${n} cards from ${pass}, and put back what they cost`,
+      `Undo the ${plural(n, 'card', 'cards')} from ${pass}, and put back what they cost`,
     undoInFlight: (n: string) => `Putting ${n} back…`,
     undoFailed: 'We couldn’t put those back. The deck is unchanged.',
   },
@@ -266,23 +288,23 @@ export const topOffCopy = {
   // selection surface.
   announce: {
     opened: (cand: string, n: string, ticked: string) =>
-      `${cand} candidates for ${n} slots. ${ticked} already ticked.`,
+      `${plural(cand, 'candidate', 'candidates')} for ${plural(n, 'slot', 'slots')}. ${ticked} already ticked.`,
     ticked: (ticked: string, n: string, buy: string) =>
       `${ticked} of ${n} ticked, ${buy} to buy.`,
     tickedNoBuy: (ticked: string, n: string) => `${ticked} of ${n} ticked.`,
-    capped: (n: string) => `${n} of ${n} slots ticked.`,
+    capped: (n: string) => `${n} of ${plural(n, 'slot', 'slots')} ticked.`,
     added: (added: string, total: string, buy: string) =>
-      `${added} cards added. ${total} of 99, ${buy} to buy.`,
+      `${plural(added, 'card', 'cards')} added. ${total} of 99, ${buy} to buy.`,
     addedNoBuy: (added: string, total: string) =>
-      `${added} cards added. ${total} of 99.`,
+      `${plural(added, 'card', 'cards')} added. ${total} of 99.`,
     declined: (name: string, ticked: string, n: string) =>
       `${name} set aside. ${ticked} of ${n} ticked.`,
     undone: (added: string, total: string) =>
-      `${added} cards put back. ${total} of 99.`,
+      `${plural(added, 'card', 'cards')} put back. ${total} of 99.`,
     /** The mark is a visual grouping, so it is the one thing on this surface a
      *  reader would otherwise get nothing from. */
     marked: (n: string, pass: string) =>
-      `${n} cards from ${pass} marked in the deck.`,
+      `${plural(n, 'card', 'cards')} from ${pass} marked in the deck.`,
     markCleared: 'Mark cleared.',
   },
 } as const;
