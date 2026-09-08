@@ -104,6 +104,14 @@ export function cssUrl(uri: string): string {
   return `url("${encodeURI(uri).replaceAll('"', "%22")}")`;
 }
 
+/**
+ * The art fallback for a card whose printing carries no image. It lives beside
+ * `cssUrl` because every surface that calls one calls the other, and two copies
+ * of a stripe angle drift the first time one is adjusted.
+ */
+export const ART_STRIPES =
+  "repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px), var(--bg)";
+
 /** Subtitle date per design: "today" / "yesterday" / "Jul 12" (year appended when not current). */
 export function formatLastUpdated(date: Date, now: Date = new Date()): string {
   const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();

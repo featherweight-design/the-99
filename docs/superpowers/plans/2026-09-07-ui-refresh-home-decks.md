@@ -1589,7 +1589,10 @@ git commit -m "feat(decks): give the six statuses one token rule"
 **Files:**
 - Modify: `src/components/decks/deck-card.tsx` (rewrite)
 - Modify: `src/components/decks/deck-card-overflow.tsx` (label and geometry only)
-- Test: `src/components/decks/deck-card.test.tsx`
+- Modify: `src/lib/copy/refresh.ts` (add `decks.cardAriaNoDetail` — see Step 3)
+- Modify: `src/lib/collection/browse.ts` (`ART_STRIPES` moves here), `src/components/home/hero-commander.tsx` (imports it)
+- Modify: `src/app/decks/page.tsx` (one clock, one roll-up, passed to every tile)
+- Test: `src/components/decks/deck-card.test.tsx`, `src/components/decks/deck-card-overflow.test.tsx` (the trigger's name is now per-deck)
 
 **Interfaces:**
 - Consumes: `DeckListItem` + `lastPlayedAt` (Task 6), `DeckShopping` (Task 7), `statusBarStyle` / `StatusPillBadge` (Task 9), `refreshCopy.decks` (Task 1), `formatWhen` (Task 3), `colorLabel` (`src/lib/decks/format.ts`, locked ruling 3).
@@ -1707,19 +1710,26 @@ Inside `deck-card.tsx`, above the component. It is a total function over the six
 ```tsx
 /**
  * The one figure that explains the status (STATES-deck-statuses.md §7). Total
- * over the six values: a status with no branch here would render an empty row,
+ * over the six values: a status with no branch here would render an empty slot,
  * which reads as a bug rather than as an absence.
  *
- * Building has no separate figure — its count IS the explanation — so it
- * repeats the count rather than inventing a second one.
+ * Two statuses return `null` — see below. `null` withholds the slot entirely;
+ * it is never rendered empty.
  */
-function detailFor(deck: DeckListItem, shopping: DeckShopping | undefined): string {
+function detailFor(
+  deck: DeckListItem,
+  shopping: DeckShopping | undefined,
+  now: Date,
+): string | null {
   const c = refreshCopy.decks;
   switch (deck.statusPill) {
     case "Draft":
-      return c.detailDraft;
+      return formatWhen(deck.createdAt, now) === "today" ? c.detailDraft : null;
     case "Building":
-      return `${deck.built} / ${MATURE_DECK_SIZE}`;
+      // No figure. Building's count IS its explanation, and the count already
+      // has its own slot in the same row — a second copy of `87 / 99` beside
+      // the first says nothing and reads as a rendering fault.
+      return null;
     case "Over":
       return c.detailOver(deck.built - MATURE_DECK_SIZE);
     case "Unresolved":
@@ -1741,29 +1751,45 @@ function detailFor(deck: DeckListItem, shopping: DeckShopping | undefined): stri
 }
 ```
 
-`detailDraft` is the literal string `created today`, which is only true on the day of creation. Render it as `formatWhen(deck.createdAt, now) === "today" ? c.detailDraft : \`created ${formatWhen(deck.createdAt, now)}\`` — **no**: that invents a string. Instead use `c.detailDraft` when the deck was created today and fall through to the count (`0 / 99`) otherwise, and record the gap. A Draft deck older than a day is a real state the copy file does not cover.
+Two `null` branches, both recorded in the gap report:
+
+- `detailDraft` is the literal string `created today`, only true on the day of creation. An older Draft gets no detail figure rather than a date it does not have; its count carries the row. A Draft deck older than a day is a real state the copy file does not cover.
+- Building's figure was drafted as a repeat of the count. It cannot be: the count occupies its own slot in the same row, so the tile would print `87 / 99` twice side by side. Building gets no detail figure.
+
+Both make the tile's accessible name three things rather than four, so `refreshCopy.decks` gains one key beside `cardAria`:
+
+```ts
+cardAriaNoDetail: (name: string, status: string, count: string) =>
+  `${name}, ${status}, ${count}`,
+```
+
+Falling back to `cardAria` with the count in the detail slot is not an option — a reader would hear the figure twice.
 
 - [ ] **Step 4: Write the tile**
 
 Structure, both viewports (the tile is one element with responsive classes — never two subtrees, one hidden; see the responsive-split rule):
 
 ```tsx
-<article className="relative overflow-hidden rounded-[14px]"
-         style={{ background: "var(--surface)", border: "1px solid var(--border-strong)" }}>
-  {/* 1 · art header, 118px, scrim --bg 10% → --surface-inset 96% */}
-  <div data-deck-art className="relative h-[118px]" style={{ background: `${cssUrl(deck.commanderImageUri)} center/cover` }}>
-    <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, color-mix(in srgb, var(--bg) 10%, transparent), color-mix(in srgb, var(--surface-inset) 96%, transparent))" }} />
-    <div className="absolute left-3 top-3"><StatusPillBadge status={deck.statusPill} /></div>
-    <div className="absolute right-2 top-2"><DeckCardOverflow ... /></div>
+<article className="relative flex-none overflow-hidden rounded-[14px]"
+         style={{ background: "var(--surface-inset)", border: "1px solid var(--border)" }}>
+  {/* 1 · art header, 124px phone / 118px desktop, scrim --bg 10% → --surface-inset 96% */}
+  <div data-deck-art className="relative h-[124px] sm:h-[118px]" style={{ background: `${cssUrl(deck.commanderImageUri)} center/cover` }}>
+    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 10%, transparent), color-mix(in srgb, var(--surface-inset) 96%, transparent))" }} />
+    <StatusPillBadge status={deck.statusPill} />
+    <DeckCardOverflow ... />
     {/* 4 · name over the scrim */}
-    <h3 className="absolute inset-x-3 bottom-2 truncate" style={{ fontFamily: "var(--font-display)", fontSize: 15 }}>{deck.name}</h3>
+    <h3 className="absolute inset-x-0 bottom-0 truncate px-[13px] pb-[10px] font-display text-[17px] font-semibold sm:text-[15px]">{deck.name}</h3>
   </div>
-  {/* 5 · meta row */}
-  {/* 6 · 3px progress */}
-  {/* 7 · detail row */}
+  {/* 5·6·7 — one grid, two area maps */}
+  <div className="grid ... [grid-template-areas:'pips_detail_count''bar_bar_bar'] sm:[grid-template-areas:'pips_label_count''bar_bar_bar''detail_._played']"
+       style={{ gridTemplateColumns: "auto 1fr auto" }}> ... </div>
   <Link href={`/decks/${deck.id}`} className="absolute inset-0" aria-label={ariaLabel} />
 </article>
 ```
+
+The phone and the desktop put the same nodes in different places — the detail figure sits in the meta row on a phone and below the bar on desktop, and the colour label and last-played are desktop-only. That is **two `grid-template-areas` maps over one set of nodes**, each child carrying `style={{ gridArea: "pips" | "label" | "detail" | "count" | "bar" | "played" }}`, never a phone subtree beside a desktop one. The two desktop-only nodes are `hidden sm:inline`, so on a phone they are `display:none` and are not auto-placed into an area that does not exist.
+
+The 3px bar is decorative and carries **no** `role="progressbar"`. The shipped tile had one, with `aria-valuenow`/`aria-valuemax`/`aria-valuetext`; the refresh's tile-level `aria-label` names the count, so the role would announce the same figure a second time. Recorded in the gap report.
 
 Keep the shipped card's absolute-overlay `<Link>` technique — it is what makes the whole tile the target while leaving the `…` clickable — but give the overflow `relative z-10` so it sits above the overlay. The `aria-label` comes from `refreshCopy.decks.cardAria(name, status, count, detail)` and must carry the same four things in the same order the tile shows them.
 
@@ -1771,7 +1797,13 @@ The art fallback when `commanderImageUri` is null: reuse `ART_STRIPES` from `src
 
 - [ ] **Step 5: Bring the overflow to spec**
 
-In `deck-card-overflow.tsx`: the trigger becomes 26px square (desktop) / 44px (phone) and its `aria-label` becomes `refreshCopy.decks.menu.trigger(deckName)` — `Actions for Atraxa, Praetors' Voice` — instead of the shipped generic `Deck options`, which says the same thing for every tile on the page. The three item labels come from `refreshCopy.decks.menu`. Delete is `--danger` and last. **Add nothing to this menu.**
+In `deck-card-overflow.tsx`: the trigger becomes 26px square (desktop) / 44px (phone) and its `aria-label` becomes `refreshCopy.decks.menu.trigger(deckName)` — `Actions for Atraxa, Praetors' Voice` — instead of the shipped generic `Deck options`, which says the same thing for every tile on the page. `deck-card-overflow.test.tsx` queries by that name and so is updated with it. The three item labels come from `refreshCopy.decks.menu`. Delete is `--danger` and last. **Add nothing to this menu.**
+
+The drawn plate behind the `…` is desktop-only; on a phone the control is bare and 44px so it clears the touch-target floor. Its open state is a **conditional class, not an inline style** — the repo's `no-restricted-syntax` lint rule rejects inline background/colour/border here, because an inline background outranks the `hover:` utility beside it and the control stops highlighting the moment the panel opens.
+
+- [ ] **Step 5b: Feed the tile from the page**
+
+`src/app/decks/page.tsx` reads the clock once and loads `loadShoppingRollup(userId)` once, then passes `now={now}` and `shopping={rollup.byDeck.get(deck.id)}` to every tile. One clock so every relative date on the page agrees; one roll-up so a tile's copies and its cost always cover the same cards.
 
 - [ ] **Step 6: Run the tests**
 
@@ -1782,8 +1814,9 @@ Expected: PASS.
 
 ```bash
 git add src/components/decks/deck-card.tsx src/components/decks/deck-card.test.tsx \
-        src/components/decks/deck-card-overflow.tsx src/lib/collection/browse.ts \
-        src/components/home/hero-commander.tsx
+        src/components/decks/deck-card-overflow.tsx src/components/decks/deck-card-overflow.test.tsx \
+        src/lib/copy/refresh.ts src/lib/collection/browse.ts \
+        src/components/home/hero-commander.tsx src/app/decks/page.tsx
 git commit -m "feat(decks): rebuild the deck tile around commander art"
 ```
 

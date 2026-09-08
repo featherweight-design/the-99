@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { listDecksWithStats } from "../../lib/decks/read";
+import { loadShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { selectParamSuffix } from "../../lib/decks/selection-param";
 import { CardFan } from "../../components/marks";
 import { Crown } from "../../components/ui/crown";
@@ -37,6 +38,12 @@ export default async function DecksPage({
   // Name order is what this page has always shown. The refreshed Decks view
   // reads the order off the URL; until it lands, the shipped order stands.
   const decks = await listDecksWithStats(userId, "name");
+  // The tile's To buy figure reads its copies and its cost from the same
+  // roll-up, so the count and the price always cover the same cards.
+  const rollup = await loadShoppingRollup(userId);
+  // One clock for the whole page. Every tile's relative date agrees because
+  // they are all measured against this instant, not against their own.
+  const now = new Date();
 
   // ── Empty state — §Empty State — No Decks. Verbatim from interim; not regressed. ──
   if (decks.length === 0) {
@@ -142,7 +149,7 @@ export default async function DecksPage({
       >
         {decks.map((deck) => (
           <li key={deck.id}>
-            <DeckCard deck={deck} />
+            <DeckCard deck={deck} shopping={rollup.byDeck.get(deck.id)} now={now} />
           </li>
         ))}
       </ul>

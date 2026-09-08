@@ -9,7 +9,11 @@ vi.mock("../../app/decks/actions", () => ({ deleteDeck, renameDeck }));
 
 const { DeckCardOverflow } = await import("./deck-card-overflow");
 
-const trigger = () => screen.getByRole("button", { name: "Deck options" });
+// Named per deck: "Deck options" said the same thing for every tile on the
+// page, so a reader tabbing the grid heard one label repeated as many times as
+// there were decks.
+const trigger = (deckName = "Atraxa") =>
+  screen.getByRole("button", { name: `Actions for ${deckName}` });
 
 describe("DeckCardOverflow", () => {
   // ARIA defines aria-haspopup="true" as equivalent to "menu", and every other
@@ -40,11 +44,11 @@ describe("DeckCardOverflow", () => {
         <DeckCardOverflow deckId="d2" deckName="Krenko" built={99} />
       </>,
     );
-    const triggers = screen.getAllByRole("button", { name: "Deck options" });
-    triggers.forEach((t) => fireEvent.click(t));
-    const ids = screen
-      .getAllByRole("button", { name: "Deck options" })
-      .map((t) => t.getAttribute("aria-controls"));
+    fireEvent.click(trigger("Atraxa"));
+    fireEvent.click(trigger("Krenko"));
+    const ids = [trigger("Atraxa"), trigger("Krenko")].map((t) =>
+      t.getAttribute("aria-controls"),
+    );
     expect(new Set(ids).size).toBe(2);
   });
 });
