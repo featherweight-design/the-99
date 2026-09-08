@@ -12,12 +12,17 @@ import { useSearchParams } from "next/navigation";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { fromFreeDelta, type FreeRankingDelta } from "../../lib/recs/free-delta";
 import { filterByColors } from "../../lib/commanders/filter";
-import { parseColors } from "../../lib/color-param";
+import {
+  laneQuery,
+  parseLaneParams,
+  type LaneOrder,
+  type LaneParams,
+} from "../../lib/commanders/lane-params";
 import { rankMap } from "../../lib/commanders/rank-maps";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { RecCard, type ScoreDelta } from "./rec-card";
-import { FilterBar } from "./filter-bar";
+import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
 import { PageHeader } from "./page-header";
 import { useScopeAnnouncement, useScopeNav } from "./list-nav";
@@ -27,8 +32,6 @@ import {
   REVEAL_STEP, RevealControl, EndOfRanking, revealAnnouncement,
 } from "./reveal-control";
 
-// ── URL helpers (mirrors collection/browser.tsx pattern) ─────────────────────
-
 export type AvailMode = "all" | "free";
 
 // A commander whose whole pool is free. Shared rather than allocated per row,
@@ -36,16 +39,29 @@ export type AvailMode = "all" | "free";
 // zero claims renders the receipt's first clause alone, which stays true.
 const NO_CLAIMS: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };
 
-function serializeParams(colors: string[], avail: AvailMode): string {
-  const p = new URLSearchParams();
-  if (colors.length > 0) p.set("c", colors.join(""));
-  // Only the non-default is written, so a player who never touches the toggle
-  // carries no mode at all. Writing it at all is the point: this runs on every
-  // colour change too, and a narrower version would silently drop the mode on
-  // the next pip click.
-  if (avail === "all") p.set("avail", "all");
-  const s = p.toString();
-  return s ? `?${s}` : "";
+// `filterByColors` matches against `colorIdentity`, which is upper-case
+// throughout the catalog; `lane-params` writes the URL in lower case. The lift
+// happens once, here, rather than inside the predicate — the collection browser
+// passes it upper-case already.
+const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
+
+/**
+ * The lane's client-side ordering. `fit` is the server's order and is returned
+ * untouched, which is also what keeps the rank numerals meaningful: they are
+ * built over the unfiltered list in fit order and never renumber.
+ *
+ * `added` is deliberately a no-op. "Recently added" has nothing behind it —
+ * `collection_items` carries no timestamp, and `replaceCollection` deletes and
+ * re-inserts every holding on each upload, so there is no acquisition date to
+ * sort on. Fabricating one would be an order that quietly means nothing.
+ */
+function ordered<T extends { name: string }>(rows: T[], order: LaneOrder): T[] {
+  if (order !== "name") return rows;
+  return [...rows].sort((a, b) => a.name.localeCompare(b.name, "en"));
+}
+
+function matchesQuery(name: string, q: string): boolean {
+  return name.toLowerCase().includes(q);
 }
 
 
@@ -95,27 +111,55 @@ export function CommandersView({
     [results, freeRanking],
   );
 
-  const [colors, setColors] = useState<string[]>(() =>
-    parseColors(search.get("c")),
-  );
-  const [avail, setAvailState] = useState<AvailMode>(initialAvail);
+  // One parameter object for the whole rack, seeded off the URL. `avail` is the
+  // exception: the server decides which ranking it prepared — it forces `all`
+  // when the deck read failed — so the prop wins over the parsed value.
+  const [params, setParams] = useState<LaneParams>(() => ({
+    ...parseLaneParams(search, "owned"),
+    avail: initialAvail,
+  }));
+  const { colors: rawColors, avail } = params;
+  const colors = useMemo(() => upper(rawColors), [rawColors]);
 
-  // Mirror both controls to the URL through the History API rather than
+  // Mirror the rack to the URL through the History API rather than
   // `router.replace`: a replace is a navigation, and this page's whole point is
-  // that neither control needs one — the server sends both rankings in the same
+  // that no control needs one — the server sends both rankings in the same
   // render. The URL stays shareable and `useSearchParams` still sees it.
   useEffect(() => {
-    // The live pathname, not a literal: this rewrites the query and must leave
-    // the path exactly as it found it under a basePath or a route move.
-    const path = window.location.pathname;
-    window.history.replaceState(null, "", `${path}${serializeParams(colors, avail)}`);
-  }, [colors, avail]);
+    // The live pathname and the live query, not literals: this rewrites only
+    // the keys the lane owns, leaving the path and every foreign parameter
+    // exactly as it found them.
+    const { pathname, search: live } = window.location;
+    const next = laneQuery(new URLSearchParams(live), params, "owned");
+    window.history.replaceState(null, "", `${pathname}${next}`);
+  }, [params]);
 
   // Which list is on screen. Falling back to `results` when the free ranking is
   // missing keeps the page rendering something true rather than nothing.
   const active = avail === "free" && freeItems ? freeItems : results;
 
-  const filtered = useMemo(() => filterByColors(active, colors), [active, colors]);
+  // Search narrows before colour, so the colour counts below describe the list
+  // the reader is actually looking at. Name matching only, case-insensitive,
+  // and nothing trimmed off the middle — the same matcher discovery uses.
+  const searched = useMemo(() => {
+    const q = params.q.trim().toLowerCase();
+    return q === "" ? active : active.filter((r) => matchesQuery(r.name, q));
+  }, [active, params.q]);
+
+  const filtered = useMemo(
+    () => ordered(filterByColors(searched, colors, params.match), params.order),
+    [searched, colors, params.match, params.order],
+  );
+
+  // What `Exactly` costs against `Any`, counted over the same searched list so
+  // the figure answers for one control alone. Null when the mode is off, when
+  // no pip is lit, or when the two modes agree — a "0 excluded" aside is noise.
+  const excludedByExactly = useMemo(() => {
+    if (params.match !== "exactly" || colors.length === 0) return null;
+    const loose = filterByColors(searched, colors, "contains").length;
+    const diff = loose - filterByColors(searched, colors, "exactly").length;
+    return diff > 0 ? diff : null;
+  }, [searched, colors, params.match]);
 
   // Two rank maps, each built once over the FULL candidate set in that mode's
   // ordering. Both are pre-filter, so filtering still never renumbers: a hidden
@@ -155,31 +199,30 @@ export function CommandersView({
   // filter change puts it back to the first batch.
   const [shown, setShown] = useState(REVEAL_STEP);
 
-  // Clear handler passed to FilteredEmpty
-  const handleClearFilter = useCallback(() => {
-    setColors([]);
-    setShown(REVEAL_STEP);
-  }, []);
-
-  // Toggle a single color in/out of active set
-  const toggleColor = useCallback((c: string) => {
-    setColors((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
-    setShown(REVEAL_STEP);
-  }, []);
-
-  // ── Score against (§7) ─────────────────────────────────────────────────────
-  // Both rankings are already here, so the flip is a state change: no push, no
-  // transition, no dimmed list waiting on a server that has nothing left to say.
-  const setAvail = useCallback(
-    (next: AvailMode) => {
-      if (next === avail) return;
-      if (next === "free" && !freeItems) return;
-      // The window belongs to the current result set, not the session, and a
-      // re-rank means different commanders occupy the revealed range.
+  // Every control on the rack lands here. Both rankings are already on the
+  // client, so even `Score against` is a state change: no push, no transition,
+  // no dimmed list waiting on a server that has nothing left to say.
+  const update = useCallback(
+    (next: LaneParams) => {
+      setParams((prev) => ({
+        ...next,
+        // `?a=free` is a request, not a promise. With no free ranking there is
+        // nothing to switch to, so the flip is refused rather than rendering an
+        // empty list under a checked segment.
+        avail: next.avail === "free" && !freeItems ? prev.avail : next.avail,
+      }));
+      // The window belongs to the current result set, not the session: every
+      // one of these changes which commanders occupy the revealed range.
       setShown(REVEAL_STEP);
-      setAvailState(next);
     },
-    [avail, freeItems],
+    [freeItems],
+  );
+
+  // The filtered-to-zero state's one control drops the pips and the modifier
+  // that only exists to modify them, and leaves search and order alone.
+  const handleClearFilter = useCallback(
+    () => update({ ...params, colors: [], match: "contains" }),
+    [update, params],
   );
 
   const windowed = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
@@ -277,41 +320,18 @@ export function CommandersView({
         </div>
       )}
 
-      {/* The bar itself lives in `filter-bar.tsx`, shared with the discovery
-          scope. The `Order` slot is the only part that differs between them:
-          here it stays the inert label the owned ranking has always shown,
-          because that ranking has exactly one order. */}
-      <FilterBar
-        colors={colors}
-        onToggleColor={toggleColor}
-        onClearColors={handleClearFilter}
-        avail={avail}
-        onAvailChange={setAvail}
-        availOk={availOk}
-        wasWindowed={wasWindowed}
-        shown={shown}
-        filteredTotal={filtered.length}
-        activeTotal={active.length}
-        order={{
-          desktop: (
-            <span
-              className="font-mono"
-              style={{ fontSize: 11, color: "var(--fg-faint)" }}
-            >
-              Order: Fit ↓ · fixed
-            </span>
-          ),
-          // Null below the window threshold, where this label has never rendered
-          // on a phone. It is a label rather than a control, so its absence
-          // denies the player nothing.
-          mobile: wasWindowed ? (
-            <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-              Fit ↓ · fixed
-            </span>
-          ) : null,
-        }}
+      {/* The rack is shared with `/discover`; `lane` is the whole of the
+          difference. Its result line answers how many rows the filters left,
+          which is a different question from the reveal control's "N more
+          below" — so the rack states one and never the other. */}
+      <FilterRack
+        params={params}
+        lane="owned"
+        onChange={update}
+        shown={filtered.length}
+        total={active.length}
+        excludedByExactly={excludedByExactly}
       />
-
 
       {/* ── Main content: list (or filtered-empty) ── */}
       <div className="p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">

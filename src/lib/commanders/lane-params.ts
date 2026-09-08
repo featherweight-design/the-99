@@ -71,6 +71,29 @@ export function serializeLaneParams(p: LaneParams, lane: Lane): string {
   return qs ? `?${qs}` : "";
 }
 
+// Every key either lane reads, new and legacy. A URL may carry parameters that
+// belong to neither lane — a campaign tag, something another surface left — and
+// a write rebuilt from `LaneParams` alone would drop them. This is the list a
+// write is allowed to clear; everything else on the live URL is copied across.
+const LANE_KEYS = ["q", "c", "m", "join", "a", "avail", "o", "sort", "s"];
+
+/**
+ * The query string to write for `p`, keeping every parameter the lane does not
+ * own exactly as the live URL had it. Foreign keys lead, in the order they were
+ * already in; the lane's own keys follow in `serializeLaneParams` order.
+ */
+export function laneQuery(live: URLSearchParams, p: LaneParams, lane: Lane): string {
+  const kept = new URLSearchParams(live);
+  for (const key of LANE_KEYS) kept.delete(key);
+  for (const [key, value] of new URLSearchParams(
+    serializeLaneParams(p, lane).slice(1),
+  )) {
+    kept.set(key, value);
+  }
+  const qs = kept.toString();
+  return qs ? `?${qs}` : "";
+}
+
 // The badge, the chip row and Clear's enabled state all read this. Search and
 // order are excluded by call 4: search sits outside the sheet, and order always
 // has a value.
