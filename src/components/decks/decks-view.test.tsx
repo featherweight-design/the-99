@@ -1,5 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
+
 import { DecksView } from "./decks-view";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
@@ -20,6 +25,7 @@ function deckOf(over: Partial<DeckListItem> = {}): DeckListItem {
     unresolvedCount: 0,
     createdAt: new Date("2026-01-01T00:00:00Z"),
     lastPlayedAt: new Date("2026-09-02T00:00:00Z"),
+    inUseElsewhere: 0,
     ...over,
   };
 }

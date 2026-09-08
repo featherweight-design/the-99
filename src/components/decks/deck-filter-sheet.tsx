@@ -14,7 +14,6 @@ import {
   COLOUR_ORDER,
   EMPTY_FILTERS,
   STATUS_ORDER,
-  activeFilterCount,
   type PlayedWindow,
 } from "../../lib/decks/filter";
 import { DECK_SORT_LABELS, DECK_SORT_ORDER, type DeckSort } from "../../lib/decks/sort";
@@ -126,7 +125,6 @@ export function DeckFilterSheet({
   if (!open) return null;
 
   const c = refreshCopy.filters;
-  const active = activeFilterCount(filters);
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end sm:hidden">
@@ -237,17 +235,15 @@ export function DeckFilterSheet({
           >
             {c.sheetDismiss(shown)}
           </button>
-          {active > 0 && (
-            <button
-              type="button"
-              // Never the sort, matching the column: a reader who chose an order
-              // did not ask for it back.
-              onClick={() => onChange(EMPTY_FILTERS)}
-              className="flex h-[44px] cursor-pointer items-center border-none bg-transparent px-[14px] text-[14px] text-[color:var(--fg-muted)]"
-            >
-              {c.clear}
-            </button>
-          )}
+          <button
+            type="button"
+            // Never the sort, matching the column: a reader who chose an order
+            // did not ask for it back.
+            onClick={() => onChange(EMPTY_FILTERS)}
+            className="flex h-[44px] cursor-pointer items-center border-none bg-transparent px-[14px] text-[14px] text-[color:var(--fg-muted)]"
+          >
+            {c.clear}
+          </button>
         </div>
       </div>
     </div>

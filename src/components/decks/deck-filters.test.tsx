@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { EMPTY_FILTERS } from "../../lib/decks/filter";
+import { EMPTY_FILTERS, STATUS_ORDER } from "../../lib/decks/filter";
 import { DeckFilterColumn } from "./deck-filter-column";
 import { DeckFilterSheet } from "./deck-filter-sheet";
 
@@ -53,16 +53,23 @@ describe("DeckFilterColumn", () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ statuses: [] }));
   });
 
-  it("summarises what is on, and hides Clear when nothing is", () => {
+  it("summarises what is on, and keeps Clear at every state", () => {
     const { rerender } = render(<DeckFilterColumn {...props()} />);
     expect(screen.getByText("all statuses on")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Clear" })).toBeNull();
+    // Drawn present whether or not anything is on: a control that appears the
+    // moment you tick a box moves the footer under the reader's cursor.
+    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
 
     rerender(
       <DeckFilterColumn {...props({ filters: { ...EMPTY_FILTERS, statuses: ["Draft"] } })} />,
     );
     expect(screen.getByText("1 status on")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
+  });
+
+  it("reads all six ticked as all statuses on, not six", () => {
+    render(<DeckFilterColumn {...props({ filters: { ...EMPTY_FILTERS, statuses: [...STATUS_ORDER] } })} />);
+    expect(screen.getByText("all statuses on")).toBeInTheDocument();
   });
 
   it("gives every colour swatch an accessible name", () => {

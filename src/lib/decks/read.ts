@@ -12,6 +12,7 @@ import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability } from "./availability-query";
+import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant } from "./price";
 import {
   deckCounts,
@@ -241,6 +242,12 @@ export type DeckListItem = {
    * and it is a real state rather than a missing figure.
    */
   lastPlayedAt: Date | null;
+  /**
+   * How many of this deck's owned cards a *different* finished deck has
+   * sleeved. Zero when the availability read fails, which is the same thing the
+   * tile draws when nothing is spoken for — a clause is not worth a 500.
+   */
+  inUseElsewhere: number;
   statusPill: StatusPill;
 };
 
@@ -319,25 +326,43 @@ export async function listDecksWithStats(userId: string, sort: DeckSort): Promis
           // would put every never-played deck at the top of "last played".
           [sql`${lastPlayedSql} desc nulls last`, ...byName];
 
-  const rows = await db
-    .select({
-      id: decks.id,
-      name: decks.name,
-      createdAt: decks.createdAt,
-      commanderName: cards.name,
-      commanderColorIdentity: cards.colorIdentity,
-      commanderImageUri: cards.imageUri,
-      built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
-      ownedCount: ownedCountSql,
-      unresolvedCount: unresolvedCountSql,
-      lastPlayedAt: lastPlayedSql,
-    })
-    .from(decks)
-    .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
-    .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
-    .where(eq(decks.userId, userId))
-    .groupBy(decks.id, decks.name, decks.createdAt, cards.name, cards.colorIdentity, cards.imageUri)
-    .orderBy(...order);
+  // One unscoped availability read for the whole grid, alongside the list. Its
+  // `claims` already name every deck holding every card, so the per-deck counts
+  // fall out of a single pass — a per-deck `excludeDeckId` query would be one
+  // round trip per tile. Tolerated rather than awaited into the page's failure
+  // path: a missing clause is not worth a 500 on the deck list.
+  const [rows, availability] = await Promise.all([
+    db
+      .select({
+        id: decks.id,
+        name: decks.name,
+        createdAt: decks.createdAt,
+        commanderName: cards.name,
+        commanderColorIdentity: cards.colorIdentity,
+        commanderImageUri: cards.imageUri,
+        built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
+        ownedCount: ownedCountSql,
+        unresolvedCount: unresolvedCountSql,
+        lastPlayedAt: lastPlayedSql,
+      })
+      .from(decks)
+      .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
+      .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
+      .where(eq(decks.userId, userId))
+      .groupBy(
+        decks.id,
+        decks.name,
+        decks.createdAt,
+        cards.name,
+        cards.colorIdentity,
+        cards.imageUri,
+      )
+      .orderBy(...order),
+    loadAvailability(userId).catch(() => null),
+  ]);
+  const inUseElsewhere = availability
+    ? inUseElsewhereByDeck(availability.values())
+    : new Map<string, number>();
 
   return rows.map((row) => {
     const pill = statusPill({
@@ -367,6 +392,7 @@ export async function listDecksWithStats(userId: string, sort: DeckSort): Promis
       // would then date to a different day in Denver than in CI, and `2 days
       // ago` is exactly the kind of figure that shifts.
       lastPlayedAt: toDate(row.lastPlayedAt),
+      inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,
     };
   });

@@ -23,6 +23,7 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   unresolvedCount: 0,
   statusPill: "To buy",
   lastPlayedAt: daysBefore(2),
+  inUseElsewhere: 0,
   ...over,
 });
 
@@ -122,6 +123,29 @@ describe("DeckCard", () => {
       expect(screen.getByText(text)).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it("fills an empty detail slot with the in-use-elsewhere clause", () => {
+    render(
+      <DeckCard
+        deck={deck({ statusPill: "Building", built: 87, inUseElsewhere: 3 })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("3 in use elsewhere")).toBeInTheDocument();
+  });
+
+  it("never lets the clause displace a status's own figure", () => {
+    render(
+      <DeckCard
+        deck={deck({ statusPill: "Unresolved", unresolvedCount: 2, inUseElsewhere: 3 })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("2 lines unresolved")).toBeInTheDocument();
+    expect(screen.queryByText("3 in use elsewhere")).toBeNull();
   });
 
   // `detailDraft` is the literal `created today`, so it is only true on the day

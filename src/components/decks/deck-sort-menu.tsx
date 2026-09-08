@@ -80,7 +80,7 @@ export function DeckSortMenu({
                 trigger.current?.focus();
               }}
               className={`flex h-[38px] w-full cursor-pointer items-center border-x-0 border-b-0 border-solid px-[13px] text-left font-sans text-[13px] ${
-                i === 0 ? "border-t-0" : "border-t border-t-[color:var(--border)]"
+                i === 0 ? "border-t-0" : "border-t border-t-[color:var(--elevated)]"
               } ${
                 sort === option
                   ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"

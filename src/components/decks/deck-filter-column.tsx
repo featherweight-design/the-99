@@ -14,7 +14,6 @@ import {
   COLOUR_ORDER,
   EMPTY_FILTERS,
   STATUS_ORDER,
-  activeFilterCount,
   type ColourCode,
   type DeckFilters,
   type PlayedWindow,
@@ -135,7 +134,6 @@ export function ColourSwatch({
 
 export function DeckFilterColumn({ filters, onChange }: FilterChromeProps) {
   const c = refreshCopy.filters;
-  const active = activeFilterCount(filters);
 
   return (
     <div className="hidden w-[262px] flex-none flex-col border-0 border-r border-solid border-[color:var(--border)] bg-[color:var(--surface-rail)] sm:flex">
@@ -202,20 +200,23 @@ export function DeckFilterColumn({ filters, onChange }: FilterChromeProps) {
       <div className="flex items-center gap-[10px] border-0 border-t border-solid border-[color:var(--border)] px-[16px] py-[12px]">
         {/* Statuses only, exactly as the copy string reads. The chip row above
             the grid is where the other headings report themselves. */}
+        {/* Ticking all six says the same thing as ticking none, so both read
+            `all statuses on` — the count would otherwise claim a narrowing the
+            grid has not made. */}
         <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">
-          {filters.statuses.length === 0 ? c.allOn : c.someOn(filters.statuses.length)}
+          {filters.statuses.length === 0 || filters.statuses.length === STATUS_ORDER.length
+            ? c.allOn
+            : c.someOn(filters.statuses.length)}
         </span>
-        {active > 0 && (
-          <button
-            type="button"
-            // Never the sort: Clear is a filter control, and a reader who set an
-            // order did not ask for it back.
-            onClick={() => onChange(EMPTY_FILTERS)}
-            className="ml-auto flex h-[32px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[13px] text-[12.5px] text-[color:var(--fg)]"
-          >
-            {c.clear}
-          </button>
-        )}
+        <button
+          type="button"
+          // Never the sort: Clear is a filter control, and a reader who set an
+          // order did not ask for it back.
+          onClick={() => onChange(EMPTY_FILTERS)}
+          className="ml-auto flex h-[32px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[13px] text-[12.5px] text-[color:var(--fg)]"
+        >
+          {c.clear}
+        </button>
       </div>
     </div>
   );

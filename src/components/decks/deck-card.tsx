@@ -23,6 +23,26 @@ function detailFor(
   deck: DeckListItem,
   shopping: DeckShopping | undefined,
   now: Date,
+): { text: string; color: string } | null {
+  const c = refreshCopy.decks;
+  const statusDetail = statusDetailFor(deck, shopping, now);
+  // Fills the slot only where the status has nothing to say in it. The clause is
+  // a fact about the collection, and `4 over` or `3 lines unresolved` is a fact
+  // about the deck the reader opened the tile for — the narrower reading of the
+  // table's "in place of the ordinary detail figure", and the one that never
+  // hides a warning. Flagged for Design to ratify.
+  if (statusDetail === null && deck.inUseElsewhere > 0) {
+    return { text: c.detailInUseElsewhere(deck.inUseElsewhere), color: "var(--accent)" };
+  }
+  return statusDetail === null
+    ? null
+    : { text: statusDetail, color: DETAIL_COLOR[deck.statusPill] };
+}
+
+function statusDetailFor(
+  deck: DeckListItem,
+  shopping: DeckShopping | undefined,
+  now: Date,
 ): string | null {
   const c = refreshCopy.decks;
   switch (deck.statusPill) {
@@ -103,7 +123,7 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
   const ariaLabel =
     detail === null
       ? refreshCopy.decks.cardAriaNoDetail(deck.name, deck.statusPill, count)
-      : refreshCopy.decks.cardAria(deck.name, deck.statusPill, count, detail);
+      : refreshCopy.decks.cardAria(deck.name, deck.statusPill, count, detail.text);
 
   return (
     <article
@@ -171,9 +191,9 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
         {detail !== null && (
           <span
             className="truncate font-mono text-[11px] sm:text-[10.5px]"
-            style={{ gridArea: "detail", color: DETAIL_COLOR[deck.statusPill] }}
+            style={{ gridArea: "detail", color: detail.color }}
           >
-            {detail}
+            {detail.text}
           </span>
         )}
 

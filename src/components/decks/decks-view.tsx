@@ -8,6 +8,7 @@
 // with `history.replaceState` instead, which is what AGENTS.md's "Caching a
 // list a reader flips between" asks for on a re-parameterised list.
 
+import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { colorNames } from "../../lib/copy/color-labels";
 import { refreshCopy } from "../../lib/copy/refresh";
@@ -82,11 +83,12 @@ function chipLabels(filters: DeckFilters): { key: string; label: string; without
 }
 
 export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: DecksViewProps) {
-  // Lazily seeded from the live URL, so a shared link paints filtered on the
-  // first frame rather than painting everything and then correcting itself.
-  const [state, setState] = useState<ViewState>(() =>
-    filtersFromParams(new URLSearchParams(window.location.search)),
-  );
+  // Seeded from the URL, so a shared link paints filtered on the first frame
+  // rather than painting everything and then correcting itself. Read through
+  // `useSearchParams` rather than `window.location`, which the server render
+  // does not have; every later read is in a callback, where `window` is safe.
+  const search = useSearchParams();
+  const [state, setState] = useState<ViewState>(() => filtersFromParams(search));
   const [sheet, setSheet] = useState<{ open: boolean; focusSearch: boolean }>({
     open: false,
     focusSearch: false,
@@ -186,7 +188,10 @@ export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: De
         <ImportDeckButton />
       </div>
 
-      {active > 0 && (
+      {/* Gated on `!zero` alongside the filter controls above: arriving at
+          `/decks?status=Draft` with no decks at all would otherwise stack a
+          chip row on top of the zero state, which offers no filters to remove. */}
+      {!zero && active > 0 && (
         <div className="flex flex-wrap gap-[7px] px-[16px] pt-[12px] pb-0 sm:hidden">
           {chips.map((chip) => (
             <button

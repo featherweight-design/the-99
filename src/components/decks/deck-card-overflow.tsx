@@ -7,6 +7,11 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { RenameForm } from "./rename-form";
 
+/** One menu row. The same geometry `DeckSortMenu` draws, which is the only
+ *  menu the Decks frames specify. */
+const ITEM =
+  "flex h-[38px] w-full items-center border-x-0 border-b-0 border-t border-solid border-t-[color:var(--elevated)] px-[13px] text-left font-sans text-[13px] transition-colors hover:bg-[color:var(--elevated)]";
+
 interface DeckCardOverflowProps {
   deckId: string;
   deckName: string;
@@ -100,11 +105,7 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
       {open && (
         <div
           id={panelId}
-          className="absolute right-0 top-full mt-[6px] z-20 min-w-[180px] rounded-[10px] shadow-lg"
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border-strong)",
-          }}
+          className="absolute right-0 top-full z-20 mt-[6px] w-[186px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)] sm:mt-[4px]"
           // Propagation only: the deck-card Link overlay beneath fires on
           // bubbling, so stopping the bubble is the whole fix. preventDefault
           // here would also cancel the browser default for clicks inside the
@@ -113,12 +114,15 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
           onClick={(e) => e.stopPropagation()}
         >
           {mode === "menu" ? (
-            <div className="p-[8px] flex flex-col gap-[4px]">
+            // Flush 38px rows divided by hairlines, not inset pills: the panel
+            // clips its own corners, so `first:border-t-0` is the whole
+            // separator rule and it survives the Update row being absent.
+            <div className="flex flex-col">
               {built > 0 && (
                 <Link
                   href={`/decks/${deckId}/import`}
                   aria-label={deckImportCopy.update.entryAria(deckName)}
-                  className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors no-underline hover:bg-[color:var(--elevated)] text-[color:var(--fg)]"
+                  className={`${ITEM} first:border-t-0 text-[color:var(--fg)] no-underline`}
                 >
                   {refreshCopy.decks.menu.updateFromList}
                 </Link>
@@ -128,7 +132,7 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
                 onClick={handleRename}
                 // bg/border as utilities, not inline: an inline background
                 // outranks hover: and the row never highlights.
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none cursor-pointer hover:bg-[color:var(--elevated)] text-[color:var(--fg)]"
+                className={`${ITEM} first:border-t-0 cursor-pointer bg-transparent text-[color:var(--fg)]`}
               >
                 {refreshCopy.decks.menu.rename}
               </button>
@@ -136,7 +140,7 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
                 type="button"
                 onClick={handleDelete}
                 disabled={isPending}
-                className="w-full text-left rounded-[6px] px-[12px] py-[9px] text-[13px] font-sans transition-colors bg-transparent border-none hover:bg-[color:var(--elevated)] text-[color:var(--danger)]"
+                className={`${ITEM} bg-transparent text-[color:var(--danger)]`}
                 style={{ cursor: isPending ? "default" : "pointer" }}
               >
                 {isPending ? "Deleting…" : refreshCopy.decks.menu.delete}
