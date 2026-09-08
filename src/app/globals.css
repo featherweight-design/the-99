@@ -553,3 +553,37 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
     will-change: auto;
   }
 }
+
+/* The wash trades legibility against drama. A reader who has asked for less
+   transparency has already said which way that trade should go.
+
+   `!important` is load-bearing rather than a shortcut: `<ArtWash>` sets each
+   layer's opacity and gradient inline, because both are computed from the band,
+   and an inline declaration outranks any selector without it. */
+@media (prefers-reduced-transparency: reduce) {
+  .art-wash-art {
+    opacity: 0.3 !important;
+  }
+  .art-wash-scrim {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--bg) 95%, transparent) 0%,
+      color-mix(in oklab, var(--bg) 60%, transparent) 40%,
+      color-mix(in oklab, var(--bg) 85%, transparent) 100%
+    ) !important;
+  }
+}
+
+/* Forced colours is a different mechanism: the system takes the palette, so the
+   scrim is no longer ours to tune and text lands on whatever the OS chooses.
+   A photograph under that is the exact unreadable case this wash exists to fix,
+   so the art goes rather than being re-weighted. The band keeps its height —
+   every surface sizes the parent, never these layers. */
+@media (forced-colors: active) {
+  .art-wash-art {
+    display: none !important;
+  }
+  .art-wash-scrim {
+    background: Canvas !important;
+  }
+}

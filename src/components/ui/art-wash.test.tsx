@@ -48,6 +48,14 @@ describe("ArtWash — cover", () => {
     );
     expect(container.innerHTML).not.toMatch(/#[0-9A-Fa-f]{6}/);
   });
+
+  it("exposes the hooks the accessibility rules target", () => {
+    const { container } = render(
+      <ArtWash strategy="cover" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+    );
+    expect(container.querySelector(".art-wash-art")).toBeTruthy();
+    expect(container.querySelector(".art-wash-scrim")).toBeTruthy();
+  });
 });
 
 describe("ArtWash — left portrait", () => {
@@ -89,5 +97,15 @@ describe("ArtWash — left portrait", () => {
       (d) => d.style.backgroundSize === "cover" && d.style.opacity === "0.2",
     );
     expect(ambient).toBeDefined();
+  });
+
+  // Both art layers, or a reduced-transparency reader keeps the sharp portrait
+  // at full strength behind the one the rule dimmed.
+  it("marks both of its art layers for the accessibility rules", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    expect(container.querySelectorAll(".art-wash-art")).toHaveLength(2);
+    expect(container.querySelector(".art-wash-scrim")).toBeTruthy();
   });
 });

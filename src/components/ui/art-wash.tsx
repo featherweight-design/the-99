@@ -46,7 +46,7 @@ export function ArtWash(props: ArtWashProps) {
         className="pointer-events-none absolute inset-0 overflow-hidden bg-[color:var(--bg)]"
       >
         <div
-          className="absolute inset-0"
+          className="art-wash-art absolute inset-0"
           style={{
             opacity: artCropUri ? p.ambientOpacity : 1,
             background: artCropUri ? undefined : commanderGradient(colorIdentity),
@@ -57,7 +57,7 @@ export function ArtWash(props: ArtWashProps) {
         />
         {artCropUri ? (
           <div
-            className="absolute inset-y-0 left-0"
+            className="art-wash-art absolute inset-y-0 left-0"
             style={{
               width: `${p.width}px`,
               opacity: p.sharpOpacity,
@@ -70,7 +70,7 @@ export function ArtWash(props: ArtWashProps) {
             }}
           />
         ) : null}
-        <div className="absolute inset-0" style={{ background: p.scrim }} />
+        <div className="art-wash-scrim absolute inset-0" style={{ background: p.scrim }} />
       </div>
     );
   }
@@ -81,7 +81,7 @@ export function ArtWash(props: ArtWashProps) {
       className="pointer-events-none absolute inset-0 overflow-hidden bg-[color:var(--bg)]"
     >
       <div
-        className="absolute inset-0"
+        className="art-wash-art absolute inset-0"
         style={{
           opacity: artCropUri ? COVER_ART_OPACITY : 1,
           background: artCropUri ? undefined : commanderGradient(colorIdentity),
@@ -90,7 +90,7 @@ export function ArtWash(props: ArtWashProps) {
           backgroundPosition: "center top",
         }}
       />
-      <div className="absolute inset-0" style={{ background: SCRIM }} />
+      <div className="art-wash-scrim absolute inset-0" style={{ background: SCRIM }} />
     </div>
   );
 }
