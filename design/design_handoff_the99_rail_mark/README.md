@@ -10,6 +10,27 @@ numeral.** No token, prop, route or copy change.
 Follows the folder convention of `design/design_handoff_the99_refresh/`, whose
 `CHROME-rail-and-tabs.md` specified the diamond this supersedes.
 
+## Engineering errata
+
+The ruling shipped as drawn. The handoff's prose below is kept verbatim as the record of what was
+ruled and why, so five statements it makes about the code and its arithmetic are corrected here
+rather than edited in place. Reasoning for each is in
+`docs/superpowers/plans/2026-09-08-rail-mark.md`.
+
+| The handoff says | What shipped |
+|---|---|
+| `<Crowned99>` renders "only in the wide rail and `MobileHeader`" | It also renders in the signed-out hero (`src/app/page.tsx`). The wide rail was deleted in the 2026-09-07 refresh, so its `"rail"` variant rendered nowhere |
+| A third variant is added beside `"rail"` | `"rail-62"` **replaces** `"rail"`, which had no call sites |
+| "No token, prop, route or copy change" | One prop change: `variant` is now required, the dead default having been its only purpose |
+| `src/lib/copy/shell.ts` gains `shellCopy.railMarkAria` | Not added. `Crowned99` already renders `role="img" aria-label="The 99"` for every variant, and a second copy of the name would be a second source of truth |
+| Lockup 32.5 × 39; the nav block starts 13px lower | 32.5 is the canvas's flex box, which rotated squares overflow — the painted row is 35.0 wide. Height 39 is right. The nav block drops **17px**: 13 counts the head's 26 → 39 without the spacer's 16 → 20, and the handoff's own head-zone figures (56 → 73) give 17 |
+
+Two numbers are converted rather than copied, because the canvas lays the crown out in flex and
+the app draws one SVG that already does the rotation maths: the gap passed is the 3px of visible
+air the handoff asks to *see*, not the 6px CSS gap that produces it on unrotated boxes; and the
+numeral baseline sits 22px under the crown rather than 4 + 23, because the canvas's
+`line-height: 1` carries −4px of half-leading that an SVG `<text>` has no line box to inherit.
+
 | File | What it holds |
 |---|---|
 | `The 99 - Rail Mark.dc.html` | The deliverable. Three candidates drawn in the shipped 62px rail; **1a ruled**, 1b and 1c kept so the rejections are on the record. |
