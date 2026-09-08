@@ -1870,33 +1870,41 @@ import {
   filterDecks,
   filtersFromParams,
   filtersToParams,
+  type FilterableDeck,
 } from "./filter";
 
 const NOW = new Date("2026-09-07T12:00:00Z");
 
-function deck(over: Partial<Parameters<typeof filterDecks<never>>[0][number]> = {}) {
+// Mid-month on both sides, so the calendar-month test states what it means in
+// every timezone rather than turning on the machine's UTC offset: `inCurrentMonth`
+// compares local year and month, and a midnight-UTC fixture is the previous day
+// west of Greenwich.
+const THIS_MONTH = new Date("2026-09-03T12:00:00Z");
+const LAST_MONTH = new Date("2026-08-20T12:00:00Z");
+
+function deck(over: Partial<FilterableDeck> & { id?: string } = {}) {
   return {
     id: "d1",
     name: "Atraxa, Praetors' Voice",
     commanderName: "Atraxa, Praetors' Voice",
     commanderColorIdentity: ["W", "U", "B", "G"],
-    status: "Complete" as const,
-    lastPlayedAt: new Date("2026-09-02T00:00:00Z"),
+    statusPill: "Complete" as const,
+    lastPlayedAt: THIS_MONTH,
     ...over,
   };
 }
 
 describe("filterDecks", () => {
   it("returns everything when nothing is set", () => {
-    const decks = [deck(), deck({ id: "d2", status: "Draft" })];
+    const decks = [deck(), deck({ id: "d2", statusPill: "Draft" })];
     expect(filterDecks(decks, EMPTY_FILTERS, NOW)).toHaveLength(2);
   });
 
   it("ORs within status", () => {
     const decks = [
-      deck({ id: "a", status: "Draft" }),
-      deck({ id: "b", status: "Over" }),
-      deck({ id: "c", status: "Complete" }),
+      deck({ id: "a", statusPill: "Draft" }),
+      deck({ id: "b", statusPill: "Over" }),
+      deck({ id: "c", statusPill: "Complete" }),
     ];
     const kept = filterDecks(decks, { ...EMPTY_FILTERS, statuses: ["Draft", "Over"] }, NOW);
     expect(kept.map((d) => d.id)).toEqual(["a", "b"]);
@@ -1904,8 +1912,8 @@ describe("filterDecks", () => {
 
   it("ANDs across headings", () => {
     const decks = [
-      deck({ id: "a", status: "Draft", commanderColorIdentity: ["R"] }),
-      deck({ id: "b", status: "Draft", commanderColorIdentity: ["G"] }),
+      deck({ id: "a", statusPill: "Draft", commanderColorIdentity: ["R"] }),
+      deck({ id: "b", statusPill: "Draft", commanderColorIdentity: ["G"] }),
     ];
     const kept = filterDecks(
       decks,
@@ -1936,8 +1944,8 @@ describe("filterDecks", () => {
 
   it("reads This month as the calendar month, not thirty days", () => {
     const decks = [
-      deck({ id: "sept", lastPlayedAt: new Date("2026-09-01T00:00:00Z") }),
-      deck({ id: "aug", lastPlayedAt: new Date("2026-08-30T00:00:00Z") }),
+      deck({ id: "sept", lastPlayedAt: THIS_MONTH }),
+      deck({ id: "aug", lastPlayedAt: LAST_MONTH }),
       deck({ id: "never", lastPlayedAt: null }),
     ];
     const kept = filterDecks(decks, { ...EMPTY_FILTERS, played: "thisMonth" }, NOW);
@@ -1946,7 +1954,7 @@ describe("filterDecks", () => {
 
   it("reads Never as no play at all", () => {
     const decks = [
-      deck({ id: "sept", lastPlayedAt: new Date("2026-09-01T00:00:00Z") }),
+      deck({ id: "sept", lastPlayedAt: THIS_MONTH }),
       deck({ id: "never", lastPlayedAt: null }),
     ];
     const kept = filterDecks(decks, { ...EMPTY_FILTERS, played: "never" }, NOW);
@@ -1956,7 +1964,7 @@ describe("filterDecks", () => {
   it("searches deck name and commander name, case-insensitively", () => {
     const decks = [
       deck({ id: "a", name: "Weekend brew", commanderName: "Krenko, Mob Boss" }),
-      deck({ id: "b", name: "Krenko goblins", commanderName: "Krenko, Mob Boss" }),
+      deck({ id: "b", name: "Krenko goblins", commanderName: "Torbran" }),
       deck({ id: "c", name: "Slug", commanderName: "Torbran" }),
     ];
     const kept = filterDecks(decks, { ...EMPTY_FILTERS, search: "  kRenKo " }, NOW);
@@ -2074,7 +2082,7 @@ export type FilterableDeck = {
   name: string;
   commanderName: string;
   commanderColorIdentity: string[];
-  status: StatusPill;
+  statusPill: StatusPill;
   lastPlayedAt: Date | null;
 };
 
@@ -2103,7 +2111,7 @@ export function filterDecks<T extends FilterableDeck>(
 ): T[] {
   const needle = f.search.trim().toLowerCase();
   return decks.filter((d) => {
-    if (f.statuses.length && !f.statuses.includes(d.status)) return false;
+    if (f.statuses.length && !f.statuses.includes(d.statusPill)) return false;
     if (f.colours.length && !f.colours.every((c) => d.commanderColorIdentity.includes(c))) {
       return false;
     }
@@ -2169,7 +2177,7 @@ hand-edited URL cannot inject a status the column has no row for.
 - [ ] **Step 4: Run the tests**
 
 Run: `pnpm test src/lib/decks/filter.test.ts`
-Expected: PASS, 13 tests.
+Expected: PASS, 14 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -2512,7 +2520,7 @@ function deckOf(over = {}) {
     commanderName: "Atraxa, Praetors' Voice",
     commanderColorIdentity: ["W", "U", "B", "G"],
     commanderImageUri: null,
-    status: "Complete" as const,
+    statusPill: "Complete" as const,
     built: 99,
     ownedCount: 99,
     unresolvedCount: 0,
@@ -2530,7 +2538,7 @@ beforeEach(() => {
 
 describe("DecksView", () => {
   it("counts what it renders", () => {
-    const decks = [deckOf(), deckOf({ id: "d2", status: "Draft", built: 0 })];
+    const decks = [deckOf(), deckOf({ id: "d2", statusPill: "Draft", built: 0 })];
     render(<DecksView decks={decks} shopping={SHOPPING} now={NOW} />);
     expect(screen.getByText("2 of 2")).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
@@ -2538,8 +2546,8 @@ describe("DecksView", () => {
 
   it("keeps the count and the grid in step while filtering", () => {
     const decks = [
-      deckOf({ id: "a", status: "Draft", built: 0 }),
-      deckOf({ id: "b", status: "Complete" }),
+      deckOf({ id: "a", statusPill: "Draft", built: 0 }),
+      deckOf({ id: "b", statusPill: "Complete" }),
     ];
     render(<DecksView decks={decks} shopping={SHOPPING} now={NOW} />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Draft" }));
