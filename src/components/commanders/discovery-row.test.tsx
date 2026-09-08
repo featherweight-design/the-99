@@ -44,6 +44,20 @@ function row(over: Partial<DiscoveryItem> = {}, sort: "fit" | "new" = "fit") {
 const both = 2;
 
 describe("DiscoveryRow", () => {
+  it("gives the row a 148px floor so the portrait reaches both edges", () => {
+    const { container } = row();
+    expect(container.firstElementChild?.className).toContain("min-h-[148px]");
+  });
+
+  it("draws the frame-free crop, never the printed card", () => {
+    const { container } = row({
+      imageUri: "https://example.test/printed.jpg",
+      artCropUri: "https://example.test/crop.jpg",
+    });
+    expect(container.innerHTML).toContain("crop.jpg");
+    expect(container.innerHTML).not.toContain("printed.jpg");
+  });
+
   it("prints the support count over the EDHREC total", () => {
     row({ ownedSupport: 84, edhrecTotal: 236 });
     expect(screen.getAllByText("84")).toHaveLength(both);

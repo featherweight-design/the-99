@@ -10,7 +10,8 @@
 import Link from "next/link";
 import { fitSegments } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
-import { CommanderBleed, IdentityPips } from "./commander-art";
+import { ArtWash } from "../ui/art-wash";
+import { IdentityPips } from "./commander-art";
 import { DiscoveryRow } from "./discovery-row";
 import { FitBar } from "./fit-bar";
 import { RetryLink } from "./retry-submit";
@@ -111,7 +112,9 @@ export function RecCard(props: RecCardProps) {
       : 0;
 
   return (
-    <div className="relative group transition-colors hover:bg-[color:var(--elevated-hover)]">
+    // A floor, not a fixed height: a row whose content runs long keeps the
+    // portrait flush to both of its edges.
+    <div className="relative group min-h-[148px] transition-colors hover:bg-[color:var(--elevated-hover)]">
       {/* Stretched link keeps the whole row clickable without nesting the
           retry <form> inside an anchor (invalid HTML); the forms sit above it
           on z-[2]. Brand focus-visible outline inherited from globals.css. */}
@@ -121,7 +124,12 @@ export function RecCard(props: RecCardProps) {
         className="absolute inset-0 z-[1]"
       />
 
-      <CommanderBleed imageUri={c.imageUri} colorIdentity={c.colorIdentity} />
+      <ArtWash
+        strategy="left-portrait"
+        band={148}
+        artCropUri={c.artCropUri}
+        colorIdentity={c.colorIdentity}
+      />
 
       {/* ── Mobile layout: two bands in 268px ── */}
       <div

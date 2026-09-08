@@ -7,7 +7,7 @@
 // component with one branching slot. What is split off from `rec-card.tsx` is
 // the SCOPE — the owned row prints a score, fit segments and a synergy state
 // that `DiscoveryItem` does not carry, so the two share their pieces
-// (`CommanderBleed`, `IdentityPips`, `RoleChips`) by import rather than by an
+// (`ArtWash`, `IdentityPips`, `RoleChips`) by import rather than by an
 // ever-widening prop union.
 //
 // The right column is counts, never a score: discovery does not blend, so there
@@ -30,7 +30,8 @@ import { planeCopy } from "../../lib/copy/commanders-plane";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import type { PriceSlot } from "../../lib/discovery/price";
-import { CommanderBleed, IdentityPips } from "./commander-art";
+import { ArtWash } from "../ui/art-wash";
+import { IdentityPips } from "./commander-art";
 import { Emphasised, localised } from "./emphasis";
 import { RoleChips } from "./role-chips";
 import { commanderDetailHref } from "./list-nav";
@@ -316,7 +317,9 @@ export function DiscoveryRow({
   );
 
   return (
-    <div className="relative group transition-colors hover:bg-[color:var(--elevated-hover)]">
+    // A floor, not a fixed height: a row whose content runs long keeps the
+    // portrait flush to both of its edges.
+    <div className="relative group min-h-[148px] transition-colors hover:bg-[color:var(--elevated-hover)]">
       {/* Stretched link keeps the whole row clickable. Brand focus-visible
           outline inherited from globals.css. */}
       <Link
@@ -325,7 +328,12 @@ export function DiscoveryRow({
         className="absolute inset-0 z-[1]"
       />
 
-      <CommanderBleed imageUri={item.imageUri} colorIdentity={item.colorIdentity} />
+      <ArtWash
+        strategy="left-portrait"
+        band={148}
+        artCropUri={item.artCropUri}
+        colorIdentity={item.colorIdentity}
+      />
 
       {/* ── Mobile layout: two bands in 268px ── */}
       <div
