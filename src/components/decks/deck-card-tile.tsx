@@ -16,11 +16,12 @@
 import { removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { cardTileCopy } from "../../lib/copy/card-surfaces";
+import { cssUrl } from "../../lib/collection/browse";
 import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
-import { CostPips, parseManaCost } from "../ui/cost-pips";
+import { CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
@@ -63,7 +64,6 @@ export function DeckCardTile({
   const availState = card.availability
     ? availabilityState(card.availability, { selfExcluded: true })
     : "free";
-  const cost = card.manaCost && parseManaCost(card.manaCost).length > 0 ? card.manaCost : null;
 
   function handleRemove() {
     markSlotSpent(card);
@@ -146,7 +146,7 @@ export function DeckCardTile({
               // gradient: the decklist read carries no colour identity, and a
               // gradient guessed from nothing would be a claim about the card.
               background: card.imageUri
-                ? `center / cover no-repeat url(${card.imageUri})`
+                ? `center / cover no-repeat ${cssUrl(card.imageUri)}`
                 : "var(--surface-sunken)",
             }}
           >
@@ -170,7 +170,12 @@ export function DeckCardTile({
               className="w-[8px] h-[8px]"
               label={card.owned ? "Owned" : "Not owned"}
             />
-            {cost && <CostPips cost={cost} size={11} className="flex gap-[3px]" spoken />}
+            {card.manaCost ? (
+              // No pre-parse: `CostPips` draws nothing for a cost with no
+              // symbols in it, so a second parse here would only ask the same
+              // question twice per tile.
+              <CostPips cost={card.manaCost} size={11} className="flex gap-[3px]" spoken />
+            ) : null}
           </span>
         </div>
 
