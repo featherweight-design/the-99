@@ -13,6 +13,10 @@ import { formatWhen } from "../../lib/format/when";
 import type { Commitments } from "../../lib/home/commitments";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import type { ReadySlice } from "../../lib/recs/ready-to-build";
+import { CommitmentsCard } from "./commitments-card";
+import { DeckRail } from "./deck-rail";
+import { ReadyToBuild } from "./ready-to-build";
+import { ResumeDecks, resumeDecks } from "./resume-decks";
 
 export type DashboardProps = {
   stats: { totalCards: number; uniqueCards: number };
@@ -98,10 +102,32 @@ export function Dashboard(props: DashboardProps) {
         </div>
       </header>
 
-      {/* Ready to build (task 15), the resume rows (16), the deck rail and
-          Commitments (17) land below this header, inside the two-column
-          §HomeBody. Nothing stands in for them here: a placeholder would be
-          markup the next task has to find and delete. */}
+      {/* §HomeBody. One row of two columns on desktop; on a phone the same two
+          columns stack, and what phone drops it drops inside each section
+          rather than here — the resume rows and Commitments carry their own
+          `hidden sm:*`, so the order the reader gets is heroes, then decks. */}
+      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-0 sm:flex-row sm:gap-[20px] sm:p-[20px_26px_26px]">
+        <div className="flex min-w-0 flex-col gap-[12px] sm:flex-auto sm:gap-[11px]">
+          <ReadyToBuild ready={props.ready} inUse={props.inUse} />
+          {/* Sliced here rather than inside the section: the rail beside it
+              renders the same array in `listDecksWithStats`'s own order, and
+              one list cannot be in two orders at once. */}
+          <ResumeDecks decks={resumeDecks(props.decks)} shopping={props.shopping} />
+        </div>
+
+        <div className="flex flex-col gap-[12px] sm:w-[316px] sm:flex-none sm:gap-[11px]">
+          <DeckRail decks={props.decks} shopping={props.shopping} />
+          {/* Null when the availability read failed. Three zeroes after a
+              failed query is a lie, so the card leaves rather than guessing. */}
+          {props.commitments !== null && (
+            <CommitmentsCard
+              commitments={props.commitments}
+              shopping={props.shopping}
+              totalCards={props.stats.totalCards}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
