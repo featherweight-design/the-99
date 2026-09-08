@@ -1414,13 +1414,23 @@ PR C changes no pixels, so it needs no design review — but it does need the Co
   - `export function statusKeylineStyle(status: StatusPill): CSSProperties`
   - `<StatusPillBadge status={...} />` — the 22px pill.
 
-**Locked ruling 13 lives here and nowhere else.** Six values, one rule: pill fill is the status colour at `2E` alpha, border at `80` alpha, label at full. Every surface in this feature imports these three functions; **no component writes a status colour itself**, and no hex from `tokens.r6.json` appears anywhere.
+**Locked ruling 13 lives here and nowhere else.** Six values, one rule: pill fill is the status colour at `2E` alpha (18%), border at `80` alpha (50%), label at full. Every surface in this feature imports these three functions; **no component writes a status colour itself**, and no hex from `tokens.r6.json` appears anywhere.
+
+**Two drawn exceptions to that rule, per the design table's Status → token map.** `STATES-deck-statuses.md` states the flat rule in prose and then draws Draft and Building against it: both are statuses whose token IS a text colour, so a 50%-alpha border of it reads as a second, dimmer piece of text rather than an edge. The drawing gives them a hairline border token and a lighter fill:
+
+| Status | Fill | Border | Label |
+|---|---|---|---|
+| Draft | `--fg-faint` @ 16% | `var(--border-strong)` | `var(--fg-muted)` |
+| Building | `--fg-body` @ 14% | `var(--border-dashed)` | `var(--fg-body)` |
+| the other four | token @ 18% | token @ 50% | the token |
+
+`READINESS.md` closes the six-status item "per value in `STATES-deck-statuses.md`", so the per-value table is authoritative over the prose. The exception lives inside `status-style.ts` so the "no component writes a colour" principle survives intact; the gap report records the handoff's self-contradiction for Design to ratify.
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { STATUS_TOKEN, statusBarStyle, statusPillStyle } from "./status-style";
+import { STATUS_TOKEN, statusBarStyle, statusKeylineStyle, statusPillStyle } from "./status-style";
 import type { StatusPill } from "./status";
 
 const ALL: StatusPill[] = ["Draft", "Building", "Over", "Unresolved", "To buy", "Complete"];
@@ -1441,15 +1451,35 @@ describe("status style", () => {
     });
   });
 
-  it("builds every pill from one rule — 2E fill, 80 border, full-strength label", () => {
+  it("names no colour in any pill, only tokens", () => {
     for (const status of ALL) {
+      expect(JSON.stringify(statusPillStyle(status))).not.toMatch(/#[0-9a-f]{3,8}/i);
+    }
+  });
+
+  it("builds the four unexceptional pills from one rule — 18% fill, 50% border, full label", () => {
+    for (const status of ["Over", "Unresolved", "To buy", "Complete"] as StatusPill[]) {
       const style = statusPillStyle(status);
       const token = STATUS_TOKEN[status];
-      expect(JSON.stringify(style)).not.toMatch(/#[0-9a-f]{3,8}/i);
       expect(style.color).toBe(`var(${token})`);
-      expect(String(style.background)).toContain(token);
-      expect(String(style.border)).toContain(token);
+      expect(style.background).toBe(`color-mix(in srgb, var(${token}) 18%, transparent)`);
+      expect(style.border).toBe(
+        `1px solid color-mix(in srgb, var(${token}) 50%, transparent)`,
+      );
     }
+  });
+
+  it("gives Draft and Building a hairline border rather than a faded status colour", () => {
+    expect(statusPillStyle("Draft")).toEqual({
+      color: "var(--fg-muted)",
+      background: "color-mix(in srgb, var(--fg-faint) 16%, transparent)",
+      border: "1px solid var(--border-strong)",
+    });
+    expect(statusPillStyle("Building")).toEqual({
+      color: "var(--fg-body)",
+      background: "color-mix(in srgb, var(--fg-body) 14%, transparent)",
+      border: "1px solid var(--border-dashed)",
+    });
   });
 
   it("fills the bar proportionally while building and completely at or past 99", () => {
@@ -1461,6 +1491,14 @@ describe("status style", () => {
     // Over is full, not 105% — the track cannot overflow its own container.
     expect(statusBarStyle("Over", 104).width).toBe("100%");
   });
+
+  it("paints the bar and the keyline in the status's own colour", () => {
+    for (const status of ALL) {
+      const token = STATUS_TOKEN[status];
+      expect(statusBarStyle(status, 50).background).toBe(`var(${token})`);
+      expect(statusKeylineStyle(status).background).toBe(`var(${token})`);
+    }
+  });
 });
 ```
 
@@ -1471,101 +1509,65 @@ Expected: FAIL — `Failed to resolve import "./status-style"`.
 
 - [ ] **Step 3: Write `src/lib/decks/status-style.ts`**
 
+The shipped file carries the two exceptions in a `PILL_EXCEPTION` map keyed by status; an absent status gets the flat rule. `mix()` is the only place an alpha meets a token, so a theme change stays a token change:
+
 ```ts
-// Colour is status, and status only (refresh README decision 3). Six values,
-// one rule — the pill is the status colour at 2E alpha on an 80 alpha border
-// with the colour as its label. Written once, here, so a theme change is a
-// token change and never a component change.
-//
-// NO HEX. Not from tokens.r6.json, not "just for Canopy". The alpha rides as a
-// hex suffix on the token through color-mix, which every supported browser has.
-
-import type { CSSProperties } from "react";
-import { MATURE_DECK_SIZE } from "./availability";
-import type { StatusPill } from "./status";
-
-export const STATUS_TOKEN: Record<StatusPill, string> = {
-  Draft: "--fg-faint",
-  Building: "--fg-body",
-  Over: "--danger",
-  Unresolved: "--warning",
-  "To buy": "--accent",
-  Complete: "--success",
+const PILL_EXCEPTION: Partial<
+  Record<StatusPill, { fillAlpha: string; border: string; label: string }>
+> = {
+  Draft: { fillAlpha: "16%", border: "--border-strong", label: "--fg-muted" },
+  Building: { fillAlpha: "14%", border: "--border-dashed", label: "--fg-body" },
 };
-
-/** `2E` and `80` of 255 — the handoff's two alphas, as percentages. */
-const FILL_ALPHA = "18%";
-const BORDER_ALPHA = "50%";
-
-function mix(token: string, alpha: string): string {
-  return `color-mix(in srgb, var(${token}) ${alpha}, transparent)`;
-}
 
 export function statusPillStyle(status: StatusPill): CSSProperties {
   const token = STATUS_TOKEN[status];
+  const exception = PILL_EXCEPTION[status];
   return {
-    color: `var(${token})`,
-    background: mix(token, FILL_ALPHA),
-    border: `1px solid ${mix(token, BORDER_ALPHA)}`,
+    color: `var(${exception ? exception.label : token})`,
+    background: mix(token, exception ? exception.fillAlpha : FILL_ALPHA),
+    border: `1px solid ${
+      exception ? `var(${exception.border})` : mix(token, BORDER_ALPHA)
+    }`,
   };
 }
-
-/**
- * The 3px progress track's fill. Clamped at 100%: an Over deck is full, not
- * 105% — a bar cannot overflow the track that measures it, and the `5 over`
- * figure in the detail row is where the excess is stated.
- */
-export function statusBarStyle(status: StatusPill, built: number): CSSProperties {
-  const pct = Math.min(100, Math.max(0, (built / MATURE_DECK_SIZE) * 100));
-  return { width: `${pct}%`, background: `var(${STATUS_TOKEN[status]})` };
-}
-
-/** The 3px left keyline on Home's list rows. */
-export function statusKeylineStyle(status: StatusPill): CSSProperties {
-  return { background: `var(${STATUS_TOKEN[status]})` };
-}
 ```
+
+`statusBarStyle` and `statusKeylineStyle` read `STATUS_TOKEN` directly — the exceptions are the pill's alone, because a 3px bar has no border to soften.
 
 Note: `statusBarStyle("Draft", 0)` yields `0%` from the arithmetic, so Draft needs no special case — the "empty track" in `STATES-deck-statuses.md` is what 0 built already produces.
 
 - [ ] **Step 4: Write the pill component and its test**
 
+Geometry is the design table's Status pill section, not the handoff prose: `border-radius: 6` (not a full round), height 24 phone / 22 desktop, padding 9 / 8, font-size 11 / 10.5, `var(--font-mono)`, and **no letter-spacing** — the table lists none. Position is `absolute; top: 10; left: 11`, which the pill owns because it has exactly one placement in the whole feature.
+
+The label comes from `refreshCopy.status`, not from printing the `StatusPill` union member: the union is a data value, the copy file is what a reader sees, and a rename belongs in one place.
+
 ```tsx
 // src/components/decks/status-pill.tsx
-import { statusPillStyle } from "../../lib/decks/status-style";
-import type { StatusPill } from "../../lib/decks/status";
+const COPY_KEY: Record<Status, keyof typeof refreshCopy.status> = {
+  Draft: "draft",
+  Building: "building",
+  Over: "over",
+  Unresolved: "unresolved",
+  "To buy": "toBuy",
+  Complete: "complete",
+};
 
-/** 22px on a tile, per STATES-deck-statuses.md §2. Mono, 10px, 0.06em. */
-export function StatusPillBadge({ status }: { status: StatusPill }) {
+export function StatusPillBadge({ status }: { status: Status }) {
   return (
     <span
-      className="inline-flex h-[22px] items-center rounded-full px-[9px]"
-      style={{
-        ...statusPillStyle(status),
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        letterSpacing: "0.06em",
-      }}
+      className="absolute top-[10px] left-[11px] flex h-[24px] items-center rounded-[6px] px-[9px] font-mono text-[11px] sm:h-[22px] sm:px-[8px] sm:text-[10.5px]"
+      style={statusPillStyle(status)}
     >
-      {status}
+      {refreshCopy.status[COPY_KEY[status]]}
     </span>
   );
 }
 ```
 
-```tsx
-// src/components/decks/status-pill.test.tsx
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { StatusPillBadge } from "./status-pill";
+One element with `sm:` variants, never a phone subtree beside a desktop subtree — a doubled subtree reads the label twice to a screen reader and passes a property check on both columns while being wrong.
 
-describe("StatusPillBadge", () => {
-  it("prints the shipped status word, so the pill and the filter row agree", () => {
-    render(<StatusPillBadge status="To buy" />);
-    expect(screen.getByText("To buy")).toBeInTheDocument();
-  });
-});
-```
+Its test asserts the label per status, that exactly one `span` renders with both size sets on it, and that the component writes no colour utility of its own.
 
 - [ ] **Step 5: Run both tests**
 
