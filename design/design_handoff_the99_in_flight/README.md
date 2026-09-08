@@ -1,158 +1,135 @@
-# The 99 — In-flight feedback for control flips that fetch (design handoff, re-ruling R2)
+# The 99 — In-flight feedback after the two-lane split (design handoff, re-ruling R3)
 
-**R2 (this revision) corrects the clause map only.** The subtitle ships four clauses under a scope,
-not three (`page-header.tsx:66-89`, `commander-discovery.ts:50-63`). Availability owns the fourth —
-the pool — with the participle **`re-scoring…`**. `read against N cards` is owned by nobody and
-**never goes pending**: it names the whole collection by design and is locked and tested
-(`list-wiring.test.ts:110-114`). R1's `re-reading…` is retired. `re-ranking…` is discovery-only.
-Search gets an explicit no-treatment line. Nothing else in the package moved.
+`design/design_handoff_the99_in_flight/` · 2026-09-08
 
-**Unblocks the region-loader work.** Source of truth for the premise correction:
-`src/components/commanders/list-nav.ts:110-113`, and the measured 270 ms / 2,870 ms window.
-Re-rules the motion clause of three documents — `design_handoff_the99_discovery/`,
-`design_handoff_the99_commanders_plane/`, and the discovery canvas itself. Read those for the
-controls; read `design_handoff_the99_richness/README.md` for the locked voice.
+**A re-placement, not a new surface.** R2's non-placement rulings hold; what did not survive
+`#435` is *where the three participles live*. The answer is that they do not live anywhere —
+**the crown the control already wears is the whole treatment**, and the result line holds its
+outgoing count for the duration.
 
-File: `The 99 - In-Flight Feedback.dc.html` (canvas — pan/zoom). The ruling in full, with the
-three document amendments, is `RULING-in-flight-feedback.md`.
+Mirrors `design/design_handoff_the99_commanders_discover/`, which is the build this must match:
+same folder convention, same copy-export shape, same READINESS format, same refresh palette.
 
-**The one-line summary:** *the list stays because it is the previous answer, not because nothing
-is being fetched — and past 500 ms the subtitle clause the pressed control owns becomes its own
-participle.*
+| File | What it holds |
+|---|---|
+| `The 99 - In-Flight Feedback.dc.html` | The deliverable. Control inventory, discover desktop at three moments, the cache hit, both lanes at 390px, the three rejected placements, the contract, the retirements. |
+| `RULING-in-flight-feedback.md` | The ruling in full, including what must not happen. |
+| `in-flight · copy strings.ts` | **Exports nothing.** Kept so the retirement is discoverable where the strings used to live. |
+| `READINESS.md` | Self-assessed readiness and what is left to decide. |
+| `brand/` | The locked brand sheet, copied in for self-containment. |
 
-**Not gated.** The in-control half is shipped (`PendingLabel`, PRs #411, #416). Everything drawn
-here is one copy state on an existing line plus three document edits.
+**Read first:** `docs/superpowers/gap-report-in-flight.md` on `design/in-flight-handoff` (PR #436).
+R3 agrees with all of it except one line — see call 4.
 
 ---
 
-## The correction
+## What changed under the drawing
 
-Three rulings forbid animating, dimming or skeleton-ing the list on a control flip, all three
-because both flips are *"state changes over data already on the client."* That is true of **one**
-control. Scope, sort and discovery availability are server round-trips
-(`list-nav.ts:110-113` — only the active `(sort, avail)` pair is ranked, so the other ordering does
-not exist until it is asked for). Only the owned-scope availability toggle, and the colour pips,
-are client-side.
+`page-header.tsx` is now `PageHeader({ lane })`: fixed title, fixed gloss, no counts, no toggle.
+Its own header comment states it — *"the scope is now the route, the nav is the switch, and the
+counts the subtitle reported have moved onto the rack's result line."* R2's mechanism was *a
+pending clause replaces the subtitle clause its control owns*. There are no clauses.
 
-**The prohibition survives the correction; its reason is replaced.** The list is left alone because
-the rows on screen are the previous answer, correctly rendered and still pressable — not because
-nothing is being fetched.
+| Control | Owned | Discover | Where the work happens | Pending |
+|---|---|---|---|---|
+| **Scope** (`Best fit` / `Something new`) | absent | **leads the rack** | **server**, cache miss only | **sometimes** |
+| Order | Fit · Name · Recent | Popularity · Name · Recent | client — `ordered()` sorts rows already held | never |
+| Search | ✓ | ✓ | client — narrows on the keystroke; `findExcludedMatches` is a receipt, not a wait | never |
+| Colour pips + match | ✓ | ✓ | client — a pure filter over the payload | never |
+| Availability | ✓, client swap | absent, and not a greyed stand-in | client — both arrays already sent | never |
+
+One `useTransition` on the whole surface, in `discovery-view.tsx`, feeding `scopePending` into
+the rack. `commanders-view.tsx` holds none. **And the flag usually stays false**: `update()` asks
+the payload cache first, so a scope already seen this visit never navigates. The flip that pends
+is the *first* visit to a scope.
+
+> **Correction to the brief.** The surviving server control is **Scope**, not Order —
+> `filter-rack.tsx:106` is the only site passing `pending`, and `ordered()` sorts in memory on
+> both lanes. The distinction matters for ruling 6: Order *looks* like scope and must not gain a
+> crown by resemblance.
 
 ## The calls
 
 | # | Call | Answer |
 |---|---|---|
-| 1 | List treatment during a real fetch | **None, and stated for the fetching case.** No skeleton, no dim, no transition, no `aria-busy`, no `pointer-events: none`. The outgoing rows are true and stay pressable. |
-| 2 | Under 500 ms | **The shipped in-control crown, alone.** A warm flip (~270 ms) shows nothing else, at either width. An element that appears and leaves in 270 ms is a flash. |
-| 3 | Past 500 ms | **One subtitle clause becomes its own participle.** Each fetching control owns exactly one of the subtitle's three clauses; that clause is replaced — never appended — in `--fg-faint` with one static `…`. |
-| 4 | Escalation | **None at any duration.** No spinner, no progress bar, no "taking a moment" line, no animated ellipsis. The crown is the only moving thing. |
-| 5 | Announcement | **Nothing mid-flight.** Pending clause `aria-hidden`; the shipped live region speaks once on settle. |
-| 6 | Failure | **The outgoing sentence returns whole.** The route error path owns the page; the subtitle is not a status bar. |
-| 7 | Boundary with `LoadingScreen` | **Outgoing content or not.** Content → in place. None (first paint, cold shared URL, reload) → `LoadingScreen`, still the only skeleton. No third component. |
+| 1 | Does the one surviving server control need copy beyond its crown? | **No — (a).** The crown replaces the label in its own box, at `PENDING_OPACITY` 0.55, never disabled, and the label already reads the destination because selection is optimistic. What made R2's participle free was a line that was going to change anyway; nothing on the rack has that shape. |
+| 2 | What does the result line do? | **Holds** its outgoing sentence verbatim for the whole flip — and the sheet footer's copy of it. Rewrites once, on arrival. No pending form, no dash, no `aria-busy`. |
+| 3 | (b) — a pending form on the result line | **Rejected**, and ruled on so it closes. Replace deletes a true count; append is the reflow R2 refused, on a line the rack promises not to resize; a dash breaks the omit-never-dash rule. Then the collision: that line is the rack's only live region, `aria-atomic`, debounced 300 ms so four keystrokes are heard once. A participle either announces mid-flight or must be hidden from the one node built to be heard. |
+| 4 | The 500 ms gate | **Retired with the participle.** It gated the sentence; the crown was never gated and must not become gated — a press is acknowledged on the press. ⚠ The one line where R3 disagrees with the gap report's keep-list. |
+| 5 | (c) — something else on the rack | **Rejected.** The rack is three rows, always all three, and does not change height when results change. A fourth row violates that at the worst moment; reserving its height spends a permanent empty row on a state the cache usually skips. That is a region loader with a smaller font. |
+| 6 | The owned lane | **No pending state at all**, either width. Drawn so the absence is a ruling. |
+| 7 | Announcement | **Nothing mid-flight.** Crown `aria-hidden`; the lane announcer speaks the re-rank once on settle; the result line speaks only for client narrowings. Two regions, two jobs, one message per press. |
 
-## The three clauses
-
-| # | Clause | Owner | In flight | Fits? |
-|---|---|---|---|---|
-| 1 | `3,100 commanders you have not built` | Scope (server) | `counting…` | 10 in 35 |
-| 2 | `ranked by best fit` | Sort (server) — **discovery only** | `re-ranking…` | 11 in 18 |
-| 3 | `read against 2,805 cards` | **nobody** | **never pending** | — |
-| 4 | `free cards only` / `every card you own` | Availability (server under discovery) | `re-scoring…` | 11 in 15 |
-
-Controls with no clause and no pending state: availability under the **owned** scope (client, 242
-rows already sent), the colour pips (client filter), and **search** (`findExcludedMatches`,
-`discovery-view.tsx:404` — fires a server action but filters the visible list client-side, so there
-is no wait to report; no crown in the field, no participle, no clause).
-
-**Why clause 3 owns nothing:** it is scoped to the whole collection rather than the free pool on
-purpose, so the number does not move when a deck is built. A constant cannot announce a change —
-putting a participle there would have the one clause guaranteed not to move say it was moving while
-the clause that does move went stale.
-
-**Why `re-scoring…`:** the pool clause is a bare noun phrase with no verb to conjugate, so the verb
-comes from its control, `Score against` — which is also what the server does with a pool. Every
-participle is shorter than the clause it replaces at every width, clause 4 measured against its
-*shortest* form (`free cards only`, 15), so the wrap point can only move earlier and the list is
-never pushed down. Testable.
+Unchanged from R2 and restated in the ruling so the re-audit is one document: the list region is
+never touched, client-side controls get no mark, no escalation tier at any duration, failure is
+the route's, and the `LoadingScreen` boundary is a content test.
 
 ## States delivered
 
 | # | Frame | Desktop | Phone |
 |---|---|---|---|
-| A1 | Which flips fetch — the four controls with and without a pending mark | ✓ | ✓ |
-| B1 | Moment 1 — press, 0 ms: crown in place of the label, list untouched | ✓ | ✓ |
-| B2 | Moment 2 — warm arrival at ~270 ms: nothing else ever appeared | ✓ | — |
-| B3 | Moment 3 — past the 500 ms gate: one clause is a participle | ✓ | ✓ |
-| C1 | The three sentences, side by side, against the settled sentence | ✓ | ✓ |
-| D1 | Rejected treatments, drawn: skeleton, dimmed list, region loader, count-row spinner | ✓ | — |
-| E1 | The `LoadingScreen` boundary — outgoing content vs. none | ✓ | — |
-| F1 | Timings, tokens, a11y and motion contract | ✓ | ✓ |
-| G1 | The three document amendments, strike and replace | ✓ | — |
+| A | Control inventory across both lanes — where the one flag is | ✓ | ✓ |
+| B1 | Discover at rest | ✓ | — |
+| B2 | Discover pending — the diff is the trigger and nothing else | ✓ | — |
+| B3 | Discover settled — count rewrites, announcer speaks once | ✓ | — |
+| C1 | The cache hit — nothing pending at all, the common case | ✓ | — |
+| C2 | Why the gate retires | ✓ | ✓ |
+| D1 | Discover rack, 390px — scope is in the sheet, so the row shows nothing | — | ✓ |
+| D2 | Discover sheet, 390px — the mark rides the pressed option | — | ✓ |
+| D3 | Owned lane, 390px — no reachable pending state | — | ✓ |
+| E | The three rejected placements, drawn | ✓ | — |
+| F | The contract — timings, tokens, motion, a11y | ✓ | ✓ |
+| G | Retirements + the two corrections | ✓ | — |
 
 ## Component notes
 
-**No new component.** No new token, no new hex, no new motion class, no new empty state.
+**No new component, no new token, no new hex, no new string.** Everything below ships.
 
 | Piece | Spec |
 |---|---|
-| **`PendingLabel`** | Shipped, unchanged (`src/components/ui/pending-mark.tsx`). Three brass diamonds, small–large–small (4/6/4 px, `rotate(45deg)`, 3 px gap), standing where the pressed control's label was — the control is the same width waiting as idle. Opacity pulse 0.35 → 1 → 0.35 over 1,200 ms, `ease-in-out`, `prefers-reduced-motion` → static at 0.7. Control at `PENDING_OPACITY` 0.55, **never disabled**. |
-| **Pending subtitle clause** | The existing subtitle, mono 12 px `--fg-faint` (10.5 px phone), unchanged in every respect except that one of the four clauses' text is the participle. No colour change, no weight change, no italics. One static `…`. `aria-hidden` on the clause. |
-| **Gate** | `PENDING_GATE_MS = 500`, one constant, all three fetching controls. A threshold on the pending flag, not a delay on the fetch. |
-| **List region** | Untouched. No wrapper, no overlay, no `aria-busy`, no pointer trap. |
-| **Count line** | Holds its outgoing figures and rewrites with the list. Never a dash. |
+| **`PendingMark`** | Three diamonds 8 / 11 / 8 px at `rotate(45deg)`, 5 px gap, 28 px box, `currentColor` — the crown at a control's text size. Opacity pulse 0.34 → 1 → 0.34 over 1,200 ms; `prefers-reduced-motion` static at 0.7. |
+| **`PendingLabel`** | Label keeps its box, mark laid over it at `opacity-0` (not `visibility:hidden` — the accessible name is computed from that text). Control same width waiting as idle. |
+| **Rack trigger, pending** | The mark takes the **chevron's** 28 px slot, not a slot beside the label; `PENDING_OPACITY` 0.55 on the trigger; `aria-busy`; brass border because the value is off default, not because it is waiting; **the menu still opens**. |
+| **Sheet radiogroup, pending** | `aria-busy` + 0.55 on the group; the crown replaces the **selected** option's label only; the gloss under it holds. |
+| **Result line** | Untouched. Mono 11 px, tabular, `--fg-muted`, `aria-hidden` visible node + `role=status` sr-only node, 300 ms debounce. **It holds its outgoing sentence and rewrites once.** |
+| **Sheet footer count** | Same sentence, same rule. Holds. |
+| **List region** | Untouched. No wrapper, overlay, `aria-busy` or pointer trap. |
 
 ## Notes for engineering
 
-- **The pending flag already exists** and is already false for the two client-side controls and for
-  a repeat flip served from cache — so "does this need a treatment?" is a question the code has
-  already answered. Do not add a second flag.
-- **The gate is one `setTimeout` on the flag becoming true**, cleared on settle. If it fires, the
-  subtitle takes the participle; if the fetch beats it, nothing rendered.
-- **The subtitle is assembled from four clauses**, not formatted as one string — see
-  `in-flight · copy strings.ts` for the assembler. The pending participle substitutes at the clause
-  the pressed control owns; clause 3 is passed through unconditionally and there is no
-  `collection` key in the copy map to substitute with.
-- **On settle the whole sentence rewrites at once**, from the arriving payload. No clause-by-clause
-  settling, no transition on the text.
-- **On failure, call the assembler with `null`** — the outgoing sentence returns verbatim.
-- **`shown` still resets to `REVEAL_STEP` on arrival**, per the discovery handoff. It does not reset
-  on press; a flip that fails must leave the reader where they were.
-- **Nothing new is announced.** The pending clause is `aria-hidden` and the shipped live region is
-  debounced to one message per settle.
-- **Three document edits ship with this**, exactly as written in `RULING-in-flight-feedback.md`, so
-  the next reader of those files does not re-derive the wrong reason.
+- **The visible work is deletion.** Three strings, `PENDING_GATE_MS`, and `discoverySubtitle()`.
+  Nothing is added.
+- **`scopePending` already carries the whole ruling.** It is false for every client control and
+  for a cache-served flip, so "does this need a treatment" is a question the code has answered.
+  Do not add a second flag, and do not derive one from `isPending` anywhere else.
+- **The one thing to actively not do** is reach for the nearest count when the flag turns true.
+  Ruling 2 is the reflex to resist; it is why "nothing" is written down.
+- **The window reset stays on arrival**, keyed off the list, not on press — a flip that fails must
+  leave the reader where they were.
+- **Two live regions, both already correct.** The result line for client narrowings; the lane
+  announcer for the re-rank and the reveal. Neither gains a message.
+- **Search stays out of the inventory as an explicit no-treatment**, carried from R2: it fires
+  `findExcludedMatches`, but the visible list narrows from data already held.
 
 ## Gap report
 
-1. **390 px loses a subtitle line while waiting.** Because the participles are shorter, the two-line
-   subtitle collapses to one and the list moves **up** ~14 px for the duration. Judged better than a
-   reserved height (a fixed two-line subtitle spends 14 px permanently to avoid a transient shift on
-   one press). If it reads badly on device, the fix is a `min-height` at 390 px only.
-2. **2,870 ms is the measured worst case, not a p95.** This ruling refuses an escalation tier on the
-   basis that a described wait needs no apology. If the p95 turns out to sit above ~4 s, the refusal
-   is worth re-opening — with a duration histogram, not an opinion.
-3. **`Score against` × discovery is still gap 1 of the discovery handoff.** This document assumes it
-   re-scores (and therefore fetches, and therefore owns the pool clause). If it is instead disabled
-   under discovery, clause 4 has no pending state and the table loses its only server-side
-   availability row.
-4. **A flip during a flip is not drawn.** The controls are never disabled, so a reader can press
-   sort while scope is in flight. Expected: the second press supersedes, the crown moves to the
-   second control, and the subtitle's pending clause moves with it. That is one line of state, but
-   it is not specified in the brief and the ordering of two in-flight requests is engineering's.
-5. **Scroll position on arrival is unspecified.** A reader who has scrolled 40 rows into the
-   outgoing list and flips sort gets a new ranking under an old scroll offset. The shipped window
-   reset makes the list shorter than their offset in many cases. Out of scope here — it is a
-   navigation question, not a feedback question — but it is the second thing a reader will notice.
-6. **No treatment for a fetch that returns the same list.** An availability flip that changes
-   nothing visible (no free-vs-owned difference in the top 25) settles with the sentence rewritten
-   and the rows identical, which can read as a press that did nothing. The subtitle's collection
-   clause is the only evidence. Accepted; flagged.
-
-## Files
-- `The 99 - In-Flight Feedback.dc.html` — the canvas (this handoff's deliverable).
-- `RULING-in-flight-feedback.md` — the ruling in full, with the three document amendments.
-- `in-flight · copy strings.ts` — three strings, the gate constant, the subtitle assembler.
-- `README.md` — this file.
-- `READINESS.md` — self-assessed readiness and the one open item.
-- `brand/` — the locked brand sheet + brand README, copied in for self-containment.
-- `support.js` — runtime for the HTML reference; not production code.
+1. **The 2,870 ms worst case has not been re-measured against this build.** R2's window (~270 ms
+   warm, 2,870 ms cold) predates the split and the payload cache. The ruling is duration-independent
+   — there is no tier, so no threshold to get wrong — but if the cold path has got materially
+   slower, gap 2 of R2 is the one that re-opens, not this one.
+2. **What re-opens the escalation question:** a duration histogram of *cache-miss scope flips only*
+   showing p95 above ~4 s. Not an opinion, and not the warm path, which the cache has removed
+   from the sample entirely.
+3. **A flip during a flip is still not specified.** Controls are never disabled and the trigger
+   still opens its menu while a request is out, so it is reachable. Expected: the second press
+   supersedes and the crown stays where the reader last pressed. One line of state; engineering's
+   ordering call.
+4. **`discovery-view.tsx` reconciles the scope the server actually ranked on** — `loadDiscovery`
+   downgrades `new` to `bestfit` when there is no deck to measure novelty from. So a flip can
+   settle with the control back on the value it started from, having done real work. The crown
+   clears correctly, but nothing tells the reader why the scope bounced; `NoDecksBanner` is the
+   nearest thing and it is not addressed to this. Out of scope here, worth a ticket.
+5. **Scroll position on arrival is still unspecified**, as in R2 — a navigation question, not a
+   feedback one, but the reader meets it in the same second.
+6. **The result line at 320 px is unverified.** `2,847 commanders` fits; a long filtered sentence
+   with the `Exactly` aside appended is the case to check, and it is not new to this ruling.

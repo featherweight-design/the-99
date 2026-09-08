@@ -1,92 +1,91 @@
-# Gap Report — In-flight feedback for control flips that fetch (R2)
+# Gap Report — In-flight feedback for control flips that fetch (R3)
 
-**Handoff:** `design/design_handoff_the99_in_flight` (R2)
+**Handoff:** `design/design_handoff_the99_in_flight` (R3, supersedes R2)
 **Verified against:** `src/components/commanders/page-header.tsx`, `discovery-view.tsx`,
-`commanders-view.tsx`, `rack/*`, `list-nav.ts`, `pending.ts`, `src/lib/copy/lanes.ts`
+`commanders-view.tsx`, `rack/filter-rack.tsx`, `rack/filter-sheet.tsx`, `rack/select.tsx`,
+`rack/scope-control.tsx`, `rack/result-line.tsx`, `ui/pending-mark.tsx`, `pending.ts`,
+`src/lib/copy/lanes.ts`
 **Widths:** 390px and 1280px
-**Date:** 2026-09-07
+**Date:** 2026-09-08
 
 ## Verdict
 
-**🟠 Orange — the premise is superseded, not wrong.** R2 closes R1's blocking finding
-cleanly and would have been Green against the build it was drawn on. It was not drawn on
-this build. `#435` — *Split /commanders into two lanes: owned and discover*, merged as
-`3da8c52` — deleted the surface every ruling in R2 is placed on, and reduced the set of
-controls the ruling governs from three to one.
+**🟢 Green — ship.** R3 answers the placement question this report raised against R2, and it
+answers it against the build that actually exists. Every claim in the ruling was re-checked
+in `src/` rather than taken on trust, and every one holds. The net implementation is one
+behaviour to preserve and nothing to build.
 
-This needs a Design round-trip. Where the participle lives now is a placement question on
-a surface Design has not drawn a pending state for, and improvising it here would be
-choosing a location the drawing does not contain.
+## R2's Orange, and why it closes
 
-## What R2 got right, and keep
+R2 was drawn on a `page-header.tsx` carrying a four-clause subtitle, and placed a pending
+participle in the clause each fetching control owned. `#435` (*Split /commanders into two
+lanes*, `3da8c52`) deleted that surface before the audit ran: the header is now
+`PageHeader({ lane })`, a fixed title and gloss, and the counts moved onto the rack's result
+line. All three participles were left homeless, and two had no owner left to be homeless for.
 
-R1 ruled on a three-clause subtitle and assigned `re-reading…` to `read against N cards` —
-the one clause locked and tested as invariant under an availability flip
-(`src/lib/discovery/list-wiring.test.ts:110-114`). R2 counted four clauses, retired
-`re-reading…`, gave that clause no pending state at all, and moved the availability
-participle onto the pool clause that actually changes. That reasoning is sound and the
-*non-placement* rulings survive the lane split intact:
+Deciding where the treatment went instead was a placement call on a surface Design had not
+drawn, so the finding went back to Design rather than being improvised here. R3 is that
+answer: **(a) — the crown the control already wears is the whole treatment.**
 
-- The list is never touched — no `RegionLoader`, skeleton, dim, overlay or `aria-busy` on
-  the region. The outgoing rows are the previous answer and stay pressable.
-- One gate, 500 ms, never tuned per control.
-- Client-side controls get no mark.
-- Nothing announced mid-flight; no escalation tier at any duration.
-- `LoadingScreen` is the region loader, and it is reached only when there are no outgoing
-  rows.
+## Verified against the build
 
-## What `#435` removed
+Each of R3's load-bearing claims, checked:
 
-**1 — The subtitle is gone.** `page-header.tsx` is now `PageHeader({ lane })`: a fixed
-title and a fixed gloss (`Commanders` / `yours, not yet built`), 39 lines, no props for
-counts, no scope toggle. Its own header comment states the change: *"the scope is now the
-route, the nav is the switch, and the counts the subtitle reported have moved onto the
-rack's result line."* R2's mechanism — *a pending clause replaces the subtitle clause its
-control owns* — has no clauses left to replace. All three participles are homeless.
+| R3 claims | Verified |
+|---|---|
+| Scope is the only control on either lane that can reach the server | `discovery-view.tsx` `update()` returns early when `next.scope === params.scope`, and again on a cache hit before `startNav` |
+| Order never reached the server, before or after the split | `ordered()` sorts rows already held, on both lanes |
+| The owned lane holds no transition and passes no flag | `commanders-view.tsx` — no `useTransition`, no `scopePending` |
+| The crown is shipped and never gated | `select.tsx` renders `PendingMark` the moment `pending` is true; `PENDING_OPACITY` 0.55, `aria-busy`, never `disabled` |
+| The label keeps its box | `PendingLabel` uses `opacity-0`, not `visibility: hidden`, so the accessible name survives the wait |
+| The result line is the rack's only list-count live region | `result-line.tsx` — `role="status"`, `aria-atomic`, `ANNOUNCE_DELAY_MS` 300 |
 
-**2 — Three fetching controls became one.** `discovery-view.tsx:120-123` is explicit:
-*"Scope is the only one left that can reach the server, and even it usually does not — a
-cache hit answers in memory and this never turns true."* One `useTransition` feeds one
-`scopePending` boolean into the rack. `commanders-view.tsx` holds no transition at all and
-passes no pending flag: **the owned lane now has zero fetching controls.** So `counting…`
-has no owner (scope is the route, not a control), and `re-scoring…` has no owner (the
-owned lane's availability is a client swap, and Discover mounts no availability control at
-all).
+## The five deletions are five things never built
 
-**3 — The count line moved and took a live region with it.**
-`rack/result-line.tsx` is the only line on either lane that carries counts, and it is
-deliberately *the rack's only live region*, announced on a 300 ms debounce so a reader
-typing four letters hears one count. Any participle placed there collides with a rule that
-was written to prevent exactly that chorus. R2 could not have accounted for it.
+R3's READINESS describes the visible work as deleting `counting…`, `re-ranking…`,
+`re-scoring…`, `PENDING_GATE_MS` and `discoverySubtitle()`. **None of them exist in `src/`.**
+They were R2's proposed API, drafted in the handoff's copy-strings file and never
+implemented — the R2 plan that would have built them was withdrawn rather than merged. So
+the deletion is already done, and the retirement note now shipping in
+`in-flight · copy strings.ts` is the record of why they must not be re-added.
 
-## What is already shipped
+## The one sign-off R3 asks for
 
-The crown half of the ruling is in the build and needs nothing. `rack/select.tsx` takes
-`pending`, sets `aria-busy`, applies `PENDING_OPACITY` (0.55, from `pending.ts`) and swaps
-the selected option's label for `PendingMark` via `PendingLabel` — the never-disabled,
-never-reflowing treatment from PRs #411 and #416. The rack's scope control is wired to it
-(`filter-rack.tsx:106`, `filter-sheet.tsx:241`).
+R3 disagrees with this report's earlier keep-list on exactly one line — *"one gate, 500 ms,
+never tuned per control"* — and retires it.
 
-So the live question is narrow: **does one surviving server control, which usually answers
-from cache, need a copy state at all beyond the crown it already has?**
-
-## Two corrections that outlive the redraw
-
-Both are eng-resolvable and were found against the pre-`#435` build; they should be
-carried into whatever R3 says, because both are statements about *ownership* rather than
-about the subtitle.
-
-1. **"Two participles under `I own`" was already one** even before the split.
-   `commanders-view.tsx` passes no availability pending flag — that flip is a client swap
-   over data already on the client. Design's own ruling 7 says the same thing, so the
-   sentence contradicted the ruling two pages above it. Post-`#435` it is **zero**.
-2. **`ordering` is not optional.** R2's reference assembler types it optional and runs
-   `.filter(Boolean)`, which taken literally deleted `ranked by fit` from the owned
-   subtitle. The narrower true statement — the owned lane has no sort *control*, so that
-   clause can never go pending — is the one that survives.
+**Signed off, and it costs nothing to sign.** The gate existed to stop a subtitle participle
+flashing; there is no participle. The crown was never gated in the build, and gating it would
+mean half a second of a control that looks untouched after a deliberate press — the complaint
+`#338` and PRs #411/#416 were opened to answer. And the constant is not in `src/` to begin
+with, so "keep it" would have meant introducing a value no code path reads.
 
 ## What ships from this branch
 
-The R2 drop, and this report. **No implementation plan**: a plan written against
-`page-header.tsx`'s four clauses instructs a worker to edit code that no longer exists.
-The plan is re-written after R3 lands.
+The R3 drop, this report, and four regression tests in
+`src/components/commanders/rack/filter-rack.test.tsx` that lock the half of the ruling a
+future implementer is most likely to undo by reflex:
+
+1. **The result line holds.** With `scopePending` true, the sentence is byte-identical to the
+   settled one, carries no `aria-busy`, and the rack's only busy node is the scope trigger.
+2. **Scope is marked and nothing else.** Exactly one `[data-pending-mark]` on the rack, inside
+   the Scope group; Order carries none.
+3. **The owned lane has no pending state at all** — passing the flag to an owned rack produces
+   no mark and no busy node anywhere.
+4. **390px:** the mark rides the pressed scope option inside the sheet, the radiogroup takes
+   `aria-busy`, and the footer's `Show 3,301 commanders` holds.
+
+No product code changes. The treatment R3 rules on was already in the build; what was missing
+was the guarantee that the next person to touch a pending flag would not reach for the nearest
+count.
+
+## Open, and not this ticket
+
+- **The `/discover` correction button is dead.** `discovery-view.tsx`'s `correct()` calls
+  `scopeNav.go("owned")` for a `scope` cause, but `useScopeNav` still models the pre-split
+  `"owned" | "play"` values, so on `/discover` its `current` is always `"owned"` and the call
+  early-returns. `#435` fallout, unrelated to in-flight feedback, and raised rather than fixed
+  here.
+- **The scope bounce** R3 flags (gap 4): `loadDiscovery` downgrades `new` to `bestfit` with no
+  decks, so a flip can settle back on the value it started from having done real work. The
+  crown clears correctly; nothing explains the outcome. Worth a ticket.
