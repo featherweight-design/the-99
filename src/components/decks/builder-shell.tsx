@@ -554,6 +554,11 @@ export function BuilderShell({
               deck={deck}
               counts={counts}
               onExport={openExport}
+              // The server status, the same one the tab strip names. Passed
+              // rather than recomputed inside the spine, which holds the
+              // optimistic counts and would otherwise disagree with the page
+              // around it mid-edit.
+              status={serverStatus}
               {...commitments}
               // No link while the Shopping list is what the player is looking
               // at: it would point at the screen they are already on. Called

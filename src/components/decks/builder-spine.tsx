@@ -15,6 +15,8 @@ import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { overCopy, overWord } from "../../lib/copy/decks-builder";
+import { StatusPillBadge } from "./status-pill";
+import type { StatusPill } from "../../lib/decks/status";
 
 interface BuilderSpineProps {
   deck: DeckDetail;
@@ -46,6 +48,13 @@ interface BuilderSpineProps {
    * on is furniture — and absent entirely outside the builder.
    */
   onShowShopping?: () => void;
+  /**
+   * The server status, computed once in builder-shell. A prop rather than a
+   * second `statusPill()` call here: the shell's is keyed off the server counts
+   * deliberately, and a spine that recomputed it from its own optimistic
+   * `counts` would name a different status than the page it sits on.
+   */
+  status: StatusPill;
 }
 
 // The seam in the doubled glyph is the colour of whatever sits behind it, and
@@ -243,6 +252,7 @@ export function BuilderSpine({
   softClaimed,
   overCommittedCard,
   onShowShopping,
+  status,
 }: BuilderSpineProps) {
   const [renaming, setRenaming] = useState(false);
 
@@ -332,13 +342,15 @@ export function BuilderSpine({
           </button>
         )}
 
-        {/* §Spine — deck meta caption */}
-        <p
-          className="font-mono text-[10px] md:text-[11px] mt-[1px] md:mt-[2px]"
-          style={{ color: "var(--fg-faint)" }}
-        >
-          {commander.name} · {identityLabel}
-        </p>
+        {/* §Spine — deck meta caption. The status pill sits with the other
+            facts about the deck rather than beside the name, which it would
+            compete with. */}
+        <div className="flex items-center gap-[8px] mt-[1px] md:mt-[2px]">
+          <p className="font-mono text-[10px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
+            {commander.name} · {identityLabel}
+          </p>
+          <StatusPillBadge status={status} />
+        </div>
 
         {/* §Spine — pip chips (desktop only) */}
         {commander.colorIdentity.length > 0 && (
@@ -452,7 +464,11 @@ export function BuilderSpine({
         {built > 0 && (
           <GhostButton
             href={`/decks/${deck.id}/import`}
-            className="flex items-center font-mono text-[11px] md:font-sans md:text-[13px] px-[9px] md:px-[18px] py-[6px] md:py-[11px] min-h-[44px] md:min-h-0"
+            // Hairline geometry spelled out at `md:` rather than merged from
+            // `HAIRLINE`, which is a `sm:` constant: this whole spine splits at
+            // `md`, and moving its breakpoint is a change with its own review.
+            // The phone keeps its 44px target — 32px is a desktop figure.
+            className="flex items-center font-mono text-[11px] md:font-sans md:h-[32px] md:px-[14px] md:py-0 md:text-[12.5px] px-[9px] py-[6px] min-h-[44px] md:min-h-0"
           >
             {deckImportCopy.update.entryLabel}
           </GhostButton>
