@@ -25,7 +25,6 @@ import {
   activeControlCount,
   defaultParams,
   type Lane,
-  type LaneOrder,
   type LaneParams,
 } from "../../../lib/commanders/lane-params";
 import { commandersCopy, discoverCopy, filterCopy } from "../../../lib/copy/lanes";
@@ -33,26 +32,12 @@ import { PrimaryButton } from "../../ui/button";
 import { AvailabilityControl } from "./availability-control";
 import { ColourControl } from "./colour-control";
 import { OrderControl } from "./order-control";
+import { ORDER_OPTIONS } from "./order-options";
 import { ScopeControl } from "./scope-control";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
 const DRAG_DISMISS_PX = 80;
 
-/** The lane owns its sort list; `OrderControl` knows neither. Exported because
-    the rack mounts the same control on its own persistent row and the two lists
-    must not drift. */
-export const ORDER_OPTIONS: Record<Lane, readonly { key: LaneOrder; label: string }[]> = {
-  owned: [
-    { key: "fit", label: commandersCopy.order.fit },
-    { key: "name", label: commandersCopy.order.name },
-    { key: "added", label: commandersCopy.order.added },
-  ],
-  discover: [
-    { key: "popularity", label: discoverCopy.order.popularity },
-    { key: "name", label: discoverCopy.order.name },
-    { key: "recent", label: discoverCopy.order.recent },
-  ],
-};
 
 export function FilterSheet({
   open,
