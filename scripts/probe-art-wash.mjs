@@ -32,9 +32,16 @@ async function signIn(page) {
           : await signIn.create({ identifier: email, password });
         if (attempt.status === "needs_first_factor" || attempt.status === "needs_client_trust") {
           const factor = attempt.supportedFirstFactors?.find((f) => f.strategy === "email_code");
+          // Named here rather than left to Clerk: an undefined emailAddressId
+          // fails inside prepareFirstFactor with an error that says nothing
+          // about the account being unable to take a code.
+          if (!factor) {
+            const offered = (attempt.supportedFirstFactors ?? []).map((f) => f.strategy).join(", ");
+            return `${email} offers no email_code first factor (offered: ${offered || "none"}). The probe user must be a +clerk_test address.`;
+          }
           await signIn.prepareFirstFactor({
             strategy: "email_code",
-            emailAddressId: factor?.emailAddressId,
+            emailAddressId: factor.emailAddressId,
           });
           attempt = await signIn.attemptFirstFactor({ strategy: "email_code", code: "424242" });
         }
