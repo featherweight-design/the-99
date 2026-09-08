@@ -290,8 +290,11 @@ export function TopOffList({
       const result = await commitTopOff(deckId, [...live]);
       if (!result.ok) {
         // Every tick is preserved: the refusal changed nothing (state 15).
+        // The plate is the only thing drawn and the live region is the only
+        // thing spoken, so they say the same words: the server's reason, which
+        // is more specific than the generic refusal the thrown path falls to.
         setError(result.message);
-        onAnnounce(topOffCopy.commit.refused);
+        onAnnounce(result.message);
         return;
       }
       onTickedChange(new Set());
@@ -787,7 +790,10 @@ export function RefusalPlate({
 }) {
   return (
     <div
-      role="alert"
+      data-testid="top-off-refusal"
+      // No live role. BuilderShell already owns a polite region, and the commit
+      // path speaks the refusal into it; an alert here would say the same thing
+      // a second time, louder and out of order.
       className={`flex items-center gap-[9px] rounded-[8px] px-[12px] py-[9px] ${className ?? ""}`}
       style={{
         // The design draws the sunken surface with a faint danger lift. Mixed

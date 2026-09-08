@@ -284,8 +284,11 @@ describe("TopOffList", () => {
 
     await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98") }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Deck is full.");
-    expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.commit.refused);
+    // Drawn and spoken once each, in the same words. The plate carries no live
+    // role, because BuilderShell's polite region is what speaks here.
+    expect(screen.getByTestId("top-off-refusal")).toHaveTextContent("Deck is full.");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(onAnnounce).toHaveBeenLastCalledWith("Deck is full.");
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
   });
@@ -299,9 +302,9 @@ describe("TopOffList", () => {
 
     await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("1", "97") }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent(topOffCopy.commit.refused);
-    // The plate is drawn, so a reader hears it too: the two refusal paths are
-    // one event and they speak with one voice.
+    expect(screen.getByTestId("top-off-refusal")).toHaveTextContent(topOffCopy.commit.refused);
+    // A thrown call has no reason of its own, so both paths fall to the same
+    // sentence here, and it is still said once.
     expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.commit.refused);
   });
 
