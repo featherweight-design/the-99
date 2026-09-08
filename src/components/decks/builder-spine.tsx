@@ -349,7 +349,13 @@ export function BuilderSpine({
           <p className="font-mono text-[10px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
             {commander.name} · {identityLabel}
           </p>
-          <StatusPillBadge status={status} />
+          <StatusPillBadge
+            status={status}
+            // The tile's figures with `absolute` dropped: the pill sits in the
+            // caption's flow here, not pinned to art. Split at `md` like the
+            // rest of the spine rather than at the pill's own `sm`.
+            className="flex h-[24px] flex-none items-center rounded-[6px] px-[9px] font-mono text-[11px] md:h-[22px] md:px-[8px] md:text-[10.5px]"
+          />
         </div>
 
         {/* §Spine — pip chips (desktop only) */}
