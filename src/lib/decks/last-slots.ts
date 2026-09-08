@@ -24,6 +24,20 @@ export function planLastSlots(args: {
   return { place, shortfall: args.openSlots - place.length };
 }
 
+/** Every card the list can offer, in rank order and uncapped.
+ *
+ *  The cap is a property of the selection, not of the pool: the player sees the
+ *  whole ranking and ticks up to the open slots inside it, so a pool truncated
+ *  at `openSlots` would hide the cards each tick is being chosen over. The one
+ *  exclusion is a card the deck already holds, which is `planLastSlots`' own
+ *  exclusion — the two read the same ranked list and must agree on it. */
+export function listLastSlotsCandidates(args: {
+  ranked: SynergyCard[];
+  inDeckOracleIds: Set<string>;
+}): SynergyCard[] {
+  return args.ranked.filter((c) => !args.inDeckOracleIds.has(c.oracleId));
+}
+
 /** How many cards the top-up plan would require the player to buy.
  *
  *  This is NOT `allCandidates - ownedCandidates`. Both planLastSlots runs are
