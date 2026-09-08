@@ -36,6 +36,7 @@ export type ScoreRowWithCard = {
   name: string;
   colorIdentity: string[];
   imageUri: string | null;
+  artCropUri: string | null;
 };
 
 export function toScoreRow(userId: string, r: RankedCommander) {
@@ -77,6 +78,7 @@ export function rowToListItem(row: ScoreRowWithCard): CommanderListItem {
     rankScore: row.rankScore,
     measurableTotal: measurableTotalFor(row.fitSynergy),
     imageUri: row.imageUri,
+    artCropUri: row.artCropUri,
   };
 }
 
@@ -182,6 +184,7 @@ export async function loadScores(
         name: cards.name,
         colorIdentity: cards.colorIdentity,
         imageUri: cards.imageUri,
+        artCropUri: cards.artCropUri,
       })
       .from(commanderScores)
       .innerJoin(cards, eq(commanderScores.oracleId, cards.oracleId))

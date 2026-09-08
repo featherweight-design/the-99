@@ -53,6 +53,7 @@ export type CommanderListItem = Pick<
   | "rankScore"
   | "measurableTotal"
   | "imageUri"
+  | "artCropUri"
 > & {
   /** Preformatted receipts line — overlapOwned can be large, so only the
       rendered preview string ships to the client. */
@@ -78,6 +79,7 @@ export function toListItem(r: RankedCommander): CommanderListItem {
     rankScore: r.rankScore,
     measurableTotal: r.measurableTotal,
     imageUri: r.imageUri,
+    artCropUri: r.artCropUri,
   };
 }
 
@@ -146,7 +148,7 @@ export const loadCollectionPool = cache(async function loadCollectionPool(
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords,
       colorIdentity: cards.colorIdentity, commanderLegal: cards.commanderLegal,
-      imageUri: cards.imageUri, manaCost: cards.manaCost,
+      imageUri: cards.imageUri, artCropUri: cards.artCropUri, manaCost: cards.manaCost,
     })
     .from(collectionItems)
     .innerJoin(cards, eq(collectionItems.oracleId, cards.oracleId))
@@ -169,7 +171,7 @@ async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords,
       colorIdentity: cards.colorIdentity, imageUri: cards.imageUri,
-      manaCost: cards.manaCost,
+      artCropUri: cards.artCropUri, manaCost: cards.manaCost,
     })
     .from(cards)
     // Commander legality is part of the lookup, not a later check: the pool this

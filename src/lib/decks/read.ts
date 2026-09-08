@@ -231,6 +231,7 @@ export type DeckListItem = {
   commanderName: string;
   commanderColorIdentity: string[];
   commanderImageUri: string | null;
+  commanderArtCropUri: string | null;
   built: number;
   ownedCount: number;
   toBuyCount: number;
@@ -345,6 +346,7 @@ export async function listDecksWithStats(
       commanderName: cards.name,
       commanderColorIdentity: cards.colorIdentity,
       commanderImageUri: cards.imageUri,
+      commanderArtCropUri: cards.artCropUri,
       built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
       ownedCount: ownedCountSql,
       unresolvedCount: unresolvedCountSql,
@@ -361,6 +363,7 @@ export async function listDecksWithStats(
       cards.name,
       cards.colorIdentity,
       cards.imageUri,
+      cards.artCropUri,
     )
     .orderBy(...order);
 
@@ -400,6 +403,7 @@ export async function listDecksWithStats(
       commanderName: row.commanderName,
       commanderColorIdentity: row.commanderColorIdentity,
       commanderImageUri: row.commanderImageUri,
+      commanderArtCropUri: row.commanderArtCropUri,
       built: row.built,
       ownedCount: row.ownedCount,
       toBuyCount: row.built - row.ownedCount,

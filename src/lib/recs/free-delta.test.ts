@@ -21,6 +21,7 @@ function item(over: Partial<CommanderListItem>): CommanderListItem {
     rankScore: 60,
     measurableTotal: 100,
     imageUri: "https://cards.example/a.jpg",
+    artCropUri: null,
     ...over,
   };
 }

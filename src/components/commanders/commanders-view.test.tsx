@@ -47,6 +47,7 @@ function results(n: number, colorIdentity: string[] = ["R"]): CommanderListItem[
     rankScore: 100 - i,
     measurableTotal: 100,
     imageUri: null,
+    artCropUri: null,
     synergyState: "ok" as const,
   }));
 }

@@ -63,6 +63,7 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   name: "A Commander",
   colorIdentity: ["G"],
   imageUri: null,
+  artCropUri: null,
   releasedAt: null,
   deckCount: 1209,
   rank: 1,

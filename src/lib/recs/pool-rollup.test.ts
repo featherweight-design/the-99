@@ -29,7 +29,7 @@ describe("identityMask", () => {
 
 const card = (over: Partial<PoolCard> & { oracleId: string }): PoolCard => ({
   name: over.oracleId, typeLine: "Creature — Human", oracleText: null,
-  keywords: [], colorIdentity: [], imageUri: null, manaCost: null, ...over,
+  keywords: [], colorIdentity: [], imageUri: null, artCropUri: null, manaCost: null, ...over,
 });
 
 const collection: PoolCard[] = [

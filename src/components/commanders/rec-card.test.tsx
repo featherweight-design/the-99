@@ -29,6 +29,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
     rankScore: 44,
     measurableTotal: 100,
     imageUri: null,
+    artCropUri: null,
     synergyState: "ok",
     ...overrides,
   };

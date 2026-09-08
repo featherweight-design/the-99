@@ -18,6 +18,7 @@ function deckOf(over: Partial<DeckListItem> = {}): DeckListItem {
     commanderName: "Atraxa, Praetors' Voice",
     commanderColorIdentity: ["W", "U", "B", "G"],
     commanderImageUri: null,
+    commanderArtCropUri: null,
     statusPill: "Complete",
     built: 99,
     ownedCount: 99,

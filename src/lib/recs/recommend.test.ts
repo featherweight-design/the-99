@@ -19,6 +19,7 @@ function stubScore(name: string, score = 0): CommanderScore & { synergyState: Sy
     name,
     colorIdentity: [],
     imageUri: null,
+    artCropUri: null,
     typeLine: "Legendary Creature",
     oracleText: null,
     manaCost: null,
@@ -157,6 +158,7 @@ describe("finalizeRecommendations", () => {
         rankScore: 85,
         measurableTotal: 40,
         imageUri: null,
+        artCropUri: null,
       });
       expect(item).not.toHaveProperty("oracleText");
       expect(item).not.toHaveProperty("overlapOwned");

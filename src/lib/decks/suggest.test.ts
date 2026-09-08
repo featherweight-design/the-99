@@ -49,7 +49,8 @@ function buildSuggestions(
 let n = 0;
 const card = (over: Partial<PoolCard>): PoolCard => ({
   oracleId: `o-${n++}`, name: `Card ${n}`, typeLine: "Creature",
-  oracleText: "", keywords: [], colorIdentity: [], imageUri: null, manaCost: null, ...over,
+  oracleText: "", keywords: [], colorIdentity: [], imageUri: null, artCropUri: null,
+  manaCost: null, ...over,
 });
 const commander = card({ name: "Cmdr", typeLine: "Legendary Creature", colorIdentity: ["G"] });
 

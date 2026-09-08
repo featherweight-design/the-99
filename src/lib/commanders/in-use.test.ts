@@ -11,6 +11,7 @@ const card = (oracleId: string, colorIdentity: string[] = []): PoolCard => ({
   keywords: [],
   colorIdentity,
   imageUri: null,
+  artCropUri: null,
   manaCost: null,
 });
 

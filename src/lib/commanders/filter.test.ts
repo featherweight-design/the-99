@@ -9,6 +9,7 @@ function stub(name: string, colorIdentity: string[], score = 0): RankedCommander
     name,
     colorIdentity,
     imageUri: null,
+    artCropUri: null,
     typeLine: "Legendary Creature",
     oracleText: null,
     manaCost: null,

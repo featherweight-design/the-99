@@ -15,7 +15,7 @@ import { ROLE_TARGETS } from "./roles";
 const card = (over: Partial<PoolCard> & { oracleId?: string; name?: string }): PoolCard => ({
   oracleId: over.oracleId ?? randomUUID(),
   name: "X", typeLine: "Creature", oracleText: "", keywords: [], colorIdentity: [],
-  imageUri: null, manaCost: null,
+  imageUri: null, artCropUri: null, manaCost: null,
   ...over,
 });
 
