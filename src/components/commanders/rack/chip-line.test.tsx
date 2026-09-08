@@ -48,6 +48,28 @@ describe("ChipLine", () => {
     expect(screen.getByText("+3")).toBeInTheDocument();
   });
 
+  it("opens the sheet from the +N, since the sheet is where those controls went", () => {
+    const onOverflowOpen = vi.fn();
+    render(
+      <ChipLine
+        params={{
+          q: "druid",
+          colors: ["b", "g"],
+          match: "exactly",
+          avail: "free",
+          order: "name",
+          scope: "bestfit",
+        }}
+        lane="owned"
+        onChange={noop}
+        wide={false}
+        onOverflowOpen={onOverflowOpen}
+      />,
+    );
+    screen.getByText("+3").click();
+    expect(onOverflowOpen).toHaveBeenCalledOnce();
+  });
+
   it("clears every control at once, back to the lane's defaults", async () => {
     const onChange = vi.fn();
     render(

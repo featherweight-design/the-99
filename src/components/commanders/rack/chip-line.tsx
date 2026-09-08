@@ -43,11 +43,15 @@ export function ChipLine({
   lane,
   onChange,
   wide,
+  onOverflowOpen,
 }: {
   params: LaneParams;
   lane: Lane;
   onChange: (next: LaneParams) => void;
   wide: boolean;
+  /** Opens the sheet the collapsed chips' controls live in. Absent at 1024px+,
+      where the cap is four and nothing can collapse. */
+  onOverflowOpen?: () => void;
 }) {
   const chips = chipsFor(params, lane);
   // Search is not in `activeControlCount` — it sits outside the sheet — so it
@@ -84,18 +88,23 @@ export function ChipLine({
       )}
 
       {overflow > 0 && (
-        // Dashed, and not a control: the chips it stands for are all still
-        // reachable — every one of them has its control a tap away in the
-        // sheet, and `Clear` beside it drops the lot.
-        <span
+        // Dashed, and a second door to the sheet: the chips it stands for are
+        // the controls it opens, so pressing what hid them is what shows them.
+        // Named for the chips it stands in for rather than for the sheet, which
+        // already has a button by that name one row above.
+        <button
+          type="button"
+          onClick={onOverflowOpen}
+          aria-label={filterCopy.chips.overflowAria(overflow)}
+          aria-haspopup="dialog"
           className={[
-            "inline-flex shrink-0 items-center rounded-full border border-dashed",
-            "border-[color:var(--border-strong)] font-mono text-[color:var(--fg-faint)]",
+            "inline-flex shrink-0 cursor-pointer items-center rounded-full border border-dashed",
+            "bg-transparent border-[color:var(--border-strong)] font-mono text-[color:var(--fg-faint)]",
             wide ? "h-[22px] px-[8px] text-[10.5px]" : "h-[26px] px-[10px] text-[11px]",
           ].join(" ")}
         >
           {filterCopy.chips.overflow(overflow)}
-        </span>
+        </button>
       )}
 
       <button

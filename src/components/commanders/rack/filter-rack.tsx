@@ -144,7 +144,13 @@ export function FilterRack({
         </div>
       )}
 
-      <ChipLine params={params} lane={lane} onChange={onChange} wide={wide} />
+      <ChipLine
+        params={params}
+        lane={lane}
+        onChange={onChange}
+        wide={wide}
+        onOverflowOpen={wide ? undefined : () => setSheetOpen(true)}
+      />
 
       <ResultLine
         shown={shown}

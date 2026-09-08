@@ -42,6 +42,11 @@ export const filterCopy = {
   chips: {
     query: (q: string) => `"${q}"`,
     overflow: (extra: number) => `+${extra}`,
+    // The +N opens the sheet, and its name has to say which filters it means —
+    // `Filters` alone is the sheet trigger's name and would be a second button
+    // by that name on the same row.
+    overflowAria: (extra: number) =>
+      `Show ${extra} more ${extra === 1 ? "filter" : "filters"}`,
     clear: "Clear",
     clearAll: "Clear all filters",
     none: "no filters — nothing to clear",
