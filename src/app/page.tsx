@@ -80,22 +80,30 @@ export default async function HomePage() {
     );
   }
 
-  // Awaited first and alone: first run renders none of what follows, and there
-  // is no point loading four more things to throw them away. The `currentUser()`
-  // that used to ride alongside is gone with the name — neither greeting
-  // interpolates one now, and a Clerk round trip nothing renders is a request
-  // paid for nothing.
-  const stats = await getCollectionStats(userId);
-  if (stats.uniqueCards === 0) {
-    return <FirstRunChecklist />;
-  }
-
-  const [lastUpdated, ranked, decks, shopping] = await Promise.all([
-    getCollectionLastUpdated(userId),
-    getRankedList(userId),
+  // Awaited before the rest: first run renders none of what follows, and there
+  // is no point loading three more things to throw them away. The
+  // `currentUser()` that used to ride alongside is gone with the name — neither
+  // greeting interpolates one now, and a Clerk round trip nothing renders is a
+  // request paid for nothing.
+  //
+  // The decks are read here rather than below because first run is "no
+  // collection read AND no decks", both halves. A player who imported a deck
+  // before reading a collection is not a new player, and that state is
+  // reachable by design: the checklist's own escape hatch links to
+  // /decks/import. Showing them the three steps would hide the deck they have.
+  const [stats, decks] = await Promise.all([
+    getCollectionStats(userId),
     // Explicit, because the parameter has no default. Home's rail is a resume
     // rail, so last played is the order it wants on its own merits.
     listDecksWithStats(userId, DEFAULT_DECK_SORT),
+  ]);
+  if (stats.uniqueCards === 0 && decks.length === 0) {
+    return <FirstRunChecklist />;
+  }
+
+  const [lastUpdated, ranked, shopping] = await Promise.all([
+    getCollectionLastUpdated(userId),
+    getRankedList(userId),
     loadShoppingRollup(userId),
   ]);
 

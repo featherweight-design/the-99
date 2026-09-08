@@ -126,7 +126,7 @@ export function ResumeDecks({
   return (
     <section className="hidden sm:flex sm:flex-col sm:gap-[11px]">
       {/* §SectionLabel, with this instance's own `margin-top: 6`. */}
-      <h2 className="m-0 mt-[6px] font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
+      <h2 className="m-0 mt-[6px] flex-none font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
         {refreshCopy.home.resumeHeading}
       </h2>
 

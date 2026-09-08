@@ -60,12 +60,28 @@ function Padlock() {
 }
 
 function LockedStep({ n, title, reason }: { n: number; title: string; reason: string }) {
+  // Derived from `n` rather than `useId`, which would make this a client
+  // component for two strings. The checklist is the whole page when it renders
+  // at all, so the step number is unique in the document.
+  const titleId = `first-run-step-${n}-title`;
+  const reasonId = `first-run-step-${n}-reason`;
   return (
     // No opacity wrapper over the locked colours: the table states them
     // outright, and an opacity stacked on top would make the result depend on
     // whatever surface each theme puts behind the card.
+    // `role="group"` so the label is actually announced: `aria-label` on a
+    // generic div names nothing, and the reason is what tells a screen-reader
+    // user the step is locked rather than merely dim.
+    //
+    // Named from its own two visible strings rather than
+    // `firstRun.lockedItemAria`, which hard-codes the collection as the reason.
+    // That is true of the rail and the tab bar, whose locked items all wait on
+    // the same thing, and true of step 2 — but step 3 waits on a commander, and
+    // a name that said otherwise would be wrong out loud while the card beside
+    // it read correctly.
     <div
-      aria-label={refreshCopy.firstRun.lockedItemAria(title)}
+      role="group"
+      aria-labelledby={`${titleId} ${reasonId}`}
       className="flex min-h-[56px] flex-none items-center gap-[12px] rounded-[14px] border border-[color:var(--border)] bg-[color:var(--surface-rail)] p-[14px_15px] sm:min-h-0 sm:gap-[14px] sm:p-[15px_18px]"
     >
       <span
@@ -75,10 +91,13 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
         {n}
       </span>
       <div className="flex min-w-0 flex-auto flex-col gap-[3px]">
-        <span className="font-display text-[15px] font-semibold text-[color:var(--fg-locked)] sm:text-[16px]">
+        <span
+          id={titleId}
+          className="font-display text-[15px] font-semibold text-[color:var(--fg-locked)] sm:text-[16px]"
+        >
           {title}
         </span>
-        <span className="text-[12px] text-[color:var(--fg-disabled)] sm:text-[12.5px]">
+        <span id={reasonId} className="text-[12px] text-[color:var(--fg-disabled)] sm:text-[12.5px]">
           {reason}
         </span>
       </div>
@@ -91,7 +110,10 @@ export function FirstRunChecklist() {
   const c = refreshCopy.firstRun;
 
   return (
-    <div className="flex min-w-0 flex-auto flex-col bg-[radial-gradient(640px_340px_at_40%_-40px,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
+    // The accent wash is a desktop figure: 640×340 at 40% of a 390px frame is
+    // the whole screen, which is a tint over the page rather than the light
+    // behind the fan the frame draws. Phone gets `--bg` alone.
+    <div className="flex min-w-0 flex-auto flex-col sm:bg-[radial-gradient(640px_340px_at_40%_-40px,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
       <div className="p-[16px_16px_0] sm:p-[26px_28px_0]">
         {/* The kicker replaces the shipped "Three steps to your first
             recommendations." — it says the same thing in four words, and the

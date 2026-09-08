@@ -26,6 +26,20 @@ describe("FirstRunChecklist", () => {
     expect(screen.getByText("Unlocks with a commander")).toBeInTheDocument();
   });
 
+  it("names each locked step in the accessibility tree, not just on a div", () => {
+    render(<FirstRunChecklist />);
+    // A role, because a name on a generic names nothing: without it a
+    // screen-reader user hears the step's title and never that it is locked.
+    // Each step's name is its own reason — step 3 waits on a commander, not on
+    // the collection.
+    expect(
+      screen.getByRole("group", { name: "Pick a commander Unlocks once a collection is read" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Build the 99 Unlocks with a commander" }),
+    ).toBeInTheDocument();
+  });
+
   it("offers both entries into step 1", () => {
     render(<FirstRunChecklist />);
     expect(screen.getByRole("button", { name: "Upload a CSV" })).toBeInTheDocument();

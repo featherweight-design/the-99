@@ -187,7 +187,7 @@ export function DeckRail({
   return (
     <section className="flex flex-col gap-[11px]">
       {/* §SectionLabel. The TOTAL, not the number of rows below it. */}
-      <h2 className="m-0 font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
+      <h2 className="m-0 flex-none font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
         {refreshCopy.home.decksHeading(decks.length)}
       </h2>
 

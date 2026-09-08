@@ -26,10 +26,10 @@ import type { Commitments } from "../../lib/home/commitments";
  * The three figures do not share a colour, and the difference is the content:
  * a claim made on purpose, a claim that cannot be honoured, and money owed.
  *
- * The middle row keeps its warning token at zero. Recolouring a row when its
- * figure reaches zero would make the palette a second, quieter status system,
- * and `0 cards` in the warning colour reads as what it is — the row that would
- * be red if it were not zero.
+ * The middle row keeps `--danger` at zero. Recolouring a row when its figure
+ * reaches zero would make the palette a second, quieter status system, and
+ * `0 cards` in that colour reads as what it is — the row that would be red if
+ * it were not zero.
  */
 function Row({ label, value, color }: { label: string; value: string; color: string }) {
   return (
@@ -60,7 +60,7 @@ export function CommitmentsCard({
   return (
     <section className="hidden sm:flex sm:flex-col sm:gap-[11px]">
       {/* §SectionLabel, with this instance's own `margin-top: 4`. */}
-      <h2 className="m-0 mt-[4px] font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
+      <h2 className="m-0 mt-[4px] flex-none font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
         {c.commitmentsHeading}
       </h2>
 
