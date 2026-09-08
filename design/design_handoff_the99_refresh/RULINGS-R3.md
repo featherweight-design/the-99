@@ -19,7 +19,7 @@ Rule 2 stands as written: **accent is not available for actions, because accent 
 cannot also read gold as *press me*. Three of the four sites are inside that rule. One is outside
 it, and that exception is now written down so it does not get "fixed" later.
 
-### `game-log-form.tsx:233` and `:387` — two submits, one screen
+### `game-log-form.tsx:233` and `:387` — two submits, one form (see §6)
 
 **The submit that ends the task is the filled bone primary. The other becomes a 32px hairline
 pill.** Both lose accent.
@@ -69,7 +69,7 @@ applies to it.
 
 **Both go to 44px. Yes, this changes the drawing, and the drawing was wrong.**
 
-`coverage-sort.tsx:140` at 38px — unowned, eng's to fix, agreed.
+`coverage-sort.tsx:140` at 38px — unowned by any design table, Engineering to fix, agreed.
 
 `facet-strip.tsx:107` at 32px — the 32px in the PR #435 table is a **desktop** value that reached
 the phone because the height was written unprefixed. Ratifying 32px on the phone would mean
