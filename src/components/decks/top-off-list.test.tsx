@@ -226,6 +226,17 @@ describe("TopOffList", () => {
     ).toBeInTheDocument();
   });
 
+  // An aria-label replaces the visible label rather than annotating it, so at
+  // zero the accessible name must lose the count too. Announcing "Add 0 cards"
+  // over a button that reads "Add cards" is two different buttons.
+  it("drops the count from the commit button's accessible name at zero ticks", () => {
+    render(<Harness />);
+    expect(
+      screen.getByRole("button", { name: topOffCopy.commit.addEmpty }),
+    ).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /Add 0 cards/ })).toBeNull();
+  });
+
   it("commits exactly the live ticks and closes on success", async () => {
     const onClose = vi.fn();
     const onAnnounce = vi.fn();

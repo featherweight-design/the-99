@@ -323,6 +323,17 @@ export function TopOffList({
       ? topOffCopy.commit.addEmpty
       : topOffCopy.commit.add(String(tickedCount));
 
+  // An aria-label replaces the visible label rather than adding to it, so it
+  // has to track all three of the button's states. Only the last one has a
+  // count worth spelling out: at zero the copy file already drops it, and
+  // mid-pass the count is in the visible label the aria-label is standing in
+  // for. The added total is the fact the drawing puts nowhere else.
+  const primaryAria = inflight
+    ? primaryLabel
+    : tickedCount === 0
+      ? topOffCopy.commit.addEmpty
+      : topOffCopy.commit.addAria(String(tickedCount), String(total));
+
   const headDesktop = topOffCopy.list.head(
     String(tickedCount),
     String(openSlots),
@@ -490,7 +501,7 @@ export function TopOffList({
             type="button"
             onClick={commit}
             disabled={tickedCount === 0 || inflight}
-            aria-label={topOffCopy.commit.addAria(String(tickedCount), String(total))}
+            aria-label={primaryAria}
             className={[
               "md:order-1 flex-auto md:flex-none inline-flex items-center justify-center",
               "min-h-[44px] md:min-h-0 rounded-[8px] px-[18px] md:py-[10px]",
