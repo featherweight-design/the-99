@@ -247,6 +247,56 @@ describe("CommandersView windowing under the colour filter", () => {
   });
 });
 
+// Which zero state answers for an empty list follows which control emptied it.
+// The colour state promises a pip to drop; a query has no pip, so a search-only
+// zero used to fall through to an empty list under a rack still claiming
+// `0 of 40 commanders match` — a count with nothing under it explaining itself.
+describe("CommandersView zero states", () => {
+  const searchFor = (q: string) =>
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: q } });
+
+  // `cards()` throws on an empty list, which is the case under test.
+  const noRows = () => expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+
+  // The rack's own search field also offers `Clear search`, so the state's
+  // primary is reached through the state rather than by label alone.
+  const zeroState = () =>
+    within(screen.getByText("No commander by that name").parentElement!);
+
+  it("explains a search that matched nothing, and offers the other lane", () => {
+    view(results(40));
+    searchFor("jodah");
+    noRows();
+    expect(screen.getByText("No commander by that name")).toBeInTheDocument();
+    expect(screen.getByText(/the 40 you own/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Search Discover" })).toHaveAttribute(
+      "href",
+      "/discover?q=jodah",
+    );
+  });
+
+  it("clears the search from the state's own primary", () => {
+    view(results(40));
+    searchFor("jodah");
+    fireEvent.click(zeroState().getByRole("button", { name: "Clear search" }));
+    expect(cards()).toHaveLength(REVEAL_STEP);
+  });
+
+  it("keeps naming a pip when one is lit, since that state has a correction", () => {
+    view(results(40, ["R"]));
+    fireEvent.click(screen.getByRole("button", { name: "Blue" }));
+    noRows();
+    expect(screen.getByText("Nothing in the pile matches")).toBeInTheDocument();
+    expect(screen.queryByText("No commander by that name")).toBeNull();
+  });
+
+  it("shows no zero state when nothing narrowed the lane", () => {
+    view(results(0));
+    expect(screen.queryByText("Nothing in the pile matches")).toBeNull();
+    expect(screen.queryByText("No commander by that name")).toBeNull();
+  });
+});
+
 describe("CommandersView ranking toggle", () => {
   // The control switches the data, not a panel, so it is a radiogroup rather
   // than the tablist its shape suggests.

@@ -30,7 +30,7 @@ import { GuidedBanner } from "./guided-banner";
 import { PageHeader } from "./page-header";
 import { useScopeAnnouncement } from "./list-nav";
 import { DegradedBanner } from "./degraded-banner";
-import { FilteredEmpty } from "./filtered-empty";
+import { FilteredEmpty, OwnedSearchEmpty } from "./filtered-empty";
 import {
   REVEAL_STEP, RevealControl, EndOfRanking, revealAnnouncement,
 } from "./reveal-control";
@@ -372,12 +372,23 @@ export function CommandersView({
 
       {/* ── Main content: list (or filtered-empty) ── */}
       <div className="p-[12px_14px] sm:px-[34px] sm:pb-[34px] sm:pt-[14px]">
-        {/* Result list or filtered-to-zero state */}
-        {colors.length > 0 && filtered.length === 0 ? (
+        {/* Result list, or whichever zero state explains the emptiness. The
+            colour state names a pip to drop and the search state names the
+            other lane, so which one renders follows which control did the
+            narrowing. Zero with neither lit is not a filtered result — the
+            reader owns no commanders — and the list's own emptiness is the
+            honest thing to show. */}
+        {filtered.length === 0 && colors.length > 0 ? (
           <FilteredEmpty
             nearest={nearest}
             onDrop={handleDropColour}
             onClearAll={handleClearFilter}
+          />
+        ) : filtered.length === 0 && params.q.trim() !== "" ? (
+          <OwnedSearchEmpty
+            query={params.q.trim()}
+            total={active.length}
+            onClearSearch={() => update({ ...params, q: "" })}
           />
         ) : (
           <>

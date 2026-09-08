@@ -117,6 +117,19 @@ export const commandersCopy = {
     fixDrop: (control: string) => `Drop ${control}`,
     fixMode: "Switch to Any of these",
   },
+
+  // The mirror of `discoverCopy.empty`, said about the other lane. A name that
+  // matches nothing here may still be a commander, and that boundary is the one
+  // thing a spelling hint could never tell the reader.
+  emptySearch: {
+    heading: "No commander by that name",
+    body: (q: string, total: number) =>
+      `Nothing in your commanders matches "${q}". This lane lists the ${n(
+        total,
+      )} you own — if you don't own it yet, it's on Discover instead.`,
+    clearSearch: "Clear search",
+    otherLane: "Search Discover",
+  },
 } as const;
 
 export const discoverCopy = {

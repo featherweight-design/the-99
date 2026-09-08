@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { FilteredEmpty } from "./filtered-empty";
+import { describe, it, expect, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { FilteredEmpty, OwnedSearchEmpty } from "./filtered-empty";
 
 // The owned lane's zero state (canvas D4). The whole promise of the state is
 // that it names ONE control and what dropping it returns, so the sentence and
@@ -60,5 +60,36 @@ describe("FilteredEmpty", () => {
   it("heads the state without a CTA of its own", () => {
     render(<FilteredEmpty nearest={null} onDrop={() => {}} onClearAll={() => {}} />);
     expect(screen.getByText("Nothing in the pile matches")).toBeInTheDocument();
+  });
+});
+
+// The same state said about a query rather than a pip. It is the mirror of
+// `DiscoveryEmpty`, so what it is pinned on is the same: the lane boundary, and
+// a handoff that carries the query the other way.
+describe("OwnedSearchEmpty", () => {
+  it("names the lane boundary rather than a spelling hint alone", () => {
+    render(<OwnedSearchEmpty query="jodah" total={148} onClearSearch={() => {}} />);
+    expect(screen.getByText("No commander by that name")).toBeInTheDocument();
+    expect(screen.getByText(/it's on Discover instead/)).toBeInTheDocument();
+  });
+
+  it("counts the lane it is speaking about", () => {
+    render(<OwnedSearchEmpty query="jodah" total={1148} onClearSearch={() => {}} />);
+    expect(screen.getByText(/the 1,148 you own/)).toBeInTheDocument();
+  });
+
+  it("offers the other lane, carrying the same query", () => {
+    render(<OwnedSearchEmpty query="jodah" total={148} onClearSearch={() => {}} />);
+    expect(screen.getByRole("link", { name: "Search Discover" })).toHaveAttribute(
+      "href",
+      "/discover?q=jodah",
+    );
+  });
+
+  it("clears the search from its primary", () => {
+    const onClearSearch = vi.fn();
+    render(<OwnedSearchEmpty query="jodah" total={148} onClearSearch={onClearSearch} />);
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(onClearSearch).toHaveBeenCalledOnce();
   });
 });

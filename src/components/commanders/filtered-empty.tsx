@@ -146,3 +146,43 @@ export function FilteredEmpty({
     />
   );
 }
+
+/**
+ * The owned lane emptied by the search alone (D4). `FilteredEmpty` names a pip
+ * to drop, which a query has no equivalent of, and its "several are overlapping"
+ * sentence would be false where one control did all the narrowing. So the state
+ * says the other thing that is true instead: the commander may exist and simply
+ * not be owned.
+ *
+ * The second affordance is the same handoff `DiscoveryEmpty` offers, pointing
+ * the other way — a link rather than a button, so it can be opened in a tab.
+ */
+export function OwnedSearchEmpty({
+  query,
+  total,
+  onClearSearch,
+}: {
+  query: string;
+  total: number;
+  onClearSearch: () => void;
+}) {
+  return (
+    <ZeroState
+      heading={commandersCopy.emptySearch.heading}
+      body={commandersCopy.emptySearch.body(query, total)}
+      primary={
+        <PrimaryButton onClick={onClearSearch} className={ZERO_PRIMARY}>
+          {commandersCopy.emptySearch.clearSearch}
+        </PrimaryButton>
+      }
+      secondary={
+        <GhostButton
+          href={`/discover?q=${encodeURIComponent(query)}`}
+          className={ZERO_SECONDARY}
+        >
+          {commandersCopy.emptySearch.otherLane}
+        </GhostButton>
+      }
+    />
+  );
+}
