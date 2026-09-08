@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R3</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Top off the last 31 &middot; #360 &middot; one panel, folding #359 and #361</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;text-wrap:pretty;">A control that places 31 cards should ask first.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;">The shipped strip is <b style="color:#EDE6D8;font-weight:600;">two buttons that each commit up to 31 cards on one tap</b>, and the only way back is a sweep that removes 92 of them. #360 asks for the cards first and a selective accept; #361 says the two CTAs read as out of place; #359 asks for provenance per fill, persisted, so a top-off reverses independently of the seed. <b style="color:#EDE6D8;font-weight:600;">All three are the same defect</b> &mdash; the fill is an act when it should be a proposal &mdash; and one change answers them: the strip stops adding cards and starts opening a list.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The two CTAs collapse into one, and the mixed fill falls out of it for free.</b> Two buttons split by ownership were an ownership filter wearing two verbs &mdash; and this product has already ruled that <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">ownership is a label, not a filter</span>. So there is one ranked list of candidates, owned and unowned interleaved by synergy, and it <b style="color:#EDE6D8;font-weight:600;">arrives with everything you own already ticked</b>. That preselection <i>is</i> the old owned-fill button. Ticking a card you do not own is the old top-up button. A mixed fill is just a list with both kinds ticked, and it needs no control of its own.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;text-wrap:pretty;">Read <a href="README.md">README.md</a> for the four calls and what was rejected, <a href="STATES-top-off.md">STATES-top-off.md</a> for the panel's twenty states, the ledger's fourteen and the mark's four, <a href="LONG-LIST-thirty-one-rows.md">LONG-LIST-thirty-one-rows.md</a> for the 390px constraint and why there is no inner scroller, <a href="top-off · copy strings.ts">top-off &middot; copy strings.ts</a> for production copy, <a href="READINESS.md">READINESS.md</a> for the verdict.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;background:#181410;padding:18px 22px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:10px;">R3 &mdash; the ledger meets the shipped auto lifecycle</div>
+    <div style="font-size:13.5px;color:#C6B79A;line-height:1.7;text-wrap:pretty;max-width:1180px;margin-bottom:16px;"><b style="color:#EDE6D8;font-weight:600;">R2 ruled on one of three controls.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">clear-auto.tsx</span> is the kept note, the bulk keep <i>and</i> the sweep, with a per-row keep beside them &mdash; and <b style="color:#EDE6D8;font-weight:600;">keeping a card clears its auto flag</b>. R2's ledger arrived on top of that cluster without mentioning it. The audit's four consequences all turn on one question, so R3 answers that question once.</div>
+    <div style="background:#1A160F;border:1px solid #6E5B33;border-radius:10px;padding:16px 18px;margin-bottom:16px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:9px;">The call</div>
+      <div style="font-size:14.5px;color:#EDE6D8;line-height:1.65;text-wrap:pretty;font-weight:600;">Keeping is not a third reversal. It is a <i>graduation out of provenance</i> &mdash; so a kept card leaves its pass, exactly as a card removed by hand does.</div>
+      <div style="font-size:13px;color:#A89B84;line-height:1.7;margin-top:11px;text-wrap:pretty;">The shipped act already says this in the schema: <b style="color:#EDE6D8;font-weight:600;">keeping clears the auto flag</b>. The card stops being the app&rsquo;s suggestion and becomes the player&rsquo;s choice. A ledger of what the app placed <b style="color:#EDE6D8;font-weight:600;">should not still be claiming a card the player has adopted</b> &mdash; and R2 already has the rule for a card that leaves a pass. Keeping is a second way to leave, not a new kind of event.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px 24px;">
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">1 &middot; the vanishing reversal</div><div style="font-size:13px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The sweep is present exactly when the ledger is</b>, and that is now an invariant rather than a coincidence. Sweep absent &hArr; zero auto rows &hArr; every pass empty &hArr; <b style="color:#EDE6D8;font-weight:600;">no ledger to hold an orphaned pointer.</b> Keep-all empties both at once.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">2 &middot; undo vs. a kept card</div><div style="font-size:13px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The question dissolves.</b> A kept card is not in the pass, so undo cannot reach it &mdash; no contradiction with the keep control, and no pass that is un-undoable in part. The line recounts and its button counts down: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Undo these 22</span>.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">3 &middot; two reports of one fact</div><div style="font-size:13px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">They are two facts, and R3 keeps them that way.</b> The toolbar note is about <i>the deck</i> &mdash; how many cards are yours for good. The ledger is about <i>a pass</i> &mdash; how many of its cards are still the app&rsquo;s. <b style="color:#EDE6D8;font-weight:600;">The ledger never prints a deck-wide kept total</b>, so nothing is said twice and the shipped note is unmoved.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">4 &middot; backfill</div><div style="font-size:13px;color:#C6B79A;line-height:1.6;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">No backfilled seed line. The ledger begins at migration and says so.</b> R2&rsquo;s rule inferred the seed from auto rows, which keeping has already eaten &mdash; while <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filled</span> stays true forever. Design will not print a count it cannot prove: one honest line beats a fabricated 41-card seed.</div></div>
+    </div>
+    <div style="font-size:12.5px;color:#8E8269;line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid #2A241D;text-wrap:pretty;">Both R2 calls are taken and #361 is confirmed clean. Everything else stands unchanged: one door for two CTAs, one interleaved list with owned pre-ticked, the tick cap as the trade, the two mid-fill sentences, the parity row with its cost track, no inner scroller, the commit in the dock&rsquo;s slot. <b style="color:#C6B79A;font-weight:600;">R3 adds no control, no string to the toolbar, and no schema field beyond R2&rsquo;s table.</b></div>
+  </div>
+
+  <div style="border:1px solid #C6533F;border-left:3px solid #C6533F;border-radius:12px;background:#1A1310;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">What Design could not read &mdash; stated once, then worked around</div>
+    <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The three issues are not in this project.</b> #360 and #361 are quoted here only as the handoff prompt states them, and #360's four scope items are treated as the questions. <b style="color:#EDE6D8;font-weight:600;">#359's scope arrived with the R1 audit and is now honoured in full</b> &mdash; it is the only one of the three whose own words Design has seen, and it changed a ruling. <b style="color:#EDE6D8;font-weight:600;">#361's one line remains a summary</b>, so if it carries a constraint the prompt did not carry, the same correction is still open there. <b style="color:#EDE6D8;font-weight:600;">Nor is the design table:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">docs/superpowers/design-tables/synergy-discovery.md</span> is absent (this project carries only <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">appshell.md</span>) &mdash; but its content was located: <b style="color:#EDE6D8;font-weight:600;">&sect;FillControlA / &sect;FillControlB are specified in full</b> in <a href="../design_handoff_the99_synergy_discovery/STATES-fill-controls.md">the synergy handoff's own states file</a>, including all eleven states, both control geometries and every string. That is the artefact being replaced, and it is quoted rather than guessed.<br><br><b style="color:#EDE6D8;font-weight:600;">Four components are absent too</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">last-slots-strip.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">builder-spine.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">button.tsx</span> and the shopping row (this project holds only <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">src/components/shell/nav.tsx</span>). Strip and row geometry is traced from <a href="../design_handoff_the99_synergy_discovery/The 99 - Synergy Discovery.dc.html">the synergy canvas</a>, the buy tag from <a href="../design_handoff_the99_card_surfaces/README.md">the card-surfaces handoff</a> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> ink, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent-shadow</span> hairline), the tick toggle from the synergy row's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+ / &#10003;</span>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PrimaryButton</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">GhostButton</span> from their use across five prior handoffs. <b style="color:#EDE6D8;font-weight:600;">If the components disagree, they win</b>, and README's component table is what to correct.<br><br><b style="color:#EDE6D8;font-weight:600;">R1 correction &mdash; the candidate row is now built to the current row standards, not to the synergy row as drawn in the older canvas.</b> <a href="../design_handoff_the99_card_rows/FLOOR-what-every-card-row-carries.md">Card-row parity</a>'s floor (name + one availability slot), its shared dashed-for-unowned dot and its canonical metrics (34/52px, radius 7, pad 9 / 8&ndash;4, gap 10/9, name 13.5/12.5px), plus <a href="../design_handoff_the99_card_surfaces/README.md">card surfaces</a>' 40px cost-pip track with its shingle-from-three and five-slot cap. The hand-rolled <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">creature &middot; 3</span> type line that stood in for a mana value is gone, and it is what paid for the track.</div>
+  </div>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:20px 24px;margin-bottom:20px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Scope 1 &middot; see the cards first</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The strip opens a list in its own place, in the page.</b> Not a modal, not a tray, not a second route &mdash; the review list renders where the buttons were, above the decklist it is about. The strip's control changes from a verb to a door: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Choose the last 31</span>.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Scope 2 &middot; the mixed fill</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">One list, both pools, interleaved by synergy &mdash; and no pool control at all.</b> Owned arrives ticked, unowned arrives unticked. The mix is whatever the player ticks, so &ldquo;mixed&rdquo; is not a mode the app has to offer or the player has to find.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Scope 3a &middot; #361, the two CTAs</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Closed by deletion, not restyling.</b> They read as out of place because they were two doors to one room, differing only in which pool they drew from. One door, one weight: brass outline. The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> count moves off a button face and onto the money, where it belongs.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Scope 3b &middot; #359, undo and provenance</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The provenance line becomes a ledger of passes, and each line is reversible on its own.</b> Persisted, so it survives a reload; the seed is a line in it too, and its reversal is the sweep. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show these 27</span> is how the distinction is seen <i>before</i> deciding. No toast, no time window, no new row atom.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Scope 4 &middot; mid-fill</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Partly accepted is the ordinary state, not an edge case.</b> The strip returns, recounted (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">The last 4</span>), and the list remembers: what you declined stays in it, marked and restorable. <b style="color:#EDE6D8;font-weight:600;">Stopping short by choice and running out of cards are two different sentences</b> and must never share one.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">The constraint &middot; 31 rows at 390px</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">No inner scroller, ever.</b> The list is the page at phone width, and the count and the commit take <b style="color:#EDE6D8;font-weight:600;">the quick-add dock's slot</b> &mdash; the dock stands down while the list is open, because one bottom slot gets one occupant. A scrolling box inside a scrolling page with the primary trapped below it is the failure the brief names, and the only reliable way to avoid it is to not have the box.</div></div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;background:#181410;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:8px;">Carried over whole from the synergy handoff &mdash; drawn as written, not re-litigated</div>
+    <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">A control with nothing to do is absent, not disabled</b> &middot; <b style="color:#EDE6D8;font-weight:600;">nothing unmounts mid-write</b> &middot; everything a fill places is still <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto</span> and the sweep still takes all of it &middot; the strip unmounts as a unit at zero open slots &middot; a label states what it can place, never the gap &middot; a refusal does not disable a neighbouring control &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all auto</span> stays exactly where it ships, a rule and a row away &middot; the &sect;7.6 shortfall line keeps the provenance line's shape and <b style="color:#EDE6D8;font-weight:600;">never the warning banner's colour</b> &middot; one live-region message per settle &middot; no solid brass anywhere near this strip, because 99 is opt-in.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <!-- ============ SURFACE 1 · THE STRIP AT REST ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface 1 &middot; <span style="color:#C9A24B;">the strip at rest &mdash; one door where two verbs were</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:940px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &mdash; <span style="color:#C9A24B;">68 / 99, 31 open, 38 candidates ranked. Provenance, strip, toolbar &mdash; positions unchanged.</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;padding:22px 24px;">
+
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">68 / 99</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">Building</span>
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:11px;background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:11px 15px;margin-bottom:12px;">
+            <span style="flex:none;width:20px;height:20px;border-radius:999px;border:1px solid #6E5B33;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">i</span>
+            <span style="font-size:12.5px;color:#C6B79A;line-height:1.6;">We filled the roles and the mana base &mdash; 68 cards, 7 of them from outside your collection. The other 31 are yours: that is where this commander actually happens, and it is where we are worst.</span>
+          </div>
+
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:11px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">The last 31</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">31 slots open &middot; 38 candidates ranked by synergy for this commander</span>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <span style="display:inline-flex;align-items:center;gap:9px;border:1px solid #C9A24B;border-radius:8px;background:transparent;color:#C9A24B;font-size:13px;font-weight:600;padding:10px 16px;">Choose the last 31 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">&darr;</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;flex:1;min-width:240px;line-height:1.6;">24 of them are in your collection and arrive ticked. Nothing is added until you say so.</span>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #2A241D;padding-top:14px;">
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All 68</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Shopping 7</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;margin-left:auto;">68 cards are yours now &mdash; 0 kept</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid #3A3229;border-radius:8px;background:transparent;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 13px;">Clear all auto &middot; 68</span>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:12px;line-height:1.6;">The strip keeps its shipped box, heading, caption, position and rule. <span style="color:#8E8269;">One control replaces two; the mono note replaces <span style="color:#C6B79A;">ownedNote</span>, which existed to explain a number on a button face that no longer exists.</span></div>
+
+        </div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">#361 &mdash; why one control, and why it is still brass outline</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;">The shipped pair reads as out of place for a reason worth naming precisely: <b style="color:#EDE6D8;font-weight:600;">they are not two actions, they are one action and a filter.</b> Both add cards ranked by synergy to the same slots; the only difference is whether the app was allowed to consider cards you have not bought. Presenting that as a second button put the ownership filter this product has explicitly refused into the loudest place on the surface &mdash; and put a price decision behind a single tap.<br><br><b style="color:#EDE6D8;font-weight:600;">So the count leaves the button and the money goes to the money.</b> The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> figure that sat on the top-up's face now appears once, in the commit row, next to a total &mdash; the only place where a number in warning ink is actually about spending.<br><br><b style="color:#EDE6D8;font-weight:600;">Brass outline stays, and solid brass stays refused.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Build this deck</span> owns solid; reaching 99 is the player's goal, not the app's. The door is now the only control in the strip, so it does not need weight to win a comparison &mdash; it needs to not look like a commitment, which an outline does and a fill does not.<br><br><span style="color:#8E8269;">Rejected: keeping both buttons and adding a review step to each.</span> Two doors into two lists that differ by a filter, and the mixed fill would have needed a third.<br><br><span style="color:#8E8269;">Rejected: a segmented owned / to&nbsp;buy header inside the list.</span> Same filter, one level down, and it hides half the ranking behind a tab.</div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone 390 &mdash; <span style="color:#C9A24B;">one full-width 44px door</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:flex-start;gap:9px;background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:10px 12px;">
+            <span style="flex:none;width:18px;height:18px;border-radius:999px;border:1px solid #6E5B33;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;">i</span>
+            <span style="font-size:12px;color:#C6B79A;line-height:1.55;">We filled the roles and the mana base &mdash; 68 cards, 7 from outside your collection. The other 31 are yours.</span>
+          </div>
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:13px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">The last 31</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-bottom:11px;">31 slots open &middot; 38 candidates ranked</div>
+            <span style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid #C9A24B;border-radius:8px;color:#C9A24B;font-size:14px;font-weight:600;">Choose the last 31 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">&darr;</span></span>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:9px;line-height:1.55;">24 are in your collection and arrive ticked.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All 68</span>
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Shopping 7</span>
+            <span style="margin-left:auto;display:inline-flex;align-items:center;min-height:44px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:0 12px;">Clear auto &middot; 68</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:10px;line-height:1.6;">The mono note drops to one clause at 390px. It is a gloss on a default, not a figure the player needs &mdash; the list states the same thing twice as legibly.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE 2 · THE REVIEW LIST ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface 2 &middot; <span style="color:#C9A24B;">the review list &mdash; open, mid-selection, both pools ticked</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:940px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &mdash; <span style="color:#C9A24B;">24 owned ticked on open, plus 3 the player chose to buy. 27 of 31.</span></div>
+        <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:14px 16px;">
+
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">The last 31</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">31 slots open &middot; 38 candidates ranked by synergy for this commander</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;border-bottom:1px dashed #4A4033;">Close the list</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0 11px;border-bottom:1px solid #2A241D;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">27 of 31 slots ticked &middot; <span style="color:#6A6152;">38 candidates, 11 untouched</span></span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 11px;border-radius:8px;border:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">Tick the 24 I own</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 11px;border-radius:8px;border:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">Clear all ticks</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">ranked &middot; synergy, then inclusion, then name</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 4px 7px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8269;">
+            <span style="width:18px;flex:none;"></span>
+            <span style="width:7px;flex:none;"></span>
+            <span style="flex:auto;min-width:0;">Card</span>
+            <span style="width:40px;flex:none;text-align:right;">Cost</span>
+            <span style="width:84px;flex:none;"></span>
+            <span style="width:88px;flex:none;text-align:right;">Synergy</span>
+            <span style="width:52px;flex:none;text-align:right;">Decks</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+              <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:{{ r.rowBg }};border:1px solid {{ r.rowBd }};border-radius:7px;padding:0 9px;">
+                <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid {{ r.boxBd }};background:{{ r.boxBg }};color:{{ r.boxFg }};font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">{{ r.glyph }}</span>
+                <span style="flex:none;width:7px;height:7px;border-radius:999px;background:{{ r.dotBg }};border:1px {{ r.dotStyle }} {{ r.dotBd }};"></span>
+                <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">{{ r.name }}</span>
+                <span style="flex:none;width:40px;display:flex;align-items:center;justify-content:flex-end;gap:3px;">
+                  <span style="display:{{ r.p1.d }};width:12px;height:12px;border-radius:999px;background:{{ r.p1.bg }};color:{{ r.p1.fg }};margin-left:{{ r.p1.ml }};font-family:'IBM Plex Mono',monospace;font-size:8px;align-items:center;justify-content:center;">{{ r.p1.txt }}</span>
+                  <span style="display:{{ r.p2.d }};width:12px;height:12px;border-radius:999px;background:{{ r.p2.bg }};color:{{ r.p2.fg }};margin-left:{{ r.p2.ml }};font-family:'IBM Plex Mono',monospace;font-size:8px;align-items:center;justify-content:center;">{{ r.p2.txt }}</span>
+                  <span style="display:{{ r.p3.d }};width:12px;height:12px;border-radius:999px;background:{{ r.p3.bg }};color:{{ r.p3.fg }};margin-left:{{ r.p3.ml }};font-family:'IBM Plex Mono',monospace;font-size:8px;align-items:center;justify-content:center;">{{ r.p3.txt }}</span>
+                </span>
+                <span style="flex:none;width:84px;display:flex;align-items:center;justify-content:flex-end;">
+                  <span style="display:{{ r.tagD }};align-items:center;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ r.tagFg }};border:1px solid {{ r.tagBd }};border-radius:4px;padding:1px 6px;">{{ r.tag }}</span>
+                </span>
+                <span style="flex:none;width:88px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">{{ r.syn }}</span>
+                <span style="flex:none;width:52px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ r.inc }}</span>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;border:1px dashed #3A3229;border-radius:7px;padding:0 12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">28 more candidates render below &mdash; all 38 in one list, in the page, with no inner scroller. See <a href="LONG-LIST-thirty-one-rows.md">LONG-LIST-thirty-one-rows.md</a>.</div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid #2A241D;margin-top:14px;padding-top:14px;">
+            <span style="display:inline-flex;align-items:center;border:1px solid #C9A24B;border-radius:8px;background:transparent;color:#C9A24B;font-size:13px;font-weight:600;padding:10px 18px;">Add 27 cards</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid #3A3229;border-radius:8px;background:transparent;color:#EDE6D8;font-size:13px;padding:10px 16px;">Cancel</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;line-height:1.6;">95 of 99 when added &middot; <span style="color:#E0913C;">3 to buy &middot; $42.80</span></span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">4 slots stay open &mdash; you can come back to them</span>
+          </div>
+
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:12px;line-height:1.6;">The row is <span style="color:#8E8269;">the parity shell at canonical metrics</span> &mdash; 34px, radius 7, pad 9, gap 10, name 13.5px &mdash; carrying the floor (<span style="color:#C6B79A;">shared dot + one availability slot</span>), the <span style="color:#C6B79A;">40px cost track</span>, and the synergy row's two figures under a header. The <span style="color:#C6B79A;">+ / &#10003;</span> toggle moves to the left edge: here it selects <i>into the deck</i> rather than into a build, and the reader is scanning a column of decisions, not a column of cards.</div>
+      </div>
+
+      <div style="width:470px;flex:none;display:flex;flex-direction:column;gap:20px;">
+        <div style="background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Why 38 candidates for 31 slots &mdash; and why that is the whole mixed-fill design</div>
+          <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;">A list of exactly 31 for 31 slots is not a choice, it is a receipt. So the list is <b style="color:#EDE6D8;font-weight:600;">every legal candidate EDHREC ranks</b> &mdash; in colour, not in the deck, singleton-legal &mdash; and the arithmetic does the rest: <b style="color:#EDE6D8;font-weight:600;">you cannot tick more than the slots you have.</b><br><br>That single constraint is what makes the mixed fill legible without a control. 24 owned arrive ticked and 7 slots stay free, so the seven best unowned cards are one tap each. Want an eighth? <b style="color:#EDE6D8;font-weight:600;">Untick something you own.</b> The trade is the interface: the player is not choosing between two pools, they are spending 31 slots on 38 cards, and the ranking is right there to spend them by.<br><br><b style="color:#EDE6D8;font-weight:600;">At the cap the unticked boxes go inert, not hidden</b>, with one mono line saying why &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">31 of 31 slots ticked</span>. Nothing disappears from a ranked list because the player ran out of room; the row is still evidence about the commander.</div>
+        </div>
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The row &mdash; <span style="color:#C9A24B;">parity floor, canonical metrics, and the cost track</span></div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.7;text-wrap:pretty;margin-bottom:14px;">The candidate row is <b style="color:#EDE6D8;font-weight:600;">the parity shell, not a new row</b>: 34px desktop / 52px phone (the meta-line height), radius 7 at both widths, pad 9 desktop and 8&ndash;4 phone, gap 10 / 9, name 13.5 / 12.5px. It carries the floor &mdash; <b style="color:#EDE6D8;font-weight:600;">name plus one availability slot</b> &mdash; and the shared dot, <b style="color:#EDE6D8;font-weight:600;">dashed for unowned</b>, never a solid hollow ring.</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 9px;">
+              <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Murmuring Mystic</span>
+              <span style="flex:none;width:40px;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span style="width:12px;height:12px;border-radius:999px;background:#3A3229;color:#C6B79A;font-family:'IBM Plex Mono',monospace;font-size:8px;display:flex;align-items:center;justify-content:center;">2</span><span style="width:12px;height:12px;border-radius:999px;background:#3A6AA5;"></span></span>
+              <span style="flex:none;width:70px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;text-align:right;">two, plain</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 9px;">
+              <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Talrand, Sky Summoner</span>
+              <span style="flex:none;width:40px;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span style="width:12px;height:12px;border-radius:999px;background:#3A3229;color:#C6B79A;font-family:'IBM Plex Mono',monospace;font-size:8px;display:flex;align-items:center;justify-content:center;">2</span><span style="width:12px;height:12px;border-radius:999px;background:#3A6AA5;margin-left:-5px;"></span><span style="width:12px;height:12px;border-radius:999px;background:#3A6AA5;margin-left:-5px;"></span></span>
+              <span style="flex:none;width:70px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;text-align:right;">three, fanned</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 9px;">
+              <span style="flex:none;width:7px;height:7px;border-radius:999px;background:transparent;border:1px dashed #6A6152;"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Nicol Bolas, God-Pharaoh</span>
+              <span style="flex:none;width:40px;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span style="width:12px;height:12px;border-radius:999px;background:#3A3229;color:#C6B79A;font-family:'IBM Plex Mono',monospace;font-size:8px;display:flex;align-items:center;justify-content:center;">4</span><span style="width:12px;height:12px;border-radius:999px;background:#3A6AA5;margin-left:-5px;"></span><span style="width:12px;height:12px;border-radius:999px;background:#1E1B1A;border:1px solid #3A3229;margin-left:-5px;"></span><span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;margin-left:-5px;"></span><span style="width:12px;height:12px;border-radius:999px;background:#3A3229;color:#C6B79A;font-family:'IBM Plex Mono',monospace;font-size:8px;display:flex;align-items:center;justify-content:center;margin-left:-5px;">+2</span></span>
+              <span style="flex:none;width:70px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6A6152;text-align:right;">six, capped</span>
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The cost track is the shipped 40px one</b>: 12px pips, 3px gap, right-aligned, shingling from three at &minus;5px, capped at five slots with the generic <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+N</span> pip. It sits <b style="color:#EDE6D8;font-weight:600;">between the name block and the availability slot</b>, which is where adjacent rows' pips land on one vertical line &mdash; and the slot is fixed at 74px for the same reason the search row fixes its own.<br><br><b style="color:#EDE6D8;font-weight:600;">Parity Q2 refused pips on the synergy row, and this row takes them anyway</b> &mdash; deliberately, on Q2's own rule. Cost pips go where the reader is <i>choosing or paying</i>, never where they are <i>auditing</i>: the refusal was about the commander route's synergy panel, where the reader is reading a ranking. Here the same row is doing <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">card-search-row</span>'s job &mdash; thirty-eight near-identical candidates, and what each costs to cast is the differentiator. <b style="color:#EDE6D8;font-weight:600;">The type line paid for the track</b>, and the floor already refuses it as floor.</div>
+        </div>
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The availability slot &mdash; <span style="color:#C9A24B;">one occupant, and one legitimate silence</span></div>
+          <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+            <div style="display:flex;align-items:center;gap:10px;"><span style="flex:none;width:88px;display:flex;justify-content:flex-end;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;border:1px solid #6E5B33;border-radius:4px;padding:1px 6px;">buy $6.10</span></span><span><b style="color:#EDE6D8;font-weight:600;">Own none</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">BuyTag</span>, full form, both widths</span></div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="flex:none;width:88px;display:flex;justify-content:flex-end;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#D9975C;border:1px solid #6E5B33;border-radius:4px;padding:1px 6px;">&#9670; none free</span></span><span><b style="color:#EDE6D8;font-weight:600;">Own it, all sleeved</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">AvailabilityMarker</span>, count-only</span></div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="flex:none;width:88px;display:flex;justify-content:flex-end;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">&mdash;</span></span><span><b style="color:#EDE6D8;font-weight:600;">Own it, copies spare</b> &mdash; the marker returns <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">null</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">free</span>. Silent, and that is not the zero-occupant defect</span></div>
+          </div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.7;margin-top:14px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The middle row is the state this list needed and the shipped strip could not have had.</b> A card you own whose only copy is sleeved in another deck was, under the old owned-fill, silently placed &mdash; and the player found out when two decks disagreed. On a review list it is a fact on the row before the tap. <b style="color:#EDE6D8;font-weight:600;">It does not gate the tick</b>: ownership is a label, and so is availability.</div>
+        </div>
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The money, said once &mdash; <span style="color:#C9A24B;">and not on a button face</span></div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.7;text-wrap:pretty;">Each unowned row carries the <b style="color:#EDE6D8;font-weight:600;">full shipped buy tag</b>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">buy $6.10</span> &mdash; not the bare <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">$</span> the card-surfaces pass collapses it to on the All tab, <b style="color:#EDE6D8;font-weight:600;">and not at either width.</b> That collapse traded the figure for name width on a list of cards you have already committed to. This is the one surface where the figure <i>is</i> the decision, so it keeps its width and the phone row breaks to a second line instead.<br><br>The commit row then states the total once: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">3 to buy &middot; $42.80</span>, in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span>, beside the count it belongs to. <b style="color:#EDE6D8;font-weight:600;">No running basket, no per-row subtotal, no cart.</b> Applying the fill puts the three on the shopping list, which is the surface that owns money.</div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone 390 &mdash; <span style="color:#C9A24B;">38 rows in the page, and the commit takes quick-add's slot</span></div>
+        <div style="position:relative;height:734px;overflow:hidden;background:#100D0A;border:1px solid #2A241D;border-radius:16px;">
+          <div style="padding:14px 12px 0;display:flex;flex-direction:column;gap:10px;">
+            <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:12px 12px 10px;">
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">The last 31</span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;border-bottom:1px dashed #4A4033;">Close</span>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">38 candidates &middot; ranked by synergy</div>
+              <div style="display:flex;gap:8px;margin-top:11px;">
+                <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:8px;border:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">Tick the 24 I own</span>
+                <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:8px;border:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">Clear all ticks</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ prows }}" as="r" hint-placeholder-count="7">
+                <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:{{ r.rowBg }};border:1px solid {{ r.rowBd }};border-radius:7px;padding:0 4px 0 8px;">
+                  <span style="flex:none;width:26px;height:26px;border-radius:6px;border:1px solid {{ r.boxBd }};background:{{ r.boxBg }};color:{{ r.boxFg }};font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">{{ r.glyph }}</span>
+                  <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                    <span style="display:flex;align-items:center;gap:7px;">
+                      <span style="flex:none;width:7px;height:7px;border-radius:999px;background:{{ r.dotBg }};border:1px {{ r.dotStyle }} {{ r.dotBd }};"></span>
+                      <span style="flex:auto;min-width:0;font-size:12.5px;color:#EDE6D8;">{{ r.name }}</span>
+                      <span style="flex:none;display:{{ r.tagD }};align-items:center;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ r.tagFg }};border:1px solid {{ r.tagBd }};border-radius:4px;padding:1px 6px;">{{ r.tag }}</span>
+                    </span>
+                    <span style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;">
+                      <span style="display:flex;align-items:center;gap:3px;">
+                        <span style="display:{{ r.p1.d }};width:13px;height:13px;border-radius:999px;background:{{ r.p1.bg }};color:{{ r.p1.fg }};font-family:'IBM Plex Mono',monospace;font-size:8px;align-items:center;justify-content:center;">{{ r.p1.txt }}</span>
+                        <span style="display:{{ r.p2.d }};width:13px;height:13px;border-radius:999px;background:{{ r.p2.bg }};color:{{ r.p2.fg }};font-family:'IBM Plex Mono',monospace;font-size:8px;align-items:center;justify-content:center;">{{ r.p2.txt }}</span>
+                        <span style="display:{{ r.p3.d }};width:13px;height:13px;border-radius:999px;background:{{ r.p3.bg }};color:{{ r.p3.fg }};font-family:'IBM Plex Mono',monospace;font-size:8px;align-items:center;justify-content:center;">{{ r.p3.txt }}</span>
+                      </span>
+                      <span style="color:#C9A24B;">{{ r.syn }}</span>
+                      <span style="color:#8E8269;">{{ r.inc }}</span>
+                    </span>
+                  </span>
+                </div>
+              </sc-for>
+              <div style="min-height:34px;display:flex;align-items:center;border:1px dashed #3A3229;border-radius:8px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">31 more rows &mdash; the page scrolls, the list does not</div>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#14110E;border-top:1px solid #3A3229;padding:11px 12px 13px;display:flex;flex-direction:column;gap:9px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">Quick-add is back when you close the list</div>
+            <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;">
+              <span style="color:#C6B79A;">27 of 31 ticked</span>
+              <span style="color:#E0913C;">3 to buy &middot; $42.80</span>
+              <span style="margin-left:auto;color:#6A6152;">95 of 99</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <span style="flex:auto;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid #C9A24B;border-radius:8px;color:#C9A24B;font-size:14px;font-weight:600;">Add 27 cards</span>
+              <span style="flex:none;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-size:14px;">Cancel</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:10px;line-height:1.6;">One scroll surface: the page. The row is 52px and two lines &mdash; dot, name and the availability slot above; pips and the two figures below &mdash; so a long name never truncates and the price never collapses to a glyph. <b style="color:#8E8269;font-weight:600;">The bar occupies quick-add's slot, not a second one</b>, so the count and the money are never scrolled away from the button that commits them and nothing is pinned twice.</div>
+        <div style="margin-top:14px;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:12px;padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:11px;">The bottom slot has one occupant &mdash; <span style="color:#8E8269;">and R1 assumed a bar that is not on this route</span></div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.7;text-wrap:pretty;">R1 leaned on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Build this deck</span>. That bar is on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">commanders/detail.tsx</span> and it is <b style="color:#EDE6D8;font-weight:600;">a link, not a commit</b> &mdash; it carries no counts and no money, and it is not on the builder at all. The builder&rsquo;s bottom slot is the <b style="color:#EDE6D8;font-weight:600;">quick-add dock</b>, in the strip&rsquo;s own scroll column.<br><br><b style="color:#EDE6D8;font-weight:600;">So the commit takes that slot and quick-add stands down while the list is open.</b> Not stacked, not squeezed: <b style="color:#EDE6D8;font-weight:600;">the dock and the list are the same job</b> &mdash; putting a card in an open slot &mdash; and the list is that job done deliberately, with the ranking, the price and the count in view. A search field for one card is not what a player wants in the middle of choosing twenty-seven.<br><br><b style="color:#EDE6D8;font-weight:600;">It is a swap, and it says so:</b> the dock collapses to the single mono line <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Quick-add is back when you close the list</span> for as long as the bar is up, so the affordance is accounted for rather than vanished. Closing or cancelling restores it in place, focus and query intact.<br><br><b style="color:#EDE6D8;font-weight:600;">Nothing else on the route is pinned</b>, and &sect;13&rsquo;s promise holds: that state has no list open, so quick-add is exactly where it ships.<br><br><span style="color:#8E8269;">Rejected: stacking both bars.</span> Two pinned bars is ~150px of a 390&times;844 viewport, and it puts a text field with a keyboard directly under a 27-card commit.<br><br><span style="color:#8E8269;">Rejected: an unpinned commit at the list&rsquo;s end.</span> The count and the money are the whole argument for a review step; scrolling 38 rows to see what you are about to spend is the shipped defect in slow motion.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE 3 · AFTER THE COMMIT ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface 3 &middot; <span style="color:#C9A24B;">partly accepted, partly open &mdash; and the pass ledger (#359 in full, scope 4)</span></div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:940px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Desktop &mdash; <span style="color:#C9A24B;">27 landed, 95 / 99, 4 slots still open, 11 candidates still on the list</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;padding:22px 24px;">
+
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">95 / 99</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;border:1px solid #3A3229;border-radius:999px;padding:3px 9px;">Building</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">4 to find &middot; 10 to buy</span>
+          </div>
+
+          <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:12px 15px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:11px;margin-bottom:11px;">
+              <span style="flex:none;width:20px;height:20px;border-radius:999px;border:1px solid #6E5B33;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">i</span>
+              <span style="font-size:12.5px;color:#C6B79A;">Where these 95 cards came from</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">two passes &middot; 10 to buy</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:11px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 11px;">
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;width:66px;white-space:nowrap;">the seed</span>
+                <span style="flex:auto;min-width:0;font-size:12.5px;color:#C6B79A;">We filled the roles and the mana base &mdash; <b style="color:#EDE6D8;font-weight:600;">68 cards</b>, 7 of them to buy. <span style="color:#6A6152;">5 now yours.</span></span>
+                <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;border-bottom:1px dashed #4A4033;">Show these 63</span>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;width:126px;text-align:right;">its reversal is the sweep</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;min-height:34px;background:#211C15;border:1px solid #6E5B33;border-radius:7px;padding:0 11px;">
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;width:66px;white-space:nowrap;">top-off 1</span>
+                <span style="flex:auto;min-width:0;font-size:12.5px;color:#C6B79A;">You chose <b style="color:#EDE6D8;font-weight:600;">27 cards</b> from the last 31, 3 of them to buy.</span>
+                <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C9A24B;border-bottom:1px dashed #6E5B33;">Show these 27</span>
+                <span style="flex:none;width:126px;display:flex;justify-content:flex-end;"><span style="display:inline-flex;align-items:center;white-space:nowrap;border:1px solid #3A3229;border-radius:7px;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 10px;">Undo these 27</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:11px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;">The last 4</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">4 slots open &middot; 11 candidates still on the list</span>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <span style="display:inline-flex;align-items:center;gap:9px;border:1px solid #C9A24B;border-radius:8px;background:transparent;color:#C9A24B;font-size:13px;font-weight:600;padding:10px 16px;">Choose the last 4 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">&darr;</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;flex:1;min-width:240px;line-height:1.6;">You own none of the 11 left. The list reopens where you left it, declines and all.</span>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px;border-top:1px solid #2A241D;padding-top:14px;">
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All 95</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Shopping 10</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;margin-left:auto;">95 cards are yours now &mdash; 0 kept</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid #3A3229;border-radius:8px;background:transparent;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 13px;">Clear all auto &middot; 95</span>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="width:470px;flex:none;display:flex;flex-direction:column;gap:20px;">
+        <div style="background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">#359 in full &mdash; the schema, taken</div>
+          <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;">R1 ruled no schema change and no new marker. <b style="color:#EDE6D8;font-weight:600;">#359 asks for both, in its own words, and R2 takes them.</b> Design does not get to decline a schema change the issue exists to request &mdash; and the argument was wrong on its own terms: <b style="color:#EDE6D8;font-weight:600;">&ldquo;no time window, ever&rdquo; cannot be built on client memory.</b> Row ids in a page&rsquo;s state die on reload, which is a five-second window with extra steps and a worse failure mode, because nothing tells the player it closed.<br><br><b style="color:#EDE6D8;font-weight:600;">So a fill is a persisted pass, and the provenance line is a ledger of them.</b> One line per pass, newest last, each stating what it placed and what it cost. <b style="color:#EDE6D8;font-weight:600;">Each line reverses on its own</b>, in any order, at any age &mdash; a top-off is undoable independently of the seed, which is exactly what the scope asks for and what a single batch pointer could never give.<br><br><b style="color:#EDE6D8;font-weight:600;">The seed is a line in the ledger too.</b> That is the ruling that makes the rest coherent: if a fill is a pass, the build is the first pass, and pretending otherwise would leave 68 of 95 cards with no provenance in a table built for provenance. Its reversal is <b style="color:#EDE6D8;font-weight:600;">the sweep</b>, which is where it already lives &mdash; so the seed line names its reversal rather than growing a second button for it.<br><br><b style="color:#EDE6D8;font-weight:600;">&ldquo;Before deciding&rdquo; is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show these 27</span>.</b> The scope asks the player to see which cards came from which pass <i>before</i> reversing one. Tapping it puts a brass hairline on that pass&rsquo;s rows in the decklist below &mdash; <b style="color:#EDE6D8;font-weight:600;">marks them, dims nothing, filters nothing, moves nothing</b> &mdash; and the ledger line stays put with its undo beside it. The decision and the evidence are one tap apart and never on separate screens.<br><br><b style="color:#EDE6D8;font-weight:600;">The row keeps its floor.</b> No pass ordinal on the tag, no new row atom: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">AutoTag</span> stays exactly as it ships, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all auto</span> still sweeps every pass at once. The distinction lives where the decision lives.<br><br><span style="color:#8E8269;">Rejected: an ordinal on the auto tag (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto&nbsp;2</span>).</span> A number no row explains, 95 times, to serve a decision taken in one place.<br><br><span style="color:#8E8269;">Rejected: a per-pass filter chip on the toolbar.</span> The toolbar filters by ownership and it is not a history browser; a chip per pass grows without limit.<br><br><span style="color:#8E8269;">Rejected: a toast with an undo link.</span> It expires, it covers the decklist it is talking about, and this product has no toast.</div>
+        </div>
+        <div style="background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">R3 &mdash; keeping, and the three controls R2 did not mention</div>
+          <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;">The shipped cluster is <b style="color:#EDE6D8;font-weight:600;">three controls, not one</b>: a kept note, a bulk keep, and the sweep &mdash; plus a per-row keep. R2 ruled on the sweep and inherited the rest by accident.<br><br><b style="color:#EDE6D8;font-weight:600;">Keeping is a graduation, not a reversal.</b> The shipped act says so in the schema: keeping clears the auto flag, and the card stops being the app&rsquo;s suggestion and becomes the player&rsquo;s choice. <b style="color:#EDE6D8;font-weight:600;">A ledger of what the app placed must not still claim a card the player has adopted.</b> So a kept card leaves its pass &mdash; the same exit R2 already wrote for a card removed by hand, and not a new kind of event.<br><br><b style="color:#EDE6D8;font-weight:600;">The line says which exit each card took</b>, because they mean opposite things: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">27 cards &middot; 3 now yours, 2 removed since</span>. <i>Removed</i> is a rejection, <i>now yours</i> is an endorsement, and a ledger that blurred them would be worse than one that only counted.<br><br><b style="color:#EDE6D8;font-weight:600;">Which makes the undo honest.</b> It never touches a kept card, never contradicts the keep control, and never leaves a pass un-undoable in part: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Undo these 22</span>. <b style="color:#EDE6D8;font-weight:600;">Keeping is how you protect a card from an undo</b> &mdash; which is a sentence the player can act on, and a use the keep control did not have before.<br><br><b style="color:#EDE6D8;font-weight:600;">And a pass at zero leaves the ledger</b>, whether its cards were swept, removed or kept. Keep a whole pass and its line goes: nothing was reversed, but nothing is outstanding either.<br><br><span style="color:#8E8269;">Rejected: keeping as a third reversal-adjacent act the ledger models.</span> It is the one act in the cluster that is <i>not</i> a reversal &mdash; modelling it as one would make the ledger a history of everything that ever happened to a card, which is the version-control feature every round of this handoff has refused.<br><br><span style="color:#8E8269;">Rejected: absorbing the cluster and leaving the toolbar only the sweep.</span> Tempting, and wrong twice: it moves two shipped controls no issue complained about, and the kept note has to survive at zero auto, <b style="color:#EDE6D8;font-weight:600;">where there is no ledger to hold it.</b></div>
+        </div>
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Two facts, not two reports &mdash; <span style="color:#C9A24B;">and the invariant that saves the seed line</span></div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.7;text-wrap:pretty;">The audit is right that a count of fill cards would be printed twice. <b style="color:#EDE6D8;font-weight:600;">R3 keeps them as two different facts instead of moving either.</b><br><br><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">68 cards are yours now &mdash; 5 kept</span> is about <b style="color:#EDE6D8;font-weight:600;">the deck</b>: how much of it has graduated. It stays in the toolbar, unmoved, unedited, and it is the only place a deck-wide kept total appears.<br><br><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">27 cards &middot; 3 now yours</span> is about <b style="color:#EDE6D8;font-weight:600;">a pass</b>: how much of that pass is still the app&rsquo;s to take back. It is a per-line figure and <b style="color:#EDE6D8;font-weight:600;">the ledger never sums it</b>.<br><br>The header states passes and money only &mdash; no kept total, no auto total &mdash; which is what keeps the two from colliding.</div>
+          <div style="border-top:1px solid #2A241D;margin-top:14px;padding-top:14px;font-size:12.5px;color:#A89B84;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The seed line&rsquo;s reversal cannot be orphaned, and now that is provable:</b><br><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">sweep absent &hArr; 0 auto rows &hArr; every pass empty &hArr; ledger absent</span><br>Each step is one of the shipped rules, and R2&rsquo;s state (a) already ends there. <b style="color:#EDE6D8;font-weight:600;">Keep-all empties the ledger and the toolbar in the same act</b>, so the line naming the sweep is gone at the moment the sweep is. What R2 had by luck, R3 states as an invariant &mdash; and it is the thing to re-check if any future pass can survive with zero auto rows.</div>
+        </div>
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Scope 4 &mdash; <span style="color:#C9A24B;">stopping short is not running out</span></div>
+          <div style="font-size:12.5px;color:#A89B84;line-height:1.7;text-wrap:pretty;">The shipped &sect;7.6 line says <i>your collection ran out 7 short</i>. That sentence is true when the pool is exhausted and <b style="color:#EDE6D8;font-weight:600;">a lie when the player simply did not tick everything</b> &mdash; and after a selective accept, the second case is the common one.<br><br>So there are two lines and the app can always tell which it is: <b style="color:#EDE6D8;font-weight:600;">candidates remaining is the test.</b> Above zero, the strip returns with a recounted heading and a caption that says how many are still on the list. At zero, the shipped shortfall line prints unchanged, keeping the provenance line's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span> rule &mdash; <b style="color:#EDE6D8;font-weight:600;">never <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span></b>, because owning what you own is not an outage.<br><br><b style="color:#EDE6D8;font-weight:600;">Nothing about a partly-filled deck is treated as unfinished business.</b> No banner, no nudge, no badge on the tab, and the strip does not grow a second sentence urging the player on. Four open slots on a 95-card deck is a deck, and the count in the header is the only reminder it gets.</div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Phone 390 &mdash; <span style="color:#C9A24B;">one card per pass, each with its own two controls at 44px</span></div>
+        <div style="background:#100D0A;border:1px solid #2A241D;border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;gap:12px;">
+          <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:10px 12px;">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px;">
+              <span style="flex:none;width:18px;height:18px;border-radius:999px;border:1px solid #6E5B33;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;">i</span>
+              <span style="font-size:12px;color:#C6B79A;">Where these 95 came from</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:9px 10px;">
+                <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;">the seed</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">the sweep reverses it</span></div>
+                <div style="font-size:12px;color:#C6B79A;line-height:1.5;margin-top:5px;"><b style="color:#EDE6D8;font-weight:600;">68 cards</b> &mdash; the roles and the mana base, 7 to buy.</div>
+                <span style="display:inline-flex;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;border-bottom:1px dashed #4A4033;margin-top:7px;">Show these 68</span>
+              </div>
+              <div style="background:#211C15;border:1px solid #6E5B33;border-radius:7px;padding:9px 10px;">
+                <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#C9A24B;">top-off 1</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">$42.80</span></div>
+                <div style="font-size:12px;color:#C6B79A;line-height:1.5;margin-top:5px;"><b style="color:#EDE6D8;font-weight:600;">27 cards</b> you chose from the last 31, 3 to buy.</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                  <span style="display:flex;align-items:center;min-height:44px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C9A24B;border-bottom:1px dashed #6E5B33;">Show these 27</span>
+                  <span style="margin-left:auto;display:flex;align-items:center;min-height:44px;padding:0 13px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Undo these 27</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#1A160F;border:1px solid #3A3229;border-radius:10px;padding:13px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">The last 4</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-bottom:11px;">4 slots open &middot; 11 candidates left</div>
+            <span style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid #C9A24B;border-radius:8px;color:#C9A24B;font-size:14px;font-weight:600;">Choose the last 4 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">&darr;</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">All 95</span>
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#221D16;border:1px solid #2A241D;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">Shopping 10</span>
+            <span style="margin-left:auto;display:inline-flex;align-items:center;min-height:44px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:0 12px;">Clear auto &middot; 95</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-top:10px;line-height:1.6;">The ledger goes one card per pass rather than one row: the label and the money share a line, the sentence gets its own, and <span style="color:#C6B79A;">Show these</span> and <span style="color:#C6B79A;">Undo these</span> sit at 44px on the last. Two reversals, never adjacent &mdash; a pass undo lives inside the provenance box, the sweep stays on the filter row. That is the shipped separation rule applied to a third control rather than an exception to it.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ SURFACE 4 · STATE FRAMES ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Surface 4 &middot; <span style="color:#C9A24B;">the frames the table cannot carry</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;margin:-8px 0 16px;">All of them are tabled in <a href="STATES-top-off.md">STATES-top-off.md</a> &mdash; <span style="color:#8E8269;">the panel's twenty (<span style="color:#C6B79A;">1&ndash;20</span>), the ledger's fourteen (<span style="color:#C6B79A;">a&ndash;j, i2&ndash;i4, l0</span>) and the mark's four (<span style="color:#C6B79A;">k&ndash;n</span>) &mdash; three sets, not one series.</span> <b style="color:#8E8269;">Each frame below is labelled with the identifier it draws.</b> Drawn here: the ones where something changes shape, goes inert, or has to keep its place.</div>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">6 &middot; At the tick cap</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">31 of 31 ticked, 7 candidates still unticked</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#211C15;border:1px solid #6E5B33;border-radius:7px;padding:0 9px;">
+            <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid #C9A24B;background:#252017;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">&#10003;</span>
+            <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#D9975C;"></span>
+            <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Storm-Kiln Artist</span>
+            <span style="flex:none;width:40px;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span style="width:12px;height:12px;border-radius:999px;background:#3A3229;color:#C6B79A;font-family:'IBM Plex Mono',monospace;font-size:8px;display:flex;align-items:center;justify-content:center;">3</span><span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;"></span></span>
+            <span style="white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#D9975C;border:1px solid #6E5B33;border-radius:4px;padding:1px 6px;">&#9670; none free</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">+29</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 9px;opacity:0.55;">
+            <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid #2A241D;background:transparent;color:#494037;font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">+</span>
+            <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed #6A6152;"></span>
+            <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Thousand-Year Storm</span>
+            <span style="flex:none;width:40px;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span style="width:12px;height:12px;border-radius:999px;background:#3A3229;color:#C6B79A;font-family:'IBM Plex Mono',monospace;font-size:8px;display:flex;align-items:center;justify-content:center;">4</span><span style="width:12px;height:12px;border-radius:999px;background:#3A6AA5;margin-left:-5px;"></span><span style="width:12px;height:12px;border-radius:999px;background:#C05A3E;margin-left:-5px;"></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;border:1px solid #6E5B33;border-radius:4px;padding:1px 6px;">buy $4.80</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">+27</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;margin-top:11px;">31 of 31 slots ticked &mdash; <span style="color:#6A6152;">untick one to swap another in</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;">The row stays, dimmed, with its figures and its price intact and its box inert. <b style="color:#EDE6D8;font-weight:600;">It is still evidence about the commander</b>, and hiding it would make the ranking lie about its own length.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">8 &middot; Commit in flight</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">The list stays on screen, legible, non-interactive</div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;border:1px solid #6E5B33;border-radius:8px;color:#8E8269;font-size:13px;font-weight:600;padding:10px 18px;">Sleeving 27 cards&hellip;</span>
+          <span style="display:inline-flex;align-items:center;border:1px solid #2A241D;border-radius:8px;color:#6A6152;font-size:13px;padding:10px 16px;opacity:0.5;">Cancel</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">95 of 99 when added</span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Nothing unmounts, nothing collapses, and the list does not skeleton.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sleeving N cards&hellip;</span> is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">fill.fillingRows</span> string, reused rather than reinvented &mdash; a 27-row write is exactly what it was written for. There is no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Stop</span>: this is a local database write, not a five-second model call.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">11 &middot; Nothing ticked</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">Cleared by hand, or 0 owned candidates from the start</div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;border:1px solid #2A241D;border-radius:8px;color:#6A6152;font-size:13px;font-weight:600;padding:10px 18px;">Add cards</span>
+          <span style="display:inline-flex;align-items:center;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-size:13px;padding:10px 16px;">Cancel</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;flex:1;min-width:150px;line-height:1.6;">nothing ticked &mdash; you own none of these 38, so every tick is one to buy</span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;">The primary loses its count and goes disabled, <b style="color:#EDE6D8;font-weight:600;">and no error appears with it</b> &mdash; nothing has gone wrong. This is also the whole of the old zero-owned state: the list still opens, still ranks, and simply arrives with nothing ticked. <b style="color:#EDE6D8;font-weight:600;">The door is never absent because the pool is unowned</b>; that was the ownership filter, and it is gone.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">13 &middot; Candidates exhausted</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">92 / 99, 0 candidates left, no control at all</div>
+        <div style="display:flex;align-items:flex-start;gap:10px;background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:11px 13px;">
+          <span style="flex:none;width:18px;height:18px;border-radius:999px;border:1px solid #6E5B33;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;">i</span>
+          <span style="font-size:12.5px;color:#C6B79A;line-height:1.6;">92 of 99. The list is empty &mdash; you own what you own, EDHREC knows what it knows, and that is everything we have. Quick-add and Consider are still open.</span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;">The clause in the middle is <b style="color:#EDE6D8;font-weight:600;">lifted verbatim</b> from the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">fill.provenanceShort</span>. <b style="color:#EDE6D8;font-weight:600;">The strip keeps the line and loses the button</b>, which is the sweep's shipped behaviour at zero and the one case where the strip does not unmount with its control: seven visibly open slots need their explanation more than the surface needs the tidiness.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">15 &middot; Commit refused</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">Every tick preserved, nothing added</div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:11px;">
+          <span style="display:inline-flex;align-items:center;border:1px solid #C9A24B;border-radius:8px;color:#C9A24B;font-size:13px;font-weight:600;padding:10px 18px;">Add 27 cards</span>
+          <span style="display:inline-flex;align-items:center;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-size:13px;padding:10px 16px;">Cancel</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;background:#1A1310;border:1px solid #C6533F;border-radius:8px;padding:9px 12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#C6533F;">refused</span>
+          <span style="font-size:12.5px;color:#C6B79A;">We couldn&rsquo;t add those. The deck is unchanged.</span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;">The shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MutationError</span>, under the control that was clicked, with the string unchanged from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">lastSlots.topUpFailed</span>. <b style="color:#EDE6D8;font-weight:600;">27 ticks survive a refusal</b> &mdash; a rejected write is not a reason to make someone choose 27 cards again, and the review step exists precisely so that work is worth preserving.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">l &middot; <span style="color:#EDE6D8;">Show these 27</span> &mdash; the pass, marked</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">#359's &ldquo;before deciding&rdquo;, in the decklist below the ledger</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 9px;">
+            <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+            <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Brainstorm</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;border:1px solid #2A241D;border-radius:4px;padding:1px 5px;">auto</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:7px;padding:0 9px;">
+            <span style="flex:none;width:7px;height:7px;border-radius:999px;background:#6FA368;"></span>
+            <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Murmuring Mystic</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;border:1px solid #2A241D;border-radius:4px;padding:1px 5px;">auto</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:7px;padding:0 9px;">
+            <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed #6A6152;"></span>
+            <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Shark Typhoon</span>
+            <span style="white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;border:1px solid #6E5B33;border-radius:4px;padding:1px 6px;">buy $6.10</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;border:1px solid #2A241D;border-radius:4px;padding:1px 5px;">auto</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;">A <b style="color:#EDE6D8;font-weight:600;">3px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span> left edge</b> on the pass's rows &mdash; the same mark the provenance box wears, which is why it reads as <i>belongs to that line</i>. <b style="color:#EDE6D8;font-weight:600;">Nothing is dimmed, filtered, reordered or collapsed</b>: the deck stays whole, because the question is <i>which of these are those</i>, not <i>show me only those</i>. <b style="color:#EDE6D8;font-weight:600;">The auto tag is untouched</b> &mdash; no ordinal, no second tag. Tapping again unmarks; opening another line moves the mark.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">d, e &middot; Three passes, one undone</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">Any pass, any order, any age &mdash; and the ledger does not keep the corpse</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;gap:10px;min-height:32px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 10px;">
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;width:66px;white-space:nowrap;">the seed</span>
+            <span style="flex:auto;min-width:0;font-size:12.5px;color:#C6B79A;">68 cards</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">the sweep reverses it</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:32px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 10px;">
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;width:66px;white-space:nowrap;">top-off 1</span>
+            <span style="flex:auto;min-width:0;font-size:12.5px;color:#C6B79A;">24 cards</span>
+            <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;border-bottom:1px dashed #4A4033;">Undo these 24</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:32px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 10px;">
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;width:66px;white-space:nowrap;">top-off 2</span>
+            <span style="flex:auto;min-width:0;font-size:12.5px;color:#C6B79A;">3 cards &middot; <span style="color:#6A6152;">2 removed since</span></span>
+            <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;border-bottom:1px dashed #4A4033;">Undo this 1</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">An undone pass leaves the ledger entirely</b> &mdash; it placed nothing, so it has nothing to account for, and a list of things that did not happen is a history browser. <b style="color:#EDE6D8;font-weight:600;">Ordinals are stable and never renumber</b>: if top-off 1 goes, the next is still 3. And a pass recounts to what survives &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">2 removed since</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Undo this 1</span> &mdash; because the batch is a set of rows, not a transaction. <b style="color:#EDE6D8;font-weight:600;">At zero survivors the line goes too.</b></div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">i2, i3 &middot; A pass, part kept</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">Two exits, named separately, and the undo counts down</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 10px;">
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;width:66px;white-space:nowrap;">top-off 1</span>
+            <span style="flex:auto;min-width:0;font-size:12.5px;color:#C6B79A;">27 cards &middot; <span style="color:#6A6152;">3 now yours, 2 removed since</span></span>
+            <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;border-bottom:1px dashed #4A4033;">Undo these 22</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 10px;">
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8269;width:66px;white-space:nowrap;">top-off 2</span>
+            <span style="flex:auto;min-width:0;font-size:12.5px;color:#C6B79A;">4 cards &middot; <span style="color:#6A6152;">all 4 now yours</span></span>
+            <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">the line goes</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Kept and removed are counted separately because they mean opposite things</b> &mdash; a rejection and an endorsement. Both leave the pass, so both count down the undo. <b style="color:#EDE6D8;font-weight:600;">A fully kept pass leaves the ledger like any empty one</b>: nothing was reversed, and nothing is outstanding. And <b style="color:#EDE6D8;font-weight:600;">keeping is now how a player protects a card from an undo</b> &mdash; a use the control did not have before.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">l0 &middot; A deck that predates the ledger</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">No seed line, and the header says why</div>
+        <div style="background:#181410;border:1px solid #2A241D;border-left:3px solid #C9A24B;border-radius:9px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px;">
+            <span style="flex:none;width:18px;height:18px;border-radius:999px;border:1px solid #6E5B33;color:#C9A24B;font-family:'IBM Plex Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;">i</span>
+            <span style="font-size:12.5px;color:#C6B79A;">Where these 95 cards came from</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px dashed #3A3229;border-radius:7px;padding:0 10px;">
+            <span style="flex:auto;min-width:0;font-size:12.5px;color:#8E8269;">This deck was built before we started keeping this record. <span style="color:#6A6152;">Anything we place from here on is listed below.</span></span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;">R2 inferred the seed from the deck&rsquo;s auto rows. <b style="color:#EDE6D8;font-weight:600;">Keeping has already eaten some of those</b>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">filled</span> stays true forever &mdash; so that rule renders a filled deck as barely filled, or as nothing at all. <b style="color:#EDE6D8;font-weight:600;">Design will not print a count it cannot prove.</b> One honest line, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show these</span>, no undo, and the pre-existing auto cards stay <b style="color:#EDE6D8;font-weight:600;">exactly as sweepable as they are today</b>. The line goes for good the first time a pass lands.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">20 &middot; The bottom slot, swapped</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">Phone 390 &mdash; closed, then open. One occupant either way</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:10px 11px;display:flex;align-items:center;gap:9px;">
+            <span style="flex:auto;min-height:44px;display:flex;align-items:center;padding:0 11px;border:1px solid #2A241D;border-radius:8px;background:#1A160F;font-size:12.5px;color:#6A6152;">Add a card by name</span>
+            <span style="flex:none;min-height:44px;display:flex;align-items:center;padding:0 13px;border:1px solid #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">Add</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;text-align:center;">&darr; the list opens</div>
+          <div style="background:#14110E;border:1px solid #3A3229;border-radius:8px;padding:10px 11px;display:flex;flex-direction:column;gap:8px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;">Quick-add is back when you close the list</div>
+            <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;"><span style="color:#C6B79A;">27 of 31 ticked</span><span style="color:#E0913C;">3 to buy &middot; $42.80</span></div>
+            <div style="display:flex;gap:8px;">
+              <span style="flex:auto;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid #C9A24B;border-radius:8px;color:#C9A24B;font-size:14px;font-weight:600;">Add 27 cards</span>
+              <span style="flex:none;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1px solid #3A3229;border-radius:8px;color:#EDE6D8;font-size:14px;">Cancel</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;">The dock <b style="color:#EDE6D8;font-weight:600;">collapses to its own notice rather than vanishing</b>, so the swap is legible and the affordance is accounted for. <b style="color:#EDE6D8;font-weight:600;">Nothing is stacked</b> and the height stays close to the dock's, so the page's scrollable area barely changes when the list opens. Closing restores the dock in place with its query and focus intact; the keyboard never opens under a commit.</div>
+      </div>
+
+      <div style="width:440px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:12px;padding:16px 18px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C9A24B;margin-bottom:4px;">17 &middot; A decline, and a row gone illegal</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;margin-bottom:12px;">Both keep their slot in the ranking</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px solid #2A241D;border-radius:7px;padding:0 10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#6A6152;">not this one</span>
+            <span style="flex:auto;min-width:0;font-size:13px;color:#8E8269;">Cyclonic Rift</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;border-bottom:1px dashed #4A4033;">Show it again</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:#1E1A15;border:1px dashed #3A3229;border-radius:7px;padding:0 10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:#6A6152;">already in the deck</span>
+            <span style="flex:auto;min-width:0;font-size:13px;color:#8E8269;">Young Pyromancer</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6A6152;">untickable</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">A decline collapses to one line in its own slot, restorable</b> &mdash; the tuning card's dismissed shape, and the reason the list survives being reopened. A candidate that became illegal while the list was open (added by quick-add, or the singleton rule) <b style="color:#EDE6D8;font-weight:600;">unticks itself, says why, and recounts</b>. It does not vanish, because a row disappearing from under a cursor mid-selection is the failure every one of these surfaces is built to avoid.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ CONTRACT ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #C9A24B;padding-top:18px;">Contract &middot; <span style="color:#C9A24B;">tokens, a11y, motion &mdash; and what this pass does not add</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:520px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Tokens spent &mdash; <span style="color:#C9A24B;">no new hex, no new token</span></div>
+        <div style="display:flex;flex-direction:column;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#C9A24B;flex:none;"></span><span style="color:#C6B79A;">--accent</span><span style="color:#6A6152;margin-left:auto;">the door, the commit, synergy, ticked box</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#6E5B33;flex:none;"></span><span style="color:#C6B79A;">--accent-shadow</span><span style="color:#6A6152;margin-left:auto;">ticked row border, buy hairline, in flight</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#211C15;border:1px solid #3A3229;flex:none;"></span><span style="color:#C6B79A;">--elevated-hover</span><span style="color:#6A6152;margin-left:auto;">ticked row fill</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#6FA368;flex:none;"></span><span style="color:#C6B79A;">--success</span><span style="color:#6A6152;margin-left:auto;">owned dot, filled 7px &mdash; nothing else</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#D9975C;flex:none;"></span><span style="color:#C6B79A;">--avail-hard-fg</span><span style="color:#6A6152;margin-left:auto;">committed dot, the marker chip</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="display:flex;gap:2px;flex:none;"><span style="width:14px;height:16px;border-radius:3px;background:#F4E9C4;"></span><span style="width:14px;height:16px;border-radius:3px;background:#3A6AA5;"></span><span style="width:14px;height:16px;border-radius:3px;background:#C05A3E;"></span></span><span style="color:#C6B79A;">--w / --u / --r</span><span style="color:#6A6152;margin-left:auto;">cost pips, this commander's identity</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#E0913C;flex:none;"></span><span style="color:#C6B79A;">--warning</span><span style="color:#6A6152;margin-left:auto;">the buy tag and the one total</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#C6533F;flex:none;"></span><span style="color:#C6B79A;">--danger</span><span style="color:#6A6152;margin-left:auto;">a refused write, nothing else</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#8E8269;flex:none;"></span><span style="color:#C6B79A;">--fg-faint</span><span style="color:#6A6152;margin-left:auto;">inclusion figure, captions, declines</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:#6A6152;flex:none;"></span><span style="color:#C6B79A;">--fg-locked</span><span style="color:#6A6152;margin-left:auto;">type line, mono notes, inert box glyph</span></div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:16px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The count that used to sit on the top-up's face in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> is the only token use this pass removes.</b> It now appears twice at most on the surface &mdash; on each unowned row's buy tag, and once as a total &mdash; and both are about money. Nothing here needs a value that is not already in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">globals.css</span> at any of the six themes.</div>
+      </div>
+
+      <div style="width:560px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">A11y &mdash; <span style="color:#C9A24B;">a 38-row selection has to be operable without sight or a mouse</span></div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.75;text-wrap:pretty;">&middot; The door is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-expanded</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-controls</span> on the list &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CoverageDisclosure</span>'s shipped contract &mdash; and <b style="color:#EDE6D8;font-weight:600;">it does not steal focus</b>. Opening moves nothing; the list is next in reading order.<br>&middot; The list is a <b style="color:#EDE6D8;font-weight:600;">group of checkboxes</b>, not a listbox and not a menu: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">role=&quot;group&quot;</span> with an accessible name carrying both counts, and each tick a real <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">checkbox</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-checked</span>. Tab reaches every row; space toggles.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">The row's accessible name carries everything the marks say silently</b> &mdash; the dot, the pip track, the availability chip and both figures are all <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span>: <i>&ldquo;Shark Typhoon. Five generic and one blue. Not in your collection, six dollars ten. Synergy plus 34 points. In 29% of decks.&rdquo;</i><br>&middot; <b style="color:#EDE6D8;font-weight:600;">The cost is spoken in full and never capped</b>, from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CostPips</span>' <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">sr-only</span> alternative &mdash; the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+N</span> pip truncates the drawing, not the sentence. A reader who cannot see the track is the one reader for whom truncation is not a density trade.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">The committed state is a word, not a hue.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--avail-hard-fg</span> against <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span> is a colour difference alone at 7px, so the marker chip beside it carries <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">none free</span> as real text and the accessible name says <i>&ldquo;you own one, none free.&rdquo;</i><br>&middot; <b style="color:#EDE6D8;font-weight:600;">The cap is spoken, not just dimmed.</b> Inert boxes take <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-disabled</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-describedby</span> pointing at the cap line, so a reader who tabs into one hears <i>&ldquo;31 of 31 slots ticked&rdquo;</i> rather than nothing happening.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">Ticking announces on a debounce, never per tap.</b> One message per settle: <i>&ldquo;27 of 31 ticked, 3 to buy.&rdquo;</i> Thirty-one fast taps is one announcement &mdash; the shipped selection rule from surface A.<br>&middot; The commit and the undo both announce once, with counts and denominators: <i>&ldquo;27 cards added. 95 of 99, 3 to buy.&rdquo;</i> / <i>&ldquo;27 cards put back. 68 of 99.&rdquo;</i><br>&middot; <b style="color:#EDE6D8;font-weight:600;">The ledger is a list, and each line's controls are named by their pass</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Undo these 27</span> is ambiguous out of context, so the accessible name is <i>&ldquo;Undo the 27 cards from top-off 1&rdquo;</i>. Three passes means three unambiguous buttons.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">The mark is not colour alone.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show these 27</span> is a toggle (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-pressed</span>), it announces <i>&ldquo;27 cards from top-off 1 marked in the deck&rdquo;</i>, and each marked row's accessible name gains <i>&ldquo;from top-off 1&rdquo;</i> while the mark is up &mdash; so a reader gets the grouping the brass edge draws.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">Ownership is never colour alone</b> &mdash; filled versus hollow is a shape, the word is in the accessible name, and the buy tag is real text. Nor is the ticked state: the box carries a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#10003;</span> as well as a fill and a border.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">Focus survives the commit.</b> It stays on the primary as it becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Sleeving 27 cards&hellip;</span>, then moves to <b style="color:#EDE6D8;font-weight:600;">the ledger line that pass just created</b> &mdash; which is where its undo is, and the reason the ledger is ordered oldest-first and never reorders.<br>&middot; <b style="color:#EDE6D8;font-weight:600;">The bottom-slot swap is announced, not silent</b> &mdash; <i>&ldquo;Quick-add hidden while the list is open&rdquo;</i> once on open, and focus never starts in the retired dock. Closing restores the dock with its query and focus intact.<br>&middot; Closing the list returns focus to the door. Cancel and Close are the same act and the same string is not used for both.<br>&middot; Targets: 18px box on a 40px row at desktop (the whole row is the label, so the target is the row); <b style="color:#EDE6D8;font-weight:600;">26px box on a 52px row at phone</b>; 44px on every phone button and both list-head controls.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:#181410;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Motion, and the list of things not added</div>
+        <div style="font-size:13px;color:#C6B79A;line-height:1.7;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">No motion class is added.</b> The pass mark appears and clears instantly &mdash; 27 left edges fading in across a 95-row list is a page that shivers. Ticking is an instant state change &mdash; a 38-row list where rows animate on toggle is a list that flinches, and this one gets toggled 27 times in a row. Opening the list is a height change with no transition, per the shipped disclosure. A decline collapses with no animation out.<br><br><b style="color:#EDE6D8;font-weight:600;">Not added:</b> no modal, no tray, no drawer, no sheet, no second route, no confirm step, no toast, no time-limited undo, no new row atom, no ordinal on the auto tag, no per-pass filter chip, no basket, no per-row subtotal, no pool switch, no segmented ownership filter, no inner scroller, no virtualisation, no pagination, no &ldquo;show more&rdquo;, no skeleton, no shimmer, no badge, no nudge to finish a 95-card deck, no second pinned bar, and no new empty-state construct.<br><br><b style="color:#EDE6D8;font-weight:600;">Four shipped behaviours are deliberately changed rather than added to:</b> the strip's two controls become one door; the fill provenance line becomes a ledger of passes with a reversal per line; the deck gains a persisted fill-pass table (#359's own request, and the only new persistence); and the quick-add dock stands down while the list is open. Everything else on this surface is a shipped atom moved, recounted, or reused verbatim &mdash; including every string that survives, which is most of them.</div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2280,&quot;height&quot;:1400}}">
+// ── The row, to the card-row parity floor + the cost-pip track ───────────
+// FLOOR (card_rows §Q1): name + ONE availability slot, holding exactly one of
+// BuyTag or AvailabilityMarker. The marker returns null at `free`, so an owned
+// candidate with copies to spare has a legitimately silent slot; an owned
+// candidate already sleeved elsewhere draws the marker.
+// DOT (card_rows §Q3): the SHARED dot — filled --success owned, DASHED unowned
+// (never a solid hollow ring), filled --avail-hard-fg committed.
+// PIPS (card_surfaces §3): 12px pips, gap 3px, fixed 40px right-aligned track,
+// shingling from three at -5px, capped at five slots + a generic +N pip.
+// Between the name block and the availability slot.
+const W = "#F4E9C4", U = "#3A6AA5", R = "#C05A3E", GEN = "#3A3229";
+
+function pip(bg, txt) {
+  return { d: "flex", bg: bg, fg: bg === GEN ? "#C6B79A" : "transparent", txt: txt || "" };
+}
+const NOPIP = { d: "none", bg: "transparent", fg: "transparent", txt: "" };
+
+// A cost of three or more symbols shingles at -5px; two sits at the 3px gap.
+function cost(a, b, c) {
+  const n = c ? 3 : 2, ml = n >= 3 ? "-5px" : "0";
+  return {
+    p1: Object.assign({}, a, { ml: "0" }),
+    p2: Object.assign({}, b, { ml: ml }),
+    p3: Object.assign({}, c || NOPIP, { ml: ml }),
+  };
+}
+
+const TICKED = {
+  rowBg: "#211C15", rowBd: "#6E5B33",
+  boxBd: "#C9A24B", boxBg: "#252017", boxFg: "#C9A24B", glyph: "\u2713",
+};
+const UNTICKED = {
+  rowBg: "#1E1A15", rowBd: "#2A241D",
+  boxBd: "#3A3229", boxBg: "transparent", boxFg: "#8E8269", glyph: "+",
+};
+// The shared OwnershipDot, three states.
+const DOT = {
+  owned: { dotBg: "#6FA368", dotBd: "#6FA368", dotStyle: "solid" },
+  committed: { dotBg: "#D9975C", dotBd: "#D9975C", dotStyle: "solid" },
+  unowned: { dotBg: "transparent", dotBd: "#6A6152", dotStyle: "dashed" },
+};
+// The one availability slot. Exactly one occupant, or a legitimate silence.
+const SLOT = {
+  silent: { tag: "", tagFg: "transparent", tagBd: "transparent", tagD: "none" },
+  buy: function (price) {
+    return { tag: "buy " + price, tagFg: "#E0913C", tagBd: "#6E5B33", tagD: "inline-flex" };
+  },
+  // AvailabilityMarker, count-only: you own it, and every copy is sleeved.
+  hard: { tag: "\u25C6 none free", tagFg: "#D9975C", tagBd: "#6E5B33", tagD: "inline-flex" },
+};
+
+// Kykar, Wind's Fury — 38 legal candidates, 24 owned. The list arrives with the
+// 24 owned ticked; the three ticked buys below are the player's own additions,
+// which is what makes the drawn frame a mixed selection at 27 of 31.
+function row(name, syn, inc, ticked, dot, slot, c) {
+  return Object.assign(
+    { name: name, syn: syn, inc: inc },
+    ticked ? TICKED : UNTICKED, DOT[dot], slot, c
+  );
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      row("Murmuring Mystic", "+47", "31%", true, "owned", SLOT.silent, cost(pip(GEN, "2"), pip(U))),
+      row("Docent of Perfection", "+41", "22%", true, "owned", SLOT.silent, cost(pip(GEN, "4"), pip(U))),
+      row("Shark Typhoon", "+34", "29%", true, "unowned", SLOT.buy("$6.10"), cost(pip(GEN, "5"), pip(U))),
+      row("Young Pyromancer", "+33", "26%", true, "owned", SLOT.silent, cost(pip(GEN, "1"), pip(R))),
+      row("Cyclonic Rift", "+31", "44%", true, "unowned", SLOT.buy("$31.90"), cost(pip(GEN, "1"), pip(U))),
+      row("Storm-Kiln Artist", "+29", "24%", true, "committed", SLOT.hard, cost(pip(GEN, "3"), pip(R))),
+      row("Thousand-Year Storm", "+27", "12%", true, "unowned", SLOT.buy("$4.80"), cost(pip(GEN, "4"), pip(U), pip(R))),
+      row("Talrand, Sky Summoner", "+24", "18%", true, "owned", SLOT.silent, cost(pip(GEN, "2"), pip(U), pip(U))),
+      row("Metallurgic Summonings", "+22", "9%", true, "owned", SLOT.silent, cost(pip(GEN, "4"), pip(U), pip(U))),
+      row("Mizzix's Mastery", "+19", "14%", false, "unowned", SLOT.buy("$2.40"), cost(pip(GEN, "2"), pip(R))),
+    ];
+    // The phone frame draws seven of the thirty-eight: the bar grew a line at R2
+    // (the quick-add swap notice), so the long-list note still clears it.
+    return { rows: rows, prows: rows.slice(0, 7) };
+  }
+}
+</script>
+</body>
+</html>
