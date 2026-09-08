@@ -32,7 +32,12 @@ export type ShoppingRollup = {
   total: DeckShopping;
 };
 
-const EMPTY: DeckShopping = { copies: 0, cents: 0, pricedCopies: 0 };
+/**
+ * A fresh object each time. A shared constant would hand every caller with an
+ * empty roll-up the same reference, and one caller mutating its `total` would
+ * silently change what the next one reads.
+ */
+const empty = (): DeckShopping => ({ copies: 0, cents: 0, pricedCopies: 0 });
 
 export function sumShopping(values: Iterable<DeckShopping>): DeckShopping {
   let copies = 0;
@@ -75,7 +80,7 @@ export async function loadShoppingRollup(userId: string): Promise<ShoppingRollup
       ),
     );
 
-  if (rows.length === 0) return { byDeck: new Map(), total: EMPTY };
+  if (rows.length === 0) return { byDeck: new Map(), total: empty() };
 
   const { prices, newestAsOf } = await loadPrices([...new Set(rows.map((r) => r.oracleId))]);
 
