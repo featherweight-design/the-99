@@ -757,6 +757,22 @@ describe("undoFillPass", () => {
     expect(await undoFillPass("deck-1", passId)).toBe(2);
     expect(stub.state.deleteCalls).toHaveLength(0);
     expect(stub.state.updateCalls).toEqual([{ table: "deck_cards", set: expect.anything() }]);
+    // The copies left behind are the player's, so the same write clears the
+    // marker — otherwise the pass would go on claiming them and a second undo
+    // would take cards it never placed.
+    expect(stub.state.updateCalls[0].set).toMatchObject({ auto: false });
+  });
+
+  // Following the decrement above: the row is the player's now, so the pass has
+  // nothing live left and its second undo is a no-op.
+  it("takes nothing more from a stacked row it has already decremented", async () => {
+    pass();
+    stub.state.fillPassMembers = [{ passId, oracleId: uuid(1), quantity: 2 }];
+    stub.state.deckCards = [{ oracleId: uuid(1), quantity: 3, auto: false }];
+    const { undoFillPass } = await import("./actions");
+    expect(await undoFillPass("deck-1", passId)).toBe(0);
+    expect(stub.state.updateCalls).toHaveLength(0);
+    expect(stub.state.deleteCalls).toHaveLength(0);
   });
 
   // `keepAutoCard` clears the flag without taking the deck lock, so a keep can

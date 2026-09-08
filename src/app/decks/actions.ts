@@ -1048,9 +1048,13 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
       const held = placed.get(row.oracleId) ?? 0;
       if (row.quantity > held) {
         // `auto` is re-checked in the predicate, exactly as the delete does it,
-        // so a card the player has just claimed keeps all of its copies.
+        // so a card the player has just claimed keeps all of its copies. It is
+        // also cleared by the same write: what remains are the copies the
+        // player stacked on top, and leaving the marker set would let
+        // `summariseFillPasses` go on counting them as this pass's — a second
+        // undo would then take copies the pass never placed.
         const decremented = await tx.update(deckCards)
-          .set({ quantity: sql`${deckCards.quantity} - ${held}` })
+          .set({ quantity: sql`${deckCards.quantity} - ${held}`, auto: false })
           .where(and(
             eq(deckCards.deckId, deckId),
             eq(deckCards.oracleId, row.oracleId),
