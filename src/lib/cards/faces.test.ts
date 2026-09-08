@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isTwoFaced } from "./faces";
+import { faceNames, isTwoFaced } from "./faces";
 
 describe("isTwoFaced", () => {
   it("is true for the layouts that print two sides", () => {
@@ -25,5 +25,18 @@ describe("isTwoFaced", () => {
     expect(isTwoFaced("normal")).toBe(false);
     expect(isTwoFaced(null)).toBe(false);
     expect(isTwoFaced(undefined)).toBe(false);
+  });
+});
+
+describe("faceNames", () => {
+  it("splits the stored name on Scryfall's separator", () => {
+    expect(faceNames("Delver of Secrets // Insectile Aberration")).toEqual({
+      front: "Delver of Secrets",
+      back: "Insectile Aberration",
+    });
+  });
+
+  it("answers with the whole name on both sides when there is no separator", () => {
+    expect(faceNames("Sol Ring")).toEqual({ front: "Sol Ring", back: "Sol Ring" });
   });
 });

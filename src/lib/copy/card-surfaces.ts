@@ -62,6 +62,22 @@ export const cardTileCopy = {
   copiesAria: (copies: number) => `${copies} copies in deck`,
 } as const;
 
+/**
+ * #363 — the two-faced mark and the modal's flip control.
+ *
+ * `mark` is drawn text, aria-hidden; `markAria` is the sr-only sibling. The
+ * flip control names the FACE IT TURNS TO, not the act: "Turn over" tells the
+ * reader nothing they cannot see, and the other face's name is the fact they
+ * are actually reaching for.
+ */
+export const twoFacedCopy = {
+  mark: "//",
+  markAria: "two-faced card",
+  flipToAria: (otherFaceName: string) => `Turn over to ${otherFaceName}`,
+  /** Announced on the swap, since the image change is silent by design. */
+  flippedAria: (faceName: string) => `Showing ${faceName}`,
+} as const;
+
 /** "U/B" → "blue or black"; "2/W" → "2 or white"; "G/P" → "green or 2 life". */
 function speakSymbol(symbol: string): string {
   return symbol

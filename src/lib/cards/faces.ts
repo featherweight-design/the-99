@@ -20,3 +20,18 @@ const TWO_FACED = new Set(["transform", "modal_dfc"]);
 export function isTwoFaced(layout: string | null | undefined): boolean {
   return layout !== null && layout !== undefined && TWO_FACED.has(layout);
 }
+
+/**
+ * The two halves of a two-faced card's name. Scryfall joins them with ` // `,
+ * and the catalog stores that whole string — there is no per-face name column,
+ * so this is where the back face's name comes from and the only thing the flip
+ * control can call what it turns to.
+ *
+ * Only ever asked of a card `isTwoFaced` already answered for, but a name
+ * without the separator still answers: both halves are the whole name, so the
+ * control names the card rather than falling back to an empty string.
+ */
+export function faceNames(name: string): { front: string; back: string } {
+  const [front, back] = name.split(" // ");
+  return { front, back: back ?? front };
+}

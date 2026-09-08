@@ -18,6 +18,7 @@ import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { TwoFacedMark } from "../cards/two-faced-mark";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
 import {
@@ -252,6 +253,7 @@ export function DecklistRow({
               >
                 {card.name}
               </CardDetailTrigger>
+              <TwoFacedMark layout={card.layout} />
               {quantityGlyph}
             </div>
             {/* The phone meta line, and the only two things that ever ride it:
@@ -298,6 +300,7 @@ export function DecklistRow({
             >
               {card.name}
             </CardDetailTrigger>
+            <TwoFacedMark layout={card.layout} />
             {quantityGlyph}
           </div>
         )}
