@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { ResultLine } from "./result-line";
 
 describe("ResultLine", () => {
@@ -21,8 +21,8 @@ describe("ResultLine", () => {
   // The plan's version of this assertion had no `selector`. A function matcher
   // reading `el.textContent` matches every ancestor too — `<body>` and the
   // render container hold the same text — so `getByText` threw on three
-  // matches however the component was written. Scoping the query to the live
-  // region is the assertion the plan meant: one element carries the whole
+  // matches however the component was written. Scoping the query to the drawn
+  // paragraph is the assertion the plan meant: one element carries the whole
   // sentence, aside included.
   it("appends the Exactly aside to the same line, not a second one", () => {
     render(<ResultLine shown={2} total={148} lane="owned" excludedByExactly={6} />);
@@ -30,7 +30,7 @@ describe("ResultLine", () => {
       screen.getByText(
         (_, el) =>
           el?.textContent === "2 of 148 commanders match — Exactly excludes 6 that Any would show",
-        { selector: "[aria-live]" },
+        { selector: "p" },
       ),
     ).toBeInTheDocument();
   });
@@ -40,5 +40,30 @@ describe("ResultLine", () => {
       <ResultLine shown={4} total={148} lane="owned" excludedByExactly={null} />,
     );
     expect(container.querySelectorAll("[aria-live]")).toHaveLength(1);
+  });
+
+  // Filtering is immediate and only the message waits: a reader typing four
+  // letters hears the count once, not once per keystroke.
+  it("draws a new count at once but waits 300ms to announce it", () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender, container } = render(
+        <ResultLine shown={148} total={148} lane="owned" excludedByExactly={null} />,
+      );
+      const live = () => container.querySelector("[aria-live]")?.textContent;
+      expect(live()).toBe("");
+
+      rerender(<ResultLine shown={9} total={148} lane="owned" excludedByExactly={null} />);
+      expect(container.querySelector("p")?.textContent).toBe("9 of 148 commanders match");
+      expect(live()).toBe("");
+
+      rerender(<ResultLine shown={4} total={148} lane="owned" excludedByExactly={null} />);
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(live()).toBe("4 of 148 commanders match");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

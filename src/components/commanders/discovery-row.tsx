@@ -347,6 +347,7 @@ export function DiscoveryRow({
               minWidth: 16,
               textAlign: "center",
               lineHeight: 1.2,
+              fontVariantNumeric: "tabular-nums",
             }}
           >
             {rank}
@@ -366,7 +367,12 @@ export function DiscoveryRow({
             <div aria-hidden="true" className="flex flex-col items-end shrink-0">
               <span
                 className="font-mono font-[600]"
-                style={{ fontSize: 20, color: "var(--fg)", lineHeight: 1 }}
+                style={{
+                  fontSize: 20,
+                  color: "var(--fg)",
+                  lineHeight: 1,
+                  fontVariantNumeric: "tabular-nums",
+                }}
               >
                 {support}
               </span>
@@ -441,6 +447,7 @@ export function DiscoveryRow({
               fontSize: 19,
               color: rank === 1 ? "var(--accent)" : "var(--fg-faint)",
               lineHeight: 1,
+              fontVariantNumeric: "tabular-nums",
             }}
           >
             {rank}
@@ -541,7 +548,12 @@ export function DiscoveryRow({
               <div aria-hidden="true" className="flex flex-col gap-[3px]">
                 <span
                   className="font-mono font-[600]"
-                  style={{ fontSize: 27, color: "var(--fg)", lineHeight: 1 }}
+                  style={{
+                    fontSize: 27,
+                    color: "var(--fg)",
+                    lineHeight: 1,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
                 >
                   {support}
                 </span>

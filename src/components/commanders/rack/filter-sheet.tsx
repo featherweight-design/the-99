@@ -33,6 +33,7 @@ import { AvailabilityControl } from "./availability-control";
 import { ColourControl } from "./colour-control";
 import { OrderControl } from "./order-control";
 import { ORDER_OPTIONS } from "./order-options";
+import { resultSentence } from "./result-line";
 import { ScopeControl } from "./scope-control";
 
 /** Travel past which the handle drag dismisses rather than snapping back. */
@@ -46,6 +47,7 @@ export function FilterSheet({
   lane,
   onChange,
   shown,
+  total,
   scopePending = false,
 }: {
   open: boolean;
@@ -53,8 +55,10 @@ export function FilterSheet({
   params: LaneParams;
   lane: Lane;
   onChange: (next: LaneParams) => void;
-  /** Rows the current parameters would show. The footer says it, live. */
+  /** Rows the current parameters would show. The header and footer both say it,
+      live — nothing here is staged. */
   shown: number;
+  total: number;
   /** Discover only: a scope flip is out with the server (#338). */
   scopePending?: boolean;
 }) {
@@ -207,14 +211,20 @@ export function FilterSheet({
           <span className="h-[4px] w-[36px] rounded-full bg-[color:var(--border-strong)]" />
         </div>
 
-        <h2 className="m-0 px-[16px] pt-[4px] pb-[10px] font-display text-[18px] font-semibold text-[color:var(--fg)]">
-          {filterCopy.sheet.title}
-          {active > 0 && (
-            <span className="ml-[8px] rounded-full px-[8px] py-px align-middle font-mono text-[12px] font-semibold bg-[color:var(--accent)] text-[color:var(--bg)]">
-              {active}
-            </span>
-          )}
-        </h2>
+        <div className="flex items-baseline gap-[10px] px-[16px] pt-[4px] pb-[10px]">
+          <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
+            {filterCopy.sheet.title}
+          </h2>
+          {/* The rack's own sentence, drawn silently. Every tap applies at once,
+              so the header answers "what would I be left with" while the reader
+              is still in the sheet — and it is the SAME sentence the result line
+              behind the scrim is showing, never a second count that could
+              disagree. Silent because that line is the lane's one live region;
+              the sheet's debounced announcer is what speaks here. */}
+          <span className="ml-auto font-mono text-[11px] tabular-nums text-[color:var(--fg-body)]">
+            {resultSentence(shown, total, lane)}
+          </span>
+        </div>
 
         {/* min-h-0 so the section stack scrolls inside the 78vh cap rather than
             pushing the footer off the bottom of the sheet. */}
