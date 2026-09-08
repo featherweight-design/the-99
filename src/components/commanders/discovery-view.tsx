@@ -64,14 +64,22 @@ const EMPTY_MATCHES: ExcludedMatch[] = [];
 const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
 
 /**
- * The lane's client-side ordering. `popularity` is the server's own order and is
- * returned untouched, which is what keeps the rank numerals meaningful: they are
- * built over the unfiltered list in the server's order and never renumber.
+ * The lane's client-side ordering — all three of them, over rows the client
+ * already holds. A round trip for a sort of a list in memory is the request this
+ * lane's cache exists to avoid, and the payload carries every figure they rank
+ * on. The scope picks which question the list answers and the order only
+ * arranges the answer, so none of these touches `rank`, which stays the position
+ * in the scope's own ranking.
  *
- * `recent` sorts on `releasedAt` descending with undated sets last. It is a
- * client-side reorder rather than a fourth server ranking because the payload
- * already carries the date, and a round trip for a sort over rows in memory is
- * the request this lane's cache exists to avoid.
+ * `popularity` sorts on the EDHREC deck count, which is the figure the row
+ * prints under that name. It is NOT the server's own order: the server ranks on
+ * support or on novelty — the scope's two questions — so returning the list
+ * untouched here would have printed `Popularity` over whichever of those was
+ * active and called it the deck count.
+ *
+ * A row with no figure sorts last in both figure orders. An undated set and an
+ * uncounted commander are absences, and an absence ordered as a zero would be
+ * the claim that nobody has built it.
  */
 function ordered(rows: DiscoveryItem[], order: LaneOrder): DiscoveryItem[] {
   if (order === "name") {
@@ -79,6 +87,9 @@ function ordered(rows: DiscoveryItem[], order: LaneOrder): DiscoveryItem[] {
   }
   if (order === "recent") {
     return [...rows].sort((a, b) => (b.releasedAt ?? "").localeCompare(a.releasedAt ?? ""));
+  }
+  if (order === "popularity") {
+    return [...rows].sort((a, b) => (b.deckCount ?? -1) - (a.deckCount ?? -1));
   }
   return rows;
 }

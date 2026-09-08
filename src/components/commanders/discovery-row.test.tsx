@@ -15,6 +15,7 @@ const item = (over: Partial<DiscoveryItem> = {}): DiscoveryItem => ({
   colorIdentity: ["B", "G"],
   imageUri: null,
   releasedAt: "2021-04-23",
+  deckCount: 1209,
   rank: 1,
   ownedSupport: 126,
   collectionSupport: 126,

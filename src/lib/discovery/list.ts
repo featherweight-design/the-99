@@ -22,6 +22,10 @@ export type DiscoveryItem = {
       order reads it on the client; nothing on the server sorts by it, so the
       ranks the payload carries are unaffected. */
   releasedAt: string | null;
+  /** How many decks EDHREC counted, or null where the index carried no figure.
+      Read on the client twice: the row prints it, and the `Popularity` order
+      ranks on it. Like `releasedAt`, nothing on the server sorts by it. */
+  deckCount: number | null;
   /** Position in the active ordering, over every item this list carries — so a
       client-side colour filter never renumbers what it leaves behind. It is not
       a position in `candidateCount`: under `new`, the untagged and the
@@ -123,6 +127,7 @@ export function assembleDiscovery(input: {
       oracleId: c.oracleId, slug: c.slug, name: c.name,
       colorIdentity: c.colorIdentity, imageUri: c.imageUri,
       releasedAt: c.releasedAt,
+      deckCount: c.deckCount,
       ownedSupport: c.ownedSupport,
       collectionSupport: c.collectionSupport,
       edhrecTotal: c.edhrecTotal,

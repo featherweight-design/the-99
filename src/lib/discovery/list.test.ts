@@ -9,7 +9,7 @@ const candidate = (over: Partial<Parameters<typeof assembleDiscovery>[0]["candid
   const merged = {
     oracleId: "a", name: "A",
     colorIdentity: ["G"], imageUri: null, releasedAt: null,
-    edhrecTotal: 100, tags: [], ownedSupport: 50,
+    edhrecTotal: 100, deckCount: 1209, tags: [], ownedSupport: 50,
     ...over,
   };
   return { collectionSupport: merged.ownedSupport, ...merged };

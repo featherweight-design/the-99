@@ -64,6 +64,7 @@ const item = (over: Partial<DiscoveryList["items"][number]>): DiscoveryList["ite
   colorIdentity: ["G"],
   imageUri: null,
   releasedAt: null,
+  deckCount: 1209,
   rank: 1,
   ownedSupport: 12,
   collectionSupport: 12,
@@ -223,6 +224,40 @@ describe("DiscoveryView", () => {
     expect(window.location.search).toBe("?o=recent");
     expect(container.textContent?.indexOf("New Legend")).toBeLessThan(
       container.textContent?.indexOf("Old Legend") ?? -1,
+    );
+  });
+
+  // `Popularity` is the lane's default order and it ranks on the deck count the
+  // row prints under that name. It is not "whatever the server sent": the server
+  // ranks on the scope's question — support, or novelty — so a pass-through here
+  // would print the label over a different ordering entirely. The fixture makes
+  // them disagree, with the server's rank 1 second on deck count.
+  it("orders by the deck count under Popularity, not by the scope's ranking", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Server First", deckCount: 12 }),
+      item({ oracleId: "b", slug: "b", name: "Most Built", deckCount: 9000, rank: 2 }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+    );
+    expect(container.textContent?.indexOf("Most Built")).toBeLessThan(
+      container.textContent?.indexOf("Server First") ?? -1,
+    );
+  });
+
+  // An uncounted commander is an absence, and ordering it as a zero would be the
+  // claim that nobody has built it. It sorts last instead, which is where the
+  // undated set sorts under `Recently released` for the same reason.
+  it("sorts an uncounted commander last rather than as a zero", () => {
+    const items = [
+      item({ oracleId: "a", slug: "a", name: "Uncounted", deckCount: null }),
+      item({ oracleId: "b", slug: "b", name: "Counted", deckCount: 1, rank: 2 }),
+    ];
+    const { container } = render(
+      <DiscoveryView discovery={list({ items, candidateCount: 2 })} />,
+    );
+    expect(container.textContent?.indexOf("Counted")).toBeLessThan(
+      container.textContent?.indexOf("Uncounted") ?? -1,
     );
   });
 

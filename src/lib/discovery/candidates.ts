@@ -25,6 +25,11 @@ export type CandidateSqlRow = {
       module refuses for `Recently added`. */
   releasedAt: string | null;
   edhrecTotal: number | null;
+  /** How many decks EDHREC counted for this commander. Null where the index
+      carried no figure, which is a real state and prints as no line rather than
+      as a zero — nobody has built it is a claim the absent figure cannot make.
+      The discover row prints it, and the `Popularity` order ranks on it. */
+  deckCount: number | null;
   tags: EdhrecTag[];
   ownedSupport: number;
   /** The same count over the player's whole collection rather than over the
@@ -85,6 +90,7 @@ export async function loadCandidates(
       imageUri: cards.imageUri,
       releasedAt: RELEASED_AT,
       edhrecTotal: commanderSupport.edhrecTotal,
+      deckCount: commanderSupport.deckCount,
       tags: commanderSupport.tags,
       ownedSupport: ownedSupportColumn(),
       collectionSupport: collectionSupportColumn(collectionOracleIds != null),
