@@ -16,8 +16,9 @@ import { StatusPillBadge } from "./status-pill";
  * over the six values: a status with no branch here would render an empty slot,
  * which reads as a bug rather than as an absence.
  *
- * Building has no separate figure — its count IS the explanation — so it
- * repeats the count rather than inventing a second one.
+ * Null is a branch, not a gap: several statuses are explained by the `87 / 99`
+ * the meta row already prints, and for those the honest detail is nothing at
+ * all rather than a second figure invented to fill the slot.
  */
 function detailFor(
   deck: DeckListItem,
@@ -48,9 +49,9 @@ function statusDetailFor(
   switch (deck.statusPill) {
     case "Draft":
       // `detailDraft` is the literal `created today`, so it is only true on the
-      // day of creation. An older Draft falls back to its count rather than
-      // being told a date it does not have — a Draft deck older than a day is a
-      // real state the copy file does not cover, and the gap report says so.
+      // day of creation. An older Draft draws no figure rather than being told
+      // a date it does not have — a Draft deck older than a day is a real state
+      // the copy file does not cover, and the gap report says so.
       return formatWhen(deck.createdAt, now) === "today" ? c.detailDraft : null;
     case "Building":
       // No figure. Building's count IS its explanation, and the count already
