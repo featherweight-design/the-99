@@ -482,7 +482,7 @@ export function BuilderSpine({
           <button
             type="button"
             disabled
-            className="hidden md:flex items-center gap-[6px] rounded-[8px] font-sans font-semibold text-[13px] px-[18px] py-[11px] text-[color:var(--fg-faint)] bg-transparent border border-[color:var(--border)]"
+            className="hidden md:flex items-center gap-[6px] rounded-[8px] font-sans font-semibold h-[32px] px-[14px] text-[12.5px] text-[color:var(--fg-faint)] bg-transparent border border-[color:var(--border)]"
             style={{ cursor: "not-allowed" }}
           >
             Export
@@ -518,7 +518,7 @@ export function BuilderSpine({
             {/* Desktop: filled accent button */}
             <PrimaryButton
               onClick={onExport}
-              className="hidden md:flex items-center gap-[6px] text-[13px] px-[18px] py-[11px]"
+              className="hidden md:flex items-center gap-[6px] h-[32px] px-[14px] text-[12.5px]"
             >
               Export
             </PrimaryButton>
