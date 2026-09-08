@@ -42,6 +42,7 @@ function mount(built: number) {
         deck={deck}
         counts={{ built, ownedCount: built, toBuyCount: 0 }}
         onExport={vi.fn()}
+        status="Building"
         overCommitted={0}
         softClaimed={0}
       />
@@ -102,6 +103,7 @@ function mountOver(opts: { onShowShopping?: () => void } = {}) {
         deck={deck}
         counts={{ built: 62, ownedCount: 54, toBuyCount: 8 }}
         onExport={vi.fn()}
+        status="Building"
         overCommitted={2}
         softClaimed={0}
         onShowShopping={opts.onShowShopping}

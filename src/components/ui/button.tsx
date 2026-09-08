@@ -29,7 +29,11 @@ const BASE =
 // so a filled CTA wearing it claims a status it does not have. --fg-body is the
 // hover because it is the only token that is a step off bone in the same family
 // across all six themes; --accent-hover would put accent back by the side door.
-const PRIMARY =
+// Exported because two call sites cannot use PrimaryButton itself: they render a
+// Link through SelectableBuildButton, which builds its own href from the
+// selection. Sharing the string keeps one definition of the bone fill rather
+// than a second one that drifts.
+export const PRIMARY =
   "bg-[color:var(--fg)] text-[color:var(--bg)] hover:bg-[color:var(--fg-body)] " +
   "disabled:hover:bg-[color:var(--fg)]";
 
@@ -37,6 +41,17 @@ const GHOST =
   "bg-transparent text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] " +
   "hover:[border-color:var(--accent)] hover:[color:var(--accent-hover)] " +
   "disabled:hover:[border-color:var(--border-strong)] disabled:hover:[color:var(--fg)]";
+
+// The refresh's conformance geometry: "a 32px hairline pill (--border-strong,
+// 12.5px label, 14px side padding)". Prefixed at sm: because the figure is a
+// desktop figure — below it every control that takes this is at its touch
+// height, and 32px would put it under the target floor.
+//
+// A class string rather than a variant: its callers are not all GhostButton.
+// Two are hand-rolled buttons with a menu contract and one is a field
+// container, and pulling three unrelated components through one primitive to
+// share three utilities would cost more than it saves.
+export const HAIRLINE = "sm:h-[32px] sm:px-[14px] sm:text-[12.5px]";
 
 type SharedProps = {
   className?: string;

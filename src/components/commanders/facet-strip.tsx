@@ -101,7 +101,10 @@ export function FacetStrip({
               e.preventDefault();
               step(i, dir);
             }}
-            className="shrink-0 md:shrink flex items-center gap-[5px] md:gap-[6px] font-mono cursor-pointer h-8 md:h-[30px]"
+            // `md:` where the refresh's other controls use `sm:`, deliberately:
+            // matching the breakpoints would move this strip at a width nobody
+            // reviewed. Only the desktop height changes, 30px to the hairline 32.
+            className="shrink-0 md:shrink flex items-center gap-[5px] md:gap-[6px] font-mono cursor-pointer h-8 md:h-[32px]"
             style={{
               padding: "0 11px",
               borderRadius: 999,

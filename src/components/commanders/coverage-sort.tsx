@@ -130,10 +130,14 @@ export function CoverageSortMenu({
         aria-label={copy.triggerAria}
         onClick={() => setOpen((v) => !v)}
         className={[
-          "font-mono inline-flex items-center cursor-pointer rounded-[8px] px-[12px] text-[12px] gap-[8px]",
+          "font-mono inline-flex items-center cursor-pointer rounded-[8px] gap-[8px]",
           "bg-[color:var(--surface-sunken)] border border-[color:var(--border-strong)]",
           "text-[color:var(--fg)]",
-          isDesktop ? "h-[30px]" : "h-[38px] w-full",
+          // The hairline geometry spelled out rather than merged from
+          // `HAIRLINE`: `isDesktop` here is a JS boolean, not a media query, and
+          // the same boolean places the menu. Converting this component to
+          // responsive classes is a change with its own review.
+          isDesktop ? "h-[32px] px-[14px] text-[12.5px]" : "h-[38px] w-full px-[12px] text-[12px]",
         ].join(" ")}
       >
         <span aria-hidden className="text-[color:var(--fg-faint)]">{copy.triggerPrefix}</span>

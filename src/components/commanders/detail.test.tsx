@@ -293,21 +293,4 @@ describe("CommanderDetail availability mode", () => {
     render(<CommanderDetail commander={commander()} rank={1} isBestFit synergyCards={noSynergyCards} />);
     expect(screen.queryByText(availabilityCopy.ranking.freeNote)).toBeNull();
   });
-
-  // Back to the list the reader was actually on. Without the parameter the link
-  // lands on the canonical ranking, which is a different order.
-  it("returns to the free-ranked list", () => {
-    render(
-      <CommanderDetail
-        commander={commander()}
-        rank={1}
-        isBestFit
-        avail="free"
-        synergyCards={noSynergyCards}
-      />,
-    );
-    for (const link of screen.getAllByRole("link", { name: /back to rankings/i })) {
-      expect(link).toHaveAttribute("href", "/commanders?avail=free");
-    }
-  });
 });

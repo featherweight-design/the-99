@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { GhostButton, PrimaryButton } from "./button";
+import { GhostButton, HAIRLINE, PrimaryButton } from "./button";
 
 describe("PrimaryButton", () => {
   it("renders a button element when href is absent", () => {
@@ -139,5 +139,19 @@ describe("GhostButton", () => {
     expect(screen.getByRole("link", { name: "Home" }).getAttribute("href")).toBe(
       "/",
     );
+  });
+});
+
+describe("HAIRLINE", () => {
+  it("states the hairline geometry once, for the desktop branch only", () => {
+    expect(HAIRLINE).toContain("sm:h-[32px]");
+    expect(HAIRLINE).toContain("sm:px-[14px]");
+    expect(HAIRLINE).toContain("sm:text-[12.5px]");
+    // Nothing unprefixed at all: the phone keeps whatever touch height, padding
+    // and label size its caller set. Matched on the bare utility prefix rather
+    // than the arbitrary-value form, so a scale class like `h-8` fails too.
+    expect(HAIRLINE).not.toMatch(/(^|\s)h-/);
+    expect(HAIRLINE).not.toMatch(/(^|\s)px-/);
+    expect(HAIRLINE).not.toMatch(/(^|\s)text-/);
   });
 });

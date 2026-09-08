@@ -8,6 +8,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetail } from "../../lib/decks/read";
+import type { StatusPill } from "../../lib/decks/status";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { BuilderSpine } from "./builder-spine";
@@ -31,16 +32,23 @@ const deck = {
   toBuyCount: 8,
 } as unknown as DeckDetail;
 
-type SpineProps = Omit<Parameters<typeof BuilderSpine>[0], "deck" | "counts" | "onExport">;
+type SpineProps = Omit<
+  Parameters<typeof BuilderSpine>[0],
+  "deck" | "counts" | "onExport" | "status"
+> & { status?: StatusPill };
 
-function mount(props: SpineProps) {
+// `status` defaults here and nowhere in the component: the roll-up tests below
+// say nothing about it, and a default on the prop itself would let a real call
+// site render a status that is not the deck's.
+function mount({ status = "Building", ...props }: SpineProps) {
   const fetchCard = vi.fn<(id: string) => Promise<BrowseCard | null>>().mockResolvedValue(null);
-  render(
+  return render(
     <CardDetailProvider fetchCard={fetchCard}>
       <BuilderSpine
         deck={deck}
         counts={{ built: 62, ownedCount: 54, toBuyCount: 8 }}
         onExport={vi.fn()}
+        status={status}
         {...props}
       />
     </CardDetailProvider>,
@@ -144,5 +152,20 @@ describe("BuilderSpine commitments roll-up", () => {
     mount({ overCommitted: 1, softClaimed: 12 });
     expect(screen.getAllByText(availabilityCopy.deckRollup.softBodyShort)).toHaveLength(1);
     expect(screen.getAllByText(availabilityCopy.deckRollup.softBody)).toHaveLength(1);
+  });
+});
+
+describe("BuilderSpine header", () => {
+  it("names the deck's status with the shared pill", () => {
+    mount({ overCommitted: 0, softClaimed: 0, status: "To buy" });
+    expect(screen.getAllByText("To buy").length).toBeGreaterThan(0);
+  });
+
+  // Rule 2 of the refresh: one filled primary per screen. The assertion reads
+  // the class the bone PRIMARY sets, because a test that cannot see the fill
+  // cannot enforce the rule.
+  it("draws exactly one filled button", () => {
+    const { container } = mount({ overCommitted: 0, softClaimed: 0 });
+    expect(container.querySelectorAll(".bg-\\[color\\:var\\(--fg\\)\\]")).toHaveLength(1);
   });
 });
