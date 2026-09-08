@@ -139,9 +139,14 @@ async function walk(page, width) {
   const before = await ticks();
   await page.getByRole("button", { name: /^Add .* cards to the deck/ }).click();
   await page.waitForTimeout(1500);
-  const alert = await list.getByRole("alert").innerText().catch(() => "(none)");
+  // By test id, not by role: the plate carries no live role, because
+  // BuilderShell's polite region is what speaks the refusal.
+  const refusal = await list
+    .getByTestId("top-off-refusal")
+    .innerText()
+    .catch(() => "(none)");
   const after = await ticks();
-  console.log(`[${w}] refusal: "${alert.trim()}" · ticks ${before} then ${after}`);
+  console.log(`[${w}] refusal: "${refusal.trim()}" · ticks ${before} then ${after}`);
   await shot(page, `${w}-5-refused`);
   await page.unroute("**/decks/**");
 
