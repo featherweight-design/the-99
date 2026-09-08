@@ -122,11 +122,16 @@ export function DecklistRow({
   // Basic lands are never in Shopping (the fill guarantees it), but guard anyway.
   const hasShoppingMeta = !isBasicLand(card.typeLine) && shoppingFigure !== undefined;
   // The cost joins that same line on the phone, so a row can now carry one
-  // without being in Shopping at all. A land has no cost and so no line, and
-  // lands are their own group under both groupings — which is why the height
-  // change lands on a group boundary and never inside a group.
+  // without being in Shopping at all.
   const cost = card.manaCost && parseManaCost(card.manaCost).length > 0 ? card.manaCost : null;
-  const hasMetaLine = hasShoppingMeta || cost !== null;
+  // Keyed on the GROUP, not on this row's own cost. Most costless cards are
+  // lands, and lands are their own group under both groupings — but a handful
+  // of spells have no printed cost either (Ancestral Vision, Restore Balance),
+  // and a row that asked its own `cost` would put a 44px row in the middle of a
+  // column of 52px ones. Ragged is the failure the group boundary exists to
+  // avoid; a little more space under one name is not.
+  const inLandsGroup = card.cardTypeGroup === "Lands";
+  const hasMetaLine = hasShoppingMeta || !inLandsGroup;
   const rowShell = hasMetaLine ? ROW_SHELL_META : ROW_SHELL;
   // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
   // line and needs context. Desktop: bare "24%" because it is inline with the

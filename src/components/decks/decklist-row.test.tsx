@@ -150,14 +150,24 @@ describe("DecklistRow remove control (#179)", () => {
   // The name block is what grows to fill the row, not the name itself: a
   // growing trigger would strand the count at the row's right edge, away from
   // the text it counts.
-  it("keeps the count beside the name text", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, quantity: 37 }} />);
+  // Both shells: the row with a meta line puts the growing box one level up,
+  // and the count still has to ride the name rather than the row's edge.
+  it.each([
+    ["with a meta line", "Sorceries"],
+    ["without one", "Lands"],
+  ])("keeps the count beside the name text, %s", (_label, cardTypeGroup) => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        card={{ ...card, quantity: 37, manaCost: null, cardTypeGroup } as DeckDetailCard}
+      />,
+    );
 
     const count = screen.getByText("×37");
     const name = screen.getByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") });
     expect(count.parentElement).toBe(name.parentElement);
     expect(name.className).not.toContain("flex-auto");
-    expect(count.parentElement?.className).toContain("flex-auto");
+    expect(name.closest(".flex-auto")).not.toBeNull();
   });
 
   // The ✕'s aria already says "37 in deck", so a reader that also voiced the
@@ -558,9 +568,29 @@ describe("DecklistRow cost pips (#350)", () => {
     expect(rowShell().className).toContain("min-h-[52px]");
   });
 
-  it("leaves a costless card at 44px", () => {
-    renderRow(<DecklistRow deckId="d1" card={{ ...card, manaCost: null } as DeckDetailCard} />);
+  it("leaves a land at 44px", () => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        card={{ ...card, manaCost: null, cardTypeGroup: "Lands" } as DeckDetailCard}
+      />,
+    );
     expect(rowShell().className).toContain("min-h-[44px]");
+  });
+
+  // The height is the group's, not the card's. Ancestral Vision and Restore
+  // Balance have no printed cost and are not lands, and a row that measured its
+  // own cost would sit 8px short in the middle of a column of Sorceries.
+  it("keeps a costless spell at its group's height", () => {
+    renderRow(
+      <DecklistRow
+        deckId="d1"
+        card={{ ...card, manaCost: null, cardTypeGroup: "Sorceries" } as DeckDetailCard}
+      />,
+    );
+    expect(rowShell().className).toContain("min-h-[52px]");
+    // No pips, though — the row has the line, and nothing to put on it.
+    expect(screen.queryByText(spokenManaCost("{1}"))).toBeNull();
   });
 
   it("holds the desktop track at a fixed width whatever the cost costs", () => {
