@@ -58,18 +58,29 @@ authoritative and the code now matches it.
    gradient at `0.3` — the preference muting the one identity signal the row has. `reducible` now
    takes whether the layer is art; a gradient publishes its own opacity.
 
-## Deliberate deviations from the handoff — for Design to ratify
+## Deliberate deviations from the handoff
 
-Not defects; recorded so they are reviewed rather than discovered.
+Not defects. Sorted with Hugh on 2026-09-08: the first two are settled eng-side and ask Design
+nothing, the last two are visible and go back as one prompt. Both of those ship live while Design
+rules — each is the more readable of the two readings, and reverting mid-review would redraw the
+same surface twice.
+
+**Settled eng-side, no round-trip.**
 
 - **`!important` in both media queries.** `<ArtWash>` sets opacity and gradients inline because
-  both are computed from the band, and an inline declaration outranks any plain selector.
+  both are computed from the band, and an inline declaration outranks any plain selector. A
+  mechanism, invisible in the drawing.
 - **`forced-colors: active` drops the art rather than re-tuning it** — READINESS eng
-  clarification 7, already flagged there as extending the handoff's intent.
+  clarification 7, already flagged there as extending the handoff's intent, and audited as such.
+
+**Open with Design, shipped live.**
+
 - **The status chip's fill mixes into `var(--bg)`, not into `transparent`**, giving an opaque
   plate at every alpha behind one uniform `1px solid var(--border-strong)`. README §3 asks for an
   opaque fill plus a hairline. **Side effect: `Building` loses the `--border-dashed` border
-  ratified earlier.** All six statuses now carry the same hairline.
+  ratified earlier**, and the four signal statuses lose their colour-faded edges. All six now
+  carry the same hairline, because a 50% fade of the status colour was the worst-reading edge in
+  the report and the wash rules ink over art to full opacity.
 - **The no-art identity gradient renders at full opacity**, not at the art layer's. README says
   "the existing colour-identity gradient at the same opacity"; the plan shipped `1`, on the
   reading that a gradient is ground rather than photography and at `0.14` would leave a
