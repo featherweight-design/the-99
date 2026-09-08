@@ -915,7 +915,7 @@ git commit -m "refactor(ui): fill the primary with bone so accent can mean in us
 - Produces:
   - `DeckListItem` gains `lastPlayedAt: Date | null`.
   - `listDecksWithStats(userId: string, sort?: DeckSort): Promise<DeckListItem[]>`.
-  - `src/lib/decks/sort.ts`: `export type DeckSort = "lastPlayed" | "name" | "newest"`, `export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed"`, `export const DECK_SORT_LABELS: Record<DeckSort, string>`, `export function parseDeckSort(raw: string | undefined): DeckSort`, `export function serializeDeckSort(sort: DeckSort): string | undefined`.
+  - `src/lib/decks/sort.ts`: `export type DeckSort = "lastPlayed" | "name" | "newest"`, `export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed"`, `export const DECK_SORT_LABELS: Record<DeckSort, string>`, `export function parseDeckSort(raw: string | null | undefined): DeckSort`, `export function serializeDeckSort(sort: DeckSort): string | undefined`.
 
 This closes **finding 5** and implements **locked ruling 7**. The query itself gets no unit test — the repo's untested-query pattern (documented in `src/lib/home/summary.ts`) is that shape-shifting SQL is proved by the type checker and the browser, and pure logic is proved by Vitest. `parseDeckSort` is the pure logic.
 
@@ -991,8 +991,8 @@ export const DECK_SORT_LABELS: Record<DeckSort, string> = {
  * `"__proto__"` or `"toString"` reaches the Object prototype and would otherwise
  * be accepted as a sort key.
  */
-export function parseDeckSort(raw: string | undefined): DeckSort {
-  return raw !== undefined && Object.hasOwn(DECK_SORT_LABELS, raw)
+export function parseDeckSort(raw: string | null | undefined): DeckSort {
+  return raw != null && Object.hasOwn(DECK_SORT_LABELS, raw)
     ? (raw as DeckSort)
     : DEFAULT_DECK_SORT;
 }

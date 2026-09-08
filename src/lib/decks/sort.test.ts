@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import { DECK_SORT_LABELS, DEFAULT_DECK_SORT, parseDeckSort, serializeDeckSort } from "./sort";
 
 describe("deck sort", () => {
-  it("defaults to last played", () => {
+  it("defaults to last played on either absence", () => {
+    // `undefined` is what a server component's searchParams gives for a missing
+    // key; `null` is what URLSearchParams.get gives. Both mean "not in the URL".
     expect(DEFAULT_DECK_SORT).toBe("lastPlayed");
     expect(parseDeckSort(undefined)).toBe("lastPlayed");
+    expect(parseDeckSort(null)).toBe("lastPlayed");
   });
 
   it("reads the two non-default orders off the URL", () => {
