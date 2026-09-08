@@ -115,6 +115,9 @@ function LastSlotsStripInner({
 
   const ownedIds = candidates.filter((c) => c.owned).map((c) => c.oracleId);
 
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const moveFocus = useRef(false);
+
   function openList() {
     let seedTicked = ticked;
     if (!seeded.current) {
@@ -122,6 +125,7 @@ function LastSlotsStripInner({
       seedTicked = new Set(ownedIds.slice(0, openSlots));
       setTicked(seedTicked);
     }
+    moveFocus.current = true;
     setOpen(true);
     onOpenChange?.(true);
     // One message per settle, and opening at phone settles two facts at once —
@@ -135,14 +139,26 @@ function LastSlotsStripInner({
     onAnnounce(isDesktop ? opened : `${opened} ${topOffCopy.dock.retiredAnnounce}`);
   }
 
-  // Focus returns to the door on close (§1e), and only then — opening does not
-  // move focus. The door does not exist at the moment close is asked for, so
-  // the move waits for the render that puts it back.
-  const returnFocus = useRef(false);
+  function closeList(reason: "cancel" | "committed") {
+    moveFocus.current = true;
+    if (reason === "committed") setPassed(true);
+    setOpen(false);
+    onOpenChange?.(false);
+  }
+
+  // The door and `Close the list` are two faces of one disclosure, because the
+  // drawing replaces the first with the second rather than relabelling a single
+  // control the way the shipped CoverageDisclosure does. That costs a focus
+  // move the chip never needs: the door unmounts under the cursor, and a button
+  // that unmounts drops focus to the body, which is the very thing §1e's "does
+  // not steal focus" is protecting against. Focus therefore follows the
+  // disclosure to whichever face is mounted — never into the rows, which is
+  // what the handoff rules out. Both moves wait for the render that mounts the
+  // target; a synchronous focus() would find nothing there.
   useEffect(() => {
-    if (open || !returnFocus.current) return;
-    returnFocus.current = false;
-    doorRef.current?.focus();
+    if (!moveFocus.current) return;
+    moveFocus.current = false;
+    (open ? closeRef : doorRef).current?.focus();
   }, [open]);
 
   // The strip unmounts the moment the deck fills, and a fill can land from the
@@ -160,13 +176,6 @@ function LastSlotsStripInner({
     },
     [],
   );
-
-  function closeList(reason: "cancel" | "committed") {
-    returnFocus.current = true;
-    if (reason === "committed") setPassed(true);
-    setOpen(false);
-    onOpenChange?.(false);
-  }
 
   // State 13: nothing left to offer. The line replaces the caption and the
   // door both — a control with nothing to do is absent, not disabled.
@@ -226,8 +235,14 @@ function LastSlotsStripInner({
 
         {open && (
           <button
+            ref={closeRef}
             type="button"
             onClick={() => closeList("cancel")}
+            // The expanded half of the disclosure the door opens, so it carries
+            // the state and the target rather than leaving the pair silent
+            // about both while the list is up.
+            aria-expanded
+            aria-controls={listId}
             // `Close` is a visual truncation at 390px, not a second label, and
             // both spans are in the DOM at every width — so without this the
             // spoken name is the two of them run together.

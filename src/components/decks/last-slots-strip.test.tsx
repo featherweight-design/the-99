@@ -178,6 +178,18 @@ describe("LastSlotsStrip", () => {
     expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
   });
 
+  // The door unmounts under the cursor when the list opens, and a button that
+  // unmounts drops focus to the body. Focus follows the disclosure to its other
+  // face instead — never into the rows, which §1e rules out.
+  it("moves focus to the close control when the door opens the list", async () => {
+    render(<LastSlotsStrip {...base} />);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    const close = screen.getByRole("button", { name: topOffCopy.strip.close });
+    expect(close).toHaveFocus();
+    expect(close).toHaveAttribute("aria-expanded", "true");
+  });
+
   // §1e — focus moves on close and only on close. The door does not exist at
   // the moment close is asked for, so the move has to wait for the render that
   // puts it back; a synchronous focus() here would silently do nothing.
