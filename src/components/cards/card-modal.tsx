@@ -18,6 +18,8 @@ import { clearCardArtPreference, setCardArtPreference } from "../../app/collecti
 import { ManaCost } from "./mana-pips";
 import { PrintingRegion, OVERFLOW_THRESHOLD, printingEntryCount, printingKey } from "./printing-region";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { faceNames, isTwoFaced } from "../../lib/cards/faces";
+import { twoFacedCopy } from "../../lib/copy/card-surfaces";
 import { ExternalLink } from "../ui/external-link";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
@@ -252,6 +254,9 @@ export function CardModal({
   const desktopTriggerRef = useRef<HTMLButtonElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [announcement, setAnnouncement] = useState("");
+  // No reset on card change: the provider keys this component on oracleId, so
+  // Prev/Next remounts and a new card starts on its front face by construction.
+  const [flipped, setFlipped] = useState(false);
   const [, startWrite] = useTransition();
 
   // The pick the user just made, before the server action's revalidate lands. Seeding it from
@@ -352,10 +357,31 @@ export function CardModal({
   const REGION_MOBILE = "printings-mobile";
   const REGION_DESKTOP = "printings-desktop";
 
+  // A back face to turn to, or none (#363). The image is the second condition and
+  // not an afterthought: a `transform` row seeded before the back-face column
+  // existed carries the layout and no art, and a control that turns to a
+  // colour-identity gradient is the lie the layout gate exists to prevent.
+  const twoFaced = isTwoFaced(card.layout) && Boolean(card.backImageUri);
+  const faces = faceNames(card.name);
+
+  function onFlip() {
+    const next = !flipped;
+    setFlipped(next);
+    // The swap is silent by design — no motion, no caption change — so the live
+    // region is the only thing that reports it.
+    setAnnouncement(twoFacedCopy.flippedAria(next ? faces.back : faces.front));
+  }
+
   // Art follows the resolved printing, not the card-level image: they are the same value
   // today, but an optimistic pick updates `resolved` a revalidate earlier.
-  const artStyle: React.CSSProperties = resolved?.imageUri
-    ? { backgroundImage: cssUrl(resolved.imageUri), backgroundSize: "cover", backgroundPosition: "center" }
+  //
+  // The back face has no such per-printing form: it is stored once per oracle id,
+  // so a flip on a card whose front is a picked printing can show a back from a
+  // different one. Known limitation — closing it means a `back_image_uri` on
+  // `printings` and the art-tier subqueries reading it.
+  const faceImage = flipped ? card.backImageUri : resolved?.imageUri;
+  const artStyle: React.CSSProperties = faceImage
+    ? { backgroundImage: cssUrl(faceImage), backgroundSize: "cover", backgroundPosition: "center" }
     : { background: identityGradient(card.colorIdentity) };
 
   return (
@@ -429,7 +455,19 @@ export function CardModal({
               ...artStyle,
               boxShadow: "0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)",
             }}
-          />
+          >
+            {/* Absent on the 72px thumbnail: a 44px target on a 72px image is
+                most of the art, and the collapsed header is a printing-picker
+                state where the art is a locator rather than the thing read. The
+                control returns with the full-size art. */}
+            {twoFaced && !compactArt && (
+              <FlipControl
+                otherFaceName={flipped ? faces.front : faces.back}
+                onFlip={onFlip}
+                size={44}
+              />
+            )}
+          </div>
           {compactArt && (
             // The dialog's accessible name still comes from the h3 below, which stays in the
             // DOM (display:none on phone) — this copy is the visual half of the same heading.
@@ -450,13 +488,21 @@ export function CardModal({
           style={{ width: 320, padding: 28, background: "var(--bg)" }}
         >
           <div
-            className="w-full rounded-[12px]"
+            className="relative w-full rounded-[12px]"
             style={{
               aspectRatio: "63/88",
               ...artStyle,
               boxShadow: "0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3)",
             }}
-          />
+          >
+            {twoFaced && (
+              <FlipControl
+                otherFaceName={flipped ? faces.front : faces.back}
+                onFlip={onFlip}
+                size={34}
+              />
+            )}
+          </div>
         </div>
 
         {/* Content column — mobile: flex-1 padding 20px; desktop: padding 30px 32px.
@@ -627,6 +673,42 @@ export function CardModal({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The modal's turn-over control (#363). It sits ON the art, bottom-right, rather
+ * than in the modal's chrome, so it cannot read as a sibling of Prev/Next: those
+ * page between cards, this turns one card over.
+ *
+ * Its accessible name is the face it turns TO, never "flip" — the act is the
+ * part the reader can already see, and the other face's name is the fact they
+ * are reaching for. The drawn glyph is the same `//` the row and the tile use,
+ * so the mark and the control are one notation rather than two.
+ */
+function FlipControl({
+  otherFaceName, onFlip, size,
+}: {
+  otherFaceName: string;
+  onFlip: () => void;
+  /** 44 on the phone's art header, 34 in the desktop art column. */
+  size: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onFlip}
+      aria-label={twoFacedCopy.flipToAria(otherFaceName)}
+      // The ground is a scrim rather than a solid: the control has to stay
+      // legible over whatever art is under it without hiding a square of the card.
+      className="absolute flex items-center justify-center cursor-pointer font-mono bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] border border-[color:var(--border-strong)] text-[color:var(--fg)]"
+      style={{
+        right: 10, bottom: 10, width: size, height: size, borderRadius: 7,
+        fontSize: size >= 44 ? 15 : 13,
+      }}
+    >
+      <span aria-hidden>{twoFacedCopy.mark}</span>
+    </button>
   );
 }
 

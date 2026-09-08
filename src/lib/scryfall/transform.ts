@@ -4,6 +4,7 @@ export type CardRow = {
   oracleId: string; scryfallId: string; name: string; manaCost: string | null;
   cmc: number; colorIdentity: string[]; typeLine: string; oracleText: string | null;
   keywords: string[]; commanderLegal: boolean; imageUri: string | null; rarity: string;
+  layout: string; backImageUri: string | null;
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw Scryfall bulk JSON is untyped by design; toCardRow narrows it.
 export type ScryfallCard = Record<string, any>;
@@ -31,5 +32,12 @@ export function toCardRow(raw: ScryfallCard): CardRow | null {
     commanderLegal: raw.legalities?.commander === "legal",
     imageUri,
     rarity: raw.rarity ?? "unknown",
+    layout: raw.layout ?? "normal",
+    // The second face's own art, which is what a flip has to swap to. Asking
+    // the face for an image rather than asking the layout for a list of the
+    // ones that have two: split, flip and adventure cards are also `card_faces`
+    // arrays, and they carry a single image between them, so they answer null
+    // here without this needing to know their names.
+    backImageUri: faces?.[1]?.image_uris?.normal ?? null,
   };
 }

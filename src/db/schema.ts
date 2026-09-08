@@ -34,6 +34,18 @@ export const cards = pgTable("cards", {
   commanderLegal: boolean("commander_legal").notNull(),
   imageUri: text("image_uri"),
   rarity: text("rarity").notNull(),
+  /**
+   * Scryfall's own layout word — `normal`, `transform`, `modal_dfc`, `split`,
+   * `adventure`. Stored because it is the only reliable answer to "does this
+   * card have a back": the `//` in a name, in a type line or in the joined
+   * oracle text is shared with split and adventure cards, which have nothing
+   * to turn over. Defaults to `normal`, so a row written before the re-seed
+   * under-claims — a missing mark, never a mark promising a flip the modal
+   * cannot deliver.
+   */
+  layout: text("layout").notNull().default("normal"),
+  /** The second face's art. Null for every layout with one face or one image. */
+  backImageUri: text("back_image_uri"),
 }, (t) => [index("cards_name_idx").on(t.name)]);
 
 /**

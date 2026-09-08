@@ -25,6 +25,7 @@ import { CostPips } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger, cardDetailCopy } from "../cards/card-detail-provider";
+import { TwoFacedMark } from "../cards/two-faced-mark";
 import { MutationError } from "./mutation-error";
 import { UndoTile } from "./deck-card-undo-tile";
 import {
@@ -188,6 +189,9 @@ export function DeckCardTile({
           >
             {card.name}
           </span>
+          {/* `ml-[2px]` on top of the caption's 4px gap: the mark's gap is 6px
+              at both surfaces, and the caption's own rhythm is the ✕'s. */}
+          <TwoFacedMark layout={card.layout} className="ml-[2px]" />
           {/* 32px on desktop rather than `grid-view`'s 24: this is the only way
               to remove a card in card view, so it takes the floor rather than
               the shortcut exception. Revealed on tile hover, which is a desktop

@@ -30,6 +30,8 @@ const card = (over: Partial<CatalogCardRow> = {}): CatalogCardRow => ({
   rarity: "common",
   colorIdentity: [],
   imageUri: "https://img/oracle.jpg",
+  layout: "normal",
+  backImageUri: null,
   ...over,
 });
 

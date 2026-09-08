@@ -41,6 +41,7 @@ const raw = (over: Partial<RawCollectionRow> = {}): RawCollectionRow => ({
   preferredSetCode: null, preferredCollectorNumber: null,
   name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", oracleText: null,
   keywords: [], rarity: "uncommon", colorIdentity: [],
+  layout: "normal", backImageUri: null,
   exactImageUri: null, representativeImageUri: null, cardImageUri: null,
   ...over,
 });

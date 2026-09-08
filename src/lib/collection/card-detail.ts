@@ -26,6 +26,8 @@ export type CatalogCardRow = {
   rarity: string;
   colorIdentity: string[];
   imageUri: string | null;
+  layout: string;
+  backImageUri: string | null;
 };
 
 /** One `printings` row joined to its `sets` row. */
@@ -80,6 +82,8 @@ export function catalogCard(
     rarity: coerceRarity(card.rarity),
     colorIdentity: card.colorIdentity,
     imageUri: card.imageUri,
+    layout: card.layout,
+    backImageUri: card.backImageUri,
     quantity: 0,
     printings,
     setCodes: [...new Set(printings.map((p) => p.setCode))],
@@ -155,6 +159,8 @@ export const loadCardDetail = cache(async function loadCardDetail(
       rarity: cards.rarity,
       colorIdentity: cards.colorIdentity,
       imageUri: cards.imageUri,
+      layout: cards.layout,
+      backImageUri: cards.backImageUri,
     })
     .from(cards)
     .where(eq(cards.oracleId, oracleId));

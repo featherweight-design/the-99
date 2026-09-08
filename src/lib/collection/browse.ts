@@ -46,6 +46,15 @@ export type BrowseCard = {
   colorIdentity: string[];
   /** The primary printing's image — first non-null across printings in display order. */
   imageUri: string | null;
+  /**
+   * Scryfall's layout word and, for the layouts that have one, the back face's
+   * art (#363). Optional rather than `| null` required for the reason
+   * `availability` is: BrowseCard literals are built in fixtures and tests that
+   * cannot reach the catalog. Absent means no `//` mark and no flip control,
+   * which is the direction this is allowed to fail in.
+   */
+  layout?: string | null;
+  backImageUri?: string | null;
   quantity: number;
   /**
    * Optional, not `| null` required — same call as DeckDetailCard in Task 4.
@@ -129,6 +138,8 @@ export type RawCollectionRow = {
   keywords: string[];
   rarity: string;
   colorIdentity: string[];
+  layout: string;
+  backImageUri: string | null;
   /** From `sets`, joined on the holding's set code. Null when the catalog has no row. */
   setName: string | null;
   releasedAt: string | null;
@@ -236,6 +247,8 @@ export function aggregateCollection(rows: RawCollectionRow[]): BrowseCard[] {
         rarity: coerceRarity(r.rarity),
         colorIdentity: r.colorIdentity,
         imageUri: null,
+        layout: r.layout,
+        backImageUri: r.backImageUri,
         quantity: r.quantity,
         printings: [],
         setCodes: [setCode],
@@ -443,6 +456,8 @@ export async function selectCollectionRows(
       keywords: cards.keywords,
       rarity: cards.rarity,
       colorIdentity: cards.colorIdentity,
+      layout: cards.layout,
+      backImageUri: cards.backImageUri,
       exactImageUri: exact.imageUri,
       representativeImageUri: representative.imageUri,
       cardImageUri: cards.imageUri,
