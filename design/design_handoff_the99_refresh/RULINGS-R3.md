@@ -2,9 +2,9 @@
 
 `design/design_handoff_the99_refresh/` · R3 + R3.1 · 2026-09-08
 
-§1–§3 are the original R3 rulings. **§4 and §5 are R3.1**, answering the two items R3 could not
-settle: the suggestion tile's second add branch, and a contradiction R3 introduced between its own
-two phone geometries.
+§1–§3 are the original R3 rulings. **§4, §5 and §6 are R3.1**: §4 and §5 answer the two items R3
+could not settle — the suggestion tile's second add branch, and a contradiction R3 introduced
+between its own two phone geometries — and §6 corrects the premise §1 argued its tie-breaker from.
 
 Ratification only. No surface is redrawn, no closed decision is reopened, and nothing here needs a
 new frame. Each item states the rule it follows from, the verdict, and the smallest change that

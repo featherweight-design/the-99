@@ -1,6 +1,6 @@
 # Readiness — UI refresh · Home, Decks, chrome
 
-`design/design_handoff_the99_refresh/` · R3 · 2026-09-08
+`design/design_handoff_the99_refresh/` · R3 + R3.1 · 2026-09-08
 
 ## Closed
 
