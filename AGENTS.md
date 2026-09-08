@@ -57,7 +57,10 @@ Package manager is **pnpm** (pinned via `packageManager` in package.json) — ne
   two disagree about. A row is installed only when the hash the source stored equals the hash
   the *target's* own inputs produce, so a sentence describing themes the target no longer
   records is never written; those rows keep their null and are picked up by the next
-  `db:build:prose` against that target, which is the run to do afterwards.
+  `db:build:prose` against that target, which is the run to do afterwards. A suppressed
+  commander is skipped before any of that, exactly as the generator skips it: a source
+  generated before an id joined the list still holds that sentence, so the copy is the one
+  path that could put a pulled sentence back.
 - The catalog refresh (`.github/workflows/catalog-refresh.yml`) runs 09:00 UTC every Monday and refreshes **both** `catalog-staging` and `catalog-production`. A stale catalog is silent: collection CSV rows whose card is missing land in `unmatched` and are dropped, so a set that lands between refreshes simply appears not to exist.
 - Stage files by name — never `git add -A` (`.env` and other untracked files must stay untracked).
 - PR reviews follow the Copilot policy in the user-level `~/.claude/CLAUDE.md`. This repo merges via **squash**.

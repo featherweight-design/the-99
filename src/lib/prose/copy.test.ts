@@ -40,7 +40,7 @@ describe("copyCommanderProse", () => {
       write,
     });
     expect(write).toHaveBeenCalledWith(sourceRow());
-    expect(r).toEqual({ installed: 1, fresh: 0, missing: 0, drifted: 0 });
+    expect(r).toEqual({ installed: 1, fresh: 0, suppressed: 0, missing: 0, drifted: 0 });
   });
 
   // The guard that makes the copy safe: the source's hash was computed from the source's
@@ -55,7 +55,7 @@ describe("copyCommanderProse", () => {
       write,
     });
     expect(write).not.toHaveBeenCalled();
-    expect(r).toEqual({ installed: 0, fresh: 0, missing: 0, drifted: 1 });
+    expect(r).toEqual({ installed: 0, fresh: 0, suppressed: 0, missing: 0, drifted: 1 });
   });
 
   it("leaves a row alone when the target's name has moved under the same oracle id", async () => {
@@ -66,7 +66,7 @@ describe("copyCommanderProse", () => {
       write,
     });
     expect(write).not.toHaveBeenCalled();
-    expect(r).toEqual({ installed: 0, fresh: 0, missing: 0, drifted: 1 });
+    expect(r).toEqual({ installed: 0, fresh: 0, suppressed: 0, missing: 0, drifted: 1 });
   });
 
   it("counts a commander the source never generated as missing", async () => {
@@ -75,7 +75,7 @@ describe("copyCommanderProse", () => {
       loadTarget: async () => [targetRow()],
       write: async () => {},
     });
-    expect(r).toEqual({ installed: 0, fresh: 0, missing: 1, drifted: 0 });
+    expect(r).toEqual({ installed: 0, fresh: 0, suppressed: 0, missing: 1, drifted: 0 });
   });
 
   // Re-running the copy must not rewrite what it already wrote.
@@ -87,7 +87,36 @@ describe("copyCommanderProse", () => {
       write,
     });
     expect(write).not.toHaveBeenCalled();
-    expect(r).toEqual({ installed: 0, fresh: 1, missing: 0, drifted: 0 });
+    expect(r).toEqual({ installed: 0, fresh: 1, suppressed: 0, missing: 0, drifted: 0 });
+  });
+
+  // The list is the only recourse for a sentence that reads as confident and is false, and a
+  // source generated before an id was added to it still holds that sentence — so this is the
+  // one path that could put a pulled sentence back.
+  it("never installs a sentence for a suppressed commander", async () => {
+    const write = vi.fn(async () => {});
+    const r = await copyCommanderProse({
+      loadSource: async () => [sourceRow()],
+      loadTarget: async () => [targetRow()],
+      write,
+      suppressed: (oracleId) => oracleId === ORACLE,
+    });
+    expect(write).not.toHaveBeenCalled();
+    expect(r).toEqual({ installed: 0, fresh: 0, suppressed: 1, missing: 0, drifted: 0 });
+  });
+
+  // Suppression outranks freshness: a stored sentence for a newly suppressed id must not be
+  // refreshed either, so the check has to come before the hash comparison, not after it.
+  it("leaves a suppressed commander alone even when the source is current", async () => {
+    const write = vi.fn(async () => {});
+    const r = await copyCommanderProse({
+      loadSource: async () => [sourceRow()],
+      loadTarget: async () => [targetRow({ prose: "something older", proseInputHash: "stale" })],
+      write,
+      suppressed: () => true,
+    });
+    expect(write).not.toHaveBeenCalled();
+    expect(r).toEqual({ installed: 0, fresh: 0, suppressed: 1, missing: 0, drifted: 0 });
   });
 
   // A sentence the target generated under older inputs is worth replacing with one that is
@@ -100,6 +129,6 @@ describe("copyCommanderProse", () => {
       write,
     });
     expect(write).toHaveBeenCalledWith(sourceRow());
-    expect(r).toEqual({ installed: 1, fresh: 0, missing: 0, drifted: 0 });
+    expect(r).toEqual({ installed: 1, fresh: 0, suppressed: 0, missing: 0, drifted: 0 });
   });
 });

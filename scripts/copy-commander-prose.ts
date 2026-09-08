@@ -72,8 +72,8 @@ copyCommanderProse({ loadSource, loadTarget, write })
   .then((r) => {
     console.log(
       `${dryRun ? "Would install" : "Installed"} ${r.installed} sentences; ${r.fresh} already ` +
-      `current, ${r.missing} absent from the source, ${r.drifted} generated from inputs the ` +
-      `target no longer has.`,
+      `current, ${r.suppressed} suppressed, ${r.missing} absent from the source, ${r.drifted} ` +
+      `generated from inputs the target no longer has.`,
     );
     // Rows the copy left alone are not a failure — the generator writes them, and saying so
     // here saves the reader working out what to do with the two numbers above.

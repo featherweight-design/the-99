@@ -1,5 +1,6 @@
 import type { EdhrecTag } from "../edhrec/parse";
 import { proseInputHash } from "./prompt";
+import { isSuppressed } from "./suppressed";
 
 /** A sentence generated elsewhere, with the hash of the inputs it was generated from. */
 export type ProseSource = {
@@ -22,12 +23,15 @@ export type CopyOptions = {
   loadSource: () => PromiseLike<ProseSource[]>;
   loadTarget: () => PromiseLike<ProseTarget[]>;
   write: (row: ProseSource) => Promise<void>;
+  suppressed?: (oracleId: string) => boolean;
 };
 
 export type CopyResult = {
   installed: number;
   /** The target already holds a sentence whose hash matches its own inputs. */
   fresh: number;
+  /** On the suppression list, so no sentence is installed whatever the source holds. */
+  suppressed: number;
   /** No sentence on the source for this commander at all. */
   missing: number;
   /**
@@ -52,10 +56,17 @@ export type CopyResult = {
  */
 export async function copyCommanderProse(opts: CopyOptions): Promise<CopyResult> {
   const [source, target] = await Promise.all([opts.loadSource(), opts.loadTarget()]);
+  const suppressed = opts.suppressed ?? isSuppressed;
   const bySourceOracleId = new Map(source.map((row) => [row.oracleId, row]));
-  const r: CopyResult = { installed: 0, fresh: 0, missing: 0, drifted: 0 };
+  const r: CopyResult = { installed: 0, fresh: 0, suppressed: 0, missing: 0, drifted: 0 };
 
   for (const t of target) {
+    // First, exactly as the generator consults it first. The list is the only recourse for a
+    // sentence that reads as confident and is false, and a source generated before an id was
+    // added to it still holds that sentence — so copying is precisely the path that would put
+    // a pulled sentence back.
+    if (suppressed(t.oracleId)) { r.suppressed++; continue; }
+
     const hash = proseInputHash(t.oracleId, t.name, t.tags);
     if (t.prose !== null && t.proseInputHash === hash) { r.fresh++; continue; }
 
