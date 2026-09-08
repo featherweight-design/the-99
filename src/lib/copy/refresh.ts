@@ -101,6 +101,12 @@ export const refreshCopy = {
     // figure — the same four things the tile shows, in the same order.
     cardAria: (name: string, status: string, count: string, detail: string) =>
       `${name}, ${status}, ${count}, ${detail}`,
+    // Building has no fourth thing — its count IS the explanation, and it is
+    // already the third. The same is true of a Draft older than the day it was
+    // created, which `detailDraft` cannot describe. Neither may fall back to
+    // cardAria with the count repeated: a reader would hear the figure twice.
+    cardAriaNoDetail: (name: string, status: string, count: string) =>
+      `${name}, ${status}, ${count}`,
   },
 
   // ── Zero states ───────────────────────────────────────────────────────
@@ -145,6 +151,10 @@ export const refreshCopy = {
   filters: {
     searchPlaceholder: 'Search decks',
     statusHeading: 'Status',
+    // Phone only. The sheet is where a reader on a phone reaches the sort,
+    // which has no other home there; the desktop column has none because the
+    // header carries `decks.sort`.
+    sortHeading: 'Sort',
     // "Color identity" is a Magic rules term and keeps Wizards' spelling, as it
     // already does in create-pre-filled.tsx. Ordinary prose stays British —
     // theme.ts ships "Colour theme". The key name is the handoff's.

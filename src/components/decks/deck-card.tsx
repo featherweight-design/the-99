@@ -1,304 +1,255 @@
 import Link from "next/link";
-import { commanderGradient } from "../../lib/collection/gradients";
-import { WUBRG_COLOR } from "../../lib/collection/browse";
-import type { DeckListItem } from "../../lib/decks/read";
+import { ART_STRIPES, WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
+import { refreshCopy } from "../../lib/copy/refresh";
+import { MATURE_DECK_SIZE } from "../../lib/decks/availability";
 import { colorLabel } from "../../lib/decks/format";
+import { formatCents } from "../../lib/decks/price";
+import type { DeckListItem } from "../../lib/decks/read";
+import type { DeckShopping } from "../../lib/decks/shopping-rollup";
+import { statusBarStyle } from "../../lib/decks/status-style";
+import { formatWhen } from "../../lib/format/when";
 import { DeckCardOverflow } from "./deck-card-overflow";
-import { GhostButton } from "@/components/ui/button";
-import { deckImportCopy } from "../../lib/copy/deck-import";
-import { overCopy } from "../../lib/copy/decks-builder";
-
-/** Progress bar fill color by built bucket. §Deck card — progress bar fill */
-function progressFillColor(built: number): string {
-  if (built >= 99) return "var(--success)";
-  if (built >= 55) return "var(--warning)";
-  return "var(--danger)";
-}
+import { StatusPillBadge } from "./status-pill";
 
 /**
- * Status pill variant styles. Green carries one meaning — the deck can be put
- * on a table — so `Complete` holds it alone. #357 retired `Playable`, which
- * took the same green while the caption beneath it read "15 to buy".
+ * The one figure that explains the status (`STATES-deck-statuses.md` §7). Total
+ * over the six values: a status with no branch here would render an empty slot,
+ * which reads as a bug rather than as an absence.
+ *
+ * Null is a branch, not a gap: several statuses are explained by the `87 / 99`
+ * the meta row already prints, and for those the honest detail is nothing at
+ * all rather than a second figure invented to fill the slot.
  */
-function pillStyles(status: DeckListItem["statusPill"]): { color: string; background: string } {
-  switch (status) {
-    case "Building":
-    case "Over":
-    case "Unresolved":
-    case "To buy":
-      return { color: "var(--warning)", background: "color-mix(in oklab, var(--warning) 13%, transparent)" };
-    case "Complete":
-      return { color: "var(--success)", background: "color-mix(in oklab, var(--success) 13%, transparent)" };
+function detailFor(
+  deck: DeckListItem,
+  shopping: DeckShopping | undefined,
+  now: Date,
+): { text: string; color: string } | null {
+  const c = refreshCopy.decks;
+  const statusDetail = statusDetailFor(deck, shopping, now);
+  // Fills the slot only where the status has nothing to say in it. The clause is
+  // a fact about the collection, and `4 over` or `3 lines unresolved` is a fact
+  // about the deck the reader opened the tile for — the narrower reading of the
+  // table's "in place of the ordinary detail figure", and the one that never
+  // hides a warning. Flagged for Design to ratify.
+  if (statusDetail === null && deck.inUseElsewhere > 0) {
+    return { text: c.detailInUseElsewhere(deck.inUseElsewhere), color: "var(--accent)" };
+  }
+  return statusDetail === null
+    ? null
+    : { text: statusDetail, color: DETAIL_COLOR[deck.statusPill] };
+}
+
+function statusDetailFor(
+  deck: DeckListItem,
+  shopping: DeckShopping | undefined,
+  now: Date,
+): string | null {
+  const c = refreshCopy.decks;
+  switch (deck.statusPill) {
     case "Draft":
-    default:
-      return { color: "var(--fg-muted)", background: "color-mix(in oklab, var(--fg-muted) 12%, transparent)" };
+      // `detailDraft` is the literal `created today`, so it is only true on the
+      // day of creation. An older Draft draws no figure rather than being told
+      // a date it does not have — a Draft deck older than a day is a real state
+      // the copy file does not cover, and the gap report says so.
+      return formatWhen(deck.createdAt, now) === "today" ? c.detailDraft : null;
+    case "Building":
+      // No figure. Building's count IS its explanation, and the count already
+      // has its own slot in the same row — a second copy of `87 / 99` beside
+      // the first says nothing and reads as a rendering fault.
+      return null;
+    case "Over":
+      return c.detailOver(deck.built - MATURE_DECK_SIZE);
+    case "Unresolved":
+      return c.detailUnresolved(deck.unresolvedCount);
+    case "To buy": {
+      // Every figure here comes from the roll-up, never from `deck.toBuyCount`.
+      // The roll-up excludes basics, as every Shopping surface does;
+      // `toBuyCount` is `built − ownedCount` and does not, so the two are
+      // different definitions of "unowned" and mixing them prints a cost that
+      // covers fewer copies than the number beside it.
+      //
+      // A deck whose only unowned cards are basics therefore has a `To buy`
+      // pill — that threshold counts them — and no roll-up entry at all. It
+      // draws no figure rather than a count of cards no Shopping surface will
+      // offer to sell; the `87 / 99` beside it already says how far along it is.
+      if (!shopping) return null;
+      // No price row is not "free" — the copies still print, the cost does not.
+      return shopping.cents > 0
+        ? c.detailToBuy(shopping.copies, formatCents(shopping.cents))
+        : c.detailUnowned(shopping.copies);
+    }
+    case "Complete":
+      return c.detailComplete;
   }
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+/** The detail figure carries the status's colour only where the status is a warning. */
+const DETAIL_COLOR: Record<DeckListItem["statusPill"], string> = {
+  Draft: "var(--fg-faint)",
+  Building: "var(--fg-faint)",
+  Over: "var(--danger)",
+  Unresolved: "var(--warning)",
+  "To buy": "var(--fg-faint)",
+  Complete: "var(--fg-faint)",
+};
 
 interface DeckCardProps {
   deck: DeckListItem;
+  /** Absent when the deck's cards are all owned — absent, never a zeroed row. */
+  shopping: DeckShopping | undefined;
+  /**
+   * A prop for the same reason `formatWhen` takes one: the page is a server
+   * component, it reads the clock once, and every tile on it must agree.
+   */
+  now: Date;
 }
 
 /**
- * DeckCard — server component, pure presentational.
- * §Deck card, §Deck card — art thumb, §Deck card — name,
- * §Deck card — pip row, §Deck card — WUBRG pip, §Deck card — guild/type label,
- * §Deck card — status pill, §Deck card — progress figure row,
- * §Deck card — built figure, §Deck card — "/ 99" suffix,
- * §Deck card — owned · to-buy caption, §Deck card — progress bar track/fill,
- * §Deck card — action buttons (desktop only), §Deck card — "Open builder" button,
- * §Deck card — "⋯" overflow button.
+ * A deck tile: commander art with the status pill and the name over it, then a
+ * meta row, a 3px progress bar and — on desktop — a detail row.
  *
- * Nested-interactive pattern: <article> wraps an absolute-inset <Link> overlay
- * as the card tap target. Action buttons are `relative z-10` siblings so they
- * sit above the overlay and capture their own clicks without triggering navigation.
+ * **No call to action.** The whole tile is the link, so an "Open builder"
+ * button would be a second way to do the one thing the tile already does. The
+ * absolute-inset `<Link>` is what makes that work; the overflow is a
+ * `relative z-10` sibling so its clicks never reach the overlay.
+ *
+ * The body is a grid rather than a stack of rows, because the phone and the
+ * desktop put the same nodes in different places: the detail figure sits in the
+ * meta row on a phone and below the bar on desktop. Two grid-area maps move one
+ * set of nodes; two subtrees would read the label twice to a screen reader and
+ * pass a property check on both columns while being wrong.
  */
-export function DeckCard({ deck }: DeckCardProps) {
-  const nameId = `deck-name-${deck.id}`;
-  const pill = pillStyles(deck.statusPill);
-  const fillColor = progressFillColor(deck.built);
-  const fillPercent = Math.min(100, Math.round((deck.built / 99) * 100));
-  // Past 99 the bar re-scales to the total instead of pinning at 100%: the
-  // green segment is the legal 99 and the amber remainder *is* the number of
-  // cards to cut, drawn to scale.
-  const over = deck.built > 99;
-  const toCut = deck.built - 99;
-  const legalPercent = over ? (99 / deck.built) * 100 : fillPercent;
-  const progressLabel = over
-    ? overCopy.aria.progress(String(deck.built), String(toCut))
-    : `${deck.built} of 99 cards built`;
-  const artGradient = commanderGradient(deck.commanderColorIdentity);
+export function DeckCard({ deck, shopping, now }: DeckCardProps) {
+  const detail = detailFor(deck, shopping, now);
+  const count = `${deck.built} / ${MATURE_DECK_SIZE}`;
+  const lastPlayed = deck.lastPlayedAt
+    ? formatWhen(deck.lastPlayedAt, now)
+    : refreshCopy.decks.lastPlayedNever;
+
+  const ariaLabel =
+    detail === null
+      ? refreshCopy.decks.cardAriaNoDetail(deck.name, deck.statusPill, count)
+      : refreshCopy.decks.cardAria(deck.name, deck.statusPill, count, detail.text);
 
   return (
-    // §Deck card: br 12px, bg var(--surface), border 1px var(--border), p 13px/22px, flex col, gap 11px/18px
-    // Desktop padding and gap lifted by the richness pass ("deck-list cards
-    // padding 16→22, gap +4"); mobile is unchanged. Browse loosens, working
-    // surfaces (the decklist ledger, the Add panel) stay tight.
     <article
-      className="relative rounded-[12px] flex flex-col gap-[11px] md:gap-[18px] p-[13px] md:p-[22px]"
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-      }}
+      className="relative flex-none overflow-hidden rounded-[14px]"
+      style={{ background: "var(--surface-inset)", border: "1px solid var(--border)" }}
     >
-      {/* Whole-card tap target — absolute inset Link overlay, aria-labelledby the name */}
-      <Link
-        href={`/decks/${deck.id}`}
-        className="absolute inset-0 rounded-[12px]"
-        aria-labelledby={nameId}
-      />
-
-      {/* ── Top row: art thumb + name/pips/pill + overflow ── */}
-      {/* The overflow lives here rather than in the action row below, because
-          that row is desktop-only — the whole card is the tap target on phone,
-          so "Open builder" would be a second way to do the same thing. Rename
-          and delete have no such duplicate, and were unreachable on phone for
-          as long as they shared that row. One instance at one place beats a
-          responsive pair that can drift. */}
-      <div className="flex gap-[12px] md:gap-[14px] items-start">
-        {/* §Deck card — art thumb: 42×59px mobile / 52×73px desktop, br 6/8px, gradient bg, inset shadow */}
-        {/* Mobile size: w-[42px] h-[59px]. Desktop: md:w-[52px] md:h-[73px]. */}
+      {/* 1 · Art header. Always present: `decks.commander_oracle_id` is NOT
+          NULL, so every deck has a commander and every tile has art — Draft
+          included. The stripes are the fallback for a commander whose printing
+          carries no image, not for a deck without one. */}
+      <div
+        data-deck-art
+        className="relative h-[124px] sm:h-[118px]"
+        style={{
+          background: deck.commanderImageUri
+            ? `${cssUrl(deck.commanderImageUri)} center/cover`
+            : ART_STRIPES,
+        }}
+      >
         <div
-          className="shrink-0 w-[42px] h-[59px] rounded-[6px] md:w-[52px] md:h-[73px] md:rounded-[8px]"
+          className="absolute inset-0"
           style={{
-            background: deck.commanderImageUri
-              ? `url(${deck.commanderImageUri}) center/cover`
-              : artGradient,
-            boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)",
+            background:
+              "linear-gradient(180deg, color-mix(in srgb, var(--bg) 10%, transparent), color-mix(in srgb, var(--surface-inset) 96%, transparent))",
           }}
         />
-
-        {/* Name, pips, and pill stack */}
-        <div className="min-w-0 flex-1 flex flex-col gap-[4px] md:gap-[6px]">
-          {/* §Deck card — name: Cinzel 600 15/18px var(--fg), nowrap ellipsis */}
-          <div className="flex items-start justify-between gap-[8px]">
-            <p
-              id={nameId}
-              className="font-display font-semibold text-[15px] md:text-[18px] leading-[1.3] truncate"
-              style={{ color: "var(--fg)" }}
-            >
-              {deck.name}
-            </p>
-
-            {/* §Deck card — status pill: mono 10px, 0.06em, br 999px, p 4px 9px / 5px 10px */}
-            <span
-              className="shrink-0 font-mono text-[10px] tracking-[0.06em] rounded-[999px] px-[9px] py-[4px] md:px-[10px] md:py-[5px]"
-              style={{
-                color: pill.color,
-                background: pill.background,
-              }}
-            >
-              {deck.statusPill}
-            </span>
-          </div>
-
-          {/* §Deck card — pip row: flex, center, gap 7/8px, mt 4/6px */}
-          <div className="flex items-center gap-[7px] md:gap-[8px] mt-[4px] md:mt-[6px]">
-            {deck.commanderColorIdentity.map((color) => (
-              // §Deck card — WUBRG pip: 11/12px, br 999px, color hex
-              <span
-                key={color}
-                className="shrink-0 rounded-[999px] w-[11px] h-[11px] md:w-[12px] md:h-[12px]"
-                style={{
-                  background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
-                }}
-                aria-hidden
-              />
-            ))}
-            {/* §Deck card — guild/type label: IBM Plex Mono 11/12px var(--fg-muted), ml 2px */}
-            <span
-              className="font-mono text-[11px] md:text-[12px] ml-[2px]"
-              style={{ color: "var(--fg-muted)" }}
-            >
-              {colorLabel(deck.commanderColorIdentity)}
-            </span>
-          </div>
-        </div>
-
-        {/* §Deck card — "⋯" overflow button — client component, relative z-10 */}
+        <StatusPillBadge status={deck.statusPill} />
         <DeckCardOverflow deckId={deck.id} deckName={deck.name} built={deck.built} />
+        <h3
+          className="absolute inset-x-0 bottom-0 truncate px-[13px] pb-[10px] font-display text-[17px] font-semibold sm:text-[15px]"
+          style={{ color: "var(--fg)" }}
+        >
+          {deck.name}
+        </h3>
       </div>
 
-      {/* ── Progress section ── */}
-      <div>
-        {/* §Deck card — progress figure row: flex, space-between, baseline, mb 5/6px */}
-        <div
-          className="flex justify-between items-baseline mb-[5px] md:mb-[6px]"
-        >
-          {/* §Deck card — built figure: IBM Plex Mono 600 13/15px var(--fg) */}
-          <span
-            className="font-mono font-semibold text-[13px] md:text-[15px]"
-            style={{ color: over ? "var(--warning)" : "var(--fg)" }}
-          >
-            {deck.built}
-            {/* §Deck card — "/ 99" suffix: var(--fg-faint) weight 400. Desktop
-                only at or below 99, but an over deck shows it at every width —
-                a bare amber 104 with no denominator is the one reading this
-                amendment exists to stop. */}
+      {/* 2 · Body. Phone: `pips detail count` over the bar. Desktop: the colour
+          label takes the middle slot, and the detail drops below the bar beside
+          last played. */}
+      <div
+        className="grid items-center gap-x-[8px] gap-y-[10px] pt-[11px] pr-[13px] pb-[13px] pl-[13px] [grid-template-areas:'pips_detail_count''bar_bar_bar'] sm:gap-y-[9px] sm:[grid-template-areas:'pips_label_count''bar_bar_bar''detail_._played']"
+        style={{ gridTemplateColumns: "auto 1fr auto" }}
+      >
+        <span className="flex gap-[3px]" style={{ gridArea: "pips" }} aria-hidden>
+          {deck.commanderColorIdentity.map((color) => (
             <span
-              className={over ? "font-normal" : "hidden md:inline font-normal"}
-              style={{ color: "var(--fg-faint)" }}
-            >
-              {overCopy.figure.denominator}
-            </span>
-            {/* §Deck card — "+n" delta (desktop only): the 390px card lets the
-                `n to cut` line carry the same figure instead. */}
-            {over && (
-              <span
-                className="hidden md:inline ml-[6px]"
-                style={{ color: "var(--warning)" }}
-              >
-                {overCopy.figure.delta(String(toCut))}
-              </span>
-            )}
-          </span>
-
-          {/* §Deck card — owned · to-buy caption: IBM Plex Mono 11/12px var(--fg-muted) */}
-          <span
-            className="font-mono text-[11px] md:text-[12px]"
-            style={{ color: "var(--fg-muted)" }}
-          >
-            {deck.ownedCount} owned · {deck.toBuyCount} to buy
-          </span>
-        </div>
-
-        {/* §Deck card — progress bar track: h 6/7px, br 999px, bg var(--elevated), overflow hidden */}
-        <div
-          className="rounded-[999px] overflow-hidden h-[6px] md:h-[7px]"
-          style={{
-            background: "var(--elevated)",
-          }}
-          role="progressbar"
-          // Held at 99 past the limit. Reported as its own max, the bar computes
-          // to exactly 100% and readers announce a finished deck — the reading
-          // the amber second segment exists to prevent.
-          aria-valuenow={Math.min(deck.built, 99)}
-          aria-valuemin={0}
-          // A valuenow of 104 against a max of 99 is an invalid range, and some
-          // readers clamp it to 100% — which reads as a finished deck.
-          aria-valuemax={Math.max(99, deck.built)}
-          // The percentage is what a reader falls back on when there is no
-          // valuetext, and no percentage can say "five over". This replaces it
-          // outright rather than sitting beside it.
-          aria-valuetext={progressLabel}
-          // Stable, and about the deck rather than the count. A name that
-          // changed with the value would be announced alongside the valuetext
-          // that already carries it, so the reader would hear the count twice.
-          aria-label={`${deck.name} build progress`}
-        >
-          {/* §Deck card — progress bar fill: h 100%, br 999px, color by built bucket */}
-          <div className="flex h-full">
-            <div
-              className={over ? "h-full" : "h-full rounded-[999px]"}
+              key={color}
+              className="h-[9px] w-[9px] rounded-[2px]"
               style={{
-                width: `${legalPercent}%`,
-                background: fillColor,
+                background: WUBRG_COLOR[color] ?? "var(--fg-faint)",
+                // Every pip carries a hairline so `--b` survives a light ground.
+                border: "1px solid var(--border-strong)",
               }}
             />
-            {over && (
-              // The hairline is the only thing separating two saturated fills
-              // that meet edge to edge.
-              <div
-                className="h-full"
-                style={{
-                  width: `${100 - legalPercent}%`,
-                  background: "var(--warning)",
-                  boxShadow: "inset 1px 0 0 var(--bg)",
-                }}
-              />
-            )}
-          </div>
+          ))}
+        </span>
+
+        <span
+          className="hidden truncate font-mono text-[10.5px] sm:inline"
+          style={{ gridArea: "label", color: "var(--fg-faint)" }}
+        >
+          {colorLabel(deck.commanderColorIdentity)}
+        </span>
+
+        {detail !== null && (
+          <span
+            className="truncate font-mono text-[11px] sm:text-[10.5px]"
+            style={{ gridArea: "detail", color: detail.color }}
+          >
+            {detail.text}
+          </span>
+        )}
+
+        <span
+          className="text-right font-mono text-[12.5px] tabular-nums sm:text-[12px]"
+          style={{
+            gridArea: "count",
+            color: deck.statusPill === "Draft" ? "var(--fg-muted)" : "var(--fg)",
+          }}
+        >
+          {count}
+        </span>
+
+        {/* 3 · Progress. The track is drawn for every status; the fill is
+            omitted entirely for Draft, which is what "empty track" means. */}
+        <div
+          data-deck-bar
+          className="relative h-[3px] rounded-[2px]"
+          style={{ gridArea: "bar", background: "var(--border)" }}
+        >
+          {deck.statusPill !== "Draft" && (
+            <div
+              data-deck-bar-fill
+              className="absolute top-0 bottom-0 left-0 rounded-[2px]"
+              style={statusBarStyle(deck.statusPill, deck.built)}
+            />
+          )}
         </div>
 
-        {/* §Deck card — "n to cut" line, in the unresolved marker's slot and
-            above it when both render. Terse because the spine says it properly. */}
-        {over && (
-          <p
-            className="font-mono text-[10px] md:text-[10.5px] mt-[6px] md:mt-[7px] m-0"
-            style={{ color: "var(--warning)" }}
+        {/* 4 · Last played, desktop only. A Draft tile has none: its detail row
+            carries `created today` alone. */}
+        {deck.statusPill !== "Draft" && (
+          <span
+            className="hidden text-right font-mono text-[10.5px] sm:inline"
+            style={{ gridArea: "played", color: "var(--fg-faint)" }}
           >
-            {overCopy.toCut(String(toCut))}
-          </p>
-        )}
-
-        {/* §Deck with unresolved rows on /decks — the count behind the pill.
-            This marker used to be the only sign of unresolved lines, on the
-            reasoning that a pill value threaded through both the server list
-            and the optimistic client list would multiply the surfaces that can
-            disagree mid-mutation. #357 overturned that: the pill renders here
-            and nowhere else, and the builder — which owns the optimistic list
-            — renders no pill at all, so there is no second surface to drift.
-            The marker stays because the pill carries the word and this carries
-            the number, and it still shows below 99 where the pill reads
-            Building. Clears itself when the last line is resolved or deleted. */}
-        {deck.unresolvedCount > 0 && (
-          <p
-            className="font-mono text-[10px] md:text-[10.5px] mt-[6px] md:mt-[7px] m-0"
-            style={{ color: "var(--warning)" }}
-          >
-            {deckImportCopy.unresolved.deckCardBadge(deck.unresolvedCount)}
-          </p>
+            {lastPlayed}
+          </span>
         )}
       </div>
 
-      {/* ── Desktop-only action buttons ── */}
-      {/* §Deck card — action buttons: desktop only, flex, gap 9px */}
-      <div className="hidden md:flex gap-[9px]">
-        {/* §Deck card — "Open builder" button: flex 1, IBM Plex Sans 600 13px var(--fg),
-            transparent bg, border 1px var(--border-strong), br 8px, p 9px 0 */}
-        <GhostButton
-          href={`/decks/${deck.id}`}
-          className="relative z-10 flex-1 text-center text-[13px] py-[9px] px-0"
-          tabIndex={-1}
-          aria-hidden="true"
-        >
-          Open builder
-        </GhostButton>
-      </div>
+      {/* The whole tile is the target. Last in the DOM so it overlays the body,
+          and named with the same four things the tile shows, in the same
+          order. */}
+      <Link
+        href={`/decks/${deck.id}`}
+        className="absolute inset-0"
+        aria-label={ariaLabel}
+      />
     </article>
   );
 }

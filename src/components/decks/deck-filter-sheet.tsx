@@ -1,0 +1,290 @@
+"use client";
+
+// The phone filter surface. Same `DeckFilters` in, same whole-new-value out as
+// the desktop column, through the same `toggleIn` — which is what stops the two
+// from ever disagreeing. Neither reads or writes a URL; the view does.
+//
+// The sheet carries the sort as well as the filters, because the phone header
+// has nowhere to put it (plan ruling 6). Everything else is the column's
+// vocabulary re-drawn as chips at the 44px touch floor.
+
+import { useRef } from "react";
+import { useDialogA11y } from "../../lib/a11y/dialog";
+import { refreshCopy } from "../../lib/copy/refresh";
+import {
+  COLOUR_ORDER,
+  EMPTY_FILTERS,
+  STATUS_ORDER,
+  type PlayedWindow,
+} from "../../lib/decks/filter";
+import { DECK_SORT_LABELS, DECK_SORT_ORDER, type DeckSort } from "../../lib/decks/sort";
+import { STATUS_TOKEN } from "../../lib/decks/status-style";
+import {
+  ColourSwatch,
+  PLAYED_LABEL,
+  STATUS_COPY_KEY,
+  SearchField,
+  toggleIn,
+  type FilterChromeProps,
+} from "./deck-filter-column";
+
+type DeckFilterSheetProps = FilterChromeProps & {
+  open: boolean;
+  onDismiss: () => void;
+  autoFocusSearch: boolean;
+};
+
+const CHIP =
+  "flex h-[36px] cursor-pointer items-center rounded-full border border-solid px-[12px] font-sans text-[13px]";
+
+const HEADING =
+  "mx-0 mt-0 mb-[9px] p-0 font-mono text-[10px] tracking-[0.14em] uppercase text-[color:var(--fg-faint)]";
+
+/**
+ * A pill-shaped toggle. Its on state is the status's own token at 15% over a
+ * full-strength edge of the same token, so the chip and the tile's pill agree
+ * without a second colour table. The token rides in on a custom property: an
+ * inline colour on a button outranks any utility beside it.
+ */
+function Chip({
+  label,
+  on,
+  token,
+  onToggle,
+  role = "checkbox",
+  chipRef,
+  tabIndex,
+  onKeyDown,
+}: {
+  label: string;
+  on: boolean;
+  /** Absent for a Sort or Last-played chip: only a status owns a colour. */
+  token?: string;
+  onToggle: () => void;
+  role?: "checkbox" | "radio";
+  /** The three below are the radiogroup's roving tab stop; a checkbox uses none. */
+  chipRef?: (node: HTMLButtonElement | null) => void;
+  tabIndex?: number;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
+}) {
+  return (
+    <button
+      ref={chipRef}
+      type="button"
+      role={role}
+      aria-checked={on}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
+      onClick={onToggle}
+      style={token ? ({ "--chip": `var(${token})` } as React.CSSProperties) : undefined}
+      className={`${CHIP} ${
+        on
+          ? token
+            ? "border-[color:var(--chip)] bg-[color-mix(in_srgb,var(--chip)_15%,transparent)] text-[color:var(--fg)]"
+            : "border-[color:var(--fg)] text-[color:var(--fg)]"
+          : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function Group({ heading, children }: { heading: string; children: React.ReactNode }) {
+  return (
+    <fieldset
+      role="group"
+      aria-label={heading}
+      className="m-0 border-none p-0"
+    >
+      <legend className={HEADING}>{heading}</legend>
+      {children}
+    </fieldset>
+  );
+}
+
+/**
+ * Absent rather than hidden: a CSS-hidden sheet keeps its controls in the tab
+ * order and its search field focusable behind the page. The body is a separate
+ * component so `useDialogA11y` mounts and unmounts with the dialog itself,
+ * which is what makes its focus-return and its counted scroll lock correct.
+ */
+export function DeckFilterSheet({ open, ...rest }: DeckFilterSheetProps) {
+  return open ? <SheetBody {...rest} /> : null;
+}
+
+function SheetBody({
+  filters,
+  onChange,
+  sort,
+  onSortChange,
+  shown,
+  total,
+  onDismiss,
+  autoFocusSearch,
+}: Omit<DeckFilterSheetProps, "open">) {
+  const dialog = useRef<HTMLDivElement>(null);
+  // Focus trap, Escape and focus-return, shared with every other dialog here.
+  // Escape never restores the filters the reader arrived with: filtering
+  // already happened as they ticked, so there is nothing to undo and swiping
+  // the sheet away must lose nothing either.
+  //
+  // The dialog itself takes initial focus unless the reader came in through the
+  // search affordance. The hook would otherwise land on the first focusable,
+  // which is the search input — and raising the phone keyboard on a reader who
+  // pressed `Filter decks` is not what they asked for.
+  useDialogA11y(dialog, onDismiss, { initialFocusRef: autoFocusSearch ? undefined : dialog });
+
+  const sortChips = useRef<(HTMLButtonElement | null)[]>([]);
+  function stepSort(from: number, e: React.KeyboardEvent) {
+    const dir =
+      e.key === "ArrowRight" || e.key === "ArrowDown"
+        ? 1
+        : e.key === "ArrowLeft" || e.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (dir === 0) return;
+    e.preventDefault();
+    const next = (from + dir + DECK_SORT_ORDER.length) % DECK_SORT_ORDER.length;
+    sortChips.current[next]?.focus();
+    onSortChange(DECK_SORT_ORDER[next]);
+  }
+
+  const c = refreshCopy.filters;
+
+  return (
+    // z-50, not z-40: the phone tab bar is z-40 and paints later, so at z-40 it
+    // sits over the sheet's own footer and Clear cannot be clicked at all.
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:hidden">
+      <div
+        aria-hidden="true"
+        onClick={onDismiss}
+        className="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
+      />
+      <div
+        ref={dialog}
+        role="dialog"
+        aria-modal="true"
+        aria-label={c.sheetTitle}
+        // Focusable only as the trap's landing point, never as a tab stop.
+        tabIndex={-1}
+        className="relative z-10 flex flex-col gap-[14px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
+      >
+        <div
+          aria-hidden="true"
+          className="h-[4px] w-[38px] self-center rounded-[2px] bg-[color:var(--border-strong)]"
+        />
+
+        <div className="flex items-baseline gap-[10px]">
+          <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
+            {c.sheetTitle}
+          </h2>
+          <span className="ml-auto font-mono text-[11px] text-[color:var(--fg-faint)]">
+            {c.sheetMatch(shown, total)}
+          </span>
+        </div>
+
+        <SearchField
+          value={filters.search}
+          onChange={(search) => onChange({ ...filters, search })}
+          size="sheet"
+          autoFocus={autoFocusSearch}
+        />
+
+        <Group heading={c.sortHeading}>
+          <div role="radiogroup" aria-label={c.sortHeading} className="flex flex-wrap gap-[8px]">
+            {DECK_SORT_ORDER.map((option: DeckSort, i) => (
+              <Chip
+                key={option}
+                role="radio"
+                chipRef={(node) => {
+                  sortChips.current[i] = node;
+                }}
+                label={DECK_SORT_LABELS[option]}
+                on={sort === option}
+                // Roving: the chosen order is the group's one tab stop, so the
+                // arrows move inside the group rather than Tab walking past
+                // three stops. Selection follows focus, matching FacetStrip.
+                tabIndex={sort === option ? 0 : -1}
+                onKeyDown={(e) => stepSort(i, e)}
+                // Radio, not checkbox: clicking the one already on leaves it on,
+                // because a list is always in some order.
+                onToggle={() => onSortChange(option)}
+              />
+            ))}
+          </div>
+        </Group>
+
+        <Group heading={c.statusHeading}>
+          <div className="flex flex-wrap gap-[8px]">
+            {STATUS_ORDER.map((status) => (
+              <Chip
+                key={status}
+                label={refreshCopy.status[STATUS_COPY_KEY[status]]}
+                on={filters.statuses.includes(status)}
+                token={STATUS_TOKEN[status]}
+                onToggle={() =>
+                  onChange({
+                    ...filters,
+                    statuses: toggleIn(STATUS_ORDER, filters.statuses, status),
+                  })
+                }
+              />
+            ))}
+          </div>
+        </Group>
+
+        <Group heading={c.colourHeading}>
+          <div className="flex gap-[8px]">
+            {COLOUR_ORDER.map((code) => (
+              <ColourSwatch
+                key={code}
+                code={code}
+                size="sheet"
+                on={filters.colours.includes(code)}
+                onToggle={() =>
+                  onChange({ ...filters, colours: toggleIn(COLOUR_ORDER, filters.colours, code) })
+                }
+              />
+            ))}
+          </div>
+        </Group>
+
+        <Group heading={c.lastPlayedHeading}>
+          <div className="flex flex-wrap gap-[8px]">
+            {(["thisMonth", "never"] as const).map((window: PlayedWindow) => (
+              <Chip
+                key={window}
+                label={PLAYED_LABEL[window]}
+                on={filters.played === window}
+                onToggle={() =>
+                  onChange({ ...filters, played: filters.played === window ? null : window })
+                }
+              />
+            ))}
+          </div>
+        </Group>
+
+        <div className="flex items-center gap-[10px]">
+          <button
+            type="button"
+            // Dismiss only. It applies nothing, because nothing is pending.
+            onClick={onDismiss}
+            className="flex h-[44px] flex-auto cursor-pointer items-center justify-center rounded-[10px] border-none bg-[color:var(--fg)] text-[14px] font-semibold text-[color:var(--bg)]"
+          >
+            {c.sheetDismiss(shown)}
+          </button>
+          <button
+            type="button"
+            // Never the sort, matching the column: a reader who chose an order
+            // did not ask for it back.
+            onClick={() => onChange(EMPTY_FILTERS)}
+            className="flex h-[44px] cursor-pointer items-center border-none bg-transparent px-[14px] text-[14px] text-[color:var(--fg-muted)]"
+          >
+            {c.clear}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

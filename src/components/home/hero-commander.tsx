@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { cssUrl } from "../../lib/collection/browse";
+import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import { readCommanderProse } from "../../lib/prose/read";
 import { dailyPick } from "../../lib/recs/daily-pick";
@@ -50,10 +50,6 @@ const COMPLETENESS_FALLBACK: Record<SynergyState, string> = {
   absent: "EDHREC doesn't track this commander, so there's no top-cards list to compare.",
   degraded: "We couldn't reach EDHREC. The count returns once it's back.",
 };
-
-/** The no-art fallback the handoff specified for the art column. */
-const ART_STRIPES =
-  "repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px), var(--bg)";
 
 /**
  * §Hero card: Art. The tile holds Scryfall's 63:88 instead of filling a

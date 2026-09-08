@@ -1414,13 +1414,23 @@ PR C changes no pixels, so it needs no design review — but it does need the Co
   - `export function statusKeylineStyle(status: StatusPill): CSSProperties`
   - `<StatusPillBadge status={...} />` — the 22px pill.
 
-**Locked ruling 13 lives here and nowhere else.** Six values, one rule: pill fill is the status colour at `2E` alpha, border at `80` alpha, label at full. Every surface in this feature imports these three functions; **no component writes a status colour itself**, and no hex from `tokens.r6.json` appears anywhere.
+**Locked ruling 13 lives here and nowhere else.** Six values, one rule: pill fill is the status colour at `2E` alpha (18%), border at `80` alpha (50%), label at full. Every surface in this feature imports these three functions; **no component writes a status colour itself**, and no hex from `tokens.r6.json` appears anywhere.
+
+**Two drawn exceptions to that rule, per the design table's Status → token map.** `STATES-deck-statuses.md` states the flat rule in prose and then draws Draft and Building against it: both are statuses whose token IS a text colour, so a 50%-alpha border of it reads as a second, dimmer piece of text rather than an edge. The drawing gives them a hairline border token and a lighter fill:
+
+| Status | Fill | Border | Label |
+|---|---|---|---|
+| Draft | `--fg-faint` @ 16% | `var(--border-strong)` | `var(--fg-muted)` |
+| Building | `--fg-body` @ 14% | `var(--border-dashed)` | `var(--fg-body)` |
+| the other four | token @ 18% | token @ 50% | the token |
+
+`READINESS.md` closes the six-status item "per value in `STATES-deck-statuses.md`", so the per-value table is authoritative over the prose. The exception lives inside `status-style.ts` so the "no component writes a colour" principle survives intact; the gap report records the handoff's self-contradiction for Design to ratify.
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { STATUS_TOKEN, statusBarStyle, statusPillStyle } from "./status-style";
+import { STATUS_TOKEN, statusBarStyle, statusKeylineStyle, statusPillStyle } from "./status-style";
 import type { StatusPill } from "./status";
 
 const ALL: StatusPill[] = ["Draft", "Building", "Over", "Unresolved", "To buy", "Complete"];
@@ -1441,15 +1451,35 @@ describe("status style", () => {
     });
   });
 
-  it("builds every pill from one rule — 2E fill, 80 border, full-strength label", () => {
+  it("names no colour in any pill, only tokens", () => {
     for (const status of ALL) {
+      expect(JSON.stringify(statusPillStyle(status))).not.toMatch(/#[0-9a-f]{3,8}/i);
+    }
+  });
+
+  it("builds the four unexceptional pills from one rule — 18% fill, 50% border, full label", () => {
+    for (const status of ["Over", "Unresolved", "To buy", "Complete"] as StatusPill[]) {
       const style = statusPillStyle(status);
       const token = STATUS_TOKEN[status];
-      expect(JSON.stringify(style)).not.toMatch(/#[0-9a-f]{3,8}/i);
       expect(style.color).toBe(`var(${token})`);
-      expect(String(style.background)).toContain(token);
-      expect(String(style.border)).toContain(token);
+      expect(style.background).toBe(`color-mix(in srgb, var(${token}) 18%, transparent)`);
+      expect(style.border).toBe(
+        `1px solid color-mix(in srgb, var(${token}) 50%, transparent)`,
+      );
     }
+  });
+
+  it("gives Draft and Building a hairline border rather than a faded status colour", () => {
+    expect(statusPillStyle("Draft")).toEqual({
+      color: "var(--fg-muted)",
+      background: "color-mix(in srgb, var(--fg-faint) 16%, transparent)",
+      border: "1px solid var(--border-strong)",
+    });
+    expect(statusPillStyle("Building")).toEqual({
+      color: "var(--fg-body)",
+      background: "color-mix(in srgb, var(--fg-body) 14%, transparent)",
+      border: "1px solid var(--border-dashed)",
+    });
   });
 
   it("fills the bar proportionally while building and completely at or past 99", () => {
@@ -1461,6 +1491,14 @@ describe("status style", () => {
     // Over is full, not 105% — the track cannot overflow its own container.
     expect(statusBarStyle("Over", 104).width).toBe("100%");
   });
+
+  it("paints the bar and the keyline in the status's own colour", () => {
+    for (const status of ALL) {
+      const token = STATUS_TOKEN[status];
+      expect(statusBarStyle(status, 50).background).toBe(`var(${token})`);
+      expect(statusKeylineStyle(status).background).toBe(`var(${token})`);
+    }
+  });
 });
 ```
 
@@ -1471,101 +1509,65 @@ Expected: FAIL — `Failed to resolve import "./status-style"`.
 
 - [ ] **Step 3: Write `src/lib/decks/status-style.ts`**
 
+The shipped file carries the two exceptions in a `PILL_EXCEPTION` map keyed by status; an absent status gets the flat rule. `mix()` is the only place an alpha meets a token, so a theme change stays a token change:
+
 ```ts
-// Colour is status, and status only (refresh README decision 3). Six values,
-// one rule — the pill is the status colour at 2E alpha on an 80 alpha border
-// with the colour as its label. Written once, here, so a theme change is a
-// token change and never a component change.
-//
-// NO HEX. Not from tokens.r6.json, not "just for Canopy". The alpha rides as a
-// hex suffix on the token through color-mix, which every supported browser has.
-
-import type { CSSProperties } from "react";
-import { MATURE_DECK_SIZE } from "./availability";
-import type { StatusPill } from "./status";
-
-export const STATUS_TOKEN: Record<StatusPill, string> = {
-  Draft: "--fg-faint",
-  Building: "--fg-body",
-  Over: "--danger",
-  Unresolved: "--warning",
-  "To buy": "--accent",
-  Complete: "--success",
+const PILL_EXCEPTION: Partial<
+  Record<StatusPill, { fillAlpha: string; border: string; label: string }>
+> = {
+  Draft: { fillAlpha: "16%", border: "--border-strong", label: "--fg-muted" },
+  Building: { fillAlpha: "14%", border: "--border-dashed", label: "--fg-body" },
 };
-
-/** `2E` and `80` of 255 — the handoff's two alphas, as percentages. */
-const FILL_ALPHA = "18%";
-const BORDER_ALPHA = "50%";
-
-function mix(token: string, alpha: string): string {
-  return `color-mix(in srgb, var(${token}) ${alpha}, transparent)`;
-}
 
 export function statusPillStyle(status: StatusPill): CSSProperties {
   const token = STATUS_TOKEN[status];
+  const exception = PILL_EXCEPTION[status];
   return {
-    color: `var(${token})`,
-    background: mix(token, FILL_ALPHA),
-    border: `1px solid ${mix(token, BORDER_ALPHA)}`,
+    color: `var(${exception ? exception.label : token})`,
+    background: mix(token, exception ? exception.fillAlpha : FILL_ALPHA),
+    border: `1px solid ${
+      exception ? `var(${exception.border})` : mix(token, BORDER_ALPHA)
+    }`,
   };
 }
-
-/**
- * The 3px progress track's fill. Clamped at 100%: an Over deck is full, not
- * 105% — a bar cannot overflow the track that measures it, and the `5 over`
- * figure in the detail row is where the excess is stated.
- */
-export function statusBarStyle(status: StatusPill, built: number): CSSProperties {
-  const pct = Math.min(100, Math.max(0, (built / MATURE_DECK_SIZE) * 100));
-  return { width: `${pct}%`, background: `var(${STATUS_TOKEN[status]})` };
-}
-
-/** The 3px left keyline on Home's list rows. */
-export function statusKeylineStyle(status: StatusPill): CSSProperties {
-  return { background: `var(${STATUS_TOKEN[status]})` };
-}
 ```
+
+`statusBarStyle` and `statusKeylineStyle` read `STATUS_TOKEN` directly — the exceptions are the pill's alone, because a 3px bar has no border to soften.
 
 Note: `statusBarStyle("Draft", 0)` yields `0%` from the arithmetic, so Draft needs no special case — the "empty track" in `STATES-deck-statuses.md` is what 0 built already produces.
 
 - [ ] **Step 4: Write the pill component and its test**
 
+Geometry is the design table's Status pill section, not the handoff prose: `border-radius: 6` (not a full round), height 24 phone / 22 desktop, padding 9 / 8, font-size 11 / 10.5, `var(--font-mono)`, and **no letter-spacing** — the table lists none. Position is `absolute; top: 10; left: 11`, which the pill owns because it has exactly one placement in the whole feature.
+
+The label comes from `refreshCopy.status`, not from printing the `StatusPill` union member: the union is a data value, the copy file is what a reader sees, and a rename belongs in one place.
+
 ```tsx
 // src/components/decks/status-pill.tsx
-import { statusPillStyle } from "../../lib/decks/status-style";
-import type { StatusPill } from "../../lib/decks/status";
+const COPY_KEY: Record<Status, keyof typeof refreshCopy.status> = {
+  Draft: "draft",
+  Building: "building",
+  Over: "over",
+  Unresolved: "unresolved",
+  "To buy": "toBuy",
+  Complete: "complete",
+};
 
-/** 22px on a tile, per STATES-deck-statuses.md §2. Mono, 10px, 0.06em. */
-export function StatusPillBadge({ status }: { status: StatusPill }) {
+export function StatusPillBadge({ status }: { status: Status }) {
   return (
     <span
-      className="inline-flex h-[22px] items-center rounded-full px-[9px]"
-      style={{
-        ...statusPillStyle(status),
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        letterSpacing: "0.06em",
-      }}
+      className="absolute top-[10px] left-[11px] flex h-[24px] items-center rounded-[6px] px-[9px] font-mono text-[11px] sm:h-[22px] sm:px-[8px] sm:text-[10.5px]"
+      style={statusPillStyle(status)}
     >
-      {status}
+      {refreshCopy.status[COPY_KEY[status]]}
     </span>
   );
 }
 ```
 
-```tsx
-// src/components/decks/status-pill.test.tsx
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { StatusPillBadge } from "./status-pill";
+One element with `sm:` variants, never a phone subtree beside a desktop subtree — a doubled subtree reads the label twice to a screen reader and passes a property check on both columns while being wrong.
 
-describe("StatusPillBadge", () => {
-  it("prints the shipped status word, so the pill and the filter row agree", () => {
-    render(<StatusPillBadge status="To buy" />);
-    expect(screen.getByText("To buy")).toBeInTheDocument();
-  });
-});
-```
+Its test asserts the label per status, that exactly one `span` renders with both size sets on it, and that the component writes no colour utility of its own.
 
 - [ ] **Step 5: Run both tests**
 
@@ -1587,7 +1589,10 @@ git commit -m "feat(decks): give the six statuses one token rule"
 **Files:**
 - Modify: `src/components/decks/deck-card.tsx` (rewrite)
 - Modify: `src/components/decks/deck-card-overflow.tsx` (label and geometry only)
-- Test: `src/components/decks/deck-card.test.tsx`
+- Modify: `src/lib/copy/refresh.ts` (add `decks.cardAriaNoDetail` — see Step 3)
+- Modify: `src/lib/collection/browse.ts` (`ART_STRIPES` moves here), `src/components/home/hero-commander.tsx` (imports it)
+- Modify: `src/app/decks/page.tsx` (one clock, one roll-up, passed to every tile)
+- Test: `src/components/decks/deck-card.test.tsx`, `src/components/decks/deck-card-overflow.test.tsx` (the trigger's name is now per-deck)
 
 **Interfaces:**
 - Consumes: `DeckListItem` + `lastPlayedAt` (Task 6), `DeckShopping` (Task 7), `statusBarStyle` / `StatusPillBadge` (Task 9), `refreshCopy.decks` (Task 1), `formatWhen` (Task 3), `colorLabel` (`src/lib/decks/format.ts`, locked ruling 3).
@@ -1705,19 +1710,26 @@ Inside `deck-card.tsx`, above the component. It is a total function over the six
 ```tsx
 /**
  * The one figure that explains the status (STATES-deck-statuses.md §7). Total
- * over the six values: a status with no branch here would render an empty row,
+ * over the six values: a status with no branch here would render an empty slot,
  * which reads as a bug rather than as an absence.
  *
- * Building has no separate figure — its count IS the explanation — so it
- * repeats the count rather than inventing a second one.
+ * Two statuses return `null` — see below. `null` withholds the slot entirely;
+ * it is never rendered empty.
  */
-function detailFor(deck: DeckListItem, shopping: DeckShopping | undefined): string {
+function detailFor(
+  deck: DeckListItem,
+  shopping: DeckShopping | undefined,
+  now: Date,
+): string | null {
   const c = refreshCopy.decks;
   switch (deck.statusPill) {
     case "Draft":
-      return c.detailDraft;
+      return formatWhen(deck.createdAt, now) === "today" ? c.detailDraft : null;
     case "Building":
-      return `${deck.built} / ${MATURE_DECK_SIZE}`;
+      // No figure. Building's count IS its explanation, and the count already
+      // has its own slot in the same row — a second copy of `87 / 99` beside
+      // the first says nothing and reads as a rendering fault.
+      return null;
     case "Over":
       return c.detailOver(deck.built - MATURE_DECK_SIZE);
     case "Unresolved":
@@ -1739,29 +1751,45 @@ function detailFor(deck: DeckListItem, shopping: DeckShopping | undefined): stri
 }
 ```
 
-`detailDraft` is the literal string `created today`, which is only true on the day of creation. Render it as `formatWhen(deck.createdAt, now) === "today" ? c.detailDraft : \`created ${formatWhen(deck.createdAt, now)}\`` — **no**: that invents a string. Instead use `c.detailDraft` when the deck was created today and fall through to the count (`0 / 99`) otherwise, and record the gap. A Draft deck older than a day is a real state the copy file does not cover.
+Two `null` branches, both recorded in the gap report:
+
+- `detailDraft` is the literal string `created today`, only true on the day of creation. An older Draft gets no detail figure rather than a date it does not have; its count carries the row. A Draft deck older than a day is a real state the copy file does not cover.
+- Building's figure was drafted as a repeat of the count. It cannot be: the count occupies its own slot in the same row, so the tile would print `87 / 99` twice side by side. Building gets no detail figure.
+
+Both make the tile's accessible name three things rather than four, so `refreshCopy.decks` gains one key beside `cardAria`:
+
+```ts
+cardAriaNoDetail: (name: string, status: string, count: string) =>
+  `${name}, ${status}, ${count}`,
+```
+
+Falling back to `cardAria` with the count in the detail slot is not an option — a reader would hear the figure twice.
 
 - [ ] **Step 4: Write the tile**
 
 Structure, both viewports (the tile is one element with responsive classes — never two subtrees, one hidden; see the responsive-split rule):
 
 ```tsx
-<article className="relative overflow-hidden rounded-[14px]"
-         style={{ background: "var(--surface)", border: "1px solid var(--border-strong)" }}>
-  {/* 1 · art header, 118px, scrim --bg 10% → --surface-inset 96% */}
-  <div data-deck-art className="relative h-[118px]" style={{ background: `${cssUrl(deck.commanderImageUri)} center/cover` }}>
-    <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, color-mix(in srgb, var(--bg) 10%, transparent), color-mix(in srgb, var(--surface-inset) 96%, transparent))" }} />
-    <div className="absolute left-3 top-3"><StatusPillBadge status={deck.statusPill} /></div>
-    <div className="absolute right-2 top-2"><DeckCardOverflow ... /></div>
+<article className="relative flex-none overflow-hidden rounded-[14px]"
+         style={{ background: "var(--surface-inset)", border: "1px solid var(--border)" }}>
+  {/* 1 · art header, 124px phone / 118px desktop, scrim --bg 10% → --surface-inset 96% */}
+  <div data-deck-art className="relative h-[124px] sm:h-[118px]" style={{ background: `${cssUrl(deck.commanderImageUri)} center/cover` }}>
+    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 10%, transparent), color-mix(in srgb, var(--surface-inset) 96%, transparent))" }} />
+    <StatusPillBadge status={deck.statusPill} />
+    <DeckCardOverflow ... />
     {/* 4 · name over the scrim */}
-    <h3 className="absolute inset-x-3 bottom-2 truncate" style={{ fontFamily: "var(--font-display)", fontSize: 15 }}>{deck.name}</h3>
+    <h3 className="absolute inset-x-0 bottom-0 truncate px-[13px] pb-[10px] font-display text-[17px] font-semibold sm:text-[15px]">{deck.name}</h3>
   </div>
-  {/* 5 · meta row */}
-  {/* 6 · 3px progress */}
-  {/* 7 · detail row */}
+  {/* 5·6·7 — one grid, two area maps */}
+  <div className="grid ... [grid-template-areas:'pips_detail_count''bar_bar_bar'] sm:[grid-template-areas:'pips_label_count''bar_bar_bar''detail_._played']"
+       style={{ gridTemplateColumns: "auto 1fr auto" }}> ... </div>
   <Link href={`/decks/${deck.id}`} className="absolute inset-0" aria-label={ariaLabel} />
 </article>
 ```
+
+The phone and the desktop put the same nodes in different places — the detail figure sits in the meta row on a phone and below the bar on desktop, and the colour label and last-played are desktop-only. That is **two `grid-template-areas` maps over one set of nodes**, each child carrying `style={{ gridArea: "pips" | "label" | "detail" | "count" | "bar" | "played" }}`, never a phone subtree beside a desktop one. The two desktop-only nodes are `hidden sm:inline`, so on a phone they are `display:none` and are not auto-placed into an area that does not exist.
+
+The 3px bar is decorative and carries **no** `role="progressbar"`. The shipped tile had one, with `aria-valuenow`/`aria-valuemax`/`aria-valuetext`; the refresh's tile-level `aria-label` names the count, so the role would announce the same figure a second time. Recorded in the gap report.
 
 Keep the shipped card's absolute-overlay `<Link>` technique — it is what makes the whole tile the target while leaving the `…` clickable — but give the overflow `relative z-10` so it sits above the overlay. The `aria-label` comes from `refreshCopy.decks.cardAria(name, status, count, detail)` and must carry the same four things in the same order the tile shows them.
 
@@ -1769,7 +1797,13 @@ The art fallback when `commanderImageUri` is null: reuse `ART_STRIPES` from `src
 
 - [ ] **Step 5: Bring the overflow to spec**
 
-In `deck-card-overflow.tsx`: the trigger becomes 26px square (desktop) / 44px (phone) and its `aria-label` becomes `refreshCopy.decks.menu.trigger(deckName)` — `Actions for Atraxa, Praetors' Voice` — instead of the shipped generic `Deck options`, which says the same thing for every tile on the page. The three item labels come from `refreshCopy.decks.menu`. Delete is `--danger` and last. **Add nothing to this menu.**
+In `deck-card-overflow.tsx`: the trigger becomes 26px square (desktop) / 44px (phone) and its `aria-label` becomes `refreshCopy.decks.menu.trigger(deckName)` — `Actions for Atraxa, Praetors' Voice` — instead of the shipped generic `Deck options`, which says the same thing for every tile on the page. `deck-card-overflow.test.tsx` queries by that name and so is updated with it. The three item labels come from `refreshCopy.decks.menu`. Delete is `--danger` and last. **Add nothing to this menu.**
+
+The drawn plate behind the `…` is desktop-only; on a phone the control is bare and 44px so it clears the touch-target floor. Its open state is a **conditional class, not an inline style** — the repo's `no-restricted-syntax` lint rule rejects inline background/colour/border here, because an inline background outranks the `hover:` utility beside it and the control stops highlighting the moment the panel opens.
+
+- [ ] **Step 5b: Feed the tile from the page**
+
+`src/app/decks/page.tsx` reads the clock once and loads `loadShoppingRollup(userId)` once, then passes `now={now}` and `shopping={rollup.byDeck.get(deck.id)}` to every tile. One clock so every relative date on the page agrees; one roll-up so a tile's copies and its cost always cover the same cards.
 
 - [ ] **Step 6: Run the tests**
 
@@ -1780,8 +1814,9 @@ Expected: PASS.
 
 ```bash
 git add src/components/decks/deck-card.tsx src/components/decks/deck-card.test.tsx \
-        src/components/decks/deck-card-overflow.tsx src/lib/collection/browse.ts \
-        src/components/home/hero-commander.tsx
+        src/components/decks/deck-card-overflow.tsx src/components/decks/deck-card-overflow.test.tsx \
+        src/lib/copy/refresh.ts src/lib/collection/browse.ts \
+        src/components/home/hero-commander.tsx src/app/decks/page.tsx
 git commit -m "feat(decks): rebuild the deck tile around commander art"
 ```
 
@@ -1835,33 +1870,41 @@ import {
   filterDecks,
   filtersFromParams,
   filtersToParams,
+  type FilterableDeck,
 } from "./filter";
 
 const NOW = new Date("2026-09-07T12:00:00Z");
 
-function deck(over: Partial<Parameters<typeof filterDecks<never>>[0][number]> = {}) {
+// Mid-month on both sides, so the calendar-month test states what it means in
+// every timezone rather than turning on the machine's UTC offset: `inCurrentMonth`
+// compares local year and month, and a midnight-UTC fixture is the previous day
+// west of Greenwich.
+const THIS_MONTH = new Date("2026-09-03T12:00:00Z");
+const LAST_MONTH = new Date("2026-08-20T12:00:00Z");
+
+function deck(over: Partial<FilterableDeck> & { id?: string } = {}) {
   return {
     id: "d1",
     name: "Atraxa, Praetors' Voice",
     commanderName: "Atraxa, Praetors' Voice",
     commanderColorIdentity: ["W", "U", "B", "G"],
-    status: "Complete" as const,
-    lastPlayedAt: new Date("2026-09-02T00:00:00Z"),
+    statusPill: "Complete" as const,
+    lastPlayedAt: THIS_MONTH,
     ...over,
   };
 }
 
 describe("filterDecks", () => {
   it("returns everything when nothing is set", () => {
-    const decks = [deck(), deck({ id: "d2", status: "Draft" })];
+    const decks = [deck(), deck({ id: "d2", statusPill: "Draft" })];
     expect(filterDecks(decks, EMPTY_FILTERS, NOW)).toHaveLength(2);
   });
 
   it("ORs within status", () => {
     const decks = [
-      deck({ id: "a", status: "Draft" }),
-      deck({ id: "b", status: "Over" }),
-      deck({ id: "c", status: "Complete" }),
+      deck({ id: "a", statusPill: "Draft" }),
+      deck({ id: "b", statusPill: "Over" }),
+      deck({ id: "c", statusPill: "Complete" }),
     ];
     const kept = filterDecks(decks, { ...EMPTY_FILTERS, statuses: ["Draft", "Over"] }, NOW);
     expect(kept.map((d) => d.id)).toEqual(["a", "b"]);
@@ -1869,8 +1912,8 @@ describe("filterDecks", () => {
 
   it("ANDs across headings", () => {
     const decks = [
-      deck({ id: "a", status: "Draft", commanderColorIdentity: ["R"] }),
-      deck({ id: "b", status: "Draft", commanderColorIdentity: ["G"] }),
+      deck({ id: "a", statusPill: "Draft", commanderColorIdentity: ["R"] }),
+      deck({ id: "b", statusPill: "Draft", commanderColorIdentity: ["G"] }),
     ];
     const kept = filterDecks(
       decks,
@@ -1901,8 +1944,8 @@ describe("filterDecks", () => {
 
   it("reads This month as the calendar month, not thirty days", () => {
     const decks = [
-      deck({ id: "sept", lastPlayedAt: new Date("2026-09-01T00:00:00Z") }),
-      deck({ id: "aug", lastPlayedAt: new Date("2026-08-30T00:00:00Z") }),
+      deck({ id: "sept", lastPlayedAt: THIS_MONTH }),
+      deck({ id: "aug", lastPlayedAt: LAST_MONTH }),
       deck({ id: "never", lastPlayedAt: null }),
     ];
     const kept = filterDecks(decks, { ...EMPTY_FILTERS, played: "thisMonth" }, NOW);
@@ -1911,7 +1954,7 @@ describe("filterDecks", () => {
 
   it("reads Never as no play at all", () => {
     const decks = [
-      deck({ id: "sept", lastPlayedAt: new Date("2026-09-01T00:00:00Z") }),
+      deck({ id: "sept", lastPlayedAt: THIS_MONTH }),
       deck({ id: "never", lastPlayedAt: null }),
     ];
     const kept = filterDecks(decks, { ...EMPTY_FILTERS, played: "never" }, NOW);
@@ -1921,7 +1964,7 @@ describe("filterDecks", () => {
   it("searches deck name and commander name, case-insensitively", () => {
     const decks = [
       deck({ id: "a", name: "Weekend brew", commanderName: "Krenko, Mob Boss" }),
-      deck({ id: "b", name: "Krenko goblins", commanderName: "Krenko, Mob Boss" }),
+      deck({ id: "b", name: "Krenko goblins", commanderName: "Torbran" }),
       deck({ id: "c", name: "Slug", commanderName: "Torbran" }),
     ];
     const kept = filterDecks(decks, { ...EMPTY_FILTERS, search: "  kRenKo " }, NOW);
@@ -2039,7 +2082,7 @@ export type FilterableDeck = {
   name: string;
   commanderName: string;
   commanderColorIdentity: string[];
-  status: StatusPill;
+  statusPill: StatusPill;
   lastPlayedAt: Date | null;
 };
 
@@ -2068,7 +2111,7 @@ export function filterDecks<T extends FilterableDeck>(
 ): T[] {
   const needle = f.search.trim().toLowerCase();
   return decks.filter((d) => {
-    if (f.statuses.length && !f.statuses.includes(d.status)) return false;
+    if (f.statuses.length && !f.statuses.includes(d.statusPill)) return false;
     if (f.colours.length && !f.colours.every((c) => d.commanderColorIdentity.includes(c))) {
       return false;
     }
@@ -2134,7 +2177,7 @@ hand-edited URL cannot inject a status the column has no row for.
 - [ ] **Step 4: Run the tests**
 
 Run: `pnpm test src/lib/decks/filter.test.ts`
-Expected: PASS, 13 tests.
+Expected: PASS, 14 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -2150,7 +2193,9 @@ Two presentational components over one value. Neither owns state: both take `fil
 `onChange` with a whole new `DeckFilters`. That is what makes them impossible to disagree.
 
 **Files:**
-- Modify: `src/lib/decks/status-style.ts` (add `COLOUR_SWATCH`)
+- Modify: `src/lib/copy/refresh.ts` (add `filters.sortHeading`)
+- Modify: `src/lib/decks/sort.ts` (add `DECK_SORT_ORDER`)
+- Create: `src/components/decks/search-icon.tsx`
 - Create: `src/components/decks/deck-filter-column.tsx`
 - Create: `src/components/decks/deck-filter-sheet.tsx`
 - Test: `src/components/decks/deck-filters.test.tsx`
@@ -2159,33 +2204,30 @@ Two presentational components over one value. Neither owns state: both take `fil
 - Consumes: everything from Task 11, `STATUS_TOKEN` (Task 9), `refreshCopy.filters` (Task 1),
   `DECK_SORT_LABELS` / `DeckSort` (Task 6).
 - Produces:
-  - `export const COLOUR_SWATCH: Record<ColourCode, string>` (in `status-style.ts`)
+  - `export function SearchIcon({ size }: { size: 14 | 16 })`
   - `export function DeckFilterColumn(props: FilterChromeProps)`
   - `export function DeckFilterSheet(props: FilterChromeProps & { open: boolean; onDismiss: () => void; autoFocusSearch: boolean })`
   - `export type FilterChromeProps = { filters: DeckFilters; onChange: (next: DeckFilters) => void; sort: DeckSort; onSortChange: (next: DeckSort) => void; shown: number; total: number }`
 
   `FilterChromeProps` is exported from `deck-filter-column.tsx`; the sheet imports it.
 
-- [ ] **Step 1: Add the swatch colours**
+- [x] **Step 1: Add the swatch colours — SKIPPED, superseded**
 
-Append to `src/lib/decks/status-style.ts`:
+The design table (`design-tables/ui-refresh-decks.md`, FilterColumn → Colour swatch) specifies
+`var(--w)` / `var(--u)` / `var(--b)` / `var(--r)` / `var(--g)`, not fixed hex. Those five tokens
+exist in `src/app/globals.css:64-68`, and `WUBRG_COLOR` (`src/lib/collection/browse.ts:118`)
+already maps exactly to them — it is what the deck tile's own pips render. A second table of the
+same five colours would drift from the first and would break the "no component names a colour"
+rule Task 9 established, so `COLOUR_SWATCH` was not built and `status-style.ts` was not touched.
+Both surfaces import `WUBRG_COLOR`.
 
-```ts
-import type { ColourCode } from "./filter";
+Two additions the drawing did need instead:
 
-/**
- * WUBRG pigment. Fixed hex, not theme tokens, for the same reason commander art
- * is never themed (ruling 17): a blue mana symbol that turns amber under a theme
- * is not a blue mana symbol. These are the five values the handoff draws.
- */
-export const COLOUR_SWATCH: Record<ColourCode, string> = {
-  W: "#E8E4D6",
-  U: "#4A7FB5",
-  B: "#5B5566",
-  R: "#C05A48",
-  G: "#6B9E63",
-};
-```
+- `refreshCopy.filters.sortHeading = 'Sort'` — the sheet's Sort group (ruling 6) is not in the
+  handoff's copy file, and `decks.sort(by)` prints `Sort · last played`, which is the desktop
+  trigger's label and not a heading.
+- `DECK_SORT_ORDER = ["lastPlayed", "name", "newest"]` in `sort.ts` — the render order for the
+  sheet's three radio chips, beside the labels it orders rather than in the component.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -2340,16 +2382,30 @@ Geometry, from the desktop frame:
 
 - Column: `w-[262px] flex-none border-r border-[color:var(--border)] bg-[color:var(--surface-rail)] flex flex-col`.
 - Search block: `p-[14px_16px_12px] border-b border-[color:var(--border)]`, holding a 34px
-  `SearchField` (`src/components/ui/text-field.tsx`) with `refreshCopy.filters.searchPlaceholder`,
-  8px radius, `--surface-sunken` fill, `--border-strong` hairline, 14px leading glyph.
+  search field with `refreshCopy.filters.searchPlaceholder`, 8px radius, `--surface-sunken` fill,
+  `--border-strong` hairline, and a 14px leading magnifier.
+
+  **Not `SearchField` from `src/components/ui/text-field.tsx`.** That primitive draws a `⌕` text
+  glyph, and the design table specifies an SVG with exact geometry (`viewBox 0 0 20 20`,
+  `stroke-width 1.6`, `circle cx=9 cy=9 r=5.4`, `path d="m13.2 13.2 3.3 3.3"`) at 14px in the
+  column and 16px in the sheet. Reusing the primitive would also inherit its `FIELD_CHROME`
+  `rounded-lg` and its `focus-within` accent ring, neither of which the table draws. The SVG is
+  `search-icon.tsx`; a local `SearchField`, exported from `deck-filter-column.tsx` and taking
+  `size: "column" | "sheet"`, is the one field both surfaces render.
 - Heading: `p-[13px_16px_7px]` (first) / `p-[14px_16px_7px] border-t border-[color:var(--border)] mt-[12px]`
   (subsequent), mono 10px, `0.14em`, uppercase, `--fg-faint`.
 - Status row: a `<button role="checkbox" aria-checked>` — 32px tall, `px-[16px]`, 13px, a **3px
-  left border in that status's token** (`STATUS_TOKEN[status]`), `--surface-raised` when on and
-  transparent when off, `--fg` when on and `--fg-body` when off. Label only. **No count**
-  (ruling 9).
+  left border in that status's token** (`STATUS_TOKEN[status]`), `--surface` when on (the design
+  table's value; not `--surface-raised`) and transparent when off, `--fg` when on and `--fg-body`
+  when off. Label only. **No count** (ruling 9).
+
+  The token cannot be an inline `borderLeftColor`: `eslint.config.mjs:25-36` rejects an inline
+  colour on a `button`, because it outranks the `hover:` utility beside it. Pass it as a custom
+  property — `style={{ "--keyline": \`var(${token})\` }}` — and read it back with
+  `border-l-[color:var(--keyline)]`. The 3px slot stays open when the row is off
+  (`border-l-transparent`) so ticking a row moves no text.
 - Colour pips: `px-[16px] flex gap-[6px]`, each a 28px square, 7px radius, `1px` border —
-  `--border-strong` when off, `--fg` when on — filled `COLOUR_SWATCH[code]`. Also
+  `--border-strong` when off, `--fg` when on — filled `WUBRG_COLOR[code]` (Step 1). Also
   `role="checkbox"`, `aria-checked`, and `aria-label={colorNames([code])[0]}` — `colorNames`
   (`src/lib/copy/color-labels.ts:77`) is the exported reader over that module's private
   `MONO_NAMES` and already returns `White` / `Blue` / `Black` / `Red` / `Green`. Do not retype
@@ -2384,9 +2440,12 @@ export function toggleIn<T extends string>(
 `src/components/decks/deck-filter-sheet.tsx`, `"use client"`. Returns `null` when `!open` —
 mounted or absent, never hidden with CSS, for the reason `filter-panel.tsx:11-15` gives.
 
-- Scrim: `fixed inset-0 z-40` at `rgba(16,13,10,0.74)`; clicking it calls `onDismiss`.
-- Panel: `fixed inset-x-0 bottom-0 z-50 rounded-t-[22px] border-t border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] p-[12px_16px_16px] flex flex-col gap-[14px]`,
-  `role="dialog"`, `aria-modal="true"`, labelled by the title.
+- One `fixed inset-0 z-40 flex flex-col justify-end sm:hidden` layer holds both, matching the
+  table's bottom-anchored `justify-content: flex-end` parent. The scrim is an `absolute inset-0`
+  child at `rgba(16,13,10,0.74)`; clicking it calls `onDismiss`.
+- Panel: `relative z-10 rounded-t-[22px] border-t border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px] flex flex-col gap-[14px]`,
+  `role="dialog"`, `aria-modal="true"`, labelled by the title. `--surface-inset`, not
+  `--surface-raised` — the design table's value.
 - Grab handle: a 38 × 4 `--border-strong` bar, 2px radius, `self-center`, `aria-hidden`.
 - Title row: `refreshCopy.filters.sheetTitle` in display 18px, and
   `refreshCopy.filters.sheetMatch(shown, total)` in mono 11px `--fg-faint`, `ml-auto`.
@@ -2400,9 +2459,11 @@ mounted or absent, never hidden with CSS, for the reason `filter-panel.tsx:11-15
     `border-[STATUS_TOKEN[s]]`, fill `color-mix(in srgb, TOKEN 15%, transparent)`, `--fg` text —
     so the chip and the tile's pill agree without a second colour table.
   - Colour identity renders the same swatches at **44px, 11px radius** — the phone target rule.
-- Footer row: `Show N decks` (`sheetDismiss(shown)`) as the full-width 44px bone-filled
-  `PrimaryButton`, `flex-auto`, calling **only** `onDismiss`; then `Clear` as a 44px borderless
-  text button at `--fg-body`, rendered whenever `activeFilterCount > 0`.
+- Footer row: `Show N decks` (`sheetDismiss(shown)`) as a full-width 44px `flex-auto` button,
+  10px radius, `bg-[color:var(--fg)]` on `text-[color:var(--bg)]` at 14px/600 — the bone fill
+  written inline rather than routed through `PrimaryButton`, whose padding and radius are its
+  own; then `Clear` as a 44px borderless text button at `--fg-muted` (the table's value, not
+  `--fg-body`), rendered whenever `activeFilterCount > 0`.
 - `Escape` on `document` calls `onDismiss`. Body scroll locks while open.
 
 **One filter, two renderings.** Every `onChange` in both files goes through `toggleIn`, and
@@ -2411,12 +2472,15 @@ neither file ever reads or writes a URL — Task 13 owns that.
 - [ ] **Step 6: Run the tests**
 
 Run: `pnpm test src/components/decks/deck-filters.test.tsx`
-Expected: PASS, 11 tests.
+Expected: PASS, 13 tests — the eleven above plus two that pin the shared-value claim: the column's
+`Clear` resets the filters and leaves `onSortChange` untouched, and the sheet's Status chip hands
+back the same `statuses` array the column's row does for the same tick.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/lib/decks/status-style.ts src/components/decks/deck-filter-column.tsx \
+git add src/lib/copy/refresh.ts src/lib/decks/sort.ts src/components/decks/search-icon.tsx \
+        src/components/decks/deck-filter-column.tsx \
         src/components/decks/deck-filter-sheet.tsx src/components/decks/deck-filters.test.tsx
 git commit -m "feat(decks): draw the filter column and the phone filter sheet"
 ```
@@ -2477,7 +2541,7 @@ function deckOf(over = {}) {
     commanderName: "Atraxa, Praetors' Voice",
     commanderColorIdentity: ["W", "U", "B", "G"],
     commanderImageUri: null,
-    status: "Complete" as const,
+    statusPill: "Complete" as const,
     built: 99,
     ownedCount: 99,
     unresolvedCount: 0,
@@ -2495,7 +2559,7 @@ beforeEach(() => {
 
 describe("DecksView", () => {
   it("counts what it renders", () => {
-    const decks = [deckOf(), deckOf({ id: "d2", status: "Draft", built: 0 })];
+    const decks = [deckOf(), deckOf({ id: "d2", statusPill: "Draft", built: 0 })];
     render(<DecksView decks={decks} shopping={SHOPPING} now={NOW} />);
     expect(screen.getByText("2 of 2")).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
@@ -2503,8 +2567,8 @@ describe("DecksView", () => {
 
   it("keeps the count and the grid in step while filtering", () => {
     const decks = [
-      deckOf({ id: "a", status: "Draft", built: 0 }),
-      deckOf({ id: "b", status: "Complete" }),
+      deckOf({ id: "a", statusPill: "Draft", built: 0 }),
+      deckOf({ id: "b", statusPill: "Complete" }),
     ];
     render(<DecksView decks={decks} shopping={SHOPPING} now={NOW} />);
     fireEvent.click(screen.getByRole("checkbox", { name: "Draft" }));
@@ -2735,6 +2799,42 @@ git add src/app/decks/page.tsx src/components/decks/decks-view.tsx \
         src/lib/decks/sort.ts src/lib/decks/sort.test.ts
 git commit -m "feat(decks): filter, sort and count the deck list"
 ```
+
+### As built — where the code departs from this task
+
+1. **`FilterPanel` → a new `deck-sort-menu.tsx`.** Step 3 names `FilterPanel` for the desktop
+   `Sort · …` trigger. `src/components/collection/filter-panel.tsx` draws a 44px pill with a
+   chevron on its own type scale and takes a ~20-string `FilterPanelCopy` contract; the design
+   table specifies a 32px hairline trigger at 12.5px. Every trigger row would have failed the
+   verify. `DeckSortMenu` draws the trigger the table specifies and reuses the geometry the same
+   frames already draw for the tile's overflow menu — the only menu the Decks frames specify.
+2. **The zero-state card fan is local divs, not `CardFan`.** Step 4 says reuse
+   `src/components/marks.tsx`'s `CardFan` and restyle only if the angles disagree. The card
+   dimensions disagree too, not just the angles, so the mark is three positioned divs inside
+   `decks-zero.tsx`. `CardFan` is untouched and still used elsewhere.
+3. **The chip row is phone-only.** Step 3 says "phone and desktop"; the design table renders no
+   chip row at desktop, where the filter column already shows every active value with its
+   checkbox ticked. The table wins.
+4. **`sm:` throughout, not `md:`.** Step 3's body says `hidden md:flex` for the filter column.
+   The refresh's breakpoint is 640px, which is Tailwind's `sm:`.
+5. **`readySlice(ranked.items).set.length` does not exist.** The shipped `ReadySlice` is
+   `{ shown, moreCount, floor }`. The page uses
+   `Math.min(READY_COUNT, ranked?.items.length ?? 0)` — the same set size, and not a second
+   threshold.
+6. **The test mocks `next/navigation` and widens the fixture.** The view never *routes* — every
+   URL write is `history.replaceState` — but it does seed its filter state from
+   `useSearchParams()`, because the alternative, `window.location.search` in a `useState` lazy
+   initializer, runs during the server render where `window` does not exist. The fixture also
+   supplies `toBuyCount` and `inUseElsewhere`, both of which `DeckListItem` requires. Both
+   breakpoint variants render in jsdom, so the filter checkbox and the two links are addressed
+   with `getAllByRole`.
+7. **No view toggle.** Table ambiguity 3 leaves it undocumented; nothing was built for it.
+8. **The in-use-elsewhere clause needed a new reader.** The design table gives `DeckTile` a
+   cross-cutting state this task never mentions, and nothing in the stack could produce the
+   number. `src/lib/decks/in-use-elsewhere.ts` derives the whole grid's counts from the one
+   unscoped `loadAvailability` the page already affords, rather than a per-deck
+   `excludeDeckId` query; `listDecksWithStats` runs it in parallel with the list query and
+   tolerates its failure. See `docs/superpowers/gap-report-ui-refresh-decks.md`.
 
 ---
 ## Task 14: The Home header, and what the page loads

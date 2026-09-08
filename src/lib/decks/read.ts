@@ -12,6 +12,7 @@ import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability } from "./availability-query";
+import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant } from "./price";
 import {
   deckCounts,
@@ -241,6 +242,12 @@ export type DeckListItem = {
    * and it is a real state rather than a missing figure.
    */
   lastPlayedAt: Date | null;
+  /**
+   * How many of this deck's owned cards a *different* finished deck has
+   * sleeved. Zero when the availability read fails, which is the same thing the
+   * tile draws when nothing is spoken for — a clause is not worth a 500.
+   */
+  inUseElsewhere: number;
   statusPill: StatusPill;
 };
 
@@ -269,7 +276,18 @@ function toDate(value: Date | string | null): Date | null {
  * re-order every existing caller the day it changed, and the caller is always
  * the one that knows which order its page asked for.
  */
-export async function listDecksWithStats(userId: string, sort: DeckSort): Promise<DeckListItem[]> {
+export async function listDecksWithStats(
+  userId: string,
+  sort: DeckSort,
+  /**
+   * Off by default because only the deck grid draws the clause. The builder's
+   * move-card picker calls this for names alone, and the availability read
+   * aggregates the player's whole collection — a cost that page has no use for.
+   * A caller that leaves it off gets `inUseElsewhere: 0`, which is what the
+   * tile draws when nothing is spoken for anyway.
+   */
+  opts: { includeInUseElsewhere?: boolean } = {},
+): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
     (
       select sum(dc2.quantity)
@@ -336,8 +354,38 @@ export async function listDecksWithStats(userId: string, sort: DeckSort): Promis
     .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
     .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
     .where(eq(decks.userId, userId))
-    .groupBy(decks.id, decks.name, decks.createdAt, cards.name, cards.colorIdentity, cards.imageUri)
+    .groupBy(
+      decks.id,
+      decks.name,
+      decks.createdAt,
+      cards.name,
+      cards.colorIdentity,
+      cards.imageUri,
+    )
     .orderBy(...order);
+
+  // One unscoped availability read for the whole grid. Its `claims` already
+  // name every deck holding every card, so the per-deck counts fall out of a
+  // single pass — a per-deck `excludeDeckId` query would be one round trip per
+  // tile.
+  //
+  // Issued after the list rather than alongside it, even though that costs a
+  // round trip, because the query is driven by the player's collection and not
+  // by their decks: a player who has uploaded a CSV and built nothing would
+  // otherwise pay a scan of the whole collection to be told they have no decks,
+  // which is exactly the zero state this page draws on a first visit. The one
+  // added trip is hidden behind `loadShoppingRollup`, which the page already
+  // runs in parallel with this whole function and which is itself two queries.
+  //
+  // Tolerated rather than awaited into the page's failure path: a missing
+  // clause is not worth a 500 on the deck list.
+  const availability =
+    opts.includeInUseElsewhere && rows.length > 0
+      ? await loadAvailability(userId).catch(() => null)
+      : null;
+  const inUseElsewhere = availability
+    ? inUseElsewhereByDeck(availability.values())
+    : new Map<string, number>();
 
   return rows.map((row) => {
     const pill = statusPill({
@@ -367,6 +415,7 @@ export async function listDecksWithStats(userId: string, sort: DeckSort): Promis
       // would then date to a different day in Denver than in CI, and `2 days
       // ago` is exactly the kind of figure that shifts.
       lastPlayedAt: toDate(row.lastPlayedAt),
+      inUseElsewhere: inUseElsewhere.get(row.id) ?? 0,
       statusPill: pill,
     };
   });

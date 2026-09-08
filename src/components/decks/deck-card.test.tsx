@@ -1,112 +1,196 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { deckImportCopy } from "../../lib/copy/deck-import";
-import { overCopy } from "../../lib/copy/decks-builder";
-import type { DeckListItem } from "../../lib/decks/read";
+import { describe, expect, it, vi } from "vitest";
 import { DeckCard } from "./deck-card";
+import type { DeckListItem } from "../../lib/decks/read";
+
+vi.mock("./deck-card-overflow", () => ({
+  DeckCardOverflow: () => <button type="button">Actions</button>,
+}));
+
+const now = new Date("2026-09-07T12:00:00Z");
+const daysBefore = (n: number) => new Date(now.getTime() - n * 86_400_000);
 
 const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   id: "d1",
-  name: "Slime Time",
-  createdAt: new Date("2026-08-05"),
-  commanderName: "Slimefoot, the Stowaway",
-  commanderColorIdentity: ["B", "G"],
-  commanderImageUri: null,
-  built: 97,
-  ownedCount: 90,
-  toBuyCount: 7,
+  name: "Atraxa, Praetors' Voice",
+  createdAt: daysBefore(30),
+  commanderName: "Atraxa, Praetors' Voice",
+  commanderColorIdentity: ["W", "U", "B", "G"],
+  commanderImageUri: "https://example.test/atraxa.jpg",
+  built: 99,
+  ownedCount: 96,
+  toBuyCount: 3,
   unresolvedCount: 0,
-  lastPlayedAt: null,
-  statusPill: "Building",
+  statusPill: "To buy",
+  lastPlayedAt: daysBefore(2),
+  inUseElsewhere: 0,
   ...over,
 });
 
-describe("DeckCard — unresolved badge", () => {
-  it("marks a deck that imported short", () => {
-    render(<DeckCard deck={deck({ unresolvedCount: 2 })} />);
-    expect(screen.getByText(deckImportCopy.unresolved.deckCardBadge(2))).toBeInTheDocument();
+describe("DeckCard", () => {
+  it("shows the status, the count with its denominator, and the explaining figure", () => {
+    render(
+      <DeckCard deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+    );
+    expect(screen.getByText("To buy")).toBeInTheDocument();
+    expect(screen.getByText("99 / 99")).toBeInTheDocument();
+    expect(screen.getByText("3 unowned · $18.40")).toBeInTheDocument();
+    expect(screen.getByText("2 days ago")).toBeInTheDocument();
   });
 
-  it("shows nothing on a deck with no unresolved lines", () => {
-    render(<DeckCard deck={deck()} />);
-    expect(screen.queryByText(/couldn't name/)).not.toBeInTheDocument();
+  // `toBuyCount` is `built − ownedCount` and counts basics; the roll-up refuses
+  // them, as every Shopping surface does. Printing the deck's number beside the
+  // roll-up's cost would be a figure and a price covering different cards.
+  it("counts the roll-up's copies, not the deck's, so the count and the cost agree", () => {
+    render(
+      <DeckCard
+        deck={deck({ toBuyCount: 3 })}
+        shopping={{ copies: 1, cents: 620, pricedCopies: 1 }}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("1 unowned · $6.20")).toBeInTheDocument();
   });
 
-  // The badge and the pill are not redundant — the pill carries the word, the
-  // badge carries the count, and below 99 the badge shows against a Building
-  // pill that says nothing about unresolved lines.
-  it("keeps the count badge beside the Unresolved pill", () => {
-    render(<DeckCard deck={deck({ built: 99, ownedCount: 99, unresolvedCount: 2, statusPill: "Unresolved" })} />);
-    expect(screen.getByText("Unresolved")).toBeInTheDocument();
-    expect(screen.getByText(deckImportCopy.unresolved.deckCardBadge(2))).toBeInTheDocument();
-  });
-});
-
-// #357. Green is the claim that the deck can be put on a table, so exactly one
-// pill may carry it. The retired `Playable` took the same green as `Complete`
-// while the caption beneath it read "15 to buy".
-describe("DeckCard — status pill tone", () => {
-  // Read off `style.color` rather than getComputedStyle: the component sets the
-  // tone inline, and a computed read routes the answer through jsdom's own
-  // handling of custom properties, which is not what ships.
-  const toneOf = (status: DeckListItem["statusPill"]) => {
-    const { unmount } = render(<DeckCard deck={deck({ statusPill: status })} />);
-    const tone = (screen.getByText(status) as HTMLElement).style.color;
-    unmount();
-    return tone;
-  };
-
-  it("gives Complete the only success tone", () => {
-    expect(toneOf("Complete")).toBe("var(--success)");
+  it("prints the copies without a cost when nothing in the deck has a price", () => {
+    render(<DeckCard deck={deck()} shopping={{ copies: 3, cents: 0, pricedCopies: 0 }} now={now} />);
+    expect(screen.getByText("3 unowned")).toBeInTheDocument();
   });
 
-  it.each(["Building", "Over", "Unresolved", "To buy"] as const)(
-    "gives %s a warning tone, not success",
-    (status) => {
-      expect(toneOf(status)).toBe("var(--warning)");
-    },
-  );
-
-  it("leaves Draft muted", () => {
-    expect(toneOf("Draft")).toBe("var(--fg-muted)");
-  });
-});
-
-describe("DeckCard — over 99", () => {
-  const overDeck = deck({ built: 104, ownedCount: 104, toBuyCount: 0, statusPill: "Over" });
-
-  it("says how many to cut", () => {
-    render(<DeckCard deck={overDeck} />);
-    expect(screen.getByText(overCopy.toCut("5"))).toBeInTheDocument();
+  // A deck whose only unowned cards are basics clears the `To buy` threshold —
+  // that one counts them — and has no roll-up entry, because no Shopping
+  // surface sells them. Falling back to `toBuyCount` here would print an
+  // "unowned" figure that disagrees with every other surface in the app.
+  it("draws no figure for a To buy deck the roll-up has nothing for", () => {
+    render(<DeckCard deck={deck({ toBuyCount: 3 })} shopping={undefined} now={now} />);
+    expect(screen.queryByText(/unowned/)).toBeNull();
   });
 
-  // A bare amber 104 with no denominator is the reading this amendment exists
-  // to stop, so the suffix is present at phone width too — where a deck at or
-  // under 99 hides it.
-  it("keeps the / 99 denominator visible at every width", () => {
-    render(<DeckCard deck={overDeck} />);
-    const suffix = screen.getByText(overCopy.figure.denominator.trim());
-    expect(suffix.className).not.toContain("hidden");
+  it("has no call to action — the pill is the message and the tile is the target", () => {
+    render(<DeckCard deck={deck()} shopping={undefined} now={now} />);
+    // One link (the whole tile) and one button (the overflow). Nothing else.
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: /open|build|edit/i })).toBeNull();
   });
 
-  // A valuenow of 104 against a max of 99 is an invalid range, and a reader
-  // that clamps it to 100% announces a finished deck. Holding valuenow at the
-  // legal 99 below a raised max keeps the ratio short of full, and the
-  // valuetext says the part no percentage can.
-  it("reports the legal 99 against the deck's own total as the max", () => {
-    render(<DeckCard deck={overDeck} />);
-    const bar = screen.getByRole("progressbar");
-    expect(bar).toHaveAttribute("aria-valuenow", "99");
-    expect(bar).toHaveAttribute("aria-valuemax", "104");
-    expect(bar).toHaveAttribute("aria-valuetext", overCopy.aria.progress("104", "5"));
-    // The name is the deck, not the count. A name that moved with the value
-    // would be announced alongside the valuetext that already carries it.
-    expect(bar).toHaveAccessibleName(`${overDeck.name} build progress`);
+  it("draws commander art on a Draft tile, because every deck has a commander", () => {
+    const { container } = render(
+      <DeckCard
+        deck={deck({
+          statusPill: "Draft",
+          built: 0,
+          ownedCount: 0,
+          toBuyCount: 0,
+          lastPlayedAt: null,
+          createdAt: now,
+        })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    expect(container.querySelector("[data-deck-art]")).toHaveAttribute(
+      "style",
+      expect.stringContaining("atraxa.jpg"),
+    );
+    expect(screen.getByText("0 / 99")).toBeInTheDocument();
+    expect(screen.getByText("created today")).toBeInTheDocument();
+    expect(screen.queryByText(/no commander/i)).toBeNull();
   });
 
-  it("leaves a deck at 99 alone", () => {
-    render(<DeckCard deck={deck({ built: 99, ownedCount: 99, toBuyCount: 0, statusPill: "Complete" })} />);
-    expect(screen.queryByText(/to cut/)).not.toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "99");
+  it("leaves a Draft tile's track empty and its last-played slot unrendered", () => {
+    render(
+      <DeckCard
+        deck={deck({ statusPill: "Draft", built: 0, lastPlayedAt: null, createdAt: now })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    // The track is drawn for every status; only the fill is withheld, which is
+    // what "empty track" means. A Draft tile's detail row carries its created
+    // figure alone.
+    expect(document.querySelector("[data-deck-bar-fill]")).toBeNull();
+    expect(document.querySelector("[data-deck-bar]")).toBeTruthy();
+    expect(screen.queryByText("never played")).toBeNull();
+  });
+
+  it("prints never played rather than leaving the corner blank", () => {
+    render(<DeckCard deck={deck({ lastPlayedAt: null })} shopping={undefined} now={now} />);
+    expect(screen.getByText("never played")).toBeInTheDocument();
+  });
+
+  it("gives each status its own explaining figure", () => {
+    const cases: Array<[Partial<DeckListItem>, string]> = [
+      [{ statusPill: "Complete", toBuyCount: 0, ownedCount: 99 }, "all owned"],
+      [{ statusPill: "Unresolved", unresolvedCount: 2 }, "2 lines unresolved"],
+      [{ statusPill: "Unresolved", unresolvedCount: 1 }, "1 line unresolved"],
+      [{ statusPill: "Over", built: 104 }, "5 over"],
+      [{ statusPill: "Building", built: 87 }, "87 / 99"],
+    ];
+    for (const [over, text] of cases) {
+      const { unmount } = render(<DeckCard deck={deck(over)} shopping={undefined} now={now} />);
+      expect(screen.getByText(text)).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("fills an empty detail slot with the in-use-elsewhere clause", () => {
+    render(
+      <DeckCard
+        deck={deck({ statusPill: "Building", built: 87, inUseElsewhere: 3 })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("3 in use elsewhere")).toBeInTheDocument();
+  });
+
+  it("never lets the clause displace a status's own figure", () => {
+    render(
+      <DeckCard
+        deck={deck({ statusPill: "Unresolved", unresolvedCount: 2, inUseElsewhere: 3 })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("2 lines unresolved")).toBeInTheDocument();
+    expect(screen.queryByText("3 in use elsewhere")).toBeNull();
+  });
+
+  // `detailDraft` is the literal `created today`, so it is only true on the day
+  // of creation. There is no copy key for an older Draft, so it falls back to
+  // its count rather than being told a date it does not have.
+  it("falls back to the count for a Draft older than the day it was created", () => {
+    render(
+      <DeckCard
+        deck={deck({ statusPill: "Draft", built: 0, createdAt: daysBefore(9) })}
+        shopping={undefined}
+        now={now}
+      />,
+    );
+    expect(screen.queryByText("created today")).toBeNull();
+    expect(screen.getByText("0 / 99")).toBeInTheDocument();
+  });
+
+  it("names the whole tile for a screen reader, in the order the tile reads", () => {
+    render(
+      <DeckCard deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+    );
+    expect(
+      screen.getByRole("link", {
+        name: "Atraxa, Praetors' Voice, To buy, 99 / 99, 3 unowned · $18.40",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  // The detail figure moves between the meta row and the detail row by grid
+  // area, never by rendering twice: a doubled node reads the figure twice to a
+  // screen reader and passes a property check on both columns while being wrong.
+  it("renders the phone and desktop layouts from one set of nodes", () => {
+    const { container } = render(
+      <DeckCard deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+    );
+    expect(screen.getAllByText("3 unowned · $18.40")).toHaveLength(1);
+    expect(container.querySelectorAll("[data-deck-art]")).toHaveLength(1);
   });
 });
