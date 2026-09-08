@@ -17,6 +17,7 @@ export type CandidateSqlRow = {
   // type line answers nothing discovery asks and nothing discovery renders.
   colorIdentity: string[];
   imageUri: string | null;
+  artCropUri: string | null;
   /** When this commander first appeared in print, `YYYY-MM-DD`. Null when every
       set it was printed in is undated, which is a real state — promos and Secret
       Lair carry no date. It is projected only because the discover lane offers a
@@ -91,6 +92,7 @@ export async function loadCandidates(
       name: cards.name,
       colorIdentity: cards.colorIdentity,
       imageUri: cards.imageUri,
+      artCropUri: cards.artCropUri,
       releasedAt: RELEASED_AT,
       edhrecTotal: commanderSupport.edhrecTotal,
       deckCount: commanderSupport.deckCount,

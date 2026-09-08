@@ -5,6 +5,7 @@ export type PoolCard = {
   oracleId: string; name: string; typeLine: string; oracleText: string | null;
   keywords: string[]; colorIdentity: string[];
   imageUri: string | null;
+  artCropUri: string | null;
   manaCost: string | null;
 };
 
@@ -27,6 +28,7 @@ export type CommanderScore = {
   oracleId: string; name: string;
   colorIdentity: string[];
   imageUri: string | null;
+  artCropUri: string | null;
   typeLine: string;
   oracleText: string | null;
   manaCost: string | null;
@@ -294,6 +296,7 @@ export function scoreCommander(args: {
     name: args.commander.name,
     colorIdentity: args.commander.colorIdentity,
     imageUri: args.commander.imageUri,
+    artCropUri: args.commander.artCropUri,
     typeLine: args.commander.typeLine,
     oracleText: args.commander.oracleText,
     manaCost: args.commander.manaCost,

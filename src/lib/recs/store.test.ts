@@ -21,6 +21,7 @@ const ranked = (over: Partial<RankedCommander> = {}): RankedCommander => ({
   name: "Atraxa, Praetors' Voice",
   colorIdentity: ["W", "U", "B", "G"],
   imageUri: "https://x.test/a.jpg",
+  artCropUri: null,
   typeLine: "Legendary Creature — Phyrexian Angel Horror",
   oracleText: "Flying, vigilance, deathtouch, lifelink",
   manaCost: "{G}{W}{U}{B}",
@@ -93,6 +94,7 @@ describe("rowToListItem", () => {
       name: "Atraxa, Praetors' Voice",
       colorIdentity: ["W", "U", "B", "G"],
       imageUri: "https://x.test/a.jpg",
+      artCropUri: null,
     });
     expect(item.name).toBe("Atraxa, Praetors' Voice");
     expect(item.slug).toBe("atraxa-praetors-voice");
@@ -107,7 +109,7 @@ describe("rowToListItem", () => {
       synergyState: "degraded", edhrecOwnedCount: null, edhrecTotal: null,
       receipts: "", colorPoolSize: 100,
       roleCounts: { ramp: 1, draw: 1, removal: 1, wipes: 0 },
-      name: "X", colorIdentity: ["R"], imageUri: null,
+      name: "X", colorIdentity: ["R"], imageUri: null, artCropUri: null,
     });
     expect(item.fitSynergy).toBeNull();
     expect(item.edhrecTotal).toBeNull();

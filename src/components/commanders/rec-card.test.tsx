@@ -29,6 +29,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
     rankScore: 44,
     measurableTotal: 100,
     imageUri: null,
+    artCropUri: null,
     synergyState: "ok",
     ...overrides,
   };
@@ -95,6 +96,22 @@ describe("RecCard row shape", () => {
       commander: item({ imageUri: "https://example.test/art.jpg" }),
     });
     expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("gives the row a 148px floor so the portrait reaches both edges", () => {
+    const { container } = card();
+    expect(container.firstElementChild?.className).toContain("min-h-[148px]");
+  });
+
+  it("draws the frame-free crop, never the printed card", () => {
+    const { container } = card({
+      commander: item({
+        imageUri: "https://example.test/printed.jpg",
+        artCropUri: "https://example.test/crop.jpg",
+      }),
+    });
+    expect(container.innerHTML).toContain("crop.jpg");
+    expect(container.innerHTML).not.toContain("printed.jpg");
   });
 
   // Every figure the shipped row printed is still printed: the redraw moved

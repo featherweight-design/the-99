@@ -5,25 +5,10 @@
 // this call site and no string is written here (plan ruling 5).
 
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
-import { ART_STRIPES, WUBRG_COLOR, cssUrl } from "../../lib/collection/browse";
+import { ArtWash } from "@/components/ui/art-wash";
+import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { CommanderListItem } from "../../lib/recs/recommend";
-
-/**
- * §ReadyCard — scrim. Written as `color-mix` against `var(--bg)` rather than the
- * frame's literal dark-theme channels, so the wash follows a theme change instead
- * of pinning the card to the dark one. The two breakpoints differ only in the
- * top stop (12% phone, 15% desktop), and both are spelled out: a custom property
- * substituted into a `color-mix` percentage is one more thing to be wrong about
- * for no gain over a second arbitrary value.
- */
-const SCRIM =
-  "bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg)_12%,transparent)_0%," +
-  "color-mix(in_srgb,var(--bg)_72%,transparent)_52%," +
-  "color-mix(in_srgb,var(--bg)_96%,transparent)_100%)] " +
-  "sm:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg)_15%,transparent)_0%," +
-  "color-mix(in_srgb,var(--bg)_72%,transparent)_52%," +
-  "color-mix(in_srgb,var(--bg)_96%,transparent)_100%)]";
 
 /** §ReadyCard — "See the pool" chevron icon. Phone only; the label is the desktop form. */
 function ChevronIcon() {
@@ -57,16 +42,10 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
   const denominator = gap === -1 ? null : badge.slice(gap + 1);
 
   return (
-    <div
-      className="relative h-[186px] overflow-hidden rounded-[14px] border border-[color:var(--border)] sm:h-[250px]"
-      // Art is not themed — it is photography (ruling 17), so no token filters
-      // it. The stripes are the fallback for a printing with no image, the same
-      // one the deck tile uses; a second placeholder would be a second answer.
-      style={{
-        background: item.imageUri ? `${cssUrl(item.imageUri)} center/cover` : ART_STRIPES,
-      }}
-    >
-      <div className={`absolute inset-0 ${SCRIM}`} aria-hidden />
+    // The band is the deck card's, exactly — same aspect, same floor. A second
+    // number here would be a second answer to a question already settled.
+    <div className="relative aspect-[2.2/1] min-h-[104px] overflow-hidden rounded-[14px] border border-[color:var(--border)]">
+      <ArtWash strategy="cover" artCropUri={item.artCropUri} colorIdentity={item.colorIdentity} />
 
       {/* §ReadyCard — fit badge */}
       <div className="absolute top-[10px] left-[11px] flex h-[22px] items-center rounded-[6px] bg-[color-mix(in_srgb,var(--bg)_82%,transparent)] px-[8px] font-mono text-[10.5px] sm:top-[11px] sm:left-[12px]">

@@ -6,13 +6,12 @@
 // the token through `color-mix`, so the six themes each get their own value of
 // the same rule and no component ever names a colour.
 //
-// The pill's base rule is the status colour at 18% fill on a 50% border with
-// the colour as its label. Draft and Building are drawn as exceptions to it:
-// they are the two statuses whose token IS a text colour, so a 50%-alpha
-// border of it reads as a second, dimmer piece of text rather than an edge.
-// The drawing gives them a hairline border token instead and drops the fill to
-// 16% / 14%. `STATES-deck-statuses.md` states the flat rule in prose and then
-// draws these two against it; READINESS closes the item "per value in
+// The pill's base rule is the status colour at 18% over the base plate, inside
+// one opaque hairline, with the colour as its label. Draft and Building are
+// drawn as exceptions to the fill and the label: they are the two statuses
+// whose token IS a text colour, so they take 16% / 14% and a quieter label.
+// `STATES-deck-statuses.md` states the flat rule in prose and then draws these
+// two against it; READINESS closes the item "per value in
 // STATES-deck-statuses.md", so the per-value table is what ships.
 
 import type { CSSProperties } from "react";
@@ -28,24 +27,30 @@ export const STATUS_TOKEN: Record<StatusPill, string> = {
   Complete: "--success",
 };
 
-/** The handoff's `2E` and `80` of 255, as the percentages `color-mix` takes. */
+/** The handoff's `2E` of 255, as the percentage `color-mix` takes. */
 const FILL_ALPHA = "18%";
-const BORDER_ALPHA = "50%";
 
 /**
  * Where the drawing departs from the flat rule. Absent status = the flat rule.
- * `border` and `label` are whole tokens rather than alphas, which is the point
- * of the exception: a hairline is its own token, not a faded status colour.
+ * `label` is a whole token rather than an alpha: Draft and Building are the two
+ * statuses whose own token is a text colour, and they take a lighter fill and a
+ * quieter label than the four that key off a signal colour.
  */
-const PILL_EXCEPTION: Partial<
-  Record<StatusPill, { fillAlpha: string; border: string; label: string }>
-> = {
-  Draft: { fillAlpha: "16%", border: "--border-strong", label: "--fg-muted" },
-  Building: { fillAlpha: "14%", border: "--border-dashed", label: "--fg-body" },
+const PILL_EXCEPTION: Partial<Record<StatusPill, { fillAlpha: string; label: string }>> = {
+  Draft: { fillAlpha: "16%", label: "--fg-muted" },
+  Building: { fillAlpha: "14%", label: "--fg-body" },
 };
 
-function mix(token: string, alpha: string): string {
-  return `color-mix(in srgb, var(${token}) ${alpha}, transparent)`;
+/**
+ * The pill only ever sits on art, and the art wash amendment rules ink over art
+ * to full opacity: the fill mixes into `--bg` rather than into transparency, so
+ * the plate is opaque at every alpha and a bright pixel behind it cannot reach
+ * the label. The status still keys the colour — only the thing it is mixed with
+ * changed. The border follows, one opaque hairline for every status, because a
+ * 50% fade of the status colour was the worst-reading edge in the report.
+ */
+function plate(token: string, alpha: string): string {
+  return `color-mix(in srgb, var(${token}) ${alpha}, var(--bg))`;
 }
 
 export function statusPillStyle(status: StatusPill): CSSProperties {
@@ -53,10 +58,8 @@ export function statusPillStyle(status: StatusPill): CSSProperties {
   const exception = PILL_EXCEPTION[status];
   return {
     color: `var(${exception ? exception.label : token})`,
-    background: mix(token, exception ? exception.fillAlpha : FILL_ALPHA),
-    border: `1px solid ${
-      exception ? `var(${exception.border})` : mix(token, BORDER_ALPHA)
-    }`,
+    background: plate(token, exception ? exception.fillAlpha : FILL_ALPHA),
+    border: "1px solid var(--border-strong)",
   };
 }
 

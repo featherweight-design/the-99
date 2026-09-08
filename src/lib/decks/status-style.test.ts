@@ -26,30 +26,38 @@ describe("status style", () => {
     }
   });
 
-  it("builds the four unexceptional pills from one rule — 18% fill, 50% border, full label", () => {
+  it("builds the four unexceptional pills from one rule — 18% over the plate, full label", () => {
     for (const status of ["Over", "Unresolved", "To buy", "Complete"] as StatusPill[]) {
       const style = statusPillStyle(status);
       const token = STATUS_TOKEN[status];
       expect(style.color).toBe(`var(${token})`);
-      expect(style.background).toBe(`color-mix(in srgb, var(${token}) 18%, transparent)`);
-      expect(style.border).toBe(
-        `1px solid color-mix(in srgb, var(${token}) 50%, transparent)`,
-      );
+      expect(style.background).toBe(`color-mix(in srgb, var(${token}) 18%, var(--bg))`);
+    }
+  });
+
+  // The pill only ever sits on art. A translucent fill let a bright pixel reach
+  // the label, so every fill mixes into `--bg` and every edge is one opaque
+  // hairline — no status keeps a faded border of its own colour.
+  it("plates every pill opaquely, behind one hairline", () => {
+    for (const status of ALL) {
+      const style = statusPillStyle(status);
+      expect(style.background).not.toContain("transparent");
+      expect(style.border).toBe("1px solid var(--border-strong)");
     }
   });
 
   // The two statuses whose token is a text colour are drawn against the flat
-  // rule: a hairline border token, and a lighter fill.
-  it("gives Draft and Building a hairline border rather than a faded status colour", () => {
+  // rule: a lighter fill, and a quieter label than the colour itself.
+  it("gives Draft and Building a lighter fill and their own label token", () => {
     expect(statusPillStyle("Draft")).toEqual({
       color: "var(--fg-muted)",
-      background: "color-mix(in srgb, var(--fg-faint) 16%, transparent)",
+      background: "color-mix(in srgb, var(--fg-faint) 16%, var(--bg))",
       border: "1px solid var(--border-strong)",
     });
     expect(statusPillStyle("Building")).toEqual({
       color: "var(--fg-body)",
-      background: "color-mix(in srgb, var(--fg-body) 14%, transparent)",
-      border: "1px solid var(--border-dashed)",
+      background: "color-mix(in srgb, var(--fg-body) 14%, var(--bg))",
+      border: "1px solid var(--border-strong)",
     });
   });
 

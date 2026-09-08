@@ -18,6 +18,7 @@ export type DiscoveryItem = {
   name: string;
   colorIdentity: string[];
   imageUri: string | null;
+  artCropUri: string | null;
   /** `YYYY-MM-DD`, or null for an undated set. The rack's `Recently released`
       order reads it on the client; nothing on the server sorts by it, so the
       ranks the payload carries are unaffected. */
@@ -126,6 +127,7 @@ export function assembleDiscovery(input: {
       counts: input.availOk ? rollup.counts : null,
       oracleId: c.oracleId, slug: c.slug, name: c.name,
       colorIdentity: c.colorIdentity, imageUri: c.imageUri,
+      artCropUri: c.artCropUri,
       releasedAt: c.releasedAt,
       deckCount: c.deckCount,
       ownedSupport: c.ownedSupport,

@@ -5,7 +5,7 @@ import { discoverCandidates, shapeCandidate, type CandidateSqlRow } from "./cand
 
 const row = (over: Partial<CandidateSqlRow>): CandidateSqlRow => ({
   oracleId: "a", name: "Atraxa",
-  colorIdentity: ["W", "U", "B", "G"], imageUri: null, releasedAt: "2021-02-05",
+  colorIdentity: ["W", "U", "B", "G"], imageUri: null, artCropUri: null, releasedAt: "2021-02-05",
   edhrecTotal: 99, deckCount: 1209, tags: [{ slug: "counters", label: "Counters", count: 5 }],
   ownedSupport: 40, collectionSupport: 40, ...over,
 });

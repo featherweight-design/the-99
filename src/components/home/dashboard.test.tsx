@@ -44,6 +44,7 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   commanderName: "Atraxa, Praetors' Voice",
   commanderColorIdentity: ["W", "U", "B", "G"],
   commanderImageUri: null,
+  commanderArtCropUri: null,
   built: 99,
   ownedCount: 96,
   toBuyCount: 3,

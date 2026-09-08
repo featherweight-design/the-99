@@ -19,6 +19,7 @@ const collection = [
   colorIdentity: [] as string[],
   commanderLegal: true,
   imageUri: null,
+  artCropUri: null,
   manaCost: "{2}",
 }));
 
@@ -70,6 +71,7 @@ const item = (
   rankScore: 0,
   measurableTotal: 40,
   imageUri: null,
+  artCropUri: null,
   receipts: "",
   ...over,
 });

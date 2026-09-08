@@ -20,6 +20,7 @@ const card = (oracleId: string): PoolCard => ({
   keywords: [],
   colorIdentity: [],
   imageUri: null,
+  artCropUri: null,
   manaCost: null,
 });
 
@@ -106,6 +107,7 @@ describe("rankFree with preloaded reads", () => {
     rankScore: 25,
     measurableTotal: 40,
     imageUri: null,
+    artCropUri: null,
   });
 
   // The point of the parameter: `/commanders` has already made both reads for

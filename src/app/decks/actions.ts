@@ -50,7 +50,8 @@ async function ownedColorLegalPool(userId: string, commander: Pick<PoolCard, "or
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
       oracleText: cards.oracleText, keywords: cards.keywords, colorIdentity: cards.colorIdentity,
-      imageUri: cards.imageUri, manaCost: cards.manaCost, manaValue: cards.cmc,
+      imageUri: cards.imageUri, artCropUri: cards.artCropUri,
+      manaCost: cards.manaCost, manaValue: cards.cmc,
       ownedQuantity: sql<number>`sum(${collectionItems.quantity})::int`,
     })
     .from(collectionItems)

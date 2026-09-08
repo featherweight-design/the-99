@@ -42,6 +42,7 @@ function commander(overrides: Partial<CommanderDetailScore> = {}): CommanderDeta
     name: "Krenko, Mob Boss",
     colorIdentity: ["R"],
     imageUri: null,
+    artCropUri: null,
     typeLine: "Legendary Creature — Goblin Warrior",
     oracleText: "Tap: Create X 1/1 red Goblin creature tokens.",
     manaCost: "{2}{R}{R}",

@@ -148,6 +148,13 @@
       "when": 1788891160858,
       "tag": "0020_tidy_rocket_raccoon",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788895041791,
+      "tag": "0021_yellow_black_tarantula",
+      "breakpoints": true
     }
   ]
 }

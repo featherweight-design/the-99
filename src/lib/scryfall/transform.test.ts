@@ -19,8 +19,36 @@ describe("toCardRow", () => {
       typeLine: "Artifact", oracleText: "{T}: Add {C}{C}.", keywords: [],
       commanderLegal: true, rarity: "uncommon",
       imageUri: "https://cards.scryfall.io/normal/x.jpg",
+      artCropUri: null,
       layout: "normal", backImageUri: null,
     });
+  });
+
+  it("stores the art crop, not the framed card image", () => {
+    const row = toCardRow({
+      ...solRing,
+      image_uris: {
+        normal: "https://cards.scryfall.io/normal/front/a/b/id.jpg",
+        art_crop: "https://cards.scryfall.io/art_crop/front/a/b/id.jpg",
+      },
+    });
+    expect(row?.artCropUri).toBe("https://cards.scryfall.io/art_crop/front/a/b/id.jpg");
+    expect(row?.imageUri).toBe("https://cards.scryfall.io/normal/front/a/b/id.jpg");
+  });
+
+  it("takes the front face's crop on a modal double-faced card", () => {
+    const row = toCardRow({
+      ...solRing, image_uris: undefined,
+      card_faces: [
+        { image_uris: { normal: "front-normal.jpg", art_crop: "front-crop.jpg" } },
+        { image_uris: { normal: "back-normal.jpg", art_crop: "back-crop.jpg" } },
+      ],
+    });
+    expect(row?.artCropUri).toBe("front-crop.jpg");
+  });
+
+  it("leaves the crop null when Scryfall has none", () => {
+    expect(toCardRow({ ...solRing, image_uris: { normal: "n.jpg" } })?.artCropUri).toBeNull();
   });
 
   it("defaults a layoutless entry to normal rather than dropping the column", () => {
