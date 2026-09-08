@@ -1,7 +1,16 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { Crowned99 } from "../components/marks";
-import { getCollectionStats, listRecentDecks } from "../lib/home/summary";
+import { receiptCountsByCommander, type ReceiptCounts } from "../lib/commanders/in-use";
+import { loadAvailability } from "../lib/decks/availability-query";
+import { listDecksWithStats } from "../lib/decks/read";
+import { loadShoppingRollup } from "../lib/decks/shopping-rollup";
+import { DEFAULT_DECK_SORT } from "../lib/decks/sort";
+import { commitmentFigures, type Commitments } from "../lib/home/commitments";
+import { getCollectionLastUpdated, getCollectionStats } from "../lib/home/summary";
+import { getRankedList } from "../lib/recs/ranked-list";
+import { readySlice } from "../lib/recs/ready-to-build";
+import { loadCollectionPool } from "../lib/recs/recommend";
 import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
 
@@ -71,18 +80,62 @@ export default async function HomePage() {
     );
   }
 
-  // Fetch name + data in parallel. currentUser() is cheap (Clerk session cache).
-  // `user?.firstName` falls back to null gracefully when not set.
-  const [user, stats, decks] = await Promise.all([
-    currentUser(),
-    getCollectionStats(userId),
-    listRecentDecks(userId, 3),
-  ]);
-  const name = user?.firstName ?? null;
-
-  // First-run: user has zero unique cards (no collection uploaded yet).
+  // Awaited first and alone: first run renders none of what follows, and there
+  // is no point loading four more things to throw them away. The `currentUser()`
+  // that used to ride alongside is gone with the name — neither greeting
+  // interpolates one now, and a Clerk round trip nothing renders is a request
+  // paid for nothing.
+  const stats = await getCollectionStats(userId);
   if (stats.uniqueCards === 0) {
-    return <FirstRunChecklist name={name} />;
+    // The prop goes when task 18 rewrites this component against the refresh's
+    // `firstRun.heading`, which carries no name either.
+    return <FirstRunChecklist name={null} />;
   }
-  return <Dashboard userId={userId} stats={stats} decks={decks} name={name} />;
+
+  const [lastUpdated, ranked, decks, shopping] = await Promise.all([
+    getCollectionLastUpdated(userId),
+    getRankedList(userId),
+    // Explicit, because the parameter has no default. Home's rail is a resume
+    // rail, so last played is the order it wants on its own merits.
+    listDecksWithStats(userId, DEFAULT_DECK_SORT),
+    loadShoppingRollup(userId),
+  ]);
+
+  const ready = readySlice(ranked.items);
+
+  // One availability read between the in-use clause and the Commitments card.
+  // Fail soft, the same way src/app/commanders/page.tsx does: losing
+  // availability must cost those two things, never the page.
+  let inUse = new Map<string, ReceiptCounts>();
+  let commitments: Commitments | null = null;
+  try {
+    const [{ collection }, availability] = await Promise.all([
+      // React-cached, so on the branch where getRankedList recomputed this is a
+      // cache hit rather than a second query.
+      loadCollectionPool(userId),
+      // No options: the whole-user vantage, as /collection already takes.
+      loadAvailability(userId),
+    ]);
+    // The shown pair, not the whole ranked list — only a rendered hero prints
+    // the clause.
+    inUse = receiptCountsByCommander(ready.shown, collection, availability);
+    commitments = commitmentFigures(availability.values());
+  } catch {
+    // Both consumers render nothing rather than a zero, which would be a claim.
+  }
+
+  return (
+    <Dashboard
+      stats={stats}
+      lastUpdated={lastUpdated}
+      ready={ready}
+      inUse={inUse}
+      decks={decks}
+      commitments={commitments}
+      shopping={shopping}
+      // One clock for the whole page, read on the server, so every relative
+      // date below agrees.
+      now={new Date().toISOString()}
+    />
+  );
 }
