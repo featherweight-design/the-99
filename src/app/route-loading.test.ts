@@ -34,7 +34,7 @@ function segmentsWithPages(dir: string, segment = ""): string[] {
 }
 
 describe("route loading boundaries", () => {
-  it("gives every fetching segment its own loading.tsx", () => {
+  it("gives every segment that owns a page.tsx its own loading.tsx", () => {
     const missing = segmentsWithPages(APP).filter(
       (segment) =>
         !NO_BOUNDARY_NEEDED.has(segment) &&
