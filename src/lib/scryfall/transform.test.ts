@@ -97,6 +97,31 @@ describe("toCardRow", () => {
     expect(row?.backImageUri).toBeNull();
   });
 
+  it("takes the front face's cost when the two-sided layouts omit the top-level one", () => {
+    // Scryfall prints no top-level `mana_cost` on transform or modal_dfc, so a
+    // row stored from that field alone has no cost — and the decklist then draws
+    // no pips for exactly the cards that carry the `//` mark.
+    const row = toCardRow({
+      ...solRing, name: "Delver of Secrets // Insectile Aberration",
+      layout: "transform", mana_cost: undefined,
+      card_faces: [{ mana_cost: "{U}" }, { mana_cost: "" }],
+    });
+    expect(row?.manaCost).toBe("{U}");
+  });
+
+  it("keeps the joined top-level cost a split card already carries", () => {
+    // The front face alone would answer `{1}{R}`, which is half the card's cost.
+    const row = toCardRow({
+      ...solRing, name: "Fire // Ice", layout: "split", mana_cost: "{1}{R} // {1}{U}",
+      card_faces: [{ mana_cost: "{1}{R}" }, { mana_cost: "{1}{U}" }],
+    });
+    expect(row?.manaCost).toBe("{1}{R} // {1}{U}");
+  });
+
+  it("leaves a genuinely costless card null rather than storing an empty string", () => {
+    expect(toCardRow({ ...solRing, mana_cost: "" })?.manaCost).toBeNull();
+  });
+
   it("skips entries without an oracle_id", () => {
     expect(toCardRow({ ...solRing, oracle_id: undefined })).toBeNull();
   });

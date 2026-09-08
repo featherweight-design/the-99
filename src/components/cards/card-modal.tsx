@@ -683,8 +683,14 @@ export function CardModal({
  *
  * Its accessible name is the face it turns TO, never "flip" — the act is the
  * part the reader can already see, and the other face's name is the fact they
- * are reaching for. The drawn glyph is the same `//` the row and the tile use,
- * so the mark and the control are one notation rather than two.
+ * are reaching for.
+ *
+ * The drawn glyph is a turn arrow, not the `//` the row and the tile carry. One
+ * notation across all three was the tidier idea and the wrong one: `//` is a
+ * mark that says *this card has two faces*, and reading it as a control asks the
+ * reader to infer an action from a statement. A button on the art has to say
+ * what pressing it does, and every app that turns a card over draws an arrow
+ * going round.
  */
 function FlipControl({
   otherFaceName, onFlip, size,
@@ -701,14 +707,36 @@ function FlipControl({
       aria-label={twoFacedCopy.flipToAria(otherFaceName)}
       // The ground is a scrim rather than a solid: the control has to stay
       // legible over whatever art is under it without hiding a square of the card.
-      className="absolute flex items-center justify-center cursor-pointer font-mono bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] border border-[color:var(--border-strong)] text-[color:var(--fg)]"
-      style={{
-        right: 10, bottom: 10, width: size, height: size, borderRadius: 7,
-        fontSize: size >= 44 ? 15 : 13,
-      }}
+      className="absolute flex items-center justify-center cursor-pointer bg-[color-mix(in_oklab,var(--bg)_86%,transparent)] border border-[color:var(--border-strong)] text-[color:var(--fg)]"
+      style={{ right: 10, bottom: 10, width: size, height: size, borderRadius: 7 }}
     >
-      <span aria-hidden>{twoFacedCopy.mark}</span>
+      <TurnOverIcon size={Math.round(size * 0.5)} />
     </button>
+  );
+}
+
+/**
+ * The turn arrow: a circle open at the top with a head on the rising end, in the
+ * same `currentColor` stroke shape as `SearchIcon` so the two read as one set.
+ * The gap sits at the top because the head has to be somewhere the eye lands
+ * first, and at 17px a head on the underside of the circle is a smudge.
+ */
+function TurnOverIcon({ size }: { size: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6.5 5.1A6 6 0 1 0 13.5 5.1" />
+      <path d="m13.5 5.1 .31 2.6M13.5 5.1l2.55 .6" />
+    </svg>
   );
 }
 
