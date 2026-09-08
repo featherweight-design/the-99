@@ -1,6 +1,6 @@
 # The 99 — UI refresh · Home, Decks, and the chrome
 
-`design/design_handoff_the99_refresh/` · R3.1 · 2026-09-08
+`design/design_handoff_the99_refresh/` · R3 + R3.1 · 2026-09-08
 
 ## What this package is
 
@@ -93,15 +93,15 @@ question, not a screen question.
 
 **3 · Collection is not in this package.** It is the second rail item and it did not get a frame.
 
-**6 · Zero states are drawn (R2).** Home at first run — three-step checklist, step 1 live, steps 2–3
+**4 · Zero states are drawn (R2).** Home at first run — three-step checklist, step 1 live, steps 2–3
 locked with the reason stated, rail and tab bar dimmed to `#4A4033` — and Decks at zero decks,
 card-fan mark with Browse commanders and Import a deck. Both viewports each.
 
-**7 · A Draft deck has a commander.** `decks.commander_oracle_id` is NOT NULL, so the Draft tile
+**5 · A Draft deck has a commander.** `decks.commander_oracle_id` is NOT NULL, so the Draft tile
 carries commander art like every other tile; the placeholder art block and the *no commander yet*
 string are gone from the frames, `STATES-deck-statuses.md` and the copy file.
 
-**4 · Closed: phone Ready-to-build is a stacked list.** Two art-led cards at 170px, then
+**6 · Closed: phone Ready-to-build is a stacked list.** Two art-led cards at 170px, then
 `7 more scored 70 or better` + **All commanders**. The carousel is withdrawn — it hid eight of nine
 candidates behind a gesture, which is the hidden-content problem the refresh set out to remove.
 
@@ -115,5 +115,5 @@ what you own* only if the second list is truncated. **Every phone frame in this 
 and nothing may exceed it** — a mock that only fits at 890px is not showing a phone. Anything added
 to phone Home has to name what it displaces.
 
-**5 · Loading states not re-checked.** They keep their layouts, but they were never re-rendered
+**7 · Loading states not re-checked.** They keep their layouts, but they were never re-rendered
 against the new display faces and the 32px button. Worth one pass before build.
