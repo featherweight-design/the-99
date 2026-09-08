@@ -1,6 +1,6 @@
 # The 99 — UI refresh · Home, Decks, and the chrome
 
-`design/design_handoff_the99_refresh/` · R2 · 2026-09-07
+`design/design_handoff_the99_refresh/` · R3 · 2026-09-08
 
 ## What this package is
 
@@ -17,6 +17,7 @@ shipped layouts; §Conformance lists the only changes they take.
 | `STATES-deck-statuses.md` | The six statuses, their tokens, and what each card shows. |
 | `CHROME-rail-and-tabs.md` | Rail, tab bar, and the one shipped adjudication this retires. |
 | `refresh · copy strings.ts` | Production strings for the two refreshed surfaces. |
+| `RULINGS-R3.md` | The three calls PRs #437/#438 left open, ruled. Read with `CHROME-rail-and-tabs.md`. |
 | `READINESS.md` | What blocks a green. |
 
 ## Decisions
@@ -29,7 +30,8 @@ drawn in that pass is **withdrawn**: it proposed a feature that does not exist.
 **2 · One filled button per screen, and it is bone, not accent.** `--fg` on `--bg` for the single
 primary; everything else is a 32px hairline pill (`--border-strong`, 12.5px label, 14px side
 padding — about 40% less mass than the shipped button). Accent is not available for actions because
-it means *in use / to buy*.
+it means *in use / to buy*. **Scope, ruled in R3:** the rule binds every surface reachable with a
+session; the signed-out front door is outside it and keeps accent (`RULINGS-R3.md` §1).
 
 **3 · Colour is status, and status only.** Draft `--fg-faint` · Building `--fg-body` ·
 Over `--danger` · Unresolved `--warning` · To buy `--accent` · Complete `--success`. No other
@@ -91,14 +93,6 @@ question, not a screen question.
 
 **3 · Collection is not in this package.** It is the second rail item and it did not get a frame.
 
-**4 · Closed: phone Ready-to-build is a stacked list.** Two art-led cards at 186px in the page's
-own vertical scroll, then `7 more scored 70 or better` + **All commanders**. The carousel is
-withdrawn — it hid eight of nine candidates behind a gesture, which is the hidden-content problem
-the refresh set out to remove.
-
-**5 · Loading states not re-checked.** They keep their layouts, but they were never re-rendered
-against the new display faces and the 32px button. Worth one pass before build.
-
 **6 · Zero states are drawn (R2).** Home at first run — three-step checklist, step 1 live, steps 2–3
 locked with the reason stated, rail and tab bar dimmed to `#4A4033` — and Decks at zero decks,
 card-fan mark with Browse commanders and Import a deck. Both viewports each.
@@ -106,3 +100,20 @@ card-fan mark with Browse commanders and Import a deck. Both viewports each.
 **7 · A Draft deck has a commander.** `decks.commander_oracle_id` is NOT NULL, so the Draft tile
 carries commander art like every other tile; the placeholder art block and the *no commander yet*
 string are gone from the frames, `STATES-deck-statuses.md` and the copy file.
+
+**4 · Closed: phone Ready-to-build is a stacked list.** Two art-led cards at 170px, then
+`7 more scored 70 or better` + **All commanders**. The carousel is withdrawn — it hid eight of nine
+candidates behind a gesture, which is the hidden-content problem the refresh set out to remove.
+
+The stacked list costs vertical space the carousel did not, so **phone Home's deck list is two rows
+and carries no footer** — the route to the full list is the Decks tab, which is on screen at all
+times, so a second link to it was paying 30px for nothing. Desktop keeps four rows and its
+`All decks` link.
+
+That is a budget, not a preference: at 390×800 the frame holds *what you can build* and *a glance at
+what you own* only if the second list is truncated. **Every phone frame in this package is 390×800
+and nothing may exceed it** — a mock that only fits at 890px is not showing a phone. Anything added
+to phone Home has to name what it displaces.
+
+**5 · Loading states not re-checked.** They keep their layouts, but they were never re-rendered
+against the new display faces and the 32px button. Worth one pass before build.

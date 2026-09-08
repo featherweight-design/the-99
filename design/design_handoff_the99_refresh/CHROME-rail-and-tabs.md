@@ -47,11 +47,33 @@ Bottom, `--bg`, 1px `--border` top, 8px padding with 14px bottom for the home in
 |---|---|---|
 | Buttons | 32px tall | 44px |
 | Icon-only controls | 32px (26px on tile art) | 44px |
+| Filter chips / facets | 32px tall | **44px** |
+| Sort and view controls | 32px tall | **44px** |
 | Body copy | 12.5–13px | 13.5–14px |
 | Mono data | 10.5–13px | 10.5–12.5px |
 
+**The phone column is a floor, not a starting point.** Every row of it is 44px, including rows whose
+desktop twin is 32px — a control that measures 32px at 390px wide is under the floor even when its
+desktop value is correct. The two bold rows were added in R3 because the shipped facet strip and
+coverage-sort read their heights unprefixed and inherited the desktop number.
+
 The 26px `…` on a deck tile is the one sub-32px target at desktop, and it sits inside a tile that is
-itself clickable, so the small target is a shortcut rather than the only route.
+itself clickable, so the small target is a shortcut rather than the only route. **That exemption does
+not generalise.** It rests on there being a second, larger route to the same action; a facet chip, a
+sort control and a submit each have no second route, so none of them may sit under the floor.
+
+## Hairline pill — the one geometry
+
+| Property | Desktop | Phone |
+|---|---|---|
+| height | 32px | 44px |
+| side padding | **14px** | 16px |
+| border | 1px `--border-strong` | 1px `--border-strong` |
+| radius | 8px | 10px |
+| label | 12.5px, weight 500 | 14px, weight 500 |
+
+14px is the ratified side padding. The R2 frames drew 13px; **the frames were wrong and have been
+corrected** — the constant is not moving to match a drawing that was off by a pixel.
 
 ## Filter surfaces
 
