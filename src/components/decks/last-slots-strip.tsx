@@ -143,13 +143,23 @@ function LastSlotsStripInner({
     moveFocus.current = true;
     setOpen(true);
     onOpenChange?.(true);
+    // The selection survives a close, and the deck does not stand still while
+    // the list is shut: slots can close under it and a card can join the deck
+    // from the quick-add dock. A reopen therefore announces what the list will
+    // actually show, derived the way TopOffList derives it — pool order, minus
+    // what is declined or already in the deck, clipped to the slots left. On a
+    // first open this is the seed itself, so one expression serves both.
+    const liveTicks = candidates
+      .map((c) => c.oracleId)
+      .filter((id) => seedTicked.has(id) && !declined.has(id) && !deckOracleIds.has(id))
+      .slice(0, Math.max(openSlots, 0)).length;
     // One message per settle, and opening at phone settles two facts at once —
     // so they are one message. Two calls would leave only the second in the
     // live region, and the one that would survive is the lesser of the two.
     const opened = topOffCopy.announce.opened(
       String(candidates.length),
       String(openSlots),
-      String(seedTicked.size),
+      String(liveTicks),
     );
     onAnnounce(isDesktop ? opened : `${opened} ${topOffCopy.dock.retiredAnnounce}`);
   }

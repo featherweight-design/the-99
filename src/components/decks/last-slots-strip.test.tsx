@@ -157,6 +157,23 @@ describe("LastSlotsStrip", () => {
     expect(screen.getByText(topOffCopy.strip.caption("3", "3"))).toBeInTheDocument();
   });
 
+  // The selection survives a close, but the deck does not stand still: a
+  // quick-add can take a slot without unticking anything. The reopen has to
+  // announce what the list will show rather than what the player left.
+  it("announces the reopened count the list can actually show", async () => {
+    const onAnnounce = vi.fn();
+    const { rerender } = render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+
+    rerender(<LastSlotsStrip {...base} openSlots={1} onAnnounce={onAnnounce} />);
+    await click(screen.getByRole("button", { name: doorName("1") }));
+
+    const last = onAnnounce.mock.calls.at(-1)?.[0] as string;
+    expect(last).toContain(topOffCopy.announce.opened("3", "1", "1"));
+    expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
+  });
+
   it("caps the seeded ticks at the open slots", async () => {
     render(<LastSlotsStrip {...base} openSlots={1} />);
     await click(screen.getByRole("button", { name: doorName("1") }));
