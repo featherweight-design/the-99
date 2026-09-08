@@ -41,7 +41,9 @@ export interface TopOffListProps {
   listId: string;
   /** 99 minus the built count, live: quick-add can move it while the list is open. */
   openSlots: number;
-  /** The whole ranked pool, frozen by the caller for the life of one opening. */
+  /** The whole ranked pool, live. It is frozen inside for the life of one
+      opening — see the comment at `frozen` — and the live value is read only to
+      tell which of the frozen rows the route is still offering. */
   candidates: TopOffCandidate[];
   /** Oracle ids currently in the deck, used to name why a row went illegal. */
   deckOracleIds: Set<string>;
@@ -145,10 +147,22 @@ export function TopOffList({
   const [inflight, setInflight] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // The pool is frozen for the life of one opening. The optimistic deck set
+  // freezes a quick-added row in the same frame as the click, but the server
+  // payload that follows drops that card from `candidates` outright — so a pool
+  // read live would let the row vanish from under the cursor one beat later,
+  // which is the whole of what state 17 forbids. The frozen rows are drawn from
+  // the difference between this pool and the fresh list.
+  const frozen = useRef(candidates);
+  const pool = frozen.current;
+  const offered = new Set(candidates.map((c) => c.oracleId));
+
   // A candidate the deck gained while the list was open. Frozen rows keep their
   // slot and say why rather than vanishing from under the cursor (state 17).
   const illegal = new Set(
-    candidates.filter((c) => deckOracleIds.has(c.oracleId)).map((c) => c.oracleId),
+    pool
+      .filter((c) => deckOracleIds.has(c.oracleId) || !offered.has(c.oracleId))
+      .map((c) => c.oracleId),
   );
 
   // Derived during render, never in an effect: an illegal row unticks itself,
@@ -157,12 +171,12 @@ export function TopOffList({
   const tickedCount = live.size;
   const atCap = tickedCount >= openSlots;
 
-  const ownedIds = candidates
+  const ownedIds = pool
     .filter((c) => c.owned && !illegal.has(c.oracleId) && !declined.has(c.oracleId))
     .map((c) => c.oracleId);
-  const untouched = candidates.length - tickedCount - declined.size;
+  const untouched = pool.length - tickedCount - declined.size;
 
-  const buying = candidates.filter((c) => live.has(c.oracleId) && !c.owned);
+  const buying = pool.filter((c) => live.has(c.oracleId) && !c.owned);
   const buyMoney = summarisePrices(
     buying.map((c) => ({ quantity: 1, price: c.price })),
     newestAsOf,
@@ -281,7 +295,7 @@ export function TopOffList({
   const headDesktop = topOffCopy.list.head(
     String(tickedCount),
     String(openSlots),
-    String(candidates.length),
+    String(pool.length),
     String(Math.max(0, untouched)),
   );
   // The head is one of our own strings and its two halves take different ink.
@@ -312,14 +326,14 @@ export function TopOffList({
             onClick={() => onTickedChange(new Set(ownedIds.slice(0, openSlots)))}
             disabled={inflight || ownedIds.length === 0}
             aria-label={topOffCopy.list.tickOwnedAria(String(ownedIds.length))}
-            className="flex-1 justify-center min-h-[44px] md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] disabled:opacity-50"
+            className="flex flex-1 items-center justify-center min-h-[44px] md:inline-flex md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] text-[color:var(--fg-body)] disabled:opacity-50"
           >
             {topOffCopy.list.tickOwned(String(ownedIds.length))}
           </GhostButton>
           <GhostButton
             onClick={() => onTickedChange(new Set())}
             disabled={inflight || tickedCount === 0}
-            className="flex-1 justify-center min-h-[44px] md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] disabled:opacity-50"
+            className="flex flex-1 items-center justify-center min-h-[44px] md:inline-flex md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] text-[color:var(--fg-body)] disabled:opacity-50"
           >
             {topOffCopy.list.clearTicks}
           </GhostButton>
@@ -336,7 +350,7 @@ export function TopOffList({
       {/* ── Column header (§3) — desktop only ───────────────────────────── */}
       <div
         aria-hidden
-        className="hidden md:flex items-center gap-[10px] pt-[9px] pb-[7px] px-[4px] font-mono uppercase"
+        className="hidden md:flex items-center gap-[10px] pt-[9px] pb-[7px] px-[9px] font-mono uppercase"
         style={{ fontSize: "9.5px", letterSpacing: ".12em", color: "var(--fg-faint)" }}
       >
         <span className="w-[18px] flex-none" />
@@ -346,18 +360,19 @@ export function TopOffList({
         <span className="w-[84px] flex-none" />
         <span className="w-[88px] flex-none text-right">{topOffCopy.list.colSynergy}</span>
         <span className="w-[52px] flex-none text-right">{topOffCopy.list.colDecks}</span>
+        <span className="w-[18px] flex-none" />
       </div>
 
       {/* ── The rows (§4) ──────────────────────────────────────────────── */}
       <div
         role="group"
         aria-label={topOffCopy.list.groupAria(
-          String(candidates.length),
+          String(pool.length),
           String(openSlots),
         )}
         className="flex flex-col gap-[6px] md:gap-[5px] mt-[8px]"
       >
-        {candidates.map((c) => {
+        {pool.map((c) => {
           if (illegal.has(c.oracleId)) {
             return <IllegalRow key={c.oracleId} name={c.name} inDeck />;
           }
@@ -402,7 +417,7 @@ export function TopOffList({
       {tickedCount === 0 && (
         <p className="font-mono text-[10.5px] mt-[9px]" style={{ color: "var(--fg-locked)" }}>
           {ownedIds.length === 0
-            ? topOffCopy.commit.nothingTickedUnowned(String(candidates.length))
+            ? topOffCopy.commit.nothingTickedUnowned(String(pool.length))
             : topOffCopy.commit.nothingTicked}
         </p>
       )}
@@ -416,12 +431,9 @@ export function TopOffList({
           // Desktop: an ordinary row at the foot of the list, never sticky.
           "md:static md:left-auto md:right-auto md:p-0 md:mt-[14px] md:pt-[14px]",
           "md:flex-row md:items-center md:gap-[14px] md:flex-wrap",
-          "md:[background:none] md:[border-top:1px_solid_var(--border)]",
+          "[background:var(--base)] md:[background:none]",
+          "[border-top:1px_solid_var(--border-strong)] md:[border-top:1px_solid_var(--border)]",
         ].join(" ")}
-        style={{
-          background: "var(--base)",
-          borderTop: "1px solid var(--border-strong)",
-        }}
       >
         <p
           className="order-1 md:hidden font-mono text-[10px]"
@@ -592,7 +604,7 @@ function CandidateRow({
             </span>
             <span
               aria-hidden
-              className="flex-none flex items-center justify-end whitespace-nowrap md:order-4 md:w-[84px]"
+              className="flex-none flex items-center justify-end whitespace-nowrap font-mono text-[10px] md:order-4 md:w-[84px]"
             >
               {!c.owned ? (
                 <BuyTag

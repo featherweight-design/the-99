@@ -168,7 +168,7 @@ function LastSlotsStripInner({
   return (
     <div
       className={[
-        "mx-[16px] md:mx-[30px] mt-[10px] md:mt-[12px] md:mb-[16px] rounded-[10px]",
+        "mx-[16px] md:mx-[30px] mt-[10px] md:mt-[12px] mb-[12px] md:mb-[16px] rounded-[10px]",
         // The open panel is tighter at phone, where the list beneath it carries
         // its own spacing; desktop padding does not change between the two.
         open ? "px-[12px] pt-[12px] pb-[10px]" : "px-[14px] py-[13px]",

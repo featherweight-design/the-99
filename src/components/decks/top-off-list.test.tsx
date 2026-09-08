@@ -123,6 +123,23 @@ describe("TopOffList", () => {
     expect(screen.getAllByText(topOffCopy.list.headMobile("1", "3"))).toHaveLength(2);
   });
 
+  // The server payload that follows a quick-add drops the card from the pool
+  // outright. The row still has to keep its slot: the frozen list is the pool
+  // as it stood at the open, not the pool as the route last described it.
+  it("keeps a frozen row when the fresh candidate list stops offering it", () => {
+    const { rerender } = render(<Harness initialTicked={["owned-1", "owned-2"]} />);
+    rerender(
+      <Harness
+        initialTicked={["owned-1", "owned-2"]}
+        candidates={candidates.filter((c) => c.oracleId !== "owned-1")}
+        deckOracleIds={new Set(["owned-1"])}
+      />,
+    );
+
+    expect(screen.getByText(topOffCopy.list.illegalInDeck)).toBeInTheDocument();
+    expect(screen.getAllByText(topOffCopy.list.headMobile("1", "3"))).toHaveLength(2);
+  });
+
   // State 7. The decline is reversible and says so in the same breath as the
   // count it changed.
   it("declines a row, announces it, and restores it", async () => {
