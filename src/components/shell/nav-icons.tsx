@@ -1,4 +1,4 @@
-// The four rail/tab glyphs — 19px, currentColor, 1.5px, round caps
+// The five rail/tab glyphs — 19px, currentColor, 1.5px, round caps
 // (design/design_handoff_the99_refresh/CHROME-rail-and-tabs.md §The rail).
 //
 // ONE component for both chromes. The handoff calls out that the slots must not
@@ -9,8 +9,15 @@
 // and Decks.dc.html"), which draw all four glyphs — they are not an engineering
 // invention. Note the 20-unit viewBox rendered at 19px: that is what the frames
 // specify, and changing it rescales every stroke.
+//
+// The fifth, Discover, is drawn in the two-lane package instead ("The 99 -
+// Commanders and Discover.dc.html", the rail at the head of the desktop frame):
+// a 6.8r circle around a diamond, at the same 1.5px as its four siblings. That
+// package's CHROME-five-item-nav.md describes the diamond as 3.2r, which would
+// be square; the frame draws it 2.8 wide and 3.6 tall, and the frame is the
+// drawing.
 
-export type NavHref = "/" | "/collection" | "/commanders" | "/decks";
+export type NavHref = "/" | "/collection" | "/commanders" | "/discover" | "/decks";
 
 function Svg({ children }: { children: React.ReactNode }) {
   return (
@@ -53,6 +60,13 @@ export function NavIcon({ href }: { href: NavHref }) {
         <Svg>
           <path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z" />
           <path d="M3 16.6h14" />
+        </Svg>
+      );
+    case "/discover":
+      return (
+        <Svg>
+          <circle cx="10" cy="10" r="6.8" />
+          <path d="M10 6.4 12.8 10 10 13.6 7.2 10z" />
         </Svg>
       );
     case "/decks":
