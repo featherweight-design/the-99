@@ -551,10 +551,6 @@ export function TopOffList({
 
         {error && <RefusalPlate className="order-4 md:order-5 md:w-full" message={error} />}
       </div>
-
-      {/* The pinned phone bar sits over the list's own foot, so the list keeps
-          a matching run of space beneath it. Desktop has nothing pinned. */}
-      <div aria-hidden className="h-[128px] md:hidden" />
     </div>
   );
 }
