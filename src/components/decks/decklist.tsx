@@ -4,13 +4,15 @@
 // Owns filter/grouping render; filter and grouping come as props from BuilderShell.
 // §Decklist Group Toggle, §Decklist Group, §Decklist Row (design table).
 
+import { useState } from "react";
+
 import type { DeckDetailCard, DeckUnresolvedRow } from "../../lib/decks/grouping";
 import { cardCopies, groupByCardType, groupByRole } from "../../lib/decks/grouping";
 import { computeRoleCounts } from "../../lib/decks/mix";
 import { isShoppingCard, isSpokenFor } from "../../lib/decks/shopping";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
-import { GroupToggle, type AutoControls } from "./group-toggle";
+import { GroupToggle, type AutoControls, type DeckView } from "./group-toggle";
 import { summarisePrices, type ProvenanceForm } from "../../lib/decks/price";
 import { DecklistGroup } from "./decklist-group";
 import { DecklistGroupHeader } from "./decklist-group-header";
@@ -112,6 +114,12 @@ export function Decklist({
   newestAsOf = null,
   provenance = null,
 }: DecklistProps) {
+  // The view does not persist and does not touch the URL: it is one visit's
+  // reading preference, where `/collection`'s `?view=` answers a browse
+  // surface's different question. Held here because nothing above the list
+  // reads it.
+  const [view, setView] = useState<DeckView>("list");
+
   // undefined = no figure line on the row. That is the All view's answer, and
   // also the outage's: with EDHREC unreachable we know nothing about any of
   // these cards, so a per-card "no EDHREC figure" would be a claim we can't make.
@@ -282,6 +290,8 @@ export function Decklist({
             grouping={grouping}
             onFilterChange={onFilterChange}
             onGroupingChange={onGroupingChange}
+            view={view}
+            onViewChange={setView}
             autoCount={autoCount}
             keptCount={keptCount}
             sweepPending={sweepPending}
@@ -342,6 +352,8 @@ export function Decklist({
           grouping={grouping}
           onFilterChange={onFilterChange}
           onGroupingChange={onGroupingChange}
+          view={view}
+          onViewChange={setView}
           autoCount={autoCount}
           keptCount={keptCount}
           sweepPending={sweepPending}
@@ -517,6 +529,8 @@ export function Decklist({
         grouping={grouping}
         onFilterChange={onFilterChange}
         onGroupingChange={onGroupingChange}
+        view={view}
+        onViewChange={setView}
         autoCount={autoCount}
         keptCount={keptCount}
         sweepPending={sweepPending}

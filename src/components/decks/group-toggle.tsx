@@ -6,6 +6,15 @@
 import { ClearAutoButton } from "./clear-auto";
 import { PriceStrip } from "./price-strip";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
+import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
+
+export type DeckView = "list" | "card";
+
+const DECK_VIEWS: readonly [ViewToggleOption<DeckView>, ViewToggleOption<DeckView>] = [
+  { value: "list", glyph: "≣", label: viewToggleCopy.deck.list },
+  { value: "card", glyph: "▦", label: viewToggleCopy.deck.card },
+];
 
 /**
  * One prop, not two handlers. The cluster renders only when both answers are
@@ -22,6 +31,10 @@ type GroupToggleProps = {
   grouping: "type" | "role";
   onFilterChange: (f: "all" | "shopping") => void;
   onGroupingChange: (g: "type" | "role") => void;
+  /** Both required, not optional: the well is part of the bar from here on, and
+   *  an optional pair would let a caller drop the control with no signal. */
+  view: DeckView;
+  onViewChange: (v: DeckView) => void;
   /** Number of untouched auto cards. The button is absent at 0. */
   autoCount?: number;
   /** Number of non-auto cards — kept fill cards and player additions alike. */
@@ -48,6 +61,8 @@ export function GroupToggle({
   grouping,
   onFilterChange,
   onGroupingChange,
+  view,
+  onViewChange,
   autoCount = 0,
   keptCount = 0,
   sweepPending = false,
@@ -70,14 +85,16 @@ export function GroupToggle({
           pushed off the edge. The auto cluster is one flex child, so it wraps
           whole rather than splitting the pair across two lines. */}
       <div className="flex flex-wrap items-center gap-[7px] md:gap-[10px]">
-        {/* "All N" filter pill — active: accent bg dark text | idle: muted with border */}
+        {/* "All N" filter pill. Selected is bone on `--elevated` with a
+            `--border-strong` ring — verbatim the active `By type` skin. Accent
+            does not appear on the builder's control bar. */}
         <button
           type="button"
           onClick={() => onFilterChange("all")}
           className={[
             "font-sans font-semibold transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
             filter === "all"
-              ? "text-[color:var(--bg)] bg-[color:var(--accent)]"
+              ? "text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
               : "text-[color:var(--fg-faint)] bg-transparent border border-solid border-[color:var(--border-strong)]",
           ].join(" ")}
         >
@@ -91,7 +108,7 @@ export function GroupToggle({
           className={[
             "font-sans transition-[filter] hover:brightness-125 text-[12px] md:text-[13px] rounded-full px-[11px] py-[4px] md:px-[14px] md:py-[5px]",
             filter === "shopping"
-              ? "font-semibold text-[color:var(--bg)] bg-[color:var(--accent)]"
+              ? "font-semibold text-[color:var(--fg)] bg-[color:var(--elevated)] border border-solid border-[color:var(--border-strong)]"
               : "font-medium text-[color:var(--warning)] bg-transparent border border-solid border-[color:color-mix(in_srgb,var(--accent)_30%,var(--bg))]",
           ].join(" ")}
         >
@@ -115,14 +132,6 @@ export function GroupToggle({
             keepAllPending={keepAllPending}
           />
         )}
-
-        {/* "Group" label — desktop only, margin-left: auto is handled by spacer above */}
-        <span
-          className="hidden md:inline font-mono text-[10px] uppercase tracking-[0.1em]"
-          style={{ color: "var(--fg-faint)" }}
-        >
-          Group
-        </span>
 
         {/* By type — active: dark pill with border | idle: plain muted text */}
         {/* Mobile active: px-10 py-4; Desktop active: px-13 py-5              */}
@@ -151,6 +160,12 @@ export function GroupToggle({
         >
           By role
         </button>
+
+        {/* Absent under Shopping, not disabled: a shopping list is a list of
+            things to buy, and there is no second way to read it. */}
+        {filter === "all" && (
+          <ViewToggle options={DECK_VIEWS} value={view} onChange={onViewChange} />
+        )}
       </div>
 
       {/* Scoped to the filter it sits under: the sum of what Shopping is

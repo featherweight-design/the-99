@@ -32,6 +32,16 @@ export const manaCopy = {
   pipOverflow: (omitted: number) => `+${omitted}`,
 } as const;
 
+/**
+ * The view well's two segments, on both surfaces it appears. The glyph is drawn
+ * and the name is spoken, so these strings are the whole accessible name of the
+ * control — there is no visible label to fall back on.
+ */
+export const viewToggleCopy = {
+  deck: { list: "List view", card: "Card view" },
+  collection: { rows: "Rows view", grid: "Grid view" },
+} as const;
+
 /** "U/B" → "blue or black"; "2/W" → "2 or white"; "G/P" → "green or 2 life". */
 function speakSymbol(symbol: string): string {
   return symbol
