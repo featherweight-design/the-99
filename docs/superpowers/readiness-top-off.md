@@ -53,11 +53,13 @@ them needed a Design round-trip.
 4. **`celebration.ts` no longer exists.** It is on the Untouched list in all three rounds. The file
    was deleted with the completion reveal in #362; nothing needs to be preserved.
 
-5. **Three numbering slips in the package, all cosmetic and none of them a design call.** Ledger
+5. **Four numbering slips in the package, all cosmetic and none of them a design call.** Ledger
    rules in `STATES-top-off.md` run 1–7 and then 5, 6, 7 again; the panel state table lists state 17
-   after state 20; and `README.md`'s title still says "R1" where every other line of the round is
-   R3. The rules and states are cited by number elsewhere in the package, so a build that quotes a
-   number should say which of the two it means.
+   after state 20; `README.md`'s open-items list runs 1–7, 7, 9, 10, 8; and `README.md`'s title
+   still says "R1" where every other line of the round is R3. Rules, states and gaps are all cited
+   by number elsewhere in the package, so anything quoting a repeated number should say which of
+   the two it means. The one citation this audit makes — README gap 9, in limitation 5 below — is
+   unambiguous.
 
 ## Checked and correct — `CostPips` and the cost track
 
