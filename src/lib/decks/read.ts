@@ -21,7 +21,7 @@ import {
   type DeckUnresolvedRow,
 } from "./grouping";
 import { statusPill, type StatusPill } from "./status";
-import { DEFAULT_DECK_SORT, type DeckSort } from "./sort";
+import type { DeckSort } from "./sort";
 
 // ---------------------------------------------------------------------------
 // WUBRG bitmask helpers (tested)
@@ -243,16 +243,27 @@ export type DeckListItem = {
  * mapping that would hand back a Date. `toUtcInstant` marks the string form as
  * UTC before parsing, because a bare `new Date("2026-09-05 20:00:00")` is read
  * in the runtime's own zone.
+ *
+ * An unreadable value throws rather than yielding the Invalid Date `new Date`
+ * hands back, which satisfies `instanceof Date`, travels out through
+ * `lastPlayedAt`, and surfaces as a rendered `Invalid Date` far from its cause.
+ * `parseAsOf` guards the same shape for `printing_prices.as_of`.
  */
 function toDate(value: Date | string | null): Date | null {
   if (value === null) return null;
-  return value instanceof Date ? value : new Date(toUtcInstant(value));
+  const parsed = value instanceof Date ? value : new Date(toUtcInstant(value));
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`deck_games.played_at is not a readable timestamp: ${String(value)}`);
+  }
+  return parsed;
 }
 
-export async function listDecksWithStats(
-  userId: string,
-  sort: DeckSort = DEFAULT_DECK_SORT,
-): Promise<DeckListItem[]> {
+/**
+ * `sort` is required rather than defaulted: a default here would silently
+ * re-order every existing caller the day it changed, and the caller is always
+ * the one that knows which order its page asked for.
+ */
+export async function listDecksWithStats(userId: string, sort: DeckSort): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
     (
       select sum(dc2.quantity)

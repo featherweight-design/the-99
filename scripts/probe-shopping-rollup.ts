@@ -36,7 +36,7 @@ async function main() {
 
   for (const userId of userIds) {
     const rollup = await loadShoppingRollup(userId);
-    const tiles = await listDecksWithStats(userId);
+    const tiles = await listDecksWithStats(userId, "lastPlayed");
     const tileTotal = tiles.reduce((n, d) => n + d.toBuyCount, 0);
 
     const fullyOwned = tiles.filter((d) => d.toBuyCount === 0);

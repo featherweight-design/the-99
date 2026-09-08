@@ -35,7 +35,8 @@ export default async function DeckBuilderPage({
 
   const [{ suggestions, degraded, shoppingFigures }, allDecks, ranked, games] = await Promise.all([
     getDeckSuggestions(id),
-    listDecksWithStats(userId),
+    // The move-card picker lists every other deck by name, as it always has.
+    listDecksWithStats(userId, "name"),
     // Read the ranked support list only when the strip can render. A completed
     // deck (openSlots ≤ 0) would never show the strip, so the query would be
     // pure waste — skipping it saves a join on every finished-deck page load.

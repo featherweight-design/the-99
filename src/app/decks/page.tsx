@@ -34,7 +34,9 @@ export default async function DecksPage({
   }
 
   const userId = await requireUserId();
-  const decks = await listDecksWithStats(userId);
+  // Name order is what this page has always shown. The refreshed Decks view
+  // reads the order off the URL; until it lands, the shipped order stands.
+  const decks = await listDecksWithStats(userId, "name");
 
   // ── Empty state — §Empty State — No Decks. Verbatim from interim; not regressed. ──
   if (decks.length === 0) {

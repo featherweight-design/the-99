@@ -914,7 +914,10 @@ git commit -m "refactor(ui): fill the primary with bone so accent can mean in us
 - Consumes: `deckGames` from `src/db/schema.ts`.
 - Produces:
   - `DeckListItem` gains `lastPlayedAt: Date | null`.
-  - `listDecksWithStats(userId: string, sort?: DeckSort): Promise<DeckListItem[]>`.
+  - `listDecksWithStats(userId: string, sort: DeckSort): Promise<DeckListItem[]>` — `sort` is
+    **required**. A default would silently re-order every existing caller, and the caller is
+    always the one that knows which order its page asked for. The two callers that predate the
+    refresh (`/decks` and `/decks/[id]`) pass `"name"`, the order they have always shown.
   - `src/lib/decks/sort.ts`: `export type DeckSort = "lastPlayed" | "name" | "newest"`, `export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed"`, `export const DECK_SORT_LABELS: Record<DeckSort, string>`, `export function parseDeckSort(raw: string | null | undefined): DeckSort`, `export function serializeDeckSort(sort: DeckSort): string | undefined`.
 
 This closes **finding 5** and implements **locked ruling 7**. The query itself gets no unit test — the repo's untested-query pattern (documented in `src/lib/home/summary.ts`) is that shape-shifting SQL is proved by the type checker and the browser, and pure logic is proved by Vitest. `parseDeckSort` is the pure logic.
@@ -1035,13 +1038,12 @@ Select it as `lastPlayedAt: lastPlayedSql`, then normalise it in the `rows.map` 
 
 - [ ] **Step 6: Add the sort parameter**
 
-Give `listDecksWithStats` a second parameter and replace the fixed `orderBy`:
+Give `listDecksWithStats` a required second parameter, replace the fixed `orderBy`, and update
+the two existing callers (`src/app/decks/page.tsx`, `src/app/decks/[id]/page.tsx`) to pass
+`"name"` — the order both have always shown:
 
 ```ts
-export async function listDecksWithStats(
-  userId: string,
-  sort: DeckSort = DEFAULT_DECK_SORT,
-): Promise<DeckListItem[]> {
+export async function listDecksWithStats(userId: string, sort: DeckSort): Promise<DeckListItem[]> {
 ```
 
 ```ts
@@ -1980,7 +1982,7 @@ Expected: FAIL — `Failed to resolve import "./filter"`.
 // sheet than in the column is not possible by construction.
 
 import type { StatusPill } from "./status";
-import { DEFAULT_DECK_SORT, parseDeckSort, serializeDeckSort, type DeckSort } from "./sort";
+import { parseDeckSort, serializeDeckSort, type DeckSort } from "./sort";
 
 export type ColourCode = "W" | "U" | "B" | "R" | "G";
 export type PlayedWindow = "thisMonth" | "never";
@@ -2101,7 +2103,7 @@ export function filtersFromParams(params: URLSearchParams): {
       played: PLAYED_WINDOWS.find((w) => w === played) ?? null,
       search: params.get("q")?.trim() ?? "",
     },
-    sort: parseDeckSort(params.get("sort")) ?? DEFAULT_DECK_SORT,
+    sort: parseDeckSort(params.get("sort")),
   };
 }
 ```
@@ -2656,7 +2658,7 @@ auth today and must keep doing so. Then:
 ```tsx
 const userId = await requireUserId();
 const [decks, shopping, ranked, stats] = await Promise.all([
-  listDecksWithStats(userId),
+  listDecksWithStats(userId, DEFAULT_DECK_SORT),
   loadShoppingRollup(userId),
   getRankedList(userId),
   getCollectionStats(userId),
@@ -2672,8 +2674,9 @@ return (
 );
 ```
 
-`listDecksWithStats` is called with no sort argument — the server's order is
-`DEFAULT_DECK_SORT`, and the client re-sorts from there.
+`listDecksWithStats` takes its sort explicitly — the parameter has no default, so no caller's
+order can move under it. The server hands back `DEFAULT_DECK_SORT`'s order and the client re-sorts
+from there.
 
 `getRankedList` (`src/lib/recs/ranked-list.ts:26`) returns `{ items, degraded, uniqueCardsRead,
 candidateCount }`; `readySlice` takes the `items`. `getCollectionStats`
@@ -2819,7 +2822,9 @@ if (stats.uniqueCards === 0) return <FirstRunChecklist />;
 const [lastUpdated, ranked, decks, shopping] = await Promise.all([
   getCollectionLastUpdated(userId),
   getRankedList(userId),
-  listDecksWithStats(userId),
+  // Explicit, because the parameter has no default. Home's rail is a resume
+  // rail, so last played is the order it wants on its own merits.
+  listDecksWithStats(userId, DEFAULT_DECK_SORT),
   loadShoppingRollup(userId),
 ]);
 
