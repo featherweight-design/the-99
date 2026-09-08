@@ -45,9 +45,9 @@ function Row({
   );
 }
 
-function setPaneRect() {
-  const pane = document.querySelector(".pane") as HTMLElement;
-  pane.getBoundingClientRect = () => rect(PANE);
+function setPaneRect(pane: typeof PANE = PANE) {
+  const el = document.querySelector(".pane") as HTMLElement;
+  el.getBoundingClientRect = () => rect(pane);
 }
 
 function setHover(matches: boolean) {
@@ -220,6 +220,37 @@ describe("HoverPreviewProvider", () => {
     fireEvent.mouseEnter(screen.getByTestId("bottom"));
     act(() => void vi.advanceTimersByTime(0));
     expect(preview()?.style.top).toBe("448px");
+  });
+
+  it("holds the right edge too, rather than flipping onto the panel", () => {
+    // A row with nothing to its left in a 500px pane: the flip is taken and
+    // then clamped, because 300 + 14 + 252 lands 66px past the pane's right.
+    render(<Harness rows={[{ name: "a", imageUri: ART, box: NO_ROOM }]} />);
+    setPaneRect({ ...PANE, right: 500, width: 500 });
+
+    fireEvent.mouseEnter(screen.getByTestId("a"));
+    act(() => void vi.advanceTimersByTime(240));
+
+    // 500 − 252.
+    expect(preview()?.style.left).toBe("248px");
+  });
+
+  it("keeps the near edge when the pane is smaller than the box", () => {
+    // A two-card group in a short window: 120px of pane against a 352px box.
+    // There is no placement that fits, and the one that must not happen is a
+    // top above the pane, which is where the deck bar is.
+    render(
+      <Harness
+        rows={[{ name: "a", imageUri: ART, box: rect({ left: 400, right: 700, top: 260, height: 34 }) }]}
+      />,
+    );
+    setPaneRect({ ...PANE, top: 240, bottom: 360, height: 120, left: 380, right: 560, width: 180 });
+
+    fireEvent.mouseEnter(screen.getByTestId("a"));
+    act(() => void vi.advanceTimersByTime(240));
+
+    expect(preview()?.style.top).toBe("240px");
+    expect(preview()?.style.left).toBe("380px");
   });
 
   it("says nothing and shows nothing but the card", () => {

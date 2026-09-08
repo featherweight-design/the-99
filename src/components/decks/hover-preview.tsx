@@ -64,17 +64,31 @@ const PreviewContext = createContext<PreviewApi | null>(null);
  * flipped right when there is not `WIDTH + GUTTER` to the left of it, which is
  * what a right-column row at a narrow desktop hits.
  *
- * Bounded by the decklist pane rather than the viewport: the preview may
- * overlap rows, since it is a transient, but it must never cover the panel.
+ * Bounded by the decklist pane rather than the viewport, on both axes: the
+ * preview may overlap rows, since it is a transient, but the pane's edges are
+ * where the deck bar and the add panel begin. Only a pane smaller than the box
+ * itself gets past them — see `clamp`.
  */
 function place(row: DOMRect, pane: DOMRect): PreviewBox {
   const leftward = row.left - GUTTER - WIDTH;
-  const left = leftward >= pane.left ? leftward : row.right + GUTTER;
+  const sided = leftward >= pane.left ? leftward : row.right + GUTTER;
+  const left = clamp(sided, pane.left, pane.right - WIDTH);
   // Anchored to the row's vertical centre, then held inside the pane — a row
   // near either end would otherwise hang the box off the top or the bottom.
   const centred = row.top + row.height / 2 - HEIGHT / 2;
-  const top = Math.min(Math.max(centred, pane.top), pane.bottom - HEIGHT);
+  const top = clamp(centred, pane.top, pane.bottom - HEIGHT);
   return { top, left };
+}
+
+/**
+ * A pane smaller than the box on some axis — a three-card group, a short window
+ * — hands this a `max` below its `min`, and a plain `min(max(v, min), max)`
+ * answers with that `max`: a top *above* the pane, or a left outside it. There
+ * is no placement that fits in that case, so the near edge wins and the overflow
+ * falls off the far one.
+ */
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
 /**
