@@ -711,7 +711,9 @@ describe("DiscoveryView", () => {
       />,
     );
     fireEvent.change(field(), { target: { value: "krenko" } });
-    await waitFor(() => expect(container.textContent).toContain(search.noneEmphasis(40)));
+    await waitFor(() =>
+      expect(container.textContent).toContain(discoverCopy.empty.body("krenko", 40)),
+    );
   });
 
   // The name is in nothing this reader can see, so the state says where we
@@ -723,13 +725,13 @@ describe("DiscoveryView", () => {
     fireEvent.click(pip(filterCopy.colour.names.g));
     fireEvent.change(field(), { target: { value: "krenko" } });
 
-    await waitFor(() => expect(container.textContent).toContain(search.noneHeading("krenko")));
+    await waitFor(() => expect(container.textContent).toContain(discoverCopy.empty.heading));
 
     // The field's ✕ carries a different name from the state's button, so the
     // one with the visible label is unambiguous.
     const cta = screen
-      .getAllByRole("button", { name: search.noneCta })
-      .find((b) => b.textContent === search.noneCta);
+      .getAllByRole("button", { name: discoverCopy.empty.clearSearch })
+      .find((b) => b.textContent === discoverCopy.empty.clearSearch);
     fireEvent.click(cta as HTMLElement);
     // The pips survive: the button cleared what the reader typed, and clearing
     // the colours too would undo a filter this state never blamed.

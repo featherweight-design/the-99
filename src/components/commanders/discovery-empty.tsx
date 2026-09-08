@@ -10,9 +10,51 @@
 "use client";
 
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import { GhostButton } from "../ui/button";
+import { discoverCopy } from "../../lib/copy/lanes";
+import { GhostButton, PrimaryButton } from "../ui/button";
+import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "./filtered-empty";
 
 const { empty: copy } = discoveryCopy;
+
+/**
+ * The discover lane at zero (D5). The owned lane's zero state names a control to
+ * drop; this one has a boundary to name instead — the commander the reader is
+ * looking for may exist and simply be on the other lane, which is the one thing
+ * a spelling hint could never tell them.
+ *
+ * So the second affordance is a link rather than a button: it carries the same
+ * query to `/commanders`, and a reader who middle-clicks it gets the lane they
+ * asked for in a tab, which is what a search handoff should do.
+ */
+export function DiscoveryEmpty({
+  query,
+  total,
+  onClearSearch,
+}: {
+  query: string;
+  total: number;
+  onClearSearch: () => void;
+}) {
+  return (
+    <ZeroState
+      heading={discoverCopy.empty.heading}
+      body={discoverCopy.empty.body(query, total)}
+      primary={
+        <PrimaryButton onClick={onClearSearch} className={ZERO_PRIMARY}>
+          {discoverCopy.empty.clearSearch}
+        </PrimaryButton>
+      }
+      secondary={
+        <GhostButton
+          href={`/commanders?q=${encodeURIComponent(query)}`}
+          className={ZERO_SECONDARY}
+        >
+          {discoverCopy.empty.otherLane}
+        </GhostButton>
+      }
+    />
+  );
+}
 
 /**
  * State 1 — no decks built. Rendered above the list under either sort, since the

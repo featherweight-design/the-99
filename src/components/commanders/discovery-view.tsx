@@ -35,10 +35,11 @@ import { useRerankAnnouncement, useScopeAnnouncement, useScopeNav } from "./list
 import {
   EndOfRanking, REVEAL_STEP, RevealControl, revealAnnouncement,
 } from "./reveal-control";
-import { FloorEmpty, NoDecksBanner } from "./discovery-empty";
+import { DiscoveryEmpty, FloorEmpty, NoDecksBanner } from "./discovery-empty";
 import { ExclusionLine } from "./exclusion-line";
 import { resolveExclusionLine } from "../../lib/commanders/exclusion-line";
-import { FilteredEmpty } from "./filtered-empty";
+import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "./filtered-empty";
+import { GhostButton, PrimaryButton } from "../ui/button";
 import { ExcludedMatchAside } from "./excluded-match";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
 import { findExcludedMatches } from "../../app/commanders/actions";
@@ -541,83 +542,88 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
           onRankByFit={() => update({ ...params, scope: "bestfit" })}
         />
       ) : showHeldEmpty && report ? (
-        // The held state (§2b). The empty's geometry, with every part it fills
-        // from the colour filter's vocabulary replaced: the heading names the
-        // commander, the body names the one control holding it, the count line
-        // goes (its figures are the aside beside the button), and the button
-        // undoes that control rather than clearing the pips.
-        <FilteredEmpty
-          colors={[]}
-          total={discovery.items.length}
-          onClear={correct}
+        // The held state (§2b). The shared zero-state shell, with every part it
+        // would fill from the colour filter's vocabulary replaced: the heading
+        // names the commander, the body names the one control holding it, and
+        // the button undoes that control rather than clearing the pips. The
+        // aside keeps its figures beside the button, inert.
+        <ZeroState
           heading={report.heading ?? planeCopy.search.noneHeading(trimmedQuery)}
           body={report.body}
-          diagnostic={null}
-          cta={report.cta}
+          primary={
+            <PrimaryButton onClick={correct} className={ZERO_PRIMARY}>
+              {report.cta}
+            </PrimaryButton>
+          }
           secondary={
             report.aside ? (
-              <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]">
+              <span className="self-center font-mono text-[11.5px] text-[color:var(--fg-faint)]">
                 {report.aside}
               </span>
             ) : undefined
           }
         />
       ) : showSearchEmpty ? (
-        // The same shape as the colour miss, with three of its parts replaced:
-        // no pip row (no filter to show), a diagnostic in the search's own
-        // vocabulary rather than the colour filter's, and a button that clears
-        // what the reader actually set.
-        // The candidate count, not the ranked one, and all three figures take it:
-        // this state fires only once the server has looked past the rows on
-        // screen and found nothing either, so "the N you have not built" is the
-        // whole unbuilt pool.
-        <FilteredEmpty
-          colors={[]}
+        // D5. The candidate count, not the ranked one: this state fires only
+        // once the server has looked past the rows on screen and found nothing
+        // either, so the figure names the whole unbuilt pool.
+        <DiscoveryEmpty
+          query={trimmedQuery}
           total={discovery.candidateCount}
-          onClear={() => update({ ...params, q: "" })}
-          heading={planeCopy.search.noneHeading(trimmedQuery)}
-          body={planeCopy.search.noneBody(discovery.candidateCount)}
-          emphasis={planeCopy.search.noneEmphasis(discovery.candidateCount)}
-          diagnostic={planeCopy.search.announce(0, discovery.candidateCount)}
-          cta={planeCopy.search.noneCta}
+          onClearSearch={() => update({ ...params, q: "" })}
         />
       ) : showUnknownEmpty ? (
-        // The same shape again, saying less: no population figure and no
-        // diagnostic, because the count of what was searched is exactly what
-        // this state does not know.
-        <FilteredEmpty
-          colors={[]}
-          total={discovery.items.length}
-          onClear={() => update({ ...params, q: "" })}
+        // The same shell saying less: no population figure, because the count of
+        // what was searched is exactly what this state does not know. That also
+        // costs it the other lane's link, which only means anything alongside a
+        // claim about what this lane holds.
+        <ZeroState
           heading={planeCopy.search.unknownHeading(trimmedQuery)}
           body={planeCopy.search.unknownBody}
-          diagnostic={null}
-          cta={planeCopy.search.unknownCta}
+          primary={
+            <PrimaryButton
+              onClick={() => update({ ...params, q: "" })}
+              className={ZERO_PRIMARY}
+            >
+              {planeCopy.search.unknownCta}
+            </PrimaryButton>
+          }
         />
       ) : showFilteredEmpty ? (
-        <FilteredEmpty
-          colors={colors}
-          total={discovery.items.length}
-          onClear={() => update({ ...params, colors: [], match: "contains" })}
+        <ZeroState
           heading={emptyCopy.filteredHeading}
           // The ranked count: "the N you have not built" names the list the
           // filter just emptied, and under `sort="new"` the candidate count is
           // the larger pre-exclusion figure the reader never saw a row of.
-          body={emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
-          extraClause={builtClause ?? undefined}
-          cta={emptyCopy.filteredCta}
-          // Accent, not the canvas's `--fg-faint`: M-10 resolves the link that
-          // way, because the drawing gives it exactly the appearance of the
-          // inert aside beside the floor empty's CTA, and the one thing the
-          // design says about it is that it is a link.
-          secondary={
-            <button
-              type="button"
-              onClick={() => scopeNav.go("owned")}
-              className="font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--accent)] hover:underline"
+          // The built clause is the one genuinely new reason this state has under
+          // discovery, so the whole clause is marked rather than a phrase inside it.
+          body={
+            <>
+              {emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
+              {builtClause ? (
+                <>
+                  {" "}
+                  <strong className="font-semibold text-[color:var(--fg)]">
+                    {builtClause}
+                  </strong>
+                </>
+              ) : null}
+            </>
+          }
+          primary={
+            <PrimaryButton
+              onClick={() => update({ ...params, colors: [], match: "contains" })}
+              className={ZERO_PRIMARY}
             >
+              {emptyCopy.filteredCta}
+            </PrimaryButton>
+          }
+          // The other lane, reached the way D5 reaches it: this one is a scope
+          // move rather than a route, so it stays a button.
+          secondary={
+            <GhostButton onClick={() => scopeNav.go("owned")} className={ZERO_SECONDARY}>
               {emptyCopy.filteredScopeLink}
-            </button>
+            </GhostButton>
           }
         />
       ) : (

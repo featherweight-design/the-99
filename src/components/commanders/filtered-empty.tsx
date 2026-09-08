@@ -1,167 +1,148 @@
 "use client";
-// Empty State — Filtered to Zero (§Empty State — Filtered to Zero), as
-// re-skinned by the richness pass (Surfaces v2 §Commanders).
-// Contains: the quiet crown, dimmed WUBRG pips of the active filter, a Cinzel
-// heading, body copy, the "Showing 0 of N" diagnostic, "Clear color filter".
-// Mobile breakpoint: sm:640px (project uses sm: prefix, table breakpoint is 640px).
+// The zero states both lanes draw — canvases D4 (owned), D5 (discover) and E5
+// (phone). One shell, because a reader who empties one lane and then the other
+// should recognise the second state as the same thing said about a different
+// list.
+//
+// The rack above it never changes here. A zero result is a fact about the list,
+// and the controls are how the reader leaves it, so nothing above this state is
+// hidden, disabled or collapsed when it renders.
 
-import { WUBRG_COLOR } from "../../lib/collection/browse";
-import { guildLabel, colorWords } from "../../lib/copy/color-labels";
-import { commandersCopy } from "../../lib/copy/commanders";
-import { Crown } from "../ui/crown";
-import { Emphasised } from "./emphasis";
-import { GhostButton } from "../ui/button";
+import type { ReactNode } from "react";
+import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
+import { GhostButton, PrimaryButton } from "../ui/button";
 
-type FilteredEmptyProps = {
-  colors: string[];
-  total: number;
-  onClear: () => void;
-  /** Discovery's wording for the same shape. The owned scope passes none of
-      these and renders byte-identically to what shipped: discovery is asking a
-      narrower question of the same list, not showing a different state. */
-  heading?: string;
-  body?: string;
-  cta?: string;
-  /** One extra sentence after the body, and one affordance after the button.
-      Both are discovery's alone — the owned scope has no second scope to send
-      the reader to, and no built decks to explain the absence with. */
-  extraClause?: string;
-  secondary?: React.ReactNode;
-  /** One clause of `body` to lift, the way the other two empties mark theirs.
-      The copy module owns the whole sentence and the phrase is a substring of
-      it, so the emphasis is found inside the rendered text rather than composed
-      from fragments here. */
-  emphasis?: string;
-  /** Replaces the mono count line. A search miss is not "showing 0 of N" in the
-      colour filter's sense — nothing was narrowed, nothing was named — so the
-      caller supplies the diagnostic its own state can defend. Explicit `null`
-      prints no line at all, for a state whose figures are already elsewhere. */
-  diagnostic?: string | null;
-};
+/** Three hairline diamonds, the same rotated square the end-of-ranking rule
+    draws, so every full-stop on this page is furniture of one family.
+    Decorative: the heading below says the same thing in words. */
+function DiamondRule() {
+  return (
+    <div className="flex gap-[7px]" aria-hidden="true">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="block h-[10px] w-[10px] rotate-45 border border-solid border-[color:var(--border-strong)]"
+        />
+      ))}
+    </div>
+  );
+}
 
-export function FilteredEmpty({
-  colors,
-  total,
-  onClear,
+/** The shared shape: rule, heading, one sentence, and at most two affordances.
+    The buttons stack full-width at 48px on the phone and sit side by side at
+    32px from `sm:` up — one element per button with responsive classes, so each
+    sentence and each label exists exactly once in the document. */
+export function ZeroState({
   heading,
   body,
-  cta,
-  extraClause,
+  primary,
   secondary,
-  emphasis,
-  diagnostic,
-}: FilteredEmptyProps) {
-  const label = guildLabel(colors);
-
+}: {
+  heading: string;
+  body: ReactNode;
+  primary?: ReactNode;
+  secondary?: ReactNode;
+}) {
   return (
-    // Vignette per Surfaces v2 — accent at 7%, existing token, no new hex.
-    <div className="flex flex-1 flex-col items-center justify-center text-center p-[24px_30px] sm:p-[40px] bg-[radial-gradient(420px_240px_at_50%_76%,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
-      <Crown tone="quiet" className="mb-[14px]" />
-
-      {/* The dimmed pips stay: they were beside the crab, not part of it, and
-          they are the only place the active filter is visible. With no pip lit
-          there is no filter to show, and the row would be an empty gap under a
-          heading that never mentioned colour. */}
-      {colors.length > 0 ? (
-        <div className="flex items-center gap-[16px]">
-          <div className="flex gap-[6px]" aria-hidden="true">
-            {colors.map((c) => (
-              <span
-                key={c}
-                className="block rounded-full"
-                style={{
-                  width: 16,
-                  height: 16,
-                  background: WUBRG_COLOR[c] ?? "var(--fg-faint)",
-                  opacity: 0.5,
-                  boxShadow: "0 0 0 2px var(--accent)",
-                }}
-              />
-            ))}
-          </div>
+    <div className="flex flex-col items-center gap-[12px] px-[22px] pt-[40px] pb-[40px] text-center sm:pt-[34px] sm:pb-[38px]">
+      <DiamondRule />
+      <h2 className="font-display m-0 text-[19px] font-semibold text-[color:var(--fg)]">
+        {heading}
+      </h2>
+      <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] sm:max-w-[520px]">
+        {body}
+      </p>
+      {primary || secondary ? (
+        <div className="mt-[6px] flex w-full flex-col gap-[9px] self-stretch sm:mt-[4px] sm:w-auto sm:flex-row sm:self-auto">
+          {primary}
+          {secondary}
         </div>
       ) : null}
-
-      {/* Heading */}
-      <h2
-        className="font-display m-0 mt-[16px] text-[20px] sm:text-[24px]"
-        style={{ fontWeight: 700, color: "var(--fg)" }}
-      >
-        {heading ?? commandersCopy.filteredEmpty.heading(label)}
-      </h2>
-
-      {/* Body */}
-      <p
-        className="m-0 text-[13px] sm:text-[14px]"
-        style={{
-          color: "var(--fg-body)",
-          lineHeight: 1.6,
-          marginTop: 8,
-          maxWidth: 380,
-        }}
-      >
-        {(() => {
-          // The default caption is a sentence like any other, so a caller marking a
-          // substring of it should not have to restate the whole thing to be heard.
-          const resolved = body ?? commandersCopy.filteredEmpty.caption(colorWords(colors), total);
-          return emphasis ? (
-            <Emphasised text={resolved} values={[emphasis]} color="var(--fg)" />
-          ) : (
-            resolved
-          );
-        })()}
-        {/* The clause is a second sentence rather than a second paragraph: it
-            gives the reason the first sentence is true, and a break would read
-            as a change of subject. Emphasised whole, unlike the other two
-            empties' one marked phrase — the clause IS the new reason here, so
-            there is nothing inside it to lift above the rest. */}
-        {extraClause ? (
-          <>
-            {" "}
-            <strong className="font-semibold text-[color:var(--fg)]">{extraClause}</strong>
-          </>
-        ) : null}
-      </p>
-
-      {/* "Showing 0 of N" count — amber, and now below the caption: the
-          character leads, the diagnostic follows. It is the only place the
-          user learns the filter matched nothing rather than the list being
-          empty, so it stays. */}
-      {diagnostic !== null ? (
-        <p
-          className="m-0 font-mono text-[10.5px] sm:text-[11px]"
-          style={{ color: "var(--warning)", marginTop: 12 }}
-        >
-          {diagnostic ?? commandersCopy.filteredEmpty.count(total)}
-        </p>
-      ) : null}
-
-      {/* Clear color filter button. Under discovery it gains a second
-          affordance beside it, so the two sit in a wrapping group; the owned
-          scope has nothing to put there and keeps the bare button it shipped
-          with. `flex-wrap` because no phone frame was drawn for this state and
-          a 40px button plus a mono note does not fit 390px on one line. The
-          group's `10px` matches the floor empty's identical CTA-plus-note
-          pairing: M-9 resolves the canvas's 12px here as drafting drift. */}
-      {secondary ? (
-        <span className="mt-[16px] inline-flex flex-wrap items-center justify-center gap-[10px]">
-          <GhostButton
-            onClick={onClear}
-            className="inline-flex items-center h-[40px] px-[18px] text-[13.5px]"
-          >
-            {cta ?? commandersCopy.filteredEmpty.cta}
-          </GhostButton>
-          {secondary}
-        </span>
-      ) : (
-        <GhostButton
-          onClick={onClear}
-          // brand focus-visible outline treatment inherited from globals.css
-          className="text-[13px] p-[11px_20px] sm:p-[10px_20px] mt-[16px]"
-        >
-          {cta ?? commandersCopy.filteredEmpty.cta}
-        </GhostButton>
-      )}
     </div>
+  );
+}
+
+/** Shared button geometry: 48px full-width on the phone, 32px hugging its label
+    from `sm:` up. The primitives own fill, border and type family; height,
+    padding and size are the caller's, which is what these two constants are. */
+export const ZERO_PRIMARY =
+  "inline-flex items-center justify-center h-[48px] rounded-[10px] text-[14px] " +
+  "sm:h-[32px] sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]";
+export const ZERO_SECONDARY =
+  "inline-flex items-center justify-center h-[48px] rounded-[10px] text-[14px] " +
+  "sm:h-[32px] sm:rounded-[8px] sm:px-[13px] sm:text-[12.5px]";
+
+/** The body lifts two phrases out of the sentence the copy module owns: the
+    commander's name, and the control that excluded it. Both go to `--fg-body`,
+    and the control also takes the mono face every other control name on this
+    page is set in. Marked by colour alone rather than bolded — a screen reader
+    hears the sentence, and the lift is for the eye scanning it.
+    Two faces, so the shared `Emphasised` (one style per call) cannot draw it. */
+function markPhrases(text: string, name: string, control: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let rest = text;
+  const marks: Array<[string, string]> = [
+    [name, "text-[color:var(--fg-body)]"],
+    [control, "font-mono text-[12.5px] text-[color:var(--fg-body)]"],
+  ];
+  marks.forEach(([value, className], i) => {
+    const at = rest.indexOf(value);
+    if (at === -1) return;
+    nodes.push(rest.slice(0, at));
+    nodes.push(
+      <span key={i} className={className}>
+        {value}
+      </span>,
+    );
+    rest = rest.slice(at + value.length);
+  });
+  nodes.push(rest);
+  return nodes;
+}
+
+/**
+ * The owned lane at zero (D4). One control is named — the single one whose
+ * removal returns the most rows — along with the commander it would bring back
+ * and how many rows come with it. That promise is the whole point of the state,
+ * so where no single control fixes the list the sentence drops it rather than
+ * making one it cannot keep, and only the wholesale escape renders.
+ *
+ * The choice of control is arithmetic and is made in `nearestFix`; this draws
+ * the answer.
+ */
+export function FilteredEmpty({
+  nearest,
+  onDrop,
+  onClearAll,
+}: {
+  nearest: { name: string; control: string; rows: number } | null;
+  onDrop: () => void;
+  onClearAll: () => void;
+}) {
+  return (
+    <ZeroState
+      heading={commandersCopy.empty.heading}
+      body={
+        nearest
+          ? markPhrases(
+              commandersCopy.empty.bodyOneFix(nearest.name, nearest.control, nearest.rows),
+              nearest.name,
+              nearest.control,
+            )
+          : commandersCopy.empty.bodyNoSingleFix
+      }
+      primary={
+        nearest ? (
+          <PrimaryButton onClick={onDrop} className={ZERO_PRIMARY}>
+            {commandersCopy.empty.fixDrop(nearest.control)}
+          </PrimaryButton>
+        ) : undefined
+      }
+      secondary={
+        <GhostButton onClick={onClearAll} className={ZERO_SECONDARY}>
+          {filterCopy.chips.clearAll}
+        </GhostButton>
+      }
+    />
   );
 }

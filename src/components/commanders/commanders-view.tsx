@@ -13,12 +13,15 @@ import type { CommanderListItem } from "../../lib/recs/recommend";
 import { fromFreeDelta, type FreeRankingDelta } from "../../lib/recs/free-delta";
 import { filterByColors } from "../../lib/commanders/filter";
 import {
+  defaultParams,
   laneQuery,
   parseLaneParams,
   type LaneOrder,
   type LaneParams,
 } from "../../lib/commanders/lane-params";
 import { rankMap } from "../../lib/commanders/rank-maps";
+import { nearestFix } from "../../lib/commanders/nearest-fix";
+import { filterCopy } from "../../lib/copy/lanes";
 import type { ReceiptCounts } from "../../lib/commanders/in-use";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { RecCard, type ScoreDelta } from "./rec-card";
@@ -44,6 +47,11 @@ const NO_CLAIMS: ReceiptCounts = { inUse: 0, wantedByBrew: 0 };
 // happens once, here, rather than inside the predicate — the collection browser
 // passes it upper-case already.
 const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
+
+/** The reader's word for one pip. The catalog's hues are upper-case and the copy
+    module keys on the URL's lower-case form, so the lift happens here. */
+const colourName = (hue: string) =>
+  filterCopy.colour.names[hue.toLowerCase() as keyof typeof filterCopy.colour.names];
 
 /**
  * The lane's client-side ordering. `fit` is the server's order and is returned
@@ -213,12 +221,54 @@ export function CommandersView({
     [freeItems],
   );
 
-  // The filtered-to-zero state's one control drops the pips and the modifier
-  // that only exists to modify them, and leaves search and order alone.
-  const handleClearFilter = useCallback(
-    () => update({ ...params, colors: [], match: "contains" }),
-    [update, params],
-  );
+  // The zero state's wholesale escape says `Clear all filters`, so it means the
+  // same thing the rack's own `Clear` means: every control back to the lane's
+  // default, search included. Anything narrower would leave a control lit under
+  // a button that claimed to have cleared them.
+  const handleClearFilter = useCallback(() => update(defaultParams("owned")), [update]);
+
+  // The zero state's specific correction: the one lit pip whose removal returns
+  // the most rows, with the commander it brings back and how many come with it.
+  //
+  // Colours only. Availability is a scoring control — it re-scores the same
+  // members and removes none — so dropping it could never return a row, and the
+  // mode is excluded because the sentence the copy module owns promises the
+  // reader a colour ("Drop the colour and you get N rows back"), which a mode
+  // flip would not keep.
+  //
+  // Every candidate carries the same `changedAt`: the pips are rebuilt in WUBRG
+  // order on each toggle, so nothing on this lane records which one moved last,
+  // and inventing an order here would be a recency claim the rack cannot make.
+  const nearest = useMemo(() => {
+    const returned = new Map<string, typeof searched>();
+    for (const hue of colors) {
+      returned.set(
+        colourName(hue),
+        filterByColors(
+          searched,
+          colors.filter((c) => c !== hue),
+          params.match,
+        ),
+      );
+    }
+    const best = nearestFix(
+      [...returned].map(([control, rows]) => ({ control, rows: rows.length, changedAt: 0 })),
+    );
+    if (best === null) return null;
+    const back = ordered(returned.get(best.control) as typeof searched, params.order);
+    return { name: back[0].name, control: best.control, rows: best.rows };
+  }, [colors, searched, params.match, params.order]);
+
+  // The named correction, and only it: one pip goes out and every other control
+  // stays where the reader put it. The control is carried as the reader's word
+  // for it, so the pip it names is found by that word rather than by index.
+  const handleDropColour = useCallback(() => {
+    if (nearest === null) return;
+    update({
+      ...params,
+      colors: rawColors.filter((hue) => colourName(hue) !== nearest.control),
+    });
+  }, [nearest, update, params, rawColors]);
 
   const windowed = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
   const remaining = Math.max(0, filtered.length - shown);
@@ -325,9 +375,9 @@ export function CommandersView({
         {/* Result list or filtered-to-zero state */}
         {colors.length > 0 && filtered.length === 0 ? (
           <FilteredEmpty
-            colors={colors}
-            total={results.length}
-            onClear={handleClearFilter}
+            nearest={nearest}
+            onDrop={handleDropColour}
+            onClearAll={handleClearFilter}
           />
         ) : (
           <>
