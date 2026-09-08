@@ -1,0 +1,59 @@
+// The plan wrote these six with `@testing-library/user-event`, which this repo
+// does not depend on (see theme-picker.test.tsx). The assertions are the plan's,
+// verbatim; only the two interactions are fireEvent instead. The Esc case aims
+// the key at whatever holds focus, so it still fails if the sheet never took it.
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { defaultParams } from "@/lib/commanders/lane-params";
+import { FilterSheet } from "./filter-sheet";
+
+describe("FilterSheet", () => {
+  it("puts scope first on the discover lane", () => {
+    render(
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("discover")} lane="discover" onChange={() => {}} shown={3301} />,
+    );
+    const legends = screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"));
+    expect(legends[0]).toBe("Scope");
+  });
+
+  it("keeps search out of the sheet, which is why the badge does not count it", () => {
+    render(
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} />,
+    );
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+  });
+
+  it("labels the footer with the live count", () => {
+    render(
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={4} />,
+    );
+    expect(screen.getByRole("button", { name: "Show 4 commanders" })).toBeInTheDocument();
+  });
+
+  it("applies a tap immediately rather than staging it behind an Apply", () => {
+    const onChange = vi.fn();
+    render(
+      <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={onChange} shown={148} />,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Free cards only" }));
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it("dismisses on Esc without reverting", () => {
+    const onOpenChange = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <FilterSheet open onOpenChange={onOpenChange} params={{ ...defaultParams("owned"), avail: "free" }} lane="owned" onChange={onChange} shown={4} />,
+    );
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("renders nothing when closed, leaving no duplicate controls in the a11y tree", () => {
+    const { container } = render(
+      <FilterSheet open={false} onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={() => {}} shown={148} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+});

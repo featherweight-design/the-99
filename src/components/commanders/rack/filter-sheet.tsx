@@ -1,0 +1,321 @@
+"use client";
+// The filter sheet — every control except search, below 1024px.
+//
+// `src/components/ui/filter-panel.tsx` is the reference implementation and its
+// rules are carried whole rather than redesigned: the same sheet markup, the
+// same scrim, the same 80px drag-to-dismiss, the same focus trap, and the same
+// 300ms-debounced announcement.
+//
+// Three of those rules matter more than the markup:
+//
+// 1. EXACTLY ONE of the sheet and the inline rack is mounted. Closed returns
+//    null — never a hidden duplicate, which would put a second copy of every
+//    radiogroup in the accessibility tree.
+// 2. Taps apply immediately. There is no Apply and nothing is staged: the
+//    footer's primary only dismisses, and its label tracks the live count.
+// 3. Esc is dismiss, never undo — as are the handle drag, the scrim tap and
+//    that primary. They are one action with four gestures.
+//
+// Search is deliberately absent: it stays on the persistent row behind the
+// scrim, which is why `activeControlCount` does not count it and why the badge
+// here cannot either.
+
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  activeControlCount,
+  defaultParams,
+  type Lane,
+  type LaneOrder,
+  type LaneParams,
+} from "../../../lib/commanders/lane-params";
+import { commandersCopy, discoverCopy, filterCopy } from "../../../lib/copy/lanes";
+import { PrimaryButton } from "../../ui/button";
+import { AvailabilityControl } from "./availability-control";
+import { ColourControl } from "./colour-control";
+import { OrderControl } from "./order-control";
+import { ScopeControl } from "./scope-control";
+
+/** Travel past which the handle drag dismisses rather than snapping back. */
+const DRAG_DISMISS_PX = 80;
+
+/** The lane owns its sort list; `OrderControl` knows neither. */
+const ORDER_OPTIONS: Record<Lane, readonly { key: LaneOrder; label: string }[]> = {
+  owned: [
+    { key: "fit", label: commandersCopy.order.fit },
+    { key: "name", label: commandersCopy.order.name },
+    { key: "added", label: commandersCopy.order.added },
+  ],
+  discover: [
+    { key: "popularity", label: discoverCopy.order.popularity },
+    { key: "name", label: discoverCopy.order.name },
+    { key: "recent", label: discoverCopy.order.recent },
+  ],
+};
+
+export function FilterSheet({
+  open,
+  onOpenChange,
+  params,
+  lane,
+  onChange,
+  shown,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  params: LaneParams;
+  lane: Lane;
+  onChange: (next: LaneParams) => void;
+  /** Rows the current parameters would show. The footer says it, live. */
+  shown: number;
+}) {
+  // Live offset of the sheet under a handle drag, in px. 0 when not dragging.
+  const [dragY, setDragY] = useState(0);
+  const [announcement, setAnnouncement] = useState("");
+  const dragStartY = useRef<number | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // The count as last announced. Null means "not announced yet this opening",
+  // which is what keeps the sheet from reading its own count out on open.
+  const lastShown = useRef<number | null>(null);
+
+  // aria-modal means focus has to start inside the sheet, and the key handler
+  // is bound to the dialog — without this, Esc would never reach it.
+  useEffect(() => {
+    if (open) panelRef.current?.focus();
+  }, [open]);
+
+  // The count is announced debounced 300ms, exactly as the reference panel
+  // announces its match count: FILTERING is immediate and only the message
+  // waits, so a reader tapping four pips hears one number, not four.
+  useEffect(() => {
+    if (!open) {
+      lastShown.current = null;
+      return;
+    }
+    if (lastShown.current === null || lastShown.current === shown) {
+      lastShown.current = shown;
+      return;
+    }
+    lastShown.current = shown;
+    const t = setTimeout(() => setAnnouncement(filterCopy.sheet.dismiss(shown)), 300);
+    return () => clearTimeout(t);
+  }, [open, shown]);
+
+  if (!open) return null;
+
+  const active = activeControlCount(params, lane);
+  const orders = ORDER_OPTIONS[lane];
+
+  function close() {
+    dragStartY.current = null;
+    setDragY(0);
+    onOpenChange(false);
+  }
+
+  // aria-modal: focus must not escape the sheet while it is up.
+  function trapTab(e: React.KeyboardEvent) {
+    const root = panelRef.current;
+    if (!root) return;
+    const focusable = [...root.querySelectorAll<HTMLElement>("button")].filter(
+      (el) => !el.hasAttribute("disabled") && el.tabIndex !== -1,
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      // Dismiss, never undo — every tap is already applied.
+      close();
+      return;
+    }
+    if (e.key === "Tab") trapTab(e);
+  }
+
+  // Drag-to-dismiss, tracked live: the sheet follows the pointer down and either
+  // snaps back or dismisses past the threshold.
+  function onHandlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    dragStartY.current = e.clientY;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }
+  function onHandlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (dragStartY.current === null) return;
+    setDragY(Math.max(0, e.clientY - dragStartY.current));
+  }
+  function onHandlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (dragStartY.current === null) return;
+    const travelled = Math.max(0, e.clientY - dragStartY.current);
+    dragStartY.current = null;
+    setDragY(0);
+    if (travelled >= DRAG_DISMISS_PX) close();
+  }
+
+  // The pips and their match modifier are one control and one group; the rest
+  // are wrapped here, so the sections are named in rack order and scope leads
+  // on discover.
+  const colour = (
+    <ColourControl
+      colors={params.colors}
+      match={params.match}
+      onColorsChange={(colors) => onChange({ ...params, colors })}
+      onMatchChange={(match) => onChange({ ...params, match })}
+      wide={false}
+      showHint
+    />
+  );
+  const order = (
+    <Section legend={filterCopy.order.legend} showLegend>
+      <OrderControl
+        value={params.order}
+        options={orders}
+        onChange={(next) => onChange({ ...params, order: next })}
+        wide={false}
+      />
+    </Section>
+  );
+
+  return (
+    <>
+      {/* Scrim — the app's shipped one. Tap dismisses, and commits nothing. */}
+      <div
+        role="presentation"
+        onClick={close}
+        className="fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--bg)_72%,transparent)]"
+      />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        aria-label={filterCopy.sheet.title}
+        onKeyDown={onKeyDown}
+        className="fixed inset-x-0 bottom-0 z-50 flex max-h-[78vh] flex-col rounded-t-[16px] bg-[color:var(--surface-rail)] border-t border-solid border-[color:var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in"
+        // The drag offset is per-pixel and only exists mid-gesture, so it cannot
+        // be a class. Not colour or border — the inline-style rule is about
+        // styles that outrank hover: utilities.
+        style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
+      >
+        {/* Drag handle. aria-hidden and unfocusable on purpose: the footer's
+            primary is the accessible way out, and a second control with the
+            same job would be announced as a duplicate. */}
+        <div
+          aria-hidden
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerUp}
+          className="flex touch-none justify-center pt-[9px] pb-[4px]"
+        >
+          <span className="h-[4px] w-[36px] rounded-full bg-[color:var(--border-strong)]" />
+        </div>
+
+        <h2 className="m-0 px-[16px] pt-[4px] pb-[10px] font-display text-[18px] font-semibold text-[color:var(--fg)]">
+          {filterCopy.sheet.title}
+          {active > 0 && (
+            <span className="ml-[8px] rounded-full px-[8px] py-px align-middle font-mono text-[12px] font-semibold bg-[color:var(--accent)] text-[color:var(--bg)]">
+              {active}
+            </span>
+          )}
+        </h2>
+
+        {/* min-h-0 so the section stack scrolls inside the 78vh cap rather than
+            pushing the footer off the bottom of the sheet. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-[16px] py-[6px]">
+          {lane === "discover" ? (
+            <>
+              {/* Scope leads discover, carrying both glosses. */}
+              <Section legend={discoverCopy.scope.legend} showLegend>
+                <ScopeControl
+                  value={params.scope}
+                  onChange={(scope) => onChange({ ...params, scope })}
+                  wide={false}
+                  showGlosses
+                />
+              </Section>
+              {colour}
+              {order}
+            </>
+          ) : (
+            <>
+              {colour}
+              {/* The control draws its own legend and its own explainer, so the
+                  section only has to name itself for AT. */}
+              <Section legend={commandersCopy.availability.legend} showLegend={false}>
+                <AvailabilityControl
+                  value={params.avail}
+                  onChange={(avail) => onChange({ ...params, avail })}
+                  wide={false}
+                />
+              </Section>
+              {order}
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-[12px] border-t border-solid border-[color:var(--border)] px-[16px] pt-[12px] pb-[20px]">
+          <button
+            type="button"
+            // Search is not in this sheet, so Clear does not reach it: clearing
+            // a query the reader cannot see from here would be a control acting
+            // outside its own frame.
+            onClick={() => onChange({ ...defaultParams(lane), q: params.q })}
+            disabled={active === 0}
+            className={[
+              "font-sans text-[13.5px] font-medium",
+              active > 0
+                ? "cursor-pointer text-[color:var(--accent)]"
+                : "cursor-default text-[color:var(--fg-locked)]",
+            ].join(" ")}
+          >
+            {filterCopy.chips.clear}
+          </button>
+          {/* Dismiss only. It commits nothing, because everything is committed. */}
+          <PrimaryButton onClick={close} className="px-[22px] py-[12px] text-[13.5px]">
+            {filterCopy.sheet.dismiss(shown)}
+          </PrimaryButton>
+        </div>
+
+        <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </span>
+      </div>
+    </>
+  );
+}
+
+// Module scope, deliberately: a component declared inside `FilterSheet` would be
+// a new type on every render and would remount its whole subtree.
+//
+// The group is what names a section for AT. `ScopeControl` and `OrderControl`
+// are radiogroups, which is the right role for what they are but not one that
+// stands in for a section heading — and the sheet's sections have to be walkable
+// in rack order.
+function Section({
+  legend,
+  showLegend,
+  children,
+}: {
+  legend: string;
+  /** False where the control already draws its own caption. */
+  showLegend: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div role="group" aria-label={legend} className="flex flex-col gap-[10px]">
+      {showLegend && (
+        <p className="font-mono m-0 text-[10px] tracking-[0.12em] uppercase text-[color:var(--fg-faint)]">
+          {legend}
+        </p>
+      )}
+      {children}
+    </div>
+  );
+}
