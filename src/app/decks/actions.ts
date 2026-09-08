@@ -23,20 +23,10 @@ import { validateCardForDeck } from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
 import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
-import { readSynergyCards } from "../commanders/[slug]/synergy-read";
-import { planLastSlots } from "../../lib/decks/last-slots";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
-
-export type LastSlotsFillResult =
-  | { ok: true; added: number; total: number; shortfall: number }
-  | { ok: false; message: string };
-
-export type LastSlotsTopUpResult =
-  | { ok: true; added: number; total: number; bought: number }
-  | { ok: false; message: string };
 
 export type TopOffResult =
   | { ok: true; passId: string | null; added: number; total: number; boughtDelta: number }
@@ -716,145 +706,18 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
   });
 }
 
-// ---------------------------------------------------------------------------
-// Last-slots fill actions
-// ---------------------------------------------------------------------------
-
-/** Shared logic for both fill controls. The only difference between owned-only
- *  and top-up is `ownedOnly`. Both follow the restoreAutoCards locking pattern:
- *  for-update, re-read inside the lock, legality pass per card (skipping rather
- *  than throwing), insert with onConflictDoNothing, revalidate claim surfaces. */
-async function fillLastSlots(deckId: string, ownedOnly: boolean) {
-  const userId = await requireUserId();
-  const deck = await requireDeck(deckId, userId);
-  const [commander] = await db.select({ colorIdentity: cards.colorIdentity })
-    .from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
-  if (!commander) throw new Error("commander not found");
-
-  // The exclusion input is empty: the panel's role-coverage exclusion is a
-  // commander-page concern, and on the deck surface every ranked card is a
-  // candidate. planLastSlots does the in-deck filtering.
-  const ranked = await readSynergyCards(userId, deck.commanderOracleId, []);
-
-  return await db.transaction(async (tx) => {
-    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
-    // Re-read inside the lock. openSlots computed before it is a number another
-    // tab may already have spent.
-    const present = await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
-      .from(deckCards).where(eq(deckCards.deckId, deckId));
-    const built = present.reduce((n, r) => n + r.quantity, 0);
-    const inDeck = new Set(present.map((r) => r.oracleId));
-
-    const { place } = planLastSlots({
-      ranked, openSlots: 99 - built, inDeckOracleIds: inDeck, ownedOnly,
-    });
-
-    // Read card rows for the legality pass — same inArray shape as restoreAutoCards.
-    const byOracleId = place.length > 0
-      ? new Map(
-          (await tx.select({
-            oracleId: cards.oracleId,
-            commanderLegal: cards.commanderLegal,
-            colorIdentity: cards.colorIdentity,
-          }).from(cards).where(inArray(cards.oracleId, place)))
-            .map((c) => [c.oracleId, c]),
-        )
-      : new Map<string, { oracleId: string; commanderLegal: boolean; colorIdentity: string[] }>();
-
-    // Same legality pass the add path runs; a refusal skips one card rather
-    // than failing the fill, because a fill is a bulk act and one off-identity
-    // row is not a reason to place nothing.
-    const legal = place.filter((oracleId) => {
-      const card = byOracleId.get(oracleId);
-      return card != null && !validateCardForDeck(card, {
-        commanderOracleId: deck.commanderOracleId,
-        commanderColorIdentity: commander.colorIdentity,
-        built: 0,
-      });
-    });
-
-    if (legal.length > 0) {
-      await tx.insert(deckCards)
-        .values(legal.map((oracleId) => ({ deckId, oracleId, quantity: 1, auto: true })))
-        .onConflictDoNothing();
-    }
-    for (const path of claimSurfaces(deckId)) revalidatePath(path);
-    // finalCounts: copies per oracle id after the write — what was already in the
-    // deck at its stacked quantity, plus one copy for each card that just landed.
-    // The wrapper scopes its collection read to these ids and counts `bought` by
-    // copies, because `bought` is a card count everywhere else it appears
-    // (planFill sums quantities, and the announcement pairs it with a total that
-    // does), so a deck holding four unowned basics has to report four.
-    const finalCounts = new Map(present.map((r) => [r.oracleId, r.quantity]));
-    // `?? 1` rather than an unconditional 1: an id already present lost its
-    // insert to onConflictDoNothing and keeps the quantity it had.
-    for (const oracleId of legal) finalCounts.set(oracleId, finalCounts.get(oracleId) ?? 1);
-    // shortfall: derived from what actually landed (post-legality-filter) so the
-    // reported numbers add up to 99. Pre-filter shortfall could read "0 short"
-    // while the deck is one card light if the legality pass dropped a card.
-    // Clamped at zero: a deck that somehow holds more than 99 is corrupt state,
-    // not a negative shortfall, and "−1 short" is a worse answer than "none".
-    const shortfall = Math.max(0, 99 - (built + legal.length));
-    return { added: legal.length, total: built + legal.length, shortfall, userId, finalCounts };
-  });
-}
-
-export async function fillLastSlotsOwned(deckId: string): Promise<LastSlotsFillResult> {
-  try {
-    const r = await fillLastSlots(deckId, true);
-    return { ok: true, added: r.added, total: r.total, shortfall: r.shortfall };
-  } catch (err) {
-    console.error("fillLastSlotsOwned failed", err);
-    return { ok: false, message: synergyCopy.lastSlots.fillFailed };
-  }
-}
-
-export async function fillLastSlotsUnowned(deckId: string): Promise<LastSlotsTopUpResult> {
-  try {
-    const r = await fillLastSlots(deckId, false);
-    // `bought` is the whole deck's unowned count after the write — ownership lives
-    // in collection_items, not the ranked list, so a deck card EDHREC never ranked
-    // still counts. This read is outside the transaction: collection_items is not
-    // touched by the deck write and needs no row lock.
-    const finalIds = [...r.finalCounts.keys()];
-    // Gated on a non-empty list like every other inArray in this file: a deck
-    // holding nothing, whose fill placed nothing, would otherwise ask for
-    // `in ()`. It has no answer to give either — nothing in the deck is nothing
-    // bought.
-    const owned = finalIds.length === 0
-      ? new Set<string>()
-      : new Set(
-          (await db.select({ oracleId: collectionItems.oracleId })
-            .from(collectionItems)
-            .where(and(
-              eq(collectionItems.userId, r.userId),
-              inArray(collectionItems.oracleId, finalIds),
-            )))
-            .map((c) => c.oracleId),
-        );
-    const bought = [...r.finalCounts].reduce(
-      (n, [oracleId, quantity]) => (owned.has(oracleId) ? n : n + quantity),
-      0,
-    );
-    return { ok: true, added: r.added, total: r.total, bought };
-  } catch (err) {
-    console.error("fillLastSlotsUnowned failed", err);
-    return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
-  }
-}
-
 /** Places exactly the cards the player ticked, as one act.
  *
- *  Unlike the two fill controls, nothing here is planned server-side: the list
- *  is the plan, and this writes the selection it produced. That difference is
- *  why an illegal card refuses the whole commit rather than being skipped — the
- *  player chose these cards specifically, and placing all but one of them would
- *  make the receipt lie about what they asked for.
+ *  Nothing here is planned server-side: the list is the plan, and this writes
+ *  the selection it produced. That is why an illegal card refuses the whole
+ *  commit rather than being skipped — the player chose these cards
+ *  specifically, and placing all but one of them would make the receipt lie
+ *  about what they asked for.
  *
  *  The refusal is a race guard and not the surface for a ticked row going
  *  illegal: the list recounts that client-side before any request leaves, so a
- *  refusal here means the two views disagree, and it renders as the generic
- *  failure the top-up already ships. */
+ *  refusal here means the two views disagree, and it renders as the one
+ *  refusal string this surface has. */
 async function runTopOff(deckId: string, oracleIds: string[]) {
   const userId = await requireUserId();
   const deck = await requireDeck(deckId, userId);

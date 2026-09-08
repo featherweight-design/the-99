@@ -12,8 +12,9 @@ import {
   UPDATED_PARAM,
 } from "../../../lib/decks/arrival";
 import { readSynergyCards } from "../../commanders/[slug]/synergy-read";
-import { planLastSlots, countLastSlotsUnowned } from "../../../lib/decks/last-slots";
+import { listLastSlotsCandidates, type TopOffCandidate } from "../../../lib/decks/last-slots";
 import { loadPrices } from "../../../lib/decks/price-query";
+import { loadAvailability } from "../../../lib/decks/availability-query";
 import { provenanceForm } from "../../../lib/decks/price";
 import { listDeckGames, summarizeGames } from "../../../lib/decks/games";
 
@@ -40,9 +41,9 @@ export default async function DeckBuilderPage({
     // Read the ranked support list only when the strip can render. A completed
     // deck (openSlots ≤ 0) would never show the strip, so the query would be
     // pure waste — skipping it saves a join on every finished-deck page load.
-    // The in-deck filter belongs to planLastSlots, not here: passing
-    // detail.cards as coveredOracleIds would exclude unowned in-deck cards,
-    // over-counting B's figure and breaking state 12.
+    // The in-deck filter belongs to listLastSlotsCandidates, not here: passing
+    // detail.cards as coveredOracleIds would apply the role-coverage exclusion
+    // to them, which is a different exclusion with a different meaning.
     openSlots > 0 ? readSynergyCards(userId, detail.commander.oracleId, []) : [],
     listDeckGames(id, userId),
   ]);
@@ -52,16 +53,41 @@ export default async function DeckBuilderPage({
   // work to the browser for nothing.
   const gameSummary = summarizeGames(games);
 
-  // Sequential, not part of the Promise.all above: the suggestion oracle ids
-  // come out of that call, so there is nothing to price until it resolves.
-  // A failed price read degrades to today's bare tags rather than taking the
-  // builder down — the same treatment search-action.ts:104 gives availability.
-  const priced = await loadPrices([
-    ...new Set([
-      ...detail.cards.map((c) => c.oracleId),
-      ...suggestions.map((s) => s.oracleId),
-    ]),
-  ]).catch(() => null);
+  // The whole pool the top-off list offers, in rank order and uncapped — the
+  // cap belongs to the selection, not to the list. A card the deck already
+  // holds is the one exclusion: a row the player cannot tick is a row the list
+  // has no reason to draw.
+  const inDeckOracleIds = new Set(detail.cards.map((r) => r.oracleId));
+  const candidateCards = listLastSlotsCandidates({ ranked, inDeckOracleIds });
+
+  // Sequential, not part of the Promise.all above: the suggestion and candidate
+  // oracle ids come out of those calls, so there is nothing to price or to ask
+  // availability for until they resolve.
+  //
+  // Each read is scoped to the half of the candidate list that can use it. Only
+  // an unowned row draws a BuyTag, so pricing an owned candidate buys nothing;
+  // and `loadAvailability` is driven by the collection, so an unowned oracle id
+  // can never come back from it. `excludeDeckId` is the deck being built, so its
+  // own claims do not count against its own candidates.
+  //
+  // Both are swallowed. A failed price read degrades to bare rows and a failed
+  // availability read to no markers, rather than taking the builder down — the
+  // same treatment search-action.ts gives availability.
+  const ownedCandidateIds = candidateCards.filter((c) => c.owned).map((c) => c.oracleId);
+  const [priced, candidateAvailability] = await Promise.all([
+    loadPrices([
+      ...new Set([
+        ...detail.cards.map((c) => c.oracleId),
+        ...suggestions.map((s) => s.oracleId),
+        ...candidateCards.filter((c) => !c.owned).map((c) => c.oracleId),
+      ]),
+    ]).catch(() => null),
+    ownedCandidateIds.length > 0
+      ? loadAvailability(userId, { excludeDeckId: id, oracleIds: ownedCandidateIds }).catch(
+          () => null,
+        )
+      : null,
+  ]);
 
   // Attached here, server-side, on lists that are being built anyway — so no
   // component below does a map lookup during render, and BuilderShell takes one
@@ -76,22 +102,14 @@ export default async function DeckBuilderPage({
   // First-run: user's only deck and it has no cards yet.
   const firstRun = allDecks.length === 1 && detail.built === 0;
 
-  // Derive the two candidate counts from the same planLastSlots function the
-  // fill actions use — so the control face and the action's plan can never
-  // disagree on what will be placed. Both are 0 when the deck is full and
-  // ranked is the empty array returned above.
-  const inDeckOracleIds = new Set(detail.cards.map((r) => r.oracleId));
-  const ownedCandidates = planLastSlots({
-    ranked, openSlots, inDeckOracleIds, ownedOnly: true,
-  }).place.length;
-  // unownedCandidates is the count of oracle ids in the top-up plan that the
-  // player does not own — not `allCandidates - ownedCandidates`. Both
-  // planLastSlots runs are capped at openSlots, so when the owned pool covers
-  // the gap both counts hit the cap and the difference is 0, hiding B for
-  // well-stocked players. countLastSlotsUnowned runs the top-up plan once and
-  // intersects its ids with the owned set — the only figure that is honest
-  // about what B would make the player buy.
-  const unownedCandidates = countLastSlotsUnowned({ ranked, openSlots, inDeckOracleIds });
+  // Attached here for the same reason `withPrice` above attaches its figure:
+  // the row component then reads a field rather than doing two map lookups per
+  // render, and BuilderShell takes one list rather than a list plus two maps.
+  const candidates: TopOffCandidate[] = candidateCards.map((c) => ({
+    ...c,
+    price: c.owned ? null : (priced?.prices.get(c.oracleId) ?? null),
+    availability: c.owned ? (candidateAvailability?.get(c.oracleId) ?? null) : null,
+  }));
 
   return (
     <BuilderShell
@@ -106,8 +124,7 @@ export default async function DeckBuilderPage({
       shoppingFigures={shoppingFigures}
       firstRun={firstRun}
       commanderIdentity={detail.commander.colorIdentity}
-      ownedCandidates={ownedCandidates}
-      unownedCandidates={unownedCandidates}
+      candidates={candidates}
       games={games}
       gameSummary={gameSummary}
       // Left in the URL rather than swept with a router.replace. Stripping it

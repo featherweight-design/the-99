@@ -50,6 +50,7 @@ import { cardCopies, deckCounts, unresolvedCardCount, type DeckDetailCard } from
 import { computeRoleCounts, RECOMMENDED_MIX, type MixRole } from "../../lib/decks/mix";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import type { ProvenanceForm } from "../../lib/decks/price";
+import type { TopOffCandidate } from "../../lib/decks/last-slots";
 
 // Shared by both shelf paths — the one that is already on Consider and the one
 // that has to switch views first — so they land identically.
@@ -94,12 +95,11 @@ interface BuilderShellProps {
   /** Built on the server by `provenanceForm`, never in the browser: it compares
       against a clock, and a second call could flip `behind` at hydration. */
   provenance?: ProvenanceForm | null;
-  /** Owned synergy cards planLastSlots would place into the open slots, derived
-      once by the page route. Zero means the owned fill control is absent. */
-  ownedCandidates?: number;
-  /** Unowned synergy cards planLastSlots would add beyond the owned ones.
-      Zero means the top-up control is absent. */
-  unownedCandidates?: number;
+  /** Every card the top-off list can offer, ranked and uncapped, priced and
+      availability-marked by the page route. An empty array is a state the strip
+      renders rather than a reason to unmount it: the door stays while slots are
+      open, and says the pool ran out. */
+  candidates?: TopOffCandidate[];
   /** Every game logged against this deck, newest first. */
   games?: DeckGame[];
   /** Aggregated on the server — `summarizeGames` is pure, so running it here
@@ -130,8 +130,7 @@ export function BuilderShell({
   shoppingFigures = {},
   newestAsOf = null,
   provenance = null,
-  ownedCandidates = 0,
-  unownedCandidates = 0,
+  candidates = [],
   games = [],
   gameSummary = NO_GAMES,
 }: BuilderShellProps) {
@@ -144,10 +143,16 @@ export function BuilderShell({
   const [unresolvedExpanded, setUnresolvedExpanded] = useState(false);
   const isDesktop = useIsDesktop();
 
-  // True while LastSlotsStrip has a fill write in flight (A or B). Used to
-  // disable control C (ClearAutoButton) during either fill per design table
-  // state 3 / state 8.
+  // True while the top-off commit is writing. Clearing the auto cards mid-write
+  // would race the pass being placed, so ClearAutoButton is disabled for the
+  // duration (design table states 3 and 8).
   const [fillInflight, setFillInflight] = useState(false);
+
+  // The top-off list is open. At phone widths its commit bar takes the bottom
+  // slot, so the quick-add dock hides — one bottom slot, one occupant (state
+  // 20). Hidden with `display:none` rather than unmounted, so a half-typed
+  // query is still there when the list closes.
+  const [topOffOpen, setTopOffOpen] = useState(false);
 
   // Every count and row below is drawn from this list rather than the server
   // props, so an add lands across the whole builder in the same frame as the
@@ -186,6 +191,16 @@ export function BuilderShell({
   // wiping the refusal before the user can read it. Rows still show their own
   // optimistic "✓ In deck", so nothing is lost by keeping this one committed.
   const deckOracleIds = useMemo(() => deck.cards.map((c) => c.oracleId), [deck.cards]);
+
+  // The top-off list's own copy, and deliberately the OPTIMISTIC list. It uses
+  // this to name a row that went illegal while the list was open, so a quick-add
+  // has to freeze that row in the same frame as the click. The committed set
+  // above cannot do that, and the refusal-clearing reasoning behind it does not
+  // apply here: the list never treats this as a settled answer to an add.
+  const topOffDeckOracleIds = useMemo(
+    () => new Set(cards.map((c) => c.oracleId)),
+    [cards],
+  );
 
   // The commitments roll-up (#43). Read off the availability `read.ts` already
   // hung on every card, so this costs no query — and off the SERVER list rather
@@ -625,25 +640,28 @@ export function BuilderShell({
               );
             })()}
 
-            {/* Last-31 strip — shown when the deck still has open slots and
-                the commander's EDHREC support list has cards to offer. Unmounts
-                as a unit at 0 open slots. Mounted once: unlike ProvenanceLine,
-                which uses a `width` prop to branch conditional non-interactive
-                content and therefore needs two mounts, the strip uses responsive
-                Tailwind classes for all width-dependent elements (caption text,
-                the ⓘ disc, the shortfall border-radius). Interactive controls
-                A and B appear exactly once in the DOM. */}
-            {(ownedCandidates > 0 || unownedCandidates > 0) && (
-              <LastSlotsStrip
-                deckId={deck.id}
-                openSlots={99 - built}
-                ownedCandidates={ownedCandidates}
-                unownedCandidates={unownedCandidates}
-                commanderShortName={commanderShortName}
-                onAnnounce={setAnnouncement}
-                onInflight={setFillInflight}
-              />
-            )}
+            {/* Last-31 strip — the door onto the top-off list. Open slots are
+                its only condition: it unmounts as a unit at 0 and at nothing
+                else. An empty candidate pool is a state the strip renders, not
+                a reason to take the door away, which is why there is no gate
+                here any more — the old `candidates > 0` gate made STATES 12 and
+                13 unreachable by unmounting exactly the case they describe.
+
+                Mounted once: unlike ProvenanceLine, which uses a `width` prop to
+                branch conditional non-interactive content and therefore needs
+                two mounts, the strip uses responsive Tailwind classes for all
+                width-dependent elements. */}
+            <LastSlotsStrip
+              deckId={deck.id}
+              openSlots={99 - built}
+              candidates={candidates}
+              deckOracleIds={topOffDeckOracleIds}
+              newestAsOf={newestAsOf}
+              onAnnounce={setAnnouncement}
+              onInflight={setFillInflight}
+              onOpenChange={setTopOffOpen}
+            />
+
 
             {/* Fill-failed banner — shown when the fill never landed (State
                 15). Offers a retry. A swept deck is filled=true and must not
@@ -973,7 +991,12 @@ export function BuilderShell({
             {(isDesktop || !unresolvedExpanded) && (
               <div
                 data-testid="quick-add-dock"
-                className="sticky bottom-[var(--tabbar-h)] md:bottom-0 z-20 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]"
+                className={[
+                  "sticky bottom-[var(--tabbar-h)] md:bottom-0 z-20 mt-auto px-[16px] pt-[10px] pb-[12px] md:px-[30px] md:py-[11px]",
+                  // The top-off commit bar takes this slot at phone widths. Hidden
+                  // rather than unmounted, so the query survives the list closing.
+                  topOffOpen ? "max-md:hidden" : "",
+                ].join(" ")}
                 style={{ background: "var(--bg)", borderTop: "1px solid var(--border)" }}
               >
                 <QuickAddBar
