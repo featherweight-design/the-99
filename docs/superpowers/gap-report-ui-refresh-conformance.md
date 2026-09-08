@@ -7,7 +7,7 @@ never accent; everything else is a 32px hairline pill (`--border-strong`, 12.5px
 label, 14px side padding, 8px radius). Rule 3: colour is status, and status only.
 
 Property table: `docs/superpowers/design-tables/appshell.md` §404 plus the surface
-tables named per section below. Verify pass returned 15 gaps; four were real and are
+tables named per section below. Verify pass returned 15 gaps; six were real and are
 fixed, the rest are rulings recorded here.
 
 ## Resolved

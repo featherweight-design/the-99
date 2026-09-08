@@ -147,7 +147,11 @@ describe("HAIRLINE", () => {
     expect(HAIRLINE).toContain("sm:h-[32px]");
     expect(HAIRLINE).toContain("sm:px-[14px]");
     expect(HAIRLINE).toContain("sm:text-[12.5px]");
-    // No unprefixed height: the phone keeps whatever touch height its caller set.
-    expect(HAIRLINE).not.toMatch(/(^|\s)h-\[/);
+    // Nothing unprefixed at all: the phone keeps whatever touch height, padding
+    // and label size its caller set. Matched on the bare utility prefix rather
+    // than the arbitrary-value form, so a scale class like `h-8` fails too.
+    expect(HAIRLINE).not.toMatch(/(^|\s)h-/);
+    expect(HAIRLINE).not.toMatch(/(^|\s)px-/);
+    expect(HAIRLINE).not.toMatch(/(^|\s)text-/);
   });
 });
