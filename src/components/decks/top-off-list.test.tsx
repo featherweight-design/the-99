@@ -226,6 +226,23 @@ describe("TopOffList", () => {
     ).toBeInTheDocument();
   });
 
+  // The strip owns the declines and they outlive every close, while the pool is
+  // refrozen on each open. A card declined once and gone from the route by the
+  // next open must not be subtracted from a pool it is not in.
+  it("counts only the declines this opening can see", () => {
+    render(
+      <Harness
+        candidates={[candidate("owned-1", true), candidate("owned-2", true)]}
+        initialDeclined={["owned-1", "gone-from-the-route"]}
+      />,
+    );
+
+    // Two candidates, one of them declined here, nothing ticked. The head is
+    // drawn in two spans, so the static half is what carries the count.
+    const [, statics] = topOffCopy.list.head("0", "3", "2", "1").split(" · ");
+    expect(screen.getByText(statics, { exact: false })).toBeInTheDocument();
+  });
+
   // An aria-label replaces the visible label rather than annotating it, so at
   // zero the accessible name must lose the count too. Announcing "Add 0 cards"
   // over a button that reads "Add cards" is two different buttons.

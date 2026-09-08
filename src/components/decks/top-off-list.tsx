@@ -192,7 +192,13 @@ export function TopOffList({
   const ownedIds = pool
     .filter((c) => c.owned && !illegal.has(c.oracleId) && !declined.has(c.oracleId))
     .map((c) => c.oracleId);
-  const untouched = pool.length - tickedCount - declined.size;
+  // Only the declines this opening can actually see. The set is the strip's and
+  // survives every close, while the pool is refrozen on each open — so a card
+  // declined once and gone from the route by the next open would otherwise be
+  // subtracted from a pool it is not in, and the head would count rows down to
+  // nothing.
+  const declinedHere = pool.filter((c) => declined.has(c.oracleId)).length;
+  const untouched = pool.length - tickedCount - declinedHere;
 
   const buying = pool.filter((c) => live.has(c.oracleId) && !c.owned);
   const buyMoney = summarisePrices(
