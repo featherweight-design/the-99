@@ -28,6 +28,8 @@ export async function seedCards(): Promise<{ upserted: number; skipped: number }
         commanderLegal: sql`excluded.commander_legal`,
         imageUri: sql`excluded.image_uri`,
         rarity: sql`excluded.rarity`,
+        layout: sql`excluded.layout`,
+        backImageUri: sql`excluded.back_image_uri`,
       },
     });
     upserted += batch.length;

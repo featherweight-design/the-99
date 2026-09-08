@@ -41,6 +41,12 @@ export type DeckDetailCard = {
    * no image draws the tile's empty plate rather than a broken one.
    */
   imageUri?: string | null;
+  /**
+   * Scryfall's layout word, for the `//` mark (#363). Optional for the same
+   * reason the three above are; absent means no mark, which is the right way
+   * for this to fail — see `lib/cards/faces.ts`.
+   */
+  layout?: string | null;
 };
 
 /**

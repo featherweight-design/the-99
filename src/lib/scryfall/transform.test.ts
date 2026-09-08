@@ -19,7 +19,12 @@ describe("toCardRow", () => {
       typeLine: "Artifact", oracleText: "{T}: Add {C}{C}.", keywords: [],
       commanderLegal: true, rarity: "uncommon",
       imageUri: "https://cards.scryfall.io/normal/x.jpg",
+      layout: "normal", backImageUri: null,
     });
+  });
+
+  it("defaults a layoutless entry to normal rather than dropping the column", () => {
+    expect(toCardRow({ ...solRing, layout: undefined })?.layout).toBe("normal");
   });
 
   it("marks banned cards commanderLegal=false", () => {
@@ -38,6 +43,30 @@ describe("toCardRow", () => {
     const row = toCardRow(dfc);
     expect(row?.oracleText).toBe("Front text\n//\nBack text");
     expect(row?.imageUri).toBe("https://x/front.jpg");
+  });
+
+  it("keeps the back face's art when the second face has one", () => {
+    const row = toCardRow({
+      ...solRing, layout: "transform", image_uris: undefined,
+      card_faces: [
+        { oracle_text: "Front", image_uris: { normal: "https://x/front.jpg" } },
+        { oracle_text: "Back", image_uris: { normal: "https://x/back.jpg" } },
+      ],
+    });
+    expect(row?.layout).toBe("transform");
+    expect(row?.imageUri).toBe("https://x/front.jpg");
+    expect(row?.backImageUri).toBe("https://x/back.jpg");
+  });
+
+  it("gives a split card no back, though it has two faces and two `//`s", () => {
+    // Fire // Ice is one piece of card stock. A `//` heuristic would promise a
+    // flip here; the layout and the absent per-face art both refuse it.
+    const row = toCardRow({
+      ...solRing, name: "Fire // Ice", layout: "split", type_line: "Instant // Instant",
+      card_faces: [{ oracle_text: "Fire" }, { oracle_text: "Ice" }],
+    });
+    expect(row?.layout).toBe("split");
+    expect(row?.backImageUri).toBeNull();
   });
 
   it("skips entries without an oracle_id", () => {

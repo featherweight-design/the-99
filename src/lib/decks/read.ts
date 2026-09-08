@@ -146,6 +146,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
       keywords: cards.keywords,
       manaCost: cards.manaCost,
       imageUri: cards.imageUri,
+      layout: cards.layout,
       owned: ownedSql,
       quantity: deckCards.quantity,
       auto: deckCards.auto,
@@ -186,6 +187,7 @@ export async function getDeckDetail(deckId: string, userId: string): Promise<Dec
     availability: availability?.get(row.oracleId) ?? null,
     manaCost: row.manaCost,
     imageUri: row.imageUri,
+    layout: row.layout,
   }));
 
   // Fourth: the lines the import could not identify, in the source's own order.
