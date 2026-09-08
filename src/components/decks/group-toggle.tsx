@@ -86,8 +86,11 @@ export function GroupToggle({
           whole rather than splitting the pair across two lines. */}
       <div className="flex flex-wrap items-center gap-[7px] md:gap-[10px]">
         {/* "All N" filter pill. Selected is bone on `--elevated` with a
-            `--border-strong` ring — verbatim the active `By type` skin. Accent
-            does not appear on the builder's control bar. */}
+            `--border-strong` ring — verbatim the active `By type` skin. No
+            accent fill anywhere on the builder's control bar: selection here is
+            said with the bone-on-elevated skin, never with a coloured ground.
+            Accent does still tint a border — the Shopping pill mixes 30% of it
+            into its idle ring below. */}
         <button
           type="button"
           onClick={() => onFilterChange("all")}

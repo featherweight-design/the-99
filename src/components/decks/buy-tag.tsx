@@ -37,8 +37,16 @@ const PLACEMENT: Record<BuyTagVariant, string> = {
   row: "flex-none text-[9px] md:text-[9.5px]",
   // Above the art and deaf to the pointer: the tag overlaps the card-detail
   // button it sits beside, and a corner of the art must stay clickable.
-  tile: "absolute z-10 right-[6px] top-[6px] text-[9px] pointer-events-none",
+  tile: "absolute z-10 top-[6px] text-[9px] pointer-events-none",
 };
+
+/**
+ * Which top corner the tile variant takes. Two tile surfaces disagree because
+ * their other corner is already spoken for: the Consider tile has no quantity
+ * badge and puts the tag right, the deck card tile draws `×N` there and puts
+ * the tag left, where it lines up with the availability chip it stands in for.
+ */
+const TILE_CORNER = { right: "right-[6px]", left: "left-[6px]" } as const;
 
 /** The figure's ink differs by plate: the row sits on a surface, the tile on art. */
 const FIGURE_INK: Record<BuyTagVariant, string> = {
@@ -120,6 +128,7 @@ export function BuyTag({
   provenance = null,
   reserveSlot = false,
   density = "full",
+  corner = "right",
 }: {
   variant: BuyTagVariant;
   /**
@@ -144,6 +153,8 @@ export function BuyTag({
    * full, formatted by the one Tail that formats them everywhere.
    */
   density?: "full" | "collapsed";
+  /** Tile variant only — see TILE_CORNER. */
+  corner?: keyof typeof TILE_CORNER;
 }) {
   const state = priceState(price, newestAsOf);
   const cents = price ? priceOf(price, state) : null;
@@ -190,7 +201,9 @@ export function BuyTag({
 
   return (
     <span
-      className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]}`}
+      className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]} ${
+        variant === "tile" ? TILE_CORNER[corner] : ""
+      }`}
       style={{ color: "var(--warning)", ...PLATE[variant] }}
     >
       {density === "collapsed" ? (
