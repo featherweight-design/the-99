@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable, text, integer, real, timestamp, jsonb, boolean, primaryKey, uuid, index, check, date,
+  unique,
 } from "drizzle-orm/pg-core";
 import { FINISHES } from "../lib/collection/key";
 import type { EdhrecTag } from "../lib/edhrec/parse";
@@ -197,6 +198,43 @@ export const deckCards = pgTable("deck_cards", {
   // leave it set, or the sweep would silently spare cards the player only looked at.
   auto: boolean("auto").notNull().default(false),
 }, (t) => [primaryKey({ columns: [t.deckId, t.oracleId] })]);
+
+/**
+ * One act of the app putting cards into a deck: the build's seed fill, or one
+ * top-off the player committed from the last-31 list.
+ *
+ * The record is immutable. Nothing updates or deletes a pass or its cards —
+ * not the keep controls, not the sweep, not an undo — because it records that
+ * an event happened, and the provenance ledger's counts are derived by
+ * comparing that record against the deck as it stands now. A pass whose cards
+ * have all left the deck simply has no live rows, and renders no line.
+ */
+export const fillPasses = pgTable("fill_passes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),                       // 'seed' | 'top_off'
+  // Stable per deck AND per kind, so a label is read straight off the row: the
+  // seed is ordinal 1 of its kind, and "top-off 3" keeps its name after
+  // "top-off 1" is undone. Never recomputed — a label derived from a position
+  // in the rendered ledger would renumber every time a line dropped out.
+  ordinal: integer("ordinal").notNull(),
+  // How many slots stood open when this pass committed. The ledger's sentence
+  // reads "27 cards you chose from the last 31", and that 31 is unrecoverable
+  // afterwards, because the deck has been written to since.
+  openSlots: integer("open_slots").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  check("fill_passes_kind_check", sql`${t.kind} in ('seed', 'top_off')`),
+  unique("fill_passes_deck_kind_ordinal_key").on(t.deckId, t.kind, t.ordinal),
+  index("fill_passes_deck_idx").on(t.deckId),
+]);
+
+/** What a pass placed, at the quantity it placed. Written once, with the pass. */
+export const fillPassCards = pgTable("fill_pass_cards", {
+  passId: uuid("pass_id").notNull().references(() => fillPasses.id, { onDelete: "cascade" }),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  quantity: integer("quantity").notNull().default(1),
+}, (t) => [primaryKey({ columns: [t.passId, t.oracleId] })]);
 
 /**
  * One logged Commander game against one deck.

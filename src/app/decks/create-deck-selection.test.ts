@@ -95,6 +95,7 @@ const stub = vi.hoisted(() => {
       values: (values: unknown) => {
         const returning: unknown[] = [];
         if (tableName === "decks") returning.push({ id: "deck-new-uuid" });
+        if (tableName === "fill_passes") returning.push({ id: "pass-new-uuid" });
         state.insertCalls.push({
           table: tableName,
           values,
