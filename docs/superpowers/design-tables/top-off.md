@@ -103,7 +103,7 @@ Unchanged from shipped. Same position under the provenance ledger, above the dec
 | font-size | `14px` | `13px` |
 | font-weight | `600` | `600` |
 | Touch target | **44px** | — |
-| aria | `aria-expanded` / `aria-controls` → the list; **does not move focus on open** | same |
+| aria | `aria-expanded` / `aria-controls` → the list; focus follows the disclosure (erratum 1) | same |
 | aria-label | `strip.openAria(n)` | same |
 | Never | solid brass fill; never disabled (a control with nothing to do is absent) | same |
 
@@ -145,7 +145,7 @@ Unchanged from shipped. Same position under the provenance ledger, above the dec
 | background | `transparent` | `transparent` |
 | position | `margin-left:auto` in the list head's baseline row | `margin-left:auto` in the list head's baseline row |
 | Touch target | **44px hit area** | — |
-| Focus return | returns focus to the door | returns focus to the door |
+| Focus return | returns focus to the door, or to the exhausted plate when the pass emptied the pool and the door is gone (erratum 1) | same |
 | Copy | `strip.close` — and **the same string is not used for Cancel** | same |
 
 ---
@@ -1241,3 +1241,30 @@ escalate or ratify.**
     with no cost slot — the two do not compose without an eng decision.
 30. **S30 — The strip's open-state padding at desktop** is drawn as `14px 16px` (same as closed) but
     the list, head, header row and commit row all add their own padding; no total is stated.
+
+---
+
+# Errata — where the shipped build departs from this table
+
+Each row above that carries an "erratum" reference is corrected here rather than in place, so
+the table stays a record of what Design drew.
+
+1. **The door does not stay mounted, so focus has to follow it.** §1c gives the door
+   `aria-expanded` / `aria-controls` and says it "does not move focus on open", which is the
+   contract the shipped `CoverageDisclosure` honours by keeping one control mounted and
+   relabelling it. This design does not draw that: the door is *replaced* by `Close the list`,
+   and §1d gives that replacement its own geometry and its own copy key. A control that
+   unmounts under the cursor drops focus to the body, which is the outcome "does not move
+   focus" exists to prevent.
+
+   The build therefore treats the door and `Close the list` as two faces of one disclosure.
+   Focus follows the disclosure to whichever face is mounted, and never into the rows — the
+   prohibition §1e actually states. `Close the list` carries `aria-expanded` and
+   `aria-controls` so the pair is not silent about its state while the list is up.
+
+   §1d's focus-return row inherits the same correction: a pass that takes the last candidates
+   leaves slots open and no door, because the exhausted plate stands in its place. Focus
+   returns to the plate in that one case, which is otherwise the only close in the feature
+   that lands nowhere.
+
+   **For Design to ratify**, alongside the open items in the PR body.
