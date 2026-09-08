@@ -18,6 +18,7 @@ import { isSpokenFor } from "../../lib/decks/shopping";
 import { AutoTag } from "./auto-tag";
 import { BuyTag } from "./buy-tag";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
 import {
   useAnnounceUndo,
@@ -145,6 +146,11 @@ export function DecklistRow({
   const figureTextDesktop = Number.isFinite(shoppingFigure)
     ? recommendationsCopy.shopping.rowFigureDesktop(String(shoppingFigure as number))
     : recommendationsCopy.shopping.rowNoFigureDesktop;
+  // The whole row is the preview's trigger (#351), so the handlers go on the
+  // shell rather than on the name — the name is the modal's trigger, and a
+  // preview that only opened over it would be a second, smaller target for a
+  // gesture the reader is already making across the row.
+  const previewHandlers = usePreviewRow(card.imageUri);
   const { isPending, error, run } = useDeckMutation(false, DECK_REMOVE_FALLBACK_MESSAGE);
   const removeOptimisticCard = useRemoveOptimisticCard();
   const markSlotSpent = useMarkSlotSpent();
@@ -208,6 +214,7 @@ export function DecklistRow({
           The over tint (design 4.5/4.10) is an inset ring rather than a border:
           a real border would add 2px to one row's height and shunt the list. */}
       <div
+        {...previewHandlers}
         className={`group ${rowShell} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
           [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]
           ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
