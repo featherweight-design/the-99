@@ -109,13 +109,42 @@ describe("summariseFillPasses", () => {
     expect(lines.map((l) => l.id)).toEqual(["seed", "p1", "p2"]);
   });
 
-  it("counts a stacked basic at the quantity the deck holds now, not the one it was placed at", () => {
+  it("counts a trimmed stack as partly live and partly removed", () => {
     const [line] = summariseFillPasses({
       passes: [pass({ id: "seed", kind: "seed" })],
       members: [member("seed", "forest", 30)],
       deckCards: [live("forest", 24)],
     });
-    expect(line).toMatchObject({ live: 24, kept: 0, removed: 0 });
+    // Six of the thirty left, and the line says so.
+    expect(line).toMatchObject({ live: 24, kept: 0, removed: 6 });
+  });
+
+  it("never counts copies the player added on top of a stack the pass placed", () => {
+    const [line] = summariseFillPasses({
+      passes: [pass({ id: "seed", kind: "seed" })],
+      members: [member("seed", "forest", 30)],
+      deckCards: [live("forest", 34)],
+    });
+    // `Undo these 30` must not offer to take the four the player added.
+    expect(line).toMatchObject({ live: 30, kept: 0, removed: 0 });
+  });
+
+  it("breaks a timestamp tie deterministically, whatever order the passes arrive in", () => {
+    // Two passes of different kinds inside one millisecond, both ordinal 1: the
+    // ordinal cannot separate them, and attribution decides what an undo deletes.
+    const same = { createdAt: at(0), ordinal: 1 };
+    const rows = { members: [member("s", "a"), member("t", "a")], deckCards: [live("a")] };
+    const forward = summariseFillPasses({
+      passes: [pass({ id: "s", kind: "seed", ...same }), pass({ id: "t", kind: "top_off", ...same })],
+      ...rows,
+    });
+    const reversed = summariseFillPasses({
+      passes: [pass({ id: "t", kind: "top_off", ...same }), pass({ id: "s", kind: "seed", ...same })],
+      ...rows,
+    });
+    // The top-off owns it either way: a seed is older than any top-off.
+    expect(forward.map((l) => l.id)).toEqual(["t"]);
+    expect(reversed.map((l) => l.id)).toEqual(["t"]);
   });
 
   it("holds the invariant: no auto rows means no ledger", () => {
@@ -132,7 +161,8 @@ describe("summariseFillPasses", () => {
 
 /** The transaction handle `recordFillPass` needs: the existing passes it reads
     to allocate an ordinal, and a record of what it inserted. */
-function fakeTx(existing: { ordinal: number }[] = []) {
+function fakeTx(highest = 0) {
+  const existing = [{ highest }];
   const inserts: { table: string; values: unknown }[] = [];
   const wheres: unknown[] = [];
   const tx = {
@@ -193,7 +223,7 @@ describe("recordFillPass", () => {
   it("takes the next ordinal above the highest the deck has ever used", async () => {
     // Ordinals come from max(), not count(), so an undone pass — whose row
     // stays — never has its number handed out a second time.
-    const { tx, inserts } = fakeTx([{ ordinal: 1 }, { ordinal: 3 }]);
+    const { tx, inserts } = fakeTx(3);
     await recordFillPass(
       tx as never, { deckId: "d1", kind: "top_off", openSlots: 31, rows: [row] },
     );
@@ -210,6 +240,21 @@ describe("recordFillPass", () => {
       tx as never, { deckId: "d1", kind: "top_off", openSlots: 31, rows: [row] },
     );
     expect(columnsIn(wheres[0])).toEqual(expect.arrayContaining(["deck_id", "kind"]));
+  });
+
+  it("records one member per oracle id, matching the deck the caller wrote", async () => {
+    // `deck_cards` has the same primary key and the same on-conflict rule, so a
+    // caller handing the same id twice put one row in the deck. The membership
+    // says one too, at the quantity the deck holds.
+    const { tx, inserts } = fakeTx();
+    await recordFillPass(tx as never, {
+      deckId: "d1",
+      kind: "seed",
+      openSlots: 99,
+      rows: [{ oracleId: "a", quantity: 2 }, { oracleId: "a", quantity: 7 }],
+    });
+    expect(inserts.find((i) => i.table === "fill_pass_cards")!.values)
+      .toEqual([{ passId: "pass-1", oracleId: "a", quantity: 2 }]);
   });
 
   it("writes nothing and returns null when the act placed no cards", async () => {

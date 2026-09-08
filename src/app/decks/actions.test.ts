@@ -147,12 +147,13 @@ const stub = vi.hoisted(() => {
     insert: (table: unknown) => makeInsertBuilder(table),
     update: () => ({ set: () => ({ where: async () => {} }) }),
     execute: async () => {},
-    // Table-aware, because `recordFillPass` reads the deck's existing passes to
-    // allocate the next ordinal and would otherwise be handed deck card rows.
+    // Table-aware, because `recordFillPass` reads the highest ordinal the deck
+    // has used and would otherwise be handed deck card rows. That read is an
+    // aggregate, so it always returns exactly one row.
     select: () => ({
       from: (table: unknown) => {
         const rows = () => (nameOf(table) === "fill_passes"
-          ? state.fillPasses as unknown as Record<string, unknown>[]
+          ? [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }]
           : state.deckRows as unknown as Record<string, unknown>[]);
         return {
           where: () => Object.assign(

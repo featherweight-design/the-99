@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { deckCards, fillPassCards, fillPasses } from "../../db/schema";
 
@@ -67,11 +67,17 @@ export function summariseFillPasses(args: {
   const byOracleId = new Map(args.deckCards.map((r) => [r.oracleId, r]));
 
   // Newest first, so the first pass to claim an oracle id is the one that owns
-  // it. Ties on the timestamp fall back to the ordinal, which is monotonic
-  // within a kind — two passes committed inside the same millisecond are
-  // unlikely but not impossible, and a coin flip there would be a real bug.
+  // it. Two passes committed inside the same millisecond are unlikely but not
+  // impossible, and a coin flip there would be a real bug — attribution decides
+  // what `Undo these {n}` deletes. So the ties are broken all the way down: a
+  // seed is older than any top-off, ordinals are monotonic within a kind, and
+  // the id is the last resort, arbitrary but stable across reads.
+  const age = (p: FillPassRow) => (p.kind === "seed" ? 0 : 1);
   const newestFirst = [...args.passes].sort((a, b) =>
-    b.createdAt.getTime() - a.createdAt.getTime() || b.ordinal - a.ordinal);
+    b.createdAt.getTime() - a.createdAt.getTime()
+    || age(b) - age(a)
+    || b.ordinal - a.ordinal
+    || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
 
   const membersByPass = new Map<string, FillPassMember[]>();
   for (const m of args.members) {
@@ -98,13 +104,19 @@ export function summariseFillPasses(args: {
         continue;
       }
       claimed.add(member.oracleId);
-      // The deck's own quantity, not the membership's: a stacked basic the
-      // player has since trimmed should report what would actually leave.
+      // Neither quantity alone is the answer for a stacked basic. The pass can
+      // only still hold what it placed AND the deck still has, so the smaller of
+      // the two is live: a seed of 30 Forests trimmed to 24 has 24 left and 6
+      // gone, and copies the player added afterwards are the player's, not the
+      // pass's — counting them would have `Undo these {n}` offering to take
+      // cards the app never placed.
+      const held = Math.min(row.quantity, member.quantity);
+      removed += member.quantity - held;
       if (row.auto) {
-        live += row.quantity;
+        live += held;
         liveOracleIds.push(member.oracleId);
       } else {
-        kept += row.quantity;
+        kept += held;
       }
     }
 
@@ -140,18 +152,28 @@ export async function recordFillPass(tx: Tx, args: {
   // undone, and the seed is always ordinal 1 of its own kind. max() rather than
   // count(): an undone pass keeps its row precisely so its ordinal is never
   // handed out twice.
-  const existing = await tx.select({ ordinal: fillPasses.ordinal })
+  const [{ highest }] = await tx
+    .select({ highest: sql<number>`coalesce(max(${fillPasses.ordinal}), 0)`.mapWith(Number) })
     .from(fillPasses)
     .where(and(eq(fillPasses.deckId, args.deckId), eq(fillPasses.kind, args.kind)));
-  const ordinal = existing.reduce((n, r) => Math.max(n, r.ordinal), 0) + 1;
+  const ordinal = highest + 1;
 
   const [pass] = await tx.insert(fillPasses)
     .values({ deckId: args.deckId, kind: args.kind, ordinal, openSlots: args.openSlots })
     .returning({ id: fillPasses.id });
 
+  // Deduplicated rather than left to `on conflict do nothing`, because the pass
+  // id is new and so the only conflict possible is the caller handing the same
+  // oracle id twice — and swallowing that silently would leave the membership
+  // describing a fill that did not happen. Keeping the first occurrence is not a
+  // choice made here: `deck_cards` has the same primary key and the same
+  // `on conflict do nothing`, so the deck itself already holds only the first.
+  const byOracleId = new Map<string, number>();
+  for (const r of args.rows) if (!byOracleId.has(r.oracleId)) byOracleId.set(r.oracleId, r.quantity);
+
   await tx.insert(fillPassCards).values(
-    args.rows.map((r) => ({ passId: pass.id, oracleId: r.oracleId, quantity: r.quantity })),
-  ).onConflictDoNothing();
+    [...byOracleId].map(([oracleId, quantity]) => ({ passId: pass.id, oracleId, quantity })),
+  );
 
   return pass.id;
 }
