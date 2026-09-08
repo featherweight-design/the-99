@@ -73,7 +73,7 @@ export function CommanderBleed({
  */
 export function IdentityPips({
   colorIdentity,
-  size = 9,
+  size = 8,
 }: {
   colorIdentity: string[];
   size?: number;
@@ -84,7 +84,10 @@ export function IdentityPips({
       {colorIdentity.map((color) => (
         <span
           key={color}
-          className="block shrink-0 rounded-full"
+          // Squared off, which is what separates an identity read from the round
+          // mana pips a cost is drawn with: five of these in a row are a colour
+          // identity, not a five-mana cost.
+          className="block shrink-0 rounded-[2px]"
           style={{
             width: size,
             height: size,

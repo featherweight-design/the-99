@@ -152,34 +152,46 @@ export function RackSelect<K extends string>({
                 onChange(options[move(i, dir)].key);
               }}
               className={[
-                "flex items-center gap-[8px] cursor-pointer rounded-lg border border-solid px-[12px]",
-                showGlosses ? "w-full text-left" : "flex-1 justify-center",
+                "flex cursor-pointer border border-solid",
+                // Two shapes, and the gloss is what picks between them: a row of
+                // capsules where the label is the whole option, a stack of
+                // cards where each option carries a second line. A capsule
+                // cannot hold two lines and a card in a row cannot be read.
+                showGlosses
+                  ? "w-full items-start gap-[11px] rounded-[10px] px-[12px] py-[9px] text-left"
+                  : "flex-1 items-center justify-center rounded-full px-[16px]",
                 selected
-                  ? "border-[color:var(--accent)] bg-[color:var(--elevated-hover)] text-[color:var(--fg)]"
+                  ? "border-[color:var(--accent)] bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] text-[color:var(--fg)]"
                   : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]",
               ].join(" ")}
-              style={{ height: rowHeight }}
+              style={showGlosses ? { minHeight: 48 } : { height: rowHeight }}
             >
-              {/* Selection diamond, filled brass when picked. */}
-              <span
-                aria-hidden
-                className={[
-                  "block h-[7px] w-[7px] rotate-45 shrink-0",
-                  selected
-                    ? "bg-[color:var(--accent)]"
-                    : "border-[1.5px] border-solid border-[color:var(--border-strong)]",
-                ].join(" ")}
-              />
+              {/* Selection diamond, filled brass when picked — on the stacked
+                  treatment only. A capsule says the same thing with its border,
+                  and a marker inside it would say it twice. */}
+              {showGlosses && (
+                <span
+                  aria-hidden
+                  className={[
+                    "mt-[5px] block h-[8px] w-[8px] rotate-45 shrink-0",
+                    selected
+                      ? "bg-[color:var(--accent)]"
+                      : "border border-solid border-[color:var(--border-strong)]",
+                  ].join(" ")}
+                />
+              )}
               <span className={showGlosses ? "min-w-0 flex-1" : ""}>
                 {/* The mark rides the selected pill, which is already the one
                     the reader pressed — selection goes optimistic on press. */}
-                <span className="block text-[13.5px]">
+                <span
+                  className={
+                    showGlosses ? "block text-[14px] font-semibold" : "block text-[13.5px]"
+                  }
+                >
                   <PendingLabel pending={pending && selected}>{o.label}</PendingLabel>
                 </span>
-                {/* The sheet is the only place the glosses render — the rack has
-                    no room for a second line. */}
                 {showGlosses && o.gloss && (
-                  <span className="block font-mono text-[10.5px] leading-[1.5] mt-[2px] text-[color:var(--fg-faint)]">
+                  <span className="block font-mono text-[10.5px] leading-[1.5] mt-[3px] text-[color:var(--fg-muted)]">
                     {o.gloss}
                   </span>
                 )}

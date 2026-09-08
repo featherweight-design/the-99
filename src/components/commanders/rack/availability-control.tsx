@@ -62,16 +62,21 @@ export function AvailabilityControl({
         role="radiogroup"
         aria-labelledby={labelId}
         className={[
-          "flex rounded-lg border border-solid",
-          wide ? "gap-[3px] p-[3px] h-[32px]" : "gap-[6px] border-0 p-0",
+          "flex",
+          // One capsule with the segments butted inside it, so the pair reads as
+          // a single control with two positions rather than two buttons that
+          // happen to sit together. The sheet has no wrapper at all: its pills
+          // are 44px apart and each carries its own border.
+          wide
+            ? "h-[32px] overflow-hidden rounded-lg border border-solid bg-[color:var(--surface-sunken)]"
+            : "gap-[8px] bg-transparent",
           // The border is the state on the rack; in the sheet the selected pill
           // carries it and there is no wrapper to light.
           wide && off
             ? "border-[color:var(--accent)]"
             : wide
               ? "border-[color:var(--border-strong)]"
-              : "border-transparent",
-          wide ? "bg-[color:var(--surface-sunken)]" : "bg-transparent",
+              : "",
         ].join(" ")}
       >
         {segments.map((s, i) => {
@@ -101,13 +106,24 @@ export function AvailabilityControl({
                 step(i, dir);
               }}
               className={[
-                "flex items-center justify-center cursor-pointer border border-solid",
+                "flex items-center justify-center cursor-pointer",
                 wide
-                  ? "rounded-md px-[13px] h-[24px] text-[12.5px]"
-                  : "flex-1 rounded-lg px-[10px] h-[44px] text-[13px]",
-                selected
-                  ? "font-semibold bg-[color:var(--elevated)] border-[color:var(--border-strong)] text-[color:var(--fg)]"
-                  : "font-medium bg-transparent border-transparent text-[color:var(--fg-body)]",
+                  ? // A hairline between the segments and nothing around them:
+                    // the wrapper already drew the outside, and a second border
+                    // there would read as a gap.
+                    [
+                      "h-[32px] border-0 px-[11px] text-[12.5px]",
+                      i > 0 ? "border-l border-solid border-[color:var(--border)]" : "",
+                      selected
+                        ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
+                        : "bg-transparent text-[color:var(--fg-muted)]",
+                    ].join(" ")
+                  : [
+                      "h-[44px] rounded-full border border-solid px-[16px] text-[13.5px]",
+                      selected
+                        ? "border-[color:var(--accent)] bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] text-[color:var(--fg)]"
+                        : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]",
+                    ].join(" "),
               ].join(" ")}
             >
               {s.label}

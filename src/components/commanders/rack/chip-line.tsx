@@ -22,8 +22,10 @@ import { commandersCopy, discoverCopy, filterCopy } from "../../../lib/copy/lane
 type ChipSpec = {
   key: string;
   label: string;
-  /** WUBRG fill, drawn as a leading dot on a single-hue colour chip. */
-  dot?: string;
+  /** WUBRG fills, drawn as leading swatches on the colour chip — one per lit
+      hue, even where the label has already collapsed them to a count. The chip
+      is still one chip; the swatches say which pips it stands for. */
+  dots?: string[];
   removeAria: string;
   next: Partial<LaneParams>;
 };
@@ -80,7 +82,8 @@ export function ChipLine({
           <Chip
             key={chip.key}
             label={chip.label}
-            dot={chip.dot}
+            dots={chip.dots}
+            wide={wide}
             removeAria={chip.removeAria}
             onRemove={() => onChange({ ...params, ...chip.next })}
           />
@@ -99,8 +102,10 @@ export function ChipLine({
           aria-haspopup="dialog"
           className={[
             "inline-flex shrink-0 cursor-pointer items-center rounded-full border border-dashed",
-            "bg-transparent border-[color:var(--border-strong)] font-mono text-[color:var(--fg-faint)]",
-            wide ? "h-[22px] px-[8px] text-[10.5px]" : "h-[26px] px-[10px] text-[11px]",
+            "bg-[color:var(--surface-sunken)] border-[color:var(--border-strong)] font-mono text-[color:var(--fg-body)]",
+            // The same height as the chips it stands in for, so the row reads as
+            // one line of chips with the last one dashed.
+            wide ? "h-[22px] px-[9px] text-[10.5px]" : "h-[30px] px-[11px] text-[11px]",
           ].join(" ")}
         >
           {filterCopy.chips.overflow(overflow)}
@@ -149,7 +154,7 @@ function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
     chips.push({
       key: "colors",
       label,
-      dot: single ? WUBRG_COLOR[single.toUpperCase()] : undefined,
+      dots: params.colors.map((c) => WUBRG_COLOR[c.toUpperCase()]),
       removeAria: `Remove ${label} filter`,
       // Dropping the pips drops the modifier with them: `Exactly` with nothing
       // lit is the greyed state, and it would otherwise leave a chip behind.
@@ -193,12 +198,14 @@ function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
 // `ChipLine` would be a new type each render and would remount its own input.
 function Chip({
   label,
-  dot,
+  dots,
+  wide,
   removeAria,
   onRemove,
 }: {
   label: string;
-  dot?: string;
+  dots?: string[];
+  wide: boolean;
   removeAria: string;
   onRemove: () => void;
 }) {
@@ -206,17 +213,25 @@ function Chip({
     <span
       data-testid="filter-chip"
       className={[
-        "inline-flex shrink-0 items-center gap-[6px] whitespace-nowrap rounded-full",
-        "border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)]",
-        "px-[9px] py-[3px] font-sans text-[12px] text-[color:var(--fg)]",
+        "inline-flex shrink-0 items-center gap-[7px] whitespace-nowrap rounded-full",
+        // Mono, and the plain border rather than the strong one: the chip is a
+        // readout of state, drawn in the same face as the result line it sits
+        // above, not a control competing with the rack.
+        "border border-solid border-[color:var(--border)] bg-[color:var(--elevated)]",
+        "font-mono text-[color:var(--fg-body)]",
+        wide ? "h-[22px] px-[9px] text-[10.5px]" : "h-[30px] px-[11px] text-[11px]",
       ].join(" ")}
     >
-      {dot && (
-        <span
-          aria-hidden
-          className="rounded-full"
-          style={{ width: 9, height: 9, background: dot }}
-        />
+      {dots && dots.length > 0 && (
+        <span aria-hidden className="flex shrink-0 items-center gap-[3px]">
+          {dots.map((fill) => (
+            <span
+              key={fill}
+              className="block shrink-0 rounded-[2px]"
+              style={{ width: wide ? 7 : 8, height: wide ? 7 : 8, background: fill }}
+            />
+          ))}
+        </span>
       )}
       {label}
       {/* The ✕ draws about 10×19px, so its hit area is grown to 44px with a

@@ -29,6 +29,22 @@ describe("ChipLine", () => {
     expect(chips[0]).toContain('"druid"');
   });
 
+  // One chip per control is about chips, not swatches: the label collapses two
+  // pips to "2 colours", and the swatches inside that one chip say which two.
+  it("draws a swatch per lit hue inside the single colour chip", () => {
+    render(
+      <ChipLine
+        params={{ ...defaultParams("owned"), colors: ["b", "g"] }}
+        lane="owned"
+        onChange={noop}
+        wide
+      />,
+    );
+    const chip = screen.getByTestId("filter-chip");
+    expect(chip).toHaveTextContent("2 colours");
+    expect(chip.querySelectorAll("span[style*='background']")).toHaveLength(2);
+  });
+
   it("collapses past one line to a dashed +N rather than wrapping", () => {
     render(
       <ChipLine

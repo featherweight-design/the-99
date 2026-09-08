@@ -127,7 +127,7 @@ export function ColourControl({
                   // no class can name it. It sits on this span rather than on
                   // the button so it outranks no hover state of the button's.
                   background: WUBRG_COLOR[hue.toUpperCase()],
-                  opacity: lit ? 1 : 0.34,
+                  opacity: lit ? 1 : wide ? 0.34 : 0.4,
                 }}
               />
             </button>
@@ -138,7 +138,7 @@ export function ColourControl({
       {wide && (
         <span
           aria-hidden
-          className="block h-[16px] w-px shrink-0 bg-[color:var(--border)]"
+          className="block h-[20px] w-px shrink-0 bg-[color:var(--border)]"
         />
       )}
       {!wide && <Caption>{filterCopy.match.legend}</Caption>}
@@ -149,15 +149,9 @@ export function ColourControl({
         // The state, not a `disabled` attribute: the control must stay in the
         // tab order (call 1).
         aria-disabled={live ? undefined : true}
-        className={[
-          "flex",
-          wide
-            ? "gap-[2px] rounded-[6px] p-[2px] border border-solid border-[color:var(--border)]"
-            : "gap-[6px] border-0",
-          // Greyed flattens the modifier onto the sunken surface; live it drops
-          // a step to `--bg` so it reads as nested inside the pip wrapper.
-          live ? "bg-[color:var(--bg)]" : "bg-[color:var(--surface-sunken)]",
-        ].join(" ")}
+        // No box of its own on the rack: the pip wrapper is already the box, and
+        // the hairline to its left is what says the modifier is inside it.
+        className={wide ? "flex items-center gap-[2px] pr-[6px]" : "flex gap-[8px]"}
       >
         {segments.map((s, i) => {
           const selected = s.mode === match;
@@ -189,19 +183,25 @@ export function ColourControl({
                 "flex items-center justify-center border border-solid",
                 live ? "cursor-pointer" : "cursor-default",
                 wide
-                  ? "font-mono rounded-[4px] px-[8px] h-[22px] text-[10.5px] tracking-[0.06em] uppercase"
-                  : "flex-1 rounded-lg h-[44px] text-[13px]",
-                selected
-                  ? live
-                    ? "font-semibold bg-[color:var(--accent)] border-[color:var(--accent)] text-[color:var(--bg)]"
-                    : // Greying removes emphasis; it must not erase state, or a
-                      // player lights a pip and the mode appears to change by
-                      // itself. The selected segment keeps its hairline.
-                      "font-semibold bg-transparent border-[color:var(--border-strong)] text-[color:var(--fg-locked)]"
-                  : [
-                      "font-medium bg-transparent border-transparent",
-                      live ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-locked)]",
-                    ].join(" "),
+                  ? "font-mono rounded-[6px] px-[8px] h-[22px] text-[10.5px]"
+                  : "rounded-full h-[44px] px-[16px] text-[13.5px]",
+                // Greying removes emphasis; it must not erase state, or a
+                // player lights a pip and the mode appears to change by itself.
+                // The selected segment keeps its border either way.
+                !live
+                  ? [
+                      "bg-[color:var(--surface-sunken)] text-[color:var(--fg-locked)]",
+                      selected
+                        ? "border-[color:var(--border-strong)]"
+                        : "border-[color:var(--border)]",
+                    ].join(" ")
+                  : selected
+                    ? wide
+                      ? "bg-[color:var(--elevated)] border-[color:var(--border-strong)] text-[color:var(--fg)]"
+                      : "bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] border-[color:var(--accent)] text-[color:var(--fg)]"
+                    : wide
+                      ? "bg-transparent border-transparent text-[color:var(--fg-muted)]"
+                      : "bg-transparent border-[color:var(--border-strong)] text-[color:var(--fg-body)]",
               ].join(" ")}
             >
               {s.label}
