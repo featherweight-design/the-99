@@ -63,7 +63,8 @@ interface DecklistRowProps {
   spent?: boolean;
   /**
    * EDHREC inclusion % for the Shopping view's meta line (addendum A2).
-   * `undefined` — All view; no meta line is rendered (44px phone row).
+   * `undefined` — All view; no figure is rendered. Since #350 the row may
+   *               still carry a meta line, for the cost.
    * `null`      — Shopping view; card has no EDHREC figure → prints rowNoFigure.
    * `number`    — Shopping view; prints rowFigure(pct). Never 0 as a stand-in for absent.
    */
