@@ -37,7 +37,7 @@ const FILL_ALPHA = "18%";
  * quieter label than the four that key off a signal colour.
  */
 const PILL_EXCEPTION: Partial<
-  Record<StatusPill, { fillAlpha: string; label: string; borderStyle?: string }>
+  Record<StatusPill, { fillAlpha: string; label: string; borderStyle?: CSSProperties["borderStyle"] }>
 > = {
   Draft: { fillAlpha: "16%", label: "--fg-muted" },
   Building: { fillAlpha: "14%", label: "--fg-body", borderStyle: "dashed" },
