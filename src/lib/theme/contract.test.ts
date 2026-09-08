@@ -58,10 +58,10 @@ const SURFACES = [
   "surface-inset", "elevated", "elevated-hover",
 ];
 const BORDERS = ["border", "border-strong", "border-dashed"];
-// --fg-disabled rides in the chroma gate below but not in the contrast one:
-// it exists to colour what cannot be reached, sits under the 3:1 floor the
-// rest of the ramp clears, and every element wearing it carries its reason in
-// the accessible name instead.
+// --fg-disabled rides in the chroma gate below but not in the contrast one: it
+// sits under the 3:1 floor the rest of the ramp clears, which is why nothing
+// wearing it carries meaning of its own — only a padlock glyph and an
+// aria-hidden numeral, each repeating a state the words beside it already give.
 const TEXT = ["fg", "fg-body", "fg-muted", "fg-faint", "fg-locked", "fg-disabled"];
 const PIPS = ["w", "u", "b", "r", "g"];
 const SEMANTICS = ["success", "warning", "danger"];

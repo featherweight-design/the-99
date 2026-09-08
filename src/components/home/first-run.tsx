@@ -97,7 +97,12 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
         >
           {title}
         </span>
-        <span id={reasonId} className="text-[12px] text-[color:var(--fg-disabled)] sm:text-[12.5px]">
+        {/* `--fg-locked`, not the `--fg-disabled` the design note names: this
+            line is the only place a sighted reader learns what the step waits
+            on, and that token sits under the 3:1 floor on purpose. The numeral
+            above keeps it — it is `aria-hidden` and its ordinal is already
+            carried by document order. */}
+        <span id={reasonId} className="text-[12px] text-[color:var(--fg-locked)] sm:text-[12.5px]">
           {reason}
         </span>
       </div>

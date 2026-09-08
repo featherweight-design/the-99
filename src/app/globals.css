@@ -39,10 +39,11 @@
      fails in all six. Re-measure the pair after any surface change. */
   --fg-locked: #6E6654;
   /* One step below --fg-locked, and deliberately under the 3:1 floor the rest
-     of the text ramp clears: it colours things that are not reachable — locked
-     nav items, a locked step's numeral and its reason line. Every one of those
-     also carries `firstRun.lockedItemAria`, so the reason is in the accessible
-     name and never in the contrast alone. Low Sun's value is the frame's;
+     of the text ramp clears. Because it is under that floor it colours only
+     what repeats something already said: the padlock glyph beside a locked nav
+     item, and a locked step's aria-hidden numeral. The words themselves — a
+     locked tab's label, a locked step's reason line — take --fg-locked, which
+     clears the floor. Low Sun's value is the frame's;
      the other five hold their own hue at the same OKLab lightness ratio, so
      each theme dims within its own family rather than towards brass. */
   --fg-disabled: #4A4033;

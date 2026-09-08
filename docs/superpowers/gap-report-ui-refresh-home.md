@@ -131,14 +131,27 @@ conflicting specification of a bar the shell already owns. Which table governs
 the phone top bar is a Design call, not an implementation gap. Nothing on this
 branch changes until it is answered — the shipped shell wins by default.
 
-### 4. `--fg-disabled` sits below the contrast floor
+### 4. `--fg-disabled` sits below the contrast floor — resolved in code, for ratification
 
-Design-table ambiguity 6 leaves the locked-step body colour open.
-`--fg-disabled` measures roughly 1.8:1 against `--surface-rail`, under the 3:1
-floor for non-text UI and well under 4.5:1 for the body copy it is used for
-here. The locked step's reason is the one string that tells a reader what they
-are waiting for, so it is not decorative. Raising the token affects every
-surface that uses it, which is why it is not raised here.
+Design-table ambiguity 6 leaves the locked-step body colour open, and the
+handoff names a bare `#4A4033` for dimmed nav items and the locked-step reason.
+That value measures roughly 1.8:1 against `--surface-rail` — under the 3:1
+floor, and far under 4.5:1 for body copy. A contrast floor is not a taste call,
+so it was resolved rather than escalated: `--fg-disabled` now colours only what
+repeats something already said, and the words take `--fg-locked`.
+
+| Element | Was | Now |
+|---|---|---|
+| Locked step reason line | `--fg-disabled` | `--fg-locked` |
+| Locked rail slot (icon) | `--fg-disabled` | `--fg-locked` |
+| Locked tab (icon + label) | `--fg-disabled` | `--fg-locked` |
+| Padlock glyph | `--fg-disabled` | unchanged (`aria-hidden`, repeats the name) |
+| Locked step numeral | `--fg-disabled` | unchanged (`aria-hidden`, ordinal is document order) |
+
+The token stays in the contract and keeps its two decorative users, so the
+dimmer step in the ramp is still available and still declared per theme. What
+Design is asked to ratify is only that locked *text* reads at `--fg-locked`
+rather than a step below it.
 
 ### 5. One named state has no frame and so was not built
 

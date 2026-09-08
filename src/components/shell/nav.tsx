@@ -185,9 +185,14 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
               // Locked is tested first: a locked slot stays inert-looking even
               // on its own route, or the active fill would advertise a
               // destination the reader cannot reach from here.
+              // Locked takes `--fg-locked`, not the dimmer `--fg-disabled` the
+              // handoff names: this colour is the icon, and the icon is the
+              // whole of what a rail slot shows. Only the padlock beside it,
+              // which repeats a state already in the accessible name, is dim
+              // enough to sit under the contrast floor.
               className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] transition-colors ${
                 isLocked
-                  ? "bg-transparent text-[color:var(--fg-disabled)]"
+                  ? "bg-transparent text-[color:var(--fg-locked)]"
                   : active
                     ? "bg-elevated text-[color:var(--fg)]"
                     : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover"
@@ -262,9 +267,12 @@ export function TabBar({ locked }: { locked: boolean }) {
             // 13 reserves colour for status. One `color` on the slot serves both
             // the icon (currentColor) and the label.
             // Locked first, as in the rail.
+            // `--fg-locked` for the same reason as the rail, and more so: one
+            // `color` serves the icon and a visible label, and a label under
+            // the 3:1 floor is unreadable however truthful its name.
             className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
               isLocked
-                ? "bg-transparent text-[color:var(--fg-disabled)]"
+                ? "bg-transparent text-[color:var(--fg-locked)]"
                 : active
                   ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"
                   : "bg-transparent text-[color:var(--fg-faint)]"
