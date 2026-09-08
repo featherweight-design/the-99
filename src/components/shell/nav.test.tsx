@@ -55,9 +55,19 @@ describe("NavRail", () => {
     }
   });
 
-  it("carries the app mark once, not once per row", () => {
+  // The mark is the crowned numeral, not the bare diamond the rail drew until
+  // 2026-09-08 — that was the crown's middle diamond alone, which is also the
+  // shape Discover's nav glyph is built from. Asserted by role and name rather
+  // than a test-only attribute, so this covers the accessible name as well.
+  it("carries the app mark once, at the top, not once per row", () => {
     const { container } = render(<NavRail locked={false} theme="amonkhet" />);
-    expect(container.querySelectorAll("[data-nav-diamond]")).toHaveLength(1);
+    const rail = container.querySelector("aside")!;
+    const marks = within(rail).getAllByRole("img", { name: "The 99" });
+    expect(marks).toHaveLength(1);
+    // Before the Primary landmark, so a screen reader reads the app's name and
+    // then the nav, rather than meeting the name somewhere inside it.
+    const nav = within(rail).getByRole("navigation", { name: "Primary" });
+    expect(marks[0].compareDocumentPosition(nav)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it("states the reason a locked item is locked, in its accessible name", () => {

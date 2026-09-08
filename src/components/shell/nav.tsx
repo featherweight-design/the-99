@@ -151,15 +151,15 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
         borderRight: "1px solid var(--border)",
       }}
     >
-      {/* The app mark — 26px, rotated 45°, 4px radius, 1.5px --accent, and 16px
-          of air under it. Once, at the top: it is the mark, not a nav item
-          (CHROME §The rail). */}
-      <span
-        data-nav-diamond
-        aria-hidden
-        className="block h-[26px] w-[26px] rotate-45 rounded-[4px] mb-4"
-        style={{ border: "1.5px solid var(--accent)" }}
-      />
+      {/* The app mark — the crowned numeral, 39px tall, with 20px of air under
+          it. Once, at the top: it is the mark, not a nav item and not a route,
+          and never repeated per row (CHROME-rail-mark.md §§1, 3).
+
+          It was a bare 26px outlined diamond until 2026-09-08 — the crown's
+          middle diamond with the other two and the numerals taken away, which
+          is both not the mark and the same shape Discover's nav glyph is built
+          from. This is the only place the desktop app says its own name. */}
+      <Crowned99 variant="rail-62" className="mb-5" />
 
       {/* ------------------------------------------------------------------ */}
       {/* Nav section — icon-only, 38px squares, 4px apart                    */}
