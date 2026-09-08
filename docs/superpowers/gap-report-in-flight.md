@@ -2,96 +2,91 @@
 
 **Handoff:** `design/design_handoff_the99_in_flight` (R2)
 **Verified against:** `src/components/commanders/page-header.tsx`, `discovery-view.tsx`,
-`commanders-view.tsx`, `list-nav.ts`, `src/lib/copy/commander-discovery.ts`,
-`src/lib/discovery/list-wiring.test.ts`
+`commanders-view.tsx`, `rack/*`, `list-nav.ts`, `pending.ts`, `src/lib/copy/lanes.ts`
 **Widths:** 390px and 1280px
 **Date:** 2026-09-07
 
 ## Verdict
 
-**🟢 Green.** R1's one blocking finding is closed correctly, and no new blocking finding
-replaces it. Two residual corrections are recorded below; both are eng-resolvable and
-neither is a design call, so this does not go back to Design for a round-trip — Design is
-asked to ratify them, not to redraw.
+**🟠 Orange — the premise is superseded, not wrong.** R2 closes R1's blocking finding
+cleanly and would have been Green against the build it was drawn on. It was not drawn on
+this build. `#435` — *Split /commanders into two lanes: owned and discover*, merged as
+`3da8c52` — deleted the surface every ruling in R2 is placed on, and reduced the set of
+controls the ruling governs from three to one.
 
-## R1's blocker, and how R2 closes it
+This needs a Design round-trip. Where the participle lives now is a placement question on
+a surface Design has not drawn a pending state for, and improvising it here would be
+choosing a location the drawing does not contain.
 
-R1 ruled on a **three-clause** subtitle and assigned `re-reading…` to `read against N
-cards`. That clause is the one part of the sentence that is invariant under an
-availability flip, and the invariant is locked and tested at
-`src/lib/discovery/list-wiring.test.ts:110-114`:
+## What R2 got right, and keep
 
-```ts
-// "read against N cards" names the collection. Scoping it to the free pool
-// would make the number move when a deck is built.
-expect(got.cardsRead).toBe(2);
-```
+R1 ruled on a three-clause subtitle and assigned `re-reading…` to `read against N cards` —
+the one clause locked and tested as invariant under an availability flip
+(`src/lib/discovery/list-wiring.test.ts:110-114`). R2 counted four clauses, retired
+`re-reading…`, gave that clause no pending state at all, and moved the availability
+participle onto the pool clause that actually changes. That reasoning is sound and the
+*non-placement* rulings survive the lane split intact:
 
-R2 counts four clauses, retires `re-reading…`, gives clause 3 no pending state at all
-(ruling 4c), and moves the availability participle onto the clause that actually changes:
+- The list is never touched — no `RegionLoader`, skeleton, dim, overlay or `aria-busy` on
+  the region. The outgoing rows are the previous answer and stay pressable.
+- One gate, 500 ms, never tuned per control.
+- Client-side controls get no mark.
+- Nothing announced mid-flight; no escalation tier at any duration.
+- `LoadingScreen` is the region loader, and it is reached only when there are no outgoing
+  rows.
 
-| # | Clause (discovery, defaults) | Owner | In flight |
-|---|---|---|---|
-| 1 | `3,100 commanders you have not built` | scope (server) | `counting…` |
-| 2 | `ranked by best fit` | sort (server) | `re-ranking…` |
-| 3 | `read against 2,805 cards` | **nobody** | **never** |
-| 4 | `free cards only` / `every card you own` | availability (server) | `re-scoring…` |
+## What `#435` removed
 
-The never-longer-than-what-it-replaces constraint holds at the tightest measurement:
-`re-scoring…` is 11 characters against the 15 of `free cards only`, clause 4's shortest
-form. So the wrap point can only move earlier and the list can only move up, which is
-what the 390px open item in `READINESS.md` is about.
+**1 — The subtitle is gone.** `page-header.tsx` is now `PageHeader({ lane })`: a fixed
+title and a fixed gloss (`Commanders` / `yours, not yet built`), 39 lines, no props for
+counts, no scope toggle. Its own header comment states the change: *"the scope is now the
+route, the nav is the switch, and the counts the subtitle reported have moved onto the
+rack's result line."* R2's mechanism — *a pending clause replaces the subtitle clause its
+control owns* — has no clauses left to replace. All three participles are homeless.
 
-## Corrections made on port — Design to ratify, not redraw
+**2 — Three fetching controls became one.** `discovery-view.tsx:120-123` is explicit:
+*"Scope is the only one left that can reach the server, and even it usually does not — a
+cache hit answers in memory and this never turns true."* One `useTransition` feeds one
+`scopePending` boolean into the rack. `commanders-view.tsx` holds no transition at all and
+passes no pending flag: **the owned lane now has zero fetching controls.** So `counting…`
+has no owner (scope is the route, not a control), and `re-scoring…` has no owner (the
+owned lane's availability is a client swap, and Discover mounts no availability control at
+all).
 
-**Correction 1 — "two participles under `I own`" is one.**
-`RULING-in-flight-feedback.md` and the header comment of `in-flight · copy strings.ts`
-both state *"Two participles are reachable under `I own`, three under `To play`."*
-`commanders-view.tsx:284-294` passes `onAvailChange={setAvail}` and **no `availPending`**:
-under the owned scope, availability is a pure client-side swap over data already on the
-client, with nothing to wait for. Design's own ruling 7 says exactly this ("the
-client-side controls get no mark"), so the sentence contradicts the ruling two pages
-above it rather than adding to it. **Exactly one participle — `counting…` — is reachable
-under `I own`.** Recorded as a doc-sync slip; the code follows ruling 7.
+**3 — The count line moved and took a live region with it.**
+`rack/result-line.tsx` is the only line on either lane that carries counts, and it is
+deliberately *the rack's only live region*, announced on a 300 ms debounce so a reader
+typing four letters hears one count. Any participle placed there collides with a rule that
+was written to prevent exactly that chorus. R2 could not have accounted for it.
 
-**Correction 2 — `ordering` is always present; only its pending-ness is scope-dependent.**
-The R2 assembler types `ordering?: string; // absent under the owned scope — no sort
-control there` and runs `.filter(Boolean)`. Taken literally that deletes `ranked by fit`
-from the shipped owned-scope subtitle (`src/lib/copy/commander-discovery.ts:50-51`), which
-is a copy regression no drawing asks for. The true statement is narrower: the owned scope
-has no sort *control*, so clause 2 there can never go pending. **On port, `ordering` is a
-required field and `pending === 'sort'` is unreachable under the owned scope.**
+## What is already shipped
 
-## Verified, not assumed
+The crown half of the ruling is in the build and needs nothing. `rack/select.tsx` takes
+`pending`, sets `aria-busy`, applies `PENDING_OPACITY` (0.55, from `pending.ts`) and swaps
+the selected option's label for `PendingMark` via `PendingLabel` — the never-disabled,
+never-reflowing treatment from PRs #411 and #416. The rack's scope control is wired to it
+(`filter-rack.tsx:106`, `filter-sheet.tsx:241`).
 
-- **All three pending flags already exist and are already wired.**
-  `discovery-view.tsx:114-116` holds `scopeNav`/`sortNav`/`availNav`; their `pending` is
-  already passed to the scope control (`:512`), the sort menu (`:257`) and the
-  availability control (`:530`). This handoff adds the 500 ms gate and the subtitle
-  clause, not the plumbing.
-- **A cache-served repeat flip does not go pending.** `useDiscoveryCache` writes the URL
-  with `history.replaceState` rather than routing, so no transition starts and
-  `useParamNav`'s `isPending` never flips. READINESS's claim holds.
-- **Search is correctly excluded.** `discovery-view.tsx:404` computes a fifth in-flight
-  boolean from the `findExcludedMatches` action, but that action filters client-side and
-  never gates the visible list. R2 names it as explicit no-treatment (ruling 12b), which
-  is the right call and closes R1's second non-blocking note.
-- **The no-scope arm of the header is untouched.** `page-header.tsx:66-68` renders
-  `N cards scanned · ranked by fit`, has no controls above it, and gains no pending state.
-- **The three amendment targets exist verbatim** at the quoted line numbers in
-  `CONTROLS-four-above-one-list.md`, `The 99 - Commander Discovery.dc.html` and
-  `CONTROLS-six-above-one-list.md`.
+So the live question is narrow: **does one surviving server control, which usually answers
+from cache, need a copy state at all beyond the crown it already has?**
 
-## Open item, carried not closed
+## Two corrections that outlive the redraw
 
-READINESS §"Needs a decision" item 1 — the ~14px transient line loss at 390px — is drawn
-as-is and stays that way. It is a judgement to make on a device, not a blocker, and the
-fallback (a `min-height` at 390px only) is one line of CSS.
+Both are eng-resolvable and were found against the pre-`#435` build; they should be
+carried into whatever R3 says, because both are statements about *ownership* rather than
+about the subtitle.
 
-## Sequencing
+1. **"Two participles under `I own`" was already one** even before the split.
+   `commanders-view.tsx` passes no availability pending flag — that flip is a client swap
+   over data already on the client. Design's own ruling 7 says the same thing, so the
+   sentence contradicted the ruling two pages above it. Post-`#435` it is **zero**.
+2. **`ordering` is not optional.** R2's reference assembler types it optional and runs
+   `.filter(Boolean)`, which taken literally deleted `ranked by fit` from the owned
+   subtitle. The narrower true statement — the owned lane has no sort *control*, so that
+   clause can never go pending — is the one that survives.
 
-Another agent is mid-flight on the Commanders and Discover views under
-`design/design_handoff_the99_refresh`. Its Conformance table (`README.md:69-77`) commits
-to *"Every figure stays. Search moves in with the filters"* — a `filter-bar.tsx` change.
-This work is `page-header.tsx` plus copy modules, so the two do not collide, but the plan
-lands after that work settles regardless.
+## What ships from this branch
+
+The R2 drop, and this report. **No implementation plan**: a plan written against
+`page-header.tsx`'s four clauses instructs a worker to edit code that no longer exists.
+The plan is re-written after R3 lands.
