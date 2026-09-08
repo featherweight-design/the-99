@@ -202,11 +202,14 @@ function FiltersTrigger({
       aria-expanded={expanded}
       onClick={onClick}
       className={[
-        "inline-flex h-[44px] shrink-0 cursor-pointer items-center gap-[7px] rounded-[10px] px-[14px]",
+        "inline-flex h-[44px] shrink-0 cursor-pointer items-center gap-[7px] rounded-[10px]",
         "border border-solid bg-[color:var(--surface-sunken)] font-sans text-[13px] text-[color:var(--fg)]",
+        // One `px-*` either way: two would resolve by stylesheet order, not by
+        // the order of this array. The badge takes the 2px the padding gives up,
+        // so the trigger keeps its width whether or not a filter is on.
         badge > 0
-          ? "border-[color:var(--accent)]"
-          : "border-[color:var(--border-strong)]",
+          ? "px-[11px] border-[color:var(--accent)]"
+          : "px-[13px] border-[color:var(--border-strong)]",
       ].join(" ")}
     >
       {filterCopy.sheet.trigger}
