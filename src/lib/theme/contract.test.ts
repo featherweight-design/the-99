@@ -12,12 +12,13 @@ const CSS = readFileSync(
 );
 const THEMES = parseThemeBlocks(CSS);
 
-// The 36 keys, spelled out rather than derived from :root. Derived, a token
+// The 37 keys, spelled out rather than derived from :root. Derived, a token
 // dropped from every theme at once would still pass.
 const CONTRACT = [
   "bg", "surface", "surface-raised", "surface-rail", "surface-sunken",
   "surface-inset", "elevated", "elevated-hover", "border", "border-strong",
   "border-dashed", "fg", "fg-body", "fg-muted", "fg-faint", "fg-locked",
+  "fg-disabled",
   "accent", "accent-hover", "accent-strong", "accent-shadow", "accent-dim",
   "accent-mid", "success", "warning", "danger", "avail-soft", "avail-hard",
   "avail-hard-fg", "avail-over-fg", "avail-over-border", "w", "u", "b", "r", "g",
@@ -57,7 +58,11 @@ const SURFACES = [
   "surface-inset", "elevated", "elevated-hover",
 ];
 const BORDERS = ["border", "border-strong", "border-dashed"];
-const TEXT = ["fg", "fg-body", "fg-muted", "fg-faint", "fg-locked"];
+// --fg-disabled rides in the chroma gate below but not in the contrast one:
+// it exists to colour what cannot be reached, sits under the 3:1 floor the
+// rest of the ramp clears, and every element wearing it carries its reason in
+// the accessible name instead.
+const TEXT = ["fg", "fg-body", "fg-muted", "fg-faint", "fg-locked", "fg-disabled"];
 const PIPS = ["w", "u", "b", "r", "g"];
 const SEMANTICS = ["success", "warning", "danger"];
 
@@ -79,7 +84,7 @@ describe("theme contract", () => {
       return value;
     };
 
-    it("declares exactly the 36 contract keys", () => {
+    it("declares exactly the 37 contract keys", () => {
       expect([...tokens.keys()].sort()).toEqual([...CONTRACT].sort());
     });
 

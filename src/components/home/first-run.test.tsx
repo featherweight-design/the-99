@@ -1,0 +1,53 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+// Step 1 reaches the upload flow through ReplaceFlow, which calls useRouter at
+// render to send a confirmed upload on to /collection. Outside an app-router
+// tree that throws, and none of these tests navigates.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+
+const { FirstRunChecklist } = await import("./first-run");
+
+describe("FirstRunChecklist", () => {
+  it("counts the steps in the kicker, not in a sentence", () => {
+    render(<FirstRunChecklist />);
+    expect(screen.getByText("Step 1 of 3")).toBeInTheDocument();
+    expect(screen.queryByText(/Three steps/)).toBeNull();
+  });
+
+  it("greets without a name", () => {
+    render(<FirstRunChecklist />);
+    expect(screen.getByRole("heading", { name: "Welcome to The 99" })).toBeInTheDocument();
+  });
+
+  it("says what each locked step is waiting for", () => {
+    render(<FirstRunChecklist />);
+    expect(screen.getByText("Unlocks once a collection is read")).toBeInTheDocument();
+    expect(screen.getByText("Unlocks with a commander")).toBeInTheDocument();
+  });
+
+  it("offers both entries into step 1", () => {
+    render(<FirstRunChecklist />);
+    expect(screen.getByRole("button", { name: "Upload a CSV" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Paste a list" })).toBeInTheDocument();
+  });
+
+  it("lets a player who already has a decklist out of the checklist", () => {
+    render(<FirstRunChecklist />);
+    expect(screen.getByText("Already have a deck elsewhere?")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Import a deck" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("import"),
+    );
+  });
+
+  it("hides the card fan from the accessibility tree", () => {
+    const { container } = render(<FirstRunChecklist />);
+    expect(container.querySelector("[aria-hidden='true']")).toBeInTheDocument();
+    // The plan asserted `queryByText("99")` is null. It is not: only the role
+    // queries consult the accessibility tree, and `getByText` walks the DOM, so
+    // that assertion would fail against a correctly hidden fan. What it meant
+    // to check is asserted directly — the numeral sits inside a hidden subtree.
+    expect(screen.getByText("99").closest("[aria-hidden='true']")).not.toBeNull();
+  });
+});

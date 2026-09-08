@@ -53,9 +53,6 @@ export const shellCopy = {
     primaryCta: "Back home",
     secondaryCta: "View decks",
   },
-  firstRun: {
-    lockedHint: "unlocks after upload",
-  },
   accountMenu: {
     manageAccount: "Manage account",
     signOut: "Sign out",

@@ -87,9 +87,7 @@ export default async function HomePage() {
   // paid for nothing.
   const stats = await getCollectionStats(userId);
   if (stats.uniqueCards === 0) {
-    // The prop goes when task 18 rewrites this component against the refresh's
-    // `firstRun.heading`, which carries no name either.
-    return <FirstRunChecklist name={null} />;
+    return <FirstRunChecklist />;
   }
 
   const [lastUpdated, ranked, decks, shopping] = await Promise.all([

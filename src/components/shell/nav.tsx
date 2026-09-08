@@ -50,8 +50,9 @@ function isActive(pathname: string, href: string): boolean {
 
 // The handoff writes the locked colour as a bare Amonkhet hex, which would
 // stay Amonkhet under the other five themes. It is spent here as
-// `--fg-locked`, which every theme already defines against its own surfaces.
-// Awaiting Design's ratification; the intent is unchanged.
+// `--fg-disabled`, the token added for exactly this: one step below
+// `--fg-locked` and declared per theme, so each theme dims within its own
+// family rather than towards Low Sun's brass.
 
 // Decorative, because every locked item already carries the reason in words.
 function LockGlyph() {
@@ -61,7 +62,7 @@ function LockGlyph() {
       height="16"
       viewBox="0 0 14 16"
       fill="none"
-      stroke="var(--fg-locked)"
+      stroke="var(--fg-disabled)"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -186,7 +187,7 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
               // destination the reader cannot reach from here.
               className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] transition-colors ${
                 isLocked
-                  ? "bg-transparent text-[color:var(--fg-locked)]"
+                  ? "bg-transparent text-[color:var(--fg-disabled)]"
                   : active
                     ? "bg-elevated text-[color:var(--fg)]"
                     : "bg-transparent text-[color:var(--fg-faint)] hover:bg-elevated-hover"
@@ -263,7 +264,7 @@ export function TabBar({ locked }: { locked: boolean }) {
             // Locked first, as in the rail.
             className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
               isLocked
-                ? "bg-transparent text-[color:var(--fg-locked)]"
+                ? "bg-transparent text-[color:var(--fg-disabled)]"
                 : active
                   ? "bg-[color:var(--surface-inset)] text-[color:var(--fg)]"
                   : "bg-transparent text-[color:var(--fg-faint)]"
