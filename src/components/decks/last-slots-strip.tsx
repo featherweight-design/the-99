@@ -46,10 +46,24 @@ export interface LastSlotsStripProps {
 // Border-left is set via inline styles (as provenance-line.tsx does) so jsdom
 // can inspect the individual longhand properties.
 
-function ExhaustedLine({ total, shortfall }: { total: string; shortfall: string }) {
+function ExhaustedLine({
+  total,
+  shortfall,
+  ref,
+}: {
+  total: string;
+  shortfall: string;
+  ref?: React.Ref<HTMLDivElement>;
+}) {
   return (
     <div
+      ref={ref}
       data-testid="last-slots-exhausted"
+      // The plate is what a closing list has left to return focus to when the
+      // pass emptied the pool, so it takes focus programmatically. Not in the
+      // tab order: it is a sentence, and reaching it by tabbing would be one
+      // more stop between the strip and the decklist.
+      tabIndex={-1}
       className="flex items-start gap-[10px] rounded-[9px] px-[13px] py-[11px]"
       style={{
         background: "var(--surface-sunken)",
@@ -116,6 +130,7 @@ function LastSlotsStripInner({
   const ownedIds = candidates.filter((c) => c.owned).map((c) => c.oracleId);
 
   const closeRef = useRef<HTMLButtonElement>(null);
+  const exhaustedRef = useRef<HTMLDivElement>(null);
   const moveFocus = useRef(false);
 
   function openList() {
@@ -155,10 +170,16 @@ function LastSlotsStripInner({
   // disclosure to whichever face is mounted — never into the rows, which is
   // what the handoff rules out. Both moves wait for the render that mounts the
   // target; a synchronous focus() would find nothing there.
+  //
+  // A pass can take the last candidates and leave slots still open, and then
+  // the door the list closes back onto does not exist — the exhausted plate
+  // stands in its place. Focus follows the drawing rather than the control, or
+  // the one close that ends the feature drops the reader on the body.
   useEffect(() => {
     if (!moveFocus.current) return;
     moveFocus.current = false;
-    (open ? closeRef : doorRef).current?.focus();
+    const target = open ? closeRef.current : (doorRef.current ?? exhaustedRef.current);
+    target?.focus();
   }, [open]);
 
   // The strip unmounts the moment the deck fills, and a fill can land from the
@@ -258,7 +279,11 @@ function LastSlotsStripInner({
       </div>
 
       {exhausted ? (
-        <ExhaustedLine total={String(99 - openSlots)} shortfall={String(openSlots)} />
+        <ExhaustedLine
+          ref={exhaustedRef}
+          total={String(99 - openSlots)}
+          shortfall={String(openSlots)}
+        />
       ) : !open ? (
         <div className="md:flex md:items-center md:gap-[12px] md:flex-wrap">
           <button

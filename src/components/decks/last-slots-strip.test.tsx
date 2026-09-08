@@ -193,6 +193,18 @@ describe("LastSlotsStrip", () => {
   // §1e — focus moves on close and only on close. The door does not exist at
   // the moment close is asked for, so the move has to wait for the render that
   // puts it back; a synchronous focus() here would silently do nothing.
+  // A pass that takes the last candidates leaves slots open and no door, so the
+  // one close that ends the feature is the one with nothing to return to.
+  it("returns focus to the exhausted plate when the pass emptied the pool", async () => {
+    const { rerender } = render(<LastSlotsStrip {...base} />);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    rerender(<LastSlotsStrip {...base} candidates={[]} />);
+    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+
+    expect(screen.getByTestId("last-slots-exhausted")).toHaveFocus();
+  });
+
   it("returns focus to the door when the list closes", async () => {
     render(<LastSlotsStrip {...base} />);
     await click(screen.getByRole("button", { name: doorName("3") }));
