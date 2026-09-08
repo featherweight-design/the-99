@@ -11,7 +11,7 @@ import type { CommanderListItem } from "../../lib/recs/recommend";
 
 /**
  * §ReadyCard — scrim. Written as `color-mix` against `var(--bg)` rather than the
- * frame's literal `rgba(20,17,14,…)`, so the wash follows a theme change instead
+ * frame's literal dark-theme channels, so the wash follows a theme change instead
  * of pinning the card to the dark one. The two breakpoints differ only in the
  * top stop (12% phone, 15% desktop), and both are spelled out: a custom property
  * substituted into a `color-mix` percentage is one more thing to be wrong about
