@@ -30,6 +30,16 @@ export const shellCopy = {
       heading: "Consulting the council",
       status: "ranking by what you own…",
     },
+    // Not in the App Shell handoff: /discover did not exist when it was drawn.
+    // Written to the same shape — a table phrase, then a participle naming what
+    // is being fetched — and deliberately the mirror of `commanders` above,
+    // because the two lanes ask the same question of opposite shelves. Without
+    // it the route falls through to the root boundary and greets a lane of
+    // unowned commanders with "counting what you've got".
+    discover: {
+      heading: "Casting a wider net",
+      status: "ranking what you don't own…",
+    },
     decks: {
       heading: "Shuffling up",
       status: "counting the 99…",
