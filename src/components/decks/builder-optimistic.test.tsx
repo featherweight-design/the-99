@@ -114,7 +114,14 @@ const showTab = async (name: RegExp) => {
 async function addSolRing() {
   await showTab(/cards to consider/i);
   await act(async () => {
-    fireEvent.click(screen.getByRole("button", { name: /^Add Sol Ring to the deck/  }));
+    // This fixture's Sol Ring is unowned, so its accessible name is the long
+    // form. Spelled out rather than prefix-matched: the owned name is a prefix
+    // of this one, so a loose query would match both the day a test adds one.
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Add Sol Ring to the deck, which you do not own, so it will be added to buy",
+      }),
+    );
   });
 }
 
