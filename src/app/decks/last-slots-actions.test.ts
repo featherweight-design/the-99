@@ -27,8 +27,10 @@ const stub = vi.hoisted(() => {
     collectionReads: 0,
     // Insert calls tracked as { table, values }
     insertCalls: [] as { table: string; values: unknown }[],
-    // Rows representing cards currently in the deck (in-transaction read)
-    deckCards: [] as { oracleId: string; quantity: number }[],
+    // Rows representing cards currently in the deck (in-transaction read).
+    // `auto` defaults to true on read — a card the app placed — because that is
+    // what every fill path here produces; a kept card sets it false explicitly.
+    deckCards: [] as { oracleId: string; quantity: number; auto?: boolean }[],
     // Whether the transaction should throw
     transactionError: null as Error | null,
     // Called when tx.execute fires (the for-update lock point)
@@ -36,15 +38,15 @@ const stub = vi.hoisted(() => {
     // Paths passed to revalidatePath
     revalidated: [] as string[],
     // fill_passes rows. Read two ways: as the highest ordinal a deck+kind has
-    // used (recordFillPass, inside the transaction) and as one pass by id
-    // (undoFillPass, outside it).
+    // used (recordFillPass's aggregate) and as the deck's passes in full
+    // (undoFillPass, which needs every one of them to attribute a card).
     fillPasses: [] as { id: string; deckId: string; kind: string; ordinal: number }[],
-    // fill_pass_cards rows — the membership undoFillPass deletes against
-    fillPassMembers: [] as { passId: string; oracleId: string }[],
-    // Rows the delete's returning clause hands back
-    deleted: [] as { quantity: number }[],
+    // fill_pass_cards rows — the membership attribution is computed from
+    fillPassMembers: [] as { passId: string; oracleId: string; quantity?: number }[],
     // { table } per delete, so a delete can be asserted on what it targeted
     deleteCalls: [] as { table: string }[],
+    // { table, set } per update — the decrement path a stacked row takes
+    updateCalls: [] as { table: string; set: unknown }[],
   };
 
   function reset() {
@@ -59,8 +61,8 @@ const stub = vi.hoisted(() => {
     state.revalidated.length = 0;
     state.fillPasses.length = 0;
     state.fillPassMembers.length = 0;
-    state.deleted.length = 0;
     state.deleteCalls.length = 0;
+    state.updateCalls.length = 0;
     // Deck row so requireDeck succeeds
     state.collectionItems.push({
       id: "deck-1",
@@ -86,24 +88,34 @@ const stub = vi.hoisted(() => {
     groupBy: (...args: unknown[]) => Promise<Record<string, unknown>[]>;
   };
 
-  function makeSelectBuilder(isTx = false): SelectBuilder {
+  function makeSelectBuilder(isTx = false, fields?: unknown): SelectBuilder {
     return {
       from: (table: unknown) => {
         const tableName = nameOf(table);
         const builder: SelectFromBuilder = {
           where: async () => {
-            if (tableName === "deck_cards" && isTx) return state.deckCards;
+            if (tableName === "deck_cards" && isTx) {
+              return state.deckCards.map((r) => ({ auto: true, ...r }));
+            }
             if (tableName === "deck_cards") throw new Error("stub: deck_cards select outside tx — not exercised");
             if (tableName === "cards") return state.cards;
-            // Inside the transaction this read is recordFillPass's aggregate,
-            // which always answers with exactly one row; outside it, it is
-            // undoFillPass looking one pass up by id.
+            // Two different reads of one table, told apart by what they select:
+            // recordFillPass asks for `highest` and gets exactly one row back;
+            // undoFillPass asks for the pass columns and gets the deck's passes.
             if (tableName === "fill_passes") {
-              return isTx
-                ? [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }]
-                : state.fillPasses;
+              const asks = fields as Record<string, unknown> | undefined;
+              if (asks && "highest" in asks) {
+                return [{ highest: state.fillPasses.reduce((n, p) => Math.max(n, p.ordinal), 0) }];
+              }
+              // createdAt is derived from the ordinal so the summariser's
+              // newest-first sort is deterministic in tests.
+              return state.fillPasses.map((p) => ({
+                openSlots: 0, createdAt: new Date(p.ordinal * 1000), ...p,
+              }));
             }
-            if (tableName === "fill_pass_cards") return state.fillPassMembers;
+            if (tableName === "fill_pass_cards") {
+              return state.fillPassMembers.map((m) => ({ quantity: 1, ...m }));
+            }
             if (tableName === "collection_items") {
               state.collectionReads += 1;
               return state.ownedItems;
@@ -148,7 +160,19 @@ const stub = vi.hoisted(() => {
     const tableName = nameOf(table);
     state.deleteCalls.push({ table: tableName });
     return {
-      where: () => ({ returning: async () => state.deleted }),
+      // Awaited directly by the undo and with `.returning()` by the sweep, so
+      // the result has to answer to both.
+      where: () => Object.assign(Promise.resolve([]), { returning: async () => [] }),
+    };
+  }
+
+  function makeUpdateBuilder(table: unknown) {
+    const tableName = nameOf(table);
+    return {
+      set: (values: unknown) => {
+        state.updateCalls.push({ table: tableName, set: values });
+        return { where: async () => {} };
+      },
     };
   }
 
@@ -157,11 +181,13 @@ const stub = vi.hoisted(() => {
     execute: async () => {
       state.onLock?.();
     },
-    select: () => makeSelectBuilder(true),
+    select: (fields?: unknown) => makeSelectBuilder(true, fields),
+    delete: (table: unknown) => makeDeleteBuilder(table),
+    update: (table: unknown) => makeUpdateBuilder(table),
   };
 
   const db = {
-    select: () => makeSelectBuilder(false),
+    select: (fields?: unknown) => makeSelectBuilder(false, fields),
     selectDistinctOn: () => makeSelectBuilder(false),
     insert: (table: unknown) => makeInsertBuilder(table),
     delete: (table: unknown) => makeDeleteBuilder(table),
@@ -580,6 +606,22 @@ describe("commitTopOff", () => {
     expect(stub.state.insertCalls).toHaveLength(0);
   });
 
+  // A ticked card the player had already added by hand costs no slot, so it must
+  // not count against the cap: measuring the raw selection would refuse a commit
+  // the deck has room for.
+  it("does not count an already-present card against the open slots", async () => {
+    // 97 other cards plus the ticked one the player already added: 98 built,
+    // one slot open, and two cards ticked.
+    stub.state.deckCards = [...rowsFor(97), { oracleId: uuid(1), quantity: 1 }];
+    stub.state.cards.push(cardRow(uuid(1)), cardRow(uuid(2)));
+    const { commitTopOff } = await import("./actions");
+    // Two ticked, but one is already here — only the other one lands.
+    expect(await commitTopOff("deck-1", [uuid(1), uuid(2)]))
+      .toMatchObject({ ok: true, added: 1, total: 99 });
+    expect(stub.state.insertCalls.find((c) => c.table === "fill_pass_cards")!.values)
+      .toEqual([{ passId: "pass-1", oracleId: uuid(2), quantity: 1 }]);
+  });
+
   // Unlike the fill, which skips one card and places the rest: the player chose
   // these cards specifically, and placing all but one would make the receipt lie.
   it("refuses the whole commit when one ticked card is illegal", async () => {
@@ -636,9 +678,12 @@ describe("undoFillPass", () => {
       { passId, oracleId: uuid(1) },
       { passId, oracleId: uuid(2) },
     ];
-    // Only one row comes back: the other card is kept, so `auto` is false and
-    // the delete's own predicate cannot reach it.
-    stub.state.deleted = [{ quantity: 1 }];
+    // The second card was kept, so it is the player's and the undo cannot
+    // reach it — one card goes, and one is reported.
+    stub.state.deckCards = [
+      { oracleId: uuid(1), quantity: 1 },
+      { oracleId: uuid(2), quantity: 1, auto: false },
+    ];
     const { undoFillPass } = await import("./actions");
     expect(await undoFillPass("deck-1", passId)).toBe(1);
     expect(stub.state.deleteCalls).toEqual([{ table: "deck_cards" }]);
@@ -649,7 +694,7 @@ describe("undoFillPass", () => {
   it("deletes neither the pass row nor its membership", async () => {
     pass();
     stub.state.fillPassMembers = [{ passId, oracleId: uuid(1) }];
-    stub.state.deleted = [{ quantity: 1 }];
+    stub.state.deckCards = [{ oracleId: uuid(1), quantity: 1 }];
     const { undoFillPass } = await import("./actions");
     await undoFillPass("deck-1", passId);
     expect(stub.state.deleteCalls.some((c) => c.table !== "deck_cards")).toBe(false);
@@ -658,9 +703,44 @@ describe("undoFillPass", () => {
   it("removes nothing the second time the same pass is undone", async () => {
     pass();
     stub.state.fillPassMembers = [{ passId, oracleId: uuid(1) }];
-    stub.state.deleted = []; // nothing live left to delete
+    stub.state.deckCards = []; // the first undo already took it
     const { undoFillPass } = await import("./actions");
     expect(await undoFillPass("deck-1", passId)).toBe(0);
+    expect(stub.state.deleteCalls).toHaveLength(0);
+  });
+
+  // One oracle id can sit in two passes: pass 1 places it, the player removes
+  // it, pass 2 places it again. The newest pass owns the live row, so undoing
+  // the older one must leave it exactly where the newer one put it.
+  it("leaves a card a newer pass placed alone", async () => {
+    const older = uuid(901);
+    const newer = uuid(902);
+    stub.state.fillPasses = [
+      { id: older, deckId: "deck-1", kind: "top_off", ordinal: 1 },
+      { id: newer, deckId: "deck-1", kind: "top_off", ordinal: 2 },
+    ];
+    stub.state.fillPassMembers = [
+      { passId: older, oracleId: uuid(1) },
+      { passId: newer, oracleId: uuid(1) },
+    ];
+    stub.state.deckCards = [{ oracleId: uuid(1), quantity: 1 }];
+    const { undoFillPass } = await import("./actions");
+    expect(await undoFillPass("deck-1", older)).toBe(0);
+    expect(stub.state.deleteCalls).toHaveLength(0);
+    // And the newer pass still owns it, so its own undo does reach it.
+    expect(await undoFillPass("deck-1", newer)).toBe(1);
+  });
+
+  // A stacked basic can hold copies the player added on top of the pass's. The
+  // undo takes back what the pass placed and leaves the rest standing.
+  it("decrements a stacked row rather than taking the player's copies", async () => {
+    pass();
+    stub.state.fillPassMembers = [{ passId, oracleId: uuid(1), quantity: 2 }];
+    stub.state.deckCards = [{ oracleId: uuid(1), quantity: 5 }];
+    const { undoFillPass } = await import("./actions");
+    expect(await undoFillPass("deck-1", passId)).toBe(2);
+    expect(stub.state.deleteCalls).toHaveLength(0);
+    expect(stub.state.updateCalls).toEqual([{ table: "deck_cards", set: expect.anything() }]);
   });
 
   it("refuses a pass belonging to another deck", async () => {

@@ -25,7 +25,7 @@ import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/deck
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { readSynergyCards } from "../commanders/[slug]/synergy-read";
 import { planLastSlots } from "../../lib/decks/last-slots";
-import { recordFillPass } from "../../lib/decks/fill-passes";
+import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
 import { gameLogCopy } from "../../lib/copy/game-log";
@@ -879,9 +879,15 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
     const present = await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity })
       .from(deckCards).where(eq(deckCards.deckId, deckId));
     const built = present.reduce((n, r) => n + r.quantity, 0);
+    // A card the player added by hand between opening the list and committing
+    // loses its insert to the conflict clause, so it is not part of this pass —
+    // and it costs no slot either, which is why the cap is measured against the
+    // rows that will actually land rather than against the raw selection.
+    const here = new Set(present.map((r) => r.oracleId));
+    const landed = ids.filter((oracleId) => !here.has(oracleId));
     // A refusal, not a truncation: a caller past the cap is working from a stale
     // view of the deck and should be told rather than silently given less.
-    if (ids.length > 99 - built) throw new Error("more cards than open slots");
+    if (landed.length > 99 - built) throw new Error("more cards than open slots");
 
     const byOracleId = new Map(
       (await tx.select({
@@ -904,10 +910,6 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
       if (rejection) throw new Error(rejection);
     }
 
-    // A card the player added by hand between opening the list and committing
-    // loses its insert to the conflict clause, so it is not part of this pass.
-    const here = new Set(present.map((r) => r.oracleId));
-    const landed = ids.filter((oracleId) => !here.has(oracleId));
     await tx.insert(deckCards)
       .values(ids.map((oracleId) => ({ deckId, oracleId, quantity: 1, auto: true })))
       .onConflictDoNothing();
@@ -951,9 +953,16 @@ export async function commitTopOff(deckId: string, oracleIds: string[]): Promise
 
 /** The inverse of one top-off, at any age.
  *
- *  Deletes only the pass's *live* rows — still in the deck, still the app's. A
- *  card the player kept has graduated out of provenance and cannot be reached
- *  by this, which is the design's ruling stated as a `where` clause.
+ *  Removes only the pass's *live* rows — still in the deck, still the app's, and
+ *  still attributed to this pass. A card the player kept has graduated out of
+ *  provenance and cannot be reached by this, which is the design's ruling.
+ *
+ *  Attribution is `summariseFillPasses`, not the membership record, because one
+ *  oracle id can sit in two passes: pass 1 places Shark Typhoon, the player
+ *  removes it, pass 3 places it again. The newest pass owns the live row, so
+ *  undoing pass 1 must leave it alone — deleting on membership alone would take
+ *  a card pass 3 put there and leave pass 3's line claiming a card that is gone.
+ *  The ledger already reads it this way; this is the same rule as a write.
  *
  *  Neither the pass row nor its membership is deleted. The membership record is
  *  immutable, and the line goes on its own: with no live rows left the pass
@@ -969,31 +978,91 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
   await requireDeck(deckId, userId);
   if (!UUID_RE.test(passId)) throw new Error("invalid pass id");
 
-  const [pass] = await db.select({ deckId: fillPasses.deckId, kind: fillPasses.kind })
-    .from(fillPasses).where(eq(fillPasses.id, passId));
-  // The explicit deck comparison is the authorization: a pass id from another
-  // deck is unknown here, not a licence to delete that deck's cards.
-  if (!pass || pass.deckId !== deckId) throw new Error("pass not found");
-  // The seed line grows no undo of its own — it names the sweep as its reversal,
-  // and `clearAutoCards` is the control that performs it. The guard exists so a
-  // hand-made call cannot do what the UI declines to offer.
-  if (pass.kind === "seed") throw new Error("a seed pass is reversed by the sweep");
+  const removed = await db.transaction(async (tx) => {
+    // Under the same lock every deck write takes: attribution is read here and
+    // acted on in the same breath, so a commit landing between the two cannot
+    // make this undo delete a row the newer pass had just claimed.
+    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
 
-  const members = await db.select({ oracleId: fillPassCards.oracleId })
-    .from(fillPassCards).where(eq(fillPassCards.passId, passId));
-  if (members.length === 0) return 0;
+    const passes = await tx.select({
+      id: fillPasses.id,
+      deckId: fillPasses.deckId,
+      kind: fillPasses.kind,
+      ordinal: fillPasses.ordinal,
+      openSlots: fillPasses.openSlots,
+      createdAt: fillPasses.createdAt,
+    }).from(fillPasses).where(eq(fillPasses.deckId, deckId));
 
-  const removed = await db.delete(deckCards)
-    .where(and(
-      eq(deckCards.deckId, deckId),
-      eq(deckCards.auto, true),
-      inArray(deckCards.oracleId, members.map((m) => m.oracleId)),
-    ))
-    .returning({ quantity: deckCards.quantity });
-  // The shopping list is derived from deck membership, so this is also what
-  // gives the player their money back — nothing separate restores it.
-  for (const path of claimSurfaces(deckId)) revalidatePath(path);
-  return removed.reduce((n, r) => n + r.quantity, 0);
+    // A pass id from another deck is simply unknown here, never a licence to
+    // delete that deck's cards. That is the authorization check, and the deck
+    // comparison is written out rather than left to the `where` alone.
+    const pass = passes.find((p) => p.id === passId);
+    if (!pass || pass.deckId !== deckId) throw new Error("pass not found");
+    // The seed line grows no undo of its own — it names the sweep as its
+    // reversal, and `clearAutoCards` is the control that performs it. The guard
+    // exists so a hand-made call cannot do what the UI declines to offer.
+    if (pass.kind === "seed") throw new Error("a seed pass is reversed by the sweep");
+
+    // Every pass and every deck row, because attribution is a question about
+    // the whole set: what this pass still owns depends on what the newer ones
+    // have claimed.
+    const [members, rows] = await Promise.all([
+      tx.select({
+        passId: fillPassCards.passId,
+        oracleId: fillPassCards.oracleId,
+        quantity: fillPassCards.quantity,
+      }).from(fillPassCards).where(inArray(fillPassCards.passId, passes.map((p) => p.id))),
+      tx.select({
+        oracleId: deckCards.oracleId,
+        quantity: deckCards.quantity,
+        auto: deckCards.auto,
+      }).from(deckCards).where(eq(deckCards.deckId, deckId)),
+    ]);
+
+    const summary = summariseFillPasses({
+      passes: passes.map((p) => ({ ...p, kind: p.kind as FillPassKind })),
+      members,
+      deckCards: rows,
+    }).find((s) => s.id === passId);
+    // No live cards: already undone, swept, or kept out from under it. Nothing
+    // to remove and nothing to report, which is what a second undo should do.
+    if (!summary) return 0;
+
+    const live = new Set(summary.liveOracleIds);
+    const placed = new Map(
+      members.filter((m) => m.passId === passId).map((m) => [m.oracleId, m.quantity]),
+    );
+    // A stacked basic can hold copies the player added on top of the pass's.
+    // Taking the whole row would remove those too, so a row holding more than
+    // the pass placed is decremented by what the pass placed and a row holding
+    // exactly that is deleted.
+    const rowsToDelete: string[] = [];
+    for (const row of rows) {
+      if (!live.has(row.oracleId)) continue;
+      const held = placed.get(row.oracleId) ?? 0;
+      if (row.quantity > held) {
+        await tx.update(deckCards)
+          .set({ quantity: sql`${deckCards.quantity} - ${held}` })
+          .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, row.oracleId)));
+      } else {
+        rowsToDelete.push(row.oracleId);
+      }
+    }
+    if (rowsToDelete.length > 0) {
+      await tx.delete(deckCards).where(and(
+        eq(deckCards.deckId, deckId),
+        eq(deckCards.auto, true),
+        inArray(deckCards.oracleId, rowsToDelete),
+      ));
+    }
+
+    // The shopping list is derived from deck membership, so this is also what
+    // gives the player their money back — nothing separate restores it.
+    for (const path of claimSurfaces(deckId)) revalidatePath(path);
+    return summary.live;
+  });
+
+  return removed;
 }
 
 export type LogGameInput = {
