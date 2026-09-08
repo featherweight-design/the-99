@@ -119,6 +119,7 @@ export function BuyTag({
   newestAsOf = null,
   provenance = null,
   reserveSlot = false,
+  density = "full",
 }: {
   variant: BuyTagVariant;
   /**
@@ -135,6 +136,14 @@ export function BuyTag({
   provenance?: ProvenanceForm | null;
   /** Shopping reserves the figure a 58px slot so the column aligns. */
   reserveSlot?: boolean;
+  /**
+   * `collapsed` draws a bare `$` in the same box, ink, radius and position —
+   * the All tab is a list being scanned, not a bill being read. Nothing is
+   * dropped from the reading order: the drawn content becomes the tag's
+   * accessible name unchanged, so the word and the figure are still spoken in
+   * full, formatted by the one Tail that formats them everywhere.
+   */
+  density?: "full" | "collapsed";
 }) {
   const state = priceState(price, newestAsOf);
   const cents = price ? priceOf(price, state) : null;
@@ -155,11 +164,8 @@ export function BuyTag({
         }`
       : label;
 
-  return (
-    <span
-      className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]}`}
-      style={{ color: "var(--warning)", ...PLATE[variant] }}
-    >
+  const content = (
+    <>
       {spoken ? (
         <>
           <span aria-hidden="true">{word}</span>
@@ -179,6 +185,25 @@ export function BuyTag({
           silent={speaksPrice}
         />
       ) : null}
+    </>
+  );
+
+  return (
+    <span
+      className={`font-mono rounded-[4px] px-[5px] py-[1px] ${PLACEMENT[variant]}`}
+      style={{ color: "var(--warning)", ...PLATE[variant] }}
+    >
+      {density === "collapsed" ? (
+        <>
+          {/* The glyph is the component's, like the tail's separator — it
+              stands for the word rather than saying it, so it is drawn and
+              never spoken. */}
+          <span aria-hidden="true">$</span>
+          <span className="sr-only">{content}</span>
+        </>
+      ) : (
+        content
+      )}
     </span>
   );
 }

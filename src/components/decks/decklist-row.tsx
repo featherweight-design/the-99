@@ -9,6 +9,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { DECK_REMOVE_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { AvailabilityMarker } from "../ui/availability-marker";
+import { CostPips, parseManaCost } from "../ui/cost-pips";
 import { OwnershipDot } from "../ui/ownership-dot";
 import { ROW_SHELL as SHARED_ROW_SHELL } from "../ui/row-shell";
 import { recommendationsCopy } from "../../lib/copy/recommendations";
@@ -28,13 +29,24 @@ import { useDeckMutation } from "./use-deck-mutation";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
 // box making up the vertical padding, desktop 34px with real padding.
-// Exception: Shopping rows carry a meta line under the name (addendum A2), so
-// the phone shell grows to 52px to accommodate it.
+// Exception: a row carrying a meta line under the name grows to 52px on the
+// phone. Desktop is 34px flat either way — there the meta line's contents sit
+// inline with the name instead.
 const ROW_PADDING = "pl-[8px] pr-[4px] md:px-[9px] md:py-[7px]";
 
 const ROW_SHELL = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[44px] md:min-h-[34px]`;
 
-const ROW_SHELL_SHOPPING = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] md:min-h-[34px]`;
+const ROW_SHELL_META = `${SHARED_ROW_SHELL} ${ROW_PADDING} min-h-[52px] md:min-h-[34px]`;
+
+/** Desktop pip metrics. The track never widens: a variable track would put the
+ *  pips of adjacent rows on different vertical lines, which is the failure the
+ *  search row's fixed slot exists to prevent. */
+const PIP_TRACK = 40;
+const PIP_SIZE_DESKTOP = 12;
+const PIP_CAP = 5;
+/** Phone pips ride the meta line at its own size, plain and uncapped — there
+ *  the line is theirs alone and has the width to spend. */
+const PIP_SIZE_PHONE = 13;
 
 interface DecklistRowProps {
   deckId: string;
@@ -105,11 +117,24 @@ export function DecklistRow({
 
   // Addendum A2: Shopping rows carry an EDHREC figure on a meta line below the
   // name. shoppingFigure is only threaded for unowned deck cards shown in the
-  // Shopping filter. undefined = All view (no meta). null or number = Shopping view.
-  // The row grows to 52px on phone to hold the extra line.
+  // Shopping filter. undefined = All view. null or number = Shopping view.
+  // It says whether the FIGURE is drawn, and no longer whether the line is:
+  // since #350 the cost rides that same line, so an All-view row can carry a
+  // meta line with no figure on it.
   // Basic lands are never in Shopping (the fill guarantees it), but guard anyway.
   const hasShoppingMeta = !isBasicLand(card.typeLine) && shoppingFigure !== undefined;
-  const rowShell = hasShoppingMeta ? ROW_SHELL_SHOPPING : ROW_SHELL;
+  // The cost joins that same line on the phone, so a row can now carry one
+  // without being in Shopping at all.
+  const cost = card.manaCost && parseManaCost(card.manaCost).length > 0 ? card.manaCost : null;
+  // Keyed on the GROUP, not on this row's own cost. Most costless cards are
+  // lands, and lands are their own group under both groupings — but a handful
+  // of spells have no printed cost either (Ancestral Vision, Restore Balance),
+  // and a row that asked its own `cost` would put a 44px row in the middle of a
+  // column of 52px ones. Ragged is the failure the group boundary exists to
+  // avoid; a little more space under one name is not.
+  const inLandsGroup = card.cardTypeGroup === "Lands";
+  const hasMetaLine = hasShoppingMeta || !inLandsGroup;
+  const rowShell = hasMetaLine ? ROW_SHELL_META : ROW_SHELL;
   // Phone: prefixed "edhrec 24%" because the figure sits on a detached meta
   // line and needs context. Desktop: bare "24%" because it is inline with the
   // name. Absence: phone gets the full sentence; desktop gets "—" which reads
@@ -195,17 +220,20 @@ export function DecklistRow({
         />
 
         {/* Card name — the click target for the detail modal (#127).
-            Shopping rows: phone = two lines (name then prefixed figure below);
-            desktop = single line (name + bare figure inline). The `edhrec` prefix
-            exists only on phone because the figure is detached from the name there
-            and needs context; inline on desktop it reads fine without it. */}
-        {hasShoppingMeta ? (
+            Any row with a meta line — a Shopping row, or since #350 any row
+            outside the Lands group: phone = two lines (name, then the cost and
+            the prefixed figure below); desktop = single line (name, cost and
+            bare figure inline). The `edhrec` prefix exists only on phone
+            because the figure is detached from the name there and needs
+            context; inline on desktop it reads fine without it. */}
+        {hasMetaLine ? (
           // One trigger at both widths — the layout changes, the card does not.
           // Only the figure's wording differs, so only the figure is drawn twice.
           <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:items-center md:gap-[6px]">
             {/* Name and count share a line so the count stays inline after the
-                name at both widths — on phone the figure below is its own line,
-                and a count that flowed down with it would read as part of it. */}
+                name at both widths — on phone the meta line below is its own
+                line, and a count that flowed down with it would read as part
+                of it. */}
             <div className="min-w-0 flex items-center gap-[6px]">
               <CardDetailTrigger
                 oracleId={card.oracleId}
@@ -218,26 +246,38 @@ export function DecklistRow({
               </CardDetailTrigger>
               {quantityGlyph}
             </div>
-            <span
-              className="md:hidden font-mono text-[10px] tabular-nums truncate"
-              style={{
-                color: Number.isFinite(shoppingFigure)
-                  ? "var(--fg-faint)"
-                  : "var(--fg-locked)",
-              }}
-            >
-              {figureTextPhone}
+            {/* The phone meta line, and the only two things that ever ride it:
+                the cost, then the EDHREC figure. Nothing else joins it. */}
+            <span className="md:hidden flex items-center gap-[5px] min-w-0">
+              {cost ? <CostPips cost={cost} size={PIP_SIZE_PHONE} spoken /> : null}
+              {cost && hasShoppingMeta ? (
+                <span aria-hidden style={{ color: "var(--border-strong)" }}>·</span>
+              ) : null}
+              {hasShoppingMeta ? (
+                <span
+                  className="font-mono text-[10px] tabular-nums truncate"
+                  style={{
+                    color: Number.isFinite(shoppingFigure)
+                      ? "var(--fg-faint)"
+                      : "var(--fg-locked)",
+                  }}
+                >
+                  {figureTextPhone}
+                </span>
+              ) : null}
             </span>
-            <span
-              className="hidden md:inline flex-none font-mono text-[10px] tabular-nums"
-              style={{
-                color: Number.isFinite(shoppingFigure)
-                  ? "var(--fg-faint)"
-                  : "var(--fg-locked)",
-              }}
-            >
-              {figureTextDesktop}
-            </span>
+            {hasShoppingMeta ? (
+              <span
+                className="hidden md:inline flex-none font-mono text-[10px] tabular-nums"
+                style={{
+                  color: Number.isFinite(shoppingFigure)
+                    ? "var(--fg-faint)"
+                    : "var(--fg-locked)",
+                }}
+              >
+                {figureTextDesktop}
+              </span>
+            ) : null}
           </div>
         ) : (
           <div className={nameBlockClass}>
@@ -253,6 +293,25 @@ export function DecklistRow({
             {quantityGlyph}
           </div>
         )}
+
+        {/* Desktop's fixed pip track, between the name block and the
+            availability slot. Its own element rather than a share of the meta
+            line's: on desktop that line is inline with the name, and pips laid
+            out with the name would ride the name's variable width and lose the
+            vertical line the fixed track exists to hold.
+            `hidden` is display:none, so exactly one of the two runs is in the
+            accessibility tree at any width and the cost is spoken once. */}
+        {cost ? (
+          <span className="hidden md:flex flex-none items-center">
+            <CostPips
+              cost={cost}
+              size={PIP_SIZE_DESKTOP}
+              track={PIP_TRACK}
+              cap={PIP_CAP}
+              spoken
+            />
+          </span>
+        ) : null}
 
         {/* Availability marker */}
         {card.availability && (
@@ -313,6 +372,11 @@ export function DecklistRow({
             price={card.price}
             newestAsOf={newestAsOf}
             reserveSlot={hasShoppingMeta}
+            // `inShopping`, not the figure: Shopping is the list being paid
+            // from, and the figure is `undefined` there too whenever EDHREC is
+            // unreachable. The All tab is being scanned, so the tag collapses
+            // to `$` — and still speaks the word and the price in full.
+            density={inShopping ? "full" : "collapsed"}
           />
         )}
 
