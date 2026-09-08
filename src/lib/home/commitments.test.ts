@@ -40,6 +40,20 @@ describe("commitmentFigures", () => {
     expect(commitmentFigures([card({ owned: 1, hard: 6, free: -5 })]).overCommitted).toBe(1);
   });
 
+  it("never counts more copies in use than the player owns", () => {
+    // `inUse` is printed as `n of <total owned copies>`, so a card whose
+    // finished decks want six copies of the one owned contributes one, not six.
+    // The five that do not exist are what `overCommitted` reports.
+    expect(commitmentFigures([card({ owned: 1, hard: 6, free: -5 })])).toEqual({
+      inUse: 1,
+      overCommitted: 1,
+    });
+  });
+
+  it("counts nothing in use for a card the player does not own at all", () => {
+    expect(commitmentFigures([card({ owned: 0, hard: 3, free: -3 })]).inUse).toBe(0);
+  });
+
   it("is zero over an empty collection", () => {
     expect(commitmentFigures([])).toEqual({ inUse: 0, overCommitted: 0 });
   });

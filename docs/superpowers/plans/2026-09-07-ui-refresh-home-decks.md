@@ -1351,7 +1351,9 @@ export function commitmentFigures(availability: Iterable<Availability>): Commitm
   let inUse = 0;
   let overCommitted = 0;
   for (const a of availability) {
-    inUse += a.hard;
+    // Capped at what the player actually holds: `hard` is what finished decks
+    // asked for, and `inUseValue` prints it as `n of <total owned copies>`.
+    inUse += Math.min(a.hard, a.owned);
     if (availabilityState(a) === "over") overCommitted += 1;
   }
   return { inUse, overCommitted };
