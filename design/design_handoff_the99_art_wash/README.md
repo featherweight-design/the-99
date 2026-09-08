@@ -9,8 +9,9 @@ Files:
 - `The 99 - Art Wash Readability.dc.html` — R1, superseded. Kept only because R2's captions cite its
   values. Do not build from it.
 
-Read `design_handoff_the99_decks/The 99 - Decks README.md` and
-`design_handoff_the99_commanders/README.md` first — this document records only what **changes**.
+Read `design/design_handoff_the99_decks/The 99 - Decks README.md` and
+`design/design_handoff_the99_commanders/README.md` first — this document records only what
+**changes**.
 
 ## The bug, in one line
 
@@ -27,9 +28,10 @@ over it.
 | Home · ready to build | `cover` | aspect `2.2/1` | inherits the deck card exactly |
 | Home · resume | `left-portrait` | `72px` | portrait `99px`, type inset `116px` |
 
-**Four surfaces, two strategies, one component.** The only props that vary are `height`, `strategy`
-and `band`. Focal (`center top`) and the L1/L2/L3 layer stack are **constants** — please do not
-expose them per call site.
+**Four surfaces, two strategies, one component.** Every surface passes the item's own data — its art
+and its colour identity — and beyond that the only props that vary per surface are `height`,
+`strategy` and `band`. Focal (`center top`) and the L1/L2/L3 layer stack are **constants** — please
+do not expose them per call site.
 
 ---
 
