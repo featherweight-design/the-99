@@ -1162,8 +1162,8 @@ Expected: FAIL — `Failed to resolve import "./shopping"`.
 // and not into the total — `pricedCopies` is what makes that visible.
 
 import { and, eq, notExists, sql } from "drizzle-orm";
-import { db } from "../../db/client";
-import { collectionItems, deckCards, decks } from "../../db/schema";
+import { db } from "../../db";
+import { cards, collectionItems, deckCards, decks } from "../../db/schema";
 import { summarisePrices, type PricedCard } from "./price";
 import { loadPrices } from "./price-query";
 
@@ -1174,7 +1174,12 @@ export type ShoppingRollup = {
   total: DeckShopping;
 };
 
-const EMPTY: DeckShopping = { copies: 0, cents: 0, pricedCopies: 0 };
+/**
+ * A fresh object each time. A shared constant would hand every caller with an
+ * empty roll-up the same reference, and one caller mutating its `total` would
+ * silently change what the next one reads.
+ */
+const empty = (): DeckShopping => ({ copies: 0, cents: 0, pricedCopies: 0 });
 
 export function sumShopping(values: Iterable<DeckShopping>): DeckShopping {
   let copies = 0;
@@ -1200,9 +1205,15 @@ export async function loadShoppingRollup(userId: string): Promise<ShoppingRollup
     })
     .from(deckCards)
     .innerJoin(decks, eq(decks.id, deckCards.deckId))
+    .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
     .where(
       and(
         eq(decks.userId, userId),
+        // The SQL twin of `isBasicLand`'s `/\bBasic\b/`; `\m` and `\M` are
+        // Postgres's word-boundary escapes. Same predicate as
+        // `availability-query.ts`, so the two models exclude the same cards.
+        // `deck_cards.oracle_id` is a foreign key, so the join drops nothing.
+        sql`${cards.typeLine} !~ '\\mBasic\\M'`,
         notExists(
           db
             .select({ one: sql`1` })
@@ -1217,20 +1228,20 @@ export async function loadShoppingRollup(userId: string): Promise<ShoppingRollup
       ),
     );
 
-  if (rows.length === 0) return { byDeck: new Map(), total: EMPTY };
+  if (rows.length === 0) return { byDeck: new Map(), total: empty() };
 
-  const { facts, newestAsOf } = await loadPrices([...new Set(rows.map((r) => r.oracleId))]);
+  const { prices, newestAsOf } = await loadPrices([...new Set(rows.map((r) => r.oracleId))]);
 
   const perDeck = new Map<string, PricedCard[]>();
   for (const row of rows) {
     const list = perDeck.get(row.deckId) ?? [];
-    list.push({ quantity: row.quantity, price: facts.get(row.oracleId) ?? null });
+    list.push({ quantity: row.quantity, price: prices.get(row.oracleId) ?? null });
     perDeck.set(row.deckId, list);
   }
 
   const byDeck = new Map<string, DeckShopping>();
-  for (const [deckId, cards] of perDeck) {
-    const summary = summarisePrices(cards, newestAsOf);
+  for (const [deckId, pricedCards] of perDeck) {
+    const summary = summarisePrices(pricedCards, newestAsOf);
     byDeck.set(deckId, {
       copies: summary.totalCopies,
       cents: summary.totalCents,

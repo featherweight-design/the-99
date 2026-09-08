@@ -102,8 +102,8 @@ export async function loadShoppingRollup(userId: string): Promise<ShoppingRollup
   }
 
   const byDeck = new Map<string, DeckShopping>();
-  for (const [deckId, cards] of perDeck) {
-    const summary = summarisePrices(cards, newestAsOf);
+  for (const [deckId, pricedCards] of perDeck) {
+    const summary = summarisePrices(pricedCards, newestAsOf);
     byDeck.set(deckId, {
       copies: summary.totalCopies,
       cents: summary.totalCents,
