@@ -24,6 +24,11 @@ export function DeckSortMenu({
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menuId = useId();
+  // Roving focus, matching `SortMenu` and `AccountMenu`: `role="menu"` promises
+  // ↑/↓ navigation with exactly one tabbable option, and a menu that only
+  // answered Escape would be making a promise the keyboard does not keep.
+  const [active, setActive] = useState(0);
+  const items = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -46,6 +51,31 @@ export function DeckSortMenu({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  // Opening lands on the order already in force rather than the first row, so
+  // ↓ moves to the one the reader would choose next. `active` follows from the
+  // option's own `onFocus`, which fires on this programmatic focus too.
+  const selectedIndex = DECK_SORT_ORDER.indexOf(sort);
+  useEffect(() => {
+    if (!open) return;
+    items.current[selectedIndex]?.focus();
+  }, [open, selectedIndex]);
+
+  function move(delta: number) {
+    const next = (active + delta + DECK_SORT_ORDER.length) % DECK_SORT_ORDER.length;
+    setActive(next);
+    items.current[next]?.focus();
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    const to =
+      e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : e.key === "Home" ? "first" : e.key === "End" ? "last" : null;
+    if (to === null) return;
+    e.preventDefault();
+    if (to === "first") return move(-active);
+    if (to === "last") return move(DECK_SORT_ORDER.length - 1 - active);
+    move(to);
+  }
 
   return (
     <div ref={root} className="relative hidden sm:block">
@@ -71,9 +101,15 @@ export function DeckSortMenu({
           {DECK_SORT_ORDER.map((option, i) => (
             <button
               key={option}
+              ref={(el) => {
+                items.current[i] = el;
+              }}
               type="button"
               role="menuitemradio"
               aria-checked={sort === option}
+              tabIndex={active === i ? 0 : -1}
+              onFocus={() => setActive(i)}
+              onKeyDown={onKeyDown}
               onClick={() => {
                 onChange(option);
                 setOpen(false);

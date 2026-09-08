@@ -48,7 +48,8 @@ export type SortableDeck = {
 /**
  * The client-side twin of `listDecksWithStats`'s ORDER BY, so re-sorting in the
  * browser needs no request and lands on the same sequence a fresh load would.
- * The clauses mirror `read.ts:305-318` exactly, tiebreaks included:
+ * The clauses mirror `listDecksWithStats`'s `order` in `read.ts` exactly,
+ * tiebreaks included:
  *
  *   - `lower(name)` rather than the bare name, because the ordering a player
  *     sees must not turn on collation.
