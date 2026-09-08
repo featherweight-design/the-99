@@ -18,7 +18,7 @@ The head slot renders `<Crowned99 variant="rail-62" />`. Crown `--accent`, numer
 Recommended (**1a**): crown 6 / 8.5 / 6px with 3px of visible air between points; because a 45°-rotated square is 1.414× as wide as its layout box, the flex gap is 6px, not 3px — `gap = air + 0.207 × (w₁ + w₂)`, and the crown row is 12px tall (8.5 × 1.414), not 8.5px; numerals Cinzel 900 at
 23px, 4px below the crown row; lockup **32.5 × 39**, centred, 14px from the rail's top, 20px before
 the first nav item. The head grows 26 → 39px, so the nav block starts **13px** lower and the head
-zone measures 14 + 39 + 20 = 73px; nothing else moves.
+zone measures 14 + 39 + 20 = 73px; nothing else moves. *[†](README.md#engineering-errata)*
 
 Alternates drawn on the canvas: **1b** the filled crown alone (11 / 15 / 11px on 10.5px gaps, no numerals) —
 loses the name at desktop; **1c** a 36px seal tile — reads as a sixth nav item unless the head

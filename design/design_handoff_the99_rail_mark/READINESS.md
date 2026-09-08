@@ -9,7 +9,7 @@ brand sheet.
 ## Not blocking
 
 - **`<Crowned99>` exists** and `nav.tsx` already imports it for the wide rail and
-  `MobileHeader`. This adds a third variant beside `"rail"` and `"mobile-header"`.
+  `MobileHeader`. This adds a third variant beside `"rail"` and `"mobile-header"`. *[†](README.md#engineering-errata)*
 - **Colours are tokens** — crown `--accent`, numerals `--fg` — so all six themes are covered
   without a per-theme value. The canvas is drawn in the slate theme because that is what the
   reported screenshot shows.
@@ -38,6 +38,6 @@ brand sheet.
 
 ## Verify after build
 
-- Head measures 32.5×39 in the 62px rail (crown row 12 + 4 + 23), nav block 13px lower than today; three visibly separate diamonds at 100% zoom.
+- Head measures 32.5×39 in the 62px rail (crown row 12 + 4 + 23), nav block 13px lower than today; three visibly separate diamonds at 100% zoom. *[†](README.md#engineering-errata)*
 - Screen reader announces **The 99** once, before the Primary nav landmark.
 - Accent-only crown: switch themes and confirm the numerals stay `--fg` in all six.
