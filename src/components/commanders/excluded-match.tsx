@@ -8,15 +8,26 @@
 // already reading, so it is announced rather than found. Not `alert` — nothing
 // went wrong.
 
+import Link from "next/link";
 import type { ExcludedReport } from "../../lib/commanders/excluded-report";
 import { Emphasised } from "./emphasis";
 
+const CORRECTION =
+  "font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--accent)] hover:underline";
+
+/**
+ * `href` is the correction for the one cause this lane cannot undo in place:
+ * the commander is already built, and the list that shows it is another route.
+ * A route is a link, so it middle-clicks and opens in a new tab like any other.
+ */
 export function ExcludedMatchAside({
   report,
   onCorrect,
+  href,
 }: {
   report: ExcludedReport;
   onCorrect: () => void;
+  href?: string;
 }) {
   return (
     <div
@@ -35,13 +46,15 @@ export function ExcludedMatchAside({
           values={report.name ? [report.name] : []}
           color="var(--fg)"
         />
-        <button
-          type="button"
-          onClick={onCorrect}
-          className="font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--accent)] hover:underline"
-        >
-          {report.cta}
-        </button>
+        {href ? (
+          <Link href={href} className={CORRECTION}>
+            {report.cta}
+          </Link>
+        ) : (
+          <button type="button" onClick={onCorrect} className={CORRECTION}>
+            {report.cta}
+          </button>
+        )}
       </p>
     </div>
   );

@@ -28,7 +28,6 @@ import { RecCard, type ScoreDelta } from "./rec-card";
 import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
 import { PageHeader } from "./page-header";
-import { useScopeAnnouncement } from "./list-nav";
 import { DegradedBanner } from "./degraded-banner";
 import { FilteredEmpty, OwnedSearchEmpty } from "./filtered-empty";
 import {
@@ -316,11 +315,6 @@ export function CommandersView({
     prevAvail.current = avail;
     setAnnouncement(availabilityCopy.ranking.announce(avail, active.length));
   }, [avail, active.length]);
-
-  // A scope flip lands as a fresh mount, so its message arrives on arrival
-  // rather than at click time — and it lands on this same region, which every
-  // other announcement on this page already uses.
-  useScopeAnnouncement("owned", active.length, "fit", setAnnouncement);
 
   return (
     <div>

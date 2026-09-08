@@ -29,7 +29,7 @@ import { FilterRack } from "./rack/filter-rack";
 import { PageHeader } from "./page-header";
 import { RecCard } from "./rec-card";
 import { useDiscoveryCache } from "./discovery-cache";
-import { useRerankAnnouncement, useScopeAnnouncement, useScopeNav } from "./list-nav";
+import { laneHref, useRerankAnnouncement } from "./list-nav";
 // Imported, never redeclared: it is 25, and the reveal band only lines up with
 // the shipped control if both windows step by the same number.
 import {
@@ -222,10 +222,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
     return diff > 0 ? diff : null;
   }, [searched, colors, params.match]);
 
-  // Empty on an ordinary load, and the flip's message on arrival from the other
-  // lane — the count it names is the one the server just produced.
   const [announcement, setAnnouncement] = useState("");
-  useScopeAnnouncement("play", discovery.items.length, discovery.sort, setAnnouncement);
   // The re-rank happens on the server, so the message names the count that came
   // back with the new ordering rather than one predicted at click time — and the
   // server's count, not the filtered one: a colour filter is a client-side
@@ -243,8 +240,6 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
     [rankedCount],
   );
   useRerankAnnouncement(discovery.sort, sortMessage, setAnnouncement);
-
-  const scopeNav = useScopeNav();
 
   // The window goes back to the top whenever the list underneath it changes — a
   // scope flip, which is a server round-trip returning a differently ordered
@@ -471,13 +466,18 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
     [discovery, colors, params.match],
   );
 
+  // Where the owned lane's copy of this search lives. The `scope` cause is the
+  // one exclusion this lane cannot undo from here — the commander is missing
+  // because a deck is already built around it, and the list that shows those is
+  // the other route — so its correction is a link rather than a control, and
+  // `correct` below has no case for it.
+  const ownedHref = laneHref("owned", trimmedQuery);
+
   // The one control that would bring the named row back, per cause. One each,
   // because the report names one cause: a correction that flipped two controls
   // would undo a filter the reader still wants.
   const correct = useCallback(() => {
     switch (report?.cause) {
-      case "scope":
-        return scopeNav.go("owned");
       case "colors":
         return update({ ...params, colors: [], match: "contains" });
       case "join":
@@ -488,7 +488,7 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
       default:
         return;
     }
-  }, [report?.cause, scopeNav, update, params]);
+  }, [report?.cause, update, params]);
 
   // The one reason this state has under discovery that it does not have under
   // the owned lane: the commanders are missing because they are already built.
@@ -551,9 +551,15 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
           heading={report.heading ?? planeCopy.search.noneHeading(trimmedQuery)}
           body={report.body}
           primary={
-            <PrimaryButton onClick={correct} className={ZERO_PRIMARY}>
-              {report.cta}
-            </PrimaryButton>
+            report.cause === "scope" ? (
+              <PrimaryButton href={ownedHref} className={ZERO_PRIMARY}>
+                {report.cta}
+              </PrimaryButton>
+            ) : (
+              <PrimaryButton onClick={correct} className={ZERO_PRIMARY}>
+                {report.cta}
+              </PrimaryButton>
+            )
           }
           secondary={
             report.aside ? (
@@ -618,10 +624,9 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
               {emptyCopy.filteredCta}
             </PrimaryButton>
           }
-          // The other lane, reached the way D5 reaches it: this one is a scope
-          // move rather than a route, so it stays a button.
+          // The other lane, reached the way D5 reaches it: a route, so a link.
           secondary={
-            <GhostButton onClick={() => scopeNav.go("owned")} className={ZERO_SECONDARY}>
+            <GhostButton href={ownedHref} className={ZERO_SECONDARY}>
               {emptyCopy.filteredScopeLink}
             </GhostButton>
           }
@@ -632,7 +637,11 @@ export function DiscoveryView({ discovery: served }: { discovery: DiscoveryList 
               because it is about the list underneath it. */}
           {report ? (
             <div className="mb-[10px] sm:mb-[12px]">
-              <ExcludedMatchAside report={report} onCorrect={correct} />
+              <ExcludedMatchAside
+                report={report}
+                onCorrect={correct}
+                href={report.cause === "scope" ? ownedHref : undefined}
+              />
             </div>
           ) : null}
 

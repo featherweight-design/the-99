@@ -11,6 +11,7 @@
 import type { ReactNode } from "react";
 import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { laneHref } from "./list-nav";
 
 /** Three hairline diamonds, the same rotated square the end-of-ranking rule
     draws, so every full-stop on this page is furniture of one family.
@@ -176,10 +177,7 @@ export function OwnedSearchEmpty({
         </PrimaryButton>
       }
       secondary={
-        <GhostButton
-          href={`/discover?q=${encodeURIComponent(query)}`}
-          className={ZERO_SECONDARY}
-        >
+        <GhostButton href={laneHref("discover", query)} className={ZERO_SECONDARY}>
           {commandersCopy.emptySearch.otherLane}
         </GhostButton>
       }

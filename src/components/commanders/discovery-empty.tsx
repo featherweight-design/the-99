@@ -13,6 +13,7 @@ import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { discoverCopy } from "../../lib/copy/lanes";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "./filtered-empty";
+import { laneHref } from "./list-nav";
 
 const { empty: copy } = discoveryCopy;
 
@@ -45,10 +46,7 @@ export function DiscoveryEmpty({
         </PrimaryButton>
       }
       secondary={
-        <GhostButton
-          href={`/commanders?q=${encodeURIComponent(query)}`}
-          className={ZERO_SECONDARY}
-        >
+        <GhostButton href={laneHref("owned", query)} className={ZERO_SECONDARY}>
           {discoverCopy.empty.otherLane}
         </GhostButton>
       }

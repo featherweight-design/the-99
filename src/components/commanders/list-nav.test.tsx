@@ -1,102 +1,29 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, renderHook } from "@testing-library/react";
-import { discoveryCopy } from "../../lib/copy/commander-discovery";
-import {
-  commanderDetailHref,
-  useRerankAnnouncement,
-  useScopeAnnouncement,
-  useScopeNav,
-} from "./list-nav";
-
-const replace = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
+import { describe, expect, it, vi } from "vitest";
+import { renderHook } from "@testing-library/react";
+import { commanderDetailHref, laneHref, useRerankAnnouncement } from "./list-nav";
 
 describe("list-nav", () => {
-  beforeEach(() => {
-    replace.mockClear();
-    sessionStorage.clear();
-    window.history.replaceState(null, "", "/commanders");
-  });
-
-  describe("useScopeNav", () => {
-    it("writes the non-default scope and drops any sort the owned list cannot show", () => {
-      window.history.replaceState(null, "", "/commanders?scope=play&sort=new&c=BG");
-      const { result } = renderHook(() => useScopeNav());
-      act(() => result.current.go("owned"));
-      expect(replace).toHaveBeenCalledWith("?c=BG", { scroll: false });
+  describe("laneHref", () => {
+    it("carries the search to the owned lane", () => {
+      expect(laneHref("owned", "atraxa")).toBe("/commanders?q=atraxa");
     });
 
-    it("keeps the discovery scope in the URL, still without a sort", () => {
-      window.history.replaceState(null, "", "/commanders?sort=new");
-      const { result } = renderHook(() => useScopeNav());
-      act(() => result.current.go("play"));
-      expect(replace).toHaveBeenCalledWith("?scope=play", { scroll: false });
+    it("carries the search to the discover lane", () => {
+      expect(laneHref("discover", "atraxa")).toBe("/discover?q=atraxa");
     });
 
-    // The segmented control fires on its active segment too, and that click is
-    // not a flip: routing on it would clear a sort the reader had chosen.
-    it("does nothing when the scope showing is already the one asked for", () => {
-      window.history.replaceState(null, "", "/commanders?scope=play&sort=new");
-      const { result } = renderHook(() => useScopeNav());
-      act(() => result.current.go("play"));
-      expect(replace).not.toHaveBeenCalled();
-      expect(sessionStorage.getItem("commanders:scope-announce")).toBeNull();
-    });
-
-    // A bare `?` is a URL the reader would see in their address bar, so the last
-    // parameter leaving takes the query string with it.
-    it("routes to the bare path when clearing the last parameter", () => {
-      window.history.replaceState(null, "", "/commanders?scope=play");
-      const { result } = renderHook(() => useScopeNav());
-      act(() => result.current.go("owned"));
-      expect(replace).toHaveBeenCalledWith("/commanders", { scroll: false });
-    });
-  });
-
-  describe("useScopeAnnouncement", () => {
-    it("speaks the parked scope once, then never again", () => {
-      const announce = vi.fn();
-      const { rerender } = renderHook(
-        ({ count }: { count: number }) =>
-          useScopeAnnouncement("play", count, "fit", announce),
-        { initialProps: { count: 0 } },
+    // A name with a space is the common case, not the exotic one.
+    it("encodes the query", () => {
+      expect(laneHref("owned", "atraxa, praetors' voice")).toBe(
+        "/commanders?q=atraxa%2C%20praetors'%20voice",
       );
-      expect(announce).not.toHaveBeenCalled();
-
-      // Park and remount: the flip writes the key, and the list that lands under
-      // it reads the key back.
-      const nav = renderHook(() => useScopeNav());
-      act(() => nav.result.current.go("play"));
-      const landed = renderHook(
-        ({ count }: { count: number }) =>
-          useScopeAnnouncement("play", count, "fit", announce),
-        { initialProps: { count: 812 } },
-      );
-      expect(announce).toHaveBeenCalledWith(
-        discoveryCopy.scope.announce("play", 812, "fit"),
-      );
-
-      // The key is consumed on arrival, so a later render with a new count is
-      // not a second flip.
-      landed.rerender({ count: 40 });
-      rerender({ count: 40 });
-      expect(announce).toHaveBeenCalledTimes(1);
     });
 
-    // The other list's message: reading it here would announce a flip that
-    // landed somewhere else.
-    it("stays silent when the parked scope is not this list's", () => {
-      const announce = vi.fn();
-      sessionStorage.setItem("commanders:scope-announce", "owned");
-      renderHook(() => useScopeAnnouncement("play", 812, "fit", announce));
-      expect(announce).not.toHaveBeenCalled();
-    });
-
-    // Consumed even when it is not spoken, so it cannot fire on a later mount.
-    it("clears the parked scope whichever list reads it", () => {
-      sessionStorage.setItem("commanders:scope-announce", "owned");
-      renderHook(() => useScopeAnnouncement("play", 812, "fit", vi.fn()));
-      expect(sessionStorage.getItem("commanders:scope-announce")).toBeNull();
+    // A bare `?` is a URL the reader would see in their address bar, so nothing
+    // to carry means the path travels alone.
+    it("drops the query string when there is no search", () => {
+      expect(laneHref("owned", "")).toBe("/commanders");
+      expect(laneHref("discover", "   ")).toBe("/discover");
     });
   });
 
