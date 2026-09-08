@@ -23,7 +23,7 @@ The three rounds each closed one substantive gap:
 | Item | Finding |
 |---|---|
 | R2 open item 1 — "#361 is still a one-line summary, and its scope could change a ruling once readable" | **Confirmed clean.** #361's body carries no constraint beyond "the two buttons read as visually foreign… should be resolved as part of that handoff". Deleting both CTAs for one door satisfies it entirely. |
-| R3's invariant, offered for audit as a rule — `sweep absent ⟺ 0 auto rows ⟺ every pass empty ⟺ ledger absent` | **Holds where it is load-bearing, but see correction 4.** The sweep is absent at zero (`clear-auto.tsx`, "Absent (not rendered) at 0") and `ProvenanceLine` already returns null when no row is `auto` (`src/components/decks/provenance-line.tsx:54-75`), so the seed line's stated reversal cannot be orphaned. |
+| R3's invariant, offered for audit as a rule — `sweep absent ⟺ 0 auto rows ⟺ every pass empty ⟺ ledger absent` | **Holds where it is load-bearing, but see correction 2.** The sweep is absent at zero (`clear-auto.tsx`, "Absent (not rendered) at 0") and `ProvenanceLine` already returns null when no row is `auto` (`src/components/decks/provenance-line.tsx:54-75`), so the seed line's stated reversal cannot be orphaned. |
 | R3 — "the kept note must survive at zero auto, where there is no ledger to hold it" | **Correct.** `src/components/decks/clear-auto.tsx` states the shipped rule explicitly: the kept note survives when `count === 0` and the button is absent. |
 
 ## Corrections carried into the build
@@ -40,36 +40,39 @@ them needed a Design round-trip.
    `i4` by another route: an update naming every auto card empties every pass and the ledger goes
    with the sweep, which the invariant already predicts.
 
-2. **`CostPips` has no promoted form, and this is its third call site, not its fifth.** README's
-   component table specifies "`CostPips` at its shipped desktop metrics: 12px pips… fixed 40px
-   right-aligned track, shingling from three at −5px, capped at five slots, generic `+N` pip…
-   `aria-hidden`; the `sr-only` alternative speaks the whole cost, uncapped." None of that is
-   shipped. The component is `export function CostPips({ cost, className })` at
-   `src/components/decks/suggestion-tile.tsx:33` — no `size`, `track`, `cap` or `spoken` prop, no
-   `sr-only` alternative, and `aria-hidden` with no accessible alternative anywhere. Its only call
-   sites are `card-search-row.tsx:149` and `suggestion-tile.tsx`. The promoted form is real build
-   work, and the row's accessible name depends on it.
-
-3. **`manaCopy.costAria` does not exist.** The copy file's row-aria comment says "No string is added
-   here; `manaCopy.costAria` is the source." There is no `manaCopy` and no `costAria` anywhere in
-   `src/`. The string has to be written as part of correction 2. Wording is a `/copy-review` item,
-   not a design one.
-
-4. **The invariant's middle leg is false at state `l0`.** `every pass empty ⟺ ledger absent` breaks
+2. **The invariant's middle leg is false at state `l0`.** `every pass empty ⟺ ledger absent` breaks
    on a deck that predates the ledger: it has zero passes (vacuously all empty) and still renders the
    legacy line. The leg that is true, and the one to implement, is the outer one — **the ledger is
    present exactly when the sweep is** — which holds at `l0` because the legacy deck's `auto` rows
    keep the sweep on screen. State `l0` and ledger rule 6 need to agree before either is coded.
 
-5. **`passRecountedAllKept` (`all {n} now yours`) has no state.** State `i3` rules that a pass
+3. **`passRecountedAllKept` (`all {n} now yours`) has no state.** State `i3` rules that a pass
    entirely kept leaves the ledger, so no line survives to print it. Either the string is dead or
    `i3` is wrong; the states read as deliberate, so the string is the one to drop.
 
-6. **`celebration.ts` no longer exists.** It is on the Untouched list in all three rounds. The file
+4. **`celebration.ts` no longer exists.** It is on the Untouched list in all three rounds. The file
    was deleted with the completion reveal in #362; nothing needs to be preserved.
 
-7. **Ledger rules are numbered 1–7 and then 5, 6, 7 again** in `STATES-top-off.md`. Cosmetic, but
-   the rules are cited by number elsewhere in the package.
+5. **Three numbering slips in the package, all cosmetic and none of them a design call.** Ledger
+   rules in `STATES-top-off.md` run 1–7 and then 5, 6, 7 again; the panel state table lists state 17
+   after state 20; and `README.md`'s title still says "R1" where every other line of the round is
+   R3. The rules and states are cited by number elsewhere in the package, so a build that quotes a
+   number should say which of the two it means.
+
+## Checked and correct — `CostPips` and the cost track
+
+R1–R3 all specify the cost track as "`CostPips` at its shipped desktop metrics: 12px pips… fixed
+40px right-aligned track, shingling from three at −5px, capped at five slots, generic `+N` pip…
+`aria-hidden`; the `sr-only` alternative speaks the whole cost, uncapped." **Every word of that is
+already shipped**, and this section exists because an earlier draft of this audit said the opposite.
+
+`CostPips` lives at `src/components/ui/cost-pips.tsx`, promoted out of `suggestion-tile.tsx`, and
+takes `{ cost, size, track, cap, spoken, className }`. `spoken` renders an `sr-only` span carrying
+`spokenManaCost(cost)`, which is uncapped even when the pips are. `manaCopy.costAria` exists at
+`src/lib/copy/card-surfaces.ts:24`. The decklist row already passes the exact metrics the handoff
+names — `PIP_TRACK = 40`, `PIP_SIZE_DESKTOP = 12`, `PIP_CAP = 5` (`decklist-row.tsx:46-48`) — and
+there are five production call sites, so the top-off row is a sixth consumer of a finished
+component rather than build work of its own.
 
 ## Known limitations, accepted
 
