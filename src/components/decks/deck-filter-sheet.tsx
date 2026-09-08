@@ -8,7 +8,8 @@
 // has nowhere to put it (plan ruling 6). Everything else is the column's
 // vocabulary re-drawn as chips at the 44px touch floor.
 
-import { useEffect } from "react";
+import { useRef } from "react";
+import { useDialogA11y } from "../../lib/a11y/dialog";
 import { refreshCopy } from "../../lib/copy/refresh";
 import {
   COLOUR_ORDER,
@@ -51,6 +52,9 @@ function Chip({
   token,
   onToggle,
   role = "checkbox",
+  chipRef,
+  tabIndex,
+  onKeyDown,
 }: {
   label: string;
   on: boolean;
@@ -58,12 +62,19 @@ function Chip({
   token?: string;
   onToggle: () => void;
   role?: "checkbox" | "radio";
+  /** The three below are the radiogroup's roving tab stop; a checkbox uses none. */
+  chipRef?: (node: HTMLButtonElement | null) => void;
+  tabIndex?: number;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
 }) {
   return (
     <button
+      ref={chipRef}
       type="button"
       role={role}
       aria-checked={on}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
       onClick={onToggle}
       style={token ? ({ "--chip": `var(${token})` } as React.CSSProperties) : undefined}
       className={`${CHIP} ${
@@ -92,37 +103,52 @@ function Group({ heading, children }: { heading: string; children: React.ReactNo
   );
 }
 
-export function DeckFilterSheet({
+/**
+ * Absent rather than hidden: a CSS-hidden sheet keeps its controls in the tab
+ * order and its search field focusable behind the page. The body is a separate
+ * component so `useDialogA11y` mounts and unmounts with the dialog itself,
+ * which is what makes its focus-return and its counted scroll lock correct.
+ */
+export function DeckFilterSheet({ open, ...rest }: DeckFilterSheetProps) {
+  return open ? <SheetBody {...rest} /> : null;
+}
+
+function SheetBody({
   filters,
   onChange,
   sort,
   onSortChange,
   shown,
   total,
-  open,
   onDismiss,
   autoFocusSearch,
-}: DeckFilterSheetProps) {
-  // Escape dismisses. It never restores the filters the reader arrived with:
-  // filtering already happened as they ticked, so there is nothing to undo and
-  // swiping the sheet away must lose nothing either.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onDismiss();
-    };
-    document.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [open, onDismiss]);
+}: Omit<DeckFilterSheetProps, "open">) {
+  const dialog = useRef<HTMLDivElement>(null);
+  // Focus trap, Escape and focus-return, shared with every other dialog here.
+  // Escape never restores the filters the reader arrived with: filtering
+  // already happened as they ticked, so there is nothing to undo and swiping
+  // the sheet away must lose nothing either.
+  //
+  // The dialog itself takes initial focus unless the reader came in through the
+  // search affordance. The hook would otherwise land on the first focusable,
+  // which is the search input — and raising the phone keyboard on a reader who
+  // pressed `Filter decks` is not what they asked for.
+  useDialogA11y(dialog, onDismiss, { initialFocusRef: autoFocusSearch ? undefined : dialog });
 
-  // Absent rather than hidden: a CSS-hidden sheet keeps its controls in the tab
-  // order and its search field focusable behind the page.
-  if (!open) return null;
+  const sortChips = useRef<(HTMLButtonElement | null)[]>([]);
+  function stepSort(from: number, e: React.KeyboardEvent) {
+    const dir =
+      e.key === "ArrowRight" || e.key === "ArrowDown"
+        ? 1
+        : e.key === "ArrowLeft" || e.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (dir === 0) return;
+    e.preventDefault();
+    const next = (from + dir + DECK_SORT_ORDER.length) % DECK_SORT_ORDER.length;
+    sortChips.current[next]?.focus();
+    onSortChange(DECK_SORT_ORDER[next]);
+  }
 
   const c = refreshCopy.filters;
 
@@ -136,9 +162,12 @@ export function DeckFilterSheet({
         className="absolute inset-0 bg-[rgba(16,13,10,0.74)]"
       />
       <div
+        ref={dialog}
         role="dialog"
         aria-modal="true"
         aria-label={c.sheetTitle}
+        // Focusable only as the trap's landing point, never as a tab stop.
+        tabIndex={-1}
         className="relative z-10 flex flex-col gap-[14px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
       >
         <div
@@ -164,12 +193,20 @@ export function DeckFilterSheet({
 
         <Group heading={c.sortHeading}>
           <div role="radiogroup" aria-label={c.sortHeading} className="flex flex-wrap gap-[8px]">
-            {DECK_SORT_ORDER.map((option: DeckSort) => (
+            {DECK_SORT_ORDER.map((option: DeckSort, i) => (
               <Chip
                 key={option}
                 role="radio"
+                chipRef={(node) => {
+                  sortChips.current[i] = node;
+                }}
                 label={DECK_SORT_LABELS[option]}
                 on={sort === option}
+                // Roving: the chosen order is the group's one tab stop, so the
+                // arrows move inside the group rather than Tab walking past
+                // three stops. Selection follows focus, matching FacetStrip.
+                tabIndex={sort === option ? 0 : -1}
+                onKeyDown={(e) => stepSort(i, e)}
                 // Radio, not checkbox: clicking the one already on leaves it on,
                 // because a list is always in some order.
                 onToggle={() => onSortChange(option)}

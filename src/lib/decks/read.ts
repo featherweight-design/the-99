@@ -337,40 +337,48 @@ export async function listDecksWithStats(
           // would put every never-played deck at the top of "last played".
           [sql`${lastPlayedSql} desc nulls last`, ...byName];
 
-  // One unscoped availability read for the whole grid, alongside the list. Its
-  // `claims` already name every deck holding every card, so the per-deck counts
-  // fall out of a single pass — a per-deck `excludeDeckId` query would be one
-  // round trip per tile. Tolerated rather than awaited into the page's failure
-  // path: a missing clause is not worth a 500 on the deck list.
-  const [rows, availability] = await Promise.all([
-    db
-      .select({
-        id: decks.id,
-        name: decks.name,
-        createdAt: decks.createdAt,
-        commanderName: cards.name,
-        commanderColorIdentity: cards.colorIdentity,
-        commanderImageUri: cards.imageUri,
-        built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
-        ownedCount: ownedCountSql,
-        unresolvedCount: unresolvedCountSql,
-        lastPlayedAt: lastPlayedSql,
-      })
-      .from(decks)
-      .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
-      .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
-      .where(eq(decks.userId, userId))
-      .groupBy(
-        decks.id,
-        decks.name,
-        decks.createdAt,
-        cards.name,
-        cards.colorIdentity,
-        cards.imageUri,
-      )
-      .orderBy(...order),
-    opts.includeInUseElsewhere ? loadAvailability(userId).catch(() => null) : null,
-  ]);
+  // One unscoped availability read for the whole grid, started alongside the
+  // list. Its `claims` already name every deck holding every card, so the
+  // per-deck counts fall out of a single pass — a per-deck `excludeDeckId`
+  // query would be one round trip per tile. Tolerated rather than awaited into
+  // the page's failure path: a missing clause is not worth a 500 on the deck
+  // list, and the `.catch` here also means the promise is never unhandled on
+  // the branch below that does not await it.
+  const pendingAvailability = opts.includeInUseElsewhere
+    ? loadAvailability(userId).catch(() => null)
+    : null;
+
+  const rows = await db
+    .select({
+      id: decks.id,
+      name: decks.name,
+      createdAt: decks.createdAt,
+      commanderName: cards.name,
+      commanderColorIdentity: cards.colorIdentity,
+      commanderImageUri: cards.imageUri,
+      built: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int`,
+      ownedCount: ownedCountSql,
+      unresolvedCount: unresolvedCountSql,
+      lastPlayedAt: lastPlayedSql,
+    })
+    .from(decks)
+    .innerJoin(cards, eq(decks.commanderOracleId, cards.oracleId))
+    .leftJoin(deckCards, eq(deckCards.deckId, decks.id))
+    .where(eq(decks.userId, userId))
+    .groupBy(
+      decks.id,
+      decks.name,
+      decks.createdAt,
+      cards.name,
+      cards.colorIdentity,
+      cards.imageUri,
+    )
+    .orderBy(...order);
+
+  // Awaited only once there is something to attribute the counts to. A player
+  // with no decks still has a collection, and the zero state should not wait on
+  // an aggregation over it to say they have no decks.
+  const availability = rows.length > 0 ? await pendingAvailability : null;
   const inUseElsewhere = availability
     ? inUseElsewhereByDeck(availability.values())
     : new Map<string, number>();
