@@ -8,13 +8,18 @@ import { NOVELTY_FLOOR } from "./floor";
 
 export type DeckTagSet = { deckName: string; colorIdentity: string[]; slugs: Set<string> };
 
-type Overlap = Pick<CandidateRow, "ownedSupport" | "edhrecTotal">;
+type Overlap = Pick<CandidateRow, "collectionSupport" | "edhrecTotal">;
 
 /** Null, not 0, without a denominator — the locked rule is that missing data is
-    omitted rather than zeroed, and 0% is a figure this surface really reports. */
+    omitted rather than zeroed, and 0% is a figure this surface really reports.
+
+    Reads `collectionSupport`, the count `clearsFloor` decides on, so the printed
+    percentage and the decision are the same figure. The two sit in one sentence
+    — "you own 8% of its support list against the 12% floor" — and a percentage
+    drawn from a narrower pool would put a row above the number that excluded it. */
 export function floorPct(c: Overlap): number | null {
   if (c.edhrecTotal == null || c.edhrecTotal <= 0) return null;
-  return Math.round((100 * c.ownedSupport) / c.edhrecTotal);
+  return Math.round((100 * c.collectionSupport) / c.edhrecTotal);
 }
 
 /** The whole-collection support count, and never a pool a control can narrow.

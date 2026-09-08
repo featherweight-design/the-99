@@ -7,14 +7,22 @@ import {
 const tag = (slug: string, count = 1) => ({ slug, label: slug.toUpperCase(), count });
 
 describe("floorPct", () => {
-  it("is the owned share of the support list, rounded", () => {
-    expect(floorPct({ ownedSupport: 30, edhrecTotal: 100 })).toBe(30);
-    expect(floorPct({ ownedSupport: 1, edhrecTotal: 3 })).toBe(33);
+  it("is the collection's share of the support list, rounded", () => {
+    expect(floorPct({ collectionSupport: 30, edhrecTotal: 100 })).toBe(30);
+    expect(floorPct({ collectionSupport: 1, edhrecTotal: 3 })).toBe(33);
   });
 
   it("is null without a denominator — never zero", () => {
-    expect(floorPct({ ownedSupport: 5, edhrecTotal: null })).toBeNull();
-    expect(floorPct({ ownedSupport: 0, edhrecTotal: 0 })).toBeNull();
+    expect(floorPct({ collectionSupport: 5, edhrecTotal: null })).toBeNull();
+    expect(floorPct({ collectionSupport: 0, edhrecTotal: 0 })).toBeNull();
+  });
+
+  // The sentence pairs the two, so they have to be one figure: a percentage off
+  // a narrower pool could print a row as clearing a floor that excluded it.
+  it("reads the same count the floor decides on", () => {
+    const row = { collectionSupport: 40, ownedSupport: 4, edhrecTotal: 100 };
+    expect(floorPct(row)).toBe(40);
+    expect(clearsFloor(row)).toBe(true);
   });
 });
 
