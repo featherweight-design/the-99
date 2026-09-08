@@ -49,3 +49,45 @@ describe("ArtWash — cover", () => {
     expect(container.innerHTML).not.toMatch(/#[0-9A-Fa-f]{6}/);
   });
 });
+
+describe("ArtWash — left portrait", () => {
+  it("sizes the portrait off the band's height, at the crop's own 1.37:1", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    const sharp = Array.from(container.querySelectorAll("div")).find((d) =>
+      d.style.maskImage?.includes("90deg"),
+    );
+    expect(sharp?.style.width).toBe("203px");
+    expect(sharp?.style.backgroundSize).toBe("auto 100%");
+  });
+
+  it("fades the art itself, as a fraction of the art", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    // A percentage-of-width fade would drift from the portrait at every row width.
+    expect(container.innerHTML).toContain("58%");
+  });
+
+  it("scales every stop with the band", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={72} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    const sharp = Array.from(container.querySelectorAll("div")).find((d) =>
+      d.style.maskImage?.includes("90deg"),
+    );
+    expect(sharp?.style.width).toBe("99px");
+    expect(container.innerHTML).toContain("62%");
+  });
+
+  it("carries an ambient copy behind the portrait", () => {
+    const { container } = render(
+      <ArtWash strategy="left-portrait" band={148} artCropUri="crop.jpg" colorIdentity={["B"]} />,
+    );
+    const ambient = Array.from(container.querySelectorAll("div")).find(
+      (d) => d.style.backgroundSize === "cover" && d.style.opacity === "0.2",
+    );
+    expect(ambient).toBeDefined();
+  });
+});
