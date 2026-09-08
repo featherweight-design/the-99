@@ -12,7 +12,7 @@
 // It also owns the box, the heading, the caption and the door note; everything
 // from the selection head down belongs to TopOffList.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { type Ref, useEffect, useId, useRef, useState } from "react";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { topOffCopy } from "../../lib/copy/top-off";
 import type { TopOffCandidate } from "../../lib/decks/last-slots";
@@ -53,7 +53,7 @@ function ExhaustedLine({
 }: {
   total: string;
   shortfall: string;
-  ref?: React.Ref<HTMLDivElement>;
+  ref?: Ref<HTMLDivElement>;
 }) {
   return (
     <div
