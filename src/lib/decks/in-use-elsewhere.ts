@@ -29,11 +29,23 @@ export function inUseElsewhereByDeck(
   for (const a of availability) {
     const state = availabilityState(a);
     if (state !== "hard" && state !== "over") continue;
+    // "Some OTHER deck holds a mature claim" is the same question for every
+    // claim on the card, so it is answered once rather than rescanned per
+    // claim: with two or more mature claimants every claimant has one, and
+    // with exactly one only that deck itself does not.
+    let matureClaims = 0;
+    let soleMatureId: string | null = null;
     for (const claim of a.claims) {
-      // Some OTHER deck, and a finished one. A deck is never in use elsewhere
-      // on account of its own claim, and a brew's claim is not "in use".
-      const elsewhere = a.claims.some((other) => other.id !== claim.id && other.mature);
-      if (elsewhere) out.set(claim.id, (out.get(claim.id) ?? 0) + 1);
+      if (!claim.mature) continue;
+      matureClaims += 1;
+      soleMatureId = claim.id;
+    }
+    // A brew's claim is not "in use", so a card no finished deck has sleeved
+    // is nobody's conflict.
+    if (matureClaims === 0) continue;
+    for (const claim of a.claims) {
+      if (matureClaims === 1 && soleMatureId === claim.id) continue;
+      out.set(claim.id, (out.get(claim.id) ?? 0) + 1);
     }
   }
   return out;

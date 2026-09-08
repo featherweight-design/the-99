@@ -90,6 +90,19 @@ describe("sortDecks", () => {
     expect(sortDecks(decks, "newest").map((d) => d.id)).toEqual(["new", "old"]);
   });
 
+  it("orders by code point, not by the runtime's locale", () => {
+    // `localeCompare` under en-US sorts the apostrophe as though it were not
+    // there, putting "Ur-Dragon" ahead of "Ur'zad"; by code point the
+    // apostrophe (U+0027) precedes the hyphen (U+002D). The value of this
+    // function is landing on the server's sequence for every reader, so the
+    // locale must not reach it at all.
+    const decks = [
+      deck({ id: "b", name: "Ur-Dragon" }),
+      deck({ id: "a", name: "Ur'zad" }),
+    ];
+    expect(sortDecks(decks, "name").map((d) => d.id)).toEqual(["a", "b"]);
+  });
+
   it("returns a new array rather than sorting the caller's", () => {
     const decks = [deck({ id: "b", name: "B" }), deck({ id: "a", name: "A" })];
     const sorted = sortDecks(decks, "name");

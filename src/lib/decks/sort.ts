@@ -56,17 +56,25 @@ export type SortableDeck = {
  *   - `newest` breaks on id alone, and `lastPlayed` breaks on name then id,
  *     because that is what the SQL does.
  *   - Never played sorts last, which is what `nulls last` buys over there.
+ *
+ * Every string comparison is by code point, never `localeCompare`, which reads
+ * the runtime's own locale: two players on the same list would otherwise see
+ * two orders for the same names, and neither would be the one the server sent.
+ * The whole point of this function is to land on the sequence a fresh load
+ * would, so it cannot be the one comparison in the pair that varies.
  */
+const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
 export function sortDecks<T extends SortableDeck>(decks: T[], sort: DeckSort): T[] {
   const byName = (a: T, b: T) =>
-    a.name.toLowerCase().localeCompare(b.name.toLowerCase()) || a.id.localeCompare(b.id);
+    byCodePoint(a.name.toLowerCase(), b.name.toLowerCase()) || byCodePoint(a.id, b.id);
 
   const compare =
     sort === "name"
       ? byName
       : sort === "newest"
         ? (a: T, b: T) =>
-            b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id)
+            b.createdAt.getTime() - a.createdAt.getTime() || byCodePoint(a.id, b.id)
         : (a: T, b: T) => {
             const at = a.lastPlayedAt?.getTime();
             const bt = b.lastPlayedAt?.getTime();

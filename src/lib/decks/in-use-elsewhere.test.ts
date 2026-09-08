@@ -59,6 +59,15 @@ describe("inUseElsewhereByDeck", () => {
     expect(counts.size).toBe(0);
   });
 
+  it("counts every claimant once two finished decks are in play", () => {
+    const counts = inUseElsewhereByDeck([
+      card({ claims: [claim("a", false), claim("b", true), claim("c", true)] }),
+    ]);
+    expect(counts.get("a")).toBe(1);
+    expect(counts.get("b")).toBe(1);
+    expect(counts.get("c")).toBe(1);
+  });
+
   it("sums across cards", () => {
     const counts = inUseElsewhereByDeck([
       card({ claims: [claim("a", false), claim("b", true)] }),
