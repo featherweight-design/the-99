@@ -30,12 +30,19 @@ import { FilterPanel } from "../ui/filter-panel";
 // The hook moved to ui/use-is-desktop.ts when filter-panel.tsx needed it too;
 // it is re-exported here because browser.tsx already imports it from this file.
 import { useIsDesktop } from "../ui/use-is-desktop";
+import { ViewToggle, type ViewToggleOption } from "../ui/view-toggle";
+import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 
 export { useIsDesktop };
 
 const WUBRG = ["W", "U", "B", "R", "G"] as const;
 
 export type ViewMode = "rows" | "grid";
+
+const COLLECTION_VIEWS: readonly [ViewToggleOption<ViewMode>, ViewToggleOption<ViewMode>] = [
+  { value: "rows", glyph: "≣", label: viewToggleCopy.collection.rows },
+  { value: "grid", glyph: "▦", label: viewToggleCopy.collection.grid },
+];
 
 /**
  * How the selection was changed. `Clear` and "toggle the last one off" both
@@ -253,36 +260,12 @@ export function FilterBar({
           onAnnounce={onAnnounce}
         />
 
-        {/* View toggle — §View Toggle Container: bg --surface-sunken, border 1px --border-strong, radius 8px, padding 2px, gap 2px */}
-        <div
-          className="flex gap-[2px] md:ml-[2px] rounded-lg p-[2px]"
-          style={{
-            background: "var(--surface-sunken)",
-            border: "1px solid var(--border-strong)",
-          }}
-        >
-          {(["rows", "grid"] as const).map((v) => {
-            const active = v === view;
-            return (
-              <button
-                key={v}
-                type="button"
-                aria-label={`${v === "rows" ? "Rows" : "Grid"} view`}
-                aria-pressed={active}
-                onClick={() => onViewChange(v)}
-                // §View Toggle Segment: 28×24 mobile / 30×28 desktop, radius 6px, font 12/13px
-                className={[
-                  "flex items-center justify-center rounded-md text-[12px] md:text-[13px] w-[28px] h-[24px] md:w-[30px] md:h-[28px]",
-                  active
-                    ? "bg-[var(--accent)] text-[var(--bg)]"
-                    : "bg-transparent text-[var(--fg-faint)]",
-                ].join(" ")}
-              >
-                {v === "rows" ? "≣" : "▦"}
-              </button>
-            );
-          })}
-        </div>
+        <ViewToggle
+          options={COLLECTION_VIEWS}
+          value={view}
+          onChange={onViewChange}
+          className="md:ml-[2px]"
+        />
       </div>
 
       {/* The bar's single live region. One region for the whole bar, so two

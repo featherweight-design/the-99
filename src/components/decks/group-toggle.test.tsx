@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { GroupToggle } from "./group-toggle";
 import { priceCopy } from "../../lib/copy/price";
+import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import type { PriceSummary, ProvenanceForm } from "../../lib/decks/price";
 import { summarisePrices } from "../../lib/decks/price";
 import { cardCopies } from "../../lib/decks/grouping";
@@ -15,6 +16,8 @@ const props = {
   grouping: "type" as const,
   onFilterChange: () => {},
   onGroupingChange: () => {},
+  view: "list" as const,
+  onViewChange: () => {},
   shoppingCards: [{ name: "Sol Ring", quantity: 1 }],
 };
 
@@ -114,5 +117,41 @@ describe("GroupToggle denominator", () => {
     expect(
       screen.getByText(priceCopy.strip.pricedClause(1, count)),
     ).toBeInTheDocument();
+  });
+});
+
+describe("GroupToggle view well (#349)", () => {
+  it("offers both views under the All filter", () => {
+    render(<GroupToggle {...props} filter="all" />);
+    expect(
+      screen.getByRole("button", { name: viewToggleCopy.deck.list }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", { name: viewToggleCopy.deck.card }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  // Absent, not disabled: a shopping list has no second way to be read, and a
+  // dead control in the bar would say there is one.
+  it("is absent under the Shopping filter", () => {
+    render(<GroupToggle {...props} filter="shopping" />);
+    expect(screen.queryByRole("button", { name: viewToggleCopy.deck.list })).toBeNull();
+    expect(screen.queryByRole("button", { name: viewToggleCopy.deck.card })).toBeNull();
+  });
+
+  it("reports the view the reader picked", () => {
+    const picked: string[] = [];
+    render(
+      <GroupToggle {...props} filter="all" onViewChange={(v) => picked.push(v)} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: viewToggleCopy.deck.card }));
+    expect(picked).toEqual(["card"]);
+  });
+
+  // The label was inert — it named the two pills beside it and did nothing —
+  // and the well needs the width it was holding on the phone.
+  it("no longer draws the inert Group label", () => {
+    render(<GroupToggle {...props} filter="all" />);
+    expect(screen.queryByText("Group")).toBeNull();
   });
 });
