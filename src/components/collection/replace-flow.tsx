@@ -11,7 +11,18 @@ import { UploadEntry } from "./upload-entry";
 import { ReviewScreen } from "./review-screen";
 import { ConfirmModal } from "./confirm-modal";
 
-export function ReplaceFlow({ currentCardCount, embedded }: { currentCardCount: number; embedded?: boolean }) {
+export function ReplaceFlow({
+  currentCardCount,
+  embedded,
+  entry,
+}: {
+  currentCardCount: number;
+  embedded?: boolean;
+  // Pass-through to step 1. Held here rather than letting a caller render
+  // UploadEntry itself, because steps 2 and 3 are this component's to own and a
+  // caller reaching past it for step 1 would have to re-implement them.
+  entry?: React.ComponentProps<typeof UploadEntry>["entry"];
+}) {
   const router = useRouter();
   const [preview, setPreview] = useState<UploadPreview | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -37,6 +48,7 @@ export function ReplaceFlow({ currentCardCount, embedded }: { currentCardCount: 
     return (
       <UploadEntry
         currentCardCount={currentCardCount}
+        entry={entry}
         onPreview={(p) => {
           setConfirmError(null);
           setConfirming(false);

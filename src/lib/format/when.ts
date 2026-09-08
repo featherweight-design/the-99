@@ -1,5 +1,6 @@
 // Relative dates, in the register the refresh frames draw: `today`,
-// `2 days ago`, `last week`, `3 weeks ago`, `2 months ago`.
+// `2 days ago`, `last week`, `3 weeks ago`, `2 months ago`, and `never` for a
+// date that does not exist.
 //
 // `now` is a parameter and never `new Date()`. A function that reads the clock
 // renders one string on the server and a different one on the client the moment
@@ -30,7 +31,11 @@ function plural(n: number, unit: string): string {
   return `${n} ${unit}${n === 1 ? "" : "s"} ago`;
 }
 
-export function formatWhen(then: Date, now: Date): string {
+export function formatWhen(then: Date | null, now: Date): string {
+  // The absent date belongs to this vocabulary and not to a caller's. A page
+  // that answered it locally would invent a string, and two pages answering it
+  // locally would invent two.
+  if (then === null) return "never";
   const days = daysBetween(then, now);
   if (days === 0) return "today";
   if (days === 1) return "yesterday";

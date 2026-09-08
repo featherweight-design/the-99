@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
- * Brand tokens — the 36-key contract enforced by src/lib/theme/contract.test.ts.
+ * Brand tokens — the 37-key contract enforced by src/lib/theme/contract.test.ts.
  * Semantic names first; raw hexes live only here.
  * ------------------------------------------------------------------ */
 :root,
@@ -16,7 +16,7 @@
      previews, and without this the Amonkhet chip would inherit whatever theme
      the app is currently wearing and preview the wrong palette. */
 
-  /* Chrome (16) */
+  /* Chrome (17) */
   --bg: #14110E;
   --surface: #1E1A15;
   --surface-raised: #211D18;
@@ -38,6 +38,15 @@
      but because no theme holds any headroom, a change applied across the set
      fails in all six. Re-measure the pair after any surface change. */
   --fg-locked: #6E6654;
+  /* One step below --fg-locked, and deliberately under the 3:1 floor the rest
+     of the text ramp clears. Because it is under that floor it colours only
+     what repeats something already said: the padlock glyph beside a locked nav
+     item, and a locked step's aria-hidden numeral. The words themselves — a
+     locked tab's label, a locked step's reason line — take --fg-locked, which
+     clears the floor. Low Sun's value is the frame's;
+     the other five hold their own hue at the same OKLab lightness ratio, so
+     each theme dims within its own family rather than towards brass. */
+  --fg-disabled: #4A4033;
 
   /* Flavor (6) — the only family permitted real chroma. */
   --accent: #CF8745;
@@ -89,6 +98,7 @@
   --fg-muted: #959AAD;
   --fg-faint: #6F7486;
   --fg-locked: #606476;
+  --fg-disabled: #3D404E;
   --accent: #FF4D9A;
   --accent-hover: #FF62A9;
   --accent-strong: #D33E7E;
@@ -133,6 +143,7 @@
   --fg-muted: #98A695;
   --fg-faint: #808C7C;
   --fg-locked: #626E5E;
+  --fg-disabled: #3E473A;
   --accent: #A3C445;
   --accent-hover: #B2D257;
   --accent-strong: #85A22F;
@@ -176,6 +187,7 @@
   --fg-muted: #9A96A0;
   --fg-faint: #78747E;
   --fg-locked: #64616A;
+  --fg-disabled: #403E45;
   --accent: #52827A;
   --accent-hover: #629189;
   --accent-strong: #3E665F;
@@ -221,6 +233,7 @@
   --fg-muted: #9C95A8;
   --fg-faint: #898395;
   --fg-locked: #6A6475;
+  --fg-disabled: #443F4D;
   --accent: #AE88E6;
   --accent-hover: #BC9BEE;
   --accent-strong: #8E6AC4;
@@ -264,6 +277,7 @@
   --fg-muted: #95A4A6;
   --fg-faint: #7C8A8C;
   --fg-locked: #5F6D6E;
+  --fg-disabled: #3B4647;
   --accent: #5C86C9;
   --accent-hover: #6C95D8;
   --accent-strong: #486BA3;
@@ -309,6 +323,7 @@
   --color-fg-muted: var(--fg-muted);
   --color-fg-faint: var(--fg-faint);
   --color-fg-locked: var(--fg-locked);
+  --color-fg-disabled: var(--fg-disabled);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-strong: var(--accent-strong);

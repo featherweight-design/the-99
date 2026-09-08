@@ -1,0 +1,1338 @@
+# Design Property Table — UI Refresh, Home
+
+Source: `design/design_handoff_the99_refresh/` R2 (2026-09-07).
+
+- `The 99 - Refresh · Home and Decks.dc.html` — lines 39–169 (Home desktop), 390–473 (Home phone),
+  601–722 (Home first run, both viewports).
+- `refresh · copy strings.ts` — copy keys.
+- `tokens.r6.json` — R6 theme tokens.
+- `STATES-deck-statuses.md` — the six status values and their tokens.
+- `README.md` / `READINESS.md` — decisions and open items.
+
+Scope: the Home surface only. The Decks index, the left icon rail and the phone tab bar are
+covered by other tables (`ui-refresh-chrome.md` and the Decks table). Rail/tab-bar rows appear
+here **only** where Home's first-run state changes them.
+
+Breakpoint: 640px (`sm:`). "Mobile" = the 390px phone frames; "Desktop" = the 1180px / 768px frames.
+
+---
+
+## Token mapping — canvas hex → CSS variable
+
+The `.dc.html` frames are rendered in a canvas palette that approximates the **Amonkhet / Low Sun**
+theme rather than reading `tokens.r6.json` literally. Implement against the variable, not the hex.
+Rows where the canvas hex has no clean token are flagged in §Ambiguities.
+
+| Canvas hex | Variable | R6 (amonkhet) value | Note |
+|---|---|---|---|
+| `#14110E` | `var(--bg)` | `#14110E` | exact |
+| `#1E1A15` | `var(--surface)` | `#1E1A15` | exact |
+| `#1B1712` | `var(--surface-inset)` | `#1B1712` | exact — every Home panel/card surface |
+| `#171310` | `var(--surface-rail)` | `#1A1611` | design note at line 720 names it `--surface-rail` |
+| `#241F18` | `var(--elevated)` | `#29241F` | approximation |
+| `#2A241D` | `var(--border)` | `#2B241B` | outer card/panel hairline |
+| `#211C16` | `var(--border)` | `#2B241B` | inner divider — canvas uses a second, darker weight (see §Ambiguities) |
+| `#3A3229` | `var(--border-strong)` | `#3A3229` | exact — every hairline button |
+| `#4A4033` | `var(--border-dashed)` | `#494037` | also used as a *text* colour for locked items (see §Ambiguities) |
+| `#EDE6D8` | `var(--fg)` | `#EDE6D8` | exact |
+| `#C6B79A` | `var(--fg-body)` | `#C0B8A6` | approximation |
+| `#A89B84` | `var(--fg-muted)` | `#A59C89` | approximation |
+| `#8E8269` | `var(--fg-faint)` | `#8B8270` | approximation |
+| `#6A6152` | `var(--fg-locked)` | `#6E6654` | approximation |
+| `#C9A24B` | `var(--accent)` | `#CF8745` | approximation |
+| `#6FA368` | `var(--success)` | `#6FA368` | exact |
+| `#E0913C` | `var(--warning)` | `#DEAA29` (amonkhet) | canvas uses the value the other five themes carry |
+| `#C6533F` | `var(--danger)` | `#C6533F` | exact |
+| `#E8E4D6` | `var(--w)` | `#F4E9C4` | colour pip |
+| `#4A7FB5` | `var(--u)` | `#3A6AA5` | colour pip |
+| `#5B5566` | `var(--b)` | `#98748F` | colour pip |
+| `#C05A48` | `var(--r)` | `#C05A3E` | colour pip |
+| `#6B9E63` | `var(--g)` | `#4B7A46` | colour pip |
+| `#100D0A` | — | — | canvas page ground; darker than `--bg`, no token. Not used inside Home content. |
+
+Fonts:
+
+| Canvas family | Variable |
+|---|---|
+| `'Cinzel', serif` | `var(--font-display)` — the per-theme display face (`tokens.r6.json.themes[*].face`) |
+| `'IBM Plex Sans', sans-serif` | `var(--font-sans)` — body/label text |
+| `'IBM Plex Mono', monospace` | `var(--font-mono)` — every figure, every kicker, every status word |
+
+Status → token (from `STATES-deck-statuses.md`):
+
+| Status | Token |
+|---|---|
+| Draft | `var(--fg-faint)` |
+| Building | `var(--fg-body)` |
+| Over | `var(--danger)` |
+| Unresolved | `var(--warning)` |
+| To buy | `var(--accent)` |
+| Complete | `var(--success)` |
+
+---
+
+## Component: HomeFrame (page shell)
+
+The 1180×624 / 768×520 / 390×800 / 390×700 outer boxes with `border-radius:16px|26px` are the
+**mockup device frames**, not app CSS. Do not implement them. What is implementable:
+
+### Content column
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| flex-direction | column | column |
+| flex | auto | auto |
+| min-width | 0 | 0 |
+| min-height | 0 | — |
+| background | `var(--bg)` | `var(--bg)` |
+
+---
+
+## Component: HomeHeader
+
+### Desktop — header container
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — (see mobile top bar + kicker block below) | flex |
+| align-items | — | flex-end |
+| gap | — | 16 |
+| padding-top | — | 22 |
+| padding-right | — | 26 |
+| padding-bottom | — | 0 |
+| padding-left | — | 26 |
+
+### Mobile — top bar (mark + avatar)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | — (rail carries the mark and avatar) |
+| align-items | center | — |
+| gap | 10 | — |
+| padding-top | 16 | — |
+| padding-right | 16 | — |
+| padding-bottom | 0 | — |
+| padding-left | 16 | — |
+
+#### Mobile — diamond mark
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 22 | — |
+| height | 22 | — |
+| transform | rotate(45deg) | — |
+| border-width | 1.5 | — |
+| border-style | solid | — |
+| border-color | `var(--accent)` | — |
+| border-radius | 3 | — |
+
+#### Mobile — spacer
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | auto | — |
+
+#### Mobile — avatar
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 36 | — |
+| height | 36 | — |
+| border-radius | 50% | — |
+| border-width | 1 | — |
+| border-style | solid | — |
+| border-color | `var(--border-strong)` | — |
+| background | `var(--surface)` | — |
+
+### Kicker + greeting block
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| padding-top | 14 | — (inside header container) |
+| padding-right | 16 | — |
+| padding-bottom | 0 | — |
+| padding-left | 16 | — |
+| flex | — | auto |
+| min-width | — | 0 |
+
+#### Kicker line
+
+Copy: `home.kicker(cards, when)` — two arguments, both pre-formatted strings.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10 | 10 |
+| letter-spacing | 0.16em | 0.18em |
+| text-transform | uppercase | uppercase |
+| color | `var(--fg-faint)` | `var(--fg-faint)` |
+| margin-bottom | 6 | 7 |
+
+#### Greeting
+
+Copy: `home.greeting` — no arguments.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-display)` | `var(--font-display)` |
+| font-weight | 700 | 700 |
+| font-size | 23 | 28 |
+| line-height | 1.15 | 1 |
+| color | `var(--fg)` | `var(--fg)` |
+
+### Update collection button
+
+Copy: `home.updateCollection`. **Mobile: not rendered** (see §Ambiguities).
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | center |
+| gap | — | 8 |
+| height | — | 32 |
+| padding-top / bottom | — | 0 |
+| padding-left / right | — | 12 |
+| border-width | — | 1 |
+| border-style | — | solid |
+| border-color | — | `var(--border-strong)` |
+| border-radius | — | 8 |
+| font-family | — | `var(--font-sans)` |
+| font-size | — | 12.5 |
+| color | — | `var(--fg-body)` |
+| flex | — | none |
+
+#### Update collection — refresh icon (SVG)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | — | 14 |
+| height | — | 14 |
+| viewBox | — | `0 0 20 20` |
+| fill | — | none |
+| stroke | — | currentColor |
+| stroke-width | — | 1.6 |
+| stroke-linecap | — | round |
+| stroke-linejoin | — | round |
+| path d (1) | — | `M16.5 10a6.5 6.5 0 1 1-2.1-4.8` |
+| path d (2) | — | `M16.8 3.4v3.2h-3.2` |
+
+### New deck button (primary, bone fill)
+
+Copy: `home.newDeck`. **Mobile: not rendered** (see §Ambiguities).
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | center |
+| height | — | 32 |
+| padding-top / bottom | — | 0 |
+| padding-left / right | — | 14 |
+| border-radius | — | 8 |
+| border-width | — | 0 |
+| background | — | `var(--fg)` |
+| color | — | `var(--bg)` |
+| font-family | — | `var(--font-sans)` |
+| font-size | — | 12.5 |
+| font-weight | — | 600 |
+| flex | — | none |
+
+---
+
+## Component: HomeBody (two-column region)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| flex-direction | column | row (default) |
+| gap | 12 | 20 |
+| flex | auto | auto |
+| min-height | 0 | 0 |
+| padding-top | 14 | 20 |
+| padding-right | 16 | 26 |
+| padding-bottom | 0 | 26 |
+| padding-left | 16 | 26 |
+
+### Desktop — left column
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — (single column) | flex |
+| flex-direction | — | column |
+| gap | — | 11 |
+| flex | — | auto |
+| min-width | — | 0 |
+
+### Desktop — right column (rail + Commitments)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — (not rendered as a column) | flex |
+| flex-direction | — | column |
+| gap | — | 11 |
+| width | — | 316 |
+| flex | — | none |
+
+---
+
+## Component: SectionLabel (shared)
+
+Used by "Ready to build", "Pick up where you left off", "Your decks · n", "Commitments".
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10 | 10 |
+| letter-spacing | 0.14em | 0.14em |
+| text-transform | uppercase | uppercase |
+| color | `var(--fg-faint)` | `var(--fg-faint)` |
+| flex | none | — |
+
+Per-instance margin overrides (desktop only):
+
+| Instance | margin-top |
+|---|---|
+| Ready to build (`home.readyHeading`) | — |
+| Pick up where you left off (`home.resumeHeading`) | 6 |
+| Your decks · n (`home.decksHeading(n)`) | — |
+| Commitments (`home.commitmentsHeading`) | 4 |
+
+---
+
+## Component: ReadyToBuild
+
+### Grid / stack container
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — (cards are direct children of HomeBody's column) | grid |
+| grid-template-columns | — | `1fr 1fr` |
+| gap | 12 (inherited from HomeBody) | 14 |
+| Cards rendered | 2, stacked, in the page's own vertical scroll | 2, side by side |
+
+Carousel is explicitly **withdrawn** (README gap 4 / READINESS "Phone Ready-to-build · Closed (R2)").
+
+### ReadyCard — root
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | relative | relative |
+| height | 186 | 250 |
+| border-radius | 14 | 14 |
+| overflow | hidden | hidden |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border)` | `var(--border)` |
+| background | commander art, cropped to the illustration (mockup substitutes a `linear-gradient(150deg,…)` placeholder) | same |
+| flex | none | — |
+
+Art is **not** themed — it is photography (README decision 7).
+
+### ReadyCard — scrim
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| inset | 0 | 0 |
+| background | `linear-gradient(180deg, var(--bg)/12% 0%, var(--bg)/72% 52%, var(--bg)/96% 100%)` | `linear-gradient(180deg, var(--bg)/15% 0%, var(--bg)/72% 52%, var(--bg)/96% 100%)` |
+
+### ReadyCard — fit badge
+
+Copy: `home.fit(score)` → `"{score} /100 fit"`. Rendered as two spans: the numeral, then the
+denominator clause in a dimmer colour.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| top | 10 | 11 |
+| left | 11 | 12 |
+| display | flex | flex |
+| align-items | center | center |
+| height | 22 | 22 |
+| padding-top / bottom | 0 | 0 |
+| padding-left / right | 8 | 8 |
+| border-radius | 6 | 6 |
+| background | `var(--bg)` at 82% alpha | `var(--bg)` at 82% alpha |
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10.5 | 10.5 |
+| color (numeral) | `var(--fg)` | `var(--fg)` |
+| color (`/100 fit` span) | `var(--fg-faint)` | `var(--fg-faint)` |
+
+### ReadyCard — body block
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| left | 0 | 0 |
+| right | 0 | 0 |
+| bottom | 0 | 0 |
+| padding (all sides) | 13 | 14 |
+
+#### ReadyCard — commander name
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-display)` | `var(--font-display)` |
+| font-weight | 600 | 600 |
+| font-size | 17 | 18 |
+| color | `var(--fg)` | `var(--fg)` |
+| white-space | nowrap | nowrap |
+| overflow | hidden | hidden |
+| text-overflow | ellipsis | ellipsis |
+
+#### ReadyCard — meta row
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| gap | 7 | 8 |
+| margin-top | 6 | 7 |
+
+#### ReadyCard — colour pips group
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| gap | 3 | 3 |
+
+#### ReadyCard — colour pip (each)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 8 | 9 |
+| height | 8 | 9 |
+| border-radius | 2 | 2 |
+| border-width | 0 | 0 |
+| background | `var(--w)` / `var(--u)` / `var(--b)` / `var(--r)` / `var(--g)` per colour identity, in WUBRG order | same |
+
+Note: unlike deck-tile pips (`STATES-deck-statuses.md` §5) these carry **no** `--border-strong`
+hairline, because they sit on art, not on a light ground.
+
+#### ReadyCard — fit line
+
+Copy: desktop `home.fitLine(n)` → `"{n} of your cards fit"`. Mobile renders a shortened
+`"{n} fit"` form for which no copy key exists (see §Ambiguities).
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10.5 | 11 |
+| color | `var(--fg-body)` | `var(--fg-body)` |
+
+#### ReadyCard — in-use clause
+
+Copy: `home.inUse(n)` → `"{n} in use"`. **Conditional: omitted entirely when `inUse === 0`.**
+Desktop renders it as a sibling span in the meta row; mobile nests it inside the fit-line span
+after a ` · ` separator.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10.5 (inherited from fit line) | 11 |
+| color | `var(--accent)` | `var(--accent)` |
+| position in DOM | inside the fit-line span, after ` · ` | sibling span in the meta row |
+
+#### ReadyCard — actions row
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| gap | 8 | 8 |
+| margin-top | 11 | 12 |
+
+#### ReadyCard — "Start this deck" (primary, bone fill)
+
+Copy: `home.startDeck`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | — |
+| flex | auto | none |
+| height | 44 | 32 |
+| padding-left / right | — | 14 |
+| border-radius | 10 | 8 |
+| border-width | 0 | 0 |
+| background | `var(--fg)` | `var(--fg)` |
+| color | `var(--bg)` | `var(--bg)` |
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 14 | 12.5 |
+| font-weight | 600 | 600 |
+
+#### ReadyCard — "See the pool" (secondary)
+
+Copy: `home.seePool` (desktop label). Mobile collapses it to an icon-only 44×44 chevron button
+with **no** visible label.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | — |
+| width | 44 | — |
+| height | 44 | 32 |
+| padding-left / right | — | 13 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border-dashed)` (`#4A4033`) | `var(--border-dashed)` (`#4A4033`) |
+| border-radius | 10 | 8 |
+| background | `var(--bg)` at 50% alpha | `var(--bg)` at 50% alpha |
+| color | `var(--fg)` | `var(--fg)` |
+| font-size | — | 12.5 |
+
+#### ReadyCard — "See the pool" chevron icon (mobile only)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 17 | — |
+| height | 17 | — |
+| viewBox | `0 0 20 20` | — |
+| fill | none | — |
+| stroke | currentColor | — |
+| stroke-width | 1.6 | — |
+| stroke-linecap | round | — |
+| stroke-linejoin | — (not set) | — |
+| path d | `M7.5 4.5 13 10l-5.5 5.5` | — |
+
+### ReadyToBuild — "more above" row
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| gap | 10 | 12 |
+| flex | none | — |
+
+#### "more above" text
+
+Copy: `home.moreAbove(n, floor)` → `"{n} more scored {floor} or better"`. The threshold that
+produces `n` and `floor` is **unspecified** (READINESS blocker 3).
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10.5 | 11 |
+| color | `var(--fg-faint)` | `var(--fg-faint)` |
+
+#### "All commanders" button
+
+Copy: `home.allCommanders`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| margin-left | auto | — (gap only) |
+| height | 36 | 32 |
+| padding-top / bottom | 0 | 0 |
+| padding-left / right | 12 | 13 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border-strong)` | `var(--border-strong)` |
+| border-radius | 10 | 8 |
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 13 | 12.5 |
+| color | `var(--fg)` | `var(--fg)` |
+
+---
+
+## Component: ResumeRows ("Pick up where you left off")
+
+**Desktop only.** Not rendered in the phone frame (see §Ambiguities).
+No CTA on the row — the row itself opens the builder (README decision 4).
+
+### Row container
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| gap | — | 12 |
+| Rows rendered | — | 2 |
+
+### ResumeRow — root
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | — | 1 |
+| min-width | — | 0 |
+| display | — | flex |
+| align-items | — | center |
+| gap | — | 11 |
+| background | — | `var(--surface-inset)` |
+| border-width | — | 1 |
+| border-style | — | solid |
+| border-color | — | `var(--border)` |
+| border-radius | — | 12 |
+| padding-top / bottom | — | 10 |
+| padding-left / right | — | 12 |
+
+### ResumeRow — art spine
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | — | 30 |
+| height | — | 42 |
+| border-radius | — | 5 |
+| background | — | commander art (mockup: `linear-gradient(150deg,…)`) |
+| flex | — | none |
+
+### ResumeRow — text column
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | — | auto |
+| min-width | — | 0 |
+| display | — | flex |
+| flex-direction | — | column |
+| gap | — | 4 |
+
+#### ResumeRow — deck / commander name
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | `var(--font-display)` |
+| font-weight | — | 600 |
+| font-size | — | 14.5 |
+| color | — | `var(--fg)` |
+| white-space | — | nowrap |
+| overflow | — | hidden |
+| text-overflow | — | ellipsis |
+
+#### ResumeRow — meta row
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | center |
+| gap | — | 8 |
+
+#### ResumeRow — status pill
+
+Copy: `status.{draft|building|over|unresolved|toBuy|complete}`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | center |
+| height | — | 19 |
+| padding-top / bottom | — | 0 |
+| padding-left / right | — | 7 |
+| border-radius | — | 5 |
+| border-width | — | 0 |
+| background | — | status colour at 14–16% alpha (canvas: To buy `rgba(201,162,75,0.16)`, Building `rgba(198,183,154,0.14)`) |
+| color | — | status colour |
+| font-family | — | `var(--font-mono)` |
+| font-size | — | 10 |
+
+Note: `STATES-deck-statuses.md` specifies pill fills as the status colour at `2E` alpha (≈18%)
+with an `80` alpha border. The resume pill in the frame has no border and a lower alpha
+(see §Ambiguities).
+
+#### ResumeRow — count + detail
+
+Structure: `"{matched} / 99"`, optionally followed by ` · ` and the one detail figure that
+explains the status (frame shows `99 / 99 · 3 unowned` for To buy, bare `87 / 99` for Building).
+Detail vocabulary is `decks.detail*` in the copy file. No percentages, denominator always printed.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | `var(--font-mono)` |
+| font-size | — | 10.5 |
+| color | — | `var(--fg-faint)` |
+
+---
+
+## Component: DeckRail ("Your decks · n")
+
+Copy: heading `home.decksHeading(n)`.
+
+### Rail container
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | `var(--surface-inset)` | `var(--surface-inset)` |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border)` | `var(--border)` |
+| border-radius | 14 | 14 |
+| overflow | hidden | hidden |
+| flex | none | — |
+| width | 100% (of the phone column) | 316 (the right column's width) |
+| Rows rendered | 3 | 4 |
+
+### DeckRailRow — root
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| gap | 10 | 10 |
+| padding-top / bottom | 12 | 10 |
+| padding-left / right | 13 | 13 |
+| min-height | 56 | — |
+| border-left-width | 3 | 3 |
+| border-left-style | solid | solid |
+| border-left-color | status colour (`--fg-faint` / `--fg-body` / `--danger` / `--warning` / `--accent` / `--success`) | same |
+| border-bottom-width | 1 (omitted on the last row) | 1 (present on every row, including the last before the footer) |
+| border-bottom-style | solid | solid |
+| border-bottom-color | `var(--border)` (`#211C16`) | `var(--border)` (`#211C16`) |
+
+### DeckRailRow — art spine
+
+**Mobile only.** The desktop rail row has no art spine.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 26 | — |
+| height | 36 | — |
+| border-radius | 4 | — |
+| background | commander art | — |
+| flex | none | — |
+
+### DeckRailRow — text column (mobile) / name (desktop)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | — |
+| flex-direction | column | — |
+| gap | 3 | — |
+| flex | auto | auto |
+| min-width | 0 | 0 |
+
+#### DeckRailRow — deck name
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-display)` | `var(--font-display)` |
+| font-weight | 600 | 600 |
+| font-size | 14.5 | 14 |
+| color | `var(--fg)` | `var(--fg)` |
+| white-space | nowrap | nowrap |
+| overflow | hidden | hidden |
+| text-overflow | ellipsis | ellipsis |
+
+#### DeckRailRow — status line
+
+Copy: `status.*`, plus (mobile only) ` · ` and an abbreviated detail clause
+(frame: `To buy · 3 unowned`, `Unresolved · 2 lines`). Desktop prints the status word alone.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10.5 | 10 |
+| color | status colour | status colour |
+| flex | — | none |
+| position | second line of the text column | right-aligned end of the row |
+
+#### DeckRailRow — count (mobile only)
+
+Structure: `"{matched} / 99"`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | — |
+| font-size | 12 | — |
+| color | `var(--fg)` | — |
+| flex | none | — |
+
+### DeckRail — footer row
+
+**Desktop only.** The phone rail has no footer (see §Ambiguities).
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | center |
+| justify-content | — | space-between |
+| padding-top / bottom | — | 9 |
+| padding-left / right | — | 13 |
+
+#### Footer — "n more"
+
+Copy: `home.decksMore(n)`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | `var(--font-mono)` |
+| font-size | — | 11 |
+| color | — | `var(--fg-faint)` |
+
+#### Footer — "All decks"
+
+Copy: `home.allDecks`. Rendered as plain text, not a pill.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | `var(--font-sans)` |
+| font-size | — | 12.5 |
+| color | — | `var(--fg-body)` |
+| border-width | — | 0 |
+| background | — | — |
+
+---
+
+## Component: CommitmentsCard
+
+**Desktop only.** Not rendered in the phone frame (see §Ambiguities).
+Copy: heading `home.commitmentsHeading`.
+
+### Card root
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | — | `var(--surface-inset)` |
+| border-width | — | 1 |
+| border-style | — | solid |
+| border-color | — | `var(--border)` |
+| border-radius | — | 14 |
+| padding (all sides) | — | 14 |
+| display | — | flex |
+| flex-direction | — | column |
+| gap | — | 11 |
+
+### Commitments row (each of 3)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | baseline |
+| justify-content | — | space-between |
+
+#### Row label
+
+Copy: row 1 `home.inUseRow`, row 2 `home.overCommittedRow`, row 3 `home.toBuyRow`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | `var(--font-sans)` |
+| font-size | — | 13 |
+| color | — | `var(--fg-body)` |
+
+#### Row value
+
+Copy: row 1 `home.inUseValue(n, total)`, row 2 `home.overCommittedValue(n)` (singular/plural),
+row 3 `home.toBuyValue(n, cost)`.
+
+| Property | Mobile | Row 1 (Cards in use) | Row 2 (Spoken for twice) | Row 3 (To buy, all decks) |
+|----------|--------|---|---|---|
+| font-family | — | `var(--font-mono)` | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | — | 13 | 13 | 13 |
+| font-variant-numeric | — | tabular-nums | tabular-nums | tabular-nums |
+| color | — | `var(--accent)` | `var(--danger)` | `var(--fg)` |
+
+### "Review commitments" button
+
+Copy: `home.reviewCommitments`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — | flex |
+| align-items | — | center |
+| justify-content | — | center |
+| width | — | 100% (stretched by the column) |
+| height | — | 32 |
+| border-width | — | 1 |
+| border-style | — | solid |
+| border-color | — | `var(--border-strong)` |
+| border-radius | — | 8 |
+| font-family | — | `var(--font-sans)` |
+| font-size | — | 12.5 |
+| color | — | `var(--fg)` |
+| margin-top | — | 2 |
+
+---
+
+## Component: HomeFirstRun (zero state — collection unread, no decks)
+
+Desktop frame is 768px wide (not 1180). No `Update collection` / `New deck` header buttons;
+no Ready-to-build, resume, deck rail or Commitments.
+
+### First-run content column
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| flex-direction | column | column |
+| flex | auto | auto |
+| min-width | — | 0 |
+| background | `var(--bg)` | `radial-gradient(640px 340px at 40% -40px, var(--accent) 7%, transparent 70%)` over `var(--bg)` |
+
+### First-run — top bar (mobile only)
+
+Identical to the populated Home mobile top bar: `padding:16 16 0`, `display:flex`,
+`align-items:center`, `gap:10`, 22×22 rotate-45 diamond with a 1.5px `var(--accent)` border and
+`border-radius:3`, `flex:auto` spacer, 36×36 avatar (`border-radius:50%`, 1px `var(--border-strong)`,
+`background:var(--surface)`).
+
+### First-run — header block
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| padding-top | 16 | 26 |
+| padding-right | 16 | 28 |
+| padding-bottom | 0 | 0 |
+| padding-left | 16 | 28 |
+
+#### Step kicker
+
+Copy: `firstRun.step(n, of)` → `"Step 1 of 3"`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 10 | 10 |
+| letter-spacing | 0.16em | 0.18em |
+| text-transform | uppercase | uppercase |
+| color | `var(--fg-faint)` | `var(--fg-faint)` |
+| margin-bottom | 6 | 7 |
+
+#### Heading
+
+Copy: `firstRun.heading`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-display)` | `var(--font-display)` |
+| font-weight | 700 | 700 |
+| font-size | 23 | 27 |
+| line-height | 1.15 | 1 |
+| color | `var(--fg)` | `var(--fg)` |
+
+### First-run — checklist body
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| flex-direction | column | column |
+| gap | 11 | 12 |
+| flex | auto | auto |
+| min-height | 0 | 0 |
+| padding-top | 16 | 20 |
+| padding-right | 16 | 28 |
+| padding-bottom | 0 | 26 |
+| padding-left | 16 | 28 |
+
+### Step 1 card (live)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | `var(--surface-inset)` | `var(--surface-inset)` |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--accent)` | `var(--accent)` |
+| border-radius | 14 | 14 |
+| padding-top / bottom | 18 | 18 |
+| padding-left / right | 16 | 18 |
+| display | flex | flex |
+| flex-direction | column | row (default) |
+| align-items | center | center |
+| text-align | center | — |
+| gap | 12 | 18 |
+| flex | none | — |
+
+#### Step 1 — card-fan mark (container)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 88 | 74 |
+| height | 92 | 82 |
+| position | relative | relative |
+| flex | — | none |
+
+#### Step 1 — card-fan, back card (left, rotated CCW)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| left | 8 | 6 |
+| top | 14 | 12 |
+| width | 50 | 44 |
+| height | 68 | 60 |
+| border-radius | 6 | 5 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border-strong)` | `var(--border-strong)` |
+| background | `#211C16` (between `--surface-inset` and `--elevated`) | `#211C16` |
+| transform | rotate(-14deg) | rotate(-14deg) |
+
+#### Step 1 — card-fan, middle card (upright)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| left | 18 | 14 |
+| top | 10 | 9 |
+| width | 50 | 44 |
+| height | 68 | 60 |
+| border-radius | 6 | 5 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border-strong)` | `var(--border-strong)` |
+| background | `var(--elevated)` | `var(--elevated)` |
+| transform | — | — |
+
+#### Step 1 — card-fan, front card ("99", rotated CW)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| position | absolute | absolute |
+| left | 30 | 24 |
+| top | 14 | 12 |
+| width | 50 | 44 |
+| height | 68 | 60 |
+| border-radius | 6 | 5 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--accent)` | `var(--accent)` |
+| background | `var(--surface)` | `var(--surface)` |
+| transform | rotate(13deg) | rotate(13deg) |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| font-family | `var(--font-display)` | `var(--font-display)` |
+| font-weight | 700 | 700 |
+| font-size | 17 | 15 |
+| color | `var(--accent)` | `var(--accent)` |
+| content | literal `99` | literal `99` |
+
+#### Step 1 — text column
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — (children are direct card children) | flex |
+| flex-direction | — | column |
+| gap | 12 (card gap) | 7 |
+| flex | — | auto |
+| min-width | — | 0 |
+
+#### Step 1 — title
+
+Copy: `firstRun.step1Title`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-display)` | `var(--font-display)` |
+| font-weight | 600 | 600 |
+| font-size | 19 | 19 |
+| color | `var(--fg)` | `var(--fg)` |
+
+#### Step 1 — body
+
+Copy: mobile `firstRun.step1BodyShort`, desktop `firstRun.step1Body`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 13.5 | 13 |
+| line-height | 1.6 | 1.6 |
+| color | `var(--fg-muted)` | `var(--fg-muted)` |
+
+#### Step 1 — button group
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| flex-direction | column | row (default) |
+| gap | 8 | 8 |
+| width | 100% | — |
+| margin-top | 2 | 4 |
+
+#### Step 1 — "Upload a CSV" (primary, bone fill)
+
+Copy: `firstRun.uploadCsv`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | — |
+| height | 44 | 32 |
+| padding-left / right | — | 14 |
+| border-radius | 10 | 8 |
+| border-width | 0 | 0 |
+| background | `var(--fg)` | `var(--fg)` |
+| color | `var(--bg)` | `var(--bg)` |
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 14 | 12.5 |
+| font-weight | 600 | 600 |
+
+#### Step 1 — "Paste a list" (hairline)
+
+Copy: `firstRun.pasteList`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | — |
+| height | 44 | 32 |
+| padding-left / right | — | 13 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border-strong)` | `var(--border-strong)` |
+| border-radius | 10 | 8 |
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 14 | 12.5 |
+| color | `var(--fg)` | `var(--fg)` |
+
+### Step 2 / Step 3 cards (locked)
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| background | `var(--surface-rail)` (`#171310`) | `var(--surface-rail)` (`#171310`) |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border)` (`#211C16`) | `var(--border)` (`#211C16`) |
+| border-radius | 14 | 14 |
+| padding-top / bottom | 14 | 15 |
+| padding-left / right | 15 | 18 |
+| display | flex | flex |
+| align-items | center | center |
+| gap | 12 | 14 |
+| min-height | 56 | — |
+| flex | none | — |
+
+#### Locked step — number badge
+
+Content: literal step number (`2`, `3`).
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 22 | 22 |
+| height | 22 | 22 |
+| border-radius | 6 | 6 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border)` (`#2A241D`) | `var(--border)` (`#2A241D`) |
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | center |
+| font-family | `var(--font-mono)` | `var(--font-mono)` |
+| font-size | 11 | 11 |
+| color | `#4A4033` (locked dim — see §Ambiguities) | `#4A4033` |
+| flex | none | none |
+
+#### Locked step — text column
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| flex | auto | auto |
+| min-width | 0 | 0 |
+| display | flex | flex |
+| flex-direction | column | column |
+| gap | 3 | 3 |
+
+#### Locked step — title
+
+Copy: `firstRun.step2Title` / `firstRun.step3Title`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-display)` | `var(--font-display)` |
+| font-weight | 600 | 600 |
+| font-size | 15 | 16 |
+| color | `var(--fg-locked)` (`#6A6152`) | `var(--fg-locked)` (`#6A6152`) |
+
+#### Locked step — reason line
+
+Copy: `firstRun.step2Locked` / `firstRun.step3Locked`. Never blank, never "coming soon".
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 12 | 12.5 |
+| color | `#4A4033` (locked dim) | `#4A4033` |
+
+#### Locked step — padlock glyph
+
+Drawn in the frame as a bare rounded rect (the shackle is not drawn). Implementation should use a
+real padlock icon at these dimensions.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| width | 12 | 12 |
+| height | 14 | 14 |
+| border-width | 1.5 | 1.5 |
+| border-style | solid | solid |
+| border-color | `var(--border-strong)` | `var(--border-strong)` |
+| border-radius | 3 | 3 |
+| flex | none | none |
+
+Accessibility (READINESS "not blocking, eyes on it"): locked step cards and locked nav items
+carry `firstRun.lockedItemAria(label)` as the accessible name, not just visual dimming.
+
+### First-run — Import escape hatch
+
+Desktop: a bottom-pinned row with a prompt and a hairline button. Mobile: the button alone,
+full-width, with **no** prompt text and **no** top divider.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | — (button only) | flex |
+| align-items | — | center |
+| gap | — | 10 |
+| margin-top | — | auto |
+| padding-top | — | 12 |
+| border-top-width | — | 1 |
+| border-top-style | — | solid |
+| border-top-color | — | `var(--border)` (`#211C16`) |
+
+#### Import prompt (desktop only)
+
+Copy: `firstRun.importPrompt`.
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| font-family | — | `var(--font-mono)` |
+| font-size | — | 11 |
+| color | — | `var(--fg-faint)` |
+
+#### "Import a deck" button
+
+Copy: `zero.importDeck` (`'Import a deck'`).
+
+| Property | Mobile | Desktop |
+|----------|--------|---------|
+| display | flex | flex |
+| align-items | center | center |
+| justify-content | center | — |
+| width | 100% | — |
+| height | 44 | 32 |
+| padding-left / right | — | 13 |
+| border-width | 1 | 1 |
+| border-style | solid | solid |
+| border-color | `var(--border-strong)` | `var(--border-strong)` |
+| border-radius | 10 | 8 |
+| font-family | `var(--font-sans)` | `var(--font-sans)` |
+| font-size | 14 | 12.5 |
+| color | `var(--fg)` | `var(--fg)` |
+| flex | none | — |
+
+### First-run — locked navigation (Home's effect on the chrome)
+
+Enumerated here only because first run changes it; the base rail/tab-bar geometry lives in
+`ui-refresh-chrome.md`.
+
+| Property | Mobile (tab bar) | Desktop (rail) |
+|----------|--------|---------|
+| Home item colour | `var(--fg)` on `var(--surface-inset)` background | `var(--fg)` on `var(--elevated)` background |
+| Collection / Commanders / Decks item colour | `#4A4033` | `#4A4033` |
+| Locked items interactive | no — inert | no — inert |
+| Accessible name of a locked item | `firstRun.lockedItemAria(label)` | `firstRun.lockedItemAria(label)` |
+| Divider under the four items | — | 34 × 1, `background:var(--border)` (`#211C16`), `margin: 8 0` |
+| Padlock glyph under the divider | — | 14 × 16, `border:1.5px solid #4A4033`, `border-radius:3` |
+
+---
+
+## State Coverage — Home
+
+Derived from the frames plus the conditional notes in `refresh · copy strings.ts`,
+`README.md` §Gaps and `READINESS.md`. Rows marked **not drawn** have no frame in this package.
+
+| State | Triggering condition | Component rendered | Key props required |
+|---|---|---|---|
+| First run | No collection read AND no decks | `HomeFirstRun` — three-step checklist, step 1 live, steps 2–3 locked, Import escape hatch, nav dimmed | `step`(1,3), `heading`, `step1Title`, `step1Body`/`step1BodyShort`, `step2Title`+`step2Locked`, `step3Title`+`step3Locked`, `importPrompt` (desktop) |
+| Populated | Collection read AND ≥1 buildable commander AND ≥1 deck | `HomeHeader` + `ReadyToBuild` + `ResumeRows` (desktop) + `DeckRail` + `CommitmentsCard` (desktop) | `kicker(cards, when)`, ready candidates, resume decks, deck list, commitments aggregate |
+| Ready card, commander has cards in use | `inUse > 0` | in-use clause rendered in the meta row, `var(--accent)` | `inUse(n)` |
+| Ready card, nothing in use | `inUse === 0` | in-use clause **omitted entirely** — free says nothing (copy file comment; `availability.ts` rule) | — |
+| More candidates above the floor | `moreCount > 0` | "more above" row: text + `All commanders` | `moreAbove(n, floor)`, `allCommanders` |
+| No further candidates | `moreCount === 0` | **not drawn** — is the row hidden, or does `All commanders` stand alone? | — |
+| No buildable commanders at all | Collection read, zero candidates above the threshold | **not drawn** | — |
+| Deck rail with more decks than shown | `total > rowsRendered` (4 desktop / 3 mobile) | footer row with `n more` + `All decks` (desktop only) | `decksMore(n)`, `allDecks` |
+| Deck rail, all decks shown | `total <= rowsRendered` | **not drawn** — footer presence unspecified | — |
+| Home with collection read but zero decks | `deckCount === 0` | **not drawn on Home.** `zero.*` covers the *Decks page*; Home's rail/resume behaviour at zero decks has no frame | `zero.decksHeading`, `zero.decksBody`, `zero.browseCommanders`, `zero.importDeck`, `zero.buildableFrom(buildable, cards)` (Decks page) |
+| Deck row per status | one of the six shipped values | status colour drives the 3px left keyline, the status word and (desktop resume) the pill fill | `status.draft` … `status.complete` |
+| Over-committed cards present | `overCommitted > 0` | Commitments row 2, `var(--danger)` | `overCommittedValue(n)` — singular/plural |
+| No over-committed cards | `overCommitted === 0` | **not drawn** — does the row show `0 cards`, or vanish? | — |
+| Nothing to buy | `toBuyCount === 0` | **not drawn** — same question for Commitments row 3 | — |
+| To-buy aggregate unavailable | No all-decks shopping roll-up exists | **not drawn.** READINESS blocker 5: either the aggregate gets built or the row goes; must not sum client-side over a paginated deck list | `toBuyValue(n, cost)` |
+| Update collection running / partial | Collection read in flight or partially resolved | **not drawn.** READINESS blocker 4 — reuse the manifest-wait pattern | — |
+| Never played | `lastPlayedAt === null` | `decks.lastPlayedNever` — used on deck **tiles** (Decks page). Home's rail and resume rows do not print last-played | `lastPlayedNever` |
+| Loading | Data in flight | **not drawn.** README gap 5 / READINESS: layouts kept, never re-rendered against the new display faces and the 32px button | — |
+
+---
+
+## Interactive states
+
+The frames contain no `:hover`, `:focus`, `:active`, `transition` or `transform` declarations for
+any Home element other than the static `transform: rotate()` values on the card-fan mark and the
+diamond mark, which are recorded above. **No hover, focus or transition values are specified
+anywhere in this package** — see §Ambiguities.
+
+Targets that must be interactive per the design text:
+
+| Element | Behaviour |
+|---|---|
+| ReadyCard "Start this deck" | Opens the builder for that commander |
+| ReadyCard "See the pool" | Opens the pool for that commander; mobile is icon-only and needs an `aria-label` |
+| "All commanders" | Navigates to the commanders list |
+| ResumeRow (whole row) | Opens the builder. No per-row button — README decision 4 |
+| DeckRailRow (whole row) | Opens the deck. No per-row button |
+| "All decks" | Navigates to the Decks index |
+| "Review commitments" | Navigates to the commitments view |
+| "Update collection" | Starts a collection read (state machine unspecified) |
+| "New deck" | The screen's single bone-fill primary — one filled button per screen (README decision 2) |
+| First run, locked steps 2 and 3 | Inert; not focusable as controls; reason carried in the accessible name |
+
+---
+
+## Ambiguities and underspecified items
+
+1. **Mobile Home drops four whole regions.** The 390px Home frame renders header → Ready to build →
+   more-above → deck rail → tab bar. It has **no** `Update collection` button, **no** `New deck`
+   button, **no** "Pick up where you left off" section, **no** deck-rail footer (`n more` /
+   `All decks`) and **no** Commitments card. Nothing in `README.md` or `READINESS.md` says these are
+   deliberately dropped on phone, and Commitments carries figures a phone reader would want.
+   Design call required: are they cut, collapsed, or below the visible fold of the frame?
+
+2. **Mobile fit-line copy has no key.** Desktop renders `home.fitLine(n)` (`"92 of your cards fit"`);
+   the phone frame renders `"92 fit · 12 in use"`. No short-form key exists in
+   `refresh · copy strings.ts`, and the ` · ` joins two keys that are separate spans on desktop.
+
+3. **Art spine placement contradicts README decision 7.** The README says commander art appears as
+   "a 30×42 spine in list rows". Mobile deck-rail rows carry a 26×36 spine; **desktop** deck-rail
+   rows carry none at all; desktop resume rows carry the 30×42. Three different answers.
+
+4. **Resume status pill contradicts `STATES-deck-statuses.md`.** That doc specifies pill fills as
+   the status colour at `2E` alpha (≈18%) with an `80` alpha border. The Home resume pill in the
+   frame has no border and uses 16% (To buy) / 14% (Building). Which rule wins?
+
+5. **Two border weights, one token.** Home uses `#2A241D` for outer card hairlines and `#211C16`
+   for inner dividers and the rail's right edge. R6 offers only `--border` and `--border-strong`,
+   and `--border-strong` is already spoken for by buttons. Either a third token is needed or the
+   two collapse to `--border`.
+
+6. **Locked dim `#4A4033` is not `--fg-locked`.** The design note explicitly names `#4A4033` for
+   dimmed nav items and locked-step reason text, but `--fg-locked` is `#6E6654` and locked step
+   *titles* use `#6A6152` (which is `--fg-locked`). So first run uses two distinct locked greys, the
+   darker of which maps to `--border-dashed`, a border token. Contrast of `#4A4033` on
+   `--surface-rail` is very low and should be checked against WCAG before build.
+
+7. **No hover, focus, active or transition states exist anywhere in this package** for Home. Every
+   button, row and card is drawn in one state only. Focus-visible rings in particular are
+   unspecified for the icon-only mobile "See the pool" button and for the whole-row targets.
+
+8. **Ready-to-build threshold is unset** (READINESS blocker 3). The frame prints "70 or better"
+   because the two cards score 74 and 71; the real rule (top N / score ≥ X / both with a floor) is a
+   product call, and `home.moreAbove` interpolates whatever it is.
+
+9. **`Update collection` has no state machine** (READINESS blocker 4) — no running, no partial-read
+   state is drawn.
+
+10. **Commitments row 3 assumes an all-decks shopping aggregate** (READINESS blocker 5) that may not
+    exist. Must not be summed client-side over a paginated deck list.
+
+11. **The card-fan mark and the padlock are placeholder geometry.** Both are drawn as bare bordered
+    rects. The padlock has no shackle; the fan's three cards have no art. Implementation needs real
+    icons at the recorded dimensions.
+
+12. **Canvas palette ≠ R6 tokens.** The frames render an approximation of Amonkhet/Low Sun — accent
+    `#C9A24B` vs `--accent` `#CF8745`, warning `#E0913C` vs Amonkhet's `--warning` `#DEAA29`, and the
+    five colour pips are all lighter than `--w/--u/--b/--r/--g`. Verify against the variable, never
+    the hex.
+
+13. **`Explorations (1a-1c).dc.html` contains no Home frames at all** — all three packages draw only
+    the Decks screen with filters open. It therefore contradicts nothing in this table, and the
+    README already labels it "not a spec".

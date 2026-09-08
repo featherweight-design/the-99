@@ -23,12 +23,23 @@ const COPY_KEY: Record<Status, keyof typeof refreshCopy.status> = {
   Complete: "complete",
 };
 
-export function StatusPillBadge({ status }: { status: Status }) {
+/**
+ * The tile's geometry, and the default. Home's resume row draws the same pill
+ * shorter, tighter and in flow rather than pinned to art, so the box is a prop
+ * — the label and the fill are not, and stay written once.
+ */
+const TILE_CLASS =
+  "absolute top-[10px] left-[11px] flex h-[24px] items-center rounded-[6px] px-[9px] font-mono text-[11px] sm:h-[22px] sm:px-[8px] sm:text-[10.5px]";
+
+export function StatusPillBadge({
+  status,
+  className = TILE_CLASS,
+}: {
+  status: Status;
+  className?: string;
+}) {
   return (
-    <span
-      className="absolute top-[10px] left-[11px] flex h-[24px] items-center rounded-[6px] px-[9px] font-mono text-[11px] sm:h-[22px] sm:px-[8px] sm:text-[10.5px]"
-      style={statusPillStyle(status)}
-    >
+    <span className={className} style={statusPillStyle(status)}>
       {refreshCopy.status[COPY_KEY[status]]}
     </span>
   );

@@ -1,245 +1,132 @@
-import { Suspense } from "react";
-import Link from "next/link";
-import type { RecentDeck } from "../../lib/home/summary";
-import { COMPLETENESS_THRESHOLDS } from "../../lib/recs/score";
-import { CommanderCount, CommanderCountFallback } from "./commander-count";
-import { HeroCommander, HeroCommanderSkeleton } from "./hero-commander";
+// Signed-in Home. The page authenticates and loads; this draws it.
+//
+// Property table: docs/superpowers/design-tables/ui-refresh-home.md
+// §HomeHeader. The mobile top bar the table draws above the kicker (mark +
+// avatar) is the shell's, not this component's — see components/shell/nav.tsx.
 
-/* §Deck row state color: success ≥ high, warning ≥ mid, danger below —
-   derived from deck cardCount/99 (distinct from the hero bar's
-   EDHREC-owned/total metric, but sharing the same thresholds). */
-function deckStateColor(cardCount: number): string {
-  const pct = (cardCount / 99) * 100;
-  if (pct >= COMPLETENESS_THRESHOLDS.high) return "var(--success)";
-  if (pct >= COMPLETENESS_THRESHOLDS.mid) return "var(--warning)";
-  return "var(--danger)";
+import { GhostButton, PrimaryButton } from "@/components/ui/button";
+import { refreshCopy } from "../../lib/copy/refresh";
+import type { ReceiptCounts } from "../../lib/commanders/in-use";
+import type { DeckListItem } from "../../lib/decks/read";
+import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
+import { formatWhen } from "../../lib/format/when";
+import type { Commitments } from "../../lib/home/commitments";
+import type { CommanderListItem } from "../../lib/recs/recommend";
+import type { ReadySlice } from "../../lib/recs/ready-to-build";
+import { CommitmentsCard } from "./commitments-card";
+import { DeckRail } from "./deck-rail";
+import { ReadyToBuild } from "./ready-to-build";
+import { ResumeDecks, resumeDecks } from "./resume-decks";
+
+export type DashboardProps = {
+  stats: { totalCards: number; uniqueCards: number };
+  /** Null until a collection has been read — `formatWhen` names that state. */
+  lastUpdated: Date | null;
+  ready: ReadySlice<CommanderListItem>;
+  /** Keyed by commander oracleId, and only for the commanders shown. */
+  inUse: Map<string, ReceiptCounts>;
+  decks: DeckListItem[];
+  /** Null when the availability read failed. The card renders nothing, not a zero. */
+  commitments: Commitments | null;
+  shopping: ShoppingRollup;
+  /**
+   * The server's clock, as an ISO string. A `Date` does not survive the
+   * server/client boundary intact, and every relative date on this page has to
+   * be measured against one instant or two of them will disagree.
+   */
+  now: string;
+};
+
+/** §Update collection — refresh icon. 14px, drawn on a 20px viewBox. */
+function RefreshIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M16.5 10a6.5 6.5 0 1 1-2.1-4.8" />
+      <path d="M16.8 3.4v3.2h-3.2" />
+    </svg>
+  );
 }
 
-export function Dashboard({
-  userId,
-  stats,
-  decks,
-  name,
-}: {
-  userId: string;
-  stats: { totalCards: number; uniqueCards: number };
-  decks: RecentDeck[];
-  name: string | null;
-}) {
-  // Streamed on its own so the greeting and the stats panel paint before the
-  // ranked list resolves (#14). Both stat surfaces render it, and both sit
-  // behind their own boundary — the underlying read is shared by React's cache.
-  const commanderCount = (
-    <Suspense fallback={<CommanderCountFallback />}>
-      <CommanderCount userId={userId} />
-    </Suspense>
-  );
+export function Dashboard(props: DashboardProps) {
+  // Both arrive at the copy module pre-formatted: it formats no numbers by
+  // contract, and the greeting's freshness figure is a word, not a date.
+  const cards = props.stats.totalCards.toLocaleString("en-US");
+  const when = formatWhen(props.lastUpdated, new Date(props.now));
 
   return (
-    // §Signed-In Home Dashboard: Main content area — padding 20px mobile / 34px 40px 44px desktop
-    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 bg-[radial-gradient(760px_380px_at_45%_-60px,color-mix(in_oklab,var(--accent)_8%,transparent),transparent_70%)]">
-      {/* ── Greeting header ──
-          §Page heading "Welcome back":
-            Mobile: Cinzel 700 24px primary — content "Welcome back" (no name)
-            Desktop: Cinzel 700 32px primary — content "Welcome back, {name}" */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 700,
-              color: "var(--fg)",
-              margin: 0,
-            }}
-            className="text-[24px] md:text-[32px]"
-          >
-            <span className="md:hidden">Welcome back</span>
-            <span className="hidden md:inline">
-              {name ? `Welcome back, ${name}` : "Welcome back"}
-            </span>
-          </h1>
-          {/* §Stats sub-line:
-              Mobile:  mono 11px muted, mt 6px — "{total} cards · {N} commanders · {M} decks"
-              Desktop: mono 13px muted, mt 8px — "{total} cards · {unique} unique · {N} commanders · {M} decks"
-              The table writes the stat as "commanders buildable"; it ships as
-              "commanders", for the reason `commander-count.tsx` sets out. */}
-          <p
-            className="text-[11px] md:text-[13px] mt-[6px] md:mt-[8px]"
-            style={{
-              fontFamily: "var(--font-mono)",
-              color: "var(--fg-muted)",
-            }}
-          >
-            {/* Mobile: compact */}
-            <span className="md:hidden">
-              {stats.totalCards.toLocaleString()} cards · {commanderCount}{" "}
-              commanders · {decks.length} deck
-              {decks.length === 1 ? "" : "s"}
-            </span>
-            {/* Desktop: full */}
-            <span className="hidden md:inline">
-              {stats.totalCards.toLocaleString()} cards ·{" "}
-              {stats.uniqueCards.toLocaleString()} unique · {commanderCount}{" "}
-              commanders · {decks.length} deck
-              {decks.length === 1 ? "" : "s"}
-            </span>
+    <div className="flex min-h-0 min-w-0 flex-auto flex-col bg-[color:var(--bg)] font-sans text-[color:var(--fg)]">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:gap-[16px] sm:p-[22px_26px_0]">
+        <div className="min-w-0 px-[16px] pt-[14px] pb-0 sm:flex-auto sm:p-0">
+          {/* Kicker above the greeting: the greeting is a hello, and the claim
+              the page is actually making is the collection's size and age. */}
+          <p className="m-0 mb-[6px] font-mono text-[10px] tracking-[0.16em] text-[color:var(--fg-faint)] uppercase sm:mb-[7px] sm:tracking-[0.18em]">
+            {refreshCopy.home.kicker(cards, when)}
           </p>
+          <h1 className="m-0 font-display text-[23px] leading-[1.15] font-bold text-[color:var(--fg)] sm:text-[28px] sm:leading-[1]">
+            {refreshCopy.home.greeting}
+          </h1>
         </div>
 
-      </div>
-
-      {/* ── Hero Commander ──
-          §Section label: mono 10px/11px uppercase 0.16em tracking, fg-faint, mt 22px mb 10px/12px.
-          The label and the "All commanders →" link belong to the same thing and
-          now sit on one row above it: the hero is the top-ranked commander, not
-          a deck, and the ranked list it heads is reached through that link. */}
-      <div className="mt-[22px] mb-[10px] md:mb-[12px] flex items-baseline justify-between">
-        <div
-          className="text-[10px] md:text-[11px] uppercase"
-          style={{
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.16em",
-            color: "var(--fg-faint)",
-          }}
-        >
-          Recommended commander
-        </div>
-        <Link href="/commanders" className="text-[color:var(--accent)]" style={{ fontSize: 13 }}>
-          All commanders →
-        </Link>
-      </div>
-      {/* Streamed — §READINESS item 4: HeroCommander is the expensive component.
-          Suspense boundary lets the rest of the page stream first. */}
-      <Suspense fallback={<HeroCommanderSkeleton />}>
-        <HeroCommander userId={userId} />
-      </Suspense>
-
-      {/* ── Two-column grid: recent decks (1.5fr) + collection stats (1fr) ──
-          §Decks/stats section layout: grid, 1.5fr 1fr, gap 20px */}
-      <div className="mt-6 grid gap-5 md:grid-cols-[1.5fr_1fr]">
-        {/* Recent decks */}
-        <div>
-          {/* §Section label */}
-          <div
-            className="mb-[10px] md:mb-[12px] text-[10px] md:text-[11px] uppercase"
-            style={{
-              fontFamily: "var(--font-mono)",
-              letterSpacing: "0.16em",
-              color: "var(--fg-faint)",
-            }}
+        {/* `contents` at sm rather than a second copy of the pair: the desktop
+            header is one flex row and these two are its last members, while the
+            phone gets its own full-width row at the 44px touch floor. Reversed
+            there so New deck leads, which is the order the Decks header uses.
+            The 390px frame draws neither button; dropping them would cost a
+            phone reader both of the page's actions (table §Ambiguities 1). */}
+        <div className="flex flex-row-reverse gap-[8px] px-[16px] pt-[12px] pb-0 sm:contents">
+          <GhostButton
+            href="/collection/replace"
+            className="flex h-[44px] flex-auto items-center justify-center gap-[8px] rounded-[10px] text-[14px] font-normal text-[color:var(--fg)] sm:h-[32px] sm:flex-none sm:justify-start sm:rounded-[8px] sm:px-[12px] sm:text-[12.5px] sm:text-[color:var(--fg-body)]"
           >
-            Recent decks
-          </div>
-          {decks.length === 0 ? (
-            <p style={{ fontSize: 13, color: "var(--fg-muted)" }}>No decks yet.</p>
-          ) : (
-            // §Deck rows gap: flex-col, gap 10px
-            <ul className="flex flex-col gap-[10px]">
-              {decks.map((d) => (
-                <li key={d.id}>
-                  {/* §Deck row: flex, align-items center, gap 14px, bg surface, border line, border-left 3px state-color,
-                      br 8px, padding 13px 16px, cursor pointer
-                      §Deck row hover: bg surface-raised (Tailwind class, not inline style per adjudication #3) */}
-                  <Link
-                    href={`/decks/${d.id}`}
-                    className="flex items-center gap-[14px] rounded-[8px] p-[13px_16px] bg-surface hover:bg-surface-raised transition-colors border border-[color:var(--border-strong)]"
-                    // Only the left edge stays inline: its colour is derived from the
-                    // deck's card count, so no class can express it.
-                    style={{ borderLeft: `3px solid ${deckStateColor(d.cardCount)}` }}
-                  >
-                    <div className="min-w-0 flex-1">
-                      {/* §Deck name: Cinzel 600 16px primary */}
-                      <div
-                        style={{
-                          fontFamily: "var(--font-display)",
-                          fontWeight: 600,
-                          fontSize: 16,
-                          color: "var(--fg)",
-                        }}
-                      >
-                        {d.name}
-                      </div>
-                      {/* §Deck commander line: 12px muted, mt 2px */}
-                      <div
-                        className="mt-[2px]"
-                        style={{ fontSize: 12, color: "var(--fg-muted)" }}
-                      >
-                        {d.commanderName}
-                      </div>
-                    </div>
-                    {/* §Deck owned count: mono 13px, color = state color */}
-                    <div
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 13,
-                        color: deckStateColor(d.cardCount),
-                      }}
-                    >
-                      {d.cardCount}/99
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <RefreshIcon />
+            {refreshCopy.home.updateCollection}
+          </GhostButton>
+          {/* Ruling 14: the page's one filled button, and bone rather than
+              accent — accent means in use / to buy. */}
+          <PrimaryButton
+            href="/decks/new"
+            className="flex h-[44px] flex-auto items-center justify-center rounded-[10px] text-[14px] sm:h-[32px] sm:flex-none sm:justify-start sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]"
+          >
+            {refreshCopy.home.newDeck}
+          </PrimaryButton>
+        </div>
+      </header>
+
+      {/* §HomeBody. One row of two columns on desktop; on a phone the same two
+          columns stack, and what phone drops it drops inside each section
+          rather than here — the resume rows and Commitments carry their own
+          `hidden sm:*`, so the order the reader gets is heroes, then decks. */}
+      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-0 sm:flex-row sm:gap-[20px] sm:p-[20px_26px_26px]">
+        <div className="flex min-w-0 flex-col gap-[12px] sm:flex-auto sm:gap-[11px]">
+          <ReadyToBuild ready={props.ready} inUse={props.inUse} />
+          {/* Sliced here rather than inside the section: the rail beside it
+              renders the same array in `listDecksWithStats`'s own order, and
+              one list cannot be in two orders at once. */}
+          <ResumeDecks decks={resumeDecks(props.decks)} shopping={props.shopping} />
+        </div>
+
+        <div className="flex flex-col gap-[12px] sm:w-[316px] sm:flex-none sm:gap-[11px]">
+          <DeckRail decks={props.decks} shopping={props.shopping} />
+          {/* Null when the availability read failed. Three zeroes after a
+              failed query is a lie, so the card leaves rather than guessing. */}
+          {props.commitments !== null && (
+            <CommitmentsCard
+              commitments={props.commitments}
+              shopping={props.shopping}
+              totalCards={props.stats.totalCards}
+            />
           )}
         </div>
-
-        {/* Collection stats + Update entry (mobile) */}
-        <aside>
-          {/* §Section label */}
-          <div
-            className="mb-[10px] md:mb-[12px] text-[10px] md:text-[11px] uppercase"
-            style={{
-              fontFamily: "var(--font-mono)",
-              letterSpacing: "0.16em",
-              color: "var(--fg-faint)",
-            }}
-          >
-            Collection
-          </div>
-          {/* §Collection Stats Panel container: bg surface, border line, br 12px, padding 6px 20px */}
-          <div
-            className="rounded-[12px] px-5 py-[6px]"
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border-strong)",
-            }}
-          >
-            {/* §Stat row: flex, justify-between, align-center, padding 14px 0, border-bottom elevated (except last)
-                §Stat label: 13px secondary (fg-body)
-                §Stat value: mono 15px primary */}
-            {[
-              { label: "Total cards", value: stats.totalCards.toLocaleString() },
-              { label: "Unique", value: stats.uniqueCards.toLocaleString() },
-              // §Collection stats panel gives this row the accent tint; it is the
-              // only stat that is a recommendation rather than a count of what
-              // was uploaded, and the table colours it to say so.
-              { label: "Commanders", value: commanderCount, tint: "var(--accent)" },
-              { label: "Decks built", value: String(decks.length) },
-            ].map(({ label, value, tint }, i, arr) => (
-              <div
-                key={label}
-                className="flex items-center justify-between py-[14px]"
-                style={{
-                  borderBottom:
-                    i === arr.length - 1 ? "none" : "1px solid var(--border)",
-                }}
-              >
-                <span style={{ fontSize: 13, color: "var(--fg-body)" }}>{label}</span>
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 15,
-                    color: tint ?? "var(--fg)",
-                  }}
-                >
-                  {value}
-                </span>
-              </div>
-            ))}
-          </div>
-
-        </aside>
       </div>
     </div>
   );

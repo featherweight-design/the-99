@@ -47,4 +47,8 @@ describe("formatWhen", () => {
     // must not print "-1 days ago".
     expect(formatWhen(new Date(now.getTime() + 60_000), now)).toBe("today");
   });
+
+  it("says never when there is no date at all", () => {
+    expect(formatWhen(null, now)).toBe("never");
+  });
 });

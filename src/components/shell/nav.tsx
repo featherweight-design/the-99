@@ -50,8 +50,9 @@ function isActive(pathname: string, href: string): boolean {
 
 // The handoff writes the locked colour as a bare Amonkhet hex, which would
 // stay Amonkhet under the other five themes. It is spent here as
-// `--fg-locked`, which every theme already defines against its own surfaces.
-// Awaiting Design's ratification; the intent is unchanged.
+// `--fg-disabled`, the token added for exactly this: one step below
+// `--fg-locked` and declared per theme, so each theme dims within its own
+// family rather than towards Low Sun's brass.
 
 // Decorative, because every locked item already carries the reason in words.
 function LockGlyph() {
@@ -61,7 +62,7 @@ function LockGlyph() {
       height="16"
       viewBox="0 0 14 16"
       fill="none"
-      stroke="var(--fg-locked)"
+      stroke="var(--fg-disabled)"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -184,6 +185,11 @@ export function NavRail({ locked, theme }: { locked: boolean; theme: ThemeKey })
               // Locked is tested first: a locked slot stays inert-looking even
               // on its own route, or the active fill would advertise a
               // destination the reader cannot reach from here.
+              // Locked takes `--fg-locked`, not the dimmer `--fg-disabled` the
+              // handoff names: this colour is the icon, and the icon is the
+              // whole of what a rail slot shows. Only the padlock beside it,
+              // which repeats a state already in the accessible name, is dim
+              // enough to sit under the contrast floor.
               className={`flex h-[38px] w-[38px] items-center justify-center rounded-[10px] transition-colors ${
                 isLocked
                   ? "bg-transparent text-[color:var(--fg-locked)]"
@@ -261,6 +267,9 @@ export function TabBar({ locked }: { locked: boolean }) {
             // 13 reserves colour for status. One `color` on the slot serves both
             // the icon (currentColor) and the label.
             // Locked first, as in the rail.
+            // `--fg-locked` for the same reason as the rail, and more so: one
+            // `color` serves the icon and a visible label, and a label under
+            // the 3:1 floor is unreadable however truthful its name.
             className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
               isLocked
                 ? "bg-transparent text-[color:var(--fg-locked)]"

@@ -1,172 +1,175 @@
+// First run — collection unread, no decks. The three-step checklist is the
+// whole page: step 1 live, steps 2 and 3 stated and locked, and an import
+// escape hatch under both so arriving with a decklist and no CSV is not a dead
+// end.
+//
+// Property table: docs/superpowers/design-tables/ui-refresh-home.md
+// §HomeFirstRun. Where the plan and that table disagree on a value the table
+// wins, which is why the locked cards are --surface-rail on --border and the
+// step-1 card is --surface-inset.
+
+import { GhostButton } from "@/components/ui/button";
 import { ReplaceFlow } from "../collection/replace-flow";
-import { shellCopy } from "../../lib/copy/shell";
-import { Crown } from "../ui/crown";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 /**
- * First-run home is the checklist itself (design decision #4).
- * Step 1 is active + wired to the upload flow. Steps 2 & 3 are locked/dimmed.
- * Style per property table §First-Run Home — Hybrid Checklist.
+ * Three overlapping cards, the front one carrying the numeral. Decorative:
+ * it says nothing the heading does not, and a reader walking three empty
+ * rectangles and a bare "99" gets noise instead of the step they are on.
  */
-export function FirstRunChecklist({ name }: { name: string | null }) {
+function CardFan() {
   return (
-    <div className="p-5 md:px-10 md:pt-[34px] md:pb-11 bg-[radial-gradient(640px_340px_at_40%_-40px,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
-      {/* §Page heading:
-          Mobile:  Cinzel 700 23px primary, line-height 1.2
-          Desktop: Cinzel 700 30px primary
-          Content: "Welcome to the 99, {name}" (or "Welcome to the 99" when name null) */}
-      {/* The crown is load-bearing here: this is the first brand moment a new
-          player sees, so it sits above the heading rather than beside it. */}
-      <Crown tone="page" className="mb-[14px]" />
-      <h1
-        className="text-[23px] md:text-[30px]"
-        style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          color: "var(--fg)",
-          lineHeight: 1.2,
-          margin: 0,
-        }}
-      >
-        {name ? `Welcome to the 99, ${name}` : "Welcome to the 99"}
-      </h1>
+    <div
+      aria-hidden="true"
+      className="relative h-[92px] w-[88px] sm:h-[82px] sm:w-[74px] sm:flex-none"
+    >
+      <span
+        // The one fill here with no token of its own: the fan needs three
+        // separated planes and the surface scale has only two steps between
+        // --surface-inset and --elevated, so the third is mixed from the pair.
+        className="absolute top-[14px] left-[8px] h-[68px] w-[50px] -rotate-[14deg] rounded-[6px] border border-[color:var(--border-strong)] bg-[color-mix(in_srgb,var(--surface-inset)_50%,var(--elevated))] sm:top-[12px] sm:left-[6px] sm:h-[60px] sm:w-[44px] sm:rounded-[5px]"
+      />
+      <span className="absolute top-[10px] left-[18px] h-[68px] w-[50px] rounded-[6px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] sm:top-[9px] sm:left-[14px] sm:h-[60px] sm:w-[44px] sm:rounded-[5px]" />
+      <span className="absolute top-[14px] left-[30px] flex h-[68px] w-[50px] rotate-[13deg] items-center justify-center rounded-[6px] border border-[color:var(--accent)] bg-[color:var(--surface)] font-display text-[17px] font-bold text-[color:var(--accent)] sm:top-[12px] sm:left-[24px] sm:h-[60px] sm:w-[44px] sm:rounded-[5px] sm:text-[15px]">
+        99
+      </span>
+    </div>
+  );
+}
 
-      {/* §Page subhead:
-          Mobile:  13px fg-body, margin 8px 0 20px, line-height 1.5
-          Desktop: 15px fg-body, margin 10px 0 28px */}
-      <p
-        className="text-[13px] md:text-[15px] mt-[8px] md:mt-[10px] mb-[20px] md:mb-[28px] leading-[1.5]"
-        style={{ color: "var(--fg-body)" }}
-      >
-        Three steps to your first recommendations.
-      </p>
+/** Drawn in the frame as a bare rounded rect; a real padlock at those dimensions. */
+function Padlock() {
+  return (
+    <svg
+      width="12"
+      height="14"
+      viewBox="0 0 12 14"
+      fill="none"
+      stroke="var(--border-strong)"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      className="flex-none"
+    >
+      <rect x="0.75" y="5.75" width="10.5" height="7.5" rx="3" />
+      <path d="M3.25 5.75V4a2.75 2.75 0 0 1 5.5 0v1.75" />
+    </svg>
+  );
+}
 
-      {/* Step 1 — Active
-          §Step 1 active container:
-            Mobile:  bg surface, border accent, br 12px, padding 16px
-            Desktop: bg surface, border accent, br 14px, padding 26px 28px */}
-      <div
-        className="rounded-[12px] md:rounded-[14px] p-4 md:p-[26px_28px]"
-        style={{
-          background: "var(--surface)",
-          border: "1px solid var(--accent)",
-        }}
+function LockedStep({ n, title, reason }: { n: number; title: string; reason: string }) {
+  // Derived from `n` rather than `useId`, which would make this a client
+  // component for two strings. The checklist is the whole page when it renders
+  // at all, so the step number is unique in the document.
+  const titleId = `first-run-step-${n}-title`;
+  const reasonId = `first-run-step-${n}-reason`;
+  return (
+    // No opacity wrapper over the locked colours: the table states them
+    // outright, and an opacity stacked on top would make the result depend on
+    // whatever surface each theme puts behind the card.
+    // `role="group"` so the label is actually announced: `aria-label` on a
+    // generic div names nothing, and the reason is what tells a screen-reader
+    // user the step is locked rather than merely dim.
+    //
+    // Named from its own two visible strings rather than
+    // `firstRun.lockedItemAria`, which hard-codes the collection as the reason.
+    // That is true of the rail and the tab bar, whose locked items all wait on
+    // the same thing, and true of step 2 — but step 3 waits on a commander, and
+    // a name that said otherwise would be wrong out loud while the card beside
+    // it read correctly.
+    <div
+      role="group"
+      aria-labelledby={`${titleId} ${reasonId}`}
+      className="flex min-h-[56px] flex-none items-center gap-[12px] rounded-[14px] border border-[color:var(--border)] bg-[color:var(--surface-rail)] p-[14px_15px] sm:min-h-0 sm:gap-[14px] sm:p-[15px_18px]"
+    >
+      <span
+        aria-hidden="true"
+        className="flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[6px] border border-[color:var(--border)] font-mono text-[11px] text-[color:var(--fg-disabled)]"
       >
-        <div className="flex items-center gap-3">
-          {/* §Step badge — Active:
-              Mobile:  22×22px, br 999px, bg accent, color base, mono 12px 600
-              Desktop: 26×26px, br 999px, bg accent, color base, mono 13px 600 */}
-          <span
-            className="flex h-[22px] w-[22px] md:h-[26px] md:w-[26px] items-center justify-center rounded-full text-[12px] md:text-[13px]"
-            style={{
-              background: "var(--accent)",
-              color: "var(--bg)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 600,
-            }}
-          >
-            1
-          </span>
-          {/* §Step label — Active:
-              Mobile:  Cinzel 600 16px primary
-              Desktop: Cinzel 600 20px primary */}
-          <span
-            className="text-[16px] md:text-[20px]"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 600,
-              color: "var(--fg)",
-            }}
-          >
-            Upload your collection
-          </span>
-        </div>
-        <div className="mt-5">
-          <ReplaceFlow currentCardCount={0} embedded />
-        </div>
-      </div>
-
-      {/* Steps 2 & 3 — Locked.
-          §Step container — Locked:
-            Mobile:  flex, align-center, gap 10px, padding 15px 16px,
-                     mt 12px (step 2) / 10px (step 3), bg --surface-sunken,
-                     border 1px solid elevated, br 12px, opacity 0.55
-            Desktop: flex, align-center, gap 12px, padding 18px 22px,
-                     mt 14px (step 2) / 12px (step 3), bg --surface-sunken,
-                     border 1px solid elevated, br 14px, opacity 0.55 */}
-      <div
-        className="mt-[12px] md:mt-[14px] flex items-center gap-[10px] md:gap-[12px] rounded-[12px] md:rounded-[14px] p-[15px_16px] md:p-[18px_22px] opacity-[0.55]"
-        style={{
-          background: "var(--surface-sunken)",
-          border: "1px solid var(--border)",
-        }}
-      >
-        {/* §Step badge — Locked:
-            Mobile:  22×22px, br 999px, border --border-dashed, color faint, mono 12px
-            Desktop: 26×26px, br 999px, border --border-dashed, color faint, mono 13px */}
+        {n}
+      </span>
+      <div className="flex min-w-0 flex-auto flex-col gap-[3px]">
         <span
-          className="flex h-[22px] w-[22px] md:h-[26px] md:w-[26px] shrink-0 items-center justify-center rounded-full text-[12px] md:text-[13px]"
-          style={{
-            border: "1px solid var(--border-dashed)",
-            color: "var(--fg-faint)",
-            fontFamily: "var(--font-mono)",
-          }}
+          id={titleId}
+          className="font-display text-[15px] font-semibold text-[color:var(--fg-locked)] sm:text-[16px]"
         >
-          2
+          {title}
         </span>
-        {/* §Step label — Locked:
-            Mobile:  Cinzel 600 15px muted
-            Desktop: Cinzel 600 18px muted */}
-        <span
-          className="text-[15px] md:text-[18px]"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 600,
-            color: "var(--fg-muted)",
-          }}
-        >
-          Review your commanders
-        </span>
-        {/* §Locked step "unlocks after upload" hint (desktop only):
-            ml-auto, mono 11px, color --fg-faint, content "unlocks after upload" (step 2 only) */}
-        <span
-          className="ml-auto hidden md:block"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--fg-faint)",
-          }}
-        >
-          {shellCopy.firstRun.lockedHint}
+        {/* `--fg-locked`, not the `--fg-disabled` the design note names: this
+            line is the only place a sighted reader learns what the step waits
+            on, and that token sits under the 3:1 floor on purpose. The numeral
+            above keeps it — it is `aria-hidden` and its ordinal is already
+            carried by document order. */}
+        <span id={reasonId} className="text-[12px] text-[color:var(--fg-locked)] sm:text-[12.5px]">
+          {reason}
         </span>
       </div>
+      <Padlock />
+    </div>
+  );
+}
 
-      <div
-        className="mt-[10px] md:mt-[12px] flex items-center gap-[10px] md:gap-[12px] rounded-[12px] md:rounded-[14px] p-[15px_16px] md:p-[18px_22px] opacity-[0.55]"
-        style={{
-          background: "var(--surface-sunken)",
-          border: "1px solid var(--border)",
-        }}
-      >
-        <span
-          className="flex h-[22px] w-[22px] md:h-[26px] md:w-[26px] shrink-0 items-center justify-center rounded-full text-[12px] md:text-[13px]"
-          style={{
-            border: "1px solid var(--border-dashed)",
-            color: "var(--fg-faint)",
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          3
-        </span>
-        <span
-          className="text-[15px] md:text-[18px]"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 600,
-            color: "var(--fg-muted)",
-          }}
-        >
-          Build your first deck
-        </span>
+export function FirstRunChecklist() {
+  const c = refreshCopy.firstRun;
+
+  return (
+    // The accent wash is a desktop figure: 640×340 at 40% of a 390px frame is
+    // the whole screen, which is a tint over the page rather than the light
+    // behind the fan the frame draws. Phone gets `--bg` alone.
+    <div className="flex min-w-0 flex-auto flex-col sm:bg-[radial-gradient(640px_340px_at_40%_-40px,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
+      <div className="p-[16px_16px_0] sm:p-[26px_28px_0]">
+        {/* The kicker replaces the shipped "Three steps to your first
+            recommendations." — it says the same thing in four words, and the
+            copy file has no string for the sentence. */}
+        <p className="m-0 mb-[6px] font-mono text-[10px] tracking-[0.16em] text-[color:var(--fg-faint)] uppercase sm:mb-[7px] sm:tracking-[0.18em]">
+          {c.step(1, 3)}
+        </p>
+        {/* No Crown above this: the card fan is the brand moment now, and two
+            marks stacked over one heading is one too many. */}
+        <h1 className="m-0 font-display text-[23px] font-bold leading-[1.15] text-[color:var(--fg)] sm:text-[27px] sm:leading-none">
+          {c.heading}
+        </h1>
+      </div>
+
+      <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_0] sm:gap-[12px] sm:p-[20px_28px_26px]">
+        {/* Step 1 — live */}
+        <div className="flex flex-none flex-col items-center gap-[12px] rounded-[14px] border border-[color:var(--accent)] bg-[color:var(--surface-inset)] p-[18px_16px] text-center sm:flex-row sm:gap-[18px] sm:p-[18px] sm:text-left">
+          <CardFan />
+          <div className="flex w-full min-w-0 flex-col items-center gap-[12px] sm:w-auto sm:flex-auto sm:items-stretch sm:gap-[7px]">
+            <span className="font-display text-[19px] font-semibold text-[color:var(--fg)]">
+              {c.step1Title}
+            </span>
+            {/* One paragraph, two strings: the phone gets the copy file's own
+                short variant rather than a second copy of the subtree. */}
+            <p className="m-0 text-[13.5px] leading-[1.6] text-[color:var(--fg-muted)] sm:text-[13px]">
+              <span className="sm:hidden">{c.step1BodyShort}</span>
+              <span className="hidden sm:inline">{c.step1Body}</span>
+            </p>
+            {/* ReplaceFlow rather than UploadEntry: preview and confirm are its
+                steps to own, and first run reaches them by the same route the
+                replace page does. */}
+            <ReplaceFlow currentCardCount={0} entry="buttons" embedded />
+          </div>
+        </div>
+
+        <LockedStep n={2} title={c.step2Title} reason={c.step2Locked} />
+        <LockedStep n={3} title={c.step3Title} reason={c.step3Locked} />
+
+        {/* Import escape hatch. The prompt is a desktop nicety; on a phone the
+            button stands alone with no rule above it. */}
+        <div className="mt-auto flex items-center gap-[10px] sm:border-t sm:border-[color:var(--border)] sm:pt-[12px]">
+          <span className="hidden font-mono text-[11px] text-[color:var(--fg-faint)] sm:inline">
+            {c.importPrompt}
+          </span>
+          <GhostButton
+            href="/decks/import"
+            className="flex h-[44px] w-full flex-none items-center justify-center rounded-[10px] text-[14px] font-normal sm:h-[32px] sm:w-auto sm:justify-start sm:rounded-[8px] sm:px-[13px] sm:text-[12.5px]"
+          >
+            {refreshCopy.zero.importDeck}
+          </GhostButton>
+        </div>
       </div>
     </div>
   );
