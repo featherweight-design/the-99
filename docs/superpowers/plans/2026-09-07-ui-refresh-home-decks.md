@@ -2800,6 +2800,32 @@ git add src/app/decks/page.tsx src/components/decks/decks-view.tsx \
 git commit -m "feat(decks): filter, sort and count the deck list"
 ```
 
+### As built — where the code departs from this task
+
+1. **`FilterPanel` → a new `deck-sort-menu.tsx`.** Step 3 names `FilterPanel` for the desktop
+   `Sort · …` trigger. `src/components/collection/filter-panel.tsx` draws a 44px pill with a
+   chevron on its own type scale and takes a ~20-string `FilterPanelCopy` contract; the design
+   table specifies a 32px hairline trigger at 12.5px. Every trigger row would have failed the
+   verify. `DeckSortMenu` draws the trigger the table specifies and reuses the geometry the same
+   frames already draw for the tile's overflow menu — the only menu the Decks frames specify.
+2. **The zero-state card fan is local divs, not `CardFan`.** Step 4 says reuse
+   `src/components/marks.tsx`'s `CardFan` and restyle only if the angles disagree. The card
+   dimensions disagree too, not just the angles, so the mark is three positioned divs inside
+   `decks-zero.tsx`. `CardFan` is untouched and still used elsewhere.
+3. **The chip row is phone-only.** Step 3 says "phone and desktop"; the design table renders no
+   chip row at desktop, where the filter column already shows every active value with its
+   checkbox ticked. The table wins.
+4. **`sm:` throughout, not `md:`.** Step 3's body says `hidden md:flex` for the filter column.
+   The refresh's breakpoint is 640px, which is Tailwind's `sm:`.
+5. **`readySlice(ranked.items).set.length` does not exist.** The shipped `ReadySlice` is
+   `{ shown, moreCount, floor }`. The page uses
+   `Math.min(READY_COUNT, ranked?.items.length ?? 0)` — the same set size, and not a second
+   threshold.
+6. **The test drops the `next/navigation` mock and widens the fixture.** The view uses no router,
+   and `DeckListItem` requires `toBuyCount`. Both breakpoint variants render in jsdom, so the
+   filter checkbox and the two links are addressed with `getAllByRole`.
+7. **No view toggle.** Table ambiguity 3 leaves it undocumented; nothing was built for it.
+
 ---
 ## Task 14: The Home header, and what the page loads
 

@@ -1,0 +1,97 @@
+"use client";
+
+// The desktop `Sort · last played` trigger and its menu. Phone has no sort
+// trigger at all — the sheet carries the order there (table §Ambiguities 2).
+//
+// Not `FilterPanel`, which is the collection bar's control: its trigger is a
+// 44px pill with a chevron and its own type scale, and every one of those is a
+// property this surface draws differently. The menu below borrows the geometry
+// the same surface already draws for the tile's overflow menu, which is the
+// only menu the Decks frames specify.
+
+import { useEffect, useId, useRef, useState } from "react";
+import { refreshCopy } from "../../lib/copy/refresh";
+import { DECK_SORT_LABELS, DECK_SORT_ORDER, type DeckSort } from "../../lib/decks/sort";
+
+export function DeckSortMenu({
+  sort,
+  onChange,
+}: {
+  sort: DeckSort;
+  onChange: (next: DeckSort) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    // `pointerdown` rather than `mousedown`, matching `SortMenu` and
+    // `AccountMenu`: on touch the latter only arrives after the gesture ends.
+    const onDown = (e: PointerEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Focus is inside the menu by now; dismissing without handing it back
+      // would drop the reader at the top of the document.
+      setOpen(false);
+      trigger.current?.focus();
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={root} className="relative hidden sm:block">
+      <button
+        ref={trigger}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-[32px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[13px] py-0 font-sans text-[12.5px] text-[color:var(--fg-body)]"
+      >
+        {refreshCopy.decks.sort(DECK_SORT_LABELS[sort])}
+      </button>
+
+      {open && (
+        <div
+          id={menuId}
+          role="menu"
+          aria-label={refreshCopy.filters.sortHeading}
+          className="absolute right-0 top-full z-20 mt-[6px] w-[186px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] shadow-[0_22px_50px_rgba(0,0,0,0.6)]"
+        >
+          {DECK_SORT_ORDER.map((option, i) => (
+            <button
+              key={option}
+              type="button"
+              role="menuitemradio"
+              aria-checked={sort === option}
+              onClick={() => {
+                onChange(option);
+                setOpen(false);
+                trigger.current?.focus();
+              }}
+              className={`flex h-[38px] w-full cursor-pointer items-center border-x-0 border-b-0 border-solid px-[13px] text-left font-sans text-[13px] ${
+                i === 0 ? "border-t-0" : "border-t border-t-[color:var(--border)]"
+              } ${
+                sort === option
+                  ? "bg-[color:var(--elevated)] text-[color:var(--fg)]"
+                  : "bg-transparent text-[color:var(--fg)]"
+              }`}
+            >
+              {DECK_SORT_LABELS[option]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,270 @@
+"use client";
+
+// The Decks surface. The page authenticates and loads; this owns the filters,
+// the order, and the URL that carries both.
+//
+// Filtering and sorting never navigate: the server already sent every deck, so
+// a router call would refetch a list that has not changed. The URL is written
+// with `history.replaceState` instead, which is what AGENTS.md's "Caching a
+// list a reader flips between" asks for on a re-parameterised list.
+
+import { useCallback, useMemo, useState } from "react";
+import { colorNames } from "../../lib/copy/color-labels";
+import { refreshCopy } from "../../lib/copy/refresh";
+import {
+  EMPTY_FILTERS,
+  activeFilterCount,
+  filterDecks,
+  filtersFromParams,
+  filtersToParams,
+  type DeckFilters,
+} from "../../lib/decks/filter";
+import type { DeckListItem } from "../../lib/decks/read";
+import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
+import { sortDecks, type DeckSort } from "../../lib/decks/sort";
+import { DeckCard } from "./deck-card";
+import { DeckFilterColumn, PLAYED_LABEL, STATUS_COPY_KEY } from "./deck-filter-column";
+import { DeckFilterSheet } from "./deck-filter-sheet";
+import { DeckSortMenu } from "./deck-sort-menu";
+import { DecksZero } from "./decks-zero";
+import { ImportDeckButton } from "./import-deck-button";
+import { NewDeckButton } from "./new-deck-button";
+import { SearchIcon } from "./search-icon";
+
+export type DecksViewProps = {
+  decks: DeckListItem[];
+  shopping: ShoppingRollup;
+  /** Commanders in the ready-to-build set. Only the zero state prints it. */
+  buildable: number;
+  /** Copies owned, not distinct names — the second half of `buildableFrom`. */
+  cards: number;
+  /**
+   * The server's clock, as an ISO string. A `Date` prop does not survive the
+   * server/client boundary intact, and every consumer here — `formatWhen`, the
+   * `This month` predicate — wants the server's instant, not the browser's.
+   */
+  now: string;
+};
+
+/** The parameters this view owns. Everything else on the URL is left alone. */
+const OWNED_PARAMS = ["status", "colour", "played", "q", "sort"];
+
+type ViewState = { filters: DeckFilters; sort: DeckSort };
+
+/** One removable chip per active value — a heading with two values has two. */
+function chipLabels(filters: DeckFilters): { key: string; label: string; without: DeckFilters }[] {
+  return [
+    ...filters.statuses.map((status) => ({
+      key: `status:${status}`,
+      label: refreshCopy.status[STATUS_COPY_KEY[status]],
+      without: { ...filters, statuses: filters.statuses.filter((s) => s !== status) },
+    })),
+    ...filters.colours.map((colour) => ({
+      key: `colour:${colour}`,
+      label: colorNames([colour])[0],
+      without: { ...filters, colours: filters.colours.filter((c) => c !== colour) },
+    })),
+    ...(filters.played
+      ? [
+          {
+            key: "played",
+            label: PLAYED_LABEL[filters.played],
+            without: { ...filters, played: null },
+          },
+        ]
+      : []),
+    // The search chip is labelled with the term itself: "Search" would name the
+    // field rather than the filter, and the reader needs to see what is on.
+    ...(filters.search.trim()
+      ? [{ key: "q", label: filters.search.trim(), without: { ...filters, search: "" } }]
+      : []),
+  ];
+}
+
+export function DecksView({ decks, shopping, buildable, cards, now: nowIso }: DecksViewProps) {
+  // Lazily seeded from the live URL, so a shared link paints filtered on the
+  // first frame rather than painting everything and then correcting itself.
+  const [state, setState] = useState<ViewState>(() =>
+    filtersFromParams(new URLSearchParams(window.location.search)),
+  );
+  const [sheet, setSheet] = useState<{ open: boolean; focusSearch: boolean }>({
+    open: false,
+    focusSearch: false,
+  });
+
+  const apply = useCallback((next: ViewState) => {
+    setState(next);
+    const params = filtersToParams(next.filters, next.sort);
+    // Every parameter this view does not own is read back off the live URL and
+    // preserved — `?select=` rides in from the synergy picks and must survive a
+    // filter click.
+    const live = new URLSearchParams(window.location.search);
+    for (const key of OWNED_PARAMS) live.delete(key);
+    for (const [key, value] of params) live.set(key, value);
+    const query = live.toString();
+    window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
+  }, []);
+
+  const onFilters = useCallback(
+    (filters: DeckFilters) => apply({ filters, sort: state.sort }),
+    [apply, state.sort],
+  );
+  const onSort = useCallback(
+    (sort: DeckSort) => apply({ filters: state.filters, sort }),
+    [apply, state.filters],
+  );
+
+  // Derived during render, never in an effect: an effect would paint the
+  // previous list once before correcting it.
+  const now = useMemo(() => new Date(nowIso), [nowIso]);
+  const sorted = useMemo(() => sortDecks(decks, state.sort), [decks, state.sort]);
+  const shown = useMemo(
+    () => filterDecks(sorted, state.filters, now),
+    [sorted, state.filters, now],
+  );
+
+  const active = activeFilterCount(state.filters);
+  const zero = decks.length === 0;
+  const chips = chipLabels(state.filters);
+
+  return (
+    <div className="flex min-w-0 flex-auto flex-col bg-[color:var(--bg)] font-sans text-[color:var(--fg)]">
+      <header className="flex items-center gap-[10px] px-[16px] pt-[16px] pb-0 sm:gap-[12px] sm:border-x-0 sm:border-t-0 sm:border-b sm:border-solid sm:border-b-[color:var(--border)] sm:px-[22px] sm:pb-[16px]">
+        <h1 className="m-0 font-display text-[22px] font-bold text-[color:var(--fg)] sm:text-[20px]">
+          {refreshCopy.decks.title}
+        </h1>
+        {/* The count and the grid are one statement: this figure is the number
+            of tiles rendered, and if they disagree the count is the bug. */}
+        {!zero && (
+          <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)] sm:text-[11px]">
+            {refreshCopy.decks.shown(shown.length, decks.length)}
+          </span>
+        )}
+        <div className="flex-auto" />
+
+        {!zero && (
+          <>
+            <button
+              type="button"
+              onClick={() => setSheet({ open: true, focusSearch: true })}
+              aria-label={refreshCopy.filters.searchPlaceholder}
+              className="flex h-[36px] w-[36px] cursor-pointer items-center justify-center rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 text-[color:var(--fg-body)] sm:hidden"
+            >
+              <SearchIcon size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSheet({ open: true, focusSearch: false })}
+              className={`flex h-[36px] cursor-pointer items-center gap-[7px] rounded-[10px] border border-solid bg-transparent px-[12px] text-[13px] sm:hidden ${
+                active > 0
+                  ? "border-[color:var(--accent)] text-[color:var(--fg)]"
+                  : "border-[color:var(--border-strong)] text-[color:var(--fg-body)]"
+              }`}
+            >
+              {refreshCopy.filters.sheetTitle}
+              {active > 0 && (
+                <span className="rounded-[4px] bg-[color:var(--accent)] px-[5px] py-[1px] font-mono text-[10px] text-[color:var(--bg)]">
+                  {refreshCopy.filters.triggerBadge(active)}
+                </span>
+              )}
+            </button>
+            <DeckSortMenu sort={state.sort} onChange={onSort} />
+          </>
+        )}
+
+        {/* Both survive every state, zero included: the toolbar does not change
+            shape between empty and populated (README decision 6). Desktop only
+            here — the phone pair is the full-width row below. */}
+        <div className="hidden sm:flex sm:items-center sm:gap-[10px]">
+          <ImportDeckButton />
+          <NewDeckButton />
+        </div>
+      </header>
+
+      <div className="flex gap-[8px] px-[16px] pt-[12px] pb-0 sm:hidden">
+        <NewDeckButton />
+        <ImportDeckButton />
+      </div>
+
+      {active > 0 && (
+        <div className="flex flex-wrap gap-[7px] px-[16px] pt-[12px] pb-0 sm:hidden">
+          {chips.map((chip) => (
+            <button
+              key={chip.key}
+              type="button"
+              aria-label={refreshCopy.filters.chipRemoveAria(chip.label)}
+              onClick={() => onFilters(chip.without)}
+              className="flex h-[28px] cursor-pointer items-center gap-[7px] rounded-full border-none bg-[color:var(--elevated)] px-[10px] font-mono text-[11px] text-[color:var(--fg-body)]"
+            >
+              {chip.label}
+              <span aria-hidden="true" className="text-[color:var(--fg-faint)]">
+                ×
+              </span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => onFilters(EMPTY_FILTERS)}
+            className="flex h-[28px] cursor-pointer items-center border-none bg-transparent px-[10px] font-mono text-[11px] text-[color:var(--fg-muted)]"
+          >
+            {refreshCopy.filters.clear}
+          </button>
+        </div>
+      )}
+
+      {zero ? (
+        <DecksZero buildable={buildable} cards={cards} />
+      ) : (
+        <div className="flex min-h-0 flex-auto flex-col sm:flex-row">
+          <DeckFilterColumn
+            filters={state.filters}
+            onChange={onFilters}
+            sort={state.sort}
+            onSortChange={onSort}
+            shown={shown.length}
+            total={decks.length}
+          />
+
+          {shown.length === 0 ? (
+            // No mark and no body copy: the zero state offers two routes in,
+            // and this one offers the single route out of a filter the reader
+            // set themselves. Conflating them makes an empty grid read as a
+            // broken app.
+            <div className="flex min-h-0 flex-auto flex-col items-center justify-center gap-[14px] px-[22px] py-[40px] text-center">
+              <h2 className="m-0 font-display text-[20px] font-bold text-[color:var(--fg)]">
+                {refreshCopy.filters.emptyHeading}
+              </h2>
+              <button
+                type="button"
+                onClick={() => apply({ filters: EMPTY_FILTERS, sort: state.sort })}
+                className="flex h-[44px] cursor-pointer items-center rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] text-[14px] text-[color:var(--fg)] sm:h-[32px] sm:rounded-[8px] sm:text-[12.5px]"
+              >
+                {refreshCopy.filters.emptyAction}
+              </button>
+            </div>
+          ) : (
+            <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-0 sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
+              {shown.map((deck) => (
+                <li key={deck.id} className="flex-none">
+                  <DeckCard deck={deck} shopping={shopping.byDeck.get(deck.id)} now={now} />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <DeckFilterSheet
+            filters={state.filters}
+            onChange={onFilters}
+            sort={state.sort}
+            onSortChange={onSort}
+            shown={shown.length}
+            total={decks.length}
+            open={sheet.open}
+            onDismiss={() => setSheet({ open: false, focusSearch: false })}
+            autoFocusSearch={sheet.focusSearch}
+          />
+        </div>
+      )}
+    </div>
+  );
+}

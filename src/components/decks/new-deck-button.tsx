@@ -1,18 +1,20 @@
 import { PrimaryButton } from "@/components/ui/button";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 /**
- * "New Deck" CTA — server component. `PrimaryButton` renders a next/link here
- * rather than a button, because it is given an `href`.
- * §New Deck button: IBM Plex Sans 600 14px var(--bg) on var(--accent) accent.
- * Mobile: full-width 11px 0 padding. Desktop: auto-width 11px 20px.
+ * The one filled button on the Decks surface. Server component: `PrimaryButton`
+ * renders a next/link here rather than a button, because it is given an `href`.
+ *
+ * Phone puts it first in a full-width pair under the header row at the 44px
+ * touch floor; desktop puts it last in the header row at 32px.
  */
 export function NewDeckButton() {
   return (
     <PrimaryButton
       href="/decks/new"
-      className="block w-full text-center text-[14px] py-[11px] px-0 md:inline-block md:w-auto md:px-[20px]"
+      className="flex h-[44px] flex-auto items-center justify-center rounded-[10px] text-[14px] sm:h-[32px] sm:flex-none sm:justify-start sm:rounded-[8px] sm:px-[14px] sm:text-[12.5px]"
     >
-      New Deck
+      {refreshCopy.decks.newDeck}
     </PrimaryButton>
   );
 }
