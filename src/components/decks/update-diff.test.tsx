@@ -22,6 +22,7 @@ function row(id: string, over: Partial<DeckUpdatePreview["out"][number]> = {}) {
     quantity: 1,
     auto: true,
     owned: true,
+    availability: null,
     ...over,
   };
 }
@@ -207,15 +208,52 @@ describe("UpdateDiff groups", () => {
     expect(screen.getByText(copy.inMeta("1", "1"))).toBeInTheDocument();
   });
 
-  // An owned row dropped the buy pill entirely, so its type line sat where
-  // an unowned row's did not. The slot is reserved rather than removed.
-  it("keeps the buy slot's width on a row that needs no buying", () => {
-    const { container } = renderDiff({ in: [row("in-1", { owned: true })] });
+  // The floor gives every row one availability slot occupant and never two:
+  // the buy tag when the card is unowned, the marker when it is owned, and
+  // nothing at all when an owned card has no claims competing for it.
+  it("draws the buy tag only on a row that needs buying", () => {
+    const buyIn = (owned: boolean) => {
+      const { container } = renderDiff({ in: [row("in-1", { owned })] });
+      return Array.from(container.querySelectorAll("span")).filter(
+        (s) => s.textContent === "buy",
+      );
+    };
+    expect(buyIn(false)).toHaveLength(1);
+    expect(buyIn(true)).toHaveLength(0);
+  });
+
+  // The slot sits on the name's side of the fixed columns, so a row losing its
+  // tag widens the name rather than shifting the type line — the alignment the
+  // old reserved-width pill was there to protect.
+  it("puts the availability slot before the type line, not after it", () => {
+    const { container } = renderDiff({ in: [row("in-1", { owned: false })] });
     const buy = Array.from(container.querySelectorAll("span")).find(
       (s) => s.textContent === "buy",
-    );
-    expect(buy).toBeDefined();
-    expect(buy!.className).toContain("invisible");
+    )!;
+    const typeLine = container.querySelector("span[class*='w-[150px]']")!;
+    expect(buy.compareDocumentPosition(typeLine)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  // The rollup was read with `excludeDeckId`, so a removal reaches `free === 0`
+  // by having its own claim subtracted and is not competed for at all. An
+  // addition is not on the deck yet, so the same figures there are a genuine
+  // claim by some other finished deck.
+  it("reads free === 0 as self-explained on a removal and hard on an addition", () => {
+    const spokenFor = {
+      owned: 1,
+      hard: 1,
+      soft: 0,
+      free: 0,
+      claims: [{ id: "d2", name: "Atraxa", quantity: 1, mature: true }],
+    };
+    const namesClaimant = (group: "out" | "in") => {
+      const { container } = renderDiff({
+        [group]: [row(`${group}-1`, { owned: true, availability: spokenFor })],
+      });
+      return container.textContent!.includes("Atraxa");
+    };
+    expect(namesClaimant("out")).toBe(false);
+    expect(namesClaimant("in")).toBe(true);
   });
 
   it("keeps the auto slot's width on a removal the app did not place", () => {

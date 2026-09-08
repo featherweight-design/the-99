@@ -7,6 +7,8 @@ import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "..
 import { requireUserId } from "../../lib/auth";
 import { loadMatchInputs } from "../../lib/collection/import";
 import type { DetailedCatalogCard } from "../../lib/collection/match";
+import type { Availability } from "../../lib/decks/availability";
+import { loadAvailability } from "../../lib/decks/availability-query";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
 import { claimSurfaces } from "../../lib/decks/revalidate";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
@@ -25,8 +27,16 @@ export type UpdateDeckInput = {
   source: DeckImportSource;
 };
 
-/** A row of the `in` group, widened with the fact the pipeline cannot know. */
-export type DeckUpdateInRow = DeckUpdateRow & { owned: boolean };
+/** A row of either changed group — `out` as well as `in` — widened with the
+ *  facts the pipeline cannot know. `availability` is null both for a card the
+ *  player does not own and for every row when the rollup fails; in neither case
+ *  is an availability marker drawn, though an unowned row draws the buy tag in
+ *  that slot instead. A card nothing competes for is a different thing again:
+ *  a real rollup, which the marker itself renders as nothing. */
+export type DeckUpdateChangedRow = DeckUpdateRow & {
+  owned: boolean;
+  availability: Availability | null;
+};
 
 export type DeckUpdatePreview = {
   ok: true;
@@ -37,8 +47,8 @@ export type DeckUpdatePreview = {
   notes: ImportNote[];
   /** Rows this deck is carrying now, whose count the unnamed group's copy prints. */
   existingUnresolvedCount: number;
-  out: DeckUpdateInRow[];
-  in: DeckUpdateInRow[];
+  out: DeckUpdateChangedRow[];
+  in: DeckUpdateChangedRow[];
   unchanged: DeckUpdateRow[];
   /** Copies the silently-reconciled quantities add or drop, summed. Nine Islands
    *  against a deck's twelve is -3, and the landing figure has to carry it: that
@@ -156,6 +166,8 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     };
   }
 
+  const widened = await withFacts(userId, input.deckId, { out: plan.out, in: plan.in });
+
   return {
     ok: true,
     deckName: deck.name,
@@ -163,8 +175,8 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     lineCount: parsed.lineCount,
     notes: parsed.notes,
     existingUnresolvedCount: existingUnresolved.length,
-    out: await withOwnership(userId, plan.out),
-    in: await withOwnership(userId, plan.in),
+    out: widened.out,
+    in: widened.in,
     unchanged: plan.unchanged,
     unchangedDelta: quantityDelta(rows, plan.unchanged),
     unresolved: plan.unresolved,
@@ -183,21 +195,57 @@ function quantityDelta(
   return unchanged.reduce((n, r) => n + (r.quantity - (now.get(r.oracleId) ?? 0)), 0);
 }
 
-/** Ownership is a fact about a user, so it is resolved here rather than in the
- *  pure planner — the same split `importDeck`'s commander picker makes. */
-async function withOwnership(userId: string, rows: DeckUpdateRow[]): Promise<DeckUpdateInRow[]> {
-  if (rows.length === 0) return [];
-  const owned = await db
+/**
+ * Ownership and availability are facts about a user, so they are resolved here
+ * rather than in the pure planner — the same split `importDeck`'s commander
+ * picker makes.
+ *
+ * Both groups are widened in one pass rather than one call each, because both
+ * facts cost a query and neither is per-group: a card leaving and a card
+ * arriving are looked up the same way.
+ *
+ * `excludeDeckId` is this deck, as on the decklist. The player is standing in
+ * the deck they are updating, so its own claim is not competition — without the
+ * exclusion every row leaving the deck would report the deck it is leaving.
+ */
+async function withFacts(
+  userId: string,
+  deckId: string,
+  groups: { out: DeckUpdateRow[]; in: DeckUpdateRow[] },
+): Promise<{ out: DeckUpdateChangedRow[]; in: DeckUpdateChangedRow[] }> {
+  // Distinct ids, not rows: a basic land stacks, and nothing stops a plan from
+  // naming the same card in both groups. Both reads below answer per card, so a
+  // repeat only widens the bind list.
+  const oracleIds = [...new Set([...groups.out, ...groups.in].map((r) => r.oracleId))];
+  if (oracleIds.length === 0) return { out: [], in: [] };
+
+  const ownedRows = await db
     .selectDistinct({ oracleId: collectionItems.oracleId })
     .from(collectionItems)
     .where(
-      and(
-        eq(collectionItems.userId, userId),
-        inArray(collectionItems.oracleId, rows.map((r) => r.oracleId)),
-      ),
+      and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, oracleIds)),
     );
-  const have = new Set(owned.map((r) => r.oracleId));
-  return rows.map((r) => ({ ...r, owned: have.has(r.oracleId) }));
+  const have = new Set(ownedRows.map((r) => r.oracleId));
+
+  // Owned only: the rollup is driven by the collection and cannot return a card
+  // the player does not own. A failed rollup leaves every row markerless rather
+  // than failing the preview, which is the same call the decklist makes.
+  const ownedIds = oracleIds.filter((id) => have.has(id));
+  const availability =
+    ownedIds.length > 0
+      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
+          () => null,
+        )
+      : null;
+
+  const widen = (group: DeckUpdateRow[]): DeckUpdateChangedRow[] =>
+    group.map((r) => ({
+      ...r,
+      owned: have.has(r.oracleId),
+      availability: availability?.get(r.oracleId) ?? null,
+    }));
+
+  return { out: widen(groups.out), in: widen(groups.in) };
 }
 
 export type ApplyDeckUpdateInput = UpdateDeckInput & {

@@ -10,9 +10,19 @@
 // it, the same principle as the add panel's spent slot.
 
 import { deckImportCopy } from "../../lib/copy/deck-import";
+import type { Availability } from "../../lib/decks/availability";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { AvailabilityMarker } from "../ui/availability-marker";
+import { OwnershipDot } from "../ui/ownership-dot";
+import { ROW_RADIUS, ROW_SHELL } from "../ui/row-shell";
+import { BuyTag } from "./buy-tag";
 
 const copy = deckImportCopy.update.diff;
+
+// Both plates the diff rows sit on, so the over-committed marker's seam matches
+// what is actually behind it rather than the base canvas.
+const SEAM_SURFACE = "var(--surface)";
+const SEAM_KEPT = "var(--elevated-hover)";
 
 export type DiffRowCard = {
   oracleId: string;
@@ -22,23 +32,14 @@ export type DiffRowCard = {
    *  import's rows alike, so it carries no marker of its own. */
   auto: boolean;
   owned: boolean;
+  /** Governs the availability marker only, never the slot's occupant. Null for
+   *  an unowned card and for a failed rollup alike, and neither draws a marker.
+   *  A card nothing competes for is NOT null: it carries a real rollup that the
+   *  marker itself renders as nothing, so null and `free` reach the same drawing
+   *  by different routes and must not be collapsed into one. An unowned row
+   *  still fills the slot, with the buy tag. */
+  availability: Availability | null;
 };
-
-/** Owned reads as a filled disc, unowned as a dashed ring — the deck surface's
- *  own availability vocabulary. Decorative: the group header carries the
- *  owned/to-buy split in text. */
-function OwnedDot({ owned }: { owned: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={
-        owned
-          ? "w-[7px] h-[7px] rounded-full flex-none bg-[color:var(--success)]"
-          : "w-[7px] h-[7px] rounded-full flex-none bg-transparent [border:1px_dashed_var(--fg-locked)]"
-      }
-    />
-  );
-}
 
 /** The shipped `auto` tag, and nothing in its place when the card is not the
  *  app's. No column records who placed a card, so a second marker would assert
@@ -57,6 +58,47 @@ function Marker({ auto }: { auto: boolean }) {
     >
       auto
     </span>
+  );
+}
+
+/**
+ * The floor's one availability slot: the buy tag when the card is not owned,
+ * the marker when it is. Never both — an unowned card has no claims to compete
+ * over, and a card the player owns is not one to buy.
+ *
+ * An owned card nothing competes for draws nothing here, and that is the slot
+ * being filled correctly rather than left empty: the marker returns null at
+ * `free` on every surface in the app.
+ *
+ * The tag is the full `buy`, not the decklist's collapsed `$` — the collapse is
+ * an All-tab affordance on a list the player is scanning, and this is a diff
+ * they are reading once.
+ *
+ * `selfClaimed` is the caller's answer to the one question `selfExcluded` is
+ * allowed to mean: does THIS deck's own claim account for the shortfall? The
+ * rollup was read with `excludeDeckId`, so a removal — a card the deck holds
+ * today — reaches `free === 0` by having its own claim subtracted, and must not
+ * be called hard. An addition is not on the deck yet, so nothing of its was
+ * subtracted and a `free === 0` there is a genuine claim by another deck.
+ */
+function AvailabilitySlot({
+  card,
+  seam,
+  selfClaimed,
+}: {
+  card: DiffRowCard;
+  seam: string;
+  selfClaimed: boolean;
+}) {
+  if (!card.owned) return <BuyTag variant="row" />;
+  if (!card.availability) return null;
+  return (
+    <AvailabilityMarker
+      availability={card.availability}
+      seam={seam}
+      selfExcluded={selfClaimed}
+      className="flex-none"
+    />
   );
 }
 
@@ -100,15 +142,16 @@ export function DiffRowOut({
   return (
     <div
       className={[
-        "flex items-center gap-[10px] min-h-[44px] rounded-[8px] pl-[12px] pr-[6px]",
+        `${ROW_SHELL} min-h-[44px] pl-[12px] pr-[6px]`,
         kept
           ? "bg-[color:var(--elevated-hover)] [border:1px_solid_var(--accent-shadow)]"
           : "bg-[color:var(--surface)] [border:1px_solid_var(--border)]",
       ].join(" ")}
     >
-      <OwnedDot owned={card.owned} />
+      <OwnershipDot owned={card.owned} size={7} />
       <DiffRowName oracleId={card.oracleId} name={card.name} tone="var(--fg)" />
       <Marker auto={card.auto} />
+      <AvailabilitySlot card={card} seam={kept ? SEAM_KEPT : SEAM_SURFACE} selfClaimed />
       {/* Desktop only: the phone row has no width for it, and the name plus the
           hand-added marker are what the decision turns on. */}
       <span className="hidden md:block font-mono text-[10px] w-[120px] flex-none truncate text-[color:var(--fg-locked)]">
@@ -120,7 +163,7 @@ export function DiffRowOut({
         aria-pressed={kept}
         aria-label={copy.keepAria(card.name)}
         className={[
-          "font-mono text-[11.5px] rounded-[7px] h-[38px] md:h-[34px] min-w-[64px] flex-none",
+          `font-mono text-[11.5px] ${ROW_RADIUS} h-[38px] md:h-[34px] min-w-[64px] flex-none`,
           "flex items-center justify-center cursor-pointer bg-transparent transition-colors",
           kept
             ? "text-[color:var(--accent)] [border:1px_solid_var(--accent)] [background:color-mix(in_oklab,var(--accent)_10%,transparent)]"
@@ -145,24 +188,19 @@ export function DiffRowIn({
   sourceLine: number | null;
 }) {
   return (
-    <div className="flex items-center gap-[10px] min-h-[44px] rounded-[8px] px-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border)]">
-      <OwnedDot owned={card.owned} />
+    <div className={`${ROW_SHELL} min-h-[44px] px-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border)]`}>
+      <OwnershipDot owned={card.owned} size={7} />
       <DiffRowName oracleId={card.oracleId} name={card.name} tone="var(--fg)" />
+      {/* The slot sits BEFORE the type line, not after it. The name is the only
+          flexible item, so anything that can disappear has to sit on the name's
+          side of the fixed columns — with the slot trailing, an owned row's type
+          line landed a tag's width right of an unowned row's. */}
+      <AvailabilitySlot card={card} seam={SEAM_SURFACE} selfClaimed={false} />
       <span className="hidden md:block font-mono text-[10px] w-[150px] flex-none truncate text-[color:var(--fg-locked)]">
         {card.typeLine}
       </span>
-      {/* Both trailing slots keep their width when empty, and the line number is
-          tabular, so the type line lands in the same place on every row whether
-          or not the card is owned and however many digits its source line has. */}
-      <span
-        className={[
-          "font-mono text-[10px] rounded-full px-[8px] py-[3px] flex-none",
-          "text-[color:var(--warning)] [border:1px_solid_var(--accent-shadow)]",
-          card.owned ? "invisible" : "",
-        ].join(" ")}
-      >
-        buy
-      </span>
+      {/* The line number keeps its width and is tabular, so the type line lands
+          in the same place however many digits the source line has. */}
       <span
         // `whitespace-nowrap` because the string has a space in it: a long line
         // number would otherwise wrap and take the row's height with it. The
@@ -187,7 +225,7 @@ export function DiffRowUnnamed({
   sourceLine: number;
 }) {
   return (
-    <div className="flex items-center gap-[10px] min-h-[44px] rounded-[8px] px-[12px] bg-[color:var(--surface-rail)] [border:1px_dashed_var(--accent-shadow)]">
+    <div className={`${ROW_SHELL} min-h-[44px] px-[12px] bg-[color:var(--surface-rail)] [border:1px_dashed_var(--accent-shadow)]`}>
       <span className="flex-auto min-w-0 font-mono text-[13px] truncate text-[color:var(--fg-body)]">
         {rawName}
       </span>
@@ -206,7 +244,7 @@ export function DiffRowUnchanged({
   card: { oracleId: string; name: string; typeLine: string };
 }) {
   return (
-    <div className="flex items-center gap-[10px] min-h-[44px] rounded-[8px] px-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border)]">
+    <div className={`${ROW_SHELL} min-h-[44px] px-[12px] bg-[color:var(--surface)] [border:1px_solid_var(--border)]`}>
       <DiffRowName
         oracleId={card.oracleId}
         name={card.name}

@@ -11,6 +11,7 @@ import { availabilityState } from "../../lib/decks/availability";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityMarker, markerAria } from "../ui/availability-marker";
 import { GhostButton } from "../ui/button";
+import { ROW_SHELL_GRID } from "../ui/row-shell";
 
 const RARITY_DOT: Record<BrowseCard["rarity"], string> = {
   common: "var(--fg-muted)", uncommon: "var(--fg-body)", rare: "var(--accent)", mythic: "var(--warning)",
@@ -32,13 +33,14 @@ export function RowsView({
     <div className="flex-1 flex flex-col gap-[6px] md:gap-[7px] px-[12px] md:px-[34px] pt-[2px] md:pt-[12px] pb-[12px] md:pb-[34px]">
       {cards.map((c) => {
         const state = c.availability ? availabilityState(c.availability) : "free";
-        // Addendum 2 §1: over-committed "keeps its border tint and nothing
-        // else". `--avail-over-border` is the same var(--avail-over-border) the R1 canvas
-        // already draws, so it is not a new hue on this surface.
-        const border =
-          state === "over"
-            ? "[border:1px_solid_var(--avail-over-border)] hover:[border:1px_solid_var(--avail-over-border)]"
-            : "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--border-strong)]";
+        // Addendum 2 §1 gave over-committed a border tint. Card-rows call 4
+        // moved it to an inset ring: a tinted border froze the row's hover
+        // border, so an over-committed row was the one row on the surface that
+        // did not answer the pointer. The ring states the same fact and leaves
+        // the border free to do its own job.
+        const border = "[border:1px_solid_var(--border)] hover:[border:1px_solid_var(--border-strong)]";
+        const overRing =
+          state === "over" ? "[box-shadow:inset_0_0_0_1px_var(--avail-over-border)]" : "";
         return (
         <button
           key={c.oracleId}
@@ -53,10 +55,10 @@ export function RowsView({
             // produces today's exact string, unchanged.
             (c.availability ? markerAria(c.availability, { nameless: true }) : null) ?? undefined,
           )}
-          // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 8px, bg --surface, border 1px --border
+          // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 7px, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: inline values
           // outrank the hover: variants and neither hover state ever lands.
-          className={`grid items-center text-left rounded-lg gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} [grid-template-columns:38px_40px_1fr_auto] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]`}
+          className={`${ROW_SHELL_GRID} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_40px_1fr_auto] md:[grid-template-columns:52px_54px_1fr_150px_92px_18px]`}
         >
           {/* Quantity — §Row: Quantity Column: mono 13px mobile / 14px desktop, --accent, font-weight 500 */}
           <span className="font-mono text-[13px] md:text-[14px] font-medium" style={{ color: "var(--accent)" }}>
