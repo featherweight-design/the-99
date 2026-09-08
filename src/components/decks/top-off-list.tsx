@@ -62,8 +62,7 @@ export interface TopOffListProps {
 /** The three ownership clauses, matching the three occupancies of §8's slot. */
 function ownershipClause(c: TopOffCandidate, newestAsOf: Date | null): string {
   if (!c.owned) {
-    const money = moneyOf(c.price, newestAsOf);
-    return topOffCopy.list.unownedClause(money ?? synergyCopy.figure.synergyNone);
+    return topOffCopy.list.unownedClause(moneyOf(c.price, newestAsOf));
   }
   // A failed availability read is null on an owned row, and the design draws
   // that row with no marker at all. The spoken clause matches it by dropping the
@@ -531,7 +530,11 @@ export function TopOffList({
             <span className="order-2 md:order-2" style={{ color: "var(--warning)" }}>
               {topOffCopy.commit.toBuy(
                 String(buyCount),
-                formatCents(buyMoney.totalCents),
+                // price-strip.tsx's rule, and the same threshold: a figure
+                // stands as soon as one copy is priced, and leaves entirely
+                // when none is. Zero priced copies sum to zero cents, which is
+                // not a price of nothing.
+                buyMoney.pricedCopies > 0 ? formatCents(buyMoney.totalCents) : null,
               )}
             </span>
           )}

@@ -25,6 +25,9 @@ function candidate(id: string, owned: boolean): TopOffCandidate {
   };
 }
 
+/** The price feed's newest as-of, so a priced fixture reads as current. */
+const NOW = new Date("2026-09-08T09:00:00Z");
+
 const candidates = [
   candidate("owned-1", true),
   candidate("owned-2", true),
@@ -42,6 +45,7 @@ function Harness({
   openSlots?: number;
   candidates?: TopOffCandidate[];
   deckOracleIds?: Set<string>;
+  newestAsOf?: Date | null;
   onAnnounce?: (m: string) => void;
   onInflight?: (v: boolean) => void;
   onClose?: (r: "cancel" | "committed") => void;
@@ -59,7 +63,7 @@ function Harness({
       onTickedChange={setTicked}
       declined={declined}
       onDeclinedChange={setDeclined}
-      newestAsOf={null}
+      newestAsOf={props.newestAsOf ?? null}
       onAnnounce={props.onAnnounce ?? (() => {})}
       onInflight={props.onInflight ?? (() => {})}
       onClose={props.onClose ?? (() => {})}
@@ -153,6 +157,33 @@ describe("TopOffList", () => {
 
     expect(screen.getByText(topOffCopy.list.illegalColour)).toBeInTheDocument();
     expect(screen.queryByText(topOffCopy.list.illegalInDeck)).toBeNull();
+  });
+
+  // src/lib/copy/price.ts: silence is a state. A card the feed has never
+  // stocked is not free and not an error, so neither the spoken row nor the
+  // commit bar reaches for a figure it does not have.
+  it("says nothing about money when the buy rows have no price", async () => {
+    render(<Harness candidates={[candidate("buy-1", false)]} />);
+
+    expect(rowBox("buy-1")).toHaveAccessibleName(/Not in your collection\./);
+    await click(rowBox("buy-1"));
+
+    expect(screen.getByText(topOffCopy.commit.toBuy("1", null))).toBeInTheDocument();
+    expect(screen.queryByText(/\$0\.00/)).toBeNull();
+  });
+
+  it("prints the total once a buy row is priced", async () => {
+    const priced = {
+      ...candidate("buy-1", false),
+      price: { cents: 1240, foilCents: null, etchedCents: null, asOf: NOW },
+    };
+    render(<Harness candidates={[priced]} newestAsOf={NOW} />);
+
+    await click(rowBox("buy-1"));
+
+    expect(
+      screen.getByText(topOffCopy.commit.toBuy("1", "$12.40")),
+    ).toBeInTheDocument();
   });
 
   // A failed availability read draws no marker, so it must not speak a count

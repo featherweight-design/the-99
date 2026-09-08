@@ -118,7 +118,12 @@ export const topOffCopy = {
     /** Own it, every copy sleeved elsewhere — the marker's count-only state.
      *  Spoken as a fact, never as a warning: it does not gate the tick. */
     committedClause: (qty: string) => `×${qty} in your collection, none free.`,
-    unownedClause: (price: string) => `Not in your collection, ${price}.`,
+    /** The price is dropped rather than placeholdered when the feed has never
+     *  stocked the card or the read failed. src/lib/copy/price.ts owns that
+     *  rule: silence is the state, and there is no string for "—" or "$0.00".
+     *  Design's wording is untouched; only the figure leaves. */
+    unownedClause: (price: string | null) =>
+      price === null ? 'Not in your collection.' : `Not in your collection, ${price}.`,
 
     /** The cost is spoken from CostPips' own sr-only alternative — the SHIPPED
      *  string, reused, and read before the ownership clause. It is never
@@ -158,8 +163,14 @@ export const topOffCopy = {
     /** The consequence, before the tap. */
     consequence: (total: string) => `${total} of 99 when added`,
     /** The money, said once, in --warning, beside the count it belongs to.
-     *  This is the only figure on the surface that is about spending. */
-    toBuy: (b: string, money: string) => `${b} to buy · ${money}`,
+     *  This is the only figure on the surface that is about spending.
+     *
+     *  The figure leaves when nothing in the pass has a price, for the same
+     *  reason it leaves the ownership clause: a total of zero priced copies is
+     *  not a total of $0.00. The count still stands, because how many there are
+     *  to buy is known either way. */
+    toBuy: (b: string, money: string | null) =>
+      money === null ? `${b} to buy` : `${b} to buy · ${money}`,
     /** Printed when the selection leaves slots open. Not a warning and not a
      *  nudge — an assurance that stopping short is a choice with a way back. */
     slotsStayOpen: (n: string) =>
