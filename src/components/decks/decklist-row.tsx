@@ -238,7 +238,11 @@ export function DecklistRow({
         {hasMetaLine ? (
           // One trigger at both widths — the layout changes, the card does not.
           // Only the figure's wording differs, so only the figure is drawn twice.
-          <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:items-center md:gap-[6px]">
+          // `justify-center` is the column's vertical centring, and it has to be
+          // undone on the row: on desktop this block turns horizontal, where the
+          // same declaration centres the name in a `flex-auto` box wider than its
+          // text and every name in the list floats off the left rail.
+          <div className="flex-auto min-w-0 flex flex-col justify-center md:flex-row md:justify-start md:items-center md:gap-[6px]">
             {/* Name and count share a line so the count stays inline after the
                 name at both widths — on phone the meta line below is its own
                 line, and a count that flowed down with it would read as part

@@ -30,7 +30,14 @@ export function toCardRow(raw: ScryfallCard): CardRow | null {
     oracleId: raw.oracle_id,
     scryfallId: raw.id,
     name: raw.name,
-    manaCost: raw.mana_cost ?? null,
+    // Scryfall omits the top-level `mana_cost` on the two-sided layouts and
+    // prints the cost on the front face instead, so a transform card stored
+    // from the top level alone has no cost and the decklist row draws no pips.
+    // Split and adventure cards carry theirs joined at the top level
+    // (`{1}{R} // {1}{U}`), so asking the face only when the top level is empty
+    // keeps this from having to name the layouts — the same trick as
+    // `backImageUri` below.
+    manaCost: raw.mana_cost || faces?.[0]?.mana_cost || null,
     cmc: raw.cmc ?? 0,
     colorIdentity: raw.color_identity ?? [],
     typeLine: raw.type_line ?? "",
