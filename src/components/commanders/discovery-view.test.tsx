@@ -409,6 +409,12 @@ describe("DiscoveryView", () => {
             `${empty.filteredBody("green", 1)} ${empty.filteredBuiltClause(1, 2, "Green")}`,
       ),
     ).toBeTruthy();
+    // The escape to the other lane is a route, so it is a link with no search
+    // to carry — nothing has been typed here.
+    expect(screen.getByRole("link", { name: empty.filteredScopeLink })).toHaveAttribute(
+      "href",
+      "/commanders",
+    );
   });
 
   // The clause claims those decks would have been in THIS list had they been
@@ -811,9 +817,34 @@ describe("DiscoveryView", () => {
       expect(container.textContent).toContain(search.heldHeading("Atraxa, Praetors' Voice")),
     );
     expect(container.textContent).toContain(excluded.heldScope);
+    // The one cause this lane cannot undo in place: the owned list is another
+    // route, so the correction is a link carrying the search, not a control.
+    expect(screen.getByRole("link", { name: excluded.scopeCta })).toHaveAttribute(
+      "href",
+      "/commanders?q=atraxa",
+    );
     // No `avail` in the ask: this lane scores the whole collection, so the
     // lookup has only one pool it could be asking about.
     expect(findExcluded).toHaveBeenCalledWith("atraxa", { sort: "fit" });
+  });
+
+  // The same correction above a live list, where the aside draws it rather than
+  // the zero state. Both call sites, because the link is the whole fix and a
+  // button here would be the bug again.
+  it("links the aside's correction to the owned lane when a deck already holds the match", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "z", name: "Atraxa, Praetors' Voice", cause: "scope", pct: null },
+    ]);
+    render(<DiscoveryView discovery={list({ items: named(), candidateCount: 2 })} />);
+    fireEvent.change(field(), { target: { value: "the" } });
+
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: excluded.scopeCta })).toHaveAttribute(
+        "href",
+        "/commanders?q=the",
+      ),
+    );
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
   });
 
   // A failed lookup is not an answer. "No commander is named that" covers the

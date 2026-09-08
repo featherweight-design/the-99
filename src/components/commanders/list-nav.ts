@@ -1,108 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { useEffect, useRef } from "react";
 
 /**
- * A URL flip plus the target it is currently heading for.
+ * The other lane, as a URL.
  *
- * `pending` is the value the reader asked for while the server round-trip is
- * still in flight, and null the rest of the time. Controls render it as their
- * selected option so a click registers on the frame it happened rather than when
- * the response lands, and dim themselves while it is set.
- *
- * Only the control goes optimistic. The subtitle, the receipts and the rows all
- * describe the list that is actually on screen, and flipping those early would
- * print a claim about data that has not arrived.
+ * The two lanes were one list under a `?scope=` parameter until the two-lane
+ * split made them routes, so crossing between them is a navigation and every
+ * crossing is a link — middle-clickable, and openable in a new tab. The search
+ * travels with the reader: they typed a name to find one commander, and the
+ * lane they are being sent to is where that commander is.
  */
-export type Nav<T extends string> = {
-  go: (next: T) => void;
-  pending: T | null;
-};
-
-
-// The scope a flip is heading for, parked across the navigation.
-//
-// A flip swaps one list component for the other, so nothing that could hold the
-// message in state survives to speak it, and announcing at click time would name
-// a count the server has not produced yet. The target is written here, and
-// whichever list mounts under it reads it back once and clears it.
-const PENDING_KEY = "commanders:scope-announce";
-
-// Both defaults serialise as absences, so clearing the last parameter empties the
-// string — and `?` alone is a URL the reader would see in their address bar and
-// could paste back in. The bare path is the same page and says nothing extra.
-function href(params: URLSearchParams) {
-  const query = params.toString();
-  return query ? `?${query}` : window.location.pathname;
-}
-
-// `sessionStorage` throws rather than degrades when the store is unavailable —
-// Safari's private mode is the usual one. The parked scope is how a flip gets
-// announced; the flip itself, and the list that lands after it, do not depend on
-// it. So a throwing store costs the message and nothing else.
-function parkScope(scope: "owned" | "play") {
-  try {
-    sessionStorage.setItem(PENDING_KEY, scope);
-  } catch {
-    // No announcement. The navigation still happens.
-  }
-}
-
-// What the server saw for this parameter. Next hands a repeated parameter to the
-// page as an array, and every parser there compares against a string, so
-// `?sort=new&sort=fit` renders the default. `get()` would report the first value
-// instead, and the guards below would then refuse a flip the reader can see the
-// list needs — so a repeat reads as an absence on this side too.
-function readOne(params: URLSearchParams, key: string): string | null {
-  const all = params.getAll(key);
-  return all.length === 1 ? all[0] : null;
-}
-
-function takeScope(): string | null {
-  try {
-    const parked = sessionStorage.getItem(PENDING_KEY);
-    if (parked !== null) sessionStorage.removeItem(PENDING_KEY);
-    return parked;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Flip the scope through the URL, so the two lists stay server-rendered and a
- * shared link opens on the scope it names.
- */
-export function useScopeNav(): Nav<"owned" | "play"> {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [target, setTarget] = useState<"owned" | "play" | null>(null);
-
-  const go = useCallback(
-    (next: "owned" | "play") => {
-      const params = new URLSearchParams(window.location.search);
-      // Reselecting the scope already showing is not a flip. The segmented
-      // control fires on any segment, including the active one, and without
-      // this that click would clear a `sort` the reader had chosen, navigate
-      // for a list that did not change, and park an announcement for it.
-      const current = readOne(params, "scope") === "play" ? "play" : "owned";
-      if (next === current) return;
-      if (next === "play") params.set("scope", "play");
-      else params.delete("scope");
-      // A scope flip cannot carry a sort: the owned scope has no control for one,
-      // so a `sort` surviving the flip would be unreachable and invisible.
-      params.delete("sort");
-      parkScope(next);
-      setTarget(next);
-      startTransition(() => router.replace(href(params), { scroll: false }));
-    },
-    [router],
-  );
-
-  // Masked by `isPending` rather than cleared: the transition ending is the
-  // signal, and a state write to clear it would be a second render for nothing.
-  return { go, pending: isPending ? target : null };
+export function laneHref(lane: "owned" | "discover", query: string): string {
+  const path = lane === "owned" ? "/commanders" : "/discover";
+  const trimmed = query.trim();
+  // A bare `?` is a URL the reader would see in their address bar and could
+  // paste back in. With no search there is nothing to carry, so the path goes
+  // on its own.
+  return trimmed ? `${path}?q=${encodeURIComponent(trimmed)}` : path;
 }
 
 /**
@@ -119,8 +34,8 @@ export function commanderDetailHref(slug: string, avail: "all" | "free"): string
 
 /**
  * Announce a re-rank once the server's new ordering has landed. The list stays
- * mounted across a sort or availability flip, so unlike the scope message these
- * are driven off the prop changing rather than a key parked in `sessionStorage`.
+ * mounted across a sort or availability flip, so this is driven off the prop
+ * changing rather than off the arrival itself.
  */
 export function useRerankAnnouncement<T>(
   value: T,
@@ -136,29 +51,3 @@ export function useRerankAnnouncement<T>(
   }, [value, message, announce]);
 }
 
-/**
- * Announce a flip that has just landed, on the list's own live region. Does
- * nothing on an ordinary page load. The count is the one the server produced,
- * which is why this is read on arrival rather than written at click time.
- *
- * Takes the setter rather than returning a string: each list already owns one
- * live region carrying every message it sends, and a second source of truth for
- * that region would let two announcements race for it.
- */
-export function useScopeAnnouncement(
-  scope: "owned" | "play",
-  count: number,
-  sort: "fit" | "new",
-  announce: (message: string) => void,
-) {
-  // Once per mount. The pending key is consumed on arrival, so a later re-render
-  // with a different count must not speak again.
-  const read = useRef(false);
-
-  useEffect(() => {
-    if (read.current) return;
-    read.current = true;
-    if (takeScope() !== scope) return;
-    announce(discoveryCopy.scope.announce(scope, count, sort));
-  }, [scope, count, sort, announce]);
-}
