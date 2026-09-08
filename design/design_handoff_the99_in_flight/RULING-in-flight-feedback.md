@@ -1,4 +1,10 @@
-# Re-ruling — in-flight feedback for control flips that fetch
+# Re-ruling — in-flight feedback for control flips that fetch (R2)
+
+**R2 corrects the clause map.** R1 ruled on a three-clause subtitle; the page ships four under a
+scope (`page-header.tsx:66-89`, `commander-discovery.ts:50-63`). The fourth names the pool and is
+the only clause `Score against` changes. R1 assigned `re-reading…` to `read against N cards` — the
+one clause guaranteed *not* to move, locked and tested at `list-wiring.test.ts:110-114`. That
+assignment is withdrawn: see ruling 3. Everything else in R1 stands unchanged.
 
 Supersedes the motion clause of three documents (see **Amendments**, last section). Read with
 `design/design_handoff_the99_discovery/CONTROLS-four-above-one-list.md` and
@@ -55,37 +61,57 @@ progress. The gate is a threshold on the pending flag, not a delay on the fetch.
 
 ### 3. Past 500 ms exactly one line changes, and it is a line already on the page.
 
-**No region loader ships.** The header subtitle is the page's standing description of the list, and
-it already restates the population on every flip:
+**No region loader ships.** The header subtitle is the page's standing description of the list.
+Under a scope it has **four** clauses:
 
-> `3,100 commanders you have not built · ranked by best fit · read against 2,805 cards`
+> `3,100 commanders you have not built · ranked by best fit · read against 2,805 cards · free cards only`
 
-It has three clauses, and — this is the ruling — **each fetching control owns exactly one of
-them.** While that control's flip is in flight past the gate, its clause is replaced by its own
-present participle in `--fg-faint` with a single `…`; the other two clauses hold verbatim.
+**Each fetching control owns exactly one clause, and one clause is owned by nobody.** While a
+control's flip is in flight past the gate, its clause is replaced by its own present participle in
+`--fg-faint` with a single `…`; every other clause holds verbatim.
 
-| Pressed control | Clause it owns | In flight |
-|---|---|---|
-| Scope | `3,100 commanders you have not built` | `counting…` |
-| Sort | `ranked by best fit` | `re-ranking…` |
-| Availability (discovery) | `read against 2,805 cards` | `re-reading…` |
+| # | Clause | Owner | In flight | Fits? |
+|---|---|---|---|---|
+| 1 | `3,100 commanders you have not built` | Scope | `counting…` | 10 in 35 |
+| 2 | `ranked by best fit` | Sort — **discovery only** | `re-ranking…` | 11 in 18 |
+| 3 | `read against 2,805 cards` | **nobody** | **never pending** | — |
+| 4 | `free cards only` / `every card you own` | Availability | `re-scoring…` | 11 in 15 |
 
-- `counting… · ranked by best fit · read against 2,805 cards`
-- `3,100 commanders you have not built · re-ranking… · read against 2,805 cards`
-- `3,100 commanders you have not built · ranked by best fit · re-reading…`
+- `counting… · ranked by best fit · read against 2,805 cards · free cards only`
+- `3,100 commanders you have not built · re-ranking… · read against 2,805 cards · free cards only`
+- `3,100 commanders you have not built · ranked by best fit · read against 2,805 cards · re-scoring…`
 
-The clause that says it is changing is the clause that is about to change. The two that hold still
+**Clause 3 has no pending state, ever.** It is deliberately scoped to the whole collection rather
+than the free pool, and that is locked and tested (`list-wiring.test.ts:110-114` — scoping it to
+the free pool would make the number move when a deck is built). A constant cannot announce a
+change, so putting a participle there would have had the one clause guaranteed not to move say it
+was moving while the clause that actually moves went stale. R1's `re-reading…` is **retired** — do
+not ship the string.
+
+**Clause 4's participle is `re-scoring…`.** The pool clause is a bare noun phrase — it has no verb
+of its own to conjugate — so the verb comes from the control that owns it: `Score against`. That is
+also literally what the server does with a pool: re-score every commander against a different set
+of available cards. 11 characters against the 15 of `free cards only`, so it fits the shortest form
+of the clause it replaces at 390 px, and it collides with neither `re-ranking…` (order) nor the
+retired `re-reading…`.
+
+The clause that says it is changing is the clause that is about to change. The others hold and
 describe the rows underneath, so the sentence and the list never disagree — which is precisely what
 a skeleton or a dim cannot promise. On arrival the whole sentence rewrites at once: one change, one
 moment, no clause-by-clause settling.
 
 **A pending clause must never be longer than the clause it replaces.** All three are shorter at
-every width, so the subtitle's wrap point can only move earlier — the list can never be pushed
-down. This is a copy constraint, testable, and it is why the participles are bare: the pressed
-control, with a crown where its label was, already names the object of the verb.
+every width — clause 4 measured against its *shortest* form, not its longest — so the subtitle's
+wrap point can only move earlier and the list can never be pushed down. This is a copy constraint,
+testable, and it is why the participles are bare: the pressed control, with a crown where its
+label was, already names the object of the verb.
 
-**The verb is the clause's own verb.** The population clause counts, the ordering clause ranks, the
-collection clause reads. Parallel by construction, and no new vocabulary.
+**The verb is the clause's own verb, or its owner's.** The population clause counts, the ordering
+clause ranks, and the pool clause — having no verb — borrows `score` from the control that changes
+it. Parallel by construction, and no new vocabulary.
+
+**`re-ranking…` exists only under discovery.** The owned scope has no sort control, so clause 2 has
+no pending state there. Two participles are reachable under `I own`, three under `To play`.
 
 ### 4. The ellipsis does not animate, and there is no second tier.
 
@@ -100,6 +126,15 @@ apologising for itself, and it lands right when the reader is about to be reward
 Hugh's standing position — dimming alone is not sufficient feedback — is met, and met above the
 list rather than inside it: the crown replaces the label, and past the gate a sentence says what is
 being computed.
+
+### 4b. Search gets no treatment, explicitly.
+
+Search fires its own server action (`findExcludedMatches`, `discovery-view.tsx:404`) but filters
+the list **client-side** from data already held, so the visible list narrows on the keystroke with
+no wait to report. **No crown in the field, no participle, no clause of its own** — search does not
+appear in the subtitle at all, and the server action behind it is a receipt for the exclusion line,
+not a state the reader waits on. It is named here only so its absence from the control inventory
+is a decision rather than an oversight.
 
 ### 5. Nothing is announced mid-flight.
 

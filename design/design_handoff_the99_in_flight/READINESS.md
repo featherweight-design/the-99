@@ -1,4 +1,10 @@
-# READINESS — In-flight feedback for control flips that fetch (re-ruling R1)
+# READINESS — In-flight feedback for control flips that fetch (re-ruling R2)
+
+**R2 closes the one blocking finding from the Green audit.** The subtitle is four clauses, not
+three; availability owns the pool clause with `re-scoring…`; `read against N cards` owns nothing and
+never goes pending (locked and tested); R1's `re-reading…` is retired; `re-ranking…` is
+discovery-only; search has an explicit no-treatment line. A table and two frames — nothing else in
+the package moved, and the open item below is unchanged.
 
 **Self-assessed: 🟢 Green. One open item, and it is a 14 px judgement at 390 px, not a ruling.**
 
@@ -32,10 +38,16 @@ product is **one copy state on a line that already exists** and the deletion of 
 3. **No escalation tier at 2,870 ms.** A described wait does not also need an apology, and a third
    element arriving at 2 s lands just before the reward. Gap 2 says what would re-open it: a
    duration histogram showing p95 above ~4 s.
-4. **The participles are bare** (`counting…`, `re-ranking…`, `re-reading…`), one string each, both
+4. **The participles are bare** (`counting…`, `re-ranking…`, `re-scoring…`), one string each, both
    widths. The pressed control is showing a crown where its label was; the sentence does not need to
    restate the object. Longer strings also break the never-longer-than-the-clause constraint, which
-   is what keeps the list from being pushed down.
+   is what keeps the list from being pushed down — and clause 4 is measured against `free cards
+   only` (15), its shortest form, not `every card you own`.
+4b. **`re-scoring…` borrows its verb from its control.** The pool clause is a noun phrase with no
+   verb of its own; `Score against` supplies one, and it is what the server actually does. This is
+   the single place the "clause's own verb" rule is satisfied by the owner rather than the clause.
+4c. **Clause 3 gets no participle at all**, rather than a shorter or gentler one. It is a constant;
+   a constant announcing a change is worse than silence.
 5. **The pending clause replaces, never appends.** Appending a fourth clause is the reflow this
    ruling exists to prevent.
 6. **One gate for all three fetching controls.** Per-control thresholds make the product feel
@@ -58,8 +70,12 @@ product is **one copy state on a line that already exists** and the deletion of 
     reachable. Design's expectation: the second press supersedes and the crown and the pending clause
     both move to the second control.
 12. **`Score against` × discovery is still the discovery handoff's gap 1.** If it is disabled under
-    discovery rather than re-ranking, the collection clause has no pending state and the table loses
-    a row. Nothing else changes.
+    discovery rather than re-scoring, clause 4 has no pending state and the table loses its only
+    server-side availability row. Nothing else changes.
+12b. **Search is named as no-treatment, not inventoried as a control** (`findExcludedMatches`,
+    `discovery-view.tsx:404`). It fires a server action but filters client-side, so there is no wait
+    to report. If that action ever gates the visible list, it becomes a fourth owner and needs a
+    clause — there is no spare one, which is the argument against ever gating it.
 13. **Scroll offset on arrival is out of scope** (gap 5) — a navigation question. Worth a look in the
     same PR since the reader will meet it in the same second.
 14. **The window reset stays on arrival, not on press.** A flip that fails must leave the reader

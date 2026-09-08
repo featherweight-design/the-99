@@ -29,12 +29,16 @@
 
   <section style="max-width:1400px;margin:0 0 26px;">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Re-ruling &middot; in-flight feedback for control flips that fetch &middot; unblocks the region loader</div>
     </div>
     <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;text-wrap:pretty;">The list stays because it is the previous answer &mdash; not because nothing is being fetched.</h1>
     <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">Three rulings forbid animating, dimming or skeleton-ing the list on a control flip, and all three give the same reason: the flips are <i>&ldquo;state changes over data already on the client.&rdquo;</i> That is true of <b style="color:#EDE6D8;font-weight:600;">one</b> of the four controls. Scope, sort and discovery availability are server round-trips &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">list-nav.ts:110-113</span>, only the active <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">(sort, avail)</span> pair is ranked, so the other ordering does not exist until it is asked for. Measured: <b style="color:#EDE6D8;font-weight:600;">~270&thinsp;ms warm, 2,870&thinsp;ms worst case</b>.</p>
     <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">The prohibition stands; the reason is replaced.</b> The rows on screen are the previous answer, correctly rendered and still pressable, so replacing them with grey bars for up to 2.9&thinsp;s trades information the reader has for a progress indicator they did not ask for. Under 500&thinsp;ms the shipped in-control crown is the whole treatment. Past 500&thinsp;ms <b style="color:#EDE6D8;font-weight:600;">one line changes, and it is a line already on the page</b>: each fetching control owns exactly one clause of the header subtitle, and its clause is replaced by its own present participle.</p>
+    <div style="max-width:1040px;border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#18140F;padding:16px 20px;margin:0 0 14px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">R2 &mdash; the clause map, corrected</div>
+      <div style="font-size:14px;color:#C0B8A6;line-height:1.7;">The subtitle ships <b style="color:#EDE6D8;font-weight:600;">four</b> clauses under a scope, not three (<span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">page-header.tsx:66-89</span>). Availability owns the <b style="color:#EDE6D8;font-weight:600;">fourth</b> &mdash; the pool &mdash; with <b style="color:#EDE6D8;font-weight:600;">re-scoring&hellip;</b>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">read against N cards</span> is owned by <b style="color:#EDE6D8;font-weight:600;">nobody</b> and never goes pending: it names the whole collection by design and is locked and tested (<span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">list-wiring.test.ts:110-114</span>) &mdash; a constant cannot announce a change. R1's <span style="text-decoration:line-through;color:#6E6654;">re-reading&hellip;</span> is retired. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">re-ranking&hellip;</span> is discovery-only; the owned scope has no sort control. Search gets an explicit no-treatment line. <b style="color:#EDE6D8;font-weight:600;">Nothing else in the package moved.</b></div>
+    </div>
     <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8B8270;margin:0;">Read <a href="RULING-in-flight-feedback.md">RULING-in-flight-feedback.md</a> for the ruling in full and the three document amendments, <a href="README.md">README.md</a> for the calls and the gap report, <a href="in-flight · copy strings.ts">in-flight &middot; copy strings.ts</a> for the three strings and the subtitle assembler. <b style="color:#C0B8A6;font-weight:600;">Not gated</b> &mdash; the in-control half shipped in #411 / #416; this adds one copy state and deletes a ticket.</p>
   </section>
 
@@ -58,7 +62,7 @@
 
       <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#EDE6D8;font-weight:600;">Availability, <i>discovery</i> scope</div>
       <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#C0B8A6;">filter bar</div>
-      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#C0B8A6;"><b style="color:#D9975C;font-weight:600;">server</b> &mdash; re-reads against the other collection side</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#C0B8A6;"><b style="color:#D9975C;font-weight:600;">server</b> &mdash; re-scores every commander against a different pool</div>
       <div style="padding:11px 0;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;">true</div>
 
       <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#A59C89;font-weight:600;">Availability, <i>owned</i> scope</div>
@@ -66,11 +70,17 @@
       <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#8B8270;">client &mdash; 242 rows, both arrays already sent</div>
       <div style="padding:11px 0;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;">false</div>
 
-      <div style="padding:11px 12px 0 0;color:#A59C89;font-weight:600;">Colour pips</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#A59C89;font-weight:600;">Colour pips</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#8B8270;">filter bar</div>
+      <div style="padding:11px 12px 11px 0;border-bottom:1px solid #2B241B;color:#8B8270;">client &mdash; a pure filter</div>
+      <div style="padding:11px 0;border-bottom:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;">false</div>
+
+      <div style="padding:11px 12px 0 0;color:#A59C89;font-weight:600;">Search</div>
       <div style="padding:11px 12px 0 0;color:#8B8270;">filter bar</div>
-      <div style="padding:11px 12px 0 0;color:#8B8270;">client &mdash; a pure filter</div>
-      <div style="padding:11px 0 0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;">false</div>
+      <div style="padding:11px 12px 0 0;color:#8B8270;">fires <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">findExcludedMatches</span>, but filters the visible list client-side</div>
+      <div style="padding:11px 0 0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;">n/a</div>
     </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;"><b style="color:#C0B8A6;font-weight:600;">Search gets no treatment, said explicitly.</b> <span style="font-family:'IBM Plex Mono',monospace;">discovery-view.tsx:404</span> is a server action, but the list narrows on the keystroke from data already held, so there is no wait to report: no crown in the field, no participle, and no clause of its own. Named here so its absence is a decision rather than an oversight.</div>
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;">A repeat flip served from the client cache does not navigate at all &mdash; the pending flag is already false there, so <b style="color:#C0B8A6;font-weight:600;">nothing in this document applies to it</b>. The flag the code already keeps is the whole test for &ldquo;does this need a treatment&rdquo;. Do not add a second flag.</div>
   </div>
 
@@ -219,7 +229,7 @@
           <div style="padding:18px 20px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
             <div>
               <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 7px;color:#EDE6D8;">Commanders</h3>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards &middot; free cards only</div>
             </div>
             <div style="display:inline-flex;background:#1A1611;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;flex:none;">
               <span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:12.5px;color:#C0B8A6;">I own</span>
@@ -265,7 +275,7 @@
           <div style="padding:18px 20px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
             <div>
               <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 7px;color:#EDE6D8;">Commanders</h3>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">3,100 commanders you have not built &middot; <b style="color:#C0B8A6;font-weight:600;">ranked by what is new to you</b> &middot; read against 2,805 cards</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">3,100 commanders you have not built &middot; <b style="color:#C0B8A6;font-weight:600;">ranked by what is new to you</b> &middot; read against 2,805 cards &middot; free cards only</div>
             </div>
             <div style="display:inline-flex;background:#1A1611;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;flex:none;">
               <span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:12.5px;color:#C0B8A6;">I own</span>
@@ -299,13 +309,13 @@
       <div style="width:760px;flex:none;background:#1A1611;border:1px solid #3A3229;border-radius:14px;padding:20px;">
         <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
           <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#CF8745;border-radius:4px;padding:2px 7px;">500&ndash;2,870&thinsp;ms</span>
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;">past the gate &mdash; <span style="color:#CF8745;">one clause is a participle</span>, and that is the whole addition</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;">past the gate &mdash; <span style="color:#CF8745;">one of four clauses is a participle</span>, and that is the whole addition</span>
         </div>
         <div style="background:#14110E;border:1px solid #2B241B;border-radius:12px;overflow:hidden;">
           <div style="padding:18px 20px 16px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
             <div>
               <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 7px;color:#EDE6D8;">Commanders</h3>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">3,100 commanders you have not built &middot; <span style="border-bottom:1px dashed #CF8745;padding-bottom:1px;">re-ranking&hellip;</span> &middot; read against 2,805 cards</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;">3,100 commanders you have not built &middot; <span style="border-bottom:1px dashed #CF8745;padding-bottom:1px;">re-ranking&hellip;</span> &middot; read against 2,805 cards &middot; free cards only</div>
             </div>
             <div style="display:inline-flex;background:#1A1611;border:1px solid #3A3229;border-radius:8px;padding:3px;gap:3px;flex:none;">
               <span style="height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:12.5px;color:#C0B8A6;">I own</span>
@@ -340,51 +350,94 @@
             <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6654;padding-left:4px;">still the fit ranking, still true, still pressable &mdash; no dim, no skeleton, no <span style="font-family:'IBM Plex Mono',monospace;">aria-busy</span>, no pointer trap</div>
           </div>
         </div>
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;">The dashed underline is <b style="color:#C0B8A6;font-weight:600;">annotation, not design</b>: the pending clause takes no colour change, no weight change, no italics and no underline. It is the same <span style="font-family:'IBM Plex Mono',monospace;">--fg-faint</span> mono as the words either side of it, with one static <span style="font-family:'IBM Plex Mono',monospace;">&hellip;</span>. The two clauses that hold still describe the rows underneath, so the sentence and the list never disagree &mdash; which is exactly what a skeleton cannot promise.</div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #2B241B;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;">The dashed underline is <b style="color:#C0B8A6;font-weight:600;">annotation, not design</b>: the pending clause takes no colour change, no weight change, no italics and no underline. It is the same <span style="font-family:'IBM Plex Mono',monospace;">--fg-faint</span> mono as the words either side of it, with one static <span style="font-family:'IBM Plex Mono',monospace;">&hellip;</span>. The other three clauses hold verbatim and describe the rows underneath &mdash; including <span style="font-family:'IBM Plex Mono',monospace;">read against 2,805 cards</span>, which is a constant and never goes pending at all. So the sentence and the list never disagree, which is exactly what a skeleton cannot promise.</div>
       </div>
 
     </div>
   </div>
 
   <div>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">C &middot; <span style="color:#CF8745;">three controls, three clauses, one rule</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">C &middot; <span style="color:#CF8745;">four clauses, three owners, one rule</span></div>
 
     <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
-      <div style="width:760px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px 24px;">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">The subtitle, settled and in flight &mdash; one string per control, both widths</div>
+      <div style="width:820px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px 24px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">The four-clause subtitle, settled and in flight &mdash; one string per control, both widths</div>
+
+        <div style="display:grid;grid-template-columns:22px 1fr 128px 96px;gap:0 12px;align-items:center;background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#6E6654;padding-bottom:8px;">#</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#6E6654;padding-bottom:8px;">Clause</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#6E6654;padding-bottom:8px;">Owner</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#6E6654;padding-bottom:8px;">In flight</div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;padding:7px 0;">1</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C0B8A6;padding:7px 0;">3,100 commanders you have not built</div>
+          <div style="font-size:12.5px;color:#C0B8A6;padding:7px 0;">Scope</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;padding:7px 0;">counting&hellip;</div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;padding:7px 0;">2</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C0B8A6;padding:7px 0;">ranked by best fit</div>
+          <div style="font-size:12.5px;color:#C0B8A6;padding:7px 0;">Sort <span style="color:#8B8270;">(discovery only)</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;padding:7px 0;">re-ranking&hellip;</div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;padding:7px 0;">3</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8B8270;padding:7px 0;">read against 2,805 cards</div>
+          <div style="font-size:12.5px;color:#8B8270;padding:7px 0;">nobody</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6E6654;padding:7px 0;">never</div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6E6654;padding:7px 0 0;">4</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C0B8A6;padding:7px 0 0;">free cards only <span style="color:#6E6654;">/ every card you own</span></div>
+          <div style="font-size:12.5px;color:#C0B8A6;padding:7px 0 0;">Availability</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;padding:7px 0 0;">re-scoring&hellip;</div>
+        </div>
+
         <div style="display:flex;flex-direction:column;gap:14px;">
           <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px 16px;">
             <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;margin-bottom:8px;">Settled</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards &middot; free cards only</div>
           </div>
           <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Scope in flight &mdash; the population clause counts</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">counting&hellip;</b> &middot; ranked by best fit &middot; read against 2,805 cards</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Scope in flight &mdash; clause 1, the population, counts</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">counting&hellip;</b> &middot; ranked by best fit &middot; read against 2,805 cards &middot; free cards only</div>
           </div>
           <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Sort in flight &mdash; the ordering clause ranks</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;">3,100 commanders you have not built &middot; <b style="color:#EDE6D8;font-weight:600;">re-ranking&hellip;</b> &middot; read against 2,805 cards</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Sort in flight &mdash; clause 2, the ordering, ranks &middot; discovery scope only</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;">3,100 commanders you have not built &middot; <b style="color:#EDE6D8;font-weight:600;">re-ranking&hellip;</b> &middot; read against 2,805 cards &middot; free cards only</div>
           </div>
           <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px 16px;">
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Availability in flight &mdash; the collection clause reads</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;">3,100 commanders you have not built &middot; ranked by best fit &middot; <b style="color:#EDE6D8;font-weight:600;">re-reading&hellip;</b></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Availability in flight &mdash; clause 4, the pool, is re-scored</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8B8270;line-height:1.6;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards &middot; <b style="color:#EDE6D8;font-weight:600;">re-scoring&hellip;</b></div>
+          </div>
+          <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #3A3229;border-radius:10px;padding:14px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;margin-bottom:8px;">Withdrawn in R2 &mdash; clause 3 is a constant, so it never announces anything</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#6E6654;line-height:1.6;text-decoration:line-through;">3,100 commanders you have not built &middot; ranked by best fit &middot; re-reading&hellip;</div>
           </div>
         </div>
-        <div style="margin-top:18px;padding-top:16px;border-top:1px solid #2B241B;font-size:13.5px;color:#C0B8A6;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The verb is the clause's own verb</b> &mdash; the population counts, the ordering ranks, the collection reads. Parallel by construction, no new vocabulary, and the participles are <b style="color:#EDE6D8;font-weight:600;">bare</b>: the pressed control, with a crown where its label was, already names the object.</div>
-        <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;"><b style="color:#C0B8A6;font-weight:600;">The constraint that makes this safe:</b> a pending clause is never longer than the clause it replaces, at any width. <span style="color:#C0B8A6;">counting&hellip;</span> 11 chars against 35 &middot; <span style="color:#C0B8A6;">re-ranking&hellip;</span> 12 against 18 &middot; <span style="color:#C0B8A6;">re-reading&hellip;</span> 12 against 24. The wrap point can only move earlier, so the list is never pushed down. Testable, and it is why longer strings are refused.</div>
+
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid #2B241B;font-size:13.5px;color:#C0B8A6;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">The verb is the clause's own verb, or its owner's.</b> The population counts and the ordering ranks. The pool clause is a bare noun phrase with no verb to conjugate, so it borrows one from the control that changes it &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Score against</span> &mdash; which is also what the server does with a pool: re-score every commander against a different set of available cards. The participles stay <b style="color:#EDE6D8;font-weight:600;">bare</b>: the pressed control, with a crown where its label was, already names the object.</div>
+        <div style="margin-top:12px;font-size:13.5px;color:#C0B8A6;line-height:1.6;"><b style="color:#EDE6D8;font-weight:600;">Clause 3 owns nothing, and that is the R2 correction.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">read against N cards</span> names the whole collection on purpose, so the number does not move when a deck is built &mdash; locked and tested at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">list-wiring.test.ts:110-114</span>. Putting a participle there would have had the one clause guaranteed <i>not</i> to move say it was moving, while the clause that does move went stale. A constant cannot announce a change.</div>
+        <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;line-height:1.7;"><b style="color:#C0B8A6;font-weight:600;">The constraint that makes this safe:</b> a pending clause is never longer than the clause it replaces, at any width. <span style="color:#C0B8A6;">counting&hellip;</span> 10 chars in 35 &middot; <span style="color:#C0B8A6;">re-ranking&hellip;</span> 11 in 18 &middot; <span style="color:#C0B8A6;">re-scoring&hellip;</span> 11 in 15 &mdash; measured against <span style="color:#C0B8A6;">free cards only</span>, the pool clause's <b style="color:#C0B8A6;font-weight:600;">shortest</b> form, not <span style="color:#C0B8A6;">every card you own</span>. The wrap point can only move earlier, so the list is never pushed down. Testable, and it is why longer strings are refused.</div>
       </div>
 
       <div style="width:390px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:16px;">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">390px &middot; settled two lines, in flight one</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">390px &middot; four clauses settled, three in flight</div>
         <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;margin-bottom:12px;">
           <h4 style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;margin:0 0 6px;color:#EDE6D8;">Commanders</h4>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;line-height:1.55;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;line-height:1.55;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards &middot; free cards only</div>
+        </div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px;margin-bottom:12px;">
+          <h4 style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;margin:0 0 6px;color:#EDE6D8;">Commanders</h4>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">counting&hellip;</b> &middot; ranked by best fit &middot; read against 2,805 cards &middot; free cards only</div>
+        </div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px;margin-bottom:12px;">
+          <h4 style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;margin:0 0 6px;color:#EDE6D8;">Commanders</h4>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;line-height:1.55;">3,100 commanders you have not built &middot; <b style="color:#EDE6D8;font-weight:600;">re-ranking&hellip;</b> &middot; read against 2,805 cards &middot; free cards only</div>
         </div>
         <div style="background:#14110E;border:1px solid #2B241B;border-left:2px solid #CF8745;border-radius:10px;padding:14px;">
           <h4 style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;margin:0 0 6px;color:#EDE6D8;">Commanders</h4>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;line-height:1.55;">3,100 commanders you have not built &middot; <b style="color:#EDE6D8;font-weight:600;">re-ranking&hellip;</b></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8B8270;line-height:1.55;">3,100 commanders you have not built &middot; ranked by best fit &middot; read against 2,805 cards &middot; <b style="color:#EDE6D8;font-weight:600;">re-scoring&hellip;</b></div>
         </div>
-        <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;line-height:1.7;">The two-line subtitle collapses to one and the list moves <b style="color:#C0B8A6;font-weight:600;">up</b> ~14px for the duration, then back. Drawn as-is: a two-line <span style="font-family:'IBM Plex Mono',monospace;">min-height</span> spends those pixels on every reader forever to avoid a shift that lasts 2&thinsp;s on one press, and &sect;7.2 already accounts for every pixel above the first row. If it reads badly on device the fix is one line of CSS at 390px only &mdash; the open item in <a href="READINESS.md">READINESS.md</a>.</div>
+        <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;line-height:1.7;"><b style="color:#C0B8A6;font-weight:600;">Four clauses wrap to three lines here, and every in-flight sentence is shorter than the settled one</b> &mdash; <span style="color:#C0B8A6;">counting&hellip;</span> saves the most, <span style="color:#C0B8A6;">re-scoring&hellip;</span> the least, and none of them can add a line. So the shift is always a line <b style="color:#C0B8A6;font-weight:600;">removed</b>, never added.</div>
+        <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;line-height:1.7;">The subtitle collapses and the list moves <b style="color:#C0B8A6;font-weight:600;">up</b> ~14px for the duration, then back. Drawn as-is: a two-line <span style="font-family:'IBM Plex Mono',monospace;">min-height</span> spends those pixels on every reader forever to avoid a shift that lasts 2&thinsp;s on one press, and &sect;7.2 already accounts for every pixel above the first row. If it reads badly on device the fix is one line of CSS at 390px only &mdash; the open item in <a href="READINESS.md">READINESS.md</a>.</div>
       </div>
     </div>
   </div>
@@ -472,7 +525,7 @@
       <div style="width:520px;background:#1A1611;border:1px solid #3A3229;border-radius:14px;padding:20px;">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:14px;">Outgoing content exists &rarr; in place</div>
         <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">3,100 commanders you have not built &middot; <b style="color:#EDE6D8;font-weight:600;">re-ranking&hellip;</b> &middot; read against 2,805 cards</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">3,100 commanders you have not built &middot; <b style="color:#EDE6D8;font-weight:600;">re-ranking&hellip;</b> &middot; read against 2,805 cards &middot; free cards only</div>
           <span style="display:flex;align-items:center;gap:10px;height:40px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 10px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:14px;color:#8B8270;">1</span><span style="font-family:'Cinzel',serif;font-size:13px;color:#EDE6D8;">Chatterfang, Squirrel General</span></span>
           <span style="display:flex;align-items:center;gap:10px;height:40px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 10px;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:14px;color:#8B8270;">2</span><span style="font-family:'Cinzel',serif;font-size:13px;color:#EDE6D8;">Kykar, Wind&rsquo;s Fury</span></span>
         </div>

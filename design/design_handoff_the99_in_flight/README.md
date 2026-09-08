@@ -1,4 +1,11 @@
-# The 99 — In-flight feedback for control flips that fetch (design handoff, re-ruling R1)
+# The 99 — In-flight feedback for control flips that fetch (design handoff, re-ruling R2)
+
+**R2 (this revision) corrects the clause map only.** The subtitle ships four clauses under a scope,
+not three (`page-header.tsx:66-89`, `commander-discovery.ts:50-63`). Availability owns the fourth —
+the pool — with the participle **`re-scoring…`**. `read against N cards` is owned by nobody and
+**never goes pending**: it names the whole collection by design and is locked and tested
+(`list-wiring.test.ts:110-114`). R1's `re-reading…` is retired. `re-ranking…` is discovery-only.
+Search gets an explicit no-treatment line. Nothing else in the package moved.
 
 **Unblocks the region-loader work.** Source of truth for the premise correction:
 `src/components/commanders/list-nav.ts:110-113`, and the measured 270 ms / 2,870 ms window.
@@ -45,16 +52,28 @@ nothing is being fetched.
 
 ## The three clauses
 
-| Pressed control | Fetch | Clause it owns | In flight |
-|---|---|---|---|
-| Scope | server | `3,100 commanders you have not built` | `counting…` |
-| Sort | server | `ranked by best fit` | `re-ranking…` |
-| Availability, discovery | server | `read against 2,805 cards` | `re-reading…` |
-| Availability, owned scope | **client** | same clause, updates instantly | **no pending state** |
-| Colour pips | client | none | **no pending state** |
+| # | Clause | Owner | In flight | Fits? |
+|---|---|---|---|---|
+| 1 | `3,100 commanders you have not built` | Scope (server) | `counting…` | 10 in 35 |
+| 2 | `ranked by best fit` | Sort (server) — **discovery only** | `re-ranking…` | 11 in 18 |
+| 3 | `read against 2,805 cards` | **nobody** | **never pending** | — |
+| 4 | `free cards only` / `every card you own` | Availability (server under discovery) | `re-scoring…` | 11 in 15 |
 
-Every participle is shorter than the clause it replaces at every width, so the wrap point can only
-move earlier and the list is never pushed down. That is a copy constraint, and it is testable.
+Controls with no clause and no pending state: availability under the **owned** scope (client, 242
+rows already sent), the colour pips (client filter), and **search** (`findExcludedMatches`,
+`discovery-view.tsx:404` — fires a server action but filters the visible list client-side, so there
+is no wait to report; no crown in the field, no participle, no clause).
+
+**Why clause 3 owns nothing:** it is scoped to the whole collection rather than the free pool on
+purpose, so the number does not move when a deck is built. A constant cannot announce a change —
+putting a participle there would have the one clause guaranteed not to move say it was moving while
+the clause that does move went stale.
+
+**Why `re-scoring…`:** the pool clause is a bare noun phrase with no verb to conjugate, so the verb
+comes from its control, `Score against` — which is also what the server does with a pool. Every
+participle is shorter than the clause it replaces at every width, clause 4 measured against its
+*shortest* form (`free cards only`, 15), so the wrap point can only move earlier and the list is
+never pushed down. Testable.
 
 ## States delivered
 
@@ -77,7 +96,7 @@ move earlier and the list is never pushed down. That is a copy constraint, and i
 | Piece | Spec |
 |---|---|
 | **`PendingLabel`** | Shipped, unchanged (`src/components/ui/pending-mark.tsx`). Three brass diamonds, small–large–small (4/6/4 px, `rotate(45deg)`, 3 px gap), standing where the pressed control's label was — the control is the same width waiting as idle. Opacity pulse 0.35 → 1 → 0.35 over 1,200 ms, `ease-in-out`, `prefers-reduced-motion` → static at 0.7. Control at `PENDING_OPACITY` 0.55, **never disabled**. |
-| **Pending subtitle clause** | The existing subtitle, mono 12 px `--fg-faint` (10.5 px phone), unchanged in every respect except that one clause's text is the participle. No colour change, no weight change, no italics. One static `…`. `aria-hidden` on the clause. |
+| **Pending subtitle clause** | The existing subtitle, mono 12 px `--fg-faint` (10.5 px phone), unchanged in every respect except that one of the four clauses' text is the participle. No colour change, no weight change, no italics. One static `…`. `aria-hidden` on the clause. |
 | **Gate** | `PENDING_GATE_MS = 500`, one constant, all three fetching controls. A threshold on the pending flag, not a delay on the fetch. |
 | **List region** | Untouched. No wrapper, no overlay, no `aria-busy`, no pointer trap. |
 | **Count line** | Holds its outgoing figures and rewrites with the list. Never a dash. |
@@ -89,9 +108,10 @@ move earlier and the list is never pushed down. That is a copy constraint, and i
   already answered. Do not add a second flag.
 - **The gate is one `setTimeout` on the flag becoming true**, cleared on settle. If it fires, the
   subtitle takes the participle; if the fetch beats it, nothing rendered.
-- **The subtitle is assembled from three clauses**, not formatted as one string — see
+- **The subtitle is assembled from four clauses**, not formatted as one string — see
   `in-flight · copy strings.ts` for the assembler. The pending participle substitutes at the clause
-  the pressed control owns.
+  the pressed control owns; clause 3 is passed through unconditionally and there is no
+  `collection` key in the copy map to substitute with.
 - **On settle the whole sentence rewrites at once**, from the arriving payload. No clause-by-clause
   settling, no transition on the text.
 - **On failure, call the assembler with `null`** — the outgoing sentence returns verbatim.
@@ -112,8 +132,9 @@ move earlier and the list is never pushed down. That is a copy constraint, and i
    basis that a described wait needs no apology. If the p95 turns out to sit above ~4 s, the refusal
    is worth re-opening — with a duration histogram, not an opinion.
 3. **`Score against` × discovery is still gap 1 of the discovery handoff.** This document assumes it
-   re-ranks (and therefore fetches, and therefore owns the collection clause). If it is instead
-   disabled under discovery, the third clause has no pending state and this table loses a row.
+   re-scores (and therefore fetches, and therefore owns the pool clause). If it is instead disabled
+   under discovery, clause 4 has no pending state and the table loses its only server-side
+   availability row.
 4. **A flip during a flip is not drawn.** The controls are never disabled, so a reader can press
    sort while scope is in flight. Expected: the second press supersedes, the crown moves to the
    second control, and the subtitle's pending clause moves with it. That is one line of state, but
