@@ -12,7 +12,7 @@
 // closed (design state 9), and this component unmounts on close, so both are
 // held by LastSlotsStrip and passed down.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { topOffCopy } from "../../lib/copy/top-off";
 import { synergyCopy, synergySignedDisplay } from "../../lib/copy/synergy-discovery";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
@@ -213,10 +213,17 @@ export function TopOffList({
   // The height the spacer below the rows has to reserve for the pinned bar.
   const barRef = useRef<HTMLDivElement>(null);
   const [barHeight, setBarHeight] = useState(0);
-  useEffect(() => {
+  // Layout rather than passive, and measured before it is observed: a passive
+  // effect runs after paint, and the observer's own first callback is
+  // asynchronous, so either alone leaves one frame with the tail of the list
+  // under the bar. Border box, matching create-picker's dock, because the bar's
+  // padding and top border are part of what covers the row beneath it.
+  useLayoutEffect(() => {
     const el = barRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => setBarHeight(el.offsetHeight));
+    if (!el) return;
+    setBarHeight(el.getBoundingClientRect().height);
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setBarHeight(el.getBoundingClientRect().height));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
