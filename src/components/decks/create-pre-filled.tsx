@@ -53,7 +53,7 @@ export function CreatePreFilled({
     e.preventDefault();
     const trimmed = deckName.trim();
     if (trimmed.length === 0 || trimmed.length > DECK_NAME_MAX) {
-      setError("Name must be 1–120 characters.");
+      setError(`Name must be 1–${DECK_NAME_MAX} characters.`);
       return;
     }
     setError(null);

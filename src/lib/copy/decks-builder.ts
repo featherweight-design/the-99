@@ -7,6 +7,10 @@
 // (mock, Decks deltas). The export dialog's own chrome does draw copy from
 // here: see `overCopy.exportNote` and `exportLinkOutCopy`.
 
+// The one number this file does not own: the deck-name limit is the action's
+// rule, and a copy of it here would keep naming the old one after a change.
+import { DECK_NAME_MAX } from "../decks/deck-name";
+
 /** The mock names the commander in the short register ("Korvold"), not the full
  *  "Korvold, Fae-Cursed King" shown in the builder header. Everything up to the
  *  first comma. */
@@ -466,7 +470,7 @@ export const renameCopy = {
   saving: "Saving…",
   retry: "Retry",
   cancel: "Cancel",
-  errorLength: "A deck name is 1–120 characters.",
+  errorLength: `A deck name is 1–${DECK_NAME_MAX} characters.`,
   errorControl: "That name can’t contain control characters.",
   errorFailed: "That didn’t save. Try again.",
 } as const;

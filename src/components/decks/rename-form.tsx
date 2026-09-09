@@ -63,7 +63,7 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
           disabled={!canSave}
           className="flex-1 rounded-[6px] py-[7px] text-[13px]"
         >
-          {isPending ? renameCopy.saving : renameCopy.save}
+          {isPending ? renameCopy.saving : error ? renameCopy.retry : renameCopy.save}
         </PrimaryButton>
         <button
           type="button"
