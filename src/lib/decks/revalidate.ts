@@ -7,7 +7,8 @@
  * a surface leaves it showing what was true before the write.
  *
  * Exported as lists rather than as functions that revalidate, so the sets are
- * assertable without a `next/cache` mock.
+ * assertable without a `next/cache` mock. The write that acts on them lives in
+ * `revalidate-claims.ts`, which is server-only for that reason.
  */
 
 /**
@@ -22,11 +23,11 @@ export function deckSurfaces(deckId: string): string[] {
 }
 
 /**
- * The above plus the two pages that read availability off deck rows. Only for
+ * The above plus the three pages that read availability off deck rows. Only for
  * writes that change deck *membership* (or remove the deck holding it): a
  * cached `/collection` would otherwise keep showing a card as unclaimed after
  * a deck claimed it. A rename changes no claim and does not need these.
  */
 export function claimSurfaces(deckId: string): string[] {
-  return [...deckSurfaces(deckId), "/collection", "/commanders"];
+  return [...deckSurfaces(deckId), "/collection", "/commanders", "/discover"];
 }

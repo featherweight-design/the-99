@@ -9,7 +9,8 @@ import { loadMatchInputs } from "../../lib/collection/import";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { buildDeckImport, type DeckImport, type ImportNote } from "../../lib/decks/import";
 import { isBasicLand } from "../../lib/decks/grouping";
-import { claimSurfaces, deckSurfaces } from "../../lib/decks/revalidate";
+import { deckSurfaces } from "../../lib/decks/revalidate";
+import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { isCommanderCandidate } from "../../lib/recs/score";
 import {
   deckImportMaxBytes,
@@ -194,7 +195,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     return deck.id;
   });
 
-  for (const path of claimSurfaces(deckId)) revalidatePath(path);
+  revalidateClaims(deckId, userId);
   return { ok: true, deckId, unresolvedCount: result.unresolved.length, notes: result.notes };
 }
 
@@ -263,7 +264,7 @@ export async function resolveUnresolvedRow(
     }
   });
 
-  for (const path of claimSurfaces(deckId)) revalidatePath(path);
+  revalidateClaims(deckId, userId);
 }
 
 /**

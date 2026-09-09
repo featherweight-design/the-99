@@ -1,15 +1,7 @@
 import { requireUserId } from "../../lib/auth";
 import { getCollectionStats, listRecentDecks } from "../../lib/home/summary";
-import { getRankedList } from "../../lib/recs/ranked-list";
-import { rankFree } from "../../lib/recs/free-ranking";
-import { toFreeDelta, type FreeRankingDelta } from "../../lib/recs/free-delta";
-import { loadCollectionPool } from "../../lib/recs/recommend";
-import { loadAvailability } from "../../lib/decks/availability-query";
-import type { Availability } from "../../lib/decks/availability";
-import {
-  receiptCountsByCommander,
-  type ReceiptCounts,
-} from "../../lib/commanders/in-use";
+import { cacheForUser } from "../../lib/cache/user-lists";
+import { loadCommanderRankings } from "../../lib/commanders/rankings";
 import { permanentRedirect } from "next/navigation";
 import { CardFan } from "../../components/marks";
 import { CommandersView } from "../../components/commanders/commanders-view";
@@ -77,12 +69,12 @@ export default async function CommandersPage({
 
   // Fetch recommendations and recent decks in parallel.
   // decks is used only for the firstRun flag (no confirmed deck yet).
-  const [list, decks] = await Promise.all([
-    getRankedList(userId),
+  const [rankings, decks] = await Promise.all([
+    cacheForUser(userId, ["commander-rankings"], () => loadCommanderRankings(userId)),
     listRecentDecks(userId, 1),
   ]);
 
-  const { items, degraded, uniqueCardsRead, candidateCount } = list;
+  const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk } = rankings;
 
   // No commander candidates in the collection.
   if (candidateCount === 0) {
@@ -207,40 +199,7 @@ export default async function CommandersPage({
   // guided-flow condition: decks.length === 0 after collection upload).
   const firstRun = decks.length === 0;
 
-  // The receipt's second clause renders in BOTH ranking modes, so this read is
-  // unconditional — gating it on `?avail=free` would strip the clause from the
-  // default view, which is the one most players never leave. One rollup for the
-  // whole page, shared across every commander; `rankFree` is not on this path.
-  const { collection } = await loadCollectionPool(userId);
-  let receiptCounts = new Map<string, ReceiptCounts>();
-  let availability: Map<string, Availability> | null = null;
-  let availOk = true;
-  try {
-    availability = await loadAvailability(userId, {
-      oracleIds: collection.map((c) => c.oracleId),
-    });
-    receiptCounts = receiptCountsByCommander(items, collection, availability);
-  } catch {
-    // Fail soft: the list, the scores and the ranking are all unaffected. Only
-    // the clause and `What's free` are lost, and the toggle says so itself.
-    availOk = false;
-  }
-
-  // Both rankings ship in every render, whichever mode is asked for, so the
-  // toggle is a client-side swap between two lists rather than a round trip.
-  // This costs no extra query: `rankFree` re-scores the same `items` against the
-  // collection and availability already read above, which also makes the receipt
-  // and the free ranking describe one snapshot of the decks rather than two.
-  //
-  // Shipped as a diff against `items` rather than as a second full list: the
-  // two are the same commanders, so most of a second copy is the same names,
-  // slugs and image URLs sent twice. See `free-delta.ts`.
-  let freeRanking: FreeRankingDelta | null = null;
-  if (availOk && availability) {
-    const free = await rankFree(userId, items, { collection, availability });
-    freeRanking = free.ok ? toFreeDelta(items, free.items) : null;
-    if (!freeRanking) availOk = false;
-  }
+  const receiptCounts = new Map(rankings.receipts);
 
   // `?avail=free` is a request, not a promise. With no free ranking to show the
   // page renders the canonical list, so it must say so too: left as `free` the

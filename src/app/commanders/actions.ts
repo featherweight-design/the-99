@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
+import { revalidateUserLists } from "../../lib/cache/user-lists";
 import { loadBuiltCommanderIds, loadNameMatches } from "../../lib/discovery/candidates";
 import { classifyMatches, type ExcludedMatch } from "../../lib/discovery/excluded-match";
 import { loadDiscoveryPool } from "../../lib/discovery/list";
@@ -18,6 +19,7 @@ import { deleteAllScores } from "../../lib/recs/store";
 export async function retryRecs() {
   const userId = await requireUserId();
   await deleteAllScores(userId);
+  revalidateUserLists(userId);
   revalidatePath("/commanders");
   // A recompute can reorder the list, and slugs carry rank-order dedup suffixes,
   // so cached detail pages go stale too.

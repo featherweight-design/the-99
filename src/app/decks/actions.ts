@@ -13,7 +13,8 @@ import { ownedCardsWhere } from "../../lib/collection/owned-cards";
 import { withinColorIdentity } from "../../lib/cards/identity-where";
 import { getEdhrecData } from "../../lib/edhrec/client";
 import { loadAvailability } from "../../lib/decks/availability-query";
-import { claimSurfaces, deckSurfaces } from "../../lib/decks/revalidate";
+import { deckSurfaces } from "../../lib/decks/revalidate";
+import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../lib/decks/suggest";
 import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
@@ -485,7 +486,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
   if (rejection) return { ok: false, message: deckAddRejectionMessage(rejection) };
   // /decks shows derived stats (built / to-buy) — keep the index fresh too, and
   // the two surfaces that draw availability off deck rows with it.
-  for (const path of claimSurfaces(deckId)) revalidatePath(path);
+  revalidateClaims(deckId, userId);
   return { ok: true };
 }
 
@@ -500,7 +501,7 @@ export async function removeCardFromDeck(deckId: string, oracleId: string): Prom
   if (decremented.length === 0) {
     await db.delete(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
   }
-  for (const path of claimSurfaces(deckId)) revalidatePath(path);
+  revalidateClaims(deckId, userId);
 }
 
 export async function deleteDeck(deckId: string): Promise<void> {
@@ -509,7 +510,7 @@ export async function deleteDeck(deckId: string): Promise<void> {
   await db.delete(decks).where(eq(decks.id, deckId));
   // Deleting a deck releases every claim it held, so the availability markers
   // on /collection and /commanders are wrong until they are told.
-  for (const path of claimSurfaces(deckId)) revalidatePath(path);
+  revalidateClaims(deckId, userId);
   redirect("/decks");
 }
 
@@ -552,7 +553,7 @@ export async function fillDeck(deckId: string): Promise<void> {
     }
     await tx.update(decks).set({ filled: true }).where(eq(decks.id, deckId));
   });
-  for (const path of claimSurfaces(deckId)) revalidatePath(path);
+  revalidateClaims(deckId, userId);
 }
 
 /** Clears the fill's marker on one row. The card stays in the deck — the marker
@@ -575,7 +576,7 @@ export async function keepAutoCard(deckId: string, oracleId: string): Promise<vo
     then finds no row, so a sweep landing mid-keep simply takes those cards and
     this write reports what survived it.
 
-    Only the deck path is revalidated, not `claimSurfaces`. The marker says who
+    Only the deck path is revalidated, not `revalidateClaims`. The marker says who
     put a card here; an availability claim says who holds a copy. Those are
     different facts, this writes only the first, and no card moves — so the
     availability surfaces have nothing to re-read. `keepAutoCard` revalidates the
@@ -622,7 +623,7 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   const removed = await db.delete(deckCards)
     .where(and(eq(deckCards.deckId, deckId), eq(deckCards.auto, true)))
     .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
-  for (const path of claimSurfaces(deckId)) revalidatePath(path);
+  revalidateClaims(deckId, userId);
   return removed;
 }
 
@@ -701,7 +702,7 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
     await tx.insert(deckCards)
       .values([...byId].map(([oracleId, quantity]) => ({ deckId, oracleId, quantity, auto: true })))
       .onConflictDoNothing();
-    for (const path of claimSurfaces(deckId)) revalidatePath(path);
+    revalidateClaims(deckId, userId);
     return restored;
   });
 }
@@ -782,7 +783,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
       deckId, kind: "top_off", openSlots: 99 - built,
       rows: landed.map((oracleId) => ({ oracleId, quantity: 1 })),
     });
-    for (const path of claimSurfaces(deckId)) revalidatePath(path);
+    revalidateClaims(deckId, userId);
     return { passId, landed, total: built + landed.length, userId };
   });
 
@@ -983,7 +984,7 @@ export async function undoFillPass(
 
     // The shopping list is derived from deck membership, so this is also what
     // gives the player their money back — nothing separate restores it.
-    for (const path of claimSurfaces(deckId)) revalidatePath(path);
+    revalidateClaims(deckId, userId);
     return { removed: removedCards, built: built?.copies ?? 0 };
   });
 

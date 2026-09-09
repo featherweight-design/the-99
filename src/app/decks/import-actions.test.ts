@@ -14,6 +14,7 @@ const stub = vi.hoisted(() => {
     inserts: [] as { values: Record<string, unknown>; mode: "update" | "nothing" }[],
     deletedFrom: [] as string[],
     revalidated: [] as string[],
+    updatedTags: [] as string[],
     // Every WHERE the actions build, kept so the tests can prove the ownership
     // scoping is in the SQL rather than in the fake.
     wheres: [] as { table: string; condition: unknown }[],
@@ -72,6 +73,9 @@ vi.mock("next/cache", () => ({
   revalidatePath: (p: string) => {
     stub.state.revalidated.push(p);
   },
+  updateTag: (t: string) => {
+    stub.state.updatedTags.push(t);
+  },
 }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
@@ -118,6 +122,7 @@ beforeEach(() => {
   stub.state.inserts.length = 0;
   stub.state.deletedFrom.length = 0;
   stub.state.revalidated.length = 0;
+  stub.state.updatedTags.length = 0;
   stub.state.wheres.length = 0;
 });
 
@@ -132,6 +137,8 @@ describe("resolveUnresolvedRow", () => {
     // Resolving a row puts a card in the deck, which is a claim — so the
     // surfaces that draw availability off deck rows are invalidated with it.
     expect(stub.state.revalidated).toEqual(claimSurfaces(DECK));
+    // And the reader's cached list payloads, which the revalidated pages read.
+    expect(stub.state.updatedTags).toEqual(["user-lists:user_1"]);
   });
 
   it("leaves a non-basic already in the deck at one copy", async () => {
@@ -221,6 +228,7 @@ describe("deleteUnresolvedRow", () => {
     expect(stub.state.deletedFrom).toEqual(["deck_unresolved_rows"]);
     // A dropped line changes no claim, so the availability surfaces stay out.
     expect(stub.state.revalidated).toEqual(deckSurfaces(DECK));
+    expect(stub.state.updatedTags).toEqual([]);
   });
 
   it("scopes both lookups server-side", async () => {

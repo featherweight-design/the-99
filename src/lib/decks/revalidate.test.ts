@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { claimSurfaces, deckSurfaces } from "./revalidate";
 
 describe("deckSurfaces", () => {
@@ -17,6 +18,7 @@ describe("claimSurfaces", () => {
       ...deckSurfaces("deck-1"),
       "/collection",
       "/commanders",
+      "/discover",
     ]);
   });
 });

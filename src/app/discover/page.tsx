@@ -63,7 +63,11 @@ export default async function DiscoverPage({
   // The requested ranking, not necessarily the one that comes back:
   // `loadDiscovery` reads the played tags either way, and downgrades `new` to
   // `fit` when there is no deck to measure distance from.
-  const discovery = await loadDiscovery(userId, { sort: discoverSort(params.order) });
+  const sort = discoverSort(params.order);
+  // Deliberately NOT run through `cacheForUser`: this list serialises to 3.1 MB
+  // and the data cache refuses any entry over 2 MB, so caching it would pay the
+  // serialisation on every request and store nothing. See `user-lists.ts`.
+  const discovery = await loadDiscovery(userId, { sort });
 
   return (
     <section className="flex flex-col min-h-screen">

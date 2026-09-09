@@ -127,7 +127,7 @@ const stub = vi.hoisted(() => {
 
 vi.mock("../../db", () => ({ db: stub.db }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+vi.mock("next/cache", () => ({ revalidatePath: () => {}, updateTag: () => {} }));
 vi.mock("next/navigation", () => ({
   redirect: (target: string) => {
     stub.state.redirectTarget = target;

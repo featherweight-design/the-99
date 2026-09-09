@@ -1,7 +1,6 @@
 "use server";
 
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
@@ -10,7 +9,7 @@ import type { DetailedCatalogCard } from "../../lib/collection/match";
 import type { Availability } from "../../lib/decks/availability";
 import { loadAvailability } from "../../lib/decks/availability-query";
 import { buildDeckImport, type ImportNote } from "../../lib/decks/import";
-import { claimSurfaces } from "../../lib/decks/revalidate";
+import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { planDeckUpdate, type DeckUpdatePlan, type DeckUpdateRow } from "../../lib/decks/update";
 import {
   deckImportMaxBytes,
@@ -393,6 +392,6 @@ export async function updateDeckFromList(
     return { plan, removing, kept };
   });
 
-  for (const path of claimSurfaces(input.deckId)) revalidatePath(path);
+  revalidateClaims(input.deckId, userId);
   return { in: plan.in.length, out: removing.length, kept };
 }
