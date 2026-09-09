@@ -93,4 +93,20 @@ describe("useDeckRename", () => {
     expect(renameDeck).not.toHaveBeenCalled();
     expect(onDone).toHaveBeenCalled();
   });
+
+  // The spine mounts one of these per breakpoint. The hidden one is still
+  // mounted when the visible one renames, so without this a resize would open
+  // a field holding the previous name and a blur would rename the deck back.
+  it("takes a new name from outside and does not offer to save the old one", async () => {
+    const onDone = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ name }: { name: string }) => useDeckRename("d1", name, onDone),
+      { initialProps: { name: "Atraxa" } },
+    );
+    rerender({ name: "Superfriends" });
+    expect(result.current.value).toBe("Superfriends");
+    expect(result.current.canSave).toBe(false);
+    await act(async () => result.current.onBlur());
+    expect(renameDeck).not.toHaveBeenCalled();
+  });
 });

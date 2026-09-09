@@ -22,6 +22,17 @@ export function useDeckRename(deckId: string, currentName: string, onDone: () =>
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // The spine mounts this hook twice — one instance per breakpoint, both in the
+  // DOM, one hidden by CSS. A rename committed in the visible one leaves the
+  // hidden one holding the name as it was at mount, which after a resize is a
+  // field pre-filled with the old name that a blur would commit. Adjusted during
+  // render rather than in an effect, so the stale value never reaches the DOM.
+  const [syncedName, setSyncedName] = useState(currentName);
+  if (syncedName !== currentName) {
+    setSyncedName(currentName);
+    setValue(currentName);
+  }
+
   const trimmed = value.trim();
   const changed = trimmed !== currentName.trim();
   // Length is not part of `canSave`: an over-length name is a name the reader typed
