@@ -477,7 +477,13 @@ export function CreatePicker(props: CreatePickerProps) {
               className="font-mono text-[12px] text-center py-[40px]"
               style={{ color: "var(--fg-faint)" }}
             >
-              {pairing && primaryAbility ? (
+              {/* `partnerNoneOwned` is a statement about the collection —
+                  nobody in it can pair with this commander — so it may only be
+                  printed when the list is empty on its own terms. A query that
+                  matched nothing is the ordinary empty search, and saying
+                  otherwise would tell a player they own no partner when they
+                  own one whose name they mistyped. */}
+              {pairing && primaryAbility && query.trim() === "" ? (
                 copy.partnerNoneOwned(partnerAbilityLabel(primaryAbility))
               ) : (
                 <>No commanders match &ldquo;{query}&rdquo;.</>

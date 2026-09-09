@@ -81,3 +81,58 @@ describe("CreatePicker — phone bottom stack", () => {
     expect(container.querySelector("#picker-deck-name-mobile")).toBeNull();
   });
 });
+
+// `partnerNoneOwned` is a statement about the collection, not about the search:
+// it says nobody the player owns can pair with this commander. Printing it over
+// a query that simply matched nothing would tell a player they own no partner
+// while the partner they own sits one typo away.
+describe("CreatePicker — the partner list's empty state", () => {
+  const pairable = [
+    {
+      oracleId: "oracle-a",
+      name: "Ishai, Ojutai Dragonspeaker",
+      colorIdentity: ["W", "U"],
+      imageUri: null,
+      oracleText: "Partner (You can have two commanders if both have partner.)",
+      poolCount: 3,
+    },
+    {
+      oracleId: "oracle-b",
+      name: "Bruse Tarl, Boorish Herder",
+      colorIdentity: ["R", "W"],
+      imageUri: null,
+      oracleText: "Partner (You can have two commanders if both have partner.)",
+      poolCount: 2,
+    },
+  ];
+
+  function enterPairingMode() {
+    render(<CreatePicker legalCommanders={pairable} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Ishai/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Add a partner/ })[0]);
+  }
+
+  it("says nobody can pair only when the list is empty on its own terms", () => {
+    render(
+      <CreatePicker
+        legalCommanders={[{ ...pairable[0], oracleText: "Partner—Father & son" }]}
+      />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Ishai/ })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Add a partner/ })[0]);
+
+    // The slot's own caption says this too when the count is zero, so the
+    // assertion is that it is said — not that it is said exactly once.
+    expect(screen.getAllByText(/none of your commanders can pair/).length).toBeGreaterThan(0);
+  });
+
+  it("falls back to the ordinary no-match message when a query emptied the list", () => {
+    enterPairingMode();
+    fireEvent.change(screen.getAllByPlaceholderText("Search commanders…")[0], {
+      target: { value: "zzzznotacommander" },
+    });
+
+    expect(screen.getByText(/No commanders match/)).toBeInTheDocument();
+    expect(screen.queryByText(/none of your commanders can pair/)).toBeNull();
+  });
+});
