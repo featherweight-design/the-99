@@ -13,7 +13,7 @@ import { FitLegend, type FitLegendSegment } from "./fit-legend";
 import { WhySection } from "./why-section";
 import { FullCardTrigger } from "./full-card-trigger";
 import { IdentityPips } from "./commander-art";
-import { ArtWash } from "../ui/art-wash";
+import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CoverageSection } from "./coverage-section";
 import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
@@ -278,7 +278,7 @@ export function CommanderDetail({
               color: "var(--fg)",
               lineHeight: 1.15,
               marginTop: 4,
-              textShadow: "0 1px 4px rgba(0,0,0,0.85)",
+              textShadow: COVER_INK_SHADOW,
             }}
           >
             {c.name}
@@ -289,7 +289,7 @@ export function CommanderDetail({
               fontSize: 12.5,
               color: "var(--fg-body)",
               marginTop: 4,
-              textShadow: "0 1px 4px rgba(0,0,0,0.85)",
+              textShadow: COVER_INK_SHADOW,
             }}
           >
             {c.typeLine}
