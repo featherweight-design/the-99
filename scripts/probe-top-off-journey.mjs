@@ -242,7 +242,10 @@ async function forward(page, w) {
   const before = await deckSize();
   const offered = Number(/^Add (\d+)/.exec(await commit())?.[1]);
   const posts = [];
-  page.on("request", (r) => r.method() === "POST" && posts.push(r.url()));
+  // Removed at the end of the step: the page outlives this pass, so a listener
+  // left attached would count a later pass's POSTs into this array.
+  const countPost = (r) => r.method() === "POST" && posts.push(r.url());
+  page.on("request", countPost);
   let held;
   await page.route("**/decks/**", async (route) => {
     if (route.request().method() === "POST") await new Promise((r) => setTimeout(r, 3500));
@@ -263,6 +266,7 @@ async function forward(page, w) {
   await shot(page, `${w}-05-commit-inflight`);
   await page.waitForTimeout(8000);
   await page.unroute("**/decks/**");
+  page.off("request", countPost);
   const after = await deckSize();
   check(scope, "step 5: one POST for the whole commit", posts.length === 1, `${posts.length} POSTs`);
   check(
