@@ -13,14 +13,19 @@
 // draws the section and nothing around it.
 
 import Link from "next/link";
+import { shortCommanderName } from "../../lib/copy/decks-builder";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
+import { TRUNCATES } from "../decks/spine-desktop";
 import { StatusPillBadge } from "../decks/status-pill";
 import { ArtWash } from "../ui/art-wash";
 
 export const RESUME_COUNT = 2;
+
+const partnerCopy = deckImportCopy.commander;
 
 /**
  * Most recently played first, then most recently created.
@@ -65,7 +70,16 @@ function toBuyCopies(shopping: ShoppingRollup, deckId: string): number | null {
 }
 
 function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null }) {
-  const count = `${deck.built} / ${deckBodySize(false)}`;
+  const { partnerName } = deck;
+  const count = `${deck.built} / ${deckBodySize(partnerName !== null)}`;
+  // Decision 23. The long form leaves negative room for a name at all — 62px of
+  // pill, 28px of gaps and a 113px count against the 200px this line gets — so
+  // something has to not render, and it is never a partly truncated figure:
+  // `86 / 9…` reads as a different number in a way `Bruse Ta…` does not. A pair
+  // row therefore drops the clause outright. One boolean, no measurement, and
+  // not a new state — a deck with no roll-up entry already draws the count
+  // alone. The figure survives in the row's accessible name.
+  const clause = copies !== null && partnerName === null;
   return (
     <Link
       href={`/decks/${deck.id}`}
@@ -111,16 +125,75 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
           />
           {/* The commander names the portrait beside it. No text shadow, here
               or anywhere on this row: the type starts at the 116px inset, clear
-              of the art, which is decision 9's stated exception. */}
-          <span className="min-w-0 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]">
-            {deck.commanderName}
-          </span>
-          {/* Second in the flex line and the only shrinking child, so a narrow
-              row gives up the count before it gives up the commander's name. */}
-          <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">
-            {copies === null
-              ? count
-              : `${count} · ${refreshCopy.decks.detailCopies(copies)}`}
+              of the art, which is decision 9's stated exception.
+
+              Decision 19 — a pair prints SHORT names, the substring before the
+              first comma: `Ishai + Bruse Tarl` is 18 characters against 55 for
+              the full pair, and the row has no room for the second. Shortening
+              is pair-only, because the pair is what disambiguates two names the
+              way the title disambiguates one, so no single-commander row
+              changes a word.
+
+              Two spans with the joiner leading the shrinking one, so the `+` is
+              never the character truncation eats: the worst case is
+              `Ishai + Br…`, which still says *pair*. Both commanders are named
+              in full, primary first, in the row's accessible name below —
+              truncation is a layout compromise, never an information one. */}
+          {partnerName === null ? (
+            <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--fg-body)]">
+              {deck.commanderName}
+            </span>
+          ) : (
+            <>
+              <span
+                aria-hidden
+                className="flex min-w-0 flex-1 gap-[4px] overflow-hidden font-mono text-[10.5px] text-[color:var(--fg-body)]"
+              >
+                <span style={TRUNCATES}>{shortCommanderName(deck.commanderName)}</span>
+                <span style={{ ...TRUNCATES, flexShrink: 1000 }}>
+                  {`+ ${shortCommanderName(partnerName)}`}
+                </span>
+              </span>
+              {/* The one thing the pixels are allowed to drop and this is not:
+                  both names in full, primary first, and the clause the pair row
+                  does not draw. It stands in for the shortened names above
+                  rather than following them, so the row is not read twice. */}
+              <span className="sr-only">
+                {copies === null
+                  ? partnerCopy.pairAria(deck.commanderName, partnerName)
+                  : `${partnerCopy.pairAria(deck.commanderName, partnerName)} · ${partnerCopy.pairRowBuyAria(copies)}`}
+              </span>
+            </>
+          )}
+          {/* Decision 19 inverts what this line used to do. The count was the
+              shrinking child and collapsed to zero width before the name lost a
+              character — right for one name, wrong now that the denominator
+              carries the pair's other signal. It is pinned; the names above are
+              the only thing that gives. */}
+          {/* The figure and its clause are two children of one group rather than
+              one string, so that the clause, and never the figure, is what a
+              narrow row eats into: `86 / 9…` reads as a different number in a
+              way `3 car…` does not. That is also the latent bug this fixes — the
+              two shared a span that truncated to `86 / 98 · 3 t…`.
+
+              The name beside them takes its width from a zero basis and the
+              figure cannot shrink at all, so on a single row the clause is the
+              only child with anything left to give.
+
+              The group deliberately does NOT carry `min-w-0`: its automatic
+              minimum is its min-content width, which is the figure's — the
+              clause waives its own with `min-w-0`. So the group shrinks exactly
+              as far as the clause has left to give and then stops, which is what
+              pins the figure. With `min-w-0` here the group keeps going and the
+              unshrinkable figure inside is clipped by the row instead, printing
+              the `86 / 9` this whole arrangement exists to prevent. */}
+          <span className="flex gap-[4px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+            <span className="flex-none whitespace-nowrap">{count}</span>
+            {clause && (
+              <span className="min-w-0 truncate">
+                {`· ${refreshCopy.decks.detailCopies(copies!)}`}
+              </span>
+            )}
           </span>
         </span>
       </span>

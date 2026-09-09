@@ -111,6 +111,31 @@ describe("DeckRail", () => {
     expect(list("desktop").getByText("Complete")).toBeInTheDocument();
   });
 
+  // Decision 21. The denominator is the whole of the rail's pair handling: no
+  // second name, no halved art spine, just the ceiling this deck actually has.
+  it("prints 98 as a pair row's denominator and nothing else about the pair", () => {
+    render(
+      <DeckRail
+        decks={[deck({ built: 95, partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup()}
+      />,
+    );
+    expect(list("phone").getByText("95 / 98")).toBeInTheDocument();
+    expect(screen.queryByText(/Bruse Tarl/)).toBeNull();
+  });
+
+  // Over WHAT this deck's ceiling is: 99 cards is one over for a pair and
+  // exactly full for a single commander.
+  it("counts a pair's overflow against 98", () => {
+    render(
+      <DeckRail
+        decks={[deck({ built: 99, statusPill: "Over", partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup()}
+      />,
+    );
+    expect(screen.getByText("Over · 1 over")).toBeInTheDocument();
+  });
+
   it("renders nothing at all when there are no decks", () => {
     const { container } = render(<DeckRail decks={[]} shopping={rollup()} />);
     expect(container).toBeEmptyDOMElement();

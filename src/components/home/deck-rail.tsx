@@ -51,7 +51,10 @@ function railClause(deck: DeckListItem, shopping: ShoppingRollup): string | null
     case "Unresolved":
       return c.detailUnresolved(deck.unresolvedCount);
     case "Over":
-      return c.detailOver(deck.built - deckBodySize(false));
+      // Over WHAT this deck's ceiling is, not over 99: a pair's body is 98, so
+      // the same 99 cards are one over for a pair and exactly full for a single
+      // commander. The status that names this row reads the same ceiling.
+      return c.detailOver(deck.built - deckBodySize(deck.partnerName !== null));
     // The three statuses the `87 / 99` on the same line already explains. A
     // clause invented to fill the slot would say it twice.
     case "Draft":
@@ -138,8 +141,11 @@ function PhoneRow({
         </span>
       </span>
 
+      {/* Decision 21. The denominator is the rail's only pair signal — a pair
+          row reads `/ 98` and is otherwise the row it always was. The 26px art
+          spine above is not halved: half of 26 is card frame with no face. */}
       <span className="flex-none font-mono text-[12px] tabular-nums text-[color:var(--fg)]">
-        {deck.built} / {deckBodySize(false)}
+        {deck.built} / {deckBodySize(deck.partnerName !== null)}
       </span>
     </Link>
   );
