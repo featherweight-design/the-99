@@ -487,3 +487,4 @@ console.log(`\nshots:\n${shots.join("\n")}`);
 console.log(`\n${findings.length} findings`);
 for (const f of findings) console.log(` · ${f}`);
 await browser.close();
+process.exit(findings.length === 0 ? 0 : 1);
