@@ -65,6 +65,7 @@ function mount(
   return render(
     <ProvenanceLedger
       deckId="deck-1"
+      bodySize={99}
       cards={cards}
       total={cardCopies(cards.filter((c) => c.auto))}
       passes={passes}
@@ -214,6 +215,7 @@ describe("ProvenanceLedger", () => {
     const passes = [makePass("p1", { oracleIds: ["a"] })];
     const props = {
       deckId: "deck-1",
+      bodySize: 99,
       passes,
       markedPassId: null,
       onMarkChange: vi.fn(),
@@ -231,7 +233,7 @@ describe("ProvenanceLedger", () => {
       settle({ removed: 1, built: 7 });
     });
 
-    expect(onAnnounce).toHaveBeenCalledWith(topOffCopy.announce.undone("1", "7"));
+    expect(onAnnounce).toHaveBeenCalledWith(topOffCopy.announce.undone("1", "7", 99));
   });
 
   it("keeps the line and states the refusal when an undo rejects", async () => {
@@ -263,6 +265,7 @@ describe("ProvenanceLedger", () => {
         deckId="deck-1"
         cards={[makeCard("a", { auto: false })]}
         total={0}
+        bodySize={99}
         passes={passes}
         markedPassId={null}
         onMarkChange={vi.fn()}

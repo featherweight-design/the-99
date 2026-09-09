@@ -41,6 +41,9 @@ interface ProvenanceLedgerProps {
   total: number;
   /** Oldest first, passes with no live cards already dropped. */
   passes: FillPassSummary[];
+  /** The deck's body size — 99, or 98 for a pair. An undo announces the size
+      the deck settled back to, which is stated against this. */
+  bodySize: number;
   markedPassId: string | null;
   onMarkChange: (passId: string | null) => void;
   onAnnounce: (message: string) => void;
@@ -51,6 +54,7 @@ export function ProvenanceLedger({
   cards,
   total,
   passes,
+  bodySize,
   markedPassId,
   onMarkChange,
   onAnnounce,
@@ -117,6 +121,7 @@ export function ProvenanceLedger({
               deckId={deckId}
               pass={pass}
               buy={buyCount(pass)}
+              bodySize={bodySize}
               // The last line is the newest, because the list is oldest first.
               newest={i === passes.length - 1}
               marked={markedPassId === pass.id}
@@ -158,6 +163,7 @@ interface LedgerLineProps {
   deckId: string;
   pass: FillPassSummary;
   buy: number;
+  bodySize: number;
   newest: boolean;
   marked: boolean;
   onMarkChange: (passId: string | null) => void;
@@ -173,6 +179,7 @@ function LedgerLine({
   deckId,
   pass,
   buy,
+  bodySize,
   newest,
   marked,
   onMarkChange,
@@ -200,7 +207,7 @@ function LedgerLine({
         // well as by the render-time reconcile, because a pass whose undo
         // removed only some of its cards survives in the fresh summaries.
         if (marked) onMarkChange(null);
-        onAnnounce(topOffCopy.announce.undone(String(removed), String(settled)));
+        onAnnounce(topOffCopy.announce.undone(String(removed), String(settled), bodySize));
       } catch {
         onUndoError(ledger.undoFailed);
       }

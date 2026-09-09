@@ -20,6 +20,7 @@ import { suggestDeck, buildSuggestionPayload, type DeckSuggestion } from "../../
 import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { validateDeckName } from "../../lib/decks/deck-name";
+import { deckBodySize } from "../../lib/decks/deck-size";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
 import { canPair, partnerAbility } from "../../lib/decks/partner";
 import {
@@ -137,6 +138,9 @@ export async function buildFillPlan(
   // The cards a selection has already placed. Defaults to empty, so `fillDeck`
   // and the no-selection `createDeck` are unchanged.
   excludeOracleIds: Set<string> = new Set(),
+  // A pair's body is 98, and the slot it loses comes out of the lands — so the
+  // plan needs to know before it picks any, not after it has been capped.
+  hasPartner = false,
 ): Promise<FillPlan> {
   const pool = dedupeSelectionFromPool(
     await ownedColorLegalPool(userId, [commander]),
@@ -177,7 +181,7 @@ export async function buildFillPlan(
       owned: false, ownedQuantity: 0,
       inclusionPct: inclusionOf(c.name),
     })),
-  ]);
+  ], hasPartner);
 }
 
 /** `selectedOracleIds` are the synergy picks the player carried across the
@@ -256,18 +260,20 @@ export async function createDeck(
       .map((card) => card.oracleId);
     const selectedSet = new Set(selected);
 
+    const bodySize = deckBodySize(partnerOracleId !== null);
     const plan = await buildFillPlan(userId, {
       oracleId: commanderOracleId,
       name: commander.name,
       colorIdentity: commander.colorIdentity,
-    }, selectedSet);
+    }, selectedSet, partnerOracleId !== null);
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
         .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: true })
         .returning({ id: decks.id });
-      // The selection first, then as much of the fill as fits under 99. The cap
-      // sums quantity rather than counting rows, because planFill stacks basics
-      // (a single row can be thirty Forests).
+      // The selection first, then as much of the fill as fits under the body
+      // size — 99, or 98 for a pair. The cap sums quantity rather than counting
+      // rows, because planFill stacks basics (a single row can be thirty
+      // Forests).
       const rows = [
         ...selected.map((oracleId) => ({ deckId: deck.id, oracleId, quantity: 1, auto: true })),
         ...plan.rows.map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
@@ -275,11 +281,11 @@ export async function createDeck(
       const capped: typeof rows = [];
       let built = 0;
       for (const row of rows) {
-        const remaining = 99 - built;
+        const remaining = bodySize - built;
         if (remaining <= 0) break;
         // A stack that overruns the cap is truncated, not dropped. Skipping it
-        // would leave the deck short of 99 with room still on the table — two
-        // slots left and a stack of four Forests next would spend neither.
+        // would leave the deck short of its body with room still on the table —
+        // two slots left and a stack of four Forests next would spend neither.
         const quantity = Math.min(row.quantity, remaining);
         capped.push({ ...row, quantity });
         built += quantity;
@@ -290,9 +296,10 @@ export async function createDeck(
         // reversal is the sweep rather than an undo of its own. Recorded in the
         // same transaction as the rows it describes; a deck that got its cards
         // and not its pass would show auto rows the ledger cannot account for.
-        // openSlots is 99 because the deck did not exist a statement ago.
+        // openSlots is the whole body because the deck did not exist a
+        // statement ago.
         await recordFillPass(tx, {
-          deckId: deck.id, kind: "seed", openSlots: 99,
+          deckId: deck.id, kind: "seed", openSlots: bodySize,
           rows: capped.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
         });
       }
@@ -601,7 +608,8 @@ export async function fillDeck(deckId: string): Promise<void> {
     .from(deckCards).where(eq(deckCards.deckId, deckId)).limit(1);
   if (existing.length > 0) return;
 
-  const plan = await buildFillPlan(userId, commander);
+  const hasPartner = deck.partnerOracleId !== null;
+  const plan = await buildFillPlan(userId, commander, new Set(), hasPartner);
   await db.transaction(async (tx) => {
     // Lock the deck row before re-reading, the same way addCardToDeck does.
     // Without it the read sees a snapshot: a hand-add that commits between the
@@ -619,10 +627,10 @@ export async function fillDeck(deckId: string): Promise<void> {
       await tx.insert(deckCards).values(
         plan.rows.map((r) => ({ deckId, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       );
-      // The retry's fill is still the seed. openSlots is 99 because this path
-      // refuses a deck that already holds cards.
+      // The retry's fill is still the seed. openSlots is the whole body because
+      // this path refuses a deck that already holds cards.
       await recordFillPass(tx, {
-        deckId, kind: "seed", openSlots: 99,
+        deckId, kind: "seed", openSlots: deckBodySize(hasPartner),
         rows: plan.rows.map((r) => ({ oracleId: r.oracleId, quantity: r.quantity })),
       });
     }
@@ -802,6 +810,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
   if (ids.length === 0) throw new Error("nothing selected");
 
   const identity = await deckValidationContext(deck);
+  const bodySize = deckBodySize(deck.partnerOracleId !== null);
 
   const landedIds = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
@@ -818,7 +827,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
     const landed = ids.filter((oracleId) => !here.has(oracleId));
     // A refusal, not a truncation: a caller past the cap is working from a stale
     // view of the deck and should be told rather than silently given less.
-    if (landed.length > 99 - built) throw new Error("more cards than open slots");
+    if (landed.length > bodySize - built) throw new Error("more cards than open slots");
 
     const byOracleId = new Map(
       (await tx.select({
@@ -843,7 +852,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
     // Only the rows that landed. A pass claiming a card it did not place would
     // offer to undo one the player put there themselves.
     const passId = await recordFillPass(tx, {
-      deckId, kind: "top_off", openSlots: 99 - built,
+      deckId, kind: "top_off", openSlots: bodySize - built,
       rows: landed.map((oracleId) => ({ oracleId, quantity: 1 })),
     });
     revalidateClaims(deckId, userId);

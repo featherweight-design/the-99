@@ -38,6 +38,7 @@ function renderDecklist(props: Partial<React.ComponentProps<typeof Decklist>> = 
         cards={[card()]}
         unresolvedRows={[row()]}
         built={1}
+        bodySize={99}
         filter="all"
         grouping="type"
         onFilterChange={vi.fn()}

@@ -170,12 +170,12 @@ export const topOffCopy = {
      *  printing 'Add 0 cards', and goes disabled with no error. */
     add: (ticked: string) => `Add ${plural(ticked, 'card', 'cards')}`,
     addEmpty: 'Add cards',
-    addAria: (ticked: string, total: string) =>
-      `Add ${plural(ticked, 'card', 'cards')} to the deck, ${total} of 99`,
+    addAria: (ticked: string, total: string, bodySize: number) =>
+      `Add ${plural(ticked, 'card', 'cards')} to the deck, ${total} of ${bodySize}`,
     cancel: 'Cancel',
 
     /** The consequence, before the tap. */
-    consequence: (total: string) => `${total} of 99 when added`,
+    consequence: (total: string, bodySize: number) => `${total} of ${bodySize} when added`,
     /** The money, said once, in --warning, beside the count it belongs to.
      *  This is the only figure on the surface that is about spending.
      *
@@ -333,14 +333,14 @@ export const topOffCopy = {
       `${ticked} of ${n} ticked, ${buy} to buy.`,
     tickedNoBuy: (ticked: string, n: string) => `${ticked} of ${n} ticked.`,
     capped: (n: string) => `${n} of ${plural(n, 'slot', 'slots')} ticked.`,
-    added: (added: string, total: string, buy: string) =>
-      `${plural(added, 'card', 'cards')} added. ${total} of 99, ${buy} to buy.`,
-    addedNoBuy: (added: string, total: string) =>
-      `${plural(added, 'card', 'cards')} added. ${total} of 99.`,
+    added: (added: string, total: string, buy: string, bodySize: number) =>
+      `${plural(added, 'card', 'cards')} added. ${total} of ${bodySize}, ${buy} to buy.`,
+    addedNoBuy: (added: string, total: string, bodySize: number) =>
+      `${plural(added, 'card', 'cards')} added. ${total} of ${bodySize}.`,
     declined: (name: string, ticked: string, n: string) =>
       `${name} set aside. ${ticked} of ${n} ticked.`,
-    undone: (added: string, total: string) =>
-      `${plural(added, 'card', 'cards')} put back. ${total} of 99.`,
+    undone: (added: string, total: string, bodySize: number) =>
+      `${plural(added, 'card', 'cards')} put back. ${total} of ${bodySize}.`,
     /** The mark is a visual grouping, so it is the one thing on this surface a
      *  reader would otherwise get nothing from. */
     marked: (n: string, pass: string) =>

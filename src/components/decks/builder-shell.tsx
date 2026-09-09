@@ -207,6 +207,11 @@ export function BuilderShell({
   const counts = deckCounts(cards, unresolvedCount);
   const { built } = counts;
 
+  // The ceiling this page measures against, derived once. A pair's commanders
+  // take two of the hundred, so its body is 98 and every figure below counts
+  // toward that rather than a written-down 99.
+  const bodySize = deckBodySize(deck.partner !== null);
+
   // The one deliberate exception. Keyed off the SERVER counts because the
   // commitments roll-up below states a fact about other decks' claims, and a
   // predicted 99th card the server then rejects would zero the soft count for
@@ -220,7 +225,7 @@ export function BuilderShell({
     // — unowned, and owned but held by an older finished deck — so this pill and
     // the Shopping filter's own count can never disagree.
     unfundedCount: cardCopies(deck.cards.filter(isShoppingCard)),
-    bodySize: deckBodySize(false),
+    bodySize,
   });
 
   // Deliberately the SERVER list, not the optimistic one. ConsiderPanel and
@@ -663,6 +668,7 @@ export function BuilderShell({
                 cards={cards}
                 total={autoCount}
                 passes={fillPasses}
+                bodySize={bodySize}
                 markedPassId={markedPassId}
                 onMarkChange={handleMarkChange}
                 onAnnounce={setAnnouncement}
@@ -680,7 +686,8 @@ export function BuilderShell({
                 width-dependent element — the same shape the ledger now takes. */}
             <LastSlotsStrip
               deckId={deck.id}
-              openSlots={99 - built}
+              openSlots={bodySize - built}
+              bodySize={bodySize}
               candidates={candidates}
               deckOracleIds={topOffDeckOracleIds}
               newestAsOf={newestAsOf}
@@ -974,6 +981,7 @@ export function BuilderShell({
                 commanderOracleId={deck.commander.oracleId}
                 deckOracleIds={deckOracleIds}
                 built={built}
+                bodySize={bodySize}
                 spentSlot={spentSlot}
                 filled={deck.filled}
                 filter={filter}

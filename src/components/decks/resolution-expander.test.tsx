@@ -100,6 +100,7 @@ function Harness({
           cards={deck.cards}
           unresolvedRows={deck.unresolvedRows}
           built={counts.built}
+          bodySize={99}
           filter="all"
           grouping="type"
           onFilterChange={vi.fn()}

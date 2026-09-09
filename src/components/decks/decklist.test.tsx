@@ -90,6 +90,7 @@ function renderDecklist(
           commanderOracleId="commander-1"
           deckOracleIds={cards.map((c) => c.oracleId)}
           built={cards.reduce((s, c) => s + c.quantity, 0)}
+          bodySize={99}
           filled={opts.filled ?? false}
           spentSlot={opts.spentSlot ?? null}
           filter="shopping"

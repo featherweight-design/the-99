@@ -34,6 +34,9 @@ const candidates = [
 const base = {
   deckId: "deck-1",
   openSlots: 3,
+  // Every case here is a single-commander deck, which is the ceiling the
+  // figures they assert on are written against.
+  bodySize: 99,
   candidates,
   deckOracleIds: new Set<string>(),
   newestAsOf: null,
@@ -284,7 +287,7 @@ describe("LastSlotsStrip", () => {
   it("changes the door note once the list has been opened and committed", async () => {
     render(<LastSlotsStrip {...base} />);
     await click(screen.getByRole("button", { name: doorName("3") }));
-    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98") }));
+    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98", 99) }));
 
     expect(await screen.findByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
     expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();

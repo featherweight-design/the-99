@@ -44,6 +44,10 @@ type DecklistProps = {
   /** The committed claim set — see UnresolvedGroup. */
   deckOracleIds: string[];
   built: number;
+  /** The ceiling `built` is measured against — 99, or 98 for a pair. Passed
+      rather than derived, so this list cannot disagree with the target strip
+      above it about how big the deck is. */
+  bodySize: number;
   /** The card whose slot is spent, drawn in place as an undo row (#185). */
   spentSlot?: DeckDetailCard | null;
   /**
@@ -96,6 +100,7 @@ export function Decklist({
   commanderOracleId,
   deckOracleIds,
   built,
+  bodySize,
   spentSlot = null,
   filled = false,
   filter,
@@ -251,9 +256,10 @@ export function Decklist({
     const missingN = cardCopies(missingCards.filter(notSpent));
 
     // The open slots the player kept for themselves (not filled by auto).
-    // Clamped because a deck past 99 has none: the copy this feeds says the
-    // slots are "the fun part", and a negative count of them is nonsense.
-    const openSlots = Math.max(0, 99 - built);
+    // Clamped because a deck past its body size has none: the copy this feeds
+    // says the slots are "the fun part", and a negative count of them is
+    // nonsense.
+    const openSlots = Math.max(0, bodySize - built);
 
     // The auto lifecycle's refusals — a sweep, a keep-all or an undo — and the
     // sweep's receipt. Shared by both branches below: a sweep usually empties

@@ -18,6 +18,7 @@ import { ExternalLink } from "../ui/external-link";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { exportLinkOutCopy, exportShoppingCopy, overCopy } from "../../lib/copy/decks-builder";
 import { priceCopy } from "../../lib/copy/price";
+import { deckBodySize } from "../../lib/decks/deck-size";
 
 type Tab = "decklist" | "shopping";
 
@@ -70,6 +71,9 @@ export function ExportDialog({
   // rather than passed in, so it cannot disagree with the preview's own header.
   const built = decklistCards.reduce((sum, c) => sum + c.quantity, 0);
   const totalCards = commanderLines.length + built;
+  // A hundred cards including the commanders, so a pair's body is 98 and the
+  // overage line measures against that rather than a written-down 99.
+  const bodySize = deckBodySize(partnerName !== null);
 
   return (
     <>
@@ -118,6 +122,7 @@ export function ExportDialog({
             bodyLines={bodyLines}
             totalCards={totalCards}
             built={built}
+            bodySize={bodySize}
             setStatus={setStatus}
             onClose={onClose}
             isMobile={false}
@@ -145,6 +150,7 @@ export function ExportDialog({
             bodyLines={bodyLines}
             totalCards={totalCards}
             built={built}
+            bodySize={bodySize}
             setStatus={setStatus}
             onClose={onClose}
             isMobile={true}
@@ -168,8 +174,11 @@ interface DialogContentProps {
   commanderLines: string[];
   bodyLines: string[];
   totalCards: number;
-  /** Matched body cards — over 99 adds one line, see overCopy.exportNote. */
+  /** Matched body cards — over the body size adds one line, see
+      overCopy.exportNote. */
   built: number;
+  /** 99, or 98 for a pair. */
+  bodySize: number;
   setStatus: (s: string) => void;
   onClose: () => void;
   isMobile: boolean;
@@ -185,6 +194,7 @@ function DialogContent({
   bodyLines,
   totalCards,
   built,
+  bodySize,
   setStatus,
   onClose,
   isMobile,
@@ -309,11 +319,11 @@ function DialogContent({
         {tab === "decklist" ? (
           /* Decklist tab body */
           <div style={{ margin: isMobile ? "14px 18px" : "0 24px" }}>
-            {/* Over 99: one line stating the arithmetic in the one place the
-                list leaves the app. Not a warning and not a blocker — export
-                stays enabled, because the player is very likely pasting this
-                somewhere to do the cutting. */}
-            {built > 99 && (
+            {/* Over the body size: one line stating the arithmetic in the one
+                place the list leaves the app. Not a warning and not a blocker —
+                export stays enabled, because the player is very likely pasting
+                this somewhere to do the cutting. */}
+            {built > bodySize && (
               <p
                 style={{
                   fontSize: isMobile ? 12 : 12.5,
@@ -322,12 +332,12 @@ function DialogContent({
                   margin: "0 0 10px",
                 }}
               >
-                {/* The size figure is the whole list, commander included, so it
+                {/* The size figure is the whole list, commanders included, so it
                     agrees with the preview header a few lines down rather than
                     contradicting it. The overage is still measured off the body:
-                    a Commander deck holds a hundred cards, ninety-nine and its
-                    commander, so 105 really is five over. */}
-                {overCopy.exportNote(String(totalCards), String(built - 99))}
+                    a Commander deck holds a hundred cards, so 105 really is five
+                    over whether one card of it leads the deck or two do. */}
+                {overCopy.exportNote(String(totalCards), String(built - bodySize))}
               </p>
             )}
             <pre
