@@ -71,7 +71,10 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
   return (
     <header
       className="group relative hidden md:block"
-      style={{ height: 168, borderBottom: "1px solid var(--border)" }}
+      // minHeight, not the table's height + overflow:hidden: an over-99 deck
+      // draws a trim paragraph inside this band, and clipping it would hide
+      // copy rather than art. The wash still declares 168px itself.
+      style={{ minHeight: 168, borderBottom: "1px solid var(--border)" }}
     >
       <ArtWash
         strategy="left-portrait"
@@ -169,10 +172,12 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
             <p className="font-mono" style={{ fontSize: 11, color: "var(--fg-body)" }}>
               {commander.name} · {colorLabel(commander.colorIdentity)}
             </p>
+            {/* Geometry only; `statusPillStyle` still owns the colour. The prop
+                replaces the tile's class outright, so every box property §B8
+                names has to be restated here — there is no merge. */}
             <StatusPillBadge
               status={status}
-              className="flex flex-none items-center font-mono"
-              // Geometry only; `statusPillStyle` still owns the colour.
+              className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]"
             />
           </div>
 
@@ -255,10 +260,14 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
                   // aria-disabled, never disabled: disabling the focused control
                   // blurs it, and blur commits.
                   aria-disabled={!rename.canSave}
+                  // `inert`, not `!canSave`: a request in flight also clears
+                  // `canSave`, and §F draws Saving as the accent button at .6 —
+                  // the elevated plate belongs to the one state nothing can be
+                  // done to, where a hover would promise a click that does nothing.
                   className={`flex items-center rounded-[8px] border-0 font-sans font-semibold ${
-                    rename.canSave
-                      ? "bg-[color:var(--accent)] text-[color:var(--bg)]"
-                      : "bg-[color:var(--elevated)] text-[color:var(--fg-disabled)]"
+                    inert
+                      ? "bg-[color:var(--elevated)] text-[color:var(--fg-disabled)]"
+                      : "bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)]"
                   }`}
                   style={{
                     height: 29,

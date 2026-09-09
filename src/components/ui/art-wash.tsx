@@ -46,6 +46,11 @@ const COVER_PLATE = "color-mix(in srgb, var(--bg) 86%, black)";
     inset, clear of the portrait, and carries none. */
 export const INK_SHADOW = "0 1px 3px rgba(0,0,0,.6)";
 
+/** The deeper shadow the `cover` bands carry. Their type sits over the middle of
+    a photograph rather than past a portrait's flat stop, so it is drawn against
+    the brightest pixel the crop can put there, not against the row's ground. */
+export const COVER_INK_SHADOW = "0 1px 4px rgba(0,0,0,0.85)";
+
 const PORTRAIT_RATIO = 1.37; // art_crop is 626×457
 
 /** A ceiling, not a value. The handoff's `.3` was written for the cover band's

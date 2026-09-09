@@ -1,15 +1,16 @@
 // The deck details header below 768px — property table §C.
 //
 // Everything in the band sits on the wash, so every string here carries the
-// shared ink shadow — the exact inverse of the desktop band's flat-ground rule.
-// The one string below the divider is on flat ground and carries none.
+// cover band's deeper ink shadow — the exact inverse of the desktop band's
+// flat-ground rule. The one string below the divider is on flat ground and
+// carries none.
 "use client";
 
 import { useState } from "react";
 import { GhostButton } from "@/components/ui/button";
 import { IdentityPips } from "../commanders/commander-art";
 import { FullCardTrigger } from "../commanders/full-card-trigger";
-import { ArtWash, INK_SHADOW } from "../ui/art-wash";
+import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { colorLabel } from "../../lib/decks/format";
@@ -37,15 +38,17 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
         style={{
           fontSize: 10,
           color: onWash ? "var(--fg-body)" : "var(--fg-muted)",
-          textShadow: onWash ? INK_SHADOW : undefined,
+          textShadow: onWash ? COVER_INK_SHADOW : undefined,
         }}
       >
         {commander.name} · {colorLabel(commander.colorIdentity)}
       </p>
-      {/* No shadow at either call site: the chip carries its own opaque plate. */}
+      {/* No shadow at either call site: the chip carries its own opaque plate.
+          The prop replaces the tile's class outright, so §C8's box is restated
+          in full — there is no merge with the default. */}
       <StatusPillBadge
         status={status}
-        className="flex flex-none items-center font-mono"
+        className="flex flex-none items-center rounded-[6px] px-[7px] py-[3px] font-mono text-[10px]"
       />
     </div>
   );
@@ -108,8 +111,11 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
                   // aria-disabled, never disabled: disabling the focused control
                   // blurs it, and blur commits.
                   aria-disabled={!rename.canSave}
+                  // Keyed off inert, not off `canSave`: a request in flight also
+                  // clears `canSave`, and §F draws Saving as the accent button
+                  // at .6 rather than as the elevated one nothing can be done to.
                   className={`flex items-center rounded-[7px] border-0 font-mono font-medium ${
-                    rename.canSave
+                    rename.canSave || rename.isPending
                       ? "bg-[color:var(--accent)] text-[color:var(--bg)]"
                       : "bg-[color:var(--elevated)] text-[color:var(--fg-disabled)]"
                   }`}
@@ -117,6 +123,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
                     minHeight: 44,
                     padding: "0 18px",
                     fontSize: 11,
+                    opacity: rename.isPending ? 0.6 : 1,
                     cursor: rename.canSave ? "pointer" : "default",
                   }}
                 >
@@ -152,7 +159,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
                     lineHeight: 1.25,
                     textAlign: "center",
                     color: "var(--fg)",
-                    textShadow: INK_SHADOW,
+                    textShadow: COVER_INK_SHADOW,
                     display: "-webkit-box",
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: "vertical",

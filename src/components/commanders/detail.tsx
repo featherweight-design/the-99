@@ -233,7 +233,10 @@ export function CommanderDetail({
           at every width. Exactly one instance in the DOM. */}
       <SelectableLiveAnnouncer cards={synergyCards} />
       {/* ── Mobile: art header band ─────────────────────────────────── */}
-      <div className="sm:hidden relative flex-none" style={{ aspectRatio: "1.6 / 1" }}>
+      <div
+        className="sm:hidden relative flex-none overflow-hidden"
+        style={{ aspectRatio: "1.6 / 1" }}
+      >
         <ArtWash
           strategy="cover"
           labelEdge="bottom"
