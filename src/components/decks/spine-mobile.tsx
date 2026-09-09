@@ -181,7 +181,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
                 <button
                   type="button"
                   onClick={() => setRenaming(true)}
-                  aria-label={renameCopy.triggerAria}
+                  aria-label={renameCopy.triggerAria(deck.name)}
                   className="flex flex-none items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] text-[color:var(--fg)]"
                   style={{ width: 44, height: 44, fontSize: 15, cursor: "pointer" }}
                 >

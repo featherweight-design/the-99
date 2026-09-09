@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { SpineMobile } from "./spine-mobile";
+import { renameCopy } from "../../lib/copy/decks-builder";
 import { props } from "./spine-fixtures";
 
 function renderSpine(ui: React.ReactElement) {
@@ -20,7 +21,7 @@ describe("SpineMobile", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const band = container.querySelector("[data-testid='spine-band']")!;
     expect(band.textContent).toContain("Atraxa, Praetors’ Voice");
-    fireEvent.click(screen.getByRole("button", { name: "Rename deck" }));
+    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
     expect(band.textContent).not.toContain("Atraxa, Praetors’ Voice");
     expect(screen.getByText(/Atraxa, Praetors’ Voice/)).toBeTruthy();
   });
@@ -30,10 +31,19 @@ describe("SpineMobile", () => {
   // same rename the tap is about to send.
   it("neither action lets the field's blur fire first", () => {
     renderSpine(<SpineMobile {...props} />);
-    fireEvent.click(screen.getByRole("button", { name: "Rename deck" }));
+    fireEvent.click(screen.getByRole("button", { name: renameCopy.triggerAria(props.deck.name) }));
     for (const name of [/Save/, "Cancel"]) {
       expect(fireEvent.mouseDown(screen.getByRole("button", { name }))).toBe(false);
     }
+  });
+
+  // R6 ruling 4. The header is reachable from list contexts, so the label has
+  // to say which deck is about to be renamed.
+  it("names the deck in the rename trigger's accessible name", () => {
+    renderSpine(<SpineMobile {...props} />);
+    expect(
+      screen.getByRole("button", { name: `Rename deck: ${props.deck.name}` }),
+    ).toBeTruthy();
   });
 
   it("colours the bar by status", () => {

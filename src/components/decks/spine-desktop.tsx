@@ -151,7 +151,7 @@ export function SpineDesktop({ deck, counts, status, onExport }: SpineBandProps)
                 <button
                   type="button"
                   onClick={() => setRenaming(true)}
-                  aria-label={renameCopy.triggerAria}
+                  aria-label={renameCopy.triggerAria(deck.name)}
                   // Focus-visible reveals it too, or it is keyboard-unreachable.
                   className="flex flex-none items-center justify-center rounded-[6px] border border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-muted)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[color:var(--elevated-hover)]"
                   style={{
