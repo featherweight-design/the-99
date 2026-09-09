@@ -24,6 +24,7 @@ const deck = {
     oracleText: null,
     imageUri: null,
   },
+  partner: null,
   cards: [],
   // Deliberately the server's stale figure. Every number the spine draws comes
   // from `counts`, so a deck the player has just pushed over 99 says so before

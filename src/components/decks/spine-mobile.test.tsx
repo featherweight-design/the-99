@@ -27,6 +27,54 @@ describe("SpineMobile", () => {
     expect(screen.getByText("/ 98")).toBeTruthy();
   });
 
+  // Decision 18. The caption is centred inside an 18px inset, so at 390 two
+  // names are already the width of the row: the identity label is dropped for
+  // a pair and kept for a single commander.
+  it("states the pair without the identity label", () => {
+    renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    const group = screen.getByText("Atraxa, Praetors’ Voice").parentElement!;
+    expect([...group.children].map((n) => n.textContent)).toEqual([
+      "Atraxa, Praetors’ Voice",
+      "+",
+      "Kratos, God of War",
+    ]);
+    cleanup();
+    renderSpine(<SpineMobile {...props} />);
+    expect(screen.getByText(/Praetors’ Voice/).textContent).toBe(
+      "Atraxa, Praetors’ Voice · Non-red",
+    );
+  });
+
+  // Decision 18's ordered shrink. The names lead this row rather than following
+  // the pips, which is the one ordering difference from the desktop caption.
+  it("leads the row with the names and shrinks the partner first", () => {
+    renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    const row = screen.getByText("Atraxa, Praetors’ Voice").parentElement!.parentElement!;
+    expect(row.firstElementChild!.textContent).toContain("Atraxa, Praetors’ Voice");
+
+    const trigger = screen.getByRole("button", {
+      name: "Show the printing for Kratos, God of War",
+    });
+    expect(trigger.style.flexShrink).toBe("1000");
+    expect(trigger.style.textOverflow).toBe("ellipsis");
+  });
+
+  // The trigger is a 10px word inside a 10px caption, so the target is padding
+  // the equal negative margin takes back out of the row. The rule that marks it
+  // sits on the word rather than on that taller box.
+  it("gives the partner's trigger a 44px target without moving the caption", () => {
+    renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    const trigger = screen.getByRole("button", {
+      name: "Show the printing for Kratos, God of War",
+    });
+    expect(trigger.style.padding).toBe("22px 0px 9px");
+    expect(trigger.style.margin).toBe("-22px 0px -9px");
+    expect(trigger.style.borderBottom).toBe("");
+    expect((trigger.firstElementChild as HTMLElement).style.borderBottom).toBe(
+      "1px solid var(--border-strong)",
+    );
+  });
+
   it("moves the meta row below the divider while editing", () => {
     const { container } = renderSpine(<SpineMobile {...props} />);
     const band = container.querySelector("[data-testid='spine-band']")!;

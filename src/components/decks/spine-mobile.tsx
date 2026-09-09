@@ -8,24 +8,27 @@
 
 import { useState } from "react";
 import { GhostButton } from "@/components/ui/button";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { IdentityPips } from "../commanders/commander-art";
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ArtWash, COVER_INK_SHADOW } from "../ui/art-wash";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, overWord, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
-import { colorLabel } from "../../lib/decks/format";
+import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
-import type { SpineBandProps } from "./spine-desktop";
+import { type SpineBandProps, TRUNCATES } from "./spine-desktop";
 import { StatusPillBadge } from "./status-pill";
 import { useDeckRename } from "./use-deck-rename";
 
 export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
-  const { commander } = deck;
+  const { commander, partner } = deck;
   const { built } = counts;
-  const over = built > 99;
-  const toCut = built - 99;
+  const bodySize = deckBodySize(partner !== null);
+  const identity = deckIdentity(commander.colorIdentity, partner?.colorIdentity ?? null);
+  const over = built > bodySize;
+  const toCut = built - bodySize;
   // R6 ruling 3: one state, one colour. Past 99 the status is `Over`, so every
   // ink the state adds reads the same token `statusBarStyle` gives the bar
   // rather than a second alarm colour of its own.
@@ -37,17 +40,67 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
   // its ground, which is the only reason the two call sites take an argument.
   const metaRow = (onWash: boolean) => (
     <div className="flex flex-wrap items-center justify-center" style={{ gap: 8 }}>
-      <IdentityPips colorIdentity={commander.colorIdentity} size={10} />
-      <p
-        className="font-mono"
+      {/* Decision 18. The caption is centred inside `left:18 right:18`, so a
+          pair of names is already the width of the row at 390 — the identity
+          label is dropped rather than wrapped, and a single commander keeps it
+          on both widths. The names lead the row here and trail the pips on
+          desktop, which is the one ordering difference between the two bands.
+
+          Same ordered shrink as the desktop caption: the group hides its
+          overflow, both halves ellipsise, and the partner's larger shrink
+          factor makes it the half that gives. */}
+      <span
+        className="font-mono flex"
         style={{
           fontSize: 10,
           color: onWash ? "var(--fg-body)" : "var(--fg-muted)",
           textShadow: onWash ? COVER_INK_SHADOW : undefined,
+          gap: 4,
+          minWidth: 0,
+          overflow: "hidden",
+          alignItems: "baseline",
         }}
       >
-        {commander.name} · {colorLabel(commander.colorIdentity)}
-      </p>
+        {partner ? (
+          <>
+            <span style={TRUNCATES}>{commander.name}</span>
+            <span style={{ flex: "none" }}>+</span>
+            {/* The partner's printing opens from the word that names it. The
+                padding reaches a 44px target and the equal negative margin
+                takes it back out of the flex row, so nothing moves; it is
+                weighted upward because the row sits 12px off the band's
+                clipped bottom edge. */}
+            <CardDetailTrigger
+              oracleId={partner.oracleId}
+              name={partner.name}
+              title={partner.name}
+              ariaLabel={deckImportCopy.commander.partnerCardAria(partner.name)}
+              className="font-mono"
+              style={{
+                ...TRUNCATES,
+                flexShrink: 1000,
+                fontSize: 10,
+                color: "inherit",
+                textShadow: onWash ? COVER_INK_SHADOW : undefined,
+                padding: "22px 0 9px",
+                margin: "-22px 0 -9px",
+              }}
+            >
+              {/* The rule is on the word, not on the button: the button's box
+                  is 9px taller than the text so the target clears 44px, and a
+                  border there would draw that far below the name. */}
+              <span style={{ borderBottom: "1px solid var(--border-strong)" }}>
+                {partner.name}
+              </span>
+            </CardDetailTrigger>
+          </>
+        ) : (
+          <span style={TRUNCATES}>
+            {commander.name} · {colorLabel(commander.colorIdentity)}
+          </span>
+        )}
+      </span>
+      <IdentityPips colorIdentity={identity} size={10} />
       {/* No shadow at either call site: the chip carries its own opaque plate.
           The prop replaces the tile's class outright, so §C8's box is restated
           in full — there is no merge with the default. */}
@@ -226,7 +279,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
             {built}
           </span>
           <span className="font-mono" style={{ fontSize: 14, color: "var(--fg-faint)" }}>
-            {overCopy.figure.denominator(deckBodySize(deck.partner !== null))}
+            {overCopy.figure.denominator(bodySize)}
           </span>
           {over && (
             <span
@@ -250,7 +303,7 @@ export function SpineMobile({ deck, counts, status, onExport }: SpineBandProps) 
           <div
             data-testid="spine-bar-fill"
             className="h-full"
-            style={statusBarStyle(status, built, deckBodySize(false))}
+            style={statusBarStyle(status, built, bodySize)}
           />
         </div>
         {over && (
