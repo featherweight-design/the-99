@@ -50,7 +50,7 @@ follows the figure it explains.
 The built figure recolouring to `var(--warning)`: **redrawn.** Past 99 the deck's status is `Over`,
 whose bar is `var(--danger)` per `statusBarStyle` — so the shipped pairing paints one state in two
 different alarm colours. The figure takes **the status token**, derived not hardcoded:
-`var(STATUS_TOKEN[status])`. One state, one colour. Drawn as desktop state 03.
+`var(${STATUS_TOKEN[status]})`. One state, one colour. Drawn as desktop state 03.
 
 ### 3a · The trim paragraph's bold lead — `var(--fg-body)`, not the status token
 
@@ -89,6 +89,24 @@ across two rounds of review at your request and mine; agreed it should not have 
 Note this does **not** retire the null-`art_crop` fallback, which is still reachable — a commander
 whose printing has no art crop.
 
+### Errata — five lines restored in eng review, twice
+
+The R6 drop reverted three passages of the R5 prose to their pre-R5 text, and they were restored in
+PR #481. The R7 drop reverted the same passages again, along with the restoration itself — the
+document appears to be regenerated from Design's own copy each round, so corrections committed here
+do not survive into the next drop. Each contradicts the R7 canvas *and* the shipped code, so all
+are restored here rather than sent back for another round. The R7 rulings above are untouched.
+
+| Where | The drop said | Restored to | Why |
+|---|---|---|---|
+| Retired values, bar row | `var(--elevated)` / "tri-state" | `var(--elevated)` / `statusBarStyle` | The bar keys off status, not percentage. `statusBarStyle` reads `var(${STATUS_TOKEN[status]})`. |
+| Retired values, chip row · decision 6 | chip ground `var(--surface-sunken)` | `statusPillStyle`; chip has no ground of its own | The chip's fill is `color-mix(in srgb, var(--token) 18%, var(--bg))`. A flat ground also contradicted decision 5 two lines below, which says `statusPillStyle` wins. |
+| Decision 4, bar below 100% | 40/99 "renders `var(--danger)`" | 40/99 renders `var(--fg-body)` | 40/99 is `Building`, whose token is `--fg-body`. `--danger` is `Over`. The R7 canvas draws state 02 with `barFill: V('--fg-body')`, so the canvas was already right. |
+| Canvas token block, comment | "every colour below is a `var()`, never a literal" | the definitions in the block are hex, as in `globals.css`; the var()-only claim belongs to the product frame | The comment sits directly above 37 hex definitions, so as written it is contradicted by the lines it introduces. |
+| `STATUS_TOKEN`, four sites | `var(STATUS_TOKEN[status])` | `` `var(${STATUS_TOKEN[status]})` `` | The bare form is not valid syntax and reads as a CSS variable literally named `STATUS_TOKEN[status]`. This is what `statusBarStyle` actually writes. |
+
+`READINESS.md` was also deleted by both drops with no ruling retiring it. Kept.
+
 ---
 
 ## R5 — why this revision existed
@@ -116,8 +134,8 @@ hexes match the shipped tokens. `--w…--g` in `globals.css` is the only source.
 | Rename field border | `#C9A24B` | `var(--accent)` | retired pre-rebrand brass; cannot come back |
 | Rename field fill | `#181410` / `#0E0C09` | `var(--surface-sunken)` | `#0E0C09` is derived as `color-mix(--bg 86%, black)`; never mint it |
 | Export / Save | `#CF8745` | `var(--accent)` | the literal *was* Low Sun's accent — pink, lime, teal, violet or blue in the other five |
-| Bar track / fill | `#29241F` / `#DEAA29` | `var(--elevated)` / tri-state | real tokens, but the mid state only |
-| Ground / divider / chip | `#1A160F` `#2A241D` `#14110E` | `var(--surface)` `var(--border)` `var(--surface-sunken)` | the canvas disagreed with itself surface to surface |
+| Bar track / fill | `#29241F` / `#DEAA29` | `var(--elevated)` / `statusBarStyle` | real tokens, but the mid state only; the fill keys off **status**, not percentage — conflict 3 |
+| Ground / divider / chip | `#1A160F` `#2A241D` `#14110E` | `var(--surface)` `var(--border)` / `statusPillStyle` | the canvas disagreed with itself surface to surface; the chip's fill is **status-tinted**, not a flat ground — blocker 5 |
 | Rank eyebrow | `#8FB8E6` | `var(--fg-body)` | see conflict 2 |
 | Pips | round, off-palette | `rounded-[2px]`, `var(--w…--g)` | see conflict 1 |
 
@@ -150,7 +168,9 @@ exactly the moment they need it; the canvas drew it disabled and the canvas was 
 **holds its full box while empty** — it is the title's space, not the text's — so all four editing
 states measure 352×29. Strings are Product's.
 
-**4 · Bar below 100%.** Drawn at 40/99, which renders `var(--danger)` — see conflict 3.
+**4 · Bar below 100%.** Drawn at 40/99. The fill is `var(--fg-body)`, because that deck is
+`Building` and the bar keys off status rather than the count — see conflict 3, which corrects the
+percentage reading this line first carried.
 
 **5 · Status chips — render as shipped. `statusPillStyle` wins; do not fork it.**
 
@@ -252,7 +272,7 @@ Accent stays where it is large enough to hold its own: the FIT figure and button
 
 **3 · Bar keys off status, not percentage — corrected.** Both the audit's framing and my answer to
 it were wrong, and reading `status-style.ts` for the chip caught it: `statusBarStyle` sets the fill
-to **`var(STATUS_TOKEN[status])`** — one token per status, with no thresholds on the count.
+to **`var(${STATUS_TOKEN[status]})`** — one token per status, with no thresholds on the count.
 Percentage thresholds would render a **40/99 `Building` deck red**, which is exactly the frame this
 document drew.
 
@@ -279,8 +299,9 @@ nothing there is on art. Desktop `Update from a list` keeps its ghost outline, a
 it.
 
 **6 · Divider, ground, ring alphas.** All were literal-vs-literal drift. Divider `var(--border)`,
-card ground `var(--surface)`, band `var(--bg)`, chip `var(--surface-sunken)`; both the pip ring
-and the bar track ring are `inset 0 0 0 1px rgba(0,0,0,0.4)`.
+card ground `var(--surface)`, band `var(--bg)`; both the pip ring and the bar track ring are
+`inset 0 0 0 1px rgba(0,0,0,0.4)`. **The chip is not on this list** — its fill is the status colour
+mixed into `var(--bg)`, per blocker 5, and no ground of its own.
 
 **7 · Which ground is the constant.** `var(--bg)` for a wash band (it is the plate the scrim mixes
 toward, which is what makes `color-mix(in oklab, var(--bg) …)` correct), `var(--surface)` for a

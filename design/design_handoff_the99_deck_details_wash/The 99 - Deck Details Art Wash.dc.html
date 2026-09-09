@@ -14,8 +14,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   /* The 37-key contract from src/app/globals.css. Reproduced here so this
-     document resolves the same tokens the app does — every colour below is a
-     var(), never a literal. Only the keys these surfaces touch. */
+     document resolves the same tokens the app does. The definitions in this
+     block are necessarily hex, exactly as they are in globals.css — it is every
+     colour drawn in the product frame below that is a var(), never a literal.
+     Only the keys these surfaces touch. */
   :root, [data-theme="amonkhet"] {
     --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F;
     --surface-raised:#211D18; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
@@ -158,7 +160,7 @@
             <div style="height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;"><div style="width:{{ b.w }};height:100%;background:{{ b.fill }};"></div></div>
           </div>
         </sc-for>
-        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:2px;">Corrected against <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">status-style.ts</code>: the fill is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">var(STATUS_TOKEN[status])</code> — <b style="color:var(--fg);font-weight:600;">one token per status, not thresholds on the count</b>. An earlier draft had it as success/warning/danger by percentage, which would render a 40/99 Building deck red. Width is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">min(100, built/99)</code>, so an Over deck is full rather than 105%. Track <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">var(--elevated)</code> with <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">inset 0 0 0 1px rgba(0,0,0,.4)</code> — inset, on the track, so one value serves every status.</div>
+        <div style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin-top:2px;">Corrected against <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">status-style.ts</code>: the fill is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">var(${STATUS_TOKEN[status]})</code> — <b style="color:var(--fg);font-weight:600;">one token per status, not thresholds on the count</b>. An earlier draft had it as success/warning/danger by percentage, which would render a 40/99 Building deck red. Width is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">min(100, built/99)</code>, so an Over deck is full rather than 105%. Track <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">var(--elevated)</code> with <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">inset 0 0 0 1px rgba(0,0,0,.4)</code> — inset, on the track, so one value serves every status.</div>
       </div>
     </div>
   </div>
@@ -488,7 +490,7 @@ class Component extends DCLogic {
         { title:'The rename field border', was:'#C9A24B', now:'var(--accent)', why:'Retired pre-rebrand brass. It cannot come back, and the field needs the live accent so it re-themes with everything else.' },
         { title:'The field fill', was:'#181410 / #0E0C09', now:'var(--surface-sunken)', why:'#0E0C09 is derived as color-mix(--bg 86%, black) and must not be minted as a literal. --surface-sunken is the token that already means "a well below the surface".' },
         { title:'The Export button', was:'#CF8745 literal', now:'var(--accent)', why:'The literal happened to be Low Sun\u2019s accent, which is why it looked right — and would have been pink, lime, teal, violet or blue in the other five.' },
-        { title:'The bar track and fill', was:'#29241F / #DEAA29', now:'var(--elevated) / var(STATUS_TOKEN[status])', why:'Both were real tokens but the mid state only \u2014 and the replacement was wrong too. statusBarStyle keys the fill off the status token, never thresholds on the count: a 40/99 Building deck is --fg-body, not red. Width min(100, built/99).' },
+        { title:'The bar track and fill', was:'#29241F / #DEAA29', now:'var(--elevated) / var(${STATUS_TOKEN[status]})', why:'Both were real tokens but the mid state only \u2014 and the replacement was wrong too. statusBarStyle keys the fill off the status token, never thresholds on the count: a 40/99 Building deck is --fg-body, not red. Width min(100, built/99).' },
         { title:'Ground, divider, chip', was:'#1A160F #2A241D #14110E', now:'var(--surface) var(--border) statusPillStyle', why:'Ground and divider are tokens now. The chip is not ours at all \u2014 it renders status-style.ts verbatim: the status colour in the fill mixed into --bg, one --border-strong hairline, Building dashed.' },
         { title:'The rank eyebrow', was:'#8FB8E6', now:'var(--fg-body)', why:'A single on-art accent literal is one theme\u2019s hue in six. --fg-body clears 4.5:1 only once the ramp\u2019s dark stop moves to 50% \u2014 measured 5.06:1 at the eyebrow. The .86-stop proof cited earlier measured the band\u2019s bottom, not the eyebrow.' }
       ],
