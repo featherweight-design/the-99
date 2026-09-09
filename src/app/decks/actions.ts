@@ -20,7 +20,10 @@ import { cardTypeGroup, primaryRole } from "../../lib/decks/read";
 import { isBasicLand } from "../../lib/decks/grouping";
 import { validateDeckName } from "../../lib/decks/deck-name";
 import { isCommanderCandidate, type PoolCard } from "../../lib/recs/score";
-import { validateCardForDeck } from "../../lib/decks/add-validation";
+import {
+  validateCardForDeck,
+  type DeckContextForValidation,
+} from "../../lib/decks/add-validation";
 import { deckAddRejectionMessage, type DeckMutationResult } from "../../lib/decks/mutation-result";
 import { dedupeSelectionFromPool, planFill, type FillPlan } from "../../lib/decks/fill";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
@@ -43,7 +46,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // reads scan the same join under the same predicate.
 type SuggestionPoolCard = PoolCard & { manaValue: number; ownedQuantity: number };
 
-async function ownedColorLegalPool(userId: string, commander: Pick<PoolCard, "oracleId" | "colorIdentity">): Promise<SuggestionPoolCard[]> {
+// Takes every commander rather than one: a pair's legal pool is the union of
+// both identities, and neither commander belongs in its own deck's suggestions.
+async function ownedColorLegalPool(userId: string, commanders: Pick<PoolCard, "oracleId" | "colorIdentity">[]): Promise<SuggestionPoolCard[]> {
   const owned = await db
     .select({
       oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine,
@@ -59,8 +64,11 @@ async function ownedColorLegalPool(userId: string, commander: Pick<PoolCard, "or
     // dependent, so Postgres accepts them ungrouped — one row per oracle id,
     // which is what the old DISTINCT ON produced.
     .groupBy(cards.oracleId);
-  const identity = new Set(commander.colorIdentity);
-  return owned.filter((c) => c.oracleId !== commander.oracleId && c.colorIdentity.every((x) => identity.has(x)));
+  const identity = new Set(commanders.flatMap((c) => c.colorIdentity));
+  const commanderIds = new Set(commanders.map((c) => c.oracleId));
+  return owned.filter(
+    (c) => !commanderIds.has(c.oracleId) && c.colorIdentity.every((x) => identity.has(x)),
+  );
 }
 
 type UnownedStapleCard = {
@@ -129,7 +137,7 @@ export async function buildFillPlan(
   excludeOracleIds: Set<string> = new Set(),
 ): Promise<FillPlan> {
   const pool = dedupeSelectionFromPool(
-    await ownedColorLegalPool(userId, commander),
+    await ownedColorLegalPool(userId, [commander]),
     excludeOracleIds,
   );
   const { data } = await getEdhrecData(commander.oracleId, commander.name);
@@ -219,6 +227,10 @@ export async function createDeck(
       .filter((card) => !validateCardForDeck(card, {
         commanderOracleId,
         commanderColorIdentity: commander.colorIdentity,
+        // A deck created here has one commander; the picker's second slot is
+        // what will give this one a partner to measure against.
+        partnerOracleId: null,
+        partnerColorIdentity: null,
         built: 0,
       }))
       .map((card) => card.oracleId);
@@ -295,7 +307,7 @@ export async function getDeckSuggestions(deckId: string): Promise<{ suggestions:
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
   if (!commander) return { suggestions: [], degraded: false, shoppingFigures: {} };
 
-  const pool = await ownedColorLegalPool(userId, commander);
+  const pool = await ownedColorLegalPool(userId, [commander]);
   const inDeckRows = await db.select({ oracleId: deckCards.oracleId }).from(deckCards)
     .where(eq(deckCards.deckId, deckId));
   const inDeck = new Set(inDeckRows.map((r) => r.oracleId));
@@ -430,14 +442,46 @@ async function requireDeck(deckId: string, userId: string) {
   return deck;
 }
 
+/**
+ * The deck context every add path validates against: both commanders' ids and
+ * both their colour identities, in one read.
+ *
+ * A pair is legal in the union of its two identities, so a single read of the
+ * primary commander is not enough to say what the deck may hold. Throws when the
+ * primary is missing, as each of these call sites did before; a missing partner
+ * row is not fatal, because `partnerOracleId` being set with no card behind it
+ * would refuse every card in the deck rather than fail loudly.
+ */
+async function deckValidationContext(
+  deck: { commanderOracleId: string; partnerOracleId: string | null },
+): Promise<Omit<DeckContextForValidation, "built">> {
+  const ids = [
+    deck.commanderOracleId,
+    ...(deck.partnerOracleId ? [deck.partnerOracleId] : []),
+  ];
+  const rows = await db
+    .select({ oracleId: cards.oracleId, colorIdentity: cards.colorIdentity })
+    .from(cards)
+    .where(inArray(cards.oracleId, ids));
+  const commander = rows.find((r) => r.oracleId === deck.commanderOracleId);
+  if (!commander) throw new Error("commander not found");
+  return {
+    commanderOracleId: deck.commanderOracleId,
+    commanderColorIdentity: commander.colorIdentity,
+    partnerOracleId: deck.partnerOracleId,
+    partnerColorIdentity: deck.partnerOracleId
+      ? (rows.find((r) => r.oracleId === deck.partnerOracleId)?.colorIdentity ?? null)
+      : null,
+  };
+}
+
 export async function addCardToDeck(deckId: string, oracleId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const deck = await requireDeck(deckId, userId);
 
-  // Fetch commander color identity in the same round-trip as the card lookup.
-  const [[commander], [card], [existingRow]] = await Promise.all([
-    db.select({ colorIdentity: cards.colorIdentity })
-      .from(cards).where(eq(cards.oracleId, deck.commanderOracleId)),
+  // Fetch the deck's colour identity in the same round-trip as the card lookup.
+  const [identity, [card], [existingRow]] = await Promise.all([
+    deckValidationContext(deck),
     db.select({ typeLine: cards.typeLine, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
       .from(cards).where(eq(cards.oracleId, oracleId)),
     db.select({ oracleId: deckCards.oracleId })
@@ -445,7 +489,6 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
   ]);
 
   if (!card) throw new Error("card not found");
-  if (!commander) throw new Error("commander not found");
 
   // Re-adding a non-basic that's already in the deck is a no-op (singleton) —
   // return before validation so a full deck doesn't spuriously reject it.
@@ -466,7 +509,7 @@ export async function addCardToDeck(deckId: string, oracleId: string): Promise<D
     const built = builtRow?.total ?? 0;
     const error = validateCardForDeck(
       { commanderLegal: card.commanderLegal, colorIdentity: card.colorIdentity, oracleId },
-      { commanderOracleId: deck.commanderOracleId, commanderColorIdentity: commander.colorIdentity, built },
+      { ...identity, built },
     );
     if (error) return error;
 
@@ -663,22 +706,16 @@ export async function restoreAutoCards(deckId: string, rows: SweptRow[]): Promis
   // Every id gets the same legality pass addCardToDeck runs. The cap lives with
   // the write below, so `built: 0` here asks about legality alone.
   const ids = [...byId.keys()];
-  const [[commander], candidates] = await Promise.all([
-    db.select({ colorIdentity: cards.colorIdentity })
-      .from(cards).where(eq(cards.oracleId, deck.commanderOracleId)),
+  const [identity, candidates] = await Promise.all([
+    deckValidationContext(deck),
     db.select({ oracleId: cards.oracleId, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
       .from(cards).where(inArray(cards.oracleId, ids)),
   ]);
-  if (!commander) throw new Error("commander not found");
   const byOracleId = new Map(candidates.map((c) => [c.oracleId, c]));
   for (const oracleId of ids) {
     const card = byOracleId.get(oracleId);
     if (!card) throw new Error("card not found");
-    const rejection = validateCardForDeck(card, {
-      commanderOracleId: deck.commanderOracleId,
-      commanderColorIdentity: commander.colorIdentity,
-      built: 0,
-    });
+    const rejection = validateCardForDeck(card, { ...identity, built: 0 });
     if (rejection) throw new Error(rejection);
   }
 
@@ -732,9 +769,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
   }
   if (ids.length === 0) throw new Error("nothing selected");
 
-  const [commander] = await db.select({ colorIdentity: cards.colorIdentity })
-    .from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
-  if (!commander) throw new Error("commander not found");
+  const identity = await deckValidationContext(deck);
 
   const landedIds = await db.transaction(async (tx) => {
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
@@ -766,11 +801,7 @@ async function runTopOff(deckId: string, oracleIds: string[]) {
       if (!card) throw new Error("card not found");
       // `built: 0` asks about legality alone — the cap is enforced above,
       // against the deck as the lock found it.
-      const rejection = validateCardForDeck(card, {
-        commanderOracleId: deck.commanderOracleId,
-        commanderColorIdentity: commander.colorIdentity,
-        built: 0,
-      });
+      const rejection = validateCardForDeck(card, { ...identity, built: 0 });
       if (rejection) throw new Error(rejection);
     }
 
