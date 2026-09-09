@@ -25,9 +25,12 @@ states, and R5 drew the desktop editing band and corrected two specs against the
 already implement them.
 
 **The canvas is now the single source of truth, and it uses `var(--*)` throughout.** No literal
-**brand** colour appears in either file except in the retired-value column below. Two
-non-brand literals remain by design and are not theme tokens: the `rgba(0,0,0,0.4)` inset ring
-(`IdentityPips`' own value, reused on the bar track) and the mobile text shadows below.
+**brand** colour appears inside a drawn product frame in either file, except in the retired-value
+column below. The rule governs the drawings, not the canvas' `[data-theme]` blocks, which define
+the six token sets and are necessarily hex — they mirror `globals.css` and are the only place a
+literal is correct. Two non-brand literals remain by design inside the frames and are not theme
+tokens: the `rgba(0,0,0,0.4)` inset ring (`IdentityPips`' own value, reused on the bar track) and
+the mobile text shadows below.
 
 One correction worth stating plainly: `brand/The 99 - Brand Sheet.dc.html` is **not** the colour
 source for WUBRG. R2 "fixed" the pips to the brand sheet and was still wrong — none of its five
