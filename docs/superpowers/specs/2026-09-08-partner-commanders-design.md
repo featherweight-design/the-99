@@ -133,7 +133,7 @@ deckBodySize = 100 − commanderCount   // 99 today, 98 for a pair
 
 | Site | Note |
 |---|---|
-| `src/lib/decks/status.ts:61-62` | `< 99` → Building, `> 99` → Over; both become the derived size |
+| `src/lib/decks/status.ts:69-70` | `< 99` → Building, `> 99` → Over; both become the derived size |
 | `src/lib/decks/availability.ts` | **claim maturity becomes per-deck** — the hard/soft claim distinction now depends on which deck is asking |
 | `src/lib/decks/suggest.ts:52` | `const MAX = 99` |
 | `src/lib/decks/fill.ts:38-39` | `FILL_BASELINE_TOTAL`, the roles-plus-lands sum |
@@ -182,27 +182,32 @@ mechanical.
 
 **For Design:**
 
-1. **The deck-detail hero.** `src/components/decks/builder-spine.tsx:286-364` draws one art thumb, then
-   `{commander.name} · {identityLabel}` and the pips. Two portraits at a size that still reads on
-   mobile, and one name line that holds two names without crowding the count. This is the ask the
-   motivating deck is blocked on.
+1. **The deck-detail hero.** `builder-spine.tsx` no longer draws the header — it composes
+   `SpineDesktop` and `SpineMobile` and keeps only the availability rollup between them. The header
+   is `src/components/decks/spine-desktop.tsx:76,80-84,96-98` and
+   `src/components/decks/spine-mobile.tsx:80-83`: an art wash rather than a thumb, then
+   `{commander.name} · {identityLabel}` and the pips in a caption. One name line that holds two names
+   without crowding the count. This is the ask the motivating deck is blocked on.
 2. **The second slot in the picker.** `src/components/decks/create-picker.tsx` is one component serving
    `mode="create"` and `mode="import"`, deliberately — its header comment says a second component would
    be a second thing to keep in sync. Design draws the slot once and both flows get it: empty before the
    first pick has a partner ability, disabled, and the pre-selected import proposal.
-3. **The wash and the portrait.** `src/components/home/deck-rail.tsx:123` uses `commanderImageUri` as a
-   full-bleed background; `src/components/home/resume-decks.tsx:84` uses `commanderArtCropUri` as a
+3. **The wash and the portrait.** `src/components/home/deck-rail.tsx:124` uses `commanderImageUri` as a
+   full-bleed background; `src/components/home/resume-decks.tsx:85` uses `commanderArtCropUri` as a
    portrait. Both take one image. Primary-only is unambiguous and cheap; a diptych is a real option. The
    rail is where a pair deck is least distinguishable from a single, so Design rules.
-4. **The name line where two names do not fit.** `resume-decks.tsx:115`. Truncation rule, or
+4. **The name line where two names do not fit.** `resume-decks.tsx:115-116`. Truncation rule, or
    primary-only with no partner indication.
 
 **Eng carries, no Design ask:**
 
 - **Pips and identity label** become the union, derived from §2's colour rule. The pips are already a set.
-- **`commanderShortName`** (`builder-shell.tsx:278`) feeds the guided banner and two empty-state
+- **`shortCommanderName`** — exported and pure at `src/lib/copy/decks-builder.ts:17`, held as a local
+  `commanderShortName` at `builder-shell.tsx:317` — feeds the guided banner and two empty-state
   strings, all grammatically singular. The primary keeps that slot.
-- **Deck tiles on `/decks`** render no commander today. Nothing to widen.
+- **Deck tiles on `/decks`** render no commander *portrait*, so there is no art to widen. They do
+  render a count against `MATURE_DECK_SIZE` (`deck-card.tsx:127`), which moves with §4's derived
+  ceiling like every other count.
 - **Import state 12** (`import-no-commander.tsx`) is the no-candidates dead end and is unchanged; a pair
   still needs at least one candidate.
 
@@ -220,10 +225,10 @@ The ceiling change from §4 has five more call sites there, and one of them belo
 - **`src/app/decks/[id]/page.tsx:49`** — `readSynergyCards(userId, detail.commander.oracleId, [])`. A
   single commander id: this is §5's merged lookup, not the ceiling. Left alone, a pair's top-off list
   would rank against the primary while the fill ranked against both.
-- **`src/components/decks/top-off-list.tsx:215`** — `const total = 99 - openSlots + tickedCount;`
+- **`src/components/decks/top-off-list.tsx:223`** — `const total = 99 - openSlots + tickedCount;`
   reconstructs the built count from the literal. With a corrected `openSlots` and an uncorrected 99, a
   pair deck's counter reads one high — silent, and plausible enough to survive review.
-- **`src/lib/copy/top-off.ts:167, 171, 322, 324, 328`** — five strings hardcode "of 99". Mechanical
+- **`src/lib/copy/top-off.ts:174, 178, 337, 339, 343`** — five strings hardcode "of 99". Mechanical
   parameterisation; the sentence shape does not change, so this is neither a Design ask nor a copy
   review.
 - **`src/app/decks/actions.ts:262, 549, 782`** — the ledger writes: `openSlots: 99` on both seed paths,
