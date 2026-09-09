@@ -1,7 +1,7 @@
 "use client";
 // Top-level collection browse client component.
 // Owns filter/sort/view/window/modal state, mirrors to URL query params
-// (?q= &c= &t= &s= &sort= &dir= &view= &card=) via history.replaceState so
+// (OWNED_PARAMS below, the authoritative list) via history.replaceState so
 // chips + view + open card deep-link (READINESS #6).
 
 import { useMemo, useState, useCallback, useEffect } from "react";
