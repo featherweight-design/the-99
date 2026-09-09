@@ -361,10 +361,6 @@ export const overCopy = {
     delta: (n: string) => `+${n}`,
   },
 
-  // The deck card's line, in the unresolved marker's slot. Terse because it
-  // sits in a card the player is scanning past, and the spine says it properly.
-  toCut: (n: string) => (n === "1" ? "1 to cut" : `${n} to cut`),
-
   // The spine's trim line. Words, not digits, because the figure above already
   // printed the number twice.
   //
