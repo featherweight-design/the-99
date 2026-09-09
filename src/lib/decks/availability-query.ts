@@ -195,10 +195,17 @@ export async function loadAvailability(
       -- it is (owned − ownClaim) − seniorHard, which is what lands the deficit on
       -- the newest claimant instead of on all of them at once. A brew takes the
       -- total too: it outranks nothing, so every hard claim is ahead of it.
+      --
+      -- The senior subtraction is capped at the supply, because the decks ahead of
+      -- this one cannot take copies that do not exist. Four finished decks each
+      -- wanting a Relentless Rats the player owns one of are three decks short by
+      -- one, not one deck short by one and the next short by two: the shortfall
+      -- above the supply belongs to the seniors, and a "short 3" marker on a
+      -- deck that needs to buy one copy is a figure nobody can act on.
       (o.owned
         - coalesce(oc.own_claim, 0)
         - case when coalesce((select s.mature from skip_deck s), false)
-               then coalesce(sh.hard_senior, 0)
+               then least(coalesce(sh.hard_senior, 0), o.owned)
                else coalesce(c.hard, 0)
           end
       )::int as free,
@@ -241,6 +248,11 @@ export type DeckBuyRow = { deckId: string; oracleId: string; quantity: number };
  *
  * Basics are out, as they are from every Shopping surface: the fill never buys
  * them, and a deck's 30-odd Forests would otherwise dwarf everything real.
+ *
+ * `quantity` is the DEFICIT, not the deck's ask. A deck wanting four Relentless
+ * Rats with one in the box buys three, and this roll-up feeds a price total, so
+ * returning the ask would charge for a copy already on the shelf. The same
+ * arithmetic covers the deck whose commander is also on its own list.
  */
 export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
   const rows = await db.execute<{
@@ -248,28 +260,42 @@ export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
     oracle_id: string;
     quantity: number;
   }>(sql`
-    with ${claimModel(userId)}
-    select ca.deck_id, ca.oracle_id, ca.quantity
-    from claim_decks_all ca
-    join cards c on c.oracle_id = ca.oracle_id
-    left join owned o on o.oracle_id = ca.oracle_id
-    where c.type_line !~ '\\mBasic\\M'
-      -- The deck's own ask is subtracted alongside the senior claims, so this is
-      -- negative exactly when the copies do not reach as far as this deck. A
-      -- card owned in no copies has no owned row and lands here immediately,
-      -- which is the other half of the list.
-      and coalesce(o.owned, 0) - ca.quantity - coalesce((
-        select sum(senior.quantity)
-        from claim_decks_all senior
-        where senior.oracle_id = ca.oracle_id
-          and senior.mature
-          -- Mirrors senior_hard above: seniority orders the mature decks among
-          -- themselves, and an immature deck sits behind all of them.
-          and (
-            not ca.mature
-            or (senior.created_at, senior.deck_id) < (ca.created_at, ca.deck_id)
-          )
-      ), 0) < 0
+    with ${claimModel(userId)},
+    -- Every claim, beside the supply and the copies the decks ahead of it have
+    -- already taken. A card owned in no copies has no owned row at all and
+    -- falls through as zero, which is the other half of the shopping list.
+    supply as (
+      select
+        ca.deck_id,
+        ca.oracle_id,
+        ca.quantity,
+        coalesce(o.owned, 0)::int as owned,
+        coalesce((
+          select sum(senior.quantity)
+          from claim_decks_all senior
+          where senior.oracle_id = ca.oracle_id
+            and senior.mature
+            -- Mirrors senior_hard above: seniority orders the mature decks among
+            -- themselves, and an immature deck sits behind all of them.
+            and (
+              not ca.mature
+              or (senior.created_at, senior.deck_id) < (ca.created_at, ca.deck_id)
+            )
+        ), 0)::int as senior
+      from claim_decks_all ca
+      join cards c on c.oracle_id = ca.oracle_id
+      left join owned o on o.oracle_id = ca.oracle_id
+      where c.type_line !~ '\\mBasic\\M'
+    )
+    select
+      s.deck_id,
+      s.oracle_id,
+      -- The floor at zero is what stops seniors taking copies that do not exist:
+      -- their own shortfall is theirs to buy, and must not be added to this
+      -- deck's bill.
+      (s.quantity - greatest(s.owned - s.senior, 0))::int as quantity
+    from supply s
+    where s.quantity - greatest(s.owned - s.senior, 0) > 0
   `);
 
   return rows.rows.map((r) => ({
