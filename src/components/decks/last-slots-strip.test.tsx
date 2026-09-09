@@ -281,7 +281,7 @@ describe("LastSlotsStrip", () => {
   // The door note is about what the next open will do. Before the first one it
   // promises the seed; afterwards the seed has already run, so it describes the
   // pool and the selection the player can come back to.
-  it("changes the door note once a pass has landed", async () => {
+  it("changes the door note once the list has been opened and committed", async () => {
     render(<LastSlotsStrip {...base} />);
     await click(screen.getByRole("button", { name: doorName("3") }));
     await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98") }));

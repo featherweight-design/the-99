@@ -6,6 +6,7 @@
 // and a mutation with no optimistic path reads as a dead button.
 //
 // Run by hand: `PROBE_BASE=http://localhost:3022 PROBE_DECK=<id> node scripts/probe-top-off-journey.mjs`.
+import { mkdirSync } from "node:fs";
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -18,7 +19,15 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const DECK = process.env.PROBE_DECK;
+// The deck is the fixture the whole walk is written against, and it goes
+// straight into SQL. Missing, every query returns nothing and the walk fails
+// eighteen steps later as a timeout on a door that was never going to be there.
+if (!DECK) {
+  console.error("PROBE_DECK is required: the id of a deck under 99 with a seed pass.");
+  process.exit(1);
+}
 const OUT = "probe-out/top-off-journey";
+mkdirSync(OUT, { recursive: true });
 
 const sql = neon(DATABASE_URL);
 const shots = [];

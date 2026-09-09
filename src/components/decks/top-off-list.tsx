@@ -54,8 +54,9 @@ export interface TopOffListProps {
   newestAsOf: Date | null;
   onAnnounce: (message: string) => void;
   onInflight: (inflight: boolean) => void;
-  /** Cancel, and the settled commit. Returns focus to the door. The reason is
-      what tells the strip a pass landed, which is what the door note says next. */
+  /** Cancel, and the settled commit. Returns focus to the door. One handler for
+      both, and no reason argument: the strip does the same thing either way,
+      because the selection survives a cancel exactly as it survives a commit. */
   onClose: () => void;
 }
 
