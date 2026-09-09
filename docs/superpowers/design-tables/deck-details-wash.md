@@ -96,7 +96,7 @@ Columns are **Mobile (<768px)** and **Desktop (≥768px)**.
 | color | `var(--fg)` |
 | text-shadow | **—** (past the flat 240px stop) |
 | clamp | `display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden` |
-| max-height | `51px` (canvas equivalent — two 25.2px line boxes) |
+| clamped height | `51px` — two 25.2px line boxes. The canvas's `max-height`; it ships as the clamp above, never as a `max-height` declaration. |
 | min-height | **—** forbidden |
 
 ### B8. Meta row
@@ -219,7 +219,7 @@ Applies to **every bottom-labelled `cover` surface** — one ramp, derived from 
 |---|---|
 | row | `flex; align-items:flex-start; gap:8px; max-width:100%` |
 | font | display, `700`, `20px`, `line-height:1.25`, `var(--fg)`, `text-align:center` |
-| clamp | `-webkit-line-clamp:2`; canvas equivalent `max-height:50px`; no `min-height` |
+| clamp | `-webkit-line-clamp:2`, clamped height `50px` (the canvas's `max-height`, never shipped as one); no `min-height` |
 | text-shadow | `0 1px 4px rgba(0,0,0,0.85)` |
 
 ### C7. Rename pencil (mobile)

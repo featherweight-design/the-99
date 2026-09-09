@@ -1188,4 +1188,4 @@ These go in the PR body and the gap report. None of them blocks the build.
 3. **The three over-99 divergences** from Task 7 — the `+N` figure, the trim line, and the amber built figure. All three post-date the deck-details drawing.
 4. **Design's open item 1, rename undo.** Blur commits, so an accidental commit has no undo. Out of scope here; worth a decision.
 5. **The rename trigger's accessible name narrows.** The shipped button reads `Rename deck: ${deck.name}` (`builder-spine.tsx:337`); `renameCopy.triggerAria` is a bare `Rename deck`. There is one deck on the page, so the disambiguation buys nothing, but it is a deliberate string being dropped.
-6. **The merged `.worktrees/audit-art-wash-full` worktree** is still on disk and unruled.
+6. **The merged `.worktrees/audit-art-wash-full` worktree**, if it still exists locally, is unruled — remove it once its branch is confirmed merged.
