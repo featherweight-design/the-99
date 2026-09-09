@@ -212,8 +212,12 @@ function LastSlotsStripInner({
   // door both — a control with nothing to do is absent, not disabled.
   const exhausted = candidates.length === 0;
 
+  // The first-open note promises what will arrive ticked, and the seed clamps to
+  // the open slots, so it states the seeded figure rather than the owned one.
+  // The two reopen notes are about ownership rather than ticks, so they keep the
+  // unclamped count: you do still own all of them.
   const doorNote = !passed
-    ? topOffCopy.strip.doorNote(String(ownedIds.length))
+    ? topOffCopy.strip.doorNote(String(Math.min(ownedIds.length, Math.max(openSlots, 0))))
     : ownedIds.length === 0
       ? topOffCopy.strip.doorNoteAgain(String(candidates.length))
       : topOffCopy.strip.doorNoteAgainOwned(

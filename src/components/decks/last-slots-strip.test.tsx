@@ -104,6 +104,15 @@ describe("LastSlotsStrip", () => {
     expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
   });
 
+  // The note promises what will arrive ticked, and the seed clamps to the open
+  // slots. Two owned candidates for one slot arrives as one tick, so promising
+  // two is a promise the open cannot keep.
+  it("clamps the door note's promise to the slots the seed can fill", () => {
+    render(<LastSlotsStrip {...base} openSlots={1} />);
+    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+  });
+
   // State 13. A control with nothing to do is absent, not disabled — and the
   // caption goes with it rather than counting a pool of zero.
   it("replaces the door and the caption with the exhausted line when the pool is empty", () => {
