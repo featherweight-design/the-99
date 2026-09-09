@@ -223,7 +223,49 @@ export function TopOffList({
 
   // One message per settle. The first render is the open announcement, which
   // the strip fires; this only speaks once the player has moved something.
+  // A decline that takes a tick with it also speaks for itself, and raises the
+  // same flag, so the act arrives once rather than twice 600ms apart.
   const settled = useRef(true);
+
+  function toggle(id: string) {
+    if (inflight) return;
+    const next = new Set(live);
+    if (next.has(id)) next.delete(id);
+    else {
+      if (atCap) return;
+      next.add(id);
+    }
+    onTickedChange(next);
+  }
+
+  function decline(c: TopOffCandidate) {
+    if (inflight) return;
+    const nextDeclined = new Set(declined);
+    nextDeclined.add(c.oracleId);
+    const nextTicked = new Set(live);
+    nextTicked.delete(c.oracleId);
+    // Only when the row was ticked, because only then does the count move and
+    // the settle effect run. Raising it unconditionally would swallow whatever
+    // the player did next.
+    if (live.has(c.oracleId)) settled.current = true;
+    onDeclinedChange(nextDeclined);
+    onTickedChange(nextTicked);
+    onAnnounce(
+      topOffCopy.announce.declined(
+        c.name,
+        String(nextTicked.size),
+        String(openSlots),
+      ),
+    );
+  }
+
+  function restore(id: string) {
+    if (inflight) return;
+    const next = new Set(declined);
+    next.delete(id);
+    onDeclinedChange(next);
+  }
+
   useEffect(() => {
     if (settled.current) {
       settled.current = false;
@@ -251,41 +293,6 @@ export function TopOffList({
     // parent render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickedCount, buyCount, atCap, openSlots]);
-
-  function toggle(id: string) {
-    if (inflight) return;
-    const next = new Set(live);
-    if (next.has(id)) next.delete(id);
-    else {
-      if (atCap) return;
-      next.add(id);
-    }
-    onTickedChange(next);
-  }
-
-  function decline(c: TopOffCandidate) {
-    if (inflight) return;
-    const nextDeclined = new Set(declined);
-    nextDeclined.add(c.oracleId);
-    const nextTicked = new Set(live);
-    nextTicked.delete(c.oracleId);
-    onDeclinedChange(nextDeclined);
-    onTickedChange(nextTicked);
-    onAnnounce(
-      topOffCopy.announce.declined(
-        c.name,
-        String(nextTicked.size),
-        String(openSlots),
-      ),
-    );
-  }
-
-  function restore(id: string) {
-    if (inflight) return;
-    const next = new Set(declined);
-    next.delete(id);
-    onDeclinedChange(next);
-  }
 
   async function commit() {
     if (inflight || tickedCount === 0) return;

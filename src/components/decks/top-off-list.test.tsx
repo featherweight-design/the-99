@@ -388,6 +388,43 @@ describe("TopOffList", () => {
     expect(onAnnounce).toHaveBeenCalledWith(topOffCopy.announce.tickedNoBuy("2", "3"));
   });
 
+  // A decline speaks for itself immediately, and it also moves the count, which
+  // would otherwise bring the settle effect along 600ms later saying the same
+  // act a second time in different words.
+  it("speaks a decline once, not again when the selection settles", async () => {
+    vi.useFakeTimers();
+    const onAnnounce = vi.fn();
+    render(<Harness initialTicked={["owned-1"]} onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: topOffCopy.list.declineAria("owned-1") }));
+    expect(onAnnounce).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(onAnnounce).toHaveBeenCalledTimes(1);
+    expect(onAnnounce).toHaveBeenCalledWith(topOffCopy.announce.declined("owned-1", "0", "3"));
+  });
+
+  // Declining a row nobody ticked does not move the count, so there is no
+  // duplicate to suppress — and suppressing anyway would swallow the next real
+  // settle instead.
+  it("keeps the next settle after declining a row that was never ticked", async () => {
+    vi.useFakeTimers();
+    const onAnnounce = vi.fn();
+    render(<Harness onAnnounce={onAnnounce} />);
+
+    await click(screen.getByRole("button", { name: topOffCopy.list.declineAria("owned-1") }));
+    await act(async () => {
+      rowBox("owned-2").click();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(onAnnounce).toHaveBeenLastCalledWith(topOffCopy.announce.tickedNoBuy("1", "3"));
+  });
+
   it("announces the cap rather than the count once the last slot is ticked", async () => {
     vi.useFakeTimers();
     const onAnnounce = vi.fn();
