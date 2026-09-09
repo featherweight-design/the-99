@@ -39,7 +39,7 @@ describe("summariseFillPasses", () => {
       deckCards: [live("a"), live("b")],
     });
     expect(line).toMatchObject({ id: "p1", live: 2, kept: 0, removed: 0 });
-    expect(line.liveOracleIds).toEqual(["a", "b"]);
+    expect(line.liveCards).toEqual([{ oracleId: "a", quantity: 1 }, { oracleId: "b", quantity: 1 }]);
   });
 
   it("moves a kept card out of live without any write to the pass", () => {
@@ -51,7 +51,7 @@ describe("summariseFillPasses", () => {
     expect(line).toMatchObject({ live: 1, kept: 1, removed: 0 });
     // The design's ruling stated as a count: `Undo these {n}` cannot reach a
     // card the player has claimed.
-    expect(line.liveOracleIds).toEqual(["a"]);
+    expect(line.liveCards).toEqual([{ oracleId: "a", quantity: 1 }]);
   });
 
   it("counts a card that has left the deck as removed", () => {
@@ -61,6 +61,48 @@ describe("summariseFillPasses", () => {
       deckCards: [live("a")],
     });
     expect(line).toMatchObject({ live: 1, kept: 0, removed: 1 });
+  });
+
+  it("carries a stacked card's whole quantity through to the undo", () => {
+    const [line] = summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "forest", 30)],
+      deckCards: [live("forest", 30)],
+    });
+    expect(line).toMatchObject({ live: 30, kept: 0, removed: 0 });
+    expect(line.liveCards).toEqual([{ oracleId: "forest", quantity: 30 }]);
+  });
+
+  it("holds only what the deck still has of a trimmed stack", () => {
+    // The mana base placed 30 Forests and the player cut it to 24. Six are gone,
+    // and `Undo these 24` is the only honest offer.
+    const [line] = summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "forest", 30)],
+      deckCards: [live("forest", 24)],
+    });
+    expect(line).toMatchObject({ live: 24, kept: 0, removed: 6 });
+    expect(line.liveCards).toEqual([{ oracleId: "forest", quantity: 24 }]);
+  });
+
+  it("never claims copies the player added on top of a stack", () => {
+    // The pass placed 8; the deck holds 12. The other four are the player's, and
+    // an undo that took them would remove cards the app never placed.
+    const [line] = summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "island", 8)],
+      deckCards: [live("island", 12)],
+    });
+    expect(line).toMatchObject({ live: 8, kept: 0, removed: 0 });
+    expect(line.liveCards).toEqual([{ oracleId: "island", quantity: 8 }]);
+  });
+
+  it("counts a stack the player has claimed as kept, not live", () => {
+    expect(summariseFillPasses({
+      passes: [pass({ id: "p1" })],
+      members: [member("p1", "swamp", 9)],
+      deckCards: [kept("swamp", 9)],
+    })).toEqual([]);
   });
 
   it("drops a pass with no live cards, so its line goes", () => {
@@ -91,9 +133,9 @@ describe("summariseFillPasses", () => {
     });
     expect(lines.map((l) => l.id)).toEqual(["p1", "p3"]);
     expect(lines[0]).toMatchObject({ live: 1, removed: 1 });
-    expect(lines[0].liveOracleIds).toEqual(["a"]);
+    expect(lines[0].liveCards).toEqual([{ oracleId: "a", quantity: 1 }]);
     expect(lines[1]).toMatchObject({ live: 1, removed: 0 });
-    expect(lines[1].liveOracleIds).toEqual(["shark"]);
+    expect(lines[1].liveCards).toEqual([{ oracleId: "shark", quantity: 1 }]);
   });
 
   it("returns lines oldest first, whatever order the passes arrive in", () => {

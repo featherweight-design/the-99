@@ -3,6 +3,7 @@
 // Decklist Row — single card row with ownership dot, name, buy tag, remove button.
 // §Decklist Row (design table), §3 #179 and §4 #185 (add-panel addendum table).
 
+import { useId } from "react";
 import { addCardToDeck, removeCardFromDeck } from "../../app/decks/actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { availabilityState } from "../../lib/decks/availability";
@@ -27,6 +28,8 @@ import {
   useRemoveOptimisticCard,
   useReportRemoveFailure,
 } from "./optimistic-deck";
+import { usePassMark } from "./pass-mark";
+import { topOffCopy } from "../../lib/copy/top-off";
 import { useDeckMutation } from "./use-deck-mutation";
 
 // Both rows are the same slot at both widths: phone 44px with the ✕'s own hit
@@ -174,6 +177,20 @@ export function DecklistRow({
   // Basics are excluded for the filter's own reason, not the meta line's: the
   // fill never buys them, so an owned basic is never a purchase.
   const spokenFor = inShopping && isSpokenFor(card);
+  const passMark = usePassMark();
+  const markLabel = passMark?.oracleIds.has(card.oracleId) ? passMark.label : null;
+  const marked = markLabel !== null;
+  // Referenced by both name triggers rather than being left to sit beside them.
+  // Visually-hidden text alone is browse-mode only, and a reader moving through
+  // the decklist by Tab never leaves focus mode — so the pass that placed the
+  // card would go unspoken to exactly the reader the mark is drawn for.
+  const markDescriptionId = useId();
+  const describedBy = marked ? markDescriptionId : undefined;
+  // The mark is an inset edge for the same reason the over tint is an inset
+  // ring: 3px of real border would shunt one row's contents sideways.
+  const rowEdges: string[] = [];
+  if (marked) rowEdges.push("inset 3px 0 0 0 var(--accent)");
+  if (availState === "over") rowEdges.push("inset 0 0 0 1px var(--avail-over-border)");
 
   function handleRemove() {
     // Outside `run`: the slot and its announcement are ordinary state, which
@@ -218,8 +235,8 @@ export function DecklistRow({
       <div
         {...previewHandlers}
         className={`group ${rowShell} bg-[color:var(--surface-rail)] md:hover:bg-[color:var(--elevated-hover)]
-          [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]
-          ${availState === "over" ? "shadow-[inset_0_0_0_1px_var(--avail-over-border)]" : ""}`}
+          [--row-bg:var(--surface-rail)] md:hover:[--row-bg:var(--elevated-hover)]`}
+        style={rowEdges.length > 0 ? { boxShadow: rowEdges.join(", ") } : undefined}
       >
         {/* Ownership dot: solid green (owned) vs dashed hollow (unowned) */}
         <OwnershipDot
@@ -253,6 +270,7 @@ export function DecklistRow({
                 name={card.name}
                 siblings={siblings}
                 className={nameTextClass}
+                describedBy={describedBy}
                 style={{ color: "var(--fg)", background: "transparent", border: "none", padding: 0 }}
               >
                 {card.name}
@@ -300,6 +318,7 @@ export function DecklistRow({
               name={card.name}
               siblings={siblings}
               className={nameTextClass}
+              describedBy={describedBy}
               style={{ color: "var(--fg)" }}
             >
               {card.name}
@@ -397,6 +416,18 @@ export function DecklistRow({
 
         {/* Auto tag — one per stack */}
         {card.auto && <AutoTag deckId={deckId} oracleId={card.oracleId} name={card.name} />}
+
+        {/* The ledger is marking this pass. Additive to the card's own button
+            name rather than a replacement for it: the row has no aria-label to
+            extend. It follows the name and the auto tag rather than leading the
+            row, so a reader hears which card before hearing which pass placed
+            it — the same order the eye takes, and the order aria-describedby
+            reads it in too. */}
+        {markLabel && (
+          <span id={markDescriptionId} className="sr-only">
+            {topOffCopy.ledger.markedRow(markLabel)}
+          </span>
+        )}
 
         {/* Remove ✕ — at both widths now. The glyph stays 13px at both: the
             phone target is the padding around it. */}

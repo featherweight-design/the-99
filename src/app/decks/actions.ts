@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gt, inArray, or, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, lte, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "../../db";
@@ -834,15 +834,23 @@ export async function commitTopOff(deckId: string, oracleIds: string[]): Promise
  *  out again — and keeps "has this deck ever had a pass?" answerable, which is
  *  the condition the legacy line turns on.
  *
- *  Returns the number of cards actually removed, which is what the announcement
- *  states: a second undo of the same pass finds nothing live and removes none,
- *  and a card claimed between the read and the write is reported as staying. */
-export async function undoFillPass(deckId: string, passId: string): Promise<number> {
+ *  Returns the number of cards actually removed and the deck's size once the
+ *  undo has settled — both of which the announcement states. A second undo of
+ *  the same pass finds nothing live and removes none, and a card claimed
+ *  between the read and the write is reported as staying. The size is counted
+ *  inside the transaction rather than subtracted from a figure the browser held
+ *  before the click, because the rest of the builder stays live during an undo
+ *  and an edit landing meanwhile would make that subtraction state a deck size
+ *  that was never true. */
+export async function undoFillPass(
+  deckId: string,
+  passId: string,
+): Promise<{ removed: number; built: number }> {
   const userId = await requireUserId();
   await requireDeck(deckId, userId);
   if (!UUID_RE.test(passId)) throw new Error("invalid pass id");
 
-  const removed = await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // Under the same lock every deck write takes: attribution is read here and
     // acted on in the same breath, so a commit landing between the two cannot
     // make this undo delete a row the newer pass had just claimed.
@@ -889,10 +897,12 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
       deckCards: rows,
     }).find((s) => s.id === passId);
     // No live cards: already undone, swept, or kept out from under it. Nothing
-    // to remove and nothing to report, which is what a second undo should do.
-    if (!summary) return 0;
+    // to remove, and the deck is the size the read found it.
+    if (!summary) {
+      return { removed: 0, built: rows.reduce((n, r) => n + r.quantity, 0) };
+    }
 
-    const live = new Set(summary.liveOracleIds);
+    const live = new Set(summary.liveCards.map((c) => c.oracleId));
     const placed = new Map(
       members.filter((m) => m.passId === passId).map((m) => [m.oracleId, m.quantity]),
     );
@@ -900,7 +910,16 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
     // Taking the whole row would remove those too, so a row holding more than
     // the pass placed is decremented by what the pass placed and a row holding
     // exactly that is deleted.
-    const rowsToDelete: string[] = [];
+    // Keyed by the quantity the pass placed, because the delete below has to
+    // carry that number in its own predicate and one statement can only carry
+    // one. A pass places 1 of almost everything and a stack of basics, so this
+    // is two groups in practice.
+    const rowsToDelete = new Map<number, string[]>();
+    const forDeletion = (held: number, oracleId: string) => {
+      const group = rowsToDelete.get(held);
+      if (group) group.push(oracleId);
+      else rowsToDelete.set(held, [oracleId]);
+    };
     // Counted from what the writes took, not from what the read predicted.
     // `keepAutoCard` clears the flag without this lock, so a keep landing
     // between the read above and these writes turns one of them into a no-op —
@@ -916,35 +935,59 @@ export async function undoFillPass(deckId: string, passId: string): Promise<numb
         // player stacked on top, and leaving the marker set would let
         // `summariseFillPasses` go on counting them as this pass's — a second
         // undo would then take copies the pass never placed.
+        //
+        // The quantity is re-checked too, and that is not belt-and-braces. The
+        // deck row lock this transaction holds does not exclude
+        // `removeCardFromDeck`, which decrements without taking it, so the
+        // quantity read above can be out of date by the time this write lands.
+        // Without the predicate a row that has since fallen to `held` or below
+        // would be written negative. With it the update simply matches nothing
+        // and the row moves to the delete below, which is the right answer for
+        // a row that no longer holds more than the pass placed.
         const decremented = await tx.update(deckCards)
           .set({ quantity: sql`${deckCards.quantity} - ${held}`, auto: false })
           .where(and(
             eq(deckCards.deckId, deckId),
             eq(deckCards.oracleId, row.oracleId),
             eq(deckCards.auto, true),
+            gt(deckCards.quantity, held),
           ))
           .returning({ oracleId: deckCards.oracleId });
         if (decremented.length > 0) removedCards += held;
+        else forDeletion(held, row.oracleId);
       } else {
-        rowsToDelete.push(row.oracleId);
+        forDeletion(held, row.oracleId);
       }
     }
-    if (rowsToDelete.length > 0) {
+    for (const [held, oracleIds] of rowsToDelete) {
+      // The mirror of the predicate above, and it exists for the mirrored race:
+      // a row the read said held exactly what the pass placed can have gained
+      // copies since, and deleting it whole would take cards the player added
+      // rather than cards the app placed. A row that has grown past `held`
+      // matches nothing here and keeps every copy — the undo then removes less
+      // than it offered, which `removedCards` reports honestly, and no card the
+      // player put there is lost.
       const deleted = await tx.delete(deckCards).where(and(
         eq(deckCards.deckId, deckId),
         eq(deckCards.auto, true),
-        inArray(deckCards.oracleId, rowsToDelete),
+        lte(deckCards.quantity, held),
+        inArray(deckCards.oracleId, oracleIds),
       )).returning({ quantity: deckCards.quantity });
       removedCards += deleted.reduce((n, r) => n + r.quantity, 0);
     }
 
+    const [built] = await tx
+      .select({ copies: sql<number>`coalesce(sum(${deckCards.quantity}), 0)::int` })
+      .from(deckCards)
+      .where(eq(deckCards.deckId, deckId));
+
     // The shopping list is derived from deck membership, so this is also what
     // gives the player their money back — nothing separate restores it.
     for (const path of claimSurfaces(deckId)) revalidatePath(path);
-    return removedCards;
+    return { removed: removedCards, built: built?.copies ?? 0 };
   });
 
-  return removed;
+  return result;
 }
 
 export type LogGameInput = {

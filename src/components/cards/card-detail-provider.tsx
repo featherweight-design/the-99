@@ -45,7 +45,7 @@ export function useCardDetail(): CardDetailContextValue {
  * focus-return would then have nothing to hand focus back to on close.
  */
 export function CardDetailTrigger({
-  oracleId, name, siblings, className, style, title, ariaLabel, children,
+  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, children,
 }: {
   oracleId: string;
   name: string;
@@ -58,6 +58,12 @@ export function CardDetailTrigger({
    *  `cardDetailCopy.triggerAria(name)`. Chips pass a richer label that
    *  includes the EDHREC inclusion figure. */
   ariaLabel?: string;
+  /** Id of an element whose text a screen reader should read after this
+   *  button's own name. For text that qualifies the card in its row rather
+   *  than renaming the trigger: the ledger's mark uses it, so a reader
+   *  tabbing through the decklist hears which pass placed the card. Sibling
+   *  visually-hidden text alone is reachable only in browse mode. */
+  describedBy?: string;
   children: ReactNode;
 }) {
   const { open, pendingOracleId } = useCardDetail();
@@ -67,6 +73,7 @@ export function CardDetailTrigger({
       type="button"
       onClick={() => open(oracleId, siblings)}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
+      aria-describedby={describedBy}
       aria-busy={pending}
       title={title}
       // The chrome reset lives here rather than at each call site: every surface

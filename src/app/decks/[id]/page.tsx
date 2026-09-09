@@ -17,6 +17,7 @@ import { loadPrices } from "../../../lib/decks/price-query";
 import { loadAvailability } from "../../../lib/decks/availability-query";
 import { provenanceForm } from "../../../lib/decks/price";
 import { listDeckGames, summarizeGames } from "../../../lib/decks/games";
+import { readFillPasses } from "../../../lib/decks/fill-passes";
 
 export default async function DeckBuilderPage({
   params,
@@ -34,19 +35,24 @@ export default async function DeckBuilderPage({
 
   const openSlots = 99 - detail.built;
 
-  const [{ suggestions, degraded, shoppingFigures }, allDecks, ranked, games] = await Promise.all([
-    getDeckSuggestions(id),
-    // The move-card picker lists every other deck by name, as it always has.
-    listDecksWithStats(userId, "name"),
-    // Read the ranked support list only when the strip can render. A completed
-    // deck (openSlots ≤ 0) would never show the strip, so the query would be
-    // pure waste — skipping it saves a join on every finished-deck page load.
-    // The in-deck filter belongs to listLastSlotsCandidates, not here: passing
-    // detail.cards as coveredOracleIds would apply the role-coverage exclusion
-    // to them, which is a different exclusion with a different meaning.
-    openSlots > 0 ? readSynergyCards(userId, detail.commander.oracleId, []) : [],
-    listDeckGames(id, userId),
-  ]);
+  const [{ suggestions, degraded, shoppingFigures }, allDecks, ranked, games, fillPasses] =
+    await Promise.all([
+      getDeckSuggestions(id),
+      // The move-card picker lists every other deck by name, as it always has.
+      listDecksWithStats(userId, "name"),
+      // Read the ranked support list only when the strip can render. A completed
+      // deck (openSlots ≤ 0) would never show the strip, so the query would be
+      // pure waste — skipping it saves a join on every finished-deck page load.
+      // The in-deck filter belongs to listLastSlotsCandidates, not here: passing
+      // detail.cards as coveredOracleIds would apply the role-coverage exclusion
+      // to them, which is a different exclusion with a different meaning.
+      openSlots > 0 ? readSynergyCards(userId, detail.commander.oracleId, []) : [],
+      listDeckGames(id, userId),
+      // Not swallowed, unlike the price and availability reads below. Those
+      // degrade to a missing ornament; a ledger that quietly vanished would tell
+      // the player their passes are gone, which is a lie about deck state.
+      readFillPasses(id),
+    ]);
 
   // Summarised here rather than in the panel: the function is pure and this is
   // already a server component, so aggregating on the client would ship the
@@ -125,6 +131,7 @@ export default async function DeckBuilderPage({
       firstRun={firstRun}
       commanderIdentity={detail.commander.colorIdentity}
       candidates={candidates}
+      fillPasses={fillPasses}
       games={games}
       gameSummary={gameSummary}
       // Left in the URL rather than swept with a router.replace. Stripping it

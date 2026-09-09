@@ -3,9 +3,9 @@
  *
  * ADDS and REPLACES inside synergyCopy.lastSlots. The heading is untouched;
  * three strings are deleted with the controls they named (see the REPLACES
- * block at the foot of this file). Nothing in recommendations.ts is edited —
- * fill.provenanceShort and fill.fillingRows are both REUSED VERBATIM, which is
- * the point of them.
+ * block at the foot of this file). recommendations.ts loses its six
+ * fill.provenance* sentences to the ledger and keeps fill.fillingRows, which is
+ * REUSED VERBATIM.
  *
  * Every count in here carries its denominator in the same string. No
  * percentage is used for a count; the inclusion figure is a percentage because
@@ -279,6 +279,11 @@ export const topOffCopy = {
     markAria: (n: string, pass: string) =>
       `Mark the ${plural(n, 'card', 'cards')} from ${pass} in the deck below`,
     unmarkAria: (pass: string) => `Clear the mark on ${pass}`,
+    /** ENG-ADDED. §14 says a marked row's accessible name gains 'from top-off 1',
+     *  and the row has no aria-label to extend — its name is the card's own
+     *  button. So this ships as visually-hidden text inside the row, additive to
+     *  that button's name rather than a replacement for it. */
+    markedRow: (pass: string) => `from ${pass}`,
 
     /** 'these' because the line is the antecedent; the aria name says which
      *  pass, because three ledger lines mean three of these buttons. */
@@ -365,10 +370,16 @@ export const topOffCopy = {
 //    controls could settle three ways. One commit settles two ways: with money
 //    or without.
 //
-// 8. recommendationsCopy.fill.provenanceShort — RECAST, not deleted. Its
-//    wording survives as ledger.seedLine (the seed is a line in the ledger,
-//    and its sentence is the one the strip already said) and, unchanged, as
-//    the exhausted-list sentence in STATES §13.
+// 8. recommendationsCopy.fill.provenance / .provenanceMobile /
+//    .provenanceAllOwned / .provenanceShort / .provenanceFull /
+//    .provenanceFullAllOwned — DELETED. All six stated one deck-wide total for
+//    the whole fill, which is the thing the ledger stops doing. The full-fill
+//    pair was added to stop a 99/99 deck reading "The other 0 are yours"; the
+//    ledger cannot say that at all, because it counts each pass and never hands
+//    back a remainder. `provenanceShort`'s wording survives twice over: as ledger.seedLine
+//    (the seed is a line in the ledger, and its sentence is the one the strip
+//    already said) and, as the exhausted-list sentence in STATES §13, where
+//    the shipped key is synergyCopy.lastSlots.short rather than this one.
 //
 // R1 strings that did not survive R2:
 //   provenance.clause / .clauseNoBuy / .undo / .undoAria — the single
