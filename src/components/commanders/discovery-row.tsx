@@ -44,7 +44,7 @@ const overflowCopy = planeCopy.overflow;
 const SUPPORT_CHIP_STYLE = {
   background: "var(--bg)",
   border: "1px solid var(--border-strong)",
-  borderRadius: 6,
+  borderRadius: 9,
 } as const;
 
 /** The overlap track — the support count as a proportion of the EDHREC total.

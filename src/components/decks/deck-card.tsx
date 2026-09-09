@@ -135,7 +135,7 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
 
   return (
     <article
-      className="relative flex-none overflow-hidden rounded-[14px]"
+      className="relative min-w-0 flex-none overflow-hidden rounded-[14px]"
       style={{ background: "var(--surface-inset)", border: "1px solid var(--border)" }}
     >
       {/* 1 · Art header. Always present: `decks.commander_oracle_id` is NOT
@@ -160,12 +160,12 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
         <div className="absolute inset-x-0 top-0 min-w-0 pt-[10px] pr-[56px] pl-[13px] sm:pr-[48px]">
           <h3
             className="truncate font-display text-[17px] font-semibold sm:text-[15px]"
-            style={{ color: "var(--fg)", textShadow: INK_SHADOW }}
+            style={{ color: "var(--fg)", lineHeight: 1.15, textShadow: INK_SHADOW }}
           >
             {deck.name}
           </h3>
           <p
-            className="mt-[3px] truncate font-mono text-[10.5px]"
+            className="mt-[4px] truncate font-mono text-[10.5px]"
             style={{ color: "var(--fg-body)", textShadow: INK_SHADOW }}
           >
             {deck.commanderName}
@@ -224,13 +224,13 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
             omitted entirely for Draft, which is what "empty track" means. */}
         <div
           data-deck-bar
-          className="relative h-[3px] rounded-[2px]"
+          className="relative h-[3px] rounded-full"
           style={{ gridArea: "bar", background: "var(--border)" }}
         >
           {deck.statusPill !== "Draft" && (
             <div
               data-deck-bar-fill
-              className="absolute top-0 bottom-0 left-0 rounded-[2px]"
+              className="absolute top-0 bottom-0 left-0 rounded-full"
               style={statusBarStyle(deck.statusPill, deck.built)}
             />
           )}

@@ -70,7 +70,9 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
       href={`/decks/${deck.id}`}
       // The whole row is the target — no per-row button, because a button would
       // be a second way to do the one thing the row already does.
-      className="relative flex min-h-[72px] min-w-0 flex-1 items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[12px]"
+      // The height is stated, not a floor: the wash beside it is a hard 72px, so
+      // a row allowed to grow past that would show an unwashed strip.
+      className="relative flex h-[72px] min-w-0 flex-1 items-center overflow-hidden rounded-[12px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] py-[10px] pr-[18px]"
     >
       {/* §ResumeRow — the commander's portrait, at the band's own height. It is
           a column the type starts clear of, not a plate the type sits on: 99px
@@ -91,11 +93,14 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
             in both rows only because a new deck is named after its commander by
             default; a renamed deck must show the name its owner gave it, as the
             rail and the deck tile both already do. */}
-        <span className="truncate font-display text-[14.5px] font-semibold text-[color:var(--fg)]">
+        <span
+          className="truncate font-display text-[14.5px] font-semibold text-[color:var(--fg)]"
+          style={{ lineHeight: 1.2 }}
+        >
           {deck.name}
         </span>
 
-        <span className="flex items-center gap-[8px]">
+        <span className="flex items-center gap-[14px]">
           <StatusPillBadge
             status={deck.statusPill}
             // §ResumeRow — status pill: shorter and tighter than the tile's, and

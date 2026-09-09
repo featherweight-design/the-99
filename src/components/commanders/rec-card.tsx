@@ -75,7 +75,7 @@ type RecCardProps =
 const FIT_CHIP_STYLE = {
   background: "var(--bg)",
   border: "1px solid var(--border-strong)",
-  borderRadius: 6,
+  borderRadius: 9,
 } as const;
 
 export function RecCard(props: RecCardProps) {
@@ -354,6 +354,7 @@ export function RecCard(props: RecCardProps) {
             counts={counts}
             avail={avail}
             fontSize={10.5}
+            lineHeight={1.5}
           />
 
           {/* Per-commander degraded note (mobile) */}
@@ -451,6 +452,7 @@ export function RecCard(props: RecCardProps) {
               counts={counts}
               avail={avail}
               fontSize={12.5}
+              lineHeight={1.5}
             />
 
             {/* Receipts preview (desktop) */}

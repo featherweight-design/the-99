@@ -46,7 +46,7 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
     // the band to this root, so the footer below the divider sits inside the
     // same rounded corner.
     <div
-      className="relative overflow-hidden rounded-[14px] border border-[color:var(--border)]"
+      className="relative min-w-0 overflow-hidden rounded-[14px] border border-[color:var(--border)]"
       style={{ background: "var(--surface-inset)" }}
     >
       {/* The band is the deck card's, exactly — same aspect, same floor. A second
@@ -59,7 +59,7 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
         <div className="absolute inset-x-0 top-0 p-[13px] sm:p-[14px]">
           <p
             className="m-0 truncate font-display text-[17px] font-semibold text-[color:var(--fg)] sm:text-[18px]"
-            style={{ textShadow: INK_SHADOW }}
+            style={{ lineHeight: 1.15, textShadow: INK_SHADOW }}
           >
             {item.name}
           </p>
@@ -89,12 +89,14 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
         {/* §ReadyCard — fit badge. Decision 3: a chip over art takes an opaque
             plate and a hairline, exactly as the status pill does. */}
         <div
-          className="hero-fit-chip absolute right-[11px] bottom-[10px] flex h-[22px] items-center rounded-[6px] px-[8px] font-mono text-[10.5px] sm:right-[12px] sm:bottom-[11px]"
+          className="hero-fit-chip absolute right-[11px] bottom-[10px] flex h-[22px] items-center rounded-[7px] px-[8px] font-mono text-[10.5px] sm:right-[12px] sm:bottom-[11px]"
           style={{ background: "var(--bg)", border: "1px solid var(--border-strong)" }}
         >
           <span className="text-[color:var(--fg)]">{score}</span>
           {denominator !== null && (
-            <span className="text-[color:var(--fg-faint)]">&nbsp;{denominator}</span>
+            <span className="tracking-[0.1em] text-[color:var(--fg-faint)]">
+              &nbsp;{denominator}
+            </span>
           )}
         </div>
       </div>
@@ -109,7 +111,7 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
             draws: the nesting exists only to carry the phone's ` · ` shorthand,
             which has no copy key and is not adopted. */}
         <div className="flex items-center gap-[7px] sm:gap-[8px]">
-          <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-body)] sm:text-[11px]">
+          <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)] sm:text-[11px]">
             {c.fitLine(item.colorPoolSize)}
           </span>
           {/* Free says nothing — the clause is absent at zero, not a printed 0. */}
