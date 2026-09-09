@@ -113,6 +113,18 @@ describe("LastSlotsStrip", () => {
     expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
   });
 
+  // A player who owns none of the candidates seeds no ticks, and the note has
+  // to say that rather than counting zero of them.
+  it("says the list arrives untouched when nothing in the pool is owned", () => {
+    render(
+      <LastSlotsStrip {...base} candidates={[candidate("buy-1", false), candidate("buy-2", false)]} />,
+    );
+    expect(screen.getByText(topOffCopy.strip.doorNote("0"))).toBeInTheDocument();
+    // Asserting the rendered key alone cannot see a missing zero branch, since
+    // both sides of the comparison come from the same function.
+    expect(topOffCopy.strip.doorNote("0")).not.toMatch(/^0 /);
+  });
+
   // State 13. A control with nothing to do is absent, not disabled — and the
   // caption goes with it rather than counting a pool of zero.
   it("replaces the door and the caption with the exhausted line when the pool is empty", () => {

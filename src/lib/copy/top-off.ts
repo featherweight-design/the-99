@@ -62,7 +62,9 @@ export const topOffCopy = {
      *  claims nothing about how many the player owns in total. A deck with 58
      *  owned candidates for 31 slots seeds 31, and 'you own 31' would be false. */
     doorNote: (seeded: string) =>
-      seeded === '1'
+      seeded === '0'
+        ? 'You own none of these, so the list arrives untouched. Nothing is added until you say so.'
+        : seeded === '1'
         ? '1 candidate arrives ticked, from your collection. Nothing is added until you say so.'
         : `${seeded} candidates arrive ticked, all from your collection. Nothing is added until you say so.`,
     /** Reopening after a partial accept. Says what is left and that the
