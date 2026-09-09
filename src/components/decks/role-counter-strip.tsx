@@ -5,7 +5,6 @@ import {
   computeRoleCounts,
   RECOMMENDED_MIX,
   RECOMMENDED_MIX_SOURCE_LINE,
-  RECOMMENDED_MIX_WORKED_EXAMPLE,
   type MixRole,
 } from "../../lib/decks/mix";
 import { RoleCounterCell } from "./role-counter-cell";
@@ -73,15 +72,10 @@ export function RoleCounterStrip({
           Recommended mix
         </span>
 
-        {/* §Strip header — "a guide, not a gate" */}
-        <span
-          className="font-mono text-[9px] md:hidden"
-          style={{ color: "var(--fg-locked)" }}
-        >
-          a guide, not a gate
-        </span>
-
-        {/* §Strip header — source copy (desktop) */}
+        {/* §Strip header — source copy (desktop). The phone had its own
+            "a guide, not a gate" gloss here; both said the same thing and
+            neither said what the numbers are, which is what StripRationale
+            below is for. */}
         <span
           className="hidden md:inline font-mono text-[10.5px]"
           style={{ color: "var(--fg-faint)" }}
@@ -111,44 +105,13 @@ export function RoleCounterStrip({
         ))}
       </div>
 
-      {/* One disclosure for the strip, where there were five per-cell buttons. */}
+      {/* One disclosure for the strip, where there were five per-cell buttons.
+          The desktop worked-example callout that used to sit below it is gone:
+          it taught how to read a cell using hypothetical numbers, and
+          StripRationale answers the same question about the reader's own deck
+          and answers it better. Two explanations of one strip, the permanent
+          one weaker than the one behind the disclosure. */}
       <StripRationale />
-
-      {/*
-        §Worked-example callout (desktop mid-build)
-        display flex, align-items flex-start, gap 11px, mt 12px
-        bg var(--surface-sunken), border 1px var(--border), border-left 3px var(--accent)
-        br 9px, p 11px 15px
-      */}
-      <div
-        className="hidden md:flex items-start gap-[11px] mt-[12px] rounded-[9px] px-[15px] py-[11px]"
-        style={{
-          background: "var(--surface-sunken)",
-          border: "1px solid var(--border)",
-          borderLeft: "3px solid var(--accent)",
-        }}
-      >
-        {/* §Worked-example callout — "i" icon */}
-        <div
-          className="flex-none flex items-center justify-center rounded-full font-display font-bold text-[12px]"
-          style={{
-            width: 20,
-            height: 20,
-            border: "1.5px solid var(--accent)",
-            color: "var(--accent)",
-          }}
-          aria-hidden
-        >
-          i
-        </div>
-        {/* §Worked-example callout — text */}
-        <p
-          className="text-[12.5px] leading-[1.55]"
-          style={{ color: "var(--fg-body)" }}
-        >
-          {RECOMMENDED_MIX_WORKED_EXAMPLE}
-        </p>
-      </div>
     </section>
   );
 }

@@ -1336,3 +1336,14 @@ Targets that must be interactive per the design text:
 13. **`Explorations (1a-1c).dc.html` contains no Home frames at all** — all three packages draw only
     the Decks screen with filters open. It therefore contradicts nothing in this table, and the
     README already labels it "not a spec".
+
+---
+
+# Errata — where the shipped build departs from this table
+
+1. **The rail and resume clauses read `N cards`, not `N unowned`.** The figure comes from the
+   shopping roll-up, which now answers the seniority question rather than the ownership one: a
+   card held by an older finished deck is a copy to buy while being a card the player owns, so
+   `unowned` had become false. Both surfaces print the status word on the same line, so the
+   clause counts the copies and lets the `To buy` beside it say what they are —
+   `decks.detailCopies` in place of `decks.detailUnowned`. Placement and colour are unchanged.

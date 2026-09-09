@@ -162,6 +162,13 @@ export const recommendationsCopy = {
     // rather than quietly reporting a smaller number.
     provenanceShort: (filled: string, role: string, open: string) =>
       `We filled ${filled} of 99. ${role} came up short — your collection and EDHREC between them had nothing more to place. The other ${open} are yours.`,
+    // The fill placed the whole 99, so there is no "other N" to hand back and
+    // every string above would close on "The other 0 are yours" — a clause that
+    // reads as an error the first time and as noise every time after.
+    provenanceFull: (filled: string, bought: string) =>
+      `We filled the roles and the mana base — the whole ${filled}, ${bought} of them from outside your collection.`,
+    provenanceFullAllOwned: (filled: string) =>
+      `We filled the roles and the mana base — the whole ${filled}, all from your collection.`,
     // In-flight (state 14). One announcement on settle, never per row.
     filling: (n: string) => `Filling ${n} of 99…`,
     fillingRows: (n: string) => `Sleeving ${n} cards…`,

@@ -22,8 +22,15 @@
  * | `Building`   | 1–98 matched                             | Short of a legal list          | Add the rest    |
  * | `Over`       | 100+ matched                             | Past a legal list              | Cut the excess  |
  * | `Unresolved` | 99 matched, some line unresolved         | Carrying lines we cannot name  | Resolve or drop |
- * | `To buy`     | 99 matched, no unresolved, some unowned  | A legal list you do not own    | Buy the missing |
- * | `Complete`   | 99 matched, no unresolved, all owned     | Sleeve it and play it          | Play it         |
+ * | `To buy`     | 99 matched, no unresolved, some to buy    | A legal list you cannot sleeve | Buy the missing |
+ * | `Complete`   | 99 matched, no unresolved, nothing to buy | Sleeve it and play it          | Play it         |
+ *
+ * "To buy" is not the same question as "do you own a copy". A card the player
+ * owns can still be a card this deck has to buy, because an older finished deck
+ * is already holding the copies — one Sol Ring across four sleeved decks is
+ * three purchases. `unfundedCount` is that count and is what the last two rows
+ * turn on; ownership alone would call such a deck `Complete` while its own
+ * shopping list named twelve cards.
  *
  * `Playable` was retired by #357. It covered the last three rows at once and
  * rendered in the same green as `Complete`, so a 99-card list needing fifteen
@@ -56,10 +63,16 @@ export function statusPill(args: {
   built: number;
   ownedCount: number;
   unresolvedCount?: number;
+  unfundedCount?: number;
 }): StatusPill {
   if (args.built === 0) return "Draft";
   if (args.built < 99) return "Building";
   if (args.built > 99) return "Over";
   if ((args.unresolvedCount ?? 0) > 0) return "Unresolved";
-  return args.ownedCount === args.built ? "Complete" : "To buy";
+  // Unowned cards are always unfunded, so the two tests would normally collapse
+  // into one. They are kept separate because a caller that cannot compute the
+  // seniority allocation still gets the ownership answer rather than a wrong
+  // `Complete`.
+  const unfunded = args.unfundedCount ?? 0;
+  return args.ownedCount === args.built && unfunded === 0 ? "Complete" : "To buy";
 }

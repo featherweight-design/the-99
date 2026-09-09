@@ -119,7 +119,7 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
           <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">
             {copies === null
               ? count
-              : `${count} · ${refreshCopy.decks.detailUnowned(copies)}`}
+              : `${count} · ${refreshCopy.decks.detailCopies(copies)}`}
           </span>
         </span>
       </span>

@@ -72,11 +72,11 @@ describe("DeckRail", () => {
     expect(list("phone").getByRole("link", { name: "All decks" })).toBeInTheDocument();
   });
 
-  it("prints the unowned clause beside the status on phone", () => {
+  it("prints the copies clause beside the status on phone", () => {
     render(
       <DeckRail decks={[deck({ statusPill: "To buy" })]} shopping={rollup({ d1: 3 })} />,
     );
-    expect(screen.getByText("To buy · 3 unowned")).toBeInTheDocument();
+    expect(screen.getByText("To buy · 3 cards")).toBeInTheDocument();
   });
 
   // The roll-up excludes basics and `toBuyCount` (`built − ownedCount`) does
@@ -88,7 +88,7 @@ describe("DeckRail", () => {
       <DeckRail decks={[deck({ statusPill: "To buy", toBuyCount: 3 })]} shopping={rollup()} />,
     );
     expect(list("phone").getByText("To buy")).toBeInTheDocument();
-    expect(screen.queryByText(/unowned/)).toBeNull();
+    expect(screen.queryByText(/cards/)).toBeNull();
   });
 
   it("prints the unresolved clause beside the status", () => {

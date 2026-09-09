@@ -1502,3 +1502,15 @@ Cross-cutting conditions on the tile:
     superseded: filtering is live with Clear only, there is no token query, search moved into the
     filter surface, and the desktop layout is the persistent 262px column with a 3-up art-led card
     grid.
+
+---
+
+# Errata — where the shipped build departs from this table
+
+1. **The To buy detail row reads `N to buy`, not `N unowned`, and the status condition is no
+   longer "some card unowned".** Both the tile's figure and the `To buy` threshold now come from
+   the seniority allocation rather than from ownership, so a card an older finished deck already
+   holds is one of the copies counted here while being a card the player owns. `detailToBuy` was
+   reworded and `detailUnowned` became `detailToBuyNoPrice`; the geometry, colour and placement
+   in the row above are unchanged. `Complete`'s `all owned` is untouched: a Complete deck owns
+   its cards and no older deck has taken any of them.

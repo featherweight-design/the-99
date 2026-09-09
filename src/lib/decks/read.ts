@@ -11,7 +11,7 @@ import {
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
-import { loadAvailability } from "./availability-query";
+import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant } from "./price";
 import {
@@ -390,11 +390,26 @@ export async function listDecksWithStats(
     ? inUseElsewhereByDeck(availability.values())
     : new Map<string, number>();
 
+  // Unconditional, unlike `inUseElsewhere` above: this one decides the status
+  // pill, and every caller renders that. `ownedCount` alone cannot answer it —
+  // a card the player owns is still a card THIS deck must buy when an older
+  // finished deck already holds every copy — so without this a fully-owned deck
+  // reads `Complete` while its own Shopping list names twelve cards.
+  //
+  // Tolerated the same way: a failed read falls back to the ownership answer,
+  // which is the pre-seniority behaviour and not a 500.
+  const buyRows = rows.length > 0 ? await loadDeckBuyRows(userId).catch(() => []) : [];
+  const unfundedByDeck = new Map<string, number>();
+  for (const r of buyRows) {
+    unfundedByDeck.set(r.deckId, (unfundedByDeck.get(r.deckId) ?? 0) + r.quantity);
+  }
+
   return rows.map((row) => {
     const pill = statusPill({
       built: row.built,
       ownedCount: row.ownedCount,
       unresolvedCount: row.unresolvedCount,
+      unfundedCount: unfundedByDeck.get(row.id) ?? 0,
     });
     return {
       id: row.id,
