@@ -1,7 +1,8 @@
-// #364: colour identity is the union of both commanders. Atreus alone is Izzet,
-// so a white card is illegal in his deck; paired with Kratos the deck is Jeskai
-// and the same card is addable. That gap is the bug this feature exists to fix —
-// half the motivating deck's cards were unaddable to the deck they were in.
+// #364: colour identity is the union of both commanders. The primary alone
+// lacks white, so a white card is illegal in its deck; the partner adds white,
+// so paired the same card is addable. That gap is the bug this feature exists
+// to fix — half the motivating deck's cards were unaddable to the deck they
+// were in.
 //
 // Builds a pair deck and a single-commander deck through the picker, searches
 // the add field of each for the same white card, and reports whether it is
@@ -25,9 +26,9 @@ const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PAIRS = "Atreus, Impulsive Son";
 const PARTNER = "Kratos, Stoic Father";
 // Mono-white, and in the fixture collection — so the only thing that can keep
-// it out of the panel is the deck's colour identity. Atreus alone is Izzet and
-// Kratos is the one who brings white, which is what makes this the card the
-// union rule turns on.
+// it out of the panel is the deck's colour identity. The primary lacks white
+// and the partner brings it, which is what makes this the card the union rule
+// turns on.
 const WHITE = "Swords to Plowshares";
 
 async function signIn(page) {
@@ -112,8 +113,8 @@ page.on("pageerror", (e) => console.log(`  [pageerror] ${String(e).slice(0, 300)
 await signIn(page);
 
 for (const [label, partner, want] of [
-  ["pair (Jeskai)", PARTNER, "offered"],
-  ["single (Izzet)", null, "absent"],
+  ["pair (union has white)", PARTNER, "offered"],
+  ["single (no white)", null, "absent"],
 ]) {
   const url = await createDeck(page, partner, label.split(" ")[0]);
   console.log(`\n${label}: ${await searchAddPanel(page, url)} (want ${want})`);

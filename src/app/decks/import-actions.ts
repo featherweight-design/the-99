@@ -177,13 +177,15 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     .from(cards)
     .where(inArray(cards.oracleId, commanderIds));
   const commander = commanderCards.find((c) => c.oracleId === commanderOracleId);
-  if (!commander || !commander.commanderLegal || !isCommanderCandidate(commander)) {
+  if (!commander) throw new Error("commander not found");
+  if (!commander.commanderLegal || !isCommanderCandidate(commander)) {
     throw new Error("card is not a legal commander");
   }
 
   if (partnerOracleId) {
     const partner = commanderCards.find((c) => c.oracleId === partnerOracleId);
-    if (!partner || !partner.commanderLegal || !isCommanderCandidate(partner)) {
+    if (!partner) throw new Error("commander not found");
+    if (!partner.commanderLegal || !isCommanderCandidate(partner)) {
       throw new Error("card is not a legal commander");
     }
     if (
