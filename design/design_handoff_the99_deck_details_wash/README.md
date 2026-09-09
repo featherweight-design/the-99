@@ -40,8 +40,8 @@ hexes match the shipped tokens. `--w…--g` in `globals.css` is the only source.
 | Rename field border | `#C9A24B` | `var(--accent)` | retired pre-rebrand brass; cannot come back |
 | Rename field fill | `#181410` / `#0E0C09` | `var(--surface-sunken)` | `#0E0C09` is derived as `color-mix(--bg 86%, black)`; never mint it |
 | Export / Save | `#CF8745` | `var(--accent)` | the literal *was* Low Sun's accent — pink, lime, teal, violet or blue in the other five |
-| Bar track / fill | `#29241F` / `#DEAA29` | `var(--elevated)` / tri-state | real tokens, but the mid state only |
-| Ground / divider / chip | `#1A160F` `#2A241D` `#14110E` | `var(--surface)` `var(--border)` `var(--surface-sunken)` | the canvas disagreed with itself surface to surface |
+| Bar track / fill | `#29241F` / `#DEAA29` | `var(--elevated)` / `statusBarStyle` | real tokens, but the mid state only; the fill keys off **status**, not percentage — conflict 3 |
+| Ground / divider / chip | `#1A160F` `#2A241D` `#14110E` | `var(--surface)` `var(--border)` / `statusPillStyle` | the canvas disagreed with itself surface to surface; the chip's fill is **status-tinted**, not a flat ground — blocker 5 |
 | Rank eyebrow | `#8FB8E6` | `var(--fg-body)` | see conflict 2 |
 | Pips | round, off-palette | `rounded-[2px]`, `var(--w…--g)` | see conflict 1 |
 
@@ -74,7 +74,9 @@ exactly the moment they need it; the canvas drew it disabled and the canvas was 
 **holds its full box while empty** — it is the title's space, not the text's — so all four editing
 states measure 352×29. Strings are Product's.
 
-**4 · Bar below 100%.** Drawn at 40/99, which renders `var(--danger)` — see conflict 3.
+**4 · Bar below 100%.** Drawn at 40/99. The fill is `var(--fg-body)`, because that deck is
+`Building` and the bar keys off status rather than the count — see conflict 3, which corrects the
+percentage reading this line first carried.
 
 **5 · Status chips — render as shipped. `statusPillStyle` wins; do not fork it.**
 
@@ -204,8 +206,9 @@ nothing there is on art. Desktop `Update from a list` keeps its ghost outline, a
 it.
 
 **6 · Divider, ground, ring alphas.** All were literal-vs-literal drift. Divider `var(--border)`,
-card ground `var(--surface)`, band `var(--bg)`, chip `var(--surface-sunken)`; both the pip ring
-and the bar track ring are `inset 0 0 0 1px rgba(0,0,0,0.4)`.
+card ground `var(--surface)`, band `var(--bg)`; both the pip ring and the bar track ring are
+`inset 0 0 0 1px rgba(0,0,0,0.4)`. **The chip is not on this list** — its fill is the status colour
+mixed into `var(--bg)`, per blocker 5, and no ground of its own.
 
 **7 · Which ground is the constant.** `var(--bg)` for a wash band (it is the plate the scrim mixes
 toward, which is what makes `color-mix(in oklab, var(--bg) …)` correct), `var(--surface)` for a
