@@ -198,6 +198,12 @@ export function TopOffList({
   // subtracted from a pool it is not in, and the head would count rows down to
   // nothing.
   const declinedHere = pool.filter((c) => declined.has(c.oracleId)).length;
+
+  // What the tick-all will actually tick. It replaces the selection wholesale
+  // and clamps to the open slots, so a player owning twelve candidates for three
+  // slots is offered three — the figure both the face and the accessible name
+  // carry, because a button that says twelve and ticks three is lying twice.
+  const tickable = Math.min(ownedIds.length, Math.max(openSlots, 0));
   const untouched = pool.length - tickedCount - declinedHere;
 
   const buying = pool.filter((c) => live.has(c.oracleId) && !c.owned);
@@ -384,12 +390,12 @@ export function TopOffList({
 
         <div className="flex gap-[8px] mt-[11px] md:contents">
           <GhostButton
-            onClick={() => onTickedChange(new Set(ownedIds.slice(0, openSlots)))}
-            disabled={inflight || ownedIds.length === 0}
-            aria-label={topOffCopy.list.tickOwnedAria(String(ownedIds.length))}
+            onClick={() => onTickedChange(new Set(ownedIds.slice(0, tickable)))}
+            disabled={inflight || tickable === 0}
+            aria-label={topOffCopy.list.tickOwnedAria(String(tickable))}
             className="flex flex-1 items-center justify-center min-h-[44px] md:inline-flex md:flex-none md:min-h-0 md:h-[30px] md:px-[11px] rounded-[8px] font-mono text-[11px] text-[color:var(--fg-body)] disabled:opacity-50"
           >
-            {topOffCopy.list.tickOwned(String(ownedIds.length))}
+            {topOffCopy.list.tickOwned(String(tickable))}
           </GhostButton>
           <GhostButton
             onClick={() => onTickedChange(new Set())}

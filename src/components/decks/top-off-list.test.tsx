@@ -388,6 +388,21 @@ describe("TopOffList", () => {
     expect(onAnnounce).toHaveBeenCalledWith(topOffCopy.announce.tickedNoBuy("2", "3"));
   });
 
+  // The tick-all clamps to the open slots, so a player owning more candidates
+  // than there are slots must be offered the number it will actually tick —
+  // a button that says two and ticks one is wrong on its face and in its name.
+  it("names the tick-all by what it will tick, not by what is owned", async () => {
+    render(<Harness openSlots={1} />);
+
+    const button = screen.getByRole("button", {
+      name: topOffCopy.list.tickOwnedAria("1"),
+    });
+    expect(button).toHaveTextContent(topOffCopy.list.tickOwned("1"));
+
+    await click(button);
+    expect(screen.getByText(topOffCopy.list.headMobile("1", "1"))).toBeInTheDocument();
+  });
+
   // A decline speaks for itself immediately, and it also moves the count, which
   // would otherwise bring the settle effect along 600ms later saying the same
   // act a second time in different words.
