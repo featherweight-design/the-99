@@ -14,10 +14,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   /* The 37-key contract from src/app/globals.css. Reproduced here so this
-     document resolves the same tokens the app does. These [data-theme] blocks
-     are the token definitions and are necessarily hex; the rule is that every
-     colour in a drawn product frame below is a var(), never a literal. Only
-     the keys these surfaces touch. */
+     document resolves the same tokens the app does — every colour below is a
+     var(), never a literal. Only the keys these surfaces touch. */
   :root, [data-theme="amonkhet"] {
     --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F;
     --surface-raised:#211D18; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
@@ -76,9 +74,9 @@
 <div data-theme="{{ theme }}" style="padding:44px 40px 90px;max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:56px;background:var(--bg);">
 
   <div style="display:flex;flex-direction:column;gap:14px;">
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">The 99 · Art wash · detail surfaces · R5</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">The 99 · Art wash · detail surfaces · {{ rev }}</div>
     <h1 style="font-family:var(--display),serif;font-weight:800;font-size:38px;color:var(--fg);margin:0;line-height:1.12;">Deck details, commander mobile, rename — on tokens</h1>
-    <p style="font-size:15px;color:var(--fg-body);line-height:1.65;margin:0;max-width:840px;text-wrap:pretty;">R2's wash geometry stands: <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:13px;">168 × 1.37 = 230px</code>, the flat-by-240px scrim, the zero-reflow rename ring. <b style="color:var(--fg);font-weight:600;">What was wrong was the colour layer.</b> R1 and R2 were built from screenshots and sibling handoffs, so they specced hex literals against a system that is six per-theme token sets. <b style="color:var(--fg);font-weight:600;">This revision is on</b> <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:13px;">var(--*)</code> throughout — switch the theme above to check it.</p>
+    <p style="font-size:15px;color:var(--fg-body);line-height:1.65;margin:0;max-width:840px;text-wrap:pretty;">The two deck-header bands shipped in <b style="color:var(--fg);font-weight:600;">PR #473</b>. This revision rules on the four open questions that PR carries, ratifies both recorded divergences, and drops one unreachable state. <b style="color:var(--fg);font-weight:600;">No geometry changes</b> — <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:13px;">168 × 1.37 = 230px</code>, the flat-by-240px scrim and the zero-reflow rename ring all stand as built. Earlier rounds moved this document onto <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:13px;">var(--*)</code> and closed its undrawn states; switch the theme prop to check any surface under all six.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:10px;padding:16px 20px;">
       <div style="font-size:13.5px;color:var(--fg-body);line-height:1.6;max-width:880px;"><b style="color:var(--fg);font-weight:600;">Root cause, stated once.</b> Six rounds of review kept finding the same defect in different clothes — chrome, spine furniture, the Card details pill, the rename field, the pips. Every one was a value I recreated from an image instead of reading from source. The colour findings in this audit are all that same error at the token layer, so this revision fixes the <i>method</i>: nothing below is a literal, and the palette section names its source file.</div>
     </div>
@@ -167,7 +165,7 @@
 
   <!-- STATES -->
   <div style="display:flex;flex-direction:column;gap:18px;">
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">Blockers 1, 5, 6, 7 · the undrawn header states — desktop band, 168px</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:18px;">R6 · the desktop header states — band <code style="color:var(--accent);text-transform:none;letter-spacing:0;">min-height:168px</code></div>
     <div style="display:flex;flex-direction:column;gap:22px;">
       <sc-for list="{{ states }}" as="s" hint-placeholder-count="4">
         <div style="display:flex;flex-direction:column;gap:9px;">
@@ -176,7 +174,7 @@
             <span style="font-size:13px;color:var(--fg-muted);line-height:1.55;">{{ s.note }}</span>
           </div>
           <div style="border:1px solid var(--border);border-radius:12px;background:var(--bg);overflow:hidden;">
-            <div style="position:relative;height:168px;background:var(--bg);overflow:hidden;">
+            <div style="position:relative;min-height:168px;background:var(--bg);overflow:hidden;">
               <div style="position:absolute;inset:0;opacity:{{ s.ambientOp }};background-size:cover;background-position:center top;background-repeat:no-repeat;background-image:{{ s.ambient }};"></div>
               <div style="position:absolute;left:0;top:0;bottom:0;width:230px;opacity:{{ s.sharpOp }};background-size:auto 100%;background-position:left center;background-repeat:no-repeat;background-image:{{ s.sharp }};-webkit-mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);mask-image:linear-gradient(90deg,#000 0 58%,transparent 100%);"></div>
               <sc-if value="{{ s.hasWash }}" hint-placeholder-val="{{ true }}">
@@ -200,11 +198,17 @@
                     <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ s.chipInk }};background:{{ s.chipFill }};border:1px {{ s.chipStyle }} var(--border-strong);border-radius:6px;padding:3px 8px;">{{ s.chip }}</span>
                   </div>
                   <div style="display:flex;align-items:baseline;gap:4px;margin-top:5px;">
-                    <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:var(--fg);">{{ s.built }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:{{ s.builtInk }};">{{ s.built }}</span>
                     <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 99</span>
+                    <sc-if value="{{ s.hasOver }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ s.builtInk }};">{{ s.over }}</span>
+                    </sc-if>
                   </div>
                   <div style="width:170px;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;margin-top:6px;"><div style="width:{{ s.barW }};height:100%;background:{{ s.barFill }};"></div></div>
                   <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);margin-top:6px;">{{ s.owned }}</div>
+                  <sc-if value="{{ s.hasTrim }}" hint-placeholder-val="{{ true }}">
+                    <div style="font-size:11.5px;color:var(--fg-muted);line-height:1.5;margin-top:6px;max-width:520px;">{{ s.trim }}</div>
+                  </sc-if>
                 </div>
                 <div style="flex:none;display:flex;gap:9px;align-items:center;">
                   <span style="font-size:13px;font-weight:600;color:var(--fg);border:1px solid var(--border-strong);border-radius:8px;padding:10px 16px;">Update from a list</span>
@@ -294,28 +298,6 @@
       </div>
 
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:var(--warning);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--warning);">Deck header · no commander · <b style="color:var(--fg);">no band at all</b></span></div>
-        <div style="width:390px;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden;">
-          <div style="padding:18px 18px 16px;display:flex;flex-direction:column;align-items:center;gap:9px;">
-            <div style="display:flex;align-items:flex-start;gap:8px;max-width:100%;">
-              <div style="font-family:var(--display),serif;font-weight:700;font-size:20px;line-height:1.25;color:var(--fg);text-align:center;max-height:50px;overflow:hidden;">Untitled deck</div>
-              <span style="width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--surface-sunken);border:1px solid var(--border-strong);border-radius:8px;color:var(--fg);font-size:15px;">&#9998;</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;">
-              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">No commander yet</span>
-              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);background:color-mix(in srgb,var(--fg-faint) 16%,var(--bg));border:1px solid var(--border-strong);border-radius:6px;padding:3px 7px;">Draft</span>
-            </div>
-          </div>
-          <div style="border-top:1px solid var(--border);padding:14px 16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;">
-            <div style="display:flex;align-items:baseline;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--fg);">0</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">/ 99</span></div>
-            <div style="width:100%;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;"><div style="width:0%;height:100%;background:var(--danger);"></div></div>
-          </div>
-          <div style="padding:4px 16px 14px;display:flex;gap:8px;justify-content:center;">
-            <span style="display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);border:1px solid var(--border-strong);border-radius:7px;padding:6px 12px;min-height:44px;">Update from a list</span>
-          </div>
-        </div>
-        <div style="width:390px;font-size:12.5px;color:var(--fg-muted);line-height:1.6;">Desktop answered this by dropping the portrait slot, which is <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">left-portrait</code>-specific reasoning and does not transfer. The general rule behind both: <b style="color:var(--fg);font-weight:600;">no art and no identity means there is nothing to wash, so there is no wash</b>. At 2.2/1 that leaves an empty 177px band with nothing to fill it, so the band is <b style="color:var(--fg);font-weight:600;">removed entirely</b> — the header is a flat <code style="font-family:'IBM Plex Mono',monospace;color:var(--accent);font-size:12px;">var(--surface)</code> block at content height. Export goes too: there is nothing to export.</div>
-      </div>
 
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:999px;background:var(--success);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--success);">Commander hero · 1.6/1 · mobile only</span></div>
@@ -490,6 +472,9 @@ class Component extends DCLogic {
     const identity = 'linear-gradient(135deg, var(--b) 0%, color-mix(in oklab, var(--b), var(--r)) 50%, var(--r) 100%)';
 
     return {
+      // Single source for the revision label. Bump ONLY here — the eyebrow reads
+      // it, so the title can never fall a revision behind the rulings below it.
+      rev: 'R6',
       theme,
       naya: [V('--r'), V('--g'), V('--w')],
       pipRows: [
@@ -516,30 +501,35 @@ class Component extends DCLogic {
         { label:'To buy · 99 / 99', tok:'--accent', fill:V('--accent'), w:'100%' }
       ],
       states: [
-        { tag:'01 · null art_crop', note:'Blocker 1 — confirmed: the shipped fallback carries here unchanged.',
+        { tag:'01 · null art_crop', note:'Ratified R6 — the identity gradient is the AMBIENT layer only. Your drawing is better than my table: a gradient in a 230px masked box compresses the same ramp into a narrower space and seams at the mask edge.',
           pad:'254px', hasWash:true,
-          ambient:identity, ambientOp:1, sharp:identity, sharpOp:1, hasPill:false, hasPips:true,
+          ambient:identity, ambientOp:1, sharp:'none', sharpOp:0, hasPill:false, hasPips:true,
           name:'HD - Bolg', sub:'Bolg of the North · Rakdos', subInk:'var(--fg-body)', pips:[V('--b'),V('--r')],
           chip:'Complete', chipInk:'var(--success)', chipFill:'color-mix(in srgb, var(--success) 18%, var(--bg))', chipStyle:'solid',
-          built:'99', barW:'100%', barFill:V('--success'), owned:'99 owned · 0 to buy', hasExport:true },
-        { tag:'02 · building, 40 / 99', note:'Blockers 4 + 5 — the danger fill and the dashed chip, both on art.',
+          built:'99', builtInk:'var(--fg)', barW:'100%', barFill:V('--success'), owned:'99 owned · 0 to buy',
+          hasExport:true, hasOver:false, over:'', hasTrim:false, trim:'' },
+        { tag:'02 · building, 40 / 99', note:'The status-keyed bar and the dashed chip, both on art.',
           pad:'254px', hasWash:true,
           ambient:bolg, ambientOp:0.2, sharp:bolg, sharpOp:0.8, hasPill:true, hasPips:true,
           name:'HD - Bolg', sub:'Bolg of the North · Rakdos', subInk:'var(--fg-body)', pips:[V('--b'),V('--r')],
           chip:'Building', chipInk:'var(--fg-body)', chipFill:'color-mix(in srgb, var(--fg-body) 14%, var(--bg))', chipStyle:'dashed',
-          built:'40', barW:'40%', barFill:V('--fg-body'), owned:'34 owned · 6 to buy', hasExport:true },
-        { tag:'03 · no commander', note:'Blocker 7 — and the exception to decision 11: no art AND no identity, so there is no portrait slot. The inset collapses to the row\u2019s 24px padding and the scrims go with it.',
-          pad:'24px', hasWash:false,
-          ambient:'none', ambientOp:0, sharp:'none', sharpOp:0, hasPill:false, hasPips:false,
-          name:'Untitled deck', sub:'No commander yet', subInk:'var(--fg-faint)', pips:[],
-          chip:'Draft', chipInk:'var(--fg-muted)', chipFill:'color-mix(in srgb, var(--fg-faint) 16%, var(--bg))', chipStyle:'solid',
-          built:'0', barW:'0%', barFill:V('--fg-faint'), owned:'nothing to buy yet', hasExport:false },
-        { tag:'04 · long name', note:'Blocker 6 — two-line clamp at both widths, so the band never grows.',
+          built:'40', builtInk:'var(--fg)', barW:'40%', barFill:V('--fg-body'), owned:'34 owned · 6 to buy',
+          hasExport:true, hasOver:false, over:'', hasTrim:false, trim:'' },
+        { tag:'03 · over 99 — the one state that grows the band', note:'Ratified R6, with one redraw: the built figure takes the STATUS token, not a hardcoded --warning. Past 99 the status is Over, whose bar is --danger, so the shipped pairing painted one state in two alarm colours.',
+          pad:'254px', hasWash:true,
+          ambient:bolg, ambientOp:0.2, sharp:bolg, sharpOp:0.8, hasPill:true, hasPips:true,
+          name:'HD - Bolg', sub:'Bolg of the North · Rakdos', subInk:'var(--fg-body)', pips:[V('--b'),V('--r')],
+          chip:'Over', chipInk:'var(--danger)', chipFill:'color-mix(in srgb, var(--danger) 18%, var(--bg))', chipStyle:'solid',
+          built:'104', builtInk:'var(--danger)', barW:'100%', barFill:V('--danger'), owned:'98 owned · 6 to buy',
+          hasExport:true, hasOver:true, over:'+5', hasTrim:true,
+          trim:'Trim 5 cards to make this deck legal. The bar is clamped at 100%, so the +5 in the count row is the only place the overage is legible.' },
+        { tag:'04 · long name', note:'Two-line clamp at both widths, so the band never grows for a name — only for the trim copy above.',
           pad:'254px', hasWash:true,
           ambient:dog, ambientOp:0.2, sharp:dog, sharpOp:0.8, hasPill:true, hasPips:true,
-          name:'HD Tune - Scrappy Survivors of the Common\u2026', sub:'Dogmeat, Ever Loyal · Naya', subInk:'var(--fg-body)', pips:[V('--r'),V('--g'),V('--w')],
+          name:'HD Tune - Scrappy Survivors of the Common…', sub:'Dogmeat, Ever Loyal · Naya', subInk:'var(--fg-body)', pips:[V('--r'),V('--g'),V('--w')],
           chip:'Complete', chipInk:'var(--success)', chipFill:'color-mix(in srgb, var(--success) 18%, var(--bg))', chipStyle:'solid',
-          built:'99', barW:'100%', barFill:V('--success'), owned:'99 owned · 0 to buy', hasExport:true }
+          built:'99', builtInk:'var(--fg)', barW:'100%', barFill:V('--success'), owned:'99 owned · 0 to buy',
+          hasExport:true, hasOver:false, over:'', hasTrim:false, trim:'' }
       ],
       pencil: [
         { label:'REST', op:0, bg:'transparent', border:'var(--border-strong)', ring:'none' },

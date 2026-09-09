@@ -1,4 +1,4 @@
-# The 99 — Art wash on detail surfaces (design handoff · R5)
+# The 99 — Art wash on detail surfaces (design handoff · R6)
 
 Extends the shipped art-wash amendment (`design_handoff_the99_art_wash/`) to:
 
@@ -15,7 +15,84 @@ Read `design_handoff_the99_art_wash/README.md` first. Decisions are numbered con
 
 ---
 
-## R5 — why this revision exists
+## R6 — rulings against the shipped bands
+
+The two deck-header bands shipped in PR #473. This revision answers the four open questions the PR
+carries, ratifies both recorded divergences, and drops one unreachable state. **No geometry
+changes.**
+
+### 1 · Band ground where art is absent — `var(--bg)`
+
+Not `COVER_PLATE`. The plate is a **loading device, not a ground**: it exists so a pending image
+never flashes light ground behind itself, which is why it is darker than `--bg`. When there is no
+art at all there is nothing to load, and the horizontal scrim's final stop is literally `var(--bg)`
+— so a plate ground would leave the "flat" region sitting darker than the card ground below the
+divider, a visible band edge exactly where the design says there is none.
+
+**Rule:** `COVER_PLATE` while art is *pending*, `var(--bg)` when art is *absent*.
+
+### 2 · Rename undo — blur-commit stands, with one guard
+
+Closing my own open item 1 as **no undo affordance**. A toast would introduce a new component and a
+new pattern for a case the UI already answers: the rename is reversible in one tap, the pencil sits
+at the title, the result is immediately visible, and no data is lost — a name is not a deck.
+
+**The guard:** blur must **not** commit an invalid value. Empty or unchanged reverts, exactly as
+the Disabled-Save state already prevents via keyboard. Committing an empty deck name is the one
+case that *feels* irreversible, and blur is currently the only path to it.
+
+### 3 · Over-99 — two ratified, one redrawn
+
+`+N` in the count row: **ratified.** With the bar clamped at 100% it is the only place the overage
+is legible. Trim line under the owned line: **ratified** — it is consequence, and consequence
+follows the figure it explains.
+
+The built figure recolouring to `var(--warning)`: **redrawn.** Past 99 the deck's status is `Over`,
+whose bar is `var(--danger)` per `statusBarStyle` — so the shipped pairing paints one state in two
+different alarm colours. The figure takes **the status token**, derived not hardcoded:
+`var(STATUS_TOKEN[status])`. One state, one colour. Drawn as desktop state 03.
+
+### 4 · The rename trigger's accessible name — restore `Rename deck: ${deck.name}`
+
+The bare `Rename deck` is fine in isolation but the deck header is reachable from list contexts, and
+a screen-reader user tabbing to it has no way to tell which deck they are about to rename. The name
+is already in the DOM beside it; putting it in the label costs nothing.
+
+### Divergences — both ratified
+
+- **§B1, `min-height: 168`.** Correct. Clipping copy is worse than growing a header, and the wash
+  still declares 168px so the art is unaffected. **The canvas now draws it this way**, and the
+  over-99 state is the one state that exercises it.
+- **§G, identity gradient in the ambient layer only.** Ratified, and **your drawing is better than
+  my table** — I specified both layers without thinking through what a gradient does inside a 230px
+  masked box: it compresses the identical ramp into a narrower space and seams at the mask edge. One
+  layer is the honest drawing of the same intent. The canvas is corrected to match.
+
+### Dropped — unreachable
+
+**No-commander is gone from this handoff**, both frames and all prose. `commander_oracle_id` is
+`NOT NULL` and the read never returns a deck without one, so the state cannot occur. It was drawn
+across two rounds of review at your request and mine; agreed it should not have been specced at all.
+Note this does **not** retire the null-`art_crop` fallback, which is still reachable — a commander
+whose printing has no art crop.
+
+### Errata — three R5 lines restored in eng review
+
+The R6 drop reverted three passages of the R5 prose to their pre-R5 text. Each contradicted the R6
+canvas *and* the shipped code, so all three are restored here rather than sent back for another
+round. The R6 rulings above are untouched.
+
+| Where | The drop said | Restored to | Why |
+|---|---|---|---|
+| Retired values, bar row | `var(--elevated)` / "tri-state" | `var(--elevated)` / `statusBarStyle` | The bar keys off status, not percentage. `statusBarStyle` reads `var(STATUS_TOKEN[status])`. |
+| Retired values, chip row · decision 6 | chip ground `var(--surface-sunken)` | `statusPillStyle`; chip has no ground of its own | The chip's fill is `color-mix(in srgb, var(--token) 18%, var(--bg))`. A flat ground also contradicted decision 5 two lines below, which says `statusPillStyle` wins. |
+| Decision 4, bar below 100% | 40/99 "renders `var(--danger)`" | 40/99 renders `var(--fg-body)` | 40/99 is `Building`, whose token is `--fg-body`. `--danger` is `Over`. The R6 canvas draws state 02 with `barFill: V('--fg-body')`, so the canvas was already right. |
+
+`READINESS.md` was also deleted by the drop with no ruling retiring it. Kept.
+
+---
+
+## R5 — why this revision existed
 
 R1 and R2 were built from screenshots and sibling handoff documents. The wash *geometry* survived
 review (`168 × 1.37 = 230px`, the px-keyed scrim, the zero-reflow rename ring) but the **colour
@@ -25,12 +102,9 @@ states, and R5 drew the desktop editing band and corrected two specs against the
 already implement them.
 
 **The canvas is now the single source of truth, and it uses `var(--*)` throughout.** No literal
-**brand** colour appears inside a drawn product frame in either file, except in the retired-value
-column below. The rule governs the drawings, not the canvas' `[data-theme]` blocks, which define
-the six token sets and are necessarily hex — they mirror `globals.css` and are the only place a
-literal is correct. Two non-brand literals remain by design inside the frames and are not theme
-tokens: the `rgba(0,0,0,0.4)` inset ring (`IdentityPips`' own value, reused on the bar track) and
-the mobile text shadows below.
+**brand** colour appears in either file except in the retired-value column below. Two
+non-brand literals remain by design and are not theme tokens: the `rgba(0,0,0,0.4)` inset ring
+(`IdentityPips`' own value, reused on the bar track) and the mobile text shadows below.
 
 One correction worth stating plainly: `brand/The 99 - Brand Sheet.dc.html` is **not** the colour
 source for WUBRG. R2 "fixed" the pips to the brand sheet and was still wrong — none of its five
@@ -135,8 +209,7 @@ The general rule, which covers both strategies rather than being `left-portrait`
 | ≥768px (`left-portrait`) | no portrait slot: inset collapses `254px → 24px`, both scrims dropped, band keeps its 168px |
 | <768px (`cover`) | **the band is removed entirely.** A `2.2/1` band with nothing in it is 177px of empty; the header becomes a flat `var(--surface)` block at content height |
 
-Both are drawn, and **`Export` is absent in this state at both widths** — there is nothing to
-export. Ratified; the canvas now draws it absent too (it previously contradicted this line).
+Both were drawn, and `Export` was absent in this state at both widths. Moot in R6.
 
 Add to decision 11's rule: **no art and no identity → no wash.**
 
