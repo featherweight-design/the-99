@@ -115,7 +115,7 @@ function ResumeRow({ deck, copies }: { deck: DeckListItem; copies: number | null
           {deck.name}
         </span>
 
-        <span className="flex items-center gap-[14px]">
+        <span className="flex min-w-0 items-center gap-[14px]">
           <StatusPillBadge
             status={deck.statusPill}
             // §ResumeRow — status pill: shorter and tighter than the tile's, and

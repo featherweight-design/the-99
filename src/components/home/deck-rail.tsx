@@ -11,11 +11,14 @@
 
 import Link from "next/link";
 import { ART_STRIPES, cssUrl } from "../../lib/collection/browse";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { STATUS_TOKEN } from "../../lib/decks/status-style";
+
+const partnerCopy = deckImportCopy.commander;
 
 export const RAIL_ROWS = 4;
 export const RAIL_ROWS_PHONE = 3;
@@ -147,6 +150,16 @@ function PhoneRow({
       <span className="flex-none font-mono text-[12px] tabular-nums text-[color:var(--fg)]">
         {deck.built} / {deckBodySize(deck.partnerName !== null)}
       </span>
+
+      {/* The denominator is a pair signal only to a reader who can see it and
+          knows the ceiling. Both names in full, primary first, stand in for it
+          — the row shortens nothing on screen, so this adds rather than
+          restates. */}
+      {deck.partnerName !== null && (
+        <span className="sr-only">
+          {partnerCopy.pairAria(deck.commanderName, deck.partnerName)}
+        </span>
+      )}
     </Link>
   );
 }

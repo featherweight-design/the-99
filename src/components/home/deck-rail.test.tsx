@@ -121,7 +121,25 @@ describe("DeckRail", () => {
       />,
     );
     expect(list("phone").getByText("95 / 98")).toBeInTheDocument();
-    expect(screen.queryByText(/Bruse Tarl/)).toBeNull();
+    // Nothing about the pair is drawn. The phone row's accessible name is the
+    // one exception, checked below: it is heard, not seen, and the desktop row
+    // has no pair handling at all.
+    expect(list("desktop").queryByText(/Bruse Tarl/)).toBeNull();
+    expect(list("phone").queryByText("Bruse Tarl, Boorish Herder")).toBeNull();
+  });
+
+  // The denominator says `pair` only to a reader who can see it and knows the
+  // ceiling, so the row names both commanders in full to a screen reader.
+  it("names both commanders in the phone pair row's accessible name", () => {
+    render(
+      <DeckRail
+        decks={[deck({ built: 95, partnerName: "Bruse Tarl, Boorish Herder" })]}
+        shopping={rollup()}
+      />,
+    );
+    expect(
+      list("phone").getByText("Atraxa, Praetors' Voice, with partner Bruse Tarl, Boorish Herder"),
+    ).toBeInTheDocument();
   });
 
   // Over WHAT this deck's ceiling is: 99 cards is one over for a pair and
