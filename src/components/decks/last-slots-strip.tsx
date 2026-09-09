@@ -292,13 +292,34 @@ function LastSlotsStripInner({
         )}
       </div>
 
-      {exhausted ? (
+      {/* The open list outranks the exhausted plate. A quick-add can take the
+          last candidates while the list is up, and gating on the pool first
+          would tear the pass down mid-selection and stand a plate in its place,
+          which is the whole of what state 17's frozen pool forbids. The plate is
+          what the list closes back onto instead. */}
+      {open ? (
+        <TopOffList
+          deckId={deckId}
+          listId={listId}
+          openSlots={openSlots}
+          candidates={candidates}
+          deckOracleIds={deckOracleIds}
+          ticked={ticked}
+          onTickedChange={setTicked}
+          declined={declined}
+          onDeclinedChange={setDeclined}
+          newestAsOf={newestAsOf}
+          onAnnounce={onAnnounce}
+          onInflight={(v) => onInflight?.(v)}
+          onClose={closeList}
+        />
+      ) : exhausted ? (
         <ExhaustedLine
           ref={exhaustedRef}
           total={String(99 - openSlots)}
           shortfall={String(openSlots)}
         />
-      ) : !open ? (
+      ) : (
         <div className="md:flex md:items-center md:gap-[12px] md:flex-wrap">
           <button
             ref={doorRef}
@@ -327,22 +348,6 @@ function LastSlotsStripInner({
             {doorNote}
           </p>
         </div>
-      ) : (
-        <TopOffList
-          deckId={deckId}
-          listId={listId}
-          openSlots={openSlots}
-          candidates={candidates}
-          deckOracleIds={deckOracleIds}
-          ticked={ticked}
-          onTickedChange={setTicked}
-          declined={declined}
-          onDeclinedChange={setDeclined}
-          newestAsOf={newestAsOf}
-          onAnnounce={onAnnounce}
-          onInflight={(v) => onInflight?.(v)}
-          onClose={closeList}
-        />
       )}
     </div>
   );

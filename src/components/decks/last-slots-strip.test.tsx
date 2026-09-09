@@ -216,6 +216,20 @@ describe("LastSlotsStrip", () => {
     expect(close).toHaveAttribute("aria-expanded", "true");
   });
 
+  // State 17 — the pool is frozen for the duration of a pass. A quick-add can
+  // take the last candidates while the list is up, and gating the render on an
+  // empty pool before the open flag would tear the selection down mid-pass and
+  // stand the exhausted plate in its place.
+  it("keeps the open list up when the pool empties under it", async () => {
+    const { rerender } = render(<LastSlotsStrip {...base} />);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    rerender(<LastSlotsStrip {...base} candidates={[]} />);
+
+    expect(screen.getByRole("button", { name: topOffCopy.strip.close })).toBeInTheDocument();
+    expect(screen.queryByTestId("last-slots-exhausted")).toBeNull();
+  });
+
   // §1e — focus moves on close and only on close. The door does not exist at
   // the moment close is asked for, so the move has to wait for the render that
   // puts it back; a synchronous focus() here would silently do nothing.
