@@ -29,7 +29,7 @@ export function ExclusionLine({
 }) {
   return (
     <div
-      className={`items-baseline gap-[10px] px-[14px] sm:px-[34px] sm:pt-[14px] ${className}`}
+      className={`items-baseline gap-[10px] ${className}`}
     >
       {/* The same 6px rotated diamond the end-of-ranking rule uses, so the two
           receipts on this page are furniture of one family. */}
