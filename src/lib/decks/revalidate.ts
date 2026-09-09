@@ -1,10 +1,10 @@
 /**
  * The paths a deck write invalidates.
  *
- * Deck writes used to revalidate only `/decks*`, which was correct while every
- * page refetched on each navigation anyway. Now that the client cache holds
- * dynamic pages for a window (see `staleTimes` in next.config.ts), each write
- * has to name every surface that renders what it changed.
+ * Deck writes used to revalidate only `/decks*`. That misses every other page
+ * rendering the same data: a back or forward navigation is served from the
+ * router's own cache whatever the stale time is, so a write that does not name
+ * a surface leaves it showing what was true before the write.
  *
  * Exported as lists rather than as functions that revalidate, so the sets are
  * assertable without a `next/cache` mock.

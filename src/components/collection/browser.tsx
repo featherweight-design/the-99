@@ -1,11 +1,11 @@
 "use client";
 // Top-level collection browse client component.
 // Owns filter/sort/view/window/modal state, mirrors to URL query params
-// (?q= &c= &t= &s= &sort= &dir= &view= &card=) via router.replace shallow so
+// (?q= &c= &t= &s= &sort= &dir= &view= &card=) via history.replaceState so
 // chips + view + open card deep-link (READINESS #6).
 
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   DEFAULT_SORT_DIRECTION,
   filterCards,
@@ -200,7 +200,6 @@ export function CollectionBrowser({
    */
   availabilityOk: boolean;
 }) {
-  const router = useRouter();
   const search = useSearchParams();
   const isDesktop = useIsDesktop();
 
@@ -343,13 +342,16 @@ export function CollectionBrowser({
     [openCardId, sorted],
   );
 
-  // Push state → URL. Shallow via router.replace so it doesn't refetch the RSC.
+  // Push state → URL via history, not the router. `/collection` ships the whole
+  // list in one payload and its page reads no searchParams, so every filter and
+  // sort change is answered from state already in this component — a
+  // `router.replace` would fetch an RSC payload identical to the one on screen.
   // Serialize the card param only when the card actually resolved; avoids
   // stale ?card= for IDs not in the current filtered result set.
   useEffect(() => {
     const qs = serializeParams(filters, sort, sortDirection, view, openCard ? openCardId : null);
-    router.replace(`/collection${qs}`, { scroll: false });
-  }, [filters, sort, sortDirection, view, openCardId, openCard, router]);
+    window.history.replaceState(null, "", `/collection${qs}`);
+  }, [filters, sort, sortDirection, view, openCardId, openCard]);
   const openIndex = useMemo(
     () => (openCard ? sorted.findIndex((c) => c.oracleId === openCard.oracleId) : -1),
     [openCard, sorted],

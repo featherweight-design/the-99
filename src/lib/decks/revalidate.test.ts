@@ -10,9 +10,8 @@ describe("deckSurfaces", () => {
 });
 
 describe("claimSurfaces", () => {
-  // The client cache holds these two for a window now, so a deck write that
-  // does not name them leaves a claimed card reading as unclaimed until the
-  // window lapses.
+  // A back navigation to either is served from the router cache, so a deck
+  // write that does not name them leaves a claimed card reading as unclaimed.
   it("names the availability surfaces as well as every deck surface", () => {
     expect(claimSurfaces("deck-1")).toEqual([
       ...deckSurfaces("deck-1"),
