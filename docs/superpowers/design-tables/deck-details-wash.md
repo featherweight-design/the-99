@@ -270,7 +270,10 @@ Applies to **every bottom-labelled `cover` surface** — one ramp, derived from 
 
 ---
 
-## D. Commander details hero — Mobile (<768px) only
+## D. Commander details hero — Mobile (<640px, `sm:`) only
+
+The one section that is **not** on the 768px column split above: this page keeps its shipped
+`sm:` breakpoint, and its mobile subtree is `sm:hidden`.
 
 Desktop hero is explicitly out of scope and untouched.
 

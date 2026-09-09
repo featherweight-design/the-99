@@ -745,7 +745,7 @@ import { renameCopy } from "../../lib/copy/decks-builder";
 
 const MAX_NAME = 120;
 // eslint-disable-next-line no-control-regex
-const CONTROL_CHARS = /[ -]/;
+const CONTROL_CHARS = /[\u0000-\u001F\u007F]/;
 
 /**
  * The rename state machine, with no layout of its own. The builder spine renders
