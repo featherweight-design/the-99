@@ -258,7 +258,14 @@ try {
     await page.screenshot({ path: `/tmp/deck-header-${vpName}-rest.png` });
     const originalName = rest.title;
 
-    const pencil = page.getByRole("button", { name: "Rename deck" }).locator("visible=true");
+    // The prefix, not the whole label: R6 ruling 4 puts the deck's name in the
+    // accessible name, and the walk below renames the deck twice, so a locator
+    // anchored to the full string would stop resolving halfway through. A
+    // pattern also says the prefix is the intent, rather than leaning on
+    // Playwright's substring matching to make a whole-name query work.
+    const pencil = page
+      .getByRole("button", { name: /^Rename deck: / })
+      .locator("visible=true");
     await pencil.click();
     await page.waitForTimeout(300);
     const editing = await page.evaluate(`(${READ_HEADER})()`);
