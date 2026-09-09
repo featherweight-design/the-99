@@ -40,6 +40,7 @@ export type CommanderListItem = Pick<
   | "oracleId"
   | "slug"
   | "name"
+  | "typeLine"
   | "colorIdentity"
   | "colorPoolSize"
   | "roleCounts"
@@ -65,6 +66,7 @@ export function toListItem(r: RankedCommander): CommanderListItem {
     oracleId: r.oracleId,
     slug: r.slug,
     name: r.name,
+    typeLine: r.typeLine,
     colorIdentity: r.colorIdentity,
     colorPoolSize: r.colorPoolSize,
     roleCounts: r.roleCounts,

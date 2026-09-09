@@ -7,6 +7,7 @@ function item(over: Partial<CommanderListItem>): CommanderListItem {
     oracleId: "a",
     slug: "a",
     name: "A",
+    typeLine: "Legendary Creature",
     colorIdentity: ["G"],
     colorPoolSize: 100,
     roleCounts: { ramp: 1, draw: 1, removal: 1, wipes: 1 },

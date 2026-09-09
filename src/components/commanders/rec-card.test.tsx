@@ -16,6 +16,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
     oracleId: "oracle-1",
     slug: "krenko-mob-boss",
     name: "Krenko, Mob Boss",
+    typeLine: "Legendary Creature — Goblin Warrior",
     colorIdentity: ["R"],
     colorPoolSize: 120,
     roleCounts: { ramp: 4, draw: 3, removal: 5, wipes: 1 },

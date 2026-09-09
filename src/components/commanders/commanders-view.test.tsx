@@ -34,6 +34,7 @@ function results(n: number, colorIdentity: string[] = ["R"]): CommanderListItem[
     oracleId: `oracle-${i}`,
     slug: `general-${i}`,
     name: `General ${i}`,
+    typeLine: "Legendary Creature — Human",
     colorIdentity,
     colorPoolSize: 120,
     roleCounts: { ramp: 4, draw: 3, removal: 5, wipes: 1 },
