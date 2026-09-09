@@ -107,17 +107,23 @@ are restored here rather than sent back for another round. The R7 rulings above 
 
 `READINESS.md` was also deleted by both drops with no ruling retiring it. Kept.
 
-### Deviation — the phone's rename trigger drops decision 13's opaque fill
+### The phone's rename trigger, and the fill decision 13 still appears to require
 
-Decision 13 puts an opaque fill, a border and an `8px` radius behind the rename pencil. On a phone
-that box was the only chrome inside the band and outweighed the 20px title beside it, which Hugh
-judged too heavy from his own screenshots. Shipped instead: the box is gone entirely and the pencil
+Shipped in PR #483: on the phone the box behind the rename pencil is gone entirely, and the pencil
 stands alone at `17px` with `COVER_INK_SHADOW`, counterweighted by a 44px `aria-hidden` spacer so
 the title still centres. The 44×44 target, the `var(--fg)` ink and the always-visible opacity are
-untouched, and desktop still follows decision 13. This was an engineering call taken deliberately
-rather than a Design round-trip, on the grounds that the change is small and reversible; the seven
-property rows it moves are enumerated in `docs/superpowers/gap-report-deck-details-wash-r7.md`.
-Ratify or overturn it at the next drop.
+untouched, and desktop is unchanged. It was Hugh's call, from his own screenshots: that box was the
+only chrome inside the band and outweighed the 20px title beside it.
+
+**This follows conflict 5, which withdrew the "opaque fill" outright.** The summary bullet for
+decision 13 further down still carries the pre-withdrawal wording, and reading it alone makes the
+phone look non-conformant. Both sentences are Design's; the conflicts section is the later answer
+and governs.
+
+What the R7 property table does still disagree with is the pencil's size, the spacer and the row's
+alignment, because the table was enumerated from decision 13's summary bullet. Those seven rows are
+listed in `docs/superpowers/gap-report-deck-details-wash-r7.md`, and are the only part of this that
+is genuinely open.
 
 ---
 
