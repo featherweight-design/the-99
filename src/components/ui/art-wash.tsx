@@ -78,10 +78,13 @@ export function ArtWash(props: ArtWashProps) {
   if (props.strategy === "left-portrait") {
     const p = portrait(props.band);
     return (
+      // The root declares the band rather than stretching to the row: the sharp
+      // layer's `auto 100%` resolves against this box, so a taller row can no
+      // longer over-scale the crop and clip it at the fixed portrait width.
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        style={{ background: `var(${p.ground})` }}
+        className="pointer-events-none absolute inset-x-0 top-0 overflow-hidden"
+        style={{ background: `var(${p.ground})`, height: `${props.band}px` }}
       >
         <div
           className="art-wash-art absolute inset-0"
