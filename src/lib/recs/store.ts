@@ -34,6 +34,7 @@ export type ScoreRowWithCard = {
   colorPoolSize: number;
   roleCounts: RoleCounts;
   name: string;
+  typeLine: string;
   colorIdentity: string[];
   imageUri: string | null;
   artCropUri: string | null;
@@ -64,6 +65,7 @@ export function rowToListItem(row: ScoreRowWithCard): CommanderListItem {
     oracleId: row.oracleId,
     slug: row.slug,
     name: row.name,
+    typeLine: row.typeLine,
     colorIdentity: row.colorIdentity,
     colorPoolSize: row.colorPoolSize,
     roleCounts: row.roleCounts,
@@ -182,6 +184,7 @@ export async function loadScores(
         colorPoolSize: commanderScores.colorPoolSize,
         roleCounts: commanderScores.roleCounts,
         name: cards.name,
+        typeLine: cards.typeLine,
         colorIdentity: cards.colorIdentity,
         imageUri: cards.imageUri,
         artCropUri: cards.artCropUri,

@@ -44,9 +44,20 @@ function row(over: Partial<DiscoveryItem> = {}, sort: "fit" | "new" = "fit") {
 const both = 2;
 
 describe("DiscoveryRow", () => {
-  it("gives the row a 148px floor so the portrait reaches both edges", () => {
+  // §4 — the wash owns one band, which states its own height. The row's old
+  // floor let a long tag sentence stretch the wash and over-scale the crop.
+  it("confines the wash to a 148px band", () => {
     const { container } = row();
-    expect(container.firstElementChild?.className).toContain("min-h-[148px]");
+    expect(container.firstElementChild?.className).not.toContain("min-h-[148px]");
+    const band = container.querySelector<HTMLElement>(".discovery-band")!;
+    expect(band.style.height).toBe("148px");
+  });
+
+  it("keeps the data zone off the art", () => {
+    const { container } = row();
+    const zone = container.querySelector<HTMLElement>(".discovery-data-zone")!;
+    expect(zone.style.borderTop).toBe("1px solid var(--border)");
+    expect(zone.querySelector(".discovery-band")).toBeNull();
   });
 
   it("draws the frame-free crop, never the printed card", () => {
@@ -231,11 +242,15 @@ describe("DiscoveryRow", () => {
   it("unmounts the price slot and its hairline when there is no price", () => {
     const { container } = row({ price: { kind: "absent" } });
     expect(screen.queryByText(discoveryCopy.price.source)).toBeNull();
+    // §4's divider is excluded by name: it separates the band from the data and
+    // is drawn whatever the price does.
     expect(
-      [...container.querySelectorAll<HTMLElement>("[style]")].some((el) =>
-        el.style.borderTop.includes("--border"),
+      [...container.querySelectorAll<HTMLElement>("[style]")].filter(
+        (el) =>
+          el.style.borderTop.includes("--border") &&
+          !el.classList.contains("discovery-data-zone"),
       ),
-    ).toBe(false);
+    ).toHaveLength(0);
   });
 
   // The note claims the row cleared a bar, so it has to name the bar — and name the one the

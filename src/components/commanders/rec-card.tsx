@@ -1,16 +1,16 @@
 // The owned lane's row (§Recommendation Card, §Fit Bar, §Role Chips, §Synergy Line,
 // §Receipts Preview, §Per-Commander Degraded Note).
-// Desktop: grid 24px 1fr 206px 32px (rank · evidence · fit · action).
-// Mobile: two bands with the fit figure on band one's trailing edge.
+// Desktop: grid 24px 1fr auto 32px (rank · identity · fit · action) over the band,
+// and the evidence below it.
 // The art is no longer a thumbnail in a column of its own: it bleeds in from the
-// leading edge behind the whole row, so there is no card fill and no border —
-// rows are separated by a divider and told apart by the wash behind them.
+// leading edge of a 148px band, and everything the row measures sits below that
+// band's divider on flat ground (§4).
 // Whole row links to /commanders/${slug}.
 
 import Link from "next/link";
 import { fitSegments } from "../../lib/recs/format";
 import { retryRecs } from "../../app/commanders/actions";
-import { ArtWash } from "../ui/art-wash";
+import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 import { IdentityPips } from "./commander-art";
 import { DiscoveryRow } from "./discovery-row";
 import { FitBar } from "./fit-bar";
@@ -70,6 +70,14 @@ type RecCardProps =
       commander?: never;
     });
 
+/** §4 — a chip over art takes an opaque plate and a hairline, as the deck tile's
+    status pill does. The figure and its denominator ride in it together. */
+const FIT_CHIP_STYLE = {
+  background: "var(--bg)",
+  border: "1px solid var(--border-strong)",
+  borderRadius: 9,
+} as const;
+
 export function RecCard(props: RecCardProps) {
   // Narrowed on the arm's own required prop: the forbidden keys are typed
   // `never`, so a call site cannot pass `discovery={undefined}` into the owned
@@ -112,9 +120,13 @@ export function RecCard(props: RecCardProps) {
       : 0;
 
   return (
-    // A floor, not a fixed height: a row whose content runs long keeps the
-    // portrait flush to both of its edges.
-    <div className="relative group min-h-[148px] transition-colors hover:bg-[color:var(--elevated-hover)]">
+    // The row separator, which is not §4's divider: one tells this row from the
+    // next, the other tells the band from the data. Both exist, and the
+    // separator belongs to the row rather than to either half of it.
+    <div
+      className="relative group transition-colors hover:bg-[color:var(--elevated-hover)]"
+      style={{ borderBottom: "1px solid var(--border)" }}
+    >
       {/* Stretched link keeps the whole row clickable without nesting the
           retry <form> inside an anchor (invalid HTML); the forms sit above it
           on z-[2]. Brand focus-visible outline inherited from globals.css. */}
@@ -124,20 +136,20 @@ export function RecCard(props: RecCardProps) {
         className="absolute inset-0 z-[1]"
       />
 
-      <ArtWash
-        strategy="left-portrait"
-        band={148}
-        artCropUri={c.artCropUri}
-        colorIdentity={c.colorIdentity}
-      />
+      {/* §4 — the wash owns exactly one band, and the band states its height in
+          px rather than taking a floor from the row: decision 8 derives the
+          portrait's whole geometry from that figure, and a row grown by a long
+          note used to over-scale the crop and clip it. */}
+      <div className="rec-band relative overflow-hidden" style={{ height: 148 }}>
+        <ArtWash
+          strategy="left-portrait"
+          band={148}
+          artCropUri={c.artCropUri}
+          colorIdentity={c.colorIdentity}
+        />
 
-      {/* ── Mobile layout: two bands in 268px ── */}
-      <div
-        className="relative sm:hidden p-[12px_13px] flex flex-col gap-[9px]"
-        style={{ borderBottom: "1px solid var(--border)" }}
-      >
-        {/* Band one: rank, name and pips, fit pinned to the trailing edge. */}
-        <div className="flex gap-[10px] items-start">
+        {/* ── Mobile band ── */}
+        <div className="relative flex h-full items-end gap-[10px] p-[12px_13px] sm:hidden">
           <span
             className="font-mono font-[600] shrink-0"
             // minWidth, not width: a two-digit rank in a fixed box crowds the
@@ -149,23 +161,35 @@ export function RecCard(props: RecCardProps) {
               minWidth: 16,
               textAlign: "center",
               lineHeight: 1.2,
+              textShadow: INK_SHADOW,
             }}
           >
             {rank}
           </span>
 
-          <div className="flex-1 min-w-0 flex items-center gap-[6px]">
-            <span
-              className="font-display font-[600] truncate"
-              style={{ fontSize: 14.5, color: "var(--fg)" }}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-[6px]" style={{ minWidth: 0 }}>
+              <span
+                className="font-display font-[600] truncate"
+                style={{ fontSize: 14.5, color: "var(--fg)", textShadow: INK_SHADOW }}
+              >
+                {c.name}
+              </span>
+              <IdentityPips colorIdentity={c.colorIdentity} />
+            </div>
+            <p
+              className="m-0 mt-[3px] font-mono truncate"
+              style={{ fontSize: 10.5, color: "var(--fg-body)", textShadow: INK_SHADOW }}
             >
-              {c.name}
-            </span>
-            <IdentityPips colorIdentity={c.colorIdentity} />
+              {c.typeLine}
+            </p>
           </div>
 
-          {/* Fit score pinned to the trailing edge */}
-          <div className="flex flex-col items-end shrink-0">
+          {/* Fit chip pinned to the trailing edge */}
+          <div
+            className="flex shrink-0 flex-col items-center px-[8px] py-[5px]"
+            style={FIT_CHIP_STYLE}
+          >
             {/* The band has no room for the long denominator beside the figure,
                 so the one place it cannot be dropped is the accessible name. */}
             <span className="sr-only">{scoreAria}</span>
@@ -183,250 +207,77 @@ export function RecCard(props: RecCardProps) {
             >
               {fitUnit}
             </span>
-            {delta && (
-              <span
-                className="font-mono"
-                style={{ fontSize: 10, color: "var(--fg-muted)", marginTop: 2 }}
-              >
-                <span aria-hidden="true">
-                  {availabilityCopy.receipt.delta(delta.drop)}
-                </span>
-                <span className="sr-only">
-                  {availabilityCopy.receipt.deltaAria(delta.drop, delta.was)}
-                </span>
-              </span>
-            )}
           </div>
         </div>
 
-        {/* Fit bar (mobile) */}
-        <FitBar fit={fit} />
-
-        {/* Role chips */}
-        <RoleChips roleCounts={c.roleCounts} />
-
-        {/* Receipts / synergy short (mobile) */}
-        {c.edhrecOwnedCount !== null && c.edhrecTotal !== null && (
-          <p className="m-0 font-mono" style={{ fontSize: 10.5, color: "var(--fg-faint)" }}>
-            own{" "}
-            <strong style={{ fontWeight: 600, color: "var(--fg-body)" }}>
-              {c.edhrecOwnedCount}
-            </strong>{" "}
-            of top {c.edhrecTotal}
-          </p>
-        )}
-
-        {/* Receipt line (mobile). Outside the synergy conditional above: it is
-            a claim about the player's own collection, which every commander
-            has, including the ones EDHREC does not index. */}
-        <ReceiptLine
-          fits={c.colorPoolSize}
-          counts={counts}
-          avail={avail}
-          fontSize={10.5}
-        />
-
-        {/* Per-commander degraded note (mobile) */}
-        {perCmdDegraded && (
-          <div
-            className="flex items-center gap-[8px] rounded-[7px]"
-            style={{
-              background: "var(--elevated-hover)",
-              border: "1px solid var(--border-strong)",
-              borderLeft: "2px solid var(--fg-faint)",
-              padding: "7px 11px",
-            }}
-          >
-            <span style={{ color: "var(--fg-faint)", fontSize: 12 }}>⚠</span>
-            <div style={{ fontSize: 12, color: "var(--fg-muted)" }}>
-              Synergy data unavailable.{" "}
-              <form action={retryRecs} className="inline relative z-[2]">
-                <RetryLink fontSize={12}>Retry</RetryLink>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Per-commander absent note (mobile) — settled fact, so no Retry */}
-        {perCmdAbsent && (
-          <div
-            className="flex items-center gap-[8px] rounded-[7px]"
-            style={{
-              background: "var(--elevated-hover)",
-              border: "1px solid var(--border-strong)",
-              borderLeft: "2px solid var(--fg-faint)",
-              padding: "7px 11px",
-            }}
-          >
-            <span style={{ color: "var(--fg-faint)", fontSize: 12 }}>⚠</span>
-            <div style={{ fontSize: 12, color: "var(--fg-muted)" }}>
-              EDHREC doesn&apos;t track this commander, so fit comes from pool and roles alone.
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Desktop layout: grid 24px 1fr 206px 32px ── */}
-      <div
-        className="relative hidden sm:grid p-[24px_26px]"
-        style={{
-          gridTemplateColumns: "24px 1fr 206px 32px",
-          gap: 20,
-          alignItems: "stretch",
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        {/* Rank column. Brass at rank 1, and the diamond below it. */}
-        <div className="flex flex-col items-center justify-center gap-[7px]">
-          <span
-            className="font-mono font-[600]"
-            style={{
-              fontSize: 19,
-              color: rank === 1 ? "var(--accent)" : "var(--fg-faint)",
-              lineHeight: 1,
-            }}
-          >
-            {rank}
-          </span>
-          {/* Diamond pip below numeral */}
-          <span
-            aria-hidden="true"
-            className="block shrink-0"
-            style={{
-              width: 6,
-              height: 6,
-              transform: "rotate(45deg)",
-              background: rank === 1 ? "var(--accent)" : "var(--border-strong)",
-            }}
-          />
-        </div>
-
-        {/* Evidence column */}
-        <div className="flex flex-col gap-[13px]" style={{ minWidth: 0 }}>
-          {/* Commander name */}
-          <div className="flex items-center gap-[8px]" style={{ minWidth: 0 }}>
-            <h3
-              className="font-display font-[600] m-0 truncate"
-              style={{ fontSize: 17, color: "var(--fg)", lineHeight: 1.1 }}
+        {/* ── Desktop band: grid 24px 1fr auto 32px ── */}
+        <div
+          className="relative hidden h-full sm:grid p-[24px_26px]"
+          style={{
+            gridTemplateColumns: "24px 1fr auto 32px",
+            gap: 20,
+            alignItems: "end",
+          }}
+        >
+          {/* Rank column. Brass at rank 1, and the diamond below it. */}
+          <div className="flex flex-col items-center gap-[7px]">
+            <span
+              className="font-mono font-[600]"
+              style={{
+                fontSize: 19,
+                color: rank === 1 ? "var(--accent)" : "var(--fg-faint)",
+                lineHeight: 1,
+                textShadow: INK_SHADOW,
+              }}
             >
-              {c.name}
-            </h3>
-            <IdentityPips colorIdentity={c.colorIdentity} />
+              {rank}
+            </span>
+            {/* Diamond pip below numeral */}
+            <span
+              aria-hidden="true"
+              className="block shrink-0"
+              style={{
+                width: 6,
+                height: 6,
+                transform: "rotate(45deg)",
+                background: rank === 1 ? "var(--accent)" : "var(--border-strong)",
+              }}
+            />
           </div>
 
-          {/* Role chips */}
-          <RoleChips roleCounts={c.roleCounts} />
-
-          {/* Synergy line (desktop, when synergy available) */}
-          {c.edhrecOwnedCount !== null && c.edhrecTotal !== null && (
-            <div className="flex items-center gap-[10px]">
-              <span
-                className="font-mono"
+          {/* Identity column: the name, its pips and the type line. */}
+          <div style={{ minWidth: 0 }}>
+            <div className="flex items-center gap-[8px]" style={{ minWidth: 0 }}>
+              <h3
+                className="font-display font-[600] m-0 truncate"
                 style={{
-                  fontSize: 10,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  color: "var(--fg-faint)",
+                  fontSize: 17,
+                  color: "var(--fg)",
+                  lineHeight: 1.1,
+                  textShadow: INK_SHADOW,
                 }}
               >
-                Synergy
-              </span>
-              {/* Overlap bar track */}
-              <div
-                className="overflow-hidden rounded-full"
-                style={{ width: 148, height: 5, background: "var(--elevated)" }}
-              >
-                <div
-                  className="h-full"
-                  style={{ width: `${synergyPct}%`, background: "var(--accent)" }}
-                />
-              </div>
-              {/* "own N of top M" text */}
-              <span className="font-mono" style={{ fontSize: 12, color: "var(--fg-body)" }}>
-                own{" "}
-                <strong style={{ fontWeight: 600, color: "var(--fg)" }}>
-                  {c.edhrecOwnedCount}
-                </strong>{" "}
-                of top {c.edhrecTotal}
-              </span>
+                {c.name}
+              </h3>
+              <IdentityPips colorIdentity={c.colorIdentity} />
             </div>
-          )}
-
-          {/* Receipt line (desktop) */}
-          <ReceiptLine
-            fits={c.colorPoolSize}
-            counts={counts}
-            avail={avail}
-            fontSize={12.5}
-          />
-
-          {/* Receipts preview (desktop) */}
-          {receipts && (
             <p
-              className="m-0 font-mono overflow-hidden text-ellipsis whitespace-nowrap"
-              style={{ fontSize: 10.5, color: "var(--fg-faint)", lineHeight: 1.4 }}
+              className="m-0 mt-[4px] font-mono truncate"
+              style={{ fontSize: 12, color: "var(--fg-body)", textShadow: INK_SHADOW }}
             >
-              <span style={{ color: "var(--fg-faint)" }}>receipts:</span>{" "}
-              {receipts}
+              {c.typeLine}
             </p>
-          )}
+          </div>
 
-          {/* Per-commander degraded note (desktop) */}
-          {perCmdDegraded && (
-            <div
-              className="flex items-center gap-[9px] rounded-[7px]"
-              style={{
-                background: "var(--elevated-hover)",
-                border: "1px solid var(--border-strong)",
-                borderLeft: "2px solid var(--fg-faint)",
-                padding: "9px 13px",
-              }}
-            >
-              <span style={{ color: "var(--fg-faint)", fontSize: 13 }}>⚠</span>
-              <div style={{ fontSize: 12.5, color: "var(--fg-muted)", lineHeight: 1.45 }}>
-                <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
-                  Synergy data unavailable
-                </strong>{" "}
-                for this commander.{" "}
-                <form action={retryRecs} className="inline relative z-[2]">
-                  <RetryLink fontSize={12.5}>Retry</RetryLink>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* Per-commander absent note (desktop) — settled fact, so no Retry */}
-          {perCmdAbsent && (
-            <div
-              className="flex items-center gap-[9px] rounded-[7px]"
-              style={{
-                background: "var(--elevated-hover)",
-                border: "1px solid var(--border-strong)",
-                borderLeft: "2px solid var(--fg-faint)",
-                padding: "9px 13px",
-              }}
-            >
-              <span style={{ color: "var(--fg-faint)", fontSize: 13 }}>⚠</span>
-              <div style={{ fontSize: 12.5, color: "var(--fg-muted)", lineHeight: 1.45 }}>
-                <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
-                  No synergy data
-                </strong>{" "}
-                — EDHREC doesn&apos;t track this commander, so fit comes from pool
-                and roles alone.
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Fit column */}
-        <div
-          className="flex flex-col justify-center gap-[10px]"
-          style={{ borderLeft: "1px solid var(--border)", paddingLeft: 20 }}
-        >
-          {/* The figure over its denominator, as the count stack opposite it on
-              the discover lane: the unit is a line of its own, not a clause
-              trailing the number. */}
-          <div className="flex flex-col gap-[3px]">
+          {/* Fit chip. The figure over its denominator, as the count stack
+              opposite it on the discover lane: the unit is a line of its own,
+              not a clause trailing the number. The chip's own plate is why the
+              fit column's rule is gone — a box and a rule are two answers to
+              one question. */}
+          <div
+            className="flex flex-col items-center px-[11px] py-[7px]"
+            style={FIT_CHIP_STYLE}
+          >
             <span className="sr-only">{scoreAria}</span>
             <span
               className="font-mono font-[600]"
@@ -444,35 +295,243 @@ export function RecCard(props: RecCardProps) {
             </span>
           </div>
 
-          {/* Score delta (§9). Desktop buys the longer form: the bare arrow
-              says how far without saying from where. */}
+          {/* Trailing action. `z-[2]` above the stretched link, which it shares a
+              destination with: the pill names the action the whole row performs.
+              It stays with the band, being an affordance for the row's identity
+              rather than one of the figures the row reports. Desktop only — a
+              second link to the same place on the phone would be a duplicate the
+              band has no room for and the row does not need. */}
+          <div className="flex items-center justify-center">
+            <Link
+              href={commanderDetailHref(c.slug, avail)}
+              className="relative z-[2] flex h-[32px] items-center rounded-full border border-[color:var(--border-strong)] bg-[color-mix(in_oklab,var(--bg)_50%,transparent)] px-[12px] font-mono whitespace-nowrap text-[color:var(--fg-body)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+              style={{ fontSize: 11 }}
+            >
+              {commandersCopy.row.action}
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* §4 — below the divider, on flat ground: every figure the row measures. */}
+      <div
+        className="rec-data-zone relative"
+        style={{ borderTop: "1px solid var(--border)", background: "var(--surface-inset)" }}
+      >
+        {/* ── Mobile data ── */}
+        <div className="flex flex-col gap-[9px] p-[12px_13px] sm:hidden">
+          <FitBar fit={fit} />
+
           {delta && (
-            <p className="m-0 font-mono" style={{ fontSize: 10.5, color: "var(--fg-muted)" }}>
+            <span className="font-mono" style={{ fontSize: 10, color: "var(--fg-muted)" }}>
               <span aria-hidden="true">
-                {availabilityCopy.receipt.deltaFrom(delta.drop, delta.was)}
+                {availabilityCopy.receipt.delta(delta.drop)}
               </span>
               <span className="sr-only">
                 {availabilityCopy.receipt.deltaAria(delta.drop, delta.was)}
               </span>
+            </span>
+          )}
+
+          <RoleChips roleCounts={c.roleCounts} />
+
+          {/* Receipts / synergy short (mobile) */}
+          {c.edhrecOwnedCount !== null && c.edhrecTotal !== null && (
+            <p className="m-0 font-mono" style={{ fontSize: 10.5, color: "var(--fg-faint)" }}>
+              own{" "}
+              <strong style={{ fontWeight: 600, color: "var(--fg-body)" }}>
+                {c.edhrecOwnedCount}
+              </strong>{" "}
+              of top {c.edhrecTotal}
             </p>
           )}
 
-          {/* Fit bar with legend */}
-          <FitBar fit={fit} legend />
+          {/* Receipt line (mobile). Outside the synergy conditional above: it is
+              a claim about the player's own collection, which every commander
+              has, including the ones EDHREC does not index. */}
+          <ReceiptLine
+            fits={c.colorPoolSize}
+            counts={counts}
+            avail={avail}
+            fontSize={10.5}
+            lineHeight={1.5}
+          />
+
+          {/* Per-commander degraded note (mobile) */}
+          {perCmdDegraded && (
+            <div
+              className="flex items-center gap-[8px] rounded-[7px]"
+              style={{
+                background: "var(--elevated-hover)",
+                border: "1px solid var(--border-strong)",
+                borderLeft: "2px solid var(--fg-faint)",
+                padding: "7px 11px",
+              }}
+            >
+              <span style={{ color: "var(--fg-faint)", fontSize: 12 }}>⚠</span>
+              <div style={{ fontSize: 12, color: "var(--fg-muted)" }}>
+                Synergy data unavailable.{" "}
+                <form action={retryRecs} className="inline relative z-[2]">
+                  <RetryLink fontSize={12}>Retry</RetryLink>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Per-commander absent note (mobile) — settled fact, so no Retry */}
+          {perCmdAbsent && (
+            <div
+              className="flex items-center gap-[8px] rounded-[7px]"
+              style={{
+                background: "var(--elevated-hover)",
+                border: "1px solid var(--border-strong)",
+                borderLeft: "2px solid var(--fg-faint)",
+                padding: "7px 11px",
+              }}
+            >
+              <span style={{ color: "var(--fg-faint)", fontSize: 12 }}>⚠</span>
+              <div style={{ fontSize: 12, color: "var(--fg-muted)" }}>
+                EDHREC doesn&apos;t track this commander, so fit comes from pool and roles alone.
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Trailing action. `z-[2]` above the stretched link, which it shares a
-            destination with: the pill names the action the whole row performs.
-            Desktop only — a second link to the same place on the phone would be
-            a duplicate the band has no room for and the row does not need. */}
-        <div className="flex items-center justify-center">
-          <Link
-            href={commanderDetailHref(c.slug, avail)}
-            className="relative z-[2] flex h-[32px] items-center rounded-full border border-[color:var(--border-strong)] bg-[color-mix(in_oklab,var(--bg)_50%,transparent)] px-[12px] font-mono whitespace-nowrap text-[color:var(--fg-body)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-            style={{ fontSize: 11 }}
-          >
-            {commandersCopy.row.action}
-          </Link>
+        {/* ── Desktop data. The band's column template again, so the evidence
+            starts under the name rather than under the rank. ── */}
+        <div
+          className="relative hidden sm:grid p-[24px_26px]"
+          style={{
+            gridTemplateColumns: "24px 1fr 206px 32px",
+            gap: 20,
+            alignItems: "start",
+          }}
+        >
+          {/* Evidence column */}
+          <div className="flex flex-col gap-[13px]" style={{ gridColumn: 2, minWidth: 0 }}>
+            <RoleChips roleCounts={c.roleCounts} />
+
+            {/* Synergy line (desktop, when synergy available) */}
+            {c.edhrecOwnedCount !== null && c.edhrecTotal !== null && (
+              <div className="flex items-center gap-[10px]">
+                <span
+                  className="font-mono"
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "var(--fg-faint)",
+                  }}
+                >
+                  Synergy
+                </span>
+                {/* Overlap bar track */}
+                <div
+                  className="overflow-hidden rounded-full"
+                  style={{ width: 148, height: 5, background: "var(--elevated)" }}
+                >
+                  <div
+                    className="h-full"
+                    style={{ width: `${synergyPct}%`, background: "var(--accent)" }}
+                  />
+                </div>
+                {/* "own N of top M" text */}
+                <span className="font-mono" style={{ fontSize: 12, color: "var(--fg-body)" }}>
+                  own{" "}
+                  <strong style={{ fontWeight: 600, color: "var(--fg)" }}>
+                    {c.edhrecOwnedCount}
+                  </strong>{" "}
+                  of top {c.edhrecTotal}
+                </span>
+              </div>
+            )}
+
+            {/* Receipt line (desktop) */}
+            <ReceiptLine
+              fits={c.colorPoolSize}
+              counts={counts}
+              avail={avail}
+              fontSize={12.5}
+              lineHeight={1.5}
+            />
+
+            {/* Receipts preview (desktop) */}
+            {receipts && (
+              <p
+                className="m-0 font-mono overflow-hidden text-ellipsis whitespace-nowrap"
+                style={{ fontSize: 10.5, color: "var(--fg-faint)", lineHeight: 1.4 }}
+              >
+                <span style={{ color: "var(--fg-faint)" }}>receipts:</span>{" "}
+                {receipts}
+              </p>
+            )}
+
+            {/* Per-commander degraded note (desktop) */}
+            {perCmdDegraded && (
+              <div
+                className="flex items-center gap-[9px] rounded-[7px]"
+                style={{
+                  background: "var(--elevated-hover)",
+                  border: "1px solid var(--border-strong)",
+                  borderLeft: "2px solid var(--fg-faint)",
+                  padding: "9px 13px",
+                }}
+              >
+                <span style={{ color: "var(--fg-faint)", fontSize: 13 }}>⚠</span>
+                <div style={{ fontSize: 12.5, color: "var(--fg-muted)", lineHeight: 1.45 }}>
+                  <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
+                    Synergy data unavailable
+                  </strong>{" "}
+                  for this commander.{" "}
+                  <form action={retryRecs} className="inline relative z-[2]">
+                    <RetryLink fontSize={12.5}>Retry</RetryLink>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Per-commander absent note (desktop) — settled fact, so no Retry */}
+            {perCmdAbsent && (
+              <div
+                className="flex items-center gap-[9px] rounded-[7px]"
+                style={{
+                  background: "var(--elevated-hover)",
+                  border: "1px solid var(--border-strong)",
+                  borderLeft: "2px solid var(--fg-faint)",
+                  padding: "9px 13px",
+                }}
+              >
+                <span style={{ color: "var(--fg-faint)", fontSize: 13 }}>⚠</span>
+                <div style={{ fontSize: 12.5, color: "var(--fg-muted)", lineHeight: 1.45 }}>
+                  <strong style={{ color: "var(--fg-body)", fontWeight: 600 }}>
+                    No synergy data
+                  </strong>{" "}
+                  — EDHREC doesn&apos;t track this commander, so fit comes from pool
+                  and roles alone.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Fit column: the bar and what moved it. The figure itself is up in
+              the band, in its chip. */}
+          <div className="flex flex-col gap-[10px]" style={{ gridColumn: 3 }}>
+            {/* Score delta (§9). Desktop buys the longer form: the bare arrow
+                says how far without saying from where. */}
+            {delta && (
+              <p className="m-0 font-mono" style={{ fontSize: 10.5, color: "var(--fg-muted)" }}>
+                <span aria-hidden="true">
+                  {availabilityCopy.receipt.deltaFrom(delta.drop, delta.was)}
+                </span>
+                <span className="sr-only">
+                  {availabilityCopy.receipt.deltaAria(delta.drop, delta.was)}
+                </span>
+              </p>
+            )}
+
+            {/* Fit bar with legend */}
+            <FitBar fit={fit} legend />
+          </div>
         </div>
       </div>
     </div>

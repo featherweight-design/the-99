@@ -16,6 +16,7 @@ function item(overrides: Partial<CommanderListItem> = {}): CommanderListItem {
     oracleId: "oracle-1",
     slug: "krenko-mob-boss",
     name: "Krenko, Mob Boss",
+    typeLine: "Legendary Creature — Goblin Warrior",
     colorIdentity: ["R"],
     colorPoolSize: 120,
     roleCounts: { ramp: 4, draw: 3, removal: 5, wipes: 1 },
@@ -98,9 +99,11 @@ describe("RecCard row shape", () => {
     expect(container.querySelector("img")).toBeNull();
   });
 
-  it("gives the row a 148px floor so the portrait reaches both edges", () => {
+  // The floor is gone: the band states 148px outright, so a row grown by a long
+  // note can no longer stretch the wash and over-scale the crop inside it.
+  it("takes no height floor of its own — the band states the figure", () => {
     const { container } = card();
-    expect(container.firstElementChild?.className).toContain("min-h-[148px]");
+    expect(container.firstElementChild?.className).not.toContain("min-h-[148px]");
   });
 
   it("draws the frame-free crop, never the printed card", () => {
@@ -210,5 +213,30 @@ describe("RecCard score and denominator", () => {
   it("names the figure and its ceiling together at both widths", () => {
     card({ commander: { ...noSynergy("absent"), fitPool: 20, fitRoles: 12, score: 32, rankScore: 80 } });
     expect(screen.getAllByText(explainedCopy.score.scoreAria(32, 40))).toHaveLength(2);
+  });
+});
+
+// §4 of the handoff — the wash owns one band and the data sits below a divider
+// on flat ground. Both responsive subtrees render in jsdom, so every node here
+// is asserted twice over, which is also what proves the split reached both.
+describe("RecCard band and data zone", () => {
+  it("confines the wash to a 148px band", () => {
+    const { container } = card();
+    const bands = container.querySelectorAll<HTMLElement>(".rec-band");
+    // One band holding both responsive subtrees, so the wash renders once.
+    expect(bands).toHaveLength(1);
+    expect(bands[0].style.height).toBe("148px");
+  });
+
+  it("keeps the data zone off the art", () => {
+    const { container } = card();
+    const zone = container.querySelector<HTMLElement>(".rec-data-zone")!;
+    expect(zone.style.borderTop).toBe("1px solid var(--border)");
+    expect(zone.querySelector(".rec-band")).toBeNull();
+  });
+
+  it("prints the type line as the band's subtitle", () => {
+    card({ commander: item({ typeLine: "Legendary Creature — Human Wizard" }) });
+    expect(screen.getAllByText("Legendary Creature — Human Wizard")).toHaveLength(2);
   });
 });

@@ -92,6 +92,7 @@ describe("rowToListItem", () => {
       colorPoolSize: 420,
       roleCounts: { ramp: 10, draw: 8, removal: 9, wipes: 3 },
       name: "Atraxa, Praetors' Voice",
+      typeLine: "Legendary Creature — Phyrexian Angel Horror",
       colorIdentity: ["W", "U", "B", "G"],
       imageUri: "https://x.test/a.jpg",
       artCropUri: null,
@@ -109,7 +110,7 @@ describe("rowToListItem", () => {
       synergyState: "degraded", edhrecOwnedCount: null, edhrecTotal: null,
       receipts: "", colorPoolSize: 100,
       roleCounts: { ramp: 1, draw: 1, removal: 1, wipes: 0 },
-      name: "X", colorIdentity: ["R"], imageUri: null, artCropUri: null,
+      name: "X", typeLine: "Legendary Creature", colorIdentity: ["R"], imageUri: null, artCropUri: null,
     });
     expect(item.fitSynergy).toBeNull();
     expect(item.edhrecTotal).toBeNull();

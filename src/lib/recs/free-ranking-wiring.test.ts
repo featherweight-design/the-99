@@ -58,6 +58,7 @@ const item = (
   oracleId,
   slug: oracleId,
   name: oracleId,
+  typeLine: "Legendary Creature",
   colorIdentity: [],
   colorPoolSize: 0,
   roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },

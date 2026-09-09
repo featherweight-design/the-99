@@ -56,6 +56,15 @@ describe("ArtWash — cover", () => {
     expect(container.querySelector(".art-wash-art")).toBeTruthy();
     expect(container.querySelector(".art-wash-scrim")).toBeTruthy();
   });
+
+  it("plates below the page ground, not at it", () => {
+    const { container } = render(
+      <ArtWash strategy="cover" artCropUri="crop.jpg" colorIdentity={["G"]} />,
+    );
+    const plate = container.firstElementChild as HTMLElement;
+    expect(plate.style.background).toContain("color-mix");
+    expect(plate.style.background).toContain("black");
+  });
 });
 
 describe("ArtWash — left portrait", () => {

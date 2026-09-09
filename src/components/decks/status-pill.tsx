@@ -29,7 +29,7 @@ const COPY_KEY: Record<Status, keyof typeof refreshCopy.status> = {
  * — the label and the fill are not, and stay written once.
  */
 const TILE_CLASS =
-  "absolute top-[10px] left-[11px] flex h-[24px] items-center rounded-[6px] px-[9px] font-mono text-[11px] sm:h-[22px] sm:px-[8px] sm:text-[10.5px]";
+  "absolute bottom-[13px] left-[13px] flex h-[24px] items-center rounded-[6px] px-[9px] font-mono text-[11px] tracking-[0.06em] sm:h-[22px] sm:px-[8px] sm:text-[10.5px]";
 
 export function StatusPillBadge({
   status,

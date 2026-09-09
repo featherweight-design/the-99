@@ -76,7 +76,10 @@ describe("ResumeDecks", () => {
   it("gives the art its own column and starts type clear of it", () => {
     const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} />);
     const row = container.querySelector("a");
-    expect(row?.className).toContain("min-h-[72px]");
+    // Stated, not a floor — the wash beside it is a hard 72px, so a row that
+    // could grow past it would show an unwashed strip.
+    expect(row?.className).toContain("h-[72px]");
+    expect(row?.className).not.toContain("min-h-[72px]");
     const text = row?.querySelector("[data-resume-text]");
     expect(text?.className).toContain("pl-[116px]");
   });
@@ -91,6 +94,19 @@ describe("ResumeDecks", () => {
       <ResumeDecks decks={[deck({ built: 99, toBuyCount: 3 })]} shopping={rollup({ d1: 3 })} />,
     );
     expect(screen.getByText("99 / 99 · 3 unowned")).toBeInTheDocument();
+  });
+
+  // §ResumeRow — the commander names the row's art. The deck name is the deck's
+  // own, so without this line the portrait is unattributed.
+  it("names the commander under the deck name", () => {
+    render(
+      <ResumeDecks
+        decks={[deck({ name: "Four colours, one plan", commanderName: "Atraxa, Praetors' Voice" })]}
+        shopping={rollup()}
+      />,
+    );
+    expect(screen.getByText("Four colours, one plan")).toBeInTheDocument();
+    expect(screen.getByText("Atraxa, Praetors' Voice")).toBeInTheDocument();
   });
 
   it("prints the count alone when nothing is unowned", () => {

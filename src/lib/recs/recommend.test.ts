@@ -144,6 +144,7 @@ describe("finalizeRecommendations", () => {
         oracleId: "oracle-Krenko, Mob Boss",
         slug: "krenko-mob-boss",
         name: "Krenko, Mob Boss",
+        typeLine: "Legendary Creature",
         colorIdentity: [],
         colorPoolSize: 0,
         roleCounts: { ramp: 0, draw: 0, removal: 0, wipes: 0 },
@@ -164,6 +165,13 @@ describe("finalizeRecommendations", () => {
       expect(item).not.toHaveProperty("overlapOwned");
       expect(item).not.toHaveProperty("roleCards");
       expect(item).not.toHaveProperty("overlapMissing");
+    });
+
+    it("carries the type line, which the rec row draws as its subtitle", () => {
+      const score = stubScore("Atraxa, Praetors' Voice", 74);
+      score.typeLine = "Legendary Creature — Phyrexian Angel Horror";
+      const { results } = finalizeRecommendations([score], 10, 1);
+      expect(toListItem(results[0]).typeLine).toBe("Legendary Creature — Phyrexian Angel Horror");
     });
   });
 

@@ -199,4 +199,25 @@ describe("DeckCard", () => {
     expect(screen.getAllByText("3 unowned · $18.40")).toHaveLength(1);
     expect(container.querySelectorAll("[data-deck-art]")).toHaveLength(1);
   });
+
+  // §4 of the handoff: the wash owns one band, carrying the name, the subtitle
+  // and the status chip. Everything else sits below a divider on flat ground.
+  it("prints the commander name under the deck name, in the band", () => {
+    render(
+      <DeckCard
+        deck={deck({ name: "Blink and you'll miss it", commanderName: "Yuriko, the Tiger's Shadow" })}
+        shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }}
+        now={now}
+      />,
+    );
+    expect(screen.getByText("Yuriko, the Tiger's Shadow")).toBeInTheDocument();
+  });
+
+  it("separates the band from the data with a divider", () => {
+    const { container } = render(
+      <DeckCard deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
+    );
+    const footer = container.querySelector(".deck-card-footer") as HTMLElement;
+    expect(footer.style.borderTop).toBe("1px solid var(--border)");
+  });
 });

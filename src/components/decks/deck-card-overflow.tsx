@@ -93,10 +93,14 @@ export function DeckCardOverflow({ deckId, deckName, built }: DeckCardOverflowPr
         // The open state is a class, not an inline style: an inline background
         // outranks the hover: utilities beside it and the control stops
         // highlighting the moment the panel is open.
-        className={`flex h-[44px] w-[44px] cursor-pointer items-center justify-center border-0 p-0 font-mono text-[13px] transition-colors sm:h-[26px] sm:w-[26px] sm:rounded-[7px] sm:text-[11px] ${
+        // Decision 3 — the desktop plate is opaque and carries a hairline, as
+        // every other chip over art does. `border-0` is gone rather than
+        // overridden: preflight already zeroes the width, and leaving it in
+        // fought the `sm:` border for source order.
+        className={`flex h-[44px] w-[44px] cursor-pointer items-center justify-center p-0 font-mono text-[13px] tracking-[1px] transition-colors sm:h-[26px] sm:w-[26px] sm:rounded-[7px] sm:border sm:text-[11px] ${
           open
             ? "rounded-[7px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] text-[color:var(--fg)] sm:text-[color:var(--fg)]"
-            : "text-[color:var(--fg)] sm:bg-[color-mix(in_srgb,var(--bg)_70%,transparent)] sm:text-[color:var(--fg-body)]"
+            : "text-[color:var(--fg)] sm:border-[color:var(--border-strong)] sm:bg-[color:var(--bg)] sm:text-[color:var(--fg-body)]"
         }`}
       >
         …
