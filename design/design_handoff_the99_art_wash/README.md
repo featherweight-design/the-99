@@ -9,9 +9,8 @@ Files:
 - `The 99 - Art Wash Readability.dc.html` — R1, superseded. Kept only because R2's captions cite its
   values. Do not build from it.
 
-Read `design/design_handoff_the99_decks/The 99 - Decks README.md` and
-`design/design_handoff_the99_commanders/README.md` first — this document records only what
-**changes**.
+Read `design_handoff_the99_decks/README.md` and `design_handoff_the99_commanders/README.md` first —
+this document records only what **changes**.
 
 ## The bug, in one line
 
@@ -28,10 +27,9 @@ over it.
 | Home · ready to build | `cover` | aspect `2.2/1` | inherits the deck card exactly |
 | Home · resume | `left-portrait` | `72px` | portrait `99px`, type inset `116px` |
 
-**Four surfaces, two strategies, one component.** Every surface passes the item's own data — its art
-and its colour identity — and beyond that the only props that vary per surface are `height`,
-`strategy` and `band`. Focal (`center top`) and the L1/L2/L3 layer stack are **constants** — please
-do not expose them per call site.
+**Four surfaces, two strategies, one component.** The only props that vary are `height`, `strategy`
+and `band`. Focal (`center top`) and the L1/L2/L3 layer stack are **constants** — please do not
+expose them per call site.
 
 ---
 
@@ -70,6 +68,17 @@ Nothing over art gets an alpha colour. Title `#F4EFE3`, subtitle `#C6B79A`, both
 #3A3229` border — the shipped translucent "Complete" chip was the single worst-reading element in
 the report. Contrast floor over scrimmed art: **7:1** titles, **4.5:1** meta, measured against the
 art's brightest pixel, which the scrim caps at L*34.
+
+**Status pill borders — ratified 2026-09-08.** Implementing the opaque-fill-plus-hairline rule
+uniformly retired the colour-faded edges on Over, Unresolved, To buy and Complete. That is correct
+and stands: a 50% fade of the status colour sitting on art is the original bug report, and colour
+in the fill and the label carries the status adequately. **One exception:** `Building` keeps
+`1px dashed var(--border-strong)`. Its dashed edge was never an alpha fade — it is a line *style*
+at full opacity, so the readability rule does not reach it. Same colour, same weight, same opacity
+as the other five; it costs nothing on art and buys back the only status signal that survives
+greyscale and colour-blindness now that colour lives in fill and label alone, on the one status
+that differs in kind (incomplete, not a data condition) rather than in degree. So: five statuses
+`1px solid var(--border-strong)`, `Building` `1px dashed var(--border-strong)`.
 
 ### 4. Data lives on flat ground
 The wash owns exactly one band. Below a `1px #2A241D` divider, everything sits on `#1A160F`.
@@ -161,10 +170,19 @@ Constants across all four: L1 `#0E0C09`, focal `center top`, divider `1px #2A241
 - **One shared `<ArtWash>`.** All four surfaces render it. Divergent per-surface scrims are exactly
   how this drifts back to the reported bug.
 - **No art is a valid state.** A missing `art_crop` falls back to the existing colour-identity
-  gradient at the same opacity, same scrim, **no layout shift**. Do not conditionally collapse the
-  band.
+  gradient — **same layer, same scrim, no layout shift**. Do not conditionally collapse the band.
+  **Corrected 2026-09-08:** this originally read "at the same opacity" as the art, which was loose
+  wording on my part and shipped as `1` instead. `1` is right and is hereby ratified — a gradient
+  is *ground*, not photography, so the art layer's opacity has no meaning for it, and at `.14` a
+  `left-portrait` row with no crop would carry no identity signal at all.
 - **Respect reduced-transparency.** Under `prefers-reduced-transparency` or forced high contrast,
-  drop L2 to `opacity .3` and push L3's stops to `.95 / .6 / .85`.
+  drop L2 to `opacity .3` and push L3's stops to `.95 / .6 / .85 / .86` across the base
+  gradient's own four positions (`0 / 40 / 74 / 100%`) — the ramp keeps its fourth stop.
+  Reduced-opacity values are a **ceiling, never a floor**: `min(layer, .3)`, so a `left-portrait`
+  ambient copy already at `.14` or `.20` is left alone rather than raised. The preference applies
+  to **art layers only** — the no-crop identity gradient publishes its own opacity and is not
+  capped, and the 180deg override is scoped to the `cover` strategy so it cannot delete the
+  90deg px-keyed fade that `left-portrait` exists for.
 - **Do not scrim with blur.** `backdrop-filter` on the label band was the other candidate. It costs
   a compositing layer per card in a 40-deck grid and still does not fix hotspot luminance.
 - **Theme-aware values** (`surface`, `line`, text ramp, `accent`) come from `src/app/globals.css`
@@ -174,6 +192,24 @@ Constants across all four: L1 `#0E0C09`, focal `center top`, divider `1px #2A241
 - **Mock data:** commander names and art are real Oracle cards via Scryfall; deck names, fit scores,
   prices and timestamps are fabricated, several lifted from the bug report so the before/after pairs
   are directly comparable.
+
+## Ratifications
+
+Recorded here so the implementation's deliberate deviations are settled in the design source of
+truth rather than living only in the gap report
+(`docs/superpowers/gap-report-art-wash.md`, "Deliberate deviations from the handoff").
+
+| Item | Verdict | Where |
+|---|---|---|
+| Uniform `1px solid var(--border-strong)` on the status pill; colour-faded edges retired | **Ratified** | §3 |
+| `Building`'s dashed border | **Restored** — style, not alpha; one line change | §3 |
+| No-crop identity gradient at opacity `1` under `prefers-reduced-transparency` | **Ratified**; README wording corrected | Notes for engineering |
+| `!important` in both media queries | **Ratified** — inline opacity/gradients are band-derived; nothing else can win | — |
+| `forced-colors: active` drops the art | **Ratified** — correct extension of decision 3 | — |
+| Status chip fill mixes into `var(--bg)`, not `transparent` | **Ratified** — that is what "opaque fill" meant | §3 |
+
+The canvas is **not** redrawn for these: no new signal values were introduced, so there is nothing
+to draw against art. The four retired status-border colours are not coming back.
 
 ## Open items
 
