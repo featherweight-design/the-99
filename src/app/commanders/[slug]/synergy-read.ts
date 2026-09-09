@@ -31,6 +31,7 @@ export async function readSynergyCards(
       oracleId: commanderSupportCards.oracleId,
       name: cards.name,
       typeLine: cards.typeLine,
+      manaCost: cards.manaCost,
       inclusion: commanderSupportCards.inclusion,
       synergy: commanderSupportCards.synergy,
       ownedQuantity: sql<number>`coalesce(sum(${collectionItems.quantity}), 0)::int`,
@@ -49,6 +50,7 @@ export async function readSynergyCards(
       commanderSupportCards.oracleId,
       cards.name,
       cards.typeLine,
+      cards.manaCost,
       commanderSupportCards.inclusion,
       commanderSupportCards.synergy,
     );
@@ -61,6 +63,9 @@ export async function readSynergyCards(
     // `cards.typeLine` is `.notNull()` (schema.ts:31) and the join is an inner
     // join, so there is no null to defend against here.
     typeLine: r.typeLine,
+    // Nullable in the catalog — a land has no cost — and drawn only by the
+    // top-off list, which renders an empty track rather than a placeholder.
+    manaCost: r.manaCost,
     facet: cardFacet(r.typeLine),
     // `commander_support_cards.inclusion` is already a percentage — parse.ts
     // stores EDHREC's own `inclusion` field, or derives one as

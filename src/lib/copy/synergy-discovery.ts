@@ -141,48 +141,25 @@ export const synergyCopy = {
     // Named for the open slots, not for the number 31 — a partly built deck has
     // a different number and the heading has to survive it.
     heading: (n: string) => `The last ${n}`,
-    caption: (n: string) => `${n} slots open · ranked by synergy for this commander`,
-    captionMobile: (n: string) => `${n} slots open · ranked by synergy`,
 
-    // A · owned-only. States what it can place, never the gap: 'fill the rest'
-    // is a promise the pool usually cannot keep.
-    fillOwned: (n: string) => `Fill ${n} from my collection`,
-    fillOwnedAria: (n: string) =>
-      `Fill ${n} slots with cards from your collection`,
-    // Reuses recommendationsCopy.fill.fillingRows rather than adding a second
-    // in-flight vocabulary for the same act.
-    fillFailed: 'We couldn’t fill those. The deck is unchanged.',
-    // Explains the number when it is smaller than the gap, which is most of the
-    // time. Sits beside the two controls, mono, --fg-locked.
-    ownedNote: (n: string, commander: string) =>
-      `Your collection has ${n} in-colour cards left that EDHREC ranks for ${commander}.`,
-
-    // B · the buying top-up. 'to buy' is the shipped vocabulary (buy tag,
-    // Shopping footer), so the control names itself with it rather than with a
-    // new noun.
-    topUp: 'Top up with cards to buy',
-    // Not 'with cards you do not own': B plans against the whole ranked list
-    // (`ownedOnly: false`), so it places the best card for each slot whether or
-    // not the player owns it. Buying is what the control adds over A, not what
-    // it does exclusively, and an aria-label is the only name a screen reader
-    // gets — it cannot afford to be the one that overstates.
-    topUpAria: (n: string) =>
-      `Top up ${n} slots from the full list, including cards you do not own`,
+    // The one refusal on this surface. Two controls used to fail two ways and
+    // needed two strings; one commit settles one way, so `fillFailed` went with
+    // control A and `topOffCopy.commit.refused` points here.
     topUpFailed: 'We couldn’t add those. The deck is unchanged.',
 
-    // §7.6 — settled below 99. The clause after the dash is lifted verbatim
-    // from recommendationsCopy.fill.provenanceShort, which already says this
-    // about the 68-card fill. Expressive moment: it is the one line here that
-    // is allowed a voice, and it earns it by being honest about a shortfall.
+    // §7.6 — printed when the candidate list is empty and slots remain (top-off
+    // STATES §13), and nowhere else. It must never print because a player left
+    // rows unticked: 'your collection ran out' would then be false, and blaming
+    // the collection for the player's own restraint is the worst sentence this
+    // surface could say. Stopping short is `topOffCopy.strip.doorNoteAgain`,
+    // which is neutral.
+    //
+    // The clause after the dash is lifted verbatim from
+    // recommendationsCopy.fill.provenanceShort, which already says this about
+    // the 68-card fill. Expressive moment: it is the one line here that is
+    // allowed a voice, and it earns it by being honest about a shortfall.
     short: (total: string, n: string) =>
       `${total} of 99. Your collection ran out ${n} short — there was nothing left in it that EDHREC ranks for this commander.`,
-
-    filledAnnounce: (added: string, total: string) =>
-      `${added} cards added. ${total} of 99.`,
-    shortAnnounce: (added: string, total: string, short: string) =>
-      `${added} cards added. ${total} of 99, ${short} short.`,
-    boughtAnnounce: (added: string, total: string, buy: string) =>
-      `${added} cards added. ${total} of 99, ${buy} to buy.`,
   },
 
   // ── Surface B · the Consider shelf ────────────────────────────────────

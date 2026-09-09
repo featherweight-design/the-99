@@ -51,3 +51,6 @@ next-env.d.ts
 
 # screenshot reels written by scripts/audit-sweep.mjs
 /audit-output/
+
+# screenshots written by the scripts/probe-*.mjs gate runners
+/probe-out/

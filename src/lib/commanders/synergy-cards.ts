@@ -20,6 +20,10 @@ export type SynergyCard = {
   owned: boolean;
   /** The deck this card already sits in, or null. */
   committedTo: string | null;
+  /** Scryfall's cost string ("{2}{U}"), carried whole rather than as a mana
+   *  value: `CostPips` draws hybrid and Phyrexian symbols from their halves,
+   *  and an integer cannot be taken back apart into them. */
+  manaCost: string | null;
 };
 
 /** Synergy descending, absent last, then inclusion descending, then name.

@@ -223,12 +223,12 @@ vi.mock("../../lib/edhrec/client", () => ({
   },
 }));
 
-// Mock synergy-read so fillLastSlots tests don't need live DB or EDHREC data
+// Mock synergy-read so the deck actions under test need no live DB or EDHREC data
 vi.mock("../commanders/[slug]/synergy-read", () => ({
   readSynergyCards: async () => [],
 }));
 
-import { createDeck, deleteGame, fillDeck, fillLastSlotsOwned, fillLastSlotsUnowned, logGame, restoreAutoCards } from "./actions";
+import { createDeck, deleteGame, fillDeck, logGame, restoreAutoCards } from "./actions";
 
 // IDs used across tests
 const COMMANDER_ORACLE = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -592,78 +592,6 @@ describe("restoreAutoCards — the rows come from the client", () => {
     await expect(
       restoreAutoCards(DECK, [{ oracleId: CARD_A, quantity: 1 }]),
     ).rejects.toThrow("deck not found");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// fillLastSlotsOwned / fillLastSlotsUnowned — authorization boundary
-// ---------------------------------------------------------------------------
-// These tests constrain the explicit row.userId !== userId check inside
-// requireDeck. The stub's `where` method ignores its predicate argument, so
-// without the explicit check a wrong-owner row would pass through undetected.
-
-describe("fillLastSlotsOwned — authorization", () => {
-  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
-  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-
-  /** Push a commander card so the fill can proceed past requireDeck if auth passes.
-   *  Without this the test would pass on a downstream "commander not found" throw. */
-  function withCommander() {
-    stub.state.cards.push({ oracleId: CMDR, colorIdentity: ["B", "R", "G"] });
-  }
-
-  it("returns ok:false and performs no write when the deck belongs to another user", async () => {
-    // Stub returns a deck row whose userId differs from the authenticated caller ("user_1").
-    // withCommander() is set so that if the ownership check is absent the action
-    // proceeds past requireDeck and reaches ok:true — proving the check matters.
-    stub.state.decks.push({ id: DECK, userId: "user_other", commanderOracleId: CMDR });
-    withCommander();
-
-    const result = await fillLastSlotsOwned(DECK);
-
-    expect(result.ok).toBe(false);
-    // No deck_cards were written
-    expect(stub.state.insertCalls).toEqual([]);
-  });
-
-  it("returns ok:false and performs no write when no deck row exists", async () => {
-    // state.decks stays empty — deck not found
-    withCommander();
-    const result = await fillLastSlotsOwned(DECK);
-
-    expect(result.ok).toBe(false);
-    expect(stub.state.insertCalls).toEqual([]);
-  });
-});
-
-describe("fillLastSlotsUnowned — authorization", () => {
-  const DECK = "dddddddd-dddd-dddd-dddd-dddddddddddd";
-  const CMDR = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-
-  function withCommander() {
-    stub.state.cards.push({ oracleId: CMDR, colorIdentity: ["B", "R", "G"] });
-  }
-
-  it("returns ok:false and performs no write when the deck belongs to another user", async () => {
-    // Same logic as fillLastSlotsOwned: commander is present so that if the
-    // ownership check is removed the action proceeds to ok:true, proving the check.
-    stub.state.decks.push({ id: DECK, userId: "user_other", commanderOracleId: CMDR });
-    withCommander();
-
-    const result = await fillLastSlotsUnowned(DECK);
-
-    expect(result.ok).toBe(false);
-    // No deck_cards were written
-    expect(stub.state.insertCalls).toEqual([]);
-  });
-
-  it("returns ok:false and performs no write when no deck row exists", async () => {
-    // state.decks stays empty — deck not found
-    withCommander();
-    const result = await fillLastSlotsUnowned(DECK);
-
-    expect(result.ok).toBe(false);
-    expect(stub.state.insertCalls).toEqual([]);
   });
 });
 

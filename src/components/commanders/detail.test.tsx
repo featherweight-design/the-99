@@ -23,6 +23,7 @@ const synergyCards: SynergyCard[] = [
     synergyPts: 47,
     owned: true,
     committedTo: null,
+    manaCost: null,
   },
   {
     oracleId: "oracle-skullclamp",
@@ -33,6 +34,7 @@ const synergyCards: SynergyCard[] = [
     synergyPts: null,
     owned: false,
     committedTo: null,
+    manaCost: null,
   },
 ];
 

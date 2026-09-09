@@ -1,308 +1,286 @@
 import { act, render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
-import { recommendationsCopy } from "../../lib/copy/recommendations";
+import { topOffCopy } from "../../lib/copy/top-off";
+import type { TopOffCandidate } from "../../lib/decks/last-slots";
 
-const actions = vi.hoisted(() => ({
-  fillOwned: vi.fn(), fillUnowned: vi.fn(),
-}));
-vi.mock("../../app/decks/actions", () => ({
-  fillLastSlotsOwned: actions.fillOwned,
-  fillLastSlotsUnowned: actions.fillUnowned,
-}));
+const actions = vi.hoisted(() => ({ commit: vi.fn() }));
+vi.mock("../../app/decks/actions", () => ({ commitTopOff: actions.commit }));
 
 import { LastSlotsStrip } from "./last-slots-strip";
 
-function deferred<T>() {
-  let resolve!: (v: T) => void;
-  const promise = new Promise<T>((r) => { resolve = r; });
-  return { promise, resolve };
+function candidate(id: string, owned: boolean): TopOffCandidate {
+  return {
+    oracleId: id,
+    name: id,
+    typeLine: "Instant",
+    facet: "spell",
+    inclusionPct: 40,
+    synergyPts: 20,
+    owned,
+    committedTo: null,
+    manaCost: null,
+    price: null,
+    availability: null,
+  };
 }
 
+const candidates = [
+  candidate("owned-1", true),
+  candidate("owned-2", true),
+  candidate("buy-1", false),
+];
+
 const base = {
-  deckId: "deck-1", openSlots: 31, ownedCandidates: 12, unownedCandidates: 40,
-  commanderShortName: "Atraxa", onAnnounce: () => {},
+  deckId: "deck-1",
+  openSlots: 3,
+  candidates,
+  deckOracleIds: new Set<string>(),
+  newestAsOf: null,
+  onAnnounce: () => {},
 };
 
+const doorName = (slots: string) => topOffCopy.strip.openAria(slots);
+
+/** The repo has no user-event; a click plus a flushed microtask queue is what
+ *  every other builder test uses, and it is what the settled commit needs. */
+async function click(el: HTMLElement) {
+  await act(async () => {
+    el.click();
+  });
+}
+
 beforeEach(() => {
-  actions.fillOwned.mockReset().mockResolvedValue({ ok: true, added: 12, total: 80, shortfall: 19 });
-  actions.fillUnowned.mockReset().mockResolvedValue({ ok: true, added: 19, total: 99, bought: 19 });
+  actions.commit
+    .mockReset()
+    .mockResolvedValue({ ok: true, added: 1, total: 97, passId: "p1", boughtDelta: 0 });
 });
 
 describe("LastSlotsStrip", () => {
-  // State 2: shallow pool. Rule 4 — A never promises 99.
-  it("states what the owned pool can place, not the gap", () => {
-    render(<LastSlotsStrip {...base} />);
-    expect(screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") })).toBeInTheDocument();
-    expect(screen.queryByText(/Fill 31/)).not.toBeInTheDocument();
-  });
-
-  it("explains the number with the owned note", () => {
-    render(<LastSlotsStrip {...base} />);
-    expect(screen.getByText(synergyCopy.lastSlots.ownedNote("12", "Atraxa"))).toBeInTheDocument();
-  });
-
-  // State 9. Rule 3 — the strip unmounts as a unit, heading and all.
+  // States 10 and 14. The strip is arithmetic, not a flag: a full deck has no
+  // last slots, so there is no box to draw around them.
   it("renders nothing at all when there are no open slots", () => {
     const { container } = render(<LastSlotsStrip {...base} openSlots={0} />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  // State 6. Rule 1 — absent, not disabled.
-  it("omits the owned control when there are no owned candidates", () => {
-    render(<LastSlotsStrip {...base} ownedCandidates={0} />);
-    expect(screen.queryByRole("button", { name: /from my collection/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") })).toBeEnabled();
-  });
-
-  // State 12.
-  it("omits the top-up when there are no unowned candidates", () => {
-    render(<LastSlotsStrip {...base} unownedCandidates={0} />);
-    expect(screen.queryByRole("button", { name: /Top up/ })).not.toBeInTheDocument();
-  });
-
-  // States 3 and 8. Rule 2 — nothing unmounts mid-action.
-  it("disables the other control during a write rather than unmounting it", async () => {
-    const pending = deferred<{ ok: true; added: number; total: number; shortfall: number }>();
-    actions.fillOwned.mockReturnValue(pending.promise);
+  // #361 deleted the two fill CTAs rather than restyling them. If either name
+  // ever comes back this test is the one that says so.
+  it("offers one door and neither retired fill control", () => {
     render(<LastSlotsStrip {...base} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    const topUp = screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") });
-    expect(topUp).toBeInTheDocument();
-    expect(topUp).toBeDisabled();
-    expect(screen.getByText(recommendationsCopy.fill.fillingRows("12"))).toBeInTheDocument();
-    pending.resolve({ ok: true, added: 12, total: 80, shortfall: 19 });
+    expect(screen.getByRole("button", { name: doorName("3") })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: /from my collection/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /top up/i })).toBeNull();
   });
 
-  // State 5, §7.6. The shortfall is honest, not alarming: --accent, not --warning.
-  it("draws the shortfall line in the provenance shape, not the warning one", async () => {
+  // The deck can fill from somewhere else — the quick-add dock is live at
+  // desktop while the list is open — and that unmounts the strip without ever
+  // calling close. The flags have to come down anyway, or the phone dock stays
+  // hidden for a list that is gone.
+  it("lowers the open and in-flight flags when the deck fills under it", async () => {
+    const onOpenChange = vi.fn();
+    const onInflight = vi.fn();
+    const { rerender } = render(
+      <LastSlotsStrip {...base} onOpenChange={onOpenChange} onInflight={onInflight} />,
+    );
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+
+    rerender(
+      <LastSlotsStrip
+        {...base}
+        openSlots={0}
+        onOpenChange={onOpenChange}
+        onInflight={onInflight}
+      />,
+    );
+
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    expect(onInflight).toHaveBeenLastCalledWith(false);
+  });
+
+  it("names the owned candidates in the door note before any pass", () => {
     render(<LastSlotsStrip {...base} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    const line = await screen.findByText(synergyCopy.lastSlots.short("80", "19"));
-    // Asserted as longhands rather than the `border-left` shorthand: jsdom
-    // refuses to expand a shorthand whose value carries a var() reference, so
-    // the shorthand form reads as empty no matter what the element carries.
-    expect(line.closest("[data-testid='last-slots-shortfall']")).toHaveStyle({
+    expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
+  });
+
+  // The note promises what will arrive ticked, and the seed clamps to the open
+  // slots. Two owned candidates for one slot arrives as one tick, so promising
+  // two is a promise the open cannot keep.
+  it("clamps the door note's promise to the slots the seed can fill", () => {
+    render(<LastSlotsStrip {...base} openSlots={1} />);
+    expect(screen.getByText(topOffCopy.strip.doorNote("1"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
+  });
+
+  // State 13. A control with nothing to do is absent, not disabled — and the
+  // caption goes with it rather than counting a pool of zero.
+  it("replaces the door and the caption with the exhausted line when the pool is empty", () => {
+    render(<LastSlotsStrip {...base} candidates={[]} />);
+    expect(screen.getByTestId("last-slots-exhausted")).toHaveTextContent(
+      synergyCopy.lastSlots.short("96", "3"),
+    );
+    expect(screen.queryByRole("button", { name: doorName("3") })).toBeNull();
+    expect(screen.queryByText(topOffCopy.strip.caption("3", "0"))).toBeNull();
+  });
+
+  // §16 — an exhausted pool is honest, not alarming, so the plate carries the
+  // provenance accent and never the warning colour. Asserted as longhands
+  // because jsdom will not expand a shorthand whose value holds a var().
+  it("draws the exhausted line in the provenance shape, not the warning one", () => {
+    render(<LastSlotsStrip {...base} candidates={[]} />);
+    expect(screen.getByTestId("last-slots-exhausted")).toHaveStyle({
       borderLeftWidth: "3px",
       borderLeftStyle: "solid",
       borderLeftColor: "var(--accent)",
     });
   });
 
-  // §7.6 ordering — the brief requires B to sit directly beneath the shortfall
-  // line, meaning the shortfall line must precede control B in document order.
-  it("places the shortfall line before control B in document order", async () => {
-    render(<LastSlotsStrip {...base} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    const shortfall = await screen.findByTestId("last-slots-shortfall");
-    const topUp = screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") });
-    // Node.DOCUMENT_POSITION_FOLLOWING (4) means shortfall precedes topUp.
-    expect(shortfall.compareDocumentPosition(topUp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  // State 10. Rule 5 — the refusal is under the clicked control and the other
-  // control is untouched.
-  it("leaves the other control enabled after a refusal", async () => {
-    actions.fillOwned.mockResolvedValue({ ok: false, message: synergyCopy.lastSlots.fillFailed });
-    render(<LastSlotsStrip {...base} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    expect(await screen.findByText(synergyCopy.lastSlots.fillFailed)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") })).toBeEnabled();
-  });
-
-  // Rule 7, and the announcement rule: one message per settle, not per row.
-  it("announces the settle once", async () => {
+  it("opens the list, seeds a tick per owned card, and announces the open once", async () => {
     const onAnnounce = vi.fn();
-    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    await screen.findByText(synergyCopy.lastSlots.short("80", "19"));
-    expect(onAnnounce).toHaveBeenCalledExactlyOnceWith(
-      synergyCopy.lastSlots.shortAnnounce("12", "80", "19"),
-    );
+    const onOpenChange = vi.fn();
+    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} onOpenChange={onOpenChange} />);
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    // Two owned rows in a pool of three, so two ticks — never three.
+    expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
+    // One live-region message per settle, and opening settles the pool size,
+    // the open slots and the seed together.
+    expect(onAnnounce).toHaveBeenCalledTimes(1);
+    expect(onAnnounce.mock.calls[0][0]).toContain(topOffCopy.announce.opened("3", "3", "2"));
   });
 
-  // Finding 8 — the filled-at-99 path is a separate branch from the shortfall
-  // path and must be covered independently. Deleting the filledAnnounce branch
-  // leaves the shortfall tests green because they never exercise shortfall === 0.
-  it("announces the fill and shows no shortfall line when A fills the deck", async () => {
+  // At 390px the open-slot figure is the commit bar's denominator, so the strip
+  // caption stops repeating it and picks up the ordering, which phone has
+  // nowhere else to put. Desktop keeps its one caption at both states.
+  it("swaps the phone caption for the ordering once the list is open", async () => {
+    render(<LastSlotsStrip {...base} />);
+    expect(screen.getByText(topOffCopy.strip.captionMobile("3", "3"))).toBeInTheDocument();
+
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    expect(screen.queryByText(topOffCopy.strip.captionMobile("3", "3"))).toBeNull();
+    expect(screen.getByText(topOffCopy.strip.captionMobileOpen("3"))).toBeInTheDocument();
+    expect(screen.getByText(topOffCopy.strip.caption("3", "3"))).toBeInTheDocument();
+  });
+
+  // The selection survives a close, but the deck does not stand still: a
+  // quick-add can take a slot without unticking anything. The reopen has to
+  // announce what the list will show rather than what the player left.
+  it("announces the reopened count the list can actually show", async () => {
     const onAnnounce = vi.fn();
-    actions.fillOwned.mockResolvedValue({ ok: true, added: 31, total: 99, shortfall: 0 });
-    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    expect(onAnnounce).toHaveBeenCalledExactlyOnceWith(
-      synergyCopy.lastSlots.filledAnnounce("31", "99"),
-    );
-    expect(screen.queryByTestId("last-slots-shortfall")).not.toBeInTheDocument();
+    const { rerender } = render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+
+    rerender(<LastSlotsStrip {...base} openSlots={1} onAnnounce={onAnnounce} />);
+    await click(screen.getByRole("button", { name: doorName("1") }));
+
+    const last = onAnnounce.mock.calls.at(-1)?.[0] as string;
+    expect(last).toContain(topOffCopy.announce.opened("3", "1", "1"));
+    expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
   });
 
-  // The shortfall line is a receipt for one run. A second A run — the player
-  // acquires cards, the page refreshes the pool, they press Fill again — can
-  // reach 99, and the earlier "still 19 short" must not survive under a deck
-  // that is no longer short.
-  it("clears a prior shortfall line once a later A run fills the deck", async () => {
+  it("caps the seeded ticks at the open slots", async () => {
+    render(<LastSlotsStrip {...base} openSlots={1} />);
+    await click(screen.getByRole("button", { name: doorName("1") }));
+    expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
+  });
+
+  // State 9, and the reason the selection is held here rather than in the list:
+  // the list unmounts on close, so reopening must restore what the player left
+  // instead of seeding over it.
+  it("restores the selection on reopen instead of seeding again", async () => {
     render(<LastSlotsStrip {...base} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    expect(await screen.findByTestId("last-slots-shortfall")).toBeInTheDocument();
 
-    actions.fillOwned.mockResolvedValue({ ok: true, added: 19, total: 99, shortfall: 0 });
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    expect(screen.queryByTestId("last-slots-shortfall")).not.toBeInTheDocument();
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(screen.getAllByRole("checkbox", { checked: true })[0]);
+    expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
+
+    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(1);
   });
 
-  // Finding 5 — rule 4's clamp. The fixture uses ownedCandidates < openSlots
-  // so the min never fires there. This case inverts it: ownedCandidates > openSlots
-  // and the label must carry openSlots, not ownedCandidates.
-  it("clamps A's label to openSlots when the pool exceeds the gap", () => {
-    render(<LastSlotsStrip {...base} openSlots={5} ownedCandidates={12} />);
-    expect(screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("5") })).toBeInTheDocument();
-    expect(screen.queryByText(/Fill 12/)).not.toBeInTheDocument();
-  });
-
-  // Finding 3 — control B's full path. Clicking B calls fillLastSlotsUnowned,
-  // its success announces boughtAnnounce exactly once, its refusal renders
-  // MutationError under B while leaving A enabled, and its in-flight state
-  // disables A while showing B's fillingRows label.
-
-  it("calls fillLastSlotsUnowned and announces the settle when B is clicked", async () => {
-    const onAnnounce = vi.fn();
-    render(<LastSlotsStrip {...base} onAnnounce={onAnnounce} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
-    });
-    expect(actions.fillUnowned).toHaveBeenCalledWith("deck-1");
-    expect(onAnnounce).toHaveBeenCalledExactlyOnceWith(
-      synergyCopy.lastSlots.boughtAnnounce("19", "99", "19"),
-    );
-  });
-
-  it("renders MutationError under B and leaves A enabled after B is refused", async () => {
-    actions.fillUnowned.mockResolvedValue({ ok: false, message: synergyCopy.lastSlots.topUpFailed });
+  // The door unmounts under the cursor when the list opens, and a button that
+  // unmounts drops focus to the body. Focus follows the disclosure to its other
+  // face instead — never into the rows, which §1e rules out.
+  it("moves focus to the close control when the door opens the list", async () => {
     render(<LastSlotsStrip {...base} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
-    });
-    expect(await screen.findByText(synergyCopy.lastSlots.topUpFailed)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") })).toBeEnabled();
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    const close = screen.getByRole("button", { name: topOffCopy.strip.close });
+    expect(close).toHaveFocus();
+    expect(close).toHaveAttribute("aria-expanded", "true");
   });
 
-  // The actions catch their own failures, but the call itself can reject before
-  // any of that runs. Without the finally the strip would sit disabled with
-  // nothing said and no way back but a reload — the one failure that costs the
-  // player the whole surface rather than one control.
-  it.each([
-    {
-      name: "A",
-      mock: () => actions.fillOwned,
-      aria: synergyCopy.lastSlots.fillOwnedAria("12"),
-      other: synergyCopy.lastSlots.topUpAria("31"),
-      message: synergyCopy.lastSlots.fillFailed,
-    },
-    {
-      name: "B",
-      mock: () => actions.fillUnowned,
-      aria: synergyCopy.lastSlots.topUpAria("31"),
-      other: synergyCopy.lastSlots.fillOwnedAria("12"),
-      message: synergyCopy.lastSlots.topUpFailed,
-    },
-  ])("recovers both controls when $name's call rejects outright", async ({ mock, aria, other, message }) => {
-    mock().mockRejectedValue(new Error("network"));
+  // State 17 — the pool is frozen for the duration of a pass. A quick-add can
+  // take the last candidates while the list is up, and gating the render on an
+  // empty pool before the open flag would tear the selection down mid-pass and
+  // stand the exhausted plate in its place.
+  it("keeps the open list up when the pool empties under it", async () => {
+    const { rerender } = render(<LastSlotsStrip {...base} />);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    rerender(<LastSlotsStrip {...base} candidates={[]} />);
+
+    expect(screen.getByRole("button", { name: topOffCopy.strip.close })).toBeInTheDocument();
+    expect(screen.queryByTestId("last-slots-exhausted")).toBeNull();
+  });
+
+  // §1e — focus moves on close and only on close. The door does not exist at
+  // the moment close is asked for, so the move has to wait for the render that
+  // puts it back; a synchronous focus() here would silently do nothing.
+  // A pass that takes the last candidates leaves slots open and no door, so the
+  // one close that ends the feature is the one with nothing to return to.
+  it("returns focus to the exhausted plate when the pass emptied the pool", async () => {
+    const { rerender } = render(<LastSlotsStrip {...base} />);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+
+    rerender(<LastSlotsStrip {...base} candidates={[]} />);
+    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+
+    expect(screen.getByTestId("last-slots-exhausted")).toHaveFocus();
+  });
+
+  it("returns focus to the door when the list closes", async () => {
     render(<LastSlotsStrip {...base} />);
-    await act(async () => {
-      screen.getByRole("button", { name: aria }).click();
-    });
-    expect(await screen.findByText(message)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: aria })).toBeEnabled();
-    expect(screen.getByRole("button", { name: other })).toBeEnabled();
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+
+    expect(screen.getByRole("button", { name: doorName("3") })).toHaveFocus();
   });
 
-  // B is the way forward from a shortfall, so once B settles the numbers A left
-  // behind are stale. Without this the setSettled(null) in runUnowned could be
-  // deleted with every other test still green.
-  it("clears A's shortfall line once B settles", async () => {
+  // State 20 — one bottom slot, one occupant. The shell hides the quick-add
+  // dock while the list's commit bar holds that slot.
+  it("tells the shell when the list opens and when it closes", async () => {
+    const onOpenChange = vi.fn();
+    render(<LastSlotsStrip {...base} onOpenChange={onOpenChange} />);
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
+
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  // The door note is about what the player just did. Before a pass it counts
+  // what they own; after one it describes the pool they can come back to.
+  it("changes the door note once a pass has landed", async () => {
     render(<LastSlotsStrip {...base} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    expect(await screen.findByTestId("last-slots-shortfall")).toBeInTheDocument();
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
-    });
-    expect(screen.queryByTestId("last-slots-shortfall")).not.toBeInTheDocument();
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(screen.getByRole("button", { name: topOffCopy.commit.addAria("2", "98") }));
+
+    expect(await screen.findByText(topOffCopy.strip.doorNoteAgainOwned("2", "3"))).toBeInTheDocument();
+    expect(screen.queryByText(topOffCopy.strip.doorNote("2"))).toBeNull();
   });
 
-  it("disables A and shows B's fillingRows label while B's write is in flight", async () => {
-    const pending = deferred<{ ok: true; added: number; total: number; bought: number }>();
-    actions.fillUnowned.mockReturnValue(pending.promise);
+  // Cancelling is not a pass. The note must not claim one happened.
+  it("keeps the first-open door note when the list is only cancelled", async () => {
     render(<LastSlotsStrip {...base} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
-    });
-    const ownedBtn = screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") });
-    expect(ownedBtn).toBeDisabled();
-    // In-flight label uses openSlots (31), not unownedCandidates (40) — B places
-    // every open slot, owned and unowned alike, so the count must match the aria-label.
-    expect(screen.getByText(recommendationsCopy.fill.fillingRows("31"))).toBeInTheDocument();
-    pending.resolve({ ok: true, added: 19, total: 99, bought: 19 });
-  });
+    await click(screen.getByRole("button", { name: doorName("3") }));
+    await click(screen.getByRole("button", { name: topOffCopy.strip.close }));
 
-  // M4 — the badge on B's face must match the aria-label (both should be openSlots).
-  it("shows openSlots on B's badge face, matching the aria-label count", () => {
-    render(<LastSlotsStrip {...base} openSlots={7} unownedCandidates={40} />);
-    // aria-label uses openSlots; the visible badge must also use openSlots.
-    const btn = screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("7") });
-    // The badge text "7" appears inside the button.
-    expect(btn).toHaveTextContent("7");
-    // The unowned-candidate count (40) must not appear on the button face.
-    expect(btn.textContent).not.toMatch(/40/);
-  });
-
-  // Design table state 3 / state 8: onInflight signals the shell so it can
-  // disable control C while either fill is in flight.
-  it("calls onInflight(true) when A starts and onInflight(false) when A settles", async () => {
-    const pending = deferred<{ ok: true; added: number; total: number; shortfall: number }>();
-    actions.fillOwned.mockReturnValue(pending.promise);
-    const onInflight = vi.fn();
-    render(<LastSlotsStrip {...base} onInflight={onInflight} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.fillOwnedAria("12") }).click();
-    });
-    expect(onInflight).toHaveBeenLastCalledWith(true);
-    await act(async () => {
-      pending.resolve({ ok: true, added: 12, total: 80, shortfall: 19 });
-    });
-    expect(onInflight).toHaveBeenLastCalledWith(false);
-    expect(onInflight).toHaveBeenCalledTimes(2);
-  });
-
-  it("calls onInflight(true) when B starts and onInflight(false) when B settles", async () => {
-    const pending = deferred<{ ok: true; added: number; total: number; bought: number }>();
-    actions.fillUnowned.mockReturnValue(pending.promise);
-    const onInflight = vi.fn();
-    render(<LastSlotsStrip {...base} onInflight={onInflight} />);
-    await act(async () => {
-      screen.getByRole("button", { name: synergyCopy.lastSlots.topUpAria("31") }).click();
-    });
-    expect(onInflight).toHaveBeenLastCalledWith(true);
-    await act(async () => {
-      pending.resolve({ ok: true, added: 19, total: 99, bought: 19 });
-    });
-    expect(onInflight).toHaveBeenLastCalledWith(false);
-    expect(onInflight).toHaveBeenCalledTimes(2);
+    expect(screen.getByText(topOffCopy.strip.doorNote("2"))).toBeInTheDocument();
   });
 });
