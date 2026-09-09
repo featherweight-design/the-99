@@ -255,8 +255,8 @@ export const deckImportCopy = {
     //
     // The header band is one image — the primary's — so the partner's printing
     // opens from the word that names it. This is the trigger's accessible name;
-    // the visible affordance is an underline on the partner's half of the caption
-    // and nothing else. The primary needs no equivalent: its trigger is the 230px
+    // the visible affordance is a hairline rule under the partner's half of the
+    // caption and nothing else. The primary needs no equivalent: its trigger is the 230px
     // of art beside the text.
     partnerCardAria: (partner: string) => `Show the printing for ${partner}`,
 

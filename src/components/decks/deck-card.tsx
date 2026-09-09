@@ -60,7 +60,7 @@ function statusDetailFor(
       // the first says nothing and reads as a rendering fault.
       return null;
     case "Over":
-      return c.detailOver(deck.built - deckBodySize(false));
+      return c.detailOver(deck.built - deckBodySize(deck.partnerName !== null));
     case "Unresolved":
       return c.detailUnresolved(deck.unresolvedCount);
     case "To buy": {
@@ -124,7 +124,9 @@ interface DeckCardProps {
  */
 export function DeckCard({ deck, shopping, now }: DeckCardProps) {
   const detail = detailFor(deck, shopping, now);
-  const count = `${deck.built} / ${deckBodySize(false)}`;
+  // A pair takes two of the hundred, so its body is 98 and its tile says so.
+  const bodySize = deckBodySize(deck.partnerName !== null);
+  const count = `${deck.built} / ${bodySize}`;
   const lastPlayed = deck.lastPlayedAt
     ? formatWhen(deck.lastPlayedAt, now)
     : refreshCopy.decks.lastPlayedNever;
@@ -233,7 +235,7 @@ export function DeckCard({ deck, shopping, now }: DeckCardProps) {
             <div
               data-deck-bar-fill
               className="absolute top-0 bottom-0 left-0 rounded-full"
-              style={statusBarStyle(deck.statusPill, deck.built, deckBodySize(false))}
+              style={statusBarStyle(deck.statusPill, deck.built, bodySize)}
             />
           )}
         </div>
