@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { deckBodySize } from "./deck-size";
 import type { Availability, DeckClaim } from "./availability";
 
 type Row = {
@@ -20,10 +19,10 @@ type Row = {
  *
  * TWO THINGS THIS DELIBERATELY HANDLES, both verified against the schema:
  *
- * 1. THE COMMANDER IS NOT A deck_cards ROW. `decks.commander_oracle_id` is its
- *    own column and never appears in deck_cards. Without the union below, a
- *    single-copy legendary sleeved as another deck's commander would read as
- *    free everywhere.
+ * 1. NEITHER COMMANDER IS A deck_cards ROW. `decks.commander_oracle_id` and
+ *    `decks.partner_oracle_id` are their own columns and never appear in
+ *    deck_cards. Without the two union arms below, a single-copy legendary
+ *    sleeved as another deck's commander would read as free everywhere.
  *
  * 2. BASIC LANDS ARE EXCLUDED ENTIRELY. A finished deck holds 30-odd Forests
  *    and almost nobody's collection row matches, so every mature deck would
@@ -31,9 +30,10 @@ type Row = {
  *    with nothing wrong with it.
  *
  * Deck size for the maturity test stays sum(deck_cards.quantity), excluding the
- * commander — that is exactly what `built` is and what statusPill thresholds
- * on, so 99 here means the same 99 the player sees on the pill. Basics DO count
- * toward that size; they are only excluded as claim subjects.
+ * commanders — that is exactly what `built` is and what statusPill thresholds
+ * on, so the threshold here is the same body size the player sees on the pill:
+ * 99, or 98 for a deck with a partner. Basics DO count toward that size; they
+ * are only excluded as claim subjects.
  *
  * `claim_decks_all` carries every claim whatever the caller's vantage.
  * Self-exclusion is applied downstream, because the seniority ordering below has
@@ -47,9 +47,12 @@ const claimModel = (userId: string) => sql`
     where d.user_id = ${userId}
     group by dc.deck_id
   ),
-  -- Every claim on a card, one row per (deck, card): the deck's list, plus the
-  -- deck's commander, which lives in its own column and would otherwise be
-  -- invisible to this feature.
+  -- Every claim on a card, one row per (deck, card): the deck's list, plus each
+  -- of the deck's commanders, which live in their own columns and would
+  -- otherwise be invisible to this feature.
+  --
+  -- union all, not union: a deck cannot name the same card in both commander
+  -- columns, so there is nothing to deduplicate and the sort would be pure cost.
   all_claims as (
     select dc.deck_id, dc.oracle_id, dc.quantity
     from deck_cards dc
@@ -59,6 +62,10 @@ const claimModel = (userId: string) => sql`
     select d.id as deck_id, d.commander_oracle_id as oracle_id, 1 as quantity
     from decks d
     where d.user_id = ${userId}
+    union all
+    select d.id as deck_id, d.partner_oracle_id as oracle_id, 1 as quantity
+    from decks d
+    where d.user_id = ${userId} and d.partner_oracle_id is not null
   ),
   -- One row per (oracle, claiming deck), carrying that deck's whole ask.
   -- Grouping rather than select distinct is what folds a deck whose commander is
@@ -74,12 +81,21 @@ const claimModel = (userId: string) => sql`
       -- LEFT: a deck whose only card is its commander has no deck_cards rows and
       -- therefore no deck_totals row. An inner join would drop that claim
       -- entirely. No rows means no cards means brewing, hence coalesce to 0.
-      coalesce(dt.cards, 0) >= ${deckBodySize(false)} as mature,
+      --
+      -- Mirrors deckBodySize() in deck-size.ts: a pair's body is one card
+      -- shorter, so a pair deck is sleeved at 98. The literal is unavoidable in
+      -- raw SQL; a change to the format's total has to touch both.
+      coalesce(dt.cards, 0)
+        >= (99 - (case when d.partner_oracle_id is null then 0 else 1 end)) as mature,
       sum(ac.quantity)::int as quantity
     from all_claims ac
     left join deck_totals dt on dt.deck_id = ac.deck_id
     join decks d on d.id = ac.deck_id
-    group by ac.oracle_id, ac.deck_id, d.name, d.created_at, coalesce(dt.cards, 0)
+    -- d.partner_oracle_id is grouped because the maturity expression reads it.
+    -- Postgres rejects the query outright without it.
+    group by
+      ac.oracle_id, ac.deck_id, d.name, d.created_at,
+      d.partner_oracle_id, coalesce(dt.cards, 0)
   ),
   owned as (
     select ci.oracle_id, sum(ci.quantity)::int as owned
@@ -145,7 +161,11 @@ export async function loadAvailability(
       select
         d.id,
         d.created_at,
-        coalesce(dt.cards, 0) >= ${deckBodySize(false)} as mature
+        -- Same body size as claim_decks_all. Judged against a flat 99 a pair
+        -- deck's own vantage would call it immature at 98 and soften every
+        -- claim it makes.
+        coalesce(dt.cards, 0)
+          >= (99 - (case when d.partner_oracle_id is null then 0 else 1 end)) as mature
       from decks d
       left join deck_totals dt on dt.deck_id = d.id
       where ${skip}::uuid is not null
@@ -254,13 +274,14 @@ export type DeckBuyRow = { deckId: string; oracleId: string; quantity: number };
  * Rats with one in the box buys three, and this roll-up feeds a price total, so
  * returning the ask would charge for a copy already on the shelf.
  *
- * A DECK NEVER BUYS ITS OWN COMMANDER HERE, and that is a LIMITATION rather than
- * a principle — see #470, which is the ticket to lift it. The commander is real
- * senior demand: a legend sleeved as another deck's commander really is holding
- * that copy, which is why `all_claims` unions it, and a player who does not own
- * their commander genuinely has one to buy. But no surface can currently say so.
- * `DeckDetail.commander` carries no owned flag, it is absent from
- * `DeckDetail.cards`, and `built` and `ownedCount` count `deck_cards` alone, so
+ * A DECK NEVER BUYS ITS OWN COMMANDERS HERE, and that is a LIMITATION rather
+ * than a principle — see #470, which is the ticket to lift it. A commander is
+ * real senior demand: a legend sleeved as another deck's commander really is
+ * holding that copy, which is why `all_claims` unions both columns, and a player
+ * who does not own their commander genuinely has one to buy. But no surface can
+ * currently say so. `DeckDetail.commander` and `DeckDetail.partner` carry no
+ * owned flag, both are absent from `DeckDetail.cards`, and `built` and
+ * `ownedCount` count `deck_cards` alone, so
  * emitting a commander row would put a purchase on the tile and the roll-up that
  * the deck page has no row to show — the exact cross-surface disagreement this
  * change exists to end. Rows are therefore driven off the decklist while
@@ -274,9 +295,9 @@ export async function loadDeckBuyRows(userId: string): Promise<DeckBuyRow[]> {
     quantity: number;
   }>(sql`
     with ${claimModel(userId)},
-    -- The decklist alone, commander excluded. This is what a deck can be told to
-    -- go and buy; see the header. The inner join below drops a deck's
-    -- commander-only claim without a predicate to forget.
+    -- The decklist alone, both commanders excluded. This is what a deck can be
+    -- told to go and buy; see the header. The inner join below drops a deck's
+    -- commander-only claims without a predicate to forget.
     list_claims as (
       select dc.deck_id, dc.oracle_id, sum(dc.quantity)::int as quantity
       from deck_cards dc
