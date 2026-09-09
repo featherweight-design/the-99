@@ -455,3 +455,18 @@ export const exportLinkOutCopy = {
 export const exportShoppingCopy = {
   countMeta: (copies: number) => `${copies} cards · to buy`,
 } as const;
+
+/** Deck rename. The hint is the one string that names both keys, so it is set
+    in mono at the same tracking as the rest of the spine's instrument type. */
+export const renameCopy = {
+  triggerAria: "Rename deck",
+  fieldAria: "Deck name",
+  hint: "↵ save · esc cancel",
+  save: "Save",
+  saving: "Saving…",
+  retry: "Retry",
+  cancel: "Cancel",
+  errorLength: "A deck name is 1–120 characters.",
+  errorControl: "That name can’t contain control characters.",
+  errorFailed: "That didn’t save. Try again.",
+} as const;
