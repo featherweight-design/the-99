@@ -312,6 +312,7 @@ function makeDeck(cards: DeckDetailCard[] = [solRing, arcaneSignet]): DeckDetail
       typeLine: "Legendary Creature — Dragon Noble",
       oracleText: null,
       imageUri: null,
+      artCropUri: null,
     },
     filled: false,
     cards,

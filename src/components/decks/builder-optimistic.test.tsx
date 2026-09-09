@@ -67,6 +67,7 @@ function makeDeck(): DeckDetail {
       typeLine: "Legendary Creature — Dragon Noble",
       oracleText: null,
       imageUri: null,
+      artCropUri: null,
     },
     filled: false,
     cards: [
