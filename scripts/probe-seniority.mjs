@@ -69,7 +69,6 @@ const readDeck = (page) =>
       guideNotGate: text.includes("a guide, not a gate"),
       workedExample: text.includes("average ~10 sources"),
       shortMarkers: (text.match(/short \d+/g) ?? []).length,
-      buyMarkers: (text.match(/\bbuy\b/gi) ?? []).length,
     };
   });
 
